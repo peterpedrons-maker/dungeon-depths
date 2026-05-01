@@ -17,6 +17,8 @@ interface PropProps {
   level: DungeonLevel;
 }
 
+type SubProps = Omit<PropProps, "type">;
+
 const matCache = new Map<string, THREE.ShaderMaterial>();
 function cachedMat(key: string, factory: () => THREE.ShaderMaterial) {
   let m = matCache.get(key);
@@ -64,7 +66,7 @@ export function Prop({ type, position, rotY, level }: PropProps) {
   }
 }
 
-function Pillar({ position, level }: PropProps) {
+function Pillar({ position, level }: SubProps) {
   const mat = useMemo(
     () => cachedMat(`pillar-${level.id}`, () => createPS1Material({ map: stoneWallTex(), ...fogOptsFor(level) })),
     [level],
@@ -84,7 +86,7 @@ function Pillar({ position, level }: PropProps) {
   );
 }
 
-function Torch({ position, rotY, level }: PropProps) {
+function Torch({ position, rotY, level }: SubProps) {
   const woodMat = useMemo(
     () => cachedMat(`torch-${level.id}`, () => createPS1Material({ map: woodTex(), ...fogOptsFor(level) })),
     [level],
@@ -122,7 +124,7 @@ function Torch({ position, rotY, level }: PropProps) {
   );
 }
 
-function Statue({ position, rotY, level }: PropProps) {
+function Statue({ position, rotY, level }: SubProps) {
   const mat = useMemo(
     () => cachedMat(`statue-${level.id}`, () => createPS1Material({ map: statueTex(), ...fogOptsFor(level) })),
     [level],
@@ -156,7 +158,7 @@ function Statue({ position, rotY, level }: PropProps) {
   );
 }
 
-function Chest({ position, rotY, level }: PropProps) {
+function Chest({ position, rotY, level }: SubProps) {
   const wood = useMemo(
     () => cachedMat(`chest-w-${level.id}`, () => createPS1Material({ map: woodTex(), ...fogOptsFor(level) })),
     [level],
@@ -180,7 +182,7 @@ function Chest({ position, rotY, level }: PropProps) {
   );
 }
 
-function Barrel({ position, rotY, level }: PropProps) {
+function Barrel({ position, rotY, level }: SubProps) {
   const mat = useMemo(
     () => cachedMat(`barrel-${level.id}`, () => createPS1Material({ map: woodTex(), ...fogOptsFor(level) })),
     [level],
@@ -194,7 +196,7 @@ function Barrel({ position, rotY, level }: PropProps) {
   );
 }
 
-function Bookshelf({ position, rotY, level }: PropProps) {
+function Bookshelf({ position, rotY, level }: SubProps) {
   const wood = useMemo(
     () => cachedMat(`shelf-${level.id}`, () => createPS1Material({ map: woodTex(), ...fogOptsFor(level) })),
     [level],
@@ -215,7 +217,7 @@ function Bookshelf({ position, rotY, level }: PropProps) {
   );
 }
 
-function Altar({ position, rotY, level }: PropProps) {
+function Altar({ position, rotY, level }: SubProps) {
   const mat = useMemo(
     () => cachedMat(`altar-${level.id}`, () => createPS1Material({ map: stoneWallTex(), ...fogOptsFor(level) })),
     [level],
@@ -241,7 +243,7 @@ function Altar({ position, rotY, level }: PropProps) {
   );
 }
 
-function Fountain({ position, level }: PropProps) {
+function Fountain({ position, level }: SubProps) {
   const mat = useMemo(
     () => cachedMat(`fountain-${level.id}`, () => createPS1Material({ map: stoneWallTex(), ...fogOptsFor(level) })),
     [level],
@@ -266,7 +268,7 @@ function Fountain({ position, level }: PropProps) {
   );
 }
 
-function Bones({ position, rotY }: PropProps) {
+function Bones({ position, rotY }: SubProps) {
   return (
     <group position={[position[0], 0.05, position[2]]} rotation={[0, rotY, 0]}>
       <mesh>
@@ -285,7 +287,7 @@ function Bones({ position, rotY }: PropProps) {
   );
 }
 
-function Rubble({ position, rotY, level }: PropProps) {
+function Rubble({ position, rotY, level }: SubProps) {
   const mat = useMemo(
     () => cachedMat(`rubble-${level.id}`, () => createPS1Material({ map: stoneWallTex(), ...fogOptsFor(level) })),
     [level],
@@ -305,7 +307,7 @@ function Rubble({ position, rotY, level }: PropProps) {
   );
 }
 
-function Candle({ position, rotY }: PropProps) {
+function Candle({ position, rotY }: SubProps) {
   const flameRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (flameRef.current) {
