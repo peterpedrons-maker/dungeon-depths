@@ -54,6 +54,7 @@ export function Game({ levelId = "hub" }: { levelId?: string }) {
           <ambientLight intensity={0.25} color="#6080a0" />
           <Level level={level} data={data} />
           <Enemies level={level} colliders={data.colliders} />
+          <primitive object={undefined as any} />
           <WeaponView level={level} />
           <Player
             spawn={data.spawn}
