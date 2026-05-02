@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../systems/gameState";
@@ -7,11 +7,12 @@ import { metalTex, woodTex } from "../materials/textures";
 import type { DungeonLevel } from "../data/dungeon";
 
 /**
- * First-person weapon viewmodel — short sword. Attaches to the camera.
+ * First-person weapon viewmodel — short sword. Parented to the camera
+ * so it follows view rotation/position automatically.
  * Animated by the swing state in useGame.
  */
 export function WeaponView({ level }: { level: DungeonLevel }) {
-  const { camera } = useThree();
+  const { camera, scene } = useThree();
   const group = useRef<THREE.Group>(null);
   const blade = useMemo(
     () =>
@@ -34,17 +35,28 @@ export function WeaponView({ level }: { level: DungeonLevel }) {
     [level],
   );
 
+  // Ensure camera is in the scene graph so its children render,
+  // and parent the weapon group to the camera once.
+  useEffect(() => {
+    if (!group.current) return;
+    if (!camera.parent) scene.add(camera);
+    camera.add(group.current);
+    return () => {
+      if (group.current && group.current.parent === camera) {
+        camera.remove(group.current);
+      }
+    };
+  }, [camera, scene]);
+
   useFrame(() => {
     if (!group.current) return;
     const { swingActive, swingT } = useGame.getState();
-    // Attach to camera each frame
-    camera.add(group.current);
 
     let rotZ = -0.25;
     let rotX = -0.1;
-    let posX = 0.32;
+    const posX = 0.32;
     let posY = -0.28;
-    let posZ = -0.55;
+    const posZ = -0.55;
 
     if (swingActive) {
       // windup -> slash -> recovery (swingT 0..1)
@@ -64,7 +76,7 @@ export function WeaponView({ level }: { level: DungeonLevel }) {
   });
 
   return (
-    <group ref={group}>
+    <group ref={group} renderOrder={999}>
       {/* grip */}
       <mesh position={[0, 0, 0]} material={grip}>
         <boxGeometry args={[0.06, 0.18, 0.06]} />
