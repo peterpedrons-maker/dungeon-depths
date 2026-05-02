@@ -21,7 +21,8 @@ export type TileChar =
   | "A"
   | "X"
   | "M" // mossy wall
-  | "W"; // water/puddle
+  | "W" // water/puddle
+  | "E"; // enemy spawn (skeleton)
 
 export const TILE_SIZE = 2;
 export const WALL_HEIGHT = 3.2;
@@ -74,15 +75,15 @@ export const CATACOMBS: DungeonLevel = {
   ambient: 0.35,
   grid: [
     "#####################",
-    "#X..T....P....T....##",
+    "#X..T....P....T...E##",
     "#....P.......P......#",
-    "#.S............S....#",
+    "#.S......E.....S....#",
     "#....C....F....C....#",
     "#.P................P#",
     "#....T....A....T....#",
     "#.P................P#",
     "#....C....F....C....#",
-    "#.S............S....#",
+    "#.S......E.....S....#",
     "#....P.......P......#",
     "#....T....P....T....#",
     "#####################",

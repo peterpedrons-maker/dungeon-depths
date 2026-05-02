@@ -25,7 +25,7 @@ export const Route = createFileRoute("/play")({
 function PlayPage() {
   return (
     <ClientOnly fallback={<LoadingScreen />}>
-      <Game levelId="hub" />
+      <Game levelId="catacombs_1" />
     </ClientOnly>
   );
 }
