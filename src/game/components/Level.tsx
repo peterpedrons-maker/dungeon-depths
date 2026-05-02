@@ -22,6 +22,7 @@ export interface LevelData {
   props: { type: string; x: number; z: number; rot: number }[];
   spawn: [number, number, number];
   colliders: Collider[];
+  enemySpawns: { x: number; z: number }[];
 }
 
 export function parseLevel(level: DungeonLevel): LevelData {
@@ -29,6 +30,7 @@ export function parseLevel(level: DungeonLevel): LevelData {
   const floors: { x: number; z: number }[] = [];
   const props: { type: string; x: number; z: number; rot: number }[] = [];
   const colliders: Collider[] = [];
+  const enemySpawns: { x: number; z: number }[] = [];
   let spawn: [number, number, number] = [0, 1.5, 0];
 
   const rows = level.grid;
@@ -49,6 +51,7 @@ export function parseLevel(level: DungeonLevel): LevelData {
       } else {
         floors.push({ x: wx, z: wz });
         if (ch === "X") spawn = [wx, 1.4, wz];
+        if (ch === "E") enemySpawns.push({ x: wx, z: wz });
         const propType = tileToProp(ch);
         if (propType) {
           props.push({
@@ -72,7 +75,7 @@ export function parseLevel(level: DungeonLevel): LevelData {
     }
   }
 
-  return { walls, floors, props, spawn, colliders };
+  return { walls, floors, props, spawn, colliders, enemySpawns };
 }
 
 function tileToProp(ch: string): string | null {

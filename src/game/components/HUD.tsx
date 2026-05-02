@@ -8,6 +8,7 @@ export function HUD({
   stamina,
   locationName,
   showHint,
+  message,
 }: {
   hp: number;
   maxHp: number;
@@ -16,6 +17,7 @@ export function HUD({
   stamina: number;
   locationName: string;
   showHint: boolean;
+  message?: string | null;
 }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-10 select-none font-mono text-[11px] uppercase tracking-widest text-amber-100">
@@ -36,7 +38,12 @@ export function HUD({
 
       {showHint && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded border border-amber-200/40 bg-black/70 px-3 py-2 text-amber-100">
-          Clique para começar — WASD anda, Mouse olha, Shift corre, ESC libera o cursor
+          Toque para começar — WASD/Joystick anda · Mouse/arrastar olha · Atacar / Bloquear / Correr
+        </div>
+      )}
+      {message && (
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 rounded border border-amber-200/50 bg-black/80 px-4 py-2 text-amber-100">
+          {message}
         </div>
       )}
     </div>
