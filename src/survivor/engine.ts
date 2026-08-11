@@ -53,6 +53,8 @@ function spawnEnemy(state: GameState, spawnRadius: number): void {
     maxHp: stats.hp,
     hitFlash: 0,
     wobble: Math.random() * Math.PI * 2,
+    heading: angle + Math.PI, // face back toward the player from the spawn ring
+    age: 0,
   };
   state.enemies.push(enemy);
 }
@@ -91,6 +93,10 @@ export function updateGame(state: GameState, dt: number, spawnRadius: number): v
       nearest = e;
     }
 
+    // Orient toward the player (top-down heading), smoothed.
+    const targetHeading = Math.atan2(dy, dx);
+    e.heading = lerpAngle(e.heading, targetHeading, Math.min(1, dt * 8));
+
     const touchDist = e.radius + player.radius;
     if (dist > touchDist) {
       // Move toward the player.
@@ -103,6 +109,7 @@ export function updateGame(state: GameState, dt: number, spawnRadius: number): v
 
     if (e.hitFlash > 0) e.hitFlash -= dt;
     e.wobble += dt * 6;
+    e.age += dt;
   }
 
   // ── Separate overlapping enemies so they surround, not stack ─
