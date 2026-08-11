@@ -4,7 +4,8 @@ import { render, ZOOM } from '@/game/render';
 import { Input } from '@/game/input';
 import { sound } from '@/game/sound';
 import { CLASSES } from '@/game/classes';
-import { GameState, Phase, Upgrade, BIOMES, FLOOR_WAVE_TIME, DASH_COOLDOWN, ClassId } from '@/game/types';
+import { STAGES, isUnlocked, getMaxUnlocked } from '@/game/stages';
+import { GameState, Phase, Upgrade, DASH_COOLDOWN, ClassId } from '@/game/types';
 
 interface Hud {
   phase: Phase;
@@ -12,9 +13,9 @@ interface Hud {
   level: number; xp: number; xpToNext: number;
   time: number; kills: number;
   upgrades: Upgrade[];
-  floor: number; floorPhase: 'waves' | 'boss' | 'cleared'; floorProgress: number;
+  stageIndex: number; stageProgress: number; bossActive: boolean;
   bossHp: number; bossMaxHp: number; bossName: string;
-  dashFrac: number; // 0 = ready, 1 = just used
+  dashFrac: number;
 }
 
 export function Game() {
@@ -22,10 +23,12 @@ export function Game() {
   const stateRef = useRef<GameState>(createState());
   const inputRef = useRef<Input>(new Input());
   const [muted, setMuted] = useState(false);
+  const [chosenStage, setChosenStage] = useState(0);
+  const [unlockTick, setUnlockTick] = useState(0); // re-read unlocks after a win
   const [hud, setHud] = useState<Hud>({
     phase: 'title', hp: 100, maxHp: 100, level: 1, xp: 0, xpToNext: 5,
     time: 0, kills: 0, upgrades: [],
-    floor: 1, floorPhase: 'waves', floorProgress: 0, bossHp: 0, bossMaxHp: 0, bossName: '',
+    stageIndex: 0, stageProgress: 0, bossActive: false, bossHp: 0, bossMaxHp: 0, bossName: '',
     dashFrac: 0,
   });
 
@@ -38,10 +41,11 @@ export function Game() {
       level: s.player.level, xp: s.player.xp, xpToNext: s.player.xpToNext,
       time: Math.floor(s.time), kills: s.kills,
       upgrades: s.offeredUpgrades,
-      floor: s.floor, floorPhase: s.floorPhase,
-      floorProgress: Math.min(1, s.floorTimer / FLOOR_WAVE_TIME),
-      bossHp: boss ? Math.ceil(boss.hp) : 0, bossMaxHp: boss ? boss.maxHp : 0,
-      bossName: boss?.name ?? '',
+      stageIndex: s.stageIndex,
+      stageProgress: Math.min(1, s.stageTime / STAGES[s.stageIndex].duration),
+      bossActive: s.bossActive,
+      bossHp: boss ? Math.ceil(boss.hp) : 0, bossMaxHp: s.bossMaxHp,
+      bossName: boss?.name ?? STAGES[s.stageIndex].bossName,
       dashFrac: Math.max(0, s.player.dashCd) / DASH_COOLDOWN,
     });
   };
@@ -71,12 +75,11 @@ export function Game() {
       let dt = (now - last) / 1000; last = now;
       if (dt > 0.05) dt = 0.05;
       const s = stateRef.current;
-      // update() works in world units; the camera is zoomed out, so the
-      // visible world area is larger than the pixel viewport.
       update(s, dt, { w: view.w / ZOOM, h: view.h / ZOOM }, input);
       render(ctx, s, view, input);
       if (s.phase !== lastPhase) {
         if (s.phase === 'levelup' || s.phase === 'dead' || s.phase === 'won') input.clear();
+        if (s.phase === 'won') setUnlockTick(t => t + 1);
         lastPhase = s.phase; syncHud();
       }
       acc += dt;
@@ -87,20 +90,14 @@ export function Game() {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); input.detach(); };
   }, []);
 
-  const goClassSelect = () => {
-    sound.unlock();
-    sound.ui();
-    stateRef.current.phase = 'classSelect';
-    syncHud();
-  };
+  const goStageSelect = () => { sound.unlock(); sound.ui(); stateRef.current.phase = 'stageSelect'; syncHud(); };
+  const chooseStageAndClass = (i: number) => { sound.ui(); setChosenStage(i); stateRef.current.phase = 'classSelect'; syncHud(); };
   const start = (classId: ClassId) => {
-    sound.unlock();
-    sound.startMusic();
-    startGame(stateRef.current, classId);
-    inputRef.current.clear();
-    syncHud();
+    sound.unlock(); sound.startMusic();
+    startGame(stateRef.current, classId, chosenStage);
+    inputRef.current.clear(); syncHud();
   };
-  const restart = () => { stateRef.current.phase = 'classSelect'; inputRef.current.clear(); syncHud(); };
+  const backToStages = () => { sound.ui(); stateRef.current.phase = 'stageSelect'; inputRef.current.clear(); syncHud(); };
   const pick = (u: Upgrade) => { sound.ui(); chooseUpgrade(stateRef.current, u); inputRef.current.clear(); syncHud(); };
   const toggleMute = () => { const m = !muted; setMuted(m); sound.setMuted(m); };
 
@@ -109,6 +106,9 @@ export function Game() {
   const hpPct = Math.max(0, (hud.hp / hud.maxHp) * 100);
   const xpPct = Math.min(100, (hud.xp / hud.xpToNext) * 100);
   const playing = hud.phase === 'playing' || hud.phase === 'levelup';
+  const stage = STAGES[hud.stageIndex];
+  const maxUnlocked = getMaxUnlocked(); // eslint-disable-line @typescript-eslint/no-unused-vars
+  void unlockTick;
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#12101a] touch-none select-none">
@@ -136,60 +136,50 @@ export function Game() {
 
       {/* HUD */}
       {playing && (
-        <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 p-2.5">
-            <div className="mb-1.5 flex items-center gap-2">
-              <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-md bg-cyan-500 text-xs font-black text-white shadow">{hud.level}</span>
-              <div className="h-2.5 flex-1 overflow-hidden rounded-full border border-black/50 bg-black/50">
-                <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-300 transition-all" style={{ width: `${xpPct}%` }} />
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex w-40 max-w-[46vw] items-center gap-1.5">
-                <span className="text-sm">❤️</span>
-                <div className="relative h-4 flex-1 overflow-hidden rounded-full border border-black/50 bg-black/50">
-                  <div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400 transition-all" style={{ width: `${hpPct}%` }} />
-                  <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-white drop-shadow">{hud.hp}/{hud.maxHp}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-full bg-black/40 px-3 py-1 font-mono text-sm font-bold text-white tabular-nums">
-                <span>⏱️ {mm}:{ss}</span>
-                <span className="text-red-300">💀 {hud.kills}</span>
-              </div>
-            </div>
-            {/* Floor label + progress / boss bar */}
-            <div className="mt-2">
-              {hud.floorPhase === 'boss' && hud.bossMaxHp > 0 ? (
-                <div>
-                  <div className="mb-0.5 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-red-300">
-                    <span>☠️ {hud.bossName}</span>
-                  </div>
-                  <div className="mx-auto h-3 max-w-md overflow-hidden rounded-full border border-black/60 bg-black/60">
-                    <div className="h-full rounded-full bg-gradient-to-r from-red-700 to-red-400 transition-all" style={{ width: `${(hud.bossHp / hud.bossMaxHp) * 100}%` }} />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white/55">
-                    Andar {hud.floor} · {BIOMES[Math.min(hud.floor, BIOMES.length) - 1].name}
-                  </span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/40">
-                    <div className="h-full rounded-full bg-white/40" style={{ width: `${hud.floorProgress * 100}%` }} />
-                  </div>
-                </div>
-              )}
+        <div className="pointer-events-none absolute inset-x-0 top-0 p-2.5">
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-md bg-cyan-500 text-xs font-black text-white shadow">{hud.level}</span>
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full border border-black/50 bg-black/50">
+              <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-300 transition-all" style={{ width: `${xpPct}%` }} />
             </div>
           </div>
-
-          {/* Descend prompt */}
-          {hud.floorPhase === 'cleared' && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
-              <div className="animate-pulse rounded-full border border-cyan-400/50 bg-black/60 px-4 py-2 text-sm font-bold text-cyan-200">
-                ⬇️ Vá até o portal para descer
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex w-40 max-w-[46vw] items-center gap-1.5">
+              <span className="text-sm">❤️</span>
+              <div className="relative h-4 flex-1 overflow-hidden rounded-full border border-black/50 bg-black/50">
+                <div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400 transition-all" style={{ width: `${hpPct}%` }} />
+                <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-white drop-shadow">{hud.hp}/{hud.maxHp}</span>
               </div>
             </div>
-          )}
-        </>
+            <div className="flex items-center gap-3 rounded-full bg-black/40 px-3 py-1 font-mono text-sm font-bold text-white tabular-nums">
+              <span>⏱️ {mm}:{ss}</span>
+              <span className="text-red-300">💀 {hud.kills}</span>
+            </div>
+          </div>
+          {/* Stage label + progress / boss bar */}
+          <div className="mt-2">
+            {hud.bossActive ? (
+              <div>
+                <div className="mb-0.5 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-red-300">
+                  <span>☠️ {hud.bossName}</span>
+                </div>
+                <div className="mx-auto h-3 max-w-md overflow-hidden rounded-full border border-black/60 bg-black/60">
+                  <div className="h-full rounded-full bg-gradient-to-r from-red-700 to-red-400 transition-all" style={{ width: `${hud.bossMaxHp ? (hud.bossHp / hud.bossMaxHp) * 100 : 0}%` }} />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white/55">
+                  {stage.emoji} {stage.name}
+                </span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/40">
+                  <div className="h-full rounded-full bg-white/40 transition-all" style={{ width: `${hud.stageProgress * 100}%` }} />
+                </div>
+                <span className="text-[10px] text-white/45">chefe</span>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Level-up */}
@@ -218,21 +208,53 @@ export function Game() {
           <div className="mb-2 text-6xl">🗡️</div>
           <h1 className="mb-1 text-center text-4xl font-black leading-none text-cyan-300 drop-shadow">DUNGEON<br />DEPTHS</h1>
           <p className="mb-8 text-xs uppercase tracking-[0.2em] text-white/50">Twin-Stick Survivor</p>
-          <button onClick={goClassSelect} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-10 py-3.5 text-lg font-black text-white shadow-lg transition-all active:scale-95">▶ Jogar</button>
+          <button onClick={goStageSelect} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-10 py-3.5 text-lg font-black text-white shadow-lg transition-all active:scale-95">▶ Jogar</button>
           <div className="mt-8 max-w-xs text-center text-xs leading-relaxed text-white/45">
-            <p className="mb-1">🕹️ <b className="text-cyan-300">Esquerda</b> da tela: mover</p>
-            <p className="mb-1">🎯 <b className="text-yellow-300">Direita</b> da tela: mirar e atirar</p>
-            <p className="mb-1">💨 Botão de <b className="text-cyan-300">dash</b>: esquiva rápida (invencível)</p>
-            <p className="mt-3 text-white/35">Suba de nível, derrote o chefe de cada andar e desça até o fundo!</p>
+            <p className="mb-1">🕹️ <b className="text-cyan-300">Esquerda</b>: mover • 🎯 <b className="text-yellow-300">Direita</b>: mirar</p>
+            <p className="mb-1">💨 <b className="text-cyan-300">Dash</b>: esquiva invencível</p>
+            <p className="mt-3 text-white/35">Sobreviva à fase, derrote o chefe e desbloqueie a próxima!</p>
+          </div>
+        </div>
+      )}
+
+      {/* Stage select */}
+      {hud.phase === 'stageSelect' && (
+        <div className="absolute inset-0 flex flex-col items-center overflow-y-auto bg-gradient-to-b from-[#1a1530]/92 to-[#12101a]/98 px-4 py-8">
+          <h2 className="mb-1 text-2xl font-black text-white">Escolha a fase</h2>
+          <p className="mb-5 text-xs text-white/45">Limpe uma fase para liberar a próxima</p>
+          <div className="flex w-full max-w-md flex-col gap-2.5">
+            {STAGES.map((st, i) => {
+              const unlocked = isUnlocked(i);
+              return (
+                <button
+                  key={st.id}
+                  disabled={!unlocked}
+                  onClick={() => unlocked && chooseStageAndClass(i)}
+                  className={`flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${unlocked ? 'border-cyan-500/40 bg-slate-800/85 hover:border-cyan-400 hover:bg-slate-700/85 active:scale-[0.98]' : 'border-white/10 bg-black/40 opacity-60'}`}
+                >
+                  <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-lg bg-slate-900 text-3xl">{unlocked ? st.emoji : '🔒'}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/70">Fase {i + 1}</span>
+                      {st.bossInvincibleFeel && <span className="rounded bg-red-900/60 px-1.5 text-[9px] font-black uppercase text-red-300">Impiedosa</span>}
+                    </div>
+                    <div className="font-black text-white">{st.name}</div>
+                    <div className="truncate text-[11px] text-white/50">{unlocked ? st.intro : 'Vença a fase anterior para desbloquear.'}</div>
+                  </div>
+                  <span className="text-lg">{unlocked ? '▶' : ''}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Class select */}
       {hud.phase === 'classSelect' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-[#1a1530]/90 to-[#12101a]/97 px-4 py-6">
+        <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-[#1a1530]/92 to-[#12101a]/98 px-4 py-6">
+          <button onClick={backToStages} className="mb-3 text-xs text-white/50 underline">← trocar fase</button>
           <h2 className="mb-1 text-2xl font-black text-white">Escolha sua classe</h2>
-          <p className="mb-5 text-xs text-white/45">Cada uma tem uma arma e um estilo diferentes</p>
+          <p className="mb-5 text-xs text-white/45">{STAGES[chosenStage].emoji} {STAGES[chosenStage].name}</p>
           <div className="grid w-full max-w-md grid-cols-2 gap-2.5">
             {CLASSES.map(c => (
               <button
@@ -263,8 +285,8 @@ export function Game() {
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm px-4">
           <div className="mb-2 text-6xl">💀</div>
           <h2 className="mb-1 text-3xl font-black text-red-400">Você caiu</h2>
-          <p className="mb-6 text-sm text-white/60">Nível {hud.level} • {mm}:{ss} • 💀 {hud.kills}</p>
-          <button onClick={restart} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
+          <p className="mb-6 text-sm text-white/60">{stage.name} • Nível {hud.level} • {mm}:{ss} • 💀 {hud.kills}</p>
+          <button onClick={backToStages} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Continuar</button>
         </div>
       )}
 
@@ -272,9 +294,15 @@ export function Game() {
       {hud.phase === 'won' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm px-4">
           <div className="mb-2 text-6xl">🏆</div>
-          <h2 className="mb-1 text-3xl font-black text-yellow-400">Profundezas conquistadas!</h2>
-          <p className="mb-6 text-sm text-white/60">Você derrotou o Coração das Trevas • Nível {hud.level} • 💀 {hud.kills}</p>
-          <button onClick={restart} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
+          <h2 className="mb-1 text-3xl font-black text-yellow-400">Fase concluída!</h2>
+          <p className="mb-2 text-sm text-white/60">Você derrotou {hud.bossName} • Nível {hud.level} • 💀 {hud.kills}</p>
+          {hud.stageIndex + 1 < STAGES.length && (
+            <p className="mb-6 text-sm font-bold text-cyan-300">🔓 Nova fase desbloqueada: {STAGES[hud.stageIndex + 1].name}!</p>
+          )}
+          {hud.stageIndex + 1 >= STAGES.length && (
+            <p className="mb-6 text-sm font-bold text-yellow-300">Você conquistou todas as fases! 👑</p>
+          )}
+          <button onClick={backToStages} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Escolher fase</button>
         </div>
       )}
     </div>

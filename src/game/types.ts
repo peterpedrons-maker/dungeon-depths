@@ -1,6 +1,10 @@
 export interface Vec2 { x: number; y: number; }
 
-export type EnemyKind = 'slime' | 'bat' | 'skeleton';
+export type EnemyKind =
+  | 'slime' | 'bat' | 'skeleton'
+  | 'runner' | 'brute' | 'caster' | 'spider' | 'ghost' | 'bigSlime';
+
+export type BossAttack = 'charge' | 'burst' | 'summon' | 'slam' | 'volley';
 
 export interface Enemy {
   id: number;
@@ -18,17 +22,21 @@ export interface Enemy {
   knockY: number;
   hitCd: number;      // per-enemy cooldown before it can damage player again
   orbCd: number;      // per-enemy cooldown for orbiting-weapon hits
+  atkCd: number;      // ranged attack cooldown (casters)
   facingLeft: boolean;
   bob: number;
   anim: number;       // animation clock (frame timing)
   age: number;        // seconds since spawn (spawn-in pop)
+  wobble: number;     // per-enemy movement phase (weaving)
   // ── boss-only ──
   isBoss?: boolean;
   name?: string;
-  bstate?: 'chase' | 'telegraph' | 'charge' | 'recover';
+  bstate?: 'chase' | 'telegraph' | 'act' | 'charge' | 'recover';
+  bnext?: BossAttack; // attack queued during telegraph
   btimer?: number;    // time left in current boss state
   batkCd?: number;    // time until next attack
   cvx?: number; cvy?: number; // charge velocity
+  phase2?: boolean;   // enraged below 50% hp
 }
 
 export interface Hazard {
@@ -37,9 +45,11 @@ export interface Hazard {
   life: number;
   radius: number;
   damage: number;
+  telegraph?: number; // seconds of warn-up before it becomes dangerous
+  color?: string;
 }
 
-export type BoltStyle = 'bolt' | 'fire' | 'arrow';
+export type BoltStyle = 'bolt' | 'fire' | 'arrow' | 'slash';
 
 export interface Bolt {
   x: number;
@@ -49,19 +59,11 @@ export interface Bolt {
   damage: number;
   pierce: number;     // enemies it can still pass through
   life: number;       // seconds remaining
+  maxLife: number;
   hitIds: number[];   // enemies already hit (avoid double hits)
   rot: number;
   style: BoltStyle;
-}
-
-// Melee swing arc (visual + one-shot damage window)
-export interface Swing {
-  x: number; y: number;
-  ang: number;        // center angle
-  arc: number;        // total arc width in radians
-  radius: number;
-  life: number;
-  maxLife: number;
+  hitR: number;       // world-space hit radius (fat for slashes)
 }
 
 export interface Gem {
@@ -96,12 +98,12 @@ export interface PlayerStats {
   damage: number;
   attackCd: number;       // seconds between shots
   boltSpeed: number;
-  boltCount: number;      // projectiles per shot (or orbiting orbs + 1)
+  boltCount: number;      // projectiles per shot (or orbiting orbs)
   pierce: number;
   knockback: number;
   pickupRadius: number;
   critChance: number;
-  range: number;          // melee arc radius
+  range: number;          // reach (melee slash length / etc.)
 }
 
 export interface Player {
@@ -141,11 +143,11 @@ export const DASH_COOLDOWN = 1.1;
 export const ZOOM = 2 / 3;
 export const WORLD = 1 / ZOOM;
 
-// Kept close to the hero so the skulls sweep the ring where chasing enemies
-// actually stop (just outside contact range), not far outside it.
 export const ORBIT_RADIUS = 34 * WORLD;
 
-export type Phase = 'title' | 'classSelect' | 'playing' | 'levelup' | 'dead' | 'won';
+export type Phase =
+  | 'title' | 'stageSelect' | 'classSelect'
+  | 'playing' | 'levelup' | 'dead' | 'won';
 
 export type ClassId = 'knight' | 'mage' | 'hunter' | 'necro';
 export type WeaponKind = 'melee' | 'fireball' | 'arrow' | 'orbit';
@@ -163,7 +165,6 @@ export interface GameState {
   player: Player;
   enemies: Enemy[];
   bolts: Bolt[];
-  swings: Swing[];
   gems: Gem[];
   hazards: Hazard[];
   particles: Particle[];
@@ -174,15 +175,12 @@ export interface GameState {
   kills: number;
   shake: number;
   offeredUpgrades: Upgrade[];
-  // ── floor / descent ──
-  floor: number;
-  floorPhase: 'waves' | 'boss' | 'cleared';
-  floorTimer: number;
-  stair: { x: number; y: number } | null;
+  // ── stage / run ──
+  stageIndex: number;      // which stage is being played
+  stageTime: number;       // seconds into the stage
+  bossActive: boolean;     // the stage boss is on the field
+  bossMaxHp: number;
 }
-
-export const FLOOR_COUNT = 3;
-export const FLOOR_WAVE_TIME = 35; // seconds of waves before the boss
 
 export interface Biome {
   name: string;
@@ -192,5 +190,5 @@ export const BIOMES: Biome[] = [
   { name: 'Catacumbas', ground: '#2a2438', seam: '#221d30', hi1: '#312a44', hi2: '#3a3350' },
   { name: 'Cavernas Úmidas', ground: '#1f2e2a', seam: '#182420', hi1: '#26382f', hi2: '#2f463a' },
   { name: 'O Abismo', ground: '#301b22', seam: '#24141a', hi1: '#3c222a', hi2: '#4a2730' },
+  { name: 'Trono do Fim', ground: '#241a2e', seam: '#180f20', hi1: '#2e2038', hi2: '#3a2846' },
 ];
-export const BOSS_NAMES = ['Guardião de Osso', 'Horror da Caverna', 'Coração das Trevas'];

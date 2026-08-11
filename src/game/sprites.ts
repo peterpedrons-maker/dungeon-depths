@@ -227,6 +227,99 @@ export function skeletonFrames(): Sprite[] {
   return [skeletonFrame('a', 0), skeletonFrame('b', 1)];
 }
 
+// ═══ RUNNER (imp) ═══════════════════════════════════════════════════════════
+function runnerFrame(key: string, step: 0 | 1): Sprite {
+  return make('runner_' + key, 12, 13, (g) => {
+    px(g, 2, 0, 2, 2, '#7a2a12'); px(g, 8, 0, 2, 2, '#7a2a12');   // horns
+    px(g, 3, 2, 6, 4, '#f0873a');                                  // head
+    px(g, 3, 2, 6, 1, '#ff9d52');
+    px(g, 4, 3, 1, 1, '#ffec99'); px(g, 7, 3, 1, 1, '#ffec99');    // eyes
+    px(g, 3, 6, 6, 3, '#c2410c');                                  // body
+    if (step === 0) { px(g, 3, 9, 2, 4, '#7a2a12'); px(g, 7, 9, 2, 3, '#7a2a12'); }
+    else { px(g, 3, 9, 2, 3, '#7a2a12'); px(g, 7, 9, 2, 4, '#7a2a12'); }
+  });
+}
+export function runnerFrames(): Sprite[] { return [runnerFrame('a', 0), runnerFrame('b', 1)]; }
+
+// ═══ BRUTE (ogre) ═══════════════════════════════════════════════════════════
+function bruteFrame(key: string, step: 0 | 1): Sprite {
+  return make('brute_' + key, 20, 18, (g) => {
+    px(g, 6, 0, 8, 4, '#7fae52');                                  // head
+    px(g, 6, 0, 8, 1, '#9bc96e');
+    px(g, 7, 2, 2, 1, '#241a0f'); px(g, 11, 2, 2, 1, '#241a0f');   // eyes
+    px(g, 8, 4, 4, 1, '#dfe6cf');                                  // tusks
+    px(g, 3, 4, 14, 8, '#6b9245');                                 // torso
+    px(g, 3, 4, 14, 1, '#84ad58');
+    px(g, 6, 6, 8, 4, '#557636');                                  // belly shade
+    px(g, 0, 5, 3, 6, '#6b9245'); px(g, 17, 5, 3, 6, '#6b9245');   // arms
+    px(g, 0, 10, 3, 2, '#dfe6cf'); px(g, 17, 10, 3, 2, '#dfe6cf'); // fists
+    if (step === 0) { px(g, 5, 12, 5, 6, '#41582a'); px(g, 12, 12, 4, 5, '#41582a'); }
+    else { px(g, 5, 12, 4, 5, '#41582a'); px(g, 11, 12, 5, 6, '#41582a'); }
+  });
+}
+export function bruteFrames(): Sprite[] { return [bruteFrame('a', 0), bruteFrame('b', 1)]; }
+
+// ═══ CASTER (dark mage) ═════════════════════════════════════════════════════
+function casterFrame(key: string, glow: boolean): Sprite {
+  return make('caster_' + key, 14, 16, (g) => {
+    px(g, 4, 0, 6, 3, '#4c1d95');                                  // hood
+    px(g, 3, 2, 8, 2, '#5b21b6');
+    px(g, 5, 3, 4, 2, '#160a2e');                                  // shadow face
+    px(g, 5, 4, 1, 1, glow ? '#f0abfc' : '#c084fc');               // eyes
+    px(g, 8, 4, 1, 1, glow ? '#f0abfc' : '#c084fc');
+    px(g, 3, 5, 8, 8, '#6d28d9');                                  // robe
+    px(g, 3, 5, 8, 1, '#8b5cf6');
+    px(g, 3, 13, 8, 2, '#4c1d95');
+    px(g, 10, 7, 2, 3, '#e9d5ff');                                 // staff hand
+    if (glow) { px(g, 10, 4, 2, 2, '#f0abfc'); px(g, 10, 4, 2, 1, '#ffffff'); }
+  });
+}
+export function casterFrames(): Sprite[] { return [casterFrame('a', false), casterFrame('b', true)]; }
+
+// ═══ SPIDER ═════════════════════════════════════════════════════════════════
+function spiderFrame(key: string, step: 0 | 1): Sprite {
+  return make('spider_' + key, 16, 12, (g) => {
+    const y = step === 0 ? 0 : 1;
+    px(g, 0, 3 + y, 3, 1, '#4b5563'); px(g, 13, 3 + y, 3, 1, '#4b5563'); // legs
+    px(g, 0, 6 - y, 3, 1, '#4b5563'); px(g, 13, 6 - y, 3, 1, '#4b5563');
+    px(g, 1, 4, 3, 1, '#374151'); px(g, 12, 4, 3, 1, '#374151');
+    px(g, 5, 3, 6, 6, '#374151');                                  // abdomen
+    px(g, 5, 3, 6, 1, '#4b5563');
+    px(g, 6, 2, 4, 2, '#1f2937');                                  // head
+    px(g, 6, 2, 1, 1, '#f87171'); px(g, 9, 2, 1, 1, '#f87171');    // eyes
+    px(g, 7, 5, 2, 2, '#111827');
+  });
+}
+export function spiderFrames(): Sprite[] { return [spiderFrame('a', 0), spiderFrame('b', 1)]; }
+
+// ═══ GHOST ══════════════════════════════════════════════════════════════════
+function ghostFrame(key: string, step: 0 | 1): Sprite {
+  return make('ghost_' + key, 12, 14, (g) => {
+    px(g, 3, 0, 6, 2, '#cffafe');
+    px(g, 2, 2, 8, 6, '#a5f3fc');
+    px(g, 2, 2, 8, 1, '#e0fdff');
+    px(g, 4, 3, 1, 2, '#155e75'); px(g, 7, 3, 1, 2, '#155e75');    // eyes
+    px(g, 4, 6, 4, 1, '#67e8f9');                                  // mouth
+    // wispy tail
+    if (step === 0) { px(g, 2, 8, 2, 3, '#a5f3fc'); px(g, 5, 8, 2, 4, '#a5f3fc'); px(g, 8, 8, 2, 3, '#a5f3fc'); }
+    else { px(g, 2, 8, 2, 4, '#a5f3fc'); px(g, 5, 8, 2, 3, '#a5f3fc'); px(g, 8, 8, 2, 4, '#a5f3fc'); }
+  });
+}
+export function ghostFrames(): Sprite[] { return [ghostFrame('a', 0), ghostFrame('b', 1)]; }
+
+// ═══ SLASH (crescent) ═══════════════════════════════════════════════════════
+function slashFrame(key: string): Sprite {
+  return make('slash_' + key, 14, 20, (g) => {
+    // a crescent curving along +x, centered vertically
+    px(g, 8, 2, 3, 2, '#e8f1ff'); px(g, 10, 4, 2, 3, '#e8f1ff');
+    px(g, 11, 6, 2, 4, '#ffffff'); px(g, 11, 10, 2, 4, '#ffffff');
+    px(g, 10, 13, 2, 3, '#e8f1ff'); px(g, 8, 16, 3, 2, '#e8f1ff');
+    px(g, 9, 8, 2, 4, '#bcd6ff');
+  });
+}
+let SLASH_SPR: Sprite | null = null;
+export function slashSprite(): Sprite { return SLASH_SPR ?? (SLASH_SPR = slashFrame('x')); }
+
 // ═══ GEM / BOLT ══════════════════════════════════════════════════════════════
 export function gemSprite(): Sprite {
   return make('gem', 8, 8, (g) => {

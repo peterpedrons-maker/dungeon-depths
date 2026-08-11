@@ -1,20 +1,21 @@
-import { GameState, BIOMES, ORBIT_RADIUS, ZOOM } from './types';
+import { GameState, BIOMES, ORBIT_RADIUS, ZOOM, Enemy } from './types';
 import { Input } from './input';
+import { STAGES } from './stages';
 import {
   Sprite, heroSprites, slimeFrames, batFrames, skeletonFrames, gemSprite, boltSprite, bossSprite,
-  fireballSprite, arrowSprite, skullOrbSprite,
+  fireballSprite, arrowSprite, skullOrbSprite, slashSprite,
+  runnerFrames, bruteFrames, casterFrames, spiderFrames, ghostFrames,
 } from './sprites';
 
-// Sprite pixels -> screen px. Kept an integer so pixel art stays crisp.
 export const ART = 2;
 export { ZOOM };
-const TILE_WORLD = 48;                     // world units per ground tile
-const TILE_SCREEN = TILE_WORLD * ZOOM;     // exactly 32 px
+const TILE_WORLD = 48;
+const TILE_SCREEN = TILE_WORLD * ZOOM;
 
-// ── Ground tile per biome (cached by floor) ──
+// ── Ground tile per biome ──
 const groundCache: Record<number, HTMLCanvasElement> = {};
-function groundTile(floor: number): HTMLCanvasElement {
-  const key = Math.min(floor, BIOMES.length) - 1;
+function groundTile(biome: number): HTMLCanvasElement {
+  const key = Math.min(Math.max(biome, 0), BIOMES.length - 1);
   if (groundCache[key]) return groundCache[key];
   const bi = BIOMES[key];
   const c = document.createElement('canvas');
@@ -33,29 +34,22 @@ function groundTile(floor: number): HTMLCanvasElement {
   return c;
 }
 
-// ── Sprite frame caches ──
+// ── Sprite caches ──
 const HEROES: Record<string, ReturnType<typeof heroSprites>> = {};
-let SLIME: Sprite[] | null = null;
-let BAT: Sprite[] | null = null;
-let SKEL: Sprite[] | null = null;
-let GEM: Sprite | null = null;
-let BOLT: Sprite | null = null;
-let BOSS: Sprite | null = null;
-let FIRE: Sprite | null = null;
-let ARROW: Sprite | null = null;
-let SKULL: Sprite | null = null;
+const S: Record<string, Sprite[] | Sprite> = {};
 function ensureSprites(cls: string) {
   if (!HEROES[cls]) HEROES[cls] = heroSprites(cls);
-  if (!SLIME) SLIME = slimeFrames();
-  if (!BAT) BAT = batFrames();
-  if (!SKEL) SKEL = skeletonFrames();
-  if (!GEM) GEM = gemSprite();
-  if (!BOLT) BOLT = boltSprite();
-  if (!BOSS) BOSS = bossSprite();
-  if (!FIRE) FIRE = fireballSprite();
-  if (!ARROW) ARROW = arrowSprite();
-  if (!SKULL) SKULL = skullOrbSprite();
+  if (!S.slime) {
+    S.slime = slimeFrames(); S.bat = batFrames(); S.skeleton = skeletonFrames();
+    S.runner = runnerFrames(); S.brute = bruteFrames(); S.caster = casterFrames();
+    S.spider = spiderFrames(); S.ghost = ghostFrames();
+    S.gem = gemSprite(); S.bolt = boltSprite(); S.boss = bossSprite();
+    S.fire = fireballSprite(); S.arrow = arrowSprite(); S.skull = skullOrbSprite();
+    S.slash = slashSprite();
+  }
 }
+const arr = (k: string) => S[k] as Sprite[];
+const one = (k: string) => S[k] as Sprite;
 
 const tintCache: Record<string, HTMLCanvasElement> = {};
 function tint(spr: Sprite, color: string): HTMLCanvasElement {
@@ -75,19 +69,27 @@ function tint(spr: Sprite, color: string): HTMLCanvasElement {
 export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { w: number; h: number }, input: Input): void {
   const p = state.player;
   ensureSprites(p.classId);
+
+  // On the menus there is no live arena — paint a plain backdrop so the hero
+  // sprite doesn't poke through the overlay.
+  if (state.phase === 'title' || state.phase === 'stageSelect' || state.phase === 'classSelect') {
+    ctx.fillStyle = '#141024';
+    ctx.fillRect(0, 0, view.w, view.h);
+    return;
+  }
+
   let camX = p.x, camY = p.y;
   if (state.shake > 0) {
     camX += (Math.random() * 2 - 1) * state.shake;
     camY += (Math.random() * 2 - 1) * state.shake;
   }
-  // World -> screen (camera centered on the hero, zoomed out by ZOOM)
   const sx = (wx: number) => (wx - camX) * ZOOM + view.w / 2;
   const sy = (wy: number) => (wy - camY) * ZOOM + view.h / 2;
 
   ctx.imageSmoothingEnabled = false;
 
-  // Ground — iterate the world rectangle the (zoomed-out) view covers
-  const tile = groundTile(state.floor);
+  // Ground
+  const tile = groundTile(STAGES[state.stageIndex].biome);
   const halfW = view.w / 2 / ZOOM, halfH = view.h / 2 / ZOOM;
   const startX = Math.floor((camX - halfW) / TILE_WORLD) * TILE_WORLD;
   const startY = Math.floor((camY - halfH) / TILE_WORLD) * TILE_WORLD;
@@ -97,48 +99,17 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
     }
   }
 
-  // Stairway portal (drawn on the ground so the hero can stand over it)
-  if (state.floorPhase === 'cleared' && state.stair) {
-    const t = performance.now() / 1000;
-    const px = sx(state.stair.x), py = sy(state.stair.y);
-    for (let r = 3; r >= 0; r--) {
-      const rad = 10 + r * 7 + Math.sin(t * 3 - r) * 2;
-      ctx.strokeStyle = `rgba(120,220,255,${0.5 - r * 0.1})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(px, py, rad, 0, Math.PI * 2); ctx.stroke();
-    }
-    ctx.fillStyle = 'rgba(120,220,255,0.25)';
-    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#bdeaff';
-    ctx.font = '900 16px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('▼', px, py + 6);
+  // Boss telegraph markers (drawn on the ground)
+  for (const e of state.enemies) {
+    if (e.isBoss && e.bstate === 'telegraph') drawBossTelegraph(ctx, e, sx, sy);
   }
 
-  // Gems — bob + pulse
+  // Gems
   for (const g of state.gems) {
     const bob = Math.sin(g.bob) * 2;
     const pulse = 1 + Math.sin(g.bob * 1.6) * 0.14;
     drawShadow(ctx, sx(g.x), sy(g.y) + 5, 6, 2.5);
-    drawSprite(ctx, GEM!, sx(g.x), sy(g.y) + bob, false, undefined, pulse);
-  }
-
-  // Melee swing arcs
-  for (const s of state.swings) {
-    const k = s.life / s.maxLife;                 // 1 -> 0
-    const sweep = s.arc * (0.35 + 0.65 * (1 - k)); // arc opens as it swings
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, k * 1.4);
-    ctx.strokeStyle = '#e8f1ff';
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(sx(s.x), sy(s.y), s.radius * ZOOM, s.ang - sweep / 2, s.ang + sweep / 2);
-    ctx.stroke();
-    ctx.globalAlpha *= 0.45;
-    ctx.strokeStyle = '#7fb0e0';
-    ctx.lineWidth = 12;
-    ctx.stroke();
-    ctx.restore();
+    drawSprite(ctx, one('gem'), sx(g.x), sy(g.y) + bob, false, undefined, pulse);
   }
 
   // Depth-sorted actors
@@ -152,36 +123,15 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
         draw: () => {
           const grow = e.age < 0.3 ? 0.5 + 0.5 * (e.age / 0.3) : 1;
           const breathe = 1 + Math.sin(e.bob * 0.6) * 0.03;
-          drawShadow(ctx, sx(e.x), sy(e.y) + e.radius * 0.8 * ZOOM, e.radius * 1.2 * ZOOM, e.radius * 0.5 * ZOOM);
-          drawSprite(ctx, BOSS!, sx(e.x), sy(e.y) - 4, e.facingLeft, e.flash > 0 ? '#ffffff' : undefined, grow * breathe);
+          const bs = 1.6 * grow * breathe;
+          drawShadow(ctx, sx(e.x), sy(e.y) + e.radius * 0.8 * ZOOM, e.radius * 1.3 * ZOOM, e.radius * 0.55 * ZOOM);
+          const flash = e.flash > 0 ? '#ffffff' : (e.phase2 ? '#ff8a7a' : undefined);
+          drawSprite(ctx, one('boss'), sx(e.x), sy(e.y) - 6, e.facingLeft, flash, bs);
         },
       });
       continue;
     }
-    actors.push({
-      y: e.y,
-      draw: () => {
-        let spr: Sprite;
-        let yOff = 0;
-        // spawn-in pop
-        const grow = e.age < 0.18 ? 0.4 + 0.6 * (e.age / 0.18) : 1;
-        if (e.kind === 'slime') {
-          // real hop: vertical arc, squished on landing, rounded in the air
-          const hop = Math.abs(Math.sin(e.anim * 6));
-          yOff = -hop * 8;
-          spr = hop < 0.28 ? SLIME![1] : SLIME![0];
-        } else if (e.kind === 'bat') {
-          spr = BAT![Math.floor(e.anim * 14) % 2];
-          yOff = Math.sin(e.bob) * 3;
-        } else {
-          spr = SKEL![Math.floor(e.anim * 7) % 2];
-          yOff = -Math.abs(Math.sin(e.anim * 7)) * 2;   // walk bob
-        }
-        const shR = e.radius * grow;
-        drawShadow(ctx, sx(e.x), sy(e.y) + e.radius * 0.7 * ZOOM, shR * ZOOM * (e.kind === 'slime' ? 1 - Math.abs(Math.sin(e.anim * 6)) * 0.3 : 1), e.radius * 0.4 * grow * ZOOM);
-        drawSprite(ctx, spr, sx(e.x), sy(e.y) + yOff, e.facingLeft, e.flash > 0 ? '#ffffff' : undefined, grow);
-      },
-    });
+    actors.push({ y: e.y, draw: () => drawEnemy(ctx, e, sx, sy) });
   }
   actors.push({
     y: p.y,
@@ -191,11 +141,11 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
       let yBob = 0, rx = 0, ry = 0;
       if (p.attackAnim > 0) {
         spr = H.attack;
-        const k = p.attackAnim / 0.16;        // recoil kick opposite the aim
+        const k = p.attackAnim / 0.16;
         rx = -p.aimX * 3 * k; ry = -p.aimY * 3 * k;
       } else if (p.moving) {
         spr = H.walk[Math.floor(p.animTime * 9) % 4];
-        yBob = -Math.abs(Math.sin(p.animTime * 9)) * 2;   // bouncy walk
+        yBob = -Math.abs(Math.sin(p.animTime * 9)) * 2;
       } else {
         spr = H.idle;
         yBob = Math.sin(p.bob) * 1.2;
@@ -209,7 +159,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
   actors.sort((a, b) => a.y - b.y);
   for (const a of actors) a.draw();
 
-  // Orbiting skulls (Necromancer)
+  // Orbiting skulls
   if (p.weapon === 'orbit') {
     const orbs = p.stats.boltCount;
     for (let i = 0; i < orbs; i++) {
@@ -218,37 +168,56 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
       const oy = p.y + Math.sin(a) * ORBIT_RADIUS;
       ctx.save();
       ctx.shadowBlur = 10; ctx.shadowColor = '#9be86f';
-      drawSprite(ctx, SKULL!, sx(ox), sy(oy), false);
+      drawSprite(ctx, one('skull'), sx(ox), sy(oy), false);
       ctx.restore();
     }
   }
 
-  // Bolts — fireballs spin, arrows point along their flight
+  // Bolts (player projectiles)
   for (const b of state.bolts) {
     ctx.save();
-    if (b.style === 'fire') {
+    if (b.style === 'slash') {
+      const k = b.life / b.maxLife;                 // 1 -> 0
+      ctx.translate(sx(b.x), sy(b.y));
+      ctx.rotate(b.rot);
+      ctx.globalAlpha = Math.min(1, k * 1.6);
+      ctx.shadowBlur = 8; ctx.shadowColor = '#bcd6ff';
+      const spr = one('slash');
+      const sc = (0.8 + (1 - k) * 0.6) * (b.hitR / (12)); // scale with reach
+      const w = spr.w * ART * sc, h = spr.h * ART * sc;
+      ctx.drawImage(spr.canvas, Math.round(-w * 0.2), Math.round(-h / 2), w, h);
+    } else if (b.style === 'fire') {
       ctx.shadowBlur = 12; ctx.shadowColor = '#ff7a2a';
-      drawSprite(ctx, FIRE!, sx(b.x), sy(b.y), false);
+      drawSprite(ctx, one('fire'), sx(b.x), sy(b.y), false);
     } else if (b.style === 'arrow') {
       ctx.translate(sx(b.x), sy(b.y));
       ctx.rotate(b.rot);
-      const w = ARROW!.w * ART, h = ARROW!.h * ART;
-      ctx.drawImage(ARROW!.canvas, Math.round(-w / 2), Math.round(-h / 2), w, h);
+      const a = one('arrow');
+      const w = a.w * ART, h = a.h * ART;
+      ctx.drawImage(a.canvas, Math.round(-w / 2), Math.round(-h / 2), w, h);
     } else {
       ctx.shadowBlur = 8; ctx.shadowColor = '#ffd257';
-      drawSprite(ctx, BOLT!, sx(b.x), sy(b.y), false);
+      drawSprite(ctx, one('bolt'), sx(b.x), sy(b.y), false);
     }
     ctx.restore();
   }
 
-  // Hazards (boss projectiles) — glowing red orbs
+  // Hazards (enemy/boss projectiles)
   for (const h of state.hazards) {
+    const col = h.color ?? '#ff7a5a';
     ctx.save();
-    ctx.shadowBlur = 10; ctx.shadowColor = '#ff5a4a';
-    ctx.fillStyle = '#ff7a5a';
-    ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius * ZOOM + 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffe0d0';
-    ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius * 0.45 * ZOOM + 1, 0, Math.PI * 2); ctx.fill();
+    if (h.telegraph && h.telegraph > 0) {
+      ctx.globalAlpha = 0.4 + Math.sin(performance.now() / 60) * 0.2;
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius * ZOOM + 3, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      ctx.shadowBlur = 10; ctx.shadowColor = col;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius * ZOOM + 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius * 0.4 * ZOOM + 1, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -274,8 +243,70 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
   }
   ctx.globalAlpha = 1;
 
-  // Joysticks
   if (state.phase === 'playing') drawJoysticks(ctx, input);
+}
+
+// ── Per-kind enemy rendering ──
+function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, sx: (n: number) => number, sy: (n: number) => number): void {
+  const grow = e.age < 0.18 ? 0.4 + 0.6 * (e.age / 0.18) : 1;
+  let spr: Sprite;
+  let yOff = 0, scale = grow, alpha = 1;
+
+  switch (e.kind) {
+    case 'slime': case 'bigSlime': {
+      const hop = Math.abs(Math.sin(e.anim * 6));
+      yOff = -hop * 8;
+      spr = arr('slime')[hop < 0.28 ? 1 : 0];
+      scale = grow * (e.kind === 'bigSlime' ? 1.5 : 1);
+      break;
+    }
+    case 'bat':
+      spr = arr('bat')[Math.floor(e.anim * 14) % 2]; yOff = Math.sin(e.bob) * 3; break;
+    case 'skeleton':
+      spr = arr('skeleton')[Math.floor(e.anim * 7) % 2]; yOff = -Math.abs(Math.sin(e.anim * 7)) * 2; break;
+    case 'runner':
+      spr = arr('runner')[Math.floor(e.anim * 12) % 2]; yOff = -Math.abs(Math.sin(e.anim * 12)) * 2; break;
+    case 'brute':
+      spr = arr('brute')[Math.floor(e.anim * 4) % 2]; yOff = -Math.abs(Math.sin(e.anim * 4)) * 2; break;
+    case 'caster':
+      spr = arr('caster')[e.atkCd < 0.6 ? 1 : 0]; yOff = Math.sin(e.bob) * 2; break;
+    case 'spider':
+      spr = arr('spider')[Math.floor(e.anim * 12) % 2]; yOff = -Math.abs(Math.sin(e.anim * 12)) * 1.5; break;
+    case 'ghost':
+      spr = arr('ghost')[Math.floor(e.anim * 4) % 2]; yOff = Math.sin(e.bob) * 4; alpha = 0.72; break;
+    default:
+      spr = arr('slime')[0];
+  }
+
+  const shR = e.radius * grow;
+  drawShadow(ctx, sx(e.x), sy(e.y) + e.radius * 0.7 * ZOOM,
+    shR * ZOOM * (e.kind === 'slime' || e.kind === 'bigSlime' ? 1 - Math.abs(Math.sin(e.anim * 6)) * 0.3 : 1),
+    e.radius * 0.4 * grow * ZOOM);
+  if (alpha < 1) ctx.globalAlpha = alpha;
+  drawSprite(ctx, spr, sx(e.x), sy(e.y) + yOff, e.facingLeft, e.flash > 0 ? '#ffffff' : undefined, scale);
+  if (alpha < 1) ctx.globalAlpha = 1;
+}
+
+function drawBossTelegraph(ctx: CanvasRenderingContext2D, e: Enemy, sx: (n: number) => number, sy: (n: number) => number): void {
+  const bx = sx(e.x), by = sy(e.y);
+  const pulse = 0.35 + Math.abs(Math.sin(performance.now() / 90)) * 0.4;
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  if (e.bnext === 'charge') {
+    // aim line toward where the boss faces the player
+    const dir = e.facingLeft ? -1 : 1;
+    ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + dir * 240, by); ctx.stroke();
+  } else if (e.bnext === 'summon') {
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(bx, by, 60, 0, Math.PI * 2); ctx.stroke();
+  } else {
+    // burst / slam / volley → expanding ring warning
+    ctx.strokeStyle = e.bnext === 'volley' ? '#ffb020' : '#ff5a4a';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(bx, by, 40 + pulse * 30, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawJoysticks(ctx: CanvasRenderingContext2D, input: Input): void {
