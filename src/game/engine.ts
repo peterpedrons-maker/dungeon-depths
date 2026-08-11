@@ -21,7 +21,7 @@ function baseStats(): PlayerStats {
     boltCount: 1,
     pierce: 0,
     knockback: 175,
-    pickupRadius: 60,
+    pickupRadius: 40,
     critChance: 0.05,
   };
 }
@@ -32,7 +32,7 @@ function makePlayer(): Player {
     x: 0, y: 0, radius: 13,
     hp: stats.maxHp,
     level: 1, xp: 0, xpToNext: 5,
-    facingLeft: false, bob: 0,
+    facingLeft: false, faceDir: 'down', bob: 0,
     invuln: 0, hurtFlash: 0, attackTimer: 0,
     aimX: 0, aimY: 1, moving: false, animTime: 0, attackAnim: 0,
     stats,
@@ -192,11 +192,16 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
       aimX = bx / d; aimY = by / d;
     }
   }
-  if (aimX !== 0 || aimY !== 0) {
-    p.aimX = aimX; p.aimY = aimY;
-    p.facingLeft = aimX < -0.15 ? true : (aimX > 0.15 ? false : p.facingLeft);
-  } else if (p.moving) {
-    p.facingLeft = mv.vx < -0.15 ? true : (mv.vx > 0.15 ? false : p.facingLeft);
+  if (aimX !== 0 || aimY !== 0) { p.aimX = aimX; p.aimY = aimY; }
+
+  // Body orientation: face where you walk; if standing, face where you aim.
+  let fx = 0, fy = 0;
+  if (p.moving) { fx = mv.vx; fy = mv.vy; }
+  else { fx = aimX; fy = aimY; }
+  if (fx !== 0 || fy !== 0) {
+    if (Math.abs(fx) > Math.abs(fy) * 1.15) { p.faceDir = 'side'; p.facingLeft = fx < 0; }
+    else if (fy < 0) { p.faceDir = 'up'; }
+    else { p.faceDir = 'down'; }
   }
 
   // ── Auto-attack in aim direction ──
@@ -282,24 +287,28 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   // separation between enemies
   separate(state.enemies);
 
-  // ── Gems: brief outward pop, then always magnetize to the hero ──
+  // ── Gems: rest on the ground; only magnetize once you get close ──
   for (let i = state.gems.length - 1; i >= 0; i--) {
     const g = state.gems[i];
     g.bob += dt * 5;
-    // initial scatter fades quickly
-    g.x += g.vx * dt; g.y += g.vy * dt;
-    g.vx *= Math.pow(0.0005, dt); g.vy *= Math.pow(0.0005, dt);
-
     const dx = p.x - g.x, dy = p.y - g.y;
     const d = Math.hypot(dx, dy) || 1;
-    const pull = d < p.stats.pickupRadius ? 320 : 90 + (p.stats.pickupRadius / d) * 90;
-    g.x += (dx / d) * pull * dt;
-    g.y += (dy / d) * pull * dt;
-    if (d < 14) {
-      p.xp += g.value;
-      spawnBurst(state, p.x, p.y, '#38bdf8', 3);
-      state.gems.splice(i, 1);
-      if (p.xp >= p.xpToNext) levelUp(state);
+
+    if (!g.homing) {
+      // brief scatter, then settle in place
+      g.x += g.vx * dt; g.y += g.vy * dt;
+      g.vx *= Math.pow(0.0005, dt); g.vy *= Math.pow(0.0005, dt);
+      if (d < p.stats.pickupRadius) g.homing = true;   // walk near to grab it
+    }
+    if (g.homing) {
+      g.x += (dx / d) * 300 * dt;
+      g.y += (dy / d) * 300 * dt;
+      if (d < 14) {
+        p.xp += g.value;
+        spawnBurst(state, p.x, p.y, '#38bdf8', 3);
+        state.gems.splice(i, 1);
+        if (p.xp >= p.xpToNext) levelUp(state);
+      }
     }
   }
 

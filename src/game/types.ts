@@ -83,6 +83,7 @@ export interface Player {
   xp: number;
   xpToNext: number;
   facingLeft: boolean;
+  faceDir: 'down' | 'up' | 'side';   // body orientation (top-down)
   bob: number;
   invuln: number;         // seconds of post-hit invulnerability
   hurtFlash: number;

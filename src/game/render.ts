@@ -125,23 +125,25 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
     y: p.y,
     draw: () => {
       const H = HERO!;
+      const set = p.faceDir === 'up' ? H.up : p.faceDir === 'side' ? H.side : H.down;
       let spr: Sprite;
       let yBob = 0, rx = 0, ry = 0;
       if (p.attackAnim > 0) {
-        spr = H.attack;
+        spr = set.attack;
         const k = p.attackAnim / 0.16;        // recoil kick opposite the aim
         rx = -p.aimX * 3 * k; ry = -p.aimY * 3 * k;
       } else if (p.moving) {
-        spr = H.walk[Math.floor(p.animTime * 9) % 4];
+        spr = set.walk[Math.floor(p.animTime * 9) % 4];
         yBob = -Math.abs(Math.sin(p.animTime * 9)) * 2;   // bouncy walk
       } else {
-        spr = H.idle;
+        spr = set.idle;
         yBob = Math.sin(p.bob) * 1.2;
       }
+      const flip = p.faceDir === 'side' && p.facingLeft;
       drawShadow(ctx, sx(p.x), sy(p.y) + p.radius, p.radius * 1.1, p.radius * 0.45);
       const flash = p.hurtFlash > 0 && Math.floor(p.hurtFlash * 20) % 2 === 0 ? '#ff5a4a'
         : (p.invuln > 0 && Math.floor(p.invuln * 12) % 2 === 0 ? '#ffffff88' : undefined);
-      drawSprite(ctx, spr, sx(p.x) + rx, sy(p.y) + yBob + ry, p.facingLeft, flash);
+      drawSprite(ctx, spr, sx(p.x) + rx, sy(p.y) + yBob + ry, flip, flash);
     },
   });
   actors.sort((a, b) => a.y - b.y);
