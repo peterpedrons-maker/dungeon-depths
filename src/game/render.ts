@@ -1,28 +1,30 @@
-import { GameState } from './types';
+import { GameState, BIOMES } from './types';
 import { Input } from './input';
 import {
-  Sprite, heroSprites, slimeFrames, batFrames, skeletonFrames, gemSprite, boltSprite,
+  Sprite, heroSprites, slimeFrames, batFrames, skeletonFrames, gemSprite, boltSprite, bossSprite,
 } from './sprites';
 
 export const ART = 3;
 
-// ── Ground tile ──
-let ground: HTMLCanvasElement | null = null;
-function groundTile(): HTMLCanvasElement {
-  if (ground) return ground;
+// ── Ground tile per biome (cached by floor) ──
+const groundCache: Record<number, HTMLCanvasElement> = {};
+function groundTile(floor: number): HTMLCanvasElement {
+  const key = Math.min(floor, BIOMES.length) - 1;
+  if (groundCache[key]) return groundCache[key];
+  const bi = BIOMES[key];
   const c = document.createElement('canvas');
   c.width = 16; c.height = 16;
   const g = c.getContext('2d')!;
-  g.fillStyle = '#2a2438'; g.fillRect(0, 0, 16, 16);
-  g.fillStyle = '#221d30';
+  g.fillStyle = bi.ground; g.fillRect(0, 0, 16, 16);
+  g.fillStyle = bi.seam;
   g.fillRect(0, 7, 16, 1); g.fillRect(7, 0, 1, 8);
   g.fillRect(3, 8, 1, 8); g.fillRect(11, 8, 1, 8);
-  g.fillStyle = '#312a44';
+  g.fillStyle = bi.hi1;
   g.fillRect(1, 1, 5, 5); g.fillRect(9, 1, 5, 5);
   g.fillRect(4, 9, 6, 5); g.fillRect(12, 9, 3, 5);
-  g.fillStyle = '#3a3350';
+  g.fillStyle = bi.hi2;
   g.fillRect(1, 1, 5, 1); g.fillRect(9, 1, 5, 1); g.fillRect(4, 9, 6, 1);
-  ground = c;
+  groundCache[key] = c;
   return c;
 }
 
@@ -33,6 +35,7 @@ let BAT: Sprite[] | null = null;
 let SKEL: Sprite[] | null = null;
 let GEM: Sprite | null = null;
 let BOLT: Sprite | null = null;
+let BOSS: Sprite | null = null;
 function ensureSprites() {
   if (!HERO) HERO = heroSprites();
   if (!SLIME) SLIME = slimeFrames();
@@ -40,6 +43,7 @@ function ensureSprites() {
   if (!SKEL) SKEL = skeletonFrames();
   if (!GEM) GEM = gemSprite();
   if (!BOLT) BOLT = boltSprite();
+  if (!BOSS) BOSS = bossSprite();
 }
 
 const tintCache: Record<string, HTMLCanvasElement> = {};
@@ -73,7 +77,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
   ctx.imageSmoothingEnabled = false;
 
   // Ground
-  const tile = groundTile();
+  const tile = groundTile(state.floor);
   const ts = 16 * ART;
   const startX = Math.floor((camX - view.w / 2) / ts) * ts;
   const startY = Math.floor((camY - view.h / 2) / ts) * ts;
@@ -81,6 +85,23 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
     for (let x = startX; x < camX + view.w / 2 + ts; x += ts) {
       ctx.drawImage(tile, Math.round(sx(x)), Math.round(sy(y)), ts, ts);
     }
+  }
+
+  // Stairway portal (drawn on the ground so the hero can stand over it)
+  if (state.floorPhase === 'cleared' && state.stair) {
+    const t = performance.now() / 1000;
+    const px = sx(state.stair.x), py = sy(state.stair.y);
+    for (let r = 3; r >= 0; r--) {
+      const rad = 10 + r * 7 + Math.sin(t * 3 - r) * 2;
+      ctx.strokeStyle = `rgba(120,220,255,${0.5 - r * 0.1})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px, py, rad, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(120,220,255,0.25)';
+    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#bdeaff';
+    ctx.font = '900 16px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('▼', px, py + 6);
   }
 
   // Gems — bob + pulse
@@ -96,6 +117,18 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
   const actors: Drawable[] = [];
 
   for (const e of state.enemies) {
+    if (e.isBoss) {
+      actors.push({
+        y: e.y,
+        draw: () => {
+          const grow = e.age < 0.3 ? 0.5 + 0.5 * (e.age / 0.3) : 1;
+          const breathe = 1 + Math.sin(e.bob * 0.6) * 0.03;
+          drawShadow(ctx, sx(e.x), sy(e.y) + e.radius * 0.8, e.radius * 1.2, e.radius * 0.5);
+          drawSprite(ctx, BOSS!, sx(e.x), sy(e.y) - 4, e.facingLeft, e.flash > 0 ? '#ffffff' : undefined, grow * breathe);
+        },
+      });
+      continue;
+    }
     actors.push({
       y: e.y,
       draw: () => {
@@ -154,6 +187,17 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
     ctx.save();
     ctx.shadowBlur = 8; ctx.shadowColor = '#ffd257';
     drawSprite(ctx, BOLT!, sx(b.x), sy(b.y), false);
+    ctx.restore();
+  }
+
+  // Hazards (boss projectiles) — glowing red orbs
+  for (const h of state.hazards) {
+    ctx.save();
+    ctx.shadowBlur = 10; ctx.shadowColor = '#ff5a4a';
+    ctx.fillStyle = '#ff7a5a';
+    ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffe0d0';
+    ctx.beginPath(); ctx.arc(sx(h.x), sy(h.y), h.radius * 0.45, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 

@@ -3,7 +3,7 @@ import { createState, update, startGame, chooseUpgrade } from '@/game/engine';
 import { render } from '@/game/render';
 import { Input } from '@/game/input';
 import { sound } from '@/game/sound';
-import { GameState, Phase, Upgrade, WIN_TIME } from '@/game/types';
+import { GameState, Phase, Upgrade, BIOMES, FLOOR_WAVE_TIME } from '@/game/types';
 
 interface Hud {
   phase: Phase;
@@ -11,6 +11,8 @@ interface Hud {
   level: number; xp: number; xpToNext: number;
   time: number; kills: number;
   upgrades: Upgrade[];
+  floor: number; floorPhase: 'waves' | 'boss' | 'cleared'; floorProgress: number;
+  bossHp: number; bossMaxHp: number; bossName: string;
 }
 
 export function Game() {
@@ -21,16 +23,22 @@ export function Game() {
   const [hud, setHud] = useState<Hud>({
     phase: 'title', hp: 100, maxHp: 100, level: 1, xp: 0, xpToNext: 5,
     time: 0, kills: 0, upgrades: [],
+    floor: 1, floorPhase: 'waves', floorProgress: 0, bossHp: 0, bossMaxHp: 0, bossName: '',
   });
 
   const syncHud = () => {
     const s = stateRef.current;
+    const boss = s.enemies.find(e => e.isBoss);
     setHud({
       phase: s.phase,
       hp: Math.ceil(s.player.hp), maxHp: s.player.stats.maxHp,
       level: s.player.level, xp: s.player.xp, xpToNext: s.player.xpToNext,
       time: Math.floor(s.time), kills: s.kills,
       upgrades: s.offeredUpgrades,
+      floor: s.floor, floorPhase: s.floorPhase,
+      floorProgress: Math.min(1, s.floorTimer / FLOOR_WAVE_TIME),
+      bossHp: boss ? Math.ceil(boss.hp) : 0, bossMaxHp: boss ? boss.maxHp : 0,
+      bossName: boss?.name ?? '',
     });
   };
 
@@ -123,7 +131,38 @@ export function Game() {
                 <span className="text-red-300">💀 {hud.kills}</span>
               </div>
             </div>
+            {/* Floor label + progress / boss bar */}
+            <div className="mt-2">
+              {hud.floorPhase === 'boss' && hud.bossMaxHp > 0 ? (
+                <div>
+                  <div className="mb-0.5 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-red-300">
+                    <span>☠️ {hud.bossName}</span>
+                  </div>
+                  <div className="mx-auto h-3 max-w-md overflow-hidden rounded-full border border-black/60 bg-black/60">
+                    <div className="h-full rounded-full bg-gradient-to-r from-red-700 to-red-400 transition-all" style={{ width: `${(hud.bossHp / hud.bossMaxHp) * 100}%` }} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white/55">
+                    Andar {hud.floor} · {BIOMES[Math.min(hud.floor, BIOMES.length) - 1].name}
+                  </span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/40">
+                    <div className="h-full rounded-full bg-white/40" style={{ width: `${hud.floorProgress * 100}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Descend prompt */}
+          {hud.floorPhase === 'cleared' && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
+              <div className="animate-pulse rounded-full border border-cyan-400/50 bg-black/60 px-4 py-2 text-sm font-bold text-cyan-200">
+                ⬇️ Vá até o portal para descer
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -157,7 +196,7 @@ export function Game() {
           <div className="mt-8 max-w-xs text-center text-xs leading-relaxed text-white/45">
             <p className="mb-1">🕹️ <b className="text-cyan-300">Esquerda</b> da tela: mover</p>
             <p className="mb-1">🎯 <b className="text-yellow-300">Direita</b> da tela: mirar e atirar</p>
-            <p className="mt-3 text-white/35">Suba de nível, escolha melhorias e sobreviva {Math.floor(WIN_TIME / 60)} minutos!</p>
+            <p className="mt-3 text-white/35">Suba de nível, derrote o chefe de cada andar e desça até o fundo!</p>
           </div>
         </div>
       )}
@@ -176,8 +215,8 @@ export function Game() {
       {hud.phase === 'won' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm px-4">
           <div className="mb-2 text-6xl">🏆</div>
-          <h2 className="mb-1 text-3xl font-black text-yellow-400">Você sobreviveu!</h2>
-          <p className="mb-6 text-sm text-white/60">Nível {hud.level} • 💀 {hud.kills} mortes</p>
+          <h2 className="mb-1 text-3xl font-black text-yellow-400">Profundezas conquistadas!</h2>
+          <p className="mb-6 text-sm text-white/60">Você derrotou o Coração das Trevas • Nível {hud.level} • 💀 {hud.kills}</p>
           <button onClick={start} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
         </div>
       )}

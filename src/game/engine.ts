@@ -1,5 +1,6 @@
 import {
-  GameState, Player, PlayerStats, Enemy, EnemyKind, Bolt, Gem, Upgrade, WIN_TIME,
+  GameState, Player, PlayerStats, Enemy, EnemyKind, Bolt, Gem, Upgrade,
+  FLOOR_COUNT, FLOOR_WAVE_TIME, BOSS_NAMES,
 } from './types';
 import { rollUpgrades } from './upgrades';
 import { Input } from './input';
@@ -43,19 +44,21 @@ export function createState(): GameState {
   return {
     phase: 'title',
     player: makePlayer(),
-    enemies: [], bolts: [], gems: [], particles: [], damageNumbers: [],
+    enemies: [], bolts: [], gems: [], hazards: [], particles: [], damageNumbers: [],
     time: 0, spawnTimer: 0, nextId: 1, kills: 0, shake: 0,
     offeredUpgrades: [],
+    floor: 1, floorPhase: 'waves', floorTimer: 0, stair: null,
   };
 }
 
 export function startGame(state: GameState): void {
   state.phase = 'playing';
   state.player = makePlayer();
-  state.enemies = []; state.bolts = []; state.gems = [];
+  state.enemies = []; state.bolts = []; state.gems = []; state.hazards = [];
   state.particles = []; state.damageNumbers = [];
   state.time = 0; state.spawnTimer = 1.2; state.nextId = 1; state.kills = 0; state.shake = 0;
   state.offeredUpgrades = [];
+  state.floor = 1; state.floorPhase = 'waves'; state.floorTimer = 0; state.stair = null;
 }
 
 export function chooseUpgrade(state: GameState, up: Upgrade): void {
@@ -86,20 +89,26 @@ function levelUp(state: GameState): void {
 }
 
 // ─── Spawning ───────────────────────────────────────────────────────────────
-function pickKind(time: number): EnemyKind {
+function pickKind(time: number, floor: number): EnemyKind {
   const r = Math.random();
-  if (time < 20) return 'slime';
-  if (time < 50) return r < 0.65 ? 'slime' : 'bat';
+  if (floor >= 2) {                     // deeper floors: full roster right away
+    if (r < 0.4) return 'slime';
+    if (r < 0.72) return 'bat';
+    return 'skeleton';
+  }
+  if (time < 18) return 'slime';
+  if (time < 45) return r < 0.65 ? 'slime' : 'bat';
   if (r < 0.45) return 'slime';
   if (r < 0.75) return 'bat';
   return 'skeleton';
 }
 
 function spawnEnemy(state: GameState, spawnRadius: number): void {
-  const kind = pickKind(state.time);
+  const kind = pickKind(state.floorTimer, state.floor);
   const b = ENEMY_BASE[kind];
-  const hpMul = 1 + state.time / 55;      // scales up over the run
-  const dmgMul = 1 + state.time / 230;
+  const floorMul = 1 + (state.floor - 1) * 0.5;                 // tougher each floor
+  const hpMul = (1 + state.floorTimer / 55) * floorMul;
+  const dmgMul = (1 + state.floorTimer / 230) * (1 + (state.floor - 1) * 0.15);
   const a = Math.random() * Math.PI * 2;
   const dist = spawnRadius + Math.random() * 60;
   const e: Enemy = {
@@ -152,20 +161,22 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   if (p.attackAnim > 0) p.attackAnim -= dt;
   if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 60);
 
-  if (state.time >= WIN_TIME) {
-    state.phase = 'won';
-    sound.win();
-    return;
-  }
-
   const spawnRadius = Math.hypot(view.w, view.h) / 2 + 50;
 
-  // Spawn
-  state.spawnTimer -= dt;
-  if (state.spawnTimer <= 0) {
-    const count = 1 + (state.time > 90 ? 1 : 0) + (state.time > 150 ? 1 : 0);
-    for (let i = 0; i < count; i++) spawnEnemy(state, spawnRadius);
-    state.spawnTimer = spawnInterval(state.time);
+  // ── Floor flow: waves -> boss -> cleared (walk to stairs) ──
+  if (state.floorPhase === 'waves') {
+    state.floorTimer += dt;
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0) {
+      const t = state.floorTimer;
+      const count = 1 + (t > 20 ? 1 : 0) + (t > 30 ? 1 : 0) + (state.floor - 1);
+      for (let i = 0; i < count; i++) spawnEnemy(state, spawnRadius);
+      state.spawnTimer = spawnInterval(t);
+    }
+    if (state.floorTimer >= FLOOR_WAVE_TIME) spawnBoss(state, spawnRadius);
+  } else if (state.floorPhase === 'cleared' && state.stair) {
+    const dsx = p.x - state.stair.x, dsy = p.y - state.stair.y;
+    if (Math.hypot(dsx, dsy) < 24) { descend(state); return; }
   }
 
   // ── Player movement (left stick / WASD) ──
@@ -250,19 +261,33 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     e.anim += dt;
     e.age += dt;
 
-    // knockback
-    e.x += e.knockX * dt; e.y += e.knockY * dt;
-    e.knockX *= Math.pow(0.0001, dt); e.knockY *= Math.pow(0.0001, dt);
-
-    // move toward player
     const dx = p.x - e.x, dy = p.y - e.y;
     const d = Math.hypot(dx, dy) || 1;
-    e.x += (dx / d) * e.speed * dt;
-    e.y += (dy / d) * e.speed * dt;
-    e.facingLeft = dx < 0;
+
+    if (e.isBoss) {
+      bossAI(e, state, dt, spawnRadius);
+    } else {
+      // knockback
+      e.x += e.knockX * dt; e.y += e.knockY * dt;
+      e.knockX *= Math.pow(0.0001, dt); e.knockY *= Math.pow(0.0001, dt);
+      // move toward player
+      e.x += (dx / d) * e.speed * dt;
+      e.y += (dy / d) * e.speed * dt;
+      e.facingLeft = dx < 0;
+    }
 
     // death
     if (e.hp <= 0) {
+      if (e.isBoss) {
+        spawnBurst(state, e.x, e.y, '#ffd257', 40);
+        spawnBurst(state, e.x, e.y, '#c23b2e', 30);
+        state.shake = 12;
+        sound.enemyDie(); sound.levelUp();
+        for (let k = 0; k < 6; k++) dropGem(state, e);   // boss loot
+        state.enemies.splice(i, 1);
+        onBossDefeated(state, e.x, e.y);   // clears remaining enemies/hazards
+        break;                              // array was reset — stop iterating
+      }
       state.kills++;
       dropGem(state, e);
       spawnBurst(state, e.x, e.y, enemyColor(e.kind), 8);
@@ -276,12 +301,30 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     const touch = e.radius + p.radius;
     if (d < touch && e.hitCd <= 0 && p.invuln <= 0) {
       p.hp -= e.damage;
-      p.invuln = 0.6; p.hurtFlash = 0.3; e.hitCd = 0.8;
-      state.shake = Math.min(9, state.shake + 5);
+      p.invuln = 0.6; p.hurtFlash = 0.3; e.hitCd = e.isBoss ? 0.5 : 0.8;
+      state.shake = Math.min(9, state.shake + (e.isBoss ? 8 : 5));
       spawnBurst(state, p.x, p.y, '#c23b2e', 8);
       sound.hurt();
       if (p.hp <= 0) { p.hp = 0; state.phase = 'dead'; sound.gameOver(); return; }
     }
+  }
+
+  // ── Hazards (boss projectiles) ──
+  for (let i = state.hazards.length - 1; i >= 0; i--) {
+    const h = state.hazards[i];
+    h.x += h.vx * dt; h.y += h.vy * dt; h.life -= dt;
+    const rr = h.radius + p.radius;
+    if (p.invuln <= 0 && (h.x - p.x) ** 2 + (h.y - p.y) ** 2 < rr * rr) {
+      p.hp -= h.damage;
+      p.invuln = 0.6; p.hurtFlash = 0.3;
+      state.shake = Math.min(9, state.shake + 5);
+      spawnBurst(state, p.x, p.y, '#c23b2e', 6);
+      sound.hurt();
+      state.hazards.splice(i, 1);
+      if (p.hp <= 0) { p.hp = 0; state.phase = 'dead'; sound.gameOver(); return; }
+      continue;
+    }
+    if (h.life <= 0) state.hazards.splice(i, 1);
   }
 
   // separation between enemies
@@ -361,6 +404,7 @@ function separate(enemies: Enemy[]): void {
   for (let i = 0; i < enemies.length; i++) {
     for (let j = i + 1; j < enemies.length; j++) {
       const a = enemies[i], b = enemies[j];
+      if (a.isBoss || b.isBoss) continue;     // the boss shoves through
       const dx = b.x - a.x, dy = b.y - a.y;
       const d = Math.hypot(dx, dy) || 1;
       const min = a.radius + b.radius;
@@ -376,4 +420,99 @@ function separate(enemies: Enemy[]): void {
 
 function enemyColor(k: EnemyKind): string {
   return k === 'slime' ? '#5fbf46' : k === 'bat' ? '#8a5ad0' : '#e8e4d4';
+}
+
+// ─── Boss & floor descent ─────────────────────────────────────────────────────
+function spawnBoss(state: GameState, spawnRadius: number): void {
+  state.floorPhase = 'boss';
+  const p = state.player;
+  const a = Math.random() * Math.PI * 2;
+  const hp = 240 * (1 + (state.floor - 1) * 0.8);
+  const boss: Enemy = {
+    id: state.nextId++,
+    kind: 'skeleton',
+    x: p.x + Math.cos(a) * (spawnRadius * 0.7),
+    y: p.y + Math.sin(a) * (spawnRadius * 0.7),
+    hp, maxHp: hp,
+    speed: 46, radius: 30,
+    damage: 20 * (1 + (state.floor - 1) * 0.2),
+    xp: 5,
+    flash: 0, knockX: 0, knockY: 0, hitCd: 0,
+    facingLeft: false, bob: 0, anim: 0, age: 0,
+    isBoss: true, name: BOSS_NAMES[state.floor - 1],
+    bstate: 'chase', btimer: 0, batkCd: 2.4, cvx: 0, cvy: 0,
+  };
+  state.enemies.push(boss);
+}
+
+function bossAI(e: Enemy, state: GameState, dt: number, spawnRadius: number): void {
+  const p = state.player;
+  const dx = p.x - e.x, dy = p.y - e.y;
+  const d = Math.hypot(dx, dy) || 1;
+  e.facingLeft = dx < 0;
+  e.btimer = (e.btimer ?? 0) - dt;
+  e.batkCd = (e.batkCd ?? 0) - dt;
+
+  switch (e.bstate) {
+    case 'chase':
+      e.x += (dx / d) * e.speed * dt;
+      e.y += (dy / d) * e.speed * dt;
+      if ((e.batkCd ?? 0) <= 0) { e.bstate = 'telegraph'; e.btimer = 0.7; }
+      break;
+    case 'telegraph':
+      e.flash = 0.1;                         // glows white before striking
+      if ((e.btimer ?? 0) <= 0) {
+        if (Math.random() < 0.55) {          // charge
+          e.cvx = (dx / d) * 380; e.cvy = (dy / d) * 380;
+          e.bstate = 'charge'; e.btimer = 0.45;
+        } else {                             // radial burst
+          radialHazards(state, e.x, e.y, 14, 130, 12 * (1 + (state.floor - 1) * 0.15));
+          e.bstate = 'recover'; e.btimer = 0.7;
+        }
+      }
+      break;
+    case 'charge':
+      e.x += (e.cvx ?? 0) * dt; e.y += (e.cvy ?? 0) * dt;
+      if ((e.btimer ?? 0) <= 0) { e.bstate = 'chase'; e.batkCd = 2.2; }
+      break;
+    case 'recover':
+      if ((e.btimer ?? 0) <= 0) { e.bstate = 'chase'; e.batkCd = 1.8; }
+      break;
+  }
+}
+
+function radialHazards(state: GameState, x: number, y: number, n: number, speed: number, damage: number): void {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    state.hazards.push({
+      x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed,
+      life: 3.2, radius: 7, damage,
+    });
+  }
+}
+
+function onBossDefeated(state: GameState, x: number, y: number): void {
+  // Clear the field so the way to the stairs is safe.
+  state.enemies = [];
+  state.hazards = [];
+  if (state.floor >= FLOOR_COUNT) {
+    state.phase = 'won';
+    sound.win();
+  } else {
+    state.floorPhase = 'cleared';
+    state.stair = { x, y };
+  }
+}
+
+function descend(state: GameState): void {
+  state.floor += 1;
+  state.floorPhase = 'waves';
+  state.floorTimer = 0;
+  state.spawnTimer = 1.2;
+  state.stair = null;
+  state.enemies = []; state.hazards = []; state.gems = []; state.bolts = [];
+  const p = state.player;
+  p.x = 0; p.y = 0;
+  p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * 0.25);   // heal on descent
+  sound.levelUp();
 }

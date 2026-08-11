@@ -286,3 +286,30 @@ export function boltSprite(): Sprite {
     px(g, 1, 1, 4, 4, '#ffd257');
   });
 }
+
+// ═══ BOSS (big horned brute) ══════════════════════════════════════════════════
+export function bossSprite(): Sprite {
+  const body = '#8a2f46', bodyD = '#5a1e2e', bodyL = '#b3455f';
+  return make('boss', 24, 22, (g) => {
+    // horns
+    px(g, 3, 0, 3, 2, C.bone); px(g, 4, 2, 2, 2, C.bone);
+    px(g, 18, 0, 3, 2, C.bone); px(g, 18, 2, 2, 2, C.bone);
+    // head
+    px(g, 7, 2, 10, 6, body);
+    px(g, 7, 2, 10, 1, bodyL);
+    px(g, 9, 4, 2, 2, '#ffd257'); px(g, 13, 4, 2, 2, '#ffd257');   // glowing eyes
+    px(g, 9, 4, 1, 1, '#ffffff'); px(g, 13, 4, 1, 1, '#ffffff');
+    px(g, 9, 7, 6, 1, '#2a0f14');                                   // mouth
+    // torso
+    px(g, 3, 8, 18, 8, body);
+    px(g, 3, 8, 18, 1, bodyL);
+    px(g, 6, 10, 12, 4, bodyD);
+    px(g, 10, 9, 4, 2, '#c94a66');                                  // chest crest
+    // arms + claws
+    px(g, 0, 9, 3, 5, body); px(g, 21, 9, 3, 5, body);
+    px(g, 0, 13, 3, 2, C.bone); px(g, 21, 13, 3, 2, C.bone);
+    // legs
+    px(g, 6, 16, 4, 5, bodyD); px(g, 14, 16, 4, 5, bodyD);
+    px(g, 6, 21, 4, 1, '#2a0f14'); px(g, 14, 21, 4, 1, '#2a0f14');
+  });
+}

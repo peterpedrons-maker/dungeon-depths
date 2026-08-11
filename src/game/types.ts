@@ -21,6 +21,21 @@ export interface Enemy {
   bob: number;
   anim: number;       // animation clock (frame timing)
   age: number;        // seconds since spawn (spawn-in pop)
+  // ── boss-only ──
+  isBoss?: boolean;
+  name?: string;
+  bstate?: 'chase' | 'telegraph' | 'charge' | 'recover';
+  btimer?: number;    // time left in current boss state
+  batkCd?: number;    // time until next attack
+  cvx?: number; cvy?: number; // charge velocity
+}
+
+export interface Hazard {
+  x: number; y: number;
+  vx: number; vy: number;
+  life: number;
+  radius: number;
+  damage: number;
 }
 
 export interface Bolt {
@@ -112,6 +127,7 @@ export interface GameState {
   enemies: Enemy[];
   bolts: Bolt[];
   gems: Gem[];
+  hazards: Hazard[];
   particles: Particle[];
   damageNumbers: DamageNumber[];
   time: number;
@@ -120,6 +136,23 @@ export interface GameState {
   kills: number;
   shake: number;
   offeredUpgrades: Upgrade[];
+  // ── floor / descent ──
+  floor: number;
+  floorPhase: 'waves' | 'boss' | 'cleared';
+  floorTimer: number;
+  stair: { x: number; y: number } | null;
 }
 
-export const WIN_TIME = 180; // survive 3 minutes
+export const FLOOR_COUNT = 3;
+export const FLOOR_WAVE_TIME = 35; // seconds of waves before the boss
+
+export interface Biome {
+  name: string;
+  ground: string; seam: string; hi1: string; hi2: string;
+}
+export const BIOMES: Biome[] = [
+  { name: 'Catacumbas', ground: '#2a2438', seam: '#221d30', hi1: '#312a44', hi2: '#3a3350' },
+  { name: 'Cavernas Úmidas', ground: '#1f2e2a', seam: '#182420', hi1: '#26382f', hi2: '#2f463a' },
+  { name: 'O Abismo', ground: '#301b22', seam: '#24141a', hi1: '#3c222a', hi2: '#4a2730' },
+];
+export const BOSS_NAMES = ['Guardião de Osso', 'Horror da Caverna', 'Coração das Trevas'];
