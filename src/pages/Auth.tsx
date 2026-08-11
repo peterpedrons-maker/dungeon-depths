@@ -7,12 +7,18 @@ import { Label } from '@/components/ui/label';
 import { User, Mail, Lock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import dungeonBg from '@/assets/dungeon-mossy.jpg';
+import { enableGuestMode } from '@/lib/guestMode';
 export default function Auth() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const handleGuestMode = () => {
+    enableGuestMode();
+    navigate('/');
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
@@ -115,6 +121,12 @@ export default function Auth() {
             <div className="mt-6 text-center">
               <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-sm text-muted-foreground hover:text-primary transition-colors" disabled={loading}>
                 {isLogin ? "New adventurer? Create an account" : 'Already have an account? Sign in'}
+              </button>
+            </div>
+
+            <div className="mt-4 border-t border-border pt-4 text-center">
+              <button type="button" onClick={handleGuestMode} className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline" disabled={loading}>
+                Play as Guest (no account, local save only)
               </button>
             </div>
           </div>

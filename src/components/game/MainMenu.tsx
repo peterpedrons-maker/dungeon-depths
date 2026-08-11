@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame, loadSavedGame } from '@/contexts/GameContext';
 import { supabase } from '@/integrations/supabase/client';
 import { LogOut, Users } from 'lucide-react';
@@ -6,11 +7,13 @@ import { toast } from 'sonner';
 import dungeonBg from '@/assets/dungeon-mossy.jpg';
 import { CharacterSelect } from './CharacterSelect';
 import { useMenuMusic } from '@/hooks/useMenuMusic';
+import { isGuestMode, disableGuestMode } from '@/lib/guestMode';
 
 export function MainMenu() {
   const { dispatch, hasSavedGame } = useGame();
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
-  
+  const navigate = useNavigate();
+
   // Play menu music
   useMenuMusic(0.4);
 
@@ -26,6 +29,11 @@ export function MainMenu() {
   };
 
   const handleLogout = async () => {
+    if (isGuestMode()) {
+      disableGuestMode();
+      navigate('/auth');
+      return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error('Failed to sign out');

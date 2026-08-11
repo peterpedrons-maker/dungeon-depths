@@ -148,16 +148,10 @@ export function CharacterCreation() {
       pathToRoom: {},
     };
     
-    // Save to database first
-    const characterId = await saveCharacterToDatabase(name.trim(), selectedClass, newGameState);
-    
-    if (!characterId) {
-      toast.error('Failed to save character');
-      setIsCreating(false);
-      return;
-    }
-    
-    // Then dispatch to start the game
+    // Cloud save is best-effort: guests (no account) and offline players
+    // still get to play via localStorage even if this fails or returns null.
+    await saveCharacterToDatabase(name.trim(), selectedClass, newGameState);
+
     dispatch({ type: 'CREATE_CHARACTER', name: name.trim(), characterClass: selectedClass });
     setIsCreating(false);
   };

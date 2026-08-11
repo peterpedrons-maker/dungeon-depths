@@ -4,6 +4,7 @@ import { useGame, setCurrentCharacterId } from '@/contexts/GameContext';
 import { GameState, CharacterClass } from '@/types/game';
 import { Trash2, Play, Loader2, Sword, Wand, Crosshair, Heart, Axe, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { isGuestMode } from '@/lib/guestMode';
 
 interface SavedCharacter {
   id: string;
@@ -30,6 +31,11 @@ export function CharacterSelect({ onNewGame, onBack }: { onNewGame: () => void; 
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchCharacters = async () => {
+    if (isGuestMode()) {
+      // Guests have no cloud characters — their progress lives only in localStorage.
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from('characters')

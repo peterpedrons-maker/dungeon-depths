@@ -12,6 +12,7 @@ import { GameOver } from '@/components/game/GameOver';
 import { GameHUD } from '@/components/game/GameHUD';
 import { Loader2 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
+import { isGuestMode } from '@/lib/guestMode';
 
 function GameContent() {
   const { state } = useGame();
@@ -51,23 +52,29 @@ const Index = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const guestMode = isGuestMode();
 
   useEffect(() => {
     // Check if this is a fresh browser session (not already authenticated this session)
     const hasAuthenticatedThisSession = sessionStorage.getItem('authenticated');
     
     const initAuth = async () => {
-      if (!hasAuthenticatedThisSession) {
-        // Sign out any existing session on fresh browser load
-        await supabase.auth.signOut();
+      try {
+        if (!hasAuthenticatedThisSession) {
+          // Sign out any existing session on fresh browser load
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // Check for existing session if already authenticated this session
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+      } catch (error) {
+        // Network or Supabase errors shouldn't leave the app stuck loading forever
+        if (import.meta.env.DEV) console.error('Auth init failed:', error);
+      } finally {
         setLoading(false);
-        return;
       }
-      
-      // Check for existing session if already authenticated this session
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setLoading(false);
     };
 
     // Set up auth state listener
@@ -88,10 +95,10 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    if (!loading && !session) {
+    if (!loading && !session && !guestMode) {
       navigate('/auth');
     }
-  }, [loading, session, navigate]);
+  }, [loading, session, guestMode, navigate]);
 
   if (loading) {
     return (
@@ -101,7 +108,7 @@ const Index = () => {
     );
   }
 
-  if (!session) {
+  if (!session && !guestMode) {
     return null;
   }
 
