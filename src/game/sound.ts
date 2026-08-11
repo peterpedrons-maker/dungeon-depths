@@ -79,6 +79,7 @@ class SoundEngine {
     [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => this.blip(f, 0.22, 'triangle', 0.24), i * 110));
   }
   ui(): void { this.blip(440, 0.06, 'square', 0.12); }
+  dash(): void { this.blip(300, 0.16, 'sine', 0.16, 760); this.noise(0.06, 0.05); }
 
   // ── Simple looping dungeon bassline ──
   startMusic(): void {

@@ -98,7 +98,6 @@ export interface Player {
   xp: number;
   xpToNext: number;
   facingLeft: boolean;
-  faceDir: 'down' | 'up' | 'side';   // body orientation (top-down)
   bob: number;
   invuln: number;         // seconds of post-hit invulnerability
   hurtFlash: number;
@@ -108,8 +107,13 @@ export interface Player {
   moving: boolean;
   animTime: number;       // walk-cycle clock
   attackAnim: number;     // seconds of attack pose remaining
+  dashTimer: number;      // seconds of active dash remaining
+  dashCd: number;         // seconds until dash is ready again
+  dashX: number; dashY: number; // dash direction
   stats: PlayerStats;
 }
+
+export const DASH_COOLDOWN = 1.1;
 
 export type Phase = 'title' | 'playing' | 'levelup' | 'dead' | 'won';
 

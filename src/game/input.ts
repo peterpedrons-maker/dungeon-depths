@@ -22,6 +22,11 @@ export class Input {
   private aimPid = -1;
   private keys = new Set<string>();
   private el: HTMLElement | null = null;
+  private dashRequested = false;
+
+  // Queue a dash (from the on-screen button or a key). Consumed by the engine.
+  requestDash(): void { this.dashRequested = true; }
+  consumeDash(): boolean { const d = this.dashRequested; this.dashRequested = false; return d; }
 
   attach(el: HTMLElement): void {
     this.el = el;
@@ -81,6 +86,7 @@ export class Input {
 
   private onKey = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase();
+    if ((k === ' ' || k === 'shift') && e.type === 'keydown') { this.requestDash(); return; }
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
       if (e.type === 'keydown') this.keys.add(k); else this.keys.delete(k);
       this.applyKeys();

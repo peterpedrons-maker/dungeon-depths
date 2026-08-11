@@ -3,7 +3,7 @@ import { createState, update, startGame, chooseUpgrade } from '@/game/engine';
 import { render } from '@/game/render';
 import { Input } from '@/game/input';
 import { sound } from '@/game/sound';
-import { GameState, Phase, Upgrade, BIOMES, FLOOR_WAVE_TIME } from '@/game/types';
+import { GameState, Phase, Upgrade, BIOMES, FLOOR_WAVE_TIME, DASH_COOLDOWN } from '@/game/types';
 
 interface Hud {
   phase: Phase;
@@ -13,6 +13,7 @@ interface Hud {
   upgrades: Upgrade[];
   floor: number; floorPhase: 'waves' | 'boss' | 'cleared'; floorProgress: number;
   bossHp: number; bossMaxHp: number; bossName: string;
+  dashFrac: number; // 0 = ready, 1 = just used
 }
 
 export function Game() {
@@ -24,6 +25,7 @@ export function Game() {
     phase: 'title', hp: 100, maxHp: 100, level: 1, xp: 0, xpToNext: 5,
     time: 0, kills: 0, upgrades: [],
     floor: 1, floorPhase: 'waves', floorProgress: 0, bossHp: 0, bossMaxHp: 0, bossName: '',
+    dashFrac: 0,
   });
 
   const syncHud = () => {
@@ -39,6 +41,7 @@ export function Game() {
       floorProgress: Math.min(1, s.floorTimer / FLOOR_WAVE_TIME),
       bossHp: boss ? Math.ceil(boss.hp) : 0, bossMaxHp: boss ? boss.maxHp : 0,
       bossName: boss?.name ?? '',
+      dashFrac: Math.max(0, s.player.dashCd) / DASH_COOLDOWN,
     });
   };
 
@@ -105,6 +108,19 @@ export function Game() {
       {hud.phase !== 'title' && (
         <button onClick={toggleMute} className="absolute right-2 bottom-2 z-30 grid h-9 w-9 place-items-center rounded-full bg-black/45 text-lg backdrop-blur">
           {muted ? '🔇' : '🔊'}
+        </button>
+      )}
+
+      {/* Dash button */}
+      {hud.phase === 'playing' && (
+        <button
+          onPointerDown={(e) => { e.preventDefault(); inputRef.current.requestDash(); }}
+          className={`absolute right-3 bottom-14 z-30 grid h-16 w-16 touch-none place-items-center overflow-hidden rounded-full border-2 text-2xl backdrop-blur transition-colors active:scale-90 ${hud.dashFrac > 0 ? 'border-white/20 bg-black/40' : 'border-cyan-400/80 bg-cyan-800/50 shadow-[0_0_12px_rgba(56,189,248,0.5)]'}`}
+        >
+          <span className="relative z-10">💨</span>
+          {hud.dashFrac > 0 && (
+            <span className="absolute inset-0" style={{ background: `conic-gradient(rgba(0,0,0,0.6) ${hud.dashFrac * 360}deg, transparent 0deg)` }} />
+          )}
         </button>
       )}
 
@@ -196,6 +212,7 @@ export function Game() {
           <div className="mt-8 max-w-xs text-center text-xs leading-relaxed text-white/45">
             <p className="mb-1">🕹️ <b className="text-cyan-300">Esquerda</b> da tela: mover</p>
             <p className="mb-1">🎯 <b className="text-yellow-300">Direita</b> da tela: mirar e atirar</p>
+            <p className="mb-1">💨 Botão de <b className="text-cyan-300">dash</b>: esquiva rápida (invencível)</p>
             <p className="mt-3 text-white/35">Suba de nível, derrote o chefe de cada andar e desça até o fundo!</p>
           </div>
         </div>

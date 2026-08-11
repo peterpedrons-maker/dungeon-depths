@@ -1,6 +1,6 @@
 import {
   GameState, Player, PlayerStats, Enemy, EnemyKind, Bolt, Gem, Upgrade,
-  FLOOR_COUNT, FLOOR_WAVE_TIME, BOSS_NAMES,
+  FLOOR_COUNT, FLOOR_WAVE_TIME, BOSS_NAMES, DASH_COOLDOWN,
 } from './types';
 import { rollUpgrades } from './upgrades';
 import { Input } from './input';
@@ -22,7 +22,7 @@ function baseStats(): PlayerStats {
     boltCount: 1,
     pierce: 0,
     knockback: 175,
-    pickupRadius: 40,
+    pickupRadius: 75,
     critChance: 0.05,
   };
 }
@@ -32,10 +32,11 @@ function makePlayer(): Player {
   return {
     x: 0, y: 0, radius: 13,
     hp: stats.maxHp,
-    level: 1, xp: 0, xpToNext: 5,
-    facingLeft: false, faceDir: 'down', bob: 0,
+    level: 1, xp: 0, xpToNext: 4,
+    facingLeft: false, bob: 0,
     invuln: 0, hurtFlash: 0, attackTimer: 0,
     aimX: 0, aimY: 1, moving: false, animTime: 0, attackAnim: 0,
+    dashTimer: 0, dashCd: 0, dashX: 1, dashY: 0,
     stats,
   };
 }
@@ -81,7 +82,8 @@ function levelUp(state: GameState): void {
   const p = state.player;
   p.xp -= p.xpToNext;
   p.level += 1;
-  p.xpToNext = Math.ceil(p.xpToNext * 1.28) + 3;
+  // Gentle linear growth (was compounding ×1.28, which ballooned fast).
+  p.xpToNext = 3 + p.level * 2;
   state.phase = 'levelup';
   state.offeredUpgrades = rollUpgrades(3);
   spawnBurst(state, p.x, p.y, '#f0c04a', 14);
@@ -128,8 +130,8 @@ function spawnEnemy(state: GameState, spawnRadius: number): void {
 }
 
 function spawnInterval(time: number): number {
-  // Gentle early game, ramps up after the first minute.
-  return Math.max(0.36, 2.1 - time * 0.011);
+  // Gentle early game, ramps up as the floor goes on.
+  return Math.max(0.34, 1.7 - time * 0.012);
 }
 
 // ─── Effects ─────────────────────────────────────────────────────────────────
@@ -179,10 +181,33 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     if (Math.hypot(dsx, dsy) < 24) { descend(state); return; }
   }
 
-  // ── Player movement (left stick / WASD) ──
+  // ── Dash (dodge with i-frames) ──
   const mv = input.move;
+  if (p.dashCd > 0) p.dashCd -= dt;
+  if (p.dashTimer > 0) p.dashTimer -= dt;
+  if (input.consumeDash() && p.dashCd <= 0 && p.dashTimer <= 0) {
+    let dxn = 0, dyn = 0;
+    if (mv.active && mv.mag > 0.15) { dxn = mv.vx; dyn = mv.vy; }
+    else { dxn = p.aimX; dyn = p.aimY; }
+    const m = Math.hypot(dxn, dyn) || 1;
+    p.dashX = dxn / m; p.dashY = dyn / m;
+    p.dashTimer = 0.16; p.dashCd = DASH_COOLDOWN;
+    p.invuln = Math.max(p.invuln, 0.3);
+    sound.dash();
+  }
+
+  // ── Player movement (left stick / WASD), or dash override ──
   p.moving = mv.active && mv.mag > 0.15;
-  if (p.moving) {
+  if (p.dashTimer > 0) {
+    const DASH_SPEED = 540;
+    p.x += p.dashX * DASH_SPEED * dt;
+    p.y += p.dashY * DASH_SPEED * dt;
+    p.animTime += dt;
+    p.invuln = Math.max(p.invuln, p.dashTimer);
+    if (Math.abs(p.dashX) > 0.15) p.facingLeft = p.dashX < 0;
+    // afterimage trail
+    state.particles.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.2, maxLife: 0.2, color: '#8fc0f0', size: 3.5 });
+  } else if (p.moving) {
     p.x += mv.vx * p.stats.moveSpeed * mv.mag * dt;
     p.y += mv.vy * p.stats.moveSpeed * mv.mag * dt;
     p.animTime += dt;
@@ -203,16 +228,11 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
       aimX = bx / d; aimY = by / d;
     }
   }
-  if (aimX !== 0 || aimY !== 0) { p.aimX = aimX; p.aimY = aimY; }
-
-  // Body orientation: face where you walk; if standing, face where you aim.
-  let fx = 0, fy = 0;
-  if (p.moving) { fx = mv.vx; fy = mv.vy; }
-  else { fx = aimX; fy = aimY; }
-  if (fx !== 0 || fy !== 0) {
-    if (Math.abs(fx) > Math.abs(fy) * 1.15) { p.faceDir = 'side'; p.facingLeft = fx < 0; }
-    else if (fy < 0) { p.faceDir = 'up'; }
-    else { p.faceDir = 'down'; }
+  if (aimX !== 0 || aimY !== 0) {
+    p.aimX = aimX; p.aimY = aimY;
+    p.facingLeft = aimX < -0.15 ? true : (aimX > 0.15 ? false : p.facingLeft);
+  } else if (p.moving) {
+    p.facingLeft = mv.vx < -0.15 ? true : (mv.vx > 0.15 ? false : p.facingLeft);
   }
 
   // ── Auto-attack in aim direction ──
@@ -338,10 +358,13 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     const d = Math.hypot(dx, dy) || 1;
 
     if (!g.homing) {
-      // brief scatter, then settle in place
+      // brief scatter, then a gentle pull toward the hero (so XP isn't
+      // stranded far away). Move closer to grab faster / snap it in.
       g.x += g.vx * dt; g.y += g.vy * dt;
       g.vx *= Math.pow(0.0005, dt); g.vy *= Math.pow(0.0005, dt);
-      if (d < p.stats.pickupRadius) g.homing = true;   // walk near to grab it
+      g.x += (dx / d) * 70 * dt;
+      g.y += (dy / d) * 70 * dt;
+      if (d < p.stats.pickupRadius) g.homing = true;   // snap in when close
     }
     if (g.homing) {
       g.x += (dx / d) * 300 * dt;

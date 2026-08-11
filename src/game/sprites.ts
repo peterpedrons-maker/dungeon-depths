@@ -115,65 +115,15 @@ function heroLegs(g: CanvasRenderingContext2D, mode: 0 | 1 | 2) {
     px(g, 4, 15, 2, 1, C.steelD); px(g, 8, 16, 2, 1, C.steelD);
   }
 }
-function heroFrameFront(key: string, legs: 0 | 1 | 2, arms: ArmMode): Sprite {
-  return make('heroF_' + key, 14, 17, (g) => { heroArms(g, arms); heroBody(g); heroLegs(g, legs); });
-}
-
-// Back view (walking away / up): back of the helmet, hair at the nape, red cloak.
-function heroBackBody(g: CanvasRenderingContext2D) {
-  px(g, 4, 0, 6, 1, C.steel); px(g, 3, 1, 8, 2, C.steel); px(g, 3, 1, 8, 1, C.steelL); px(g, 3, 3, 8, 1, C.gold);
-  px(g, 4, 4, 6, 3, C.steel);
-  px(g, 5, 6, 4, 1, C.hair);
-  px(g, 4, 7, 6, 5, C.red);
-  px(g, 4, 7, 6, 1, '#d0655a');
-  px(g, 6, 7, 1, 4, '#a3312a');
-  px(g, 4, 7, 1, 5, C.blueD); px(g, 9, 7, 1, 5, C.blueD);
-  px(g, 4, 11, 6, 1, C.gold);
-}
-function heroFrameBack(key: string, legs: 0 | 1 | 2, arms: ArmMode): Sprite {
-  return make('heroB_' + key, 14, 17, (g) => { heroArms(g, arms); heroBackBody(g); heroLegs(g, legs); });
-}
-
-// Side view (profile, facing right; flipped for left).
-function heroSideBody(g: CanvasRenderingContext2D) {
-  px(g, 3, 0, 5, 1, C.steel); px(g, 2, 1, 6, 2, C.steel); px(g, 2, 1, 6, 1, C.steelL); px(g, 3, 3, 5, 1, C.gold);
-  px(g, 4, 4, 4, 3, C.skin);
-  px(g, 3, 4, 1, 3, C.steel);      // back of helmet
-  px(g, 8, 5, 1, 1, C.skinD);      // nose
-  px(g, 5, 5, 1, 1, C.hair);       // eye
-  px(g, 4, 6, 4, 1, C.skinD);
-  px(g, 3, 7, 5, 5, C.blue); px(g, 3, 7, 5, 1, C.blueL); px(g, 3, 11, 5, 1, C.gold);
-  px(g, 3, 8, 1, 3, C.blueD);      // far arm
-  px(g, 7, 8, 2, 3, C.blueD); px(g, 8, 10, 2, 2, C.skin);  // forward arm + hand
-  px(g, 10, 10, 4, 1, C.steel); px(g, 10, 9, 1, 3, C.gold); // sword
-  px(g, 14, 10, 1, 1, '#7dd3fc');
-}
-function heroSideLegs(g: CanvasRenderingContext2D, mode: 0 | 1 | 2) {
-  if (mode === 0) { px(g, 3, 12, 2, 3, C.legs); px(g, 6, 12, 2, 3, C.legs); px(g, 3, 15, 2, 1, C.steelD); px(g, 6, 15, 2, 1, C.steelD); }
-  else if (mode === 1) { px(g, 2, 12, 2, 3, C.legs); px(g, 6, 13, 2, 2, C.legsD); px(g, 2, 15, 3, 1, C.steelD); }
-  else { px(g, 3, 13, 2, 2, C.legsD); px(g, 7, 12, 2, 3, C.legs); px(g, 7, 15, 3, 1, C.steelD); }
-}
-function heroFrameSide(key: string, legs: 0 | 1 | 2): Sprite {
-  return make('heroS_' + key, 16, 17, (g) => { heroSideBody(g); heroSideLegs(g, legs); });
+function heroFrame(key: string, legs: 0 | 1 | 2, arms: ArmMode): Sprite {
+  return make('hero_' + key, 14, 17, (g) => { heroArms(g, arms); heroBody(g); heroLegs(g, legs); });
 }
 
 export function heroSprites() {
   return {
-    down: {
-      idle: heroFrameFront('idle', 0, 'idle'),
-      walk: [heroFrameFront('a', 1, 'a'), heroFrameFront('i', 0, 'idle'), heroFrameFront('b', 2, 'b'), heroFrameFront('i2', 0, 'idle')],
-      attack: heroFrameFront('atk', 0, 'attack'),
-    },
-    up: {
-      idle: heroFrameBack('idle', 0, 'idle'),
-      walk: [heroFrameBack('a', 1, 'a'), heroFrameBack('i', 0, 'idle'), heroFrameBack('b', 2, 'b'), heroFrameBack('i2', 0, 'idle')],
-      attack: heroFrameBack('idle', 0, 'idle'),
-    },
-    side: {
-      idle: heroFrameSide('idle', 0),
-      walk: [heroFrameSide('a', 1), heroFrameSide('i', 0), heroFrameSide('b', 2), heroFrameSide('i2', 0)],
-      attack: heroFrameSide('idle', 0),
-    },
+    idle: heroFrame('idle', 0, 'idle'),
+    walk: [heroFrame('a', 1, 'a'), heroFrame('i', 0, 'idle'), heroFrame('b', 2, 'b'), heroFrame('i2', 0, 'idle')],
+    attack: heroFrame('atk', 0, 'attack'),
   };
 }
 
