@@ -19,6 +19,7 @@ export interface Enemy {
   hitCd: number;      // per-enemy cooldown before it can damage player again
   facingLeft: boolean;
   bob: number;
+  anim: number;       // animation clock (frame timing)
 }
 
 export interface Bolt {
@@ -85,6 +86,11 @@ export interface Player {
   invuln: number;         // seconds of post-hit invulnerability
   hurtFlash: number;
   attackTimer: number;
+  aimX: number;           // current aim direction
+  aimY: number;
+  moving: boolean;
+  animTime: number;       // walk-cycle clock
+  attackAnim: number;     // seconds of attack pose remaining
   stats: PlayerStats;
 }
 

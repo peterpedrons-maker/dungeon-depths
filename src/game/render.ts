@@ -1,10 +1,12 @@
 import { GameState } from './types';
+import { Input } from './input';
 import {
-  Sprite, heroSprite, slimeSprite, batSprite, skeletonSprite, gemSprite, boltSprite,
+  Sprite, heroSprites, slimeFrames, batFrames, skeletonFrames, gemSprite, boltSprite,
 } from './sprites';
 
-export const ART = 3; // pixels per sprite-pixel
+export const ART = 3;
 
+// ── Ground tile ──
 let ground: HTMLCanvasElement | null = null;
 function groundTile(): HTMLCanvasElement {
   if (ground) return ground;
@@ -24,9 +26,25 @@ function groundTile(): HTMLCanvasElement {
   return c;
 }
 
+// ── Sprite frame caches ──
+let HERO: ReturnType<typeof heroSprites> | null = null;
+let SLIME: Sprite[] | null = null;
+let BAT: Sprite[] | null = null;
+let SKEL: Sprite[] | null = null;
+let GEM: Sprite | null = null;
+let BOLT: Sprite | null = null;
+function ensureSprites() {
+  if (!HERO) HERO = heroSprites();
+  if (!SLIME) SLIME = slimeFrames();
+  if (!BAT) BAT = batFrames();
+  if (!SKEL) SKEL = skeletonFrames();
+  if (!GEM) GEM = gemSprite();
+  if (!BOLT) BOLT = boltSprite();
+}
+
 const tintCache: Record<string, HTMLCanvasElement> = {};
 function tint(spr: Sprite, color: string): HTMLCanvasElement {
-  const key = color + spr.w + 'x' + spr.h + (spr.canvas as any)._id;
+  const key = color + ((spr.canvas as any)._id);
   if (tintCache[key]) return tintCache[key];
   const c = document.createElement('canvas');
   c.width = spr.canvas.width; c.height = spr.canvas.height;
@@ -39,13 +57,8 @@ function tint(spr: Sprite, color: string): HTMLCanvasElement {
   return c;
 }
 
-let _sid = 0;
-function sid(spr: Sprite): Sprite {
-  if (!(spr.canvas as any)._id) (spr.canvas as any)._id = ++_sid;
-  return spr;
-}
-
-export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { w: number; h: number }): void {
+export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { w: number; h: number }, input: Input): void {
+  ensureSprites();
   const p = state.player;
   let camX = p.x, camY = p.y;
   if (state.shake > 0) {
@@ -59,7 +72,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
 
   ctx.imageSmoothingEnabled = false;
 
-  // ── Ground ──
+  // Ground
   const tile = groundTile();
   const ts = 16 * ART;
   const startX = Math.floor((camX - view.w / 2) / ts) * ts;
@@ -70,18 +83,14 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
     }
   }
 
-  // ── Gems (on the ground) ──
-  const gem = sid(gemSprite());
+  // Gems
   for (const g of state.gems) {
     const bob = Math.sin(g.bob) * 2;
     drawShadow(ctx, sx(g.x), sy(g.y) + 6, 7, 3);
-    drawSprite(ctx, gem, sx(g.x), sy(g.y) + bob, false);
+    drawSprite(ctx, GEM!, sx(g.x), sy(g.y) + bob, false);
   }
 
-  // ── Shadows + depth-sorted actors ──
-  const hero = sid(heroSprite());
-  const sprFor = { slime: sid(slimeSprite()), bat: sid(batSprite()), skeleton: sid(skeletonSprite()) };
-
+  // Depth-sorted actors
   interface Drawable { y: number; draw: () => void; }
   const actors: Drawable[] = [];
 
@@ -89,35 +98,43 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
     actors.push({
       y: e.y,
       draw: () => {
-        const bob = e.kind === 'bat' ? Math.sin(e.bob) * 3 : Math.sin(e.bob) * 1;
+        let spr: Sprite;
+        let bob = 0;
+        if (e.kind === 'slime') { spr = SLIME![Math.floor(e.anim * 4) % 2]; bob = Math.sin(e.bob) * 1; }
+        else if (e.kind === 'bat') { spr = BAT![Math.floor(e.anim * 10) % 2]; bob = Math.sin(e.bob) * 3; }
+        else { spr = SKEL![Math.floor(e.anim * 6) % 2]; }
         drawShadow(ctx, sx(e.x), sy(e.y) + e.radius * 0.7, e.radius, e.radius * 0.4);
-        drawSprite(ctx, sprFor[e.kind], sx(e.x), sy(e.y) + bob, e.facingLeft, e.flash > 0 ? '#ffffff' : undefined);
+        drawSprite(ctx, spr, sx(e.x), sy(e.y) + bob, e.facingLeft, e.flash > 0 ? '#ffffff' : undefined);
       },
     });
   }
   actors.push({
     y: p.y,
     draw: () => {
-      const bob = Math.sin(p.bob) * 1.5;
+      const H = HERO!;
+      let spr: Sprite;
+      if (p.attackAnim > 0) spr = H.attack;
+      else if (p.moving) spr = H.walk[Math.floor(p.animTime * 8) % 2];
+      else spr = H.idle;
+      const bob = p.moving ? 0 : Math.sin(p.bob) * 1.2;
       drawShadow(ctx, sx(p.x), sy(p.y) + p.radius, p.radius * 1.1, p.radius * 0.45);
       const flash = p.hurtFlash > 0 && Math.floor(p.hurtFlash * 20) % 2 === 0 ? '#ff5a4a'
         : (p.invuln > 0 && Math.floor(p.invuln * 12) % 2 === 0 ? '#ffffff88' : undefined);
-      drawSprite(ctx, hero, sx(p.x), sy(p.y) + bob, p.facingLeft, flash);
+      drawSprite(ctx, spr, sx(p.x), sy(p.y) + bob, p.facingLeft, flash);
     },
   });
   actors.sort((a, b) => a.y - b.y);
   for (const a of actors) a.draw();
 
-  // ── Bolts (with glow) ──
-  const bolt = sid(boltSprite());
+  // Bolts
   for (const b of state.bolts) {
     ctx.save();
     ctx.shadowBlur = 8; ctx.shadowColor = '#ffd257';
-    drawSprite(ctx, bolt, sx(b.x), sy(b.y), false);
+    drawSprite(ctx, BOLT!, sx(b.x), sy(b.y), false);
     ctx.restore();
   }
 
-  // ── Particles ──
+  // Particles
   for (const pt of state.particles) {
     ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
     ctx.fillStyle = pt.color;
@@ -126,19 +143,37 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
   }
   ctx.globalAlpha = 1;
 
-  // ── Damage numbers ──
+  // Damage numbers
   ctx.textAlign = 'center';
   for (const d of state.damageNumbers) {
     ctx.globalAlpha = Math.min(1, d.life * 2);
     ctx.font = `900 ${d.crit ? 20 : 14}px system-ui, sans-serif`;
     ctx.fillStyle = d.crit ? '#ffd257' : '#ffffff';
-    ctx.strokeStyle = '#140f1c';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#140f1c'; ctx.lineWidth = 3;
     const txt = String(d.value) + (d.crit ? '!' : '');
     ctx.strokeText(txt, sx(d.x), sy(d.y));
     ctx.fillText(txt, sx(d.x), sy(d.y));
   }
   ctx.globalAlpha = 1;
+
+  // Joysticks
+  if (state.phase === 'playing') drawJoysticks(ctx, input);
+}
+
+function drawJoysticks(ctx: CanvasRenderingContext2D, input: Input): void {
+  const draw = (ox: number, oy: number, kx: number, ky: number, color: string) => {
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath(); ctx.arc(ox, oy, input.maxR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.arc(ox + kx, oy + ky, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  };
+  if (input.move.active) draw(input.move.ox, input.move.oy, input.move.kx, input.move.ky, '#38bdf8');
+  if (input.aim.active) draw(input.aim.ox, input.aim.oy, input.aim.kx, input.aim.ky, '#f0c04a');
 }
 
 function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number): void {
@@ -148,9 +183,7 @@ function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, rx: num
   ctx.fill();
 }
 
-function drawSprite(
-  ctx: CanvasRenderingContext2D, spr: Sprite, cx: number, cy: number, flip: boolean, flashColor?: string,
-): void {
+function drawSprite(ctx: CanvasRenderingContext2D, spr: Sprite, cx: number, cy: number, flip: boolean, flashColor?: string): void {
   const w = spr.w * ART, h = spr.h * ART;
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));

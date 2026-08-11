@@ -2,6 +2,8 @@ import {
   GameState, Player, PlayerStats, Enemy, EnemyKind, Bolt, Gem, Upgrade, WIN_TIME,
 } from './types';
 import { rollUpgrades } from './upgrades';
+import { Input } from './input';
+import { sound } from './sound';
 
 const ENEMY_BASE: Record<EnemyKind, { hp: number; speed: number; radius: number; damage: number; xp: number }> = {
   slime:    { hp: 14, speed: 40, radius: 15, damage: 8,  xp: 1 },
@@ -32,6 +34,7 @@ function makePlayer(): Player {
     level: 1, xp: 0, xpToNext: 5,
     facingLeft: false, bob: 0,
     invuln: 0, hurtFlash: 0, attackTimer: 0,
+    aimX: 0, aimY: 1, moving: false, animTime: 0, attackAnim: 0,
     stats,
   };
 }
@@ -79,6 +82,7 @@ function levelUp(state: GameState): void {
   state.phase = 'levelup';
   state.offeredUpgrades = rollUpgrades(3);
   spawnBurst(state, p.x, p.y, '#f0c04a', 14);
+  sound.levelUp();
 }
 
 // ─── Spawning ───────────────────────────────────────────────────────────────
@@ -109,7 +113,7 @@ function spawnEnemy(state: GameState, spawnRadius: number): void {
     damage: b.damage * dmgMul,
     xp: b.xp,
     flash: 0, knockX: 0, knockY: 0, hitCd: 0,
-    facingLeft: false, bob: Math.random() * 6,
+    facingLeft: false, bob: Math.random() * 6, anim: Math.random() * 6,
   };
   state.enemies.push(e);
 }
@@ -136,7 +140,7 @@ function damageNumber(state: GameState, x: number, y: number, value: number, cri
 }
 
 // ─── Main update ─────────────────────────────────────────────────────────────
-export function update(state: GameState, dt: number, view: { w: number; h: number }): void {
+export function update(state: GameState, dt: number, view: { w: number; h: number }, input: Input): void {
   if (state.phase !== 'playing') return;
 
   const p = state.player;
@@ -144,10 +148,12 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   p.bob += dt * 6;
   if (p.invuln > 0) p.invuln -= dt;
   if (p.hurtFlash > 0) p.hurtFlash -= dt;
+  if (p.attackAnim > 0) p.attackAnim -= dt;
   if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 60);
 
   if (state.time >= WIN_TIME) {
     state.phase = 'won';
+    sound.win();
     return;
   }
 
@@ -161,32 +167,45 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     state.spawnTimer = spawnInterval(state.time);
   }
 
-  // ── Hero AI: only dodge nearby threats (so combat stays on-screen).
-  //    XP is collected by magnet, so the hero holds ground and kites. ──
-  let tx = 0, ty = 0;
-  for (const e of state.enemies) {
-    const dx = p.x - e.x, dy = p.y - e.y;
-    const d = Math.hypot(dx, dy) || 1;
-    if (d < 115) {
-      let w = (115 - d) / 115;
-      w = w * w * (e.kind === 'bat' ? 1.3 : 1);   // panic only when close
-      tx += (dx / d) * w;
-      ty += (dy / d) * w;
-    }
-  }
-  const mag = Math.hypot(tx, ty);
-  if (mag > 0.01) {
-    const spd = Math.min(1, mag) * p.stats.moveSpeed;
-    p.x += (tx / mag) * spd * dt;
-    p.y += (ty / mag) * spd * dt;
-    if (Math.abs(tx) > 0.12) p.facingLeft = tx < 0;
+  // ── Player movement (left stick / WASD) ──
+  const mv = input.move;
+  p.moving = mv.active && mv.mag > 0.15;
+  if (p.moving) {
+    p.x += mv.vx * p.stats.moveSpeed * mv.mag * dt;
+    p.y += mv.vy * p.stats.moveSpeed * mv.mag * dt;
+    p.animTime += dt;
   }
 
-  // ── Auto-attack ──
+  // ── Aim (right stick) or auto-aim nearest enemy ──
+  let aimX = 0, aimY = 0, aiming = false;
+  if (input.aim.active && input.aim.mag > 0.2) {
+    aimX = input.aim.vx; aimY = input.aim.vy; aiming = true;
+  } else {
+    let best = Infinity, bx = 0, by = 0;
+    for (const e of state.enemies) {
+      const d = (e.x - p.x) ** 2 + (e.y - p.y) ** 2;
+      if (d < best) { best = d; bx = e.x - p.x; by = e.y - p.y; }
+    }
+    if (best < Infinity) {
+      const d = Math.hypot(bx, by) || 1;
+      aimX = bx / d; aimY = by / d;
+    }
+  }
+  if (aimX !== 0 || aimY !== 0) {
+    p.aimX = aimX; p.aimY = aimY;
+    p.facingLeft = aimX < -0.15 ? true : (aimX > 0.15 ? false : p.facingLeft);
+  } else if (p.moving) {
+    p.facingLeft = mv.vx < -0.15 ? true : (mv.vx > 0.15 ? false : p.facingLeft);
+  }
+
+  // ── Auto-attack in aim direction ──
   p.attackTimer -= dt;
-  if (p.attackTimer <= 0 && state.enemies.length > 0) {
+  const canFire = aiming || state.enemies.length > 0;
+  if (p.attackTimer <= 0 && canFire && (p.aimX !== 0 || p.aimY !== 0)) {
     p.attackTimer = p.stats.attackCd;
-    fireBolts(state);
+    p.attackAnim = 0.16;
+    fireBolts(state, p.aimX, p.aimY);
+    sound.shoot();
   }
 
   // ── Bolts ──
@@ -208,6 +227,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
         e.knockY += (b.vy / bl) * p.stats.knockback;
         damageNumber(state, e.x, e.y - e.radius, dmg, crit);
         spawnBurst(state, b.x, b.y, '#ffe9a8', 4);
+        sound.hit();
         if (b.pierce <= 0) { remove = true; break; }
         b.pierce -= 1;
       }
@@ -221,6 +241,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     if (e.flash > 0) e.flash -= dt;
     if (e.hitCd > 0) e.hitCd -= dt;
     e.bob += dt * 5;
+    e.anim += dt;
 
     // knockback
     e.x += e.knockX * dt; e.y += e.knockY * dt;
@@ -239,6 +260,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
       dropGem(state, e);
       spawnBurst(state, e.x, e.y, enemyColor(e.kind), 8);
       state.shake = Math.min(6, state.shake + 2);
+      sound.enemyDie();
       state.enemies.splice(i, 1);
       continue;
     }
@@ -250,7 +272,8 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
       p.invuln = 0.6; p.hurtFlash = 0.3; e.hitCd = 0.8;
       state.shake = Math.min(9, state.shake + 5);
       spawnBurst(state, p.x, p.y, '#c23b2e', 8);
-      if (p.hp <= 0) { p.hp = 0; state.phase = 'dead'; return; }
+      sound.hurt();
+      if (p.hp <= 0) { p.hp = 0; state.phase = 'dead'; sound.gameOver(); return; }
     }
   }
 
@@ -293,18 +316,17 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   }
 }
 
-function fireBolts(state: GameState): void {
+function fireBolts(state: GameState, aimX: number, aimY: number): void {
   const p = state.player;
-  const sorted = [...state.enemies].sort((a, b) =>
-    ((a.x - p.x) ** 2 + (a.y - p.y) ** 2) - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
+  const baseAng = Math.atan2(aimY, aimX);
   const n = p.stats.boltCount;
+  const spread = 0.18;
   for (let i = 0; i < n; i++) {
-    const target = sorted[Math.min(i, sorted.length - 1)];
-    let ang = Math.atan2(target.y - p.y, target.x - p.x);
-    // fan duplicates when more bolts than distinct near targets
-    if (i >= sorted.length) ang += (i - sorted.length + 1) * 0.25 * (i % 2 ? 1 : -1);
+    // fan bolts symmetrically around the aim direction
+    const offset = n === 1 ? 0 : (i - (n - 1) / 2) * spread;
+    const ang = baseAng + offset;
     const b: Bolt = {
-      x: p.x, y: p.y,
+      x: p.x + Math.cos(baseAng) * 8, y: p.y + Math.sin(baseAng) * 8,
       vx: Math.cos(ang) * p.stats.boltSpeed,
       vy: Math.sin(ang) * p.stats.boltSpeed,
       damage: p.stats.damage,

@@ -5,6 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Served from https://<user>.github.io/dungeon-depths/ on GitHub Pages.
+  base: mode === "production" ? "/dungeon-depths/" : "/",
   server: {
     host: "::",
     port: 8080,
