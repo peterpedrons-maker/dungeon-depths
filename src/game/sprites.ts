@@ -61,44 +61,53 @@ const C = {
 };
 
 // ═══ HERO ════════════════════════════════════════════════════════════════════
-function heroBody(g: CanvasRenderingContext2D) {
-  // Helmet
-  px(g, 4, 0, 6, 1, C.steel);
-  px(g, 3, 1, 8, 2, C.steel);
-  px(g, 3, 1, 8, 1, C.steelL);
-  px(g, 3, 3, 8, 1, C.gold);
+// Per-class palettes: head covering + tunic tones so each class reads distinctly.
+interface HeroSkin { hat: string; hatL: string; trim: string; body: string; bodyL: string; bodyD: string; }
+const HERO_SKINS: Record<string, HeroSkin> = {
+  knight: { hat: C.steel, hatL: C.steelL, trim: C.gold,     body: C.blue,     bodyL: C.blueL,   bodyD: C.blueD },
+  mage:   { hat: '#7c3aed', hatL: '#a78bfa', trim: '#f0c04a', body: '#c2408a', bodyL: '#e56fae', bodyD: '#8e2563' },
+  hunter: { hat: '#2f7d4f', hatL: '#57b877', trim: '#d8b45a', body: '#3f9d5f', bodyL: '#74cf90', bodyD: '#256b3d' },
+  necro:  { hat: '#3b3550', hatL: '#5c5478', trim: '#9be86f', body: '#4a4468', bodyL: '#6d648f', bodyD: '#2c2740' },
+};
+
+function heroBody(g: CanvasRenderingContext2D, s: HeroSkin) {
+  // Head covering (helmet / hood / hat)
+  px(g, 4, 0, 6, 1, s.hat);
+  px(g, 3, 1, 8, 2, s.hat);
+  px(g, 3, 1, 8, 1, s.hatL);
+  px(g, 3, 3, 8, 1, s.trim);
   // Face
   px(g, 4, 4, 6, 3, C.skin);
-  px(g, 3, 4, 1, 3, C.steel);
-  px(g, 10, 4, 1, 3, C.steel);
+  px(g, 3, 4, 1, 3, s.hat);
+  px(g, 10, 4, 1, 3, s.hat);
   px(g, 5, 5, 1, 1, C.hair);
   px(g, 8, 5, 1, 1, C.hair);
   px(g, 4, 6, 6, 1, C.skinD);
   // Torso
-  px(g, 4, 7, 6, 5, C.blue);
-  px(g, 4, 7, 6, 1, C.blueL);
-  px(g, 6, 8, 2, 2, C.gold);
-  px(g, 4, 11, 6, 1, C.gold);
+  px(g, 4, 7, 6, 5, s.body);
+  px(g, 4, 7, 6, 1, s.bodyL);
+  px(g, 6, 8, 2, 2, s.trim);
+  px(g, 4, 11, 6, 1, s.trim);
 }
 type ArmMode = 'idle' | 'a' | 'b' | 'attack';
-function heroArms(g: CanvasRenderingContext2D, mode: ArmMode) {
+function heroArms(g: CanvasRenderingContext2D, mode: ArmMode, s: HeroSkin) {
   if (mode === 'attack') {
     // hands raised forward, weapon thrust with a cast glow
-    px(g, 3, 8, 2, 2, C.blueD);
-    px(g, 9, 8, 2, 2, C.blueD);
+    px(g, 3, 8, 2, 2, s.bodyD);
+    px(g, 9, 8, 2, 2, s.bodyD);
     px(g, 3, 10, 2, 2, C.skin);
     px(g, 9, 10, 2, 2, C.skin);
     px(g, 6, 12, 2, 2, '#ffe9a8');   // spark at hands
     px(g, 6, 12, 2, 1, '#ffffff');
   } else if (mode === 'a') {         // left arm back, right arm forward
-    px(g, 2, 8, 2, 4, C.blueD); px(g, 2, 11, 2, 2, C.skin);
-    px(g, 10, 6, 2, 4, C.blueD); px(g, 10, 9, 2, 2, C.skin);
+    px(g, 2, 8, 2, 4, s.bodyD); px(g, 2, 11, 2, 2, C.skin);
+    px(g, 10, 6, 2, 4, s.bodyD); px(g, 10, 9, 2, 2, C.skin);
   } else if (mode === 'b') {         // right arm back, left arm forward
-    px(g, 2, 6, 2, 4, C.blueD); px(g, 2, 9, 2, 2, C.skin);
-    px(g, 10, 8, 2, 4, C.blueD); px(g, 10, 11, 2, 2, C.skin);
+    px(g, 2, 6, 2, 4, s.bodyD); px(g, 2, 9, 2, 2, C.skin);
+    px(g, 10, 8, 2, 4, s.bodyD); px(g, 10, 11, 2, 2, C.skin);
   } else {                          // idle
-    px(g, 2, 7, 2, 4, C.blueD);
-    px(g, 10, 7, 2, 4, C.blueD);
+    px(g, 2, 7, 2, 4, s.bodyD);
+    px(g, 10, 7, 2, 4, s.bodyD);
     px(g, 2, 10, 2, 2, C.skin);
     px(g, 10, 10, 2, 2, C.skin);
   }
@@ -115,15 +124,16 @@ function heroLegs(g: CanvasRenderingContext2D, mode: 0 | 1 | 2) {
     px(g, 4, 15, 2, 1, C.steelD); px(g, 8, 16, 2, 1, C.steelD);
   }
 }
-function heroFrame(key: string, legs: 0 | 1 | 2, arms: ArmMode): Sprite {
-  return make('hero_' + key, 14, 17, (g) => { heroArms(g, arms); heroBody(g); heroLegs(g, legs); });
+function heroFrame(cls: string, key: string, legs: 0 | 1 | 2, arms: ArmMode): Sprite {
+  const s = HERO_SKINS[cls] ?? HERO_SKINS.knight;
+  return make(`hero_${cls}_${key}`, 14, 17, (g) => { heroArms(g, arms, s); heroBody(g, s); heroLegs(g, legs); });
 }
 
-export function heroSprites() {
+export function heroSprites(cls: string) {
   return {
-    idle: heroFrame('idle', 0, 'idle'),
-    walk: [heroFrame('a', 1, 'a'), heroFrame('i', 0, 'idle'), heroFrame('b', 2, 'b'), heroFrame('i2', 0, 'idle')],
-    attack: heroFrame('atk', 0, 'attack'),
+    idle: heroFrame(cls, 'idle', 0, 'idle'),
+    walk: [heroFrame(cls, 'a', 1, 'a'), heroFrame(cls, 'i', 0, 'idle'), heroFrame(cls, 'b', 2, 'b'), heroFrame(cls, 'i2', 0, 'idle')],
+    attack: heroFrame(cls, 'atk', 0, 'attack'),
   };
 }
 
@@ -234,6 +244,42 @@ export function boltSprite(): Sprite {
     px(g, 0, 2, 6, 2, '#ffe9a8');
     px(g, 2, 2, 2, 2, '#ffffff');
     px(g, 1, 1, 4, 4, '#ffd257');
+  });
+}
+
+export function fireballSprite(): Sprite {
+  return make('fireball', 10, 10, (g) => {
+    px(g, 3, 0, 4, 1, '#ff9d4a');
+    px(g, 2, 1, 6, 2, '#ff7a2a');
+    px(g, 1, 3, 8, 4, '#ff9d4a');
+    px(g, 2, 7, 6, 2, '#ff7a2a');
+    px(g, 4, 8, 2, 1, '#c2410c');
+    px(g, 3, 3, 4, 3, '#ffe08a');
+    px(g, 4, 4, 2, 2, '#ffffff');
+  });
+}
+
+export function arrowSprite(): Sprite {
+  return make('arrow', 12, 5, (g) => {
+    px(g, 0, 2, 8, 1, '#8b5a2b');   // shaft
+    px(g, 8, 1, 3, 3, '#dfe6ee');   // head
+    px(g, 11, 2, 1, 1, '#ffffff');
+    px(g, 0, 1, 2, 1, '#e8e4d4');   // fletching
+    px(g, 0, 3, 2, 1, '#e8e4d4');
+  });
+}
+
+export function skullOrbSprite(): Sprite {
+  return make('skullorb', 9, 9, (g) => {
+    px(g, 2, 0, 5, 1, C.bone);
+    px(g, 1, 1, 7, 4, C.bone);
+    px(g, 1, 1, 7, 1, '#fbf9ef');
+    px(g, 2, 2, 2, 2, '#1a1420');   // eye sockets
+    px(g, 5, 2, 2, 2, '#1a1420');
+    px(g, 2, 5, 5, 2, C.bone);
+    px(g, 3, 6, 1, 1, '#1a1420');
+    px(g, 5, 6, 1, 1, '#1a1420');
+    px(g, 2, 7, 5, 1, C.boneD);
   });
 }
 

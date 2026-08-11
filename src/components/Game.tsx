@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { createState, update, startGame, chooseUpgrade } from '@/game/engine';
-import { render } from '@/game/render';
+import { render, ZOOM } from '@/game/render';
 import { Input } from '@/game/input';
 import { sound } from '@/game/sound';
-import { GameState, Phase, Upgrade, BIOMES, FLOOR_WAVE_TIME, DASH_COOLDOWN } from '@/game/types';
+import { CLASSES } from '@/game/classes';
+import { GameState, Phase, Upgrade, BIOMES, FLOOR_WAVE_TIME, DASH_COOLDOWN, ClassId } from '@/game/types';
 
 interface Hud {
   phase: Phase;
@@ -70,7 +71,9 @@ export function Game() {
       let dt = (now - last) / 1000; last = now;
       if (dt > 0.05) dt = 0.05;
       const s = stateRef.current;
-      update(s, dt, view, input);
+      // update() works in world units; the camera is zoomed out, so the
+      // visible world area is larger than the pixel viewport.
+      update(s, dt, { w: view.w / ZOOM, h: view.h / ZOOM }, input);
       render(ctx, s, view, input);
       if (s.phase !== lastPhase) {
         if (s.phase === 'levelup' || s.phase === 'dead' || s.phase === 'won') input.clear();
@@ -84,13 +87,20 @@ export function Game() {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); input.detach(); };
   }, []);
 
-  const start = () => {
+  const goClassSelect = () => {
+    sound.unlock();
+    sound.ui();
+    stateRef.current.phase = 'classSelect';
+    syncHud();
+  };
+  const start = (classId: ClassId) => {
     sound.unlock();
     sound.startMusic();
-    startGame(stateRef.current);
+    startGame(stateRef.current, classId);
     inputRef.current.clear();
     syncHud();
   };
+  const restart = () => { stateRef.current.phase = 'classSelect'; inputRef.current.clear(); syncHud(); };
   const pick = (u: Upgrade) => { sound.ui(); chooseUpgrade(stateRef.current, u); inputRef.current.clear(); syncHud(); };
   const toggleMute = () => { const m = !muted; setMuted(m); sound.setMuted(m); };
 
@@ -208,12 +218,42 @@ export function Game() {
           <div className="mb-2 text-6xl">🗡️</div>
           <h1 className="mb-1 text-center text-4xl font-black leading-none text-cyan-300 drop-shadow">DUNGEON<br />DEPTHS</h1>
           <p className="mb-8 text-xs uppercase tracking-[0.2em] text-white/50">Twin-Stick Survivor</p>
-          <button onClick={start} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-10 py-3.5 text-lg font-black text-white shadow-lg transition-all active:scale-95">▶ Jogar</button>
+          <button onClick={goClassSelect} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-10 py-3.5 text-lg font-black text-white shadow-lg transition-all active:scale-95">▶ Jogar</button>
           <div className="mt-8 max-w-xs text-center text-xs leading-relaxed text-white/45">
             <p className="mb-1">🕹️ <b className="text-cyan-300">Esquerda</b> da tela: mover</p>
             <p className="mb-1">🎯 <b className="text-yellow-300">Direita</b> da tela: mirar e atirar</p>
             <p className="mb-1">💨 Botão de <b className="text-cyan-300">dash</b>: esquiva rápida (invencível)</p>
             <p className="mt-3 text-white/35">Suba de nível, derrote o chefe de cada andar e desça até o fundo!</p>
+          </div>
+        </div>
+      )}
+
+      {/* Class select */}
+      {hud.phase === 'classSelect' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-[#1a1530]/90 to-[#12101a]/97 px-4 py-6">
+          <h2 className="mb-1 text-2xl font-black text-white">Escolha sua classe</h2>
+          <p className="mb-5 text-xs text-white/45">Cada uma tem uma arma e um estilo diferentes</p>
+          <div className="grid w-full max-w-md grid-cols-2 gap-2.5">
+            {CLASSES.map(c => (
+              <button
+                key={c.id}
+                onClick={() => start(c.id)}
+                className="flex flex-col items-start gap-1 rounded-xl border-2 bg-slate-800/80 p-3 text-left transition-all hover:bg-slate-700/80 active:scale-[0.97]"
+                style={{ borderColor: c.accent + '99' }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{c.emoji}</span>
+                  <span className="font-black text-white">{c.name}</span>
+                </div>
+                <span className="text-[11px] font-bold" style={{ color: c.accent }}>{c.weaponName}</span>
+                <span className="text-[10px] leading-snug text-white/55">{c.tagline}</span>
+                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-white/45">
+                  <span>❤️ {c.stats.maxHp}</span>
+                  <span>⚔️ {c.stats.damage}</span>
+                  <span>👟 {c.stats.moveSpeed}</span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -224,7 +264,7 @@ export function Game() {
           <div className="mb-2 text-6xl">💀</div>
           <h2 className="mb-1 text-3xl font-black text-red-400">Você caiu</h2>
           <p className="mb-6 text-sm text-white/60">Nível {hud.level} • {mm}:{ss} • 💀 {hud.kills}</p>
-          <button onClick={start} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
+          <button onClick={restart} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
         </div>
       )}
 
@@ -234,7 +274,7 @@ export function Game() {
           <div className="mb-2 text-6xl">🏆</div>
           <h2 className="mb-1 text-3xl font-black text-yellow-400">Profundezas conquistadas!</h2>
           <p className="mb-6 text-sm text-white/60">Você derrotou o Coração das Trevas • Nível {hud.level} • 💀 {hud.kills}</p>
-          <button onClick={start} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
+          <button onClick={restart} className="rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-700 px-8 py-3 font-black text-white transition-all active:scale-95">Jogar de novo</button>
         </div>
       )}
     </div>

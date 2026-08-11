@@ -80,6 +80,7 @@ class SoundEngine {
   }
   ui(): void { this.blip(440, 0.06, 'square', 0.12); }
   dash(): void { this.blip(300, 0.16, 'sine', 0.16, 760); this.noise(0.06, 0.05); }
+  swing(): void { this.noise(0.09, 0.10); this.blip(520, 0.07, 'triangle', 0.07, 260); }
 
   // ── Simple looping dungeon bassline ──
   startMusic(): void {

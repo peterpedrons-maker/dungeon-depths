@@ -1,10 +1,11 @@
 import {
-  GameState, Player, PlayerStats, Enemy, EnemyKind, Bolt, Gem, Upgrade,
-  FLOOR_COUNT, FLOOR_WAVE_TIME, BOSS_NAMES, DASH_COOLDOWN,
+  GameState, Player, PlayerStats, Enemy, EnemyKind, Bolt, Gem, Upgrade, ClassId,
+  FLOOR_COUNT, FLOOR_WAVE_TIME, BOSS_NAMES, DASH_COOLDOWN, ORBIT_RADIUS, WORLD,
 } from './types';
 import { rollUpgrades } from './upgrades';
 import { Input } from './input';
 import { sound } from './sound';
+import { getClass, worldStats } from './classes';
 
 const ENEMY_BASE: Record<EnemyKind, { hp: number; speed: number; radius: number; damage: number; xp: number }> = {
   slime:    { hp: 14, speed: 40, radius: 15, damage: 8,  xp: 1 },
@@ -12,23 +13,9 @@ const ENEMY_BASE: Record<EnemyKind, { hp: number; speed: number; radius: number;
   skeleton: { hp: 26, speed: 54, radius: 14, damage: 12, xp: 3 },
 };
 
-function baseStats(): PlayerStats {
-  return {
-    maxHp: 100,
-    moveSpeed: 96,
-    damage: 10,
-    attackCd: 0.62,
-    boltSpeed: 310,
-    boltCount: 1,
-    pierce: 0,
-    knockback: 175,
-    pickupRadius: 75,
-    critChance: 0.05,
-  };
-}
-
-function makePlayer(): Player {
-  const stats = baseStats();
+function makePlayer(classId: ClassId = 'knight'): Player {
+  const def = getClass(classId);
+  const stats: PlayerStats = worldStats(classId);
   return {
     x: 0, y: 0, radius: 13,
     hp: stats.maxHp,
@@ -37,6 +24,7 @@ function makePlayer(): Player {
     invuln: 0, hurtFlash: 0, attackTimer: 0,
     aimX: 0, aimY: 1, moving: false, animTime: 0, attackAnim: 0,
     dashTimer: 0, dashCd: 0, dashX: 1, dashY: 0,
+    classId, weapon: def.weapon, orbAngle: 0,
     stats,
   };
 }
@@ -45,17 +33,17 @@ export function createState(): GameState {
   return {
     phase: 'title',
     player: makePlayer(),
-    enemies: [], bolts: [], gems: [], hazards: [], particles: [], damageNumbers: [],
+    enemies: [], bolts: [], swings: [], gems: [], hazards: [], particles: [], damageNumbers: [],
     time: 0, spawnTimer: 0, nextId: 1, kills: 0, shake: 0,
     offeredUpgrades: [],
     floor: 1, floorPhase: 'waves', floorTimer: 0, stair: null,
   };
 }
 
-export function startGame(state: GameState): void {
+export function startGame(state: GameState, classId: ClassId = 'knight'): void {
   state.phase = 'playing';
-  state.player = makePlayer();
-  state.enemies = []; state.bolts = []; state.gems = []; state.hazards = [];
+  state.player = makePlayer(classId);
+  state.enemies = []; state.bolts = []; state.swings = []; state.gems = []; state.hazards = [];
   state.particles = []; state.damageNumbers = [];
   state.time = 0; state.spawnTimer = 1.2; state.nextId = 1; state.kills = 0; state.shake = 0;
   state.offeredUpgrades = [];
@@ -105,25 +93,41 @@ function pickKind(time: number, floor: number): EnemyKind {
   return 'skeleton';
 }
 
-function spawnEnemy(state: GameState, spawnRadius: number): void {
+// Pick a point just outside the visible rectangle, so enemies always walk in
+// from the nearest screen edge instead of from a far-off circle's corners.
+function offscreenPoint(state: GameState, view: { w: number; h: number }): { x: number; y: number } {
+  const p = state.player;
+  const halfW = view.w / 2, halfH = view.h / 2;
+  const margin = 30 * WORLD + Math.random() * 40 * WORLD;
+  const perimeter = 2 * (view.w + view.h);
+  let t = Math.random() * perimeter;
+  if (t < view.w) return { x: p.x - halfW + t, y: p.y - halfH - margin };            // top
+  t -= view.w;
+  if (t < view.w) return { x: p.x - halfW + t, y: p.y + halfH + margin };            // bottom
+  t -= view.w;
+  if (t < view.h) return { x: p.x - halfW - margin, y: p.y - halfH + t };            // left
+  t -= view.h;
+  return { x: p.x + halfW + margin, y: p.y - halfH + t };                            // right
+}
+
+function spawnEnemy(state: GameState, view: { w: number; h: number }): void {
   const kind = pickKind(state.floorTimer, state.floor);
   const b = ENEMY_BASE[kind];
   const floorMul = 1 + (state.floor - 1) * 0.5;                 // tougher each floor
   const hpMul = (1 + state.floorTimer / 55) * floorMul;
   const dmgMul = (1 + state.floorTimer / 230) * (1 + (state.floor - 1) * 0.15);
-  const a = Math.random() * Math.PI * 2;
-  const dist = spawnRadius + Math.random() * 60;
+  const at = offscreenPoint(state, view);
   const e: Enemy = {
     id: state.nextId++,
     kind,
-    x: state.player.x + Math.cos(a) * dist,
-    y: state.player.y + Math.sin(a) * dist,
+    x: at.x,
+    y: at.y,
     hp: b.hp * hpMul, maxHp: b.hp * hpMul,
-    speed: b.speed * (0.9 + Math.random() * 0.2),
+    speed: b.speed * WORLD * (0.9 + Math.random() * 0.2),
     radius: b.radius,
     damage: b.damage * dmgMul,
     xp: b.xp,
-    flash: 0, knockX: 0, knockY: 0, hitCd: 0,
+    flash: 0, knockX: 0, knockY: 0, hitCd: 0, orbCd: 0,
     facingLeft: false, bob: Math.random() * 6, anim: Math.random() * 6, age: 0,
   };
   state.enemies.push(e);
@@ -163,7 +167,6 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   if (p.attackAnim > 0) p.attackAnim -= dt;
   if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 60);
 
-  const spawnRadius = Math.hypot(view.w, view.h) / 2 + 50;
 
   // ── Floor flow: waves -> boss -> cleared (walk to stairs) ──
   if (state.floorPhase === 'waves') {
@@ -172,13 +175,13 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     if (state.spawnTimer <= 0) {
       const t = state.floorTimer;
       const count = 1 + (t > 20 ? 1 : 0) + (t > 30 ? 1 : 0) + (state.floor - 1);
-      for (let i = 0; i < count; i++) spawnEnemy(state, spawnRadius);
+      for (let i = 0; i < count; i++) spawnEnemy(state, view);
       state.spawnTimer = spawnInterval(t);
     }
-    if (state.floorTimer >= FLOOR_WAVE_TIME) spawnBoss(state, spawnRadius);
+    if (state.floorTimer >= FLOOR_WAVE_TIME) spawnBoss(state, view);
   } else if (state.floorPhase === 'cleared' && state.stair) {
     const dsx = p.x - state.stair.x, dsy = p.y - state.stair.y;
-    if (Math.hypot(dsx, dsy) < 24) { descend(state); return; }
+    if (Math.hypot(dsx, dsy) < 30 * WORLD) { descend(state); return; }
   }
 
   // ── Dash (dodge with i-frames) ──
@@ -199,7 +202,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   // ── Player movement (left stick / WASD), or dash override ──
   p.moving = mv.active && mv.mag > 0.15;
   if (p.dashTimer > 0) {
-    const DASH_SPEED = 540;
+    const DASH_SPEED = 540 * WORLD;
     p.x += p.dashX * DASH_SPEED * dt;
     p.y += p.dashY * DASH_SPEED * dt;
     p.animTime += dt;
@@ -241,8 +244,34 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   if (p.attackTimer <= 0 && canFire && (p.aimX !== 0 || p.aimY !== 0)) {
     p.attackTimer = p.stats.attackCd;
     p.attackAnim = 0.16;
-    fireBolts(state, p.aimX, p.aimY);
-    sound.shoot();
+    fireWeapon(state, p.aimX, p.aimY);
+  }
+
+  // ── Orbiting weapon (Necromancer): persistent contact damage ──
+  if (p.weapon === 'orbit') {
+    p.orbAngle += dt * 3.2;
+    const orbs = p.stats.boltCount;
+    for (let i = 0; i < orbs; i++) {
+      const a = p.orbAngle + (i / orbs) * Math.PI * 2;
+      const ox = p.x + Math.cos(a) * ORBIT_RADIUS;
+      const oy = p.y + Math.sin(a) * ORBIT_RADIUS;
+      for (const e of state.enemies) {
+        if (e.orbCd > 0) continue;
+        const rr = e.radius + 15 * WORLD;
+        const dx = e.x - ox, dy = e.y - oy;
+        if (dx * dx + dy * dy < rr * rr) {
+          const d = Math.hypot(dx, dy) || 1;
+          applyHit(state, e, p.stats.damage, dx / d, dy / d);
+          e.orbCd = 0.45;
+        }
+      }
+    }
+  }
+
+  // Swing arc visuals
+  for (let i = state.swings.length - 1; i >= 0; i--) {
+    state.swings[i].life -= dt;
+    if (state.swings[i].life <= 0) state.swings.splice(i, 1);
   }
 
   // ── Bolts ──
@@ -255,16 +284,8 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
       const rr = e.radius + 5;
       if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < rr * rr) {
         b.hitIds.push(e.id);
-        const crit = Math.random() < p.stats.critChance;
-        const dmg = b.damage * (crit ? 2 : 1);
-        e.hp -= dmg;
-        e.flash = 0.12;
         const bl = Math.hypot(b.vx, b.vy) || 1;
-        e.knockX += (b.vx / bl) * p.stats.knockback;
-        e.knockY += (b.vy / bl) * p.stats.knockback;
-        damageNumber(state, e.x, e.y - e.radius, dmg, crit);
-        spawnBurst(state, b.x, b.y, '#ffe9a8', 4);
-        sound.hit();
+        applyHit(state, e, b.damage, b.vx / bl, b.vy / bl);
         if (b.pierce <= 0) { remove = true; break; }
         b.pierce -= 1;
       }
@@ -277,6 +298,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     const e = state.enemies[i];
     if (e.flash > 0) e.flash -= dt;
     if (e.hitCd > 0) e.hitCd -= dt;
+    if (e.orbCd > 0) e.orbCd -= dt;
     e.bob += dt * 5;
     e.anim += dt;
     e.age += dt;
@@ -285,7 +307,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     const d = Math.hypot(dx, dy) || 1;
 
     if (e.isBoss) {
-      bossAI(e, state, dt, spawnRadius);
+      bossAI(e, state, dt);
     } else {
       // knockback
       e.x += e.knockX * dt; e.y += e.knockY * dt;
@@ -358,17 +380,15 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     const d = Math.hypot(dx, dy) || 1;
 
     if (!g.homing) {
-      // brief scatter, then a gentle pull toward the hero (so XP isn't
-      // stranded far away). Move closer to grab faster / snap it in.
+      // Brief scatter, then rest on the ground. Walk over them to collect —
+      // the zoomed-out camera keeps drops in view.
       g.x += g.vx * dt; g.y += g.vy * dt;
       g.vx *= Math.pow(0.0005, dt); g.vy *= Math.pow(0.0005, dt);
-      g.x += (dx / d) * 70 * dt;
-      g.y += (dy / d) * 70 * dt;
       if (d < p.stats.pickupRadius) g.homing = true;   // snap in when close
     }
     if (g.homing) {
-      g.x += (dx / d) * 300 * dt;
-      g.y += (dy / d) * 300 * dt;
+      g.x += (dx / d) * 300 * WORLD * dt;
+      g.y += (dy / d) * 300 * WORLD * dt;
       if (d < 14) {
         p.xp += g.value;
         spawnBurst(state, p.x, p.y, '#38bdf8', 3);
@@ -393,32 +413,68 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   }
 }
 
-function fireBolts(state: GameState, aimX: number, aimY: number): void {
+function fireWeapon(state: GameState, aimX: number, aimY: number): void {
   const p = state.player;
   const baseAng = Math.atan2(aimY, aimX);
+
+  if (p.weapon === 'melee') {
+    // Sweeping arc that hits everything in front of the hero.
+    const arc = Math.PI * 0.95;
+    const radius = p.stats.range;
+    state.swings.push({ x: p.x, y: p.y, ang: baseAng, arc, radius, life: 0.18, maxLife: 0.18 });
+    for (const e of state.enemies) {
+      const dx = e.x - p.x, dy = e.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d > radius + e.radius) continue;
+      let diff = Math.atan2(dy, dx) - baseAng;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      if (Math.abs(diff) > arc / 2) continue;
+      applyHit(state, e, p.stats.damage, dx / d, dy / d);
+    }
+    sound.swing();
+    return;
+  }
+
+  if (p.weapon === 'orbit') return;   // orbs damage continuously, not on a timer
+
+  const style = p.weapon === 'fireball' ? 'fire' : p.weapon === 'arrow' ? 'arrow' : 'bolt';
   const n = p.stats.boltCount;
   const spread = 0.18;
   for (let i = 0; i < n; i++) {
-    // fan bolts symmetrically around the aim direction
     const offset = n === 1 ? 0 : (i - (n - 1) / 2) * spread;
     const ang = baseAng + offset;
-    const b: Bolt = {
+    state.bolts.push({
       x: p.x + Math.cos(baseAng) * 8, y: p.y + Math.sin(baseAng) * 8,
       vx: Math.cos(ang) * p.stats.boltSpeed,
       vy: Math.sin(ang) * p.stats.boltSpeed,
       damage: p.stats.damage,
       pierce: p.stats.pierce,
-      life: 1.6, hitIds: [], rot: ang,
-    };
-    state.bolts.push(b);
+      life: 1.6, hitIds: [], rot: ang, style,
+    });
   }
+  sound.shoot();
+}
+
+// Shared damage application (bolts, melee, orbs)
+function applyHit(state: GameState, e: Enemy, rawDamage: number, nx: number, ny: number): void {
+  const p = state.player;
+  const crit = Math.random() < p.stats.critChance;
+  const dmg = rawDamage * (crit ? 2 : 1);
+  e.hp -= dmg;
+  e.flash = 0.12;
+  e.knockX += nx * p.stats.knockback;
+  e.knockY += ny * p.stats.knockback;
+  damageNumber(state, e.x, e.y - e.radius, dmg, crit);
+  spawnBurst(state, e.x, e.y, '#ffe9a8', 4);
+  sound.hit();
 }
 
 function dropGem(state: GameState, e: Enemy): void {
   const a = Math.random() * Math.PI * 2;
   state.gems.push({
     x: e.x, y: e.y, value: e.xp,
-    vx: Math.cos(a) * 30, vy: Math.sin(a) * 30,
+    vx: Math.cos(a) * 30 * WORLD, vy: Math.sin(a) * 30 * WORLD,
     homing: false, bob: Math.random() * 6,
   });
 }
@@ -446,21 +502,20 @@ function enemyColor(k: EnemyKind): string {
 }
 
 // ─── Boss & floor descent ─────────────────────────────────────────────────────
-function spawnBoss(state: GameState, spawnRadius: number): void {
+function spawnBoss(state: GameState, view: { w: number; h: number }): void {
   state.floorPhase = 'boss';
-  const p = state.player;
-  const a = Math.random() * Math.PI * 2;
+  const at = offscreenPoint(state, view);
   const hp = 240 * (1 + (state.floor - 1) * 0.8);
   const boss: Enemy = {
     id: state.nextId++,
     kind: 'skeleton',
-    x: p.x + Math.cos(a) * (spawnRadius * 0.7),
-    y: p.y + Math.sin(a) * (spawnRadius * 0.7),
+    x: at.x,
+    y: at.y,
     hp, maxHp: hp,
-    speed: 46, radius: 30,
+    speed: 46 * WORLD, radius: 30,
     damage: 20 * (1 + (state.floor - 1) * 0.2),
     xp: 5,
-    flash: 0, knockX: 0, knockY: 0, hitCd: 0,
+    flash: 0, knockX: 0, knockY: 0, hitCd: 0, orbCd: 0,
     facingLeft: false, bob: 0, anim: 0, age: 0,
     isBoss: true, name: BOSS_NAMES[state.floor - 1],
     bstate: 'chase', btimer: 0, batkCd: 2.4, cvx: 0, cvy: 0,
@@ -468,7 +523,7 @@ function spawnBoss(state: GameState, spawnRadius: number): void {
   state.enemies.push(boss);
 }
 
-function bossAI(e: Enemy, state: GameState, dt: number, spawnRadius: number): void {
+function bossAI(e: Enemy, state: GameState, dt: number): void {
   const p = state.player;
   const dx = p.x - e.x, dy = p.y - e.y;
   const d = Math.hypot(dx, dy) || 1;
@@ -486,10 +541,10 @@ function bossAI(e: Enemy, state: GameState, dt: number, spawnRadius: number): vo
       e.flash = 0.1;                         // glows white before striking
       if ((e.btimer ?? 0) <= 0) {
         if (Math.random() < 0.55) {          // charge
-          e.cvx = (dx / d) * 380; e.cvy = (dy / d) * 380;
+          e.cvx = (dx / d) * 380 * WORLD; e.cvy = (dy / d) * 380 * WORLD;
           e.bstate = 'charge'; e.btimer = 0.45;
         } else {                             // radial burst
-          radialHazards(state, e.x, e.y, 14, 130, 12 * (1 + (state.floor - 1) * 0.15));
+          radialHazards(state, e.x, e.y, 14, 130 * WORLD, 12 * (1 + (state.floor - 1) * 0.15));
           e.bstate = 'recover'; e.btimer = 0.7;
         }
       }
@@ -533,7 +588,7 @@ function descend(state: GameState): void {
   state.floorTimer = 0;
   state.spawnTimer = 1.2;
   state.stair = null;
-  state.enemies = []; state.hazards = []; state.gems = []; state.bolts = [];
+  state.enemies = []; state.hazards = []; state.gems = []; state.bolts = []; state.swings = [];
   const p = state.player;
   p.x = 0; p.y = 0;
   p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * 0.25);   // heal on descent

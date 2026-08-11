@@ -17,6 +17,7 @@ export interface Enemy {
   knockX: number;     // knockback velocity
   knockY: number;
   hitCd: number;      // per-enemy cooldown before it can damage player again
+  orbCd: number;      // per-enemy cooldown for orbiting-weapon hits
   facingLeft: boolean;
   bob: number;
   anim: number;       // animation clock (frame timing)
@@ -38,6 +39,8 @@ export interface Hazard {
   damage: number;
 }
 
+export type BoltStyle = 'bolt' | 'fire' | 'arrow';
+
 export interface Bolt {
   x: number;
   y: number;
@@ -48,6 +51,17 @@ export interface Bolt {
   life: number;       // seconds remaining
   hitIds: number[];   // enemies already hit (avoid double hits)
   rot: number;
+  style: BoltStyle;
+}
+
+// Melee swing arc (visual + one-shot damage window)
+export interface Swing {
+  x: number; y: number;
+  ang: number;        // center angle
+  arc: number;        // total arc width in radians
+  radius: number;
+  life: number;
+  maxLife: number;
 }
 
 export interface Gem {
@@ -82,11 +96,12 @@ export interface PlayerStats {
   damage: number;
   attackCd: number;       // seconds between shots
   boltSpeed: number;
-  boltCount: number;
+  boltCount: number;      // projectiles per shot (or orbiting orbs + 1)
   pierce: number;
   knockback: number;
   pickupRadius: number;
   critChance: number;
+  range: number;          // melee arc radius
 }
 
 export interface Player {
@@ -110,12 +125,30 @@ export interface Player {
   dashTimer: number;      // seconds of active dash remaining
   dashCd: number;         // seconds until dash is ready again
   dashX: number; dashY: number; // dash direction
+  classId: ClassId;
+  weapon: WeaponKind;
+  orbAngle: number;       // rotation of orbiting weapon
   stats: PlayerStats;
 }
 
 export const DASH_COOLDOWN = 1.1;
 
-export type Phase = 'title' | 'playing' | 'levelup' | 'dead' | 'won';
+// ── Camera zoom ──
+// World units -> screen px. Zooming out shows more of the arena, but it also
+// makes every world distance (the off-screen spawn ring, weapon reach, …)
+// larger in world units. WORLD scales speeds and distances by the same factor
+// so the game plays exactly as it looks at 1:1 — just with a wider view.
+export const ZOOM = 2 / 3;
+export const WORLD = 1 / ZOOM;
+
+// Kept close to the hero so the skulls sweep the ring where chasing enemies
+// actually stop (just outside contact range), not far outside it.
+export const ORBIT_RADIUS = 34 * WORLD;
+
+export type Phase = 'title' | 'classSelect' | 'playing' | 'levelup' | 'dead' | 'won';
+
+export type ClassId = 'knight' | 'mage' | 'hunter' | 'necro';
+export type WeaponKind = 'melee' | 'fireball' | 'arrow' | 'orbit';
 
 export interface Upgrade {
   id: string;
@@ -130,6 +163,7 @@ export interface GameState {
   player: Player;
   enemies: Enemy[];
   bolts: Bolt[];
+  swings: Swing[];
   gems: Gem[];
   hazards: Hazard[];
   particles: Particle[];
