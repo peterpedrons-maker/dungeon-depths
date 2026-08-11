@@ -238,7 +238,16 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   // ── Bolts (all attacks are projectiles) ──
   for (let i = state.bolts.length - 1; i >= 0; i--) {
     const b = state.bolts[i];
-    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+    if (b.anchor) {
+      // sweep around the hero
+      b.ang = (b.ang ?? 0) + (b.angVel ?? 0) * dt;
+      b.x = p.x + Math.cos(b.ang) * (b.reach ?? 0);
+      b.y = p.y + Math.sin(b.ang) * (b.reach ?? 0);
+      b.rot = b.ang;
+      b.life -= dt;
+    } else {
+      b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+    }
     let remove = b.life <= 0;
     for (const e of state.enemies) {
       if (b.hitIds.includes(e.id)) continue;
@@ -430,13 +439,19 @@ function fireWeapon(state: GameState, aimX: number, aimY: number): void {
     const ang = baseAng + offset;
 
     if (p.weapon === 'melee') {
-      // Crescent slash: short reach, fat hitbox, pierces the whole arc.
-      const speed = 150 * WORLD;
+      // A real sword swing: an arc that sweeps around the hero (anchored),
+      // not a crescent flung into the distance. Each extra "projectile"
+      // adds another swing, fanned wider.
+      const arc = 1.6, life = 0.2;
+      const reach = s.range * 0.62;
+      const dir = i % 2 === 0 ? 1 : -1;                 // alternate swing side
+      const ang0 = baseAng - dir * arc / 2 + offset;
       state.bolts.push({
-        x: p.x + Math.cos(baseAng) * 6, y: p.y + Math.sin(baseAng) * 6,
-        vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-        damage: s.damage, pierce: 999, life: 0.22, maxLife: 0.22,
-        hitIds: [], rot: ang, style: 'slash', hitR: s.range * 0.55,
+        x: p.x + Math.cos(ang0) * reach, y: p.y + Math.sin(ang0) * reach,
+        vx: 0, vy: 0,
+        damage: s.damage, pierce: 999, life, maxLife: life,
+        hitIds: [], rot: ang0, style: 'slash', hitR: s.range * 0.6,
+        anchor: true, ang: ang0, angVel: (dir * arc) / life, reach,
       });
     } else {
       const style = p.weapon === 'fireball' ? 'fire' : p.weapon === 'arrow' ? 'arrow' : 'bolt';

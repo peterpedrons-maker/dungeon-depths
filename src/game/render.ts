@@ -175,28 +175,31 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
 
   // Bolts (player projectiles)
   for (const b of state.bolts) {
-    ctx.save();
     if (b.style === 'slash') {
-      const k = b.life / b.maxLife;                 // 1 -> 0
-      ctx.translate(sx(b.x), sy(b.y));
-      ctx.rotate(b.rot);
-      ctx.globalAlpha = Math.min(1, k * 1.6);
-      ctx.shadowBlur = 8; ctx.shadowColor = '#bcd6ff';
-      const spr = one('slash');
-      const sc = (0.8 + (1 - k) * 0.6) * (b.hitR / (12)); // scale with reach
-      const w = spr.w * ART * sc, h = spr.h * ART * sc;
-      ctx.drawImage(spr.canvas, Math.round(-w * 0.2), Math.round(-h / 2), w, h);
-    } else if (b.style === 'fire') {
-      ctx.shadowBlur = 12; ctx.shadowColor = '#ff7a2a';
-      drawSprite(ctx, one('fire'), sx(b.x), sy(b.y), false);
+      drawSlash(ctx, b, sx(p.x), sy(p.y));
+      continue;
+    }
+    ctx.save();
+    if (b.style === 'fire') {
+      streak(ctx, b, sx, sy, 22, '#ff7a2a');
+      // pulsing fire core with a strong glow
+      const px = sx(b.x), py = sy(b.y);
+      ctx.shadowBlur = 16; ctx.shadowColor = '#ff5a1a';
+      ctx.fillStyle = 'rgba(255,120,40,0.35)';
+      ctx.beginPath(); ctx.arc(px, py, 12 + Math.sin(performance.now() / 40) * 2, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 12; ctx.shadowColor = '#ff9d3a';
+      drawSprite(ctx, one('fire'), px, py, false);
     } else if (b.style === 'arrow') {
+      streak(ctx, b, sx, sy, 20, 'rgba(220,235,255,0.9)');
       ctx.translate(sx(b.x), sy(b.y));
       ctx.rotate(b.rot);
+      ctx.shadowBlur = 6; ctx.shadowColor = '#dfe6ee';
       const a = one('arrow');
       const w = a.w * ART, h = a.h * ART;
       ctx.drawImage(a.canvas, Math.round(-w / 2), Math.round(-h / 2), w, h);
     } else {
-      ctx.shadowBlur = 8; ctx.shadowColor = '#ffd257';
+      streak(ctx, b, sx, sy, 16, '#ffd257');
+      ctx.shadowBlur = 12; ctx.shadowColor = '#ffd257';
       drawSprite(ctx, one('bolt'), sx(b.x), sy(b.y), false);
     }
     ctx.restore();
@@ -323,6 +326,49 @@ function drawJoysticks(ctx: CanvasRenderingContext2D, input: Input): void {
   };
   if (input.move.active) draw(input.move.ox, input.move.oy, input.move.kx, input.move.ky, '#38bdf8');
   if (input.aim.active) draw(input.aim.ox, input.aim.oy, input.aim.kx, input.aim.ky, '#f0c04a');
+}
+
+// A sword swing: a bright arc swept around the hero, tapering to a blade tip.
+function drawSlash(ctx: CanvasRenderingContext2D, b: import('./types').Bolt, px: number, py: number): void {
+  const k = Math.max(0, b.life / b.maxLife);         // 1 -> 0
+  const R = (b.reach ?? 0) * ZOOM;
+  const dir = Math.sign(b.angVel ?? 1) || 1;
+  const trail = 1.3;
+  const a2 = b.ang ?? 0;                              // leading edge
+  const a1 = a2 - dir * trail;                        // trailing edge
+  const lo = Math.min(a1, a2), hi = Math.max(a1, a2);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = Math.min(1, k * 1.8);
+  // outer glow
+  ctx.strokeStyle = 'rgba(150,195,255,0.28)'; ctx.lineWidth = 22;
+  ctx.beginPath(); ctx.arc(px, py, R, lo, hi); ctx.stroke();
+  // mid body
+  ctx.strokeStyle = 'rgba(205,228,255,0.75)'; ctx.lineWidth = 11;
+  ctx.beginPath(); ctx.arc(px, py, R, lo, hi); ctx.stroke();
+  // bright leading edge
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5;
+  const cLo = dir > 0 ? a2 - 0.55 : a2;
+  const cHi = dir > 0 ? a2 : a2 + 0.55;
+  ctx.beginPath(); ctx.arc(px, py, R, cLo, cHi); ctx.stroke();
+  // blade glint at the tip
+  ctx.shadowBlur = 10; ctx.shadowColor = '#bcd6ff';
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(px + Math.cos(a2) * R, py + Math.sin(a2) * R, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// A fading motion tail drawn behind a flying projectile.
+function streak(ctx: CanvasRenderingContext2D, b: import('./types').Bolt, sx: (n: number) => number, sy: (n: number) => number, len: number, color: string): void {
+  const bl = Math.hypot(b.vx, b.vy) || 1;
+  const tx = b.vx / bl, ty = b.vy / bl;
+  const x2 = sx(b.x), y2 = sy(b.y);
+  const x1 = x2 - tx * len, y1 = y2 - ty * len;
+  const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, color);
+  ctx.strokeStyle = grad; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
 }
 
 function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number): void {

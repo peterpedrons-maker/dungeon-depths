@@ -64,6 +64,11 @@ export interface Bolt {
   rot: number;
   style: BoltStyle;
   hitR: number;       // world-space hit radius (fat for slashes)
+  // ── melee slash: swings in an arc anchored to the hero ──
+  anchor?: boolean;
+  ang?: number;       // current swing angle
+  angVel?: number;    // radians/sec swept
+  reach?: number;     // distance from the hero the blade travels
 }
 
 export interface Gem {
