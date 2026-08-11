@@ -80,8 +80,9 @@ function heroBody(g: CanvasRenderingContext2D) {
   px(g, 6, 8, 2, 2, C.gold);
   px(g, 4, 11, 6, 1, C.gold);
 }
-function heroArms(g: CanvasRenderingContext2D, attack: boolean) {
-  if (attack) {
+type ArmMode = 'idle' | 'a' | 'b' | 'attack';
+function heroArms(g: CanvasRenderingContext2D, mode: ArmMode) {
+  if (mode === 'attack') {
     // hands raised forward, weapon thrust with a cast glow
     px(g, 3, 8, 2, 2, C.blueD);
     px(g, 9, 8, 2, 2, C.blueD);
@@ -89,7 +90,13 @@ function heroArms(g: CanvasRenderingContext2D, attack: boolean) {
     px(g, 9, 10, 2, 2, C.skin);
     px(g, 6, 12, 2, 2, '#ffe9a8');   // spark at hands
     px(g, 6, 12, 2, 1, '#ffffff');
-  } else {
+  } else if (mode === 'a') {         // left arm back, right arm forward
+    px(g, 2, 8, 2, 4, C.blueD); px(g, 2, 11, 2, 2, C.skin);
+    px(g, 10, 6, 2, 4, C.blueD); px(g, 10, 9, 2, 2, C.skin);
+  } else if (mode === 'b') {         // right arm back, left arm forward
+    px(g, 2, 6, 2, 4, C.blueD); px(g, 2, 9, 2, 2, C.skin);
+    px(g, 10, 8, 2, 4, C.blueD); px(g, 10, 11, 2, 2, C.skin);
+  } else {                          // idle
     px(g, 2, 7, 2, 4, C.blueD);
     px(g, 10, 7, 2, 4, C.blueD);
     px(g, 2, 10, 2, 2, C.skin);
@@ -108,18 +115,18 @@ function heroLegs(g: CanvasRenderingContext2D, mode: 0 | 1 | 2) {
     px(g, 4, 15, 2, 1, C.steelD); px(g, 8, 16, 2, 1, C.steelD);
   }
 }
-function heroFrame(key: string, legs: 0 | 1 | 2, attack: boolean): Sprite {
+function heroFrame(key: string, legs: 0 | 1 | 2, arms: ArmMode): Sprite {
   return make('hero_' + key, 14, 17, (g) => {
-    heroArms(g, attack);
+    heroArms(g, arms);
     heroBody(g);
     heroLegs(g, legs);
   });
 }
 export function heroSprites() {
   return {
-    idle: heroFrame('idle', 0, false),
-    walk: [heroFrame('w1', 1, false), heroFrame('w2', 2, false)],
-    attack: heroFrame('atk', 0, true),
+    idle: heroFrame('idle', 0, 'idle'),
+    walk: [heroFrame('w1', 1, 'a'), heroFrame('w0', 0, 'idle'), heroFrame('w2', 2, 'b'), heroFrame('w0b', 0, 'idle')],
+    attack: heroFrame('atk', 0, 'attack'),
   };
 }
 

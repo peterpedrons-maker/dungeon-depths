@@ -14,7 +14,7 @@ const ENEMY_BASE: Record<EnemyKind, { hp: number; speed: number; radius: number;
 function baseStats(): PlayerStats {
   return {
     maxHp: 100,
-    moveSpeed: 72,
+    moveSpeed: 96,
     damage: 10,
     attackCd: 0.62,
     boltSpeed: 310,
@@ -54,7 +54,7 @@ export function startGame(state: GameState): void {
   state.player = makePlayer();
   state.enemies = []; state.bolts = []; state.gems = [];
   state.particles = []; state.damageNumbers = [];
-  state.time = 0; state.spawnTimer = 0.6; state.nextId = 1; state.kills = 0; state.shake = 0;
+  state.time = 0; state.spawnTimer = 1.2; state.nextId = 1; state.kills = 0; state.shake = 0;
   state.offeredUpgrades = [];
 }
 
@@ -113,13 +113,14 @@ function spawnEnemy(state: GameState, spawnRadius: number): void {
     damage: b.damage * dmgMul,
     xp: b.xp,
     flash: 0, knockX: 0, knockY: 0, hitCd: 0,
-    facingLeft: false, bob: Math.random() * 6, anim: Math.random() * 6,
+    facingLeft: false, bob: Math.random() * 6, anim: Math.random() * 6, age: 0,
   };
   state.enemies.push(e);
 }
 
 function spawnInterval(time: number): number {
-  return Math.max(0.34, 1.5 - time * 0.014);
+  // Gentle early game, ramps up after the first minute.
+  return Math.max(0.36, 2.1 - time * 0.011);
 }
 
 // ─── Effects ─────────────────────────────────────────────────────────────────
@@ -162,7 +163,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
   // Spawn
   state.spawnTimer -= dt;
   if (state.spawnTimer <= 0) {
-    const count = 1 + (state.time > 75 ? 1 : 0) + (state.time > 140 ? 1 : 0);
+    const count = 1 + (state.time > 90 ? 1 : 0) + (state.time > 150 ? 1 : 0);
     for (let i = 0; i < count; i++) spawnEnemy(state, spawnRadius);
     state.spawnTimer = spawnInterval(state.time);
   }
@@ -242,6 +243,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
     if (e.hitCd > 0) e.hitCd -= dt;
     e.bob += dt * 5;
     e.anim += dt;
+    e.age += dt;
 
     // knockback
     e.x += e.knockX * dt; e.y += e.knockY * dt;

@@ -20,6 +20,7 @@ export interface Enemy {
   facingLeft: boolean;
   bob: number;
   anim: number;       // animation clock (frame timing)
+  age: number;        // seconds since spawn (spawn-in pop)
 }
 
 export interface Bolt {
