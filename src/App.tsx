@@ -1,5 +1,5 @@
-import { SurvivorGame } from './components/SurvivorGame';
+import { Game } from './components/Game';
 
 export default function App() {
-  return <SurvivorGame />;
+  return <Game />;
 }
