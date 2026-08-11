@@ -1,0 +1,1029 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@500;700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+@layer base {
+  :root {
+    /* Path of Exile Grey Stone Theme */
+    --background: 0 0% 5%;
+    --foreground: 40 8% 75%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 40 8% 80%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 40 8% 75%;
+
+    --primary: 45 50% 55%;
+    --primary-foreground: 0 0% 5%;
+    --primary-rgb: 191, 166, 70;
+
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 40 10% 70%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 40 5% 50%;
+
+    --accent: 0 45% 40%;
+    --accent-foreground: 40 10% 90%;
+
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 40 10% 90%;
+
+    --border: 40 10% 20%;
+    --input: 0 0% 10%;
+    --ring: 45 40% 45%;
+
+    --radius: 0.125rem;
+
+    /* Game-specific tokens */
+    --health: 0 50% 38%;
+    --health-foreground: 0 0% 95%;
+    --gold: 45 65% 55%;
+    --gold-foreground: 0 0% 5%;
+    --exp: 270 35% 45%;
+    --exp-foreground: 0 0% 95%;
+    --danger: 0 55% 45%;
+    --safe: 120 35% 32%;
+    --warning: 35 60% 50%;
+    --rune-glow: 45 60% 50%;
+  }
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 40 8% 75%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 40 8% 80%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 40 8% 75%;
+
+    --primary: 45 50% 55%;
+    --primary-foreground: 0 0% 5%;
+
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 40 10% 70%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 40 5% 50%;
+
+    --accent: 0 45% 40%;
+    --accent-foreground: 40 10% 90%;
+
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 40 10% 90%;
+
+    --border: 40 10% 20%;
+    --input: 0 0% 10%;
+    --ring: 45 40% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground text-lg;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.03em;
+  }
+
+  h1 {
+    font-family: 'Cinzel Decorative', serif;
+    @apply text-5xl md:text-7xl tracking-widest font-bold;
+  }
+
+  h2 {
+    font-family: 'Cinzel Decorative', serif;
+    @apply text-3xl md:text-5xl tracking-wider font-bold;
+  }
+
+  h3 {
+    font-family: 'Cinzel Decorative', serif;
+    @apply text-2xl md:text-3xl tracking-wide font-bold;
+  }
+
+  h4, h5, h6 {
+    font-family: 'Cinzel', serif;
+    @apply text-xl md:text-2xl font-bold tracking-wide;
+  }
+}
+
+@layer components {
+  .game-title {
+    font-family: 'Cinzel Decorative', serif;
+    text-shadow: 0 0 60px hsl(var(--rune-glow) / 0.6),
+                 0 0 30px hsl(var(--rune-glow) / 0.4),
+                 0 2px 4px hsl(0 0% 0% / 0.95),
+                 0 8px 24px hsl(0 0% 0% / 0.8);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .fantasy-button {
+    @apply relative overflow-hidden transition-all duration-200 uppercase tracking-widest;
+    font-family: 'Cinzel', serif;
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 18%) 0%,
+      hsl(0 0% 10%) 100%
+    );
+    border: 2px solid hsl(40 15% 25%);
+    box-shadow: 0 2px 8px hsl(0 0% 0% / 0.7),
+                inset 0 1px 0 hsl(40 10% 30% / 0.3),
+                inset 0 -1px 0 hsl(0 0% 0% / 0.5);
+  }
+
+  .fantasy-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--rune-glow) / 0.05) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .fantasy-button:hover::before {
+    opacity: 1;
+  }
+
+  .fantasy-button:hover {
+    transform: translateY(-1px);
+    border-color: hsl(45 40% 45%);
+    box-shadow: 0 4px 16px hsl(0 0% 0% / 0.8),
+                0 0 20px hsl(var(--rune-glow) / 0.15),
+                inset 0 1px 0 hsl(40 15% 35% / 0.4);
+  }
+
+  .path-card {
+    @apply relative overflow-hidden transition-all duration-200 cursor-pointer;
+    background: linear-gradient(
+      135deg,
+      hsl(0 0% 10%) 0%,
+      hsl(0 0% 6%) 100%
+    );
+    border: 2px solid hsl(0 0% 20%);
+  }
+
+  .path-card::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--rune-glow) / 0.2) 0%,
+      transparent 30%,
+      transparent 70%,
+      hsl(var(--rune-glow) / 0.1) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .path-card:hover::before {
+    opacity: 1;
+  }
+
+  .path-card:hover {
+    border-color: hsl(40 20% 35%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.8),
+                0 0 25px hsl(var(--rune-glow) / 0.1);
+  }
+
+  .health-bar {
+    background: linear-gradient(
+      90deg,
+      hsl(0 45% 35%) 0%,
+      hsl(0 35% 25%) 100%
+    );
+  }
+
+  .gold-text {
+    color: hsl(var(--gold));
+    text-shadow: 0 0 12px hsl(var(--gold) / 0.4);
+  }
+
+  /* Low Risk Card - Safe, welcoming, calm */
+  .risk-card-low {
+    background: linear-gradient(
+      135deg,
+      hsl(120 15% 10%) 0%,
+      hsl(120 10% 6%) 100%
+    );
+    border: 2px solid hsl(120 25% 20%);
+    box-shadow: 0 4px 20px hsl(0 0% 0% / 0.6),
+                inset 0 1px 0 hsl(120 20% 25% / 0.2);
+  }
+
+  .risk-card-low:hover {
+    border-color: hsl(120 35% 35%);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px hsl(0 0% 0% / 0.8),
+                0 0 30px hsl(var(--safe) / 0.15);
+  }
+
+  /* Medium Risk Card - Uncertain, balanced tension */
+  .risk-card-medium {
+    background: linear-gradient(
+      135deg,
+      hsl(35 20% 12%) 0%,
+      hsl(35 15% 7%) 100%
+    );
+    border: 2px solid hsl(35 30% 22%);
+    box-shadow: 0 4px 20px hsl(0 0% 0% / 0.6),
+                inset 0 1px 0 hsl(35 25% 30% / 0.2);
+  }
+
+  .risk-card-medium:hover {
+    border-color: hsl(35 50% 40%);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px hsl(0 0% 0% / 0.8),
+                0 0 30px hsl(var(--warning) / 0.2);
+  }
+
+  /* High Risk Card - Dangerous, intimidating, ominous */
+  .risk-card-high {
+    background: linear-gradient(
+      135deg,
+      hsl(0 25% 12%) 0%,
+      hsl(0 20% 6%) 100%
+    );
+    border: 2px solid hsl(0 40% 25%);
+    box-shadow: 0 4px 20px hsl(0 0% 0% / 0.7),
+                inset 0 1px 0 hsl(0 30% 30% / 0.2),
+                inset 0 0 20px hsl(0 50% 15% / 0.3);
+  }
+
+  .risk-card-high:hover {
+    border-color: hsl(0 50% 40%);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px hsl(0 0% 0% / 0.9),
+                0 0 40px hsl(var(--danger) / 0.3),
+                inset 0 0 30px hsl(0 60% 20% / 0.2);
+  }
+
+  /* Glow effects for each risk level */
+  .glow-safe {
+    box-shadow: 0 0 20px hsl(var(--safe) / 0.4),
+                inset 0 0 20px hsl(var(--safe) / 0.1);
+  }
+
+  .glow-warning {
+    box-shadow: 0 0 25px hsl(var(--warning) / 0.4),
+                inset 0 0 25px hsl(var(--warning) / 0.1);
+  }
+
+  .glow-danger {
+    box-shadow: 0 0 35px hsl(var(--danger) / 0.5),
+                inset 0 0 30px hsl(var(--danger) / 0.15);
+  }
+
+  .risk-low {
+    @apply border-l-2;
+    border-left-color: hsl(var(--safe));
+  }
+
+  .risk-medium {
+    @apply border-l-2;
+    border-left-color: hsl(var(--warning));
+  }
+
+  .risk-high {
+    @apply border-l-2;
+    border-left-color: hsl(var(--danger));
+  }
+
+  .dungeon-overlay {
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 3% / 0.4) 0%,
+      hsl(0 0% 3% / 0.85) 50%,
+      hsl(0 0% 3% / 0.98) 100%
+    );
+  }
+
+  .poe-panel {
+    @apply relative;
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 10%) 0%,
+      hsl(0 0% 6%) 100%
+    );
+    border: 2px solid hsl(40 12% 22%);
+    box-shadow: inset 0 1px 0 hsl(40 10% 25% / 0.2),
+                inset 0 -1px 0 hsl(0 0% 0% / 0.5),
+                0 4px 20px hsl(0 0% 0% / 0.6);
+  }
+
+  .poe-panel::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    border: 1px solid hsl(40 8% 18%);
+    pointer-events: none;
+  }
+
+  /* Ornate corner decorations */
+  .ornate-corners {
+    @apply relative;
+  }
+
+  .ornate-corners::before,
+  .ornate-corners::after {
+    content: '◆';
+    position: absolute;
+    color: hsl(var(--rune-glow) / 0.6);
+    font-size: 0.75rem;
+    text-shadow: 0 0 8px hsl(var(--rune-glow) / 0.8);
+  }
+
+  .ornate-corners::before {
+    top: -4px;
+    left: -4px;
+  }
+
+  .ornate-corners::after {
+    bottom: -4px;
+    right: -4px;
+  }
+
+  /* Glowing rune border */
+  .rune-border {
+    @apply relative;
+    border: 2px solid hsl(40 15% 25%);
+  }
+
+  .rune-border::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(
+      45deg,
+      hsl(var(--rune-glow) / 0.3) 0%,
+      transparent 25%,
+      transparent 75%,
+      hsl(var(--rune-glow) / 0.3) 100%
+    );
+    z-index: -1;
+    animation: rune-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes rune-pulse {
+    0%, 100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+@layer utilities {
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 5px hsl(var(--primary) / 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.8);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { 
+      opacity: 0.8;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Particle animations */
+  .animate-dust {
+    animation: dust-float linear infinite;
+  }
+
+  @keyframes dust-float {
+    0% {
+      opacity: 0;
+      transform: translateY(0) translateX(0);
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-100px) translateX(var(--drift, 20px));
+    }
+  }
+
+  .animate-spark {
+    animation: spark-rise linear infinite;
+  }
+
+  @keyframes spark-rise {
+    0% {
+      opacity: 0;
+      transform: translateY(0) translateX(0) scale(1);
+    }
+    15% {
+      opacity: 0.8;
+    }
+    50% {
+      transform: translateY(-60px) translateX(var(--drift, 15px)) scale(1.2);
+    }
+    85% {
+      opacity: 0.6;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-120px) translateX(calc(var(--drift, 15px) * 2)) scale(0.5);
+    }
+  }
+
+  .animate-ember {
+    animation: ember-rise linear infinite;
+  }
+
+  @keyframes ember-rise {
+    0% {
+      opacity: 0;
+      transform: translateY(0) translateX(0) scale(0.5);
+    }
+    10% {
+      opacity: 1;
+    }
+    30% {
+      transform: translateY(-80px) translateX(var(--drift, 10px)) scale(1.3);
+    }
+    60% {
+      opacity: 0.9;
+      transform: translateY(-200px) translateX(calc(var(--drift, 10px) * 1.5)) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-400px) translateX(calc(var(--drift, 10px) * 2)) scale(0.3);
+    }
+  }
+
+  /* Damage number floating animation */
+  .animate-damage-float {
+    animation: damage-float 1s ease-out forwards;
+  }
+
+  @keyframes damage-float {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    20% {
+      transform: translateY(-20px) scale(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-80px) scale(0.8);
+    }
+  }
+
+  /* Selected card pulse animation */
+  .animate-selected-pulse {
+    animation: selected-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes selected-pulse {
+    0%, 100% {
+      box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.4);
+    }
+    50% {
+      box-shadow: 0 0 50px rgba(var(--primary-rgb), 0.6), 0 0 80px rgba(var(--primary-rgb), 0.3);
+    }
+  }
+
+  /* Particle animations for selected card */
+  .animate-particle {
+    animation: particle-float 2s ease-in-out infinite;
+  }
+
+  @keyframes particle-float {
+    0%, 100% {
+      opacity: 0.6;
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-12px) scale(1.3);
+    }
+  }
+
+  .animate-particle-side {
+    animation: particle-side-float 2.5s ease-in-out infinite;
+  }
+
+  @keyframes particle-side-float {
+    0%, 100% {
+      opacity: 0.5;
+      transform: translateX(0) scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: translateX(-8px) scale(1.2);
+    }
+  }
+
+  /* Skill effect animations */
+  .animate-skill-particle {
+    animation: skill-particle 0.8s ease-out forwards;
+  }
+
+  @keyframes skill-particle {
+    0% {
+      opacity: 1;
+      transform: scale(1) translate(0, 0);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.5) translate(
+        calc((var(--random-x, 0) - 0.5) * 60px),
+        calc((var(--random-y, 0) - 0.5) * 60px)
+      );
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.5) translate(
+        calc((var(--random-x, 0) - 0.5) * 120px),
+        calc((var(--random-y, 0) - 0.5) * 120px)
+      );
+    }
+  }
+
+  .animate-fire-burst {
+    animation: fire-burst 0.8s ease-out forwards;
+  }
+
+  @keyframes fire-burst {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+    30% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(2);
+    }
+  }
+
+  .animate-ice-shatter {
+    animation: ice-shatter 0.7s ease-out forwards;
+  }
+
+  @keyframes ice-shatter {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+  }
+
+  .animate-holy-light {
+    animation: holy-light 0.9s ease-out forwards;
+  }
+
+  @keyframes holy-light {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.2);
+    }
+    20% {
+      opacity: 1;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.5);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(2.5);
+    }
+  }
+
+  .animate-slash {
+    animation: slash 0.5s ease-out forwards;
+  }
+
+  @keyframes slash {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5) rotate(-45deg);
+    }
+    30% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.5) rotate(15deg);
+    }
+  }
+
+  .animate-slash-line {
+    animation: slash-line 0.4s ease-out forwards;
+  }
+
+  @keyframes slash-line {
+    0% {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    30% {
+      opacity: 1;
+      transform: scaleX(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: scaleX(1);
+    }
+  }
+
+  .animate-heal-spiral {
+    animation: heal-spiral 1s ease-out forwards;
+  }
+
+  @keyframes heal-spiral {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.5) rotate(180deg);
+    }
+  }
+
+  .animate-heal-cross {
+    animation: heal-cross 1s ease-out forwards;
+  }
+
+  @keyframes heal-cross {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+    30% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+    60% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8) translateY(-30px);
+    }
+  }
+
+  .animate-buff-aura {
+    animation: buff-aura 0.8s ease-out forwards;
+  }
+
+  @keyframes buff-aura {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+    30% {
+      opacity: 0.9;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.8);
+    }
+  }
+
+  .animate-shield-form {
+    animation: shield-form 0.9s ease-out forwards;
+  }
+
+  @keyframes shield-form {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5);
+      border-radius: 50%;
+    }
+    40% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  .animate-screen-flash {
+    animation: screen-flash 0.4s ease-out forwards;
+  }
+
+  @keyframes screen-flash {
+    0% {
+      opacity: 0;
+    }
+    20% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* New skill effect animations */
+  .animate-pulse-ring {
+    animation: pulse-ring 0.8s ease-out forwards;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+    30% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.5);
+    }
+  }
+
+  .animate-shadow-pulse {
+    animation: shadow-pulse 0.85s ease-out forwards;
+  }
+
+  @keyframes shadow-pulse {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3);
+    }
+    20% {
+      opacity: 1;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+  }
+
+  .animate-nature-grow {
+    animation: nature-grow 0.8s ease-out forwards;
+  }
+
+  @keyframes nature-grow {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.2) rotate(-20deg);
+    }
+    40% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1) rotate(0deg) translateY(-20px);
+    }
+  }
+
+  .animate-debuff-curse {
+    animation: debuff-curse 0.75s ease-out forwards;
+  }
+
+  @keyframes debuff-curse {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+    }
+    30% {
+      opacity: 1;
+    }
+    60% {
+      transform: translate(-50%, -50%) scale(1.2) rotate(180deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.7) rotate(360deg);
+    }
+  }
+
+  .animate-lightning {
+    animation: lightning-flash 0.5s ease-out forwards;
+  }
+
+  @keyframes lightning-flash {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+    10% {
+      opacity: 1;
+    }
+    20% {
+      opacity: 0.3;
+    }
+    30% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+  }
+
+  .animate-lightning-bolt {
+    animation: lightning-bolt 0.5s ease-out forwards;
+  }
+
+  @keyframes lightning-bolt {
+    0% {
+      opacity: 0;
+      transform: scaleY(0);
+      transform-origin: top;
+    }
+    20% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    40% {
+      opacity: 0.4;
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: scaleY(1);
+    }
+  }
+
+  .animate-blood-drain {
+    animation: blood-drain 0.85s ease-out forwards;
+  }
+
+  @keyframes blood-drain {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+    30% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    60% {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+  }
+
+  .animate-blood-drip {
+    animation: blood-drip 0.8s ease-in forwards;
+  }
+
+  @keyframes blood-drip {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scaleY(0.5);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(10px) scaleY(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(60px) scaleY(1.5);
+    }
+  }
+
+  .animate-fire-swirl {
+    animation: fire-swirl 0.9s ease-out forwards;
+  }
+
+  @keyframes fire-swirl {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(0deg) scale(0.3);
+    }
+    30% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(360deg) scale(1.5);
+    }
+  }
+
+  /* Lightning animation for encounter transitions */
+  .animate-lightning {
+    animation: lightning-flash 0.2s ease-out forwards;
+  }
+
+  @keyframes lightning-flash {
+    0% {
+      opacity: 0;
+      stroke-dasharray: 0 1000;
+    }
+    20% {
+      opacity: 1;
+      stroke-dasharray: 500 500;
+    }
+    60% {
+      opacity: 1;
+      stroke-dasharray: 1000 0;
+    }
+    100% {
+      opacity: 0;
+      stroke-dasharray: 1000 0;
+    }
+  }
+
+  /* Radial gradient background for transitions */
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+  }
+}
