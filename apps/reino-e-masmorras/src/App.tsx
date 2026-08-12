@@ -3,11 +3,7 @@ import { Character, RankEntry, Screen } from './types/game';
 import { loadCharacter, saveCharacter, clearCharacter, loadRanking, addRankEntry } from './lib/storage';
 import { TitleScreen } from './components/TitleScreen';
 import { CharacterCreation } from './components/CharacterCreation';
-import { Hub } from './components/Hub';
-import { DungeonPanel } from './components/DungeonPanel';
-import { RankingScreen } from './components/RankingScreen';
-
-const POTION_COST = 15;
+import { GameShell } from './components/GameShell';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title');
@@ -21,7 +17,7 @@ export default function App() {
 
   function handleCreated(c: Character) {
     persist(c);
-    setScreen('hub');
+    setScreen('game');
   }
 
   function handleRunEnd(finalCharacter: Character, depthReached: number) {
@@ -32,15 +28,9 @@ export default function App() {
       level: healed.level, date: new Date().toISOString().slice(0, 10),
     });
     setRanking(updatedRanking);
-    setScreen('hub');
   }
 
-  function handleBuyPotion() {
-    if (!character || character.gold < POTION_COST) return;
-    persist({ ...character, gold: character.gold - POTION_COST, potions: character.potions + 1 });
-  }
-
-  function handleNewGame() {
+  function handleAbandon() {
     clearCharacter();
     setCharacter(null);
     setScreen('create');
@@ -51,29 +41,23 @@ export default function App() {
       return (
         <TitleScreen
           hasCharacter={!!character}
-          onContinue={() => setScreen('hub')}
-          onNewGame={handleNewGame}
-          onRanking={() => setScreen('ranking')}
+          onContinue={() => setScreen('game')}
+          onNewGame={handleAbandon}
         />
       );
     case 'create':
       return <CharacterCreation onCreated={handleCreated} />;
-    case 'hub':
+    case 'game':
       if (!character) { setScreen('create'); return null; }
       return (
-        <Hub
+        <GameShell
           character={character}
-          onEnterDungeon={() => setScreen('dungeon')}
-          onBuyPotion={handleBuyPotion}
-          onRanking={() => setScreen('ranking')}
-          onNewGame={handleNewGame}
+          ranking={ranking}
+          onCharacterChange={persist}
+          onRunEnd={handleRunEnd}
+          onAbandon={handleAbandon}
         />
       );
-    case 'dungeon':
-      if (!character) { setScreen('create'); return null; }
-      return <DungeonPanel character={character} onRunEnd={handleRunEnd} />;
-    case 'ranking':
-      return <RankingScreen ranking={ranking} onBack={() => setScreen(character ? 'hub' : 'title')} />;
     default:
       return null;
   }

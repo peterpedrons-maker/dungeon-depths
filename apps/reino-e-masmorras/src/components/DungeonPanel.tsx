@@ -4,19 +4,21 @@ import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp } from '../lib/classes';
 import { rollAttack } from '../game/combat';
 import { drawPlayer, drawEnemy } from '../game/sprites';
+import { Panel } from './Panel';
 
 interface FloatingNumber { id: number; x: number; side: 'player' | 'enemy'; value: number; crit: boolean; born: number; }
 interface Props {
   character: Character;
+  startDepth: number;
   onRunEnd: (finalCharacter: Character, deepestDepth: number) => void;
 }
 
 type Phase = 'fight' | 'resolving' | 'choice' | 'ended';
 
-export function DungeonPanel({ character, onRunEnd }: Props) {
+export function DungeonPanel({ character, startDepth, onRunEnd }: Props) {
   const [ch, setCh] = useState<Character>(character);
-  const [depth, setDepth] = useState(1);
-  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(1));
+  const [depth, setDepth] = useState(startDepth);
+  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(startDepth));
   const [phase, setPhase] = useState<Phase>('fight');
   const [log, setLog] = useState<string[]>(['Você desce as escadas em direção à masmorra...']);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
@@ -175,12 +177,7 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="flex justify-between items-baseline mb-2">
-        <h2 className="text-xl text-gold font-bold">Masmorra — Profundidade {depth}</h2>
-        <span className="text-sm text-parchment/60">{ch.name}, Nv. {ch.level}</span>
-      </div>
-
+    <Panel title={`Masmorra — Profundidade ${depth}`}>
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={640} height={280} className="w-full block" />
         {floaters.map((f) => (
@@ -241,6 +238,6 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -2,10 +2,9 @@ interface Props {
   hasCharacter: boolean;
   onContinue: () => void;
   onNewGame: () => void;
-  onRanking: () => void;
 }
 
-export function TitleScreen({ hasCharacter, onContinue, onNewGame, onRanking }: Props) {
+export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center">
       <h1 className="text-5xl font-bold text-gold tracking-wide">Reino &amp; Masmorras</h1>
@@ -21,9 +20,6 @@ export function TitleScreen({ hasCharacter, onContinue, onNewGame, onRanking }: 
         )}
         <button onClick={onNewGame} className="px-4 py-2 bg-crimson rounded font-bold hover:brightness-110">
           {hasCharacter ? 'Nova Jornada' : 'Iniciar Jornada'}
-        </button>
-        <button onClick={onRanking} className="px-4 py-2 bg-neutral-700 rounded hover:brightness-110">
-          Ranking do Reino
         </button>
       </div>
     </div>
