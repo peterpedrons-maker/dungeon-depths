@@ -61,4 +61,5 @@ export interface RankEntry {
   date: string;
 }
 
-export type Screen = 'title' | 'create' | 'hub' | 'dungeon' | 'ranking';
+export type Screen = 'title' | 'create' | 'game';
+export type Section = 'kingdom' | 'character' | 'merchant' | 'highscore' | 'dungeon';

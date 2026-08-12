@@ -17,8 +17,10 @@ export function CharacterCreation({ onCreated }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
-      <h2 className="text-3xl text-gold font-bold">Crie seu Herói</h2>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 bg-nightsky">
+      <h2 className="font-display text-2xl md:text-3xl text-gold tracking-[0.1em] uppercase [text-shadow:0_2px_0_rgba(0,0,0,0.8)]">
+        Crie seu Herói
+      </h2>
 
       <input
         value={name}

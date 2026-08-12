@@ -3,21 +3,29 @@ import { Character, EnemyInstance } from '../types/game';
 import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp } from '../lib/classes';
 import { rollAttack } from '../game/combat';
-import { drawPlayer, drawEnemy } from '../game/sprites';
+import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
+import { Panel } from './Panel';
 
-interface FloatingNumber { id: number; x: number; side: 'player' | 'enemy'; value: number; crit: boolean; born: number; }
+const ATTACK_INTERVAL = 1600;
+const LEAN_MS = 260;
+const HEAL_THRESHOLD = 0.35;
+
+interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; }
 interface Props {
   character: Character;
+  startDepth: number;
+  onLiveUpdate: (c: Character) => void;
   onRunEnd: (finalCharacter: Character, deepestDepth: number) => void;
 }
 
-type Phase = 'fight' | 'resolving' | 'choice' | 'ended';
+type Phase = 'fight' | 'ended';
 
-export function DungeonPanel({ character, onRunEnd }: Props) {
+export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: Props) {
   const [ch, setCh] = useState<Character>(character);
-  const [depth, setDepth] = useState(1);
-  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(1));
+  const [depth, setDepth] = useState(startDepth);
+  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(startDepth));
   const [phase, setPhase] = useState<Phase>('fight');
+  const [paused, setPaused] = useState(false);
   const [log, setLog] = useState<string[]>(['Você desce as escadas em direção à masmorra...']);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
   const [playerLean, setPlayerLean] = useState(0);
@@ -27,117 +35,151 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const floaterId = useRef(0);
 
+  // Refs mirror the latest state so the timer-driven combat loop always acts
+  // on fresh values, even though each step was scheduled several closures ago.
+  const chRef = useRef(ch);
+  const enemyRef = useRef(enemy);
+  const depthRef = useRef(depth);
+  const pausedRef = useRef(false);
+  const phaseRef = useRef<Phase>('fight');
+  const mountedRef = useRef(true);
+
   const cls = CLASSES[ch.classId];
+  const heroSpr = heroSprites(ch.classId);
+
+  function updateCh(next: Character) { chRef.current = next; setCh(next); onLiveUpdate(next); }
+  function updateEnemy(next: EnemyInstance) { enemyRef.current = next; setEnemy(next); }
+  function updateDepth(next: number) { depthRef.current = next; setDepth(next); }
 
   function pushLog(line: string) {
     setLog((l) => [...l.slice(-4), line]);
   }
   function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean) {
     const id = floaterId.current++;
-    setFloaters((f) => [...f, { id, x: 0, side, value, crit, born: performance.now() }]);
+    setFloaters((f) => [...f, { id, side, value, crit }]);
     setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), 900);
   }
+  function flash(side: 'player' | 'enemy') {
+    setFlashSide(side);
+    setTimeout(() => { if (mountedRef.current) setFlashSide(null); }, 150);
+  }
 
-  function playerAction(kind: 'attack' | 'potion' | 'flee') {
-    if (phase !== 'fight') return;
-    setPhase('resolving');
+  function scheduleTick(delay = ATTACK_INTERVAL) {
+    setTimeout(() => {
+      if (!mountedRef.current) return;
+      if (!pausedRef.current && phaseRef.current === 'fight') runRound();
+    }, delay);
+  }
 
-    if (kind === 'flee') {
-      const success = Math.random() < 0.7;
-      if (success) {
-        pushLog('Você escapa da masmorra em segurança.');
-        setEndedReason('retreat');
-        setPhase('ended');
-        return;
-      }
-      pushLog('A fuga falhou! O inimigo ataca.');
-      setEnemyLean(1);
-      setTimeout(() => resolveEnemyTurn(ch), 450);
-      return;
-    }
+  function runRound() {
+    if (!mountedRef.current || phaseRef.current !== 'fight') return;
 
-    if (kind === 'potion') {
-      if (ch.potions <= 0) { setPhase('fight'); return; }
-      const heal = Math.round(ch.maxHp * 0.4);
-      const healed = Math.min(ch.maxHp, ch.hp + heal);
-      const next = { ...ch, hp: healed, potions: ch.potions - 1 };
-      setCh(next);
-      pushLog(`Você bebe uma poção e recupera ${healed - ch.hp} de vida.`);
-      setTimeout(() => resolveEnemyTurn(next), 450);
-      return;
-    }
-
-    // attack
     setPlayerLean(1);
     setTimeout(() => {
+      if (!mountedRef.current) return;
       setPlayerLean(0);
-      const { dmg, crit } = rollAttack(ch.atk, enemy.def, cls.critChance);
-      const enemyHp = Math.max(0, enemy.hp - dmg);
-      setEnemy((e) => ({ ...e, hp: enemyHp }));
+      const { dmg, crit } = rollAttack(chRef.current.atk, enemyRef.current.def, cls.critChance);
+      const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
+      updateEnemy({ ...enemyRef.current, hp: enemyHp });
       pushFloat('enemy', dmg, crit);
-      setFlashSide('enemy'); setTimeout(() => setFlashSide(null), 150);
-      pushLog(`Você acerta ${enemy.name} em ${dmg}${crit ? ' (crítico!)' : ''}.`);
+      flash('enemy');
+      pushLog(`Você acerta ${enemyRef.current.name} em ${dmg}${crit ? ' (crítico!)' : ''}.`);
 
-      let next = ch;
       if (cls.lifesteal > 0) {
         const heal = Math.round(dmg * cls.lifesteal);
-        next = { ...ch, hp: Math.min(ch.maxHp, ch.hp + heal) };
-        setCh(next);
+        updateCh({ ...chRef.current, hp: Math.min(chRef.current.maxHp, chRef.current.hp + heal) });
       }
 
       if (enemyHp <= 0) {
-        const withXp = grantXp(next, enemy.xpReward);
-        const finalChar = { ...withXp, gold: withXp.gold + enemy.goldReward, bestDepth: Math.max(withXp.bestDepth, depth) };
-        setCh(finalChar);
-        pushLog(`${enemy.name} foi derrotado! +${enemy.xpReward} XP, +${enemy.goldReward} de ouro.`);
-        if (finalChar.level > next.level) pushLog(`Você subiu para o nível ${finalChar.level}!`);
-        setPhase('choice');
+        const prevLevel = chRef.current.level;
+        const withXp = grantXp(chRef.current, enemyRef.current.xpReward);
+        const finalChar = { ...withXp, gold: withXp.gold + enemyRef.current.goldReward, bestDepth: Math.max(withXp.bestDepth, depthRef.current) };
+        updateCh(finalChar);
+        pushLog(`${enemyRef.current.name} foi derrotado! +${enemyRef.current.xpReward} XP, +${enemyRef.current.goldReward} de ouro.`);
+        if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
+
+        setTimeout(() => {
+          if (!mountedRef.current) return;
+          const nextDepth = depthRef.current + 1;
+          updateDepth(nextDepth);
+          updateEnemy(spawnEnemy(nextDepth));
+          pushLog(`Você avança mais fundo na masmorra. Profundidade ${nextDepth}.`);
+          scheduleTick();
+        }, 900);
         return;
       }
-      setTimeout(() => resolveEnemyTurn(next), 350);
-    }, 300);
+
+      setEnemyLean(1);
+      setTimeout(() => {
+        if (!mountedRef.current) return;
+        setEnemyLean(0);
+        maybeAutoHeal();
+        const { dmg: edmg, crit: ecrit } = rollAttack(enemyRef.current.atk, chRef.current.def, 0.06);
+        const hp = Math.max(0, chRef.current.hp - edmg);
+        updateCh({ ...chRef.current, hp });
+        pushFloat('player', edmg, ecrit);
+        flash('player');
+        pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}.`);
+
+        if (hp <= 0) {
+          pushLog('Você caiu em combate...');
+          phaseRef.current = 'ended';
+          setEndedReason('death');
+          setPhase('ended');
+          return;
+        }
+        scheduleTick();
+      }, LEAN_MS + 120);
+    }, LEAN_MS);
   }
 
-  function resolveEnemyTurn(currentChar: Character) {
-    setEnemyLean(1);
-    setTimeout(() => {
-      setEnemyLean(0);
-      const { dmg, crit } = rollAttack(enemy.atk, currentChar.def, 0.06);
-      const hp = Math.max(0, currentChar.hp - dmg);
-      const next = { ...currentChar, hp };
-      setCh(next);
-      pushFloat('player', dmg, crit);
-      setFlashSide('player'); setTimeout(() => setFlashSide(null), 150);
-      pushLog(`${enemy.name} acerta você em ${dmg}${crit ? ' (crítico!)' : ''}.`);
-
-      if (hp <= 0) {
-        pushLog('Você caiu em combate...');
-        setEndedReason('death');
-        setPhase('ended');
-        return;
-      }
-      setPhase('fight');
-    }, 300);
+  function maybeAutoHeal() {
+    const c = chRef.current;
+    if (c.hp / c.maxHp >= HEAL_THRESHOLD || c.potions <= 0) return;
+    const prevHp = c.hp;
+    const heal = Math.round(c.maxHp * 0.4);
+    const healed = Math.min(c.maxHp, c.hp + heal);
+    updateCh({ ...c, hp: healed, potions: c.potions - 1 });
+    pushLog(`Vida baixa — você bebe uma poção e recupera ${healed - prevHp} de vida.`);
   }
 
-  function advance() {
-    const nextDepth = depth + 1;
-    setDepth(nextDepth);
-    setEnemy(spawnEnemy(nextDepth));
-    pushLog(`Você avança mais fundo na masmorra. Profundidade ${nextDepth}.`);
-    setPhase('fight');
+  function drinkPotionManually() {
+    const c = chRef.current;
+    if (phaseRef.current !== 'fight' || c.potions <= 0 || c.hp >= c.maxHp) return;
+    const prevHp = c.hp;
+    const heal = Math.round(c.maxHp * 0.4);
+    const healed = Math.min(c.maxHp, c.hp + heal);
+    updateCh({ ...c, hp: healed, potions: c.potions - 1 });
+    pushLog(`Você bebe uma poção e recupera ${healed - prevHp} de vida.`);
+  }
+
+  function togglePause() {
+    const next = !pausedRef.current;
+    pausedRef.current = next;
+    setPaused(next);
+    if (!next) scheduleTick(500);
   }
 
   function retreatSafely() {
+    phaseRef.current = 'ended';
     setEndedReason('retreat');
     setPhase('ended');
   }
 
   function confirmReturnToHub() {
-    onRunEnd({ ...ch, bestDepth: Math.max(ch.bestDepth, depth) }, depth);
+    onRunEnd({ ...chRef.current, bestDepth: Math.max(chRef.current.bestDepth, depthRef.current) }, depthRef.current);
   }
 
-  // ── Canvas render loop (idle bob + shapes) ──
+  // Kick off the auto-battle loop once, and make sure no stray timeout
+  // touches state after this panel is unmounted (leaving for another section).
+  useEffect(() => {
+    mountedRef.current = true;
+    scheduleTick(700);
+    return () => { mountedRef.current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Canvas render loop ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -146,6 +188,9 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
     const draw = (t: number) => {
       const w = canvas.width, h = canvas.height;
       g.clearRect(0, 0, w, h);
+      // back wall
+      g.fillStyle = '#1a1220';
+      g.fillRect(0, 0, w, h - 40);
       // floor
       g.fillStyle = '#241a12';
       g.fillRect(0, h - 40, w, 40);
@@ -153,47 +198,51 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
       for (let x = 0; x < w; x += 28) g.fillRect(x, h - 40, 2, 40);
       // torches flicker
       const flick = 0.6 + Math.sin(t / 130) * 0.15;
-      g.fillStyle = `rgba(255,150,60,${0.06 * flick})`;
-      g.beginPath(); g.arc(w * 0.15, h * 0.35, 90, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(w * 0.85, h * 0.35, 90, 0, Math.PI * 2); g.fill();
+      g.fillStyle = `rgba(255,150,60,${0.09 * flick})`;
+      g.beginPath(); g.arc(w * 0.15, h * 0.32, 100, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(w * 0.85, h * 0.32, 100, 0, Math.PI * 2); g.fill();
 
+      const groundY = h - 42;
       const bobP = Math.sin(t / 260) * 3;
       const bobE = Math.sin(t / 240 + 1) * 3;
-      const groundY = h - 46;
       if (phase !== 'ended') {
-        drawPlayer(g, w * 0.26, groundY, ch.classId, cls.color, bobP, playerLean);
-        drawEnemy(g, w * 0.74, groundY, enemy.shape, enemy.color, bobE, -enemyLean);
-        if (flashSide === 'player') { g.fillStyle = 'rgba(255,60,60,0.25)'; g.fillRect(0, 0, w * 0.5, h); }
-        if (flashSide === 'enemy') { g.fillStyle = 'rgba(255,255,255,0.2)'; g.fillRect(w * 0.5, 0, w * 0.5, h); }
+        const px1 = w * 0.27, ex = w * 0.73;
+        g.fillStyle = 'rgba(0,0,0,0.4)';
+        g.beginPath(); g.ellipse(px1, groundY + 3, 16, 5, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(ex, groundY + 3, 16, 5, 0, 0, Math.PI * 2); g.fill();
+
+        const heroFrame = playerLean ? heroSpr.attack : heroSpr.idle;
+        drawSprite(g, heroFrame, px1, groundY + bobP, false, flashSide === 'player' ? 0.7 : 0, playerLean);
+        drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, true, flashSide === 'enemy' ? 0.7 : 0, enemyLean);
       }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [ch.classId, cls.color, enemy, phase, playerLean, enemyLean, flashSide]);
+  }, [ch.classId, enemy.shape, phase, playerLean, enemyLean, flashSide, heroSpr]);
 
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="flex justify-between items-baseline mb-2">
-        <h2 className="text-xl text-gold font-bold">Masmorra — Profundidade {depth}</h2>
-        <span className="text-sm text-parchment/60">{ch.name}, Nv. {ch.level}</span>
-      </div>
-
+    <Panel title={`Masmorra — Profundidade ${depth}`}>
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
-        <canvas ref={canvasRef} width={640} height={280} className="w-full block" />
+        <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
         {floaters.map((f) => (
           <div
             key={f.id}
             className={`absolute font-bold text-lg pointer-events-none animate-[float_0.9s_ease-out_forwards] ${
-              f.side === 'player' ? 'text-red-400 left-[22%]' : 'text-yellow-300 left-[70%]'
+              f.side === 'player' ? 'text-red-400 left-[24%]' : 'text-yellow-300 left-[68%]'
             }`}
-            style={{ top: '40%' }}
+            style={{ top: '38%' }}
           >
             -{f.value}{f.crit ? '!' : ''}
           </div>
         ))}
+        {paused && phase === 'fight' && (
+          <div className="absolute top-2 right-2 bg-black/70 text-gold text-xs font-bold uppercase tracking-wider px-2 py-1 rounded">
+            Pausado
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
@@ -216,17 +265,13 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
       <div className="mt-4 flex gap-2 flex-wrap">
         {phase === 'fight' && (
           <>
-            <button onClick={() => playerAction('attack')} className="px-4 py-2 bg-crimson rounded font-bold hover:brightness-110">Atacar</button>
-            <button onClick={() => playerAction('potion')} disabled={ch.potions <= 0}
+            <button onClick={togglePause} className="px-4 py-2 bg-crimson rounded font-bold hover:brightness-110">
+              {paused ? 'Retomar Combate' : 'Pausar'}
+            </button>
+            <button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= ch.maxHp}
               className="px-4 py-2 bg-emerald-800 rounded disabled:opacity-40 hover:brightness-110">
               Poção ({ch.potions})
             </button>
-            <button onClick={() => playerAction('flee')} className="px-4 py-2 bg-neutral-700 rounded hover:brightness-110">Fugir</button>
-          </>
-        )}
-        {phase === 'choice' && (
-          <>
-            <button onClick={advance} className="px-4 py-2 bg-gold text-ink rounded font-bold hover:brightness-110">Avançar</button>
             <button onClick={retreatSafely} className="px-4 py-2 bg-neutral-700 rounded hover:brightness-110">Retornar ao Reino</button>
           </>
         )}
@@ -241,6 +286,6 @@ export function DungeonPanel({ character, onRunEnd }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }
