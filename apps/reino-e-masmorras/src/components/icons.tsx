@@ -78,6 +78,81 @@ export function IconActive({ className, style }: IconProps) {
   );
 }
 
+export function IconScroll({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M6 4h9a3 3 0 0 1 3 3v10a3 3 0 0 0 3 3H8a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M18 20a2 2 0 0 1-2-2V7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M8 9h7M8 12h7M8 15h5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconSkull({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M12 3c-4 0-7 3-7 7 0 2.5 1.2 4 2.3 5.2.4.4.7 1 .7 1.6V18h8v-1.2c0-.6.3-1.2.7-1.6C17.8 14 19 12.5 19 10c0-4-3-7-7-7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <circle cx="9" cy="10" r="1.6" fill="currentColor" />
+      <circle cx="15" cy="10" r="1.6" fill="currentColor" />
+      <path d="M10 18v2h4v-2M9.5 21h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconCastle({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M4 21V10h3V7h2v3h1V6h4v4h1V7h2v3h3v11H4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M4 21h16M9 21v-5a3 3 0 0 1 6 0v5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconHammer({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="m15 6 3-3 3 3-3 3M9 12l6.5-6.5 2 2L11 14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m4 20 5.5-5.5 2 2L6 22Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconCoin({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7.5v9M9.3 9.7c0-1.2 1.2-2.2 2.7-2.2s2.7 1 2.7 2c0 2.5-5.4 1.3-5.4 3.8 0 1 1.2 2 2.7 2s2.7-1 2.7-2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconTrophy({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 14v3M9 21h6M9.5 21c0-2 .8-3 2.5-4 1.7 1 2.5 2 2.5 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconHeart({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M12 20.5 4.5 13a5 5 0 0 1 7.5-6.5A5 5 0 0 1 19.5 13L12 20.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconStairs({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M4 20v-4h4v-4h4V8h4V4h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconEmptySlot({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>

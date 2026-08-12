@@ -1,6 +1,7 @@
 import { Section, DungeonDef } from '../types/game';
 import { DUNGEONS } from '../lib/dungeons';
 import pergaminho from '../assets/pergaminho.webp';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconCoin, IconTrophy } from './icons';
 
 interface Props {
   section: Section;
@@ -27,13 +28,13 @@ export function Sidebar({ section, open, onClose, onNavigate, onEnterDungeon, on
         style={{ backgroundImage: `url(${pergaminho})`, backgroundSize: '340px', backgroundBlendMode: 'multiply' }}
       >
         <Group title="Personagem">
-          <NavItem active={section === 'character'} onClick={() => nav('character')}>Visão Geral</NavItem>
-          <NavItem active={section === 'skills'} onClick={() => nav('skills')}>Habilidades</NavItem>
+          <NavItem icon={<IconScroll className="w-4 h-4" />} active={section === 'character'} onClick={() => nav('character')}>Visão Geral</NavItem>
+          <NavItem icon={<IconActive className="w-4 h-4" />} active={section === 'skills'} onClick={() => nav('skills')}>Habilidades</NavItem>
         </Group>
 
         <Group title="Masmorras">
           {DUNGEONS.map((d) => (
-            <NavItem key={d.id} active={section === 'dungeon'} onClick={() => enter(d)} title={d.desc}>
+            <NavItem key={d.id} icon={<IconSkull className="w-4 h-4" />} active={section === 'dungeon'} onClick={() => enter(d)} title={d.desc}>
               {d.special && <span className="text-gold mr-1">✦</span>}
               {d.name}
             </NavItem>
@@ -41,13 +42,13 @@ export function Sidebar({ section, open, onClose, onNavigate, onEnterDungeon, on
         </Group>
 
         <Group title="Reino">
-          <NavItem active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
-          <NavItem active={section === 'buildings'} onClick={() => nav('buildings')}>Construções</NavItem>
-          <NavItem active={section === 'merchant'} onClick={() => nav('merchant')}>Mercador</NavItem>
+          <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
+          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Construções</NavItem>
+          <NavItem icon={<IconCoin className="w-4 h-4" />} active={section === 'merchant'} onClick={() => nav('merchant')}>Mercador</NavItem>
         </Group>
 
         <Group title="Ranking">
-          <NavItem active={section === 'highscore'} onClick={() => nav('highscore')}>Colocação</NavItem>
+          <NavItem icon={<IconTrophy className="w-4 h-4" />} active={section === 'highscore'} onClick={() => nav('highscore')}>Colocação</NavItem>
         </Group>
 
         <div className="mt-auto p-3 border-t border-panelborder">
@@ -69,18 +70,21 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function NavItem({ active, onClick, children, title }: { active: boolean; onClick: () => void; children: React.ReactNode; title?: string }) {
+function NavItem({ active, onClick, children, title, icon }: {
+  active: boolean; onClick: () => void; children: React.ReactNode; title?: string; icon: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
       title={title}
-      className={`w-full text-left px-4 py-2 md:py-1.5 text-sm border-l-2 transition ${
+      className={`w-full flex items-center gap-2.5 text-left px-4 py-2 md:py-1.5 text-sm border-l-2 transition ${
         active
-          ? 'border-gold text-gold bg-white/5'
+          ? 'border-gold text-gold bg-gradient-to-r from-gold/15 to-transparent'
           : 'border-transparent text-parchment/70 hover:text-parchment hover:bg-white/5'
       }`}
     >
-      {children}
+      <span className={`shrink-0 ${active ? 'text-gold' : 'text-parchment/40'}`}>{icon}</span>
+      <span className="truncate">{children}</span>
     </button>
   );
 }

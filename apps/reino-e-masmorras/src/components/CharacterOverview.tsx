@@ -7,8 +7,10 @@ import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
-import { IconSword, IconChest, IconLegs, IconGloves, IconRing } from './icons';
+import { StatChip } from './StatChip';
+import { IconSword, IconChest, IconLegs, IconGloves, IconRing, IconHeart, IconPassive, IconCoin, IconStairs } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
+import pocaoIcon from '../assets/pocao.webp';
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
@@ -42,9 +44,12 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
   return (
     <Panel title="Personagem — Visão Geral">
       <div className="flex items-center gap-3 mb-4">
-        <span className="w-4 h-4 rounded-full inline-block" style={{ background: cls.color }} />
+        <span
+          className="w-11 h-11 rounded-full shrink-0 ring-2 ring-gold/60"
+          style={{ background: cls.color, boxShadow: `0 0 12px 3px ${cls.color}80` }}
+        />
         <div>
-          <div className="font-bold text-lg text-parchment">{ch.name}</div>
+          <div className="font-bold text-lg text-parchment leading-tight">{ch.name}</div>
           <div className="text-parchment/50 text-sm">{cls.name} · Nível {ch.level}</div>
         </div>
         {ch.skillPoints > 0 && (
@@ -59,14 +64,14 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         <div className="h-full bg-sky-500 rounded-sm" style={{ width: `${xpPct}%` }} />
       </div>
 
-      <dl className="grid grid-cols-2 gap-y-2 text-sm mb-5">
-        <Row label="Vida" value={`${fmt(ch.hp)} / ${fmt(maxHp)}`} />
-        <Row label="Ataque" value={fmt(ch.atk)} />
-        <Row label="Defesa" value={fmt(ch.def)} />
-        <Row label="Ouro" value={fmt(ch.gold)} />
-        <Row label="Poções" value={fmt(ch.potions)} />
-        <Row label="Maior profundidade" value={fmt(ch.bestDepth)} />
-      </dl>
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        <StatChip icon={<IconHeart className="w-full h-full" />} color="#e0574a" label="Vida" value={`${fmt(ch.hp)}/${fmt(maxHp)}`} />
+        <StatChip icon={<IconSword className="w-full h-full" />} color="#c89a2e" label="Ataque" value={fmt(ch.atk)} />
+        <StatChip icon={<IconPassive className="w-full h-full" />} color="#6b8fc9" label="Defesa" value={fmt(ch.def)} />
+        <StatChip icon={<IconCoin className="w-full h-full" />} color="#e0b93c" label="Ouro" value={fmt(ch.gold)} />
+        <StatChip icon={<img src={pocaoIcon} alt="" className="w-full h-full object-contain" />} color="#4f9d4f" label="Poções" value={fmt(ch.potions)} />
+        <StatChip icon={<IconStairs className="w-full h-full" />} color="#9b6fc9" label="Profundidade" value={fmt(ch.bestDepth)} />
+      </div>
 
       <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Equipamento</h3>
       <div
@@ -223,11 +228,3 @@ function FilterTab({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <>
-      <dt className="text-parchment/50">{label}</dt>
-      <dd className="text-parchment font-bold text-right">{value}</dd>
-    </>
-  );
-}

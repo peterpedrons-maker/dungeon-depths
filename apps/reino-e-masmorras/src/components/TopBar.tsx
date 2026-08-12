@@ -12,24 +12,34 @@ export function TopBar({ character: ch, onMenuClick }: { character: Character; o
   const xpPct = Math.max(0, Math.min(100, (ch.xp / ch.xpToNext) * 100));
 
   return (
-    <header className="flex items-center gap-3 sm:gap-5 px-3 sm:px-4 py-2 bg-panel border-b-2 border-gold/40 text-sm flex-wrap">
-      <button onClick={onMenuClick} className="md:hidden flex flex-col justify-center gap-1 w-7 h-7 shrink-0" aria-label="Abrir menu">
-        <span className="block w-5 h-0.5 bg-parchment" />
-        <span className="block w-5 h-0.5 bg-parchment" />
-        <span className="block w-5 h-0.5 bg-parchment" />
-      </button>
+    <header className="bg-panel border-b-2 border-gold/40 px-3 sm:px-4 py-2.5">
+      <div className="flex items-center gap-2.5">
+        <button onClick={onMenuClick} className="md:hidden flex flex-col justify-center gap-1 w-7 h-7 shrink-0" aria-label="Abrir menu">
+          <span className="block w-5 h-0.5 bg-parchment" />
+          <span className="block w-5 h-0.5 bg-parchment" />
+          <span className="block w-5 h-0.5 bg-parchment" />
+        </button>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="w-3 h-3 rounded-full inline-block ring-2 ring-black/40" style={{ background: cls.color }} />
-        <span className="font-display font-bold text-parchment tracking-wide">{ch.name}</span>
-        <span className="text-parchment/50 text-xs">Nv. {ch.level}</span>
+        <span
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full shrink-0 ring-2 ring-gold/60"
+          style={{ background: cls.color, boxShadow: `0 0 10px 2px ${cls.color}80` }}
+        />
+
+        <div className="min-w-0 flex items-baseline gap-1.5">
+          <span className="font-display font-bold text-parchment tracking-wide truncate">{ch.name}</span>
+          <span className="text-gold/70 text-xs font-bold shrink-0">Nv. {ch.level}</span>
+        </div>
+
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <Stat icon={<img src={moedaIcon} alt="" className="w-5 h-5 shrink-0" />} value={fmt(ch.gold)} color="text-gold" />
+          <Stat icon={<img src={pocaoIcon} alt="" className="w-4 h-5 shrink-0" />} value={fmt(ch.potions)} color="text-emerald-400" />
+        </div>
       </div>
 
-      <Stat icon={<img src={moedaIcon} alt="" className="w-5 h-5 shrink-0" />} value={fmt(ch.gold)} color="text-gold" />
-      <Stat icon={<img src={pocaoIcon} alt="" className="w-4 h-5 shrink-0" />} value={fmt(ch.potions)} color="text-emerald-400" />
-
-      <Bar icon={<HeartIcon />} cur={ch.hp} max={maxHp} pct={hpPct} barColor="bg-red-600" />
-      <Bar icon={<StarIcon />} cur={ch.xp} max={ch.xpToNext} pct={xpPct} barColor="bg-sky-500" />
+      <div className="flex items-center gap-4 mt-2">
+        <Bar icon={<HeartIcon />} cur={ch.hp} max={maxHp} pct={hpPct} barColor="bg-red-600" />
+        <Bar icon={<StarIcon />} cur={ch.xp} max={ch.xpToNext} pct={xpPct} barColor="bg-sky-500" />
+      </div>
     </header>
   );
 }
@@ -38,19 +48,19 @@ function Stat({ icon, value, color }: { icon: React.ReactNode; value: string; co
   return (
     <div className="flex items-center gap-1.5 shrink-0">
       {icon}
-      <span className={`font-bold tabular-nums ${color}`}>{value}</span>
+      <span className={`font-bold tabular-nums text-sm ${color}`}>{value}</span>
     </div>
   );
 }
 
 function Bar({ icon, cur, max, pct, barColor }: { icon: React.ReactNode; cur: number; max: number; pct: number; barColor: string }) {
   return (
-    <div className="flex items-center gap-2 shrink-0 min-w-[100px] sm:min-w-[130px]">
+    <div className="flex items-center gap-1.5 flex-1 min-w-0">
       {icon}
-      <div className="w-14 sm:w-24 h-2.5 bg-black/50 rounded-sm overflow-hidden border border-black/40">
-        <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
+      <div className="flex-1 h-2.5 bg-black/50 rounded-sm overflow-hidden border border-black/40">
+        <div className={`h-full ${barColor} transition-[width] duration-300`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-parchment/70 text-xs tabular-nums">{fmt(cur)}/{fmt(max)}</span>
+      <span className="text-parchment/70 text-[11px] tabular-nums shrink-0">{fmt(cur)}/{fmt(max)}</span>
     </div>
   );
 }
