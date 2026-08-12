@@ -1,6 +1,6 @@
 import { Section, DungeonDef } from '../types/game';
 import { DUNGEONS } from '../lib/dungeons';
-import madeira from '../assets/madeira.webp';
+import pergaminho from '../assets/pergaminho.webp';
 
 interface Props {
   section: Section;
@@ -20,11 +20,11 @@ export function Sidebar({ section, open, onClose, onNavigate, onEnterDungeon, on
     <>
       {open && <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={onClose} aria-hidden />}
       <nav
-        className={`fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto border-r-2 border-gold/30 flex flex-col
+        className={`fixed inset-y-0 left-0 z-40 w-64 overflow-y-auto border-r-2 border-gold/30 flex flex-col bg-panel
           transform transition-transform duration-200 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:static md:translate-x-0 md:z-auto md:w-56 md:shrink-0`}
-        style={{ backgroundImage: `url(${madeira})`, backgroundSize: '256px' }}
+        style={{ backgroundImage: `url(${pergaminho})`, backgroundSize: '340px', backgroundBlendMode: 'multiply' }}
       >
         <Group title="Personagem">
           <NavItem active={section === 'character'} onClick={() => nav('character')}>Visão Geral</NavItem>
