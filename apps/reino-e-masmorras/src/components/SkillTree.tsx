@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Character, SkillNode, SkillNodeType, SkillPath } from '../types/game';
-import { SKILL_TREES, canUnlock, unlockedCountInPath, MAX_EQUIPPED_ABILITIES } from '../lib/skills';
+import { SKILL_TREES, canUnlockNode, unlockedCountInPath, MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
@@ -20,18 +20,17 @@ const TYPE_ICON: Record<SkillNodeType, typeof IconAttribute> = { attribute: Icon
 
 type NodeState = 'unlocked' | 'available' | 'locked';
 
-// Fixed 6-node "snake" layout (3 columns × 2 rows, like a WoW talent tree)
-// instead of a single vertical chain — node i sits at NODE_POS[i], and
-// CONNECTORS[i] is the segment linking node i to node i+1.
-const NODE_POS = [
-  { col: 1, row: 1 }, { col: 3, row: 1 }, { col: 5, row: 1 },
-  { col: 5, row: 3 }, { col: 3, row: 3 }, { col: 1, row: 3 },
-];
-const CONNECTORS: { col: number; row: number; dir: 'h' | 'v' }[] = [
-  { col: 2, row: 1, dir: 'h' }, { col: 4, row: 1, dir: 'h' },
-  { col: 5, row: 2, dir: 'v' },
-  { col: 4, row: 3, dir: 'h' }, { col: 2, row: 3, dir: 'h' },
-];
+// 15-node layout: 5 tiers (rows) × 3 columns (Left/Mid/Right), reading the
+// path's node array in tier-major order (index 0-14 → row = i/3, col = i%3).
+// This mirrors the branching topology in lib/skills.ts — connectors below
+// are derived from each node's actual prereqIds, not a hardcoded chain, so
+// the cross-links (a tier-3 node reachable from two different tier-2
+// columns) render correctly without special-casing them here.
+const COL_X = [16, 50, 84]; // percent
+const ROW_Y = [9, 28, 50, 72, 91]; // percent
+function posOf(index: number): { x: number; y: number } {
+  return { x: COL_X[index % 3], y: ROW_Y[Math.floor(index / 3)] };
+}
 
 export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility }: Props) {
   const paths = SKILL_TREES[ch.classId];
@@ -102,7 +101,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
         })}
       </div>
 
-      <PathGrid path={path} ch={ch} onSelect={setSelected} />
+      <PathGraph path={path} ch={ch} onSelect={setSelected} />
 
       {selected && (
         <NodeModal
@@ -120,46 +119,48 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
   );
 }
 
-function PathGrid({ path, ch, onSelect }: {
+function PathGraph({ path, ch, onSelect }: {
   path: SkillPath; ch: Character; onSelect: (s: { node: SkillNode; state: NodeState }) => void;
 }) {
+  const idToIndex = new Map(path.nodes.map((n, i) => [n.id, i]));
+
   return (
-    <div className="rounded border border-panelborder/60 bg-panel2/40 p-4">
-      <div
-        className="mx-auto"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '4rem 2rem 4rem 2rem 4rem',
-          gridTemplateRows: '4rem 2rem 4rem',
-          justifyContent: 'center',
-          width: 'fit-content',
-        }}
-      >
-        {CONNECTORS.map((c, i) => {
-          const lit = ch.unlockedSkills.includes(path.nodes[i + 1].id);
-          return (
-            <div key={i} style={{ gridColumn: c.col, gridRow: c.row }} className="flex items-center justify-center">
-              <div
-                className={c.dir === 'h' ? 'h-0.5 w-full' : 'w-0.5 h-full'}
-                style={{ background: lit ? path.color : '#4a3f30' }}
-              />
-            </div>
-          );
-        })}
+    <div className="rounded border border-panelborder/60 bg-panel2/40 p-3">
+      <div className="relative mx-auto w-full max-w-[300px]" style={{ height: 400 }}>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+          {path.nodes.map((node, i) =>
+            node.prereqIds.map((prereqId) => {
+              const p = idToIndex.get(prereqId);
+              if (p === undefined) return null;
+              const from = posOf(p);
+              const to = posOf(i);
+              const lit = ch.unlockedSkills.includes(prereqId) && ch.unlockedSkills.includes(node.id);
+              return (
+                <line
+                  key={`${prereqId}->${node.id}`}
+                  x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                  stroke={lit ? path.color : '#4a3f30'}
+                  strokeWidth={lit ? 1.4 : 1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            }),
+          )}
+        </svg>
         {path.nodes.map((node, i) => {
           const unlocked = ch.unlockedSkills.includes(node.id);
-          const available = !unlocked && ch.skillPoints > 0 && canUnlock(path, i, ch.unlockedSkills);
+          const available = !unlocked && ch.skillPoints > 0 && canUnlockNode(node, ch.unlockedSkills);
           const state: NodeState = unlocked ? 'unlocked' : available ? 'available' : 'locked';
           const NodeIcon = TYPE_ICON[node.type];
           const isEquipped = node.type === 'active' && ch.equippedAbilities.includes(node.id);
-          const pos = NODE_POS[i];
+          const { x, y } = posOf(i);
           return (
             <button
               key={node.id}
               onClick={() => onSelect({ node, state })}
               title={node.name}
-              style={{ gridColumn: pos.col, gridRow: pos.row }}
-              className={`relative w-14 h-14 self-center justify-self-center transition-all duration-150 hover:scale-110 ${
+              style={{ left: `${x}%`, top: `${y}%` }}
+              className={`absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 ${
                 state === 'locked' ? 'opacity-35 grayscale' : ''
               } ${state === 'available' ? 'animate-pulse' : ''}`}
             >
@@ -170,7 +171,6 @@ function PathGrid({ path, ch, onSelect }: {
                 <NodeIcon className="w-full h-full" style={{ color: state === 'locked' ? '#6b6355' : path.color }} />
               </div>
               <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-              <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-panel border border-panelborder/60 text-[8px] font-bold text-parchment/60 flex items-center justify-center z-10">{i + 1}</span>
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
             </button>
           );
@@ -223,7 +223,7 @@ function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEqu
       {node.type === 'active' && node.ability && (
         <p className="text-xs text-parchment/50">Recarga: {node.ability.cooldown} rodadas.</p>
       )}
-      {state === 'locked' && <p className="text-xs text-parchment/40 italic">Desbloqueie o nó anterior desta trilha primeiro.</p>}
+      {state === 'locked' && <p className="text-xs text-parchment/40 italic">Desbloqueie um dos nós conectados a este primeiro.</p>}
     </Modal>
   );
 }

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Character, EquipmentItem, ItemSlot } from '../types/game';
+import { AttributeKey, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { CLASSES } from '../lib/classes';
 import { effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment';
+import { computeAttributeTotals } from '../lib/skills';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
@@ -11,6 +12,17 @@ import { StatChip } from './StatChip';
 import { IconSword, IconChest, IconLegs, IconGloves, IconRing, IconHeart, IconPassive, IconCoin, IconStairs } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pocaoIcon from '../assets/pocao.webp';
+
+const ATTR_META: Record<AttributeKey, { label: string; color: string }> = {
+  str: { label: 'FOR', color: '#c1502e' },
+  dex: { label: 'DES', color: '#4f9d4f' },
+  agi: { label: 'AGI', color: '#4fb8b0' },
+  vit: { label: 'VIT', color: '#c9863c' },
+  int: { label: 'INT', color: '#3f7ab8' },
+  wis: { label: 'SAB', color: '#9b6fc9' },
+  luk: { label: 'SOR', color: '#e0b93c' },
+};
+const ATTR_ORDER: AttributeKey[] = ['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk'];
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
@@ -37,6 +49,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
   const cls = CLASSES[ch.classId];
   const xpPct = Math.min(100, (ch.xp / ch.xpToNext) * 100);
   const maxHp = effectiveMaxHp(ch);
+  const attrs = computeAttributeTotals(ch.classId, ch.unlockedSkills);
   const [selected, setSelected] = useState<Selected | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   const visibleInventory = filter === 'all' ? ch.inventory : ch.inventory.filter((i) => i.slot === filter);
@@ -71,6 +84,23 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         <StatChip icon={<IconCoin className="w-full h-full" />} color="#e0b93c" label="Ouro" value={fmt(ch.gold)} />
         <StatChip icon={<img src={pocaoIcon} alt="" className="w-full h-full object-contain" />} color="#4f9d4f" label="Poções" value={fmt(ch.potions)} />
         <StatChip icon={<IconStairs className="w-full h-full" />} color="#9b6fc9" label="Profundidade" value={fmt(ch.bestDepth)} />
+      </div>
+
+      <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Atributos</h3>
+      <div className="flex flex-wrap gap-1.5 mb-6">
+        {ATTR_ORDER.map((key) => {
+          const meta = ATTR_META[key];
+          return (
+            <span
+              key={key}
+              className="flex items-center gap-1.5 rounded border border-panelborder/60 bg-panel2/40 px-2 py-1 text-xs"
+              title={key.toUpperCase()}
+            >
+              <span className="font-bold uppercase tracking-wide" style={{ color: meta.color }}>{meta.label}</span>
+              <span className="text-parchment/80 tabular-nums">{attrs[key]}</span>
+            </span>
+          );
+        })}
       </div>
 
       <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Equipamento</h3>

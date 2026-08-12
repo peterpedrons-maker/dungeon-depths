@@ -31,7 +31,7 @@ export function CharacterCreation({ onCreated }: Props) {
         className="w-64 px-3 py-2 rounded bg-black/40 border border-white/20 text-center text-parchment placeholder:text-parchment/40 focus:outline-none focus:border-gold"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-3xl">
         {Object.values(CLASSES).map((c) => (
           <button
             key={c.id}

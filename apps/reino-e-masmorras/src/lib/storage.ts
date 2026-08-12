@@ -1,9 +1,16 @@
-import { Character, EquipmentItem, RankEntry } from '../types/game';
+import { Character, ClassId, EquipmentItem, RankEntry } from '../types/game';
 import { CLASSES } from './classes';
+import { SKILL_TREES } from './skills';
 
 const CHAR_KEY = 'rm_character_v1';
 const RANK_KEY = 'rm_ranking_v1';
 const MAX_RANK_ENTRIES = 10;
+
+// The Assassino class was renamed to Ladino when the class roster expanded —
+// old saves/rankings referencing the old id are remapped transparently.
+function migrateClassId(id: string): string {
+  return id === 'assassino' ? 'ladino' : id;
+}
 
 // Old saves may have items from before the weapon-only-slot rework, missing
 // the newer bonus fields entirely — back-fill with 0 rather than let NaN
@@ -11,7 +18,7 @@ const MAX_RANK_ENTRIES = 10;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function migrateItem(item: any): EquipmentItem {
   return {
-    id: item.id, name: item.name, classId: item.classId, rarity: item.rarity, slot: item.slot ?? 'weapon',
+    id: item.id, name: item.name, classId: migrateClassId(item.classId) as ClassId, rarity: item.rarity, slot: item.slot ?? 'weapon',
     dmgBonus: item.dmgBonus ?? 0, defBonus: item.defBonus ?? 0, hpBonus: item.hpBonus ?? 0,
     secondaryStat: item.secondaryStat,
   };
@@ -25,13 +32,26 @@ export function loadCharacter(): Character | null {
     const raw = localStorage.getItem(CHAR_KEY);
     if (!raw) return null;
     const c = JSON.parse(raw) as Character;
-    if (!(c.classId in CLASSES)) return null;
+    const classId = migrateClassId(c.classId as unknown as string) as ClassId;
+    if (!(classId in CLASSES)) return null;
     const eq = c.equipment ?? ({} as Character['equipment']);
+
+    // Every rebalance of SKILL_TREES (denser trees, renamed class, reordered
+    // nodes) can leave old unlockedSkills pointing at node ids that no
+    // longer exist — drop those and refund the skill point instead of
+    // crashing or silently keeping a bonus tied to nothing.
+    const validIds = new Set(SKILL_TREES[classId].flatMap((p) => p.nodes.map((n) => n.id)));
+    const rawUnlocked = c.unlockedSkills ?? [];
+    const unlockedSkills = rawUnlocked.filter((id) => validIds.has(id));
+    const refundedPoints = rawUnlocked.length - unlockedSkills.length;
+    const equippedAbilities = (c.equippedAbilities ?? []).filter((id) => unlockedSkills.includes(id));
+
     return {
       ...c,
-      skillPoints: c.skillPoints ?? 0,
-      unlockedSkills: c.unlockedSkills ?? [],
-      equippedAbilities: c.equippedAbilities ?? [],
+      classId,
+      skillPoints: (c.skillPoints ?? 0) + refundedPoints,
+      unlockedSkills,
+      equippedAbilities,
       equipment: {
         weapon: eq.weapon ? migrateItem(eq.weapon) : null,
         body: eq.body ? migrateItem(eq.body) : null,
@@ -56,7 +76,9 @@ export function clearCharacter(): void {
 export function loadRanking(): RankEntry[] {
   try {
     const raw = localStorage.getItem(RANK_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const list = JSON.parse(raw) as RankEntry[];
+    return list.map((r) => ({ ...r, classId: migrateClassId(r.classId as unknown as string) as ClassId }));
   } catch { return []; }
 }
 

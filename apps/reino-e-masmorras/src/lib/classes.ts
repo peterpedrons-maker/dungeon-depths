@@ -13,11 +13,17 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     weaponBase: 'Cajado', bodyBase: 'Robe Arcano', legsBase: 'Calças de Tecido', handsBase: 'Luvas de Tecido',
     baseHp: 26, baseAtk: 14, baseDef: 2, critChance: 0.06,
   },
-  assassino: {
-    id: 'assassino', name: 'Assassino', color: '#4a5a48',
-    desc: 'Rápido e traiçoeiro, aposta tudo no crítico.',
+  ladino: {
+    id: 'ladino', name: 'Ladino', color: '#4a5a48',
+    desc: 'Rápido e traiçoeiro, aposta tudo no crítico e no veneno.',
     weaponBase: 'Adaga', bodyBase: 'Colete de Couro', legsBase: 'Calças de Couro', handsBase: 'Luvas de Couro',
     baseHp: 30, baseAtk: 10, baseDef: 4, critChance: 0.16,
+  },
+  clerigo: {
+    id: 'clerigo', name: 'Clérigo', color: '#c9a86a',
+    desc: 'Cura, buffs e magia sagrada — sustenta a jornada mais do que corta.',
+    weaponBase: 'Maça Sagrada', bodyBase: 'Vestes Consagradas', legsBase: 'Saiote Consagrado', handsBase: 'Luvas Consagradas',
+    baseHp: 34, baseAtk: 9, baseDef: 3, critChance: 0.05,
   },
 };
 
