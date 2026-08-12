@@ -307,18 +307,144 @@ function ghostFrame(key: string, step: 0 | 1): Sprite {
 }
 export function ghostFrames(): Sprite[] { return [ghostFrame('a', 0), ghostFrame('b', 1)]; }
 
-// ═══ SLASH (crescent) ═══════════════════════════════════════════════════════
-function slashFrame(key: string): Sprite {
-  return make('slash_' + key, 14, 20, (g) => {
-    // a crescent curving along +x, centered vertically
-    px(g, 8, 2, 3, 2, '#e8f1ff'); px(g, 10, 4, 2, 3, '#e8f1ff');
-    px(g, 11, 6, 2, 4, '#ffffff'); px(g, 11, 10, 2, 4, '#ffffff');
-    px(g, 10, 13, 2, 3, '#e8f1ff'); px(g, 8, 16, 3, 2, '#e8f1ff');
-    px(g, 9, 8, 2, 4, '#bcd6ff');
+// ═══ DEMON (fast fire demon) ════════════════════════════════════════════════
+function demonFrame(key: string, step: 0 | 1): Sprite {
+  return make('demon_' + key, 14, 16, (g) => {
+    const R  = '#c42020', RL = '#e84040', RD = '#881010';
+    const H  = '#5a0e0e', EY = '#ff9020';
+    const WG = '#1e1438', WL = '#32245a';
+    // horns
+    px(g, 4,  0, 1, 3, H); px(g, 9,  0, 1, 3, H);
+    px(g, 5,  1, 1, 2, H); px(g, 8,  1, 1, 2, H);
+    // head
+    px(g, 3,  2, 8, 1, RL);
+    px(g, 2,  3, 10, 4, R);
+    // eyes
+    px(g, 4,  4, 2, 2, EY); px(g, 8,  4, 2, 2, EY);
+    px(g, 4,  4, 1, 1, '#ffff90'); px(g, 8, 4, 1, 1, '#ffff90');
+    // maw
+    px(g, 4,  6, 6, 1, RD);
+    px(g, 5,  7, 4, 1, '#120404');
+    // wings
+    px(g, 0,  5, 2, 6, WG); px(g, 12, 5, 2, 6, WG);
+    px(g, 0,  5, 2, 1, WL); px(g, 12, 5, 2, 1, WL);
+    px(g, 1, 10, 2, 2, WL); px(g, 11, 10, 2, 2, WL);
+    // body
+    px(g, 4,  7, 6, 5, RD);
+    px(g, 5,  8, 4, 3, R);
+    // legs
+    if (step === 0) { px(g, 4, 12, 2, 4, RD); px(g, 8, 12, 2, 3, RD); px(g, 3, 15, 3, 1, H); }
+    else            { px(g, 4, 12, 2, 3, RD); px(g, 8, 12, 2, 4, RD); px(g, 8, 15, 3, 1, H); }
+    // tail
+    px(g, 10, 11, 3, 1, RD); px(g, step === 0 ? 11 : 9, 12, 2, 2, R);
   });
 }
+export function demonFrames(): Sprite[] { return [demonFrame('a', 0), demonFrame('b', 1)]; }
+
+// ═══ GOLEM (stone construct) ═════════════════════════════════════════════════
+function golemFrame(key: string, step: 0 | 1): Sprite {
+  return make('golem_' + key, 20, 18, (g) => {
+    const ST  = '#7a7060', STL = '#a09880', STD = '#504840';
+    const CR  = '#e06030', CRL = '#ff9050';
+    // head
+    px(g, 6,  0, 8, 2, STL);
+    px(g, 5,  1, 10, 5, ST);
+    // glowing lava eyes
+    px(g, 7,  3, 2, 2, CR); px(g, 11, 3, 2, 2, CR);
+    px(g, 7,  3, 1, 1, CRL); px(g, 11, 3, 1, 1, CRL);
+    // nose-crack
+    px(g, 9,  5, 2, 1, STD);
+    // body (wide, chunky stone)
+    px(g, 2,  6, 16, 7, ST);
+    px(g, 2,  6, 16, 1, STL);
+    // chest lava crack
+    px(g, 7,  8, 6, 1, CR);
+    px(g, 8,  9, 4, 2, CRL);
+    // stone seams
+    px(g, 5,  8, 1, 4, STD); px(g, 14, 8, 1, 4, STD);
+    // arms
+    px(g, 0,  7, 2, 5, STD); px(g, 18, 7, 2, 5, STD);
+    px(g, 0,  7, 2, 1, ST); px(g, 18, 7, 2, 1, ST);
+    // fists
+    px(g, 0, 11, 3, 2, STL); px(g, 17, 11, 3, 2, STL);
+    // legs
+    if (step === 0) { px(g, 5, 13, 4, 5, STD); px(g, 11, 13, 4, 4, STD); px(g, 5, 17, 5, 1, ST); }
+    else            { px(g, 5, 13, 4, 4, STD); px(g, 11, 13, 4, 5, STD); px(g, 11, 17, 5, 1, ST); }
+  });
+}
+export function golemFrames(): Sprite[] { return [golemFrame('a', 0), golemFrame('b', 1)]; }
+
+// ═══ WITCH (flying caster) ══════════════════════════════════════════════════
+function witchFrame(key: string, casting: boolean): Sprite {
+  return make('witch_' + key, 14, 18, (g) => {
+    const HAT  = '#180a28', HATL = '#2c1450';
+    const ROBE = '#4a1880', ROBEL = '#7030b8', ROBED = '#2e0848';
+    const SKIN = '#c4de98';
+    const BROOM = '#8a6030';
+    // hat tip
+    px(g, 6,  0, 2, 1, HAT);
+    px(g, 5,  1, 4, 1, HAT); px(g, 4, 2, 6, 1, HAT);
+    px(g, 3,  3, 8, 3, HATL); px(g, 3, 3, 8, 1, HAT);
+    // hat brim
+    px(g, 1,  5, 12, 1, HATL); px(g, 1, 6, 12, 1, HAT);
+    // face
+    px(g, 3,  6, 8, 5, SKIN);
+    px(g, 3,  6, 8, 1, '#d4eea8');
+    // eyes
+    px(g, 4,  8, 1, 1, casting ? '#f0f020' : '#180a28');
+    px(g, 9,  8, 1, 1, casting ? '#f0f020' : '#180a28');
+    // hooked nose
+    px(g, 6,  9, 3, 1, '#a0bc70');
+    px(g, 8, 10, 2, 1, '#7a8a50');
+    // robe body
+    px(g, 2, 11, 10, 5, ROBE);
+    px(g, 2, 11, 10, 1, ROBEL);
+    px(g, 1, 14, 12, 2, ROBED);
+    px(g, 0, 15, 14, 3, ROBED);
+    // robe stars
+    px(g, 3, 12, 1, 1, '#e8c030'); px(g, 8, 14, 1, 1, '#e8c030'); px(g, 12, 12, 1, 1, '#e8c030');
+    // broom (horizontal, extends right)
+    px(g, 8, 13, 6, 1, BROOM); px(g, 8, 13, 2, 1, '#b88040');
+    px(g, 12, 14, 2, 2, '#c07820');  // bristles
+    // arms
+    px(g, 1, 12, 2, 3, ROBED); px(g, 11, 12, 2, 3, ROBED);
+    if (casting) { px(g, 1, 14, 2, 1, '#c8a0ff'); }  // spell glow
+  });
+}
+export function witchFrames(): Sprite[] { return [witchFrame('a', false), witchFrame('b', true)]; }
+
+// ═══ MUSHROOM (spore shooter) ════════════════════════════════════════════════
+function mushroomFrame(key: string, step: 0 | 1): Sprite {
+  return make('mush_' + key, 12, 14, (g) => {
+    const CAP  = '#c83020', CAPL = '#f04838', CAPD = '#881810';
+    const SPOT = '#f0ede0';
+    const ST   = '#d8c890', STD = '#a89868';
+    // cap
+    px(g, 2, 0, 8, 1, CAP);
+    px(g, 1, 1, 10, 3, CAP); px(g, 1, 1, 10, 1, CAPL);
+    px(g, 0, 4, 12, 3, CAP); px(g, 0, 6, 12, 1, CAPD);
+    // white spots
+    px(g, 2, 2, 2, 2, SPOT); px(g, 7, 1, 2, 2, SPOT);
+    px(g, 4, 4, 2, 1, SPOT); px(g, 9, 4, 2, 1, SPOT);
+    // stem
+    px(g, 3, 7, 6, 4, ST); px(g, 3, 7, 6, 1, '#eee0b0');
+    px(g, 3, 9, 6, 2, STD);
+    // grumpy face
+    px(g, 4, 8, 1, 1, '#1a1410'); px(g, 7, 8, 1, 1, '#1a1410');
+    px(g, 4, 10, 4, 1, '#1a1410');
+    px(g, 4, 10, 1, 1, STD); px(g, 7, 10, 1, 1, STD);
+    // roots/legs
+    if (step === 0) { px(g, 3, 11, 2, 3, STD); px(g, 7, 11, 2, 2, STD); }
+    else            { px(g, 3, 11, 2, 2, STD); px(g, 7, 11, 2, 3, STD); }
+  });
+}
+export function mushroomFrames(): Sprite[] { return [mushroomFrame('a', 0), mushroomFrame('b', 1)]; }
+
+// ═══ SLASH (unused canvas sprite — arc is drawn procedurally in render.ts) ═══
 let SLASH_SPR: Sprite | null = null;
-export function slashSprite(): Sprite { return SLASH_SPR ?? (SLASH_SPR = slashFrame('x')); }
+export function slashSprite(): Sprite {
+  return SLASH_SPR ?? (SLASH_SPR = make('slash_x', 2, 2, () => {}));
+}
 
 // ═══ GEM / BOLT ══════════════════════════════════════════════════════════════
 export function gemSprite(): Sprite {

@@ -5,6 +5,7 @@ import {
   Sprite, heroSprites, slimeFrames, batFrames, skeletonFrames, gemSprite, boltSprite, bossSprite,
   fireballSprite, arrowSprite, skullOrbSprite, slashSprite,
   runnerFrames, bruteFrames, casterFrames, spiderFrames, ghostFrames,
+  demonFrames, golemFrames, witchFrames, mushroomFrames,
 } from './sprites';
 
 export const ART = 2;
@@ -43,6 +44,7 @@ function ensureSprites(cls: string) {
     S.slime = slimeFrames(); S.bat = batFrames(); S.skeleton = skeletonFrames();
     S.runner = runnerFrames(); S.brute = bruteFrames(); S.caster = casterFrames();
     S.spider = spiderFrames(); S.ghost = ghostFrames();
+    S.demon = demonFrames(); S.golem = golemFrames(); S.witch = witchFrames(); S.mush = mushroomFrames();
     S.gem = gemSprite(); S.bolt = boltSprite(); S.boss = bossSprite();
     S.fire = fireballSprite(); S.arrow = arrowSprite(); S.skull = skullOrbSprite();
     S.slash = slashSprite();
@@ -159,15 +161,28 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: { 
   actors.sort((a, b) => a.y - b.y);
   for (const a of actors) a.draw();
 
-  // Orbiting skulls
+  // Orbiting skulls with green ghost-trail
   if (p.weapon === 'orbit') {
     const orbs = p.stats.boltCount;
     for (let i = 0; i < orbs; i++) {
       const a = p.orbAngle + (i / orbs) * Math.PI * 2;
+      // trailing ghost images
+      for (let t = 3; t >= 1; t--) {
+        const ta = a - 0.22 * t;
+        const tx = p.x + Math.cos(ta) * ORBIT_RADIUS;
+        const ty = p.y + Math.sin(ta) * ORBIT_RADIUS;
+        ctx.save();
+        ctx.globalAlpha = 0.14 * (4 - t);
+        ctx.shadowBlur = 4; ctx.shadowColor = '#9be86f';
+        drawSprite(ctx, one('skull'), sx(tx), sy(ty), false);
+        ctx.restore();
+      }
+      // main skull
       const ox = p.x + Math.cos(a) * ORBIT_RADIUS;
       const oy = p.y + Math.sin(a) * ORBIT_RADIUS;
       ctx.save();
-      ctx.shadowBlur = 10; ctx.shadowColor = '#9be86f';
+      const pulse = 10 + Math.sin(performance.now() / 150 + i * 2.1) * 5;
+      ctx.shadowBlur = pulse; ctx.shadowColor = '#9be86f';
       drawSprite(ctx, one('skull'), sx(ox), sy(oy), false);
       ctx.restore();
     }
@@ -277,6 +292,14 @@ function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, sx: (n: number) => n
       spr = arr('spider')[Math.floor(e.anim * 12) % 2]; yOff = -Math.abs(Math.sin(e.anim * 12)) * 1.5; break;
     case 'ghost':
       spr = arr('ghost')[Math.floor(e.anim * 4) % 2]; yOff = Math.sin(e.bob) * 4; alpha = 0.72; break;
+    case 'demon':
+      spr = arr('demon')[Math.floor(e.anim * 14) % 2]; yOff = -Math.abs(Math.sin(e.anim * 14)) * 2; break;
+    case 'golem':
+      spr = arr('golem')[Math.floor(e.anim * 3) % 2]; yOff = -Math.abs(Math.sin(e.anim * 3)) * 1.5; break;
+    case 'witch':
+      spr = arr('witch')[e.atkCd < 0.5 ? 1 : 0]; yOff = Math.sin(e.bob * 0.8) * 4; alpha = 0.93; break;
+    case 'mushroom':
+      spr = arr('mush')[Math.floor(e.anim * 5) % 2]; yOff = Math.sin(e.bob * 0.4) * 1.5; break;
     default:
       spr = arr('slime')[0];
   }
@@ -328,33 +351,55 @@ function drawJoysticks(ctx: CanvasRenderingContext2D, input: Input): void {
   if (input.aim.active) draw(input.aim.ox, input.aim.oy, input.aim.kx, input.aim.ky, '#f0c04a');
 }
 
-// A sword swing: a bright arc swept around the hero, tapering to a blade tip.
+// A sword swing: a real steel blade arcing around the hero.
+// Colors shift from cold silver at the trail to a hot gold catchlight at the leading tip,
+// like sunlight catching a moving blade edge — not a magic energy wave.
 function drawSlash(ctx: CanvasRenderingContext2D, b: import('./types').Bolt, px: number, py: number): void {
-  const k = Math.max(0, b.life / b.maxLife);         // 1 -> 0
+  const k = Math.max(0, b.life / b.maxLife);
   const R = (b.reach ?? 0) * ZOOM;
   const dir = Math.sign(b.angVel ?? 1) || 1;
-  const trail = 1.3;
-  const a2 = b.ang ?? 0;                              // leading edge
-  const a1 = a2 - dir * trail;                        // trailing edge
+  const trail = 1.55;
+  const a2 = b.ang ?? 0;        // leading tip
+  const a1 = a2 - dir * trail;  // trailing base
   const lo = Math.min(a1, a2), hi = Math.max(a1, a2);
+
   ctx.save();
   ctx.lineCap = 'round';
-  ctx.globalAlpha = Math.min(1, k * 1.8);
-  // outer glow
-  ctx.strokeStyle = 'rgba(150,195,255,0.28)'; ctx.lineWidth = 22;
+  const alpha = Math.min(1, k * 2.2);
+  ctx.globalAlpha = alpha;
+
+  // ── Wide steel sheen (cold white, very faint) ──
+  ctx.strokeStyle = 'rgba(210,230,255,0.16)'; ctx.lineWidth = 36;
   ctx.beginPath(); ctx.arc(px, py, R, lo, hi); ctx.stroke();
-  // mid body
-  ctx.strokeStyle = 'rgba(205,228,255,0.75)'; ctx.lineWidth = 11;
+
+  // ── Blade body (silver-steel) ──
+  ctx.strokeStyle = 'rgba(238,246,255,0.84)'; ctx.lineWidth = 11;
   ctx.beginPath(); ctx.arc(px, py, R, lo, hi); ctx.stroke();
-  // bright leading edge
-  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5;
-  const cLo = dir > 0 ? a2 - 0.55 : a2;
-  const cHi = dir > 0 ? a2 : a2 + 0.55;
-  ctx.beginPath(); ctx.arc(px, py, R, cLo, cHi); ctx.stroke();
-  // blade glint at the tip
-  ctx.shadowBlur = 10; ctx.shadowColor = '#bcd6ff';
+
+  // ── Thin bright edge line (the actual sharpened edge) ──
+  ctx.strokeStyle = 'rgba(255,255,255,0.96)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(px, py, R, lo, hi); ctx.stroke();
+
+  // ── Gold catchlight on leading ~40% of arc (sun on moving blade) ──
+  const goldSpan = trail * 0.42;
+  const gLo = dir > 0 ? a2 - goldSpan : a2;
+  const gHi = dir > 0 ? a2 : a2 + goldSpan;
+  ctx.strokeStyle = 'rgba(255,224,80,0.72)'; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.arc(px, py, R, gLo, gHi); ctx.stroke();
+
+  // ── Blade tip — bright flash where the steel cuts ──
+  const tipX = px + Math.cos(a2) * R;
+  const tipY = py + Math.sin(a2) * R;
+  ctx.shadowBlur = 18; ctx.shadowColor = 'rgba(255,240,160,0.95)';
   ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(px + Math.cos(a2) * R, py + Math.sin(a2) * R, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(tipX, tipY, 5.5, 0, Math.PI * 2); ctx.fill();
+
+  // ── Inner arc at hilt radius (suggests the blade has width, not just an edge) ──
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = alpha * 0.55;
+  ctx.strokeStyle = 'rgba(255,235,140,0.45)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(px, py, R * 0.38, lo, hi); ctx.stroke();
+
   ctx.restore();
 }
 
