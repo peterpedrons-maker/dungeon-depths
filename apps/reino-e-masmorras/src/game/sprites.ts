@@ -39,10 +39,16 @@ function loadImage(url: string, displayH: number): Sprite {
 
 const HERO_SOURCES: Record<ClassId, string> = {
   // Assassino's sprite file carries over unchanged for Ladino (same class,
-  // renamed). Clérigo has no dedicated art yet — reuses the Mago sprite as a
-  // placeholder until a matching pixel-art hero is generated from the Kit de
-  // Arte prompt and swapped in here.
-  guerreiro: guerreiroUrl, mago: magoUrl, ladino: assassinoUrl, clerigo: magoUrl,
+  // renamed). Every class below without its own art yet borrows the sprite
+  // of the existing class it resembles most (heavy melee -> Guerreiro,
+  // light/rogue-ish -> Ladino, caster -> Mago) as a placeholder, until a
+  // matching pixel-art hero is generated from the Kit de Arte prompts and
+  // swapped in here.
+  guerreiro: guerreiroUrl, mago: magoUrl, ladino: assassinoUrl,
+  clerigo: magoUrl,
+  cavaleiro: guerreiroUrl, paladino: guerreiroUrl, barbaro: guerreiroUrl,
+  arqueiro: assassinoUrl, cacador: assassinoUrl, bardo: assassinoUrl,
+  feiticeiro: magoUrl, bruxo: magoUrl, druida: magoUrl, necromante: magoUrl,
 };
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, orc: orcUrl,
