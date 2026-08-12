@@ -16,6 +16,27 @@ import { DungeonPanel } from './DungeonPanel';
 
 const POTION_COST = 15;
 
+// A faint heraldic crest sitting behind the screen content — keeps the
+// leftover space below shorter panels from reading as an empty/broken void
+// instead of an intentional part of the layout.
+function EmblemWatermark() {
+  return (
+    <svg
+      viewBox="0 0 200 240"
+      className="absolute left-1/2 bottom-6 -translate-x-1/2 w-[70%] max-w-[360px] opacity-[0.06] pointer-events-none select-none"
+      style={{ color: '#c89a2e' }}
+      aria-hidden
+    >
+      <path
+        d="M100 4 L184 30 V110 C184 168 148 208 100 236 C52 208 16 168 16 110 V30 Z"
+        fill="none" stroke="currentColor" strokeWidth="3"
+      />
+      <path d="M100 30 V180 M50 60 L150 150 M150 60 L50 150" stroke="currentColor" strokeWidth="2" />
+      <circle cx="100" cy="105" r="26" fill="none" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
 interface Props {
   character: Character;
   ranking: RankEntry[];
@@ -101,7 +122,13 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-nightsky">
+    <div
+      className="flex-1 flex flex-col bg-nightsky"
+      style={{
+        backgroundImage:
+          'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(120,90,50,0.10) 0%, transparent 60%), radial-gradient(ellipse 90% 60% at 50% 100%, rgba(0,0,0,0.4) 0%, transparent 70%)',
+      }}
+    >
       <TopBar character={character} onMenuClick={() => setMenuOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar
@@ -112,7 +139,8 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           onEnterDungeon={enterDungeon}
           onAbandon={onAbandon}
         />
-        <main className="flex-1 p-3 sm:p-5 max-w-3xl min-w-0">
+        <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
+          <EmblemWatermark />
           {section === 'kingdom' && <KingdomOverview character={character} />}
           {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} />}
           {section === 'character' && (
