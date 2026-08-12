@@ -5,6 +5,7 @@ import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconAttribute, IconPassive, IconActive } from './icons';
+import skillFrame from '../assets/slot-habilidade.webp';
 
 interface Props {
   character: Character;
@@ -41,20 +42,26 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
       <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">
         Habilidades Equipadas ({ch.equippedAbilities.length}/{MAX_EQUIPPED_ABILITIES})
       </h3>
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-3 mb-6">
         {equippedNodes.map((node, i) =>
           node ? (
             <button
               key={node.id}
               onClick={() => setSelected({ node, state: 'unlocked' })}
-              className="relative w-14 h-14 rounded-full border-2 border-gold bg-gold/15 flex items-center justify-center transition-all duration-150 hover:scale-110 hover:brightness-125 shrink-0"
+              className="relative w-16 h-16 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
-              <IconActive className="w-7 h-7 text-gold" />
-              <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center">{i + 1}</span>
+              <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
+              <div className="absolute inset-[18%] flex items-center justify-center">
+                <IconActive className="w-full h-full text-gold" />
+              </div>
+              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+              <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
             </button>
           ) : (
-            <div key={i} className="w-14 h-14 rounded-full border-2 border-dashed border-panelborder/50 bg-black/20 shrink-0" />
+            <div key={i} className="relative w-16 h-16 opacity-30 shrink-0">
+              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none grayscale" draggable={false} />
+            </div>
           ),
         )}
       </div>
@@ -85,18 +92,19 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
                       <button
                         onClick={() => setSelected({ node, state })}
                         title={node.name}
-                        className={`relative w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-150 hover:scale-110 hover:brightness-125 ${
-                          state === 'locked' ? 'border-panelborder/30 bg-black/20 opacity-40' : 'hover:border-gold/70'
+                        className={`relative w-14 h-14 transition-all duration-150 hover:scale-110 ${
+                          state === 'locked' ? 'opacity-35 grayscale' : ''
                         } ${state === 'available' ? 'animate-pulse' : ''}`}
-                        style={
-                          state === 'unlocked' ? { borderColor: path.color, background: `${path.color}26` }
-                          : state === 'available' ? { borderColor: path.color }
-                          : undefined
-                        }
                       >
-                        <NodeIcon className="w-6 h-6" style={{ color: state === 'locked' ? '#6b6355' : path.color }} />
-                        <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-panel border border-panelborder/60 text-[8px] font-bold text-parchment/60 flex items-center justify-center">{i + 1}</span>
-                        {isEquipped && <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-gold border border-black/40" />}
+                        {state !== 'locked' && (
+                          <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
+                        )}
+                        <div className="absolute inset-[18%] flex items-center justify-center">
+                          <NodeIcon className="w-full h-full" style={{ color: state === 'locked' ? '#6b6355' : path.color }} />
+                        </div>
+                        <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                        <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-panel border border-panelborder/60 text-[8px] font-bold text-parchment/60 flex items-center justify-center z-10">{i + 1}</span>
+                        {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
                       </button>
                     </div>
                   );

@@ -8,6 +8,7 @@ import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconSword, IconChest, IconLegs, IconGloves, IconRing } from './icons';
+import slotFrame from '../assets/slot-equipamento.webp';
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
@@ -67,24 +68,33 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
 
       <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Equipamento</h3>
       <div
-        className="grid gap-2 mx-auto mb-5 max-w-[280px]"
+        className="grid gap-3 mx-auto mb-6 max-w-[300px]"
         style={{ gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)' }}
       >
         {SLOTS.map((slot) => {
           const item = ch.equipment[slot];
           const Icon = SLOT_ICON[slot];
-          const color = item ? rarityColor(item.rarity) : '#5a4a38';
+          const color = item ? rarityColor(item.rarity) : '#4a4038';
           return (
             <button
               key={slot}
               onClick={() => setSelected({ kind: 'equipped', slot, item })}
-              style={{ gridArea: SLOT_AREA[slot], borderColor: item ? color : undefined }}
-              className={`aspect-square rounded border-2 flex flex-col items-center justify-center gap-1 p-1 transition-all duration-150 hover:scale-105 hover:brightness-125 hover:border-gold/70 ${
-                item ? 'bg-panel2/60' : 'bg-black/20 border-dashed border-panelborder/50'
-              }`}
+              style={{ gridArea: SLOT_AREA[slot] }}
+              className="relative aspect-square transition-transform duration-150 hover:scale-105"
             >
-              <Icon className="w-7 h-7" style={{ color }} />
-              <span className="text-[8px] uppercase tracking-wide text-parchment/40 leading-none">{SLOT_NAMES[slot]}</span>
+              {item && (
+                <div
+                  className="absolute inset-[16%] rounded-full"
+                  style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
+                />
+              )}
+              <div className="absolute inset-[17%] flex items-center justify-center">
+                <Icon className="w-full h-full" style={{ color }} />
+              </div>
+              <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[8px] uppercase tracking-wide text-parchment/50 bg-nightsky/90 px-1 rounded-sm leading-tight whitespace-nowrap">
+                {SLOT_NAMES[slot]}
+              </span>
             </button>
           );
         })}
@@ -94,17 +104,21 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
       {ch.inventory.length === 0 ? (
         <p className="text-parchment/40 text-sm italic">Vazio. Derrote inimigos nas masmorras para encontrar equipamentos.</p>
       ) : (
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
           {ch.inventory.map((item) => {
             const Icon = SLOT_ICON[item.slot];
+            const color = rarityColor(item.rarity);
             return (
               <button
                 key={item.id}
                 onClick={() => setSelected({ kind: 'inventory', item })}
-                className="aspect-square rounded border-2 bg-panel2/50 flex flex-col items-center justify-center gap-1 p-1 transition-all duration-150 hover:scale-105 hover:brightness-125 hover:border-gold/70"
-                style={{ borderColor: rarityColor(item.rarity) }}
+                className="relative aspect-square transition-transform duration-150 hover:scale-105"
               >
-                <Icon className="w-6 h-6" style={{ color: rarityColor(item.rarity) }} />
+                <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
+                <div className="absolute inset-[17%] flex items-center justify-center">
+                  <Icon className="w-full h-full" style={{ color }} />
+                </div>
+                <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               </button>
             );
           })}
