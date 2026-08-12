@@ -184,6 +184,52 @@ One single full-body character sprite, facing forward or a slight 3/4 turn towar
 Solid flat magenta background (#FF00FF) filling the entire canvas behind the character — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the character (skin, cloth, metal, glow effects) — that color is reserved only for the background and will be removed later. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+### Classes III — Cavaleiro, Paladino, Bárbaro e Arqueiro
+**Tamanho:** 1536×768 px · **Uso:** 4 novas classes jogáveis, ainda sem arte própria (usam sprites de outras classes como placeholder no código até esta imagem ser gerada e integrada)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FOUR separate full-body character sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later. All four at the same pixel scale and the same ground line, facing forward or a slight 3/4 turn toward the viewer, in a calm static idle pose — no motion blur, no action pose, no animation frames.
+
+1) "Cavaleiro" (Knight): a heavily armored human knight in polished steel-gray plate armor with a tall kite shield and a longsword, sturdy and imposing, tanky silhouette.
+2) "Paladino" (Paladin): a holy warrior in radiant gold-and-white consecrated armor, holding a warhammer with a glowing holy symbol on the chest, righteous and noble bearing.
+3) "Bárbaro" (Barbarian): a huge muscular human warrior in rough fur and leather with a massive two-handed axe, wild hair, war paint, fierce and reckless stance.
+4) "Arqueiro" (Archer): an agile human archer in forest-green leather gear, holding a longbow with an arrow nocked, quiver on the back, alert and focused stance.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind and around all four characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Classes IV — Caçador, Feiticeiro, Bruxo e Druida
+**Tamanho:** 1536×768 px · **Uso:** 4 novas classes jogáveis, ainda sem arte própria
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FOUR separate full-body character sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later. All four at the same pixel scale and the same ground line, facing forward or a slight 3/4 turn toward the viewer, in a calm static idle pose — no motion blur, no action pose, no animation frames.
+
+1) "Caçador" (Hunter): a rugged human hunter in olive-and-brown camouflage-style leather gear, holding a crossbow, a small trap or snare hanging from the belt, sharp watchful eyes.
+2) "Feiticeiro" (Sorcerer): a human spellcaster in flowing violet-and-black arcane robes crackling with faint purple energy, holding an ornate glowing grimoire, intense expression.
+3) "Bruxo" (Warlock): a human dark magic user in tattered deep-purple and black robes with bone/skull trinkets, holding a dark grimoire wrapped in chains, an eerie faint purple glow around the hands.
+4) "Druida" (Druid): a human nature spellcaster in earthy green-and-brown robes woven with leaves and vines, holding a gnarled wooden staff topped with a glowing green crystal, antlers or a leaf crown on the head.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind and around all four characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Classes V — Bardo e Necromante
+**Tamanho:** 1024×768 px · **Uso:** 2 novas classes jogáveis, ainda sem arte própria
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing TWO separate full-body character sprites standing side by side, evenly spaced with a generous empty gap between them so they can be cropped apart later. Both at the same pixel scale and the same ground line, facing forward or a slight 3/4 turn toward the viewer, in a calm static idle pose — no motion blur, no action pose, no animation frames.
+
+1) "Bardo" (Bard): a charismatic human performer in warm amber-and-burgundy travel clothes, holding an ornate enchanted lute with a faint musical-note glow, confident charming pose.
+2) "Necromante" (Necromancer): a gaunt human dark spellcaster in tattered slate-gray and black robes, holding a bone-topped scepter, a faint ghostly pale-green glow around the hands, unsettling calm expression.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind and around both characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1024×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
 ### Inimigos I — Goblin, Lobo, Esqueleto e Orc
 **Tamanho:** 1536×768 px · **Uso:** inimigos de profundidade baixa/média (Ruínas, Cavernas)
 

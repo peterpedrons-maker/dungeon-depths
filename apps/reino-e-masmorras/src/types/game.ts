@@ -1,4 +1,7 @@
-export type ClassId = 'guerreiro' | 'mago' | 'ladino' | 'clerigo';
+export type ClassId =
+  | 'guerreiro' | 'mago' | 'ladino' | 'clerigo'
+  | 'cavaleiro' | 'paladino' | 'barbaro' | 'arqueiro' | 'cacador'
+  | 'feiticeiro' | 'bruxo' | 'druida' | 'bardo' | 'necromante';
 
 // ── Primary attributes: a derived layer fed only by "attribute" skill nodes
 // (never a free-allocation pool), converted into CombatStats via fixed
