@@ -48,7 +48,12 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} />}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
           {section === 'dungeon' && (
-            <DungeonPanel character={character} startDepth={dungeonStartDepth} onRunEnd={handleRunEnd} />
+            <DungeonPanel
+              character={character}
+              startDepth={dungeonStartDepth}
+              onLiveUpdate={onCharacterChange}
+              onRunEnd={handleRunEnd}
+            />
           )}
         </main>
       </div>

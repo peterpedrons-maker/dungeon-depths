@@ -15,7 +15,8 @@ export default {
         panelborder: "#4a3a70",
       },
       fontFamily: {
-        serif: ["Georgia", "'Times New Roman'", "serif"],
+        serif: ["'EB Garamond'", "Georgia", "'Times New Roman'", "serif"],
+        display: ["Cinzel", "Georgia", "serif"],
       },
     },
   },
