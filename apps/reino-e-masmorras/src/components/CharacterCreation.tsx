@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ClassId } from '../types/game';
 import { CLASSES, createCharacter } from '../lib/classes';
 import { Character } from '../types/game';
+import { Button } from './Button';
 
 interface Props {
   onCreated: (c: Character) => void;
@@ -52,9 +53,7 @@ export function CharacterCreation({ onCreated }: Props) {
         ))}
       </div>
 
-      <button onClick={confirm} className="px-6 py-2 bg-gold text-ink rounded font-bold hover:brightness-110 mt-2">
-        Começar Jornada
-      </button>
+      <Button variant="dourado" onClick={confirm} className="mt-2">Começar Jornada</Button>
     </div>
   );
 }

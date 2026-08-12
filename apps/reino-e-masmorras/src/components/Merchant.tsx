@@ -2,6 +2,7 @@ import { Character } from '../types/game';
 import { fmt } from '../lib/format';
 import { generateWeapon, rarityColor } from '../lib/equipment';
 import { Panel } from './Panel';
+import { Button } from './Button';
 
 const POTION_COST = 15;
 const WEAPON_COST = 40;
@@ -31,13 +32,9 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
           <div className="font-bold text-parchment">Poção de Vida</div>
           <div className="text-xs text-parchment/50">Recupera 40% da vida máxima em combate.</div>
         </div>
-        <button
-          onClick={onBuyPotion}
-          disabled={ch.gold < POTION_COST}
-          className="px-4 py-2 bg-emerald-800 rounded font-bold disabled:opacity-40 hover:brightness-110 shrink-0"
-        >
+        <Button variant="neutro" onClick={onBuyPotion} disabled={ch.gold < POTION_COST} className="shrink-0">
           Comprar — {fmt(POTION_COST)} ouro
-        </button>
+        </Button>
       </div>
 
       <div className="flex items-center justify-between bg-panel2 border border-panelborder rounded px-4 py-3">
@@ -45,13 +42,9 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
           <div className="font-bold text-parchment">Arma Misteriosa</div>
           <div className="text-xs text-parchment/50">Uma arma da sua classe, de raridade incerta. Pode valer a pena arriscar.</div>
         </div>
-        <button
-          onClick={buyMysteryWeapon}
-          disabled={ch.gold < WEAPON_COST}
-          className="px-4 py-2 bg-gold text-ink rounded font-bold disabled:opacity-40 hover:brightness-110 shrink-0"
-        >
+        <Button variant="dourado" onClick={buyMysteryWeapon} disabled={ch.gold < WEAPON_COST} className="shrink-0">
           Comprar — {fmt(WEAPON_COST)} ouro
-        </button>
+        </Button>
       </div>
 
       <p className="mt-3 text-xs text-parchment/40">Você possui {fmt(ch.potions)} poção(ões) e {fmt(ch.gold)} de ouro.</p>
