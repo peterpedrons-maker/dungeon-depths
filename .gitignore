@@ -8,9 +8,13 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+apps/*/node_modules
 dist
+apps/*/dist
 dist-ssr
 *.local
+# Combined multi-app build output assembled by the deploy workflow
+/site
 
 # Editor directories and files
 .vscode/*
@@ -23,3 +27,4 @@ dist-ssr
 *.sln
 *.sw?
 dist-artifact/
+apps/*/dist-artifact/
