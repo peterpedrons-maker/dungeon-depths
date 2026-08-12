@@ -92,10 +92,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function tryDropEquipment() {
-    const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct);
+    const stats = computeCombatStats(chRef.current);
+    const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
     if (Math.random() >= chance) return;
     const slot = DROP_SLOTS[Math.floor(Math.random() * DROP_SLOTS.length)];
-    const item = generateItem(slot, chRef.current.classId, depthRef.current, kingdomBonuses.itemQualityBonusPct);
+    const item = generateItem(slot, chRef.current.classId, depthRef.current, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
     updateCh({ ...chRef.current, inventory: [...chRef.current.inventory, item] });
     pushLog(`Você encontrou: ${item.name}!`);
   }
@@ -105,6 +106,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     if (cond.type === 'always') return true;
     if (cond.type === 'enemyHasStatus') return enemyStatusRef.current.some((s) => s.kind === cond.status);
     if (cond.type === 'hpBelow') return chRef.current.hp / effectiveMaxHp(chRef.current) < (cond.pct ?? 0.5);
+    if (cond.type === 'enemyHpBelow') return enemyRef.current.hp / enemyRef.current.maxHp < (cond.pct ?? 0.5);
     return false;
   }
 
@@ -115,9 +117,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
   // Self-targeted abilities (heal/buffDef/buffBlock) fire as a bonus action
   // alongside the normal attack, whenever off cooldown and their condition
-  // is met — they don't compete for the round's one attack action.
-  function fireSelfAbilities(): string[] {
+  // is met — they don't compete for the round's one attack action. Their
+  // magnitude scales with supportPowerPct (WIS), so a healer/support build
+  // gets stronger heals and buffs from the exact same ability list.
+  function fireSelfAbilities(stats: ReturnType<typeof computeCombatStats>): string[] {
     const lines: string[] = [];
+    const supportMult = 1 + stats.supportPowerPct;
     for (const ab of equippedAbilities()) {
       if (!SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
@@ -125,14 +130,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       cooldownsRef.current[ab.id] = ab.cooldown;
       if (ab.effect.kind === 'heal') {
         const maxHp = effectiveMaxHp(chRef.current);
-        const healed = Math.min(maxHp, chRef.current.hp + Math.round(maxHp * (ab.effect.healPct ?? 0.2)));
+        const healed = Math.min(maxHp, chRef.current.hp + Math.round(maxHp * (ab.effect.healPct ?? 0.2) * supportMult));
         updateCh({ ...chRef.current, hp: healed });
         lines.push(`${ab.name}: você recupera vida.`);
       } else if (ab.effect.kind === 'buffDef') {
-        playerBuffsRef.current.push({ kind: 'def', pct: ab.effect.buffPct ?? 0.2, roundsLeft: ab.effect.buffRounds ?? 3 });
+        playerBuffsRef.current.push({ kind: 'def', pct: (ab.effect.buffPct ?? 0.2) * supportMult, roundsLeft: ab.effect.buffRounds ?? 3 });
         lines.push(`${ab.name}: sua defesa aumenta.`);
       } else if (ab.effect.kind === 'buffBlock') {
-        playerBuffsRef.current.push({ kind: 'block', pct: ab.effect.buffPct ?? 0.2, roundsLeft: ab.effect.buffRounds ?? 3 });
+        playerBuffsRef.current.push({ kind: 'block', pct: (ab.effect.buffPct ?? 0.2) * supportMult, roundsLeft: ab.effect.buffRounds ?? 3 });
         lines.push(`${ab.name}: sua chance de esquiva aumenta.`);
       }
     }
@@ -192,10 +197,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       if (!mountedRef.current) return;
       setPlayerLean(0);
 
-      const selfLines = fireSelfAbilities();
+      const baseStats = computeCombatStats(chRef.current);
+      const selfLines = fireSelfAbilities(baseStats);
       selfLines.forEach(pushLog);
 
-      const stats = applyTempBuffs(computeCombatStats(chRef.current));
+      const stats = applyTempBuffs(baseStats);
       const offenseAbility = pickOffenseAbility();
       let dmg: number, crit: boolean, abilityTag = '';
       let statusLine = '';
@@ -214,6 +220,15 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       } else {
         const r = rollAttack(stats.atk, enemyRef.current.def, stats.critChance, stats.critDmgMult);
         dmg = r.dmg; crit = r.crit;
+      }
+
+      // Conditional passives ("+15% dano contra inimigo envenenado") apply
+      // on top of whatever hit just happened, offense-ability or plain.
+      if (enemyStatusRef.current.some((s) => s.kind === 'poison') && stats.dmgPctVsPoison > 0) {
+        dmg = Math.round(dmg * (1 + stats.dmgPctVsPoison));
+      }
+      if (enemyStatusRef.current.some((s) => s.kind === 'burn') && stats.dmgPctVsBurn > 0) {
+        dmg = Math.round(dmg * (1 + stats.dmgPctVsBurn));
       }
 
       const enemyHp = Math.max(0, enemyRef.current.hp - dmg);

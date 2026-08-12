@@ -1,4 +1,10 @@
-export type ClassId = 'guerreiro' | 'mago' | 'assassino';
+export type ClassId = 'guerreiro' | 'mago' | 'ladino' | 'clerigo';
+
+// ── Primary attributes: a derived layer fed only by "attribute" skill nodes
+// (never a free-allocation pool), converted into CombatStats via fixed
+// per-point coefficients in combatStats.ts ──
+export type AttributeKey = 'str' | 'dex' | 'agi' | 'vit' | 'int' | 'wis' | 'luk';
+export type Attributes = Record<AttributeKey, number>;
 
 export interface ClassDef {
   id: ClassId;
@@ -56,12 +62,14 @@ export interface SkillEffect {
   lifestealPct?: number;  // % of damage dealt healed back
   thornsPct?: number;     // % of an incoming hit reflected back at the attacker
   onCritHealPct?: number; // heals for % of max HP whenever the player crits
+  attrBonus?: Partial<Attributes>; // present only on "attribute" nodes
+  dmgPctVsStatus?: { status: StatusEffectKind; pct: number }; // conditional passive, e.g. "+15% dmg vs poisoned enemy"
 }
 
 export type StatusEffectKind = 'poison' | 'burn';
 
 export interface AbilityCondition {
-  type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'everyNRounds';
+  type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
@@ -94,13 +102,14 @@ export interface SkillNode {
   type: SkillNodeType;
   effect: SkillEffect;
   ability?: AbilityDef; // present only when type === 'active'
+  prereqIds: string[]; // OR logic — unlockable once ANY prereq is unlocked; empty = root node
 }
 
 export interface SkillPath {
   id: string;
   name: string;
   color: string;
-  nodes: SkillNode[]; // unlocked strictly in order
+  nodes: SkillNode[]; // 15 nodes forming a branching graph — see prereqIds, not array order
 }
 
 export interface Character {
@@ -174,7 +183,7 @@ export interface RankEntry {
 export type Screen = 'title' | 'create' | 'game';
 export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'merchant' | 'highscore' | 'dungeon';
 
-// ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree ──
+// ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree + attributes ──
 export interface CombatStats {
   atk: number;
   def: number;
@@ -185,6 +194,11 @@ export interface CombatStats {
   lifestealPct: number;
   thornsPct: number;
   onCritHealPct: number;
+  dmgPctVsPoison: number; // conditional passive dmg bonus while the enemy is poisoned
+  dmgPctVsBurn: number;   // conditional passive dmg bonus while the enemy is burning
+  supportPowerPct: number; // WIS-derived: scales heal/buff ability magnitudes
+  dropChanceBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
+  itemQualityBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
 }
 
 // ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──

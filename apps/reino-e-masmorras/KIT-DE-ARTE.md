@@ -154,8 +154,8 @@ Centered horizontally in frame, with generous empty magenta space on either side
 
 Pixel art nítida (não estilo pintado/realista) — uma pose estática por personagem, vários personagens juntos na mesma folha (é só recortar cada um depois), sem animação, sem movimento.
 
-### Classes — Guerreiro, Mago e Assassino
-**Tamanho:** 1536×768 px · **Uso:** recortar os 3 personagens jogáveis individualmente
+### Classes — Guerreiro, Mago e Ladino
+**Tamanho:** 1536×768 px · **Uso:** recortar os 3 personagens jogáveis individualmente. (A classe no jogo se chama "Ladino" — o prompt abaixo ainda descreve o personagem como "Assassino" porque é a arte original já integrada; o visual serve para as duas.)
 
 ```
 Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
@@ -169,6 +169,19 @@ Center — "Mago" (Mage): a slender human spellcaster in flowing deep-blue and m
 Right — "Assassino" (Assassin): a lithe human rogue in dark mossy-green and charcoal leather armor, hood up, gripping two curved daggers, crouched in a ready stance.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas behind and around all three characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Classe — Clérigo
+**Tamanho:** 768×768 px · **Uso:** 4ª classe jogável, ainda sem arte própria (usa o sprite do Mago como placeholder no código até esta imagem ser gerada e integrada)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single full-body character sprite, facing forward or a slight 3/4 turn toward the viewer, in a calm static idle pose — no motion blur, no action pose, no animation frames.
+
+"Clérigo" (Cleric): a devout human healer in warm ivory-and-gold consecrated robes with subtle holy trim, holding a golden mace or a short holy symbol/censer in one hand, calm serene expression, a faint warm golden glow around the hands. Same body proportions and pixel scale as a typical human adventurer sprite (not oversized, not chibi).
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind the character — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the character (skin, cloth, metal, glow effects) — that color is reserved only for the background and will be removed later. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
 ### Inimigos I — Goblin, Lobo, Esqueleto e Orc

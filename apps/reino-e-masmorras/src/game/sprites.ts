@@ -38,7 +38,11 @@ function loadImage(url: string, displayH: number): Sprite {
 }
 
 const HERO_SOURCES: Record<ClassId, string> = {
-  guerreiro: guerreiroUrl, mago: magoUrl, assassino: assassinoUrl,
+  // Assassino's sprite file carries over unchanged for Ladino (same class,
+  // renamed). Clérigo has no dedicated art yet — reuses the Mago sprite as a
+  // placeholder until a matching pixel-art hero is generated from the Kit de
+  // Arte prompt and swapped in here.
+  guerreiro: guerreiroUrl, mago: magoUrl, ladino: assassinoUrl, clerigo: magoUrl,
 };
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, orc: orcUrl,
