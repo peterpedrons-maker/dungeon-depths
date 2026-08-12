@@ -47,14 +47,14 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
             <button
               key={node.id}
               onClick={() => setSelected({ node, state: 'unlocked' })}
-              className="relative w-14 h-14 rounded border-2 border-gold bg-gold/15 flex items-center justify-center hover:brightness-125 shrink-0"
+              className="relative w-14 h-14 rounded-full border-2 border-gold bg-gold/15 flex items-center justify-center transition-all duration-150 hover:scale-110 hover:brightness-125 shrink-0"
               title={node.name}
             >
               <IconActive className="w-7 h-7 text-gold" />
               <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center">{i + 1}</span>
             </button>
           ) : (
-            <div key={i} className="w-14 h-14 rounded border-2 border-dashed border-panelborder/50 bg-black/20 shrink-0" />
+            <div key={i} className="w-14 h-14 rounded-full border-2 border-dashed border-panelborder/50 bg-black/20 shrink-0" />
           ),
         )}
       </div>
@@ -67,7 +67,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
               <h3 className="font-display text-sm uppercase tracking-[0.1em] mb-3 text-center" style={{ color: path.color }}>
                 {path.name}
               </h3>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-col items-center">
                 {path.nodes.map((node, i) => {
                   const unlocked = ch.unlockedSkills.includes(node.id);
                   const available = !unlocked && ch.skillPoints > 0 && canUnlock(path, i, ch.unlockedSkills);
@@ -75,23 +75,30 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
                   const NodeIcon = TYPE_ICON[node.type];
                   const isEquipped = node.type === 'active' && ch.equippedAbilities.includes(node.id);
                   return (
-                    <button
-                      key={node.id}
-                      onClick={() => setSelected({ node, state })}
-                      title={node.name}
-                      className={`relative w-11 h-11 rounded border-2 flex items-center justify-center transition hover:brightness-125 ${
-                        state === 'locked' ? 'border-panelborder/30 bg-black/20 opacity-40' : 'hover:border-gold/70'
-                      }`}
-                      style={
-                        state === 'unlocked' ? { borderColor: path.color, background: `${path.color}26` }
-                        : state === 'available' ? { borderColor: path.color }
-                        : undefined
-                      }
-                    >
-                      <NodeIcon className="w-5 h-5" style={{ color: state === 'locked' ? '#6b6355' : path.color }} />
-                      <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-panel border border-panelborder/60 text-[8px] font-bold text-parchment/60 flex items-center justify-center">{i + 1}</span>
-                      {isEquipped && <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-gold border border-black/40" />}
-                    </button>
+                    <div key={node.id} className="flex flex-col items-center">
+                      {i > 0 && (
+                        <div
+                          className="w-0.5 h-4 -my-px"
+                          style={{ background: unlocked ? path.color : '#4a3f30' }}
+                        />
+                      )}
+                      <button
+                        onClick={() => setSelected({ node, state })}
+                        title={node.name}
+                        className={`relative w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-150 hover:scale-110 hover:brightness-125 ${
+                          state === 'locked' ? 'border-panelborder/30 bg-black/20 opacity-40' : 'hover:border-gold/70'
+                        } ${state === 'available' ? 'animate-pulse' : ''}`}
+                        style={
+                          state === 'unlocked' ? { borderColor: path.color, background: `${path.color}26` }
+                          : state === 'available' ? { borderColor: path.color }
+                          : undefined
+                        }
+                      >
+                        <NodeIcon className="w-6 h-6" style={{ color: state === 'locked' ? '#6b6355' : path.color }} />
+                        <span className="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-panel border border-panelborder/60 text-[8px] font-bold text-parchment/60 flex items-center justify-center">{i + 1}</span>
+                        {isEquipped && <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-gold border border-black/40" />}
+                      </button>
+                    </div>
                   );
                 })}
               </div>

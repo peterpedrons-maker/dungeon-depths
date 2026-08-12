@@ -79,7 +79,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
               key={slot}
               onClick={() => setSelected({ kind: 'equipped', slot, item })}
               style={{ gridArea: SLOT_AREA[slot], borderColor: item ? color : undefined }}
-              className={`aspect-square rounded border-2 flex flex-col items-center justify-center gap-1 p-1 transition hover:brightness-125 hover:border-gold/70 ${
+              className={`aspect-square rounded border-2 flex flex-col items-center justify-center gap-1 p-1 transition-all duration-150 hover:scale-105 hover:brightness-125 hover:border-gold/70 ${
                 item ? 'bg-panel2/60' : 'bg-black/20 border-dashed border-panelborder/50'
               }`}
             >
@@ -101,7 +101,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
               <button
                 key={item.id}
                 onClick={() => setSelected({ kind: 'inventory', item })}
-                className="aspect-square rounded border-2 bg-panel2/50 flex flex-col items-center justify-center gap-1 p-1 transition hover:brightness-125 hover:border-gold/70"
+                className="aspect-square rounded border-2 bg-panel2/50 flex flex-col items-center justify-center gap-1 p-1 transition-all duration-150 hover:scale-105 hover:brightness-125 hover:border-gold/70"
                 style={{ borderColor: rarityColor(item.rarity) }}
               >
                 <Icon className="w-6 h-6" style={{ color: rarityColor(item.rarity) }} />
