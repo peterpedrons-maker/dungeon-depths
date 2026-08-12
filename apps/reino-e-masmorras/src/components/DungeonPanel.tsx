@@ -227,7 +227,7 @@ export function DungeonPanel({ character, dungeon, onLiveUpdate, onRunEnd }: Pro
 
         const heroFrame = playerLean ? heroSpr.attack : heroSpr.idle;
         drawSprite(g, heroFrame, px1, groundY + bobP, false, flashSide === 'player' ? 0.7 : 0, playerLean);
-        drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, true, flashSide === 'enemy' ? 0.7 : 0, enemyLean);
+        drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, false, flashSide === 'enemy' ? 0.7 : 0, enemyLean);
       }
       raf = requestAnimationFrame(draw);
     };
