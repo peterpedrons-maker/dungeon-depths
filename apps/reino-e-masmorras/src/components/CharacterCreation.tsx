@@ -30,7 +30,7 @@ export function CharacterCreation({ onCreated }: Props) {
         className="w-64 px-3 py-2 rounded bg-black/40 border border-white/20 text-center text-parchment placeholder:text-parchment/40 focus:outline-none focus:border-gold"
       />
 
-      <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl">
         {Object.values(CLASSES).map((c) => (
           <button
             key={c.id}
@@ -45,9 +45,8 @@ export function CharacterCreation({ onCreated }: Props) {
             </div>
             <p className="text-xs text-parchment/60 mb-1">{c.desc}</p>
             <p className="text-xs text-parchment/40">
-              HP {c.baseHp} · ATQ {c.baseAtk} · DEF {c.baseDef}
-              {c.critChance >= 0.15 ? ` · Crítico ${Math.round(c.critChance * 100)}%` : ''}
-              {c.lifesteal > 0 ? ` · Roubo de vida ${Math.round(c.lifesteal * 100)}%` : ''}
+              Arma: {c.weaponBase} · HP {c.baseHp} · ATQ {c.baseAtk} · DEF {c.baseDef}
+              {c.critChance >= 0.10 ? ` · Crítico ${Math.round(c.critChance * 100)}%` : ''}
             </p>
           </button>
         ))}

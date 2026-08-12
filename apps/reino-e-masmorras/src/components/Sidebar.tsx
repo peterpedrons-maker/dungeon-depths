@@ -1,16 +1,10 @@
-import { Section } from '../types/game';
-
-interface HuntTier { label: string; startDepth: number; }
-const HUNTS: HuntTier[] = [
-  { label: 'Ruínas Superficiais', startDepth: 1 },
-  { label: 'Cavernas Profundas', startDepth: 8 },
-  { label: 'Covil dos Dragões', startDepth: 18 },
-];
+import { Section, DungeonDef } from '../types/game';
+import { DUNGEONS } from '../lib/dungeons';
 
 interface Props {
   section: Section;
   onNavigate: (s: Section) => void;
-  onEnterDungeon: (startDepth: number) => void;
+  onEnterDungeon: (dungeon: DungeonDef) => void;
   onAbandon: () => void;
 }
 
@@ -19,12 +13,14 @@ export function Sidebar({ section, onNavigate, onEnterDungeon, onAbandon }: Prop
     <nav className="w-56 shrink-0 bg-panel border-r-2 border-gold/30 flex flex-col">
       <Group title="Personagem">
         <NavItem active={section === 'character'} onClick={() => onNavigate('character')}>Visão Geral</NavItem>
+        <NavItem active={section === 'skills'} onClick={() => onNavigate('skills')}>Habilidades</NavItem>
       </Group>
 
-      <Group title="Caçadas">
-        {HUNTS.map((h) => (
-          <NavItem key={h.label} active={section === 'dungeon'} onClick={() => onEnterDungeon(h.startDepth)}>
-            {h.label}
+      <Group title="Masmorras">
+        {DUNGEONS.map((d) => (
+          <NavItem key={d.id} active={section === 'dungeon'} onClick={() => onEnterDungeon(d)} title={d.desc}>
+            {d.special && <span className="text-gold mr-1">✦</span>}
+            {d.name}
           </NavItem>
         ))}
       </Group>
@@ -56,10 +52,11 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function NavItem({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function NavItem({ active, onClick, children, title }: { active: boolean; onClick: () => void; children: React.ReactNode; title?: string }) {
   return (
     <button
       onClick={onClick}
+      title={title}
       className={`w-full text-left px-4 py-1.5 text-sm border-l-2 transition ${
         active
           ? 'border-gold text-gold bg-white/5'

@@ -8,14 +8,14 @@ html, body, #root {
 
 body {
   margin: 0;
-  background: #0a0814;
+  background: #171009;
   color: #e8dcc0;
   font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
   font-size: 17px;
   -webkit-font-smoothing: antialiased;
   background-image:
-    radial-gradient(circle at 15% 20%, rgba(255,255,255,0.02) 0, transparent 40%),
-    radial-gradient(circle at 85% 75%, rgba(255,255,255,0.02) 0, transparent 40%);
+    radial-gradient(circle at 15% 20%, rgba(255,220,160,0.025) 0, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(255,220,160,0.025) 0, transparent 40%);
 }
 
 @keyframes float {

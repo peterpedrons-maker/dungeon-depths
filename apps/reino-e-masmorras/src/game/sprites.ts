@@ -10,7 +10,7 @@ export interface Sprite {
   h: number;
 }
 
-const OUTLINE = '#0e0a18';
+const OUTLINE = '#140f08';
 const cache: Record<string, Sprite> = {};
 
 function px(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
@@ -61,10 +61,9 @@ const C = {
 // ═══ HERO ════════════════════════════════════════════════════════════════════
 interface HeroPalette { hood: string; hoodL: string; trim: string; body: string; bodyL: string; bodyD: string; }
 const HERO_PALETTES: Record<ClassId, HeroPalette> = {
-  guerreiro: { hood: C.steel, hoodL: C.steelL, trim: '#c0392b', body: '#8794a3', bodyL: '#c9d2dc', bodyD: '#5f6b78' },
-  mago:      { hood: '#5b21b6', hoodL: '#8b5cf6', trim: C.gold,  body: '#6d28d9', bodyL: '#9370db', bodyD: '#3c1361' },
-  arqueiro:  { hood: '#1e5636', hoodL: '#2f7d4f', trim: '#c9a04a', body: '#2f7d4f', bodyL: '#57b877', bodyD: '#163d26' },
-  clerigo:   { hood: C.gold, hoodL: C.goldL, trim: '#8a2030', body: C.white, bodyL: '#ffffff', bodyD: '#c9c2a8' },
+  guerreiro: { hood: C.steel,   hoodL: C.steelL,  trim: '#a5432f', body: '#8794a3', bodyL: '#c9d2dc', bodyD: '#5f6b78' },
+  mago:      { hood: '#2f5a8a', hoodL: '#4a7ab0', trim: C.gold,    body: '#3a6da0', bodyL: '#5f8fc0', bodyD: '#234868' },
+  assassino: { hood: '#2a2a26', hoodL: '#42423c', trim: '#4a5a48', body: '#33332e', bodyL: '#4a4a42', bodyD: '#1e1e1a' },
 };
 
 type Pose = 'idle' | 'attack';
@@ -74,6 +73,7 @@ function heroBody(g: CanvasRenderingContext2D, pal: HeroPalette): void {
   px(g, 5, 0, 6, 1, pal.hood);
   px(g, 4, 1, 8, 2, pal.hood);
   px(g, 4, 1, 8, 1, pal.hoodL);
+  px(g, 10, 1, 1, 2, pal.hoodL);
   px(g, 4, 3, 8, 1, pal.trim);
   // face
   px(g, 5, 4, 6, 3, C.skin);
@@ -85,6 +85,7 @@ function heroBody(g: CanvasRenderingContext2D, pal: HeroPalette): void {
   // torso
   px(g, 4, 7, 8, 6, pal.body);
   px(g, 4, 7, 8, 1, pal.bodyL);
+  px(g, 10, 8, 1, 4, pal.bodyL);
   px(g, 6, 9, 4, 2, pal.trim);
   px(g, 4, 12, 8, 1, pal.trim);
   // arms
@@ -105,6 +106,7 @@ function heroWeapon(g: CanvasRenderingContext2D, classId: ClassId, pose: Pose): 
     px(g, 0, 9, 3, 6, C.brown);
     px(g, 0, 9, 3, 1, C.steelD);
     px(g, 0, 14, 3, 1, C.steelD);
+    px(g, 1, 10, 1, 4, C.brownL);
     if (pose === 'idle') {
       px(g, 13, 16, 1, 3, C.gold);
       px(g, 13, 8, 2, 8, C.steelL);
@@ -115,26 +117,28 @@ function heroWeapon(g: CanvasRenderingContext2D, classId: ClassId, pose: Pose): 
     }
   } else if (classId === 'mago') {
     px(g, 13, 2, 2, 17, C.brown);
+    px(g, 13, 2, 1, 17, C.brownL);
     if (pose === 'idle') {
       px(g, 12, 0, 4, 3, '#40e0d0');
+      px(g, 13, 0, 2, 1, '#bdf5ef');
     } else {
       px(g, 11, 0, 6, 3, '#9df5ec');
       px(g, 13, 0, 2, 2, '#ffffff');
     }
-  } else if (classId === 'arqueiro') {
-    px(g, 0, 6, 2, 2, C.brown);
-    px(g, 0, 8, 1, 6, C.brown);
-    px(g, 0, 14, 2, 2, C.brown);
-    px(g, 1, 9, 1, 4, C.brownD);
-    if (pose === 'attack') {
-      px(g, 2, 10, 3, 1, C.white);
-      px(g, 4, 10, 1, 1, '#ffffff');
-    }
   } else {
-    // clerigo: golden staff with a sun ornament
-    px(g, 13, 3, 2, 16, C.gold);
-    px(g, 12, 0, 4, 4, pose === 'attack' ? C.goldL : C.gold);
-    if (pose === 'attack') px(g, 13, 0, 2, 1, '#ffffff');
+    // assassino: twin daggers, dark leather-wrapped hilts
+    if (pose === 'idle') {
+      px(g, 1, 12, 1, 4, '#9098a0');
+      px(g, 1, 16, 1, 1, C.brownD);
+      px(g, 14, 12, 1, 4, '#9098a0');
+      px(g, 14, 16, 1, 1, C.brownD);
+    } else {
+      px(g, 13, 3, 2, 9, '#c4ccd4');
+      px(g, 12, 11, 2, 1, C.brownD);
+      px(g, 15, 2, 1, 1, '#ffffff');
+      px(g, 1, 12, 1, 4, '#9098a0');
+      px(g, 1, 16, 1, 1, C.brownD);
+    }
   }
 }
 
