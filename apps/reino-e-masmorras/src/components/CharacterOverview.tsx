@@ -36,6 +36,8 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
   const xpPct = Math.min(100, (ch.xp / ch.xpToNext) * 100);
   const maxHp = effectiveMaxHp(ch);
   const [selected, setSelected] = useState<Selected | null>(null);
+  const [filter, setFilter] = useState<'all' | ItemSlot>('all');
+  const visibleInventory = filter === 'all' ? ch.inventory : ch.inventory.filter((i) => i.slot === filter);
 
   return (
     <Panel title="Personagem — Visão Geral">
@@ -100,28 +102,47 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         })}
       </div>
 
-      <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Inventário</h3>
+      <div className="flex items-center justify-between mb-2 gap-3">
+        <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em]">Inventário</h3>
+        <span className="text-[10px] text-parchment/40 shrink-0">{ch.inventory.length} item{ch.inventory.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {ch.inventory.length > 0 && (
+        <div className="flex gap-1.5 mb-2 flex-wrap">
+          <FilterTab active={filter === 'all'} onClick={() => setFilter('all')}>Todos</FilterTab>
+          {SLOTS.map((slot) => (
+            <FilterTab key={slot} active={filter === slot} onClick={() => setFilter(slot)}>{SLOT_NAMES[slot]}</FilterTab>
+          ))}
+        </div>
+      )}
+
       {ch.inventory.length === 0 ? (
         <p className="text-parchment/40 text-sm italic">Vazio. Derrote inimigos nas masmorras para encontrar equipamentos.</p>
       ) : (
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-          {ch.inventory.map((item) => {
-            const Icon = SLOT_ICON[item.slot];
-            const color = rarityColor(item.rarity);
-            return (
-              <button
-                key={item.id}
-                onClick={() => setSelected({ kind: 'inventory', item })}
-                className="relative aspect-square transition-transform duration-150 hover:scale-105"
-              >
-                <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                <div className="absolute inset-[17%] flex items-center justify-center">
-                  <Icon className="w-full h-full" style={{ color }} />
-                </div>
-                <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-              </button>
-            );
-          })}
+        <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+          {visibleInventory.length === 0 ? (
+            <p className="text-parchment/40 text-sm italic text-center py-4">Nenhum item nessa categoria.</p>
+          ) : (
+            <div className="grid grid-cols-5 sm:grid-cols-6 gap-2.5 max-h-72 overflow-y-auto pr-0.5">
+              {visibleInventory.map((item) => {
+                const Icon = SLOT_ICON[item.slot];
+                const color = rarityColor(item.rarity);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelected({ kind: 'inventory', item })}
+                    className="relative aspect-square transition-transform duration-150 hover:scale-105"
+                  >
+                    <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
+                    <div className="absolute inset-[17%] flex items-center justify-center">
+                      <Icon className="w-full h-full" style={{ color }} />
+                    </div>
+                    <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -187,6 +208,19 @@ function secondaryStatLabel(item: EquipmentItem): string {
   if (s.type === 'block') return `+${Math.round(s.value * 100)}% chance de bloqueio`;
   if (s.type === 'def') return `+${s.value} defesa`;
   return `+${s.value} vida máxima`;
+}
+
+function FilterTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide transition ${
+        active ? 'bg-gold text-ink' : 'bg-panel2 text-parchment/50 hover:text-parchment hover:bg-panel2/80'
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
