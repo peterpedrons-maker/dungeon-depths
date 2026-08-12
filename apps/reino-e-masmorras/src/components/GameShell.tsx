@@ -23,6 +23,7 @@ interface Props {
 export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onAbandon }: Props) {
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function enterDungeon(d: DungeonDef) {
     setDungeon(d);
@@ -57,10 +58,17 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
 
   return (
     <div className="min-h-screen flex flex-col bg-nightsky">
-      <TopBar character={character} />
+      <TopBar character={character} onMenuClick={() => setMenuOpen((o) => !o)} />
       <div className="flex flex-1">
-        <Sidebar section={section} onNavigate={setSection} onEnterDungeon={enterDungeon} onAbandon={onAbandon} />
-        <main className="flex-1 p-5 max-w-3xl">
+        <Sidebar
+          section={section}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          onNavigate={setSection}
+          onEnterDungeon={enterDungeon}
+          onAbandon={onAbandon}
+        />
+        <main className="flex-1 p-3 sm:p-5 max-w-3xl min-w-0">
           {section === 'kingdom' && <KingdomOverview character={character} />}
           {section === 'character' && <CharacterOverview character={character} onEquip={handleEquip} />}
           {section === 'skills' && <SkillTree character={character} onUnlock={handleUnlockSkill} />}

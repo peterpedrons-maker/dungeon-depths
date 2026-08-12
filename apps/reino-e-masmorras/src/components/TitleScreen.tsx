@@ -7,12 +7,12 @@ interface Props {
 export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center bg-nightsky">
-      <div className="flex items-center gap-4">
-        <span className="w-2.5 h-2.5 bg-gold/70 rotate-45 shrink-0" aria-hidden />
-        <h1 className="font-display text-4xl md:text-5xl font-bold text-gold tracking-[0.08em] [text-shadow:0_2px_0_rgba(0,0,0,0.8)]">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+        <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gold/70 rotate-45 shrink-0" aria-hidden />
+        <h1 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold text-gold tracking-[0.05em] sm:tracking-[0.08em] [text-shadow:0_2px_0_rgba(0,0,0,0.8)]">
           Reino &amp; Masmorras
         </h1>
-        <span className="w-2.5 h-2.5 bg-gold/70 rotate-45 shrink-0" aria-hidden />
+        <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gold/70 rotate-45 shrink-0" aria-hidden />
       </div>
       <p className="text-parchment/70 max-w-md italic">
         Forje um herói, desça às masmorras, torne-se mais forte a cada expedição
