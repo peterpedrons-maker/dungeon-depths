@@ -228,7 +228,7 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
         const dx = e.x - ox, dy = e.y - oy;
         if (dx * dx + dy * dy < rr * rr) {
           const d = Math.hypot(dx, dy) || 1;
-          applyHit(state, e, p.stats.damage, dx / d, dy / d);
+          applyHit(state, e, p.stats.damage, dx / d, dy / d, '#9be86f');
           e.orbCd = 0.45;
         }
       }
@@ -255,7 +255,11 @@ export function update(state: GameState, dt: number, view: { w: number; h: numbe
       if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < rr * rr) {
         b.hitIds.push(e.id);
         const bl = Math.hypot(b.vx, b.vy) || 1;
-        applyHit(state, e, b.damage, b.vx / bl, b.vy / bl);
+        const hitColor = b.style === 'fire' ? '#ff8040'
+          : b.style === 'arrow' ? '#dfe6ee'
+          : b.style === 'slash' ? '#c8e4ff'
+          : '#ffe9a8';
+        applyHit(state, e, b.damage, b.vx / bl, b.vy / bl, hitColor);
         if (b.pierce <= 0) { remove = true; break; }
         b.pierce -= 1;
       }
@@ -401,10 +405,27 @@ function moveEnemy(e: Enemy, state: GameState, dt: number, dx: number, dy: numbe
       e.x += -ny * e.speed * 0.5 * dt; e.y += nx * e.speed * 0.5 * dt;
     }
     e.atkCd -= dt;
-    if (e.atkCd <= 0 && d < (def.rangedRange ?? 180) * WORLD + 60 * WORLD) {
+    if (e.atkCd <= 0 && d < (def.rangedRange ?? 180) * WORLD + 80 * WORLD) {
       e.atkCd = def.rangedCd ?? 2.2;
       const sp = 150 * WORLD;
-      state.hazards.push({ x: e.x, y: e.y, vx: nx * sp, vy: ny * sp, life: 3, radius: 6, damage: e.damage, color: '#c084fc' });
+      const col = e.kind === 'witch' ? '#c084fc' : e.kind === 'mushroom' ? '#9be86f' : '#c084fc';
+      if (def.rangedBurst) {
+        // mushroom: spores in all 8 directions
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2;
+          state.hazards.push({ x: e.x, y: e.y, vx: Math.cos(a) * sp * 0.75, vy: Math.sin(a) * sp * 0.75, life: 2.4, radius: 5, damage: e.damage, color: col });
+        }
+      } else if (def.rangedSpread && def.rangedSpread > 0) {
+        // witch: aimed fan
+        const base = Math.atan2(ny, nx);
+        const spread = def.rangedSpread;
+        for (let i = -spread; i <= spread; i += 1) {
+          const a = base + i * 0.22;
+          state.hazards.push({ x: e.x, y: e.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 2.8, radius: 6, damage: e.damage, color: col });
+        }
+      } else {
+        state.hazards.push({ x: e.x, y: e.y, vx: nx * sp, vy: ny * sp, life: 3, radius: 6, damage: e.damage, color: col });
+      }
     }
     return;
   }
@@ -467,7 +488,7 @@ function fireWeapon(state: GameState, aimX: number, aimY: number): void {
   else sound.shoot();
 }
 
-function applyHit(state: GameState, e: Enemy, rawDamage: number, nx: number, ny: number): void {
+function applyHit(state: GameState, e: Enemy, rawDamage: number, nx: number, ny: number, hitColor = '#ffe9a8'): void {
   const p = state.player;
   const crit = Math.random() < p.stats.critChance;
   const dmg = rawDamage * (crit ? 2 : 1);
@@ -476,7 +497,17 @@ function applyHit(state: GameState, e: Enemy, rawDamage: number, nx: number, ny:
   const kb = e.isBoss ? p.stats.knockback * 0.12 : p.stats.knockback;
   e.knockX += nx * kb; e.knockY += ny * kb;
   damageNumber(state, e.x, e.y - e.radius, dmg, crit);
-  spawnBurst(state, e.x, e.y, '#ffe9a8', 4);
+  // Impact burst: color-coded by weapon, plus bright white sparks
+  spawnBurst(state, e.x, e.y, hitColor, 7);
+  for (let i = 0; i < 4; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 160 + Math.random() * 100;
+    state.particles.push({
+      x: e.x, y: e.y,
+      vx: Math.cos(a) * sp + nx * 60, vy: Math.sin(a) * sp + ny * 60,
+      life: 0.22, maxLife: 0.22, color: '#ffffff', size: 1.5,
+    });
+  }
   sound.hit();
 }
 

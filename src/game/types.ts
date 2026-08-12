@@ -2,7 +2,8 @@ export interface Vec2 { x: number; y: number; }
 
 export type EnemyKind =
   | 'slime' | 'bat' | 'skeleton'
-  | 'runner' | 'brute' | 'caster' | 'spider' | 'ghost' | 'bigSlime';
+  | 'runner' | 'brute' | 'caster' | 'spider' | 'ghost' | 'bigSlime'
+  | 'demon' | 'golem' | 'witch' | 'mushroom';
 
 export type BossAttack = 'charge' | 'burst' | 'summon' | 'slam' | 'volley';
 
