@@ -1,12 +1,14 @@
 import { Character } from '../types/game';
 import { CLASSES } from '../lib/classes';
+import { effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import moedaIcon from '../assets/moeda.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
 export function TopBar({ character: ch, onMenuClick }: { character: Character; onMenuClick: () => void }) {
   const cls = CLASSES[ch.classId];
-  const hpPct = Math.max(0, Math.min(100, (ch.hp / ch.maxHp) * 100));
+  const maxHp = effectiveMaxHp(ch);
+  const hpPct = Math.max(0, Math.min(100, (ch.hp / maxHp) * 100));
   const xpPct = Math.max(0, Math.min(100, (ch.xp / ch.xpToNext) * 100));
 
   return (
@@ -26,7 +28,7 @@ export function TopBar({ character: ch, onMenuClick }: { character: Character; o
       <Stat icon={<img src={moedaIcon} alt="" className="w-5 h-5 shrink-0" />} value={fmt(ch.gold)} color="text-gold" />
       <Stat icon={<img src={pocaoIcon} alt="" className="w-4 h-5 shrink-0" />} value={fmt(ch.potions)} color="text-emerald-400" />
 
-      <Bar icon={<HeartIcon />} cur={ch.hp} max={ch.maxHp} pct={hpPct} barColor="bg-red-600" />
+      <Bar icon={<HeartIcon />} cur={ch.hp} max={maxHp} pct={hpPct} barColor="bg-red-600" />
       <Bar icon={<StarIcon />} cur={ch.xp} max={ch.xpToNext} pct={xpPct} barColor="bg-sky-500" />
     </header>
   );

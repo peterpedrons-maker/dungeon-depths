@@ -6,6 +6,9 @@ export interface ClassDef {
   color: string;
   desc: string;
   weaponBase: string; // base weapon name, e.g. "Espada"
+  bodyBase: string; // base body-armor name, e.g. "Peitoral de Placas"
+  legsBase: string; // base leg-armor name, e.g. "Grevas de Ferro"
+  handsBase: string; // base hand-armor name, e.g. "Manoplas de Ferro"
   baseHp: number;
   baseAtk: number;
   baseDef: number;
@@ -14,17 +17,90 @@ export interface ClassDef {
 
 export type Rarity = 'comum' | 'incomum' | 'raro' | 'epico' | 'legendario';
 
-export interface Weapon {
+export type ItemSlot = 'weapon' | 'body' | 'legs' | 'hands' | 'accessory';
+export type SecondaryStatType = 'crit' | 'def' | 'hp' | 'block';
+
+export interface EquipmentItem {
   id: string;
   name: string;
   classId: ClassId;
+  slot: ItemSlot;
   rarity: Rarity;
-  dmgBonus: number;
-  secondaryStat?: { type: 'crit' | 'def'; value: number };
+  dmgBonus: number; // weapon's primary stat, 0 on other slots
+  defBonus: number; // body/legs/hands primary stat, 0 on other slots
+  hpBonus: number; // accessory's primary stat, 0 on other slots
+  secondaryStat?: { type: SecondaryStatType; value: number };
 }
 
 export interface Equipment {
-  weapon: Weapon | null;
+  weapon: EquipmentItem | null;
+  body: EquipmentItem | null;
+  legs: EquipmentItem | null;
+  hands: EquipmentItem | null;
+  accessory: EquipmentItem | null;
+}
+
+// ── Skill tree: attribute/passive nodes are always-on stat math; active nodes
+// unlock a discrete ability governed by the cooldown/priority/condition engine ──
+export type SkillNodeType = 'attribute' | 'passive' | 'active';
+
+export interface SkillEffect {
+  dmgPct?: number;        // multiplies attack power
+  defPct?: number;        // multiplies defense
+  critPct?: number;       // adds to crit chance
+  critDmgPct?: number;    // adds to crit damage multiplier
+  blockChance?: number;   // chance to halve an incoming hit
+  flatBonusDmg?: number;  // flat damage added to every hit
+  lowHpDmgScale?: number; // extra damage% scaling with missing HP
+  maxHpFlat?: number;     // flat bonus to max HP
+  lifestealPct?: number;  // % of damage dealt healed back
+  thornsPct?: number;     // % of an incoming hit reflected back at the attacker
+  onCritHealPct?: number; // heals for % of max HP whenever the player crits
+}
+
+export type StatusEffectKind = 'poison' | 'burn';
+
+export interface AbilityCondition {
+  type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'everyNRounds';
+  status?: StatusEffectKind;
+  pct?: number;
+  n?: number;
+}
+
+export interface AbilityEffect {
+  kind: 'bigHit' | 'guaranteedCrit' | 'applyStatus' | 'bonusVsStatus' | 'heal' | 'buffDef' | 'buffBlock';
+  dmgMult?: number;
+  status?: StatusEffectKind;
+  statusRounds?: number;
+  statusDmgPct?: number; // % of atk dealt per tick
+  healPct?: number;
+  buffPct?: number;
+  buffRounds?: number;
+}
+
+export interface AbilityDef {
+  id: string; // matches the owning SkillNode's id
+  name: string;
+  desc: string;
+  cooldown: number; // in combat rounds
+  condition: AbilityCondition;
+  effect: AbilityEffect;
+}
+
+export interface SkillNode {
+  id: string;
+  name: string;
+  desc: string;
+  type: SkillNodeType;
+  effect: SkillEffect;
+  ability?: AbilityDef; // present only when type === 'active'
+}
+
+export interface SkillPath {
+  id: string;
+  name: string;
+  color: string;
+  nodes: SkillNode[]; // unlocked strictly in order
 }
 
 export interface Character {
@@ -41,9 +117,11 @@ export interface Character {
   potions: number;
   bestDepth: number;
   skillPoints: number;
-  unlockedSkills: string[]; // node ids, e.g. "guerreiro:furioso:0"
+  unlockedSkills: string[]; // node ids, e.g. "guerreiro:furioso:0" — for active nodes, this only means "known"
+  equippedAbilities: string[]; // ordered subset of unlocked active-ability ids, actually used in combat (checked top to bottom each round)
   equipment: Equipment;
-  inventory: Weapon[];
+  inventory: EquipmentItem[];
+  buildings: Record<string, number>; // kingdom building id -> level
 }
 
 export type EnemyShape = 'goblin' | 'wolf' | 'skeleton' | 'orc' | 'troll' | 'dragon' | 'horror';
@@ -94,7 +172,7 @@ export interface RankEntry {
 }
 
 export type Screen = 'title' | 'create' | 'game';
-export type Section = 'kingdom' | 'character' | 'skills' | 'merchant' | 'highscore' | 'dungeon';
+export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'merchant' | 'highscore' | 'dungeon';
 
 // ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree ──
 export interface CombatStats {
@@ -103,4 +181,16 @@ export interface CombatStats {
   critChance: number;
   critDmgMult: number;
   blockChance: number;
+  maxHpBonus: number;
+  lifestealPct: number;
+  thornsPct: number;
+  onCritHealPct: number;
+}
+
+// ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──
+export interface KingdomBonuses {
+  dropChanceBonusPct: number;
+  itemQualityBonusPct: number; // Forja: bonus on top of an item's rolled primary stat
+  potionHealBonusPct: number;
+  xpBonusPct: number;
 }

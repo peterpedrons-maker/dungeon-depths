@@ -4,19 +4,19 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   guerreiro: {
     id: 'guerreiro', name: 'Guerreiro', color: '#a5432f',
     desc: 'Vida alta, resiste a golpes pesados.',
-    weaponBase: 'Espada',
+    weaponBase: 'Espada', bodyBase: 'Peitoral de Placas', legsBase: 'Grevas de Ferro', handsBase: 'Manoplas de Ferro',
     baseHp: 44, baseAtk: 8, baseDef: 6, critChance: 0.05,
   },
   mago: {
     id: 'mago', name: 'Mago', color: '#3f7ab8',
     desc: 'Ataques poderosos, mas frágil.',
-    weaponBase: 'Cajado',
+    weaponBase: 'Cajado', bodyBase: 'Robe Arcano', legsBase: 'Calças de Tecido', handsBase: 'Luvas de Tecido',
     baseHp: 26, baseAtk: 14, baseDef: 2, critChance: 0.06,
   },
   assassino: {
     id: 'assassino', name: 'Assassino', color: '#4a5a48',
     desc: 'Rápido e traiçoeiro, aposta tudo no crítico.',
-    weaponBase: 'Adaga',
+    weaponBase: 'Adaga', bodyBase: 'Colete de Couro', legsBase: 'Calças de Couro', handsBase: 'Luvas de Couro',
     baseHp: 30, baseAtk: 10, baseDef: 4, critChance: 0.16,
   },
 };
@@ -31,8 +31,9 @@ export function createCharacter(name: string, classId: ClassId): Character {
     name, classId, level: 1, xp: 0, xpToNext: xpToNextLevel(1),
     hp: c.baseHp, maxHp: c.baseHp, atk: c.baseAtk, def: c.baseDef,
     gold: 0, potions: 1, bestDepth: 0,
-    skillPoints: 0, unlockedSkills: [],
-    equipment: { weapon: null }, inventory: [],
+    skillPoints: 0, unlockedSkills: [], equippedAbilities: [],
+    equipment: { weapon: null, body: null, legs: null, hands: null, accessory: null }, inventory: [],
+    buildings: {},
   };
 }
 

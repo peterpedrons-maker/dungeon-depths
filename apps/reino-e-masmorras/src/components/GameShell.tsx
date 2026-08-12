@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { Character, RankEntry, Section, DungeonDef, Weapon } from '../types/game';
+import { Character, RankEntry, Section, DungeonDef, EquipmentItem } from '../types/game';
 import { DUNGEONS } from '../lib/dungeons';
+import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
+import { sellValue } from '../lib/equipment';
+import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { KingdomOverview } from './KingdomOverview';
+import { KingdomBuildings } from './KingdomBuildings';
 import { CharacterOverview } from './CharacterOverview';
 import { SkillTree } from './SkillTree';
 import { Merchant } from './Merchant';
@@ -25,6 +29,8 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const kingdomBonuses = computeKingdomBonuses(character.buildings);
+
   function enterDungeon(d: DungeonDef) {
     setDungeon(d);
     setSection('dungeon');
@@ -40,11 +46,16 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     onCharacterChange({ ...character, gold: character.gold - POTION_COST, potions: character.potions + 1 });
   }
 
-  function handleEquip(weapon: Weapon) {
-    const prevEquipped = character.equipment.weapon;
-    const inventory = character.inventory.filter((w) => w.id !== weapon.id);
+  function handleEquip(item: EquipmentItem) {
+    const prevEquipped = character.equipment[item.slot];
+    const inventory = character.inventory.filter((i) => i.id !== item.id);
     if (prevEquipped) inventory.push(prevEquipped);
-    onCharacterChange({ ...character, equipment: { weapon }, inventory });
+    onCharacterChange({ ...character, equipment: { ...character.equipment, [item.slot]: item }, inventory });
+  }
+
+  function handleSellItem(item: EquipmentItem) {
+    const inventory = character.inventory.filter((i) => i.id !== item.id);
+    onCharacterChange({ ...character, inventory, gold: character.gold + sellValue(item) });
   }
 
   function handleUnlockSkill(nodeId: string) {
@@ -54,6 +65,33 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
       skillPoints: character.skillPoints - 1,
       unlockedSkills: [...character.unlockedSkills, nodeId],
     });
+  }
+
+  function handleEquipAbility(abilityId: string) {
+    if (character.equippedAbilities.includes(abilityId) || character.equippedAbilities.length >= MAX_EQUIPPED_ABILITIES) return;
+    onCharacterChange({ ...character, equippedAbilities: [...character.equippedAbilities, abilityId] });
+  }
+
+  function handleUnequipAbility(abilityId: string) {
+    onCharacterChange({ ...character, equippedAbilities: character.equippedAbilities.filter((id) => id !== abilityId) });
+  }
+
+  function handleReorderAbility(index: number, dir: -1 | 1) {
+    const list = [...character.equippedAbilities];
+    const target = index + dir;
+    if (target < 0 || target >= list.length) return;
+    [list[index], list[target]] = [list[target], list[index]];
+    onCharacterChange({ ...character, equippedAbilities: list });
+  }
+
+  function handleUpgradeBuilding(buildingId: string) {
+    const building = BUILDINGS.find((b) => b.id === buildingId);
+    if (!building) return;
+    const level = character.buildings[buildingId] ?? 0;
+    if (level >= building.maxLevel) return;
+    const cost = building.costForLevel(level);
+    if (character.gold < cost) return;
+    onCharacterChange({ ...character, gold: character.gold - cost, buildings: { ...character.buildings, [buildingId]: level + 1 } });
   }
 
   return (
@@ -70,14 +108,24 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         />
         <main className="flex-1 p-3 sm:p-5 max-w-3xl min-w-0">
           {section === 'kingdom' && <KingdomOverview character={character} />}
-          {section === 'character' && <CharacterOverview character={character} onEquip={handleEquip} />}
-          {section === 'skills' && <SkillTree character={character} onUnlock={handleUnlockSkill} />}
+          {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} />}
+          {section === 'character' && <CharacterOverview character={character} onEquip={handleEquip} onSell={handleSellItem} />}
+          {section === 'skills' && (
+            <SkillTree
+              character={character}
+              onUnlock={handleUnlockSkill}
+              onEquipAbility={handleEquipAbility}
+              onUnequipAbility={handleUnequipAbility}
+              onReorderAbility={handleReorderAbility}
+            />
+          )}
           {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} />}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
           {section === 'dungeon' && (
             <DungeonPanel
               character={character}
               dungeon={dungeon}
+              kingdomBonuses={kingdomBonuses}
               onLiveUpdate={onCharacterChange}
               onRunEnd={handleRunEnd}
             />
