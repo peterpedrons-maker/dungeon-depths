@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Character, RankEntry, Section, DungeonDef, EquipmentItem } from '../types/game';
+import { Character, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot } from '../types/game';
 import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
@@ -51,6 +51,12 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     const inventory = character.inventory.filter((i) => i.id !== item.id);
     if (prevEquipped) inventory.push(prevEquipped);
     onCharacterChange({ ...character, equipment: { ...character.equipment, [item.slot]: item }, inventory });
+  }
+
+  function handleUnequip(slot: ItemSlot) {
+    const item = character.equipment[slot];
+    if (!item) return;
+    onCharacterChange({ ...character, equipment: { ...character.equipment, [slot]: null }, inventory: [...character.inventory, item] });
   }
 
   function handleSellItem(item: EquipmentItem) {
@@ -109,7 +115,9 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         <main className="flex-1 p-3 sm:p-5 max-w-3xl min-w-0">
           {section === 'kingdom' && <KingdomOverview character={character} />}
           {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} />}
-          {section === 'character' && <CharacterOverview character={character} onEquip={handleEquip} onSell={handleSellItem} />}
+          {section === 'character' && (
+            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} />
+          )}
           {section === 'skills' && (
             <SkillTree
               character={character}
