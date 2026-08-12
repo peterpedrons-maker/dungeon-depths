@@ -1,11 +1,17 @@
-import { Character } from '../types/game';
+import { Character, ItemSlot } from '../types/game';
 import { fmt } from '../lib/format';
-import { generateWeapon, rarityColor } from '../lib/equipment';
+import { computeKingdomBonuses } from '../lib/buildings';
+import { generateItem, rarityColor } from '../lib/equipment';
 import { Panel } from './Panel';
 import { Button } from './Button';
 
 const POTION_COST = 15;
-const WEAPON_COST = 40;
+const ITEM_COST = 40;
+const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
+const MYSTERY_LABEL: Record<ItemSlot, string> = {
+  weapon: 'Arma Misteriosa', body: 'Peitoral Misterioso', legs: 'Perneira Misteriosa',
+  hands: 'Luvas Misteriosas', accessory: 'Acessório Misterioso',
+};
 
 interface Props {
   character: Character;
@@ -14,10 +20,12 @@ interface Props {
 }
 
 export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Props) {
-  function buyMysteryWeapon() {
-    if (ch.gold < WEAPON_COST) return;
-    const weapon = generateWeapon(ch.classId, Math.max(1, ch.bestDepth));
-    onCharacterChange({ ...ch, gold: ch.gold - WEAPON_COST, inventory: [...ch.inventory, weapon] });
+  const kingdomBonuses = computeKingdomBonuses(ch.buildings);
+
+  function buyMysteryItem(slot: ItemSlot) {
+    if (ch.gold < ITEM_COST) return;
+    const item = generateItem(slot, ch.classId, Math.max(1, ch.bestDepth), kingdomBonuses.itemQualityBonusPct);
+    onCharacterChange({ ...ch, gold: ch.gold - ITEM_COST, inventory: [...ch.inventory, item] });
   }
 
   return (
@@ -37,20 +45,24 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
         </Button>
       </div>
 
-      <div className="flex items-center justify-between bg-panel2 border border-panelborder rounded px-4 py-3">
-        <div>
-          <div className="font-bold text-parchment">Arma Misteriosa</div>
-          <div className="text-xs text-parchment/50">Uma arma da sua classe, de raridade incerta. Pode valer a pena arriscar.</div>
-        </div>
-        <Button onClick={buyMysteryWeapon} disabled={ch.gold < WEAPON_COST} className="shrink-0">
-          Comprar — {fmt(WEAPON_COST)} ouro
-        </Button>
+      <div className="space-y-2">
+        {SLOTS.map((slot) => (
+          <div key={slot} className="flex items-center justify-between bg-panel2 border border-panelborder rounded px-4 py-3">
+            <div>
+              <div className="font-bold text-parchment">{MYSTERY_LABEL[slot]}</div>
+              <div className="text-xs text-parchment/50">Um item da sua classe, de raridade incerta. Pode valer a pena arriscar.</div>
+            </div>
+            <Button onClick={() => buyMysteryItem(slot)} disabled={ch.gold < ITEM_COST} className="shrink-0">
+              Comprar — {fmt(ITEM_COST)} ouro
+            </Button>
+          </div>
+        ))}
       </div>
 
       <p className="mt-3 text-xs text-parchment/40">Você possui {fmt(ch.potions)} poção(ões) e {fmt(ch.gold)} de ouro.</p>
       {ch.equipment.weapon && (
         <p className="mt-1 text-xs">
-          Equipado: <span style={{ color: rarityColor(ch.equipment.weapon.rarity) }}>{ch.equipment.weapon.name}</span>
+          Arma equipada: <span style={{ color: rarityColor(ch.equipment.weapon.rarity) }}>{ch.equipment.weapon.name}</span>
         </p>
       )}
     </Panel>

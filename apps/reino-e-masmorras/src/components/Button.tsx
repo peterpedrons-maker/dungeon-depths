@@ -14,3 +14,21 @@ export function Button({ className = '', children, style, ...rest }: Props) {
     </button>
   );
 }
+
+// Small inline action button for list-row actions (Equipar/Vender in
+// CharacterOverview, priority reorder in SkillTree) — one shared style
+// instead of a mismatched one-off <button> per screen.
+export function SmallButton({ children, onClick, variant = 'solid' }: { children: React.ReactNode; onClick: () => void; variant?: 'solid' | 'ghost' }) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        variant === 'solid'
+          ? 'text-xs px-3 py-1 bg-gold text-ink rounded font-bold hover:brightness-110 shrink-0 whitespace-nowrap'
+          : 'text-xs px-3 py-1 border border-panelborder text-parchment/70 rounded font-bold hover:text-parchment hover:border-gold/50 shrink-0 whitespace-nowrap'
+      }
+    >
+      {children}
+    </button>
+  );
+}

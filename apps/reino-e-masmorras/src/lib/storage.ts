@@ -1,9 +1,21 @@
-import { Character, RankEntry } from '../types/game';
+import { Character, EquipmentItem, RankEntry } from '../types/game';
 import { CLASSES } from './classes';
 
 const CHAR_KEY = 'rm_character_v1';
 const RANK_KEY = 'rm_ranking_v1';
 const MAX_RANK_ENTRIES = 10;
+
+// Old saves may have items from before the weapon-only-slot rework, missing
+// the newer bonus fields entirely — back-fill with 0 rather than let NaN
+// leak into every stat sum downstream. Input is raw parsed JSON, hence `any`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function migrateItem(item: any): EquipmentItem {
+  return {
+    id: item.id, name: item.name, classId: item.classId, rarity: item.rarity, slot: item.slot ?? 'weapon',
+    dmgBonus: item.dmgBonus ?? 0, defBonus: item.defBonus ?? 0, hpBonus: item.hpBonus ?? 0,
+    secondaryStat: item.secondaryStat,
+  };
+}
 
 // Saves from before the class/skill/equipment rework may be missing fields
 // (or reference a class that no longer exists) — back-fill or discard rather
@@ -14,12 +26,21 @@ export function loadCharacter(): Character | null {
     if (!raw) return null;
     const c = JSON.parse(raw) as Character;
     if (!(c.classId in CLASSES)) return null;
+    const eq = c.equipment ?? ({} as Character['equipment']);
     return {
       ...c,
       skillPoints: c.skillPoints ?? 0,
       unlockedSkills: c.unlockedSkills ?? [],
-      equipment: c.equipment ?? { weapon: null },
-      inventory: c.inventory ?? [],
+      equippedAbilities: c.equippedAbilities ?? [],
+      equipment: {
+        weapon: eq.weapon ? migrateItem(eq.weapon) : null,
+        body: eq.body ? migrateItem(eq.body) : null,
+        legs: eq.legs ? migrateItem(eq.legs) : null,
+        hands: eq.hands ? migrateItem(eq.hands) : null,
+        accessory: eq.accessory ? migrateItem(eq.accessory) : null,
+      },
+      inventory: (c.inventory ?? []).map(migrateItem),
+      buildings: c.buildings ?? {},
     };
   } catch { return null; }
 }

@@ -42,6 +42,7 @@ export function Sidebar({ section, open, onClose, onNavigate, onEnterDungeon, on
 
         <Group title="Reino">
           <NavItem active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
+          <NavItem active={section === 'buildings'} onClick={() => nav('buildings')}>Construções</NavItem>
           <NavItem active={section === 'merchant'} onClick={() => nav('merchant')}>Mercador</NavItem>
         </Group>
 
