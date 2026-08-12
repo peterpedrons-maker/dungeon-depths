@@ -4,6 +4,7 @@ import { loadCharacter, saveCharacter, clearCharacter, loadRanking, addRankEntry
 import { TitleScreen } from './components/TitleScreen';
 import { CharacterCreation } from './components/CharacterCreation';
 import { GameShell } from './components/GameShell';
+import { ScreenFrame } from './components/ScreenFrame';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title');
@@ -36,20 +37,23 @@ export default function App() {
     setScreen('create');
   }
 
+  let content: React.ReactNode = null;
   switch (screen) {
     case 'title':
-      return (
+      content = (
         <TitleScreen
           hasCharacter={!!character}
           onContinue={() => setScreen('game')}
           onNewGame={handleAbandon}
         />
       );
+      break;
     case 'create':
-      return <CharacterCreation onCreated={handleCreated} />;
+      content = <CharacterCreation onCreated={handleCreated} />;
+      break;
     case 'game':
-      if (!character) { setScreen('create'); return null; }
-      return (
+      if (!character) { setScreen('create'); break; }
+      content = (
         <GameShell
           character={character}
           ranking={ranking}
@@ -58,7 +62,8 @@ export default function App() {
           onAbandon={handleAbandon}
         />
       );
-    default:
-      return null;
+      break;
   }
+
+  return <ScreenFrame>{content}</ScreenFrame>;
 }

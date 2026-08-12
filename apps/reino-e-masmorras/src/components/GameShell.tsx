@@ -57,7 +57,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-nightsky">
+    <div className="flex-1 flex flex-col bg-nightsky">
       <TopBar character={character} onMenuClick={() => setMenuOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar

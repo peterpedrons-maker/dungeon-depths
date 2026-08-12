@@ -9,7 +9,7 @@ interface Props {
 
 export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-4 text-center bg-nightsky">
+    <div className="flex-1 flex flex-col items-center justify-center gap-5 px-4 text-center bg-nightsky">
       <h1 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold text-gold tracking-[0.05em] sm:tracking-[0.08em] [text-shadow:0_2px_0_rgba(0,0,0,0.8)]">
         Reino &amp; Masmorras
       </h1>
@@ -20,9 +20,9 @@ export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
       </p>
       <div className="flex flex-col gap-3 w-56 mt-4">
         {hasCharacter && (
-          <Button variant="dourado" onClick={onContinue}>Continuar Jornada</Button>
+          <Button onClick={onContinue}>Continuar Jornada</Button>
         )}
-        <Button variant="carmesim" onClick={onNewGame}>
+        <Button onClick={onNewGame}>
           {hasCharacter ? 'Nova Jornada' : 'Iniciar Jornada'}
         </Button>
       </div>

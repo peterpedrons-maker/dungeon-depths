@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted fonts — no dependency on an external font CDN being reachable. */
+@font-face {
+  font-family: 'Cinzel';
+  src: url('./assets/fonts/cinzel-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('./assets/fonts/garamond-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('./assets/fonts/garamond-400i.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 html, body, #root {
   height: 100%;
 }
