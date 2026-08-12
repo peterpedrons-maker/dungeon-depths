@@ -7,6 +7,7 @@ import { generateWeapon, rarityColor } from '../lib/equipment';
 import { rollAttack } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { Panel } from './Panel';
+import { Button } from './Button';
 
 const ATTACK_INTERVAL = 1600;
 const LEAN_MS = 260;
@@ -290,14 +291,13 @@ export function DungeonPanel({ character, dungeon, onLiveUpdate, onRunEnd }: Pro
       <div className="mt-4 flex gap-2 flex-wrap">
         {phase === 'fight' && (
           <>
-            <button onClick={togglePause} className="px-4 py-2 bg-crimson rounded font-bold hover:brightness-110">
+            <Button variant="carmesim" onClick={togglePause}>
               {paused ? 'Retomar Combate' : 'Pausar'}
-            </button>
-            <button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= ch.maxHp}
-              className="px-4 py-2 bg-emerald-800 rounded disabled:opacity-40 hover:brightness-110">
+            </Button>
+            <Button variant="neutro" onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= ch.maxHp}>
               Poção ({ch.potions})
-            </button>
-            <button onClick={retreatSafely} className="px-4 py-2 bg-neutral-700 rounded hover:brightness-110">Retornar ao Reino</button>
+            </Button>
+            <Button variant="neutro" onClick={retreatSafely}>Retornar ao Reino</Button>
           </>
         )}
         {phase === 'ended' && (
@@ -305,9 +305,7 @@ export function DungeonPanel({ character, dungeon, onLiveUpdate, onRunEnd }: Pro
             <p className="mb-3 text-parchment/80">
               {endedReason === 'death' ? 'Sua expedição terminou.' : 'Você retornou em segurança.'} Profundidade alcançada: {depth}.
             </p>
-            <button onClick={confirmReturnToHub} className="px-4 py-2 bg-gold text-ink rounded font-bold hover:brightness-110">
-              Voltar ao Reino
-            </button>
+            <Button variant="dourado" onClick={confirmReturnToHub}>Voltar ao Reino</Button>
           </div>
         )}
       </div>

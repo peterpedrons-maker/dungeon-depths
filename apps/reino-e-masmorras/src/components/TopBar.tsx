@@ -1,6 +1,8 @@
 import { Character } from '../types/game';
 import { CLASSES } from '../lib/classes';
 import { fmt } from '../lib/format';
+import moedaIcon from '../assets/moeda.webp';
+import pocaoIcon from '../assets/pocao.webp';
 
 export function TopBar({ character: ch, onMenuClick }: { character: Character; onMenuClick: () => void }) {
   const cls = CLASSES[ch.classId];
@@ -21,8 +23,8 @@ export function TopBar({ character: ch, onMenuClick }: { character: Character; o
         <span className="text-parchment/50 text-xs">Nv. {ch.level}</span>
       </div>
 
-      <Stat icon={<CoinIcon />} value={fmt(ch.gold)} color="text-gold" />
-      <Stat icon={<PotionIcon />} value={fmt(ch.potions)} color="text-emerald-400" />
+      <Stat icon={<img src={moedaIcon} alt="" className="w-5 h-5 shrink-0" />} value={fmt(ch.gold)} color="text-gold" />
+      <Stat icon={<img src={pocaoIcon} alt="" className="w-4 h-5 shrink-0" />} value={fmt(ch.potions)} color="text-emerald-400" />
 
       <Bar icon={<HeartIcon />} cur={ch.hp} max={ch.maxHp} pct={hpPct} barColor="bg-red-600" />
       <Bar icon={<StarIcon />} cur={ch.xp} max={ch.xpToNext} pct={xpPct} barColor="bg-sky-500" />
@@ -51,17 +53,6 @@ function Bar({ icon, cur, max, pct, barColor }: { icon: React.ReactNode; cur: nu
   );
 }
 
-function CoinIcon() {
-  return <span className="w-3.5 h-3.5 rounded-full bg-gold border border-yellow-800 shadow-[inset_0_-1px_0_rgba(0,0,0,0.35)] shrink-0" />;
-}
-function PotionIcon() {
-  return (
-    <span className="relative w-3 h-3.5 shrink-0 block">
-      <span className="absolute left-1/2 -translate-x-1/2 -top-0.5 w-1 h-1 bg-emerald-700 rounded-sm" />
-      <span className="absolute bottom-0 w-3 h-3 rounded-full rounded-t-sm bg-emerald-500 border border-emerald-800" />
-    </span>
-  );
-}
 function HeartIcon() {
   return (
     <span className="relative w-3 h-3 shrink-0 rotate-45 bg-red-600 rounded-[2px] block">
