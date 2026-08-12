@@ -28,11 +28,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run build
+
+      # This is a monorepo of independent games under apps/<name>/. Every
+      # game builds itself, then gets copied into the combined site output.
+      # ROOT_APP keeps serving at the site root so its existing bookmarked
+      # URL never changes; every other app is published under /<name>/.
+      # Adding a new game later needs zero edits here — just add the folder.
+      - name: Build every app and assemble the site
+        run: |
+          set -e
+          ROOT_APP="dungeon-depths"
+          mkdir -p site
+          for dir in apps/*/; do
+            name="$(basename "$dir")"
+            echo "── Building $name ──"
+            (cd "$dir" && npm ci && npm run build)
+            if [ "$name" = "$ROOT_APP" ]; then
+              cp -r "$dir/dist/." site/
+            else
+              mkdir -p "site/$name"
+              cp -r "$dir/dist/." "site/$name/"
+            fi
+          done
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
