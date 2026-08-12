@@ -17,7 +17,7 @@ export default {
         woodlight: "#a9834f",
       },
       fontFamily: {
-        serif: ["'EB Garamond'", "Georgia", "'Times New Roman'", "serif"],
+        serif: ["'MedievalSharp'", "Georgia", "'Times New Roman'", "serif"],
         display: ["Cinzel", "Georgia", "serif"],
       },
     },

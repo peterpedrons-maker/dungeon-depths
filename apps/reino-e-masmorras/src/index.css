@@ -11,17 +11,10 @@
   font-display: swap;
 }
 @font-face {
-  font-family: 'EB Garamond';
-  src: url('./assets/fonts/garamond-400.woff2') format('woff2');
+  font-family: 'MedievalSharp';
+  src: url('./assets/fonts/medievalsharp-400.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'EB Garamond';
-  src: url('./assets/fonts/garamond-400i.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
   font-display: swap;
 }
 
@@ -33,7 +26,7 @@ body {
   margin: 0;
   background: #171009;
   color: #e8dcc0;
-  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-family: 'MedievalSharp', Georgia, 'Times New Roman', serif;
   font-size: 17px;
   -webkit-font-smoothing: antialiased;
   background-image:
