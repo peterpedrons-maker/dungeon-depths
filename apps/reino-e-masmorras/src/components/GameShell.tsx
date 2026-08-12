@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Character, RankEntry, Section } from '../types/game';
+import { Character, RankEntry, Section, DungeonDef, Weapon } from '../types/game';
+import { DUNGEONS } from '../lib/dungeons';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { KingdomOverview } from './KingdomOverview';
 import { CharacterOverview } from './CharacterOverview';
+import { SkillTree } from './SkillTree';
 import { Merchant } from './Merchant';
 import { RankingScreen } from './RankingScreen';
 import { DungeonPanel } from './DungeonPanel';
@@ -20,10 +22,10 @@ interface Props {
 
 export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onAbandon }: Props) {
   const [section, setSection] = useState<Section>('kingdom');
-  const [dungeonStartDepth, setDungeonStartDepth] = useState(1);
+  const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
 
-  function enterDungeon(startDepth: number) {
-    setDungeonStartDepth(startDepth);
+  function enterDungeon(d: DungeonDef) {
+    setDungeon(d);
     setSection('dungeon');
   }
 
@@ -37,6 +39,22 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     onCharacterChange({ ...character, gold: character.gold - POTION_COST, potions: character.potions + 1 });
   }
 
+  function handleEquip(weapon: Weapon) {
+    const prevEquipped = character.equipment.weapon;
+    const inventory = character.inventory.filter((w) => w.id !== weapon.id);
+    if (prevEquipped) inventory.push(prevEquipped);
+    onCharacterChange({ ...character, equipment: { weapon }, inventory });
+  }
+
+  function handleUnlockSkill(nodeId: string) {
+    if (character.skillPoints <= 0 || character.unlockedSkills.includes(nodeId)) return;
+    onCharacterChange({
+      ...character,
+      skillPoints: character.skillPoints - 1,
+      unlockedSkills: [...character.unlockedSkills, nodeId],
+    });
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-nightsky">
       <TopBar character={character} />
@@ -44,13 +62,14 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         <Sidebar section={section} onNavigate={setSection} onEnterDungeon={enterDungeon} onAbandon={onAbandon} />
         <main className="flex-1 p-5 max-w-3xl">
           {section === 'kingdom' && <KingdomOverview character={character} />}
-          {section === 'character' && <CharacterOverview character={character} />}
-          {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} />}
+          {section === 'character' && <CharacterOverview character={character} onEquip={handleEquip} />}
+          {section === 'skills' && <SkillTree character={character} onUnlock={handleUnlockSkill} />}
+          {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} />}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
           {section === 'dungeon' && (
             <DungeonPanel
               character={character}
-              startDepth={dungeonStartDepth}
+              dungeon={dungeon}
               onLiveUpdate={onCharacterChange}
               onRunEnd={handleRunEnd}
             />

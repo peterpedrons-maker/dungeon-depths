@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Character, EnemyInstance } from '../types/game';
+import { Character, EnemyInstance, DungeonDef } from '../types/game';
 import { spawnEnemy } from '../lib/enemies';
-import { CLASSES, grantXp } from '../lib/classes';
+import { grantXp } from '../lib/classes';
+import { computeCombatStats } from '../lib/combatStats';
+import { generateWeapon, rarityColor } from '../lib/equipment';
 import { rollAttack } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { Panel } from './Panel';
@@ -9,24 +11,25 @@ import { Panel } from './Panel';
 const ATTACK_INTERVAL = 1600;
 const LEAN_MS = 260;
 const HEAL_THRESHOLD = 0.35;
+const BASE_DROP_CHANCE = 0.12;
 
-interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; }
+interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; }
 interface Props {
   character: Character;
-  startDepth: number;
+  dungeon: DungeonDef;
   onLiveUpdate: (c: Character) => void;
   onRunEnd: (finalCharacter: Character, deepestDepth: number) => void;
 }
 
 type Phase = 'fight' | 'ended';
 
-export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: Props) {
+export function DungeonPanel({ character, dungeon, onLiveUpdate, onRunEnd }: Props) {
   const [ch, setCh] = useState<Character>(character);
-  const [depth, setDepth] = useState(startDepth);
-  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(startDepth));
+  const [depth, setDepth] = useState(dungeon.startDepth);
+  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(dungeon.startDepth, dungeon.enemyPool));
   const [phase, setPhase] = useState<Phase>('fight');
   const [paused, setPaused] = useState(false);
-  const [log, setLog] = useState<string[]>(['Você desce as escadas em direção à masmorra...']);
+  const [log, setLog] = useState<string[]>([`Você entra em ${dungeon.name}...`]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
   const [playerLean, setPlayerLean] = useState(0);
   const [enemyLean, setEnemyLean] = useState(0);
@@ -44,7 +47,6 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
   const phaseRef = useRef<Phase>('fight');
   const mountedRef = useRef(true);
 
-  const cls = CLASSES[ch.classId];
   const heroSpr = heroSprites(ch.classId);
 
   function updateCh(next: Character) { chRef.current = next; setCh(next); onLiveUpdate(next); }
@@ -54,9 +56,9 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
   function pushLog(line: string) {
     setLog((l) => [...l.slice(-4), line]);
   }
-  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean) {
+  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean) {
     const id = floaterId.current++;
-    setFloaters((f) => [...f, { id, side, value, crit }]);
+    setFloaters((f) => [...f, { id, side, value, crit, blocked }]);
     setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), 900);
   }
   function flash(side: 'player' | 'enemy') {
@@ -71,6 +73,14 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
     }, delay);
   }
 
+  function tryDropEquipment() {
+    const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1));
+    if (Math.random() >= chance) return;
+    const weapon = generateWeapon(chRef.current.classId, depthRef.current);
+    updateCh({ ...chRef.current, inventory: [...chRef.current.inventory, weapon] });
+    pushLog(`Você encontrou: ${weapon.name}!`);
+  }
+
   function runRound() {
     if (!mountedRef.current || phaseRef.current !== 'fight') return;
 
@@ -78,32 +88,31 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
     setTimeout(() => {
       if (!mountedRef.current) return;
       setPlayerLean(0);
-      const { dmg, crit } = rollAttack(chRef.current.atk, enemyRef.current.def, cls.critChance);
+      const stats = computeCombatStats(chRef.current);
+      const { dmg, crit } = rollAttack(stats.atk, enemyRef.current.def, stats.critChance, stats.critDmgMult);
       const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
       updateEnemy({ ...enemyRef.current, hp: enemyHp });
       pushFloat('enemy', dmg, crit);
       flash('enemy');
       pushLog(`Você acerta ${enemyRef.current.name} em ${dmg}${crit ? ' (crítico!)' : ''}.`);
 
-      if (cls.lifesteal > 0) {
-        const heal = Math.round(dmg * cls.lifesteal);
-        updateCh({ ...chRef.current, hp: Math.min(chRef.current.maxHp, chRef.current.hp + heal) });
-      }
-
       if (enemyHp <= 0) {
         const prevLevel = chRef.current.level;
-        const withXp = grantXp(chRef.current, enemyRef.current.xpReward);
-        const finalChar = { ...withXp, gold: withXp.gold + enemyRef.current.goldReward, bestDepth: Math.max(withXp.bestDepth, depthRef.current) };
+        const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
+        const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1));
+        const withXp = grantXp(chRef.current, xpGain);
+        const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current) };
         updateCh(finalChar);
-        pushLog(`${enemyRef.current.name} foi derrotado! +${enemyRef.current.xpReward} XP, +${enemyRef.current.goldReward} de ouro.`);
+        pushLog(`${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`);
         if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
+        tryDropEquipment();
 
         setTimeout(() => {
           if (!mountedRef.current) return;
           const nextDepth = depthRef.current + 1;
           updateDepth(nextDepth);
-          updateEnemy(spawnEnemy(nextDepth));
-          pushLog(`Você avança mais fundo na masmorra. Profundidade ${nextDepth}.`);
+          updateEnemy(spawnEnemy(nextDepth, dungeon.enemyPool));
+          pushLog(`Você avança mais fundo em ${dungeon.name}. Profundidade ${nextDepth}.`);
           scheduleTick();
         }, 900);
         return;
@@ -114,12 +123,16 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
         if (!mountedRef.current) return;
         setEnemyLean(0);
         maybeAutoHeal();
-        const { dmg: edmg, crit: ecrit } = rollAttack(enemyRef.current.atk, chRef.current.def, 0.06);
+        const defStats = computeCombatStats(chRef.current);
+        const { dmg: rawDmg, crit: ecrit } = rollAttack(enemyRef.current.atk, defStats.def, 0.06);
+        let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1));
+        const blocked = Math.random() < defStats.blockChance;
+        if (blocked) edmg = Math.round(edmg * 0.5);
         const hp = Math.max(0, chRef.current.hp - edmg);
         updateCh({ ...chRef.current, hp });
-        pushFloat('player', edmg, ecrit);
+        pushFloat('player', edmg, ecrit, blocked);
         flash('player');
-        pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}.`);
+        pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}.`);
 
         if (hp <= 0) {
           pushLog('Você caiu em combate...');
@@ -189,7 +202,7 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
       const w = canvas.width, h = canvas.height;
       g.clearRect(0, 0, w, h);
       // back wall
-      g.fillStyle = '#1a1220';
+      g.fillStyle = '#1e1610';
       g.fillRect(0, 0, w, h - 40);
       // floor
       g.fillStyle = '#241a12';
@@ -222,9 +235,10 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
   }, [ch.classId, enemy.shape, phase, playerLean, enemyLean, flashSide, heroSpr]);
 
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
+  const weapon = ch.equipment.weapon;
 
   return (
-    <Panel title={`Masmorra — Profundidade ${depth}`}>
+    <Panel title={`${dungeon.name} — Profundidade ${depth}`}>
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
         {floaters.map((f) => (
@@ -235,7 +249,7 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
             }`}
             style={{ top: '38%' }}
           >
-            -{f.value}{f.crit ? '!' : ''}
+            -{f.value}{f.crit ? '!' : ''}{f.blocked ? <span className="text-xs text-sky-300 align-top"> bloq.</span> : ''}
           </div>
         ))}
         {paused && phase === 'fight' && (
@@ -243,7 +257,18 @@ export function DungeonPanel({ character, startDepth, onLiveUpdate, onRunEnd }: 
             Pausado
           </div>
         )}
+        {dungeon.special && (
+          <div className="absolute top-2 left-2 bg-black/70 text-gold text-xs font-bold px-2 py-1 rounded">
+            ✦ Masmorra Especial
+          </div>
+        )}
       </div>
+
+      {weapon && (
+        <p className="mt-2 text-xs text-parchment/50">
+          Empunhando: <span style={{ color: rarityColor(weapon.rarity) }}>{weapon.name}</span>
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
         <div>

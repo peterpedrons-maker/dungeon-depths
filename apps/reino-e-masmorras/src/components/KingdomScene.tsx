@@ -16,19 +16,19 @@ export function KingdomScene() {
     const draw = (t: number) => {
       const w = canvas.width, h = canvas.height;
       const sky = g.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, '#0d0a1e');
-      sky.addColorStop(1, '#241a38');
+      sky.addColorStop(0, '#100d0a');
+      sky.addColorStop(1, '#2a2013');
       g.fillStyle = sky;
       g.fillRect(0, 0, w, h);
 
       // moon
       const moonX = w * 0.78, moonY = h * 0.22, moonR = 28;
       g.save();
-      g.shadowBlur = 30; g.shadowColor = 'rgba(230,220,255,0.6)';
-      g.fillStyle = '#f2ecff';
+      g.shadowBlur = 30; g.shadowColor = 'rgba(255,240,210,0.55)';
+      g.fillStyle = '#f5ecd8';
       g.beginPath(); g.arc(moonX, moonY, moonR, 0, Math.PI * 2); g.fill();
       g.restore();
-      g.fillStyle = 'rgba(160,150,200,0.25)';
+      g.fillStyle = 'rgba(180,160,120,0.25)';
       g.beginPath(); g.arc(moonX - 9, moonY - 6, 5, 0, Math.PI * 2); g.fill();
       g.beginPath(); g.arc(moonX + 6, moonY + 9, 3.5, 0, Math.PI * 2); g.fill();
 
@@ -44,7 +44,7 @@ export function KingdomScene() {
       g.globalAlpha = 1;
 
       // distant hills
-      g.fillStyle = '#170f28';
+      g.fillStyle = '#191207';
       g.beginPath();
       g.moveTo(0, h * 0.62);
       g.quadraticCurveTo(w * 0.25, h * 0.5, w * 0.5, h * 0.6);
@@ -54,7 +54,7 @@ export function KingdomScene() {
 
       // castle silhouette
       const cx = w * 0.42, groundY = h * 0.72;
-      g.fillStyle = '#0d0916';
+      g.fillStyle = '#0f0b07';
       // main keep
       g.fillRect(cx - 40, groundY - 70, 80, 70);
       // towers
@@ -65,7 +65,7 @@ export function KingdomScene() {
       for (let i = 0; i < 3; i++) g.fillRect(cx - 58 + i * 8, groundY - 103, 5, 8);
       for (let i = 0; i < 3; i++) g.fillRect(cx + 36 + i * 8, groundY - 98, 5, 8);
       // gate
-      g.fillStyle = '#241a38';
+      g.fillStyle = '#231a0f';
       g.beginPath(); g.roundRect(cx - 10, groundY - 24, 20, 24, [6, 6, 0, 0]); g.fill();
 
       // torches either side of the gate
@@ -78,11 +78,11 @@ export function KingdomScene() {
       g.restore();
 
       // ground
-      g.fillStyle = '#100b1c';
+      g.fillStyle = '#120e08';
       g.fillRect(0, groundY, w, h - groundY);
 
       // drifting fog bands
-      g.fillStyle = 'rgba(180,170,220,0.05)';
+      g.fillStyle = 'rgba(200,180,140,0.05)';
       for (let i = 0; i < 3; i++) {
         const fx = ((t / 60 + i * 220) % (w + 200)) - 100;
         g.beginPath();

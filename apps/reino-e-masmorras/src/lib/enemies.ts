@@ -1,4 +1,4 @@
-import { EnemyInstance, EnemyTier } from '../types/game';
+import { EnemyInstance, EnemyShape, EnemyTier } from '../types/game';
 
 // Base tiers, picked by depth bracket. Stats then scale continuously with
 // depth on top of the tier's base, so a deep run stays a real challenge even
@@ -13,16 +13,17 @@ const TIERS: EnemyTier[] = [
   { shape: 'dragon',   name: 'Dragão Jovem',         color: '#a5271f', minDepth: 20, hp: 105, atk: 21, def: 10, xp: 55, gold: 45 },
 ];
 
-export function tierForDepth(depth: number): EnemyTier {
-  let chosen = TIERS[0];
-  for (const t of TIERS) {
+export function tierForDepth(depth: number, allowed?: EnemyShape[]): EnemyTier {
+  const pool = allowed ? TIERS.filter((t) => allowed.includes(t.shape)) : TIERS;
+  let chosen = pool[0] ?? TIERS[0];
+  for (const t of pool) {
     if (depth >= t.minDepth) chosen = t;
   }
   return chosen;
 }
 
-export function spawnEnemy(depth: number): EnemyInstance {
-  const tier = tierForDepth(depth);
+export function spawnEnemy(depth: number, allowed?: EnemyShape[]): EnemyInstance {
+  const tier = tierForDepth(depth, allowed);
   const growth = 1 + depth * 0.055;
   const hp = Math.round(tier.hp * growth);
   return {
