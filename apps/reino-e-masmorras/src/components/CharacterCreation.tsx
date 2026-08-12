@@ -18,7 +18,7 @@ export function CharacterCreation({ onCreated }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 bg-nightsky">
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4 bg-nightsky">
       <h2 className="font-display text-2xl md:text-3xl text-gold tracking-[0.1em] uppercase [text-shadow:0_2px_0_rgba(0,0,0,0.8)]">
         Crie seu Herói
       </h2>
@@ -53,7 +53,7 @@ export function CharacterCreation({ onCreated }: Props) {
         ))}
       </div>
 
-      <Button variant="dourado" onClick={confirm} className="mt-2">Começar Jornada</Button>
+      <Button onClick={confirm} className="mt-2">Começar Jornada</Button>
     </div>
   );
 }

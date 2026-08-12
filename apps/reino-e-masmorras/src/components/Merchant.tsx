@@ -32,7 +32,7 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
           <div className="font-bold text-parchment">Poção de Vida</div>
           <div className="text-xs text-parchment/50">Recupera 40% da vida máxima em combate.</div>
         </div>
-        <Button variant="neutro" onClick={onBuyPotion} disabled={ch.gold < POTION_COST} className="shrink-0">
+        <Button onClick={onBuyPotion} disabled={ch.gold < POTION_COST} className="shrink-0">
           Comprar — {fmt(POTION_COST)} ouro
         </Button>
       </div>
@@ -42,7 +42,7 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
           <div className="font-bold text-parchment">Arma Misteriosa</div>
           <div className="text-xs text-parchment/50">Uma arma da sua classe, de raridade incerta. Pode valer a pena arriscar.</div>
         </div>
-        <Button variant="dourado" onClick={buyMysteryWeapon} disabled={ch.gold < WEAPON_COST} className="shrink-0">
+        <Button onClick={buyMysteryWeapon} disabled={ch.gold < WEAPON_COST} className="shrink-0">
           Comprar — {fmt(WEAPON_COST)} ouro
         </Button>
       </div>

@@ -291,13 +291,13 @@ export function DungeonPanel({ character, dungeon, onLiveUpdate, onRunEnd }: Pro
       <div className="mt-4 flex gap-2 flex-wrap">
         {phase === 'fight' && (
           <>
-            <Button variant="carmesim" onClick={togglePause}>
+            <Button onClick={togglePause}>
               {paused ? 'Retomar Combate' : 'Pausar'}
             </Button>
-            <Button variant="neutro" onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= ch.maxHp}>
+            <Button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= ch.maxHp}>
               Poção ({ch.potions})
             </Button>
-            <Button variant="neutro" onClick={retreatSafely}>Retornar ao Reino</Button>
+            <Button onClick={retreatSafely}>Retornar ao Reino</Button>
           </>
         )}
         {phase === 'ended' && (
@@ -305,7 +305,7 @@ export function DungeonPanel({ character, dungeon, onLiveUpdate, onRunEnd }: Pro
             <p className="mb-3 text-parchment/80">
               {endedReason === 'death' ? 'Sua expedição terminou.' : 'Você retornou em segurança.'} Profundidade alcançada: {depth}.
             </p>
-            <Button variant="dourado" onClick={confirmReturnToHub}>Voltar ao Reino</Button>
+            <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
           </div>
         )}
       </div>
