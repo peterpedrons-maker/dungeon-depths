@@ -12,6 +12,12 @@ import cavaleiroUrl from '../assets/sprites/cavaleiro.webp';
 import paladinoUrl from '../assets/sprites/paladino.webp';
 import barbaroUrl from '../assets/sprites/barbaro.webp';
 import arqueiroUrl from '../assets/sprites/arqueiro.webp';
+import cacadorUrl from '../assets/sprites/cacador.webp';
+import feiticeiroUrl from '../assets/sprites/feiticeiro.webp';
+import bruxoUrl from '../assets/sprites/bruxo.webp';
+import druidaUrl from '../assets/sprites/druida.webp';
+import bardoUrl from '../assets/sprites/bardo.webp';
+import necromanteUrl from '../assets/sprites/necromante.webp';
 import goblinUrl from '../assets/sprites/goblin.webp';
 import loboUrl from '../assets/sprites/lobo.webp';
 import esqueletoUrl from '../assets/sprites/esqueleto.webp';
@@ -44,16 +50,12 @@ function loadImage(url: string, displayH: number): Sprite {
 
 const HERO_SOURCES: Record<ClassId, string> = {
   // Assassino's sprite file carries over unchanged for Ladino (same class,
-  // renamed). Classes below without dedicated art yet borrow the sprite of
-  // the existing class they resemble most (heavy melee -> Guerreiro,
-  // light/rogue-ish -> Ladino, caster -> Mago) as a placeholder, until a
-  // matching pixel-art hero is generated from the Kit de Arte prompts and
-  // swapped in here.
+  // renamed). Every class now has dedicated art.
   guerreiro: guerreiroUrl, mago: magoUrl, ladino: assassinoUrl,
   clerigo: clerigoUrl,
   cavaleiro: cavaleiroUrl, paladino: paladinoUrl, barbaro: barbaroUrl, arqueiro: arqueiroUrl,
-  cacador: assassinoUrl, bardo: assassinoUrl,
-  feiticeiro: magoUrl, bruxo: magoUrl, druida: magoUrl, necromante: magoUrl,
+  cacador: cacadorUrl, bardo: bardoUrl,
+  feiticeiro: feiticeiroUrl, bruxo: bruxoUrl, druida: druidaUrl, necromante: necromanteUrl,
 };
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, orc: orcUrl,
