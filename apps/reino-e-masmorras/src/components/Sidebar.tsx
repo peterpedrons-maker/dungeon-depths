@@ -1,5 +1,4 @@
-import { Section, DungeonDef } from '../types/game';
-import { DUNGEONS } from '../lib/dungeons';
+import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
 import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconCoin, IconTrophy } from './icons';
 
@@ -8,13 +7,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onNavigate: (s: Section) => void;
-  onEnterDungeon: (dungeon: DungeonDef) => void;
   onAbandon: () => void;
 }
 
-export function Sidebar({ section, open, onClose, onNavigate, onEnterDungeon, onAbandon }: Props) {
+export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props) {
   const nav = (s: Section) => { onNavigate(s); onClose(); };
-  const enter = (d: DungeonDef) => { onEnterDungeon(d); onClose(); };
   const abandon = () => { onAbandon(); onClose(); };
 
   return (
@@ -33,12 +30,9 @@ export function Sidebar({ section, open, onClose, onNavigate, onEnterDungeon, on
         </Group>
 
         <Group title="Masmorras">
-          {DUNGEONS.map((d) => (
-            <NavItem key={d.id} icon={<IconSkull className="w-4 h-4" />} active={section === 'dungeon'} onClick={() => enter(d)} title={d.desc}>
-              {d.special && <span className="text-gold mr-1">✦</span>}
-              {d.name}
-            </NavItem>
-          ))}
+          <NavItem icon={<IconSkull className="w-4 h-4" />} active={section === 'dungeon-select' || section === 'dungeon'} onClick={() => nav('dungeon-select')}>
+            Explorar
+          </NavItem>
         </Group>
 
         <Group title="Reino">
