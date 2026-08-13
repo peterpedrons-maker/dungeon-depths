@@ -63,6 +63,11 @@ function rollMiss(attackerAccuracy: number, defenderEvasion: number): boolean {
   const missChance = Math.max(0, Math.min(MISS_CHANCE_CAP, defenderEvasion - attackerAccuracy));
   return Math.random() < missChance;
 }
+// Permanent cooldown reduction from skill-tree secondary-attribute nodes
+// shortens every ability's cooldown when it's set, never below 1 round.
+function applyCd(cooldown: number, cooldownReductionPct: number): number {
+  return Math.max(1, Math.round(cooldown * (1 - cooldownReductionPct)));
+}
 
 export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd }: Props) {
   const [ch, setCh] = useState<Character>(character);
@@ -190,8 +195,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd)),
       critDmgMult: base.critDmgMult + critDmgAdd,
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd)),
-      evasion: Math.max(0, getModTotal(playerModsRef.current, 'evasion')),
-      accuracy: getModTotal(playerModsRef.current, 'accuracy'),
+      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion')),
+      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy'),
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct'),
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
     };
@@ -238,7 +243,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       if (!SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
       if (!conditionMet(ab)) continue;
-      cooldownsRef.current[ab.id] = ab.cooldown;
+      cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct);
       const eff = ab.effect;
       if (eff.kind === 'heal') {
         const maxHp = effectiveMaxHp(chRef.current);
@@ -378,7 +383,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           pushLog(`Seu ataque erra ${enemyRef.current.name}!`);
           pushFloat('enemy', 0, false, false, true);
         } else if (offenseAbility) {
-          cooldownsRef.current[offenseAbility.id] = offenseAbility.cooldown;
+          cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
           const eff = offenseAbility.effect;
           // Abilities from magical classes cast as spells by default (matk vs
           // mdef); basic attacks (the `else` branch below) are always

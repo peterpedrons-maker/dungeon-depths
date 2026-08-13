@@ -3,9 +3,10 @@ export type ClassId =
   | 'cavaleiro' | 'paladino' | 'barbaro' | 'arqueiro' | 'cacador'
   | 'feiticeiro' | 'bruxo' | 'druida' | 'bardo' | 'necromante';
 
-// ── Primary attributes: a derived layer fed only by "attribute" skill nodes
-// (never a free-allocation pool), converted into CombatStats via fixed
-// per-point coefficients in combatStats.ts ──
+// ── Primary attributes: class base (baseAttrs, below) + Character.allocatedAttrs
+// (a free-allocation pool the player spends attributePoints into, 1 granted
+// per level) — no longer fed by the skill tree at all. Converted into
+// CombatStats via fixed per-point coefficients in combatStats.ts ──
 export type AttributeKey = 'str' | 'dex' | 'agi' | 'vit' | 'int' | 'wis' | 'luk';
 export type Attributes = Record<AttributeKey, number>;
 
@@ -24,6 +25,7 @@ export interface ClassDef {
   baseMatk: number; // magical power — only spent by abilities cast as spells
   baseMdef: number; // magical defense
   critChance: number;
+  baseAttrs: Partial<Attributes>; // starting level-1 attributes, matching the class's priority stats
 }
 
 export type Rarity = 'comum' | 'incomum' | 'raro' | 'epico' | 'legendario';
@@ -51,23 +53,30 @@ export interface Equipment {
   accessory: EquipmentItem | null;
 }
 
-// ── Skill tree: attribute/passive nodes are always-on stat math; active nodes
-// unlock a discrete ability governed by the cooldown/priority/condition engine ──
+// ── Skill tree: "attribute" nodes are always-on SECONDARY stat math (crit,
+// vida, defesa, redução de recarga, etc. — never the 7 primary attributes,
+// which come only from ClassDef.baseAttrs + Character.allocatedAttrs now);
+// "passive" nodes are unique/conditional effects; "active" nodes unlock a
+// discrete ability governed by the cooldown/priority/condition engine ──
 export type SkillNodeType = 'attribute' | 'passive' | 'active';
 
 export interface SkillEffect {
   dmgPct?: number;        // multiplies attack power
-  defPct?: number;        // multiplies defense
+  defPct?: number;        // multiplies physical defense only
+  mdefPct?: number;       // multiplies magical defense only
   critPct?: number;       // adds to crit chance
   critDmgPct?: number;    // adds to crit damage multiplier
   blockChance?: number;   // chance to halve an incoming hit
-  flatBonusDmg?: number;  // flat damage added to every hit
+  flatBonusDmg?: number;  // flat physical damage added to every hit
+  flatBonusMagicDmg?: number; // flat magical damage added to every hit
   lowHpDmgScale?: number; // extra damage% scaling with missing HP
   maxHpFlat?: number;     // flat bonus to max HP
   lifestealPct?: number;  // % of damage dealt healed back
   thornsPct?: number;     // % of an incoming hit reflected back at the attacker
   onCritHealPct?: number; // heals for % of max HP whenever the player crits
-  attrBonus?: Partial<Attributes>; // present only on "attribute" nodes
+  evasionPct?: number;    // permanent base dodge chance
+  accuracyPct?: number;   // permanent base hit chance, offsets enemy evasion
+  cooldownReductionPct?: number; // shortens every ability's cooldown, capped in combatStats.ts
   dmgPctVsStatus?: { status: StatusEffectKind; pct: number }; // conditional passive, e.g. "+15% dmg vs poisoned enemy"
 }
 
@@ -179,7 +188,9 @@ export interface Character {
   gold: number;
   potions: number;
   bestDepth: number;
-  skillPoints: number;
+  skillPoints: number; // granted every 2 levels — spent 1-per-node in the skill tree
+  attributePoints: number; // granted every level — spent freely across the 7 primary attributes
+  allocatedAttrs: Attributes; // player-chosen distribution of attributePoints already spent
   unlockedSkills: string[]; // node ids, e.g. "guerreiro:furioso:0" — for active nodes, this only means "known"
   equippedAbilities: string[]; // ordered subset of unlocked active-ability ids, actually used in combat (checked top to bottom each round)
   equipment: Equipment;
@@ -278,6 +289,9 @@ export interface CombatStats {
   supportPowerPct: number; // WIS-derived: scales heal/buff ability magnitudes
   dropChanceBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
   itemQualityBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
+  evasion: number; // permanent base dodge chance, from skill-tree secondary-attribute nodes
+  accuracy: number; // permanent base hit chance, from skill-tree secondary-attribute nodes
+  cooldownReductionPct: number; // shortens ability cooldowns, capped at 50%
 }
 
 // ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──

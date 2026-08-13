@@ -1,5 +1,5 @@
 import { Character } from '../types/game';
-import { CLASSES } from '../lib/classes';
+import { CLASSES, MAX_LEVEL } from '../lib/classes';
 import { effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import moedaIcon from '../assets/moeda.webp';
@@ -10,6 +10,7 @@ export function TopBar({ character: ch, onMenuClick }: { character: Character; o
   const maxHp = effectiveMaxHp(ch);
   const hpPct = Math.max(0, Math.min(100, (ch.hp / maxHp) * 100));
   const xpPct = Math.max(0, Math.min(100, (ch.xp / ch.xpToNext) * 100));
+  const maxed = ch.level >= MAX_LEVEL;
 
   return (
     <header className="bg-panel border-b-2 border-gold/40 px-3 sm:px-4 py-2.5">
@@ -38,7 +39,14 @@ export function TopBar({ character: ch, onMenuClick }: { character: Character; o
 
       <div className="flex items-center gap-4 mt-2">
         <Bar icon={<HeartIcon />} cur={ch.hp} max={maxHp} pct={hpPct} barColor="bg-red-600" />
-        <Bar icon={<StarIcon />} cur={ch.xp} max={ch.xpToNext} pct={xpPct} barColor="bg-sky-500" />
+        {maxed ? (
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <StarIcon />
+            <span className="text-gold text-[11px] font-bold uppercase tracking-wider">Nível Máximo</span>
+          </div>
+        ) : (
+          <Bar icon={<StarIcon />} cur={ch.xp} max={ch.xpToNext} pct={xpPct} barColor="bg-sky-500" />
+        )}
       </div>
     </header>
   );
