@@ -124,6 +124,42 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, icon f
 Centered in frame, filling about 80% of the canvas. Solid magenta background (#FF00FF). No text, no border, no hand holding it. Canvas 256×256 px.
 ```
 
+### Ícones de Habilidades — Grade I: Elementos & Status
+**Tamanho:** 1536×768 px · **Uso:** 18 ícones (recortar em grade 6×3) pros nós de habilidade ativa/passiva da árvore que envolvem fogo, gelo, raio, veneno, luz sagrada e magia sombria/amaldiçoada
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small magical object or symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing EIGHTEEN separate icons arranged in an even 6-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all eighteen.
+
+Row 1 (fire/frost/lightning): 1) a swirling orange-red fireball with trailing embers. 2) a curved blade-shaped arc wreathed in flame. 3) a sharp translucent blue-white ice crystal shard. 4) a glowing hexagonal shield made of blue ice crystal facets. 5) a jagged bright yellow-white lightning bolt. 6) two crackling arcs of blue-white electricity linking together.
+
+Row 2 (poison/holy): 7) a small pale skull with sickly green venom dripping from its jaw. 8) a corked glass vial glowing with toxic green liquid and rising green vapor. 9) a radiant golden sunburst with light rays fanning outward. 10) a glowing golden warhammer head wreathed in holy light rays. 11) a clawed shadowy hand slashing forward, wrapped in wisps of dark purple smoke. 12) a dark skull wreathed in swirling purple-black smoke, faint violet glow in the eye sockets.
+
+Row 3 (arcane/curse/nature/drain): 13) a glowing violet magic rune circle etched with arcane symbols, radiating soft light. 14) a dark purple skull-shaped sigil rune with jagged cracks of black energy. 15) a spiral of swirling bright-green leaves. 16) a coiled thorny green vine wrapped into a circular shape. 17) a swirling wisp of dark red-purple energy being pulled inward toward a center point. 18) a black flame with sickly green edges, corrupted and unnatural looking.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+### Ícones de Habilidades — Grade II: Físico & Suporte
+**Tamanho:** 1536×768 px · **Uso:** 18 ícones (recortar em grade 6×3) pros nós de habilidade ativa/passiva que envolvem golpes físicos, crítico, defesa, cura e suporte (buffs/bardo)
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small object or symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing EIGHTEEN separate icons arranged in an even 6-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all eighteen.
+
+Row 1 (melee weapons): 1) two crossed silver swords. 2) a wide silver sword-slash arc, motion-streaked. 3) a warhammer striking the ground with a small cracked-impact burst. 4) a heavy axe mid-swing leaving a curved cleave arc. 5) two crossed curved daggers. 6) an arrow striking dead-center of a small wooden target ring.
+
+Row 2 (ranged/crit/defense): 7) a crossbow bolt hitting with a small burst of impact lines. 8) a bright golden critical-hit starburst. 9) a red-and-gold circular target reticle. 10) a round wooden-and-iron shield with a spark of impact on its face. 11) a translucent blue barrier dome/bubble. 12) a swirling spiral of pale wind, suggesting a quick dodge or burst of speed.
+
+Row 3 (heal/support): 13) a small glowing red heart rising with a sparkle trail above it. 14) a glowing golden cross with soft light rays, a holy healing symbol. 15) a golden musical note with small sound-wave rings around it. 16) three concentric pale sound-wave rings radiating outward. 17) a pale skull with a small curved scythe crossed behind it. 18) a downward-angled dagger strike with sharp motion-impact lines, like a finishing blow.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+**Como isso vai virar arte no jogo:** com ~630 nós de habilidade no total (14 classes × 3 trilhas × 15 nós), não dá pra ter um ícone único desenhado pra cada um — essas 36 imagens cobrem os "temas" de efeito que se repetem entre as classes (fogo, veneno, gelo, cura, crítico, etc). Depois de geradas, cada nó do código é associado ao ícone do tema mais parecido com o efeito dele (ex: todo nó que aplica veneno usa a caveira venenosa; todo nó de cura usa a cruz/coração). Hoje os nós usam ícones genéricos (losango pra atributo, escudo pra passiva, estrela pra ativa) — essa é a próxima camada de detalhe em cima disso.
+
 ---
 
 ## Ornamentos
