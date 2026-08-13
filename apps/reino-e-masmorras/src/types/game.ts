@@ -19,8 +19,10 @@ export interface ClassDef {
   legsBase: string; // base leg-armor name, e.g. "Grevas de Ferro"
   handsBase: string; // base hand-armor name, e.g. "Manoplas de Ferro"
   baseHp: number;
-  baseAtk: number;
-  baseDef: number;
+  baseAtk: number; // physical power — weapon swings always use this, even for spellcasters
+  baseDef: number; // physical defense
+  baseMatk: number; // magical power — only spent by abilities cast as spells
+  baseMdef: number; // magical defense
   critChance: number;
 }
 
@@ -98,7 +100,13 @@ export interface AbilityCondition {
 export interface AbilityEffect {
   kind:
     | 'bigHit' | 'guaranteedCrit' | 'applyStatus' | 'bonusVsStatus' | 'heal' | 'buffDef' | 'buffBlock'
-    | 'crowdControl' | 'statMod' | 'shield' | 'regen' | 'dispel' | 'immunity' | 'haste' | 'berserk';
+    | 'crowdControl' | 'statMod' | 'shield' | 'regen' | 'dispel' | 'immunity' | 'haste' | 'berserk' | 'taunt';
+  // Which power/defense channel this hit rolls against — physical uses
+  // atk/def (weapon swings always do, regardless of class), magical uses
+  // matk/mdef. Omitted = physical, UNLESS the caster's class is in
+  // MAGICAL_CLASSES, in which case it defaults to magical (a Mago's spells
+  // are magical by default without needing every one tagged individually).
+  dmgType?: 'physical' | 'magical';
   dmgMult?: number;
   status?: StatusEffectKind;
   statusRounds?: number;
@@ -166,6 +174,8 @@ export interface Character {
   maxHp: number;
   atk: number;
   def: number;
+  matk: number;
+  mdef: number;
   gold: number;
   potions: number;
   bestDepth: number;
@@ -204,6 +214,9 @@ export interface EnemyTier {
   gold: number;
   proc?: EnemyProc;
   evasion?: number; // innate dodge chance some agile/spectral shapes carry — lets Evasion Down debuffs matter against them
+  matk?: number; // magical power — only used if atkType is 'magical'
+  mdef?: number; // magical defense — every shape has one, since the player may cast spells regardless of the enemy's own attack type
+  atkType?: 'physical' | 'magical'; // omitted = physical
 }
 
 export interface EnemyInstance {
@@ -218,6 +231,9 @@ export interface EnemyInstance {
   goldReward: number;
   proc?: EnemyProc;
   evasion?: number;
+  matk?: number;
+  mdef?: number;
+  atkType?: 'physical' | 'magical';
 }
 
 export interface DungeonDef {
@@ -248,6 +264,8 @@ export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'mercha
 export interface CombatStats {
   atk: number;
   def: number;
+  matk: number;
+  mdef: number;
   critChance: number;
   critDmgMult: number;
   blockChance: number;

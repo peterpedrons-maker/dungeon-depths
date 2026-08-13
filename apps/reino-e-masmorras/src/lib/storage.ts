@@ -46,9 +46,19 @@ export function loadCharacter(): Character | null {
     const refundedPoints = rawUnlocked.length - unlockedSkills.length;
     const equippedAbilities = (c.equippedAbilities ?? []).filter((id) => unlockedSkills.includes(id));
 
+    // Saves from before the physical/magical split have no matk/mdef at all —
+    // back-fill using the same class-base + per-level growth (+2/+1) that
+    // grantXp() applies going forward, so an old character doesn't suddenly
+    // roll NaN spell damage/defense.
+    const cls = CLASSES[classId];
+    const matk = c.matk ?? cls.baseMatk + 2 * (c.level - 1);
+    const mdef = c.mdef ?? cls.baseMdef + 1 * (c.level - 1);
+
     return {
       ...c,
       classId,
+      matk,
+      mdef,
       skillPoints: (c.skillPoints ?? 0) + refundedPoints,
       unlockedSkills,
       equippedAbilities,
