@@ -252,6 +252,7 @@ export interface DungeonDef {
   name: string;
   desc: string;
   startDepth: number;
+  levelReq: number; // minimum character level to enter — shown locked on the map below this
   special?: boolean;
   enemyPool?: EnemyShape[];
   goldMult?: number;
@@ -269,7 +270,7 @@ export interface RankEntry {
 }
 
 export type Screen = 'title' | 'create' | 'game';
-export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'merchant' | 'highscore' | 'dungeon';
+export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'merchant' | 'highscore' | 'dungeon-select' | 'dungeon';
 
 // ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree + attributes ──
 export interface CombatStats {

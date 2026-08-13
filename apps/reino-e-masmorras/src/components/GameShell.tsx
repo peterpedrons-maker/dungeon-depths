@@ -12,6 +12,7 @@ import { CharacterOverview } from './CharacterOverview';
 import { SkillTree } from './SkillTree';
 import { Merchant } from './Merchant';
 import { RankingScreen } from './RankingScreen';
+import { DungeonMap } from './DungeonMap';
 import { DungeonPanel } from './DungeonPanel';
 
 const POTION_COST = 15;
@@ -145,7 +146,6 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
           onNavigate={setSection}
-          onEnterDungeon={enterDungeon}
           onAbandon={onAbandon}
         />
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
@@ -166,6 +166,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           )}
           {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} />}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
+          {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={enterDungeon} />}
           {section === 'dungeon' && (
             <DungeonPanel
               character={character}
