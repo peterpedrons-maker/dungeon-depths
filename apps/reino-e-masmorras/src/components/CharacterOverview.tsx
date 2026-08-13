@@ -1,26 +1,27 @@
 import { useState } from 'react';
 import { AttributeKey, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { CLASSES } from '../lib/classes';
-import { effectiveMaxHp } from '../lib/combatStats';
+import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment';
 import { computeAttributeTotals } from '../lib/skills';
+import { heroSprites } from '../game/sprites';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { StatChip } from './StatChip';
-import { IconSword, IconChest, IconLegs, IconGloves, IconRing, IconHeart, IconPassive, IconActive, IconCoin, IconStairs } from './icons';
+import { IconSword, IconChest, IconLegs, IconGloves, IconRing, IconHeart, IconCoin, IconStairs } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
 const ATTR_META: Record<AttributeKey, { label: string; color: string }> = {
-  str: { label: 'FOR', color: '#c1502e' },
-  dex: { label: 'DES', color: '#4f9d4f' },
-  agi: { label: 'AGI', color: '#4fb8b0' },
-  vit: { label: 'VIT', color: '#c9863c' },
-  int: { label: 'INT', color: '#3f7ab8' },
-  wis: { label: 'SAB', color: '#9b6fc9' },
-  luk: { label: 'SOR', color: '#e0b93c' },
+  str: { label: 'Força', color: '#c1502e' },
+  dex: { label: 'Destreza', color: '#4f9d4f' },
+  agi: { label: 'Agilidade', color: '#4fb8b0' },
+  vit: { label: 'Vitalidade', color: '#c9863c' },
+  int: { label: 'Inteligência', color: '#3f7ab8' },
+  wis: { label: 'Sabedoria', color: '#9b6fc9' },
+  luk: { label: 'Sorte', color: '#e0b93c' },
 };
 const ATTR_ORDER: AttributeKey[] = ['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk'];
 
@@ -28,13 +29,10 @@ const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
   weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, accessory: IconRing,
 };
-// Classic RPG paperdoll arrangement: accessory up top, weapon/hands flanking
-// the body piece, legs below.
-const SLOT_AREA: Record<ItemSlot, string> = {
-  accessory: '1 / 2 / 2 / 3',
-  hands: '2 / 1 / 3 / 2', body: '2 / 2 / 3 / 3', weapon: '2 / 3 / 3 / 4',
-  legs: '3 / 2 / 4 / 3',
-};
+// WoW-style paperdoll: gear slots stacked in two vertical columns flanking
+// the character portrait, instead of arranged around it in a cross.
+const LEFT_SLOTS: ItemSlot[] = ['weapon', 'hands'];
+const RIGHT_SLOTS: ItemSlot[] = ['body', 'legs', 'accessory'];
 
 interface Props {
   character: Character;
@@ -50,9 +48,35 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
   const xpPct = Math.min(100, (ch.xp / ch.xpToNext) * 100);
   const maxHp = effectiveMaxHp(ch);
   const attrs = computeAttributeTotals(ch.classId, ch.unlockedSkills);
+  const stats = computeCombatStats(ch);
+  const heroImg = heroSprites(ch.classId).idle.image.src;
   const [selected, setSelected] = useState<Selected | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   const visibleInventory = filter === 'all' ? ch.inventory : ch.inventory.filter((i) => i.slot === filter);
+
+  const slotButton = (slot: ItemSlot) => {
+    const item = ch.equipment[slot];
+    const Icon = SLOT_ICON[slot];
+    const color = item ? rarityColor(item.rarity) : '#4a4038';
+    return (
+      <button
+        key={slot}
+        onClick={() => setSelected({ kind: 'equipped', slot, item })}
+        className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 transition-transform duration-150 hover:scale-105"
+      >
+        {item && (
+          <div
+            className="absolute inset-[16%] rounded-full"
+            style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
+          />
+        )}
+        <div className="absolute inset-[17%] flex items-center justify-center">
+          <Icon className="w-full h-full" style={{ color }} />
+        </div>
+        <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+      </button>
+    );
+  };
 
   return (
     <Panel title="Personagem — Visão Geral">
@@ -63,7 +87,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         />
         <div>
           <div className="font-bold text-lg text-parchment leading-tight">{ch.name}</div>
-          <div className="text-parchment/50 text-sm">{cls.name} · Nível {ch.level}</div>
+          <div className="text-parchment/50 text-sm">Nível {ch.level} · {cls.name}</div>
         </div>
         {ch.skillPoints > 0 && (
           <span className="ml-auto text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold">
@@ -77,66 +101,70 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         <div className="h-full bg-sky-500 rounded-sm" style={{ width: `${xpPct}%` }} />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-6">
+      {/* Paperdoll: gear flanks the character portrait, WoW-style. */}
+      <div className="rounded border border-black/50 bg-black/25 p-3 mb-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-center gap-2 sm:gap-4">
+          <div className="flex flex-col gap-2 sm:gap-3">{LEFT_SLOTS.map(slotButton)}</div>
+          <div className="flex-1 flex items-end justify-center min-h-[150px] sm:min-h-[190px] relative">
+            <div
+              className="absolute w-24 h-24 sm:w-32 sm:h-32 rounded-full blur-2xl opacity-30"
+              style={{ background: cls.color }}
+            />
+            <img
+              src={heroImg}
+              alt={cls.name}
+              className="relative h-[150px] sm:h-[190px] w-auto object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.6)]"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </div>
+          <div className="flex flex-col gap-2 sm:gap-3">{RIGHT_SLOTS.map(slotButton)}</div>
+        </div>
+      </div>
+
+      {/* Stats box: attributes on the left, physical/magical power on the right. */}
+      <div className="rounded border border-black/50 bg-black/25 p-3 mb-6 grid grid-cols-2 gap-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+        <div className="space-y-1 pr-3 border-r border-panelborder/40">
+          {ATTR_ORDER.map((key) => {
+            const meta = ATTR_META[key];
+            return (
+              <div key={key} className="flex items-center justify-between text-xs">
+                <span className="text-parchment/60">{meta.label}:</span>
+                <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Físico</div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-parchment/60">Ataque</span>
+              <span className="font-bold tabular-nums text-parchment">{fmt(stats.atk)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-parchment/60">Defesa</span>
+              <span className="font-bold tabular-nums text-parchment">{fmt(stats.def)}</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Mágico</div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-parchment/60">Ataque</span>
+              <span className="font-bold tabular-nums text-parchment">{fmt(stats.matk)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-parchment/60">Defesa</span>
+              <span className="font-bold tabular-nums text-parchment">{fmt(stats.mdef)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 mb-6">
         <StatChip icon={<IconHeart className="w-full h-full" />} color="#e0574a" label="Vida" value={`${fmt(ch.hp)}/${fmt(maxHp)}`} />
-        <StatChip icon={<IconSword className="w-full h-full" />} color="#c89a2e" label="Ataque" value={fmt(ch.atk)} />
-        <StatChip icon={<IconPassive className="w-full h-full" />} color="#6b8fc9" label="Defesa" value={fmt(ch.def)} />
-        <StatChip icon={<IconActive className="w-full h-full" />} color="#a86fe0" label="Ataque Mágico" value={fmt(ch.matk)} />
-        <StatChip icon={<IconPassive className="w-full h-full" />} color="#4fb8b0" label="Defesa Mágica" value={fmt(ch.mdef)} />
         <StatChip icon={<IconCoin className="w-full h-full" />} color="#e0b93c" label="Ouro" value={fmt(ch.gold)} />
         <StatChip icon={<img src={pocaoIcon} alt="" className="w-full h-full object-contain" />} color="#4f9d4f" label="Poções" value={fmt(ch.potions)} />
         <StatChip icon={<IconStairs className="w-full h-full" />} color="#9b6fc9" label="Profundidade" value={fmt(ch.bestDepth)} />
-      </div>
-
-      <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Atributos</h3>
-      <div className="flex flex-wrap gap-1.5 mb-6">
-        {ATTR_ORDER.map((key) => {
-          const meta = ATTR_META[key];
-          return (
-            <span
-              key={key}
-              className="flex items-center gap-1.5 rounded border border-panelborder/60 bg-panel2/40 px-2 py-1 text-xs"
-              title={key.toUpperCase()}
-            >
-              <span className="font-bold uppercase tracking-wide" style={{ color: meta.color }}>{meta.label}</span>
-              <span className="text-parchment/80 tabular-nums">{attrs[key]}</span>
-            </span>
-          );
-        })}
-      </div>
-
-      <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">Equipamento</h3>
-      <div
-        className="grid gap-3 mx-auto mb-6 max-w-[300px]"
-        style={{ gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(3, 1fr)' }}
-      >
-        {SLOTS.map((slot) => {
-          const item = ch.equipment[slot];
-          const Icon = SLOT_ICON[slot];
-          const color = item ? rarityColor(item.rarity) : '#4a4038';
-          return (
-            <button
-              key={slot}
-              onClick={() => setSelected({ kind: 'equipped', slot, item })}
-              style={{ gridArea: SLOT_AREA[slot] }}
-              className="relative aspect-square transition-transform duration-150 hover:scale-105"
-            >
-              {item && (
-                <div
-                  className="absolute inset-[16%] rounded-full"
-                  style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
-                />
-              )}
-              <div className="absolute inset-[17%] flex items-center justify-center">
-                <Icon className="w-full h-full" style={{ color }} />
-              </div>
-              <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-[8px] uppercase tracking-wide text-parchment/50 bg-nightsky/90 px-1 rounded-sm leading-tight whitespace-nowrap">
-                {SLOT_NAMES[slot]}
-              </span>
-            </button>
-          );
-        })}
       </div>
 
       <div className="flex items-center justify-between mb-2 gap-3">
