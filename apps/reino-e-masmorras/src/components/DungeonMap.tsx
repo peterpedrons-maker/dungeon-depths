@@ -37,9 +37,9 @@ export function DungeonMap({ character, onEnterDungeon }: Props) {
                     style={{ left: `${marker.xPct}%`, top: `${marker.yPct}%` }}
                   >
                     {locked && (
-                      <div className="absolute inset-0 rounded-full bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center gap-0.5">
-                        <IconLock className="w-5 h-5 text-parchment/70" />
-                        <span className="text-[9px] font-bold text-parchment/70">Nv. {dungeon.levelReq}</span>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 pointer-events-none">
+                        <IconLock className="w-8 h-8 text-parchment drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]" />
+                        <span className="text-[10px] font-bold text-parchment [text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_0_4px_rgba(0,0,0,0.95)]">Nv. {dungeon.levelReq}</span>
                       </div>
                     )}
                     {!locked && <div className="absolute inset-0 rounded-full hover:bg-gold/15 hover:ring-2 hover:ring-gold/50 transition" />}
