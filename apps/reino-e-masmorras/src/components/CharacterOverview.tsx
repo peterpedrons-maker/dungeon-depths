@@ -37,13 +37,14 @@ interface Props {
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
+  onAllocateAttr: (key: AttributeKey) => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }: Props) {
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttr }: Props) {
   const cls = CLASSES[ch.classId];
-  const attrs = computeAttributeTotals(ch.classId, ch.unlockedSkills);
+  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
   const heroImg = heroSprites(ch.classId).idle.image.src;
   const [tab, setTab] = useState<'equipamentos' | 'inventario'>('equipamentos');
@@ -85,13 +86,20 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         <MainTab active={tab === 'inventario'} onClick={() => setTab('inventario')}>Inventário</MainTab>
       </div>
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <span className="text-parchment/50 text-sm">{cls.name}</span>
-        {ch.skillPoints > 0 && (
-          <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold">
-            {ch.skillPoints} ponto{ch.skillPoints > 1 ? 's' : ''} de habilidade disponível{ch.skillPoints > 1 ? 'is' : ''}
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {ch.skillPoints > 0 && (
+            <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold">
+              {ch.skillPoints} ponto{ch.skillPoints > 1 ? 's' : ''} de habilidade
+            </span>
+          )}
+          {ch.attributePoints > 0 && (
+            <span className="text-xs bg-sky-500/20 border border-sky-400/50 text-sky-300 rounded-full px-3 py-1 font-bold">
+              {ch.attributePoints} ponto{ch.attributePoints > 1 ? 's' : ''} de atributo
+            </span>
+          )}
+        </div>
       </div>
 
       {tab === 'equipamentos' ? (
@@ -122,9 +130,20 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
               {ATTR_ORDER.map((key) => {
                 const meta = ATTR_META[key];
                 return (
-                  <div key={key} className="flex items-center justify-between text-xs">
-                    <span className="text-parchment/60">{meta.label}:</span>
-                    <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
+                  <div key={key} className="flex items-center justify-between text-xs gap-1.5">
+                    <span className="text-parchment/60 truncate">{meta.label}:</span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
+                      {ch.attributePoints > 0 && (
+                        <button
+                          onClick={() => onAllocateAttr(key)}
+                          className="w-4 h-4 flex items-center justify-center rounded-full bg-sky-500/30 border border-sky-400/60 text-sky-300 text-[10px] font-bold leading-none hover:bg-sky-500/50"
+                          aria-label={`+1 ${meta.label}`}
+                        >
+                          +
+                        </button>
+                      )}
+                    </span>
                   </div>
                 );
               })}

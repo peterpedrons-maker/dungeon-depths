@@ -1,6 +1,8 @@
-import { Character, ClassId, EquipmentItem, RankEntry } from '../types/game';
-import { CLASSES } from './classes';
+import { Attributes, Character, ClassId, EquipmentItem, RankEntry } from '../types/game';
+import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
+
+const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
 const CHAR_KEY = 'rm_character_v1';
 const RANK_KEY = 'rm_ranking_v1';
@@ -51,15 +53,28 @@ export function loadCharacter(): Character | null {
     // grantXp() applies going forward, so an old character doesn't suddenly
     // roll NaN spell damage/defense.
     const cls = CLASSES[classId];
-    const matk = c.matk ?? cls.baseMatk + 2 * (c.level - 1);
-    const mdef = c.mdef ?? cls.baseMdef + 1 * (c.level - 1);
+    const level = Math.min(c.level ?? 1, MAX_LEVEL);
+    const matk = c.matk ?? cls.baseMatk + 2 * (level - 1);
+    const mdef = c.mdef ?? cls.baseMdef + 1 * (level - 1);
+
+    // Saves from before the attribute-point rework have no attributePoints/
+    // allocatedAttrs at all — back-fill 1 point per level already earned
+    // (the old rate) as an unspent balance, rather than clawing back
+    // progress the player already has. skillPoints is left untouched for
+    // the same reason: the new "every 2 levels" rate only applies to future
+    // level-ups via grantXp(), never retroactively to an existing balance.
+    const attributePoints = c.attributePoints ?? Math.max(0, level - 1);
+    const allocatedAttrs = c.allocatedAttrs ?? { ...ZERO_ATTRS };
 
     return {
       ...c,
       classId,
+      level,
       matk,
       mdef,
       skillPoints: (c.skillPoints ?? 0) + refundedPoints,
+      attributePoints,
+      allocatedAttrs,
       unlockedSkills,
       equippedAbilities,
       equipment: {

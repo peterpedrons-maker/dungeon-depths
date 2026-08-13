@@ -4,13 +4,12 @@ import { computeAttributeTotals, computeSkillBonuses } from './skills';
 
 export const BASE_CRIT_DMG_MULT = 1.6;
 
-// Fixed per-point coefficients converting the 7 primary attributes (granted
-// only by "attribute" skill nodes) into the same stat channels equipment and
-// skill passives already feed — kept modest so a handful of attribute nodes
-// complements gear/talents rather than dwarfing them. STR/DEX feed physical
-// ATK only (weapon swings are always physical); INT feeds MATK only. VIT
-// feeds physical DEF; WIS feeds MDEF ("resistência mágica") plus a small
-// VIT-adjacent toughness contribution.
+// Fixed per-point coefficients converting the 7 primary attributes (class
+// baseAttrs + the player's freely-spent attributePoints, see classes.ts)
+// into the same stat channels equipment and skill-tree secondary stats
+// already feed. STR/DEX feed physical ATK only (weapon swings are always
+// physical); INT feeds MATK only. VIT feeds physical DEF; WIS feeds MDEF
+// ("resistência mágica") plus a small VIT-adjacent toughness contribution.
 const ATTR_COEF = {
   atkPerStr: 1.0, atkPerDex: 0.6,
   matkPerInt: 1.0,
@@ -36,7 +35,7 @@ function equippedItems(ch: Character): EquipmentItem[] {
 // comes purely from class base + INT/WIS + talents.
 export function computeCombatStats(ch: Character): CombatStats {
   const bonuses = computeSkillBonuses(ch.classId, ch.unlockedSkills);
-  const attrs = computeAttributeTotals(ch.classId, ch.unlockedSkills);
+  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
 
   let itemDmg = 0, itemDef = 0, itemHp = 0, itemCrit = 0, itemBlock = 0;
   for (const item of equippedItems(ch)) {
@@ -66,10 +65,10 @@ export function computeCombatStats(ch: Character): CombatStats {
     matk *= 1 + bonuses.lowHpDmgScale * missing;
   }
   atk += bonuses.flatBonusDmg;
-  matk += bonuses.flatBonusDmg;
+  matk += bonuses.flatBonusMagicDmg;
 
   const def = (ch.def + itemDef + defFromAttr) * (1 + bonuses.defPct);
-  const mdef = (ch.mdef + mdefFromAttr) * (1 + bonuses.defPct);
+  const mdef = (ch.mdef + mdefFromAttr) * (1 + bonuses.mdefPct);
   const critChance = Math.min(0.75, CLASSES[ch.classId].critChance + bonuses.critPct + itemCrit + critFromAttr);
   const critDmgMult = BASE_CRIT_DMG_MULT + bonuses.critDmgPct;
 
@@ -90,6 +89,9 @@ export function computeCombatStats(ch: Character): CombatStats {
     supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis,
     dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk,
     itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk,
+    evasion: Math.min(0.4, bonuses.evasionPct),
+    accuracy: Math.min(0.4, bonuses.accuracyPct),
+    cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct),
   };
 }
 
