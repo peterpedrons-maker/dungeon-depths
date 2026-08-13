@@ -69,7 +69,24 @@ export interface SkillEffect {
   dmgPctVsStatus?: { status: StatusEffectKind; pct: number }; // conditional passive, e.g. "+15% dmg vs poisoned enemy"
 }
 
-export type StatusEffectKind = 'poison' | 'burn';
+// Damage-over-time family (poison/burn/bleed all tick identically; curse is
+// DOT-shaped too but flavored as a hex). Distinct from crowd control below.
+export type StatusEffectKind = 'poison' | 'burn' | 'bleed' | 'curse';
+
+// Action-denial family: stun/sleep skip the affected combatant's entire
+// round (no attack, no ability); silence only blocks ability use, falling
+// back to a plain attack. Sleep additionally breaks early on taking damage.
+export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
+
+// Generic buff/debuff stat channel — sign of statModPct decides buff vs
+// debuff (e.g. 'atk' +pct = Attack Up, -pct = Attack Down). Covers most of
+// the game's named buffs/debuffs through one mechanism instead of a bespoke
+// field per named effect. 'accuracy'/'evasion' are new: without an active
+// modifier every attack still always hits (today's behavior); only a statMod
+// ability introduces a miss chance. 'dmgTakenPct' covers both Damage
+// Reduction (negative) and Vulnerability (positive). 'defPenPct' covers
+// Physical/Magic Penetration (ignores a % of the target's defense).
+export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct';
 
 export interface AbilityCondition {
   type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds';
@@ -79,7 +96,9 @@ export interface AbilityCondition {
 }
 
 export interface AbilityEffect {
-  kind: 'bigHit' | 'guaranteedCrit' | 'applyStatus' | 'bonusVsStatus' | 'heal' | 'buffDef' | 'buffBlock';
+  kind:
+    | 'bigHit' | 'guaranteedCrit' | 'applyStatus' | 'bonusVsStatus' | 'heal' | 'buffDef' | 'buffBlock'
+    | 'crowdControl' | 'statMod' | 'shield' | 'regen' | 'dispel' | 'immunity' | 'haste' | 'berserk';
   dmgMult?: number;
   status?: StatusEffectKind;
   statusRounds?: number;
@@ -87,6 +106,28 @@ export interface AbilityEffect {
   healPct?: number;
   buffPct?: number;
   buffRounds?: number;
+  // crowdControl
+  cc?: CrowdControlKind;
+  ccRounds?: number;
+  // statMod — target 'self' fires as a bonus action like heal/buffDef;
+  // target 'enemy' competes for the round's attack action like applyStatus
+  statMod?: StatModStat;
+  statModPct?: number;
+  statModRounds?: number;
+  statModTarget?: 'self' | 'enemy';
+  // shield: absorbs incoming damage before HP, sized as % of caster's max HP
+  shieldPct?: number;
+  // regen: heals a % of max HP at the start of each of the caster's rounds
+  regenPct?: number;
+  regenRounds?: number;
+  // immunity: blocks new debuffs/CC/DOT from being applied to the caster
+  immunityRounds?: number;
+  // haste: doubles the caster's own cooldown decay for its duration
+  hasteRounds?: number;
+  // berserk: simultaneous self atk buff + def debuff
+  berserkAtkPct?: number;
+  berserkDefPct?: number;
+  berserkRounds?: number;
 }
 
 export interface AbilityDef {
@@ -138,6 +179,19 @@ export interface Character {
 
 export type EnemyShape = 'goblin' | 'wolf' | 'skeleton' | 'orc' | 'troll' | 'dragon' | 'horror';
 
+// A signature debuff each enemy shape has a chance to land alongside its
+// normal attack each round — gives every enemy type a distinct combat feel
+// without needing a full enemy ability/priority system of its own.
+export interface EnemyProc {
+  chance: number; // 0-1, rolled once per enemy attack
+  label: string; // Portuguese flavor line appended to the attack log
+  status?: StatusEffectKind; // DOT proc
+  cc?: CrowdControlKind; // action-denial proc
+  statMod?: StatModStat; // stat debuff proc (applied to the player)
+  statModPct?: number;
+  rounds: number;
+}
+
 export interface EnemyTier {
   shape: EnemyShape;
   name: string;
@@ -148,6 +202,8 @@ export interface EnemyTier {
   def: number;
   xp: number;
   gold: number;
+  proc?: EnemyProc;
+  evasion?: number; // innate dodge chance some agile/spectral shapes carry — lets Evasion Down debuffs matter against them
 }
 
 export interface EnemyInstance {
@@ -160,6 +216,8 @@ export interface EnemyInstance {
   def: number;
   xpReward: number;
   goldReward: number;
+  proc?: EnemyProc;
+  evasion?: number;
 }
 
 export interface DungeonDef {
