@@ -7,12 +7,17 @@ export const BASE_CRIT_DMG_MULT = 1.6;
 // Fixed per-point coefficients converting the 7 primary attributes (granted
 // only by "attribute" skill nodes) into the same stat channels equipment and
 // skill passives already feed — kept modest so a handful of attribute nodes
-// complements gear/talents rather than dwarfing them.
+// complements gear/talents rather than dwarfing them. STR/DEX feed physical
+// ATK only (weapon swings are always physical); INT feeds MATK only. VIT
+// feeds physical DEF; WIS feeds MDEF ("resistência mágica") plus a small
+// VIT-adjacent toughness contribution.
 const ATTR_COEF = {
-  atkPerStr: 1.0, atkPerDex: 0.6, atkPerInt: 1.0,
+  atkPerStr: 1.0, atkPerDex: 0.6,
+  matkPerInt: 1.0,
   critPerDex: 0.003, critPerAgi: 0.0015, critPerLuk: 0.0025,
   blockPerAgi: 0.004,
-  defPerVit: 0.6, defPerWis: 0.4,
+  defPerVit: 0.6,
+  mdefPerWis: 0.5, mdefPerVit: 0.15,
   hpPerVit: 3,
   supportPctPerWis: 0.01,
   dropChancePctPerLuk: 0.004,
@@ -23,10 +28,12 @@ function equippedItems(ch: Character): EquipmentItem[] {
   return Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null);
 }
 
-// Combines class base + level growth (already baked into ch.atk/ch.def) with
-// every equipped item across all 5 slots, every unlocked talent node, and
-// the primary attributes those talents grant into the numbers combat
-// actually rolls against.
+// Combines class base + level growth (already baked into ch.atk/ch.def/
+// ch.matk/ch.mdef) with every equipped item across all 5 slots, every
+// unlocked talent node, and the primary attributes those talents grant into
+// the numbers combat actually rolls against. Equipment only ever feeds
+// physical atk/def — weapons and armor are mundane gear, so magical power
+// comes purely from class base + INT/WIS + talents.
 export function computeCombatStats(ch: Character): CombatStats {
   const bonuses = computeSkillBonuses(ch.classId, ch.unlockedSkills);
   const attrs = computeAttributeTotals(ch.classId, ch.unlockedSkills);
@@ -43,26 +50,34 @@ export function computeCombatStats(ch: Character): CombatStats {
     else if (sec?.type === 'block') itemBlock += sec.value;
   }
 
-  const atkFromAttr = attrs.str * ATTR_COEF.atkPerStr + attrs.dex * ATTR_COEF.atkPerDex + attrs.int * ATTR_COEF.atkPerInt;
-  const defFromAttr = attrs.vit * ATTR_COEF.defPerVit + attrs.wis * ATTR_COEF.defPerWis;
+  const atkFromAttr = attrs.str * ATTR_COEF.atkPerStr + attrs.dex * ATTR_COEF.atkPerDex;
+  const matkFromAttr = attrs.int * ATTR_COEF.matkPerInt;
+  const defFromAttr = attrs.vit * ATTR_COEF.defPerVit;
+  const mdefFromAttr = attrs.wis * ATTR_COEF.mdefPerWis + attrs.vit * ATTR_COEF.mdefPerVit;
   const critFromAttr = attrs.dex * ATTR_COEF.critPerDex + attrs.agi * ATTR_COEF.critPerAgi + attrs.luk * ATTR_COEF.critPerLuk;
   const blockFromAttr = attrs.agi * ATTR_COEF.blockPerAgi;
   const hpFromAttr = attrs.vit * ATTR_COEF.hpPerVit;
 
   let atk = (ch.atk + itemDmg + atkFromAttr) * (1 + bonuses.dmgPct);
+  let matk = (ch.matk + matkFromAttr) * (1 + bonuses.dmgPct);
   if (bonuses.lowHpDmgScale > 0) {
     const missing = 1 - ch.hp / ch.maxHp;
     atk *= 1 + bonuses.lowHpDmgScale * missing;
+    matk *= 1 + bonuses.lowHpDmgScale * missing;
   }
   atk += bonuses.flatBonusDmg;
+  matk += bonuses.flatBonusDmg;
 
   const def = (ch.def + itemDef + defFromAttr) * (1 + bonuses.defPct);
+  const mdef = (ch.mdef + mdefFromAttr) * (1 + bonuses.defPct);
   const critChance = Math.min(0.75, CLASSES[ch.classId].critChance + bonuses.critPct + itemCrit + critFromAttr);
   const critDmgMult = BASE_CRIT_DMG_MULT + bonuses.critDmgPct;
 
   return {
     atk: Math.round(atk),
     def: Math.round(def),
+    matk: Math.round(matk),
+    mdef: Math.round(mdef),
     critChance,
     critDmgMult,
     blockChance: Math.min(0.6, bonuses.blockChance + itemBlock + blockFromAttr),

@@ -9,7 +9,7 @@ import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { StatChip } from './StatChip';
-import { IconSword, IconChest, IconLegs, IconGloves, IconRing, IconHeart, IconPassive, IconCoin, IconStairs } from './icons';
+import { IconSword, IconChest, IconLegs, IconGloves, IconRing, IconHeart, IconPassive, IconActive, IconCoin, IconStairs } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
@@ -81,6 +81,8 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell }:
         <StatChip icon={<IconHeart className="w-full h-full" />} color="#e0574a" label="Vida" value={`${fmt(ch.hp)}/${fmt(maxHp)}`} />
         <StatChip icon={<IconSword className="w-full h-full" />} color="#c89a2e" label="Ataque" value={fmt(ch.atk)} />
         <StatChip icon={<IconPassive className="w-full h-full" />} color="#6b8fc9" label="Defesa" value={fmt(ch.def)} />
+        <StatChip icon={<IconActive className="w-full h-full" />} color="#a86fe0" label="Ataque Mágico" value={fmt(ch.matk)} />
+        <StatChip icon={<IconPassive className="w-full h-full" />} color="#4fb8b0" label="Defesa Mágica" value={fmt(ch.mdef)} />
         <StatChip icon={<IconCoin className="w-full h-full" />} color="#e0b93c" label="Ouro" value={fmt(ch.gold)} />
         <StatChip icon={<img src={pocaoIcon} alt="" className="w-full h-full object-contain" />} color="#4f9d4f" label="Poções" value={fmt(ch.potions)} />
         <StatChip icon={<IconStairs className="w-full h-full" />} color="#9b6fc9" label="Profundidade" value={fmt(ch.bestDepth)} />

@@ -4,7 +4,7 @@ import {
   StatModStat, StatusEffectKind,
 } from '../types/game';
 import { spawnEnemy } from '../lib/enemies';
-import { grantXp } from '../lib/classes';
+import { grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { generateItem, rarityColor } from '../lib/equipment';
 import { getEquippedAbilities } from '../lib/skills';
@@ -23,7 +23,7 @@ const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
 // they never compete for it. Enemy-targeted kinds (applyStatus, bonusVsStatus,
 // crowdControl, statMod w/ target:'enemy') compete for the one attack action,
 // exactly like bigHit always has.
-const SELF_ABILITY_KINDS = ['heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel'];
+const SELF_ABILITY_KINDS = ['heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt'];
 const MISS_CHANCE_CAP = 0.45;
 
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Envenenado', burn: 'Em Chamas', bleed: 'Sangrando', curse: 'Amaldiçoado' };
@@ -184,7 +184,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
+      matk: Math.round(base.matk * (1 + atkPct)),
       def: Math.max(0, Math.round(base.def * defMult)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd)),
       critDmgMult: base.critDmgMult + critDmgAdd,
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd)),
@@ -200,6 +202,15 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
   function computeEnemyAtk(): number {
     return Math.max(0, Math.round(enemyRef.current.atk * (1 + getModTotal(enemyModsRef.current, 'atk'))));
+  }
+  // Enemies don't carry a separate magical stat-mod pool — a debuff landed on
+  // 'atk'/'def' proportionally affects whichever power/defense channel is
+  // actually rolled, same symmetric reuse as the player's mods above.
+  function computeEnemyMatk(): number {
+    return Math.max(0, Math.round((enemyRef.current.matk ?? 0) * (1 + getModTotal(enemyModsRef.current, 'atk'))));
+  }
+  function computeEnemyMdef(): number {
+    return Math.max(0, Math.round((enemyRef.current.mdef ?? 0) * (1 + getModTotal(enemyModsRef.current, 'def'))));
   }
   function computeEnemyEvasion(): number {
     return Math.max(0, (enemyRef.current.evasion ?? 0) + getModTotal(enemyModsRef.current, 'evasion'));
@@ -258,6 +269,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         playerModsRef.current.push({ stat: 'atk', pct: eff.berserkAtkPct ?? 0.3, roundsLeft: eff.berserkRounds ?? 4 });
         playerModsRef.current.push({ stat: 'def', pct: eff.berserkDefPct ?? -0.2, roundsLeft: eff.berserkRounds ?? 4 });
         lines.push(`${ab.name}: fúria berserker — mais dano, menos defesa.`);
+      } else if (eff.kind === 'taunt') {
+        // Provoca o inimigo — hoje é só a redução de dano recebido (útil já
+        // em 1v1); a parte de "forçar o alvo" fica pronta para quando um
+        // sistema de múltiplos inimigos/coop existir.
+        playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 4 });
+        lines.push(`${ab.name}: você provoca o inimigo, reduzindo o dano recebido.`);
       } else if (eff.kind === 'dispel') {
         playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
         playerStatusRef.current = [];
@@ -363,12 +380,18 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         } else if (offenseAbility) {
           cooldownsRef.current[offenseAbility.id] = offenseAbility.cooldown;
           const eff = offenseAbility.effect;
-          const effDef = Math.max(0, computeEnemyDef() * (1 - stats.defPenPct));
-          const r = rollAbilityHit(stats.atk, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
+          // Abilities from magical classes cast as spells by default (matk vs
+          // mdef); basic attacks (the `else` branch below) are always
+          // physical regardless of class — only an ability's own dmgType
+          // override or the caster's class decides which channel a spell uses.
+          const dmgType = eff.dmgType ?? (MAGICAL_CLASSES.includes(chRef.current.classId) ? 'magical' : 'physical');
+          const power = dmgType === 'magical' ? stats.matk : stats.atk;
+          const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+          const r = rollAbilityHit(power, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
           dmg = r.dmg; crit = r.crit;
           abilityTag = ` [${offenseAbility.name}]`;
           if (eff.kind === 'applyStatus' && eff.status) {
-            enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(stats.atk * (eff.statusDmgPct ?? 0.4))) });
+            enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * (eff.statusDmgPct ?? 0.4))) });
             syncEnemyStatuses();
             statusLine = ` ${enemyRef.current.name} foi ${STATUS_VERB[eff.status]}!`;
           } else if (eff.kind === 'crowdControl' && eff.cc) {
@@ -463,7 +486,13 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           return;
         }
 
-        const { dmg: rawDmg, crit: ecrit } = rollAttack(computeEnemyAtk(), defStats.def, 0.06);
+        // Only the shapes explicitly flagged atkType: 'magical' (Dragão,
+        // Aberração) roll their attack as a spell against the player's mdef —
+        // everyone else attacks physically, same as always.
+        const enemyAtkType = enemyRef.current.atkType ?? 'physical';
+        const enemyPower = enemyAtkType === 'magical' ? computeEnemyMatk() : computeEnemyAtk();
+        const enemyDefStat = enemyAtkType === 'magical' ? defStats.mdef : defStats.def;
+        const { dmg: rawDmg, crit: ecrit } = rollAttack(enemyPower, enemyDefStat, 0.06);
         let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct));
         const blocked = Math.random() < defStats.blockChance;
         if (blocked) edmg = Math.round(edmg * 0.5);
@@ -504,7 +533,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           const proc = enemyRef.current.proc;
           if (proc && Math.random() < proc.chance && !playerImmune()) {
             if (proc.status) {
-              playerStatusRef.current.push({ kind: proc.status, roundsLeft: proc.rounds, dmgPerTick: Math.max(1, Math.round(computeEnemyAtk() * 0.35)) });
+              playerStatusRef.current.push({ kind: proc.status, roundsLeft: proc.rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
               syncPlayerStatuses();
             } else if (proc.cc) {
               playerCCRef.current.push({ kind: proc.cc, roundsLeft: proc.rounds });
