@@ -164,6 +164,10 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     onCharacterChange({ ...character, equippedAbilities: list });
   }
 
+  function handleSetAbilityThreshold(abilityId: string, pct: number) {
+    onCharacterChange({ ...character, abilityThresholds: { ...character.abilityThresholds, [abilityId]: pct } });
+  }
+
   function handleUpgradeBuilding(buildingId: string) {
     const building = BUILDINGS.find((b) => b.id === buildingId);
     if (!building) return;
@@ -229,6 +233,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           onEquipAbility={handleEquipAbility}
           onUnequipAbility={handleUnequipAbility}
           onReorderAbility={handleReorderAbility}
+          onSetAbilityThreshold={handleSetAbilityThreshold}
           onSetPotionThreshold={handleSetPotionThreshold}
           onConfirm={confirmDungeonEntry}
           onCancel={cancelDungeonSelect}
