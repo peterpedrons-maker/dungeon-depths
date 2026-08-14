@@ -86,6 +86,7 @@ export function loadCharacter(): Character | null {
       allocatedAttrs,
       unlockedSkills,
       equippedAbilities,
+      abilityThresholds: c.abilityThresholds ?? {},
       equipment: {
         weapon: eq.weapon ? migrateItem(eq.weapon) : null,
         body: eq.body ? migrateItem(eq.body) : null,

@@ -97,7 +97,7 @@ export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
 // ability introduces a miss chance. 'dmgTakenPct' covers both Damage
 // Reduction (negative) and Vulnerability (positive). 'defPenPct' covers
 // Physical/Magic Penetration (ignores a % of the target's defense).
-export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct';
+export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct';
 
 export interface AbilityCondition {
   type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed';
@@ -109,7 +109,8 @@ export interface AbilityCondition {
 export interface AbilityEffect {
   kind:
     | 'bigHit' | 'guaranteedCrit' | 'applyStatus' | 'bonusVsStatus' | 'heal' | 'buffDef' | 'buffBlock'
-    | 'crowdControl' | 'statMod' | 'shield' | 'regen' | 'dispel' | 'immunity' | 'haste' | 'berserk' | 'taunt';
+    | 'crowdControl' | 'statMod' | 'shield' | 'regen' | 'dispel' | 'immunity' | 'haste' | 'berserk' | 'taunt'
+    | 'lifestealBuff' | 'atkBuff';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -145,6 +146,8 @@ export interface AbilityEffect {
   berserkAtkPct?: number;
   berserkDefPct?: number;
   berserkRounds?: number;
+  // lifestealBuff / atkBuff: pure self buffs (no attack roll), reusing
+  // buffPct/buffRounds like buffDef/buffBlock do
 }
 
 export interface AbilityDef {
@@ -194,6 +197,7 @@ export interface Character {
   allocatedAttrs: Attributes; // player-chosen distribution of attributePoints already spent
   unlockedSkills: string[]; // node ids, e.g. "guerreiro:furioso:0" — for active nodes, this only means "known"
   equippedAbilities: string[]; // ordered subset of unlocked active-ability ids, actually used in combat (checked top to bottom each round)
+  abilityThresholds: Record<string, number>; // ability id -> custom 0-1 HP fraction, overriding its hpBelow condition's default pct when the player has customized it on the loadout screen
   equipment: Equipment;
   inventory: EquipmentItem[];
   buildings: Record<string, number>; // kingdom building id -> level

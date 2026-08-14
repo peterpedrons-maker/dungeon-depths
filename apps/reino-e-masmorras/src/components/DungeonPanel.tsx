@@ -27,7 +27,7 @@ const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
 // the one action exactly like everything else in the priority list; a
 // self-targeted 'statMod' is the one exception, since it's a hybrid hit+buff
 // that already rolls damage in the offense branch below.
-const SELF_ABILITY_KINDS = ['heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt'];
+const SELF_ABILITY_KINDS = ['heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt', 'lifestealBuff', 'atkBuff'];
 const MISS_CHANCE_CAP = 0.45;
 
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Envenenado', burn: 'Em Chamas', bleed: 'Sangrando', curse: 'Amaldiçoado' };
@@ -168,7 +168,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     const cond = ability.condition;
     if (cond.type === 'always') return true;
     if (cond.type === 'enemyHasStatus') return enemyStatusRef.current.some((s) => s.kind === cond.status);
-    if (cond.type === 'hpBelow') return chRef.current.hp / effectiveMaxHp(chRef.current) < (cond.pct ?? 0.5);
+    if (cond.type === 'hpBelow') {
+      const threshold = chRef.current.abilityThresholds[ability.id] ?? cond.pct ?? 0.5;
+      return chRef.current.hp / effectiveMaxHp(chRef.current) < threshold;
+    }
     if (cond.type === 'enemyHpBelow') return enemyRef.current.hp / enemyRef.current.maxHp < (cond.pct ?? 0.5);
     if (cond.type === 'selfDebuffed') {
       return playerStatusRef.current.length > 0 || playerCCRef.current.length > 0 || playerModsRef.current.some((m) => m.pct < 0);
@@ -209,6 +212,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy'),
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct'),
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
+      lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct')),
     };
   }
 
@@ -255,7 +259,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     if (eff.kind === 'regen') return playerRegenRef.current.some((r) => r.sourceAbilityId === ab.id);
     if (eff.kind === 'immunity') return playerImmuneRoundsRef.current > 0;
     if (eff.kind === 'haste') return playerHasteRoundsRef.current > 0;
-    if (eff.kind === 'berserk' || eff.kind === 'taunt') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    if (eff.kind === 'berserk' || eff.kind === 'taunt' || eff.kind === 'lifestealBuff' || eff.kind === 'atkBuff') {
+      return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    }
     if (eff.kind === 'statMod' && eff.statModTarget === 'self') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
     return false;
   }
@@ -333,6 +339,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       syncPlayerStatuses();
       syncPlayerCC();
       return `${ab.name}: você remove os efeitos negativos.`;
+    } else if (eff.kind === 'lifestealBuff') {
+      playerModsRef.current.push({ stat: 'lifestealPct', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      return `${ab.name}: você começa a roubar vida do inimigo.`;
+    } else if (eff.kind === 'atkBuff') {
+      playerModsRef.current.push({ stat: 'atk', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      return `${ab.name}: seu ataque aumenta.`;
     }
     return null;
   }

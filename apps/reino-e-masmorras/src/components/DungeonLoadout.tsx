@@ -1,5 +1,5 @@
 import { Character, DungeonDef } from '../types/game';
-import { MAX_EQUIPPED_ABILITIES, getUnlockedAbilities, getEquippedAbilities } from '../lib/skills';
+import { ABILITY_THRESHOLD_OPTIONS, MAX_EQUIPPED_ABILITIES, getUnlockedAbilities, getEquippedAbilities } from '../lib/skills';
 import { MAX_POTIONS, POTION_THRESHOLD_OPTIONS } from '../lib/consumables';
 import { Modal } from './Modal';
 import { SmallButton } from './Button';
@@ -12,6 +12,7 @@ interface Props {
   onEquipAbility: (abilityId: string) => void;
   onUnequipAbility: (abilityId: string) => void;
   onReorderAbility: (index: number, dir: -1 | 1) => void;
+  onSetAbilityThreshold: (abilityId: string, pct: number) => void;
   onSetPotionThreshold: (pct: number) => void;
   onConfirm: () => void;
   onCancel: () => void;
@@ -23,7 +24,7 @@ interface Props {
 // first. Unlocking NEW nodes still only happens there; this is just
 // re-ordering/equipping what's already unlocked.
 export function DungeonLoadout({
-  character: ch, dungeon, onEquipAbility, onUnequipAbility, onReorderAbility, onSetPotionThreshold, onConfirm, onCancel,
+  character: ch, dungeon, onEquipAbility, onUnequipAbility, onReorderAbility, onSetAbilityThreshold, onSetPotionThreshold, onConfirm, onCancel,
 }: Props) {
   const equipped = getEquippedAbilities(ch.classId, ch.unlockedSkills, ch.equippedAbilities);
   const known = getUnlockedAbilities(ch.classId, ch.unlockedSkills);
@@ -49,18 +50,40 @@ export function DungeonLoadout({
           <p className="text-parchment/40 text-xs italic mb-3">Nenhuma habilidade equipada.</p>
         ) : (
           <div className="space-y-1 mb-3">
-            {equipped.map((ab, i) => (
-              <div key={ab.id} className="flex items-center gap-2 bg-black/25 border border-panelborder/40 rounded px-2 py-1.5">
-                <div className="relative w-8 h-8 shrink-0">
-                  <IconActive className="absolute inset-[18%] text-gold" />
-                  <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+            {equipped.map((ab, i) => {
+              const isHpGated = ab.condition.type === 'hpBelow';
+              const threshold = ch.abilityThresholds[ab.id] ?? ab.condition.pct ?? 0.5;
+              return (
+                <div key={ab.id} className="bg-black/25 border border-panelborder/40 rounded px-2 py-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-8 h-8 shrink-0">
+                      <IconActive className="absolute inset-[18%] text-gold" />
+                      <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                    </div>
+                    <span className="flex-1 text-xs text-parchment truncate">{ab.name}</span>
+                    <button onClick={() => onReorderAbility(i, -1)} disabled={i === 0} className="text-parchment/50 hover:text-parchment disabled:opacity-20 text-xs px-1">▲</button>
+                    <button onClick={() => onReorderAbility(i, 1)} disabled={i === equipped.length - 1} className="text-parchment/50 hover:text-parchment disabled:opacity-20 text-xs px-1">▼</button>
+                    <button onClick={() => onUnequipAbility(ab.id)} className="text-crimson/80 hover:text-crimson text-xs px-1">✕</button>
+                  </div>
+                  {isHpGated && (
+                    <div className="flex items-center gap-1.5 mt-1.5 pl-10 flex-wrap">
+                      <span className="text-[10px] text-parchment/40 uppercase tracking-wide">Ativa abaixo de</span>
+                      {ABILITY_THRESHOLD_OPTIONS.map((pct) => (
+                        <button
+                          key={pct}
+                          onClick={() => onSetAbilityThreshold(ab.id, pct)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide transition ${
+                            threshold === pct ? 'bg-gold text-ink' : 'bg-panel2 text-parchment/50 hover:text-parchment hover:bg-panel2/80'
+                          }`}
+                        >
+                          {Math.round(pct * 100)}%
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span className="flex-1 text-xs text-parchment truncate">{ab.name}</span>
-                <button onClick={() => onReorderAbility(i, -1)} disabled={i === 0} className="text-parchment/50 hover:text-parchment disabled:opacity-20 text-xs px-1">▲</button>
-                <button onClick={() => onReorderAbility(i, 1)} disabled={i === equipped.length - 1} className="text-parchment/50 hover:text-parchment disabled:opacity-20 text-xs px-1">▼</button>
-                <button onClick={() => onUnequipAbility(ab.id)} className="text-crimson/80 hover:text-crimson text-xs px-1">✕</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
