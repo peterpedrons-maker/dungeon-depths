@@ -10,6 +10,7 @@ import { generateItem, rarityColor } from '../lib/equipment';
 import { getEquippedAbilities } from '../lib/skills';
 import { rollAttack, rollAbilityHit } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
+import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
 import { Button } from './Button';
 
@@ -619,19 +620,26 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     const draw = (t: number) => {
       const w = canvas.width, h = canvas.height;
       g.clearRect(0, 0, w, h);
-      // back wall
-      g.fillStyle = '#1e1610';
-      g.fillRect(0, 0, w, h - 40);
-      // floor
-      g.fillStyle = '#241a12';
-      g.fillRect(0, h - 40, w, 40);
-      g.fillStyle = '#2e2118';
-      for (let x = 0; x < w; x += 28) g.fillRect(x, h - 40, 2, 40);
-      // torches flicker
-      const flick = 0.6 + Math.sin(t / 130) * 0.15;
-      g.fillStyle = `rgba(255,150,60,${0.09 * flick})`;
-      g.beginPath(); g.arc(w * 0.15, h * 0.32, 100, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(w * 0.85, h * 0.32, 100, 0, Math.PI * 2); g.fill();
+
+      const bg = battleBackground(dungeon.id);
+      if (bg && bg.complete && bg.naturalWidth > 0) {
+        g.drawImage(bg, 0, 0, w, h);
+      } else {
+        // Procedural fallback for dungeons without dedicated art yet.
+        // back wall
+        g.fillStyle = '#1e1610';
+        g.fillRect(0, 0, w, h - 40);
+        // floor
+        g.fillStyle = '#241a12';
+        g.fillRect(0, h - 40, w, 40);
+        g.fillStyle = '#2e2118';
+        for (let x = 0; x < w; x += 28) g.fillRect(x, h - 40, 2, 40);
+        // torches flicker
+        const flick = 0.6 + Math.sin(t / 130) * 0.15;
+        g.fillStyle = `rgba(255,150,60,${0.09 * flick})`;
+        g.beginPath(); g.arc(w * 0.15, h * 0.32, 100, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(w * 0.85, h * 0.32, 100, 0, Math.PI * 2); g.fill();
+      }
 
       const groundY = h - 42;
       const bobP = Math.sin(t / 260) * 3;
