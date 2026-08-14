@@ -1,6 +1,7 @@
 import { Attributes, Character, ClassId, EquipmentItem, RankEntry } from '../types/game';
 import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
+import { MAX_POTIONS } from './consumables';
 
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
@@ -66,12 +67,20 @@ export function loadCharacter(): Character | null {
     const attributePoints = c.attributePoints ?? Math.max(0, level - 1);
     const allocatedAttrs = c.allocatedAttrs ?? { ...ZERO_ATTRS };
 
+    // Saves from before the potion cap could have stockpiled more than
+    // MAX_POTIONS — clamp down rather than let the cap only apply going
+    // forward, and back-fill the auto-use threshold new saves get by default.
+    const potions = Math.min(c.potions ?? 1, MAX_POTIONS);
+    const potionThreshold = c.potionThreshold ?? 0.3;
+
     return {
       ...c,
       classId,
       level,
       matk,
       mdef,
+      potions,
+      potionThreshold,
       skillPoints: (c.skillPoints ?? 0) + refundedPoints,
       attributePoints,
       allocatedAttrs,

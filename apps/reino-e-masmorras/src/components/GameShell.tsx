@@ -4,6 +4,7 @@ import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
+import { MAX_POTIONS } from '../lib/consumables';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { KingdomOverview } from './KingdomOverview';
@@ -13,7 +14,10 @@ import { SkillTree } from './SkillTree';
 import { Merchant } from './Merchant';
 import { RankingScreen } from './RankingScreen';
 import { DungeonMap } from './DungeonMap';
+import { DungeonLoadout } from './DungeonLoadout';
 import { DungeonPanel } from './DungeonPanel';
+import { Modal } from './Modal';
+import { SmallButton } from './Button';
 
 const POTION_COST = 15;
 
@@ -50,6 +54,9 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingDungeon, setPendingDungeon] = useState<DungeonDef | null>(null);
+  const [runInProgress, setRunInProgress] = useState(false);
+  const [navConfirmTarget, setNavConfirmTarget] = useState<Section | 'abandon' | null>(null);
 
   const kingdomBonuses = computeKingdomBonuses(character.buildings);
 
@@ -58,14 +65,50 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     setSection('dungeon');
   }
 
+  // Clicking a map marker only stages the choice — the run doesn't actually
+  // start (and the retreat-penalty guard doesn't arm) until the loadout
+  // screen's "Iniciar Expedição" is confirmed.
+  function selectDungeon(d: DungeonDef) { setPendingDungeon(d); }
+  function cancelDungeonSelect() { setPendingDungeon(null); }
+  function confirmDungeonEntry() {
+    if (!pendingDungeon) return;
+    enterDungeon(pendingDungeon);
+    setPendingDungeon(null);
+    setRunInProgress(true);
+  }
+
   function handleRunEnd(finalCharacter: Character, depthReached: number) {
     onRunEnd(finalCharacter, depthReached);
     setSection('kingdom');
+    setRunInProgress(false);
+  }
+
+  // Sidebar navigation and "Abandonar" get routed through these while a run
+  // is in progress, so leaving any way other than the DungeonPanel's own
+  // retreat flow (which heals + records the run via handleRunEnd above)
+  // requires an explicit confirmation — and forfeits that safety net.
+  function attemptNavigate(next: Section) {
+    if (runInProgress && section === 'dungeon') { setNavConfirmTarget(next); return; }
+    setSection(next);
+  }
+  function attemptAbandon() {
+    if (runInProgress && section === 'dungeon') { setNavConfirmTarget('abandon'); return; }
+    onAbandon();
+  }
+  function confirmForcedNav() {
+    if (navConfirmTarget === 'abandon') onAbandon();
+    else if (navConfirmTarget) setSection(navConfirmTarget);
+    setRunInProgress(false);
+    setNavConfirmTarget(null);
   }
 
   function handleBuyPotion() {
-    if (character.gold < POTION_COST) return;
+    if (character.gold < POTION_COST || character.potions >= MAX_POTIONS) return;
     onCharacterChange({ ...character, gold: character.gold - POTION_COST, potions: character.potions + 1 });
+  }
+
+  function handleSetPotionThreshold(pct: number) {
+    onCharacterChange({ ...character, potionThreshold: pct });
   }
 
   function handleEquip(item: EquipmentItem) {
@@ -145,8 +188,8 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           section={section}
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          onNavigate={setSection}
-          onAbandon={onAbandon}
+          onNavigate={attemptNavigate}
+          onAbandon={attemptAbandon}
         />
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
           <EmblemWatermark />
@@ -166,7 +209,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           )}
           {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} />}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
-          {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={enterDungeon} />}
+          {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
           {section === 'dungeon' && (
             <DungeonPanel
               character={character}
@@ -178,6 +221,37 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           )}
         </main>
       </div>
+
+      {pendingDungeon && (
+        <DungeonLoadout
+          character={character}
+          dungeon={pendingDungeon}
+          onEquipAbility={handleEquipAbility}
+          onUnequipAbility={handleUnequipAbility}
+          onReorderAbility={handleReorderAbility}
+          onSetPotionThreshold={handleSetPotionThreshold}
+          onConfirm={confirmDungeonEntry}
+          onCancel={cancelDungeonSelect}
+        />
+      )}
+
+      {navConfirmTarget && (
+        <Modal
+          title="Sair da Expedição?"
+          onClose={() => setNavConfirmTarget(null)}
+          footer={
+            <>
+              <SmallButton onClick={() => setNavConfirmTarget(null)} variant="ghost">Continuar na Masmorra</SmallButton>
+              <SmallButton onClick={confirmForcedNav}>Sair Mesmo Assim</SmallButton>
+            </>
+          }
+        >
+          <p>
+            Se você sair agora, perderá o progresso desta expedição — sem cura garantida e sem registrar a
+            profundidade alcançada no ranking. Na próxima vez você terá que recomeçar do início.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

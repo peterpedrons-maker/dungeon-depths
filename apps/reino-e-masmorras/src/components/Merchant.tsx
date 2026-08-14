@@ -2,6 +2,7 @@ import { Character, ItemSlot } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
 import { generateItem, rarityColor } from '../lib/equipment';
+import { MAX_POTIONS } from '../lib/consumables';
 import { Panel } from './Panel';
 import { Button } from './Button';
 import { IconSword, IconChest, IconLegs, IconGloves, IconRing } from './icons';
@@ -45,9 +46,9 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
         <ShopCard
           icon={<img src={pocaoIcon} alt="" className="w-full h-full object-contain" />}
           name="Poção de Vida"
-          desc="Recupera 40% da vida máxima em combate."
+          desc={`Recupera 40% da vida máxima em combate. Limite: ${ch.potions}/${MAX_POTIONS}.`}
           cost={POTION_COST}
-          disabled={ch.gold < POTION_COST}
+          disabled={ch.gold < POTION_COST || ch.potions >= MAX_POTIONS}
           onBuy={onBuyPotion}
         />
         {SLOTS.map((slot) => {
