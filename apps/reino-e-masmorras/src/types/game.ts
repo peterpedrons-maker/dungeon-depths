@@ -281,6 +281,7 @@ export interface DungeonDef {
   dmgTakenMult?: number;
   bossDepth: number; // fixed depth the boss spawns at — defeating it clears the dungeon and ends the run
   boss: EnemyShape;
+  miniBossDepths?: number[]; // depths shown as milestone markers on the progress bar; no dungeon defines any yet
 }
 
 export interface RankEntry {

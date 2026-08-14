@@ -25,6 +25,16 @@ import orcUrl from '../assets/sprites/orc.webp';
 import trollUrl from '../assets/sprites/troll.webp';
 import dragaoUrl from '../assets/sprites/dragao.webp';
 import aberracaoUrl from '../assets/sprites/aberracao.webp';
+import ruinBatUrl from '../assets/sprites/ruinBat.webp';
+import acidSlimeUrl from '../assets/sprites/acidSlime.webp';
+import ruinBanditUrl from '../assets/sprites/ruinBandit.webp';
+import carrionCrowUrl from '../assets/sprites/carrionCrow.webp';
+import boneKingUrl from '../assets/sprites/boneKing.webp';
+import goblinWolfRiderUrl from '../assets/sprites/goblinWolfRider.webp';
+import goblinFanaticUrl from '../assets/sprites/goblinFanatic.webp';
+import goblinThrowerUrl from '../assets/sprites/goblinThrower.webp';
+import goblinShamanUrl from '../assets/sprites/goblinShaman.webp';
+import grashUrl from '../assets/sprites/grash.webp';
 
 export interface Sprite {
   image: HTMLImageElement;
@@ -40,9 +50,9 @@ const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
   goblin: 95, wolf: 75, skeleton: 115, orc: 125, troll: 155, dragon: 130, horror: 125,
 
   // Região 1 — Ruínas Superficiais
-  ruinBat: 70, acidSlime: 85, ruinBandit: 105, carrionCrow: 65, boneKing: 165,
+  ruinBat: 70, acidSlime: 72, ruinBandit: 105, carrionCrow: 65, boneKing: 165,
   // Região 1 — Caverna dos Goblins
-  goblinShaman: 90, goblinThrower: 90, goblinFanatic: 100, goblinWolfRider: 105, grash: 160,
+  goblinShaman: 102, goblinThrower: 95, goblinFanatic: 95, goblinWolfRider: 108, grash: 160,
   // Região 1 — Cripta do Tesouro
   zombieLooter: 105, stoneGuardian: 130, greedyWraith: 100, wrappedMummy: 105, mimicChest: 80, cursedCustodian: 165,
   // Região 1 — Pântano Podre
@@ -71,21 +81,22 @@ const HERO_SOURCES: Record<ClassId, string> = {
   cacador: cacadorUrl, bardo: bardoUrl,
   feiticeiro: feiticeiroUrl, bruxo: bruxoUrl, druida: druidaUrl, necromante: necromanteUrl,
 };
-// Região 1's 23 new regular shapes + 5 bosses don't have dedicated art yet —
-// each temporarily reuses the sprite of an existing shape from the same
-// dungeon (or the closest thematic fit) until real art is generated and
-// integrated, same placeholder pattern already used for classes without
-// their own sprite. Região 2+ bosses intentionally and permanently reuse
-// their own base shape's sprite (a boss there literally IS a bigger version
-// of that same creature), not a placeholder.
+// Ruínas Superficiais and Caverna dos Goblins now have their own dedicated
+// art (regulars + boss). The remaining Região 1 shapes (Cripta, Pântano,
+// Aranhas) still don't — each temporarily reuses the sprite of an existing
+// shape from the same dungeon (or the closest thematic fit) until real art
+// is generated and integrated, same placeholder pattern already used for
+// classes without their own sprite. Região 2+ bosses intentionally and
+// permanently reuse their own base shape's sprite (a boss there literally
+// IS a bigger version of that same creature), not a placeholder.
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, orc: orcUrl,
   troll: trollUrl, dragon: dragaoUrl, horror: aberracaoUrl,
 
-  // Região 1 — Ruínas Superficiais (placeholder: esqueleto, tema já é o mesmo)
-  ruinBat: esqueletoUrl, acidSlime: esqueletoUrl, ruinBandit: esqueletoUrl, carrionCrow: esqueletoUrl, boneKing: esqueletoUrl,
-  // Região 1 — Caverna dos Goblins (placeholder: goblin)
-  goblinShaman: goblinUrl, goblinThrower: goblinUrl, goblinFanatic: goblinUrl, goblinWolfRider: goblinUrl, grash: goblinUrl,
+  // Região 1 — Ruínas Superficiais
+  ruinBat: ruinBatUrl, acidSlime: acidSlimeUrl, ruinBandit: ruinBanditUrl, carrionCrow: carrionCrowUrl, boneKing: boneKingUrl,
+  // Região 1 — Caverna dos Goblins
+  goblinShaman: goblinShamanUrl, goblinThrower: goblinThrowerUrl, goblinFanatic: goblinFanaticUrl, goblinWolfRider: goblinWolfRiderUrl, grash: grashUrl,
   // Região 1 — Cripta do Tesouro (placeholder: esqueleto, tema morto-vivo)
   zombieLooter: esqueletoUrl, stoneGuardian: esqueletoUrl, greedyWraith: esqueletoUrl, wrappedMummy: esqueletoUrl, mimicChest: esqueletoUrl, cursedCustodian: esqueletoUrl,
   // Região 1 — Pântano Podre (placeholder: orc)
