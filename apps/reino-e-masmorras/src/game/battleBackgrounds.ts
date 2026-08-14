@@ -2,9 +2,11 @@
 // only a subset of dungeons have art so far; DungeonPanel falls back to its
 // procedural canvas background for any dungeon id not listed here.
 import ruinasUrl from '../assets/battle-bg/ruinas.webp';
+import goblinsUrl from '../assets/battle-bg/goblins.webp';
 
 const SOURCES: Partial<Record<string, string>> = {
   ruinas: ruinasUrl,
+  goblins: goblinsUrl,
 };
 
 const cache: Partial<Record<string, HTMLImageElement>> = {};

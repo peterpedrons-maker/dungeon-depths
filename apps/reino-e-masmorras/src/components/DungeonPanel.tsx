@@ -13,7 +13,7 @@ import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
 import { Button } from './Button';
-import { IconActive } from './icons';
+import { IconActive, IconSkull, IconSword } from './icons';
 import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 1600;
@@ -726,19 +726,44 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   // Progress toward the dungeon's own boss, replacing the old raw
   // "Profundidade N" floor counter — every dungeon now has a defined end
   // (bossDepth), so a fill bar communicates "how close to done" far better
-  // than an ever-climbing number ever did.
-  const dungeonProgressPct = Math.round(Math.max(0, Math.min(1, (depth - dungeon.startDepth) / (dungeon.bossDepth - dungeon.startDepth))) * 100);
+  // than an ever-climbing number ever did. Once the boss itself is up, the
+  // marker/fill snap to 100% regardless of the raw depth fraction (the boss
+  // sits AT bossDepth, not past it).
+  const depthPct = (d: number) => Math.round(Math.max(0, Math.min(1, (d - dungeon.startDepth) / (dungeon.bossDepth - dungeon.startDepth))) * 100);
+  const dungeonProgressPct = depthPct(depth);
+  const playerBarPct = enemy.isBoss ? 100 : dungeonProgressPct;
+  const miniBossPcts = (dungeon.miniBossDepths ?? []).map(depthPct);
 
   return (
     <Panel title={dungeon.name}>
       {phase === 'fight' && (
-        <div className="mb-3">
+        <div className="mb-4">
           <div className="flex justify-between items-baseline text-[11px] text-parchment/50 uppercase tracking-wide mb-1">
             <span>Progresso da Masmorra</span>
             <span>{enemy.isBoss ? 'Chefe!' : `${dungeonProgressPct}%`}</span>
           </div>
-          <div className="h-1.5 bg-black/50 rounded overflow-hidden">
-            <div className="h-1.5 bg-gold rounded transition-[width] duration-500" style={{ width: `${enemy.isBoss ? 100 : dungeonProgressPct}%` }} />
+          <div className="relative h-1.5 mt-4 mb-1">
+            <div className="absolute inset-0 bg-black/50 rounded overflow-hidden">
+              <div className="h-full bg-gold rounded transition-[width] duration-500" style={{ width: `${playerBarPct}%` }} />
+              {/* 50% milestone tick */}
+              <div className="absolute top-0 bottom-0 w-px bg-parchment/40" style={{ left: '50%' }} />
+              {/* mini-boss ticks — no dungeon defines any yet, so this renders nothing today */}
+              {miniBossPcts.map((pct, i) => (
+                <div key={i} className="absolute top-0 bottom-0 w-0.5 bg-amber-400/80" style={{ left: `${pct}%` }} />
+              ))}
+            </div>
+            {/* boss marker, fixed at the end of the track */}
+            <div className="absolute -top-3 -right-0.5 text-crimson/90" title={dungeon.boss}>
+              <IconSkull className="w-3.5 h-3.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" />
+            </div>
+            {/* player position marker, slides along the track as depth advances */}
+            <div
+              className="absolute -top-3 -translate-x-1/2 text-gold transition-[left] duration-500"
+              style={{ left: `${playerBarPct}%` }}
+              title={ch.name}
+            >
+              <IconSword className="w-3 h-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" />
+            </div>
           </div>
         </div>
       )}
