@@ -1,5 +1,9 @@
-import { ClassId, EquipmentItem, ItemSlot, Rarity, SecondaryStatType } from '../types/game';
+import { AccessoryType, ClassId, EquipmentItem, ItemSlot, Rarity, SecondaryStatType } from '../types/game';
 import { CLASSES } from './classes';
+import {
+  ACCESSORY_NOUN, ACCESSORY_STAT_POOL, ACCESSORY_TYPES, ARMOR_NOUN, OFFHAND_KIND, OFFHAND_NOUN,
+  WEIGHT_GROUP, tierName,
+} from './itemTiers';
 
 interface RarityDef { id: Rarity; name: string; color: string; weight: number; mult: number; }
 export const RARITIES: RarityDef[] = [
@@ -10,6 +14,9 @@ export const RARITIES: RarityDef[] = [
   { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, mult: 3.2 },
 ];
 
+// Rarity prefixes/suffixes wrap around whatever base-tier name the item
+// already has (e.g. "Espada de Aço Élfica") — rarity no longer picks the
+// item's name on its own, it only decorates the base type from lib/itemTiers.ts.
 const PREFIXES: Record<Rarity, string[]> = {
   comum: ['Enferrujada', 'Simples', 'Rústica'],
   incomum: ['Afiada', 'Reforçada', 'Batida'],
@@ -19,17 +26,30 @@ const PREFIXES: Record<Rarity, string[]> = {
 };
 const SUFFIXES = ['do Dragão', 'da Aurora', 'das Sombras', 'do Rei Eterno', 'da Tempestade'];
 
-const ACCESSORY_BASES = ['Anel', 'Amuleto', 'Bracelete'];
-
 export const SLOT_NAMES: Record<ItemSlot, string> = {
-  weapon: 'Arma', body: 'Corpo', legs: 'Pernas', hands: 'Mãos', accessory: 'Acessório',
+  weapon: 'Arma', body: 'Corpo', legs: 'Pernas', hands: 'Mãos', offhand: 'Mão Secundária', accessory: 'Acessório',
 };
 
-// How strongly each armor slot rolls its flat defense bonus relative to a
-// weapon's flat damage roll — body is the main piece, hands the lightest.
+// How strongly each slot rolls its flat primary stat relative to a weapon's
+// flat damage roll — body is the main armor piece, hands the lightest, and a
+// shield sits below a full armor piece since it's only ever the off hand.
 const DEF_SLOT_SCALE: Record<'body' | 'legs' | 'hands', number> = {
   body: 0.6, legs: 0.45, hands: 0.35,
 };
+const SHIELD_SCALE = 0.5;
+const FOCO_SCALE = 1;
+
+// Per-stat-type scale applied to an accessory's themed primary roll — keeps
+// chance-based stats (crit/critDmg, stored as 0-1 fractions) from rolling as
+// large raw numbers as flat stats like hp.
+const ACCESSORY_PRIMARY_SCALE: Partial<Record<SecondaryStatType, number>> = {
+  crit: 0.5, critDmg: 0.8, hp: 4, def: 1, mdef: 1, atk: 1.2, matk: 1.2,
+};
+
+// Every non-weapon/armor slot can also roll one of these as its secondary
+// stat, regardless of theme — gives every item a chance at a hybrid stat on
+// top of its primary.
+const FULL_SECONDARY_POOL: SecondaryStatType[] = ['crit', 'critDmg', 'def', 'mdef', 'hp', 'block', 'atk', 'matk'];
 
 function pickRarity(): RarityDef {
   const total = RARITIES.reduce((s, r) => s + r.weight, 0);
@@ -45,57 +65,98 @@ function rarityIndex(id: Rarity): number {
   return RARITIES.findIndex((r) => r.id === id);
 }
 
-function baseNameFor(slot: ItemSlot, classId: ClassId): string {
+function baseNounFor(slot: ItemSlot, classId: ClassId, accessoryType?: AccessoryType): string {
   const c = CLASSES[classId];
   if (slot === 'weapon') return c.weaponBase;
-  if (slot === 'body') return c.bodyBase;
-  if (slot === 'legs') return c.legsBase;
-  if (slot === 'hands') return c.handsBase;
-  return ACCESSORY_BASES[Math.floor(Math.random() * ACCESSORY_BASES.length)];
+  if (slot === 'body' || slot === 'legs' || slot === 'hands') return ARMOR_NOUN[WEIGHT_GROUP[classId]][slot];
+  if (slot === 'offhand') {
+    const kind = OFFHAND_KIND[classId];
+    return kind ? OFFHAND_NOUN[kind] : 'Item Misterioso';
+  }
+  return ACCESSORY_NOUN[accessoryType ?? 'anel'];
 }
 
-// Same base roll for every slot, just scaled differently: a weapon's flat
+// Same base roll for every slot, just scaled differently — a weapon's flat
 // damage and an accessory's flat HP need very different magnitudes to feel
-// meaningful next to the class's base stats.
-function rollPrimaryValue(depth: number, mult: number, scale: number): number {
-  const roll = 3 + Math.floor(Math.random() * 5) + Math.floor(depth / 3);
+// meaningful next to the class's base stats. baseTier (1-10, from the
+// dungeon it dropped in — see DungeonDef.itemTier) replaces the old in-run
+// depth counter as the power-progression driver.
+function rollPrimaryValue(baseTier: number, mult: number, scale: number): number {
+  const roll = 3 + Math.floor(Math.random() * 5) + baseTier * 2;
   return Math.round(roll * mult * scale);
 }
 
-function rollSecondaryStat(tier: number): EquipmentItem['secondaryStat'] {
-  if (tier < 1) return undefined;
-  const types: SecondaryStatType[] = ['crit', 'def', 'hp', 'block'];
-  const type = types[Math.floor(Math.random() * types.length)];
-  const value = type === 'crit' ? Math.round(tier * 3) / 100
-    : type === 'block' ? Math.round(tier * 2) / 100
-    : type === 'hp' ? tier * 4
-    : tier * 2; // def
+type PrimaryFields = Pick<EquipmentItem, 'dmgBonus' | 'defBonus' | 'hpBonus' | 'matkBonus' | 'mdefBonus' | 'critChanceBonus' | 'critDmgBonus'>;
+const ZERO_PRIMARY: PrimaryFields = { dmgBonus: 0, defBonus: 0, hpBonus: 0, matkBonus: 0, mdefBonus: 0, critChanceBonus: 0, critDmgBonus: 0 };
+
+function primaryFieldsFor(
+  slot: ItemSlot, classId: ClassId, baseTier: number, rarityMult: number, qualityMult: number, accessoryType?: AccessoryType,
+): Partial<PrimaryFields> {
+  if (slot === 'weapon') {
+    return { dmgBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, 1) * qualityMult) };
+  }
+  if (slot === 'body' || slot === 'legs' || slot === 'hands') {
+    return { defBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, DEF_SLOT_SCALE[slot]) * qualityMult) };
+  }
+  if (slot === 'offhand') {
+    const kind = OFFHAND_KIND[classId];
+    if (kind === 'shield') return { defBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, SHIELD_SCALE) * qualityMult) };
+    if (kind === 'foco') return { matkBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, FOCO_SCALE) * qualityMult) };
+    return {};
+  }
+  // accessory — rolls one stat from its themed pool as the primary
+  const pool = ACCESSORY_STAT_POOL[accessoryType ?? 'anel'];
+  const statType = pool[Math.floor(Math.random() * pool.length)];
+  const raw = rollPrimaryValue(baseTier, rarityMult, ACCESSORY_PRIMARY_SCALE[statType] ?? 1) * qualityMult;
+  switch (statType) {
+    case 'crit': return { critChanceBonus: Math.round(raw) / 100 };
+    case 'critDmg': return { critDmgBonus: Math.round(raw) / 100 };
+    case 'hp': return { hpBonus: Math.round(raw) };
+    case 'def': return { defBonus: Math.round(raw) };
+    case 'mdef': return { mdefBonus: Math.round(raw) };
+    case 'atk': return { dmgBonus: Math.round(raw) };
+    case 'matk': return { matkBonus: Math.round(raw) };
+    default: return {};
+  }
+}
+
+function rollSecondaryStat(rarityTier: number, pool: SecondaryStatType[]): EquipmentItem['secondaryStat'] {
+  if (rarityTier < 1) return undefined;
+  const type = pool[Math.floor(Math.random() * pool.length)];
+  const value = type === 'crit' ? Math.round(rarityTier * 3) / 100
+    : type === 'critDmg' ? Math.round(rarityTier * 4) / 100
+    : type === 'block' ? Math.round(rarityTier * 2) / 100
+    : type === 'hp' ? rarityTier * 4
+    : rarityTier * 2; // def / mdef / atk / matk
   return { type, value };
 }
 
 let _iid = 0;
 
+// baseTier (1-10) comes from the dungeon the item dropped in (or, for the
+// Mercador, the toughest dungeon the player currently qualifies for — see
+// highestAccessibleItemTier in lib/dungeons.ts) and drives both the item's
+// base name (lib/itemTiers.ts) and the magnitude of its primary stat.
 // qualityBonusPct comes from the kingdom's Forja building — a flat % bonus
 // stacked on top of the item's rolled primary stat.
-export function generateItem(slot: ItemSlot, classId: ClassId, depth: number, qualityBonusPct = 0): EquipmentItem {
+export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number, qualityBonusPct = 0): EquipmentItem {
   const rarity = pickRarity();
-  const tier = rarityIndex(rarity.id);
-  const base = baseNameFor(slot, classId);
+  const rarityTier = rarityIndex(rarity.id);
+  const accessoryType = slot === 'accessory' ? ACCESSORY_TYPES[Math.floor(Math.random() * ACCESSORY_TYPES.length)] : undefined;
+  const base = tierName(baseNounFor(slot, classId, accessoryType), baseTier);
   const prefix = PREFIXES[rarity.id][Math.floor(Math.random() * PREFIXES[rarity.id].length)];
-  const name = tier >= 3
+  const name = rarityTier >= 3
     ? `${base} ${prefix} ${SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)]}`
     : `${base} ${prefix}`;
 
   const qualityMult = 1 + qualityBonusPct;
-  const dmgBonus = slot === 'weapon' ? rollPrimaryValue(depth, rarity.mult, 1) * qualityMult : 0;
-  const defBonus = slot === 'body' || slot === 'legs' || slot === 'hands'
-    ? rollPrimaryValue(depth, rarity.mult, DEF_SLOT_SCALE[slot]) * qualityMult : 0;
-  const hpBonus = slot === 'accessory' ? rollPrimaryValue(depth, rarity.mult, 3.5) * qualityMult : 0;
+  const primary = primaryFieldsFor(slot, classId, baseTier, rarity.mult, qualityMult, accessoryType);
 
   return {
-    id: `i${++_iid}_${Date.now()}`, name, classId, slot, rarity: rarity.id,
-    dmgBonus: Math.round(dmgBonus), defBonus: Math.round(defBonus), hpBonus: Math.round(hpBonus),
-    secondaryStat: rollSecondaryStat(tier),
+    id: `i${++_iid}_${Date.now()}`, name, classId, slot, rarity: rarity.id, tier: baseTier,
+    accessoryType,
+    ...ZERO_PRIMARY, ...primary,
+    secondaryStat: rollSecondaryStat(rarityTier, FULL_SECONDARY_POOL),
   };
 }
 

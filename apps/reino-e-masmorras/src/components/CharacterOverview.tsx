@@ -4,12 +4,13 @@ import { CLASSES } from '../lib/classes';
 import { computeCombatStats } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment';
+import { OFFHAND_KIND } from '../lib/itemTiers';
 import { computeAttributeTotals } from '../lib/skills';
 import { heroSprites } from '../game/sprites';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
-import { IconSword, IconChest, IconLegs, IconGloves, IconRing } from './icons';
+import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 
 const ATTR_META: Record<AttributeKey, { label: string; color: string }> = {
@@ -23,12 +24,15 @@ const ATTR_META: Record<AttributeKey, { label: string; color: string }> = {
 };
 const ATTR_ORDER: AttributeKey[] = ['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk'];
 
-const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
+const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
-  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, accessory: IconRing,
+  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
 };
 // WoW-style paperdoll: gear slots stacked in two vertical columns flanking
-// the character portrait, instead of arranged around it in a cross.
+// the character portrait, instead of arranged around it in a cross. Offhand
+// only joins the left column for classes that actually have one to equip
+// (see OFFHAND_KIND) — a class with a two-handed weapon or dual-wield never
+// shows an unusable empty slot.
 const LEFT_SLOTS: ItemSlot[] = ['weapon', 'hands'];
 const RIGHT_SLOTS: ItemSlot[] = ['body', 'legs', 'accessory'];
 
@@ -51,6 +55,9 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const [selected, setSelected] = useState<Selected | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   const visibleInventory = filter === 'all' ? ch.inventory : ch.inventory.filter((i) => i.slot === filter);
+  const hasOffhand = !!OFFHAND_KIND[ch.classId];
+  const paperdollLeftSlots: ItemSlot[] = hasOffhand ? ['weapon', 'offhand', 'hands'] : LEFT_SLOTS;
+  const visibleSlots = hasOffhand ? SLOTS : SLOTS.filter((s) => s !== 'offhand');
 
   const slotButton = (slot: ItemSlot) => {
     const item = ch.equipment[slot];
@@ -107,7 +114,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           {/* Paperdoll: gear flanks the character portrait, WoW-style. */}
           <div className="rounded border border-black/50 bg-black/25 p-3 mb-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
             <div className="flex items-center justify-center gap-3 sm:gap-6">
-              <div className="flex flex-col gap-2.5 sm:gap-3.5">{LEFT_SLOTS.map(slotButton)}</div>
+              <div className="flex flex-col gap-2.5 sm:gap-3.5">{paperdollLeftSlots.map(slotButton)}</div>
               <div className="flex-1 flex items-end justify-center min-h-[180px] sm:min-h-[230px] relative">
                 <div
                   className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full blur-2xl opacity-30"
@@ -183,7 +190,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           {ch.inventory.length > 0 && (
             <div className="flex gap-1.5 mb-2 flex-wrap">
               <FilterTab active={filter === 'all'} onClick={() => setFilter('all')}>Todos</FilterTab>
-              {SLOTS.map((slot) => (
+              {visibleSlots.map((slot) => (
                 <FilterTab key={slot} active={filter === slot} onClick={() => setFilter(slot)}>{SLOT_NAMES[slot]}</FilterTab>
               ))}
             </div>
@@ -266,11 +273,15 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
       }
     >
       <div className="font-bold text-base" style={{ color: rarityColor(item.rarity) }}>{item.name}</div>
-      <div className="text-xs text-parchment/50">{rarityName(item.rarity)}</div>
+      <div className="text-xs text-parchment/50">{rarityName(item.rarity)} · Tier {item.tier}</div>
       <ul className="text-sm space-y-0.5 pt-1">
         {item.dmgBonus > 0 && <li>+{item.dmgBonus} dano</li>}
         {item.defBonus > 0 && <li>+{item.defBonus} defesa</li>}
         {item.hpBonus > 0 && <li>+{item.hpBonus} vida máxima</li>}
+        {item.matkBonus > 0 && <li>+{item.matkBonus} ataque mágico</li>}
+        {item.mdefBonus > 0 && <li>+{item.mdefBonus} defesa mágica</li>}
+        {item.critChanceBonus > 0 && <li>+{Math.round(item.critChanceBonus * 100)}% chance de crítico</li>}
+        {item.critDmgBonus > 0 && <li>+{Math.round(item.critDmgBonus * 100)}% dano crítico</li>}
         {item.secondaryStat && <li>{secondaryStatLabel(item)}</li>}
       </ul>
     </Modal>
@@ -280,8 +291,12 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
 function secondaryStatLabel(item: EquipmentItem): string {
   const s = item.secondaryStat!;
   if (s.type === 'crit') return `+${Math.round(s.value * 100)}% chance de crítico`;
+  if (s.type === 'critDmg') return `+${Math.round(s.value * 100)}% dano crítico`;
   if (s.type === 'block') return `+${Math.round(s.value * 100)}% chance de bloqueio`;
   if (s.type === 'def') return `+${s.value} defesa`;
+  if (s.type === 'mdef') return `+${s.value} defesa mágica`;
+  if (s.type === 'atk') return `+${s.value} ataque`;
+  if (s.type === 'matk') return `+${s.value} ataque mágico`;
   return `+${s.value} vida máxima`;
 }
 

@@ -10,7 +10,11 @@ import { DungeonDef } from '../types/game';
 // run (see DungeonPanel). Região 1's five dungeons each have a bespoke
 // 5-shape roster + a unique boss; Região 2's dungeons keep their original
 // generic pool and use a boosted "elder/warlord"-style boss built from
-// their own strongest shape until they get a bespoke roster too.
+// their own strongest shape until they get a bespoke roster too. itemTier
+// (1-10, see lib/itemTiers.ts) is hand-authored per dungeon exactly like
+// bossDepth/boss — every item found inside always rolls at that tier,
+// regardless of in-run depth, so item power tracks dungeon progression
+// rather than the floor counter. Tiers 6-10 are reserved for regions 3-7.
 export const DUNGEONS: DungeonDef[] = [
   // ── Região 1 — Iniciante (nível 1-10) ──
   {
@@ -18,14 +22,14 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Criaturas fracas perto da entrada da masmorra. Boa para começar.',
     startDepth: 1, levelReq: 1,
     enemyPool: ['skeleton', 'ruinBat', 'acidSlime', 'ruinBandit', 'carrionCrow'],
-    bossDepth: 7, boss: 'boneKing',
+    bossDepth: 7, boss: 'boneKing', itemTier: 1,
   },
   {
     id: 'goblins', name: 'Caverna dos Goblins',
     desc: 'Uma tribo de goblins fez desta caverna seu covil.',
     startDepth: 4, levelReq: 4,
     enemyPool: ['goblin', 'goblinShaman', 'goblinThrower', 'goblinFanatic', 'goblinWolfRider'],
-    bossDepth: 10, boss: 'grash',
+    bossDepth: 10, boss: 'grash', itemTier: 1,
   },
   {
     id: 'cripta', name: 'Cripta do Tesouro',
@@ -33,21 +37,21 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 5, levelReq: 5, special: true,
     goldMult: 2, xpMult: 0.7, dropMult: 2.5,
     enemyPool: ['zombieLooter', 'stoneGuardian', 'greedyWraith', 'wrappedMummy', 'mimicChest'],
-    bossDepth: 9, boss: 'cursedCustodian',
+    bossDepth: 9, boss: 'cursedCustodian', itemTier: 2,
   },
   {
     id: 'pantano', name: 'Pântano Podre',
     desc: 'Água estagnada e árvores mortas escondem predadores famintos.',
     startDepth: 7, levelReq: 7,
     enemyPool: ['poisonToad', 'swampViper', 'crawlingBog', 'cursedWisp', 'rottingGator'],
-    bossDepth: 13, boss: 'mudMother',
+    bossDepth: 13, boss: 'mudMother', itemTier: 2,
   },
   {
     id: 'aranhas', name: 'Covil de Aranhas',
     desc: 'Uma fenda rochosa coberta de teias — algo grande tece lá dentro.',
     startDepth: 10, levelReq: 10,
     enemyPool: ['huntingSpider', 'venomSpider', 'giantSpider', 'spiderlingSwarm', 'darkWeaver'],
-    bossDepth: 16, boss: 'blackMatriarch',
+    bossDepth: 16, boss: 'blackMatriarch', itemTier: 3,
   },
 
   // ── Região 2 — Aprendiz (nível 11-20) ──
@@ -56,43 +60,52 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Apenas horrores e criaturas ancestrais habitam suas escadarias. Perigosa, mas generosa em experiência.',
     startDepth: 12, levelReq: 12, special: true, enemyPool: ['horror', 'dragon'],
     xpMult: 1.6, dmgTakenMult: 1.25, dropMult: 1.5,
-    bossDepth: 18, boss: 'horrorAncient',
+    bossDepth: 18, boss: 'horrorAncient', itemTier: 3,
   },
   {
     id: 'minas', name: 'Minas Abandonadas',
     desc: 'Trilhos enferrujados descem além do que os mineiros ousaram explorar.',
     startDepth: 13, levelReq: 13, enemyPool: ['orc', 'troll'],
-    bossDepth: 19, boss: 'orcWarlord',
+    bossDepth: 19, boss: 'orcWarlord', itemTier: 3,
   },
   {
     id: 'floresta', name: 'Floresta Amaldiçoada',
     desc: 'Árvores retorcidas escondem olhos brilhando na escuridão.',
     startDepth: 16, levelReq: 16, enemyPool: ['troll', 'horror'],
-    bossDepth: 22, boss: 'trollChieftain',
+    bossDepth: 22, boss: 'trollChieftain', itemTier: 4,
   },
   {
     id: 'covil', name: 'Covil dos Dragões',
     desc: 'O ninho de criaturas verdadeiramente perigosas.',
     startDepth: 18, levelReq: 18, enemyPool: ['troll', 'dragon', 'horror'],
-    bossDepth: 24, boss: 'dragonElder',
+    bossDepth: 24, boss: 'dragonElder', itemTier: 4,
   },
   {
     id: 'necropole', name: 'Necrópole Esquecida',
     desc: 'Um cemitério em ruínas onde os mortos não descansam.',
     startDepth: 18, levelReq: 18, enemyPool: ['skeleton', 'horror'],
-    bossDepth: 24, boss: 'skeletonLord',
+    bossDepth: 24, boss: 'skeletonLord', itemTier: 4,
   },
   {
     id: 'elficas', name: 'Ruínas Élficas',
     desc: 'Colunas élficas cobertas de vinhas, tomadas por criaturas selvagens.',
     startDepth: 20, levelReq: 20, enemyPool: ['troll', 'dragon'],
-    bossDepth: 26, boss: 'trollChieftain',
+    bossDepth: 26, boss: 'trollChieftain', itemTier: 5,
   },
   {
     id: 'arena', name: 'Arena de Sangue',
     desc: 'Um gauntlet de combate contínuo — arriscado, mas generoso em espólios.',
     startDepth: 20, levelReq: 20, special: true, enemyPool: ['orc', 'troll', 'dragon'],
     dmgTakenMult: 1.2, dropMult: 1.8,
-    bossDepth: 28, boss: 'orcWarlord',
+    bossDepth: 28, boss: 'orcWarlord', itemTier: 5,
   },
 ];
+
+// The Mercador sells items scaled to the toughest dungeon the player could
+// currently walk into (by levelReq), replacing the old bestDepth-based
+// scaling — a lifetime "deepest floor ever reached" no longer means
+// anything now that item tier tracks dungeon progression, not depth.
+export function highestAccessibleItemTier(level: number): number {
+  const reachable = DUNGEONS.filter((d) => level >= d.levelReq).map((d) => d.itemTier);
+  return reachable.length > 0 ? Math.max(...reachable) : 1;
+}

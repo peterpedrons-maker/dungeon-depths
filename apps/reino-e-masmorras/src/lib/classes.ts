@@ -134,7 +134,7 @@ export function createCharacter(name: string, classId: ClassId): Character {
     gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0,
     skillPoints: 0, attributePoints: 0, allocatedAttrs: { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [], abilityThresholds: {},
-    equipment: { weapon: null, body: null, legs: null, hands: null, accessory: null }, inventory: [],
+    equipment: { weapon: null, body: null, legs: null, hands: null, offhand: null, accessory: null }, inventory: [],
     buildings: {},
   };
 }

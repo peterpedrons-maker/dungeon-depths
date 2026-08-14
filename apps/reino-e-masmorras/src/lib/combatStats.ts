@@ -28,25 +28,34 @@ function equippedItems(ch: Character): EquipmentItem[] {
 }
 
 // Combines class base + level growth (already baked into ch.atk/ch.def/
-// ch.matk/ch.mdef) with every equipped item across all 5 slots, every
+// ch.matk/ch.mdef) with every equipped item across all 6 slots, every
 // unlocked talent node, and the primary attributes those talents grant into
-// the numbers combat actually rolls against. Equipment only ever feeds
-// physical atk/def — weapons and armor are mundane gear, so magical power
-// comes purely from class base + INT/WIS + talents.
+// the numbers combat actually rolls against. Equipment used to only ever
+// feed physical atk/def, but the offhand's foco/relicário line and the
+// Bracelete accessory now feed magical power too (matkBonus), and Amuleto
+// can feed mdef — so equipment can push every one of atk/def/matk/mdef now.
 export function computeCombatStats(ch: Character): CombatStats {
   const bonuses = computeSkillBonuses(ch.classId, ch.unlockedSkills);
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
 
-  let itemDmg = 0, itemDef = 0, itemHp = 0, itemCrit = 0, itemBlock = 0;
+  let itemDmg = 0, itemDef = 0, itemHp = 0, itemMatk = 0, itemMdef = 0, itemCrit = 0, itemCritDmg = 0, itemBlock = 0;
   for (const item of equippedItems(ch)) {
     itemDmg += item.dmgBonus;
     itemDef += item.defBonus;
     itemHp += item.hpBonus;
+    itemMatk += item.matkBonus;
+    itemMdef += item.mdefBonus;
+    itemCrit += item.critChanceBonus;
+    itemCritDmg += item.critDmgBonus;
     const sec = item.secondaryStat;
     if (sec?.type === 'crit') itemCrit += sec.value;
+    else if (sec?.type === 'critDmg') itemCritDmg += sec.value;
     else if (sec?.type === 'def') itemDef += sec.value;
+    else if (sec?.type === 'mdef') itemMdef += sec.value;
     else if (sec?.type === 'hp') itemHp += sec.value;
     else if (sec?.type === 'block') itemBlock += sec.value;
+    else if (sec?.type === 'atk') itemDmg += sec.value;
+    else if (sec?.type === 'matk') itemMatk += sec.value;
   }
 
   const atkFromAttr = attrs.str * ATTR_COEF.atkPerStr + attrs.dex * ATTR_COEF.atkPerDex;
@@ -58,7 +67,7 @@ export function computeCombatStats(ch: Character): CombatStats {
   const hpFromAttr = attrs.vit * ATTR_COEF.hpPerVit;
 
   let atk = (ch.atk + itemDmg + atkFromAttr) * (1 + bonuses.dmgPct);
-  let matk = (ch.matk + matkFromAttr) * (1 + bonuses.dmgPct);
+  let matk = (ch.matk + itemMatk + matkFromAttr) * (1 + bonuses.dmgPct);
   if (bonuses.lowHpDmgScale > 0) {
     const missing = 1 - ch.hp / ch.maxHp;
     atk *= 1 + bonuses.lowHpDmgScale * missing;
@@ -68,9 +77,9 @@ export function computeCombatStats(ch: Character): CombatStats {
   matk += bonuses.flatBonusMagicDmg;
 
   const def = (ch.def + itemDef + defFromAttr) * (1 + bonuses.defPct);
-  const mdef = (ch.mdef + mdefFromAttr) * (1 + bonuses.mdefPct);
+  const mdef = (ch.mdef + itemMdef + mdefFromAttr) * (1 + bonuses.mdefPct);
   const critChance = Math.min(0.75, CLASSES[ch.classId].critChance + bonuses.critPct + itemCrit + critFromAttr);
-  const critDmgMult = BASE_CRIT_DMG_MULT + bonuses.critDmgPct;
+  const critDmgMult = BASE_CRIT_DMG_MULT + bonuses.critDmgPct + itemCritDmg;
 
   return {
     atk: Math.round(atk),

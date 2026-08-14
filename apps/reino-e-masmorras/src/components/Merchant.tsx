@@ -2,22 +2,24 @@ import { Character, ItemSlot } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
 import { generateItem, rarityColor } from '../lib/equipment';
+import { highestAccessibleItemTier } from '../lib/dungeons';
+import { OFFHAND_KIND } from '../lib/itemTiers';
 import { MAX_POTIONS } from '../lib/consumables';
 import { Panel } from './Panel';
 import { Button } from './Button';
-import { IconSword, IconChest, IconLegs, IconGloves, IconRing } from './icons';
+import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
 const POTION_COST = 15;
 const ITEM_COST = 40;
-const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
+const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
 const MYSTERY_LABEL: Record<ItemSlot, string> = {
   weapon: 'Arma Misteriosa', body: 'Peitoral Misterioso', legs: 'Perneira Misteriosa',
-  hands: 'Luvas Misteriosas', accessory: 'Acessório Misterioso',
+  hands: 'Luvas Misteriosas', offhand: 'Item Misterioso', accessory: 'Acessório Misterioso',
 };
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
-  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, accessory: IconRing,
+  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
 };
 
 interface Props {
@@ -28,10 +30,13 @@ interface Props {
 
 export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Props) {
   const kingdomBonuses = computeKingdomBonuses(ch.buildings);
+  const offhandKind = OFFHAND_KIND[ch.classId];
+  const shopSlots = offhandKind ? SLOTS : SLOTS.filter((s) => s !== 'offhand');
+  const offhandLabel = offhandKind === 'shield' ? 'Escudo Misterioso' : 'Relicário Misterioso';
 
   function buyMysteryItem(slot: ItemSlot) {
     if (ch.gold < ITEM_COST) return;
-    const item = generateItem(slot, ch.classId, Math.max(1, ch.bestDepth), kingdomBonuses.itemQualityBonusPct);
+    const item = generateItem(slot, ch.classId, highestAccessibleItemTier(ch.level), kingdomBonuses.itemQualityBonusPct);
     onCharacterChange({ ...ch, gold: ch.gold - ITEM_COST, inventory: [...ch.inventory, item] });
   }
 
@@ -51,14 +56,14 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
           disabled={ch.gold < POTION_COST || ch.potions >= MAX_POTIONS}
           onBuy={onBuyPotion}
         />
-        {SLOTS.map((slot) => {
+        {shopSlots.map((slot) => {
           const Icon = SLOT_ICON[slot];
           return (
             <ShopCard
               key={slot}
               icon={<Icon className="w-full h-full text-parchment/70" />}
               frame
-              name={MYSTERY_LABEL[slot]}
+              name={slot === 'offhand' ? offhandLabel : MYSTERY_LABEL[slot]}
               desc="Item da sua classe, raridade incerta."
               cost={ITEM_COST}
               disabled={ch.gold < ITEM_COST}

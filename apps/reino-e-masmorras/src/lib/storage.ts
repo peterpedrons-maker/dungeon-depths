@@ -15,14 +15,19 @@ function migrateClassId(id: string): string {
   return id === 'assassino' ? 'ladino' : id;
 }
 
-// Old saves may have items from before the weapon-only-slot rework, missing
-// the newer bonus fields entirely — back-fill with 0 rather than let NaN
-// leak into every stat sum downstream. Input is raw parsed JSON, hence `any`.
+// Old saves may have items from before the weapon-only-slot rework, or from
+// before the base-tier/offhand/accessory-domain rework, missing the newer
+// bonus fields entirely — back-fill with 0 (or tier 1, the bottom rung of
+// the ladder) rather than let NaN leak into every stat sum downstream.
+// Input is raw parsed JSON, hence `any`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function migrateItem(item: any): EquipmentItem {
   return {
     id: item.id, name: item.name, classId: migrateClassId(item.classId) as ClassId, rarity: item.rarity, slot: item.slot ?? 'weapon',
+    tier: item.tier ?? 1, accessoryType: item.accessoryType,
     dmgBonus: item.dmgBonus ?? 0, defBonus: item.defBonus ?? 0, hpBonus: item.hpBonus ?? 0,
+    matkBonus: item.matkBonus ?? 0, mdefBonus: item.mdefBonus ?? 0,
+    critChanceBonus: item.critChanceBonus ?? 0, critDmgBonus: item.critDmgBonus ?? 0,
     secondaryStat: item.secondaryStat,
   };
 }
@@ -92,6 +97,7 @@ export function loadCharacter(): Character | null {
         body: eq.body ? migrateItem(eq.body) : null,
         legs: eq.legs ? migrateItem(eq.legs) : null,
         hands: eq.hands ? migrateItem(eq.hands) : null,
+        offhand: eq.offhand ? migrateItem(eq.offhand) : null,
         accessory: eq.accessory ? migrateItem(eq.accessory) : null,
       },
       inventory: (c.inventory ?? []).map(migrateItem),
