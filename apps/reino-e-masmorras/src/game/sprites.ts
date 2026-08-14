@@ -38,6 +38,20 @@ export interface Sprite {
 const HERO_DISPLAY_H = 145;
 const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
   goblin: 95, wolf: 75, skeleton: 115, orc: 125, troll: 155, dragon: 130, horror: 125,
+
+  // Região 1 — Ruínas Superficiais
+  ruinBat: 70, acidSlime: 85, ruinBandit: 105, carrionCrow: 65, boneKing: 165,
+  // Região 1 — Caverna dos Goblins
+  goblinShaman: 90, goblinThrower: 90, goblinFanatic: 100, goblinWolfRider: 105, grash: 160,
+  // Região 1 — Cripta do Tesouro
+  zombieLooter: 105, stoneGuardian: 130, greedyWraith: 100, wrappedMummy: 105, mimicChest: 80, cursedCustodian: 165,
+  // Região 1 — Pântano Podre
+  poisonToad: 75, swampViper: 70, crawlingBog: 90, cursedWisp: 60, rottingGator: 100, mudMother: 170,
+  // Região 1 — Covil de Aranhas
+  huntingSpider: 90, venomSpider: 85, giantSpider: 120, spiderlingSwarm: 60, darkWeaver: 115, blackMatriarch: 175,
+
+  // Bosses da Região 2+ reaproveitando o shape base — maiores que o normal
+  horrorAncient: 155, orcWarlord: 155, trollChieftain: 175, dragonElder: 160, skeletonLord: 145,
 };
 
 function loadImage(url: string, displayH: number): Sprite {
@@ -57,9 +71,30 @@ const HERO_SOURCES: Record<ClassId, string> = {
   cacador: cacadorUrl, bardo: bardoUrl,
   feiticeiro: feiticeiroUrl, bruxo: bruxoUrl, druida: druidaUrl, necromante: necromanteUrl,
 };
+// Região 1's 23 new regular shapes + 5 bosses don't have dedicated art yet —
+// each temporarily reuses the sprite of an existing shape from the same
+// dungeon (or the closest thematic fit) until real art is generated and
+// integrated, same placeholder pattern already used for classes without
+// their own sprite. Região 2+ bosses intentionally and permanently reuse
+// their own base shape's sprite (a boss there literally IS a bigger version
+// of that same creature), not a placeholder.
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, orc: orcUrl,
   troll: trollUrl, dragon: dragaoUrl, horror: aberracaoUrl,
+
+  // Região 1 — Ruínas Superficiais (placeholder: esqueleto, tema já é o mesmo)
+  ruinBat: esqueletoUrl, acidSlime: esqueletoUrl, ruinBandit: esqueletoUrl, carrionCrow: esqueletoUrl, boneKing: esqueletoUrl,
+  // Região 1 — Caverna dos Goblins (placeholder: goblin)
+  goblinShaman: goblinUrl, goblinThrower: goblinUrl, goblinFanatic: goblinUrl, goblinWolfRider: goblinUrl, grash: goblinUrl,
+  // Região 1 — Cripta do Tesouro (placeholder: esqueleto, tema morto-vivo)
+  zombieLooter: esqueletoUrl, stoneGuardian: esqueletoUrl, greedyWraith: esqueletoUrl, wrappedMummy: esqueletoUrl, mimicChest: esqueletoUrl, cursedCustodian: esqueletoUrl,
+  // Região 1 — Pântano Podre (placeholder: orc)
+  poisonToad: orcUrl, swampViper: orcUrl, crawlingBog: orcUrl, cursedWisp: orcUrl, rottingGator: orcUrl, mudMother: orcUrl,
+  // Região 1 — Covil de Aranhas (placeholder: troll)
+  huntingSpider: trollUrl, venomSpider: trollUrl, giantSpider: trollUrl, spiderlingSwarm: trollUrl, darkWeaver: trollUrl, blackMatriarch: trollUrl,
+
+  // Bosses da Região 2+ — reaproveitam o sprite do próprio shape base
+  horrorAncient: aberracaoUrl, orcWarlord: orcUrl, trollChieftain: trollUrl, dragonElder: dragaoUrl, skeletonLord: esqueletoUrl,
 };
 
 const heroCache: Partial<Record<ClassId, Sprite>> = {};
