@@ -187,6 +187,7 @@ export interface Character {
   mdef: number;
   gold: number;
   potions: number;
+  potionThreshold: number; // 0-1 HP fraction — auto-drinks a potion in combat once HP falls at or below this, subject to its own cooldown
   bestDepth: number;
   skillPoints: number; // granted every 2 levels — spent 1-per-node in the skill tree
   attributePoints: number; // granted every level — spent freely across the 7 primary attributes

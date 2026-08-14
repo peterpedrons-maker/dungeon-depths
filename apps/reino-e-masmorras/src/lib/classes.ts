@@ -131,7 +131,7 @@ export function createCharacter(name: string, classId: ClassId): Character {
   return {
     name, classId, level: 1, xp: 0, xpToNext: xpToNextLevel(1),
     hp: c.baseHp, maxHp: c.baseHp, atk: c.baseAtk, def: c.baseDef, matk: c.baseMatk, mdef: c.baseMdef,
-    gold: 0, potions: 1, bestDepth: 0,
+    gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0,
     skillPoints: 0, attributePoints: 0, allocatedAttrs: { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [],
     equipment: { weapon: null, body: null, legs: null, hands: null, accessory: null }, inventory: [],

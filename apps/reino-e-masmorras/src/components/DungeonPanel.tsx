@@ -13,10 +13,12 @@ import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
 import { Button } from './Button';
+import { IconActive } from './icons';
+import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 1600;
 const LEAN_MS = 260;
-const HEAL_THRESHOLD = 0.35;
+const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_DROP_CHANCE = 0.12;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
@@ -116,6 +118,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const playerShieldRef = useRef(0);
   const playerImmuneRoundsRef = useRef(0);
   const playerHasteRoundsRef = useRef(0);
+  const potionCooldownRef = useRef(0);
 
   const heroSpr = heroSprites(ch.classId);
 
@@ -331,6 +334,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     for (const id in cooldownsRef.current) cooldownsRef.current[id] = Math.max(0, cooldownsRef.current[id] - (1 + hasteBonus));
     if (playerHasteRoundsRef.current > 0) playerHasteRoundsRef.current -= 1;
     if (playerImmuneRoundsRef.current > 0) playerImmuneRoundsRef.current -= 1;
+    if (potionCooldownRef.current > 0) potionCooldownRef.current -= 1;
     playerModsRef.current = tickMods(playerModsRef.current);
     enemyModsRef.current = tickMods(enemyModsRef.current);
 
@@ -566,22 +570,24 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   function maybeAutoHeal() {
     const c = chRef.current;
     const maxHp = effectiveMaxHp(c);
-    if (c.hp / maxHp >= HEAL_THRESHOLD || c.potions <= 0) return;
+    if (c.hp / maxHp > c.potionThreshold || c.potions <= 0 || potionCooldownRef.current > 0) return;
     const prevHp = c.hp;
     const heal = Math.round(maxHp * (BASE_POTION_HEAL_PCT + kingdomBonuses.potionHealBonusPct));
     const healed = Math.min(maxHp, c.hp + heal);
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
+    potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
     pushLog(`Vida baixa — você bebe uma poção e recupera ${healed - prevHp} de vida.`);
   }
 
   function drinkPotionManually() {
     const c = chRef.current;
     const maxHp = effectiveMaxHp(c);
-    if (phaseRef.current !== 'fight' || c.potions <= 0 || c.hp >= maxHp) return;
+    if (phaseRef.current !== 'fight' || c.potions <= 0 || c.hp >= maxHp || potionCooldownRef.current > 0) return;
     const prevHp = c.hp;
     const heal = Math.round(maxHp * (BASE_POTION_HEAL_PCT + kingdomBonuses.potionHealBonusPct));
     const healed = Math.min(maxHp, c.hp + heal);
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
+    potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
     pushLog(`Você bebe uma poção e recupera ${healed - prevHp} de vida.`);
   }
 
@@ -702,6 +708,34 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         </p>
       )}
 
+      {phase === 'fight' && equippedAbilities().length > 0 && (
+        <div className="flex gap-2 mt-3">
+          {equippedAbilities().map((ab) => {
+            const left = cooldownsRef.current[ab.id] ?? 0;
+            const onCooldown = left > 0;
+            const pct = onCooldown ? left / ab.cooldown : 0;
+            const deg = Math.round(pct * 360);
+            return (
+              <div key={ab.id} className="relative w-11 h-11 shrink-0" title={`${ab.name}${onCooldown ? ` — recarregando` : ''}`}>
+                <IconActive className={`absolute inset-[18%] ${onCooldown ? 'text-parchment/40' : 'text-gold'}`} />
+                {onCooldown && (
+                  <>
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: `conic-gradient(rgba(0,0,0,0.75) ${deg}deg, transparent ${deg}deg)` }}
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-parchment [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">
+                      {Math.round(left * (ATTACK_INTERVAL / 1000))}s
+                    </span>
+                  </>
+                )}
+                <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
         <div>
           <div className="flex justify-between items-baseline gap-2">
@@ -721,20 +755,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         </div>
       </div>
 
-      <div className="mt-3 bg-black/30 border border-white/10 rounded p-2 h-24 overflow-y-auto text-sm text-parchment/80 flex flex-col-reverse">
-        <div>
-          {log.slice().reverse().map((l, i) => <p key={i} className="leading-tight py-0.5">{l}</p>)}
-        </div>
-      </div>
-
       <div className="mt-4 flex gap-2 flex-wrap">
         {phase === 'fight' && (
           <>
             <Button onClick={togglePause}>
               {paused ? 'Retomar Combate' : 'Pausar'}
             </Button>
-            <Button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= effMaxHp}>
-              Poção ({ch.potions})
+            <Button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= effMaxHp || potionCooldownRef.current > 0}>
+              Poção ({ch.potions}){potionCooldownRef.current > 0 ? ` — ${potionCooldownRef.current}` : ''}
             </Button>
             <Button onClick={retreatSafely}>Retornar ao Reino</Button>
           </>
@@ -747,6 +775,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
           </div>
         )}
+      </div>
+
+      <div className="mt-3 bg-black/30 border border-white/10 rounded p-2 h-24 overflow-y-auto text-sm text-parchment/80 flex flex-col-reverse">
+        <div>
+          {log.slice().reverse().map((l, i) => <p key={i} className="leading-tight py-0.5">{l}</p>)}
+        </div>
       </div>
     </Panel>
   );
