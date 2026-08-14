@@ -203,7 +203,20 @@ export interface Character {
   buildings: Record<string, number>; // kingdom building id -> level
 }
 
-export type EnemyShape = 'goblin' | 'wolf' | 'skeleton' | 'orc' | 'troll' | 'dragon' | 'horror';
+export type EnemyShape =
+  | 'goblin' | 'wolf' | 'skeleton' | 'orc' | 'troll' | 'dragon' | 'horror'
+  // Região 1 — Ruínas Superficiais (skeleton reused above)
+  | 'ruinBat' | 'acidSlime' | 'ruinBandit' | 'carrionCrow' | 'boneKing'
+  // Região 1 — Caverna dos Goblins (goblin reused above)
+  | 'goblinShaman' | 'goblinThrower' | 'goblinFanatic' | 'goblinWolfRider' | 'grash'
+  // Região 1 — Cripta do Tesouro
+  | 'zombieLooter' | 'stoneGuardian' | 'greedyWraith' | 'wrappedMummy' | 'mimicChest' | 'cursedCustodian'
+  // Região 1 — Pântano Podre
+  | 'poisonToad' | 'swampViper' | 'crawlingBog' | 'cursedWisp' | 'rottingGator' | 'mudMother'
+  // Região 1 — Covil de Aranhas
+  | 'huntingSpider' | 'venomSpider' | 'giantSpider' | 'spiderlingSwarm' | 'darkWeaver' | 'blackMatriarch'
+  // Bosses reaproveitados (Região 2+, sem arte própria ainda — placeholder no sprite do shape base)
+  | 'horrorAncient' | 'orcWarlord' | 'trollChieftain' | 'dragonElder' | 'skeletonLord';
 
 // A signature debuff each enemy shape has a chance to land alongside its
 // normal attack each round — gives every enemy type a distinct combat feel
@@ -233,6 +246,7 @@ export interface EnemyTier {
   matk?: number; // magical power — only used if atkType is 'magical'
   mdef?: number; // magical defense — every shape has one, since the player may cast spells regardless of the enemy's own attack type
   atkType?: 'physical' | 'magical'; // omitted = physical
+  isBoss?: boolean; // true only for a dungeon's own boss entry, spawned exclusively at DungeonDef.bossDepth
 }
 
 export interface EnemyInstance {
@@ -250,6 +264,7 @@ export interface EnemyInstance {
   matk?: number;
   mdef?: number;
   atkType?: 'physical' | 'magical';
+  isBoss?: boolean;
 }
 
 export interface DungeonDef {
@@ -264,6 +279,8 @@ export interface DungeonDef {
   xpMult?: number;
   dropMult?: number;
   dmgTakenMult?: number;
+  bossDepth: number; // fixed depth the boss spawns at — defeating it clears the dungeon and ends the run
+  boss: EnemyShape;
 }
 
 export interface RankEntry {

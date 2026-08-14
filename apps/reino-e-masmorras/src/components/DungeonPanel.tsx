@@ -78,13 +78,13 @@ function applyCd(cooldown: number, cooldownReductionPct: number): number {
 export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd }: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
-  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(dungeon.startDepth, dungeon.enemyPool));
+  const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(dungeon.startDepth, dungeon));
   const [phase, setPhase] = useState<Phase>('fight');
   const [paused, setPaused] = useState(false);
   const [log, setLog] = useState<string[]>([`Você entra em ${dungeon.name}...`]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
-  const [endedReason, setEndedReason] = useState<'death' | 'retreat' | null>(null);
+  const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
   const [enemyStatuses, setEnemyStatuses] = useState<StatusEffectKind[]>([]);
   const [playerStatuses, setPlayerStatuses] = useState<StatusEffectKind[]>([]);
   const [enemyCCState, setEnemyCCState] = useState<CrowdControlKind[]>([]);
@@ -152,10 +152,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     }, delay);
   }
 
-  function tryDropEquipment() {
+  function tryDropEquipment(guaranteed = false) {
     const stats = computeCombatStats(chRef.current);
-    const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
-    if (Math.random() >= chance) return;
+    if (!guaranteed) {
+      const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
+      if (Math.random() >= chance) return;
+    }
     const slot = DROP_SLOTS[Math.floor(Math.random() * DROP_SLOTS.length)];
     const item = generateItem(slot, chRef.current.classId, depthRef.current, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
     updateCh({ ...chRef.current, inventory: [...chRef.current.inventory, item] });
@@ -487,26 +489,38 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
         if (enemyHp <= 0) {
           const prevLevel = chRef.current.level;
+          const isBossKill = enemyRef.current.isBoss === true;
+          const bossBonusGold = isBossKill ? Math.round(enemyRef.current.goldReward * 0.5) : 0;
           const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1) * (1 + kingdomBonuses.xpBonusPct));
-          const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1));
+          const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
           const withXp = grantXp(chRef.current, xpGain);
           const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current) };
           updateCh(finalChar);
           pushLog(`${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`);
           if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
-          tryDropEquipment();
+          tryDropEquipment(isBossKill);
+
+          if (isBossKill) {
+            setTimeout(() => {
+              if (!mountedRef.current) return;
+              pushLog(`Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`);
+              phaseRef.current = 'ended';
+              setEndedReason('victory');
+              setPhase('ended');
+            }, 900);
+            return;
+          }
 
           setTimeout(() => {
             if (!mountedRef.current) return;
             const nextDepth = depthRef.current + 1;
             updateDepth(nextDepth);
-            updateEnemy(spawnEnemy(nextDepth, dungeon.enemyPool));
+            updateEnemy(spawnEnemy(nextDepth, dungeon));
             enemyStatusRef.current = [];
             enemyModsRef.current = [];
             enemyCCRef.current = [];
             syncEnemyStatuses();
             syncEnemyCC();
-            pushLog(`Você avança mais fundo em ${dungeon.name}. Profundidade ${nextDepth}.`);
             scheduleTick();
           }, 900);
           return;
@@ -709,9 +723,39 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
   const enemyTags = [...enemyStatuses.map((s) => allStatusLabel[s]), ...enemyCCState.map((c) => CC_LABEL[c])];
+  // Progress toward the dungeon's own boss, replacing the old raw
+  // "Profundidade N" floor counter — every dungeon now has a defined end
+  // (bossDepth), so a fill bar communicates "how close to done" far better
+  // than an ever-climbing number ever did.
+  const dungeonProgressPct = Math.round(Math.max(0, Math.min(1, (depth - dungeon.startDepth) / (dungeon.bossDepth - dungeon.startDepth))) * 100);
 
   return (
-    <Panel title={`${dungeon.name} — Profundidade ${depth}`}>
+    <Panel title={dungeon.name}>
+      {phase === 'fight' && (
+        <div className="mb-3">
+          <div className="flex justify-between items-baseline text-[11px] text-parchment/50 uppercase tracking-wide mb-1">
+            <span>Progresso da Masmorra</span>
+            <span>{enemy.isBoss ? 'Chefe!' : `${dungeonProgressPct}%`}</span>
+          </div>
+          <div className="h-1.5 bg-black/50 rounded overflow-hidden">
+            <div className="h-1.5 bg-gold rounded transition-[width] duration-500" style={{ width: `${enemy.isBoss ? 100 : dungeonProgressPct}%` }} />
+          </div>
+        </div>
+      )}
+
+      {phase === 'fight' && enemy.isBoss && (
+        <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate">✦ {enemy.name}</span>
+            <span className="text-xs text-parchment/70 shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
+          </div>
+          <div className="h-3 bg-black/50 rounded mt-1 overflow-hidden">
+            <div className="h-3 bg-crimson rounded transition-[width] duration-300" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} />
+          </div>
+          {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-1 truncate">{enemyTags.join(', ')}</div>}
+        </div>
+      )}
+
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
         {floaters.map((f) => (
@@ -773,7 +817,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
+      <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>
           <div className="flex justify-between items-baseline gap-2">
             <span className="truncate">{ch.name}{playerShieldState > 0 && <span className="text-sky-300 text-xs"> (+{playerShieldState} escudo)</span>}</span>
@@ -782,14 +826,16 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} /></div>
           {playerTags.length > 0 && <div className="text-[11px] text-amber-300/90 mt-0.5 truncate">{playerTags.join(', ')}</div>}
         </div>
-        <div>
-          <div className="flex justify-between">
-            <span className="truncate">{enemy.name}</span>
-            <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
+        {!enemy.isBoss && (
+          <div>
+            <div className="flex justify-between">
+              <span className="truncate">{enemy.name}</span>
+              <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
+            </div>
+            <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
+            {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-0.5 truncate">{enemyTags.join(', ')}</div>}
           </div>
-          <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
-          {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-0.5 truncate">{enemyTags.join(', ')}</div>}
-        </div>
+        )}
       </div>
 
       <div className="mt-4 flex gap-2 flex-wrap">
@@ -807,7 +853,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         {phase === 'ended' && (
           <div className="w-full text-center">
             <p className="mb-3 text-parchment/80">
-              {endedReason === 'death' ? 'Sua expedição terminou.' : 'Você retornou em segurança.'} Profundidade alcançada: {depth}.
+              {endedReason === 'victory' && `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`}
+              {endedReason === 'death' && 'Sua expedição terminou.'}
+              {endedReason === 'retreat' && 'Você retornou em segurança.'}
             </p>
             <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
           </div>

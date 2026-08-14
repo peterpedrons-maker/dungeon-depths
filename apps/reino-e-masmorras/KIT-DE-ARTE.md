@@ -301,6 +301,154 @@ One single wide image containing THREE separate enemy creature sprites standing 
 Solid flat magenta background (#FF00FF) filling the entire canvas — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creatures themselves (scales, smoke, hide, claws, glow effects) — that color is reserved only for the background. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+### Inimigos III — Ruínas Superficiais: Morcego, Lodo Ácido, Bandido e Corvo
+**Tamanho:** 1536×768 px · **Uso:** roster da masmorra Ruínas Superficiais (o Esqueleto já integrado continua fazendo parte do roster, sem prompt novo)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FOUR separate enemy creature sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later. All four sharing the same pixel scale and ground line, static idle/threatening pose — no motion blur, no animation frames. CRITICAL: every single one of the four creatures must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if all four are looking at/approaching something standing to their left. None of them may face right, face forward, or face the viewer — this is a strict requirement, since in the game these enemies always stand to the player's right and must visually face the player on their left.
+
+1) "Morcego das Ruínas" (Ruin Bat): a small leathery-winged cave bat, mid-flight with wings spread, sharp fangs bared, beady red eyes, dusty gray-brown membrane wings.
+2) "Lodo Ácido" (Acid Slime): a translucent sickly-green gelatinous blob creature, bubbling and dripping with corrosive acid, faint glowing motes suspended inside its jelly body, no limbs, low to the ground.
+3) "Bandido das Ruínas" (Ruin Bandit): a scruffy human scavenger in ragged dark leathers and a cloth face-wrap, gripping a curved rusty short sword, crouched sneaky stance, scavenged mismatched gear.
+4) "Corvo Carniceiro" (Carrion Crow): a large black crow with ragged glossy feathers and a sharp cruel beak, wings half-spread, perched low as if about to lunge.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creatures themselves (skin, fur, feathers, ooze, cloth, weapons) — that color is reserved only for the background. Wide canvas, 1536×768 px (roughly one quarter of the width per creature), simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Chefe — Ruínas Superficiais: Rei Ossudo
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Superficiais, spawna na profundidade 7 com barra de vida própria no topo da tela de batalha
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single boss-scale enemy creature sprite, filling most of the frame, in a static idle/threatening pose — no motion blur, no animation frames. CRITICAL: the creature must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if looking at/approaching something standing to its left. It may NOT face right, face forward, or face the viewer — this is a strict requirement, since in the game this boss always stands to the player's right and must visually face the player on their left.
+
+"Rei Ossudo" (Bone King): a towering imposing skeleton warlord, larger and more elaborate than a common skeleton, wearing a jagged bone crown and tattered regal purple-and-gold burial shrouds over ancient corroded plate armor, gripping a massive two-handed ancient greatsword, wisps of pale ghostly blue-green light glowing from its hollow eye sockets, an aura of dread. Clearly bigger and more menacing than a regular skeleton enemy.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind the creature — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creature (bone, cloth, armor, glow effects) — that color is reserved only for the background. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Inimigos IV — Caverna dos Goblins: Xamã, Arremessador, Fanático e Montador de Lobo
+**Tamanho:** 1536×768 px · **Uso:** roster da masmorra Caverna dos Goblins (o Goblin comum já integrado continua fazendo parte do roster, sem prompt novo)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FOUR separate enemy creature sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later. All four sharing the same pixel scale and ground line, static idle/threatening pose — no motion blur, no animation frames. CRITICAL: every single one of the four creatures must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if all four are looking at/approaching something standing to their left. None of them may face right, face forward, or face the viewer — this is a strict requirement, since in the game these enemies always stand to the player's right and must visually face the player on their left.
+
+1) "Xamã Goblin" (Goblin Shaman): a scrawny green-skinned goblin in ragged bone-and-feather trinkets, gripping a crooked wooden staff topped with a glowing sickly-green crystal, chanting pose, crackling dark magic energy around its free hand.
+2) "Goblin Arremessador" (Goblin Thrower): a wiry green-skinned goblin with a bandolier of crude spiked javelins across its back, one javelin cocked back ready to throw, sharp grin.
+3) "Goblin Fanático" (Goblin Fanatic): a wild-eyed green-skinned goblin strapped with crude sputtering bomb-satchels and lit fuses, manic grin, unstable and twitchy stance.
+4) "Goblin Montador de Lobo" (Goblin Wolf Rider): a green-skinned goblin in scrappy leather harness riding atop a snarling gray warg/wolf mount, gripping a short spear, both goblin and mount alert and aggressive.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creatures themselves (skin, fur, cloth, weapons, magic glow) — that color is reserved only for the background. Wide canvas, 1536×768 px (roughly one quarter of the width per creature), simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Chefe — Caverna dos Goblins: Grash
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Caverna dos Goblins, spawna na profundidade 10 com barra de vida própria no topo da tela de batalha
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single boss-scale enemy creature sprite, filling most of the frame, in a static idle/threatening pose — no motion blur, no animation frames. CRITICAL: the creature must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if looking at/approaching something standing to its left. It may NOT face right, face forward, or face the viewer — this is a strict requirement, since in the game this boss always stands to the player's right and must visually face the player on their left.
+
+"Grash" (goblin chieftain): a huge, muscular green-skinned goblin chieftain, much bigger and stockier than a common goblin, wearing crude spiked iron plate armor patched with trophies and bones, a torn red cloak, gripping a massive studded club in one hand and a jagged cleaver in the other, tusked snarling grin, scars across its face.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind the creature — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creature (skin, armor, cloth, weapons) — that color is reserved only for the background. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Inimigos V — Cripta do Tesouro: Zumbi Saqueador, Guardião de Pedra, Espectro Ganancioso, Múmia Enrolada e Baú Mímico
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cripta do Tesouro (5 inimigos regulares)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FIVE separate enemy creature sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later (roughly one fifth of the width per creature — keep each one simple and readable at that scale). All five sharing the same pixel scale and ground line, static idle/threatening pose — no motion blur, no animation frames. CRITICAL: every single one of the five creatures must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if all five are looking at/approaching something standing to their left. None of them may face right, face forward, or face the viewer — this is a strict requirement, since in the game these enemies always stand to the player's right and must visually face the player on their left.
+
+1) "Zumbi Saqueador" (Zombie Looter): a decaying gray-green shambling zombie in tattered burial clothes, clutching a fistful of stolen gold coins and a rusty dagger, slack-jawed, milky dead eyes.
+2) "Guardião de Pedra" (Stone Guardian): a squat blocky animated stone statue/golem covered in ancient carved runes that glow faintly, cracked gray granite body, heavy stone fists, immobile-looking but menacing stance.
+3) "Espectro Ganancioso" (Greedy Wraith): a translucent ghostly wraith wrapped in tattered spectral robes, semi-transparent pale-blue glow, clutching a hoard of ghostly floating gold coins and jewels around itself, hollow mournful face.
+4) "Múmia Enrolada" (Wrapped Mummy): a mummified undead figure wrapped head to toe in dusty aged bandages, one arm outstretched, faint dry cursed energy seeping from the wrappings, slow lumbering stance.
+5) "Baú Mímico" (Mimic Chest): a wooden treasure chest with a wide toothy monstrous maw where the lid should open, sharp fangs, small beady eyes on the front panel, a long barbed tongue-like tendril, iron bands and a false innocent gleam of treasure inside its mouth.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creatures themselves (skin, bandages, stone, ghostly glow, wood, gold) — that color is reserved only for the background. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Chefe — Cripta do Tesouro: Custódio Amaldiçoado
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Cripta do Tesouro, spawna na profundidade 9 com barra de vida própria no topo da tela de batalha
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single boss-scale enemy creature sprite, filling most of the frame, in a static idle/threatening pose — no motion blur, no animation frames. CRITICAL: the creature must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if looking at/approaching something standing to its left. It may NOT face right, face forward, or face the viewer — this is a strict requirement, since in the game this boss always stands to the player's right and must visually face the player on their left.
+
+"Custódio Amaldiçoado" (Cursed Custodian): a massive undead knight bound to guard the crypt's treasure forever, wearing ornate corroded gold-and-black burial armor fused to its skeletal frame, a huge ceremonial ornate key or treasure-bound chain hanging from its belt, gripping a heavy ornamental warhammer, faint cursed purple-green necrotic energy leaking from the armor's joints, imposing regal-but-decayed presence.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind the creature — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creature (bone, armor, cloth, glow effects) — that color is reserved only for the background. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Inimigos VI — Pântano Podre: Sapo Venenoso, Víbora do Pântano, Lodaçal Rastejante, Fogo-Fátuo Amaldiçoado e Jacaré Podre
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Pântano Podre (5 inimigos regulares)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FIVE separate enemy creature sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later (roughly one fifth of the width per creature — keep each one simple and readable at that scale). All five sharing the same pixel scale and ground line, static idle/threatening pose — no motion blur, no animation frames. CRITICAL: every single one of the five creatures must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if all five are looking at/approaching something standing to their left. None of them may face right, face forward, or face the viewer — this is a strict requirement, since in the game these enemies always stand to the player's right and must visually face the player on their left.
+
+1) "Sapo Venenoso" (Poison Toad): a bloated warty dark-green toad with dripping toxic purple secretions on its back, bulging yellow eyes, squat low-to-the-ground stance.
+2) "Víbora do Pântano" (Swamp Viper): a long coiled dark-scaled swamp snake with dull olive-and-black patterned scales, reared up ready to strike, flicking forked tongue, narrow slit eyes.
+3) "Lodaçal Rastejante" (Crawling Bog): a shapeless creature formed from animated black swamp mud and tangled rotting roots, glowing faint sickly-yellow eyes embedded in the muck, dripping and oozing, crawling low.
+4) "Fogo-Fátuo Amaldiçoado" (Cursed Wisp): a small floating ball of eerie flickering pale-green ghostly flame/light with a faint malevolent wisp-like face barely visible inside the glow, trailing wispy smoke tendrils.
+5) "Jacaré Podre" (Rotting Gator): a decaying undead alligator with patches of exposed bone and rotting gray-green hide, waterlogged, jaws open showing jagged teeth, low predatory crouch.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creatures themselves (skin, scales, hide, muck, glow effects) — that color is reserved only for the background. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Chefe — Pântano Podre: Mãe do Lodo
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Pântano Podre, spawna na profundidade 13 com barra de vida própria no topo da tela de batalha
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single boss-scale enemy creature sprite, filling most of the frame, in a static idle/threatening pose — no motion blur, no animation frames. CRITICAL: the creature must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if looking at/approaching something standing to its left. It may NOT face right, face forward, or face the viewer — this is a strict requirement, since in the game this boss always stands to the player's right and must visually face the player on their left.
+
+"Mãe do Lodo" (Mud Mother): a huge bloated swamp hag creature, part rotting flesh and part living black mud and tangled roots, dripping muck, several long thin root-like tendrils extending from her back like spider legs, a bloated distended torso, glowing sickly yellow-green eyes, crown of thorny reeds, dreadful and ancient presence, clearly the biggest and most menacing creature of the swamp.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind the creature — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creature (skin, mud, roots, glow effects) — that color is reserved only for the background. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Inimigos VII — Covil de Aranhas: Aranha Caçadora, Aranha Venenosa, Aranha Gigante, Enxame de Aranhinhas e Tecelã Sombria
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil de Aranhas (5 inimigos regulares)
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single wide image containing FIVE separate enemy creature sprites standing side by side, evenly spaced with generous empty gaps between each one so they can be cropped apart later (roughly one fifth of the width per creature — keep each one simple and readable at that scale). All five sharing the same pixel scale and ground line, static idle/threatening pose — no motion blur, no animation frames. CRITICAL: every single one of the five creatures must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if all five are looking at/approaching something standing to their left. None of them may face right, face forward, or face the viewer — this is a strict requirement, since in the game these enemies always stand to the player's right and must visually face the player on their left.
+
+1) "Aranha Caçadora" (Hunting Spider): a medium brown-and-tan hairy spider, low crouched stalking stance, eight legs spread wide, multiple small glinting eyes.
+2) "Aranha Venenosa" (Venom Spider): a sleek dark-purple spider with glistening dripping venom-green fangs and faint venom-green markings along its abdomen, alert aggressive stance.
+3) "Aranha Gigante" (Giant Spider): a large hulking black-and-gray spider, thick spiky legs, oversized fanged mandibles, clearly bigger and bulkier than the other spiders.
+4) "Enxame de Aranhinhas" (Spiderling Swarm): a tight cluster of many small black spiderlings swarming together as a single mass, countless tiny glinting eyes and legs, chaotic skittering arrangement.
+5) "Tecelã Sombria" (Dark Weaver): an eerie humanoid-spider hybrid — a gaunt shadowy female torso emerging from a large black spider's thorax/legs, long clawed fingers trailing spun web-silk, pale hollow eyes, unsettling and otherworldly.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creatures themselves (chitin, fur, fangs, silk, skin, glow effects) — that color is reserved only for the background. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
+### Chefe — Covil de Aranhas: Matriarca Negra
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil de Aranhas, spawna na profundidade 16 com barra de vida própria no topo da tela de batalha
+
+```
+Detailed 2D pixel art game character sprite, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outline around every shape, limited but rich color palette with simple flat-shaded highlights and shadows (2-3 tones per surface). The sharp, readable style of high-quality modern pixel-art RPGs (Octopath Traveler, Eastward, Stardew Valley) rendered at a large, highly detailed resolution. This is NOT a painted illustration, NOT a realistic digital painting, NOT anime, NOT a 3D render — it must look like actual pixel art, made of visible square pixel blocks.
+
+One single boss-scale enemy creature sprite, filling most of the frame, in a static idle/threatening pose — no motion blur, no animation frames. CRITICAL: the creature must be facing LEFT — shown in left-facing profile or a 3/4 view turned toward the left side of the frame, as if looking at/approaching something standing to its left. It may NOT face right, face forward, or face the viewer — this is a strict requirement, since in the game this boss always stands to the player's right and must visually face the player on their left.
+
+"Matriarca Negra" (Black Matriarch): a massive black widow spider queen, far bigger than any other spider in the den, glossy jet-black bulbous abdomen marked with a vivid blood-red hourglass symbol, thick spiky segmented legs, oversized venom-dripping fangs, multiple gleaming red eyes, an aura of ancient malevolent intelligence, webbing trailing from its rear legs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas behind the creature — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the creature (chitin, fangs, markings, silk) — that color is reserved only for the background. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
+```
+
 ---
 
 ## Cenas
