@@ -10,7 +10,7 @@ Prompts prontos para gerar as peças de interface e os sprites de personagens/in
 - **Pixel art, mas nítida:** os personagens e inimigos do jogo são pixel art (desenhados no código), mas a técnica original saía borrada. Por isso os prompts de sprite abaixo pedem pixel art de verdade — pixels nítidos, sem anti-aliasing/borrão, contorno escuro definido e paleta de cores limitada, no estilo de RPGs pixel art modernos (Octopath Traveler, Stardew Valley, Eastward) — em resolução alta o bastante para ficar nítido mesmo ampliado no jogo.
 - **Inimigos sempre virados para a esquerda:** no jogo o personagem do jogador fica à esquerda da tela e o inimigo à direita, olhando um para o outro — os prompts de inimigos exigem que toda criatura seja desenhada de perfil (ou 3/4) virada para a esquerda, nunca de frente ou para a direita.
 - **Sobre a moldura principal:** os *cantos* têm entalhes ornamentados únicos, mas as *bordas retas* entre os cantos são um padrão de madeira uniforme e repetitivo — de propósito, para permitir esticar a moldura em caixas de tamanhos diferentes sem distorcer os desenhos ornamentados.
-- **Sobre o Mapa de Masmorras:** são 7 imagens (uma por região), empilhadas verticalmente no jogo formando um caminho único que sobe da região Iniciante até o Endgame — role a tela pra cima pra avançar. Cada uma já reserva 2-3 marcadores "???" (nevoeiro/silhueta, sem nome legível) espalhados nas bordas, reservados pra masmorras futuras além das 52 já planejadas — assim dá pra crescer o conteúdo sem regerar a arte inteira.
+- **Sobre o Mapa de Masmorras:** são 7 imagens (uma por região), empilhadas verticalmente no jogo formando um caminho único que sobe da região Valdren até Aetherion — role a tela pra cima pra avançar. Cada uma já reserva 2-3 marcadores "???" (nevoeiro/silhueta, sem nome legível) espalhados nas bordas, reservados pra masmorras futuras além das 52 já planejadas — assim dá pra crescer o conteúdo sem regerar a arte inteira.
 - **Sobre os Fundos de Batalha:** cada masmorra tem seu próprio cenário de combate, combinando com o tema dela no Mapa de Masmorras. O personagem fica parado a ~27% da largura e o inimigo a ~73%, os dois em cima de uma faixa de chão perto da base da imagem (~15% da altura) — por isso todo prompt pede uma composição com o centro-baixo livre de objetos grandes, pra não cobrir os sprites.
 
 ---
@@ -320,9 +320,9 @@ This is a complete, self-contained illustration meant to fill the entire canvas 
 
 ### Mapa de Masmorras — Tela de seleção de masmorra (7 imagens, uma por região)
 
-As 7 imagens abaixo empilham verticalmente no jogo formando um único caminho de exploração, com scroll — Região 1 (Iniciante) embaixo, Região 7 (Endgame) no topo, o jogador rola a tela pra cima conforme sobe de nível. Cada prompt já está completo e pronto pra colar, sem precisar combinar com nenhum outro bloco.
+As 7 imagens abaixo empilham verticalmente no jogo formando um único caminho de exploração, com scroll — Região 1 (Valdren) embaixo, Região 7 (Aetherion) no topo, o jogador rola a tela pra cima conforme sobe de nível. Cada prompt já está completo e pronto pra colar, sem precisar combinar com nenhum outro bloco.
 
-### Região 1 — Iniciante (nível 1-10)
+### Região 1 — Valdren (nível 1-10)
 **Tamanho:** 1024×2560 px · **Uso:** primeiro trecho (mais baixo) do Mapa de Masmorras
 
 ```
@@ -335,7 +335,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
-### Região 2 — Aprendiz (nível 11-20)
+### Região 2 — Umbrália (nível 11-20)
 **Tamanho:** 1024×2560 px · **Uso:** segundo trecho do Mapa de Masmorras
 
 ```
@@ -348,7 +348,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
-### Região 3 — Veterano (nível 21-30)
+### Região 3 — Thurgard (nível 21-30)
 **Tamanho:** 1024×2560 px · **Uso:** terceiro trecho do Mapa de Masmorras
 
 ```
@@ -361,7 +361,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
-### Região 4 — Experiente (nível 31-40)
+### Região 4 — Xilvana (nível 31-40)
 **Tamanho:** 1024×2560 px · **Uso:** quarto trecho do Mapa de Masmorras
 
 ```
@@ -374,7 +374,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
-### Região 5 — Herói (nível 41-50)
+### Região 5 — Ignares (nível 41-50)
 **Tamanho:** 1024×2560 px · **Uso:** quinto trecho do Mapa de Masmorras
 
 ```
@@ -387,7 +387,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
-### Região 6 — Lendário (nível 51-58)
+### Região 6 — Nyxheim (nível 51-58)
 **Tamanho:** 1024×2560 px · **Uso:** sexto trecho do Mapa de Masmorras
 
 ```
@@ -400,7 +400,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
-### Região 7 — Endgame (nível 60)
+### Região 7 — Aetherion (nível 60)
 **Tamanho:** 1024×2560 px · **Uso:** sétimo e último trecho (mais alto) do Mapa de Masmorras
 
 ```

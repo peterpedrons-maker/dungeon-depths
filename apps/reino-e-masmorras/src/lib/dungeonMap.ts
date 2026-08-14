@@ -21,7 +21,7 @@ export interface RegionDef {
 // the image gets regenerated at a different resolution (still %-based).
 export const REGIONS: RegionDef[] = [
   {
-    region: 1, name: 'Iniciante', image: regiao1,
+    region: 1, name: 'Valdren', image: regiao1,
     markers: [
       { dungeonId: 'ruinas', xPct: 52.5, yPct: 80.6 },
       { dungeonId: 'goblins', xPct: 55.0, yPct: 64.4 },
@@ -31,7 +31,7 @@ export const REGIONS: RegionDef[] = [
     ],
   },
   {
-    region: 2, name: 'Aprendiz', image: regiao2,
+    region: 2, name: 'Umbrália', image: regiao2,
     markers: [
       { dungeonId: 'torre', xPct: 52.4, yPct: 80.6 },
       { dungeonId: 'minas', xPct: 54.9, yPct: 64.4 },
@@ -42,11 +42,11 @@ export const REGIONS: RegionDef[] = [
       { dungeonId: 'arena', xPct: 42.0, yPct: 14.0 },
     ],
   },
-  { region: 3, name: 'Veterano', image: null, markers: [] },
-  { region: 4, name: 'Experiente', image: null, markers: [] },
-  { region: 5, name: 'Herói', image: null, markers: [] },
-  { region: 6, name: 'Lendário', image: null, markers: [] },
-  { region: 7, name: 'Endgame', image: null, markers: [] },
+  { region: 3, name: 'Thurgard', image: null, markers: [] },
+  { region: 4, name: 'Xilvana', image: null, markers: [] },
+  { region: 5, name: 'Ignares', image: null, markers: [] },
+  { region: 6, name: 'Nyxheim', image: null, markers: [] },
+  { region: 7, name: 'Aetherion', image: null, markers: [] },
 ];
 
 // A region unlocks once the character reaches the lowest level requirement
