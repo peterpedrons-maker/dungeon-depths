@@ -4,7 +4,7 @@ import {
   StatModStat, StatusEffectKind,
 } from '../types/game';
 import { spawnEnemy } from '../lib/enemies';
-import { grantXp, MAGICAL_CLASSES } from '../lib/classes';
+import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { generateItem, rarityColor } from '../lib/equipment';
 import { getEquippedAbilities } from '../lib/skills';
@@ -22,10 +22,11 @@ const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_DROP_CHANCE = 0.12;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
-// Self-targeted kinds fire as a bonus action alongside the round's attack —
-// they never compete for it. Enemy-targeted kinds (applyStatus, bonusVsStatus,
-// crowdControl, statMod w/ target:'enemy') compete for the one attack action,
-// exactly like bigHit always has.
+// Self-targeted kinds resolve as the round's whole action — no basic attack,
+// no offense ability, just this — same as any offense pick. They compete for
+// the one action exactly like everything else in the priority list; a
+// self-targeted 'statMod' is the one exception, since it's a hybrid hit+buff
+// that already rolls damage in the offense branch below.
 const SELF_ABILITY_KINDS = ['heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt'];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -35,10 +36,12 @@ const STATUS_TICK_LABEL: Record<StatusEffectKind, string> = { poison: 'veneno', 
 const CC_LABEL: Record<CrowdControlKind, string> = { stun: 'Atordoado', sleep: 'Dormindo', silence: 'Silenciado' };
 
 interface StatusInstance { kind: StatusEffectKind; roundsLeft: number; dmgPerTick: number; }
-interface PlayerBuff { kind: 'def' | 'block'; pct: number; roundsLeft: number; }
-interface StatModInstance { stat: StatModStat; pct: number; roundsLeft: number; }
+// sourceAbilityId tags who cast this — lets pickAbility() skip an ability
+// whose effect is already active instead of blindly re-casting it on top.
+interface PlayerBuff { kind: 'def' | 'block'; pct: number; roundsLeft: number; sourceAbilityId?: string; }
+interface StatModInstance { stat: StatModStat; pct: number; roundsLeft: number; sourceAbilityId?: string; }
 interface CCInstance { kind: CrowdControlKind; roundsLeft: number; }
-interface RegenInstance { pct: number; roundsLeft: number; }
+interface RegenInstance { pct: number; roundsLeft: number; sourceAbilityId?: string; }
 interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean }
 interface Props {
   character: Character;
@@ -167,6 +170,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     if (cond.type === 'enemyHasStatus') return enemyStatusRef.current.some((s) => s.kind === cond.status);
     if (cond.type === 'hpBelow') return chRef.current.hp / effectiveMaxHp(chRef.current) < (cond.pct ?? 0.5);
     if (cond.type === 'enemyHpBelow') return enemyRef.current.hp / enemyRef.current.maxHp < (cond.pct ?? 0.5);
+    if (cond.type === 'selfDebuffed') {
+      return playerStatusRef.current.length > 0 || playerCCRef.current.length > 0 || playerModsRef.current.some((m) => m.pct < 0);
+    }
     return false;
   }
 
@@ -235,77 +241,98 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     return playerImmuneRoundsRef.current > 0;
   }
 
-  // Self-targeted abilities fire as a bonus action alongside the normal
-  // attack, whenever off cooldown and their condition is met — they don't
-  // compete for the round's one attack action. Heal/buff magnitudes scale
-  // with supportPowerPct (WIS), so a healer/support build gets more out of
-  // the exact same ability list.
-  function fireSelfAbilities(stats: ReturnType<typeof computePlayerStats>): string[] {
-    const lines: string[] = [];
-    const supportMult = 1 + stats.supportPowerPct;
-    for (const ab of equippedAbilities()) {
-      if (!SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
-      if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
-      if (!conditionMet(ab)) continue;
-      cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct);
-      const eff = ab.effect;
-      if (eff.kind === 'heal') {
-        const maxHp = effectiveMaxHp(chRef.current);
-        const healed = Math.min(maxHp, chRef.current.hp + Math.round(maxHp * (eff.healPct ?? 0.2) * supportMult));
-        updateCh({ ...chRef.current, hp: healed });
-        lines.push(`${ab.name}: você recupera vida.`);
-      } else if (eff.kind === 'buffDef') {
-        playerBuffsRef.current.push({ kind: 'def', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3 });
-        lines.push(`${ab.name}: sua defesa aumenta.`);
-      } else if (eff.kind === 'buffBlock') {
-        playerBuffsRef.current.push({ kind: 'block', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3 });
-        lines.push(`${ab.name}: sua chance de bloqueio aumenta.`);
-      } else if (eff.kind === 'shield') {
-        const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.shieldPct ?? 0.25) * supportMult);
-        playerShieldRef.current += amount;
-        syncShield();
-        lines.push(`${ab.name}: um escudo absorve ${amount} de dano.`);
-      } else if (eff.kind === 'regen') {
-        playerRegenRef.current.push({ pct: (eff.regenPct ?? 0.08) * supportMult, roundsLeft: eff.regenRounds ?? 4 });
-        lines.push(`${ab.name}: você começa a regenerar vida.`);
-      } else if (eff.kind === 'immunity') {
-        playerImmuneRoundsRef.current = Math.max(playerImmuneRoundsRef.current, eff.immunityRounds ?? 3);
-        lines.push(`${ab.name}: você fica imune a novos efeitos negativos.`);
-      } else if (eff.kind === 'haste') {
-        playerHasteRoundsRef.current = Math.max(playerHasteRoundsRef.current, eff.hasteRounds ?? 4);
-        lines.push(`${ab.name}: suas habilidades recarregam mais rápido.`);
-      } else if (eff.kind === 'berserk') {
-        playerModsRef.current.push({ stat: 'atk', pct: eff.berserkAtkPct ?? 0.3, roundsLeft: eff.berserkRounds ?? 4 });
-        playerModsRef.current.push({ stat: 'def', pct: eff.berserkDefPct ?? -0.2, roundsLeft: eff.berserkRounds ?? 4 });
-        lines.push(`${ab.name}: fúria berserker — mais dano, menos defesa.`);
-      } else if (eff.kind === 'taunt') {
-        // Provoca o inimigo — hoje é só a redução de dano recebido (útil já
-        // em 1v1); a parte de "forçar o alvo" fica pronta para quando um
-        // sistema de múltiplos inimigos/coop existir.
-        playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 4 });
-        lines.push(`${ab.name}: você provoca o inimigo, reduzindo o dano recebido.`);
-      } else if (eff.kind === 'dispel') {
-        playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
-        playerStatusRef.current = [];
-        playerCCRef.current = [];
-        syncPlayerStatuses();
-        syncPlayerCC();
-        lines.push(`${ab.name}: você remove os efeitos negativos.`);
-      }
+  // True while an ability's own persistent effect is still up — lets
+  // pickAbility() skip re-casting a buff/shield/regen/etc. on top of itself
+  // just because its cooldown happens to be ready again. Heal/dispel/bigHit
+  // and friends have no persistent state of their own, so they're never
+  // filtered here.
+  function abilityAlreadyActive(ab: AbilityDef): boolean {
+    const eff = ab.effect;
+    if (eff.kind === 'buffDef' || eff.kind === 'buffBlock') {
+      return playerBuffsRef.current.some((b) => b.sourceAbilityId === ab.id);
     }
-    return lines;
+    if (eff.kind === 'shield') return playerShieldRef.current > 0;
+    if (eff.kind === 'regen') return playerRegenRef.current.some((r) => r.sourceAbilityId === ab.id);
+    if (eff.kind === 'immunity') return playerImmuneRoundsRef.current > 0;
+    if (eff.kind === 'haste') return playerHasteRoundsRef.current > 0;
+    if (eff.kind === 'berserk' || eff.kind === 'taunt') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    if (eff.kind === 'statMod' && eff.statModTarget === 'self') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    return false;
   }
 
-  // The one offensive ability the priority list picks for this round's
-  // attack, if any is off cooldown and its condition is met — otherwise the
-  // round falls back to a plain attack. Silence blocks this entirely.
-  function pickOffenseAbility(): AbilityDef | null {
-    if (hasCC(playerCCRef.current, 'silence')) return null;
+  // The single ability (of any kind — self or offense) the priority list
+  // picks for this round's one action, if any is off cooldown, its condition
+  // is met, and it isn't already active on the player — otherwise the round
+  // falls back to a plain attack. Silence only blocks offense-kind picks;
+  // self-targeted support abilities still work while silenced.
+  function pickAbility(): AbilityDef | null {
+    const silenced = hasCC(playerCCRef.current, 'silence');
     for (const ab of equippedAbilities()) {
-      if (SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
+      if (silenced && !SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
       if (!conditionMet(ab)) continue;
+      if (abilityAlreadyActive(ab)) continue;
       return ab;
+    }
+    return null;
+  }
+
+  // Resolves a self-targeted ability as the round's whole action — it
+  // replaces the attack entirely rather than riding along with it. Heal
+  // magnitude is based on the class's baseline HP curve at the caster's
+  // level (not their live, gear/attribute-inflated max HP), so stacking
+  // VIT/maxHpFlat/gear can't turn a % heal into a source of near-immortality
+  // — cooldown stays the one knob that actually balances how much a build
+  // can out-heal incoming damage. Heal/buff magnitudes still scale with
+  // supportPowerPct (WIS), same as before.
+  function resolveSelfAbility(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>): string | null {
+    const supportMult = 1 + stats.supportPowerPct;
+    const eff = ab.effect;
+    if (eff.kind === 'heal') {
+      const c = chRef.current;
+      const baselineMaxHp = CLASSES[c.classId].baseHp + 6 * (c.level - 1);
+      const maxHp = effectiveMaxHp(c);
+      const prevHp = c.hp;
+      const healed = Math.min(maxHp, c.hp + Math.round(baselineMaxHp * (eff.healPct ?? 0.2) * supportMult));
+      updateCh({ ...c, hp: healed });
+      return `${ab.name}: você recupera ${healed - prevHp} de vida.`;
+    } else if (eff.kind === 'buffDef') {
+      playerBuffsRef.current.push({ kind: 'def', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      return `${ab.name}: sua defesa aumenta.`;
+    } else if (eff.kind === 'buffBlock') {
+      playerBuffsRef.current.push({ kind: 'block', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      return `${ab.name}: sua chance de bloqueio aumenta.`;
+    } else if (eff.kind === 'shield') {
+      const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.shieldPct ?? 0.25) * supportMult);
+      playerShieldRef.current += amount;
+      syncShield();
+      return `${ab.name}: um escudo absorve ${amount} de dano.`;
+    } else if (eff.kind === 'regen') {
+      playerRegenRef.current.push({ pct: (eff.regenPct ?? 0.08) * supportMult, roundsLeft: eff.regenRounds ?? 4, sourceAbilityId: ab.id });
+      return `${ab.name}: você começa a regenerar vida.`;
+    } else if (eff.kind === 'immunity') {
+      playerImmuneRoundsRef.current = Math.max(playerImmuneRoundsRef.current, eff.immunityRounds ?? 3);
+      return `${ab.name}: você fica imune a novos efeitos negativos.`;
+    } else if (eff.kind === 'haste') {
+      playerHasteRoundsRef.current = Math.max(playerHasteRoundsRef.current, eff.hasteRounds ?? 4);
+      return `${ab.name}: suas habilidades recarregam mais rápido.`;
+    } else if (eff.kind === 'berserk') {
+      playerModsRef.current.push({ stat: 'atk', pct: eff.berserkAtkPct ?? 0.3, roundsLeft: eff.berserkRounds ?? 4, sourceAbilityId: ab.id });
+      playerModsRef.current.push({ stat: 'def', pct: eff.berserkDefPct ?? -0.2, roundsLeft: eff.berserkRounds ?? 4, sourceAbilityId: ab.id });
+      return `${ab.name}: fúria berserker — mais dano, menos defesa.`;
+    } else if (eff.kind === 'taunt') {
+      // Provoca o inimigo — hoje é só a redução de dano recebido (útil já
+      // em 1v1); a parte de "forçar o alvo" fica pronta para quando um
+      // sistema de múltiplos inimigos/coop existir.
+      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
+      return `${ab.name}: você provoca o inimigo, reduzindo o dano recebido.`;
+    } else if (eff.kind === 'dispel') {
+      playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
+      playerStatusRef.current = [];
+      playerCCRef.current = [];
+      syncPlayerStatuses();
+      syncPlayerCC();
+      return `${ab.name}: você remove os efeitos negativos.`;
     }
     return null;
   }
@@ -367,68 +394,73 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       if (!mountedRef.current) return;
       setPlayerLean(0);
 
-      const baseStats = computePlayerStats();
-      let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false;
-
-      if (!playerStunned) {
-        const selfLines = fireSelfAbilities(baseStats);
-        selfLines.forEach(pushLog);
-      }
-
       const stats = computePlayerStats();
+      let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
       } else {
-        const offenseAbility = pickOffenseAbility();
-        const enemyEvasion = enemyStunned ? 0 : computeEnemyEvasion();
-        missed = rollMiss(stats.accuracy, enemyEvasion);
-
-        if (missed) {
-          pushLog(`Seu ataque erra ${enemyRef.current.name}!`);
-          pushFloat('enemy', 0, false, false, true);
-        } else if (offenseAbility) {
-          cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
-          const eff = offenseAbility.effect;
-          // Abilities from magical classes cast as spells by default (matk vs
-          // mdef); basic attacks (the `else` branch below) are always
-          // physical regardless of class — only an ability's own dmgType
-          // override or the caster's class decides which channel a spell uses.
-          const dmgType = eff.dmgType ?? (MAGICAL_CLASSES.includes(chRef.current.classId) ? 'magical' : 'physical');
-          const power = dmgType === 'magical' ? stats.matk : stats.atk;
-          const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
-          const r = rollAbilityHit(power, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
-          dmg = r.dmg; crit = r.crit;
-          abilityTag = ` [${offenseAbility.name}]`;
-          if (eff.kind === 'applyStatus' && eff.status) {
-            enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * (eff.statusDmgPct ?? 0.4))) });
-            syncEnemyStatuses();
-            statusLine = ` ${enemyRef.current.name} foi ${STATUS_VERB[eff.status]}!`;
-          } else if (eff.kind === 'crowdControl' && eff.cc) {
-            enemyCCRef.current.push({ kind: eff.cc, roundsLeft: eff.ccRounds ?? 1 });
-            syncEnemyCC();
-            statusLine = ` ${enemyRef.current.name} ficou ${CC_LABEL[eff.cc].toLowerCase()}!`;
-          } else if (eff.kind === 'statMod' && eff.statMod) {
-            if (eff.statModTarget === 'self') {
-              playerModsRef.current.push({ stat: eff.statMod, pct: eff.statModPct ?? 0.2, roundsLeft: eff.statModRounds ?? 3 });
-              statusLine = ' Você ganha um efeito temporário!';
-            } else {
-              enemyModsRef.current.push({ stat: eff.statMod, pct: eff.statModPct ?? -0.2, roundsLeft: eff.statModRounds ?? 3 });
-              statusLine = ` ${enemyRef.current.name} foi enfraquecido!`;
-            }
-          }
+        // One action per round, full stop — support abilities (heal, buff,
+        // dispel...) now compete on equal footing with offense abilities and
+        // the plain attack for the single pick, instead of firing for free
+        // alongside whatever else happened. Using a heal costs you the
+        // round's damage, exactly like choosing to use any other ability.
+        const chosen = pickAbility();
+        if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
+          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct);
+          const line = resolveSelfAbility(chosen, stats);
+          if (line) pushLog(line);
         } else {
-          const effDef = Math.max(0, computeEnemyDef() * (1 - stats.defPenPct));
-          const r = rollAttack(stats.atk, effDef, stats.critChance, stats.critDmgMult);
-          dmg = r.dmg; crit = r.crit;
-        }
+          const offenseAbility = chosen;
+          const enemyEvasion = enemyStunned ? 0 : computeEnemyEvasion();
+          missed = rollMiss(stats.accuracy, enemyEvasion);
 
-        // Conditional passives ("+15% dano contra inimigo envenenado") and
-        // Vulnerability-family debuffs apply on top of whatever hit landed.
-        if (!missed) {
-          if (enemyStatusRef.current.some((s) => s.kind === 'poison') && stats.dmgPctVsPoison > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsPoison));
-          if (enemyStatusRef.current.some((s) => s.kind === 'burn') && stats.dmgPctVsBurn > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsBurn));
-          if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
+          if (missed) {
+            pushLog(`Seu ataque erra ${enemyRef.current.name}!`);
+            pushFloat('enemy', 0, false, false, true);
+          } else if (offenseAbility) {
+            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
+            const eff = offenseAbility.effect;
+            // Abilities from magical classes cast as spells by default (matk vs
+            // mdef); basic attacks (the `else` branch below) are always
+            // physical regardless of class — only an ability's own dmgType
+            // override or the caster's class decides which channel a spell uses.
+            const dmgType = eff.dmgType ?? (MAGICAL_CLASSES.includes(chRef.current.classId) ? 'magical' : 'physical');
+            const power = dmgType === 'magical' ? stats.matk : stats.atk;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+            const r = rollAbilityHit(power, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
+            dmg = r.dmg; crit = r.crit;
+            abilityTag = ` [${offenseAbility.name}]`;
+            if (eff.kind === 'applyStatus' && eff.status) {
+              enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * (eff.statusDmgPct ?? 0.4))) });
+              syncEnemyStatuses();
+              statusLine = ` ${enemyRef.current.name} foi ${STATUS_VERB[eff.status]}!`;
+            } else if (eff.kind === 'crowdControl' && eff.cc) {
+              enemyCCRef.current.push({ kind: eff.cc, roundsLeft: eff.ccRounds ?? 1 });
+              syncEnemyCC();
+              statusLine = ` ${enemyRef.current.name} ficou ${CC_LABEL[eff.cc].toLowerCase()}!`;
+            } else if (eff.kind === 'statMod' && eff.statMod) {
+              if (eff.statModTarget === 'self') {
+                playerModsRef.current.push({ stat: eff.statMod, pct: eff.statModPct ?? 0.2, roundsLeft: eff.statModRounds ?? 3, sourceAbilityId: offenseAbility.id });
+                statusLine = ' Você ganha um efeito temporário!';
+              } else {
+                enemyModsRef.current.push({ stat: eff.statMod, pct: eff.statModPct ?? -0.2, roundsLeft: eff.statModRounds ?? 3 });
+                statusLine = ` ${enemyRef.current.name} foi enfraquecido!`;
+              }
+            }
+          } else {
+            const effDef = Math.max(0, computeEnemyDef() * (1 - stats.defPenPct));
+            const r = rollAttack(stats.atk, effDef, stats.critChance, stats.critDmgMult);
+            dmg = r.dmg; crit = r.crit;
+          }
+
+          // Conditional passives ("+15% dano contra inimigo envenenado") and
+          // Vulnerability-family debuffs apply on top of whatever hit landed.
+          if (!missed) {
+            if (enemyStatusRef.current.some((s) => s.kind === 'poison') && stats.dmgPctVsPoison > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsPoison));
+            if (enemyStatusRef.current.some((s) => s.kind === 'burn') && stats.dmgPctVsBurn > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsBurn));
+            if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
+          }
         }
       }
 
