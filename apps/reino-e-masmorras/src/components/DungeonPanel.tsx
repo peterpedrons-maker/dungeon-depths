@@ -7,6 +7,7 @@ import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { generateItem, rarityColor } from '../lib/equipment';
+import { OFFHAND_KIND } from '../lib/itemTiers';
 import { getEquippedAbilities } from '../lib/skills';
 import { rollAttack, rollAbilityHit } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
@@ -21,7 +22,7 @@ const LEAN_MS = 260;
 const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_DROP_CHANCE = 0.12;
 const BASE_POTION_HEAL_PCT = 0.4;
-const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'accessory'];
+const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
 // Self-targeted kinds resolve as the round's whole action — no basic attack,
 // no offense ability, just this — same as any offense pick. They compete for
 // the one action exactly like everything else in the priority list; a
@@ -158,8 +159,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
       if (Math.random() >= chance) return;
     }
-    const slot = DROP_SLOTS[Math.floor(Math.random() * DROP_SLOTS.length)];
-    const item = generateItem(slot, chRef.current.classId, depthRef.current, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
+    const availableSlots = OFFHAND_KIND[chRef.current.classId] ? DROP_SLOTS : DROP_SLOTS.filter((s) => s !== 'offhand');
+    const slot = availableSlots[Math.floor(Math.random() * availableSlots.length)];
+    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
     updateCh({ ...chRef.current, inventory: [...chRef.current.inventory, item] });
     pushLog(`Você encontrou: ${item.name}!`);
   }

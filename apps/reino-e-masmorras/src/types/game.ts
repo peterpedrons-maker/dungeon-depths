@@ -30,8 +30,17 @@ export interface ClassDef {
 
 export type Rarity = 'comum' | 'incomum' | 'raro' | 'epico' | 'legendario';
 
-export type ItemSlot = 'weapon' | 'body' | 'legs' | 'hands' | 'accessory';
-export type SecondaryStatType = 'crit' | 'def' | 'hp' | 'block';
+export type ItemSlot = 'weapon' | 'body' | 'legs' | 'hands' | 'offhand' | 'accessory';
+// 'atk'/'matk' let the accessory/offhand roll pool reuse the same channels
+// weapons and armor already read from (dmgBonus/matkBonus below), instead of
+// inventing a parallel vocabulary just for those slots.
+export type SecondaryStatType = 'crit' | 'critDmg' | 'def' | 'mdef' | 'hp' | 'block' | 'atk' | 'matk';
+
+// Only set on slot === 'accessory' items — the accessory base type is rolled
+// independently of class (unlike offhand, which is 100% determined by the
+// wearer's class via OFFHAND_KIND in lib/itemTiers.ts), so it needs its own
+// tag to know which stat domain (ACCESSORY_STAT_POOL) it draws from.
+export type AccessoryType = 'anel' | 'amuleto' | 'bracelete';
 
 export interface EquipmentItem {
   id: string;
@@ -39,9 +48,15 @@ export interface EquipmentItem {
   classId: ClassId;
   slot: ItemSlot;
   rarity: Rarity;
+  tier: number; // base tier 1-10 — which rung of the slot's name/power ladder this is (see lib/itemTiers.ts), independent of rarity's affix-count layer
+  accessoryType?: AccessoryType;
   dmgBonus: number; // weapon's primary stat, 0 on other slots
-  defBonus: number; // body/legs/hands primary stat, 0 on other slots
-  hpBonus: number; // accessory's primary stat, 0 on other slots
+  defBonus: number; // body/legs/hands/shield primary stat, 0 on other slots
+  hpBonus: number; // accessory (Amuleto) primary stat, 0 on other slots
+  matkBonus: number; // foco/Bracelete primary stat, 0 on other slots
+  mdefBonus: number; // Amuleto primary stat, 0 on other slots
+  critChanceBonus: number; // Anel primary stat, 0 on other slots
+  critDmgBonus: number; // Anel primary stat, 0 on other slots
   secondaryStat?: { type: SecondaryStatType; value: number };
 }
 
@@ -50,6 +65,7 @@ export interface Equipment {
   body: EquipmentItem | null;
   legs: EquipmentItem | null;
   hands: EquipmentItem | null;
+  offhand: EquipmentItem | null; // shield or foco/relicário — only classes in OFFHAND_KIND ever have one to equip
   accessory: EquipmentItem | null;
 }
 
@@ -282,6 +298,7 @@ export interface DungeonDef {
   bossDepth: number; // fixed depth the boss spawns at — defeating it clears the dungeon and ends the run
   boss: EnemyShape;
   miniBossDepths?: number[]; // depths shown as milestone markers on the progress bar; no dungeon defines any yet
+  itemTier: number; // 1-10 — the base tier (lib/itemTiers.ts) every item found in this dungeon rolls at, hand-authored like bossDepth so item power tracks dungeon progression, not the in-run depth counter
 }
 
 export interface RankEntry {
