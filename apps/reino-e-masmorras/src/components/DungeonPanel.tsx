@@ -704,10 +704,6 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       const bobE = Math.sin(t / 240 + 1) * 3;
       if (phase !== 'ended') {
         const px1 = w * 0.27, ex = w * 0.73;
-        g.fillStyle = 'rgba(0,0,0,0.4)';
-        g.beginPath(); g.ellipse(px1, groundY + 3, 16, 5, 0, 0, Math.PI * 2); g.fill();
-        g.beginPath(); g.ellipse(ex, groundY + 3, 16, 5, 0, 0, Math.PI * 2); g.fill();
-
         drawSprite(g, heroSpr.idle, px1, groundY + bobP, false, flashSide === 'player' ? 0.7 : 0);
         drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, false, flashSide === 'enemy' ? 0.7 : 0);
       }
@@ -806,6 +802,18 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             ✦ Masmorra Especial
           </div>
         )}
+        {phase === 'ended' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 px-6">
+            <div className="text-center">
+              <p className="font-display text-lg sm:text-xl text-gold [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] mb-4">
+                {endedReason === 'victory' && `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`}
+                {endedReason === 'death' && 'Sua expedição terminou.'}
+                {endedReason === 'retreat' && 'Você retornou em segurança.'}
+              </p>
+              <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {weapon && (
@@ -863,29 +871,17 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         )}
       </div>
 
-      <div className="mt-4 flex gap-2 flex-wrap">
-        {phase === 'fight' && (
-          <>
-            <Button onClick={togglePause}>
-              {paused ? 'Retomar Combate' : 'Pausar'}
-            </Button>
-            <Button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= effMaxHp || potionCooldownRef.current > 0}>
-              Poção ({ch.potions}){potionCooldownRef.current > 0 ? ` — ${potionCooldownRef.current}` : ''}
-            </Button>
-            <Button onClick={retreatSafely}>Retornar ao Reino</Button>
-          </>
-        )}
-        {phase === 'ended' && (
-          <div className="w-full text-center">
-            <p className="mb-3 text-parchment/80">
-              {endedReason === 'victory' && `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`}
-              {endedReason === 'death' && 'Sua expedição terminou.'}
-              {endedReason === 'retreat' && 'Você retornou em segurança.'}
-            </p>
-            <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
-          </div>
-        )}
-      </div>
+      {phase === 'fight' && (
+        <div className="mt-4 flex gap-2 flex-wrap">
+          <Button onClick={togglePause}>
+            {paused ? 'Retomar Combate' : 'Pausar'}
+          </Button>
+          <Button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= effMaxHp || potionCooldownRef.current > 0}>
+            Poção ({ch.potions}){potionCooldownRef.current > 0 ? ` — ${potionCooldownRef.current}` : ''}
+          </Button>
+          <Button onClick={retreatSafely}>Retornar ao Reino</Button>
+        </div>
+      )}
 
       <div className="mt-3 bg-black/30 border border-white/10 rounded p-2 h-24 overflow-y-auto text-sm text-parchment/80 flex flex-col-reverse">
         <div>
