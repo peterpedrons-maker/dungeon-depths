@@ -83,8 +83,6 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [paused, setPaused] = useState(false);
   const [log, setLog] = useState<string[]>([`Você entra em ${dungeon.name}...`]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
-  const [playerLean, setPlayerLean] = useState(0);
-  const [enemyLean, setEnemyLean] = useState(0);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | null>(null);
   const [enemyStatuses, setEnemyStatuses] = useState<StatusEffectKind[]>([]);
@@ -401,10 +399,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     enemyCCRef.current = tickCC(enemyCCRef.current);
     syncEnemyCC();
 
-    setPlayerLean(1);
     setTimeout(() => {
       if (!mountedRef.current) return;
-      setPlayerLean(0);
 
       const stats = computePlayerStats();
       let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false;
@@ -517,10 +513,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         }
       }
 
-      setEnemyLean(1);
       setTimeout(() => {
         if (!mountedRef.current) return;
-        setEnemyLean(0);
         maybeAutoHeal();
 
         if (enemyStunned) {
@@ -700,15 +694,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         g.beginPath(); g.ellipse(px1, groundY + 3, 16, 5, 0, 0, Math.PI * 2); g.fill();
         g.beginPath(); g.ellipse(ex, groundY + 3, 16, 5, 0, 0, Math.PI * 2); g.fill();
 
-        const heroFrame = playerLean ? heroSpr.attack : heroSpr.idle;
-        drawSprite(g, heroFrame, px1, groundY + bobP, false, flashSide === 'player' ? 0.7 : 0, playerLean);
-        drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, false, flashSide === 'enemy' ? 0.7 : 0, enemyLean);
+        drawSprite(g, heroSpr.idle, px1, groundY + bobP, false, flashSide === 'player' ? 0.7 : 0);
+        drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, false, flashSide === 'enemy' ? 0.7 : 0);
       }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [ch.classId, enemy.shape, phase, playerLean, enemyLean, flashSide, heroSpr]);
+  }, [ch.classId, enemy.shape, phase, flashSide, heroSpr]);
 
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
   const weapon = ch.equipment.weapon;
