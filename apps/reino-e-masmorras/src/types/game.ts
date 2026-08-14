@@ -100,7 +100,7 @@ export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
 export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct';
 
 export interface AbilityCondition {
-  type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds';
+  type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
