@@ -46,10 +46,18 @@ const ACCESSORY_PRIMARY_SCALE: Partial<Record<SecondaryStatType, number>> = {
   crit: 0.5, critDmg: 0.8, hp: 4, def: 1, mdef: 1, atk: 1.2, matk: 1.2,
 };
 
-// Every non-weapon/armor slot can also roll one of these as its secondary
-// stat, regardless of theme — gives every item a chance at a hybrid stat on
-// top of its primary.
+// Every item rolls exactly one affix (secondary stat) on top of its primary,
+// regardless of slot or theme — gives every item a chance at a hybrid stat.
 const FULL_SECONDARY_POOL: SecondaryStatType[] = ['crit', 'critDmg', 'def', 'mdef', 'hp', 'block', 'atk', 'matk'];
+
+// Per-stat-type scale applied to an item's affix roll — smaller than a
+// primary stat's own scale (an affix is a bonus, not the main stat), but
+// reuses the exact same rollPrimaryValue growth curve so the same stat type
+// never reads the same twice across rarities/tiers: a comum tier-1 "+FOR"
+// affix and a legendário tier-10 one on the same stat type are worlds apart.
+const AFFIX_SCALE: Record<SecondaryStatType, number> = {
+  crit: 0.3, critDmg: 0.4, block: 0.25, hp: 2, def: 0.5, mdef: 0.5, atk: 0.5, matk: 0.5,
+};
 
 function pickRarity(): RarityDef {
   const total = RARITIES.reduce((s, r) => s + r.weight, 0);
@@ -120,14 +128,12 @@ function primaryFieldsFor(
   }
 }
 
-function rollSecondaryStat(rarityTier: number, pool: SecondaryStatType[]): EquipmentItem['secondaryStat'] {
-  if (rarityTier < 1) return undefined;
+// Every item — comum included — gets exactly one affix; only its magnitude
+// changes across rarities/tiers, never whether it's present at all.
+function rollSecondaryStat(baseTier: number, rarityMult: number, pool: SecondaryStatType[]): EquipmentItem['secondaryStat'] {
   const type = pool[Math.floor(Math.random() * pool.length)];
-  const value = type === 'crit' ? Math.round(rarityTier * 3) / 100
-    : type === 'critDmg' ? Math.round(rarityTier * 4) / 100
-    : type === 'block' ? Math.round(rarityTier * 2) / 100
-    : type === 'hp' ? rarityTier * 4
-    : rarityTier * 2; // def / mdef / atk / matk
+  const raw = rollPrimaryValue(baseTier, rarityMult, AFFIX_SCALE[type]);
+  const value = (type === 'crit' || type === 'critDmg' || type === 'block') ? raw / 100 : raw;
   return { type, value };
 }
 
@@ -156,7 +162,7 @@ export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number,
     id: `i${++_iid}_${Date.now()}`, name, classId, slot, rarity: rarity.id, tier: baseTier,
     accessoryType,
     ...ZERO_PRIMARY, ...primary,
-    secondaryStat: rollSecondaryStat(rarityTier, FULL_SECONDARY_POOL),
+    secondaryStat: rollSecondaryStat(baseTier, rarity.mult, FULL_SECONDARY_POOL),
   };
 }
 
