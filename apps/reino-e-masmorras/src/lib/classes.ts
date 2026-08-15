@@ -1,4 +1,18 @@
-import { Attributes, ClassDef, ClassId, Character } from '../types/game';
+import { AttributeKey, Attributes, ClassDef, ClassId, Character } from '../types/game';
+
+// Shared attribute display metadata (label + reference color from the Kit
+// de Arte) — used by both CharacterOverview and CharacterCreation so the
+// two screens never drift apart on what an attribute is called or colored.
+export const ATTR_META: Record<AttributeKey, { label: string; abbr: string; color: string }> = {
+  str: { label: 'Força', abbr: 'FOR', color: '#c1502e' },
+  dex: { label: 'Destreza', abbr: 'DES', color: '#4f9d4f' },
+  agi: { label: 'Agilidade', abbr: 'AGI', color: '#4fb8b0' },
+  vit: { label: 'Vitalidade', abbr: 'VIT', color: '#c9863c' },
+  int: { label: 'Inteligência', abbr: 'INT', color: '#3f7ab8' },
+  wis: { label: 'Sabedoria', abbr: 'SAB', color: '#9b6fc9' },
+  luk: { label: 'Sorte', abbr: 'SOR', color: '#e0b93c' },
+};
+export const ATTR_ORDER: AttributeKey[] = ['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk'];
 
 // The highest level a character can reach — grantXp() stops advancing past
 // this, and the last remaining XP is discarded rather than left overflowing
@@ -11,107 +25,111 @@ export const MAX_LEVEL = 60;
 // power (used only by abilities explicitly cast as spells). A pure warrior
 // has baseMatk 0 and never rolls it; a pure caster has a token baseAtk (a
 // weak, purely physical basic swing) and a high baseMatk that its spells
-// actually scale off of. baseAttrs are the class's level-1 head start in its
-// priority attributes (from the canonical STR+VIT-for-Guerreiro table) —
-// everything past that comes from the player's own attributePoints spend.
+// actually scale off of. baseAttrs are the class's level-1 head start —
+// every class gets a floor of 1 in all 7 attributes (nothing is ever truly
+// zero, so even an "irrelevant" attribute does a little something) with its
+// 2-3 priority attributes set to 2-3 (secondary) or 5 (primary) on top of
+// that floor. This magnitude also drives how well the class scales with
+// that attribute later (see classAttrMult in combatStats.ts) — everything
+// past this head start comes from the player's own attributePoints spend.
 export const CLASSES: Record<ClassId, ClassDef> = {
   guerreiro: {
     id: 'guerreiro', name: 'Guerreiro', color: '#a5432f',
     desc: 'Vida alta, resiste a golpes pesados.',
     weaponBase: 'Espada', bodyBase: 'Peitoral de Placas', legsBase: 'Grevas de Ferro', handsBase: 'Manoplas de Ferro',
     baseHp: 44, baseAtk: 8, baseDef: 6, baseMatk: 0, baseMdef: 2, critChance: 0.05,
-    baseAttrs: { str: 5, vit: 3 },
+    baseAttrs: { str: 5, dex: 1, agi: 1, vit: 3, int: 1, wis: 1, luk: 1 },
   },
   mago: {
     id: 'mago', name: 'Mago', color: '#3f7ab8',
     desc: 'Ataques poderosos, mas frágil.',
     weaponBase: 'Cajado', bodyBase: 'Robe Arcano', legsBase: 'Calças de Tecido', handsBase: 'Luvas de Tecido',
     baseHp: 26, baseAtk: 3, baseDef: 2, baseMatk: 14, baseMdef: 5, critChance: 0.06,
-    baseAttrs: { int: 5, wis: 3 },
+    baseAttrs: { str: 1, dex: 1, agi: 1, vit: 1, int: 5, wis: 3, luk: 1 },
   },
   ladino: {
     id: 'ladino', name: 'Ladino', color: '#4a5a48',
     desc: 'Rápido e traiçoeiro, aposta tudo no crítico e no veneno.',
     weaponBase: 'Adaga', bodyBase: 'Colete de Couro', legsBase: 'Calças de Couro', handsBase: 'Luvas de Couro',
     baseHp: 30, baseAtk: 10, baseDef: 4, baseMatk: 0, baseMdef: 2, critChance: 0.16,
-    baseAttrs: { dex: 5, agi: 3, luk: 2 },
+    baseAttrs: { str: 1, dex: 5, agi: 3, vit: 1, int: 1, wis: 1, luk: 2 },
   },
   clerigo: {
     id: 'clerigo', name: 'Clérigo', color: '#c9a86a',
     desc: 'Cura, buffs e magia sagrada — sustenta a jornada mais do que corta.',
     weaponBase: 'Maça Sagrada', bodyBase: 'Vestes Consagradas', legsBase: 'Saiote Consagrado', handsBase: 'Luvas Consagradas',
     baseHp: 34, baseAtk: 4, baseDef: 3, baseMatk: 8, baseMdef: 6, critChance: 0.05,
-    baseAttrs: { wis: 5, int: 3, vit: 2 },
+    baseAttrs: { str: 1, dex: 1, agi: 1, vit: 2, int: 3, wis: 5, luk: 1 },
   },
   cavaleiro: {
     id: 'cavaleiro', name: 'Cavaleiro', color: '#7a8a9a',
     desc: 'Tanque de defesa elevada, feito para segurar a linha de frente.',
     weaponBase: 'Espada Longa', bodyBase: 'Armadura de Cavaleiro', legsBase: 'Grevas de Aço', handsBase: 'Manoplas de Aço',
     baseHp: 50, baseAtk: 7, baseDef: 8, baseMatk: 0, baseMdef: 3, critChance: 0.04,
-    baseAttrs: { vit: 5, str: 3 },
+    baseAttrs: { str: 3, dex: 1, agi: 1, vit: 5, int: 1, wis: 1, luk: 1 },
   },
   paladino: {
     id: 'paladino', name: 'Paladino', color: '#e0c060',
     desc: 'Guerreiro sagrado — defesa, cura e buffs num só pacote.',
     weaponBase: 'Martelo Sagrado', bodyBase: 'Armadura Consagrada', legsBase: 'Grevas Sagradas', handsBase: 'Manoplas Sagradas',
     baseHp: 42, baseAtk: 8, baseDef: 6, baseMatk: 0, baseMdef: 4, critChance: 0.05,
-    baseAttrs: { str: 5, wis: 3, vit: 2 },
+    baseAttrs: { str: 5, dex: 1, agi: 1, vit: 2, int: 1, wis: 3, luk: 1 },
   },
   barbaro: {
     id: 'barbaro', name: 'Bárbaro', color: '#8a3a2a',
     desc: 'Dano físico bruto e resistência, tudo em cima da força.',
     weaponBase: 'Machado Bárbaro', bodyBase: 'Peles de Fera', legsBase: 'Calças de Couro Reforçado', handsBase: 'Braceletes de Osso',
     baseHp: 46, baseAtk: 11, baseDef: 4, baseMatk: 0, baseMdef: 1, critChance: 0.07,
-    baseAttrs: { str: 5, vit: 3, luk: 2 },
+    baseAttrs: { str: 5, dex: 1, agi: 1, vit: 3, int: 1, wis: 1, luk: 2 },
   },
   arqueiro: {
     id: 'arqueiro', name: 'Arqueiro', color: '#5a8a4a',
     desc: 'Dano físico à distância — precisão e críticos certeiros.',
     weaponBase: 'Arco Longo', bodyBase: 'Gibão de Couro', legsBase: 'Calças de Caça', handsBase: 'Braçadeiras de Tiro',
     baseHp: 28, baseAtk: 11, baseDef: 3, baseMatk: 0, baseMdef: 2, critChance: 0.14,
-    baseAttrs: { dex: 5, agi: 3, luk: 2 },
+    baseAttrs: { str: 1, dex: 5, agi: 3, vit: 1, int: 1, wis: 1, luk: 2 },
   },
   cacador: {
     id: 'cacador', name: 'Caçador', color: '#6a7a4a',
     desc: 'Dano à distância com armadilhas e efeitos de controle.',
     weaponBase: 'Besta', bodyBase: 'Manto de Caçador', legsBase: 'Calças de Trilha', handsBase: 'Luvas de Rastreador',
     baseHp: 30, baseAtk: 10, baseDef: 3, baseMatk: 0, baseMdef: 2, critChance: 0.12,
-    baseAttrs: { dex: 5, agi: 3, wis: 2 },
+    baseAttrs: { str: 1, dex: 5, agi: 3, vit: 1, int: 1, wis: 2, luk: 1 },
   },
   feiticeiro: {
     id: 'feiticeiro', name: 'Feiticeiro', color: '#a03fb8',
     desc: 'Dano mágico explosivo — todo poder ofensivo, pouca defesa.',
     weaponBase: 'Grimório Arcano', bodyBase: 'Vestes Arcanas', legsBase: 'Calças Arcanas', handsBase: 'Luvas Arcanas',
     baseHp: 25, baseAtk: 2, baseDef: 2, baseMatk: 15, baseMdef: 4, critChance: 0.07,
-    baseAttrs: { int: 5, luk: 3 },
+    baseAttrs: { str: 1, dex: 1, agi: 1, vit: 1, int: 5, wis: 1, luk: 3 },
   },
   bruxo: {
     id: 'bruxo', name: 'Bruxo', color: '#4a2a5a',
     desc: 'Magia sombria, maldições e dano periódico.',
     weaponBase: 'Grimório Sombrio', bodyBase: 'Vestes Sombrias', legsBase: 'Calças Sombrias', handsBase: 'Luvas Sombrias',
     baseHp: 27, baseAtk: 3, baseDef: 2, baseMatk: 13, baseMdef: 5, critChance: 0.06,
-    baseAttrs: { int: 5, wis: 3, luk: 2 },
+    baseAttrs: { str: 1, dex: 1, agi: 1, vit: 1, int: 5, wis: 3, luk: 2 },
   },
   druida: {
     id: 'druida', name: 'Druida', color: '#3f8a5a',
     desc: 'Natureza — cura, buffs, debuffs e dano mágico.',
     weaponBase: 'Cajado Élfico', bodyBase: 'Vestes Naturais', legsBase: 'Calças de Folhas', handsBase: 'Luvas de Vinha',
     baseHp: 32, baseAtk: 4, baseDef: 4, baseMatk: 9, baseMdef: 5, critChance: 0.06,
-    baseAttrs: { wis: 5, int: 3, vit: 2 },
+    baseAttrs: { str: 1, dex: 1, agi: 1, vit: 2, int: 3, wis: 5, luk: 1 },
   },
   bardo: {
     id: 'bardo', name: 'Bardo', color: '#c9663c',
     desc: 'Buffs, debuffs e suporte — vitória através da inspiração.',
     weaponBase: 'Alaúde Encantado', bodyBase: 'Traje de Bardo', legsBase: 'Calças de Viajante', handsBase: 'Luvas de Bardo',
     baseHp: 29, baseAtk: 5, baseDef: 3, baseMatk: 6, baseMdef: 4, critChance: 0.10,
-    baseAttrs: { wis: 5, dex: 3, luk: 2 },
+    baseAttrs: { str: 1, dex: 3, agi: 1, vit: 1, int: 1, wis: 5, luk: 2 },
   },
   necromante: {
     id: 'necromante', name: 'Necromante', color: '#3a3a4a',
     desc: 'Magia sombria, maldições e dano periódico dos mortos.',
     weaponBase: 'Cetro Nigromante', bodyBase: 'Vestes Nigromantes', legsBase: 'Calças Nigromantes', handsBase: 'Luvas Nigromantes',
     baseHp: 27, baseAtk: 3, baseDef: 2, baseMatk: 13, baseMdef: 5, critChance: 0.06,
-    baseAttrs: { int: 5, wis: 3, luk: 2 },
+    baseAttrs: { str: 1, dex: 1, agi: 1, vit: 1, int: 5, wis: 3, luk: 2 },
   },
 };
 
@@ -126,13 +144,23 @@ export function xpToNextLevel(level: number): number {
   return 18 + level * 14;
 }
 
-export function createCharacter(name: string, classId: ClassId): Character {
+// Free attribute points granted at character creation, on top of the
+// class's baseAttrs floor — spent immediately in CharacterCreation's
+// allocator before the run ever starts (separate from the 1-per-level pool
+// grantXp hands out afterward via the normal in-game allocator).
+export const STARTING_ATTR_POINTS = 5;
+
+// initialAllocatedAttrs is the creation-time allocator's result (already
+// fully spent — see STARTING_ATTR_POINTS), so attributePoints starts at 0
+// same as before; only their destination (allocatedAttrs) differs from the
+// old always-zero default.
+export function createCharacter(name: string, classId: ClassId, initialAllocatedAttrs?: Attributes): Character {
   const c = CLASSES[classId];
   return {
     name, classId, level: 1, xp: 0, xpToNext: xpToNextLevel(1),
     hp: c.baseHp, maxHp: c.baseHp, atk: c.baseAtk, def: c.baseDef, matk: c.baseMatk, mdef: c.baseMdef,
     gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0,
-    skillPoints: 0, attributePoints: 0, allocatedAttrs: { ...ZERO_ATTRS },
+    skillPoints: 0, attributePoints: 0, allocatedAttrs: initialAllocatedAttrs ?? { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [], abilityThresholds: {},
     equipment: { weapon: null, body: null, legs: null, hands: null, offhand: null, accessory: null }, inventory: [],
     buildings: {},

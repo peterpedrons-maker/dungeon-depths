@@ -1,4 +1,4 @@
-import { Character, CombatStats, EquipmentItem } from '../types/game';
+import { AttributeKey, Character, ClassId, CombatStats, EquipmentItem } from '../types/game';
 import { CLASSES } from './classes';
 import { computeAttributeTotals, computeSkillBonuses } from './skills';
 
@@ -22,6 +22,23 @@ const ATTR_COEF = {
   dropChancePctPerLuk: 0.004,
   itemQualityPctPerLuk: 0.005,
 };
+
+// The same attribute point is worth more to a class built around that
+// attribute than to one that only carries it as a floor stat — a
+// Guerreiro's VIT point yields more HP than a Mago's. Derived straight from
+// baseAttrs' own magnitude (see classes.ts): the floor value every class
+// gets in its "irrelevant" attributes (1) scales at the baseline rate the
+// ATTR_COEF numbers above were tuned for; a class's secondary priority
+// (2-3) and primary priority (5) attributes scale progressively better.
+// Loot-luck stats (drop chance / item quality) are deliberately excluded —
+// finding better gear isn't a combat power fantasy tied to class identity,
+// so LUK's contribution to those stays universal.
+function classAttrMult(classId: ClassId, key: AttributeKey): number {
+  const base = CLASSES[classId].baseAttrs[key] ?? 1;
+  if (base >= 5) return 2.0;
+  if (base >= 2) return 1.5;
+  return 1.0;
+}
 
 function equippedItems(ch: Character): EquipmentItem[] {
   return Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null);
@@ -58,13 +75,14 @@ export function computeCombatStats(ch: Character): CombatStats {
     else if (sec?.type === 'matk') itemMatk += sec.value;
   }
 
-  const atkFromAttr = attrs.str * ATTR_COEF.atkPerStr + attrs.dex * ATTR_COEF.atkPerDex;
-  const matkFromAttr = attrs.int * ATTR_COEF.matkPerInt;
-  const defFromAttr = attrs.vit * ATTR_COEF.defPerVit;
-  const mdefFromAttr = attrs.wis * ATTR_COEF.mdefPerWis + attrs.vit * ATTR_COEF.mdefPerVit;
-  const critFromAttr = attrs.dex * ATTR_COEF.critPerDex + attrs.agi * ATTR_COEF.critPerAgi + attrs.luk * ATTR_COEF.critPerLuk;
-  const blockFromAttr = attrs.agi * ATTR_COEF.blockPerAgi;
-  const hpFromAttr = attrs.vit * ATTR_COEF.hpPerVit;
+  const mult = (key: AttributeKey) => classAttrMult(ch.classId, key);
+  const atkFromAttr = attrs.str * ATTR_COEF.atkPerStr * mult('str') + attrs.dex * ATTR_COEF.atkPerDex * mult('dex');
+  const matkFromAttr = attrs.int * ATTR_COEF.matkPerInt * mult('int');
+  const defFromAttr = attrs.vit * ATTR_COEF.defPerVit * mult('vit');
+  const mdefFromAttr = attrs.wis * ATTR_COEF.mdefPerWis * mult('wis') + attrs.vit * ATTR_COEF.mdefPerVit * mult('vit');
+  const critFromAttr = attrs.dex * ATTR_COEF.critPerDex * mult('dex') + attrs.agi * ATTR_COEF.critPerAgi * mult('agi') + attrs.luk * ATTR_COEF.critPerLuk * mult('luk');
+  const blockFromAttr = attrs.agi * ATTR_COEF.blockPerAgi * mult('agi');
+  const hpFromAttr = attrs.vit * ATTR_COEF.hpPerVit * mult('vit');
 
   let atk = (ch.atk + itemDmg + atkFromAttr) * (1 + bonuses.dmgPct);
   let matk = (ch.matk + itemMatk + matkFromAttr) * (1 + bonuses.dmgPct);
@@ -95,7 +113,7 @@ export function computeCombatStats(ch: Character): CombatStats {
     onCritHealPct: bonuses.onCritHealPct,
     dmgPctVsPoison: bonuses.dmgPctVsPoison,
     dmgPctVsBurn: bonuses.dmgPctVsBurn,
-    supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis,
+    supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis * mult('wis'),
     dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk,
     itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk,
     evasion: Math.min(0.4, bonuses.evasionPct),
