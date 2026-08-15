@@ -3,6 +3,7 @@ import { AttributeKey, Character, RankEntry, Section, DungeonDef, EquipmentItem,
 import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
+import { enhanceCost, maxEnhanceLevelForForja } from '../lib/enhancement';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS } from '../lib/consumables';
 import { TopBar } from './TopBar';
@@ -129,6 +130,24 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     onCharacterChange({ ...character, inventory, gold: character.gold + sellValue(item) });
   }
 
+  function handleEnhanceItem(item: EquipmentItem) {
+    const forjaLevel = character.buildings.forja ?? 0;
+    const cap = maxEnhanceLevelForForja(forjaLevel);
+    if (item.enhanceLevel >= cap) return;
+    const cost = enhanceCost(item);
+    if (character.gold < cost) return;
+    const upgraded = { ...item, enhanceLevel: item.enhanceLevel + 1 };
+    const equippedSlot = character.equipment[item.slot]?.id === item.id ? item.slot : null;
+    if (equippedSlot) {
+      onCharacterChange({ ...character, gold: character.gold - cost, equipment: { ...character.equipment, [equippedSlot]: upgraded } });
+    } else {
+      onCharacterChange({
+        ...character, gold: character.gold - cost,
+        inventory: character.inventory.map((i) => (i.id === item.id ? upgraded : i)),
+      });
+    }
+  }
+
   function handleAllocateAttr(key: AttributeKey) {
     if (character.attributePoints <= 0) return;
     onCharacterChange({
@@ -200,7 +219,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           {section === 'kingdom' && <KingdomOverview character={character} />}
           {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} />}
           {section === 'character' && (
-            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onAllocateAttr={handleAllocateAttr} />
+            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onEnhance={handleEnhanceItem} onAllocateAttr={handleAllocateAttr} />
           )}
           {section === 'skills' && (
             <SkillTree

@@ -2,6 +2,7 @@ import { Character, ItemSlot } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
 import { generateItem, rarityColor } from '../lib/equipment';
+import { itemDisplayName } from '../lib/enhancement';
 import { highestAccessibleItemTier } from '../lib/dungeons';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { MAX_POTIONS } from '../lib/consumables';
@@ -76,7 +77,7 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
       <p className="mt-4 text-xs text-parchment/40">Você possui {fmt(ch.potions)} poção(ões) e {fmt(ch.gold)} de ouro.</p>
       {ch.equipment.weapon && (
         <p className="mt-1 text-xs">
-          Arma equipada: <span style={{ color: rarityColor(ch.equipment.weapon.rarity) }}>{ch.equipment.weapon.name}</span>
+          Arma equipada: <span style={{ color: rarityColor(ch.equipment.weapon.rarity) }}>{itemDisplayName(ch.equipment.weapon)}</span>
         </p>
       )}
     </Panel>

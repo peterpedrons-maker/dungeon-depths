@@ -7,6 +7,7 @@ import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { generateItem, rarityColor } from '../lib/equipment';
+import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { getEquippedAbilities } from '../lib/skills';
 import { rollAttack, rollAbilityHit } from '../game/combat';
@@ -820,7 +821,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
       {weapon && (
         <p className="mt-2 text-xs text-parchment/50">
-          Empunhando: <span style={{ color: rarityColor(weapon.rarity) }}>{weapon.name}</span>
+          Empunhando: <span style={{ color: rarityColor(weapon.rarity) }}>{itemDisplayName(weapon)}</span>
         </p>
       )}
 

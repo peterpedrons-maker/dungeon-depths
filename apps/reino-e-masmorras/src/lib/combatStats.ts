@@ -1,5 +1,6 @@
 import { AttributeKey, Character, ClassId, CombatStats, EquipmentItem } from '../types/game';
 import { CLASSES } from './classes';
+import { enhancedItem } from './enhancement';
 import { computeAttributeTotals, computeSkillBonuses } from './skills';
 
 export const BASE_CRIT_DMG_MULT = 1.6;
@@ -56,7 +57,8 @@ export function computeCombatStats(ch: Character): CombatStats {
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
 
   let itemDmg = 0, itemDef = 0, itemHp = 0, itemMatk = 0, itemMdef = 0, itemCrit = 0, itemCritDmg = 0, itemBlock = 0;
-  for (const item of equippedItems(ch)) {
+  for (const raw of equippedItems(ch)) {
+    const item = enhancedItem(raw);
     itemDmg += item.dmgBonus;
     itemDef += item.defBonus;
     itemHp += item.hpBonus;
