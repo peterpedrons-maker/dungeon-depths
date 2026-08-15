@@ -181,6 +181,23 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 **Cores de referência** (pra bater com o que o jogo já usa em cada atributo, caso a IA de imagem aceite direcionamento de cor mais preciso): Força `#c1502e`, Destreza `#4f9d4f`, Agilidade `#4fb8b0`, Vitalidade `#c9863c`, Inteligência `#3f7ab8`, Sabedoria `#9b6fc9`, Sorte `#e0b93c`.
 
+### Emblemas de Classe — Avatar no topo da tela
+**Tamanho:** 1536×768 px · **Uso:** 14 emblemas (recortar em grade 7×2), um por classe — vai substituir o círculo de cor lisa que hoje fica ao lado do nome do personagem no topo da tela (`TopBar`), mesmo lugar em todas as telas do jogo
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted badge/medallion style as the game's attribute icons (circular bronze-rimmed enameled token with a symbol embossed in relief), NOT flat vector, NOT pixel art. Each emblem is a small circular heraldic crest/medallion with a bronze rim, catching a bright specular highlight along the upper-left edge, with a single bold symbol embossed in pale gold relief at its center over an enameled background in the class's own color. Warm directional lighting from the upper-left throughout, readable and bold even at small size (it will be displayed as a tiny avatar icon in-game).
+
+One single wide image containing FOURTEEN separate emblem medallions arranged in an even 7-column × 2-row grid, generous magenta gaps between every emblem so each can be cropped out individually later. Every emblem centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fourteen.
+
+Row 1: 1) "Guerreiro" — crest enameled in deep rust-red, with a crossed sword and round shield embossed at its center. 2) "Mago" — crest enameled in deep sapphire blue, with a glowing arcane crystal orb resting atop a small open spellbook embossed at its center. 3) "Ladino" — crest enameled in dark mossy-green, with two crossed curved daggers embossed at its center. 4) "Clérigo" — crest enameled in warm tan-gold, with a radiant sunburst behind a small holy chalice embossed at its center. 5) "Cavaleiro" — crest enameled in steel blue-gray, with a heraldic shield bearing a bold cross embossed at its center. 6) "Paladino" — crest enameled in bright gold, with a winged holy warhammer embossed at its center. 7) "Bárbaro" — crest enameled in dark rust-brown, with a crossed great-axe over a small tusk embossed at its center.
+
+Row 2: 8) "Arqueiro" — crest enameled in forest green, with a drawn longbow and arrow embossed at its center. 9) "Caçador" — crest enameled in olive green, with a crossbow crossed with a wolf-paw print embossed at its center. 10) "Feiticeiro" — crest enameled in deep indigo-violet (NOT magenta/pink — lean deep blue-violet), with a swirling arcane flame embossed at its center. 11) "Bruxo" — crest enameled in dark violet-black, with a cursed skull sigil wreathed in wisps of purple smoke embossed at its center. 12) "Druida" — crest enameled in mossy green, with a leaf-and-antler emblem embossed at its center. 13) "Bardo" — crest enameled in warm amber-orange, with a golden musical note and lute emblem embossed at its center. 14) "Necromante" — crest enameled in dark slate-gray, with a pale skull glowing faint sickly green embossed at its center.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between emblems — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the emblems themselves (enamel, gold relief, bronze rim) — that color is reserved only for the background and will be removed later; this especially applies to the Feiticeiro emblem, which must read as blue-violet, never magenta-pink. Wide canvas, 1536×768 px. No text, no labels, no numbers, no watermark, no extra border beyond each emblem's own bronze rim.
+```
+
+**Cores de referência** (mesmas já usadas em cada classe no jogo hoje): Guerreiro `#a5432f`, Mago `#3f7ab8`, Ladino `#4a5a48`, Clérigo `#c9a86a`, Cavaleiro `#7a8a9a`, Paladino `#e0c060`, Bárbaro `#8a3a2a`, Arqueiro `#5a8a4a`, Caçador `#6a7a4a`, Feiticeiro `#a03fb8`, Bruxo `#4a2a5a`, Druida `#3f8a5a`, Bardo `#c9663c`, Necromante `#3a3a4a`.
+
 ---
 
 ## Ornamentos
