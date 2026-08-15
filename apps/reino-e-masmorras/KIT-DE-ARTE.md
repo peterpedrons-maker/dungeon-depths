@@ -162,6 +162,25 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 **Como isso vai virar arte no jogo:** com ~630 nós de habilidade no total (14 classes × 3 trilhas × 15 nós), não dá pra ter um ícone único desenhado pra cada um — essas 36 imagens cobrem os "temas" de efeito que se repetem entre as classes (fogo, veneno, gelo, cura, crítico, etc). Depois de geradas, cada nó do código é associado ao ícone do tema mais parecido com o efeito dele (ex: todo nó que aplica veneno usa a caveira venenosa; todo nó de cura usa a cruz/coração). Hoje os nós usam ícones genéricos (losango pra atributo, escudo pra passiva, estrela pra ativa) — essa é a próxima camada de detalhe em cima disso.
 
+### Ícones de Atributo & Combate — Tela de Personagem
+**Tamanho:** 1536×1536 px · **Uso:** 9 ícones (recortar em grade 3×3) pros 7 atributos primários (Força, Destreza, Agilidade, Vitalidade, Inteligência, Sabedoria, Sorte) e os 2 sub-ícones de Físico/Mágico da seção de Combate — hoje esses 9 lugares mostram só texto, sem ícone nenhum
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ruby heart, arcane rune), NOT flat vector, NOT pixel art. Each icon is a small circular enameled badge/token with a bronze rim, catching a bright specular highlight along the upper-left edge of the rim, with a single symbol embossed in pale gold relief at its center. Warm directional lighting from the upper-left throughout, readable and bold even at small size.
+
+One single wide image containing NINE separate badge icons arranged in an even 3-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all nine.
+
+Row 1 (physical attributes): 1) "Força" — a badge enameled in warm terracotta-red, with a clenched armored fist embossed at its center. 2) "Destreza" — a badge enameled in forest green, with a single sharp feather quill embossed at its center. 3) "Agilidade" — a badge enameled in teal-blue, with a swift curling wind-gust swirl embossed at its center.
+
+Row 2 (vital/mental attributes): 4) "Vitalidade" — a badge enameled in warm amber-orange, with a glowing heart embossed at its center. 5) "Inteligência" — a badge enameled in deep sapphire blue, with an open spellbook embossed at its center. 6) "Sabedoria" — a badge enameled in soft violet-purple, with a single all-seeing eye embossed at its center.
+
+Row 3 (luck & combat sub-icons): 7) "Sorte" — a badge enameled in warm golden-yellow, with a four-leaf clover embossed at its center. 8) "Físico" — a badge enameled in dark steel-gray, with two crossed silver swords embossed at its center. 9) "Mágico" — a badge enameled in deep violet-black, with a bright arcane sparkle/starburst embossed in pale lavender at its center.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the badges themselves (enamel, gold relief, bronze rim) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×1536 px. No text, no labels, no numbers, no watermark, no extra border beyond each badge's own bronze rim.
+```
+
+**Cores de referência** (pra bater com o que o jogo já usa em cada atributo, caso a IA de imagem aceite direcionamento de cor mais preciso): Força `#c1502e`, Destreza `#4f9d4f`, Agilidade `#4fb8b0`, Vitalidade `#c9863c`, Inteligência `#3f7ab8`, Sabedoria `#9b6fc9`, Sorte `#e0b93c`.
+
 ---
 
 ## Ornamentos
