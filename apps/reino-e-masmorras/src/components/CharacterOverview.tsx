@@ -29,11 +29,13 @@ const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
   weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
 };
 // WoW-style paperdoll: gear slots stacked in two vertical columns flanking
-// the character portrait, instead of arranged around it in a cross. Offhand
-// only joins the left column for classes that actually have one to equip
-// (see OFFHAND_KIND) — a class with a two-handed weapon or dual-wield never
-// shows an unusable empty slot.
-const LEFT_SLOTS: ItemSlot[] = ['weapon', 'hands'];
+// the character portrait, instead of arranged around it in a cross. Every
+// class always shows all 6 slots for visual consistency — a class with no
+// real offhand (two-handed weapon or dual-wield, see OFFHAND_KIND) instead
+// gets a dimmed "ghost" echo of its weapon in that slot, PoE/Diablo-style,
+// showing the two-handed weapon occupies both hands rather than leaving an
+// empty, unusable frame.
+const PAPERDOLL_LEFT_SLOTS: ItemSlot[] = ['weapon', 'offhand', 'hands'];
 const RIGHT_SLOTS: ItemSlot[] = ['body', 'legs', 'accessory'];
 
 interface Props {
@@ -56,20 +58,29 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   const visibleInventory = filter === 'all' ? ch.inventory : ch.inventory.filter((i) => i.slot === filter);
   const hasOffhand = !!OFFHAND_KIND[ch.classId];
-  const paperdollLeftSlots: ItemSlot[] = hasOffhand ? ['weapon', 'offhand', 'hands'] : LEFT_SLOTS;
+  // The inventory filter only offers "Mão Secundária" for classes that can
+  // actually find/buy one — a two-handed class never has that item in its
+  // bag, so the tab would just always be empty for it.
   const visibleSlots = hasOffhand ? SLOTS : SLOTS.filter((s) => s !== 'offhand');
 
   const slotButton = (slot: ItemSlot) => {
-    const item = ch.equipment[slot];
-    const Icon = SLOT_ICON[slot];
+    // A two-handed class' weapon "ghosts" into the offhand slot — same icon,
+    // dimmed and non-interactive — instead of leaving an empty frame there.
+    const isGhostOffhand = slot === 'offhand' && !hasOffhand;
+    const item = isGhostOffhand ? ch.equipment.weapon : ch.equipment[slot];
+    const Icon = isGhostOffhand ? SLOT_ICON.weapon : SLOT_ICON[slot];
     const color = item ? rarityColor(item.rarity) : '#4a4038';
     return (
       <button
         key={slot}
-        onClick={() => setSelected({ kind: 'equipped', slot, item })}
-        className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 transition-transform duration-150 hover:scale-105"
+        onClick={() => { if (!isGhostOffhand) setSelected({ kind: 'equipped', slot, item }); }}
+        disabled={isGhostOffhand}
+        title={isGhostOffhand ? 'Arma de duas mãos — ocupa as duas mãos' : undefined}
+        className={`relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 transition-transform duration-150 ${
+          isGhostOffhand ? 'opacity-40 cursor-default' : 'hover:scale-105'
+        }`}
       >
-        {item && (
+        {item && !isGhostOffhand && (
           <div
             className="absolute inset-[16%] rounded-full"
             style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
@@ -114,7 +125,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           {/* Paperdoll: gear flanks the character portrait, WoW-style. */}
           <div className="rounded border border-black/50 bg-black/25 p-3 mb-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
             <div className="flex items-center justify-center gap-3 sm:gap-6">
-              <div className="flex flex-col gap-2.5 sm:gap-3.5">{paperdollLeftSlots.map(slotButton)}</div>
+              <div className="flex flex-col gap-2.5 sm:gap-3.5">{PAPERDOLL_LEFT_SLOTS.map(slotButton)}</div>
               <div className="flex-1 flex items-end justify-center min-h-[180px] sm:min-h-[230px] relative">
                 <div
                   className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full blur-2xl opacity-30"
