@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AttributeKey, Character, EquipmentItem, ItemSlot } from '../types/game';
-import { CLASSES } from '../lib/classes';
+import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatStats } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment';
@@ -12,17 +12,6 @@ import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
-
-const ATTR_META: Record<AttributeKey, { label: string; color: string }> = {
-  str: { label: 'Força', color: '#c1502e' },
-  dex: { label: 'Destreza', color: '#4f9d4f' },
-  agi: { label: 'Agilidade', color: '#4fb8b0' },
-  vit: { label: 'Vitalidade', color: '#c9863c' },
-  int: { label: 'Inteligência', color: '#3f7ab8' },
-  wis: { label: 'Sabedoria', color: '#9b6fc9' },
-  luk: { label: 'Sorte', color: '#e0b93c' },
-};
-const ATTR_ORDER: AttributeKey[] = ['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk'];
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
