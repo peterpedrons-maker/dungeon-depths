@@ -139,7 +139,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                   const meta = ATTR_META[key];
                   return (
                     <div key={key} className="flex items-center justify-between text-xs gap-1.5">
-                      <span className="text-parchment/60 truncate">{meta.label}:</span>
+                      <span className="text-parchment/60 truncate min-w-0">{meta.label}:</span>
                       <span className="flex items-center gap-1.5 shrink-0">
                         <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
                         {ch.attributePoints > 0 && (
@@ -158,134 +158,95 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Redução de Recarga</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.cooldownReductionPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Redução de Recarga</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.cooldownReductionPct * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Roubo de Vida</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.lifestealPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Roubo de Vida</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.lifestealPct * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Espinhos</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.thornsPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Espinhos</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.thornsPct * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Cura ao Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.onCritHealPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Cura ao Crítico</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.onCritHealPct * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Dano vs. Envenenado</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Dano vs. Envenenado</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Dano vs. Queimando</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Dano vs. Queimando</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Poder de Suporte</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.supportPowerPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Poder de Suporte</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.supportPowerPct * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Chance de Item</span>
-                  <span className="font-bold tabular-nums text-parchment">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Chance de Item</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Qualidade de Item</span>
-                  <span className="font-bold tabular-nums text-parchment">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Qualidade de Item</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
                 </div>
               </div>
             </div>
             <div className="space-y-3">
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Vida</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Vida Máxima</span>
-                  <span className="font-bold tabular-nums text-parchment">{fmt(effectiveMaxHp(ch))}</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Vida Máxima</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(effectiveMaxHp(ch))}</span>
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Físico</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Ataque</span>
-                  <span className="font-bold tabular-nums text-parchment">{fmt(stats.atk)}</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Ataque</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.atk)}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Defesa</span>
-                  <span className="font-bold tabular-nums text-parchment">{fmt(stats.def)}</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Defesa</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.def)}</span>
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Mágico</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Ataque</span>
-                  <span className="font-bold tabular-nums text-parchment">{fmt(stats.matk)}</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Ataque</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.matk)}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Defesa</span>
-                  <span className="font-bold tabular-nums text-parchment">{fmt(stats.mdef)}</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Defesa</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.mdef)}</span>
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Chance de Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.critChance * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Chance de Crítico</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critChance * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Dano Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.critDmgMult * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Dano Crítico</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critDmgMult * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Bloqueio</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.blockChance * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Bloqueio</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.blockChance * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Evasão</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.evasion * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Evasão</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.evasion * 100)}%</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Precisão</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.accuracy * 100)}%</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Redução de Recarga</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.cooldownReductionPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Roubo de Vida</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.lifestealPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Espinhos</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.thornsPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Cura ao Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.onCritHealPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Dano vs. Envenenado</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Dano vs. Queimando</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Poder de Suporte</span>
-                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.supportPowerPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Chance de Item</span>
-                  <span className="font-bold tabular-nums text-parchment">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-parchment/60">Qualidade de Item</span>
-                  <span className="font-bold tabular-nums text-parchment">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-parchment/60 truncate min-w-0">Precisão</span>
+                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.accuracy * 100)}%</span>
                 </div>
               </div>
             </div>
