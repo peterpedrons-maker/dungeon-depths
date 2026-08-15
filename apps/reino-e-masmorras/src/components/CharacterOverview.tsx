@@ -178,6 +178,29 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                   <span className="font-bold tabular-nums text-parchment">{fmt(stats.mdef)}</span>
                 </div>
               </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Chance de Crítico</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.critChance * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Dano Crítico</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.critDmgMult * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Bloqueio</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.blockChance * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Evasão</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.evasion * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Precisão</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.accuracy * 100)}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </>
