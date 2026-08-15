@@ -4,6 +4,7 @@ import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment';
+import { enhancedItem, enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, maxEnhanceLevelForForja } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { computeAttributeTotals } from '../lib/skills';
 import { heroSprites } from '../game/sprites';
@@ -32,12 +33,13 @@ interface Props {
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
+  onEnhance: (item: EquipmentItem) => void;
   onAllocateAttr: (key: AttributeKey) => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttr }: Props) {
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onEnhance, onAllocateAttr }: Props) {
   const cls = CLASSES[ch.classId];
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
@@ -302,22 +304,31 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       {selected && (
         <ItemModal
           selected={selected}
+          gold={ch.gold}
+          forjaLevel={ch.buildings.forja ?? 0}
           onClose={() => setSelected(null)}
           onEquip={(item) => { onEquip(item); setSelected(null); }}
           onUnequip={(slot) => { onUnequip(slot); setSelected(null); }}
           onSell={(item) => { onSell(item); setSelected(null); }}
+          onEnhance={(item) => {
+            onEnhance(item);
+            setSelected(selected.kind === 'equipped' ? { ...selected, item: { ...item, enhanceLevel: item.enhanceLevel + 1 } } : { kind: 'inventory', item: { ...item, enhanceLevel: item.enhanceLevel + 1 } });
+          }}
         />
       )}
     </Panel>
   );
 }
 
-function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
+function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, onSell, onEnhance }: {
   selected: Selected;
+  gold: number;
+  forjaLevel: number;
   onClose: () => void;
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
+  onEnhance: (item: EquipmentItem) => void;
 }) {
   if (selected.kind === 'equipped' && !selected.item) {
     return (
@@ -343,19 +354,57 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
         )
       }
     >
-      <div className="font-bold text-base" style={{ color: rarityColor(item.rarity) }}>{item.name}</div>
+      <div className="font-bold text-base" style={{ color: rarityColor(item.rarity) }}>{itemDisplayName(item)}</div>
       <div className="text-xs text-parchment/50">{rarityName(item.rarity)} · Tier {item.tier}</div>
       <ul className="text-sm space-y-0.5 pt-1">
-        {item.dmgBonus > 0 && <li>+{item.dmgBonus} dano</li>}
-        {item.defBonus > 0 && <li>+{item.defBonus} defesa</li>}
-        {item.hpBonus > 0 && <li>+{item.hpBonus} vida máxima</li>}
-        {item.matkBonus > 0 && <li>+{item.matkBonus} ataque mágico</li>}
-        {item.mdefBonus > 0 && <li>+{item.mdefBonus} defesa mágica</li>}
-        {item.critChanceBonus > 0 && <li>+{Math.round(item.critChanceBonus * 100)}% chance de crítico</li>}
-        {item.critDmgBonus > 0 && <li>+{Math.round(item.critDmgBonus * 100)}% dano crítico</li>}
+        {(() => {
+          const boosted = enhancedItem(item);
+          return (
+            <>
+              {boosted.dmgBonus > 0 && <li>+{boosted.dmgBonus} dano</li>}
+              {boosted.defBonus > 0 && <li>+{boosted.defBonus} defesa</li>}
+              {boosted.hpBonus > 0 && <li>+{boosted.hpBonus} vida máxima</li>}
+              {boosted.matkBonus > 0 && <li>+{boosted.matkBonus} ataque mágico</li>}
+              {boosted.mdefBonus > 0 && <li>+{boosted.mdefBonus} defesa mágica</li>}
+              {boosted.critChanceBonus > 0 && <li>+{Math.round(boosted.critChanceBonus * 100)}% chance de crítico</li>}
+              {boosted.critDmgBonus > 0 && <li>+{Math.round(boosted.critDmgBonus * 100)}% dano crítico</li>}
+            </>
+          );
+        })()}
         {item.secondaryStat && <li>{secondaryStatLabel(item)}</li>}
       </ul>
+
+      <EnhanceSection item={item} gold={gold} forjaLevel={forjaLevel} onEnhance={onEnhance} />
     </Modal>
+  );
+}
+
+function EnhanceSection({ item, gold, forjaLevel, onEnhance }: {
+  item: EquipmentItem; gold: number; forjaLevel: number; onEnhance: (item: EquipmentItem) => void;
+}) {
+  const cap = maxEnhanceLevelForForja(forjaLevel);
+  const cost = enhanceCost(item);
+  const atHardCap = item.enhanceLevel >= MAX_ENHANCE_LEVEL;
+  const atForjaCap = item.enhanceLevel >= cap;
+
+  return (
+    <div className="mt-3 pt-2 border-t border-panelborder/40">
+      <div className="flex items-center justify-between text-xs mb-1.5">
+        <span className="text-parchment/60">Aprimoramento na Forja</span>
+        <span className="font-bold tabular-nums text-gold">+{item.enhanceLevel}/{MAX_ENHANCE_LEVEL}</span>
+      </div>
+      {atHardCap ? (
+        <p className="text-xs text-parchment/40 italic">Nível máximo de aprimoramento atingido.</p>
+      ) : atForjaCap ? (
+        <p className="text-xs text-parchment/40 italic">
+          Requer Forja nível {Math.ceil((item.enhanceLevel + 1) / 2)} (atual: {forjaLevel}).
+        </p>
+      ) : (
+        <SmallButton onClick={() => onEnhance(item)} disabled={gold < cost}>
+          Aprimorar para +{item.enhanceLevel + 1} — {fmt(cost)} ouro
+        </SmallButton>
+      )}
+    </div>
   );
 }
 

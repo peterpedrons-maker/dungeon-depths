@@ -163,12 +163,13 @@ export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number,
     accessoryType,
     ...ZERO_PRIMARY, ...primary,
     secondaryStat: rollSecondaryStat(baseTier, rarity.mult, FULL_SECONDARY_POOL),
+    enhanceLevel: 0,
   };
 }
 
 export function sellValue(item: EquipmentItem): number {
   const tier = rarityIndex(item.rarity);
-  return 6 + tier * 8;
+  return 6 + tier * 8 + item.enhanceLevel * 4;
 }
 
 export function rarityColor(r: Rarity): string {

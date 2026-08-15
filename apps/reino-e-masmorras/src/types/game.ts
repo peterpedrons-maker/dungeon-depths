@@ -58,6 +58,7 @@ export interface EquipmentItem {
   critChanceBonus: number; // Anel primary stat, 0 on other slots
   critDmgBonus: number; // Anel primary stat, 0 on other slots
   secondaryStat?: { type: SecondaryStatType; value: number };
+  enhanceLevel: number; // Forja upgrade, 0-10 — scales this item's *Bonus fields only, never secondaryStat (see lib/enhancement.ts)
 }
 
 export interface Equipment {

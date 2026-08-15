@@ -1,4 +1,5 @@
 import { KingdomBonuses } from '../types/game';
+import { maxEnhanceLevelForForja } from './enhancement';
 
 export interface BuildingDef {
   id: string;
@@ -13,11 +14,12 @@ export interface BuildingDef {
 export const BUILDINGS: BuildingDef[] = [
   {
     id: 'forja', name: 'Forja',
-    desc: 'Melhora a chance de encontrar equipamentos em masmorras e a qualidade dos itens forjados.',
+    desc: 'Melhora a chance de encontrar equipamentos em masmorras, a qualidade dos itens forjados, e libera aprimorar seus itens (+1 até +10).',
     maxLevel: 5,
     costForLevel: (level) => Math.round(40 * Math.pow(1.6, level)),
     effectForLevel: (level) => ({ dropChanceBonusPct: level * 0.03, itemQualityBonusPct: level * 0.05 }),
-    effectLabel: (level) => `+${Math.round(level * 3)}% chance de drop, +${Math.round(level * 5)}% qualidade dos itens`,
+    effectLabel: (level) =>
+      `+${Math.round(level * 3)}% chance de drop, +${Math.round(level * 5)}% qualidade dos itens, aprimoramento até +${maxEnhanceLevelForForja(level)}`,
   },
   {
     id: 'capela', name: 'Capela',

@@ -29,6 +29,7 @@ function migrateItem(item: any): EquipmentItem {
     matkBonus: item.matkBonus ?? 0, mdefBonus: item.mdefBonus ?? 0,
     critChanceBonus: item.critChanceBonus ?? 0, critDmgBonus: item.critDmgBonus ?? 0,
     secondaryStat: item.secondaryStat,
+    enhanceLevel: item.enhanceLevel ?? 0,
   };
 }
 
