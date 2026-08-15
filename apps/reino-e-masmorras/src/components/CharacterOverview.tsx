@@ -133,27 +133,68 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
 
           {/* Stats box: attributes on the left, physical/magical power on the right. */}
           <div className="rounded border border-black/50 bg-black/25 p-3 mb-4 grid grid-cols-2 gap-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-            <div className="space-y-1 pr-3 border-r border-panelborder/40">
-              {ATTR_ORDER.map((key) => {
-                const meta = ATTR_META[key];
-                return (
-                  <div key={key} className="flex items-center justify-between text-xs gap-1.5">
-                    <span className="text-parchment/60 truncate">{meta.label}:</span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
-                      {ch.attributePoints > 0 && (
-                        <button
-                          onClick={() => onAllocateAttr(key)}
-                          className="w-4 h-4 flex items-center justify-center rounded-full bg-sky-500/30 border border-sky-400/60 text-sky-300 text-[10px] font-bold leading-none hover:bg-sky-500/50"
-                          aria-label={`+1 ${meta.label}`}
-                        >
-                          +
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
+            <div className="space-y-3 pr-3 border-r border-panelborder/40">
+              <div className="space-y-1">
+                {ATTR_ORDER.map((key) => {
+                  const meta = ATTR_META[key];
+                  return (
+                    <div key={key} className="flex items-center justify-between text-xs gap-1.5">
+                      <span className="text-parchment/60 truncate">{meta.label}:</span>
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
+                        {ch.attributePoints > 0 && (
+                          <button
+                            onClick={() => onAllocateAttr(key)}
+                            className="w-4 h-4 flex items-center justify-center rounded-full bg-sky-500/30 border border-sky-400/60 text-sky-300 text-[10px] font-bold leading-none hover:bg-sky-500/50"
+                            aria-label={`+1 ${meta.label}`}
+                          >
+                            +
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Redução de Recarga</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.cooldownReductionPct * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Roubo de Vida</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.lifestealPct * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Espinhos</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.thornsPct * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Cura ao Crítico</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.onCritHealPct * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Dano vs. Envenenado</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Dano vs. Queimando</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Poder de Suporte</span>
+                  <span className="font-bold tabular-nums text-parchment">{Math.round(stats.supportPowerPct * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Chance de Item</span>
+                  <span className="font-bold tabular-nums text-parchment">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-parchment/60">Qualidade de Item</span>
+                  <span className="font-bold tabular-nums text-parchment">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
+                </div>
+              </div>
             </div>
             <div className="space-y-3">
               <div>
