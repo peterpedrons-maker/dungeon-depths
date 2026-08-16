@@ -556,14 +556,16 @@ This is a complete, self-contained illustration meant to fill the canvas edge-to
 ```
 
 ### Cena do Ferreiro — Tela do Ferreiro (aberta pela Forja)
-**Tamanho:** 1536×640 px · **Uso:** banner no topo da tela do Ferreiro (aberta ao tocar "Conversar com o Ferreiro" no balão da Forja) — substitui o placeholder de brilho em CSS
+**Tamanho:** 1536×1536 px (quadrado) · **Uso:** banner grande em tela cheia no topo da tela do Ferreiro (aberta ao tocar "Conversar com o Ferreiro" no balão da Forja) — substitui o placeholder de brilho em CSS. Ocupa ~44% da altura da tela do celular, largura total (`object-fit: cover`), então o quadrado garante uma sobra segura pra cortar tanto em celulares mais largos quanto mais altos sem perder o assunto principal. O nome "Ferreiro" e o botão de fechar ficam sobrepostos no canto superior, com um gradiente escuro por trás pra legibilidade — não precisa deixar essa área vazia de propósito.
 
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
 
-A close interior view of the Forja's workshop at night — not the wide courtyard from the Mapa de Construções scene, but a tighter shot inside the forge building itself. A stocky blacksmith NPC (weathered face, leather apron over simple work clothes, thick forearms) stands at a glowing anvil in the left-to-center third of the frame, mid-swing with a hammer or looking toward the viewer with a friendly, gruff expression. Behind him, a lit furnace glows deep orange, casting warm light and drifting sparks across the scene. Stone walls hung with tool racks, tongs, and a few finished weapons and shields. The right third of the frame stays relatively open and dim — no large objects there, since UI elements sit over that area.
+A close interior view of the Forja's workshop at night — not the wide courtyard from the Mapa de Construções scene, but a tighter shot inside the forge building itself. A stocky blacksmith NPC (weathered face, leather apron over simple work clothes, thick forearms) stands at a glowing anvil roughly centered in the frame, mid-swing with a hammer or looking toward the viewer with a friendly, gruff expression. Behind him, a lit furnace glows deep orange, casting warm light and drifting sparks across the scene. Stone walls hung with tool racks, tongs, and a few finished weapons and shields.
 
-This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Wide canvas, 1536×640 px. No text, no watermark, no UI elements, no frame or border.
+Composition: keep the blacksmith and anvil — the main subject — comfortably within the center 70% of the square canvas, since the image will be cropped to different aspect ratios (sometimes wider, sometimes taller) depending on the player's screen. Don't place anything essential right at the edges.
+
+This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
 ```
 
 ### Mapa de Masmorras — Tela de seleção de masmorra (7 imagens, uma por região)
