@@ -17,6 +17,7 @@ import { RankingScreen } from './RankingScreen';
 import { DungeonMap } from './DungeonMap';
 import { DungeonLoadout } from './DungeonLoadout';
 import { DungeonPanel } from './DungeonPanel';
+import { Ferreiro } from './Ferreiro';
 import { Modal } from './Modal';
 import { SmallButton } from './Button';
 
@@ -58,6 +59,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   const [pendingDungeon, setPendingDungeon] = useState<DungeonDef | null>(null);
   const [runInProgress, setRunInProgress] = useState(false);
   const [navConfirmTarget, setNavConfirmTarget] = useState<Section | 'abandon' | null>(null);
+  const [ferreiroOpen, setFerreiroOpen] = useState(false);
 
   const kingdomBonuses = computeKingdomBonuses(character.buildings);
 
@@ -217,7 +219,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
           <EmblemWatermark />
           {section === 'kingdom' && <KingdomOverview character={character} />}
-          {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} onEnhance={handleEnhanceItem} />}
+          {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} onOpenFerreiro={() => setFerreiroOpen(true)} />}
           {section === 'character' && (
             <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onEnhance={handleEnhanceItem} onAllocateAttr={handleAllocateAttr} />
           )}
@@ -244,6 +246,10 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           )}
         </main>
       </div>
+
+      {ferreiroOpen && (
+        <Ferreiro character={character} onEnhance={handleEnhanceItem} onClose={() => setFerreiroOpen(false)} />
+      )}
 
       {pendingDungeon && (
         <DungeonLoadout
