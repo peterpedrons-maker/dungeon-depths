@@ -1,22 +1,16 @@
 import { useEffect, useRef, useState, CSSProperties, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { Character, EquipmentItem, ItemSlot } from '../types/game';
+import { Character } from '../types/game';
 import { fmt } from '../lib/format';
 import { BUILDINGS, BuildingDef } from '../lib/buildings';
-import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
-import { itemDisplayName } from '../lib/enhancement';
 import { Panel } from './Panel';
-import { Modal } from './Modal';
-import { EnhanceSection } from './EnhanceSection';
-import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import mapaConstrucoes from '../assets/reino-construcoes.webp';
-import slotFrame from '../assets/slot-equipamento.webp';
 import pergaminho from '../assets/pergaminho.webp';
 
 interface Props {
   character: Character;
   onUpgrade: (buildingId: string) => void;
-  onEnhance: (item: EquipmentItem) => void;
+  onOpenFerreiro: () => void;
 }
 
 // Coordinates were measured directly from the generated map art (each
@@ -30,14 +24,9 @@ const MARKERS: Record<string, { xPct: number; yPct: number }> = {
 };
 const RESERVED_MARKER = { xPct: 89.4, yPct: 56.4 };
 
-const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
-  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
-};
-
-export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props) {
+export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro }: Props) {
   const [openBuildingId, setOpenBuildingId] = useState<string | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-  const [ferreiroOpen, setFerreiroOpen] = useState(false);
   const [glowId, setGlowId] = useState<string | null>(null);
   const markerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -138,13 +127,9 @@ export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props)
           level={ch.buildings[openBuilding.id] ?? 0}
           gold={ch.gold}
           onUpgrade={() => handleUpgradeClick(openBuilding.id)}
-          onOpenFerreiro={openBuilding.id === 'forja' ? () => { setFerreiroOpen(true); setOpenBuildingId(null); } : undefined}
+          onOpenFerreiro={openBuilding.id === 'forja' ? () => { onOpenFerreiro(); setOpenBuildingId(null); } : undefined}
           onClose={() => setOpenBuildingId(null)}
         />
-      )}
-
-      {ferreiroOpen && (
-        <FerreiroModal character={ch} forjaLevel={ch.buildings.forja ?? 0} onEnhance={onEnhance} onClose={() => setFerreiroOpen(false)} />
       )}
     </Panel>
   );
@@ -212,72 +197,5 @@ function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onU
       )}
     </div>,
     document.body
-  );
-}
-
-// Opened from the Forja's popover — the item grid + per-item enhance detail.
-// Still a plain Modal for now; a future pass replaces this with a full scene
-// (background art + dialogue) once that art exists.
-function FerreiroModal({ character: ch, forjaLevel, onEnhance, onClose }: {
-  character: Character; forjaLevel: number; onEnhance: (item: EquipmentItem) => void; onClose: () => void;
-}) {
-  const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
-  const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
-
-  if (openItem) {
-    return (
-      <Modal title={SLOT_NAMES[openItem.slot]} onClose={onClose}>
-        <button onClick={() => setOpenItem(null)} className="text-xs text-parchment/50 hover:text-parchment mb-1">‹ Voltar</button>
-        <div className="font-bold text-base" style={{ color: rarityColor(openItem.rarity) }}>{itemDisplayName(openItem)}</div>
-        <div className="text-xs text-parchment/50">{rarityName(openItem.rarity)} · Tier {openItem.tier}</div>
-        <EnhanceSection
-          item={openItem}
-          gold={ch.gold}
-          forjaLevel={forjaLevel}
-          onEnhance={(item) => { onEnhance(item); setOpenItem({ ...item, enhanceLevel: item.enhanceLevel + 1 }); }}
-        />
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal title="Ferreiro" onClose={onClose}>
-      <p className="text-xs text-parchment/50 mb-3">
-        {forjaLevel > 0
-          ? `Nível da Forja: ${forjaLevel}/5 — aprimoramento liberado até +${Math.min(10, forjaLevel * 2)}. Toque num item pra aprimorar.`
-          : 'Construa a Forja pra liberar o aprimoramento de itens.'}
-      </p>
-      {forgeableItems.length === 0 ? (
-        <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>
-      ) : (
-        <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-          <div className="grid grid-cols-5 gap-2.5 max-h-[16rem] overflow-y-auto pr-0.5">
-            {forgeableItems.map((item) => {
-              const Icon = SLOT_ICON[item.slot];
-              const color = rarityColor(item.rarity);
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setOpenItem(item)}
-                  title={itemDisplayName(item)}
-                  className="relative aspect-square transition-transform duration-150 hover:scale-105"
-                >
-                  <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                  <div className="absolute inset-[17%] flex items-center justify-center">
-                    <Icon className="w-full h-full" style={{ color }} />
-                  </div>
-                  {item.enhanceLevel > 0 && (
-                    <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
-                      +{item.enhanceLevel}
-                    </span>
-                  )}
-                  <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </Modal>
   );
 }
