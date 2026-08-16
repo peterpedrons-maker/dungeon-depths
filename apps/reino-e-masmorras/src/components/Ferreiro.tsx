@@ -76,12 +76,12 @@ function EnhanceAnimation({ item, onDone }: { item: EquipmentItem; onDone: () =>
 }
 
 // Full-screen scene opened from the Forja's "Conversar com o Ferreiro"
-// balloon action, replacing the old plain item-grid Modal. The banner area
-// is a CSS forge-glow placeholder, sized to the same 2.4:1 aspect as every
-// other painted "Cena" in this game — a future pass drops in the real
-// illustration from the KIT-DE-ARTE.md prompt below with no layout changes
-// needed, same write-prompt-then-integrate-later pattern used for the
-// Kingdom scene and the Construções map.
+// balloon action, replacing the old plain item-grid Modal. The banner is a
+// full-bleed hero area (CSS forge-glow placeholder for now) sized to a
+// near-square crop that stays safe across phone aspect ratios — a future
+// pass drops in the real illustration from the KIT-DE-ARTE.md prompt below
+// with no layout changes needed, same write-prompt-then-integrate-later
+// pattern used for the Kingdom scene and the Construções map.
 export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const [animatingItem, setAnimatingItem] = useState<EquipmentItem | null>(null);
@@ -89,30 +89,31 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
 
   return (
-    <div className="fixed inset-0 z-40 bg-nightsky overflow-y-auto">
-      <div className="max-w-md mx-auto p-3 sm:p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_0_rgba(0,0,0,0.8)]">
+    <div className="fixed inset-0 z-40 bg-nightsky overflow-y-auto flex flex-col">
+      <div
+        className="relative w-full shrink-0 flex items-center justify-center overflow-hidden"
+        style={{ height: '44vh', minHeight: 260, background: 'radial-gradient(ellipse 75% 65% at 50% 55%, rgba(210,100,30,0.4) 0%, rgba(20,12,8,0.97) 60%, #0c0703 100%)' }}
+      >
+        <div className="absolute inset-0 animate-[forgeFlicker_4s_ease-in-out_infinite]" style={{ background: 'radial-gradient(ellipse 55% 40% at 50% 60%, rgba(255,140,50,0.3) 0%, transparent 70%)' }} />
+        <IconHammer className="relative w-16 h-16 text-gold/50" />
+
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+        <div className="absolute top-3 inset-x-3 flex items-center justify-between">
+          <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
             Ferreiro
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-black/40 border border-gold/40 text-parchment/70 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
             aria-label="Fechar"
           >
             ×
           </button>
         </div>
+      </div>
 
-        <div
-          className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[2.4/1] flex items-center justify-center"
-          style={{ background: 'radial-gradient(ellipse 75% 65% at 50% 60%, rgba(210,100,30,0.4) 0%, rgba(20,12,8,0.97) 60%, #0c0703 100%)' }}
-        >
-          <div className="absolute inset-0 animate-[forgeFlicker_4s_ease-in-out_infinite]" style={{ background: 'radial-gradient(ellipse 55% 40% at 50% 65%, rgba(255,140,50,0.3) 0%, transparent 70%)' }} />
-          <IconHammer className="relative w-10 h-10 text-gold/50" />
-        </div>
-
-        <div className="flex items-start gap-3 mt-4 mb-4">
+      <div className="max-w-md w-full mx-auto p-3 sm:p-5">
+        <div className="flex items-start gap-3 mb-4">
           <div className="w-11 h-11 rounded-full bg-panel border-2 border-gold/50 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
             <IconHammer className="w-5 h-5 text-gold" />
           </div>
