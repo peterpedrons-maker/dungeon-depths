@@ -3,9 +3,11 @@ import { Character, EquipmentItem, ItemSlot } from '../types/game';
 import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
 import { enhancedItem, itemDisplayName } from '../lib/enhancement';
 import { EnhanceSection } from './EnhanceSection';
-import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing, IconHammer, IconAnvil } from './icons';
+import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing, IconHammer } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pergaminho from '../assets/pergaminho.webp';
+import ferreiroCena from '../assets/ferreiro-cena.webp';
+import martelo from '../assets/aprimoramento-martelo.webp';
 
 interface Props {
   character: Character;
@@ -27,14 +29,15 @@ const STAT_ROWS: { key: 'dmgBonus' | 'defBonus' | 'hpBonus' | 'matkBonus' | 'mde
   { key: 'critDmgBonus', label: 'Dano Crítico', pct: true },
 ];
 
-const ANIM_MS = 1600;
+const ANIM_MS = 1300;
 
-// Plays for a few seconds when the player confirms an "Aprimorar" — purely
-// theatrical (the stat change already happened via onEnhance when the
-// animation started, same as the instant-apply flow everywhere else in the
-// game), but gives the Ferreiro visit the "sabe? Como se a arma tivesse se
-// aprimorando mesmo" moment that was asked for: item before vs. after side
-// by side with a hammer striking an anvil between them.
+// Plays for a bit over one loop of the hammer-strike sprite when the player
+// confirms an "Aprimorar" — purely theatrical (the stat change already
+// happened via onEnhance when the animation started, same as the
+// instant-apply flow everywhere else in the game), but gives the Ferreiro
+// visit the "sabe? Como se a arma tivesse se aprimorando mesmo" moment that
+// was asked for: item before vs. after side by side with the hammer/anvil
+// animation between them.
 function EnhanceAnimation({ item, onDone }: { item: EquipmentItem; onDone: () => void }) {
   useEffect(() => {
     const t = window.setTimeout(onDone, ANIM_MS);
@@ -51,15 +54,8 @@ function EnhanceAnimation({ item, onDone }: { item: EquipmentItem; onDone: () =>
       <div className="font-bold text-base mb-1" style={{ color: rarityColor(item.rarity) }}>{item.name}</div>
       <div className="text-xs text-gold mb-3">+{item.enhanceLevel} → +{item.enhanceLevel + 1}</div>
 
-      <div className="relative h-16 flex items-center justify-center mb-4">
-        <span
-          className="absolute w-9 h-9 rounded-full animate-[anvilSpark_1.6s_ease-in-out]"
-          style={{ background: 'radial-gradient(circle, rgba(255,200,120,0.95) 0%, rgba(255,140,50,0.5) 55%, transparent 75%)' }}
-        />
-        <IconAnvil className="relative w-9 h-9 text-parchment/60" />
-        <div className="absolute" style={{ transformOrigin: '85% 85%' }}>
-          <IconHammer className="w-7 h-7 text-gold animate-[hammerSwing_1.6s_ease-in-out]" />
-        </div>
+      <div className="flex items-center justify-center mb-4">
+        <img src={martelo} alt="" className="h-28 w-auto" style={{ imageRendering: 'pixelated' }} draggable={false} />
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-1 items-center text-xs max-w-[220px] mx-auto">
@@ -77,11 +73,9 @@ function EnhanceAnimation({ item, onDone }: { item: EquipmentItem; onDone: () =>
 
 // Full-screen scene opened from the Forja's "Conversar com o Ferreiro"
 // balloon action, replacing the old plain item-grid Modal. The banner is a
-// full-bleed hero area (CSS forge-glow placeholder for now) sized to a
-// near-square crop that stays safe across phone aspect ratios — a future
-// pass drops in the real illustration from the KIT-DE-ARTE.md prompt below
-// with no layout changes needed, same write-prompt-then-integrate-later
-// pattern used for the Kingdom scene and the Construções map.
+// full-bleed hero area sized to a near-square crop that stays safe across
+// phone aspect ratios (see KIT-DE-ARTE.md's Cena do Ferreiro prompt for why
+// the source art is a 1536x1536 square).
 export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const [animatingItem, setAnimatingItem] = useState<EquipmentItem | null>(null);
@@ -90,13 +84,14 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-40 bg-nightsky overflow-y-auto flex flex-col">
-      <div
-        className="relative w-full shrink-0 flex items-center justify-center overflow-hidden"
-        style={{ height: '44vh', minHeight: 260, background: 'radial-gradient(ellipse 75% 65% at 50% 55%, rgba(210,100,30,0.4) 0%, rgba(20,12,8,0.97) 60%, #0c0703 100%)' }}
-      >
-        <div className="absolute inset-0 animate-[forgeFlicker_4s_ease-in-out_infinite]" style={{ background: 'radial-gradient(ellipse 55% 40% at 50% 60%, rgba(255,140,50,0.3) 0%, transparent 70%)' }} />
-        <IconHammer className="relative w-16 h-16 text-gold/50" />
-
+      <div className="relative w-full shrink-0 overflow-hidden" style={{ height: '44vh', minHeight: 260 }}>
+        <img
+          src={ferreiroCena}
+          alt="O Ferreiro em sua forja"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ imageRendering: 'pixelated' }}
+          draggable={false}
+        />
         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
         <div className="absolute top-3 inset-x-3 flex items-center justify-between">
           <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
