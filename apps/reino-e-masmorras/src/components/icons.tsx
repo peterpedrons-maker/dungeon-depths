@@ -125,6 +125,15 @@ export function IconHammer({ className, style }: IconProps) {
   );
 }
 
+export function IconAnvil({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M3 10.5h9.5l3-2.5H21a1 1 0 0 1 1 1v1a2 2 0 0 1-2 2h-3.5v2H18v2H8v-2h1.5v-2H6a3 3 0 0 1-3-3v-.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9 18h6l1 3H8l1-3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconCoin({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>

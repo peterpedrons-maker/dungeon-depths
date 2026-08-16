@@ -42,3 +42,13 @@ body {
   0%, 100% { opacity: 0.7; }
   50%      { opacity: 1; }
 }
+
+@keyframes hammerSwing {
+  0%, 15%, 40%, 55%, 80%, 100% { transform: rotate(-35deg); }
+  30%, 70%                     { transform: rotate(12deg); }
+}
+
+@keyframes anvilSpark {
+  0%, 24%, 36%, 64%, 76%, 100% { opacity: 0; transform: scale(0.5); }
+  30%, 70%                     { opacity: 1; transform: scale(1.25); }
+}
