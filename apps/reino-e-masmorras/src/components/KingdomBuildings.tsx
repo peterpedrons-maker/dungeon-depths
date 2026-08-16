@@ -35,10 +35,7 @@ const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
 
 export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props) {
   const [openBuildingId, setOpenBuildingId] = useState<string | null>(null);
-  const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const openBuilding = BUILDINGS.find((b) => b.id === openBuildingId) ?? null;
-  const forjaLevel = ch.buildings.forja ?? 0;
-  const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
 
   return (
     <Panel title="Reino — Construções">
@@ -47,9 +44,7 @@ export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props)
         construção no mapa pra ver os detalhes.
       </p>
 
-      <div
-        className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[2/1]"
-      >
+      <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[2/1]">
         <img
           src={mapaConstrucoes}
           alt="Mapa de construções do Reino"
@@ -86,62 +81,12 @@ export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props)
         </div>
       </div>
 
-      <div className="mt-5">
-        <h3 className="font-display text-sm text-gold tracking-[0.08em] uppercase mb-1">Forjar Item</h3>
-        <p className="text-xs text-parchment/50 mb-3">
-          {forjaLevel > 0
-            ? `Nível da Forja: ${forjaLevel}/5 — aprimoramento liberado até +${Math.min(10, forjaLevel * 2)}. Toque num item pra aprimorar.`
-            : 'Construa a Forja (marcador no mapa acima) pra liberar o aprimoramento de itens.'}
-        </p>
-
-        {forgeableItems.length === 0 ? (
-          <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>
-        ) : (
-          <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-            <div className="grid grid-cols-5 sm:grid-cols-6 gap-2.5 max-h-[16rem] overflow-y-auto pr-0.5">
-              {forgeableItems.map((item) => {
-                const Icon = SLOT_ICON[item.slot];
-                const color = rarityColor(item.rarity);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setOpenItem(item)}
-                    title={itemDisplayName(item)}
-                    className="relative aspect-square transition-transform duration-150 hover:scale-105"
-                  >
-                    <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                    <div className="absolute inset-[17%] flex items-center justify-center">
-                      <Icon className="w-full h-full" style={{ color }} />
-                    </div>
-                    {item.enhanceLevel > 0 && (
-                      <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
-                        +{item.enhanceLevel}
-                      </span>
-                    )}
-                    <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
       {openBuilding && (
-        <BuildingModal building={openBuilding} level={ch.buildings[openBuilding.id] ?? 0} gold={ch.gold} onUpgrade={onUpgrade} onClose={() => setOpenBuildingId(null)} />
-      )}
-
-      {openItem && (
-        <Modal title={SLOT_NAMES[openItem.slot]} onClose={() => setOpenItem(null)}>
-          <div className="font-bold text-base" style={{ color: rarityColor(openItem.rarity) }}>{itemDisplayName(openItem)}</div>
-          <div className="text-xs text-parchment/50">{rarityName(openItem.rarity)} · Tier {openItem.tier}</div>
-          <EnhanceSection
-            item={openItem}
-            gold={ch.gold}
-            forjaLevel={forjaLevel}
-            onEnhance={(item) => { onEnhance(item); setOpenItem({ ...item, enhanceLevel: item.enhanceLevel + 1 }); }}
-          />
-        </Modal>
+        openBuilding.id === 'forja' ? (
+          <ForjaModal character={ch} building={openBuilding} onUpgrade={onUpgrade} onEnhance={onEnhance} onClose={() => setOpenBuildingId(null)} />
+        ) : (
+          <BuildingModal building={openBuilding} level={ch.buildings[openBuilding.id] ?? 0} gold={ch.gold} onUpgrade={onUpgrade} onClose={() => setOpenBuildingId(null)} />
+        )
       )}
     </Panel>
   );
@@ -172,6 +117,100 @@ function BuildingModal({ building: b, level, gold, onUpgrade, onClose }: {
       {level > 0 && <p className="text-xs text-emerald-400 mb-3">Efeito atual: {b.effectLabel(level)}</p>}
       <Button onClick={() => onUpgrade(b.id)} disabled={maxed || gold < cost} className="w-full">
         {maxed ? 'Nível Máximo' : `Melhorar — ${fmt(cost)} ouro`}
+      </Button>
+    </Modal>
+  );
+}
+
+// The Forja is the only construction with a second, non-upgrade interaction
+// today (aprimorar itens com o Ferreiro) — so its modal gets its own small
+// step machine (menu → lista de itens → detalhe do item) instead of reusing
+// the plain BuildingModal. Other buildings fall back to BuildingModal until
+// they grow a similar second action.
+function ForjaModal({ character: ch, building: b, onUpgrade, onEnhance, onClose }: {
+  character: Character; building: BuildingDef; onUpgrade: (id: string) => void; onEnhance: (item: EquipmentItem) => void; onClose: () => void;
+}) {
+  const [step, setStep] = useState<'menu' | 'items'>('menu');
+  const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
+  const level = ch.buildings.forja ?? 0;
+  const maxed = level >= b.maxLevel;
+  const cost = maxed ? 0 : b.costForLevel(level);
+  const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
+
+  if (openItem) {
+    return (
+      <Modal title={SLOT_NAMES[openItem.slot]} onClose={onClose}>
+        <button onClick={() => setOpenItem(null)} className="text-xs text-parchment/50 hover:text-parchment mb-1">‹ Voltar</button>
+        <div className="font-bold text-base" style={{ color: rarityColor(openItem.rarity) }}>{itemDisplayName(openItem)}</div>
+        <div className="text-xs text-parchment/50">{rarityName(openItem.rarity)} · Tier {openItem.tier}</div>
+        <EnhanceSection
+          item={openItem}
+          gold={ch.gold}
+          forjaLevel={level}
+          onEnhance={(item) => { onEnhance(item); setOpenItem({ ...item, enhanceLevel: item.enhanceLevel + 1 }); }}
+        />
+      </Modal>
+    );
+  }
+
+  if (step === 'items') {
+    return (
+      <Modal title="Ferreiro" onClose={onClose}>
+        <button onClick={() => setStep('menu')} className="text-xs text-parchment/50 hover:text-parchment mb-1">‹ Voltar</button>
+        <p className="text-xs text-parchment/50 mb-3">
+          {level > 0
+            ? `Nível da Forja: ${level}/5 — aprimoramento liberado até +${Math.min(10, level * 2)}. Toque num item pra aprimorar.`
+            : 'Construa a Forja pra liberar o aprimoramento de itens.'}
+        </p>
+        {forgeableItems.length === 0 ? (
+          <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>
+        ) : (
+          <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+            <div className="grid grid-cols-5 gap-2.5 max-h-[16rem] overflow-y-auto pr-0.5">
+              {forgeableItems.map((item) => {
+                const Icon = SLOT_ICON[item.slot];
+                const color = rarityColor(item.rarity);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setOpenItem(item)}
+                    title={itemDisplayName(item)}
+                    className="relative aspect-square transition-transform duration-150 hover:scale-105"
+                  >
+                    <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
+                    <div className="absolute inset-[17%] flex items-center justify-center">
+                      <Icon className="w-full h-full" style={{ color }} />
+                    </div>
+                    {item.enhanceLevel > 0 && (
+                      <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
+                        +{item.enhanceLevel}
+                      </span>
+                    )}
+                    <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title={b.name} onClose={onClose}>
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold shrink-0">
+          Nível {level}/{b.maxLevel}
+        </span>
+      </div>
+      <p className="text-xs text-parchment/50 mb-2">{b.desc}</p>
+      {level > 0 && <p className="text-xs text-emerald-400 mb-3">Efeito atual: {b.effectLabel(level)}</p>}
+      <Button onClick={() => onUpgrade(b.id)} disabled={maxed || ch.gold < cost} className="w-full">
+        {maxed ? 'Nível Máximo' : `Melhorar Forja — ${fmt(cost)} ouro`}
+      </Button>
+      <Button onClick={() => setStep('items')} className="w-full mt-2">
+        Conversar com o Ferreiro
       </Button>
     </Modal>
   );
