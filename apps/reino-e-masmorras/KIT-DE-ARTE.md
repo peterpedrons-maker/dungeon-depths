@@ -12,6 +12,7 @@ Prompts prontos para gerar as peças de interface e os sprites de personagens/in
 - **Sobre a moldura principal:** os *cantos* têm entalhes ornamentados únicos, mas as *bordas retas* entre os cantos são um padrão de madeira uniforme e repetitivo — de propósito, para permitir esticar a moldura em caixas de tamanhos diferentes sem distorcer os desenhos ornamentados.
 - **Sobre o Mapa de Masmorras:** são 7 imagens (uma por região), empilhadas verticalmente no jogo formando um caminho único que sobe da região Valdren até Aetherion — role a tela pra cima pra avançar. Cada uma já reserva 2-3 marcadores "???" (nevoeiro/silhueta, sem nome legível) espalhados nas bordas, reservados pra masmorras futuras além das 52 já planejadas — assim dá pra crescer o conteúdo sem regerar a arte inteira.
 - **Sobre os Fundos de Batalha:** cada masmorra tem seu próprio cenário de combate, combinando com o tema dela no Mapa de Masmorras. O personagem fica parado a ~27% da largura e o inimigo a ~73%, os dois em cima de uma faixa de chão perto da base da imagem (~15% da altura) — por isso todo prompt pede uma composição com o centro-baixo livre de objetos grandes, pra não cobrir os sprites.
+- **Sobre o Mapa de Construções:** mesmo padrão do Mapa de Masmorras — uma única imagem com as construções já pintadas na cena, e os marcadores clicáveis do jogo ficam posicionados por cima, nas coordenadas certas (medidas depois que a arte for gerada). Já reserva um canteiro de obras vazio (fog-shrouded) pra uma futura construção além das 3 atuais.
 
 ---
 
@@ -529,6 +530,23 @@ Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO ant
 A wide nighttime kingdom scene viewed from just outside the walls: a fortified stone castle with two towers and a lit gatehouse, silhouetted against a deep indigo night sky. A large pale moon with faint craters sits above the towers, surrounded by scattered twinkling stars. Rolling dark hills in the distance. Warm orange torchlight glow beside the castle gate. A few thin wisps of ground fog drifting near the base of the walls.
 
 This is a complete, self-contained illustration meant to fill the entire canvas edge-to-edge — unlike the sprite sheets above, this one should NOT have a magenta background and should NOT be treated as a cutout; it's a finished scene, not something to key out. Wide canvas, 1536×640 px. No text, no watermark, no UI elements, no frame or border.
+```
+
+### Mapa de Construções — Tela de Reino: Construções
+**Tamanho:** 1536×640 px · **Uso:** substitui a lista simples de construções por um mapa clicável (mesmo padrão do Mapa de Masmorras — marcadores por cima da própria arte)
+
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and Kingdom scene (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A wide nighttime view of the castle's inner courtyard, seen from just inside the gates — the same fortified stone walls and deep indigo night sky as the Reino overview scene, but now looking IN at the grounds instead of at the gate from outside. Warm torchlight and a pale moon overhead, a few scattered stars. Cobblestone paths connect three distinct structures spread across the courtyard, left to right:
+
+1) "Forja" — a sturdy stone forge building with a chimney glowing orange from an internal furnace, sparks drifting upward, a blacksmith's anvil visible near the open door.
+2) "Capela" — a small stone chapel with a modest bell tower and a stained-glass window glowing soft blue-white from within.
+3) "Guilda dos Aventureiros" — a timber-and-stone hall with a hanging wooden sign and a banner bearing a simple heraldic emblem over the door.
+
+Each of the three has a small wooden signpost bearing its Portuguese name near its entrance (small spelling mistakes acceptable). Leave one clearly buildable empty plot near the right edge — bare ground with a low stone foundation outline and a fog-shrouded silhouette of scaffolding, suggesting a future construction site, no legible sign.
+
+This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Wide canvas, 1536×640 px. No text beyond the small signs described, no watermark, no UI elements, no frame or border.
 ```
 
 ### Mapa de Masmorras — Tela de seleção de masmorra (7 imagens, uma por região)
