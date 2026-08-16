@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, CSSProperties, RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { Character, EquipmentItem, ItemSlot } from '../types/game';
 import { fmt } from '../lib/format';
 import { BUILDINGS, BuildingDef } from '../lib/buildings';
 import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { Panel } from './Panel';
-import { Button } from './Button';
 import { Modal } from './Modal';
 import { EnhanceSection } from './EnhanceSection';
 import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import mapaConstrucoes from '../assets/reino-construcoes.webp';
 import slotFrame from '../assets/slot-equipamento.webp';
+import pergaminho from '../assets/pergaminho.webp';
 
 interface Props {
   character: Character;
@@ -35,7 +36,52 @@ const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
 
 export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props) {
   const [openBuildingId, setOpenBuildingId] = useState<string | null>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [ferreiroOpen, setFerreiroOpen] = useState(false);
+  const [glowId, setGlowId] = useState<string | null>(null);
+  const markerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const glowTimer = useRef<number | undefined>(undefined);
+
   const openBuilding = BUILDINGS.find((b) => b.id === openBuildingId) ?? null;
+
+  useEffect(() => {
+    if (!openBuildingId) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenBuildingId(null); };
+    window.addEventListener('keydown', onKey);
+    // A full-screen click-catcher would intercept the click needed to swap
+    // straight from one marker's balloon to another's, so instead we just
+    // watch for clicks that land outside both the balloon and every marker.
+    // Marker clicks are left alone — toggleBuilding already handles them
+    // (close if same marker, switch anchor if a different one).
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target)) return;
+      if (Object.values(markerRefs.current).some((el) => el?.contains(target))) return;
+      setOpenBuildingId(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [openBuildingId]);
+
+  useEffect(() => () => window.clearTimeout(glowTimer.current), []);
+
+  function toggleBuilding(id: string) {
+    if (openBuildingId === id) { setOpenBuildingId(null); return; }
+    const el = markerRefs.current[id];
+    if (el) setAnchorRect(el.getBoundingClientRect());
+    setOpenBuildingId(id);
+  }
+
+  function handleUpgradeClick(id: string) {
+    onUpgrade(id);
+    setGlowId(id);
+    window.clearTimeout(glowTimer.current);
+    glowTimer.current = window.setTimeout(() => setGlowId(null), 900);
+  }
 
   return (
     <Panel title="Reino — Construções">
@@ -59,9 +105,12 @@ export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props)
           return (
             <button
               key={b.id}
-              onClick={() => setOpenBuildingId(b.id)}
+              ref={(el) => { markerRefs.current[b.id] = el; }}
+              onClick={() => toggleBuilding(b.id)}
               title={b.name}
-              className="absolute w-16 h-16 sm:w-20 sm:h-20 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition hover:bg-gold/15 hover:ring-2 hover:ring-gold/50"
+              className={`absolute w-16 h-16 sm:w-20 sm:h-20 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition hover:bg-gold/15 hover:ring-2 hover:ring-gold/50 ${
+                glowId === b.id ? 'animate-[buildingGlow_0.9s_ease-out]' : ''
+              } ${openBuildingId === b.id ? 'bg-gold/15 ring-2 ring-gold/50' : ''}`}
               style={{ left: `${marker.xPct}%`, top: `${markerYPct(marker.yPct)}%` }}
             >
               {level > 0 && (
@@ -81,12 +130,21 @@ export function KingdomBuildings({ character: ch, onUpgrade, onEnhance }: Props)
         </div>
       </div>
 
-      {openBuilding && (
-        openBuilding.id === 'forja' ? (
-          <ForjaModal character={ch} building={openBuilding} onUpgrade={onUpgrade} onEnhance={onEnhance} onClose={() => setOpenBuildingId(null)} />
-        ) : (
-          <BuildingModal building={openBuilding} level={ch.buildings[openBuilding.id] ?? 0} gold={ch.gold} onUpgrade={onUpgrade} onClose={() => setOpenBuildingId(null)} />
-        )
+      {openBuilding && anchorRect && (
+        <BuildingPopover
+          popoverRef={popoverRef}
+          anchorRect={anchorRect}
+          building={openBuilding}
+          level={ch.buildings[openBuilding.id] ?? 0}
+          gold={ch.gold}
+          onUpgrade={() => handleUpgradeClick(openBuilding.id)}
+          onOpenFerreiro={openBuilding.id === 'forja' ? () => { setFerreiroOpen(true); setOpenBuildingId(null); } : undefined}
+          onClose={() => setOpenBuildingId(null)}
+        />
+      )}
+
+      {ferreiroOpen && (
+        <FerreiroModal character={ch} forjaLevel={ch.buildings.forja ?? 0} onEnhance={onEnhance} onClose={() => setFerreiroOpen(false)} />
       )}
     </Panel>
   );
@@ -101,40 +159,69 @@ function markerYPct(sourceYPct: number): number {
   return ((sourceYPct - cropTopPct) / cropHeightPct) * 100;
 }
 
-function BuildingModal({ building: b, level, gold, onUpgrade, onClose }: {
-  building: BuildingDef; level: number; gold: number; onUpgrade: (id: string) => void; onClose: () => void;
+// A small balloon anchored right next to the marker that was tapped, instead
+// of a centered full-screen Modal — keeps the "melhorar / conversar" choice
+// feeling like part of the map rather than a separate window. Portaled to
+// <body> and positioned via the marker's own getBoundingClientRect() so it's
+// never clipped by an ancestor's overflow-hidden (the map crop, the Panel
+// card, etc.) no matter where on the page it renders.
+function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onUpgrade, onOpenFerreiro, onClose }: {
+  popoverRef: RefObject<HTMLDivElement>; anchorRect: DOMRect; building: BuildingDef; level: number; gold: number;
+  onUpgrade: () => void; onOpenFerreiro?: () => void; onClose: () => void;
 }) {
   const maxed = level >= b.maxLevel;
   const cost = maxed ? 0 : b.costForLevel(level);
-  return (
-    <Modal title={b.name} onClose={onClose}>
-      <div className="flex items-center justify-between gap-3 mb-1">
-        <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold shrink-0">
-          Nível {level}/{b.maxLevel}
-        </span>
+  const centerX = anchorRect.left + anchorRect.width / 2;
+  const placeBelow = anchorRect.top < window.innerHeight / 2;
+  const vertical: CSSProperties = placeBelow
+    ? { top: anchorRect.bottom + 10 }
+    : { bottom: window.innerHeight - anchorRect.top + 10 };
+
+  return createPortal(
+    <div
+      ref={popoverRef}
+      className="fixed z-50 w-56 rounded-sm border-2 border-gold/50 bg-panel shadow-[0_12px_30px_rgba(0,0,0,0.6)] p-3 text-xs"
+      style={{
+        left: `clamp(120px, ${centerX}px, calc(100vw - 120px))`,
+        transform: 'translateX(-50%)',
+        backgroundImage: `url(${pergaminho})`, backgroundSize: '200px', backgroundBlendMode: 'multiply',
+        ...vertical,
+      }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="font-display text-gold font-bold tracking-wide leading-tight">{b.name}</span>
+        <button onClick={onClose} className="text-parchment/50 hover:text-parchment text-base leading-none px-1 shrink-0" aria-label="Fechar">×</button>
       </div>
-      <p className="text-xs text-parchment/50 mb-2">{b.desc}</p>
-      {level > 0 && <p className="text-xs text-emerald-400 mb-3">Efeito atual: {b.effectLabel(level)}</p>}
-      <Button onClick={() => onUpgrade(b.id)} disabled={maxed || gold < cost} className="w-full">
+      <span className="inline-block text-[10px] bg-gold/20 border border-gold/50 text-gold rounded-full px-2 py-0.5 font-bold mb-2">
+        Nível {level}/{b.maxLevel}
+      </span>
+      <button
+        onClick={onUpgrade}
+        disabled={maxed || gold < cost}
+        className="w-full text-center font-bold text-ink bg-gold rounded px-2 py-1.5 mb-1.5 hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:grayscale disabled:hover:brightness-100"
+      >
         {maxed ? 'Nível Máximo' : `Melhorar — ${fmt(cost)} ouro`}
-      </Button>
-    </Modal>
+      </button>
+      {onOpenFerreiro && (
+        <button
+          onClick={onOpenFerreiro}
+          className="w-full text-center font-bold text-parchment/80 border border-panelborder rounded px-2 py-1.5 hover:border-gold/50 hover:text-parchment"
+        >
+          Conversar com o Ferreiro
+        </button>
+      )}
+    </div>,
+    document.body
   );
 }
 
-// The Forja is the only construction with a second, non-upgrade interaction
-// today (aprimorar itens com o Ferreiro) — so its modal gets its own small
-// step machine (menu → lista de itens → detalhe do item) instead of reusing
-// the plain BuildingModal. Other buildings fall back to BuildingModal until
-// they grow a similar second action.
-function ForjaModal({ character: ch, building: b, onUpgrade, onEnhance, onClose }: {
-  character: Character; building: BuildingDef; onUpgrade: (id: string) => void; onEnhance: (item: EquipmentItem) => void; onClose: () => void;
+// Opened from the Forja's popover — the item grid + per-item enhance detail.
+// Still a plain Modal for now; a future pass replaces this with a full scene
+// (background art + dialogue) once that art exists.
+function FerreiroModal({ character: ch, forjaLevel, onEnhance, onClose }: {
+  character: Character; forjaLevel: number; onEnhance: (item: EquipmentItem) => void; onClose: () => void;
 }) {
-  const [step, setStep] = useState<'menu' | 'items'>('menu');
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
-  const level = ch.buildings.forja ?? 0;
-  const maxed = level >= b.maxLevel;
-  const cost = maxed ? 0 : b.costForLevel(level);
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
 
   if (openItem) {
@@ -146,72 +233,51 @@ function ForjaModal({ character: ch, building: b, onUpgrade, onEnhance, onClose 
         <EnhanceSection
           item={openItem}
           gold={ch.gold}
-          forjaLevel={level}
+          forjaLevel={forjaLevel}
           onEnhance={(item) => { onEnhance(item); setOpenItem({ ...item, enhanceLevel: item.enhanceLevel + 1 }); }}
         />
       </Modal>
     );
   }
 
-  if (step === 'items') {
-    return (
-      <Modal title="Ferreiro" onClose={onClose}>
-        <button onClick={() => setStep('menu')} className="text-xs text-parchment/50 hover:text-parchment mb-1">‹ Voltar</button>
-        <p className="text-xs text-parchment/50 mb-3">
-          {level > 0
-            ? `Nível da Forja: ${level}/5 — aprimoramento liberado até +${Math.min(10, level * 2)}. Toque num item pra aprimorar.`
-            : 'Construa a Forja pra liberar o aprimoramento de itens.'}
-        </p>
-        {forgeableItems.length === 0 ? (
-          <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>
-        ) : (
-          <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-            <div className="grid grid-cols-5 gap-2.5 max-h-[16rem] overflow-y-auto pr-0.5">
-              {forgeableItems.map((item) => {
-                const Icon = SLOT_ICON[item.slot];
-                const color = rarityColor(item.rarity);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setOpenItem(item)}
-                    title={itemDisplayName(item)}
-                    className="relative aspect-square transition-transform duration-150 hover:scale-105"
-                  >
-                    <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                    <div className="absolute inset-[17%] flex items-center justify-center">
-                      <Icon className="w-full h-full" style={{ color }} />
-                    </div>
-                    {item.enhanceLevel > 0 && (
-                      <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
-                        +{item.enhanceLevel}
-                      </span>
-                    )}
-                    <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </Modal>
-    );
-  }
-
   return (
-    <Modal title={b.name} onClose={onClose}>
-      <div className="flex items-center justify-between gap-3 mb-1">
-        <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold shrink-0">
-          Nível {level}/{b.maxLevel}
-        </span>
-      </div>
-      <p className="text-xs text-parchment/50 mb-2">{b.desc}</p>
-      {level > 0 && <p className="text-xs text-emerald-400 mb-3">Efeito atual: {b.effectLabel(level)}</p>}
-      <Button onClick={() => onUpgrade(b.id)} disabled={maxed || ch.gold < cost} className="w-full">
-        {maxed ? 'Nível Máximo' : `Melhorar Forja — ${fmt(cost)} ouro`}
-      </Button>
-      <Button onClick={() => setStep('items')} className="w-full mt-2">
-        Conversar com o Ferreiro
-      </Button>
+    <Modal title="Ferreiro" onClose={onClose}>
+      <p className="text-xs text-parchment/50 mb-3">
+        {forjaLevel > 0
+          ? `Nível da Forja: ${forjaLevel}/5 — aprimoramento liberado até +${Math.min(10, forjaLevel * 2)}. Toque num item pra aprimorar.`
+          : 'Construa a Forja pra liberar o aprimoramento de itens.'}
+      </p>
+      {forgeableItems.length === 0 ? (
+        <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>
+      ) : (
+        <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+          <div className="grid grid-cols-5 gap-2.5 max-h-[16rem] overflow-y-auto pr-0.5">
+            {forgeableItems.map((item) => {
+              const Icon = SLOT_ICON[item.slot];
+              const color = rarityColor(item.rarity);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setOpenItem(item)}
+                  title={itemDisplayName(item)}
+                  className="relative aspect-square transition-transform duration-150 hover:scale-105"
+                >
+                  <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
+                  <div className="absolute inset-[17%] flex items-center justify-center">
+                    <Icon className="w-full h-full" style={{ color }} />
+                  </div>
+                  {item.enhanceLevel > 0 && (
+                    <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
+                      +{item.enhanceLevel}
+                    </span>
+                  )}
+                  <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }
