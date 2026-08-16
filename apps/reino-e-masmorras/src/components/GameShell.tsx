@@ -217,7 +217,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
           <EmblemWatermark />
           {section === 'kingdom' && <KingdomOverview character={character} />}
-          {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} />}
+          {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} onEnhance={handleEnhanceItem} />}
           {section === 'character' && (
             <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onEnhance={handleEnhanceItem} onAllocateAttr={handleAllocateAttr} />
           )}
