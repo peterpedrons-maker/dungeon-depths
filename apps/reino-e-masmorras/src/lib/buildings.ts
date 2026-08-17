@@ -30,17 +30,17 @@ export const BUILDINGS: BuildingDef[] = [
     effectLabel: (level) => `+${Math.round(level * 8)}% de cura das poções`,
   },
   {
-    id: 'guilda', name: 'Guilda dos Aventureiros',
-    desc: 'Contatos e conhecimento acumulado fazem você ganhar mais experiência por inimigo derrotado.',
+    id: 'mercador', name: 'Mercador',
+    desc: 'Boas relações comerciais rendem descontos nas poções e itens vendidos por ele.',
     maxLevel: 5,
     costForLevel: (level) => Math.round(45 * Math.pow(1.6, level)),
-    effectForLevel: (level) => ({ xpBonusPct: level * 0.06 }),
-    effectLabel: (level) => `+${Math.round(level * 6)}% de experiência`,
+    effectForLevel: (level) => ({ merchantDiscountPct: level * 0.04 }),
+    effectLabel: (level) => `-${Math.round(level * 4)}% no preço da loja`,
   },
 ];
 
 export function computeKingdomBonuses(buildings: Record<string, number>): KingdomBonuses {
-  const totals: KingdomBonuses = { dropChanceBonusPct: 0, itemQualityBonusPct: 0, potionHealBonusPct: 0, xpBonusPct: 0 };
+  const totals: KingdomBonuses = { dropChanceBonusPct: 0, itemQualityBonusPct: 0, potionHealBonusPct: 0, merchantDiscountPct: 0 };
   for (const b of BUILDINGS) {
     const level = buildings[b.id] ?? 0;
     if (level <= 0) continue;
@@ -48,7 +48,7 @@ export function computeKingdomBonuses(buildings: Record<string, number>): Kingdo
     totals.dropChanceBonusPct += eff.dropChanceBonusPct ?? 0;
     totals.itemQualityBonusPct += eff.itemQualityBonusPct ?? 0;
     totals.potionHealBonusPct += eff.potionHealBonusPct ?? 0;
-    totals.xpBonusPct += eff.xpBonusPct ?? 0;
+    totals.merchantDiscountPct += eff.merchantDiscountPct ?? 0;
   }
   return totals;
 }

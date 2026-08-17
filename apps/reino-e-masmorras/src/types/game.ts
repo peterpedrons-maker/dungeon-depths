@@ -316,7 +316,7 @@ export interface RankEntry {
 }
 
 export type Screen = 'title' | 'create' | 'game';
-export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'merchant' | 'highscore' | 'dungeon-select' | 'dungeon';
+export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon';
 
 // ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree + attributes ──
 export interface CombatStats {
@@ -346,5 +346,5 @@ export interface KingdomBonuses {
   dropChanceBonusPct: number;
   itemQualityBonusPct: number; // Forja: bonus on top of an item's rolled primary stat
   potionHealBonusPct: number;
-  xpBonusPct: number;
+  merchantDiscountPct: number; // Mercador: discount off potion/item shop prices
 }

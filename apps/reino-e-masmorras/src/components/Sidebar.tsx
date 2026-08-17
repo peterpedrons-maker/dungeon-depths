@@ -1,6 +1,6 @@
 import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
-import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconCoin, IconTrophy } from './icons';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy } from './icons';
 
 interface Props {
   section: Section;
@@ -38,7 +38,6 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props
         <Group title="Reino">
           <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
           <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Construções</NavItem>
-          <NavItem icon={<IconCoin className="w-4 h-4" />} active={section === 'merchant'} onClick={() => nav('merchant')}>Mercador</NavItem>
         </Group>
 
         <Group title="Ranking">

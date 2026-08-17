@@ -106,9 +106,18 @@ export function loadCharacter(): Character | null {
       // could invalidate previously-saved positions anyway — repacking from
       // scratch on every load is cheap and guarantees no overlaps either way.
       inventory: repackInventory((c.inventory ?? []).map(migrateItem)),
-      buildings: c.buildings ?? {},
+      buildings: migrateBuildings(c.buildings ?? {}),
     };
   } catch { return null; }
+}
+
+// Old saves invested gold levels into "guilda" (XP bonus), a building the
+// Mercador replaced — carry that investment forward under the new id
+// instead of silently discarding it.
+function migrateBuildings(b: Record<string, number>): Record<string, number> {
+  if (!b.guilda || b.mercador !== undefined) return b;
+  const { guilda, ...rest } = b;
+  return { ...rest, mercador: guilda };
 }
 
 export function saveCharacter(c: Character): void {

@@ -499,7 +499,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           const prevLevel = chRef.current.level;
           const isBossKill = enemyRef.current.isBoss === true;
           const bossBonusGold = isBossKill ? Math.round(enemyRef.current.goldReward * 0.5) : 0;
-          const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1) * (1 + kingdomBonuses.xpBonusPct));
+          const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
           const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
           const withXp = grantXp(chRef.current, xpGain);
           const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current) };

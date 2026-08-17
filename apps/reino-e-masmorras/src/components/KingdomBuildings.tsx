@@ -11,6 +11,7 @@ interface Props {
   character: Character;
   onUpgrade: (buildingId: string) => void;
   onOpenFerreiro: () => void;
+  onOpenMercador: () => void;
 }
 
 // Coordinates were measured directly from the generated map art (each
@@ -20,11 +21,11 @@ interface Props {
 const MARKERS: Record<string, { xPct: number; yPct: number }> = {
   forja: { xPct: 15.6, yPct: 68.3 },
   capela: { xPct: 40.6, yPct: 61.7 },
-  guilda: { xPct: 68.1, yPct: 63.3 },
+  mercador: { xPct: 68.1, yPct: 63.3 },
 };
 const RESERVED_MARKER = { xPct: 89.4, yPct: 56.4 };
 
-export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro }: Props) {
+export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onOpenMercador }: Props) {
   const [openBuildingId, setOpenBuildingId] = useState<string | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [glowId, setGlowId] = useState<string | null>(null);
@@ -33,6 +34,14 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro }: P
   const glowTimer = useRef<number | undefined>(undefined);
 
   const openBuilding = BUILDINGS.find((b) => b.id === openBuildingId) ?? null;
+
+  // Buildings whose marker also opens a full NPC scene, beyond the plain
+  // "melhorar nível" upgrade every building has — keyed by building id so
+  // adding a future NPC building doesn't require touching BuildingPopover.
+  const talkActions: Record<string, { label: string; onOpen: () => void }> = {
+    forja: { label: 'Conversar com o Ferreiro', onOpen: onOpenFerreiro },
+    mercador: { label: 'Conversar com o Mercador', onOpen: onOpenMercador },
+  };
 
   useEffect(() => {
     if (!openBuildingId) return;
@@ -127,7 +136,10 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro }: P
           level={ch.buildings[openBuilding.id] ?? 0}
           gold={ch.gold}
           onUpgrade={() => handleUpgradeClick(openBuilding.id)}
-          onOpenFerreiro={openBuilding.id === 'forja' ? () => { onOpenFerreiro(); setOpenBuildingId(null); } : undefined}
+          talk={talkActions[openBuilding.id] ? {
+            label: talkActions[openBuilding.id].label,
+            onOpen: () => { talkActions[openBuilding.id].onOpen(); setOpenBuildingId(null); },
+          } : undefined}
           onClose={() => setOpenBuildingId(null)}
         />
       )}
@@ -150,9 +162,9 @@ function markerYPct(sourceYPct: number): number {
 // <body> and positioned via the marker's own getBoundingClientRect() so it's
 // never clipped by an ancestor's overflow-hidden (the map crop, the Panel
 // card, etc.) no matter where on the page it renders.
-function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onUpgrade, onOpenFerreiro, onClose }: {
+function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onUpgrade, talk, onClose }: {
   popoverRef: RefObject<HTMLDivElement>; anchorRect: DOMRect; building: BuildingDef; level: number; gold: number;
-  onUpgrade: () => void; onOpenFerreiro?: () => void; onClose: () => void;
+  onUpgrade: () => void; talk?: { label: string; onOpen: () => void }; onClose: () => void;
 }) {
   const maxed = level >= b.maxLevel;
   const cost = maxed ? 0 : b.costForLevel(level);
@@ -187,12 +199,12 @@ function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onU
       >
         {maxed ? 'Nível Máximo' : `Melhorar — ${fmt(cost)} ouro`}
       </button>
-      {onOpenFerreiro && (
+      {talk && (
         <button
-          onClick={onOpenFerreiro}
+          onClick={talk.onOpen}
           className="w-full text-center font-bold text-parchment/80 border border-panelborder rounded px-2 py-1.5 hover:border-gold/50 hover:text-parchment"
         >
-          Conversar com o Ferreiro
+          {talk.label}
         </button>
       )}
     </div>,

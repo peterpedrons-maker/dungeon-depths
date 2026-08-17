@@ -13,7 +13,7 @@ import { KingdomOverview } from './KingdomOverview';
 import { KingdomBuildings } from './KingdomBuildings';
 import { CharacterOverview } from './CharacterOverview';
 import { SkillTree } from './SkillTree';
-import { Merchant } from './Merchant';
+import { Mercador } from './Mercador';
 import { RankingScreen } from './RankingScreen';
 import { DungeonMap } from './DungeonMap';
 import { DungeonLoadout } from './DungeonLoadout';
@@ -61,6 +61,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   const [runInProgress, setRunInProgress] = useState(false);
   const [navConfirmTarget, setNavConfirmTarget] = useState<Section | 'abandon' | null>(null);
   const [ferreiroOpen, setFerreiroOpen] = useState(false);
+  const [mercadorOpen, setMercadorOpen] = useState(false);
 
   const kingdomBonuses = computeKingdomBonuses(character.buildings);
 
@@ -107,8 +108,9 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   }
 
   function handleBuyPotion() {
-    if (character.gold < POTION_COST || character.potions >= MAX_POTIONS) return;
-    onCharacterChange({ ...character, gold: character.gold - POTION_COST, potions: character.potions + 1 });
+    const cost = Math.max(1, Math.round(POTION_COST * (1 - kingdomBonuses.merchantDiscountPct)));
+    if (character.gold < cost || character.potions >= MAX_POTIONS) return;
+    onCharacterChange({ ...character, gold: character.gold - cost, potions: character.potions + 1 });
   }
 
   function handleSetPotionThreshold(pct: number) {
@@ -233,7 +235,14 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
           <EmblemWatermark />
           {section === 'kingdom' && <KingdomOverview character={character} />}
-          {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} onOpenFerreiro={() => setFerreiroOpen(true)} />}
+          {section === 'buildings' && (
+            <KingdomBuildings
+              character={character}
+              onUpgrade={handleUpgradeBuilding}
+              onOpenFerreiro={() => setFerreiroOpen(true)}
+              onOpenMercador={() => setMercadorOpen(true)}
+            />
+          )}
           {section === 'character' && (
             <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onAllocateAttr={handleAllocateAttr} />
           )}
@@ -246,7 +255,6 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
               onReorderAbility={handleReorderAbility}
             />
           )}
-          {section === 'merchant' && <Merchant character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} />}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
           {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
           {section === 'dungeon' && (
@@ -263,6 +271,10 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
 
       {ferreiroOpen && (
         <Ferreiro character={character} onEnhance={handleEnhanceItem} onClose={() => setFerreiroOpen(false)} />
+      )}
+
+      {mercadorOpen && (
+        <Mercador character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} onClose={() => setMercadorOpen(false)} />
       )}
 
       {pendingDungeon && (
