@@ -36,30 +36,34 @@ function fitsAt(occ: Set<string>, x: number, y: number, w: number, h: number): b
   return true;
 }
 
-// First free top-left position (row-major scan) for a w×h block within the
-// nominal GRID_COLS×GRID_ROWS grid. Null means it doesn't fit anywhere in
-// the 50-cell grid — used to gate new acquisitions (loot, purchases).
-export function findFreeSlot(inventory: EquipmentItem[], w: number, h: number): { x: number; y: number } | null {
+// First free top-left position (row-major scan) for a w×h block within a
+// cols×rows grid (defaults to the nominal GRID_COLS×GRID_ROWS player
+// inventory, but the Mercador's stock grid passes its own smaller
+// dimensions). Null means it doesn't fit anywhere — used to gate new
+// acquisitions (loot, purchases) or to stop generating shop stock early.
+export function findFreeSlot(
+  inventory: EquipmentItem[], w: number, h: number, cols: number = GRID_COLS, rows: number = GRID_ROWS,
+): { x: number; y: number } | null {
   const occ = occupiedCells(inventory);
-  for (let y = 0; y <= GRID_ROWS - h; y++) {
-    for (let x = 0; x <= GRID_COLS - w; x++) {
+  for (let y = 0; y <= rows - h; y++) {
+    for (let x = 0; x <= cols - w; x++) {
       if (fitsAt(occ, x, y, w, h)) return { x, y };
     }
   }
   return null;
 }
 
-// Same scan, but keeps extending downward past GRID_ROWS if the nominal grid
+// Same scan, but keeps extending downward past `rows` if the nominal grid
 // has no room — used only for moves that must never lose an item the player
 // already owns (unequip, equip-swap). Should only ever kick in a cell or two
 // over cap, since those moves free one item's footprint right before placing
 // another.
-function findFreeSlotOrExtend(inventory: EquipmentItem[], w: number, h: number): { x: number; y: number } {
-  const found = findFreeSlot(inventory, w, h);
+function findFreeSlotOrExtend(inventory: EquipmentItem[], w: number, h: number, cols: number): { x: number; y: number } {
+  const found = findFreeSlot(inventory, w, h, cols);
   if (found) return found;
   const occ = occupiedCells(inventory);
   for (let y = 0; ; y++) {
-    for (let x = 0; x <= GRID_COLS - w; x++) {
+    for (let x = 0; x <= cols - w; x++) {
       if (fitsAt(occ, x, y, w, h)) return { x, y };
     }
   }
@@ -71,11 +75,12 @@ export function canFitInInventory(inventory: EquipmentItem[], slot: ItemSlot): b
 }
 
 // Places `item` into `inventory`, finding it a free grid position. Always
-// succeeds (see findFreeSlotOrExtend) — callers gating the 50-cell cap
-// should check canFitInInventory() first and skip calling this otherwise.
-export function placeInInventory(inventory: EquipmentItem[], item: EquipmentItem): EquipmentItem[] {
+// succeeds (see findFreeSlotOrExtend) — callers gating the cap should check
+// canFitInInventory() (or findFreeSlot() directly, for a non-default grid
+// like the Mercador's stock) first and skip calling this otherwise.
+export function placeInInventory(inventory: EquipmentItem[], item: EquipmentItem, cols: number = GRID_COLS): EquipmentItem[] {
   const { w, h } = SLOT_FOOTPRINT[item.slot];
-  const pos = findFreeSlotOrExtend(inventory, w, h);
+  const pos = findFreeSlotOrExtend(inventory, w, h, cols);
   return [...inventory, { ...item, gridX: pos.x, gridY: pos.y }];
 }
 
@@ -89,6 +94,6 @@ export function usedCells(inventory: EquipmentItem[]): number {
 // safe to recompute). Used on load so old saves without gridX/gridY — or
 // any inventory whose footprints changed after a rebalance — always end up
 // valid.
-export function repackInventory(items: EquipmentItem[]): EquipmentItem[] {
-  return items.reduce<EquipmentItem[]>((acc, item) => placeInInventory(acc, item), []);
+export function repackInventory(items: EquipmentItem[], cols: number = GRID_COLS): EquipmentItem[] {
+  return items.reduce<EquipmentItem[]>((acc, item) => placeInInventory(acc, item, cols), []);
 }

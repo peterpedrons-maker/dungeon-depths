@@ -3,6 +3,8 @@ import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
 import { MAX_POTIONS } from './consumables';
 import { repackInventory } from './inventoryGrid';
+import { computeKingdomBonuses } from './buildings';
+import { generateMerchantStock, STOCK_COLS } from './merchantStock';
 
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
@@ -31,6 +33,7 @@ function migrateItem(item: any): EquipmentItem {
     critChanceBonus: item.critChanceBonus ?? 0, critDmgBonus: item.critDmgBonus ?? 0,
     secondaryStat: item.secondaryStat,
     enhanceLevel: item.enhanceLevel ?? 0,
+    identified: item.identified ?? true,
   };
 }
 
@@ -79,6 +82,14 @@ export function loadCharacter(): Character | null {
     // forward, and back-fill the auto-use threshold new saves get by default.
     const potions = Math.min(c.potions ?? 1, MAX_POTIONS);
     const potionThreshold = c.potionThreshold ?? 0.3;
+    const buildings = migrateBuildings(c.buildings ?? {});
+
+    // Saves from before the Mercador redesign have no stock at all — roll a
+    // fresh one rather than leave the shop empty until the player's next
+    // dungeon run happens to end in victory or death.
+    const merchantStock = c.merchantStock
+      ? repackInventory(c.merchantStock.map(migrateItem), STOCK_COLS)
+      : generateMerchantStock({ ...c, classId, level, buildings } as Character, computeKingdomBonuses(buildings));
 
     return {
       ...c,
@@ -106,7 +117,8 @@ export function loadCharacter(): Character | null {
       // could invalidate previously-saved positions anyway — repacking from
       // scratch on every load is cheap and guarantees no overlaps either way.
       inventory: repackInventory((c.inventory ?? []).map(migrateItem)),
-      buildings: migrateBuildings(c.buildings ?? {}),
+      buildings,
+      merchantStock,
     };
   } catch { return null; }
 }

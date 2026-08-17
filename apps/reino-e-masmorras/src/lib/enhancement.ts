@@ -59,3 +59,31 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
 export function itemDisplayName(item: EquipmentItem): string {
   return item.enhanceLevel > 0 ? `${item.name} +${item.enhanceLevel}` : item.name;
 }
+
+// Bare "+N stat" lines for an item's primary roll (already enhance-scaled —
+// pass the item through enhancedItem() first), shared by every item-detail
+// card (CharacterOverview's quick-view, the Mercador's buy card) so the two
+// never drift apart on wording.
+export function primaryStatLines(item: EquipmentItem): string[] {
+  return [
+    item.dmgBonus > 0 && `+${item.dmgBonus} dano`,
+    item.defBonus > 0 && `+${item.defBonus} defesa`,
+    item.hpBonus > 0 && `+${item.hpBonus} vida máxima`,
+    item.matkBonus > 0 && `+${item.matkBonus} ataque mágico`,
+    item.mdefBonus > 0 && `+${item.mdefBonus} defesa mágica`,
+    item.critChanceBonus > 0 && `+${Math.round(item.critChanceBonus * 100)}% chance de crítico`,
+    item.critDmgBonus > 0 && `+${Math.round(item.critDmgBonus * 100)}% dano crítico`,
+  ].filter((l): l is string => !!l);
+}
+
+export function secondaryStatLabel(item: EquipmentItem): string {
+  const s = item.secondaryStat!;
+  if (s.type === 'crit') return `+${Math.round(s.value * 100)}% chance de crítico`;
+  if (s.type === 'critDmg') return `+${Math.round(s.value * 100)}% dano crítico`;
+  if (s.type === 'block') return `+${Math.round(s.value * 100)}% chance de bloqueio`;
+  if (s.type === 'def') return `+${s.value} defesa`;
+  if (s.type === 'mdef') return `+${s.value} defesa mágica`;
+  if (s.type === 'atk') return `+${s.value} ataque`;
+  if (s.type === 'matk') return `+${s.value} ataque mágico`;
+  return `+${s.value} vida máxima`;
+}
