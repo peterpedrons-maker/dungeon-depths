@@ -34,7 +34,11 @@ export function IconLegs({ className, style }: IconProps) {
 export function IconGloves({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
-      <path d="M7 13V6a2 2 0 0 1 4 0v5V4.5a2 2 0 0 1 4 0V11V5.5a2 2 0 0 1 4 0V13a6 6 0 0 1-6 6h-1a5 5 0 0 1-5-5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      {/* Flipped so the cuff sits on top and the fingers point down — same
+          convention as the painted glove/gauntlet art. */}
+      <g transform="translate(0,24) scale(1,-1)">
+        <path d="M7 13V6a2 2 0 0 1 4 0v5V4.5a2 2 0 0 1 4 0V11V5.5a2 2 0 0 1 4 0V13a6 6 0 0 1-6 6h-1a5 5 0 0 1-5-5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      </g>
     </svg>
   );
 }
