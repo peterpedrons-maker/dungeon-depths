@@ -57,6 +57,21 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, in the
 The entire flat center of the frame (where an item icon will be placed by the game) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area, just a clean hollow square hole. Square canvas, 256×256 px, viewed perfectly flat-on, thin frame border only (see the 5-7% note above — this is the main thing distinguishing it from the old, much thicker frame this replaces). No text, no watermark, no drop shadow floating outside the frame.
 ```
 
+### Ícones de Slot Vazio — Paperdoll de Equipamentos (slot sem item)
+**Tamanho:** 1536×1024 px · **Uso:** 6 ícones (recortar em grade 3×2) pros 6 slots do paperdoll (Arma, Corpo, Pernas, Mãos, Mão Secundária, Acessório) quando estão vazios — substitui o glifo de linha simples usado hoje, que destoa da arte pintada dos itens reais.
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other item icons (weapons, armor), NOT flat vector, NOT pixel art. Each icon is a faint, pale gray-blue engraved silhouette of an empty equipment slot — like a dim chalk outline or a ghostly afterimage of the item shape, NOT a fully rendered colorful item. Soft and subtle, low contrast, meant to read as "nothing equipped here" rather than as a real piece of loot — no rich color, no material detail, no shading variation, just a single muted silhouette tone per icon with a faint soft inner glow along the outline.
+
+One single wide image containing SIX separate icons arranged in an even 3-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 70% of that cell, same faint pale silhouette style and rendering weight across all six.
+
+Row 1: 1) a simple straight sword silhouette, point down. 2) a simple sleeveless tunic/vest silhouette, front view. 3) a simple pair of trousers silhouette, front view.
+
+Row 2: 4) a simple pair of gloves silhouette, front view, oriented cuff-up with the fingers pointing straight down. 5) a simple round shield silhouette, front view. 6) a simple ring silhouette, viewed at a three-quarter angle like a jewelry icon.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1536×1024 px. No text, no labels, no numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
 ### Slot de Habilidade — Nós da árvore e barra de habilidades equipadas
 **Tamanho:** 256×256 px · **Uso:** moldura circular de cada nó/ícone na tela de Habilidades
 
