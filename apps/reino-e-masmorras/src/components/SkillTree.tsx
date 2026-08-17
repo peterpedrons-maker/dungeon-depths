@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Character, SkillNode, SkillNodeType, SkillPath } from '../types/game';
+import { ClassId, Character, SkillNode, SkillNodeType, SkillPath } from '../types/game';
 import { SKILL_TREES, canUnlockNode, unlockedCountInPath, MAX_EQUIPPED_ABILITIES } from '../lib/skills';
+import { activeAbilityIconStyle, passiveIconStyle } from '../lib/abilityIcons';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
-import { IconAttribute, IconPassive, IconActive } from './icons';
+import { IconActive } from './icons';
 import skillFrame from '../assets/slot-habilidade.webp';
 
 interface Props {
@@ -16,7 +17,19 @@ interface Props {
 }
 
 const TYPE_LABEL: Record<SkillNodeType, string> = { attribute: 'Atributo', passive: 'Passiva', active: 'Ativa' };
-const TYPE_ICON: Record<SkillNodeType, typeof IconAttribute> = { attribute: IconAttribute, passive: IconPassive, active: IconActive };
+
+// Active nodes get their own unique painted icon (per-ability sheet, when
+// the class has one) instead of the generic star; attribute/passive nodes
+// share one small library of icons keyed by effect kind (see
+// lib/abilityIcons.ts) instead of a plain diamond/shield for every node.
+function NodeIconView({ node, classId, color }: { node: SkillNode; classId: ClassId; color: string }) {
+  if (node.type === 'active') {
+    const bg = activeAbilityIconStyle(classId, node.id);
+    if (bg) return <div className="w-full h-full rounded-full overflow-hidden" style={bg} />;
+    return <IconActive className="w-full h-full" style={{ color }} />;
+  }
+  return <div className="w-full h-full rounded-full overflow-hidden" style={passiveIconStyle(node.effect)} />;
+}
 
 type NodeState = 'unlocked' | 'available' | 'locked';
 
@@ -67,7 +80,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
             >
               <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
               <div className="absolute inset-[18%] flex items-center justify-center">
-                <IconActive className="w-full h-full text-gold" />
+                <NodeIconView node={node} classId={ch.classId} color="#c89a2e" />
               </div>
               <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
@@ -151,7 +164,6 @@ function PathGraph({ path, ch, onSelect }: {
           const unlocked = ch.unlockedSkills.includes(node.id);
           const available = !unlocked && ch.skillPoints > 0 && canUnlockNode(node, ch.unlockedSkills);
           const state: NodeState = unlocked ? 'unlocked' : available ? 'available' : 'locked';
-          const NodeIcon = TYPE_ICON[node.type];
           const isEquipped = node.type === 'active' && ch.equippedAbilities.includes(node.id);
           const { x, y } = posOf(i);
           return (
@@ -168,7 +180,7 @@ function PathGraph({ path, ch, onSelect }: {
                 <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
               )}
               <div className="absolute inset-[18%] flex items-center justify-center">
-                <NodeIcon className="w-full h-full" style={{ color: state === 'locked' ? '#6b6355' : path.color }} />
+                <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
               </div>
               <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
