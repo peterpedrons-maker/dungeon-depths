@@ -52,16 +52,16 @@ Molduras pequenas para os ícones dos slots — quadrada para o equipamento (pap
 **Tamanho:** 256×256 px · **Uso:** moldura de cada slot na tela de Personagem
 
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, in the style of a World of Warcraft-esque equipment/inventory slot frame. A square frame carved from ornate bronze/gold metal with a beveled raised edge and a subtle engraved knotwork or filigree pattern running around the rim. Small decorative rivets or studs at each of the four corners. Warm bronze-to-gold gradient with a bright specular highlight along the top edge.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, in the style of a clean, minimal Diablo-esque equipment/inventory slot frame. A square frame in bronze/gold metal with a THIN, simple uniform border — only about 5-7% of the canvas width on each side, much thinner than an ornate picture-frame. Flat bevel, soft warm gold gradient, no engraved knotwork or filigree pattern running along the rim — keep the border clean and understated. A single small diamond-shaped rivet accent sits at each of the four corners only, slightly overlapping the border, and that's the only ornamentation.
 
-The entire flat center of the frame (where an item icon will be placed by the game) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area, just a clean hollow square hole. Square canvas, 256×256 px, viewed perfectly flat-on, frame border taking up about 18-22% of the canvas width on each side. No text, no watermark, no drop shadow floating outside the frame.
+The entire flat center of the frame (where an item icon will be placed by the game) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area, just a clean hollow square hole. Square canvas, 256×256 px, viewed perfectly flat-on, thin frame border only (see the 5-7% note above — this is the main thing distinguishing it from the old, much thicker frame this replaces). No text, no watermark, no drop shadow floating outside the frame.
 ```
 
 ### Slot de Habilidade — Nós da árvore e barra de habilidades equipadas
 **Tamanho:** 256×256 px · **Uso:** moldura circular de cada nó/ícone na tela de Habilidades
 
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, in the style of a World of Warcraft-esque talent tree node frame. The exact same bronze/gold ornate metal material, beveled edge and engraved filigree as an equipment slot frame from the same UI kit — but this one is a perfect CIRCLE instead of a square, like a round medallion or coin border. Small decorative studs spaced evenly around the ring. Warm bronze-to-gold gradient with a bright specular highlight along the top of the ring.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, in the style of a clean, minimal talent tree node frame. The exact same thin bronze/gold metal border, flat bevel and small corner-only diamond rivet accents as the equipment slot frame from the same UI kit (a thin ~5-7%-of-canvas-width border, NOT an ornate filigree-covered rim) — but this one is a perfect CIRCLE instead of a square, like a round medallion or coin border, with the rivet accents spaced evenly around the ring instead of just at corners. Warm bronze-to-gold gradient with a soft specular highlight along the top of the ring.
 
 The entire flat circular center (where a skill icon will be placed by the game) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area, just a clean hollow circular hole. Square canvas, 256×256 px, the circular frame centered and filling almost the whole canvas, viewed perfectly flat-on. No text, no watermark, no drop shadow floating outside the ring.
 ```
