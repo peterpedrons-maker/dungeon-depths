@@ -236,6 +236,467 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 ---
 
+## Ícones de Itens — Armas, Armaduras, Mão Secundária & Acessórios
+
+Os ícones que aparecem dentro de cada slot de equipamento/inventário (hoje são só os glifos genéricos de `icons.tsx` — uma espada simples pra qualquer arma, um peitoral simples pra qualquer armadura de corpo etc, sem diferenciar classe nem tier). Mesmo estilo pintado dos outros ícones de UI do jogo (moeda de ouro, poção, coração, runa, ícones de habilidade) — **não** é o pixel art usado nos sprites de personagem/inimigo/cenas nem nos emblemas de classe, já que esses ícones representam objetos dentro de um slot pequeno, igual a moeda e a poção, não um personagem.
+
+**Como o tier e a raridade viram arte:** cada tipo de item (`baseNoun` — ex. "Espada", "Peitoral", "Anel") tem uma escada de **10 tiers**, e cada tier tem sua própria arte — é isso que este kit gera, uma folha de 10 ícones por tipo de item. A **Raridade** (Comum/Incomum/Raro/Épico/Legendário) **não** precisa de arte própria: no jogo ela já é aplicada por código como um brilho/tingimento de cor atrás do ícone (`rarityColor()`, o mesmo círculo colorido que já aparece atrás de cada ícone equipado/no inventário hoje) — uma Espada de Aço comum e uma Espada de Aço lendária usam exatamente o mesmo ícone de tier 3, só o brilho de fundo muda. Isso corta o trabalho de arte de 1400 pra 280 ícones (14 armas + 9 armaduras + 2 mão-secundária + 3 acessórios, × 10 tiers cada).
+
+**Escala visual dos 10 tiers** (aplicada ao mesmo objeto-base em toda folha, da esquerda pra direita / topo pra baixo — cada folha abaixo já aplica essa escala ao objeto específico, mas é assim que ela evolui de forma geral):
+
+1. **Sucata** — improvisado, metal cinza-marrom fosco enferrujado, bordas lascadas/entalhadas, sem ornamento.
+2. **Ferro** — ferro escuro sólido e simples, forma funcional, sem adorno.
+3. **Aço** — aço azul-acinzentado polido, linhas mais limpas, brilho sutil de espelho.
+4. **Prata** — acabamento prateado brilhante, gravações finas, um pequeno acento de gema ou fio.
+5. **Ouro** — base de aço/prata com filigrana de ouro incrustada, um pouco mais de presença.
+6. **Mithril** — metal azul-esbranquiçado pálido e luminoso, parece quase sem peso, brilho suave.
+7. **Adamantina** — metal quase preto ultra-duro, facetas angulares nítidas, brilho violeta escuro fraco.
+8. **Obsidiana** — vidro vulcânico preto, bordas naturais irregulares e afiadas, brilho vermelho-brasa fraco por dentro.
+9. **Escamas de Dragão** — textura de escama de dragão incorporada ao material, brilho laranja-brasa quente nas bordas.
+10. **Lendas** — dourado-branco radiante, envolto numa aura suave, gravações rúnicas brilhantes, pequenos motivos de asa/chama/coroa — claramente a peça mais lendária da folha.
+
+**Convenção de cada folha:** imagem única 1280×512 px, grade de 10 ícones em 5 colunas × 2 linhas (linha 1 = tiers 1-5, linha 2 = tiers 6-10), fundo e vãos em magenta sólido (#FF00FF), sem texto/número/rótulo em nenhum ícone.
+
+### Armas — 14 folhas, uma por classe
+
+Cada classe tem sua própria arma exclusiva (nome já usado no jogo em `classes.ts`/`weaponBase`) — a folha cobre os 10 tiers dela.
+
+#### Espada — Guerreiro
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Guerreiro
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single straight sword, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude notched shortsword, dull rusted iron blade, chipped edge, frayed cord-wrapped hilt. 2) a plain solid iron longsword blade, straight edge, plain leather-wrapped grip. 3) a polished blue-steel longsword, clean sharp edge, subtle fuller groove. 4) a bright silver blade with a fuller groove, wire-wrapped hilt, small polished pommel gem. 5) a steel blade with ornate gold filigree along the fuller and a gold-inlaid crossguard.
+
+Row 2 (tiers 6-10): 6) a pale luminous blue-white blade that seems to shimmer, impossibly thin, slender elegant crossguard. 7) a near-black blade with sharp angular facets, faint dark violet glow along the edge. 8) a glassy volcanic-black blade, jagged natural edge, faint ember-red glow deep inside the glass. 9) a blade patterned with overlapping dragon-scale texture along the flat, warm ember-orange glow along the edge. 10) a radiant white-gold blade wreathed in a soft golden aura, glowing rune engravings along the fuller, small angel-wing motifs on the crossguard.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Cajado — Mago
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Mago
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single wizard's staff topped with a crystal, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crooked scrap-wood staff, rough bark, a dull cracked gray stone lashed to the top with frayed cord. 2) a plain straight iron-shod wooden staff, a small unpolished gray stone set in an iron claw at the top. 3) a smooth polished dark wood staff, a faceted steel-blue crystal set at the top. 4) a silver-banded wood staff, a brighter clear crystal orb cradled in a silver claw at the top. 5) a wood staff wrapped in gold filigree bands, an ornate gold claw holding a glowing amber crystal.
+
+Row 2 (tiers 6-10): 6) a pale luminous staff that looks carved from mithril itself, a softly glowing white-blue crystal orb at the top. 7) a near-black adamantine staff with sharp angular facets, a dark violet-glowing crystal orb at the top. 8) a glassy obsidian staff, jagged natural facets, a crystal orb glowing faint ember-red at the top. 9) a staff wrapped in overlapping dragon-scale plating, a crystal orb wreathed in warm ember-orange flame-glow at the top. 10) a radiant white-gold staff wreathed in a soft aura, glowing rune engravings down the shaft, a brilliant golden-white crystal orb crowned with small wing motifs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Adaga — Ladino
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Ladino
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single dagger, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude notched iron dagger, rust spots, a worn cord-wrapped grip. 2) a plain solid iron dagger, straight edge, plain leather grip. 3) a polished blue-steel dagger, sharp double edge, subtle fuller. 4) a bright silver dagger with a fullered blade and a wire-wrapped grip. 5) a steel dagger with gold filigree along the spine and a gold-capped pommel.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril dagger, impossibly thin blade, faint soft glow. 7) a near-black adamantine dagger with sharp angular facets, faint dark violet glow along the edge. 8) a glassy obsidian dagger, jagged natural glass edge, faint ember-red glow inside. 9) a dagger blade patterned with dragon-scale texture, warm ember-orange glow along the edge. 10) a radiant white-gold dagger wreathed in a soft golden aura, glowing rune engravings, small wing motifs on the guard.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Maça Sagrada — Clérigo
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Clérigo
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single flanged holy mace head on its haft, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude blunt iron mace head on a rough wooden haft, dull and pitted. 2) a plain solid iron mace, flanged head, plain wood haft. 3) a polished steel flanged mace head, clean edges, leather-wrapped haft. 4) a bright silver flanged mace head with fine engraved linework, wire-wrapped haft. 5) a steel mace head inlaid with gold filigree, ornate gold-capped haft end.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril mace head, softly glowing, slender elegant haft. 7) a near-black adamantine mace head with sharp angular flanges, faint dark violet glow. 8) a glassy obsidian mace head, jagged natural facets, faint ember-red glow inside. 9) a mace head wrapped in dragon-scale plating, warm ember-orange glow along the flanges. 10) a radiant white-gold mace head wreathed in a soft holy aura, glowing rune engravings, a small golden halo motif above the head.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Espada Longa — Cavaleiro
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Cavaleiro
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single broad chivalric longsword (wider blade and crossguard than a common sword — a knight's weapon), richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude notched broadsword, dull rusted iron blade, a plain worn iron crossguard. 2) a plain solid iron longsword, wide straight blade, simple crossguard. 3) a polished blue-steel longsword, broad clean edge, subtle fuller groove. 4) a bright silver longsword with a fullered blade and an engraved silver crossguard. 5) a steel longsword with gold filigree along the fuller and a gold-inlaid wide crossguard.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril longsword, broad slender blade that seems to shimmer. 7) a near-black adamantine longsword with sharp angular facets, faint dark violet glow. 8) a glassy obsidian longsword, jagged natural edge, faint ember-red glow inside. 9) a longsword blade patterned with dragon-scale texture, warm ember-orange glow along the edge. 10) a radiant white-gold longsword wreathed in a soft aura, glowing rune engravings along the fuller, a small crown motif atop the pommel.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Martelo Sagrado — Paladino
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Paladino
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single holy warhammer head (flat striking face and a back spike, distinct from a flanged mace) on its haft, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude blunt iron warhammer head on a rough wooden haft, dull and pitted. 2) a plain solid iron warhammer head, flat face and back spike, plain wood haft. 3) a polished steel warhammer head, clean edges, leather-wrapped haft. 4) a bright silver warhammer head with fine engraved linework, wire-wrapped haft. 5) a steel warhammer head inlaid with gold filigree, ornate gold-capped haft end.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril warhammer head, softly glowing, slender elegant haft. 7) a near-black adamantine warhammer head with sharp angular facets, faint dark violet glow. 8) a glassy obsidian warhammer head, jagged natural facets, faint ember-red glow inside. 9) a warhammer head wrapped in dragon-scale plating, warm ember-orange glow along the face. 10) a radiant white-gold warhammer head wreathed in a soft holy aura, glowing rune engravings, a small golden halo motif above the head.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Machado Bárbaro — Bárbaro
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Bárbaro
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single wide-bladed battle axe head on its haft, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude notched iron axe head on a rough wooden haft, dull rusted edge. 2) a plain solid iron axe head, wide blade, plain wood haft. 3) a polished steel axe head, curved sharp edge, leather-wrapped haft. 4) a bright silver axe head with engraved linework, wire-wrapped haft. 5) a steel axe head inlaid with gold filigree along the blade, ornate haft cap.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril axe head, wide curved blade that seems to shimmer. 7) a near-black adamantine axe head with sharp angular facets, faint dark violet glow. 8) a glassy obsidian axe head, jagged natural edge, faint ember-red glow inside. 9) an axe head wrapped in dragon-scale plating, warm ember-orange glow along the edge. 10) a radiant white-gold double-bladed axe head wreathed in a soft aura, glowing rune engravings, small flame motifs along the edge.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Arco Longo — Arqueiro
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Arqueiro
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single strung longbow, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude bent wooden longbow, rough bark, a frayed worn string. 2) a plain straight wooden longbow, iron-tipped limbs, plain string. 3) a polished dark wood longbow, steel-reinforced limb tips. 4) a silver-banded wood longbow, a fine braided silver-thread string. 5) a wood longbow wrapped in gold filigree bands at the limb tips.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-limbed longbow that seems to glow softly along its curve. 7) a near-black adamantine longbow with sharp angular limb facets, faint dark violet glow. 8) a glassy obsidian longbow, jagged natural limb edges, faint ember-red glow inside. 9) a longbow wrapped in dragon-scale plating along the limbs, warm ember-orange glow. 10) a radiant white-gold longbow wreathed in a soft aura, glowing rune engravings down the limbs, small wing motifs at the tips.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Besta — Caçador
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Caçador
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single loaded crossbow, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude wooden crossbow, rough iron trigger mechanism, a worn frayed string. 2) a plain iron-and-wood crossbow, simple trigger mechanism. 3) a polished steel-limbed crossbow, clean mechanical trigger housing. 4) a bright silver-accented crossbow with fine engraved linework on the stock. 5) a crossbow with gold filigree inlaid along the stock and limbs.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-limbed crossbow that seems to shimmer softly. 7) a near-black adamantine crossbow with sharp angular limb facets, faint dark violet glow. 8) a glassy obsidian crossbow, jagged natural limb edges, faint ember-red glow inside. 9) a crossbow wrapped in dragon-scale plating along the stock, warm ember-orange glow. 10) a radiant white-gold crossbow wreathed in a soft aura, glowing rune engravings along the stock, small wing motifs at the limb tips.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Grimório Arcano — Feiticeiro
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Feiticeiro
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single closed leather-bound spellbook (arcane grimoire), richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude tattered scrap-leather grimoire, rough stitched pages, a dull cracked cover. 2) a plain iron-clasped leather grimoire, unadorned cover. 3) a polished dark leather grimoire with a steel clasp and corner guards. 4) a silver-clasped grimoire with fine engraved cover linework. 5) a grimoire bound in gold filigree corner guards, an ornate gold clasp.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-clasped grimoire, its cover softly glowing with faint arcane light. 7) a near-black adamantine-bound grimoire with sharp angular corner facets, faint dark violet glow from the pages. 8) a glassy obsidian-bound grimoire, jagged facet corner guards, faint ember-red glow from within. 9) a grimoire bound in dragon-scale leather, warm ember-orange glow radiating from the pages. 10) a radiant white-gold grimoire wreathed in a soft aura, glowing rune engravings covering the cover, small wing motifs on the clasp.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Grimório Sombrio — Bruxo
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Bruxo
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single closed dark, cursed-looking spellbook (bound in black leather with bone accents — distinct from a plain arcane grimoire), richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude tattered black-leather grimoire, bound with rusted rings, a cracked bone clasp. 2) a plain iron-clasped dark grimoire, unadorned black cover. 3) a polished dark leather grimoire with a steel clasp and blackened corner guards. 4) a silver-clasped dark grimoire with fine engraved skull-motif cover linework. 5) a grimoire bound in gold filigree corner guards over black leather, an ornate gold-and-bone clasp.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-clasped grimoire bound in dark leather, its cover glowing faintly with cold blue-white light. 7) a near-black adamantine-bound grimoire with sharp angular corner facets, faint dark violet glow seeping from the pages. 8) a glassy obsidian-bound grimoire, jagged facet corner guards, faint ember-red glow from within. 9) a grimoire bound in dragon-scale leather with bone accents, warm ember-orange glow radiating from the pages. 10) a radiant grimoire wreathed in a soft violet-gold aura, glowing dark rune engravings covering the black cover, small curved horn motifs on the clasp.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Cajado Élfico — Druida
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Druida
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single living-wood nature staff topped with a crystal cradled by carved vines (distinct from a plain wizard's staff — organic, gnarled, vine-wrapped), richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude gnarled scrap-wood branch staff, rough bark, a cracked dull stone bound with vine. 2) a plain straight wooden staff, a small unpolished green stone bound with cord at the top. 3) a smooth polished pale wood staff, a faceted green crystal nestled in carved wood at the top. 4) a silver-banded wood staff, a brighter clear-green crystal cradled by living vines at the top. 5) a wood staff wrapped in gold filigree vine-shaped bands, an ornate golden leaf cradling a glowing green crystal.
+
+Row 2 (tiers 6-10): 6) a pale luminous staff that looks carved from living mithril-wood, a softly glowing pale-green crystal orb at the top. 7) a near-black adamantine-veined wood staff with sharp angular facets, a dark violet-glowing crystal orb at the top. 8) a glassy obsidian-veined staff, jagged natural facets, a crystal orb glowing faint ember-red at the top. 9) a staff wrapped in overlapping dragon-scale bark, a crystal orb wreathed in warm ember-orange flame-glow at the top. 10) a radiant white-gold living-wood staff wreathed in a soft aura, glowing rune-etched vines climbing the shaft, a brilliant golden-green crystal orb crowned with small leaf-wing motifs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Alaúde Encantado — Bardo
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Bardo
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single lute, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-wood lute, rough unfinished body, frayed worn strings. 2) a plain polished wood lute, simple sound hole, plain strings. 3) a polished dark wood lute with steel-wound strings and a clean lacquered finish. 4) a silver-inlaid wood lute with fine engraved linework around the sound hole. 5) a lute inlaid with gold filigree along the neck and body, ornate gold tuning pegs.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-inlaid lute that seems to shimmer, faintly glowing strings. 7) a near-black adamantine-inlaid lute with sharp angular body facets, faint dark violet glow from the sound hole. 8) a glassy obsidian-inlaid lute, jagged natural facet edges, faint ember-red glow from within. 9) a lute inlaid with dragon-scale plating along the body, warm ember-orange glow along the strings. 10) a radiant white-gold lute wreathed in a soft aura, glowing rune engravings across the body, small wing motifs at the scroll.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Cetro Nigromante — Necromante
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da arma do Necromante
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single scepter topped with a small animal/humanoid skull, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-metal scepter topped with a cracked, dull animal skull. 2) a plain iron scepter topped with a small polished bone skull. 3) a polished steel scepter topped with a clean-carved bone skull, faint etched detail. 4) a bright silver scepter topped with a silver-capped skull, fine engraved linework. 5) a scepter inlaid with gold filigree, topped with a gold-crowned skull.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril scepter, topped with a skull that glows with a faint cold blue-white light in its eye sockets. 7) a near-black adamantine scepter with sharp angular facets, topped with a skull glowing dark violet in its eye sockets. 8) a glassy obsidian scepter, jagged natural facets, topped with a skull glowing faint ember-red in its eye sockets. 9) a scepter wrapped in dragon-scale plating, topped with a skull wreathed in warm ember-orange flame-glow. 10) a radiant white-gold scepter wreathed in a soft dark-gold aura, glowing rune engravings down the shaft, topped with a skull crowned in small curved horn motifs, eyes blazing bright gold.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+### Armaduras — 9 folhas, 3 grupos de peso × Corpo/Pernas/Mãos
+
+As 14 classes se agrupam em 3 grupos de peso (leve/médio/pesado, ver `WEIGHT_GROUP` em `itemTiers.ts`) em vez de 14 escadas próprias — leve: Mago, Clérigo, Feiticeiro, Bruxo, Druida, Necromante, Bardo; médio: Ladino, Bárbaro, Arqueiro, Caçador; pesado: Guerreiro, Cavaleiro, Paladino.
+
+#### Robe — Corpo (Leve)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de corpo das classes leves
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single folded cloth robe garment, laid out flat and centered like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a tattered scrap-cloth robe, rough burlap texture, frayed hem, muted dull brown-gray. 2) a plain undyed linen robe, simple stitched seams. 3) a fine steel-gray wool robe with subtle embroidered trim. 4) a silver-trimmed robe with fine embroidered silver thread along the collar and hem. 5) a robe with gold filigree embroidery along the collar, cuffs and hem, rich fabric sheen.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-thread robe that seems to shimmer with a faint soft glow. 7) a near-black robe woven with adamantine thread, sharp angular embroidered facet patterns, faint dark violet glow. 8) an obsidian-black robe with glassy faceted clasps, faint ember-red glow along the seams. 9) a robe patterned with overlapping dragon-scale fabric texture, warm ember-orange glow along the trim. 10) a radiant white-gold robe wreathed in a soft aura, glowing rune-embroidered patterns across the fabric, small wing motifs on the shoulders.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Calças — Pernas (Leve)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de pernas das classes leves
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pair of cloth trousers, laid out flat and centered like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) tattered scrap-cloth trousers, rough burlap texture, frayed hems, muted dull brown-gray. 2) plain undyed linen trousers, simple stitched seams. 3) fine steel-gray wool trousers with subtle embroidered trim at the cuffs. 4) silver-trimmed trousers with fine embroidered silver thread along the cuffs. 5) trousers with gold filigree embroidery along the cuffs and waistband, rich fabric sheen.
+
+Row 2 (tiers 6-10): 6) pale luminous mithril-thread trousers that seem to shimmer with a faint soft glow. 7) near-black trousers woven with adamantine thread, sharp angular embroidered facet patterns, faint dark violet glow. 8) obsidian-black trousers with glassy faceted cuff clasps, faint ember-red glow along the seams. 9) trousers patterned with overlapping dragon-scale fabric texture, warm ember-orange glow along the cuffs. 10) radiant white-gold trousers wreathed in a soft aura, glowing rune-embroidered patterns along the seams, small wing motifs at the cuffs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Luvas — Mãos (Leve)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de mãos das classes leves
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pair of soft cloth gloves, laid out flat and centered like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) tattered scrap-cloth fingerless gloves, rough burlap texture, frayed cuffs. 2) plain undyed linen gloves, simple stitched seams. 3) fine steel-gray wool gloves with subtle embroidered trim at the cuffs. 4) silver-trimmed gloves with fine embroidered silver thread along the cuffs. 5) gloves with gold filigree embroidery along the cuffs, rich fabric sheen.
+
+Row 2 (tiers 6-10): 6) pale luminous mithril-thread gloves that seem to shimmer with a faint soft glow. 7) near-black gloves woven with adamantine thread, sharp angular embroidered facet patterns, faint dark violet glow. 8) obsidian-black gloves with glassy faceted cuff clasps, faint ember-red glow along the seams. 9) gloves patterned with overlapping dragon-scale fabric texture, warm ember-orange glow along the cuffs. 10) radiant white-gold gloves wreathed in a soft aura, glowing rune-embroidered cuffs, small wing motifs on the backs of the hands.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Colete — Corpo (Médio)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de corpo das classes médias
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single leather vest garment, laid out flat and centered like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-leather vest, rough stitching, dull cracked hide, patchwork panels. 2) a plain solid leather vest, simple buckled straps. 3) a polished dark leather vest with steel buckles and clean tooled seams. 4) a silver-buckled leather vest with fine tooled linework across the chest. 5) a leather vest inlaid with gold filigree trim and ornate gold buckles.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril-studded leather vest that seems to shimmer with a faint soft glow. 7) a near-black adamantine-studded leather vest with sharp angular stud facets, faint dark violet glow. 8) a glassy obsidian-studded leather vest, jagged natural facet studs, faint ember-red glow along the seams. 9) a leather vest patterned with overlapping dragon-scale plating, warm ember-orange glow along the trim. 10) a radiant white-gold-trimmed leather vest wreathed in a soft aura, glowing rune-tooled leather, small wing motifs on the shoulder straps.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Culotes — Pernas (Médio)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de pernas das classes médias
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pair of leather breeches, laid out flat and centered like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) crude scrap-leather breeches, rough stitching, dull cracked hide patches. 2) plain solid leather breeches, simple buckled straps at the knee. 3) polished dark leather breeches with steel knee buckles and clean tooled seams. 4) silver-buckled leather breeches with fine tooled linework down the sides. 5) leather breeches inlaid with gold filigree trim and ornate gold knee buckles.
+
+Row 2 (tiers 6-10): 6) pale luminous mithril-studded leather breeches that seem to shimmer with a faint soft glow. 7) near-black adamantine-studded leather breeches with sharp angular stud facets, faint dark violet glow. 8) glassy obsidian-studded leather breeches, jagged natural facet studs, faint ember-red glow along the seams. 9) leather breeches patterned with overlapping dragon-scale plating, warm ember-orange glow along the trim. 10) radiant white-gold-trimmed leather breeches wreathed in a soft aura, glowing rune-tooled leather, small wing motifs at the knees.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Braçadeiras — Mãos (Médio)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de mãos das classes médias
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pair of leather arm bracers, laid out flat and centered like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) crude scrap-leather bracers, rough stitching, dull cracked hide, worn buckle straps. 2) plain solid leather bracers, simple buckled straps. 3) polished dark leather bracers with steel buckles and clean tooled seams. 4) silver-buckled leather bracers with fine tooled linework. 5) leather bracers inlaid with gold filigree trim and ornate gold buckles.
+
+Row 2 (tiers 6-10): 6) pale luminous mithril-studded leather bracers that seem to shimmer with a faint soft glow. 7) near-black adamantine-studded leather bracers with sharp angular stud facets, faint dark violet glow. 8) glassy obsidian-studded leather bracers, jagged natural facet studs, faint ember-red glow along the seams. 9) leather bracers patterned with overlapping dragon-scale plating, warm ember-orange glow along the trim. 10) radiant white-gold-trimmed leather bracers wreathed in a soft aura, glowing rune-tooled leather, small wing motifs at the wrist.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Peitoral — Corpo (Pesado)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de corpo das classes pesadas
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single plate armor breastplate, viewed front-on like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude dented scrap-iron breastplate, rusted rivets, uneven patched plates. 2) a plain solid iron breastplate, simple riveted seams. 3) a polished steel breastplate, clean lines, subtle embossed centerline ridge. 4) a bright silver breastplate with fine engraved linework and a polished chest emblem. 5) a steel breastplate inlaid with gold filigree along the edges and an ornate gold chest emblem.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril breastplate that seems to shimmer, impossibly light-looking, elegant fluted lines. 7) a near-black adamantine breastplate with sharp angular faceted plates, faint dark violet glow along the seams. 8) a glassy obsidian breastplate, jagged natural facet plates, faint ember-red glow along the seams. 9) a breastplate overlaid with dragon-scale plating, warm ember-orange glow along the edges. 10) a radiant white-gold breastplate wreathed in a soft aura, glowing rune engravings across the chest, small angel-wing motifs on the pauldrons.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Grevas — Pernas (Pesado)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de pernas das classes pesadas
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pair of plate leg greaves, viewed front-on like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) crude dented scrap-iron greaves, rusted rivets, uneven patched plates. 2) plain solid iron greaves, simple riveted seams. 3) polished steel greaves, clean lines, subtle embossed ridges. 4) bright silver greaves with fine engraved knee-plate linework. 5) steel greaves inlaid with gold filigree along the edges and ornate gold knee plates.
+
+Row 2 (tiers 6-10): 6) pale luminous mithril greaves that seem to shimmer, impossibly light-looking, elegant fluted lines. 7) near-black adamantine greaves with sharp angular faceted plates, faint dark violet glow along the seams. 8) glassy obsidian greaves, jagged natural facet plates, faint ember-red glow along the seams. 9) greaves overlaid with dragon-scale plating, warm ember-orange glow along the edges. 10) radiant white-gold greaves wreathed in a soft aura, glowing rune engravings down the shins, small wing motifs on the knee plates.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Manoplas — Mãos (Pesado)
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da peça de mãos das classes pesadas
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pair of plate gauntlets, viewed front-on like a mannequin display, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) crude dented scrap-iron gauntlets, rusted rivets, uneven patched plates. 2) plain solid iron gauntlets, simple riveted finger plates. 3) polished steel gauntlets, clean lines, subtle embossed knuckle ridges. 4) bright silver gauntlets with fine engraved linework across the knuckles. 5) steel gauntlets inlaid with gold filigree along the cuffs and ornate gold knuckle plates.
+
+Row 2 (tiers 6-10): 6) pale luminous mithril gauntlets that seem to shimmer, impossibly light-looking, elegant fluted finger plates. 7) near-black adamantine gauntlets with sharp angular faceted plates, faint dark violet glow along the seams. 8) glassy obsidian gauntlets, jagged natural facet plates, faint ember-red glow along the seams. 9) gauntlets overlaid with dragon-scale plating, warm ember-orange glow along the knuckles. 10) radiant white-gold gauntlets wreathed in a soft aura, glowing rune engravings across the back of the hand, small wing motifs at the cuffs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+### Mão Secundária — 2 folhas
+
+Só as classes de uma mão só têm esse slot: Guerreiro/Cavaleiro/Paladino recebem um Escudo, Clérigo/Feiticeiro/Bruxo/Necromante recebem um Relicário — as demais classes (arma de duas mãos ou dual-wield) nunca veem esse slot preenchido.
+
+#### Escudo — Guerreiro, Cavaleiro, Paladino
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da mão secundária das classes tanque
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single kite-shaped shield, viewed front-on, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude dented scrap-iron kite shield, rusted rim, cracked wood backing showing through. 2) a plain solid iron kite shield, simple riveted rim. 3) a polished steel kite shield, clean lines, subtle embossed boss at the center. 4) a bright silver kite shield with fine engraved linework and a polished central boss. 5) a steel kite shield inlaid with gold filigree along the rim and an ornate gold boss emblem.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril kite shield that seems to shimmer, impossibly light-looking. 7) a near-black adamantine kite shield with sharp angular faceted surface, faint dark violet glow along the rim. 8) a glassy obsidian kite shield, jagged natural facet surface, faint ember-red glow along the rim. 9) a kite shield overlaid with dragon-scale plating, warm ember-orange glow along the edge. 10) a radiant white-gold kite shield wreathed in a soft aura, glowing rune engravings across the face, a small angel-wing motif at the top.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Relicário — Clérigo, Feiticeiro, Bruxo, Necromante
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 da mão secundária das classes de suporte de uma mão
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single hand-held reliquary — a small ornamental frame or claw cradling a glowing orb, meant to be held in an off-hand like a focus, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-metal reliquary orb, cracked dull housing, a rough iron claw. 2) a plain iron reliquary, a small unpolished gray orb held in a simple iron claw. 3) a polished steel reliquary, a faceted steel-blue orb held in a clean claw mount. 4) a bright silver reliquary with fine engraved linework, a brighter clear orb cradled in a silver claw. 5) a reliquary wrapped in gold filigree, an ornate gold claw holding a glowing amber orb.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril reliquary, a softly glowing white-blue orb cradled in a shimmering claw. 7) a near-black adamantine reliquary with sharp angular facets, a dark violet-glowing orb at its center. 8) a glassy obsidian reliquary, jagged natural facets, an orb glowing faint ember-red at its center. 9) a reliquary wrapped in dragon-scale plating, an orb wreathed in warm ember-orange flame-glow. 10) a radiant white-gold reliquary wreathed in a soft aura, glowing rune engravings, small wing motifs framing a brilliant golden-white orb.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+### Acessórios — 3 folhas
+
+Só existe 1 slot de acessório equipável, mas 3 tipos podem dropar — cada um com seu próprio domínio de stat (Anel: crítico; Amuleto: vida/defesa física/defesa mágica; Bracelete: ataque/ataque mágico), então o jogador escolhe qual prioridade levar.
+
+#### Anel
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 do acessório de anel (foco em crítico)
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single ring, viewed at a slight angle so the band and setting both read clearly, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-iron ring, rough uneven band, no setting. 2) a plain solid iron ring band, simple and unadorned. 3) a polished steel ring band with a small faceted gray stone setting. 4) a bright silver ring band with a small sparkling clear gem setting. 5) a gold-banded ring with an ornate claw setting holding a glowing amber gem.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril ring band that seems to shimmer, holding a softly glowing white-blue gem. 7) a near-black adamantine ring band with sharp angular facets, holding a dark violet-glowing gem. 8) a glassy obsidian ring band, jagged natural facets, holding a gem glowing faint ember-red. 9) a ring band wrapped in dragon-scale texture, holding a gem wreathed in warm ember-orange glow. 10) a radiant white-gold ring band wreathed in a soft aura, glowing rune engravings around the band, a brilliant golden-white gem blazing with light at its center.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Amuleto
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 do acessório de amuleto (foco em vida/defesa)
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single pendant amulet hanging from a short length of chain or cord, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-iron pendant on a frayed cord, dull cracked stone. 2) a plain iron pendant on a simple chain, a small unpolished gray stone. 3) a polished steel pendant on a fine chain, a faceted steel-blue stone. 4) a bright silver pendant on a silver chain, a brighter clear stone in a silver setting. 5) a gold pendant on a gold chain, ornate filigree setting holding a glowing amber stone.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril pendant on a shimmering chain, a softly glowing white-blue stone. 7) a near-black adamantine pendant with sharp angular facets on a dark chain, a dark violet-glowing stone. 8) a glassy obsidian pendant, jagged natural facets, a stone glowing faint ember-red on a dark chain. 9) a pendant wrapped in dragon-scale texture on a heavy chain, a stone wreathed in warm ember-orange glow. 10) a radiant white-gold pendant wreathed in a soft aura on a fine gold chain, glowing rune engravings across the pendant, small wing motifs at the top.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+#### Bracelete
+**Tamanho:** 1280×512 px · **Uso:** 10 ícones (grade 5×2), tiers 1-10 do acessório de bracelete (foco em ataque/ataque mágico)
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ability icons), NOT flat vector, NOT pixel art. Each icon is a single wrist bracelet/armband, viewed at a slight angle so the band reads as a ring shape, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing TEN separate icons arranged in an even 5-column × 2-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all ten — this is a power progression from tier 1 (weakest, top-left) to tier 10 (strongest, bottom-right), so make the visual richness escalate clearly from plain/crude to ornate/radiant across the grid.
+
+Row 1 (tiers 1-5): 1) a crude scrap-iron bracelet, rough uneven band, no ornament. 2) a plain solid iron bracelet band, simple and unadorned. 3) a polished steel bracelet band with a subtle embossed pattern. 4) a bright silver bracelet band with fine engraved linework. 5) a gold-banded bracelet with ornate filigree engraving around the whole band.
+
+Row 2 (tiers 6-10): 6) a pale luminous mithril bracelet band that seems to shimmer with a faint soft glow. 7) a near-black adamantine bracelet band with sharp angular facets, faint dark violet glow. 8) a glassy obsidian bracelet band, jagged natural facets, faint ember-red glow. 9) a bracelet band wrapped in dragon-scale texture, warm ember-orange glow along the edges. 10) a radiant white-gold bracelet band wreathed in a soft aura, glowing rune engravings around the entire band, small wing motifs at the clasp.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
+```
+
+**Como isso vai virar arte no jogo:** hoje o ícone dentro de cada slot é só um glifo genérico por tipo de slot (`SLOT_ICON` em `CharacterOverview.tsx`/`Ferreiro.tsx`/`Merchant.tsx` — uma espada simples pra qualquer arma, um peitoral simples pra qualquer corpo etc, ignorando classe/grupo de peso/tier/tipo de acessório). Depois que as 28 folhas acima forem geradas e recortadas em 280 ícones individuais, cada item passa a resolver seu ícone por `baseNoun` (o mesmo texto usado no nome do item — "Espada", "Peitoral", "Escudo", "Anel" etc) + `tier` (1-10), em vez do glifo genérico por slot — essa troca de código é um follow-up separado, depois que a arte estiver pronta (mesmo padrão dos ícones de inimigos/chefes, que também tiveram os prompts escritos primeiro e a integração de código depois).
+
+---
+
 ## Ornamentos
 
 Peças decorativas — faixa de título dos painéis, florão divisor entre seções.
