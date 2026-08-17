@@ -1009,7 +1009,7 @@ A wide nighttime view of the castle's inner courtyard, seen from just inside the
 
 1) "Forja" — a sturdy stone forge building with a chimney glowing orange from an internal furnace, sparks drifting upward, a blacksmith's anvil visible near the open door.
 2) "Capela" — a small stone chapel with a modest bell tower and a stained-glass window glowing soft blue-white from within.
-3) "Guilda dos Aventureiros" — a timber-and-stone hall with a hanging wooden sign and a banner bearing a simple heraldic emblem over the door.
+3) "Mercador" — a timber-framed market stall with an awning, wooden crates and barrels stacked beside it, a few visible wares (potions, coiled rope, a shield) hanging or displayed on a simple counter, a lantern lit for evening trade.
 
 Each of the three has a small wooden signpost bearing its Portuguese name near its entrance (small spelling mistakes acceptable). Leave one clearly buildable empty plot near the right edge — bare ground with a low stone foundation outline and a fog-shrouded silhouette of scaffolding, suggesting a future construction site, no legible sign.
 
@@ -1025,6 +1025,19 @@ Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO ant
 A close interior view of the Forja's workshop at night — not the wide courtyard from the Mapa de Construções scene, but a tighter shot inside the forge building itself. A stocky blacksmith NPC (weathered face, leather apron over simple work clothes, thick forearms) stands at a glowing anvil roughly centered in the frame, mid-swing with a hammer or looking toward the viewer with a friendly, gruff expression. Behind him, a lit furnace glows deep orange, casting warm light and drifting sparks across the scene. Stone walls hung with tool racks, tongs, and a few finished weapons and shields.
 
 Composition: keep the blacksmith and anvil — the main subject — comfortably within the center 70% of the square canvas, since the image will be cropped to different aspect ratios (sometimes wider, sometimes taller) depending on the player's screen. Don't place anything essential right at the edges.
+
+This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
+```
+
+### Cena do Mercador — Tela do Mercador (aberta pela construção Mercador)
+**Tamanho:** 1536×1536 px (quadrado) · **Uso:** banner grande em tela cheia no topo da tela do Mercador (aberta ao tocar "Conversar com o Mercador" no balão da construção) — substitui o placeholder de gradiente liso em CSS usado hoje. Mesmo tratamento do Ferreiro: ocupa ~44% da altura da tela do celular, largura total (`object-fit: cover`), quadrado garante sobra segura pra cortar em telas mais largas ou mais altas. Nome "Mercador" e botão de fechar ficam sobrepostos no canto superior, com gradiente escuro por trás pra legibilidade.
+
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A close view of a market stall at night, lit by a warm lantern hanging from the awning post. A shrewd, friendly merchant NPC (weathered traveling cloak over simple tunic, a coin pouch at the belt, maybe a pair of spectacles pushed up on the forehead) stands behind a wooden counter roughly centered in the frame, gesturing toward their wares or looking toward the viewer with an inviting, sly smile. The counter is covered with goods: a couple of glass potion bottles glowing faintly red, a coiled rope, a small chest with scattered coins, a shield leaning against a crate. Wooden crates and barrels stacked to the sides, a striped canvas awning overhead.
+
+Composition: keep the merchant and counter — the main subject — comfortably within the center 70% of the square canvas, since the image will be cropped to different aspect ratios depending on the player's screen. Don't place anything essential right at the edges.
 
 This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
 ```
