@@ -15,7 +15,6 @@ import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import { ItemIcon } from './ItemIcon';
-import slotFrame from '../assets/slot-equipamento.webp';
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
 const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
@@ -75,20 +74,13 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
         onClick={() => { if (!isGhostOffhand) setSelected({ kind: 'equipped', slot, item }); }}
         disabled={isGhostOffhand}
         title={isGhostOffhand ? 'Arma de duas mãos — ocupa as duas mãos' : undefined}
-        className={`relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 transition-transform duration-150 ${
-          isGhostOffhand ? 'opacity-40 cursor-default' : 'hover:scale-105'
+        className={`relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,transform] duration-150 ${
+          isGhostOffhand ? 'opacity-40 cursor-default' : 'hover:scale-105 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)]'
         }`}
       >
-        {item && !isGhostOffhand && (
-          <div
-            className="absolute inset-[16%] rounded-full"
-            style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
-          />
-        )}
-        <div className="absolute inset-[17%] flex items-center justify-center">
+        <div className="w-[88%] h-[88%] flex items-center justify-center">
           {item ? <ItemIcon item={item} className="w-full h-full" style={{ color }} /> : <Icon className="w-full h-full" style={{ color }} />}
         </div>
-        <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
       </button>
     );
   };

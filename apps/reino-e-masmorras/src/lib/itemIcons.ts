@@ -46,7 +46,7 @@ const WEAPON_SHEET: Partial<Record<ClassId, Sheet>> = {
   bruxo: { url: weaponBruxo, aspect: 0.8405 },
   druida: { url: weaponDruida, aspect: 0.4286 },
   bardo: { url: weaponBardo, aspect: 0.5343 },
-  necromante: { url: weaponNecromante, aspect: 0.5705 },
+  necromante: { url: weaponNecromante, aspect: 0.4025 },
 };
 
 const OFFHAND_SHEET: Record<OffhandKind, Sheet> = {
