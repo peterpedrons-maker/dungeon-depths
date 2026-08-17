@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Character, EquipmentItem, ItemSlot } from '../types/game';
+import { Character, EquipmentItem } from '../types/game';
 import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
 import {
   enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, maxEnhanceLevelForForja, successChanceForLevel,
 } from '../lib/enhancement';
 import { fmt } from '../lib/format';
 import { Button } from './Button';
-import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing, IconHammer } from './icons';
+import { ItemIcon as ItemIconGlyph } from './ItemIcon';
+import { IconHammer } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pergaminho from '../assets/pergaminho.webp';
 import ferreiroCena from '../assets/ferreiro-cena.webp';
@@ -19,10 +20,6 @@ interface Props {
   onClose: () => void;
 }
 
-const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
-  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
-};
-
 const ROLL_MS = 1500;
 
 function findLiveItem(ch: Character, id: string): EquipmentItem | null {
@@ -34,7 +31,6 @@ function findLiveItem(ch: Character, id: string): EquipmentItem | null {
 // preview cards — `dim` grays it out for "outcome not decided yet" and
 // "attempt failed", `lit` briefly pulses it for "attempt succeeded".
 function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?: boolean }) {
-  const Icon = SLOT_ICON[item.slot];
   const color = rarityColor(item.rarity);
   return (
     <div className={`relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 transition-[filter,opacity] duration-500 ${dim ? 'grayscale opacity-40' : 'opacity-100'}`}>
@@ -43,7 +39,7 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
         style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
       />
       <div className="absolute inset-[17%] flex items-center justify-center">
-        <Icon className="w-full h-full" style={{ color }} />
+        <ItemIconGlyph item={item} className="w-full h-full" style={{ color }} />
       </div>
       {item.enhanceLevel > 0 && (
         <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">

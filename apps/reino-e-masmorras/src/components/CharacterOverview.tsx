@@ -14,6 +14,7 @@ import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
+import { ItemIcon } from './ItemIcon';
 import slotFrame from '../assets/slot-equipamento.webp';
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
@@ -85,7 +86,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           />
         )}
         <div className="absolute inset-[17%] flex items-center justify-center">
-          <Icon className="w-full h-full" style={{ color }} />
+          {item ? <ItemIcon item={item} className="w-full h-full" style={{ color }} /> : <Icon className="w-full h-full" style={{ color }} />}
         </div>
         <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
       </button>
@@ -295,7 +296,6 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                 }}
               >
                 {ch.inventory.map((item) => {
-                  const Icon = SLOT_ICON[item.slot];
                   const color = rarityColor(item.rarity);
                   const { w, h } = SLOT_FOOTPRINT[item.slot];
                   const x = item.gridX ?? 0;
@@ -315,7 +315,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                       }}
                     >
                       <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                      <Icon className="relative w-[min(46cqw,46cqh)] h-[min(46cqw,46cqh)]" style={{ color }} />
+                      <ItemIcon item={item} className="relative w-[min(46cqw,46cqh)] h-[min(46cqw,46cqh)]" style={{ color }} />
                       {item.enhanceLevel > 0 && (
                         <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
                           +{item.enhanceLevel}
