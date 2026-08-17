@@ -314,8 +314,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                         containerType: 'size',
                       }}
                     >
-                      <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                      <ItemIcon item={item} className="relative w-[min(46cqw,46cqh)] h-[min(46cqw,46cqh)]" style={{ color }} />
+                      <ItemIcon item={item} className="relative w-[97%] h-[97%]" style={{ color }} />
                       {item.enhanceLevel > 0 && (
                         <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
                           +{item.enhanceLevel}
