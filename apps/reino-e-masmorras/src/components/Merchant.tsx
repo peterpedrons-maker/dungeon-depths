@@ -6,6 +6,7 @@ import { itemDisplayName } from '../lib/enhancement';
 import { highestAccessibleItemTier } from '../lib/dungeons';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { MAX_POTIONS } from '../lib/consumables';
+import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { Panel } from './Panel';
 import { Button } from './Button';
 import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
@@ -36,9 +37,9 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
   const offhandLabel = offhandKind === 'shield' ? 'Escudo Misterioso' : 'Relicário Misterioso';
 
   function buyMysteryItem(slot: ItemSlot) {
-    if (ch.gold < ITEM_COST) return;
+    if (ch.gold < ITEM_COST || !canFitInInventory(ch.inventory, slot)) return;
     const item = generateItem(slot, ch.classId, highestAccessibleItemTier(ch.level), kingdomBonuses.itemQualityBonusPct);
-    onCharacterChange({ ...ch, gold: ch.gold - ITEM_COST, inventory: [...ch.inventory, item] });
+    onCharacterChange({ ...ch, gold: ch.gold - ITEM_COST, inventory: placeInInventory(ch.inventory, item) });
   }
 
   return (
@@ -59,15 +60,16 @@ export function Merchant({ character: ch, onBuyPotion, onCharacterChange }: Prop
         />
         {shopSlots.map((slot) => {
           const Icon = SLOT_ICON[slot];
+          const full = !canFitInInventory(ch.inventory, slot);
           return (
             <ShopCard
               key={slot}
               icon={<Icon className="w-full h-full text-parchment/70" />}
               frame
               name={slot === 'offhand' ? offhandLabel : MYSTERY_LABEL[slot]}
-              desc="Item da sua classe, raridade incerta."
+              desc={full ? 'Inventário cheio — abra espaço pra comprar.' : 'Item da sua classe, raridade incerta.'}
               cost={ITEM_COST}
-              disabled={ch.gold < ITEM_COST}
+              disabled={ch.gold < ITEM_COST || full}
               onBuy={() => buyMysteryItem(slot)}
             />
           );

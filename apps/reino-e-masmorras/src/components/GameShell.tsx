@@ -4,6 +4,7 @@ import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
 import { enhanceCost, maxEnhanceLevelForForja, successChanceForLevel } from '../lib/enhancement';
+import { placeInInventory } from '../lib/inventoryGrid';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS } from '../lib/consumables';
 import { TopBar } from './TopBar';
@@ -116,15 +117,19 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
 
   function handleEquip(item: EquipmentItem) {
     const prevEquipped = character.equipment[item.slot];
-    const inventory = character.inventory.filter((i) => i.id !== item.id);
-    if (prevEquipped) inventory.push(prevEquipped);
+    // Free the incoming item's own cells first, then place the outgoing one
+    // — swapping two same-slot items (almost always the common case) nets
+    // out to the same footprint, so this practically always finds room
+    // without needing to gate it behind the 50-cell cap like new pickups.
+    let inventory = character.inventory.filter((i) => i.id !== item.id);
+    if (prevEquipped) inventory = placeInInventory(inventory, prevEquipped);
     onCharacterChange({ ...character, equipment: { ...character.equipment, [item.slot]: item }, inventory });
   }
 
   function handleUnequip(slot: ItemSlot) {
     const item = character.equipment[slot];
     if (!item) return;
-    onCharacterChange({ ...character, equipment: { ...character.equipment, [slot]: null }, inventory: [...character.inventory, item] });
+    onCharacterChange({ ...character, equipment: { ...character.equipment, [slot]: null }, inventory: placeInInventory(character.inventory, item) });
   }
 
   function handleSellItem(item: EquipmentItem) {
