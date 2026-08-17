@@ -9,6 +9,7 @@ import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { generateItem, rarityColor } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
+import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { getEquippedAbilities } from '../lib/skills';
 import { rollAttack, rollAbilityHit } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
@@ -162,8 +163,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     }
     const availableSlots = OFFHAND_KIND[chRef.current.classId] ? DROP_SLOTS : DROP_SLOTS.filter((s) => s !== 'offhand');
     const slot = availableSlots[Math.floor(Math.random() * availableSlots.length)];
+    if (!canFitInInventory(chRef.current.inventory, slot)) {
+      pushLog('Inventário cheio — o item foi perdido.');
+      return;
+    }
     const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
-    updateCh({ ...chRef.current, inventory: [...chRef.current.inventory, item] });
+    updateCh({ ...chRef.current, inventory: placeInInventory(chRef.current.inventory, item) });
     pushLog(`Você encontrou: ${item.name}!`);
   }
 

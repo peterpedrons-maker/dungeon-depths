@@ -7,6 +7,7 @@ import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment
 import { enhancedItem, itemDisplayName } from '../lib/enhancement';
 import { EnhanceSection } from './EnhanceSection';
 import { OFFHAND_KIND } from '../lib/itemTiers';
+import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
 import { heroSprites } from '../game/sprites';
 import { Panel } from './Panel';
@@ -48,7 +49,12 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const [tab, setTab] = useState<'equipamentos' | 'inventario'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
-  const visibleInventory = filter === 'all' ? ch.inventory : ch.inventory.filter((i) => i.slot === filter);
+  const used = usedCells(ch.inventory);
+  // Equip/unequip can push the inventory past the nominal 50-cell cap (that
+  // cap is only enforced on loot/purchase, never on gear you already own) —
+  // grow the grid's row count to fit whatever actually landed there instead
+  // of clipping the overflow items invisibly under a fixed 5-row viewport.
+  const gridRows = Math.max(GRID_ROWS, ...ch.inventory.map((i) => (i.gridY ?? 0) + SLOT_FOOTPRINT[i.slot].h));
   const hasOffhand = !!OFFHAND_KIND[ch.classId];
   // The inventory filter only offers "Mão Secundária" for classes that can
   // actually find/buy one — a two-handed class never has that item in its
@@ -258,7 +264,12 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       ) : (
         <>
           <div className="flex items-center justify-between mb-2 gap-3">
-            <span className="text-[10px] text-parchment/40 shrink-0">{ch.inventory.length} item{ch.inventory.length !== 1 ? 's' : ''}</span>
+            <span className="text-[10px] text-parchment/40 shrink-0">
+              {ch.inventory.length} item{ch.inventory.length !== 1 ? 's' : ''}
+            </span>
+            <span className={`text-[10px] font-bold shrink-0 ${used >= GRID_CELLS ? 'text-crimson' : 'text-gold/80'}`}>
+              {used}/{GRID_CELLS} células
+            </span>
           </div>
 
           {ch.inventory.length > 0 && (
@@ -273,30 +284,47 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           {ch.inventory.length === 0 ? (
             <p className="text-parchment/40 text-sm italic">Vazio. Derrote inimigos nas masmorras para encontrar equipamentos.</p>
           ) : (
-            <div className="rounded border border-black/50 bg-black/25 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-              {visibleInventory.length === 0 ? (
-                <p className="text-parchment/40 text-sm italic text-center py-4">Nenhum item nessa categoria.</p>
-              ) : (
-                <div className="grid grid-cols-5 sm:grid-cols-6 gap-2.5 max-h-[28rem] overflow-y-auto pr-0.5">
-                  {visibleInventory.map((item) => {
-                    const Icon = SLOT_ICON[item.slot];
-                    const color = rarityColor(item.rarity);
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setSelected({ kind: 'inventory', item })}
-                        className="relative aspect-square transition-transform duration-150 hover:scale-105"
-                      >
-                        <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                        <div className="absolute inset-[17%] flex items-center justify-center">
-                          <Icon className="w-full h-full" style={{ color }} />
-                        </div>
-                        <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+            <div className="rounded border border-black/50 bg-black/25 p-2 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+              <div
+                className="relative w-full bg-[rgba(0,0,0,0.45)] rounded-sm overflow-hidden"
+                style={{
+                  aspectRatio: `${GRID_COLS} / ${gridRows}`,
+                  backgroundImage:
+                    'linear-gradient(to right, rgba(122,90,52,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(122,90,52,0.35) 1px, transparent 1px)',
+                  backgroundSize: `${100 / GRID_COLS}% ${100 / gridRows}%`,
+                }}
+              >
+                {ch.inventory.map((item) => {
+                  const Icon = SLOT_ICON[item.slot];
+                  const color = rarityColor(item.rarity);
+                  const { w, h } = SLOT_FOOTPRINT[item.slot];
+                  const x = item.gridX ?? 0;
+                  const y = item.gridY ?? 0;
+                  const dimmed = filter !== 'all' && item.slot !== filter;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setSelected({ kind: 'inventory', item })}
+                      className={`absolute flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,opacity] duration-150 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)] ${dimmed ? 'opacity-30 grayscale' : ''}`}
+                      style={{
+                        left: `${(x / GRID_COLS) * 100}%`,
+                        top: `${(y / gridRows) * 100}%`,
+                        width: `${(w / GRID_COLS) * 100}%`,
+                        height: `${(h / gridRows) * 100}%`,
+                        containerType: 'size',
+                      }}
+                    >
+                      <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
+                      <Icon className="relative w-[min(46cqw,46cqh)] h-[min(46cqw,46cqh)]" style={{ color }} />
+                      {item.enhanceLevel > 0 && (
+                        <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
+                          +{item.enhanceLevel}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </>

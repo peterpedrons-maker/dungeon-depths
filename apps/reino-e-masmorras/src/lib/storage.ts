@@ -2,6 +2,7 @@ import { Attributes, Character, ClassId, EquipmentItem, RankEntry } from '../typ
 import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
 import { MAX_POTIONS } from './consumables';
+import { repackInventory } from './inventoryGrid';
 
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
@@ -101,7 +102,10 @@ export function loadCharacter(): Character | null {
         offhand: eq.offhand ? migrateItem(eq.offhand) : null,
         accessory: eq.accessory ? migrateItem(eq.accessory) : null,
       },
-      inventory: (c.inventory ?? []).map(migrateItem),
+      // Old saves have no gridX/gridY at all, and a slot-footprint rebalance
+      // could invalidate previously-saved positions anyway — repacking from
+      // scratch on every load is cheap and guarantees no overlaps either way.
+      inventory: repackInventory((c.inventory ?? []).map(migrateItem)),
       buildings: c.buildings ?? {},
     };
   } catch { return null; }
