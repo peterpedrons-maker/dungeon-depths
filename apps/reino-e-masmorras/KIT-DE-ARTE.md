@@ -142,41 +142,271 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, icon f
 Centered in frame, filling about 80% of the canvas. Solid magenta background (#FF00FF). No text, no border, no hand holding it. Canvas 256×256 px.
 ```
 
-### Ícones de Habilidades — Grade I: Elementos & Status
-**Tamanho:** 1536×768 px · **Uso:** 18 ícones (recortar em grade 6×3) pros nós de habilidade ativa/passiva da árvore que envolvem fogo, gelo, raio, veneno, luz sagrada e magia sombria/amaldiçoada
+### Ícones de Habilidades — Ativas por Classe + Biblioteca de Passivas
 
-```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small magical object or symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Reformulado a pedido do usuário: antes, essas duas folhas ("Grade I/II") cobriam só **temas** de efeito (fogo, veneno, crítico, cura...), e cada nó da árvore — ativo ou passivo — era associado ao tema mais parecido, então habilidades bem diferentes entre si (de classes diferentes, ou até dentro da mesma classe) podiam acabar reaproveitando exatamente o mesmo ícone. Agora a divisão é outra:
 
-One single wide image containing EIGHTEEN separate icons arranged in an even 6-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all eighteen.
+- **Habilidades ativas (nó tipo `active`, 5 por trilha × 3 trilhas = 15 por classe):** cada uma tem seu **próprio ícone único**, desenhado pro nome e efeito específico dela — nenhuma reutilização entre habilidades ativas, nem dentro da mesma classe nem entre classes. São 14 folhas abaixo, uma por classe, cada uma com as 15 habilidades ativas daquela classe (as 3 trilhas empilhadas, uma por linha da grade).
+- **Nós de atributo secundário e passivas genéricas (nó tipo `attribute`/`passive`, 10 por trilha × 3 trilhas = 30 por classe):** esses são pequenos bônus percentuais que se repetem MUITO entre classes (ex: "+1% crítico" aparece em praticamente toda trilha do jogo) — pra esses, uma **única folha compartilhada** de 18 ícones (por conceito de efeito, não por nó) cobre o jogo inteiro. Um nó de "+3% dano crítico" no Guerreiro usa o mesmo ícone que um nó idêntico no Mago.
 
-Row 1 (fire/frost/lightning): 1) a swirling orange-red fireball with trailing embers. 2) a curved blade-shaped arc wreathed in flame. 3) a sharp translucent blue-white ice crystal shard. 4) a glowing hexagonal shield made of blue ice crystal facets. 5) a jagged bright yellow-white lightning bolt. 6) two crackling arcs of blue-white electricity linking together.
+Isso leva o total de **630 nós** (14 classes × 3 trilhas × 15 nós) pra **228 ícones reais** (210 ativos únicos + 18 passivos compartilhados) — ainda um esforço grande, mas cada habilidade ativa (o que o jogador realmente vê brilhando na barra de combate) ganha identidade visual própria.
 
-Row 2 (poison/holy): 7) a small pale skull with sickly green venom dripping from its jaw. 8) a corked glass vial glowing with toxic green liquid and rising green vapor. 9) a radiant golden sunburst with light rays fanning outward. 10) a glowing golden warhammer head wreathed in holy light rays. 11) a clawed shadowy hand slashing forward, wrapped in wisps of dark purple smoke. 12) a dark skull wreathed in swirling purple-black smoke, faint violet glow in the eye sockets.
+**Convenção comum a todas as 15 folhas abaixo:** mesmo estilo pintado das outras folhas de ícone deste kit (moeda, poção, coração, runa — pintura digital rica, NÃO vetor liso, NÃO pixel art), fundo e vãos em magenta sólido (#FF00FF), sem texto/número/rótulo em nenhum ícone, luz vindo de cima-esquerda em todos.
 
-Row 3 (arcane/curse/nature/drain): 13) a glowing violet magic rune circle etched with arcane symbols, radiating soft light. 14) a dark purple skull-shaped sigil rune with jagged cracks of black energy. 15) a spiral of swirling bright-green leaves. 16) a coiled thorny green vine wrapped into a circular shape. 17) a swirling wisp of dark red-purple energy being pulled inward toward a center point. 18) a black flame with sickly green edges, corrupted and unnatural looking.
-
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
-```
-
-### Ícones de Habilidades — Grade II: Físico & Suporte
-**Tamanho:** 1536×768 px · **Uso:** 18 ícones (recortar em grade 6×3) pros nós de habilidade ativa/passiva que envolvem golpes físicos, crítico, defesa, cura e suporte (buffs/bardo)
+#### Biblioteca de Passivas — reutilizável entre todas as classes
+**Tamanho:** 1536×768 px · **Uso:** 18 ícones (recortar em grade 6×3) pros nós de atributo secundário e passivas genéricas de TODAS as trilhas do jogo — substitui as folhas "Grade I" e "Grade II" antigas
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small object or symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
 
 One single wide image containing EIGHTEEN separate icons arranged in an even 6-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all eighteen.
 
-Row 1 (melee weapons): 1) two crossed silver swords. 2) a wide silver sword-slash arc, motion-streaked. 3) a warhammer striking the ground with a small cracked-impact burst. 4) a heavy axe mid-swing leaving a curved cleave arc. 5) two crossed curved daggers. 6) an arrow striking dead-center of a small wooden target ring.
+Row 1 (offense stats): 1) "chance de crítico" — a red-and-gold circular target reticle with a small crosshair. 2) "dano crítico" — a bright golden critical-hit starburst. 3) "precisão" — a single sharp arrow piercing dead-center of a small wooden target ring. 4) "dano físico bônus" — two small crossed silver swords. 5) "dano mágico bônus" — a small floating violet-blue arcane spark/ember. 6) "dano contra queimado" — a small orange fireball with a sharp "+" impact-burst overlapping it.
 
-Row 2 (ranged/crit/defense): 7) a crossbow bolt hitting with a small burst of impact lines. 8) a bright golden critical-hit starburst. 9) a red-and-gold circular target reticle. 10) a round wooden-and-iron shield with a spark of impact on its face. 11) a translucent blue barrier dome/bubble. 12) a swirling spiral of pale wind, suggesting a quick dodge or burst of speed.
+Row 2 (defense/mitigation stats): 7) "defesa" — a round wooden-and-iron shield, plain and sturdy. 8) "defesa mágica" — a translucent blue hexagonal ward/barrier facet. 9) "chance de bloqueio" — a round shield catching a small spark of impact on its face. 10) "evasão" — a swirling spiral of pale wind suggesting a quick dodge. 11) "reflete dano (espinhos)" — a round shield ringed with small sharp iron spikes, a deflected spark bouncing off. 12) "dano contra envenenado" — a small pale skull dripping green venom with a sharp "+" impact-burst overlapping it.
 
-Row 3 (heal/support): 13) a small glowing red heart rising with a sparkle trail above it. 14) a glowing golden cross with soft light rays, a holy healing symbol. 15) a golden musical note with small sound-wave rings around it. 16) three concentric pale sound-wave rings radiating outward. 17) a pale skull with a small curved scythe crossed behind it. 18) a downward-angled dagger strike with sharp motion-impact lines, like a finishing blow.
+Row 3 (sustain/utility stats): 13) "vida máxima" — a small glowing red heart with a faint outward-pulsing rim. 14) "roubo de vida" — a crimson blood-drop being drawn upward in a faint red siphon-swirl. 15) "cura ao acertar crítico" — a small heart overlapping a golden crit-starburst. 16) "mais dano com vida baixa" — a clenched fist wreathed in a wild red rage-aura, veins glowing. 17) "recarga de habilidade reduzida" — a small hourglass with a faint lightning-swirl around it, sand flowing unusually fast. 18) "genérico / atributo primário" — a single faceted gold gemstone/rhombus, catching a bright specular highlight.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
 ```
 
-**Como isso vai virar arte no jogo:** com ~630 nós de habilidade no total (14 classes × 3 trilhas × 15 nós), não dá pra ter um ícone único desenhado pra cada um — essas 36 imagens cobrem os "temas" de efeito que se repetem entre as classes (fogo, veneno, gelo, cura, crítico, etc). Depois de geradas, cada nó do código é associado ao ícone do tema mais parecido com o efeito dele (ex: todo nó que aplica veneno usa a caveira venenosa; todo nó de cura usa a cruz/coração). Hoje os nós usam ícones genéricos (losango pra atributo, escudo pra passiva, estrela pra ativa) — essa é a próxima camada de detalhe em cima disso.
+#### Habilidades Ativas — Guerreiro
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Guerreiro, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Furioso" path, rage-red theme): 1) "Golpe Brutal" — a heavy gauntleted fist slamming down with a cracked-impact burst, red motion streaks. 2) "Golpe Atordoante" — a mace strike leaving a ring of small white stun-stars circling above the impact point. 3) "Fúria Cega" — a raging eye squinting through a blindfold, a golden crit-starburst bursting through it. 4) "Lâmina Sanguinária" — a crimson-stained greatsword slash arc with a dripping blood-red motion trail. 5) "Fúria Imparável" — a berserker's clenched fist wreathed in a wild red battle-aura, glowing veins.
+
+Row 2 ("Guardião" path, steel-grey theme): 6) "Postura Defensiva" — a round shield planted into the ground, glowing blue-white defensive aura ring. 7) "Muralha Viva" — a row of overlapping shields forming a small fortress silhouette. 8) "Instinto Blindado" — a shield wrapped in a shimmering protective dome, deflecting small dark arrows. 9) "Bastião Inabalável" — a massive tower-shield with reinforced golden rivets and a bright aura. 10) "Fortaleza Viva" — a fortress-shaped shield radiating a powerful golden nimbus.
+
+Row 3 ("Duelista" path, gold-precision theme): 11) "Fúria do Duelo" — a rapier tip glinting with a golden crit-starburst. 12) "Estocada Rápida" — a quick rapier thrust leaving a sharp straight motion-streak. 13) "Golpe de Misericórdia" — a dagger poised for a downward finishing strike over a cracked skull. 14) "Fúria Absoluta" — twin rapiers crossed in an X with a blazing gold crit-starburst behind them. 15) "Execução Perfeita" — a rapier piercing straight through a shattering skull silhouette.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Mago
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Mago, uma linha por trilha (nota: as 3 trilhas do Mago já são elementalmente distintas — fogo/gelo/raio — então cada linha abaixo pode virar uma imagem separada também, se preferir gerar uma de cada vez)
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small magical effect or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Piromante" path, fire theme): 1) "Queimadura" — a wand tip igniting a small enemy silhouette into orange flame. 2) "Névoa Onírica" — a swirling lavender dream-mist with small drooping "Zzz" wisps and an impact spark. 3) "Chuva de Fogo" — a shower of small falling fireball streaks raining down. 4) "Detonação" — a burning enemy silhouette exploding outward in a fiery burst. 5) "Cataclismo Ardente" — a massive fire mushroom-cloud eruption filling the frame.
+
+Row 2 ("Gélido" path, ice theme): 6) "Barreira de Gelo" — a crystalline ice-shield dome forming around a small figure. 7) "Névoa Congelante" — a swirling frost-mist cloud with faint ice-shard glints. 8) "Casca Endurecida" — a body silhouette encased in a glowing translucent ice-armor shell. 9) "Fortaleza de Gelo" — a jagged ice fortress-wall bursting upward. 10) "Eternidade Glacial" — a towering glacier spire radiating a pale-blue aura.
+
+Row 3 ("Eletromante" path, lightning theme): 11) "Sobrecarga" — a crackling ball of electricity with a golden crit-starburst at its core. 12) "Choque em Cadeia" — a lightning bolt striking a burning enemy silhouette, a branching chain-arc. 13) "Raio Perfurante" — a single narrow lightning bolt piercing straight through. 14) "Fúria Elétrica" — twin crossed lightning bolts crackling around a golden starburst. 15) "Tempestade Devastadora" — a swirling storm-vortex of lightning bolts converging on a burning point.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Ladino
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Ladino, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Veneno" path, toxic-green theme): 1) "Golpe Peçonhento" — a curved dagger dripping sickly green venom onto a small skull. 2) "Corte Tóxico" — a quick green-tinged dagger slash arc. 3) "Veneno Mortal" — a vial of toxic green liquid shattering over a skull. 4) "Golpe Fatal" — a dagger stabbing into a green-glowing poisoned wound mark. 5) "Execução Venenosa" — a dagger plunging through a skull wreathed in thick green venom mist.
+
+Row 2 ("Sombras" path, shadow-grey theme): 6) "Passo nas Sombras" — a shadowy silhouette splitting into a wispy dark after-image mid-step. 7) "Golpe Cegante" — a dagger slash trailing a burst of dark sparkles across a small eye symbol. 8) "Salto para as Sombras" — a figure dissolving into a swirl of dark smoke, leaving only an outline. 9) "Véu das Sombras" — a cloak of swirling black shadow-wisps wrapping around a silhouette. 10) "Um com a Escuridão" — a fully shadow-merged silhouette, barely visible, faint violet glowing eyes.
+
+Row 3 ("Lâminas Gêmeas" path, gold-precision theme): 11) "Investida Precisa" — twin curved daggers crossed with a golden crit-starburst behind them. 12) "Golpe Perfurante" — a dagger punching straight through a cracking armor plate. 13) "Golpe de Misericórdia" — twin daggers poised for a downward finishing strike over a cracked skull. 14) "Fúria das Lâminas" — a whirlwind blur of twin daggers spinning around a bright gold starburst. 15) "Execução Perfeita" — twin daggers piercing through a shattering skull silhouette.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Clérigo
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Clérigo, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small holy effect, weapon, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Devoção" path, holy-gold healing theme): 1) "Cura Divina" — a golden holy chalice overflowing with radiant light, small healing sparkles rising. 2) "Renovação" — a glowing golden cross with soft healing rays fanning outward. 3) "Escudo Sagrado" — a translucent golden holy-barrier dome. 4) "Milagre" — descending beams of golden holy light converging on a kneeling silhouette. 5) "Ressurreição Menor" — a bright golden phoenix-feather-like light burst rising upward.
+
+Row 2 ("Retidão" path, holy-bronze defense theme): 6) "Escudo da Retidão" — a golden holy shield absorbing an impact with a bright flash. 7) "Golpe Sagrado" — a mace strike wreathed in golden holy light with a small impact burst. 8) "Voto de Proteção" — a golden shield emblazoned with a glowing cross-sigil. 9) "Martelo da Fé" — a warhammer strike wreathed in radiant golden light, a ground-crack impact. 10) "Muralha Divina" — a towering wall of golden holy light-pillars.
+
+Row 3 ("Provação" path, holy-purple fire theme): 11) "Chama Purificadora" — a golden-white holy flame igniting a small enemy silhouette. 12) "Purificação Divina" — a burst of cleansing golden light dissolving small dark chain-link debuff icons. 13) "Sentença Final" — a golden holy hammer descending onto a cracked skull marked with a judgment sigil. 14) "Ira Consumidora" — golden holy fire engulfing a burning enemy silhouette in a bright flash. 15) "Apocalipse Sagrado" — a massive golden-white holy fire eruption with radiant judgment beams.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Cavaleiro
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Cavaleiro, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Bastião" path, steel-blue defense theme): 1) "Postura de Bastião" — a heater-shield planted into the ground, steel-blue aura ring. 2) "Guarda Total" — a steel-blue shield absorbing a heavy impact with sparks. 3) "Bastião Pessoal" — a shield wrapped in a shimmering warding-rune dome. 4) "Provocar" — a roaring warhorn with small red arrows converging on it. 5) "Bastião Absoluto" — a massive fortress-shaped steel shield radiating a powerful blue-white aura.
+
+Row 2 ("Investida" path, charge-red theme): 6) "Investida Montada" — a lance striking forward, a sharp horizontal motion-streak. 7) "Golpe de Lança" — a lance-tip thrust with a small impact-burst. 8) "Fúria da Cavalaria" — a lance crossed with a golden crit-starburst, a small dust-cloud beneath. 9) "Carga Devastadora" — a charging lance leaving a long red motion-streak with a cracked-ground impact. 10) "Última Carga" — a lance strike wreathed in a desperate red battle-aura.
+
+Row 3 ("Comando" path, command-gold theme): 11) "Rugido de Comando" — a warhorn with golden sound-wave rings radiating outward. 12) "Escudo Inabalável" — a golden banner-emblem shield wrapped in a warding-rune glow. 13) "Cadência de Comando" — a golden hourglass spinning fast, a small lightning-swirl around it. 14) "Comando Defensivo" — a golden war-banner planted beside overlapping shields. 15) "Estandarte Inabalável" — a tall golden war-banner radiating a wide protective aura.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Paladino
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Paladino, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small holy weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Voto Sagrado" path, holy-gold defense theme): 1) "Escudo do Voto" — a golden holy heater-shield with a small cross-sigil and a protective aura ring. 2) "Toque Restaurador" — a gauntleted hand glowing gold, small healing sparkles rising from it. 3) "Aegis Sagrado" — a golden aegis-shield emblazoned with radiant light rays. 4) "Muralha da Fé" — a towering wall of golden light-pillars marked with holy sigils. 5) "Milagre do Voto" — descending golden holy light beams converging on a kneeling knight silhouette.
+
+Row 2 ("Martelo da Fé" path, holy-red hammer theme): 6) "Martelo Consagrado" — a warhammer strike wreathed in golden holy light with a small impact burst. 7) "Martelo Flamejante" — a warhammer wreathed in golden-orange holy fire, mid-swing. 8) "Silêncio Sagrado" — a warhammer strike with a small golden "mute" rune shattering above the impact. 9) "Martelo do Juízo" — a massive warhammer strike with a radiant golden judgment-burst. 10) "Sentença Divina" — a warhammer descending onto a cracked skull marked with a glowing judgment sigil.
+
+Row 3 ("Luz Purificadora" path, holy-white heal theme): 11) "Toque de Luz" — an open palm glowing with soft golden-white healing light, small sparkles rising. 12) "Barreira de Luz" — a radiant golden-white light-barrier dome with a small impact spark. 13) "Renascimento" — a golden-white phoenix-like light burst rising from a kneeling silhouette. 14) "Explosão de Luz" — a bright golden-white radiant light explosion, healing sparkles scattering outward. 15) "Radiância" — a golden holy cross wreathed in a crit-starburst.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Bárbaro
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Bárbaro, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Fúria" path, rage-red theme): 1) "Golpe Selvagem" — a massive two-handed axe strike with a cracked-ground impact. 2) "Corte Sangrento" — an axe slash leaving a trail of dripping blood-red streaks. 3) "Grito de Guerra" — a roaring barbarian silhouette with a golden crit-starburst bursting from an open mouth. 4) "Massacre" — a wide brutal axe-cleave arc with a heavy impact-burst. 5) "Fúria Berserker" — a berserker's clenched fist wreathed in a raging red battle-aura, glowing veins.
+
+Row 2 ("Resistência" path, rugged-brown defense theme): 6) "Postura Selvagem" — a crude iron shield planted into the ground, rugged brown-red aura. 7) "Couro Curtido" — a thick leather-and-hide shield with a small impact spark. 8) "Fúria Berserker" — a clenched fist wreathed in swirling red-and-black rage-aura, cracked ground beneath. 9) "Fome Sanguinária" — a red vampiric siphon-swirl being drawn into a clenched fist. 10) "Muralha Selvagem" — a jagged wall of crude wooden-and-iron shields lashed together.
+
+Row 3 ("Selvageria" path, gold-crit theme): 11) "Fúria Explosiva" — a roaring barbarian face wreathed in a golden crit-starburst explosion. 12) "Investida Selvagem" — a charging barbarian silhouette leaving a rugged brown motion-streak. 13) "Golpe de Caça" — an axe poised for a downward finishing strike over a cracked skull. 14) "Fúria Total" — a double-bladed axe whirling around a bright gold crit-starburst. 15) "Aniquilação" — a massive axe strike shattering a skull silhouette entirely.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Arqueiro
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Arqueiro, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small arrow, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Precisão" path, gold-crit theme): 1) "Tiro Certeiro" — an arrow striking dead-center of a target with a golden crit-starburst. 2) "Flecha na Perna" — an arrow lodged in a leg silhouette with a small chain-link "slowed" mark. 3) "Tiro Fatal" — an arrow piercing a cracked skull silhouette. 4) "Disparo Perfeito" — two crossed arrows around a bright gold crit-starburst. 5) "Flecha da Morte" — a black-fletched arrow piercing straight through a shattering skull.
+
+Row 2 ("Tiro Rápido" path, forest-green damage theme): 6) "Rajada de Flechas" — three arrows loosed in rapid succession, motion-streaked. 7) "Chuva de Flechas" — a shower of arrows raining down onto a small target zone. 8) "Tiro Instintivo" — a single arrow mid-flight with a golden crit-starburst trailing behind. 9) "Rajada Mortal" — a dense volley of arrows striking one point with a heavy impact-burst. 10) "Última Flecha" — a single glowing arrow drawn taut on a bow, a desperate red-tinged aura.
+
+Row 3 ("Instinto de Caça" path, teal evasion theme): 11) "Esquiva do Caçador" — a swift teal wind-swirl trailing behind a leaping figure silhouette. 12) "Tiro de Retirada" — an arrow loosed backward while leaping away, motion-blurred. 13) "Corrida Silenciosa" — a silhouette dissolving into a fast teal wind-streak. 14) "Sombra da Mata" — a figure blending into leafy teal-green foliage silhouette. 15) "Um com a Trilha" — a nearly invisible figure outlined only by a faint teal wind-swirl.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Caçador
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Caçador, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small trap, weapon, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Armadilhas Venenosas" path, toxic-green theme): 1) "Armadilha de Veneno" — a small iron bear-trap dripping sickly green venom. 2) "Tiro Envenenado" — a crossbow bolt tipped with dripping green venom. 3) "Armadilha Mortal" — a spiked iron trap glowing with thick green venom mist. 4) "Golpe de Misericórdia" — a hunting knife stabbing into a green-glowing poisoned wound. 5) "Execução da Presa" — a crossbow bolt piercing a skull wreathed in green venom mist.
+
+Row 2 ("Rastreio" path, grey-green evasion theme): 6) "Sumir na Mata" — a hunter's silhouette blending into dense gray-green foliage. 7) "Armadilha de Ferro" — a spiked iron snare trap clamping onto a leg silhouette. 8) "Passo Etéreo" — a silhouette fading into a swirl of pale gray mist. 9) "Manto das Sombras" — a hooded cloak silhouette merging with shadow. 10) "Um com a Caça" — a nearly invisible tracker silhouette, only sharp eyes visible in shadow.
+
+Row 3 ("Precisão da Caça" path, gold-crit theme): 11) "Disparo Preciso" — a crossbow bolt striking dead-center with a golden crit-starburst. 12) "Tiro Duplo" — two crossbow bolts loosed together, crossed motion-streaks. 13) "Abate" — a hunting knife poised over a cracked skull, a downward finishing strike. 14) "Disparo Mortal" — a crossbow bolt with a bright gold crit-starburst trailing behind. 15) "Caça Perfeita" — a crossbow bolt piercing straight through a shattering skull.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Feiticeiro
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Feiticeiro, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small arcane effect or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Explosão Arcana" path, violet-burst theme): 1) "Explosão Arcana" — a violet arcane orb bursting outward in jagged energy shards. 2) "Selo Arcano" — a violet rune-seal shattering with a small "mute" symbol above it. 3) "Pico de Energia" — a violet arcane spark with a golden crit-starburst at its core. 4) "Implosão" — a violet energy vortex collapsing inward into a small bright point. 5) "Cataclismo Pessoal" — a massive violet arcane explosion wreathed in a desperate dark-purple aura.
+
+Row 2 ("Sobrecarga Mística" path, gold-crit-arcane theme): 6) "Pico Arcano" — a small violet spark-orb with a golden crit-starburst. 7) "Drenar Poder" — a violet energy tendril siphoning power from a weakening enemy silhouette. 8) "Colapso Dirigido" — a focused violet energy beam striking a cracked skull. 9) "Singularidade" — a tiny violet-black singularity point with a bright gold crit-starburst around it. 10) "Big Bang Pessoal" — an explosive violet-white energy burst radiating outward.
+
+Row 3 ("Domínio Arcano" path, fire-arcane theme): 11) "Marca Arcana" — a violet arcane sigil igniting a small enemy silhouette in orange-violet flame. 12) "Detonação Menor" — a small violet-orange arcane fireburst with sharp jagged edges. 13) "Chama Persistente" — a swirling violet-orange flame sigil burning steadily. 14) "Detonação Total" — a burning enemy silhouette detonating in a violet-orange arcane blast. 15) "Combustão Absoluta" — a massive violet-orange arcane fire eruption.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Bruxo
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Bruxo, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small cursed effect or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Maldição" path, curse-purple theme): 1) "Maldição Debilitante" — a dark purple curse-sigil dripping sickly violet-green mist onto a skull. 2) "Maldição Amplificada" — a purple curse-mark burning on an enemy silhouette, small crack-lines radiating outward. 3) "Maldição Mortal" — a dark purple skull-sigil wreathed in swirling violet-black smoke. 4) "Colheita de Almas" — a clawed shadowy hand reaching into a cursed, violet-glowing skull. 5) "Ruína Final" — a massive dark-purple curse-explosion consuming a skull silhouette.
+
+Row 2 ("Pacto Sombrio" path, dark defense theme): 6) "Escudo das Trevas" — a dark violet-black shield wreathed in wisps of shadow. 7) "Sifão Vital" — a dark violet vampiric siphon-swirl drawn into a shadowy hand. 8) "Manto das Trevas" — a cloak of swirling dark purple-black shadow-wisps. 9) "Barreira Infernal" — a jagged obsidian-black barrier wreathed in a faint violet glow. 10) "Abraço da Escuridão" — a figure fully enveloped in swirling dark shadow, faint violet glowing eyes.
+
+Row 3 ("Corrupção" path, gold-crit-corrupt theme): 11) "Golpe Corrompido" — a dark violet energy strike with a golden-purple crit-starburst. 12) "Amplificação Corrupta" — a cracked violet-black rune pulsing with corrupted energy. 13) "Explosão Sombria" — a dark violet-black energy burst with jagged corrupted edges. 14) "Colapso das Trevas" — a shadowy tendril striking a cracked skull silhouette. 15) "Aniquilação Sombria" — a massive dark violet-black annihilation burst consuming a skull.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Druida
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Druida, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small nature effect or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Cura Natural" path, green-heal theme): 1) "Bênção da Floresta" — a small glowing green leaf-sprout unfurling with healing sparkles. 2) "Chuva de Cura" — a gentle rain of glowing green healing droplets falling from leaves. 3) "Casca de Árvore" — a figure's silhouette wrapped in glowing green bark-like armor. 4) "Renovação da Vida" — a great tree-root bursting upward wreathed in green healing light. 5) "Bênção da Grande Árvore" — a massive glowing green world-tree silhouette radiating healing light.
+
+Row 2 ("Fúria da Natureza" path, feral-red theme): 6) "Golpe de Garras" — a bear-claw swipe leaving three sharp red slash-marks. 7) "Investida Feral" — a charging feral beast-silhouette leaving a rugged brown-green motion streak. 8) "Fúria da Ursa" — a roaring bear-head silhouette wreathed in a golden crit-starburst. 9) "Dilaceramento" — a set of deep claw-slashes tearing across the frame. 10) "Fúria Total da Natureza" — a feral beast silhouette wreathed in a wild green-red rage-aura.
+
+Row 3 ("Equilíbrio" path, nature-poison defense theme): 11) "Esporos Tóxicos" — a small cluster of glowing green toxic mushroom-spores drifting. 12) "Chicote de Vinhas" — a thorny green vine lashing forward like a whip. 13) "Praga da Floresta" — a cluster of dark green toxic spores bursting outward. 14) "Colheita Venenosa" — a thorny vine constricting a skull wreathed in green venom mist. 15) "Fúria da Terra Envenenada" — roots bursting from the ground wreathed in toxic green mist, engulfing a skull.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Bardo
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Bardo, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small musical or magical effect illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Canção de Guerra" path, orange-bronze support theme): 1) "Canção do Escudo" — a golden musical note wreathed in a protective orange-bronze shield aura. 2) "Sinfonia da Esquiva" — three musical notes swirling into a small deflecting shield shape. 3) "Melodia Curativa" — a musical note trailing soft healing sparkles over a small heart. 4) "Hino da Fortaleza" — a lute radiating concentric orange sound-wave rings shaped like fortress walls. 5) "Sinfonia Épica" — a burst of golden musical notes forming a radiant shield-dome.
+
+Row 2 ("Melodia Sombria" path, curse-purple support theme): 6) "Canção da Discórdia" — a dark violet musical note dripping sickly purple mist onto a skull. 7) "Nota Dissonante" — a jarring broken musical note shattering small dark chain-link debuff icons. 8) "Réquiem Sombrio" — a dark violet lute wreathed in swirling black-purple sound-waves. 9) "Crescendo Fatal" — a musical note striking a skull wreathed in violet curse-mist. 10) "Sinfonia da Perdição" — a massive burst of dark violet discordant sound-waves consuming a skull.
+
+Row 3 ("Inspiração" path, gold-heal support theme): 11) "Melodia Restauradora" — a golden musical note trailing warm healing sparkles upward. 12) "Compasso Acelerado" — a golden hourglass wreathed in swirling musical notes, spinning fast. 13) "Última Canção" — a lute radiating a wide golden healing-light burst. 14) "Sinfonia da Vida" — a golden tree-of-notes bursting upward with radiant healing light. 15) "Aplauso Vital" — a pair of golden hands clapping, a small healing sparkle-burst and a crit-star above.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+#### Habilidades Ativas — Necromante
+**Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Necromante, uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small necrotic effect, bone, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+
+Row 1 ("Decomposição" path, plague-green theme): 1) "Praga Necrótica" — a small pale skull dripping sickly green-black necrotic ooze. 2) "Toque Corrosivo" — a skeletal hand corroding a small armor-plate silhouette with green-black rot. 3) "Praga Devastadora" — a cluster of decayed bones wreathed in thick green-black plague-mist. 4) "Colheita das Almas" — a skeletal hand reaching into a decaying, green-glowing skull. 5) "Apocalipse Necrótico" — a massive eruption of green-black necrotic plague engulfing a skull.
+
+Row 2 ("Drenar Vida" path, bone-violet theme): 6) "Escudo de Ossos" — a shield formed from interlocking bleached bones, a faint violet glow. 7) "Sangue Pelo Sangue" — a dark red vampiric siphon-swirl drawn into a skeletal hand. 8) "Véu da Morte" — a tattered dark shroud wrapping around a skeletal silhouette. 9) "Fortaleza de Ossos" — a wall built from stacked bleached bones and skulls. 10) "Voracidade Mortal" — a skeletal hand gripping a dark red pulsing heart, draining it.
+
+Row 3 ("Ceifador" path, gold-violet crit theme): 11) "Golpe da Foice" — a curved scythe blade with a golden-violet crit-starburst along its edge. 12) "Golpe do Terror" — a scythe swing leaving a ring of small dark terror-stars circling above the impact. 13) "Toque Final" — a scythe blade poised over a cracked skull for a finishing strike. 14) "Dança da Ceifa" — a whirling scythe blur around a bright gold-violet crit-starburst. 15) "Ceifa da Morte" — a massive scythe strike shattering a skull silhouette entirely.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
 
 ### Ícones de Atributo & Combate — Tela de Personagem
 **Tamanho:** 1536×1536 px · **Uso:** 9 ícones (recortar em grade 3×3) pros 7 atributos primários (Força, Destreza, Agilidade, Vitalidade, Inteligência, Sabedoria, Sorte) e os 2 sub-ícones de Físico/Mágico da seção de Combate — hoje esses 9 lugares mostram só texto, sem ícone nenhum
