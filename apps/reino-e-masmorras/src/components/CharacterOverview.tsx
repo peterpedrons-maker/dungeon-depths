@@ -12,12 +12,20 @@ import { heroSprites } from '../game/sprites';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
-import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing } from './icons';
 import { ItemIcon } from './ItemIcon';
+import emptyWeapon from '../assets/items/empty-weapon.webp';
+import emptyBody from '../assets/items/empty-body.webp';
+import emptyLegs from '../assets/items/empty-legs.webp';
+import emptyHands from '../assets/items/empty-hands.webp';
+import emptyOffhand from '../assets/items/empty-offhand.webp';
+import emptyAccessory from '../assets/items/empty-accessory.webp';
 
 const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
-const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
-  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
+// Faint painted silhouettes shown in an empty paperdoll slot — same style
+// as the real item art, unlike the old flat SVG line-glyph, so an empty
+// slot no longer visually clashes with an equipped one next to it.
+const EMPTY_SLOT_ICON: Record<ItemSlot, string> = {
+  weapon: emptyWeapon, body: emptyBody, legs: emptyLegs, hands: emptyHands, offhand: emptyOffhand, accessory: emptyAccessory,
 };
 // WoW-style paperdoll: gear slots stacked in two vertical columns flanking
 // the character portrait, instead of arranged around it in a cross. Every
@@ -64,7 +72,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
     // dimmed and non-interactive — instead of leaving an empty frame there.
     const isGhostOffhand = slot === 'offhand' && !hasOffhand;
     const item = isGhostOffhand ? ch.equipment.weapon : ch.equipment[slot];
-    const Icon = isGhostOffhand ? SLOT_ICON.weapon : SLOT_ICON[slot];
+    const emptyIcon = isGhostOffhand ? EMPTY_SLOT_ICON.weapon : EMPTY_SLOT_ICON[slot];
     const color = item ? rarityColor(item.rarity) : '#4a4038';
     return (
       <button
@@ -77,7 +85,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
         }`}
       >
         <div className="w-[88%] h-[88%] flex items-center justify-center">
-          {item ? <ItemIcon item={item} className="w-full h-full" style={{ color }} /> : <Icon className="w-full h-full" style={{ color }} />}
+          {item ? <ItemIcon item={item} className="w-full h-full" style={{ color }} /> : <img src={emptyIcon} alt="" className="w-full h-full object-contain opacity-70" />}
         </div>
       </button>
     );
