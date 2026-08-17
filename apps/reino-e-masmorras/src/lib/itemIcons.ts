@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
-import { ClassId, EquipmentItem } from '../types/game';
-import { OFFHAND_KIND, OffhandKind } from './itemTiers';
+import { AccessoryType, ClassId, EquipmentItem } from '../types/game';
+import { OFFHAND_KIND, OffhandKind, WEIGHT_GROUP, WeightGroup } from './itemTiers';
 
 import weaponGuerreiro from '../assets/items/weapon-guerreiro.webp';
 import weaponMago from '../assets/items/weapon-mago.webp';
@@ -18,6 +18,18 @@ import weaponBardo from '../assets/items/weapon-bardo.webp';
 import weaponNecromante from '../assets/items/weapon-necromante.webp';
 import offhandShield from '../assets/items/offhand-shield.webp';
 import offhandFoco from '../assets/items/offhand-foco.webp';
+import bodyLight from '../assets/items/body-light.webp';
+import legsLight from '../assets/items/legs-light.webp';
+import handsLight from '../assets/items/hands-light.webp';
+import bodyMedium from '../assets/items/body-medium.webp';
+import legsMedium from '../assets/items/legs-medium.webp';
+import handsMedium from '../assets/items/hands-medium.webp';
+import bodyHeavy from '../assets/items/body-heavy.webp';
+import legsHeavy from '../assets/items/legs-heavy.webp';
+import handsHeavy from '../assets/items/hands-heavy.webp';
+import accessoryAnel from '../assets/items/accessory-anel.webp';
+import accessoryBracelete from '../assets/items/accessory-bracelete.webp';
+import accessoryAmuleto from '../assets/items/accessory-amuleto.webp';
 
 interface Sheet {
   url: string;
@@ -29,9 +41,7 @@ interface Sheet {
 }
 
 // Each sheet is a 5-column x 2-row grid covering tiers 1-10 (see
-// KIT-DE-ARTE.md's "Ícones de Itens" section) — armor and accessory sheets
-// haven't been generated yet, so those slots still fall back to the plain
-// per-slot glyph in icons.tsx until their art arrives too.
+// KIT-DE-ARTE.md's "Ícones de Itens" section).
 const WEAPON_SHEET: Partial<Record<ClassId, Sheet>> = {
   guerreiro: { url: weaponGuerreiro, aspect: 0.3895 },
   mago: { url: weaponMago, aspect: 0.431 },
@@ -54,6 +64,30 @@ const OFFHAND_SHEET: Record<OffhandKind, Sheet> = {
   foco: { url: offhandFoco, aspect: 1 },
 };
 
+const ARMOR_SHEET: Record<WeightGroup, { body: Sheet; legs: Sheet; hands: Sheet }> = {
+  light: {
+    body: { url: bodyLight, aspect: 1.0485 },
+    legs: { url: legsLight, aspect: 0.8834 },
+    hands: { url: handsLight, aspect: 1.0192 },
+  },
+  medium: {
+    body: { url: bodyMedium, aspect: 0.807 },
+    legs: { url: legsMedium, aspect: 0.8947 },
+    hands: { url: handsMedium, aspect: 1.1144 },
+  },
+  heavy: {
+    body: { url: bodyHeavy, aspect: 1.015 },
+    legs: { url: legsHeavy, aspect: 0.7908 },
+    hands: { url: handsHeavy, aspect: 0.9397 },
+  },
+};
+
+const ACCESSORY_SHEET: Record<AccessoryType, Sheet> = {
+  anel: { url: accessoryAnel, aspect: 0.9398 },
+  bracelete: { url: accessoryBracelete, aspect: 1.1336 },
+  amuleto: { url: accessoryAmuleto, aspect: 0.6696 },
+};
+
 const SHEET_COLS = 5;
 const SHEET_ROWS = 2;
 
@@ -62,6 +96,12 @@ function sheetFor(item: EquipmentItem): Sheet | null {
   if (item.slot === 'offhand') {
     const kind = OFFHAND_KIND[item.classId];
     return kind ? OFFHAND_SHEET[kind] : null;
+  }
+  if (item.slot === 'body' || item.slot === 'legs' || item.slot === 'hands') {
+    return ARMOR_SHEET[WEIGHT_GROUP[item.classId]][item.slot];
+  }
+  if (item.slot === 'accessory') {
+    return item.accessoryType ? ACCESSORY_SHEET[item.accessoryType] : null;
   }
   return null;
 }
