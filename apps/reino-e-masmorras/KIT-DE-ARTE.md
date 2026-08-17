@@ -1061,6 +1061,19 @@ Composition: keep the merchant and counter — the main subject — comfortably 
 This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
 ```
 
+### Cena de Título — Tela Inicial (logo + menu)
+**Tamanho:** 1536×1536 px (quadrado) · **Uso:** fundo em tela cheia atrás do logo do jogo, do texto de apresentação e dos botões "Continuar Jornada"/"Nova Jornada" na tela inicial (`TitleScreen.tsx`) — substitui o fundo liso `bg-nightsky` usado hoje. Mesmo tratamento do Ferreiro/Mercador: quadrado garante sobra segura pra cortar (`object-fit: cover`) em telas mais largas ou mais altas. O logo do jogo, o texto e os botões ficam centralizados por cima, então a faixa vertical central da imagem deve ficar visualmente mais calma (menos detalhe, tons mais escuros) pra não brigar com esses elementos — o jogo já aplica um leve gradiente escuro por trás deles, mas a arte não deve depender só disso pra ficar legível.
+
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+An epic wide-shot fantasy vista at night, tying together the game's two halves — "Reino" and "Masmorras". On the upper-left, a fortified castle with lit towers sits atop a distant hill, warm torchlight glowing from its windows. On the lower-right, jagged rocky terrain descends into the mouth of a dark dungeon entrance, faint eerie green-blue light seeping out from within. Between them, a moonlit valley with rolling hills, sparse dead trees, and drifting mist. A large pale moon with faint craters hangs in a deep indigo starry sky, positioned upper-center to upper-right.
+
+Composition: keep the busy, detailed elements (castle, dungeon mouth, silhouetted trees) pushed toward the four corners and edges of the canvas. The vertical center third of the image should read as comparatively calm and dark — open sky, distant mist, or plain shadowed hillside — since the game's logo, tagline and menu buttons sit on top of that area and need to stay readable without a heavy overlay box.
+
+This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
+```
+
 ### Mapa de Masmorras — Tela de seleção de masmorra (7 imagens, uma por região)
 
 As 7 imagens abaixo empilham verticalmente no jogo formando um único caminho de exploração, com scroll — Região 1 (Valdren) embaixo, Região 7 (Aetherion) no topo, o jogador rola a tela pra cima conforme sobe de nível. Cada prompt já está completo e pronto pra colar, sem precisar combinar com nenhum outro bloco.
