@@ -8,7 +8,6 @@ import { fmt } from '../lib/format';
 import { Button } from './Button';
 import { ItemIcon as ItemIconGlyph } from './ItemIcon';
 import { IconHammer } from './icons';
-import slotFrame from '../assets/slot-equipamento.webp';
 import pergaminho from '../assets/pergaminho.webp';
 import ferreiroCena from '../assets/ferreiro-cena.webp';
 import marteloParado from '../assets/aprimoramento-martelo-parado.webp';
@@ -33,12 +32,10 @@ function findLiveItem(ch: Character, id: string): EquipmentItem | null {
 function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?: boolean }) {
   const color = rarityColor(item.rarity);
   return (
-    <div className={`relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 transition-[filter,opacity] duration-500 ${dim ? 'grayscale opacity-40' : 'opacity-100'}`}>
-      <div
-        className={`absolute inset-[16%] rounded-full ${lit ? 'animate-[buildingGlow_0.9s_ease-out]' : ''}`}
-        style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
-      />
-      <div className="absolute inset-[17%] flex items-center justify-center">
+    <div
+      className={`relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[filter,opacity] duration-500 ${dim ? 'grayscale opacity-40' : 'opacity-100'} ${lit ? 'animate-[buildingGlow_0.9s_ease-out]' : ''}`}
+    >
+      <div className="w-[88%] h-[88%] flex items-center justify-center">
         <ItemIconGlyph item={item} className="w-full h-full" style={{ color }} />
       </div>
       {item.enhanceLevel > 0 && (
@@ -46,7 +43,6 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
           +{item.enhanceLevel}
         </span>
       )}
-      <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
     </div>
   );
 }
