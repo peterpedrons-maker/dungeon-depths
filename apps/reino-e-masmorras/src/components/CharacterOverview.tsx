@@ -4,7 +4,7 @@ import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
-import { enhancedItem, itemDisplayName } from '../lib/enhancement';
+import { enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
@@ -360,15 +360,7 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
   const item = selected.item as EquipmentItem;
   const color = rarityColor(item.rarity);
   const boosted = enhancedItem(item);
-  const primaryLines = [
-    boosted.dmgBonus > 0 && `+${boosted.dmgBonus} dano`,
-    boosted.defBonus > 0 && `+${boosted.defBonus} defesa`,
-    boosted.hpBonus > 0 && `+${boosted.hpBonus} vida máxima`,
-    boosted.matkBonus > 0 && `+${boosted.matkBonus} ataque mágico`,
-    boosted.mdefBonus > 0 && `+${boosted.mdefBonus} defesa mágica`,
-    boosted.critChanceBonus > 0 && `+${Math.round(boosted.critChanceBonus * 100)}% chance de crítico`,
-    boosted.critDmgBonus > 0 && `+${Math.round(boosted.critDmgBonus * 100)}% dano crítico`,
-  ].filter((l): l is string => !!l);
+  const primaryLines = primaryStatLines(boosted);
 
   return (
     <Modal onClose={onClose} bare>
@@ -410,18 +402,6 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
       </div>
     </Modal>
   );
-}
-
-function secondaryStatLabel(item: EquipmentItem): string {
-  const s = item.secondaryStat!;
-  if (s.type === 'crit') return `+${Math.round(s.value * 100)}% chance de crítico`;
-  if (s.type === 'critDmg') return `+${Math.round(s.value * 100)}% dano crítico`;
-  if (s.type === 'block') return `+${Math.round(s.value * 100)}% chance de bloqueio`;
-  if (s.type === 'def') return `+${s.value} defesa`;
-  if (s.type === 'mdef') return `+${s.value} defesa mágica`;
-  if (s.type === 'atk') return `+${s.value} ataque`;
-  if (s.type === 'matk') return `+${s.value} ataque mágico`;
-  return `+${s.value} vida máxima`;
 }
 
 function MainTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {

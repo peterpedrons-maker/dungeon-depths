@@ -1,28 +1,20 @@
-import { Character, ItemSlot } from '../types/game';
+import { useState } from 'react';
+import { Character, EquipmentItem } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
-import { generateItem, rarityColor } from '../lib/equipment';
-import { itemDisplayName } from '../lib/enhancement';
-import { highestAccessibleItemTier } from '../lib/dungeons';
-import { OFFHAND_KIND } from '../lib/itemTiers';
+import { rarityColor } from '../lib/equipment';
+import { itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
+import { priceForStockItem, STOCK_COLS, STOCK_ROWS } from '../lib/merchantStock';
+import { canFitInInventory, placeInInventory, SLOT_FOOTPRINT } from '../lib/inventoryGrid';
 import { MAX_POTIONS } from '../lib/consumables';
-import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
-import { Button } from './Button';
-import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing, IconCoin } from './icons';
+import { Button, SmallButton } from './Button';
+import { Modal } from './Modal';
+import { ItemIcon } from './ItemIcon';
+import { IconCoin } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
-import slotFrame from '../assets/slot-equipamento.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
 const POTION_BASE_COST = 15;
-const ITEM_BASE_COST = 40;
-const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
-const MYSTERY_LABEL: Record<ItemSlot, string> = {
-  weapon: 'Arma Misteriosa', body: 'Peitoral Misterioso', legs: 'Perneira Misteriosa',
-  hands: 'Luvas Misteriosas', offhand: 'Item Misterioso', accessory: 'Acessório Misterioso',
-};
-const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
-  weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
-};
 
 interface Props {
   character: Character;
@@ -32,24 +24,30 @@ interface Props {
 }
 
 // Full-screen scene opened from the Mercador building's "Conversar com o
-// Mercador" balloon action, same pattern as the Ferreiro scene — the shop
-// used to be its own sidebar section, but now lives at the building marker
-// like every other NPC. No dedicated banner art yet (see KIT-DE-ARTE.md's
-// "Cena do Mercador" prompt), so the banner is a plain gradient placeholder
-// until that lands, rather than blocking the feature on it.
+// Mercador" balloon action, same pattern as the Ferreiro scene. The stock
+// grid reads like the player's own inventory (same footprint/packing rules,
+// same item card on click) instead of the old "pick a slot, get something
+// random" mystery cards — real items sitting in the shop that the player
+// can see and choose between, closer to a PoE vendor tab. Stock only
+// re-rolls when a dungeon run ends in victory or death (see
+// GameShell.handleRunEnd) — opening/closing this screen never changes it,
+// so there's no free re-roll by walking in and out.
 export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClose }: Props) {
+  const [selected, setSelected] = useState<EquipmentItem | null>(null);
   const kingdomBonuses = computeKingdomBonuses(ch.buildings);
   const discount = kingdomBonuses.merchantDiscountPct;
   const potionCost = Math.max(1, Math.round(POTION_BASE_COST * (1 - discount)));
-  const itemCost = Math.max(1, Math.round(ITEM_BASE_COST * (1 - discount)));
-  const offhandKind = OFFHAND_KIND[ch.classId];
-  const shopSlots = offhandKind ? SLOTS : SLOTS.filter((s) => s !== 'offhand');
-  const offhandLabel = offhandKind === 'shield' ? 'Escudo Misterioso' : 'Relicário Misterioso';
 
-  function buyMysteryItem(slot: ItemSlot) {
-    if (ch.gold < itemCost || !canFitInInventory(ch.inventory, slot)) return;
-    const item = generateItem(slot, ch.classId, highestAccessibleItemTier(ch.level), kingdomBonuses.itemQualityBonusPct);
-    onCharacterChange({ ...ch, gold: ch.gold - itemCost, inventory: placeInInventory(ch.inventory, item) });
+  function buyStockItem(item: EquipmentItem) {
+    const price = priceForStockItem(item, discount);
+    if (ch.gold < price || !canFitInInventory(ch.inventory, item.slot)) return;
+    onCharacterChange({
+      ...ch,
+      gold: ch.gold - price,
+      merchantStock: ch.merchantStock.filter((i) => i.id !== item.id),
+      inventory: placeInInventory(ch.inventory, { ...item, identified: true }),
+    });
+    setSelected(null);
   }
 
   return (
@@ -88,32 +86,69 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <ShopCard
-            icon={<img src={pocaoIcon} alt="" className="w-full h-full object-contain" />}
-            name="Poção de Vida"
-            desc={`Recupera 40% da vida máxima em combate. Limite: ${ch.potions}/${MAX_POTIONS}.`}
-            cost={potionCost}
-            disabled={ch.gold < potionCost || ch.potions >= MAX_POTIONS}
-            onBuy={onBuyPotion}
-          />
-          {shopSlots.map((slot) => {
-            const Icon = SLOT_ICON[slot];
-            const full = !canFitInInventory(ch.inventory, slot);
-            return (
-              <ShopCard
-                key={slot}
-                icon={<Icon className="w-full h-full text-parchment/70" />}
-                frame
-                name={slot === 'offhand' ? offhandLabel : MYSTERY_LABEL[slot]}
-                desc={full ? 'Inventário cheio — abra espaço pra comprar.' : 'Item da sua classe, raridade incerta.'}
-                cost={itemCost}
-                disabled={ch.gold < itemCost || full}
-                onBuy={() => buyMysteryItem(slot)}
-              />
-            );
-          })}
+        <div className="rounded border border-panelborder/60 bg-panel2/40 p-3 flex items-center gap-3 mb-4">
+          <img src={pocaoIcon} alt="" className="w-10 h-11 object-contain shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-xs text-parchment leading-tight">Poção de Vida</div>
+            <div className="text-[10px] text-parchment/50 leading-snug">
+              Recupera 40% da vida máxima em combate. Limite: {ch.potions}/{MAX_POTIONS}.
+            </div>
+          </div>
+          <Button onClick={onBuyPotion} disabled={ch.gold < potionCost || ch.potions >= MAX_POTIONS} className="!min-w-0 !px-3 !py-2 text-xs shrink-0">
+            {fmt(potionCost)} ouro
+          </Button>
         </div>
+
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-parchment/60">Itens à venda</span>
+          <span className="text-[10px] text-gold/80 font-bold">{ch.merchantStock.length} disponíve{ch.merchantStock.length === 1 ? 'l' : 'is'}</span>
+        </div>
+
+        {ch.merchantStock.length === 0 ? (
+          <p className="text-parchment/40 text-sm italic">
+            Sem itens no estoque agora. Termine ou sobreviva a uma expedição pra o Mercador reabastecer.
+          </p>
+        ) : (
+          <div className="rounded border border-black/50 bg-black/25 p-2 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+            <div
+              className="relative w-full bg-[rgba(0,0,0,0.45)] rounded-sm overflow-hidden"
+              style={{
+                aspectRatio: `${STOCK_COLS} / ${STOCK_ROWS}`,
+                backgroundImage:
+                  'linear-gradient(to right, rgba(122,90,52,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(122,90,52,0.35) 1px, transparent 1px)',
+                backgroundSize: `${100 / STOCK_COLS}% ${100 / STOCK_ROWS}%`,
+              }}
+            >
+              {ch.merchantStock.map((item) => {
+                const identified = item.identified !== false;
+                const color = identified ? rarityColor(item.rarity) : '#8a8078';
+                const { w, h } = SLOT_FOOTPRINT[item.slot];
+                const x = item.gridX ?? 0;
+                const y = item.gridY ?? 0;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelected(item)}
+                    className="absolute flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color] duration-150 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)]"
+                    style={{
+                      left: `${(x / STOCK_COLS) * 100}%`,
+                      top: `${(y / STOCK_ROWS) * 100}%`,
+                      width: `${(w / STOCK_COLS) * 100}%`,
+                      height: `${(h / STOCK_ROWS) * 100}%`,
+                      containerType: 'size',
+                    }}
+                  >
+                    {identified ? (
+                      <ItemIcon item={item} className="relative w-[97%] h-[97%]" style={{ color }} />
+                    ) : (
+                      <span className="text-2xl font-display text-parchment/40">?</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <p className="mt-4 text-xs text-parchment/40">Você possui {fmt(ch.potions)} poção(ões) e {fmt(ch.gold)} de ouro.</p>
         {ch.equipment.weapon && (
@@ -122,24 +157,63 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
           </p>
         )}
       </div>
+
+      {selected && (
+        <StockItemModal
+          item={selected}
+          price={priceForStockItem(selected, discount)}
+          disabled={ch.gold < priceForStockItem(selected, discount) || !canFitInInventory(ch.inventory, selected.slot)}
+          onClose={() => setSelected(null)}
+          onBuy={buyStockItem}
+        />
+      )}
     </div>
   );
 }
 
-function ShopCard({ icon, frame, name, desc, cost, disabled, onBuy }: {
-  icon: React.ReactNode; frame?: boolean; name: string; desc: string; cost: number; disabled: boolean; onBuy: () => void;
+function StockItemModal({ item, price, disabled, onClose, onBuy }: {
+  item: EquipmentItem; price: number; disabled: boolean; onClose: () => void; onBuy: (item: EquipmentItem) => void;
 }) {
+  const identified = item.identified !== false;
+  const color = identified ? rarityColor(item.rarity) : '#8a8078';
+  const primaryLines = identified ? primaryStatLines(item) : [];
+
   return (
-    <div className="rounded border border-panelborder/60 bg-panel2/40 p-3 flex flex-col items-center text-center gap-1.5">
-      <div className="relative w-14 h-14">
-        <div className="absolute inset-[17%] flex items-center justify-center">{icon}</div>
-        {frame && <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />}
+    <Modal onClose={onClose} bare>
+      <div className="relative w-64 flex flex-col items-center gap-2 px-5 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+
+        <div className="font-bold text-base text-center" style={{ color }}>
+          {identified ? itemDisplayName(item) : 'Item Misterioso'}
+        </div>
+
+        <div className="w-24 h-24 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+          {identified ? (
+            <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
+          ) : (
+            <span className="text-4xl font-display text-parchment/40">?</span>
+          )}
+        </div>
+
+        {identified ? (
+          <div className="flex flex-col items-center gap-0.5">
+            {primaryLines.map((line) => <div key={line} className="text-sm text-parchment/90">{line}</div>)}
+            {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
+          </div>
+        ) : (
+          <p className="text-xs text-parchment/50 italic text-center">A identidade só é revelada depois da compra.</p>
+        )}
+
+        <div className="flex gap-2 mt-2">
+          <SmallButton onClick={() => onBuy(item)} disabled={disabled}>Comprar ({fmt(price)} ouro)</SmallButton>
+        </div>
       </div>
-      <div className="font-bold text-xs text-parchment leading-tight">{name}</div>
-      <div className="text-[10px] text-parchment/50 leading-snug">{desc}</div>
-      <Button onClick={onBuy} disabled={disabled} className="w-full !min-w-0 !px-2 !py-2 text-xs mt-1">
-        {fmt(cost)} ouro
-      </Button>
-    </div>
+    </Modal>
   );
 }

@@ -178,3 +178,6 @@ export function rarityColor(r: Rarity): string {
 export function rarityName(r: Rarity): string {
   return RARITIES.find((x) => x.id === r)?.name ?? 'Comum';
 }
+export function rarityMult(r: Rarity): number {
+  return RARITIES.find((x) => x.id === r)?.mult ?? 1;
+}

@@ -51,7 +51,7 @@ interface Props {
   dungeon: DungeonDef;
   kingdomBonuses: KingdomBonuses;
   onLiveUpdate: (c: Character) => void;
-  onRunEnd: (finalCharacter: Character, deepestDepth: number) => void;
+  onRunEnd: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory') => void;
 }
 
 type Phase = 'fight' | 'ended';
@@ -665,7 +665,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function confirmReturnToHub() {
-    onRunEnd({ ...chRef.current, bestDepth: Math.max(chRef.current.bestDepth, depthRef.current) }, depthRef.current);
+    onRunEnd(
+      { ...chRef.current, bestDepth: Math.max(chRef.current.bestDepth, depthRef.current) },
+      depthRef.current,
+      endedReason ?? 'retreat',
+    );
   }
 
   // Kick off the auto-battle loop once, and make sure no stray timeout

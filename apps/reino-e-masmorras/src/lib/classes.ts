@@ -1,4 +1,6 @@
 import { AttributeKey, Attributes, ClassDef, ClassId, Character } from '../types/game';
+import { computeKingdomBonuses } from './buildings';
+import { generateMerchantStock } from './merchantStock';
 
 // Shared attribute display metadata (label + reference color from the Kit
 // de Arte) — used by both CharacterOverview and CharacterCreation so the
@@ -156,15 +158,21 @@ export const STARTING_ATTR_POINTS = 5;
 // old always-zero default.
 export function createCharacter(name: string, classId: ClassId, initialAllocatedAttrs?: Attributes): Character {
   const c = CLASSES[classId];
-  return {
+  const base: Character = {
     name, classId, level: 1, xp: 0, xpToNext: xpToNextLevel(1),
     hp: c.baseHp, maxHp: c.baseHp, atk: c.baseAtk, def: c.baseDef, matk: c.baseMatk, mdef: c.baseMdef,
     gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0,
     skillPoints: 0, attributePoints: 0, allocatedAttrs: initialAllocatedAttrs ?? { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [], abilityThresholds: {},
     equipment: { weapon: null, body: null, legs: null, hands: null, offhand: null, accessory: null }, inventory: [],
-    buildings: {},
+    buildings: {}, merchantStock: [],
   };
+  // Seeded up front (not left empty until the first run ends) so a
+  // brand-new character never sees a bare shop — mainly matters for a
+  // player who racks up some gold retreating early a few times before ever
+  // finishing or dying in a dungeon, which is the only thing that re-rolls
+  // stock afterward.
+  return { ...base, merchantStock: generateMerchantStock(base, computeKingdomBonuses(base.buildings)) };
 }
 
 // Levels up as many times as the accumulated XP allows (capped at MAX_LEVEL,

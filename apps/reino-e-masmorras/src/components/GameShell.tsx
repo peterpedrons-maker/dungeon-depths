@@ -5,6 +5,7 @@ import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
 import { enhanceCost, maxEnhanceLevelForForja, successChanceForLevel } from '../lib/enhancement';
 import { placeInInventory } from '../lib/inventoryGrid';
+import { generateMerchantStock } from '../lib/merchantStock';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS } from '../lib/consumables';
 import { TopBar } from './TopBar';
@@ -82,8 +83,14 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     setRunInProgress(true);
   }
 
-  function handleRunEnd(finalCharacter: Character, depthReached: number) {
-    onRunEnd(finalCharacter, depthReached);
+  // The Mercador's stock only re-rolls here, on an actual victory or death —
+  // never just from opening the shop, and never on a mid-run retreat — so
+  // there's no way to farm it for a good roll by walking in and out.
+  function handleRunEnd(finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+    const withStock = endedReason === 'retreat'
+      ? finalCharacter
+      : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
+    onRunEnd(withStock, depthReached);
     setSection('kingdom');
     setRunInProgress(false);
   }

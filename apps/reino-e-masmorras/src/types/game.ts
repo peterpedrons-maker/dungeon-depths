@@ -59,6 +59,11 @@ export interface EquipmentItem {
   critDmgBonus: number; // Anel primary stat, 0 on other slots
   secondaryStat?: { type: SecondaryStatType; value: number };
   enhanceLevel: number; // Forja upgrade, 0-10 — scales this item's *Bonus fields only, never secondaryStat (see lib/enhancement.ts)
+  // false only while sitting unpurchased in Character.merchantStock — name,
+  // icon and stats are hidden in the UI until the player buys it, at which
+  // point it's set back to true (or just dropped, since undefined === true).
+  // Never false anywhere else (equipped or in the player's own inventory).
+  identified?: boolean;
   // Top-left cell of this item's footprint in the inventory grid (see
   // lib/inventoryGrid.ts) — undefined while equipped, always set once an
   // item is actually sitting in Character.inventory.
@@ -223,6 +228,11 @@ export interface Character {
   equipment: Equipment;
   inventory: EquipmentItem[];
   buildings: Record<string, number>; // kingdom building id -> level
+  // The Mercador's current stock (see lib/merchantStock.ts) — re-rolled only
+  // when a dungeon run actually ends in victory or death (never on retreat,
+  // and never just from opening/closing the shop), so the player can't
+  // farm it for a good roll by walking in and out.
+  merchantStock: EquipmentItem[];
 }
 
 export type EnemyShape =
