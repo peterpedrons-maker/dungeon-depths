@@ -355,7 +355,7 @@ function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, on
 }) {
   if (selected.kind === 'equipped' && !selected.item) {
     return (
-      <Modal title={SLOT_NAMES[selected.slot]} onClose={onClose}>
+      <Modal title={SLOT_NAMES[selected.slot]} onClose={onClose} plain>
         <p className="text-parchment/50 italic">Nenhum item equipado neste slot.</p>
       </Modal>
     );
@@ -378,6 +378,7 @@ function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, on
     <Modal
       title={SLOT_NAMES[item.slot]}
       onClose={onClose}
+      plain
       footer={
         selected.kind === 'equipped' ? (
           <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
