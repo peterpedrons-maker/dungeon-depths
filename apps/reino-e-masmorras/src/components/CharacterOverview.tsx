@@ -362,6 +362,18 @@ function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, on
   }
 
   const item = selected.item as EquipmentItem;
+  const color = rarityColor(item.rarity);
+  const boosted = enhancedItem(item);
+  const primaryLines = [
+    boosted.dmgBonus > 0 && `+${boosted.dmgBonus} dano`,
+    boosted.defBonus > 0 && `+${boosted.defBonus} defesa`,
+    boosted.hpBonus > 0 && `+${boosted.hpBonus} vida máxima`,
+    boosted.matkBonus > 0 && `+${boosted.matkBonus} ataque mágico`,
+    boosted.mdefBonus > 0 && `+${boosted.mdefBonus} defesa mágica`,
+    boosted.critChanceBonus > 0 && `+${Math.round(boosted.critChanceBonus * 100)}% chance de crítico`,
+    boosted.critDmgBonus > 0 && `+${Math.round(boosted.critDmgBonus * 100)}% dano crítico`,
+  ].filter((l): l is string => !!l);
+
   return (
     <Modal
       title={SLOT_NAMES[item.slot]}
@@ -377,25 +389,33 @@ function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, on
         )
       }
     >
-      <div className="font-bold text-base" style={{ color: rarityColor(item.rarity) }}>{itemDisplayName(item)}</div>
-      <div className="text-xs text-parchment/50">{rarityName(item.rarity)} · Tier {item.tier}</div>
-      <ul className="text-sm space-y-0.5 pt-1">
-        {(() => {
-          const boosted = enhancedItem(item);
-          return (
-            <>
-              {boosted.dmgBonus > 0 && <li>+{boosted.dmgBonus} dano</li>}
-              {boosted.defBonus > 0 && <li>+{boosted.defBonus} defesa</li>}
-              {boosted.hpBonus > 0 && <li>+{boosted.hpBonus} vida máxima</li>}
-              {boosted.matkBonus > 0 && <li>+{boosted.matkBonus} ataque mágico</li>}
-              {boosted.mdefBonus > 0 && <li>+{boosted.mdefBonus} defesa mágica</li>}
-              {boosted.critChanceBonus > 0 && <li>+{Math.round(boosted.critChanceBonus * 100)}% chance de crítico</li>}
-              {boosted.critDmgBonus > 0 && <li>+{Math.round(boosted.critDmgBonus * 100)}% dano crítico</li>}
-            </>
-          );
-        })()}
-        {item.secondaryStat && <li>{secondaryStatLabel(item)}</li>}
-      </ul>
+      {/* PoE-style item card: big icon up top, name/rarity centered under it,
+          then base attribute (the slot's defining roll) and affix (the extra
+          secondary stat) shown as clearly separate sections instead of one
+          flat bullet list — so it's obvious which line is which. */}
+      <div className="flex flex-col items-center text-center pb-2">
+        <div className="w-20 h-20 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center mb-2">
+          <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
+        </div>
+        <div className="font-bold text-base" style={{ color }}>{itemDisplayName(item)}</div>
+        <div className="text-xs text-parchment/50">{rarityName(item.rarity)} · Tier {item.tier}</div>
+      </div>
+
+      {primaryLines.length > 0 && (
+        <div className="border-t border-panelborder/40 pt-2 mt-1">
+          <div className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold mb-1">Atributo Base</div>
+          <ul className="text-sm space-y-0.5">
+            {primaryLines.map((line) => <li key={line} className="text-parchment/90">{line}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {item.secondaryStat && (
+        <div className="border-t border-panelborder/40 pt-2 mt-2">
+          <div className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold mb-1">Afixo</div>
+          <p className="text-sm text-sky-300">{secondaryStatLabel(item)}</p>
+        </div>
+      )}
 
       <EnhanceSection item={item} gold={gold} forjaLevel={forjaLevel} onEnhance={onEnhance} />
     </Modal>
