@@ -11,10 +11,26 @@ const SLOT_GLYPH: Record<ItemSlot, typeof IconSword> = {
 // today) or falls back to the plain per-slot glyph otherwise (armor/
 // accessory, until their sheets are generated) — same className/style API
 // either way, so callers don't need to care which one they got.
+//
+// Sprite cells aren't square (a sword's tall silhouette vs. a crossbow's
+// wide one), so the real-art branch letterboxes to the sprite's own aspect
+// ratio inside whatever box the caller gives it, using the container-query
+// "contain" formula (width = min(100cqw, 100cqh*aspect), and vice versa)
+// instead of stretching the sprite to match the box.
 export function ItemIcon({ item, className, style }: { item: EquipmentItem; className?: string; style?: CSSProperties }) {
-  const sheetStyle = itemSheetStyle(item);
-  if (sheetStyle) {
-    return <div className={className} style={{ ...sheetStyle, ...style }} />;
+  const sheet = itemSheetStyle(item);
+  if (sheet) {
+    return (
+      <div className={`flex items-center justify-center ${className ?? ''}`} style={{ ...style, containerType: 'size' }}>
+        <div
+          style={{
+            width: `min(100cqw, ${100 * sheet.aspect}cqh)`,
+            height: `min(100cqh, ${100 / sheet.aspect}cqw)`,
+            ...sheet.backgroundStyle,
+          }}
+        />
+      </div>
+    );
   }
   const Glyph = SLOT_GLYPH[item.slot];
   return <Glyph className={className} style={style} />;
