@@ -45,23 +45,25 @@ export interface Sprite {
 
 // Target on-screen height (px) for each character, roughly matching their
 // relative size in the fiction (a goblin is small, a troll looms large).
-const HERO_DISPLAY_H = 145;
+// Common (non-boss) enemies got a bigger relative bump than bosses here —
+// bosses already read as large, so the fiction's size gap stays intact.
+const HERO_DISPLAY_H = 165;
 const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
-  goblin: 95, wolf: 75, skeleton: 115, orc: 125, troll: 155, dragon: 130, horror: 125,
+  goblin: 120, wolf: 95, skeleton: 132, orc: 144, troll: 163, dragon: 150, horror: 144,
 
   // Região 1 — Ruínas Superficiais
-  ruinBat: 70, acidSlime: 72, ruinBandit: 105, carrionCrow: 65, boneKing: 165,
+  ruinBat: 88, acidSlime: 90, ruinBandit: 121, carrionCrow: 88, boneKing: 173,
   // Região 1 — Caverna dos Goblins
-  goblinShaman: 102, goblinThrower: 95, goblinFanatic: 95, goblinWolfRider: 108, grash: 160,
+  goblinShaman: 117, goblinThrower: 119, goblinFanatic: 119, goblinWolfRider: 124, grash: 168,
   // Região 1 — Cripta do Tesouro
-  zombieLooter: 105, stoneGuardian: 130, greedyWraith: 100, wrappedMummy: 105, mimicChest: 80, cursedCustodian: 165,
+  zombieLooter: 121, stoneGuardian: 150, greedyWraith: 115, wrappedMummy: 121, mimicChest: 100, cursedCustodian: 173,
   // Região 1 — Pântano Podre
-  poisonToad: 75, swampViper: 70, crawlingBog: 90, cursedWisp: 60, rottingGator: 100, mudMother: 170,
+  poisonToad: 94, swampViper: 88, crawlingBog: 113, cursedWisp: 81, rottingGator: 115, mudMother: 179,
   // Região 1 — Covil de Aranhas
-  huntingSpider: 90, venomSpider: 85, giantSpider: 120, spiderlingSwarm: 60, darkWeaver: 115, blackMatriarch: 175,
+  huntingSpider: 113, venomSpider: 106, giantSpider: 138, spiderlingSwarm: 81, darkWeaver: 132, blackMatriarch: 184,
 
   // Bosses da Região 2+ reaproveitando o shape base — maiores que o normal
-  horrorAncient: 155, orcWarlord: 155, trollChieftain: 175, dragonElder: 160, skeletonLord: 145,
+  horrorAncient: 163, orcWarlord: 163, trollChieftain: 184, dragonElder: 168, skeletonLord: 152,
 };
 
 function loadImage(url: string, displayH: number): Sprite {

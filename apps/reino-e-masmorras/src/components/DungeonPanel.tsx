@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import {
   AbilityDef, Character, CrowdControlKind, EnemyInstance, DungeonDef, ItemSlot, KingdomBonuses,
   StatModStat, StatusEffectKind,
@@ -712,12 +712,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       }
 
       const groundY = h - 42;
-      const bobP = Math.sin(t / 260) * 3;
-      const bobE = Math.sin(t / 240 + 1) * 3;
       if (phase !== 'ended') {
         const px1 = w * 0.27, ex = w * 0.73;
-        drawSprite(g, heroSpr.idle, px1, groundY + bobP, false, flashSide === 'player' ? 0.7 : 0);
-        drawSprite(g, enemySprite(enemy.shape), ex, groundY + bobE, false, flashSide === 'enemy' ? 0.7 : 0);
+        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0);
+        drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0);
       }
       raf = requestAnimationFrame(draw);
     };
@@ -840,21 +838,21 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             const left = cooldownsRef.current[ab.id] ?? 0;
             const onCooldown = left > 0;
             const pct = onCooldown ? left / ab.cooldown : 0;
-            const deg = Math.round(pct * 360);
+            // A fresh cast snaps the wedge to full instantly (pct === 1);
+            // every round after that eases it down smoothly over the same
+            // ATTACK_INTERVAL the round loop itself ticks on, so the wipe
+            // reads as one continuous sweep instead of a per-round jump.
             return (
               <div key={ab.id} className="relative w-11 h-11 shrink-0" title={`${ab.name}${onCooldown ? ` — recarregando` : ''}`}>
                 <IconActive className={`absolute inset-[18%] ${onCooldown ? 'text-parchment/40' : 'text-gold'}`} />
-                {onCooldown && (
-                  <>
-                    <div
-                      className="absolute inset-0 rounded-full"
-                      style={{ background: `conic-gradient(rgba(0,0,0,0.75) ${deg}deg, transparent ${deg}deg)` }}
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-parchment [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">
-                      {Math.round(left * (ATTACK_INTERVAL / 1000))}s
-                    </span>
-                  </>
-                )}
+                <div
+                  className="absolute inset-0 rounded-full pointer-events-none"
+                  style={{
+                    background: 'conic-gradient(rgba(0,0,0,0.75) var(--cd-pct), transparent var(--cd-pct))',
+                    ['--cd-pct' as string]: `${pct * 100}%`,
+                    transition: pct === 1 ? 'none' : `--cd-pct ${ATTACK_INTERVAL}ms linear`,
+                  } as CSSProperties}
+                />
                 <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               </div>
             );

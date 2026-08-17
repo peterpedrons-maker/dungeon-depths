@@ -32,6 +32,16 @@ body {
   100% { transform: translateY(-36px); opacity: 0; }
 }
 
+/* Registering this lets the browser smoothly interpolate the cooldown wedge
+   between rounds instead of jumping — see the ability-cooldown overlay in
+   DungeonPanel.tsx, which transitions this property instead of showing a
+   ticking round-count. */
+@property --cd-pct {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
 @keyframes buildingGlow {
   0%   { box-shadow: 0 0 0 0 rgba(200,154,46,0); background-color: transparent; }
   30%  { box-shadow: 0 0 22px 10px rgba(200,154,46,0.85); background-color: rgba(200,154,46,0.25); }
