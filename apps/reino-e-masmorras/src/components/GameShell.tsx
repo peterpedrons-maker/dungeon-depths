@@ -3,7 +3,7 @@ import { AttributeKey, Character, RankEntry, Section, DungeonDef, EquipmentItem,
 import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
-import { enhanceCost, maxEnhanceLevelForForja } from '../lib/enhancement';
+import { enhanceCost, maxEnhanceLevelForForja, successChanceForLevel } from '../lib/enhancement';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS } from '../lib/consumables';
 import { TopBar } from './TopBar';
@@ -132,13 +132,21 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     onCharacterChange({ ...character, inventory, gold: character.gold + sellValue(item) });
   }
 
-  function handleEnhanceItem(item: EquipmentItem) {
+  // Gold is spent on the ATTEMPT, not the outcome — success rolls against
+  // successChanceForLevel(item.enhanceLevel) and gets steeper near +10, so a
+  // failed roll still costs the gold but leaves the item at its current
+  // level. Returns the roll result so callers (the Ferreiro's confirm/roll
+  // screen, CharacterOverview's quick modal) can react to it; undefined
+  // means the attempt couldn't even be made (shouldn't happen since the UI
+  // already disables the button in that case).
+  function handleEnhanceItem(item: EquipmentItem): boolean | undefined {
     const forjaLevel = character.buildings.forja ?? 0;
     const cap = maxEnhanceLevelForForja(forjaLevel);
-    if (item.enhanceLevel >= cap) return;
+    if (item.enhanceLevel >= cap) return undefined;
     const cost = enhanceCost(item);
-    if (character.gold < cost) return;
-    const upgraded = { ...item, enhanceLevel: item.enhanceLevel + 1 };
+    if (character.gold < cost) return undefined;
+    const success = Math.random() < successChanceForLevel(item.enhanceLevel);
+    const upgraded = success ? { ...item, enhanceLevel: item.enhanceLevel + 1 } : item;
     const equippedSlot = character.equipment[item.slot]?.id === item.id ? item.slot : null;
     if (equippedSlot) {
       onCharacterChange({ ...character, gold: character.gold - cost, equipment: { ...character.equipment, [equippedSlot]: upgraded } });
@@ -148,6 +156,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
         inventory: character.inventory.map((i) => (i.id === item.id ? upgraded : i)),
       });
     }
+    return success;
   }
 
   function handleAllocateAttr(key: AttributeKey) {

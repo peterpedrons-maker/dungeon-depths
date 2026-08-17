@@ -1,17 +1,21 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Character, EquipmentItem, ItemSlot } from '../types/game';
 import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
-import { enhancedItem, itemDisplayName } from '../lib/enhancement';
-import { EnhanceSection } from './EnhanceSection';
+import {
+  enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, maxEnhanceLevelForForja, successChanceForLevel,
+} from '../lib/enhancement';
+import { fmt } from '../lib/format';
+import { Button } from './Button';
 import { IconSword, IconChest, IconLegs, IconGloves, IconShield, IconRing, IconHammer } from './icons';
 import slotFrame from '../assets/slot-equipamento.webp';
 import pergaminho from '../assets/pergaminho.webp';
 import ferreiroCena from '../assets/ferreiro-cena.webp';
-import martelo from '../assets/aprimoramento-martelo.webp';
+import marteloParado from '../assets/aprimoramento-martelo-parado.webp';
+import marteloAnimado from '../assets/aprimoramento-martelo.webp';
 
 interface Props {
   character: Character;
-  onEnhance: (item: EquipmentItem) => void;
+  onEnhance: (item: EquipmentItem) => boolean | undefined;
   onClose: () => void;
 }
 
@@ -19,54 +23,104 @@ const SLOT_ICON: Record<ItemSlot, typeof IconSword> = {
   weapon: IconSword, body: IconChest, legs: IconLegs, hands: IconGloves, offhand: IconShield, accessory: IconRing,
 };
 
-const STAT_ROWS: { key: 'dmgBonus' | 'defBonus' | 'hpBonus' | 'matkBonus' | 'mdefBonus' | 'critChanceBonus' | 'critDmgBonus'; label: string; pct?: boolean }[] = [
-  { key: 'dmgBonus', label: 'Dano' },
-  { key: 'defBonus', label: 'Defesa' },
-  { key: 'hpBonus', label: 'Vida Máxima' },
-  { key: 'matkBonus', label: 'Ataque Mágico' },
-  { key: 'mdefBonus', label: 'Defesa Mágica' },
-  { key: 'critChanceBonus', label: 'Chance de Crítico', pct: true },
-  { key: 'critDmgBonus', label: 'Dano Crítico', pct: true },
-];
+const ROLL_MS = 1500;
 
-const ANIM_MS = 1300;
+function findLiveItem(ch: Character, id: string): EquipmentItem | null {
+  for (const eq of Object.values(ch.equipment)) if (eq?.id === id) return eq;
+  return ch.inventory.find((i) => i.id === id) ?? null;
+}
 
-// Plays for a bit over one loop of the hammer-strike sprite when the player
-// confirms an "Aprimorar" — purely theatrical (the stat change already
-// happened via onEnhance when the animation started, same as the
-// instant-apply flow everywhere else in the game), but gives the Ferreiro
-// visit the "sabe? Como se a arma tivesse se aprimorando mesmo" moment that
-// was asked for: item before vs. after side by side with the hammer/anvil
-// animation between them.
-function EnhanceAnimation({ item, onDone }: { item: EquipmentItem; onDone: () => void }) {
+// One item's circular icon, reused for the grid and for the before/after
+// preview cards — `dim` grays it out for "outcome not decided yet" and
+// "attempt failed", `lit` briefly pulses it for "attempt succeeded".
+function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?: boolean }) {
+  const Icon = SLOT_ICON[item.slot];
+  const color = rarityColor(item.rarity);
+  return (
+    <div className={`relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 transition-[filter,opacity] duration-500 ${dim ? 'grayscale opacity-40' : 'opacity-100'}`}>
+      <div
+        className={`absolute inset-[16%] rounded-full ${lit ? 'animate-[buildingGlow_0.9s_ease-out]' : ''}`}
+        style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }}
+      />
+      <div className="absolute inset-[17%] flex items-center justify-center">
+        <Icon className="w-full h-full" style={{ color }} />
+      </div>
+      {item.enhanceLevel > 0 && (
+        <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
+          +{item.enhanceLevel}
+        </span>
+      )}
+      <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+    </div>
+  );
+}
+
+// The confirm → roll → result screen opened when the player taps "Aprimorar"
+// on an item. Nothing is spent until "Confirmar" — before that, the hammer
+// sprite sits on its first frame (paused) and the right-hand preview icon is
+// dimmed since the outcome isn't decided yet. Confirming rolls immediately
+// (so gold is spent and the result is already known), but the reveal is
+// held back until the hammer animation finishes playing, so the drama
+// matches what's actually happening instead of racing ahead of it.
+function EnhanceFlow({ item, gold, onEnhance, onDone }: {
+  item: EquipmentItem; gold: number; onEnhance: (item: EquipmentItem) => boolean | undefined; onDone: (success: boolean) => void;
+}) {
+  const [phase, setPhase] = useState<'confirm' | 'rolling' | 'result'>('confirm');
+  const [success, setSuccess] = useState(false);
+  const cost = enhanceCost(item);
+  const chance = successChanceForLevel(item.enhanceLevel);
+  const nextItem = { ...item, enhanceLevel: item.enhanceLevel + 1 };
+
   useEffect(() => {
-    const t = window.setTimeout(onDone, ANIM_MS);
+    if (phase !== 'rolling') return;
+    const t = window.setTimeout(() => setPhase('result'), ROLL_MS);
     return () => window.clearTimeout(t);
-  }, [onDone]);
+  }, [phase]);
 
-  const before = enhancedItem(item);
-  const after = enhancedItem({ ...item, enhanceLevel: item.enhanceLevel + 1 });
-  const rows = STAT_ROWS.filter((r) => item[r.key] !== 0);
-  const fmtVal = (v: number, pct?: boolean) => (pct ? `+${Math.round(v * 100)}%` : `+${v}`);
+  function handleConfirm() {
+    const result = onEnhance(item) ?? false;
+    setSuccess(result);
+    setPhase('rolling');
+  }
 
   return (
     <div className="rounded border border-black/50 bg-black/30 p-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)] text-center">
-      <div className="font-bold text-base mb-1" style={{ color: rarityColor(item.rarity) }}>{item.name}</div>
-      <div className="text-xs text-gold mb-3">+{item.enhanceLevel} → +{item.enhanceLevel + 1}</div>
-
-      <div className="flex items-center justify-center mb-4">
-        <img src={martelo} alt="" className="h-28 w-auto" style={{ imageRendering: 'pixelated' }} draggable={false} />
+      <div className="flex items-center justify-center gap-3 mb-3">
+        <ItemIcon item={item} />
+        <img
+          src={phase === 'rolling' ? marteloAnimado : marteloParado}
+          alt=""
+          className="h-20 sm:h-24 w-auto shrink-0"
+          style={{ imageRendering: 'pixelated' }}
+          draggable={false}
+        />
+        <ItemIcon item={nextItem} dim={phase !== 'result' || !success} lit={phase === 'result' && success} />
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-x-2 gap-y-1 items-center text-xs max-w-[220px] mx-auto">
-        {rows.map((r) => (
-          <Fragment key={r.key}>
-            <span className="text-right text-parchment/45">{fmtVal(before[r.key], r.pct)}</span>
-            <span className="text-gold">→</span>
-            <span className="text-left text-emerald-400 font-bold">{fmtVal(after[r.key], r.pct)}</span>
-          </Fragment>
-        ))}
-      </div>
+      {phase === 'result' ? (
+        <>
+          <p className={`text-sm font-bold mb-1 ${success ? 'text-emerald-400' : 'text-crimson'}`}>
+            {success ? 'Deu certo! Ficou até melhor.' : 'Não dessa vez... o metal não aguentou.'}
+          </p>
+          <p className="text-xs text-parchment/50 mb-3">
+            {success ? `${item.name} agora está +${nextItem.enhanceLevel}.` : `${item.name} continua +${item.enhanceLevel}.`}
+          </p>
+          <Button onClick={() => onDone(success)} className="w-full">Continuar</Button>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-parchment/60 mb-1">+{item.enhanceLevel} → +{nextItem.enhanceLevel}</p>
+          <p className="text-xs text-parchment/50 mb-3">Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro</p>
+          {phase === 'confirm' ? (
+            <div className="flex gap-2">
+              <Button onClick={() => onDone(false)} className="flex-1">Cancelar</Button>
+              <Button onClick={handleConfirm} disabled={gold < cost} className="flex-1">Confirmar</Button>
+            </div>
+          ) : (
+            <p className="text-xs text-gold italic">Batendo o martelo...</p>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -78,8 +132,9 @@ function EnhanceAnimation({ item, onDone }: { item: EquipmentItem; onDone: () =>
 // the source art is a 1536x1536 square).
 export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
-  const [animatingItem, setAnimatingItem] = useState<EquipmentItem | null>(null);
+  const [enhancingItem, setEnhancingItem] = useState<EquipmentItem | null>(null);
   const forjaLevel = ch.buildings.forja ?? 0;
+  const cap = maxEnhanceLevelForForja(forjaLevel);
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
 
   return (
@@ -117,34 +172,52 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
             style={{ backgroundImage: `url(${pergaminho})`, backgroundSize: '200px', backgroundBlendMode: 'multiply' }}
           >
             <span className="absolute -left-[7px] top-4 w-3 h-3 bg-panel border-l-2 border-b-2 border-gold/40 rotate-45" />
-            {animatingItem
-              ? 'Segura aí... uns golpes bem colocados e já sai.'
+            {enhancingItem
+              ? 'Bora ver o que dá pra fazer com essa peça.'
               : openItem
               ? 'Boa escolha. Deixa eu ver o que consigo fazer com essa peça...'
               : `Fala, ${ch.name}. Qual peça você quer que eu aprimore hoje?`}
           </div>
         </div>
 
-        {animatingItem ? (
-          <EnhanceAnimation
-            item={animatingItem}
+        {enhancingItem ? (
+          <EnhanceFlow
+            item={enhancingItem}
+            gold={ch.gold}
+            onEnhance={onEnhance}
             onDone={() => {
-              onEnhance(animatingItem);
-              setOpenItem({ ...animatingItem, enhanceLevel: animatingItem.enhanceLevel + 1 });
-              setAnimatingItem(null);
+              const live = findLiveItem(ch, enhancingItem.id);
+              setOpenItem(live);
+              setEnhancingItem(null);
             }}
           />
         ) : openItem ? (
           <div className="rounded border border-black/50 bg-black/30 p-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
             <button onClick={() => setOpenItem(null)} className="text-xs text-parchment/50 hover:text-parchment mb-2">‹ Voltar</button>
-            <div className="font-bold text-base" style={{ color: rarityColor(openItem.rarity) }}>{itemDisplayName(openItem)}</div>
-            <div className="text-xs text-parchment/50">{rarityName(openItem.rarity)} · Tier {openItem.tier} · {SLOT_NAMES[openItem.slot]}</div>
-            <EnhanceSection
-              item={openItem}
-              gold={ch.gold}
-              forjaLevel={forjaLevel}
-              onEnhance={(item) => setAnimatingItem(item)}
-            />
+            <div className="flex items-center gap-3">
+              <ItemIcon item={openItem} />
+              <div>
+                <div className="font-bold text-base" style={{ color: rarityColor(openItem.rarity) }}>{itemDisplayName(openItem)}</div>
+                <div className="text-xs text-parchment/50">{rarityName(openItem.rarity)} · Tier {openItem.tier} · {SLOT_NAMES[openItem.slot]}</div>
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-panelborder/40">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-parchment/60">Aprimoramento na Forja</span>
+                <span className="font-bold tabular-nums text-gold">+{openItem.enhanceLevel}/{MAX_ENHANCE_LEVEL}</span>
+              </div>
+              {openItem.enhanceLevel >= MAX_ENHANCE_LEVEL ? (
+                <p className="text-xs text-parchment/40 italic">Nível máximo de aprimoramento atingido.</p>
+              ) : openItem.enhanceLevel >= cap ? (
+                <p className="text-xs text-parchment/40 italic">
+                  Requer Forja nível {Math.ceil((openItem.enhanceLevel + 1) / 2)} (atual: {forjaLevel}).
+                </p>
+              ) : (
+                <Button onClick={() => setEnhancingItem(openItem)} className="w-full">
+                  Aprimorar para +{openItem.enhanceLevel + 1}
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <>
@@ -158,29 +231,16 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
             ) : (
               <div className="rounded border border-black/50 bg-black/30 p-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
                 <div className="grid grid-cols-5 gap-2.5">
-                  {forgeableItems.map((item) => {
-                    const Icon = SLOT_ICON[item.slot];
-                    const color = rarityColor(item.rarity);
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setOpenItem(item)}
-                        title={itemDisplayName(item)}
-                        className="relative aspect-square transition-transform duration-150 hover:scale-105"
-                      >
-                        <div className="absolute inset-[16%] rounded-full" style={{ boxShadow: `0 0 10px 2px ${color}99`, background: `${color}22` }} />
-                        <div className="absolute inset-[17%] flex items-center justify-center">
-                          <Icon className="w-full h-full" style={{ color }} />
-                        </div>
-                        {item.enhanceLevel > 0 && (
-                          <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow">
-                            +{item.enhanceLevel}
-                          </span>
-                        )}
-                        <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-                      </button>
-                    );
-                  })}
+                  {forgeableItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setOpenItem(item)}
+                      title={itemDisplayName(item)}
+                      className="transition-transform duration-150 hover:scale-105"
+                    >
+                      <ItemIcon item={item} />
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

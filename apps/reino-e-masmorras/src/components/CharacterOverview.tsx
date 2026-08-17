@@ -34,7 +34,7 @@ interface Props {
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
-  onEnhance: (item: EquipmentItem) => void;
+  onEnhance: (item: EquipmentItem) => boolean | undefined;
   onAllocateAttr: (key: AttributeKey) => void;
 }
 
@@ -312,8 +312,11 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           onUnequip={(slot) => { onUnequip(slot); setSelected(null); }}
           onSell={(item) => { onSell(item); setSelected(null); }}
           onEnhance={(item) => {
-            onEnhance(item);
-            setSelected(selected.kind === 'equipped' ? { ...selected, item: { ...item, enhanceLevel: item.enhanceLevel + 1 } } : { kind: 'inventory', item: { ...item, enhanceLevel: item.enhanceLevel + 1 } });
+            const success = onEnhance(item);
+            if (success) {
+              setSelected(selected.kind === 'equipped' ? { ...selected, item: { ...item, enhanceLevel: item.enhanceLevel + 1 } } : { kind: 'inventory', item: { ...item, enhanceLevel: item.enhanceLevel + 1 } });
+            }
+            return success;
           }}
         />
       )}
@@ -329,7 +332,7 @@ function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, on
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
-  onEnhance: (item: EquipmentItem) => void;
+  onEnhance: (item: EquipmentItem) => boolean | undefined;
 }) {
   if (selected.kind === 'equipped' && !selected.item) {
     return (

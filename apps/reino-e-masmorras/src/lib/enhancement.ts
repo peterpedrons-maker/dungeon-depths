@@ -21,6 +21,16 @@ export function maxEnhanceLevelForForja(forjaLevel: number): number {
   return Math.min(MAX_ENHANCE_LEVEL, forjaLevel * 2);
 }
 
+// Chance to succeed when attempting to push FROM this enhanceLevel to the
+// next one — early levels are basically free, but risk climbs steeply
+// toward +10 so the gold spent on a late attempt is a real gamble, not just
+// a formality. Index = current enhanceLevel (0-9).
+const SUCCESS_CHANCE = [1.00, 1.00, 0.95, 0.90, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
+
+export function successChanceForLevel(level: number): number {
+  return SUCCESS_CHANCE[level] ?? 0;
+}
+
 // Gold cost to push `item` from its current enhanceLevel to the next one —
 // scales with the item's own tier (a tier-1 scrap sword is cheap to enhance,
 // a tier-10 legend isn't) and grows per level so +9→+10 costs far more than
