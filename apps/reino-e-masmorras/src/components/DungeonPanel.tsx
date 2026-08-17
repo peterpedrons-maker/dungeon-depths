@@ -17,6 +17,7 @@ import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
 import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
+import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 1600;
@@ -842,9 +843,17 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             // every round after that eases it down smoothly over the same
             // ATTACK_INTERVAL the round loop itself ticks on, so the wipe
             // reads as one continuous sweep instead of a per-round jump.
+            const iconBg = activeAbilityIconStyle(ch.classId, ab.id);
             return (
               <div key={ab.id} className="relative w-11 h-11 shrink-0" title={`${ab.name}${onCooldown ? ` — recarregando` : ''}`}>
-                <IconActive className={`absolute inset-[18%] ${onCooldown ? 'text-parchment/40' : 'text-gold'}`} />
+                {iconBg ? (
+                  <div
+                    className={`absolute inset-[18%] rounded-full overflow-hidden ${onCooldown ? 'opacity-50' : ''}`}
+                    style={iconBg}
+                  />
+                ) : (
+                  <IconActive className={`absolute inset-[18%] ${onCooldown ? 'text-parchment/40' : 'text-gold'}`} />
+                )}
                 <div
                   className="absolute inset-0 rounded-full pointer-events-none"
                   style={{
