@@ -11,13 +11,13 @@ interface Props {
 
 type Phase = 'dark' | 'publisher' | 'title';
 
-// Choreography (ms), all relative to mount: a beat of black, a brief soft
+// Choreography (ms), all relative to mount: a beat of black, a slow soft
 // pulse of the publisher mark, another beat of black, then the game logo
 // settles in with the menu trailing a step behind it.
 const PUBLISHER_IN_AT = 400;
-const PUBLISHER_FADE_MS = 700;
-const PUBLISHER_HOLD_MS = 900;
-const PUBLISHER_OUT_MS = 600;
+const PUBLISHER_FADE_MS = 1400;
+const PUBLISHER_HOLD_MS = 1200;
+const PUBLISHER_OUT_MS = 900;
 const GAP_MS = 500;
 const TITLE_AT = PUBLISHER_IN_AT + PUBLISHER_FADE_MS + PUBLISHER_HOLD_MS + PUBLISHER_OUT_MS + GAP_MS;
 const MENU_DELAY_MS = 450;
@@ -53,7 +53,7 @@ export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
 
   return (
     <div
-      className="flex-1 flex flex-col items-center justify-center gap-6 px-4 text-center bg-nightsky relative overflow-hidden"
+      className={`flex-1 flex flex-col items-center justify-center gap-6 px-4 text-center relative overflow-hidden ${phase === 'title' ? 'bg-nightsky' : 'bg-black'}`}
       onClick={introRunning ? skipIntro : undefined}
       role={introRunning ? 'button' : undefined}
     >
@@ -61,7 +61,7 @@ export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
         <img
           src={publisherLogo}
           alt="Thornrune"
-          className={`w-40 sm:w-52 transition-opacity ease-in-out ${publisherVisible ? 'opacity-80' : 'opacity-0'}`}
+          className={`w-80 sm:w-[26rem] transition-opacity ease-in-out ${publisherVisible ? 'opacity-80' : 'opacity-0'}`}
           style={{ transitionDuration: `${publisherVisible ? PUBLISHER_FADE_MS : PUBLISHER_OUT_MS}ms` }}
           draggable={false}
         />
