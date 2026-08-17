@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from './Button';
 import gameLogo from '../assets/reino-masmorras-logo.webp';
 import publisherLogo from '../assets/thornrune-logo.webp';
+import titleScene from '../assets/titulo-cena.webp';
 
 interface Props {
   hasCharacter: boolean;
@@ -68,23 +69,36 @@ export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
       )}
 
       {phase === 'title' && (
-        <div className={`flex flex-col items-center gap-6 transition-opacity duration-700 ease-in-out ${titleVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <img src={gameLogo} alt="Reino & Masmorras" className="w-72 sm:w-[26rem] max-w-full" draggable={false} />
-          <div className={`flex flex-col items-center gap-6 transition-opacity duration-500 ease-in-out ${menuVisible ? 'opacity-100' : 'opacity-0'}`}>
-            <p className="text-parchment/70 max-w-md italic">
-              Forje um herói, desça às masmorras, torne-se mais forte a cada expedição
-              e conquiste seu lugar no ranking do reino.
-            </p>
-            <div className="flex flex-col gap-3 w-56">
-              {hasCharacter && (
-                <Button onClick={onContinue}>Continuar Jornada</Button>
-              )}
-              <Button onClick={onNewGame}>
-                {hasCharacter ? 'Nova Jornada' : 'Iniciar Jornada'}
-              </Button>
+        <>
+          <img
+            src={titleScene}
+            alt=""
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1400ms] ease-in-out ${titleVisible ? 'opacity-100' : 'opacity-0'}`}
+            style={{ imageRendering: 'pixelated' }}
+            draggable={false}
+          />
+          {/* Darkens the busy corners (castle, dungeon mouth) a touch more
+              than the calm center band the art already leaves open, so the
+              logo/menu stay legible without needing a solid backing panel. */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,rgba(23,16,9,0.35)_0%,rgba(23,16,9,0.75)_100%)]" />
+          <div className={`relative flex flex-col items-center gap-6 transition-opacity duration-700 ease-in-out ${titleVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <img src={gameLogo} alt="Reino & Masmorras" className="w-72 sm:w-[26rem] max-w-full" draggable={false} />
+            <div className={`flex flex-col items-center gap-6 transition-opacity duration-500 ease-in-out ${menuVisible ? 'opacity-100' : 'opacity-0'}`}>
+              <p className="text-parchment/70 max-w-md italic">
+                Forje um herói, desça às masmorras, torne-se mais forte a cada expedição
+                e conquiste seu lugar no ranking do reino.
+              </p>
+              <div className="flex flex-col gap-3 w-56">
+                {hasCharacter && (
+                  <Button onClick={onContinue}>Continuar Jornada</Button>
+                )}
+                <Button onClick={onNewGame}>
+                  {hasCharacter ? 'Nova Jornada' : 'Iniciar Jornada'}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {introRunning && (
