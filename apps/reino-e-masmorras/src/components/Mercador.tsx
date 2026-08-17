@@ -13,6 +13,7 @@ import { ItemIcon } from './ItemIcon';
 import { IconCoin } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
 import pocaoIcon from '../assets/pocao.webp';
+import mercadorCena from '../assets/mercador-cena.webp';
 
 const POTION_BASE_COST = 15;
 
@@ -52,11 +53,14 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
 
   return (
     <div className="fixed inset-0 z-40 bg-nightsky overflow-y-auto flex flex-col">
-      <div
-        className="relative w-full shrink-0 overflow-hidden bg-gradient-to-b from-[#2b2140] to-[#120d1e] flex items-center justify-center"
-        style={{ height: '44vh', minHeight: 260 }}
-      >
-        <IconCoin className="w-24 h-24 text-gold/25" />
+      <div className="relative w-full shrink-0 overflow-hidden" style={{ height: '44vh', minHeight: 260 }}>
+        <img
+          src={mercadorCena}
+          alt="O Mercador em sua barraca"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ imageRendering: 'pixelated' }}
+          draggable={false}
+        />
         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
         <div className="absolute top-3 inset-x-3 flex items-center justify-between">
           <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
