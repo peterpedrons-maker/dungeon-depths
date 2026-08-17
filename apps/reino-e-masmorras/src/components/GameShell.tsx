@@ -235,7 +235,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           {section === 'kingdom' && <KingdomOverview character={character} />}
           {section === 'buildings' && <KingdomBuildings character={character} onUpgrade={handleUpgradeBuilding} onOpenFerreiro={() => setFerreiroOpen(true)} />}
           {section === 'character' && (
-            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onEnhance={handleEnhanceItem} onAllocateAttr={handleAllocateAttr} />
+            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onAllocateAttr={handleAllocateAttr} />
           )}
           {section === 'skills' && (
             <SkillTree

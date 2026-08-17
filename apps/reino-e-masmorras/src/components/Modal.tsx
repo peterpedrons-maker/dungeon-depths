@@ -2,7 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import pergaminho from '../assets/pergaminho.webp';
 
 interface Props {
-  title: string;
+  title?: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
@@ -11,14 +11,27 @@ interface Props {
   // fights with reading the item's own stats. Other modals (skills, building
   // confirmations) keep the textured book-panel look by default.
   plain?: boolean;
+  // Skips the title bar and footer chrome entirely — just the escape-key/
+  // backdrop-click behavior, with full layout freedom left to `children`.
+  // Used for the item tooltip, which reads as a floating card (name, big
+  // icon, bare stat lines) rather than a boxy dialog with a header.
+  bare?: boolean;
 }
 
-export function Modal({ title, onClose, children, footer, plain }: Props) {
+export function Modal({ title, onClose, children, footer, plain, bare }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  if (bare) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={onClose}>
+        <div className="relative" onClick={(e) => e.stopPropagation()}>{children}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={onClose}>

@@ -3,9 +3,8 @@ import { AttributeKey, Character, EquipmentItem, ItemSlot } from '../types/game'
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
-import { rarityColor, rarityName, sellValue, SLOT_NAMES } from '../lib/equipment';
+import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
 import { enhancedItem, itemDisplayName } from '../lib/enhancement';
-import { EnhanceSection } from './EnhanceSection';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
@@ -35,13 +34,12 @@ interface Props {
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
-  onEnhance: (item: EquipmentItem) => boolean | undefined;
   onAllocateAttr: (key: AttributeKey) => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onEnhance, onAllocateAttr }: Props) {
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttr }: Props) {
   const cls = CLASSES[ch.classId];
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
@@ -324,39 +322,29 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       {selected && (
         <ItemModal
           selected={selected}
-          gold={ch.gold}
-          forjaLevel={ch.buildings.forja ?? 0}
           onClose={() => setSelected(null)}
           onEquip={(item) => { onEquip(item); setSelected(null); }}
           onUnequip={(slot) => { onUnequip(slot); setSelected(null); }}
           onSell={(item) => { onSell(item); setSelected(null); }}
-          onEnhance={(item) => {
-            const success = onEnhance(item);
-            if (success) {
-              setSelected(selected.kind === 'equipped' ? { ...selected, item: { ...item, enhanceLevel: item.enhanceLevel + 1 } } : { kind: 'inventory', item: { ...item, enhanceLevel: item.enhanceLevel + 1 } });
-            }
-            return success;
-          }}
         />
       )}
     </Panel>
   );
 }
 
-function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, onSell, onEnhance }: {
+function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
   selected: Selected;
-  gold: number;
-  forjaLevel: number;
   onClose: () => void;
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
-  onEnhance: (item: EquipmentItem) => boolean | undefined;
 }) {
   if (selected.kind === 'equipped' && !selected.item) {
     return (
-      <Modal title={SLOT_NAMES[selected.slot]} onClose={onClose} plain>
-        <p className="text-parchment/50 italic">Nenhum item equipado neste slot.</p>
+      <Modal onClose={onClose} bare>
+        <div className="px-5 py-4 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+          <p className="text-parchment/50 italic text-sm">Nenhum item equipado neste slot.</p>
+        </div>
       </Modal>
     );
   }
@@ -375,50 +363,43 @@ function ItemModal({ selected, gold, forjaLevel, onClose, onEquip, onUnequip, on
   ].filter((l): l is string => !!l);
 
   return (
-    <Modal
-      title={SLOT_NAMES[item.slot]}
-      onClose={onClose}
-      plain
-      footer={
-        selected.kind === 'equipped' ? (
-          <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
-        ) : (
-          <>
-            <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
-            <SmallButton onClick={() => onSell(item)} variant="ghost">Vender ({sellValue(item)} ouro)</SmallButton>
-          </>
-        )
-      }
-    >
-      {/* PoE-style item card: big icon up top, name/rarity centered under it,
-          then base attribute (the slot's defining roll) and affix (the extra
-          secondary stat) shown as clearly separate sections instead of one
-          flat bullet list — so it's obvious which line is which. */}
-      <div className="flex flex-col items-center text-center pb-2">
-        <div className="w-20 h-20 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center mb-2">
+    <Modal onClose={onClose} bare>
+      {/* Path of Exile-style floating tooltip: name on top, big art in the
+          middle, bare stat lines below — no title bar, no section labels,
+          no boxes-within-boxes. Enhancing now only happens via the Ferreiro
+          (which already has its own full confirm/roll/result screen), so
+          there's no enhance widget cluttering this quick-view card. */}
+      <div className="relative w-64 flex flex-col items-center gap-2 px-5 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+
+        <div className="font-bold text-base text-center" style={{ color }}>{itemDisplayName(item)}</div>
+
+        <div className="w-24 h-24 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
           <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
         </div>
-        <div className="font-bold text-base" style={{ color }}>{itemDisplayName(item)}</div>
-        <div className="text-xs text-parchment/50">{rarityName(item.rarity)} · Tier {item.tier}</div>
+
+        <div className="flex flex-col items-center gap-0.5">
+          {primaryLines.map((line) => <div key={line} className="text-sm text-parchment/90">{line}</div>)}
+          {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
+        </div>
+
+        <div className="flex gap-2 mt-2">
+          {selected.kind === 'equipped' ? (
+            <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
+          ) : (
+            <>
+              <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
+              <SmallButton onClick={() => onSell(item)} variant="ghost">Vender ({sellValue(item)} ouro)</SmallButton>
+            </>
+          )}
+        </div>
       </div>
-
-      {primaryLines.length > 0 && (
-        <div className="border-t border-panelborder/40 pt-2 mt-1">
-          <div className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold mb-1">Atributo Base</div>
-          <ul className="text-sm space-y-0.5">
-            {primaryLines.map((line) => <li key={line} className="text-parchment/90">{line}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {item.secondaryStat && (
-        <div className="border-t border-panelborder/40 pt-2 mt-2">
-          <div className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold mb-1">Afixo</div>
-          <p className="text-sm text-sky-300">{secondaryStatLabel(item)}</p>
-        </div>
-      )}
-
-      <EnhanceSection item={item} gold={gold} forjaLevel={forjaLevel} onEnhance={onEnhance} />
     </Modal>
   );
 }
