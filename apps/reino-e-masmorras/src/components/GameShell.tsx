@@ -21,6 +21,8 @@ import { RankingScreen } from './RankingScreen';
 import { DungeonMap } from './DungeonMap';
 import { HuntHall } from './HuntHall';
 import { PrestigeShop } from './PrestigeShop';
+import { Bestiario } from './Bestiario';
+import { Titulos } from './Titulos';
 import { DungeonLoadout } from './DungeonLoadout';
 import { DungeonPanel } from './DungeonPanel';
 import { Ferreiro } from './Ferreiro';
@@ -78,6 +80,10 @@ export function GameShell({
   const [navConfirmTarget, setNavConfirmTarget] = useState<Section | 'abandon' | null>(null);
   const [ferreiroOpen, setFerreiroOpen] = useState(false);
   const [mercadorOpen, setMercadorOpen] = useState(false);
+  // Armed on the loadout screen (DungeonLoadout.tsx), only offered for a
+  // dungeon already in character.clearedDungeons — reset whenever a new
+  // dungeon is picked so it never silently carries over to the next one.
+  const [nightmareArmed, setNightmareArmed] = useState(false);
 
   const kingdomBonuses = computeKingdomBonuses(character.buildings);
 
@@ -89,11 +95,19 @@ export function GameShell({
   // Clicking a map marker only stages the choice — the run doesn't actually
   // start (and the retreat-penalty guard doesn't arm) until the loadout
   // screen's "Iniciar Expedição" is confirmed.
-  function selectDungeon(d: DungeonDef) { setPendingDungeon(d); }
-  function cancelDungeonSelect() { setPendingDungeon(null); }
+  function selectDungeon(d: DungeonDef) { setPendingDungeon(d); setNightmareArmed(false); }
+  function cancelDungeonSelect() { setPendingDungeon(null); setNightmareArmed(false); }
   function confirmDungeonEntry() {
     if (!pendingDungeon) return;
-    enterDungeon(pendingDungeon);
+    const d = nightmareArmed
+      ? {
+          ...pendingDungeon, isNightmare: true,
+          dropMult: (pendingDungeon.dropMult ?? 1) * 1.6,
+          goldMult: (pendingDungeon.goldMult ?? 1) * 1.5,
+          xpMult: (pendingDungeon.xpMult ?? 1) * 1.4,
+        }
+      : pendingDungeon;
+    enterDungeon(d);
     setPendingDungeon(null);
     setRunInProgress(true);
   }
@@ -109,10 +123,24 @@ export function GameShell({
     return finalCharacter.ironMode ? base * 3 : base;
   }
 
+  // Only a real (non-Hunt) dungeon clear counts — a Caçada boss is already
+  // the hardest fight at its level, stacking Modo Pesadelo on top of it
+  // wouldn't mean anything, so Hunts never enter clearedDungeons and their
+  // loadout screen never offers the toggle.
+  function withDungeonClear(c: Character, endedReason: 'death' | 'retreat' | 'victory'): Character {
+    if (endedReason !== 'victory' || dungeon.isHunt) return c;
+    const clearedDungeons = c.clearedDungeons?.includes(dungeon.id) ? c.clearedDungeons : [...(c.clearedDungeons ?? []), dungeon.id];
+    const clearedNightmareDungeons = !dungeon.isNightmare || c.clearedNightmareDungeons?.includes(dungeon.id)
+      ? c.clearedNightmareDungeons ?? []
+      : [...(c.clearedNightmareDungeons ?? []), dungeon.id];
+    return { ...c, clearedDungeons, clearedNightmareDungeons };
+  }
+
   // The Mercador's stock only re-rolls here, on an actual victory or death —
   // never just from opening the shop, and never on a mid-run retreat — so
   // there's no way to farm it for a good roll by walking in and out.
-  function handleRunEnd(finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+  function handleRunEnd(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+    const finalCharacter = withDungeonClear(finalCharacterIn, endedReason);
     const withStock = endedReason === 'retreat'
       ? finalCharacter
       : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
@@ -124,7 +152,8 @@ export function GameShell({
   // Same finalization as handleRunEnd, but stays in the dungeon section and
   // remounts DungeonPanel on the same dungeon instead of going to the
   // kingdom — the "Reiniciar Masmorra" shortcut on the ended screen.
-  function handleRestartDungeon(finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+  function handleRestartDungeon(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+    const finalCharacter = withDungeonClear(finalCharacterIn, endedReason);
     const withStock = endedReason === 'retreat'
       ? finalCharacter
       : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
@@ -308,6 +337,10 @@ export function GameShell({
           {section === 'prestige-shop' && (
             <PrestigeShop profile={profile} onBuy={onBuyCosmetic} onEquip={onEquipCosmetic} />
           )}
+          {section === 'bestiary' && <Bestiario character={character} />}
+          {section === 'titles' && (
+            <Titulos character={character} onEquip={(id) => onCharacterChange({ ...character, equippedTitle: id })} />
+          )}
           {section === 'dungeon' && (
             <DungeonPanel
               key={dungeonRunKey}
@@ -341,6 +374,9 @@ export function GameShell({
           onSetPotionThreshold={handleSetPotionThreshold}
           onConfirm={confirmDungeonEntry}
           onCancel={cancelDungeonSelect}
+          nightmareUnlocked={!pendingDungeon.isHunt && (character.clearedDungeons?.includes(pendingDungeon.id) ?? false)}
+          nightmareArmed={nightmareArmed}
+          onToggleNightmare={setNightmareArmed}
         />
       )}
 

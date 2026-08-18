@@ -238,6 +238,19 @@ export interface Character {
   // for good instead of the normal heal-and-return-to-Reino — no second
   // chances. Never gated behind anything; any class/build can opt in.
   ironMode?: boolean;
+  // Bestiário — every enemy shape ever killed, incremented on each kill
+  // (see DungeonPanel.tsx). Absence of a key means never encountered.
+  kills?: Partial<Record<EnemyShape, number>>;
+  // Dungeon ids (DungeonDef.id) this character has cleared at least once —
+  // a normal-mode clear unlocks that dungeon's Modo Pesadelo (see
+  // DungeonLoadout.tsx), a Pesadelo clear separately unlocks Títulos tied
+  // to it. Neither list ever shrinks.
+  clearedDungeons?: string[];
+  clearedNightmareDungeons?: string[];
+  // Títulos (lib/titles.ts) are computed live from character state, never
+  // stored as an unlocked-list — only which one is currently equipped (or
+  // null) is persisted. Shown next to the name in TopBar.
+  equippedTitle?: string | null;
 }
 
 export type EnemyShape =
@@ -367,6 +380,12 @@ export interface DungeonDef {
   miniBossDepths?: number[]; // depths shown as milestone markers on the progress bar; no dungeon defines any yet
   itemTier: number; // 1-10 — the base tier (lib/itemTiers.ts) every item found in this dungeon rolls at, hand-authored like bossDepth so item power tracks dungeon progression, not the in-run depth counter
   isHunt?: boolean; // lib/hunts.ts entries only — startDepth === bossDepth (the fight IS the boss), stats get an extra multiplier on top of the normal boss curve, and the guaranteed kill-drop forces a high rarity
+  // Never set on a DUNGEONS entry itself — GameShell.tsx builds a runtime
+  // copy with this (and goldMult/dropMult/xpMult bumped) when the player
+  // arms Modo Pesadelo on the loadout screen for an already-cleared
+  // dungeon. lib/enemies.ts's spawnEnemy reads it to scale every enemy in
+  // the run (not just the boss, unlike a Caçada).
+  isNightmare?: boolean;
 }
 
 export interface RankEntry {
@@ -379,7 +398,19 @@ export interface RankEntry {
 }
 
 export type Screen = 'title' | 'select' | 'create' | 'game';
-export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts' | 'prestige-shop';
+export type Section =
+  | 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts'
+  | 'prestige-shop' | 'bestiary' | 'titles';
+
+// ── Títulos (lib/titles.ts) — purely computed from Character state, see the
+// `condition` function; nothing about a title is ever persisted except
+// which one (if any) is currently equipped, on Character.equippedTitle.
+export interface TitleDef {
+  id: string;
+  name: string;
+  desc: string; // how to earn it, shown on the locked card
+  condition: (c: Character) => boolean;
+}
 
 // ── Loja de Prestígio (lib/cosmetics.ts) — account-wide, not per-character:
 // prestige currency and owned/equipped cosmetics survive character deletion
