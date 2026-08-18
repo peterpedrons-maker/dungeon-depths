@@ -45,6 +45,22 @@ function classAttrMult(classId: ClassId, key: AttributeKey): number {
   return 1.0;
 }
 
+// Diminishing-returns curve for the four attributes that feed the same
+// primary stats equipment does (STR/DEX->ATK, VIT->DEF/HP, INT->MATK,
+// WIS->MDEF) — everywhere else (crit, block, speed, drop luck...) stays
+// linear. Points^0.7 scaled so the curve matches the old 1-point-per-point
+// rate exactly at CURVE_ANCHOR (about where most classes already sit in
+// their own priority attribute), so light/moderate investment feels
+// unchanged and only heavy single-stat dumping tapers off — the intent is
+// to stop pure attribute investment alone from outscaling equipment, not to
+// punish a normal build. See lib/combatStats.ts discussion for the numbers.
+const ATTR_CURVE_EXP = 0.7;
+const ATTR_CURVE_ANCHOR = 5;
+const ATTR_CURVE_K = Math.pow(ATTR_CURVE_ANCHOR, 1 - ATTR_CURVE_EXP);
+function curved(points: number): number {
+  return ATTR_CURVE_K * Math.pow(points, ATTR_CURVE_EXP);
+}
+
 function equippedItems(ch: Character): EquipmentItem[] {
   return Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null);
 }
@@ -82,13 +98,13 @@ export function computeCombatStats(ch: Character): CombatStats {
   }
 
   const mult = (key: AttributeKey) => classAttrMult(ch.classId, key);
-  const atkFromAttr = attrs.str * ATTR_COEF.atkPerStr * mult('str') + attrs.dex * ATTR_COEF.atkPerDex * mult('dex');
-  const matkFromAttr = attrs.int * ATTR_COEF.matkPerInt * mult('int');
-  const defFromAttr = attrs.vit * ATTR_COEF.defPerVit * mult('vit');
-  const mdefFromAttr = attrs.wis * ATTR_COEF.mdefPerWis * mult('wis') + attrs.vit * ATTR_COEF.mdefPerVit * mult('vit');
+  const atkFromAttr = curved(attrs.str) * ATTR_COEF.atkPerStr * mult('str') + curved(attrs.dex) * ATTR_COEF.atkPerDex * mult('dex');
+  const matkFromAttr = curved(attrs.int) * ATTR_COEF.matkPerInt * mult('int');
+  const defFromAttr = curved(attrs.vit) * ATTR_COEF.defPerVit * mult('vit');
+  const mdefFromAttr = curved(attrs.wis) * ATTR_COEF.mdefPerWis * mult('wis') + curved(attrs.vit) * ATTR_COEF.mdefPerVit * mult('vit');
   const critFromAttr = attrs.dex * ATTR_COEF.critPerDex * mult('dex') + attrs.agi * ATTR_COEF.critPerAgi * mult('agi') + attrs.luk * ATTR_COEF.critPerLuk * mult('luk');
   const blockFromAttr = attrs.agi * ATTR_COEF.blockPerAgi * mult('agi');
-  const hpFromAttr = attrs.vit * ATTR_COEF.hpPerVit * mult('vit');
+  const hpFromAttr = curved(attrs.vit) * ATTR_COEF.hpPerVit * mult('vit');
   const speedFromAttr = attrs.agi * ATTR_COEF.speedPerAgi * mult('agi');
 
   let atk = (ch.atk + itemDmg + atkFromAttr) * (1 + bonuses.dmgPct);
