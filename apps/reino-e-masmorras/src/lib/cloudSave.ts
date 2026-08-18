@@ -2,22 +2,28 @@ import { Character, ClassId, RankEntry } from '../types/game';
 import { supabase } from './supabaseClient';
 
 // Cloud counterpart of lib/storage.ts's local-only loadCharacter/
-// saveCharacter/loadRanking/addRankEntry — one row per account in
-// `characters` (see supabase/schema.sql), keyed by the authenticated
-// user's id instead of a single browser's localStorage.
+// saveCharacter — up to MAX_CHARACTER_SLOTS (see lib/storage.ts) rows per
+// account in `characters` (see supabase/schema.sql), one per slot, all
+// keyed by the authenticated user's id instead of a single browser's
+// localStorage.
 
-export async function fetchCloudCharacter(userId: string): Promise<Character | null> {
-  const { data, error } = await supabase.from('characters').select('data').eq('user_id', userId).maybeSingle();
-  if (error || !data) return null;
-  return data.data as Character;
+// One round-trip for the whole character-select screen instead of
+// MAX_CHARACTER_SLOTS separate fetches — returns only the slots that
+// actually have a character; empty slots simply aren't in the map.
+export async function fetchCloudCharacterSlots(userId: string): Promise<Map<number, Character>> {
+  const { data, error } = await supabase.from('characters').select('slot,data').eq('user_id', userId);
+  const map = new Map<number, Character>();
+  if (error || !data) return map;
+  for (const row of data) map.set(row.slot as number, row.data as Character);
+  return map;
 }
 
-export async function saveCloudCharacter(userId: string, character: Character): Promise<void> {
-  await supabase.from('characters').upsert({ user_id: userId, data: character, updated_at: new Date().toISOString() });
+export async function saveCloudCharacter(userId: string, slot: number, character: Character): Promise<void> {
+  await supabase.from('characters').upsert({ user_id: userId, slot, data: character, updated_at: new Date().toISOString() });
 }
 
-export async function deleteCloudCharacter(userId: string): Promise<void> {
-  await supabase.from('characters').delete().eq('user_id', userId);
+export async function deleteCloudCharacter(userId: string, slot: number): Promise<void> {
+  await supabase.from('characters').delete().eq('user_id', userId).eq('slot', slot);
 }
 
 // Top 20 across every account, not just this browser — the whole point of

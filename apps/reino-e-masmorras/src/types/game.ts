@@ -369,7 +369,7 @@ export interface RankEntry {
   date: string;
 }
 
-export type Screen = 'title' | 'create' | 'game';
+export type Screen = 'title' | 'select' | 'create' | 'game';
 export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon';
 
 // ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree + attributes ──
