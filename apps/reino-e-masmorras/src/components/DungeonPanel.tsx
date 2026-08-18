@@ -121,6 +121,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [enemyCCState, setEnemyCCState] = useState<CrowdControlKind[]>([]);
   const [playerCCState, setPlayerCCState] = useState<CrowdControlKind[]>([]);
   const [playerShieldState, setPlayerShieldState] = useState(0);
+  // Boss-only: label of the highest phase transition reached so far, shown
+  // next to the boss's name in its HP bar (see applyEnemyHp below). Stays
+  // null for every regular encounter, which never carries a phases array.
+  const [bossPhaseName, setBossPhaseName] = useState<string | null>(null);
   // ATB gauges — player and enemy now run on independent action clocks (the
   // player's AGI shortens their own interval via stats.speedPct; enemies
   // stay at the baseline pace for now), so each side tracks its own
@@ -151,6 +155,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   // is the action-denial family (stun/sleep/silence).
   const cooldownsRef = useRef<Record<string, number>>({});
   const enemyAbilityCooldownsRef = useRef<Record<string, number>>({});
+  // Boss-only: how many of the current boss's phases (see BossPhase in
+  // types/game.ts) have already fired this fight, so each threshold only
+  // triggers once as HP drops past it, never re-fires, and can't fire out
+  // of order. No-op for a regular enemy, which has no phases array.
+  const bossPhaseIndexRef = useRef(0);
   const enemyStatusRef = useRef<StatusInstance[]>([]);
   const playerStatusRef = useRef<StatusInstance[]>([]);
   const playerBuffsRef = useRef<PlayerBuff[]>([]);
@@ -168,6 +177,36 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
   function updateCh(next: Character) { chRef.current = next; setCh(next); onLiveUpdate(next); }
   function updateEnemy(next: EnemyInstance) { enemyRef.current = next; setEnemy(next); }
+
+  // Every hp-reducing hit on the enemy (the player's own attack, thorns
+  // reflection, a DOT tick) routes through here instead of calling
+  // updateEnemy directly, so a boss's phases (see BossPhase in
+  // types/game.ts) can never be skipped depending on which of those three
+  // sources happened to land the crossing blow. Each threshold only ever
+  // fires once (bossPhaseIndexRef only moves forward), and a single big hit
+  // that jumps past more than one threshold at once fires them all in order.
+  function applyEnemyHp(hp: number) {
+    const current = enemyRef.current;
+    let next: EnemyInstance = { ...current, hp };
+    const phases = current.phases;
+    if (phases && hp > 0) {
+      while (bossPhaseIndexRef.current < phases.length && hp / current.maxHp <= phases[bossPhaseIndexRef.current].hpPct) {
+        const p = phases[bossPhaseIndexRef.current];
+        bossPhaseIndexRef.current += 1;
+        pushLog(`✦ ${p.transitionMsg}`);
+        setBossPhaseName(p.name);
+        if (p.atkMult) enemyModsRef.current = [...enemyModsRef.current, { stat: 'atk', pct: p.atkMult - 1, roundsLeft: 999 }];
+        if (p.extraAbilities?.length) next = { ...next, abilities: [...(next.abilities ?? []), ...p.extraAbilities] };
+        if (p.cc && !playerImmune()) {
+          playerCCRef.current.push({ kind: p.cc, roundsLeft: p.ccRounds ?? 1 });
+          syncPlayerCC();
+          pushLog(`Você ficou ${CC_LABEL[p.cc].toLowerCase()}!`);
+        }
+      }
+    }
+    updateEnemy(next);
+  }
+
   function updateDepth(next: number) { depthRef.current = next; setDepth(next); }
   function syncEnemyStatuses() { setEnemyStatuses(enemyStatusRef.current.map((s) => s.kind)); }
   function syncPlayerStatuses() { setPlayerStatuses(playerStatusRef.current.map((s) => s.kind)); }
@@ -473,7 +512,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     playerModsRef.current = tickMods(playerModsRef.current);
     enemyModsRef.current = tickMods(enemyModsRef.current);
 
-    const enemyDotLine = tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => updateEnemy({ ...enemyRef.current, hp }), enemyRef.current.name);
+    const enemyDotLine = tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => applyEnemyHp(hp), enemyRef.current.name);
     syncEnemyStatuses();
     if (enemyDotLine) pushLog(enemyDotLine);
     const playerDotLine = tickStatus(playerStatusRef, chRef.current.hp, (hp) => updateCh({ ...chRef.current, hp }), ch.name);
@@ -587,7 +626,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
       if (!missed && dmg > 0) {
         const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
-        updateEnemy({ ...enemyRef.current, hp: enemyHp });
+        applyEnemyHp(enemyHp);
         pushFloat('enemy', dmg, crit);
         flash('enemy');
         if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx();
@@ -638,6 +677,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             enemyModsRef.current = [];
             enemyCCRef.current = [];
             enemyAbilityCooldownsRef.current = {};
+            bossPhaseIndexRef.current = 0;
+            setBossPhaseName(null);
             syncEnemyStatuses();
             syncEnemyCC();
             schedulePlayer(nextPlayerDelay());
@@ -741,7 +782,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     // that reward flow only runs from the direct attack-roll above.
     if (defStats.thornsPct > 0 && edmg > 0) {
       const reflected = Math.round(edmg * defStats.thornsPct);
-      if (reflected > 0) updateEnemy({ ...enemyRef.current, hp: Math.max(1, enemyRef.current.hp - reflected) });
+      if (reflected > 0) applyEnemyHp(Math.max(1, enemyRef.current.hp - reflected));
     }
 
     if (chosenAbility && abEffect) {
@@ -965,7 +1006,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       {phase === 'fight' && enemy.isBoss && (
         <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
           <div className="flex justify-between items-baseline gap-2">
-            <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate">✦ {enemy.name}</span>
+            <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate">
+              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}
+            </span>
             <span className="text-xs text-parchment/70 shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
           </div>
           <div className="h-3 bg-black/50 rounded mt-1 overflow-hidden">

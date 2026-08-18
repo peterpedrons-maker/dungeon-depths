@@ -289,6 +289,19 @@ export interface EnemyAbility {
   effect: EnemyAbilityEffect;
 }
 
+// A boss-only HP-threshold transition — no new art, just a one-time
+// telegraphed punish plus a permanent escalation for the rest of the fight,
+// so a boss reads as an actual encounter with a story arc instead of a
+// flat damage sponge. Regular (non-boss) enemies never carry these.
+export interface BossPhase {
+  hpPct: number; // enters this phase once the boss's HP drops to/below this fraction of its max (e.g. 0.66)
+  name: string; // short phase label shown next to the boss's name in its HP bar
+  transitionMsg: string; // one-time combat-log line fired the instant the phase starts
+  atkMult?: number; // multiplies the boss's atk/matk for the rest of the fight (stacks with any earlier phase)
+  cc?: CrowdControlKind; ccRounds?: number; // guaranteed CC applied to the player once, as the transition's punish
+  extraAbilities?: EnemyAbility[]; // added to the boss's ability pool from this phase on
+}
+
 export interface EnemyTier {
   shape: EnemyShape;
   name: string;
@@ -306,6 +319,7 @@ export interface EnemyTier {
   mdef?: number; // magical defense — every shape has one, since the player may cast spells regardless of the enemy's own attack type
   atkType?: 'physical' | 'magical'; // omitted = physical
   isBoss?: boolean; // true only for a dungeon's own boss entry, spawned exclusively at DungeonDef.bossDepth
+  phases?: BossPhase[]; // isBoss only — HP-threshold escalations, checked in ascending hpPct-descending order as the fight progresses
 }
 
 export interface EnemyInstance {
@@ -326,6 +340,7 @@ export interface EnemyInstance {
   atkType?: 'physical' | 'magical';
   isBoss?: boolean;
   isElite?: boolean; // a milestone encounter at one of the dungeon's miniBossDepths — boosted stats/rewards, same shape roster, no bespoke art needed
+  phases?: BossPhase[];
 }
 
 export interface DungeonDef {
