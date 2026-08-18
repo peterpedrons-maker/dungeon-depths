@@ -16,6 +16,9 @@ interface Props {
   onSetPotionThreshold: (pct: number) => void;
   onConfirm: () => void;
   onCancel: () => void;
+  nightmareUnlocked: boolean;
+  nightmareArmed: boolean;
+  onToggleNightmare: (armed: boolean) => void;
 }
 
 // Shown as a dimmed overlay over the Dungeon Map right before a run actually
@@ -25,6 +28,7 @@ interface Props {
 // re-ordering/equipping what's already unlocked.
 export function DungeonLoadout({
   character: ch, dungeon, onEquipAbility, onUnequipAbility, onReorderAbility, onSetAbilityThreshold, onSetPotionThreshold, onConfirm, onCancel,
+  nightmareUnlocked, nightmareArmed, onToggleNightmare,
 }: Props) {
   const equipped = getEquippedAbilities(ch.classId, ch.unlockedSkills, ch.equippedAbilities);
   const known = getUnlockedAbilities(ch.classId, ch.unlockedSkills);
@@ -43,6 +47,26 @@ export function DungeonLoadout({
       }
     >
       <div>
+        {nightmareUnlocked && (
+          <label className={`flex items-start gap-2 w-full px-3 py-2 mb-3 rounded border cursor-pointer text-left transition ${
+            nightmareArmed ? 'border-crimson bg-crimson/15' : 'border-panelborder/40 bg-black/20 hover:border-crimson/40'
+          }`}>
+            <input
+              type="checkbox"
+              checked={nightmareArmed}
+              onChange={(e) => onToggleNightmare(e.target.checked)}
+              className="mt-0.5 accent-crimson"
+            />
+            <span>
+              <span className={`block text-xs font-bold uppercase tracking-wide ${nightmareArmed ? 'text-crimson' : 'text-parchment/80'}`}>
+                ☠ Modo Pesadelo
+              </span>
+              <span className="block text-[11px] text-parchment/50 mt-0.5">
+                Todo inimigo desta masmorra fica bem mais forte — em troca, ouro, XP e chance de item melhoram.
+              </span>
+            </span>
+          </label>
+        )}
         <h4 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">
           Habilidades ({equipped.length}/{MAX_EQUIPPED_ABILITIES})
         </h4>

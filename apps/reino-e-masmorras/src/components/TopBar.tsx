@@ -1,6 +1,7 @@
 import { Character } from '../types/game';
 import { CLASSES, MAX_LEVEL } from '../lib/classes';
 import { effectiveMaxHp } from '../lib/combatStats';
+import { TITLES } from '../lib/titles';
 import { fmt } from '../lib/format';
 import moedaIcon from '../assets/moeda.webp';
 import pocaoIcon from '../assets/pocao.webp';
@@ -12,6 +13,12 @@ export function TopBar({ character: ch, accentColor, onMenuClick }: { character:
   const hpPct = Math.max(0, Math.min(100, (ch.hp / maxHp) * 100));
   const xpPct = Math.max(0, Math.min(100, (ch.xp / ch.xpToNext) * 100));
   const maxed = ch.level >= MAX_LEVEL;
+  // Re-validated live, not just trusted from storage — a title can only be
+  // shown while its condition still holds (it always will once earned,
+  // since every condition in lib/titles.ts is monotonic, but this is the
+  // one place a stale/renamed id from an old save would otherwise leak
+  // through as a blank equipped-but-unknown title).
+  const equippedTitle = ch.equippedTitle ? TITLES.find((t) => t.id === ch.equippedTitle && t.condition(ch)) : undefined;
 
   return (
     <header className="bg-panel border-b-2 border-gold/40 px-3 sm:px-4 py-2.5">
@@ -27,19 +34,22 @@ export function TopBar({ character: ch, accentColor, onMenuClick }: { character:
           style={{ background: avatarColor, boxShadow: `0 0 10px 2px ${avatarColor}80` }}
         />
 
-        <div className="min-w-0 flex items-baseline gap-1.5">
-          <span
-            className={`font-display font-bold tracking-wide truncate ${accentColor ? '' : 'text-parchment'}`}
-            style={accentColor ? { color: accentColor } : undefined}
-          >
-            {ch.name}
-          </span>
-          {ch.ironMode && (
-            <span className="text-crimson text-[10px] font-bold uppercase tracking-wide shrink-0" title="Modo Ferro — morte é permanente">
-              ☠ Ferro
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className={`font-display font-bold tracking-wide truncate ${accentColor ? '' : 'text-parchment'}`}
+              style={accentColor ? { color: accentColor } : undefined}
+            >
+              {ch.name}
             </span>
-          )}
-          <span className="text-gold/70 text-xs font-bold shrink-0">Nv. {ch.level}</span>
+            {ch.ironMode && (
+              <span className="text-crimson text-[10px] font-bold uppercase tracking-wide shrink-0" title="Modo Ferro — morte é permanente">
+                ☠ Ferro
+              </span>
+            )}
+            <span className="text-gold/70 text-xs font-bold shrink-0">Nv. {ch.level}</span>
+          </div>
+          {equippedTitle && <p className="text-[10px] text-gold/60 italic truncate leading-tight">{equippedTitle.name}</p>}
         </div>
 
         <div className="ml-auto flex items-center gap-3 shrink-0">

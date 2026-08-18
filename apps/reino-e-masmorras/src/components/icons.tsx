@@ -193,6 +193,25 @@ export function IconGem({ className, style }: IconProps) {
   );
 }
 
+export function IconBook({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M12 4v16" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+export function IconRibbon({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <circle cx="12" cy="8.5" r="5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8.5 12.5 6.5 21l5.5-3 5.5 3-2-8.5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconTarget({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>

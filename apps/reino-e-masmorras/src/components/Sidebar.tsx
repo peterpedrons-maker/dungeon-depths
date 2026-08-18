@@ -1,6 +1,6 @@
 import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
-import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem } from './icons';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon } from './icons';
 import { playClickSfx } from '../lib/audio';
 
 interface Props {
@@ -30,6 +30,8 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon, onSignO
         <Group title="Personagem">
           <NavItem icon={<IconScroll className="w-4 h-4" />} active={section === 'character'} onClick={() => nav('character')}>Personagem</NavItem>
           <NavItem icon={<IconActive className="w-4 h-4" />} active={section === 'skills'} onClick={() => nav('skills')}>Habilidades</NavItem>
+          <NavItem icon={<IconBook className="w-4 h-4" />} active={section === 'bestiary'} onClick={() => nav('bestiary')}>Bestiário</NavItem>
+          <NavItem icon={<IconRibbon className="w-4 h-4" />} active={section === 'titles'} onClick={() => nav('titles')}>Títulos</NavItem>
         </Group>
 
         <Group title="Masmorras">

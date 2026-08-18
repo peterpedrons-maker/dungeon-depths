@@ -685,7 +685,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
           const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
           const withXp = grantXp(chRef.current, xpGain);
-          const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current) };
+          const shape = enemyRef.current.shape;
+          const kills = { ...withXp.kills, [shape]: (withXp.kills?.[shape] ?? 0) + 1 };
+          const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
           updateCh(finalChar);
           pushLog(`${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`);
           if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
@@ -1091,9 +1093,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             Pausado
           </div>
         )}
-        {dungeon.special && (
+        {dungeon.special && !dungeon.isNightmare && (
           <div className="absolute top-2 left-2 bg-black/70 text-gold text-xs font-bold px-2 py-1 rounded">
             ✦ Masmorra Especial
+          </div>
+        )}
+        {dungeon.isNightmare && (
+          <div className="absolute top-2 left-2 bg-black/70 text-crimson text-xs font-bold px-2 py-1 rounded">
+            ☠ Modo Pesadelo
           </div>
         )}
         {phase === 'ended' && (

@@ -11,7 +11,10 @@ import { DungeonDef, EnemyInstance, EnemyShape, EnemyTier } from '../types/game'
 // else's mdef just sits there ready for the day the player's own spells hit
 // them. isBoss shapes are never picked by the regular roll — they only ever
 // spawn via spawnBoss() at their dungeon's own bossDepth.
-const TIERS: EnemyTier[] = [
+// Exported for the Bestiário screen (components/Bestiario.tsx), which needs
+// every shape's name/color/isBoss to render its grid — nothing else reads
+// this from outside the module.
+export const TIERS: EnemyTier[] = [
   // ── Genéricos (ainda usados pelas dungeons da Região 2+ sem roster próprio) ──
   { shape: 'goblin',   name: 'Goblin',              color: '#5a8a3c', minDepth: 1,  hp: 12, atk: 4,  def: 1,  xp: 6,  gold: 4,  matk: 2,  mdef: 1,
     proc: { chance: 0.20, label: 'Sua lâmina suja envenena você!', status: 'poison', rounds: 3 },
@@ -251,6 +254,26 @@ const HUNT_STAT_MULT = 2.4; // hp/atk/matk
 const HUNT_DEF_MULT = 1.6; // def/mdef
 const HUNT_REWARD_MULT = 3.0; // xp/gold — the grind-worthy payoff for a fight this much harder
 
+// Modo Pesadelo (DungeonLoadout.tsx) replays an already-cleared dungeon with
+// every enemy — regulars and the boss alike, unlike a Caçada's single
+// hyper-boss — scaled up. Lower than HUNT_STAT_MULT since this compounds
+// across an entire run instead of one fight; reward multipliers live on the
+// runtime dungeon copy itself (dropMult/goldMult/xpMult), not here.
+const NIGHTMARE_STAT_MULT = 1.7;
+const NIGHTMARE_DEF_MULT = 1.3;
+
+function applyNightmare(inst: EnemyInstance): EnemyInstance {
+  return {
+    ...inst,
+    hp: Math.round(inst.hp * NIGHTMARE_STAT_MULT),
+    maxHp: Math.round(inst.maxHp * NIGHTMARE_STAT_MULT),
+    atk: Math.round(inst.atk * NIGHTMARE_STAT_MULT),
+    def: Math.round(inst.def * NIGHTMARE_DEF_MULT),
+    matk: inst.matk !== undefined ? Math.round(inst.matk * NIGHTMARE_STAT_MULT) : undefined,
+    mdef: inst.mdef !== undefined ? Math.round(inst.mdef * NIGHTMARE_DEF_MULT) : undefined,
+  };
+}
+
 // Second steepening of the per-depth growth curve (was 0.075/0.045, itself
 // already a steepening of the original 0.055/0.03) — the player's own power
 // has grown faster than this curve since then (equipment's primary-stat
@@ -298,7 +321,7 @@ function randomRegularTier(depth: number, allowed?: EnemyShape[]): EnemyTier {
 
 // Spawns the dungeon's boss at its fixed bossDepth, or a regular enemy drawn
 // at random from the dungeon's own pool otherwise.
-export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {
+function spawnRegularOrBoss(depth: number, dungeon: DungeonDef): EnemyInstance {
   if (depth >= dungeon.bossDepth) {
     const bossTier = TIERS_BY_SHAPE[dungeon.boss];
     if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth, dungeon.isHunt ? 'hunt' : undefined);
@@ -306,4 +329,9 @@ export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {
   const tier = randomRegularTier(depth, dungeon.enemyPool);
   const isMiniBossDepth = dungeon.miniBossDepths?.includes(depth) ?? false;
   return instanceFromTier(tier, depth, isMiniBossDepth ? 'elite' : undefined);
+}
+
+export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {
+  const inst = spawnRegularOrBoss(depth, dungeon);
+  return dungeon.isNightmare ? applyNightmare(inst) : inst;
 }
