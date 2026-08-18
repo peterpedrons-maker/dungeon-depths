@@ -8,6 +8,7 @@ import { placeInInventory } from '../lib/inventoryGrid';
 import { generateMerchantStock } from '../lib/merchantStock';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS } from '../lib/consumables';
+import { playBuySellSfx } from '../lib/audio';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 import { KingdomOverview } from './KingdomOverview';
@@ -118,6 +119,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     const cost = Math.max(1, Math.round(POTION_COST * (1 - kingdomBonuses.merchantDiscountPct)));
     if (character.gold < cost || character.potions >= MAX_POTIONS) return;
     onCharacterChange({ ...character, gold: character.gold - cost, potions: character.potions + 1 });
+    playBuySellSfx();
   }
 
   function handleSetPotionThreshold(pct: number) {
@@ -144,6 +146,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
   function handleSellItem(item: EquipmentItem) {
     const inventory = character.inventory.filter((i) => i.id !== item.id);
     onCharacterChange({ ...character, inventory, gold: character.gold + sellValue(item) });
+    playBuySellSfx();
   }
 
   // Gold is spent on the ATTEMPT, not the outcome — success rolls against
