@@ -53,9 +53,10 @@ interface Props {
   onCharacterChange: (c: Character) => void;
   onRunEnd: (finalCharacter: Character, depthReached: number) => void;
   onAbandon: () => void;
+  onSignOut: () => void;
 }
 
-export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onAbandon }: Props) {
+export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onAbandon, onSignOut }: Props) {
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -241,6 +242,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           onClose={() => setMenuOpen(false)}
           onNavigate={attemptNavigate}
           onAbandon={attemptAbandon}
+          onSignOut={onSignOut}
         />
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
           <EmblemWatermark />
