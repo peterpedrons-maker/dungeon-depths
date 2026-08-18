@@ -28,8 +28,9 @@ body {
 }
 
 @keyframes float {
-  0%   { transform: translateY(0);    opacity: 1; }
-  100% { transform: translateY(-36px); opacity: 0; }
+  0%   { transform: translateY(0) scale(1);      opacity: 1; }
+  15%  { transform: translateY(-6px) scale(1.15); opacity: 1; }
+  100% { transform: translateY(-64px) scale(1);   opacity: 0; }
 }
 
 /* Registering this lets the browser smoothly interpolate the cooldown wedge

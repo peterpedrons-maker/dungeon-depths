@@ -208,9 +208,16 @@ const ELITE_STAT_MULT = 1.6; // hp/atk/matk
 const ELITE_DEF_MULT = 1.25; // def/mdef — dangerous, but still killable, not a wall
 const ELITE_REWARD_MULT = 2.2; // xp/gold, so clearing the checkpoint feels worth it
 
+// Second steepening of the per-depth growth curve (was 0.075/0.045, itself
+// already a steepening of the original 0.055/0.03) — the player's own power
+// has grown faster than this curve since then (equipment's primary-stat
+// roll alone went from 2/tier to 6.5/tier), so enemies were falling behind
+// a well-geared character at any given depth instead of keeping pace with
+// it. minDepth's own base stats are untouched — only how fast enemies scale
+// past that floor changes.
 function instanceFromTier(tier: EnemyTier, depth: number, elite = false): EnemyInstance {
-  const growth = (1 + depth * 0.075) * (elite ? ELITE_STAT_MULT : 1);
-  const defGrowth = (1 + depth * 0.045) * (elite ? ELITE_DEF_MULT : 1);
+  const growth = (1 + depth * 0.12) * (elite ? ELITE_STAT_MULT : 1);
+  const defGrowth = (1 + depth * 0.07) * (elite ? ELITE_DEF_MULT : 1);
   const hp = Math.round(tier.hp * growth);
   return {
     name: elite ? `${tier.name} Veterano` : tier.name,
