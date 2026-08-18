@@ -8,7 +8,13 @@ import { generateMerchantStock, STOCK_COLS } from './merchantStock';
 
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
-const CHAR_KEY = 'rm_character_v1';
+// Legacy pre-multi-slot key (one save per browser, no slot concept) — still
+// read as a fallback for slot 0 so nobody's local cache silently vanishes
+// just from this rework; the real migration of that single old save into a
+// proper cloud slot happens once, in App.tsx, right after login.
+const LEGACY_CHAR_KEY = 'rm_character_v1';
+function charKey(slot: number): string { return `rm_character_v1_slot${slot}`; }
+export const MAX_CHARACTER_SLOTS = 10;
 
 // The Assassino class was renamed to Ladino when the class roster expanded —
 // old saves/rankings referencing the old id are remapped transparently.
@@ -38,9 +44,9 @@ function migrateItem(item: any): EquipmentItem {
 // Saves from before the class/skill/equipment rework may be missing fields
 // (or reference a class that no longer exists) — back-fill or discard rather
 // than let the app crash on an old localStorage save.
-export function loadCharacter(): Character | null {
+export function loadCharacter(slot: number): Character | null {
   try {
-    const raw = localStorage.getItem(CHAR_KEY);
+    const raw = localStorage.getItem(charKey(slot)) ?? (slot === 0 ? localStorage.getItem(LEGACY_CHAR_KEY) : null);
     if (!raw) return null;
     const c = JSON.parse(raw) as Character;
     const classId = migrateClassId(c.classId as unknown as string) as ClassId;
@@ -130,10 +136,13 @@ function migrateBuildings(b: Record<string, number>): Record<string, number> {
   return { ...rest, mercador: guilda };
 }
 
-export function saveCharacter(c: Character): void {
-  try { localStorage.setItem(CHAR_KEY, JSON.stringify(c)); } catch { /* ignore */ }
+export function saveCharacter(slot: number, c: Character): void {
+  try { localStorage.setItem(charKey(slot), JSON.stringify(c)); } catch { /* ignore */ }
 }
 
-export function clearCharacter(): void {
-  try { localStorage.removeItem(CHAR_KEY); } catch { /* ignore */ }
+export function clearCharacter(slot: number): void {
+  try {
+    localStorage.removeItem(charKey(slot));
+    if (slot === 0) localStorage.removeItem(LEGACY_CHAR_KEY);
+  } catch { /* ignore */ }
 }

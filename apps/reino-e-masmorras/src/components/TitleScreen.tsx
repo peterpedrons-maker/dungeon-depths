@@ -5,9 +5,7 @@ import publisherLogo from '../assets/thornrune-logo.webp';
 import titleScene from '../assets/titulo-cena.webp';
 
 interface Props {
-  hasCharacter: boolean;
-  onContinue: () => void;
-  onNewGame: () => void;
+  onEnter: () => void;
 }
 
 type Phase = 'dark' | 'publisher' | 'title';
@@ -23,7 +21,7 @@ const GAP_MS = 500;
 const TITLE_AT = PUBLISHER_IN_AT + PUBLISHER_FADE_MS + PUBLISHER_HOLD_MS + PUBLISHER_OUT_MS + GAP_MS;
 const MENU_DELAY_MS = 450;
 
-export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
+export function TitleScreen({ onEnter }: Props) {
   const [phase, setPhase] = useState<Phase>('dark');
   const [publisherVisible, setPublisherVisible] = useState(false);
   const [titleVisible, setTitleVisible] = useState(false);
@@ -89,12 +87,7 @@ export function TitleScreen({ hasCharacter, onContinue, onNewGame }: Props) {
                 e conquiste seu lugar no ranking do reino.
               </p>
               <div className="flex flex-col gap-3 w-56">
-                {hasCharacter && (
-                  <Button onClick={onContinue}>Continuar Jornada</Button>
-                )}
-                <Button onClick={onNewGame}>
-                  {hasCharacter ? 'Nova Jornada' : 'Iniciar Jornada'}
-                </Button>
+                <Button onClick={onEnter}>Entrar no Reino</Button>
               </div>
             </div>
           </div>

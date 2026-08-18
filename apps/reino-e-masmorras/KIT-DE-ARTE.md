@@ -11,16 +11,38 @@ Passo único de configuração pra ativar contas/login/save na nuvem/ranking glo
 -- Run this once in the Supabase project's SQL Editor (Dashboard → SQL Editor
 -- → New query → paste → Run). Safe to re-run (every statement is idempotent).
 
--- One row per account, holding the full character save as JSON — mirrors
--- exactly what used to live under the browser's localStorage key
--- rm_character_v1, just keyed by the authenticated user instead of the
+-- Up to 10 rows per account (one per character slot, see
+-- MAX_CHARACTER_SLOTS in lib/storage.ts), each holding a full character
+-- save as JSON — mirrors what used to live under the browser's
+-- localStorage, just keyed by the authenticated user instead of the
 -- browser. auth.users is Supabase's own built-in table; we never touch it
 -- directly, only reference its id.
 create table if not exists public.characters (
-  user_id uuid primary key references auth.users(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  slot integer not null default 0,
   data jsonb not null,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (user_id, slot)
 );
+
+-- Migration: earlier installs had `user_id` alone as the primary key (one
+-- character per account, no slot concept) — bring them up to the composite
+-- (user_id, slot) key so multiple characters per account works. No-ops on
+-- a fresh install, since the table above is already created with the right
+-- shape in that case.
+alter table public.characters add column if not exists slot integer not null default 0;
+do $$
+begin
+  if exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.characters'::regclass
+      and contype = 'p'
+      and array_length(conkey, 1) = 1
+  ) then
+    alter table public.characters drop constraint characters_pkey;
+    alter table public.characters add primary key (user_id, slot);
+  end if;
+end $$;
 
 alter table public.characters enable row level security;
 
