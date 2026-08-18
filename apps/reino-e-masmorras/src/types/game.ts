@@ -297,6 +297,7 @@ export interface EnemyInstance {
   mdef?: number;
   atkType?: 'physical' | 'magical';
   isBoss?: boolean;
+  isElite?: boolean; // a milestone encounter at one of the dungeon's miniBossDepths — boosted stats/rewards, same shape roster, no bespoke art needed
 }
 
 export interface DungeonDef {

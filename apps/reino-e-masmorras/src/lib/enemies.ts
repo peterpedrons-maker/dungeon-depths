@@ -111,24 +111,33 @@ const TIERS: EnemyTier[] = [
 const TIERS_BY_SHAPE: Partial<Record<EnemyShape, EnemyTier>> = {};
 for (const t of TIERS) TIERS_BY_SHAPE[t.shape] = t;
 
-function instanceFromTier(tier: EnemyTier, depth: number): EnemyInstance {
-  const growth = 1 + depth * 0.055;
+// A checkpoint fight at one of the dungeon's miniBossDepths — same shape
+// roster, zero new art, just a heavier stat/reward multiplier than a
+// regular encounter and its own name so it reads as a step up mid-run.
+const ELITE_STAT_MULT = 1.6; // hp/atk/matk
+const ELITE_DEF_MULT = 1.25; // def/mdef — dangerous, but still killable, not a wall
+const ELITE_REWARD_MULT = 2.2; // xp/gold, so clearing the checkpoint feels worth it
+
+function instanceFromTier(tier: EnemyTier, depth: number, elite = false): EnemyInstance {
+  const growth = (1 + depth * 0.075) * (elite ? ELITE_STAT_MULT : 1);
+  const defGrowth = (1 + depth * 0.045) * (elite ? ELITE_DEF_MULT : 1);
   const hp = Math.round(tier.hp * growth);
   return {
-    name: tier.name,
+    name: elite ? `${tier.name} Veterano` : tier.name,
     shape: tier.shape,
     color: tier.color,
     hp, maxHp: hp,
     atk: Math.round(tier.atk * growth),
-    def: Math.round(tier.def * (1 + depth * 0.03)),
-    xpReward: Math.round(tier.xp * (1 + depth * 0.08)),
-    goldReward: Math.round(tier.gold * (1 + depth * 0.08)),
+    def: Math.round(tier.def * defGrowth),
+    xpReward: Math.round(tier.xp * (1 + depth * 0.08) * (elite ? ELITE_REWARD_MULT : 1)),
+    goldReward: Math.round(tier.gold * (1 + depth * 0.08) * (elite ? ELITE_REWARD_MULT : 1)),
     proc: tier.proc,
     evasion: tier.evasion,
     matk: tier.matk !== undefined ? Math.round(tier.matk * growth) : undefined,
-    mdef: tier.mdef !== undefined ? Math.round(tier.mdef * (1 + depth * 0.03)) : undefined,
+    mdef: tier.mdef !== undefined ? Math.round(tier.mdef * defGrowth) : undefined,
     atkType: tier.atkType,
     isBoss: tier.isBoss,
+    isElite: elite || undefined,
   };
 }
 
@@ -150,5 +159,6 @@ export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {
     if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth);
   }
   const tier = randomRegularTier(depth, dungeon.enemyPool);
-  return instanceFromTier(tier, depth);
+  const isMiniBossDepth = dungeon.miniBossDepths?.includes(depth) ?? false;
+  return instanceFromTier(tier, depth, isMiniBossDepth);
 }
