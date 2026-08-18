@@ -59,6 +59,11 @@ interface Props {
 export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onAbandon, onSignOut }: Props) {
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
+  // Bumped only by handleRestartDungeon — forces DungeonPanel to remount
+  // fresh on the same dungeon without ever leaving the 'dungeon' section
+  // (any other path back into a dungeon already unmounts/remounts it via
+  // the normal section-switch, so this is the one case that needs a key).
+  const [dungeonRunKey, setDungeonRunKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDungeon, setPendingDungeon] = useState<DungeonDef | null>(null);
   const [runInProgress, setRunInProgress] = useState(false);
@@ -95,6 +100,17 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     onRunEnd(withStock, depthReached);
     setSection('kingdom');
     setRunInProgress(false);
+  }
+
+  // Same finalization as handleRunEnd, but stays in the dungeon section and
+  // remounts DungeonPanel on the same dungeon instead of going to the
+  // kingdom — the "Reiniciar Masmorra" shortcut on the ended screen.
+  function handleRestartDungeon(finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+    const withStock = endedReason === 'retreat'
+      ? finalCharacter
+      : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
+    onRunEnd(withStock, depthReached);
+    setDungeonRunKey((k) => k + 1);
   }
 
   // Sidebar navigation and "Abandonar" get routed through these while a run
@@ -271,11 +287,13 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
           {section === 'dungeon' && (
             <DungeonPanel
+              key={dungeonRunKey}
               character={character}
               dungeon={dungeon}
               kingdomBonuses={kingdomBonuses}
               onLiveUpdate={onCharacterChange}
               onRunEnd={handleRunEnd}
+              onRestart={handleRestartDungeon}
             />
           )}
         </main>

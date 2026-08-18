@@ -1,6 +1,7 @@
 import { AttributeKey, Attributes, ClassDef, ClassId, Character } from '../types/game';
 import { computeKingdomBonuses } from './buildings';
 import { generateMerchantStock } from './merchantStock';
+import { generateItem } from './equipment';
 
 // Shared attribute display metadata (label + reference color from the Kit
 // de Arte) — used by both CharacterOverview and CharacterCreation so the
@@ -142,8 +143,14 @@ const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0,
 // (no ability active) is still always physical.
 export const MAGICAL_CLASSES: ClassId[] = ['mago', 'feiticeiro', 'bruxo', 'necromante', 'clerigo', 'druida', 'bardo'];
 
+// Steeper than the original curve (18 + level*14) on purpose — that one let
+// a fresh level-1 character blow through 2-3 levels just clearing the
+// regular encounters of the very first dungeon, before ever reaching its
+// boss. Roughly 3x the level-1 cost and ~4x the per-level slope now, so
+// clearing a whole early dungeon (regular fights + its boss) nets about a
+// level, not three.
 export function xpToNextLevel(level: number): number {
-  return 18 + level * 14;
+  return 40 + level * 55;
 }
 
 // Free attribute points granted at character creation, on top of the
@@ -164,7 +171,15 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
     gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0,
     skillPoints: 0, attributePoints: 0, allocatedAttrs: initialAllocatedAttrs ?? { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [], abilityThresholds: {},
-    equipment: { weapon: null, body: null, legs: null, hands: null, offhand: null, accessory: null }, inventory: [],
+    equipment: {
+      // Every hero starts geared, not empty-handed — a guaranteed comum
+      // weapon + chest piece (tier 1, the lowest rung), instead of leaving
+      // the very first fight in the game riding on bare class base stats.
+      weapon: generateItem('weapon', classId, 1, 0, 'comum'),
+      body: generateItem('body', classId, 1, 0, 'comum'),
+      legs: null, hands: null, offhand: null, accessory: null,
+    },
+    inventory: [],
     buildings: {}, merchantStock: [],
   };
   // Seeded up front (not left empty until the first run ends) so a
