@@ -25,7 +25,7 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props
         style={{ backgroundImage: `url(${pergaminho})`, backgroundSize: '340px', backgroundBlendMode: 'multiply' }}
       >
         <Group title="Personagem">
-          <NavItem icon={<IconScroll className="w-4 h-4" />} active={section === 'character'} onClick={() => nav('character')}>Visão Geral</NavItem>
+          <NavItem icon={<IconScroll className="w-4 h-4" />} active={section === 'character'} onClick={() => nav('character')}>Personagem</NavItem>
           <NavItem icon={<IconActive className="w-4 h-4" />} active={section === 'skills'} onClick={() => nav('skills')}>Habilidades</NavItem>
         </Group>
 
@@ -37,7 +37,7 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props
 
         <Group title="Reino">
           <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
-          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Construções</NavItem>
+          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Pátio</NavItem>
         </Group>
 
         <Group title="Ranking">
