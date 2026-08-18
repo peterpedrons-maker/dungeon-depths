@@ -184,6 +184,15 @@ export function IconEmptySlot({ className, style }: IconProps) {
   );
 }
 
+export function IconGem({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M6 4h12l4 6-10 10L2 10Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M2 10h20M9 4l-2.5 6L12 20l5.5-10L15 4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconTarget({ className, style }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>

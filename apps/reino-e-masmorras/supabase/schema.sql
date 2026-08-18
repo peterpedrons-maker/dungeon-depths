@@ -66,6 +66,11 @@ create table if not exists public.ranking (
   created_at timestamptz not null default now()
 );
 
+-- Badges a Modo Ferro run on the leaderboard — added after the table
+-- already existed on installs from before Modo Ferro shipped, hence the
+-- idempotent add-column instead of just being in the create table above.
+alter table public.ranking add column if not exists iron_mode boolean not null default false;
+
 alter table public.ranking enable row level security;
 
 drop policy if exists "ranking_select_all" on public.ranking;
@@ -75,3 +80,29 @@ create policy "ranking_select_all" on public.ranking
 drop policy if exists "ranking_insert_own" on public.ranking;
 create policy "ranking_insert_own" on public.ranking
   for insert with check (auth.uid() = user_id);
+
+-- One row per account (not per character slot) — prestígio and cosméticos
+-- da Loja de Prestígio survive character deletion, including Modo Ferro
+-- permadeath, and are shared across every slot on the account, same as the
+-- Supabase login itself.
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  prestige integer not null default 0,
+  owned_cosmetics text[] not null default '{}',
+  equipped_cosmetic text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own" on public.profiles
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = user_id);

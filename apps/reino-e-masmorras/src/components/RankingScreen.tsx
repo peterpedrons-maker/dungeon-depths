@@ -32,6 +32,7 @@ export function RankingScreen({ ranking }: { ranking: RankEntry[] }) {
                 </span>
                 <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: CLASSES[r.classId].color }} />
                 <span className="text-parchment truncate">{r.name}</span>
+                {r.ironMode && <span className="text-crimson text-xs shrink-0" title="Modo Ferro">☠</span>}
                 <span className="text-parchment/40 text-xs shrink-0">Nv.{r.level}</span>
               </span>
               <span className="text-gold font-bold shrink-0">Prof. {r.depth}</span>

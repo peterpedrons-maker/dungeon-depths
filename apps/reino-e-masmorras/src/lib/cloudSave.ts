@@ -1,4 +1,4 @@
-import { Character, ClassId, RankEntry } from '../types/game';
+import { Character, ClassId, ProfileState, RankEntry } from '../types/game';
 import { supabase } from './supabaseClient';
 
 // Cloud counterpart of lib/storage.ts's local-only loadCharacter/
@@ -33,7 +33,7 @@ export async function deleteCloudCharacter(userId: string, slot: number): Promis
 export async function fetchGlobalRanking(): Promise<RankEntry[]> {
   const { data, error } = await supabase
     .from('ranking')
-    .select('name,class_id,depth,level,created_at')
+    .select('name,class_id,depth,level,created_at,iron_mode')
     .order('depth', { ascending: false })
     .limit(20);
   if (error || !data) return [];
@@ -43,11 +43,40 @@ export async function fetchGlobalRanking(): Promise<RankEntry[]> {
     depth: r.depth as number,
     level: r.level as number,
     date: (r.created_at as string).slice(0, 10),
+    ironMode: r.iron_mode as boolean,
   }));
 }
 
 export async function insertGlobalRankEntry(userId: string, entry: RankEntry): Promise<void> {
   await supabase.from('ranking').insert({
     user_id: userId, name: entry.name, class_id: entry.classId, depth: entry.depth, level: entry.level,
+    iron_mode: entry.ironMode ?? false,
+  });
+}
+
+// Loja de Prestígio — uma linha por conta (não por slot de personagem), ver
+// supabase/schema.sql. Ausência de linha (conta nova, ainda sem compra)
+// resolve para o estado zerado em vez de erro.
+export async function fetchProfile(userId: string): Promise<ProfileState> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('prestige,owned_cosmetics,equipped_cosmetic')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error || !data) return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null };
+  return {
+    prestige: data.prestige as number,
+    ownedCosmetics: (data.owned_cosmetics as string[]) ?? [],
+    equippedCosmetic: (data.equipped_cosmetic as string | null) ?? null,
+  };
+}
+
+export async function saveProfile(userId: string, profile: ProfileState): Promise<void> {
+  await supabase.from('profiles').upsert({
+    user_id: userId,
+    prestige: profile.prestige,
+    owned_cosmetics: profile.ownedCosmetics,
+    equipped_cosmetic: profile.equippedCosmetic,
+    updated_at: new Date().toISOString(),
   });
 }

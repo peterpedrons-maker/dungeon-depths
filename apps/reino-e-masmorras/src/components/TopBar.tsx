@@ -5,8 +5,9 @@ import { fmt } from '../lib/format';
 import moedaIcon from '../assets/moeda.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
-export function TopBar({ character: ch, onMenuClick }: { character: Character; onMenuClick: () => void }) {
+export function TopBar({ character: ch, accentColor, onMenuClick }: { character: Character; accentColor?: string; onMenuClick: () => void }) {
   const cls = CLASSES[ch.classId];
+  const avatarColor = accentColor ?? cls.color;
   const maxHp = effectiveMaxHp(ch);
   const hpPct = Math.max(0, Math.min(100, (ch.hp / maxHp) * 100));
   const xpPct = Math.max(0, Math.min(100, (ch.xp / ch.xpToNext) * 100));
@@ -23,11 +24,21 @@ export function TopBar({ character: ch, onMenuClick }: { character: Character; o
 
         <span
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full shrink-0 ring-2 ring-gold/60"
-          style={{ background: cls.color, boxShadow: `0 0 10px 2px ${cls.color}80` }}
+          style={{ background: avatarColor, boxShadow: `0 0 10px 2px ${avatarColor}80` }}
         />
 
         <div className="min-w-0 flex items-baseline gap-1.5">
-          <span className="font-display font-bold text-parchment tracking-wide truncate">{ch.name}</span>
+          <span
+            className={`font-display font-bold tracking-wide truncate ${accentColor ? '' : 'text-parchment'}`}
+            style={accentColor ? { color: accentColor } : undefined}
+          >
+            {ch.name}
+          </span>
+          {ch.ironMode && (
+            <span className="text-crimson text-[10px] font-bold uppercase tracking-wide shrink-0" title="Modo Ferro — morte é permanente">
+              ☠ Ferro
+            </span>
+          )}
           <span className="text-gold/70 text-xs font-bold shrink-0">Nv. {ch.level}</span>
         </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AttributeKey, Character, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot } from '../types/game';
+import { AttributeKey, Character, ProfileState, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot } from '../types/game';
+import { findCosmetic } from '../lib/cosmetics';
 import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
@@ -19,6 +20,7 @@ import { Mercador } from './Mercador';
 import { RankingScreen } from './RankingScreen';
 import { DungeonMap } from './DungeonMap';
 import { HuntHall } from './HuntHall';
+import { PrestigeShop } from './PrestigeShop';
 import { DungeonLoadout } from './DungeonLoadout';
 import { DungeonPanel } from './DungeonPanel';
 import { Ferreiro } from './Ferreiro';
@@ -51,13 +53,18 @@ function EmblemWatermark() {
 interface Props {
   character: Character;
   ranking: RankEntry[];
+  profile: ProfileState;
   onCharacterChange: (c: Character) => void;
-  onRunEnd: (finalCharacter: Character, depthReached: number) => void;
+  onRunEnd: (finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', prestigeGained: number) => void;
   onAbandon: () => void;
   onSignOut: () => void;
+  onBuyCosmetic: (id: string) => void;
+  onEquipCosmetic: (id: string | null) => void;
 }
 
-export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onAbandon, onSignOut }: Props) {
+export function GameShell({
+  character, ranking, profile, onCharacterChange, onRunEnd, onAbandon, onSignOut, onBuyCosmetic, onEquipCosmetic,
+}: Props) {
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
   // Bumped only by handleRestartDungeon — forces DungeonPanel to remount
@@ -91,6 +98,17 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     setRunInProgress(true);
   }
 
+  // Prestígio only comes from an actual boss kill (never a retreat or a
+  // death) — a Caçada boss is worth much more than a regular dungeon boss,
+  // since it's deliberately far harder to reach that victory, and a Modo
+  // Ferro character triples every gain as the payoff for playing with
+  // permadeath on.
+  function prestigeGain(finalCharacter: Character, d: DungeonDef, endedReason: 'death' | 'retreat' | 'victory'): number {
+    if (endedReason !== 'victory') return 0;
+    const base = d.isHunt ? 5 : 1;
+    return finalCharacter.ironMode ? base * 3 : base;
+  }
+
   // The Mercador's stock only re-rolls here, on an actual victory or death —
   // never just from opening the shop, and never on a mid-run retreat — so
   // there's no way to farm it for a good roll by walking in and out.
@@ -98,7 +116,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     const withStock = endedReason === 'retreat'
       ? finalCharacter
       : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
-    onRunEnd(withStock, depthReached);
+    onRunEnd(withStock, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
     setSection('kingdom');
     setRunInProgress(false);
   }
@@ -110,7 +128,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
     const withStock = endedReason === 'retreat'
       ? finalCharacter
       : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
-    onRunEnd(withStock, depthReached);
+    onRunEnd(withStock, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
     setDungeonRunKey((k) => k + 1);
   }
 
@@ -251,7 +269,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(120,90,50,0.10) 0%, transparent 60%), radial-gradient(ellipse 90% 60% at 50% 100%, rgba(0,0,0,0.4) 0%, transparent 70%)',
       }}
     >
-      <TopBar character={character} onMenuClick={() => setMenuOpen((o) => !o)} />
+      <TopBar character={character} accentColor={findCosmetic(profile.equippedCosmetic)?.color} onMenuClick={() => setMenuOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar
           section={section}
@@ -287,6 +305,9 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
           {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
           {section === 'hunts' && <HuntHall character={character} onEnterHunt={selectDungeon} />}
+          {section === 'prestige-shop' && (
+            <PrestigeShop profile={profile} onBuy={onBuyCosmetic} onEquip={onEquipCosmetic} />
+          )}
           {section === 'dungeon' && (
             <DungeonPanel
               key={dungeonRunKey}

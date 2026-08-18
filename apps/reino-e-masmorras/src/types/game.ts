@@ -233,6 +233,11 @@ export interface Character {
   // and never just from opening/closing the shop), so the player can't
   // farm it for a good roll by walking in and out.
   merchantStock: EquipmentItem[];
+  // Modo Ferro: set once at creation, never changed after. On death inside a
+  // dungeon (see App.tsx's handleRunEnd) an ironMode character is deleted
+  // for good instead of the normal heal-and-return-to-Reino — no second
+  // chances. Never gated behind anything; any class/build can opt in.
+  ironMode?: boolean;
 }
 
 export type EnemyShape =
@@ -370,10 +375,29 @@ export interface RankEntry {
   depth: number;
   level: number;
   date: string;
+  ironMode?: boolean; // badges a hardcore run on the leaderboard — the run that ended this character's life, or their best retreat/victory while still alive
 }
 
 export type Screen = 'title' | 'select' | 'create' | 'game';
-export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts';
+export type Section = 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts' | 'prestige-shop';
+
+// ── Loja de Prestígio (lib/cosmetics.ts) — account-wide, not per-character:
+// prestige currency and owned/equipped cosmetics survive character deletion
+// (including Modo Ferro permadeath) and are shared across every slot on the
+// account, mirroring how Supabase auth itself is account-wide. Purely
+// cosmetic (recolors the hero avatar/name in TopBar) — no combat effect.
+export interface CosmeticDef {
+  id: string;
+  name: string;
+  color: string;
+  cost: number; // in prestígio
+}
+
+export interface ProfileState {
+  prestige: number;
+  ownedCosmetics: string[]; // CosmeticDef ids
+  equippedCosmetic: string | null;
+}
 
 // ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree + attributes ──
 export interface CombatStats {

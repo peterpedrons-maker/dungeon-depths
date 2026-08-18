@@ -89,6 +89,7 @@ export function CharacterCreation({ onCreated }: Props) {
   // one decision at a time instead of asking for a name before the player
   // even knows which hero they're naming.
   const [naming, setNaming] = useState(false);
+  const [ironMode, setIronMode] = useState(false);
 
   const cardRefs = useRef<Partial<Record<ClassId, HTMLButtonElement>>>({});
   const panelRef = useRef<HTMLDivElement>(null);
@@ -176,7 +177,7 @@ export function CharacterCreation({ onCreated }: Props) {
     if (!selectedId) return;
     const finalName = name.trim();
     if (!finalName) return;
-    onCreated(createCharacter(finalName, selectedId, allocated));
+    onCreated(createCharacter(finalName, selectedId, allocated, ironMode));
   }
 
   return (
@@ -358,6 +359,26 @@ export function CharacterCreation({ onCreated }: Props) {
               maxLength={18}
               className="w-56 px-3 py-2 rounded bg-black/40 border border-white/20 text-center text-parchment placeholder:text-parchment/40 focus:outline-none focus:border-gold"
             />
+
+            <label className={`flex items-start gap-2 w-full max-w-xs px-3 py-2 rounded border cursor-pointer text-left transition ${
+              ironMode ? 'border-crimson bg-crimson/15' : 'border-panelborder/40 bg-black/20 hover:border-crimson/40'
+            }`}>
+              <input
+                type="checkbox"
+                checked={ironMode}
+                onChange={(e) => setIronMode(e.target.checked)}
+                className="mt-0.5 accent-crimson"
+              />
+              <span>
+                <span className={`block text-xs font-bold uppercase tracking-wide ${ironMode ? 'text-crimson' : 'text-parchment/80'}`}>
+                  ☠ Modo Ferro
+                </span>
+                <span className="block text-[11px] text-parchment/50 mt-0.5">
+                  Morte é permanente — se esse herói cair em uma masmorra, ele é perdido para sempre. Em troca, todo prestígio ganho é triplicado.
+                </span>
+              </span>
+            </label>
+
             <div className="flex gap-2 mt-1">
               <SmallButton onClick={() => setNaming(false)} variant="ghost">Voltar</SmallButton>
               <SmallButton onClick={finalizeCreate} disabled={!name.trim()}>Iniciar Jornada</SmallButton>

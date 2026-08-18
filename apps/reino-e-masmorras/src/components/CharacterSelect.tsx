@@ -43,7 +43,9 @@ export function CharacterSelect({ slots, onSelect, onCreateNew, onDelete }: Prop
             return (
               <div
                 key={slot}
-                className="relative flex flex-col items-center gap-1.5 p-3 pt-4 rounded border border-panelborder bg-black/30"
+                className={`relative flex flex-col items-center gap-1.5 p-3 pt-4 rounded border bg-black/30 ${
+                  c.ironMode ? 'border-crimson/60' : 'border-panelborder'
+                }`}
               >
                 <button
                   onClick={() => setConfirmDelete(slot)}
@@ -52,6 +54,9 @@ export function CharacterSelect({ slots, onSelect, onCreateNew, onDelete }: Prop
                 >
                   ×
                 </button>
+                {c.ironMode && (
+                  <span className="absolute top-1 left-1.5 text-crimson text-[10px] font-bold" title="Modo Ferro">☠</span>
+                )}
                 <span className="w-10 h-10 rounded-full ring-2 ring-gold/50 shrink-0" style={{ background: cls.color }} />
                 <span className="text-parchment font-bold text-sm truncate w-full text-center">{c.name}</span>
                 <span className="text-parchment/50 text-[11px]">{cls.name} · Nv.{c.level}</span>

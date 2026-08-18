@@ -1,6 +1,6 @@
 import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
-import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget } from './icons';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem } from './icons';
 import { playClickSfx } from '../lib/audio';
 
 interface Props {
@@ -48,6 +48,7 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon, onSignO
 
         <Group title="Ranking">
           <NavItem icon={<IconTrophy className="w-4 h-4" />} active={section === 'highscore'} onClick={() => nav('highscore')}>Colocação</NavItem>
+          <NavItem icon={<IconGem className="w-4 h-4" />} active={section === 'prestige-shop'} onClick={() => nav('prestige-shop')}>Loja de Prestígio</NavItem>
         </Group>
 
         <div className="mt-auto p-3 border-t border-panelborder flex flex-col items-start gap-1.5">

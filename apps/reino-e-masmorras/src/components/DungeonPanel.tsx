@@ -1013,6 +1013,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const depthPct = (d: number) => Math.round(Math.max(0, Math.min(1, (d - dungeon.startDepth) / (dungeon.bossDepth - dungeon.startDepth))) * 100);
   const dungeonProgressPct = depthPct(depth);
   const playerBarPct = enemy.isBoss ? 100 : dungeonProgressPct;
+  // Modo Ferro: death here is permanent — see App.tsx's handleRunEnd, which
+  // deletes the character instead of healing it. No "Reiniciar Masmorra"
+  // option makes sense for a character that's about to cease existing.
+  const ironDeath = character.ironMode === true && endedReason === 'death';
   const miniBossPcts = (dungeon.miniBossDepths ?? []).map(depthPct);
 
   return (
@@ -1095,14 +1099,16 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         {phase === 'ended' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 px-6">
             <div className="text-center">
-              <p className="font-display text-lg sm:text-xl text-gold [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] mb-4">
+              <p className={`font-display text-lg sm:text-xl [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] mb-4 ${
+                ironDeath ? 'text-crimson' : 'text-gold'
+              }`}>
                 {endedReason === 'victory' && `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`}
-                {endedReason === 'death' && 'Sua expedição terminou.'}
+                {endedReason === 'death' && (ironDeath ? 'Modo Ferro não perdoa — seu herói caiu para sempre.' : 'Sua expedição terminou.')}
                 {endedReason === 'retreat' && 'Você retornou em segurança.'}
               </p>
               <div className="flex gap-2 justify-center flex-wrap">
-                <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
-                {endedReason !== 'retreat' && (
+                <Button onClick={confirmReturnToHub}>{ironDeath ? 'Aceitar o Destino' : 'Voltar ao Reino'}</Button>
+                {endedReason !== 'retreat' && !ironDeath && (
                   <Button onClick={confirmRestart}>Reiniciar Masmorra</Button>
                 )}
               </div>
