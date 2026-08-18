@@ -263,6 +263,32 @@ export interface EnemyProc {
   rounds: number;
 }
 
+// A real alternative action an enemy can take instead of its plain attack —
+// distinct from EnemyProc (a small chance-based rider ON the plain attack).
+// Rolled by DungeonPanel's pickEnemyAbility() only when off cooldown, and
+// only a fraction of the time even then (useChance), so it reads as a
+// signature move the enemy sometimes breaks out, not its default action.
+// No icon/art needed — it only ever shows up as combat-log text, same as
+// EnemyProc. Deliberately capped at one per shape for this pass; bosses
+// don't have one yet (that's the "boss phases" follow-up).
+export type EnemyAbilityKind = 'bigHit' | 'lifestealHit' | 'statusBite' | 'controlSlam' | 'weakenNova' | 'stealGold';
+export interface EnemyAbilityEffect {
+  kind: EnemyAbilityKind;
+  dmgMult?: number; // bigHit/lifestealHit/statusBite/controlSlam/weakenNova — multiplies the normal attack roll (small/no hit for the two debuff kinds)
+  lifestealPct?: number; // lifestealHit — fraction of the damage dealt healed back to the enemy
+  status?: StatusEffectKind; statusRounds?: number; // statusBite — guaranteed application, unlike EnemyProc's chance roll
+  cc?: CrowdControlKind; ccRounds?: number; // controlSlam — guaranteed application
+  statMod?: StatModStat; statModPct?: number; statModRounds?: number; // weakenNova — guaranteed application
+  goldPct?: number; // stealGold — fraction of the player's current gold, no damage roll at all
+}
+export interface EnemyAbility {
+  id: string;
+  name: string; // Portuguese flavor name, shown as a log tag ("... [Mordida Vampírica]")
+  cooldown: number; // same round-count unit envTick decays player ability cooldowns in
+  useChance: number; // 0-1, rolled once per round it's off cooldown
+  effect: EnemyAbilityEffect;
+}
+
 export interface EnemyTier {
   shape: EnemyShape;
   name: string;
@@ -274,6 +300,7 @@ export interface EnemyTier {
   xp: number;
   gold: number;
   proc?: EnemyProc;
+  abilities?: EnemyAbility[];
   evasion?: number; // innate dodge chance some agile/spectral shapes carry — lets Evasion Down debuffs matter against them
   matk?: number; // magical power — only used if atkType is 'magical'
   mdef?: number; // magical defense — every shape has one, since the player may cast spells regardless of the enemy's own attack type
@@ -292,6 +319,7 @@ export interface EnemyInstance {
   xpReward: number;
   goldReward: number;
   proc?: EnemyProc;
+  abilities?: EnemyAbility[];
   evasion?: number;
   matk?: number;
   mdef?: number;

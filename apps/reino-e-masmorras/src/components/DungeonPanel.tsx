@@ -1,11 +1,11 @@
 import { CSSProperties, useEffect, useRef, useState } from 'react';
 import {
-  AbilityDef, Character, CrowdControlKind, EnemyInstance, DungeonDef, ItemSlot, KingdomBonuses,
+  AbilityDef, Character, CrowdControlKind, EnemyAbility, EnemyInstance, DungeonDef, ItemSlot, KingdomBonuses,
   StatModStat, StatusEffectKind,
 } from '../types/game';
 import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
-import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
+import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
 import { generateItem, rarityColor } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
@@ -23,7 +23,7 @@ import {
 } from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
 
-const ATTACK_INTERVAL = 1600;
+const ATTACK_INTERVAL = 2200;
 // Player and enemy now run on independent action clocks (see playerAct/
 // enemyAct); this only offsets the enemy's very first action so the two
 // don't visually land in the exact same instant every round for a
@@ -150,6 +150,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   // modifiers (atk/def/crit/accuracy/evasion/dmgTakenPct/defPenPct); *CCRef
   // is the action-denial family (stun/sleep/silence).
   const cooldownsRef = useRef<Record<string, number>>({});
+  const enemyAbilityCooldownsRef = useRef<Record<string, number>>({});
   const enemyStatusRef = useRef<StatusInstance[]>([]);
   const playerStatusRef = useRef<StatusInstance[]>([]);
   const playerBuffsRef = useRef<PlayerBuff[]>([]);
@@ -360,6 +361,19 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     return null;
   }
 
+  // Mirrors pickAbility() for the enemy side — a silenced enemy can't use
+  // its signature move at all (falls back to a plain attack), and even
+  // off-cooldown it only fires useChance of the time so it reads as a
+  // move the enemy sometimes breaks out, not its default action.
+  function pickEnemyAbility(): EnemyAbility | null {
+    if (hasCC(enemyCCRef.current, 'silence')) return null;
+    for (const ab of enemyRef.current.abilities ?? []) {
+      if ((enemyAbilityCooldownsRef.current[ab.id] ?? 0) > 0) continue;
+      if (Math.random() < ab.useChance) return ab;
+    }
+    return null;
+  }
+
   // Resolves a self-targeted ability as the round's whole action — it
   // replaces the attack entirely rather than riding along with it. Heal
   // magnitude is based on the class's baseline HP curve at the caster's
@@ -452,6 +466,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
     const hasteBonus = playerHasteRoundsRef.current > 0 ? 1 : 0;
     for (const id in cooldownsRef.current) cooldownsRef.current[id] = Math.max(0, cooldownsRef.current[id] - (1 + hasteBonus));
+    for (const id in enemyAbilityCooldownsRef.current) enemyAbilityCooldownsRef.current[id] = Math.max(0, enemyAbilityCooldownsRef.current[id] - 1);
     if (playerHasteRoundsRef.current > 0) playerHasteRoundsRef.current -= 1;
     if (playerImmuneRoundsRef.current > 0) playerImmuneRoundsRef.current -= 1;
     if (potionCooldownRef.current > 0) potionCooldownRef.current -= 1;
@@ -622,6 +637,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             enemyStatusRef.current = [];
             enemyModsRef.current = [];
             enemyCCRef.current = [];
+            enemyAbilityCooldownsRef.current = {};
             syncEnemyStatuses();
             syncEnemyCC();
             schedulePlayer(nextPlayerDelay());
@@ -670,7 +686,28 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     const enemyAtkType = enemyRef.current.atkType ?? 'physical';
     const enemyPower = enemyAtkType === 'magical' ? computeEnemyMatk() : computeEnemyAtk();
     const enemyDefStat = enemyAtkType === 'magical' ? defStats.mdef : defStats.def;
-    const { dmg: rawDmg, crit: ecrit } = rollAttack(enemyPower, enemyDefStat, 0.06);
+
+    // A signature ability replaces the plain attack for the round when
+    // picked — stealGold is the one kind with no damage roll at all, so it
+    // short-circuits before anything else. Everything else (bigHit,
+    // lifestealHit, statusBite, controlSlam, weakenNova) still rolls a hit,
+    // just with that ability's own dmgMult and a guaranteed extra effect
+    // instead of the plain attack's chance-based EnemyProc rider.
+    const chosenAbility = pickEnemyAbility();
+    const abEffect = chosenAbility?.effect;
+
+    if (abEffect?.kind === 'stealGold') {
+      enemyAbilityCooldownsRef.current[chosenAbility!.id] = chosenAbility!.cooldown;
+      const stolen = chRef.current.gold > 0
+        ? Math.min(chRef.current.gold, Math.max(1, Math.round(chRef.current.gold * (abEffect.goldPct ?? 0.04))))
+        : 0;
+      if (stolen > 0) updateCh({ ...chRef.current, gold: chRef.current.gold - stolen });
+      pushLog(`${enemyRef.current.name} usa ${chosenAbility!.name} e rouba ${stolen} de ouro!`);
+      scheduleEnemy();
+      return;
+    }
+
+    const { dmg: rawDmg, crit: ecrit } = rollAbilityHit(enemyPower, enemyDefStat, abEffect?.dmgMult ?? 1, 0.06, BASE_CRIT_DMG_MULT);
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct));
     const blocked = Math.random() < defStats.blockChance;
     if (blocked) edmg = Math.round(edmg * 0.5);
@@ -690,7 +727,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     if (edmg > 0) playHurtSfx();
     flash('player');
     const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
-    pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}.`);
+    const abilityTag = chosenAbility ? ` [${chosenAbility.name}]` : '';
+    pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}${abilityTag}.`);
 
     // Sleep breaks the instant its target takes damage.
     if (hasCC(playerCCRef.current, 'sleep') && (edmg > 0 || shieldAbsorbed > 0)) {
@@ -706,10 +744,32 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       if (reflected > 0) updateEnemy({ ...enemyRef.current, hp: Math.max(1, enemyRef.current.hp - reflected) });
     }
 
-    // The enemy's signature proc — a chance-based extra debuff riding
-    // its normal attack, skipped if the enemy is silenced or the player
-    // is shielded by Immunity.
-    if (!hasCC(enemyCCRef.current, 'silence') && edmg + shieldAbsorbed > 0) {
+    if (chosenAbility && abEffect) {
+      // A chosen ability's own guaranteed effect replaces the chance-based
+      // EnemyProc rider for this round — landing both would double up.
+      enemyAbilityCooldownsRef.current[chosenAbility.id] = chosenAbility.cooldown;
+      if (abEffect.kind === 'lifestealHit' && edmg > 0) {
+        const healAmt = Math.round(edmg * (abEffect.lifestealPct ?? 0.5));
+        if (healAmt > 0) {
+          updateEnemy({ ...enemyRef.current, hp: Math.min(enemyRef.current.maxHp, enemyRef.current.hp + healAmt) });
+          pushLog(`${enemyRef.current.name} recupera ${healAmt} de vida!`);
+        }
+      } else if (abEffect.kind === 'statusBite' && abEffect.status && !playerImmune()) {
+        playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: abEffect.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+        syncPlayerStatuses();
+        pushLog(`Você foi ${STATUS_VERB[abEffect.status]}!`);
+      } else if (abEffect.kind === 'controlSlam' && abEffect.cc && !playerImmune()) {
+        playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: abEffect.ccRounds ?? 1 });
+        syncPlayerCC();
+        pushLog(`Você ficou ${CC_LABEL[abEffect.cc].toLowerCase()}!`);
+      } else if (abEffect.kind === 'weakenNova' && abEffect.statMod && !playerImmune()) {
+        playerModsRef.current.push({ stat: abEffect.statMod, pct: abEffect.statModPct ?? -0.2, roundsLeft: abEffect.statModRounds ?? 3 });
+        pushLog('Você foi enfraquecido!');
+      }
+    } else if (!hasCC(enemyCCRef.current, 'silence') && edmg + shieldAbsorbed > 0) {
+      // The enemy's signature proc — a chance-based extra debuff riding its
+      // normal attack, skipped if the enemy is silenced or the player is
+      // shielded by Immunity, and only ever on the plain-attack path.
       const proc = enemyRef.current.proc;
       if (proc && Math.random() < proc.chance && !playerImmune()) {
         if (proc.status) {
