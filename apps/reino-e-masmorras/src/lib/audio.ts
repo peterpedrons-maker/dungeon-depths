@@ -1,5 +1,4 @@
 import bgMusicUrl from '../assets/audio/musica-fundo.mp3';
-import battleMusicUrl from '../assets/audio/musica-batalha.mp3';
 import bossMusicUrl from '../assets/audio/musica-chefe.mp3';
 import magicAttackUrl from '../assets/audio/ataque-magico.mp3';
 import physicalAttackUrl from '../assets/audio/ataque-fisico.mp3';
@@ -48,23 +47,12 @@ export function resumeBackgroundMusic() {
   if (musicStarted) getMusicEl().play().catch(() => {});
 }
 
-// Combat music: a normal battle loop and a separate boss loop, swapped
-// in/out of the kingdom music (never layered on top of it). DungeonPanel
-// picks between them based on EnemyInstance.isBoss and calls stopCombatMusic
-// on the way out, which hands playback back to the kingdom loop where it
-// left off — same "pause, don't restart" behavior as before this existed.
-let battleMusicEl: HTMLAudioElement | null = null;
+// Boss music swaps in for the kingdom loop for the duration of a boss
+// fight, handing playback back to the kingdom loop (picking up where it
+// left off) on the way out. Regular (non-boss) encounters have no music of
+// their own — the kingdom loop just keeps playing straight through them.
 let bossMusicEl: HTMLAudioElement | null = null;
-let activeCombatTrack: 'battle' | 'boss' | null = null;
-
-function getBattleMusicEl(): HTMLAudioElement {
-  if (!battleMusicEl) {
-    battleMusicEl = new Audio(battleMusicUrl);
-    battleMusicEl.loop = true;
-    battleMusicEl.volume = MUSIC_VOLUME;
-  }
-  return battleMusicEl;
-}
+let bossMusicActive = false;
 
 function getBossMusicEl(): HTMLAudioElement {
   if (!bossMusicEl) {
@@ -75,26 +63,17 @@ function getBossMusicEl(): HTMLAudioElement {
   return bossMusicEl;
 }
 
-export function playBattleMusic() {
-  pauseBackgroundMusic();
-  if (activeCombatTrack === 'battle') return;
-  bossMusicEl?.pause();
-  activeCombatTrack = 'battle';
-  getBattleMusicEl().play().catch(() => {});
-}
-
 export function playBossMusic() {
+  if (bossMusicActive) return;
   pauseBackgroundMusic();
-  if (activeCombatTrack === 'boss') return;
-  battleMusicEl?.pause();
-  activeCombatTrack = 'boss';
+  bossMusicActive = true;
   getBossMusicEl().play().catch(() => {});
 }
 
 export function stopCombatMusic() {
-  battleMusicEl?.pause();
+  if (!bossMusicActive) return;
   bossMusicEl?.pause();
-  activeCombatTrack = null;
+  bossMusicActive = false;
   resumeBackgroundMusic();
 }
 

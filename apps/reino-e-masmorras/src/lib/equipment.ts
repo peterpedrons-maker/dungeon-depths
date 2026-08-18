@@ -150,9 +150,12 @@ let _iid = 0;
 // highestAccessibleItemTier in lib/dungeons.ts) and drives both the item's
 // base name (lib/itemTiers.ts) and the magnitude of its primary stat.
 // qualityBonusPct comes from the kingdom's Forja building — a flat % bonus
-// stacked on top of the item's rolled primary stat.
-export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number, qualityBonusPct = 0): EquipmentItem {
-  const rarity = pickRarity();
+// stacked on top of the item's rolled primary stat. forcedRarity skips the
+// normal weighted roll entirely — used for a brand-new character's
+// guaranteed starter gear (see createCharacter in lib/classes.ts), which
+// always wants exactly comum, never whatever pickRarity() would've rolled.
+export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number, qualityBonusPct = 0, forcedRarity?: Rarity): EquipmentItem {
+  const rarity = forcedRarity ? RARITIES.find((r) => r.id === forcedRarity)! : pickRarity();
   const rarityTier = rarityIndex(rarity.id);
   const accessoryType = slot === 'accessory' ? ACCESSORY_TYPES[Math.floor(Math.random() * ACCESSORY_TYPES.length)] : undefined;
   const base = tierName(baseNounFor(slot, classId, accessoryType), baseTier);

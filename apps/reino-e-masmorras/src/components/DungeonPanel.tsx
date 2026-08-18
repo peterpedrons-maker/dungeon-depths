@@ -19,7 +19,7 @@ import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import {
-  playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
+  playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
 } from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
 
@@ -60,6 +60,11 @@ interface Props {
   kingdomBonuses: KingdomBonuses;
   onLiveUpdate: (c: Character) => void;
   onRunEnd: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory') => void;
+  // Same finalization as onRunEnd (heal, reroll stock, record depth) but
+  // GameShell reacts by immediately re-entering this same dungeon instead
+  // of returning to the kingdom — the "Reiniciar Masmorra" shortcut on the
+  // ended screen, for a death or a finished run.
+  onRestart: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory') => void;
 }
 
 type Phase = 'fight' | 'ended';
@@ -106,7 +111,7 @@ function AtbBar({ roundKey, roundMs, paused, colorClass }: {
   );
 }
 
-export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd }: Props) {
+export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd, onRestart }: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
   const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(dungeon.startDepth, dungeon));
@@ -877,12 +882,19 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     setPhase('ended');
   }
 
+  function finalRunCharacter(): Character {
+    return { ...chRef.current, bestDepth: Math.max(chRef.current.bestDepth, depthRef.current) };
+  }
+
   function confirmReturnToHub() {
-    onRunEnd(
-      { ...chRef.current, bestDepth: Math.max(chRef.current.bestDepth, depthRef.current) },
-      depthRef.current,
-      endedReason ?? 'retreat',
-    );
+    onRunEnd(finalRunCharacter(), depthRef.current, endedReason ?? 'retreat');
+  }
+
+  // Same finalization as returning to the hub, just handed to onRestart
+  // instead — GameShell reacts by remounting this panel fresh on the same
+  // dungeon rather than navigating to the kingdom screen.
+  function confirmRestart() {
+    onRestart(finalRunCharacter(), depthRef.current, endedReason ?? 'death');
   }
 
   // Kick off the auto-battle loop once, and make sure no stray timeout
@@ -896,13 +908,13 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Battle music swaps in for the kingdom loop for the duration of the
-  // fight, switching to the boss track the instant the guardian spawns, and
-  // handing playback back to the kingdom loop (picking up where it left
-  // off) on the way out.
+  // Only the boss fight gets its own music, swapping in for the kingdom
+  // loop the instant the guardian spawns — regular encounters have no
+  // combat music of their own, so the kingdom loop just plays straight
+  // through them.
   useEffect(() => {
-    if (phase !== 'fight') return;
-    if (enemy.isBoss) playBossMusic(); else playBattleMusic();
+    if (phase !== 'fight' || !enemy.isBoss) return;
+    playBossMusic();
   }, [enemy.isBoss, phase]);
 
   useEffect(() => {
@@ -1052,7 +1064,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
                 {endedReason === 'death' && 'Sua expedição terminou.'}
                 {endedReason === 'retreat' && 'Você retornou em segurança.'}
               </p>
-              <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
+              <div className="flex gap-2 justify-center flex-wrap">
+                <Button onClick={confirmReturnToHub}>Voltar ao Reino</Button>
+                {endedReason !== 'retreat' && (
+                  <Button onClick={confirmRestart}>Reiniciar Masmorra</Button>
+                )}
+              </div>
             </div>
           </div>
         )}
