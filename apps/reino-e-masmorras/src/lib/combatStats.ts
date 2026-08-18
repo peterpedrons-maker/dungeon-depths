@@ -150,5 +150,5 @@ export function computeCombatStats(ch: Character): CombatStats {
 // and talents can push the real cap higher, so anything that shows or caps
 // against "max HP" should use this instead of the raw field.
 export function effectiveMaxHp(ch: Character): number {
-  return ch.maxHp + computeCombatStats(ch).maxHpBonus;
+  return Math.round(ch.maxHp + computeCombatStats(ch).maxHpBonus);
 }
