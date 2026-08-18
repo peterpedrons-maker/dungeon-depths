@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Character } from '../types/game';
 import { MAX_CHARACTER_SLOTS } from '../lib/storage';
 import { CLASSES } from '../lib/classes';
+import { computeCombatPower } from '../lib/combatStats';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconEmptySlot } from './icons';
@@ -60,6 +61,7 @@ export function CharacterSelect({ slots, onSelect, onCreateNew, onDelete }: Prop
                 <span className="w-10 h-10 rounded-full ring-2 ring-gold/50 shrink-0" style={{ background: cls.color }} />
                 <span className="text-parchment font-bold text-sm truncate w-full text-center">{c.name}</span>
                 <span className="text-parchment/50 text-[11px]">{cls.name} · Nv.{c.level}</span>
+                <span className="text-amber-300/90 text-[10px] font-bold">⚔ {computeCombatPower(c)}</span>
                 <SmallButton onClick={() => onSelect(slot)}>Continuar</SmallButton>
               </div>
             );

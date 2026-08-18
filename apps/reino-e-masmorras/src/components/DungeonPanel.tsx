@@ -86,7 +86,18 @@ const MISS_CHANCE_CAP = 0.45;
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Envenenado', burn: 'Em Chamas', bleed: 'Sangrando', curse: 'Amaldiçoado' };
 const STATUS_VERB: Record<StatusEffectKind, string> = { poison: 'envenenado', burn: 'incendiado', bleed: 'posto a sangrar', curse: 'amaldiçoado' };
 const STATUS_TICK_LABEL: Record<StatusEffectKind, string> = { poison: 'veneno', burn: 'queimadura', bleed: 'sangramento', curse: 'maldição' };
+const STATUS_DESC: Record<StatusEffectKind, string> = {
+  poison: 'Sofre dano de veneno a cada rodada até o efeito passar.',
+  burn: 'Sofre dano de fogo a cada rodada até o efeito passar.',
+  bleed: 'Sofre dano por sangramento a cada rodada até o efeito passar.',
+  curse: 'Sofre dano mágico contínuo a cada rodada por estar amaldiçoado.',
+};
 const CC_LABEL: Record<CrowdControlKind, string> = { stun: 'Atordoado', sleep: 'Dormindo', silence: 'Silenciado' };
+const CC_DESC: Record<CrowdControlKind, string> = {
+  stun: 'Perde a próxima ação — não consegue atacar nem usar habilidades.',
+  sleep: 'Não age enquanto dorme; qualquer dano sofrido interrompe o sono.',
+  silence: 'Não pode usar habilidades — só ataques básicos, até o efeito passar.',
+};
 
 // Small icon badges rendered right next to each combatant's sprite (see
 // EffectBadgeRow below) — painted art from the buff/debuff icon sheet.
@@ -114,7 +125,7 @@ const STAT_MOD_LABEL: Record<StatModStat, string> = {
   evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
 };
 
-interface EffectBadge { key: string; icon: string; title: string; }
+interface EffectBadge { key: string; icon: string; title: string; desc: string; }
 
 // dmgTakenPct is the one stat where a negative roll is the good outcome
 // (less damage taken) — everything else follows "higher is better for
@@ -123,14 +134,20 @@ function statModBadgeIsBuff(m: StatModInstance): boolean {
   return m.stat === 'dmgTakenPct' ? m.pct < 0 : m.pct > 0;
 }
 
-function buildEffectBadges(statuses: StatusEffectKind[], ccs: CrowdControlKind[], mods: StatModInstance[]): EffectBadge[] {
+function buildEffectBadges(side: 'player' | 'enemy', statuses: StatusEffectKind[], ccs: CrowdControlKind[], mods: StatModInstance[]): EffectBadge[] {
   return [
-    ...statuses.map((s, i) => ({ key: `s${i}`, icon: STATUS_BADGE_ICON[s], title: STATUS_LABEL[s] })),
-    ...ccs.map((c, i) => ({ key: `c${i}`, icon: CC_BADGE_ICON[c], title: CC_LABEL[c] })),
+    ...statuses.map((s, i) => ({ key: `${side}-s${i}`, icon: STATUS_BADGE_ICON[s], title: STATUS_LABEL[s], desc: STATUS_DESC[s] })),
+    ...ccs.map((c, i) => ({ key: `${side}-c${i}`, icon: CC_BADGE_ICON[c], title: CC_LABEL[c], desc: CC_DESC[c] })),
     ...mods.map((m, i) => {
       const isBuff = statModBadgeIsBuff(m);
       const pctText = `${m.pct > 0 ? '+' : ''}${Math.round(m.pct * 100)}%`;
-      return { key: `m${i}`, icon: isBuff ? STAT_MOD_ICON[m.stat].buff : STAT_MOD_ICON[m.stat].debuff, title: `${STAT_MOD_LABEL[m.stat]} ${pctText}` };
+      const roundsText = `${m.roundsLeft} rodada${m.roundsLeft === 1 ? '' : 's'} restante${m.roundsLeft === 1 ? '' : 's'}`;
+      return {
+        key: `${side}-m${i}`,
+        icon: isBuff ? STAT_MOD_ICON[m.stat].buff : STAT_MOD_ICON[m.stat].debuff,
+        title: `${STAT_MOD_LABEL[m.stat]} ${pctText}`,
+        desc: `${isBuff ? 'Bônus' : 'Penalidade'} de ${pctText} em ${STAT_MOD_LABEL[m.stat]} — ${roundsText}.`,
+      };
     }),
   ];
 }
@@ -205,19 +222,36 @@ function AtbBar({ roundKey, roundMs, paused, colorClass }: {
   );
 }
 
-function EffectBadgeRow({ badges, align }: { badges: EffectBadge[]; align: 'left' | 'right' }) {
+// Icons alone don't explain themselves at 24px, and a hover title tooltip
+// never fires on a touchscreen — so each badge is a tap target that toggles
+// a small text popover instead, dismissed by tapping the badge again or the
+// backdrop rendered by the caller.
+function EffectBadgeRow({ badges, align, activeKey, onToggle }: {
+  badges: EffectBadge[]; align: 'left' | 'right'; activeKey: string | null; onToggle: (key: string) => void;
+}) {
   if (badges.length === 0) return null;
+  const active = badges.find((b) => b.key === activeKey);
   return (
-    <div className={`absolute top-1.5 flex gap-1 flex-wrap max-w-[45%] ${align === 'left' ? 'left-1.5' : 'right-1.5 justify-end'}`}>
+    <div className={`absolute top-1.5 z-20 flex gap-1 flex-wrap max-w-[45%] ${align === 'left' ? 'left-1.5' : 'right-1.5 justify-end'}`}>
       {badges.map((b) => (
-        <img
+        <button
           key={b.key}
-          src={b.icon}
-          title={b.title}
-          alt={b.title}
-          className="w-6 h-6 rounded-full ring-1 ring-black/60 shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
-        />
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggle(b.key); }}
+          className="w-6 h-6 rounded-full ring-1 ring-black/60 shadow-[0_1px_3px_rgba(0,0,0,0.8)] shrink-0"
+        >
+          <img src={b.icon} alt={b.title} className="w-full h-full rounded-full pointer-events-none" />
+        </button>
       ))}
+      {active && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`absolute top-7 z-30 w-44 rounded border border-gold/40 bg-black/95 px-2 py-1.5 shadow-lg ${align === 'left' ? 'left-0' : 'right-0'}`}
+        >
+          <p className="text-[11px] font-bold text-gold">{active.title}</p>
+          <p className="text-[10px] text-parchment/80 mt-0.5 leading-snug">{active.desc}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -230,6 +264,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [paused, setPaused] = useState(false);
   const [log, setLog] = useState<LogLine[]>([[{ text: `Você entra em ${dungeon.name}...` }]]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
+  const [activeBadgeKey, setActiveBadgeKey] = useState<string | null>(null);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
   const [enemyStatuses, setEnemyStatuses] = useState<StatusEffectKind[]>([]);
@@ -1116,8 +1151,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
   const enemyTags = [...enemyStatuses.map((s) => allStatusLabel[s]), ...enemyCCState.map((c) => CC_LABEL[c])];
-  const playerBadges = buildEffectBadges(playerStatuses, playerCCState, playerModsState);
-  const enemyBadges = buildEffectBadges(enemyStatuses, enemyCCState, enemyModsState);
+  const playerBadges = buildEffectBadges('player', playerStatuses, playerCCState, playerModsState);
+  const enemyBadges = buildEffectBadges('enemy', enemyStatuses, enemyCCState, enemyModsState);
   // Progress toward the dungeon's own boss, replacing the old raw
   // "Profundidade N" floor counter — every dungeon now has a defined end
   // (bossDepth), so a fill bar communicates "how close to done" far better
@@ -1185,8 +1220,17 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
-        <EffectBadgeRow badges={playerBadges} align="left" />
-        <EffectBadgeRow badges={enemyBadges} align="right" />
+        {activeBadgeKey && (
+          <div className="absolute inset-0 z-10" onClick={() => setActiveBadgeKey(null)} />
+        )}
+        <EffectBadgeRow
+          badges={playerBadges} align="left" activeKey={activeBadgeKey}
+          onToggle={(key) => setActiveBadgeKey((cur) => (cur === key ? null : key))}
+        />
+        <EffectBadgeRow
+          badges={enemyBadges} align="right" activeKey={activeBadgeKey}
+          onToggle={(key) => setActiveBadgeKey((cur) => (cur === key ? null : key))}
+        />
         {floaters.map((f) => {
           // Damage dealt to the player stays put above the character (not
           // rising) and reads bigger/sharper — it was hard to read as a

@@ -241,12 +241,17 @@ export function GameShell({
     return success;
   }
 
-  function handleAllocateAttr(key: AttributeKey) {
-    if (character.attributePoints <= 0) return;
+  function handleAllocateAttrs(deltas: Partial<Record<AttributeKey, number>>) {
+    const total = Object.values(deltas).reduce((s, n) => s + (n ?? 0), 0);
+    if (total <= 0 || total > character.attributePoints) return;
+    const nextAllocated = { ...character.allocatedAttrs };
+    for (const key of Object.keys(deltas) as AttributeKey[]) {
+      nextAllocated[key] += deltas[key] ?? 0;
+    }
     onCharacterChange({
       ...character,
-      attributePoints: character.attributePoints - 1,
-      allocatedAttrs: { ...character.allocatedAttrs, [key]: character.allocatedAttrs[key] + 1 },
+      attributePoints: character.attributePoints - total,
+      allocatedAttrs: nextAllocated,
     });
   }
 
@@ -320,7 +325,7 @@ export function GameShell({
             />
           )}
           {section === 'character' && (
-            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onAllocateAttr={handleAllocateAttr} />
+            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onAllocateAttrs={handleAllocateAttrs} />
           )}
           {section === 'skills' && (
             <SkillTree
