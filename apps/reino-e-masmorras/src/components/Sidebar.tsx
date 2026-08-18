@@ -9,11 +9,13 @@ interface Props {
   onClose: () => void;
   onNavigate: (s: Section) => void;
   onAbandon: () => void;
+  onSignOut: () => void;
 }
 
-export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props) {
+export function Sidebar({ section, open, onClose, onNavigate, onAbandon, onSignOut }: Props) {
   const nav = (s: Section) => { playClickSfx(); onNavigate(s); onClose(); };
   const abandon = () => { playClickSfx(); onAbandon(); onClose(); };
+  const signOut = () => { playClickSfx(); onSignOut(); onClose(); };
 
   return (
     <>
@@ -45,9 +47,12 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props
           <NavItem icon={<IconTrophy className="w-4 h-4" />} active={section === 'highscore'} onClick={() => nav('highscore')}>Colocação</NavItem>
         </Group>
 
-        <div className="mt-auto p-3 border-t border-panelborder">
+        <div className="mt-auto p-3 border-t border-panelborder flex flex-col items-start gap-1.5">
           <button onClick={abandon} className="text-xs text-parchment/40 hover:text-parchment/70">
             Abandonar Herói / Novo Jogo
+          </button>
+          <button onClick={signOut} className="text-xs text-parchment/40 hover:text-parchment/70">
+            Sair da Conta
           </button>
         </div>
       </nav>

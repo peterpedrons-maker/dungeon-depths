@@ -1,4 +1,4 @@
-import { Attributes, Character, ClassId, EquipmentItem, RankEntry } from '../types/game';
+import { Attributes, Character, ClassId, EquipmentItem } from '../types/game';
 import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
 import { MAX_POTIONS } from './consumables';
@@ -9,8 +9,6 @@ import { generateMerchantStock, STOCK_COLS } from './merchantStock';
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
 const CHAR_KEY = 'rm_character_v1';
-const RANK_KEY = 'rm_ranking_v1';
-const MAX_RANK_ENTRIES = 10;
 
 // The Assassino class was renamed to Ladino when the class roster expanded —
 // old saves/rankings referencing the old id are remapped transparently.
@@ -138,21 +136,4 @@ export function saveCharacter(c: Character): void {
 
 export function clearCharacter(): void {
   try { localStorage.removeItem(CHAR_KEY); } catch { /* ignore */ }
-}
-
-export function loadRanking(): RankEntry[] {
-  try {
-    const raw = localStorage.getItem(RANK_KEY);
-    if (!raw) return [];
-    const list = JSON.parse(raw) as RankEntry[];
-    return list.map((r) => ({ ...r, classId: migrateClassId(r.classId as unknown as string) as ClassId }));
-  } catch { return []; }
-}
-
-export function addRankEntry(entry: RankEntry): RankEntry[] {
-  const list = [...loadRanking(), entry]
-    .sort((a, b) => b.depth - a.depth)
-    .slice(0, MAX_RANK_ENTRIES);
-  try { localStorage.setItem(RANK_KEY, JSON.stringify(list)); } catch { /* ignore */ }
-  return list;
 }
