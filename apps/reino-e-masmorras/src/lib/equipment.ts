@@ -88,9 +88,15 @@ function baseNounFor(slot: ItemSlot, classId: ClassId, accessoryType?: Accessory
 // damage and an accessory's flat HP need very different magnitudes to feel
 // meaningful next to the class's base stats. baseTier (1-10, from the
 // dungeon it dropped in — see DungeonDef.itemTier) replaces the old in-run
-// depth counter as the power-progression driver.
+// depth counter as the power-progression driver. The per-tier term is
+// deliberately steep (6.5/tier, not 2) — this is the "buff gear" half of
+// the balance pass alongside the attribute diminishing-returns curve in
+// combatStats.ts: a tier-5 legendary weapon now contributes roughly as
+// much ATK as a level-60 character's own attribute investment, instead of
+// a fraction of it, so gear choice is a real part of a build's power
+// rather than a rounding error next to level/attributes.
 function rollPrimaryValue(baseTier: number, mult: number, scale: number): number {
-  const roll = 3 + Math.floor(Math.random() * 5) + baseTier * 2;
+  const roll = 3 + Math.floor(Math.random() * 5) + baseTier * 6.5;
   return Math.round(roll * mult * scale);
 }
 
