@@ -1,6 +1,6 @@
 import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
-import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy } from './icons';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget } from './icons';
 import { playClickSfx } from '../lib/audio';
 
 interface Props {
@@ -35,6 +35,9 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon, onSignO
         <Group title="Masmorras">
           <NavItem icon={<IconSkull className="w-4 h-4" />} active={section === 'dungeon-select' || section === 'dungeon'} onClick={() => nav('dungeon-select')}>
             Explorar
+          </NavItem>
+          <NavItem icon={<IconTarget className="w-4 h-4" />} active={section === 'hunts'} onClick={() => nav('hunts')}>
+            Caçadas
           </NavItem>
         </Group>
 

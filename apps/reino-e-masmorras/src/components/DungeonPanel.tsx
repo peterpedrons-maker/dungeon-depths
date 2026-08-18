@@ -1,7 +1,7 @@
 import { CSSProperties, useEffect, useRef, useState } from 'react';
 import {
   AbilityDef, Character, CrowdControlKind, EnemyAbility, EnemyInstance, DungeonDef, ItemSlot, KingdomBonuses,
-  StatModStat, StatusEffectKind,
+  Rarity, StatModStat, StatusEffectKind,
 } from '../types/game';
 import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
@@ -38,6 +38,20 @@ const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_DROP_CHANCE = 0.12;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
+
+// Weighted floor for a Hunt boss's guaranteed drop — Raro is the baseline,
+// with a real (not token) shot at Épico or Lendário, since the fight itself
+// is deliberately much harder than a normal same-level dungeon boss.
+const HUNT_RARITY_WEIGHTS: [Rarity, number][] = [['raro', 55], ['epico', 35], ['legendario', 10]];
+function pickHuntDropRarity(): Rarity {
+  const total = HUNT_RARITY_WEIGHTS.reduce((s, [, w]) => s + w, 0);
+  let roll = Math.random() * total;
+  for (const [rarity, weight] of HUNT_RARITY_WEIGHTS) {
+    if (roll < weight) return rarity;
+    roll -= weight;
+  }
+  return 'raro';
+}
 // Self-targeted kinds resolve as the round's whole action — no basic attack,
 // no offense ability, just this — same as any offense pick. They compete for
 // the one action exactly like everything else in the priority list; a
@@ -292,7 +306,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       pushLog('Inventário cheio — o item foi perdido.');
       return;
     }
-    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
+    // Um Alvo de Caçada é bem mais difícil que o chefe normal do seu nível
+    // (ver HUNT_STAT_MULT em lib/enemies.ts) — a recompensa precisa refletir
+    // isso: em vez da rolagem normal de raridade, força pelo menos Raro,
+    // com uma chance real de Épico ou até Lendário.
+    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : undefined;
+    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct, forcedRarity);
     updateCh({ ...chRef.current, inventory: placeInInventory(chRef.current.inventory, item) });
     pushLog([
       { text: 'Você encontrou: ' },

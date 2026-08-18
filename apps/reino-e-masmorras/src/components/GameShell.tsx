@@ -18,6 +18,7 @@ import { SkillTree } from './SkillTree';
 import { Mercador } from './Mercador';
 import { RankingScreen } from './RankingScreen';
 import { DungeonMap } from './DungeonMap';
+import { HuntHall } from './HuntHall';
 import { DungeonLoadout } from './DungeonLoadout';
 import { DungeonPanel } from './DungeonPanel';
 import { Ferreiro } from './Ferreiro';
@@ -285,6 +286,7 @@ export function GameShell({ character, ranking, onCharacterChange, onRunEnd, onA
           )}
           {section === 'highscore' && <RankingScreen ranking={ranking} />}
           {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
+          {section === 'hunts' && <HuntHall character={character} onEnterHunt={selectDungeon} />}
           {section === 'dungeon' && (
             <DungeonPanel
               key={dungeonRunKey}
