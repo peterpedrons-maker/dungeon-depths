@@ -143,14 +143,14 @@ const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0,
 // (no ability active) is still always physical.
 export const MAGICAL_CLASSES: ClassId[] = ['mago', 'feiticeiro', 'bruxo', 'necromante', 'clerigo', 'druida', 'bardo'];
 
-// Steeper than the original curve (18 + level*14) on purpose — that one let
-// a fresh level-1 character blow through 2-3 levels just clearing the
-// regular encounters of the very first dungeon, before ever reaching its
-// boss. Roughly 3x the level-1 cost and ~4x the per-level slope now, so
-// clearing a whole early dungeon (regular fights + its boss) nets about a
-// level, not three.
+// Second, bigger cut on top of the first one (18 + level*14 -> 40 +
+// level*55 -> this). Simulated against every enemy/dungeon in the game:
+// clearing the entire first dungeon (11 regular fights + its boss) now
+// nets exactly 1 level (was 3, then 2), and clearing all 12 currently
+// existing dungeons back to back lands around level 14 of the level-60
+// cap (was ~22) — plenty of room left for the still-unbuilt regions 3-7.
 export function xpToNextLevel(level: number): number {
-  return 40 + level * 55;
+  return 100 + level * 140;
 }
 
 // Free attribute points granted at character creation, on top of the
