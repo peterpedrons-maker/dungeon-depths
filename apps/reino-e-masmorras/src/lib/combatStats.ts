@@ -11,11 +11,15 @@ export const BASE_CRIT_DMG_MULT = 1.6;
 // already feed. STR/DEX feed physical ATK only (weapon swings are always
 // physical); INT feeds MATK only. VIT feeds physical DEF; WIS feeds MDEF
 // ("resistência mágica") plus a small VIT-adjacent toughness contribution.
+// AGI also feeds speedPct — DungeonPanel uses it to shorten the delay
+// between the player's own actions, so a high-AGI build genuinely acts
+// more often than a slow one instead of just dodging/blocking more.
 const ATTR_COEF = {
   atkPerStr: 1.0, atkPerDex: 0.6,
   matkPerInt: 1.0,
   critPerDex: 0.003, critPerAgi: 0.0015, critPerLuk: 0.0025,
   blockPerAgi: 0.004,
+  speedPerAgi: 0.008,
   defPerVit: 0.6,
   mdefPerWis: 0.5, mdefPerVit: 0.15,
   hpPerVit: 3,
@@ -85,6 +89,7 @@ export function computeCombatStats(ch: Character): CombatStats {
   const critFromAttr = attrs.dex * ATTR_COEF.critPerDex * mult('dex') + attrs.agi * ATTR_COEF.critPerAgi * mult('agi') + attrs.luk * ATTR_COEF.critPerLuk * mult('luk');
   const blockFromAttr = attrs.agi * ATTR_COEF.blockPerAgi * mult('agi');
   const hpFromAttr = attrs.vit * ATTR_COEF.hpPerVit * mult('vit');
+  const speedFromAttr = attrs.agi * ATTR_COEF.speedPerAgi * mult('agi');
 
   let atk = (ch.atk + itemDmg + atkFromAttr) * (1 + bonuses.dmgPct);
   let matk = (ch.matk + itemMatk + matkFromAttr) * (1 + bonuses.dmgPct);
@@ -121,6 +126,7 @@ export function computeCombatStats(ch: Character): CombatStats {
     evasion: Math.min(0.4, bonuses.evasionPct),
     accuracy: Math.min(0.4, bonuses.accuracyPct),
     cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct),
+    speedPct: Math.min(0.5, speedFromAttr),
   };
 }
 
