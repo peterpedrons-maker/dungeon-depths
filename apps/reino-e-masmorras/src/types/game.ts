@@ -349,6 +349,7 @@ export interface CombatStats {
   evasion: number; // permanent base dodge chance, from skill-tree secondary-attribute nodes
   accuracy: number; // permanent base hit chance, from skill-tree secondary-attribute nodes
   cooldownReductionPct: number; // shortens ability cooldowns, capped at 50%
+  speedPct: number; // AGI-derived — shortens the delay between the player's own actions, capped at 50%
 }
 
 // ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──

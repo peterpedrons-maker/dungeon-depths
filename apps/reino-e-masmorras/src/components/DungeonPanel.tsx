@@ -24,6 +24,10 @@ import {
 import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 1600;
+// Player and enemy now run on independent action clocks (see playerAct/
+// enemyAct); this only offsets the enemy's very first action so the two
+// don't visually land in the exact same instant every round for a
+// zero-AGI build, matching the stagger the old single shared round had.
 const LEAN_MS = 260;
 const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_DROP_CHANCE = 0.12;
@@ -117,14 +121,17 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [enemyCCState, setEnemyCCState] = useState<CrowdControlKind[]>([]);
   const [playerCCState, setPlayerCCState] = useState<CrowdControlKind[]>([]);
   const [playerShieldState, setPlayerShieldState] = useState(0);
-  // ATB gauge: both sides act on the same shared round timer (there's no
-  // per-combatant speed stat — see the DEX/AGI investigation this project
-  // already did), so one fill cycle drives both bars. roundKey remounts the
-  // fill div each round so its CSS animation restarts from empty instead of
-  // snapping backwards; roundMs is the actual delay scheduleTick() used, so
-  // pause/resume and the shorter opening delay stay visually honest.
-  const [roundKey, setRoundKey] = useState(0);
-  const [roundMs, setRoundMs] = useState(ATTACK_INTERVAL);
+  // ATB gauges — player and enemy now run on independent action clocks (the
+  // player's AGI shortens their own interval via stats.speedPct; enemies
+  // stay at the baseline pace for now), so each side tracks its own
+  // key/duration pair. The *Key bump remounts the fill div at the start of
+  // each of that side's actions so the CSS animation restarts from empty
+  // instead of snapping backwards; *Ms is the actual delay that side's
+  // scheduler used, so pause/resume and speed changes stay visually honest.
+  const [playerRoundKey, setPlayerRoundKey] = useState(0);
+  const [playerRoundMs, setPlayerRoundMs] = useState(ATTACK_INTERVAL);
+  const [enemyRoundKey, setEnemyRoundKey] = useState(0);
+  const [enemyRoundMs, setEnemyRoundMs] = useState(ATTACK_INTERVAL);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const floaterId = useRef(0);
 
@@ -180,13 +187,41 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     setTimeout(() => { if (mountedRef.current) setFlashSide(null); }, 150);
   }
 
-  function scheduleTick(delay = ATTACK_INTERVAL) {
-    setRoundMs(delay);
-    setRoundKey((k) => k + 1);
+  // Three independent clocks instead of one shared round: envTick owns every
+  // duration-based decay (cooldowns, DOT, buffs/debuffs, CC, regen) on the
+  // original fixed cadence so none of that balance shifts, while the player
+  // and enemy each act on their own pace. The player's pace shortens with
+  // AGI (stats.speedPct) — a fast build genuinely gets more actions in than
+  // a slow one, not just better odds to dodge/block. Enemies stay at the
+  // baseline pace for now (no per-shape speed stat yet).
+  function scheduleEnv(delay = ATTACK_INTERVAL) {
     setTimeout(() => {
       if (!mountedRef.current) return;
-      if (!pausedRef.current && phaseRef.current === 'fight') runRound();
+      if (!pausedRef.current && phaseRef.current === 'fight') envTick();
     }, delay);
+  }
+
+  function schedulePlayer(delay: number) {
+    setPlayerRoundMs(delay);
+    setPlayerRoundKey((k) => k + 1);
+    setTimeout(() => {
+      if (!mountedRef.current) return;
+      if (!pausedRef.current && phaseRef.current === 'fight') playerAct();
+    }, delay);
+  }
+
+  function scheduleEnemy(delay = ATTACK_INTERVAL) {
+    setEnemyRoundMs(delay);
+    setEnemyRoundKey((k) => k + 1);
+    setTimeout(() => {
+      if (!mountedRef.current) return;
+      if (!pausedRef.current && phaseRef.current === 'fight') enemyAct();
+    }, delay);
+  }
+
+  function nextPlayerDelay(): number {
+    const speedPct = computePlayerStats().speedPct;
+    return Math.round(ATTACK_INTERVAL / (1 + speedPct));
   }
 
   function tryDropEquipment(guaranteed = false) {
@@ -408,7 +443,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     return `${name} sofre ${totalDmg} de dano de ${label}.`;
   }
 
-  function runRound() {
+  // Duration-based decay (cooldowns, DOT, buffs/debuffs, CC, regen) — kept on
+  // its own fixed cadence, untouched by either side's action speed, so no
+  // ability/status duration needs rebalancing now that actions themselves
+  // can run faster or slower than this.
+  function envTick() {
     if (!mountedRef.current || phaseRef.current !== 'fight') return;
 
     const hasteBonus = playerHasteRoundsRef.current > 0 ? 1 : 0;
@@ -436,16 +475,30 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       }
     }
 
-    const playerStunned = hasCC(playerCCRef.current, 'stun') || hasCC(playerCCRef.current, 'sleep');
     playerCCRef.current = tickCC(playerCCRef.current);
     syncPlayerCC();
-    const enemyStunned = hasCC(enemyCCRef.current, 'stun') || hasCC(enemyCCRef.current, 'sleep');
     enemyCCRef.current = tickCC(enemyCCRef.current);
     syncEnemyCC();
 
-    setTimeout(() => {
-      if (!mountedRef.current) return;
+    scheduleEnv();
+  }
 
+  // The player's own action clock — paced independently of the enemy's via
+  // nextPlayerDelay() (shorter with more AGI), so a fast build genuinely
+  // gets more of these per enemy action instead of just better dodge/block
+  // odds. Stun/sleep are read live here (envTick only advances their
+  // remaining duration) since this can now fire between envTick pulses.
+  function playerAct() {
+    if (!mountedRef.current || phaseRef.current !== 'fight') return;
+
+    // A kill just landed and the enemy is mid-respawn (see the 900ms
+    // setTimeout below) — nothing to swing at yet, just wait our turn out.
+    if (enemyRef.current.hp <= 0) { schedulePlayer(nextPlayerDelay()); return; }
+
+    const playerStunned = hasCC(playerCCRef.current, 'stun') || hasCC(playerCCRef.current, 'sleep');
+    const enemyStunned = hasCC(enemyCCRef.current, 'stun') || hasCC(enemyCCRef.current, 'sleep');
+
+    {
       const stats = computePlayerStats();
       let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false, playerHitMagical = false;
 
@@ -565,104 +618,115 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             enemyCCRef.current = [];
             syncEnemyStatuses();
             syncEnemyCC();
-            scheduleTick();
+            schedulePlayer(nextPlayerDelay());
           }, 900);
           return;
         }
       }
+    }
 
-      setTimeout(() => {
-        if (!mountedRef.current) return;
-        maybeAutoHeal();
+    schedulePlayer(nextPlayerDelay());
+  }
 
-        if (enemyStunned) {
-          pushLog(`${enemyRef.current.name} está incapacitado e não consegue atacar!`);
-          scheduleTick();
-          return;
-        }
+  // The enemy's own action clock — independent of the player's, currently
+  // always at the baseline pace (no per-shape speed stat yet, see the
+  // player-only AGI investigation this feature grew out of).
+  function enemyAct() {
+    if (!mountedRef.current || phaseRef.current !== 'fight') return;
 
-        const defStats = computePlayerStats();
-        const enemyAccuracy = computeEnemyAccuracy();
-        const enemyMissed = rollMiss(enemyAccuracy, defStats.evasion);
+    // Player just landed the killing blow and a respawn is pending (see
+    // playerAct's 900ms setTimeout) — nothing to swing with yet.
+    if (enemyRef.current.hp <= 0) { scheduleEnemy(); return; }
 
-        if (enemyMissed) {
-          pushFloat('player', 0, false, false, true);
-          pushLog(`${enemyRef.current.name} erra o ataque!`);
-          scheduleTick();
-          return;
-        }
+    maybeAutoHeal();
 
-        // Only the shapes explicitly flagged atkType: 'magical' (Dragão,
-        // Aberração) roll their attack as a spell against the player's mdef —
-        // everyone else attacks physically, same as always.
-        const enemyAtkType = enemyRef.current.atkType ?? 'physical';
-        const enemyPower = enemyAtkType === 'magical' ? computeEnemyMatk() : computeEnemyAtk();
-        const enemyDefStat = enemyAtkType === 'magical' ? defStats.mdef : defStats.def;
-        const { dmg: rawDmg, crit: ecrit } = rollAttack(enemyPower, enemyDefStat, 0.06);
-        let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct));
-        const blocked = Math.random() < defStats.blockChance;
-        if (blocked) edmg = Math.round(edmg * 0.5);
+    const enemyStunned = hasCC(enemyCCRef.current, 'stun') || hasCC(enemyCCRef.current, 'sleep');
+    if (enemyStunned) {
+      pushLog(`${enemyRef.current.name} está incapacitado e não consegue atacar!`);
+      scheduleEnemy();
+      return;
+    }
 
-        let shieldAbsorbed = 0;
-        if (playerShieldRef.current > 0 && edmg > 0) {
-          shieldAbsorbed = Math.min(playerShieldRef.current, edmg);
-          playerShieldRef.current -= shieldAbsorbed;
-          edmg -= shieldAbsorbed;
-          syncShield();
-        }
+    const defStats = computePlayerStats();
+    const enemyAccuracy = computeEnemyAccuracy();
+    const enemyMissed = rollMiss(enemyAccuracy, defStats.evasion);
 
-        const hp = Math.max(0, chRef.current.hp - edmg);
-        updateCh({ ...chRef.current, hp });
-        pushFloat('player', edmg, ecrit, blocked);
-        if (enemyAtkType === 'magical') playMagicAttackSfx(); else playPhysicalAttackSfx();
-        if (edmg > 0) playHurtSfx();
-        flash('player');
-        const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
-        pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}.`);
+    if (enemyMissed) {
+      pushFloat('player', 0, false, false, true);
+      pushLog(`${enemyRef.current.name} erra o ataque!`);
+      scheduleEnemy();
+      return;
+    }
 
-        // Sleep breaks the instant its target takes damage.
-        if (hasCC(playerCCRef.current, 'sleep') && (edmg > 0 || shieldAbsorbed > 0)) {
-          playerCCRef.current = playerCCRef.current.filter((c) => c.kind !== 'sleep');
+    // Only the shapes explicitly flagged atkType: 'magical' (Dragão,
+    // Aberração) roll their attack as a spell against the player's mdef —
+    // everyone else attacks physically, same as always.
+    const enemyAtkType = enemyRef.current.atkType ?? 'physical';
+    const enemyPower = enemyAtkType === 'magical' ? computeEnemyMatk() : computeEnemyAtk();
+    const enemyDefStat = enemyAtkType === 'magical' ? defStats.mdef : defStats.def;
+    const { dmg: rawDmg, crit: ecrit } = rollAttack(enemyPower, enemyDefStat, 0.06);
+    let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct));
+    const blocked = Math.random() < defStats.blockChance;
+    if (blocked) edmg = Math.round(edmg * 0.5);
+
+    let shieldAbsorbed = 0;
+    if (playerShieldRef.current > 0 && edmg > 0) {
+      shieldAbsorbed = Math.min(playerShieldRef.current, edmg);
+      playerShieldRef.current -= shieldAbsorbed;
+      edmg -= shieldAbsorbed;
+      syncShield();
+    }
+
+    const hp = Math.max(0, chRef.current.hp - edmg);
+    updateCh({ ...chRef.current, hp });
+    pushFloat('player', edmg, ecrit, blocked);
+    if (enemyAtkType === 'magical') playMagicAttackSfx(); else playPhysicalAttackSfx();
+    if (edmg > 0) playHurtSfx();
+    flash('player');
+    const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
+    pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}.`);
+
+    // Sleep breaks the instant its target takes damage.
+    if (hasCC(playerCCRef.current, 'sleep') && (edmg > 0 || shieldAbsorbed > 0)) {
+      playerCCRef.current = playerCCRef.current.filter((c) => c.kind !== 'sleep');
+      syncPlayerCC();
+      pushLog('O impacto desperta você!');
+    }
+
+    // Thorns is capped so it can never land the killing blow itself —
+    // that reward flow only runs from the direct attack-roll above.
+    if (defStats.thornsPct > 0 && edmg > 0) {
+      const reflected = Math.round(edmg * defStats.thornsPct);
+      if (reflected > 0) updateEnemy({ ...enemyRef.current, hp: Math.max(1, enemyRef.current.hp - reflected) });
+    }
+
+    // The enemy's signature proc — a chance-based extra debuff riding
+    // its normal attack, skipped if the enemy is silenced or the player
+    // is shielded by Immunity.
+    if (!hasCC(enemyCCRef.current, 'silence') && edmg + shieldAbsorbed > 0) {
+      const proc = enemyRef.current.proc;
+      if (proc && Math.random() < proc.chance && !playerImmune()) {
+        if (proc.status) {
+          playerStatusRef.current.push({ kind: proc.status, roundsLeft: proc.rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+          syncPlayerStatuses();
+        } else if (proc.cc) {
+          playerCCRef.current.push({ kind: proc.cc, roundsLeft: proc.rounds });
           syncPlayerCC();
-          pushLog('O impacto desperta você!');
+        } else if (proc.statMod) {
+          playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: proc.rounds });
         }
+        pushLog(proc.label);
+      }
+    }
 
-        // Thorns is capped so it can never land the killing blow itself —
-        // that reward flow only runs from the direct attack-roll above.
-        if (defStats.thornsPct > 0 && edmg > 0) {
-          const reflected = Math.round(edmg * defStats.thornsPct);
-          if (reflected > 0) updateEnemy({ ...enemyRef.current, hp: Math.max(1, enemyRef.current.hp - reflected) });
-        }
-
-        // The enemy's signature proc — a chance-based extra debuff riding
-        // its normal attack, skipped if the enemy is silenced or the player
-        // is shielded by Immunity.
-        if (!hasCC(enemyCCRef.current, 'silence') && edmg + shieldAbsorbed > 0) {
-          const proc = enemyRef.current.proc;
-          if (proc && Math.random() < proc.chance && !playerImmune()) {
-            if (proc.status) {
-              playerStatusRef.current.push({ kind: proc.status, roundsLeft: proc.rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
-              syncPlayerStatuses();
-            } else if (proc.cc) {
-              playerCCRef.current.push({ kind: proc.cc, roundsLeft: proc.rounds });
-              syncPlayerCC();
-            } else if (proc.statMod) {
-              playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: proc.rounds });
-            }
-            pushLog(proc.label);
-          }
-        }
-
-        if (hp <= 0) {
-          pushLog('Você caiu em combate...');
-          phaseRef.current = 'ended';
-          setEndedReason('death');
-          setPhase('ended');
-          return;
-        }
-        scheduleTick();
-      }, LEAN_MS + 120);
-    }, LEAN_MS);
+    if (hp <= 0) {
+      pushLog('Você caiu em combate...');
+      phaseRef.current = 'ended';
+      setEndedReason('death');
+      setPhase('ended');
+      return;
+    }
+    scheduleEnemy();
   }
 
   function maybeAutoHeal() {
@@ -693,7 +757,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     const next = !pausedRef.current;
     pausedRef.current = next;
     setPaused(next);
-    if (!next) scheduleTick(500);
+    if (!next) {
+      scheduleEnv(500);
+      schedulePlayer(500);
+      scheduleEnemy(500);
+    }
   }
 
   function retreatSafely() {
@@ -714,7 +782,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   // touches state after this panel is unmounted (leaving for another section).
   useEffect(() => {
     mountedRef.current = true;
-    scheduleTick(700);
+    scheduleEnv(700);
+    schedulePlayer(700);
+    scheduleEnemy(700 + LEAN_MS + 120);
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -835,7 +905,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           <div className="h-3 bg-black/50 rounded mt-1 overflow-hidden">
             <div className="h-3 bg-crimson rounded transition-[width] duration-300" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} />
           </div>
-          <AtbBar roundKey={roundKey} roundMs={roundMs} paused={paused} colorClass="bg-amber-400" />
+          <AtbBar roundKey={enemyRoundKey} roundMs={enemyRoundMs} paused={paused} colorClass="bg-amber-400" />
           {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-1 truncate">{enemyTags.join(', ')}</div>}
         </div>
       )}
@@ -928,7 +998,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             <span className="shrink-0">{Math.max(0, ch.hp)}/{effMaxHp}</span>
           </div>
           <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} /></div>
-          {phase === 'fight' && <AtbBar roundKey={roundKey} roundMs={roundMs} paused={paused} colorClass="bg-sky-400" />}
+          {phase === 'fight' && <AtbBar roundKey={playerRoundKey} roundMs={playerRoundMs} paused={paused} colorClass="bg-sky-400" />}
           {playerTags.length > 0 && <div className="text-[11px] text-amber-300/90 mt-0.5 truncate">{playerTags.join(', ')}</div>}
         </div>
         {!enemy.isBoss && (
@@ -938,7 +1008,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
               <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
             </div>
             <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
-            {phase === 'fight' && <AtbBar roundKey={roundKey} roundMs={roundMs} paused={paused} colorClass="bg-amber-400" />}
+            {phase === 'fight' && <AtbBar roundKey={enemyRoundKey} roundMs={enemyRoundMs} paused={paused} colorClass="bg-amber-400" />}
             {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-0.5 truncate">{enemyTags.join(', ')}</div>}
           </div>
         )}
