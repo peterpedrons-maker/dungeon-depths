@@ -152,3 +152,20 @@ export function computeCombatStats(ch: Character): CombatStats {
 export function effectiveMaxHp(ch: Character): number {
   return Math.round(ch.maxHp + computeCombatStats(ch).maxHpBonus);
 }
+
+// A single headline number summarizing "how strong is this character" —
+// deliberately attribute-only (no equipment), so it reads purely as
+// character progression the way level does, just with more nuance. Each
+// attribute counts for a class exactly as much as that class already leans
+// on it: reusing baseAttrs (5 primary / 2-3 secondary / 1 floor, see
+// classAttrMult above) as the per-point weight means the same 10 points of
+// STR are worth far more Combat Power on a Guerreiro (baseAttrs.str = 5)
+// than on a Mago (baseAttrs.str = 1) — matching how little a mage's
+// swordarm actually contributes to its damage output.
+export function computeCombatPower(ch: Character): number {
+  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
+  const base = CLASSES[ch.classId].baseAttrs;
+  let power = 0;
+  for (const key of Object.keys(attrs) as AttributeKey[]) power += attrs[key] * (base[key] ?? 1);
+  return Math.round(power);
+}

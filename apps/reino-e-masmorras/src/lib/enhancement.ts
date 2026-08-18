@@ -87,3 +87,49 @@ export function secondaryStatLabel(item: EquipmentItem): string {
   if (s.type === 'matk') return `+${s.value} ataque mágico`;
   return `+${s.value} vida máxima`;
 }
+
+// One shared key space for both the 7 flat *Bonus fields and the rolled
+// secondaryStat affix, so an item's full stat picture (base roll + affix)
+// can be compared against another item's picture stat-for-stat instead of
+// comparing two different shapes. blockBonus only ever comes from a
+// secondaryStat roll — no item slot has a base block stat of its own.
+type StatKey = typeof PRIMARY_KEYS[number] | 'blockBonus';
+const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
+  { key: 'dmgBonus', label: 'Dano', isPct: false },
+  { key: 'defBonus', label: 'Defesa', isPct: false },
+  { key: 'hpBonus', label: 'Vida Máxima', isPct: false },
+  { key: 'matkBonus', label: 'Ataque Mágico', isPct: false },
+  { key: 'mdefBonus', label: 'Defesa Mágica', isPct: false },
+  { key: 'critChanceBonus', label: 'Chance de Crítico', isPct: true },
+  { key: 'critDmgBonus', label: 'Dano Crítico', isPct: true },
+  { key: 'blockBonus', label: 'Chance de Bloqueio', isPct: true },
+];
+const SECONDARY_TO_STAT_KEY: Record<NonNullable<EquipmentItem['secondaryStat']>['type'], StatKey> = {
+  crit: 'critChanceBonus', critDmg: 'critDmgBonus', block: 'blockBonus',
+  def: 'defBonus', mdef: 'mdefBonus', atk: 'dmgBonus', matk: 'matkBonus', hp: 'hpBonus',
+};
+
+function statTotals(item: EquipmentItem): Record<StatKey, number> {
+  const totals = { blockBonus: 0 } as Record<StatKey, number>;
+  for (const key of PRIMARY_KEYS) totals[key] = item[key];
+  if (item.secondaryStat) {
+    const key = SECONDARY_TO_STAT_KEY[item.secondaryStat.type];
+    totals[key] = (totals[key] ?? 0) + item.secondaryStat.value;
+  }
+  return totals;
+}
+
+export interface StatCompareLine { label: string; delta: number; isPct: boolean }
+
+// What `newItem` gives more or less than whatever's currently equipped in
+// its slot — both sides go through enhancedItem() first so a comparison
+// against a forged item reflects what's actually in play, not the raw roll.
+// A null `equipped` (empty slot) makes every one of the new item's stats
+// read as a pure gain, which is exactly right for "nothing to lose here."
+export function compareItemStats(newItem: EquipmentItem, equipped: EquipmentItem | null): StatCompareLine[] {
+  const a = statTotals(enhancedItem(newItem));
+  const b = equipped ? statTotals(enhancedItem(equipped)) : ({} as Record<StatKey, number>);
+  return STAT_META
+    .map(({ key, label, isPct }) => ({ label, isPct, delta: (a[key] ?? 0) - (b[key] ?? 0) }))
+    .filter((line) => line.delta !== 0);
+}

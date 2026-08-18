@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { AttributeKey, Character, EquipmentItem, ItemSlot } from '../types/game';
+import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
-import { computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
+import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
-import { enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
+import { compareItemStats, enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
@@ -42,12 +42,14 @@ interface Props {
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
-  onAllocateAttr: (key: AttributeKey) => void;
+  onAllocateAttrs: (deltas: Partial<Record<AttributeKey, number>>) => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttr }: Props) {
+const ZERO_ALLOC: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
+
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs }: Props) {
   const cls = CLASSES[ch.classId];
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
@@ -55,6 +57,34 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const [tab, setTab] = useState<'equipamentos' | 'inventario'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
+  // Points the player is staging before committing — lets them see the
+  // secondary-stat payoff (atk/def/hp/...) of a spend before it's permanent,
+  // instead of finding out only after clicking. Reset whenever the pool of
+  // spendable points shrinks (a confirm just happened) or grows (leveled up
+  // mid-allocation) — either way any earlier staged plan no longer applies.
+  const [pendingAlloc, setPendingAlloc] = useState<Record<AttributeKey, number>>(ZERO_ALLOC);
+  const pendingTotal = Object.values(pendingAlloc).reduce((s, n) => s + n, 0);
+  const previewAllocatedAttrs: Attributes = { ...ch.allocatedAttrs };
+  for (const key of ATTR_ORDER) previewAllocatedAttrs[key] += pendingAlloc[key];
+  const previewCh: Character = { ...ch, allocatedAttrs: previewAllocatedAttrs };
+  const previewStats = computeCombatStats(previewCh);
+  const previewMaxHp = effectiveMaxHp(previewCh);
+
+  function stagePoint(key: AttributeKey, delta: number) {
+    setPendingAlloc((prev) => {
+      const next = Math.max(0, prev[key] + delta);
+      if (delta > 0 && pendingTotal >= ch.attributePoints) return prev;
+      return { ...prev, [key]: next };
+    });
+  }
+  function confirmAlloc() {
+    if (pendingTotal === 0) return;
+    onAllocateAttrs(pendingAlloc);
+    setPendingAlloc(ZERO_ALLOC);
+  }
+  function cancelAlloc() {
+    setPendingAlloc(ZERO_ALLOC);
+  }
   const used = usedCells(ch.inventory);
   // Equip/unequip can push the inventory past the nominal 50-cell cap (that
   // cap is only enforced on loot/purchase, never on gear you already own) —
@@ -102,7 +132,13 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       </div>
 
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-        <span className="text-parchment/50 text-sm">{cls.name}</span>
+        <span className="flex items-center gap-2 text-sm">
+          <span className="text-parchment/50">{cls.name}</span>
+          <span className="text-parchment/30">·</span>
+          <span className="text-amber-300 font-bold" title="Poder de Combate — soma dos seus atributos, com peso conforme sua classe">
+            ⚔ {fmt(computeCombatPower(ch))}
+          </span>
+        </span>
         <div className="flex items-center gap-2 flex-wrap">
           {ch.skillPoints > 0 && (
             <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold">
@@ -145,14 +181,25 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               <div className="space-y-1">
                 {ATTR_ORDER.map((key) => {
                   const meta = ATTR_META[key];
+                  const staged = pendingAlloc[key];
                   return (
                     <div key={key} className="flex items-center justify-between text-xs gap-1.5">
                       <span className="text-parchment/60 truncate min-w-0">{meta.label}:</span>
                       <span className="flex items-center gap-1.5 shrink-0">
                         <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
-                        {ch.attributePoints > 0 && (
+                        {staged > 0 && <span className="font-bold tabular-nums text-sky-300">+{staged}</span>}
+                        {staged > 0 && (
                           <button
-                            onClick={() => onAllocateAttr(key)}
+                            onClick={() => stagePoint(key, -1)}
+                            className="w-4 h-4 flex items-center justify-center rounded-full bg-black/40 border border-parchment/30 text-parchment/70 text-[10px] font-bold leading-none hover:border-parchment/60"
+                            aria-label={`-1 ${meta.label}`}
+                          >
+                            −
+                          </button>
+                        )}
+                        {ch.attributePoints - pendingTotal > 0 && (
+                          <button
+                            onClick={() => stagePoint(key, 1)}
                             className="w-4 h-4 flex items-center justify-center rounded-full bg-sky-500/30 border border-sky-400/60 text-sky-300 text-[10px] font-bold leading-none hover:bg-sky-500/50"
                             aria-label={`+1 ${meta.label}`}
                           >
@@ -164,6 +211,22 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                   );
                 })}
               </div>
+              {pendingTotal > 0 && (
+                <div className="rounded border border-sky-400/40 bg-sky-500/10 p-2 space-y-1">
+                  <div className="text-[10px] uppercase tracking-wide text-sky-300 font-bold mb-0.5">Prévia com {pendingTotal} ponto{pendingTotal > 1 ? 's' : ''}</div>
+                  <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} />
+                  <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} />
+                  <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} />
+                  <PreviewStatRow label="Ataque Mágico" from={stats.matk} to={previewStats.matk} />
+                  <PreviewStatRow label="Defesa Mágica" from={stats.mdef} to={previewStats.mdef} />
+                  <PreviewStatRow label="Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" />
+                  <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
+                  <div className="flex gap-2 pt-1">
+                    <SmallButton onClick={confirmAlloc}>Confirmar</SmallButton>
+                    <SmallButton onClick={cancelAlloc} variant="ghost">Cancelar</SmallButton>
+                  </div>
+                </div>
+              )}
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
                 <div className="flex items-center justify-between gap-1.5 text-xs">
@@ -330,6 +393,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       {selected && (
         <ItemModal
           selected={selected}
+          equippedInSlot={selected.kind === 'inventory' ? ch.equipment[selected.item.slot] : null}
           onClose={() => setSelected(null)}
           onEquip={(item) => { onEquip(item); setSelected(null); }}
           onUnequip={(slot) => { onUnequip(slot); setSelected(null); }}
@@ -340,8 +404,11 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   );
 }
 
-function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
+function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSell }: {
   selected: Selected;
+  // Only meaningful for an inventory item — what's presently equipped in
+  // that same slot, so the modal can show what swapping in would change.
+  equippedInSlot: EquipmentItem | null;
   onClose: () => void;
   onEquip: (item: EquipmentItem) => void;
   onUnequip: (slot: ItemSlot) => void;
@@ -389,6 +456,10 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
           {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
         </div>
 
+        {selected.kind === 'inventory' && (
+          <ItemCompare newItem={item} equipped={equippedInSlot} />
+        )}
+
         <div className="flex gap-2 mt-2">
           {selected.kind === 'equipped' ? (
             <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
@@ -401,6 +472,42 @@ function ItemModal({ selected, onClose, onEquip, onUnequip, onSell }: {
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Diablo/PoE-style compare block under an inventory item's stats — what it
+// gives more or less than whatever's already equipped in that slot, so the
+// player doesn't have to tab back and forth or do the math themselves.
+function ItemCompare({ newItem, equipped }: { newItem: EquipmentItem; equipped: EquipmentItem | null }) {
+  const lines = compareItemStats(newItem, equipped);
+  if (lines.length === 0) return null;
+  return (
+    <div className="w-full rounded border border-panelborder/40 bg-black/25 px-2.5 py-1.5 mt-0.5">
+      <div className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold mb-0.5">
+        {equipped ? 'Comparado ao equipado' : 'Slot vazio — tudo é ganho'}
+      </div>
+      {lines.map((l) => (
+        <div key={l.label} className="flex items-center justify-between text-xs">
+          <span className="text-parchment/60">{l.label}</span>
+          <span className={`font-bold tabular-nums ${l.delta > 0 ? 'text-green-400' : 'text-crimson'}`}>
+            {l.delta > 0 ? '+' : ''}{l.isPct ? `${Math.round(l.delta * 100)}%` : Math.round(l.delta)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PreviewStatRow({ label, from, to, suffix = '' }: { label: string; from: number; to: number; suffix?: string }) {
+  const changed = to !== from;
+  return (
+    <div className="flex items-center justify-between gap-1.5 text-[11px]">
+      <span className="text-parchment/60 truncate min-w-0">{label}</span>
+      <span className="font-bold tabular-nums shrink-0">
+        <span className={changed ? 'text-parchment/50' : 'text-parchment'}>{from}{suffix}</span>
+        {changed && <span className="text-sky-300"> → {to}{suffix}</span>}
+      </span>
+    </div>
   );
 }
 
