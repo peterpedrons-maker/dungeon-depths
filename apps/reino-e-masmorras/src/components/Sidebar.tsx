@@ -37,7 +37,7 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props
 
         <Group title="Reino">
           <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
-          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Pátio</NavItem>
+          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Mercadores</NavItem>
         </Group>
 
         <Group title="Ranking">
