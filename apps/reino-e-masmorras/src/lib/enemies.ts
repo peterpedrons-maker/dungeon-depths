@@ -49,7 +49,13 @@ const TIERS: EnemyTier[] = [
     proc: { chance: 0.20, label: 'As garras infectadas do corvo o envenenam!', status: 'poison', rounds: 3 },
     abilities: [{ id: 'carrionCrow:peck', name: 'Bicada Infecciosa', cooldown: 4, useChance: 0.45, effect: { kind: 'statusBite', dmgMult: 1.0, status: 'poison', statusRounds: 3 } }] },
   { shape: 'boneKing', name: 'Rei Ossos', color: '#e8e2c8', minDepth: 1, hp: 140, atk: 16, def: 8, xp: 70, gold: 55, matk: 5, mdef: 4, isBoss: true,
-    proc: { chance: 0.28, label: 'O Rei Ossos ergue sua lâmina e o atordoa com um golpe brutal!', cc: 'stun', rounds: 1 } },
+    proc: { chance: 0.28, label: 'O Rei Ossos ergue sua lâmina e o atordoa com um golpe brutal!', cc: 'stun', rounds: 1 },
+    phases: [
+      { hpPct: 0.66, name: 'Ira Óssea', transitionMsg: 'Os ossos do Rei Ossos rangem de fúria — ele ataca com mais força!', atkMult: 1.15,
+        extraAbilities: [{ id: 'boneKing:p2', name: 'Lança Óssea', cooldown: 4, useChance: 0.45, effect: { kind: 'bigHit', dmgMult: 1.8 } }] },
+      { hpPct: 0.33, name: 'Fúria Ancestral', transitionMsg: 'Com a vida se esvaindo, o Rei Ossos convoca a fúria dos caídos!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'boneKing:p3', name: 'Grito dos Mortos', cooldown: 5, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.7, statMod: 'dmgTakenPct', statModPct: 0.3, statModRounds: 3 } }] },
+    ] },
 
   // ── Região 1 — Caverna dos Goblins (goblin acima também faz parte do pool) ──
   { shape: 'goblinShaman', name: 'Goblin Xamã', color: '#3c6a5a', minDepth: 1, hp: 16, atk: 5, def: 1, xp: 8, gold: 6, matk: 8, mdef: 3, atkType: 'magical',
@@ -65,7 +71,13 @@ const TIERS: EnemyTier[] = [
     proc: { chance: 0.18, label: 'A investida montada o derruba, atordoado!', cc: 'stun', rounds: 1 },
     abilities: [{ id: 'goblinWolfRider:charge', name: 'Investida Montada', cooldown: 5, useChance: 0.4, effect: { kind: 'controlSlam', dmgMult: 0.7, cc: 'stun', ccRounds: 1 } }] },
   { shape: 'grash', name: 'Grash, o Implacável', color: '#3c5a2c', minDepth: 1, hp: 160, atk: 18, def: 6, xp: 80, gold: 65, isBoss: true,
-    proc: { chance: 0.28, label: 'Grash golpeia o chão com fúria, atordoando você!', cc: 'stun', rounds: 1 } },
+    proc: { chance: 0.28, label: 'Grash golpeia o chão com fúria, atordoando você!', cc: 'stun', rounds: 1 },
+    phases: [
+      { hpPct: 0.66, name: 'Grash Enraivecido', transitionMsg: 'Grash esmurra o próprio peito e ruge, enlouquecido!', atkMult: 1.15,
+        extraAbilities: [{ id: 'grash:p2', name: 'Pisão Selvagem', cooldown: 4, useChance: 0.45, effect: { kind: 'bigHit', dmgMult: 1.8 } }] },
+      { hpPct: 0.33, name: 'Grash Implacável', transitionMsg: 'Ferido, Grash entra em fúria cega!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'grash:p3', name: 'Investida Final', cooldown: 5, useChance: 0.4, effect: { kind: 'controlSlam', dmgMult: 0.7, cc: 'stun', ccRounds: 1 } }] },
+    ] },
 
   // ── Região 1 — Cripta do Tesouro ──
   { shape: 'zombieLooter', name: 'Zumbi Saqueador', color: '#5a6a4a', minDepth: 1, hp: 20, atk: 6, def: 2, xp: 10, gold: 14,
@@ -84,7 +96,13 @@ const TIERS: EnemyTier[] = [
     proc: { chance: 0.22, label: 'A arca morde com força surpreendente!', status: 'bleed', rounds: 3 },
     abilities: [{ id: 'mimicChest:bite', name: 'Mordida da Arca', cooldown: 4, useChance: 0.5, effect: { kind: 'bigHit', dmgMult: 1.8 } }] },
   { shape: 'cursedCustodian', name: 'Custódio Amaldiçoado', color: '#8a7a3c', minDepth: 1, hp: 150, atk: 17, def: 9, xp: 75, gold: 100, isBoss: true,
-    proc: { chance: 0.26, label: 'O Custódio amaldiçoa você, tornando-o mais vulnerável!', statMod: 'dmgTakenPct', statModPct: 0.20, rounds: 3 } },
+    proc: { chance: 0.26, label: 'O Custódio amaldiçoa você, tornando-o mais vulnerável!', statMod: 'dmgTakenPct', statModPct: 0.20, rounds: 3 },
+    phases: [
+      { hpPct: 0.66, name: 'Custódio Desperto', transitionMsg: 'O Custódio se ergue por completo, runas brilhando em fúria!', atkMult: 1.15,
+        extraAbilities: [{ id: 'cursedCustodian:p2', name: 'Toque da Cripta', cooldown: 4, useChance: 0.45, effect: { kind: 'statusBite', dmgMult: 1.0, status: 'poison', statusRounds: 3 } }] },
+      { hpPct: 0.33, name: 'Ira da Cripta', transitionMsg: 'A maldição do Custódio se intensifica, sufocando seus movimentos!', atkMult: 1.3, cc: 'silence', ccRounds: 2,
+        extraAbilities: [{ id: 'cursedCustodian:p3', name: 'Maldição Final', cooldown: 5, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.7, statMod: 'dmgTakenPct', statModPct: 0.3, statModRounds: 3 } }] },
+    ] },
 
   // ── Região 1 — Pântano Podre ──
   { shape: 'poisonToad', name: 'Sapo Venenoso', color: '#4f7a3a', minDepth: 1, hp: 22, atk: 7, def: 2, xp: 12, gold: 9,
@@ -103,7 +121,13 @@ const TIERS: EnemyTier[] = [
     proc: { chance: 0.22, label: 'A mordida do jacaré rasga fundo!', status: 'bleed', rounds: 3 },
     abilities: [{ id: 'rottingGator:bite', name: 'Mordida Mortal', cooldown: 4, useChance: 0.5, effect: { kind: 'bigHit', dmgMult: 1.8 } }] },
   { shape: 'mudMother', name: 'Mãe-Lodo', color: '#3a4a2a', minDepth: 1, hp: 190, atk: 19, def: 8, xp: 95, gold: 75, isBoss: true,
-    proc: { chance: 0.26, label: 'Mãe-Lodo esmaga sua guarda com um golpe de lama pesada!', statMod: 'def', statModPct: -0.20, rounds: 3 } },
+    proc: { chance: 0.26, label: 'Mãe-Lodo esmaga sua guarda com um golpe de lama pesada!', statMod: 'def', statModPct: -0.20, rounds: 3 },
+    phases: [
+      { hpPct: 0.66, name: 'Mãe-Lodo Fervente', transitionMsg: 'O lodo ferve ao redor da Mãe-Lodo, borbulhando veneno!', atkMult: 1.15,
+        extraAbilities: [{ id: 'mudMother:p2', name: 'Vômito Tóxico', cooldown: 4, useChance: 0.45, effect: { kind: 'statusBite', dmgMult: 1.0, status: 'poison', statusRounds: 3 } }] },
+      { hpPct: 0.33, name: 'Fúria do Pântano', transitionMsg: 'Encurralada, a Mãe-Lodo desaba sobre você com todo o seu peso!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'mudMother:p3', name: 'Esmagamento Lodoso', cooldown: 5, useChance: 0.4, effect: { kind: 'bigHit', dmgMult: 2.0 } }] },
+    ] },
 
   // ── Região 1 — Covil de Aranhas ──
   { shape: 'huntingSpider', name: 'Aranha Caçadora', color: '#3a2a2a', minDepth: 1, hp: 28, atk: 10, def: 3, xp: 16, gold: 12, evasion: 0.15,
@@ -122,20 +146,56 @@ const TIERS: EnemyTier[] = [
     proc: { chance: 0.20, label: 'A teia pegajosa o prende, atordoado!', cc: 'stun', rounds: 1 },
     abilities: [{ id: 'darkWeaver:web', name: 'Teia Sombria', cooldown: 5, useChance: 0.4, effect: { kind: 'controlSlam', dmgMult: 0.7, cc: 'stun', ccRounds: 1 } }] },
   { shape: 'blackMatriarch', name: 'Matriarca Negra', color: '#0f0f18', minDepth: 1, hp: 220, atk: 22, def: 9, xp: 110, gold: 90, isBoss: true,
-    proc: { chance: 0.26, label: 'A picada da Matriarca injeta um veneno paralisante!', status: 'poison', rounds: 4 } },
+    proc: { chance: 0.26, label: 'A picada da Matriarca injeta um veneno paralisante!', status: 'poison', rounds: 4 },
+    phases: [
+      { hpPct: 0.66, name: 'Matriarca Desperta', transitionMsg: 'Teias se espalham pela arena — a Matriarca desperta toda a sua ninhada!', atkMult: 1.15,
+        extraAbilities: [{ id: 'blackMatriarch:p2', name: 'Ferrão Duplo', cooldown: 4, useChance: 0.45, effect: { kind: 'statusBite', dmgMult: 1.1, status: 'poison', statusRounds: 4 } }] },
+      { hpPct: 0.33, name: 'Fúria da Ninhada', transitionMsg: 'Ferida, a Matriarca ataca sem piedade!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'blackMatriarch:p3', name: 'Investida da Matriarca', cooldown: 5, useChance: 0.4, effect: { kind: 'controlSlam', dmgMult: 0.7, cc: 'stun', ccRounds: 1 } }] },
+    ] },
 
   // ── Bosses da Região 2+ — sem roster próprio ainda, reaproveitam o sprite
   // do shape mais forte do pool da masmorra até ganharem arte dedicada.
   { shape: 'horrorAncient', name: 'Aberração Ancestral', color: '#3a2a52', minDepth: 1, hp: 180, atk: 20, def: 8, xp: 90, gold: 70, evasion: 0.18, matk: 20, mdef: 11, atkType: 'magical', isBoss: true,
-    proc: { chance: 0.26, label: 'Uma aberração ancestral o faz adormecer em terror!', cc: 'sleep', rounds: 1 } },
+    proc: { chance: 0.26, label: 'Uma aberração ancestral o faz adormecer em terror!', cc: 'sleep', rounds: 1 },
+    phases: [
+      { hpPct: 0.66, name: 'Horror Desperto', transitionMsg: 'A aberração se contorce, sussurros do vazio ecoando ao redor!', atkMult: 1.15,
+        extraAbilities: [{ id: 'horrorAncient:p2', name: 'Sussurro do Vazio', cooldown: 4, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.7, statMod: 'dmgTakenPct', statModPct: 0.25, statModRounds: 3 } }] },
+      { hpPct: 0.33, name: 'Fúria Ancestral', transitionMsg: 'A aberração descarta toda sutileza e ataca com fúria pura!', atkMult: 1.3, cc: 'silence', ccRounds: 2,
+        extraAbilities: [{ id: 'horrorAncient:p3', name: 'Grito Ancestral', cooldown: 5, useChance: 0.4, effect: { kind: 'bigHit', dmgMult: 2.0 } }] },
+    ] },
   { shape: 'orcWarlord', name: 'Senhor da Guerra Orc', color: '#4f7a3a', minDepth: 1, hp: 170, atk: 19, def: 9, xp: 85, gold: 65, matk: 5, mdef: 4, isBoss: true,
-    proc: { chance: 0.26, label: 'O golpe do senhor da guerra orc o atordoa!', cc: 'stun', rounds: 1 } },
+    proc: { chance: 0.26, label: 'O golpe do senhor da guerra orc o atordoa!', cc: 'stun', rounds: 1 },
+    phases: [
+      { hpPct: 0.66, name: 'Senhor Enraivecido', transitionMsg: 'O Senhor da Guerra saca seu segundo machado, rugindo de fúria!', atkMult: 1.15,
+        extraAbilities: [{ id: 'orcWarlord:p2', name: 'Machado Duplo', cooldown: 4, useChance: 0.45, effect: { kind: 'bigHit', dmgMult: 1.8 } }] },
+      { hpPct: 0.33, name: 'Fúria de Guerra', transitionMsg: 'Encurralado, o Senhor da Guerra solta um grito que ecoa pela masmorra!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'orcWarlord:p3', name: 'Grito de Guerra', cooldown: 5, useChance: 0.4, effect: { kind: 'controlSlam', dmgMult: 0.7, cc: 'stun', ccRounds: 1 } }] },
+    ] },
   { shape: 'trollChieftain', name: 'Cacique Troll', color: '#7a5230', minDepth: 1, hp: 210, atk: 20, def: 10, xp: 100, gold: 75, matk: 6, mdef: 5, isBoss: true,
-    proc: { chance: 0.24, label: 'O cacique troll esmaga sua guarda!', statMod: 'def', statModPct: -0.20, rounds: 3 } },
+    proc: { chance: 0.24, label: 'O cacique troll esmaga sua guarda!', statMod: 'def', statModPct: -0.20, rounds: 3 },
+    phases: [
+      { hpPct: 0.66, name: 'Cacique Furioso', transitionMsg: 'O Cacique Troll golpeia o próprio porrete contra a pedra, estilhaçando-a!', atkMult: 1.15,
+        extraAbilities: [{ id: 'trollChieftain:p2', name: 'Porrete Esmagador', cooldown: 4, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.8, statMod: 'def', statModPct: -0.25, statModRounds: 3 } }] },
+      { hpPct: 0.33, name: 'Regeneração Feroz', transitionMsg: 'Ferido, o corpo do Cacique começa a se regenerar diante dos seus olhos!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'trollChieftain:p3', name: 'Vigor Selvagem', cooldown: 5, useChance: 0.45, effect: { kind: 'lifestealHit', dmgMult: 1.2, lifestealPct: 0.4 } }] },
+    ] },
   { shape: 'dragonElder', name: 'Dragão Ancião', color: '#a5271f', minDepth: 1, hp: 260, atk: 24, def: 12, xp: 130, gold: 100, matk: 26, mdef: 14, atkType: 'magical', isBoss: true,
-    proc: { chance: 0.26, label: 'O sopro ancestral do dragão o incendeia!', status: 'burn', rounds: 3 } },
+    proc: { chance: 0.26, label: 'O sopro ancestral do dragão o incendeia!', status: 'burn', rounds: 3 },
+    phases: [
+      { hpPct: 0.66, name: 'Dragão Enfurecido', transitionMsg: 'O Dragão Ancião ruge e as chamas em seu peito se intensificam!', atkMult: 1.15,
+        extraAbilities: [{ id: 'dragonElder:p2', name: 'Fôlego Ardente', cooldown: 4, useChance: 0.45, effect: { kind: 'statusBite', dmgMult: 1.1, status: 'burn', statusRounds: 3 } }] },
+      { hpPct: 0.33, name: 'Fúria Ancestral', transitionMsg: 'O Dragão bate as asas com violência, atordoando você com a rajada!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'dragonElder:p3', name: 'Chamas Ancestrais', cooldown: 5, useChance: 0.4, effect: { kind: 'bigHit', dmgMult: 2.2 } }] },
+    ] },
   { shape: 'skeletonLord', name: 'Lorde Esqueleto', color: '#d8d2b8', minDepth: 1, hp: 150, atk: 17, def: 7, xp: 75, gold: 60, matk: 6, mdef: 4, isBoss: true,
-    proc: { chance: 0.24, label: 'A maldição do Lorde Esqueleto o torna vulnerável!', statMod: 'dmgTakenPct', statModPct: 0.20, rounds: 3 } },
+    proc: { chance: 0.24, label: 'A maldição do Lorde Esqueleto o torna vulnerável!', statMod: 'dmgTakenPct', statModPct: 0.20, rounds: 3 },
+    phases: [
+      { hpPct: 0.66, name: 'Lorde Amaldiçoado', transitionMsg: 'O Lorde Esqueleto ergue sua coroa em ruínas, invocando uma maldição maior!', atkMult: 1.15,
+        extraAbilities: [{ id: 'skeletonLord:p2', name: 'Maldição Maior', cooldown: 4, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.7, statMod: 'dmgTakenPct', statModPct: 0.3, statModRounds: 3 } }] },
+      { hpPct: 0.33, name: 'Fúria dos Ossos', transitionMsg: 'Prestes a desmoronar, o Lorde Esqueleto ataca com fúria antiga!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'skeletonLord:p3', name: 'Fúria dos Ossos Antigos', cooldown: 5, useChance: 0.4, effect: { kind: 'bigHit', dmgMult: 2.0 } }] },
+    ] },
 ];
 
 const TIERS_BY_SHAPE: Partial<Record<EnemyShape, EnemyTier>> = {};
@@ -163,6 +223,7 @@ function instanceFromTier(tier: EnemyTier, depth: number, elite = false): EnemyI
     goldReward: Math.round(tier.gold * (1 + depth * 0.08) * (elite ? ELITE_REWARD_MULT : 1)),
     proc: tier.proc,
     abilities: tier.abilities,
+    phases: tier.phases,
     evasion: tier.evasion,
     matk: tier.matk !== undefined ? Math.round(tier.matk * growth) : undefined,
     mdef: tier.mdef !== undefined ? Math.round(tier.mdef * defGrowth) : undefined,
