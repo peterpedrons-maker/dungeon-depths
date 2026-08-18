@@ -165,12 +165,12 @@ export const STARTING_ATTR_POINTS = 5;
 // fully spent — see STARTING_ATTR_POINTS), so attributePoints starts at 0
 // same as before; only their destination (allocatedAttrs) differs from the
 // old always-zero default.
-export function createCharacter(name: string, classId: ClassId, initialAllocatedAttrs?: Attributes): Character {
+export function createCharacter(name: string, classId: ClassId, initialAllocatedAttrs?: Attributes, ironMode = false): Character {
   const c = CLASSES[classId];
   const base: Character = {
     name, classId, level: 1, xp: 0, xpToNext: xpToNextLevel(1),
     hp: c.baseHp, maxHp: c.baseHp, atk: c.baseAtk, def: c.baseDef, matk: c.baseMatk, mdef: c.baseMdef,
-    gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0,
+    gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0, ironMode,
     skillPoints: 0, attributePoints: 0, allocatedAttrs: initialAllocatedAttrs ?? { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [], abilityThresholds: {},
     equipment: {

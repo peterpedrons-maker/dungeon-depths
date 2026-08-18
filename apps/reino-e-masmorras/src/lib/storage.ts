@@ -1,4 +1,4 @@
-import { Attributes, Character, ClassId, EquipmentItem } from '../types/game';
+import { Attributes, Character, ClassId, EquipmentItem, ProfileState } from '../types/game';
 import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
 import { MAX_POTIONS } from './consumables';
@@ -145,4 +145,21 @@ export function clearCharacter(slot: number): void {
     localStorage.removeItem(charKey(slot));
     if (slot === 0) localStorage.removeItem(LEGACY_CHAR_KEY);
   } catch { /* ignore */ }
+}
+
+// Loja de Prestígio's local cache — account-wide, so unlike character saves
+// this key isn't slot-scoped at all. Same local-first/cloud-authoritative
+// pattern as characters: read instantly from here, then App.tsx reconciles
+// against Supabase once the session is known.
+const PROFILE_KEY = 'rm_profile_v1';
+export function loadProfile(): ProfileState {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null };
+    const p = JSON.parse(raw) as Partial<ProfileState>;
+    return { prestige: p.prestige ?? 0, ownedCosmetics: p.ownedCosmetics ?? [], equippedCosmetic: p.equippedCosmetic ?? null };
+  } catch { return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null }; }
+}
+export function saveProfileLocal(p: ProfileState): void {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch { /* ignore */ }
 }

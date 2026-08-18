@@ -84,6 +84,32 @@ create policy "ranking_select_all" on public.ranking
 drop policy if exists "ranking_insert_own" on public.ranking;
 create policy "ranking_insert_own" on public.ranking
   for insert with check (auth.uid() = user_id);
+
+-- One row per account (not per character slot) — prestígio e cosméticos
+-- da Loja de Prestígio sobrevivem à exclusão de personagem, inclusive
+-- permadeath do Modo Ferro, e são compartilhados entre todos os slots da
+-- conta, igual ao próprio login do Supabase.
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  prestige integer not null default 0,
+  owned_cosmetics text[] not null default '{}',
+  equipped_cosmetic text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own" on public.profiles
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = user_id);
 ```
 
 Depois de rodar: se quiser testar login sem precisar confirmar e-mail toda vez, vá em **Authentication → Settings** e desative "Confirm email" (opcional, só facilita testes).

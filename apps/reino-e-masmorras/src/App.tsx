@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { Character, RankEntry, Screen } from './types/game';
-import { loadCharacter, saveCharacter, clearCharacter, MAX_CHARACTER_SLOTS } from './lib/storage';
+import { Character, ProfileState, RankEntry, Screen } from './types/game';
+import { loadCharacter, saveCharacter, clearCharacter, loadProfile, saveProfileLocal, MAX_CHARACTER_SLOTS } from './lib/storage';
 import { supabase } from './lib/supabaseClient';
-import { fetchCloudCharacterSlots, saveCloudCharacter, deleteCloudCharacter, fetchGlobalRanking, insertGlobalRankEntry } from './lib/cloudSave';
+import {
+  fetchCloudCharacterSlots, saveCloudCharacter, deleteCloudCharacter, fetchGlobalRanking, insertGlobalRankEntry,
+  fetchProfile, saveProfile,
+} from './lib/cloudSave';
+import { COSMETICS } from './lib/cosmetics';
 import { armBackgroundMusic } from './lib/audio';
 import { TitleScreen } from './components/TitleScreen';
 import { AuthScreen } from './components/AuthScreen';
@@ -21,6 +25,7 @@ export default function App() {
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(true);
   const [ranking, setRanking] = useState<RankEntry[]>([]);
+  const [profile, setProfile] = useState<ProfileState>(loadProfile());
 
   const character = activeSlot !== null ? slots[activeSlot] : null;
 
@@ -78,6 +83,42 @@ export default function App() {
     fetchGlobalRanking().then(setRanking);
   }, []);
 
+  // Loja de Prestígio is account-wide, not per-slot, so this is a single
+  // row fetch (not the per-slot reconciliation the characters effect above
+  // does) — the cloud row is simply authoritative once a session exists.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    fetchProfile(session.user.id).then((p) => {
+      if (cancelled) return;
+      setProfile(p);
+      saveProfileLocal(p);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
+
+  function persistProfile(p: ProfileState) {
+    setProfile(p);
+    saveProfileLocal(p);
+    if (session) saveProfile(session.user.id, p);
+  }
+
+  function handleBuyCosmetic(id: string) {
+    const cosmetic = COSMETICS.find((c) => c.id === id);
+    if (!cosmetic || profile.ownedCosmetics.includes(id) || profile.prestige < cosmetic.cost) return;
+    persistProfile({
+      ...profile,
+      prestige: profile.prestige - cosmetic.cost,
+      ownedCosmetics: [...profile.ownedCosmetics, id],
+      equippedCosmetic: id,
+    });
+  }
+
+  function handleEquipCosmetic(id: string | null) {
+    if (id !== null && !profile.ownedCosmetics.includes(id)) return;
+    persistProfile({ ...profile, equippedCosmetic: id });
+  }
+
   function persist(c: Character) {
     if (activeSlot === null) return;
     setSlots((prev) => prev.map((old, i) => (i === activeSlot ? c : old)));
@@ -90,12 +131,30 @@ export default function App() {
     setScreen('game');
   }
 
-  function handleRunEnd(finalCharacter: Character, depthReached: number) {
-    const healed = { ...finalCharacter, hp: finalCharacter.maxHp };
-    persist(healed);
+  function handleRunEnd(finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', prestigeGained: number) {
+    if (prestigeGained > 0) persistProfile({ ...profile, prestige: profile.prestige + prestigeGained });
+
+    // Modo Ferro's whole point: death inside a dungeon is permanent, not a
+    // trip back to the Reino to heal up and try again. The rank entry below
+    // still records the run (their best depth before falling), same as any
+    // other death — only the character itself doesn't come back.
+    if (finalCharacter.ironMode && endedReason === 'death') {
+      if (activeSlot !== null) {
+        clearCharacter(activeSlot);
+        if (session) deleteCloudCharacter(session.user.id, activeSlot);
+        setSlots((prev) => prev.map((c, i) => (i === activeSlot ? null : c)));
+        setActiveSlot(null);
+      }
+      setScreen('select');
+    } else {
+      const healed = { ...finalCharacter, hp: finalCharacter.maxHp };
+      persist(healed);
+    }
+
     const entry: RankEntry = {
-      name: healed.name, classId: healed.classId, depth: depthReached,
-      level: healed.level, date: new Date().toISOString().slice(0, 10),
+      name: finalCharacter.name, classId: finalCharacter.classId, depth: depthReached,
+      level: finalCharacter.level, date: new Date().toISOString().slice(0, 10),
+      ironMode: finalCharacter.ironMode,
     };
     if (session) {
       insertGlobalRankEntry(session.user.id, entry).then(() => fetchGlobalRanking().then(setRanking));
@@ -168,10 +227,13 @@ export default function App() {
         <GameShell
           character={character}
           ranking={ranking}
+          profile={profile}
           onCharacterChange={persist}
           onRunEnd={handleRunEnd}
           onAbandon={handleAbandon}
           onSignOut={handleSignOut}
+          onBuyCosmetic={handleBuyCosmetic}
+          onEquipCosmetic={handleEquipCosmetic}
         />
       );
       break;
