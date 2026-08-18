@@ -1,4 +1,5 @@
 import bgMusicUrl from '../assets/audio/musica-fundo.mp3';
+import battleMusicUrl from '../assets/audio/musica-batalha.mp3';
 import bossMusicUrl from '../assets/audio/musica-chefe.mp3';
 import magicAttackUrl from '../assets/audio/ataque-magico.mp3';
 import physicalAttackUrl from '../assets/audio/ataque-fisico.mp3';
@@ -47,12 +48,23 @@ export function resumeBackgroundMusic() {
   if (musicStarted) getMusicEl().play().catch(() => {});
 }
 
-// Boss music swaps in for the kingdom loop for the duration of a boss
-// fight, handing playback back to the kingdom loop (picking up where it
-// left off) on the way out. Regular (non-boss) encounters have no music of
-// their own — the kingdom loop just keeps playing straight through them.
+// Combat music swaps in for the kingdom loop for the duration of a fight,
+// handing playback back to the kingdom loop (picking up where it left off)
+// only once combat ends entirely. Regular encounters play the battle track;
+// bosses play their own track — switching between the two within the same
+// dungeon run doesn't touch the kingdom loop at all.
+let battleMusicEl: HTMLAudioElement | null = null;
 let bossMusicEl: HTMLAudioElement | null = null;
-let bossMusicActive = false;
+let activeCombatTrack: 'battle' | 'boss' | null = null;
+
+function getBattleMusicEl(): HTMLAudioElement {
+  if (!battleMusicEl) {
+    battleMusicEl = new Audio(battleMusicUrl);
+    battleMusicEl.loop = true;
+    battleMusicEl.volume = MUSIC_VOLUME;
+  }
+  return battleMusicEl;
+}
 
 function getBossMusicEl(): HTMLAudioElement {
   if (!bossMusicEl) {
@@ -63,17 +75,27 @@ function getBossMusicEl(): HTMLAudioElement {
   return bossMusicEl;
 }
 
+export function playBattleMusic() {
+  if (activeCombatTrack === 'battle') return;
+  if (activeCombatTrack === null) pauseBackgroundMusic();
+  bossMusicEl?.pause();
+  activeCombatTrack = 'battle';
+  getBattleMusicEl().play().catch(() => {});
+}
+
 export function playBossMusic() {
-  if (bossMusicActive) return;
-  pauseBackgroundMusic();
-  bossMusicActive = true;
+  if (activeCombatTrack === 'boss') return;
+  if (activeCombatTrack === null) pauseBackgroundMusic();
+  battleMusicEl?.pause();
+  activeCombatTrack = 'boss';
   getBossMusicEl().play().catch(() => {});
 }
 
 export function stopCombatMusic() {
-  if (!bossMusicActive) return;
+  if (activeCombatTrack === null) return;
+  battleMusicEl?.pause();
   bossMusicEl?.pause();
-  bossMusicActive = false;
+  activeCombatTrack = null;
   resumeBackgroundMusic();
 }
 
@@ -90,4 +112,4 @@ export function playPhysicalAttackSfx() { playOneShot(physicalAttackUrl, SFX_VOL
 export function playHurtSfx() { playOneShot(hurtUrl, SFX_VOLUME); }
 export function playBuySellSfx() { playOneShot(buySellUrl, SFX_VOLUME); }
 export function playUpgradeSfx() { playOneShot(upgradeUrl, SFX_VOLUME); }
-export function playClickSfx() { playOneShot(clickUrl, 0.4); }
+export function playClickSfx() { playOneShot(clickUrl, 0.25); }
