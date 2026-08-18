@@ -33,6 +33,17 @@ body {
   100% { transform: translateY(-64px) scale(1);   opacity: 0; }
 }
 
+/* Damage the player takes — held in place above the character instead of
+   rising, so it reads clearly as "this happened to you" without competing
+   for attention with the enemy-damage number traveling across the canvas. */
+@keyframes floatStatic {
+  0%   { transform: scale(0.8); opacity: 0; }
+  12%  { transform: scale(1.2); opacity: 1; }
+  22%  { transform: scale(1);   opacity: 1; }
+  80%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(1);   opacity: 0; }
+}
+
 /* Registering this lets the browser smoothly interpolate the cooldown wedge
    between rounds instead of jumping — see the ability-cooldown overlay in
    DungeonPanel.tsx, which transitions this property instead of showing a

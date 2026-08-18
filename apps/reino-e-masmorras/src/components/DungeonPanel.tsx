@@ -65,6 +65,41 @@ const STATUS_VERB: Record<StatusEffectKind, string> = { poison: 'envenenado', bu
 const STATUS_TICK_LABEL: Record<StatusEffectKind, string> = { poison: 'veneno', burn: 'queimadura', bleed: 'sangramento', curse: 'maldição' };
 const CC_LABEL: Record<CrowdControlKind, string> = { stun: 'Atordoado', sleep: 'Dormindo', silence: 'Silenciado' };
 
+// Small colored badges rendered right next to each combatant's sprite (see
+// EffectBadges below) — placeholder glyphs (single letters), same spirit as
+// every other "ship the mechanic, real art later" spot in this game.
+const STATUS_BADGE_ABBR: Record<StatusEffectKind, string> = { poison: 'V', burn: 'Q', bleed: 'S', curse: 'M' };
+const STATUS_BADGE_COLOR: Record<StatusEffectKind, string> = { poison: '#7a9a3c', burn: '#d9701c', bleed: '#a1303a', curse: '#6a4a9a' };
+const CC_BADGE_ABBR: Record<CrowdControlKind, string> = { stun: 'A', sleep: 'D', silence: 'S' };
+const CC_BADGE_COLOR = '#4a5a9a';
+const STAT_MOD_ABBR: Record<StatModStat, string> = {
+  atk: 'ATQ', def: 'DEF', critChance: 'CRIT', critDmgMult: 'CRIT%', accuracy: 'PRE',
+  evasion: 'EVA', dmgTakenPct: 'DANO%', defPenPct: 'PEN', lifestealPct: 'VIDA',
+};
+const BUFF_COLOR = '#3f9d4f';
+const DEBUFF_COLOR = '#b8323f';
+
+interface EffectBadge { key: string; abbr: string; color: string; title: string; }
+
+// dmgTakenPct is the one stat where a negative roll is the good outcome
+// (less damage taken) — everything else follows "higher is better for
+// whoever holds the mod."
+function statModBadgeIsBuff(m: StatModInstance): boolean {
+  return m.stat === 'dmgTakenPct' ? m.pct < 0 : m.pct > 0;
+}
+
+function buildEffectBadges(statuses: StatusEffectKind[], ccs: CrowdControlKind[], mods: StatModInstance[]): EffectBadge[] {
+  return [
+    ...statuses.map((s, i) => ({ key: `s${i}`, abbr: STATUS_BADGE_ABBR[s], color: STATUS_BADGE_COLOR[s], title: STATUS_LABEL[s] })),
+    ...ccs.map((c, i) => ({ key: `c${i}`, abbr: CC_BADGE_ABBR[c], color: CC_BADGE_COLOR, title: CC_LABEL[c] })),
+    ...mods.map((m, i) => {
+      const isBuff = statModBadgeIsBuff(m);
+      const pctText = `${m.pct > 0 ? '+' : ''}${Math.round(m.pct * 100)}%`;
+      return { key: `m${i}`, abbr: STAT_MOD_ABBR[m.stat], color: isBuff ? BUFF_COLOR : DEBUFF_COLOR, title: `${STAT_MOD_ABBR[m.stat]} ${pctText}` };
+    }),
+  ];
+}
+
 interface StatusInstance { kind: StatusEffectKind; roundsLeft: number; dmgPerTick: number; }
 // sourceAbilityId tags who cast this — lets pickAbility() skip an ability
 // whose effect is already active instead of blindly re-casting it on top.
@@ -135,6 +170,24 @@ function AtbBar({ roundKey, roundMs, paused, colorClass }: {
   );
 }
 
+function EffectBadgeRow({ badges, align }: { badges: EffectBadge[]; align: 'left' | 'right' }) {
+  if (badges.length === 0) return null;
+  return (
+    <div className={`absolute top-1.5 flex gap-1 flex-wrap max-w-[45%] ${align === 'left' ? 'left-1.5' : 'right-1.5 justify-end'}`}>
+      {badges.map((b) => (
+        <span
+          key={b.key}
+          title={b.title}
+          className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white ring-1 ring-black/60 shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+          style={{ background: b.color }}
+        >
+          {b.abbr}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd, onRestart }: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
@@ -149,6 +202,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [playerStatuses, setPlayerStatuses] = useState<StatusEffectKind[]>([]);
   const [enemyCCState, setEnemyCCState] = useState<CrowdControlKind[]>([]);
   const [playerCCState, setPlayerCCState] = useState<CrowdControlKind[]>([]);
+  // Buffs/debuffs (StatModInstance) — mirrors the statuses/CC sync pattern
+  // above, so the sprite-side badges (see badgesFor below) can show them too.
+  const [playerModsState, setPlayerModsState] = useState<StatModInstance[]>([]);
+  const [enemyModsState, setEnemyModsState] = useState<StatModInstance[]>([]);
   const [playerShieldState, setPlayerShieldState] = useState(0);
   // Boss-only: label of the highest phase transition reached so far, shown
   // next to the boss's name in its HP bar (see applyEnemyHp below). Stays
@@ -224,7 +281,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         bossPhaseIndexRef.current += 1;
         pushLog(`✦ ${p.transitionMsg}`);
         setBossPhaseName(p.name);
-        if (p.atkMult) enemyModsRef.current = [...enemyModsRef.current, { stat: 'atk', pct: p.atkMult - 1, roundsLeft: 999 }];
+        if (p.atkMult) { enemyModsRef.current = [...enemyModsRef.current, { stat: 'atk', pct: p.atkMult - 1, roundsLeft: 999 }]; syncEnemyMods(); }
         if (p.extraAbilities?.length) next = { ...next, abilities: [...(next.abilities ?? []), ...p.extraAbilities] };
         if (p.cc && !playerImmune()) {
           playerCCRef.current.push({ kind: p.cc, roundsLeft: p.ccRounds ?? 1 });
@@ -241,6 +298,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   function syncPlayerStatuses() { setPlayerStatuses(playerStatusRef.current.map((s) => s.kind)); }
   function syncEnemyCC() { setEnemyCCState(enemyCCRef.current.map((c) => c.kind)); }
   function syncPlayerCC() { setPlayerCCState(playerCCRef.current.map((c) => c.kind)); }
+  function syncPlayerMods() { setPlayerModsState([...playerModsRef.current]); }
+  function syncEnemyMods() { setEnemyModsState([...enemyModsRef.current]); }
   function syncShield() { setPlayerShieldState(playerShieldRef.current); }
 
   function pushLog(line: string | LogLine) {
@@ -494,12 +553,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     } else if (eff.kind === 'berserk') {
       playerModsRef.current.push({ stat: 'atk', pct: eff.berserkAtkPct ?? 0.3, roundsLeft: eff.berserkRounds ?? 4, sourceAbilityId: ab.id });
       playerModsRef.current.push({ stat: 'def', pct: eff.berserkDefPct ?? -0.2, roundsLeft: eff.berserkRounds ?? 4, sourceAbilityId: ab.id });
+      syncPlayerMods();
       return `${ab.name}: fúria berserker — mais dano, menos defesa.`;
     } else if (eff.kind === 'taunt') {
       // Provoca o inimigo — hoje é só a redução de dano recebido (útil já
       // em 1v1); a parte de "forçar o alvo" fica pronta para quando um
       // sistema de múltiplos inimigos/coop existir.
       playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
+      syncPlayerMods();
       return `${ab.name}: você provoca o inimigo, reduzindo o dano recebido.`;
     } else if (eff.kind === 'dispel') {
       playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
@@ -507,12 +568,15 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       playerCCRef.current = [];
       syncPlayerStatuses();
       syncPlayerCC();
+      syncPlayerMods();
       return `${ab.name}: você remove os efeitos negativos.`;
     } else if (eff.kind === 'lifestealBuff') {
       playerModsRef.current.push({ stat: 'lifestealPct', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      syncPlayerMods();
       return `${ab.name}: você começa a roubar vida do inimigo.`;
     } else if (eff.kind === 'atkBuff') {
       playerModsRef.current.push({ stat: 'atk', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      syncPlayerMods();
       return `${ab.name}: seu ataque aumenta.`;
     }
     return null;
@@ -550,6 +614,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     if (potionCooldownRef.current > 0) potionCooldownRef.current -= 1;
     playerModsRef.current = tickMods(playerModsRef.current);
     enemyModsRef.current = tickMods(enemyModsRef.current);
+    syncPlayerMods();
+    syncEnemyMods();
 
     const enemyDotLine = tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => applyEnemyHp(hp), enemyRef.current.name);
     syncEnemyStatuses();
@@ -614,7 +680,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           missed = rollMiss(stats.accuracy, enemyEvasion);
 
           if (missed) {
-            pushLog(`Seu ataque erra ${enemyRef.current.name}!`);
+            // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
           } else if (offenseAbility) {
             cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
@@ -641,9 +707,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             } else if (eff.kind === 'statMod' && eff.statMod) {
               if (eff.statModTarget === 'self') {
                 playerModsRef.current.push({ stat: eff.statMod, pct: eff.statModPct ?? 0.2, roundsLeft: eff.statModRounds ?? 3, sourceAbilityId: offenseAbility.id });
+                syncPlayerMods();
                 statusLine = ' Você ganha um efeito temporário!';
               } else {
                 enemyModsRef.current.push({ stat: eff.statMod, pct: eff.statModPct ?? -0.2, roundsLeft: eff.statModRounds ?? 3 });
+                syncEnemyMods();
                 statusLine = ` ${enemyRef.current.name} foi enfraquecido!`;
               }
             }
@@ -669,7 +737,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         pushFloat('enemy', dmg, crit);
         flash('enemy');
         if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx();
-        pushLog(`Você acerta ${enemyRef.current.name} em ${dmg}${crit ? ' (crítico!)' : ''}${abilityTag}.${statusLine}`);
+        // Plain-attack damage already shows on screen via the floater — the
+        // log only needs to note it when an ability (and/or the status/CC/
+        // buff it applied) made the round more than just a routine hit.
+        if (abilityTag) pushLog(`Você usa${abilityTag}!${statusLine}`);
 
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
           const maxHp = effectiveMaxHp(chRef.current);
@@ -722,6 +793,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             setBossPhaseName(null);
             syncEnemyStatuses();
             syncEnemyCC();
+            syncEnemyMods();
             schedulePlayer(nextPlayerDelay());
           }, 900);
           return;
@@ -756,8 +828,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     const enemyMissed = rollMiss(enemyAccuracy, defStats.evasion);
 
     if (enemyMissed) {
+      // No log line — the floater's "erro!" already shows this on screen.
       pushFloat('player', 0, false, false, true);
-      pushLog(`${enemyRef.current.name} erra o ataque!`);
       scheduleEnemy();
       return;
     }
@@ -809,8 +881,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     if (edmg > 0) playHurtSfx();
     flash('player');
     const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
-    const abilityTag = chosenAbility ? ` [${chosenAbility.name}]` : '';
-    pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}${abilityTag}.`);
+    // Plain-attack damage already shows on screen via the floater — the log
+    // only needs to note it when the enemy used a named ability this round.
+    if (chosenAbility) pushLog(`${enemyRef.current.name} usa ${chosenAbility.name}!${shieldTag}`);
 
     // Sleep breaks the instant its target takes damage.
     if (hasCC(playerCCRef.current, 'sleep') && (edmg > 0 || shieldAbsorbed > 0)) {
@@ -846,6 +919,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         pushLog(`Você ficou ${CC_LABEL[abEffect.cc].toLowerCase()}!`);
       } else if (abEffect.kind === 'weakenNova' && abEffect.statMod && !playerImmune()) {
         playerModsRef.current.push({ stat: abEffect.statMod, pct: abEffect.statModPct ?? -0.2, roundsLeft: abEffect.statModRounds ?? 3 });
+        syncPlayerMods();
         pushLog('Você foi enfraquecido!');
       }
     } else if (!hasCC(enemyCCRef.current, 'silence') && edmg + shieldAbsorbed > 0) {
@@ -862,6 +936,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           syncPlayerCC();
         } else if (proc.statMod) {
           playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: proc.rounds });
+          syncPlayerMods();
         }
         pushLog(proc.label);
       }
@@ -1006,6 +1081,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
   const enemyTags = [...enemyStatuses.map((s) => allStatusLabel[s]), ...enemyCCState.map((c) => CC_LABEL[c])];
+  const playerBadges = buildEffectBadges(playerStatuses, playerCCState, playerModsState);
+  const enemyBadges = buildEffectBadges(enemyStatuses, enemyCCState, enemyModsState);
   // Progress toward the dungeon's own boss, replacing the old raw
   // "Profundidade N" floor counter — every dungeon now has a defined end
   // (bossDepth), so a fill bar communicates "how close to done" far better
@@ -1073,21 +1150,36 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
-        {floaters.map((f) => (
+        <EffectBadgeRow badges={playerBadges} align="left" />
+        <EffectBadgeRow badges={enemyBadges} align="right" />
+        {floaters.map((f) => {
+          // Damage dealt to the player stays put above the character (not
+          // rising) and reads bigger/sharper — it was hard to read as a
+          // pale, moving red against the busy background.
+          const playerHit = f.side === 'player';
+          return (
           <div
             key={f.id}
-            className={`absolute font-bold pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${
-              f.crit ? 'text-4xl' : 'text-2xl'
+            className={`absolute font-extrabold pointer-events-none ${
+              playerHit
+                ? (f.crit ? 'text-5xl' : 'text-3xl')
+                : `drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${f.crit ? 'text-4xl' : 'text-2xl'}`
             } ${
-              f.side === 'player' ? 'text-red-400 left-[24%]' : 'text-yellow-300 left-[68%]'
+              playerHit ? 'left-[24%]' : 'text-yellow-300 left-[68%]'
             }`}
-            style={{ top: '38%', animation: `float ${FLOAT_DURATION_MS}ms ease-out forwards` }}
+            style={{
+              top: playerHit ? '14%' : '38%',
+              color: playerHit ? '#ff4040' : undefined,
+              textShadow: playerHit ? '0 0 3px #000, 0 2px 2px #000, 0 0 12px rgba(0,0,0,0.85)' : undefined,
+              animation: `${playerHit ? 'floatStatic' : 'float'} ${FLOAT_DURATION_MS}ms ease-out forwards`,
+            }}
           >
             {f.miss ? <span className="text-lg text-parchment/60">erro!</span> : (
               <>-{f.value}{f.crit ? <span className="text-amber-300"> CRÍTICO!</span> : ''}{f.blocked ? <span className="text-sm text-sky-300 align-top"> bloq.</span> : ''}</>
             )}
           </div>
-        ))}
+          );
+        })}
         {paused && phase === 'fight' && (
           <div className="absolute top-2 right-2 bg-black/70 text-gold text-xs font-bold uppercase tracking-wider px-2 py-1 rounded">
             Pausado
