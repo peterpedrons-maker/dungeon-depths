@@ -3,7 +3,8 @@ import { AttributeKey, Attributes, Character, ClassId } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES, STARTING_ATTR_POINTS, createCharacter } from '../lib/classes';
 import { WEIGHT_GROUP, WeightGroup } from '../lib/itemTiers';
 import { heroSprites } from '../game/sprites';
-import { Button } from './Button';
+import { Button, SmallButton } from './Button';
+import { Modal } from './Modal';
 import pergaminho from '../assets/pergaminho.webp';
 
 interface Props {
@@ -83,6 +84,11 @@ export function CharacterCreation({ onCreated }: Props) {
   const [selectedId, setSelectedId] = useState<ClassId | null>(null);
   const [closing, setClosing] = useState(false);
   const [allocated, setAllocated] = useState<Attributes>({ ...ZERO_ATTRS });
+  // Naming happens last, in its own modal, after the class + attribute
+  // points are already locked in — keeps the class-select screen focused on
+  // one decision at a time instead of asking for a name before the player
+  // even knows which hero they're naming.
+  const [naming, setNaming] = useState(false);
 
   const cardRefs = useRef<Partial<Record<ClassId, HTMLButtonElement>>>({});
   const panelRef = useRef<HTMLDivElement>(null);
@@ -163,7 +169,13 @@ export function CharacterCreation({ onCreated }: Props) {
 
   function confirm() {
     if (!selectedId || remaining !== 0) return;
-    const finalName = name.trim() || 'Aventureiro';
+    setNaming(true);
+  }
+
+  function finalizeCreate() {
+    if (!selectedId) return;
+    const finalName = name.trim();
+    if (!finalName) return;
     onCreated(createCharacter(finalName, selectedId, allocated));
   }
 
@@ -172,14 +184,6 @@ export function CharacterCreation({ onCreated }: Props) {
       <h2 className="font-display text-2xl md:text-3xl text-gold tracking-[0.1em] uppercase [text-shadow:0_2px_0_rgba(0,0,0,0.8)] text-center">
         Crie seu Herói
       </h2>
-
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Nome do herói"
-        maxLength={18}
-        className="w-64 px-3 py-2 rounded bg-black/40 border border-white/20 text-center text-parchment placeholder:text-parchment/40 focus:outline-none focus:border-gold"
-      />
 
       <p className="text-xs text-parchment/50 text-center max-w-md -mt-1">
         Toque numa classe para conhecê-la de perto e distribuir seus pontos de atributo iniciais.
@@ -336,6 +340,30 @@ export function CharacterCreation({ onCreated }: Props) {
             </Button>
           </div>
         </div>
+      )}
+
+      {naming && selected && (
+        <Modal title="Nomeie seu Herói" onClose={() => setNaming(false)}>
+          <div className="flex flex-col items-center gap-3 py-1">
+            <span className="w-11 h-11 rounded-full border-2 border-dashed flex items-center justify-center text-base font-display" style={{ borderColor: `${selected.color}90`, color: selected.color, background: `${selected.color}22` }}>
+              {selected.name.slice(0, 1)}
+            </span>
+            <p className="text-xs text-parchment/50 text-center">Como esse {selected.name.toLowerCase()} vai ser conhecido pelo reino?</p>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') finalizeCreate(); }}
+              placeholder="Nome do herói"
+              maxLength={18}
+              className="w-56 px-3 py-2 rounded bg-black/40 border border-white/20 text-center text-parchment placeholder:text-parchment/40 focus:outline-none focus:border-gold"
+            />
+            <div className="flex gap-2 mt-1">
+              <SmallButton onClick={() => setNaming(false)} variant="ghost">Voltar</SmallButton>
+              <SmallButton onClick={finalizeCreate} disabled={!name.trim()}>Iniciar Jornada</SmallButton>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
