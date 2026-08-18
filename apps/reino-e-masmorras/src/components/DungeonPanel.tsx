@@ -24,6 +24,11 @@ import {
 import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 2200;
+// How long a floating damage number stays on screen — kept in one place so
+// the JS unmount timer and the CSS animation duration below never drift
+// apart. Bumped up from the original 900ms so a hit has time to actually
+// register before it's gone.
+const FLOAT_DURATION_MS = 1500;
 // Player and enemy now run on independent action clocks (see playerAct/
 // enemyAct); this only offsets the enemy's very first action so the two
 // don't visually land in the exact same instant every round for a
@@ -54,6 +59,11 @@ interface StatModInstance { stat: StatModStat; pct: number; roundsLeft: number; 
 interface CCInstance { kind: CrowdControlKind; roundsLeft: number; }
 interface RegenInstance { pct: number; roundsLeft: number; sourceAbilityId?: string; }
 interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean }
+// A log line is a list of segments instead of a plain string so a single
+// line can mix normal text with a rarity-colored item name (see
+// tryDropEquipment) without resorting to raw HTML in the log.
+interface LogSegment { text: string; color?: string }
+type LogLine = LogSegment[];
 interface Props {
   character: Character;
   dungeon: DungeonDef;
@@ -117,7 +127,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(dungeon.startDepth, dungeon));
   const [phase, setPhase] = useState<Phase>('fight');
   const [paused, setPaused] = useState(false);
-  const [log, setLog] = useState<string[]>([`Você entra em ${dungeon.name}...`]);
+  const [log, setLog] = useState<LogLine[]>([[{ text: `Você entra em ${dungeon.name}...` }]]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
@@ -219,13 +229,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   function syncPlayerCC() { setPlayerCCState(playerCCRef.current.map((c) => c.kind)); }
   function syncShield() { setPlayerShieldState(playerShieldRef.current); }
 
-  function pushLog(line: string) {
-    setLog((l) => [...l.slice(-4), line]);
+  function pushLog(line: string | LogLine) {
+    const segments = typeof line === 'string' ? [{ text: line }] : line;
+    setLog((l) => [...l.slice(-4), segments]);
   }
   function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean) {
     const id = floaterId.current++;
     setFloaters((f) => [...f, { id, side, value, crit, blocked, miss }]);
-    setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), 900);
+    setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
   }
   function flash(side: 'player' | 'enemy') {
     setFlashSide(side);
@@ -283,7 +294,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     }
     const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct);
     updateCh({ ...chRef.current, inventory: placeInInventory(chRef.current.inventory, item) });
-    pushLog(`Você encontrou: ${item.name}!`);
+    pushLog([
+      { text: 'Você encontrou: ' },
+      { text: itemDisplayName(item), color: rarityColor(item.rarity) },
+      { text: '!' },
+    ]);
   }
 
   function conditionMet(ability: AbilityDef): boolean {
@@ -1036,13 +1051,15 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         {floaters.map((f) => (
           <div
             key={f.id}
-            className={`absolute font-bold text-lg pointer-events-none animate-[float_0.9s_ease-out_forwards] ${
+            className={`absolute font-bold pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${
+              f.crit ? 'text-4xl' : 'text-2xl'
+            } ${
               f.side === 'player' ? 'text-red-400 left-[24%]' : 'text-yellow-300 left-[68%]'
             }`}
-            style={{ top: '38%' }}
+            style={{ top: '38%', animation: `float ${FLOAT_DURATION_MS}ms ease-out forwards` }}
           >
-            {f.miss ? <span className="text-sm text-parchment/60">erro!</span> : (
-              <>-{f.value}{f.crit ? '!' : ''}{f.blocked ? <span className="text-xs text-sky-300 align-top"> bloq.</span> : ''}</>
+            {f.miss ? <span className="text-lg text-parchment/60">erro!</span> : (
+              <>-{f.value}{f.crit ? <span className="text-amber-300"> CRÍTICO!</span> : ''}{f.blocked ? <span className="text-sm text-sky-300 align-top"> bloq.</span> : ''}</>
             )}
           </div>
         ))}
@@ -1154,7 +1171,13 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
       <div className="mt-3 bg-black/30 border border-white/10 rounded p-2 h-24 overflow-y-auto text-sm text-parchment/80 flex flex-col-reverse">
         <div>
-          {log.slice().reverse().map((l, i) => <p key={i} className="leading-tight py-0.5">{l}</p>)}
+          {log.slice().reverse().map((segments, i) => (
+            <p key={i} className="leading-tight py-0.5">
+              {segments.map((s, j) => (
+                <span key={j} style={s.color ? { color: s.color } : undefined}>{s.text}</span>
+              ))}
+            </p>
+          ))}
         </div>
       </div>
     </Panel>
