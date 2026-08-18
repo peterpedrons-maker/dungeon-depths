@@ -18,7 +18,9 @@ import { Panel } from './Panel';
 import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
-import { pauseBackgroundMusic, resumeBackgroundMusic, playMagicAttackSfx } from '../lib/audio';
+import {
+  playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
+} from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 1600;
@@ -80,6 +82,26 @@ function applyCd(cooldown: number, cooldownReductionPct: number): number {
   return Math.max(1, Math.round(cooldown * (1 - cooldownReductionPct)));
 }
 
+// Round-timer gauge ("ATB") for a single side — remounted via `roundKey`
+// every round so the CSS fill animation restarts from empty instead of
+// jumping backwards, and frozen via animation-play-state while paused.
+function AtbBar({ roundKey, roundMs, paused, colorClass }: {
+  roundKey: number; roundMs: number; paused: boolean; colorClass: string;
+}) {
+  return (
+    <div className="h-1 bg-black/50 rounded overflow-hidden mt-0.5">
+      <div
+        key={roundKey}
+        className={`h-1 rounded ${colorClass}`}
+        style={{
+          animation: `atbFill ${roundMs}ms linear forwards`,
+          animationPlayState: paused ? 'paused' : 'running',
+        }}
+      />
+    </div>
+  );
+}
+
 export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd }: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
@@ -95,6 +117,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const [enemyCCState, setEnemyCCState] = useState<CrowdControlKind[]>([]);
   const [playerCCState, setPlayerCCState] = useState<CrowdControlKind[]>([]);
   const [playerShieldState, setPlayerShieldState] = useState(0);
+  // ATB gauge: both sides act on the same shared round timer (there's no
+  // per-combatant speed stat — see the DEX/AGI investigation this project
+  // already did), so one fill cycle drives both bars. roundKey remounts the
+  // fill div each round so its CSS animation restarts from empty instead of
+  // snapping backwards; roundMs is the actual delay scheduleTick() used, so
+  // pause/resume and the shorter opening delay stay visually honest.
+  const [roundKey, setRoundKey] = useState(0);
+  const [roundMs, setRoundMs] = useState(ATTACK_INTERVAL);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const floaterId = useRef(0);
 
@@ -151,6 +181,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function scheduleTick(delay = ATTACK_INTERVAL) {
+    setRoundMs(delay);
+    setRoundKey((k) => k + 1);
     setTimeout(() => {
       if (!mountedRef.current) return;
       if (!pausedRef.current && phaseRef.current === 'fight') runRound();
@@ -490,7 +522,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         updateEnemy({ ...enemyRef.current, hp: enemyHp });
         pushFloat('enemy', dmg, crit);
         flash('enemy');
-        if (playerHitMagical) playMagicAttackSfx();
+        if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx();
         pushLog(`Você acerta ${enemyRef.current.name} em ${dmg}${crit ? ' (crítico!)' : ''}${abilityTag}.${statusLine}`);
 
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
@@ -582,7 +614,8 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         const hp = Math.max(0, chRef.current.hp - edmg);
         updateCh({ ...chRef.current, hp });
         pushFloat('player', edmg, ecrit, blocked);
-        if (enemyAtkType === 'magical') playMagicAttackSfx();
+        if (enemyAtkType === 'magical') playMagicAttackSfx(); else playPhysicalAttackSfx();
+        if (edmg > 0) playHurtSfx();
         flash('player');
         const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
         pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}.`);
@@ -686,11 +719,18 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Combat has no music of its own yet — mute the kingdom loop for the
-  // duration of the fight and pick it back up where it left off on the way out.
+  // Battle music swaps in for the kingdom loop for the duration of the
+  // fight, switching to the boss track the instant the guardian spawns, and
+  // handing playback back to the kingdom loop (picking up where it left
+  // off) on the way out.
   useEffect(() => {
-    pauseBackgroundMusic();
-    return () => resumeBackgroundMusic();
+    if (phase !== 'fight') return;
+    if (enemy.isBoss) playBossMusic(); else playBattleMusic();
+  }, [enemy.isBoss, phase]);
+
+  useEffect(() => {
+    return () => stopCombatMusic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Canvas render loop ──
@@ -795,6 +835,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           <div className="h-3 bg-black/50 rounded mt-1 overflow-hidden">
             <div className="h-3 bg-crimson rounded transition-[width] duration-300" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} />
           </div>
+          <AtbBar roundKey={roundKey} roundMs={roundMs} paused={paused} colorClass="bg-amber-400" />
           {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-1 truncate">{enemyTags.join(', ')}</div>}
         </div>
       )}
@@ -887,6 +928,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             <span className="shrink-0">{Math.max(0, ch.hp)}/{effMaxHp}</span>
           </div>
           <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} /></div>
+          {phase === 'fight' && <AtbBar roundKey={roundKey} roundMs={roundMs} paused={paused} colorClass="bg-sky-400" />}
           {playerTags.length > 0 && <div className="text-[11px] text-amber-300/90 mt-0.5 truncate">{playerTags.join(', ')}</div>}
         </div>
         {!enemy.isBoss && (
@@ -896,6 +938,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
               <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
             </div>
             <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
+            {phase === 'fight' && <AtbBar roundKey={roundKey} roundMs={roundMs} paused={paused} colorClass="bg-amber-400" />}
             {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-0.5 truncate">{enemyTags.join(', ')}</div>}
           </div>
         )}

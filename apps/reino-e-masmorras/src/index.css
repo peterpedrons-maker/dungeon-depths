@@ -42,6 +42,15 @@ body {
   initial-value: 0%;
 }
 
+/* ATB gauge fill — the div is remounted (via a `key` bump) at the start of
+   every combat round so this restarts from empty instead of jumping
+   backwards; DungeonPanel toggles animation-play-state to freeze it while
+   combat is paused. */
+@keyframes atbFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
 @keyframes buildingGlow {
   0%   { box-shadow: 0 0 0 0 rgba(200,154,46,0); background-color: transparent; }
   30%  { box-shadow: 0 0 22px 10px rgba(200,154,46,0.85); background-color: rgba(200,154,46,0.25); }
