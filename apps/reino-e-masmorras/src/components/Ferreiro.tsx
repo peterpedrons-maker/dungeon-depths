@@ -12,6 +12,7 @@ import pergaminho from '../assets/pergaminho.webp';
 import ferreiroCena from '../assets/ferreiro-cena.webp';
 import marteloParado from '../assets/aprimoramento-martelo-parado.webp';
 import marteloAnimado from '../assets/aprimoramento-martelo.webp';
+import { playUpgradeSfx } from '../lib/audio';
 
 interface Props {
   character: Character;
@@ -19,7 +20,7 @@ interface Props {
   onClose: () => void;
 }
 
-const ROLL_MS = 1500;
+const ROLL_MS = 2000;
 
 function findLiveItem(ch: Character, id: string): EquipmentItem | null {
   for (const eq of Object.values(ch.equipment)) if (eq?.id === id) return eq;
@@ -73,6 +74,7 @@ function EnhanceFlow({ item, gold, onEnhance, onDone }: {
     const result = onEnhance(item) ?? false;
     setSuccess(result);
     setPhase('rolling');
+    playUpgradeSfx();
   }
 
   return (

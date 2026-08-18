@@ -18,6 +18,7 @@ import { Panel } from './Panel';
 import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
+import { pauseBackgroundMusic, resumeBackgroundMusic, playMagicAttackSfx } from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
 
 const ATTACK_INTERVAL = 1600;
@@ -414,7 +415,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
       if (!mountedRef.current) return;
 
       const stats = computePlayerStats();
-      let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false;
+      let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false, playerHitMagical = false;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -445,6 +446,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             // physical regardless of class — only an ability's own dmgType
             // override or the caster's class decides which channel a spell uses.
             const dmgType = eff.dmgType ?? (MAGICAL_CLASSES.includes(chRef.current.classId) ? 'magical' : 'physical');
+            playerHitMagical = dmgType === 'magical';
             const power = dmgType === 'magical' ? stats.matk : stats.atk;
             const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
             const r = rollAbilityHit(power, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
@@ -488,6 +490,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         updateEnemy({ ...enemyRef.current, hp: enemyHp });
         pushFloat('enemy', dmg, crit);
         flash('enemy');
+        if (playerHitMagical) playMagicAttackSfx();
         pushLog(`Você acerta ${enemyRef.current.name} em ${dmg}${crit ? ' (crítico!)' : ''}${abilityTag}.${statusLine}`);
 
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
@@ -579,6 +582,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         const hp = Math.max(0, chRef.current.hp - edmg);
         updateCh({ ...chRef.current, hp });
         pushFloat('player', edmg, ecrit, blocked);
+        if (enemyAtkType === 'magical') playMagicAttackSfx();
         flash('player');
         const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
         pushLog(`${enemyRef.current.name} acerta você em ${edmg}${ecrit ? ' (crítico!)' : ''}${blocked ? ' — parcialmente bloqueado!' : ''}${shieldTag}.`);
@@ -680,6 +684,13 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     scheduleTick(700);
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Combat has no music of its own yet — mute the kingdom loop for the
+  // duration of the fight and pick it back up where it left off on the way out.
+  useEffect(() => {
+    pauseBackgroundMusic();
+    return () => resumeBackgroundMusic();
   }, []);
 
   // ── Canvas render loop ──

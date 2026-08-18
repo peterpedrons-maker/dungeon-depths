@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Character, RankEntry, Screen } from './types/game';
 import { loadCharacter, saveCharacter, clearCharacter, loadRanking, addRankEntry } from './lib/storage';
+import { armBackgroundMusic } from './lib/audio';
 import { TitleScreen } from './components/TitleScreen';
 import { CharacterCreation } from './components/CharacterCreation';
 import { GameShell } from './components/GameShell';
@@ -10,6 +11,12 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('title');
   const [character, setCharacter] = useState<Character | null>(() => loadCharacter());
   const [ranking, setRanking] = useState<RankEntry[]>(() => loadRanking());
+
+  // Autoplay is blocked until the player interacts with the page at all —
+  // this arms a one-time listener so the kingdom loop starts on whatever
+  // they touch first (even the title splash's skip tap), instead of
+  // needing its own dedicated "enable sound" button.
+  useEffect(() => { armBackgroundMusic(); }, []);
 
   function persist(c: Character) {
     setCharacter(c);

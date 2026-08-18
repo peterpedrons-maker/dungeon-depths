@@ -7,6 +7,7 @@ import { itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/en
 import { priceForStockItem, STOCK_COLS, STOCK_ROWS } from '../lib/merchantStock';
 import { canFitInInventory, placeInInventory, SLOT_FOOTPRINT } from '../lib/inventoryGrid';
 import { MAX_POTIONS } from '../lib/consumables';
+import { playBuySellSfx } from '../lib/audio';
 import { Button, SmallButton } from './Button';
 import { Modal } from './Modal';
 import { ItemIcon } from './ItemIcon';
@@ -48,6 +49,7 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
       merchantStock: ch.merchantStock.filter((i) => i.id !== item.id),
       inventory: placeInInventory(ch.inventory, { ...item, identified: true }),
     });
+    playBuySellSfx();
     setSelected(null);
   }
 
