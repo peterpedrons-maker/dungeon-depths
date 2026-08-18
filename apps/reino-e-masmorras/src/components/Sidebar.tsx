@@ -1,6 +1,7 @@
 import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
 import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy } from './icons';
+import { playClickSfx } from '../lib/audio';
 
 interface Props {
   section: Section;
@@ -11,8 +12,8 @@ interface Props {
 }
 
 export function Sidebar({ section, open, onClose, onNavigate, onAbandon }: Props) {
-  const nav = (s: Section) => { onNavigate(s); onClose(); };
-  const abandon = () => { onAbandon(); onClose(); };
+  const nav = (s: Section) => { playClickSfx(); onNavigate(s); onClose(); };
+  const abandon = () => { playClickSfx(); onAbandon(); onClose(); };
 
   return (
     <>

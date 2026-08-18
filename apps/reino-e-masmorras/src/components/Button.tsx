@@ -1,12 +1,18 @@
-import { ButtonHTMLAttributes } from 'react';
+import { ButtonHTMLAttributes, MouseEvent } from 'react';
 import dourado from '../assets/botao-dourado.webp';
+import { playClickSfx } from '../lib/audio';
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function Button({ className = '', children, style, ...rest }: Props) {
+export function Button({ className = '', children, style, onClick, ...rest }: Props) {
+  function handleClick(e: MouseEvent<HTMLButtonElement>) {
+    playClickSfx();
+    onClick?.(e);
+  }
   return (
     <button
       {...rest}
+      onClick={handleClick}
       className={`relative inline-flex items-center justify-center font-bold tracking-wide text-ink bg-no-repeat bg-center px-6 py-3 min-w-[130px] transition hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:grayscale disabled:hover:brightness-100 ${className}`}
       style={{ backgroundImage: `url(${dourado})`, backgroundSize: '100% 100%', ...style }}
     >
@@ -23,7 +29,7 @@ export function SmallButton({ children, onClick, variant = 'solid', disabled = f
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => { playClickSfx(); onClick(); }}
       disabled={disabled}
       className={
         (variant === 'solid'
