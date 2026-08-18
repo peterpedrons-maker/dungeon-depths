@@ -82,7 +82,7 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onO
   }
 
   return (
-    <Panel title="Reino — Construções">
+    <Panel title="Reino — Pátio">
       <p className="text-parchment/70 mb-4">
         Invista seu ouro em melhorias permanentes que continuam valendo em toda expedição futura. Toque numa
         construção no mapa pra ver os detalhes.
