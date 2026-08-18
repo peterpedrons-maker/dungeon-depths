@@ -587,6 +587,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         if (enemyHp <= 0) {
           const prevLevel = chRef.current.level;
           const isBossKill = enemyRef.current.isBoss === true;
+          const isEliteKill = enemyRef.current.isElite === true;
           const bossBonusGold = isBossKill ? Math.round(enemyRef.current.goldReward * 0.5) : 0;
           const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
           const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
@@ -595,7 +596,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           updateCh(finalChar);
           pushLog(`${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`);
           if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
-          tryDropEquipment(isBossKill);
+          // Elite checkpoint kills always drop something too, same as a
+          // boss — clearing one of these mid-run milestones is meant to
+          // feel worth the extra danger, not just riskier for the same odds.
+          tryDropEquipment(isBossKill || isEliteKill);
 
           if (isBossKill) {
             setTimeout(() => {
@@ -612,7 +616,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             if (!mountedRef.current) return;
             const nextDepth = depthRef.current + 1;
             updateDepth(nextDepth);
-            updateEnemy(spawnEnemy(nextDepth, dungeon));
+            const next = spawnEnemy(nextDepth, dungeon);
+            updateEnemy(next);
+            if (next.isElite) pushLog(`${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`);
             enemyStatusRef.current = [];
             enemyModsRef.current = [];
             enemyCCRef.current = [];
@@ -1004,7 +1010,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         {!enemy.isBoss && (
           <div>
             <div className="flex justify-between">
-              <span className="truncate">{enemy.name}</span>
+              <span className={`truncate ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}</span>
               <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
             </div>
             <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
