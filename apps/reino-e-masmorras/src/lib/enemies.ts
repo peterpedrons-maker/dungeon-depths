@@ -196,6 +196,41 @@ const TIERS: EnemyTier[] = [
       { hpPct: 0.33, name: 'Fúria dos Ossos', transitionMsg: 'Prestes a desmoronar, o Lorde Esqueleto ataca com fúria antiga!', atkMult: 1.3, cc: 'stun', ccRounds: 1,
         extraAbilities: [{ id: 'skeletonLord:p3', name: 'Fúria dos Ossos Antigos', cooldown: 5, useChance: 0.4, effect: { kind: 'bigHit', dmgMult: 2.0 } }] },
     ] },
+
+  // ── Alvos de Caçada (lib/hunts.ts) — superchefes opcionais, deliberadamente
+  // bem mais fortes que o chefe de uma masmorra do mesmo levelReq (ver
+  // HUNT_STAT_MULT abaixo). Cada um ganha uma 3ª fase, uma a mais que um
+  // chefe normal, para reforçar que a luta é mais longa e mais dura.
+  { shape: 'boneTyrant', name: 'Tirano Ossudo', color: '#c9c2a0', minDepth: 1, hp: 180, atk: 20, def: 9, xp: 90, gold: 70, matk: 6, mdef: 4, isBoss: true,
+    proc: { chance: 0.28, label: 'O Tirano Ossudo esmaga sua guarda com um golpe descomunal!', statMod: 'def', statModPct: -0.25, rounds: 3 },
+    phases: [
+      { hpPct: 0.70, name: 'Fúria dos Sepultados', transitionMsg: 'Ossos quebrados se reerguem ao redor do Tirano Ossudo, alimentando sua fúria!', atkMult: 1.2,
+        extraAbilities: [{ id: 'boneTyrant:p2', name: 'Investida Sepulcral', cooldown: 4, useChance: 0.45, effect: { kind: 'bigHit', dmgMult: 1.9 } }] },
+      { hpPct: 0.40, name: 'Legião Despertada', transitionMsg: 'O Tirano convoca a legião inteira do sepulcro — o ar fica pesado de maldição!', atkMult: 1.35, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'boneTyrant:p3', name: 'Maldição da Legião', cooldown: 5, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.8, statMod: 'dmgTakenPct', statModPct: 0.3, statModRounds: 3 } }] },
+      { hpPct: 0.15, name: 'Última Sepultura', transitionMsg: 'À beira da destruição, o Tirano Ossudo golpeia com força capaz de abrir sepulturas!', atkMult: 1.5,
+        extraAbilities: [{ id: 'boneTyrant:p4', name: 'Golpe da Última Sepultura', cooldown: 5, useChance: 0.5, effect: { kind: 'bigHit', dmgMult: 2.4 } }] },
+    ] },
+  { shape: 'swampLeviathan', name: 'Leviatã do Pântano', color: '#2f4a2a', minDepth: 1, hp: 220, atk: 22, def: 11, xp: 110, gold: 85, matk: 7, mdef: 5, isBoss: true,
+    proc: { chance: 0.28, label: 'O Leviatã do Pântano arrasta você para as profundezas lodosas!', cc: 'stun', rounds: 1 },
+    phases: [
+      { hpPct: 0.70, name: 'Despertar do Lodo', transitionMsg: 'O lodo ferve e o Leviatã emerge por completo, maior do que parecia!', atkMult: 1.2,
+        extraAbilities: [{ id: 'swampLeviathan:p2', name: 'Coice Lodoso', cooldown: 4, useChance: 0.45, effect: { kind: 'controlSlam', dmgMult: 0.8, cc: 'stun', ccRounds: 1 } }] },
+      { hpPct: 0.40, name: 'Fúria Abissal', transitionMsg: 'Encurralado, o Leviatã convoca a fúria de tudo que já afundou no pântano!', atkMult: 1.35,
+        extraAbilities: [{ id: 'swampLeviathan:p3', name: 'Engolir', cooldown: 5, useChance: 0.45, effect: { kind: 'lifestealHit', dmgMult: 1.4, lifestealPct: 0.5 } }] },
+      { hpPct: 0.15, name: 'Última Maré', transitionMsg: 'O pântano inteiro parece se erguer com o Leviatã em seus estertores finais!', atkMult: 1.5, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'swampLeviathan:p4', name: 'Última Maré', cooldown: 5, useChance: 0.5, effect: { kind: 'bigHit', dmgMult: 2.4 } }] },
+    ] },
+  { shape: 'infernalWyrm', name: 'Wyrm Infernal', color: '#7a1a12', minDepth: 1, hp: 280, atk: 26, def: 13, xp: 150, gold: 120, matk: 30, mdef: 16, atkType: 'magical', isBoss: true,
+    proc: { chance: 0.28, label: 'O sopro do Wyrm Infernal o incendeia até os ossos!', status: 'burn', rounds: 4 },
+    phases: [
+      { hpPct: 0.70, name: 'Chamas Ascendentes', transitionMsg: 'As escamas do Wyrm incandescem — o calor se torna insuportável!', atkMult: 1.2,
+        extraAbilities: [{ id: 'infernalWyrm:p2', name: 'Baforada Infernal', cooldown: 4, useChance: 0.45, effect: { kind: 'statusBite', dmgMult: 1.2, status: 'burn', statusRounds: 4 } }] },
+      { hpPct: 0.40, name: 'Fúria do Abismo Flamejante', transitionMsg: 'O Wyrm rasga o céu com um rugido — o próprio ar queima!', atkMult: 1.35, cc: 'stun', ccRounds: 1,
+        extraAbilities: [{ id: 'infernalWyrm:p3', name: 'Tempestade de Cinzas', cooldown: 5, useChance: 0.45, effect: { kind: 'weakenNova', dmgMult: 0.9, statMod: 'dmgTakenPct', statModPct: 0.3, statModRounds: 3 } }] },
+      { hpPct: 0.15, name: 'Cataclismo Final', transitionMsg: 'Prestes a cair, o Wyrm Infernal desata todo o seu poder em um cataclismo final!', atkMult: 1.55,
+        extraAbilities: [{ id: 'infernalWyrm:p4', name: 'Cataclismo Final', cooldown: 5, useChance: 0.5, effect: { kind: 'bigHit', dmgMult: 2.6 } }] },
+    ] },
 ];
 
 const TIERS_BY_SHAPE: Partial<Record<EnemyShape, EnemyTier>> = {};
@@ -208,6 +243,14 @@ const ELITE_STAT_MULT = 1.6; // hp/atk/matk
 const ELITE_DEF_MULT = 1.25; // def/mdef — dangerous, but still killable, not a wall
 const ELITE_REWARD_MULT = 2.2; // xp/gold, so clearing the checkpoint feels worth it
 
+// Alvos de Caçada (lib/hunts.ts) reuse a dungeon's normal boss-scaling curve
+// (same `depth` growth formula below) and then stack this on top — deliberately
+// steeper than ELITE_STAT_MULT, since a Hunt boss is meant to be the hardest
+// fight available at its levelReq, not a mid-run checkpoint.
+const HUNT_STAT_MULT = 2.4; // hp/atk/matk
+const HUNT_DEF_MULT = 1.6; // def/mdef
+const HUNT_REWARD_MULT = 3.0; // xp/gold — the grind-worthy payoff for a fight this much harder
+
 // Second steepening of the per-depth growth curve (was 0.075/0.045, itself
 // already a steepening of the original 0.055/0.03) — the player's own power
 // has grown faster than this curve since then (equipment's primary-stat
@@ -215,19 +258,22 @@ const ELITE_REWARD_MULT = 2.2; // xp/gold, so clearing the checkpoint feels wort
 // a well-geared character at any given depth instead of keeping pace with
 // it. minDepth's own base stats are untouched — only how fast enemies scale
 // past that floor changes.
-function instanceFromTier(tier: EnemyTier, depth: number, elite = false): EnemyInstance {
-  const growth = (1 + depth * 0.12) * (elite ? ELITE_STAT_MULT : 1);
-  const defGrowth = (1 + depth * 0.07) * (elite ? ELITE_DEF_MULT : 1);
+function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt'): EnemyInstance {
+  const statMult = mode === 'elite' ? ELITE_STAT_MULT : mode === 'hunt' ? HUNT_STAT_MULT : 1;
+  const defMult = mode === 'elite' ? ELITE_DEF_MULT : mode === 'hunt' ? HUNT_DEF_MULT : 1;
+  const rewardMult = mode === 'elite' ? ELITE_REWARD_MULT : mode === 'hunt' ? HUNT_REWARD_MULT : 1;
+  const growth = (1 + depth * 0.12) * statMult;
+  const defGrowth = (1 + depth * 0.07) * defMult;
   const hp = Math.round(tier.hp * growth);
   return {
-    name: elite ? `${tier.name} Veterano` : tier.name,
+    name: mode === 'elite' ? `${tier.name} Veterano` : tier.name,
     shape: tier.shape,
     color: tier.color,
     hp, maxHp: hp,
     atk: Math.round(tier.atk * growth),
     def: Math.round(tier.def * defGrowth),
-    xpReward: Math.round(tier.xp * (1 + depth * 0.08) * (elite ? ELITE_REWARD_MULT : 1)),
-    goldReward: Math.round(tier.gold * (1 + depth * 0.08) * (elite ? ELITE_REWARD_MULT : 1)),
+    xpReward: Math.round(tier.xp * (1 + depth * 0.08) * rewardMult),
+    goldReward: Math.round(tier.gold * (1 + depth * 0.08) * rewardMult),
     proc: tier.proc,
     abilities: tier.abilities,
     phases: tier.phases,
@@ -236,7 +282,7 @@ function instanceFromTier(tier: EnemyTier, depth: number, elite = false): EnemyI
     mdef: tier.mdef !== undefined ? Math.round(tier.mdef * defGrowth) : undefined,
     atkType: tier.atkType,
     isBoss: tier.isBoss,
-    isElite: elite || undefined,
+    isElite: mode === 'elite' || undefined,
   };
 }
 
@@ -255,9 +301,9 @@ function randomRegularTier(depth: number, allowed?: EnemyShape[]): EnemyTier {
 export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {
   if (depth >= dungeon.bossDepth) {
     const bossTier = TIERS_BY_SHAPE[dungeon.boss];
-    if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth);
+    if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth, dungeon.isHunt ? 'hunt' : undefined);
   }
   const tier = randomRegularTier(depth, dungeon.enemyPool);
   const isMiniBossDepth = dungeon.miniBossDepths?.includes(depth) ?? false;
-  return instanceFromTier(tier, depth, isMiniBossDepth);
+  return instanceFromTier(tier, depth, isMiniBossDepth ? 'elite' : undefined);
 }

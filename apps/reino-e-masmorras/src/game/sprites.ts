@@ -64,6 +64,10 @@ const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
 
   // Bosses da Região 2+ reaproveitando o shape base — maiores que o normal
   horrorAncient: 163, orcWarlord: 163, trollChieftain: 184, dragonElder: 168, skeletonLord: 152,
+
+  // Alvos de Caçada (lib/hunts.ts) — maiores ainda, para reforçar visualmente
+  // que são o desafio mais duro disponível.
+  boneTyrant: 190, swampLeviathan: 196, infernalWyrm: 184,
 };
 
 function loadImage(url: string, displayH: number): Sprite {
@@ -108,6 +112,10 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
 
   // Bosses da Região 2+ — reaproveitam o sprite do próprio shape base
   horrorAncient: aberracaoUrl, orcWarlord: orcUrl, trollChieftain: trollUrl, dragonElder: dragaoUrl, skeletonLord: esqueletoUrl,
+
+  // Alvos de Caçada (lib/hunts.ts) — placeholder no shape temático mais
+  // próximo (mesmo padrão acima) até ganharem arte própria.
+  boneTyrant: esqueletoUrl, swampLeviathan: trollUrl, infernalWyrm: dragaoUrl,
 };
 
 const heroCache: Partial<Record<ClassId, Sprite>> = {};
