@@ -19,9 +19,32 @@ import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import {
-  playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
+  playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
 } from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
+import iconVeneno from '../assets/effects/effect-veneno.webp';
+import iconQueimadura from '../assets/effects/effect-queimadura.webp';
+import iconSangramento from '../assets/effects/effect-sangramento.webp';
+import iconMaldicao from '../assets/effects/effect-maldicao.webp';
+import iconAtordoado from '../assets/effects/effect-atordoado.webp';
+import iconDormindo from '../assets/effects/effect-dormindo.webp';
+import iconSilenciado from '../assets/effects/effect-silenciado.webp';
+import iconAtkBuff from '../assets/effects/effect-atk-buff.webp';
+import iconAtkDebuff from '../assets/effects/effect-atk-debuff.webp';
+import iconDefBuff from '../assets/effects/effect-def-buff.webp';
+import iconDefDebuff from '../assets/effects/effect-def-debuff.webp';
+import iconCritBuff from '../assets/effects/effect-crit-buff.webp';
+import iconCritDebuff from '../assets/effects/effect-crit-debuff.webp';
+import iconCritDmgBuff from '../assets/effects/effect-critdmg-buff.webp';
+import iconCritDmgDebuff from '../assets/effects/effect-critdmg-debuff.webp';
+import iconPrecisaoBuff from '../assets/effects/effect-precisao-buff.webp';
+import iconPrecisaoDebuff from '../assets/effects/effect-precisao-debuff.webp';
+import iconEvasaoBuff from '../assets/effects/effect-evasao-buff.webp';
+import iconEvasaoDebuff from '../assets/effects/effect-evasao-debuff.webp';
+import iconDanoRecebidoBuff from '../assets/effects/effect-danorecebido-buff.webp';
+import iconDanoRecebidoDebuff from '../assets/effects/effect-danorecebido-debuff.webp';
+import iconDefPenBuff from '../assets/effects/effect-defpen-buff.webp';
+import iconRouboVidaBuff from '../assets/effects/effect-roubovida-buff.webp';
 
 const ATTACK_INTERVAL = 2200;
 // How long a floating damage number stays on screen — kept in one place so
@@ -65,21 +88,33 @@ const STATUS_VERB: Record<StatusEffectKind, string> = { poison: 'envenenado', bu
 const STATUS_TICK_LABEL: Record<StatusEffectKind, string> = { poison: 'veneno', burn: 'queimadura', bleed: 'sangramento', curse: 'maldição' };
 const CC_LABEL: Record<CrowdControlKind, string> = { stun: 'Atordoado', sleep: 'Dormindo', silence: 'Silenciado' };
 
-// Small colored badges rendered right next to each combatant's sprite (see
-// EffectBadges below) — placeholder glyphs (single letters), same spirit as
-// every other "ship the mechanic, real art later" spot in this game.
-const STATUS_BADGE_ABBR: Record<StatusEffectKind, string> = { poison: 'V', burn: 'Q', bleed: 'S', curse: 'M' };
-const STATUS_BADGE_COLOR: Record<StatusEffectKind, string> = { poison: '#7a9a3c', burn: '#d9701c', bleed: '#a1303a', curse: '#6a4a9a' };
-const CC_BADGE_ABBR: Record<CrowdControlKind, string> = { stun: 'A', sleep: 'D', silence: 'S' };
-const CC_BADGE_COLOR = '#4a5a9a';
-const STAT_MOD_ABBR: Record<StatModStat, string> = {
-  atk: 'ATQ', def: 'DEF', critChance: 'CRIT', critDmgMult: 'CRIT%', accuracy: 'PRE',
-  evasion: 'EVA', dmgTakenPct: 'DANO%', defPenPct: 'PEN', lifestealPct: 'VIDA',
+// Small icon badges rendered right next to each combatant's sprite (see
+// EffectBadgeRow below) — painted art from the buff/debuff icon sheet.
+const STATUS_BADGE_ICON: Record<StatusEffectKind, string> = {
+  poison: iconVeneno, burn: iconQueimadura, bleed: iconSangramento, curse: iconMaldicao,
 };
-const BUFF_COLOR = '#3f9d4f';
-const DEBUFF_COLOR = '#b8323f';
+const CC_BADGE_ICON: Record<CrowdControlKind, string> = {
+  stun: iconAtordoado, sleep: iconDormindo, silence: iconSilenciado,
+};
+// Two icons per stat (buff/debuff) except defPenPct and lifestealPct, which
+// only ever appear as buffs in actual effect data — no debuff variant exists.
+const STAT_MOD_ICON: Record<StatModStat, { buff: string; debuff: string }> = {
+  atk: { buff: iconAtkBuff, debuff: iconAtkDebuff },
+  def: { buff: iconDefBuff, debuff: iconDefDebuff },
+  critChance: { buff: iconCritBuff, debuff: iconCritDebuff },
+  critDmgMult: { buff: iconCritDmgBuff, debuff: iconCritDmgDebuff },
+  accuracy: { buff: iconPrecisaoBuff, debuff: iconPrecisaoDebuff },
+  evasion: { buff: iconEvasaoBuff, debuff: iconEvasaoDebuff },
+  dmgTakenPct: { buff: iconDanoRecebidoBuff, debuff: iconDanoRecebidoDebuff },
+  defPenPct: { buff: iconDefPenBuff, debuff: iconDefPenBuff },
+  lifestealPct: { buff: iconRouboVidaBuff, debuff: iconRouboVidaBuff },
+};
+const STAT_MOD_LABEL: Record<StatModStat, string> = {
+  atk: 'Ataque', def: 'Defesa', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
+  evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
+};
 
-interface EffectBadge { key: string; abbr: string; color: string; title: string; }
+interface EffectBadge { key: string; icon: string; title: string; }
 
 // dmgTakenPct is the one stat where a negative roll is the good outcome
 // (less damage taken) — everything else follows "higher is better for
@@ -90,12 +125,12 @@ function statModBadgeIsBuff(m: StatModInstance): boolean {
 
 function buildEffectBadges(statuses: StatusEffectKind[], ccs: CrowdControlKind[], mods: StatModInstance[]): EffectBadge[] {
   return [
-    ...statuses.map((s, i) => ({ key: `s${i}`, abbr: STATUS_BADGE_ABBR[s], color: STATUS_BADGE_COLOR[s], title: STATUS_LABEL[s] })),
-    ...ccs.map((c, i) => ({ key: `c${i}`, abbr: CC_BADGE_ABBR[c], color: CC_BADGE_COLOR, title: CC_LABEL[c] })),
+    ...statuses.map((s, i) => ({ key: `s${i}`, icon: STATUS_BADGE_ICON[s], title: STATUS_LABEL[s] })),
+    ...ccs.map((c, i) => ({ key: `c${i}`, icon: CC_BADGE_ICON[c], title: CC_LABEL[c] })),
     ...mods.map((m, i) => {
       const isBuff = statModBadgeIsBuff(m);
       const pctText = `${m.pct > 0 ? '+' : ''}${Math.round(m.pct * 100)}%`;
-      return { key: `m${i}`, abbr: STAT_MOD_ABBR[m.stat], color: isBuff ? BUFF_COLOR : DEBUFF_COLOR, title: `${STAT_MOD_ABBR[m.stat]} ${pctText}` };
+      return { key: `m${i}`, icon: isBuff ? STAT_MOD_ICON[m.stat].buff : STAT_MOD_ICON[m.stat].debuff, title: `${STAT_MOD_LABEL[m.stat]} ${pctText}` };
     }),
   ];
 }
@@ -175,14 +210,13 @@ function EffectBadgeRow({ badges, align }: { badges: EffectBadge[]; align: 'left
   return (
     <div className={`absolute top-1.5 flex gap-1 flex-wrap max-w-[45%] ${align === 'left' ? 'left-1.5' : 'right-1.5 justify-end'}`}>
       {badges.map((b) => (
-        <span
+        <img
           key={b.key}
+          src={b.icon}
           title={b.title}
-          className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white ring-1 ring-black/60 shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
-          style={{ background: b.color }}
-        >
-          {b.abbr}
-        </span>
+          alt={b.title}
+          className="w-6 h-6 rounded-full ring-1 ring-black/60 shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+        />
       ))}
     </div>
   );
@@ -1019,13 +1053,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Only the boss fight gets its own music, swapping in for the kingdom
-  // loop the instant the guardian spawns — regular encounters have no
-  // combat music of their own, so the kingdom loop just plays straight
-  // through them.
+  // Combat music swaps in for the kingdom loop for every fight — the battle
+  // track for regular encounters, the boss track the instant the guardian
+  // spawns — switching tracks again without ever handing back to the
+  // kingdom loop mid-run.
   useEffect(() => {
-    if (phase !== 'fight' || !enemy.isBoss) return;
-    playBossMusic();
+    if (phase !== 'fight') return;
+    if (enemy.isBoss) playBossMusic();
+    else playBattleMusic();
   }, [enemy.isBoss, phase]);
 
   useEffect(() => {
