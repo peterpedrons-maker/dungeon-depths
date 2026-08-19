@@ -33,8 +33,16 @@ export type Rarity = 'comum' | 'incomum' | 'raro' | 'epico' | 'legendario';
 export type ItemSlot = 'weapon' | 'body' | 'legs' | 'hands' | 'offhand' | 'accessory';
 // 'atk'/'matk' let the accessory/offhand roll pool reuse the same channels
 // weapons and armor already read from (dmgBonus/matkBonus below), instead of
-// inventing a parallel vocabulary just for those slots.
-export type SecondaryStatType = 'crit' | 'critDmg' | 'def' | 'mdef' | 'hp' | 'block' | 'atk' | 'matk';
+// inventing a parallel vocabulary just for those slots. The 9 after 'matk'
+// are affix-only — they have no matching primary *Bonus field on
+// EquipmentItem, they only ever show up inside an item's secondaryStats roll
+// (see lib/equipment.ts's SLOT_AFFIX_POOL) — added so gear finally has a way
+// to grant Evasão/Precisão/Tenacidade/Velocidade/Roubo de Vida/Espinhos/
+// Redução de Recarga/sorte de item, none of which any equipment slot could
+// touch before.
+export type SecondaryStatType =
+  | 'crit' | 'critDmg' | 'def' | 'mdef' | 'hp' | 'block' | 'atk' | 'matk'
+  | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'cdr' | 'itemFind' | 'itemQuality';
 
 // Only set on slot === 'accessory' items — the accessory base type is rolled
 // independently of class (unlike offhand, which is 100% determined by the
@@ -57,8 +65,13 @@ export interface EquipmentItem {
   mdefBonus: number; // Amuleto primary stat, 0 on other slots
   critChanceBonus: number; // Anel primary stat, 0 on other slots
   critDmgBonus: number; // Anel primary stat, 0 on other slots
-  secondaryStat?: { type: SecondaryStatType; value: number };
-  enhanceLevel: number; // Forja upgrade, 0-10 — scales this item's *Bonus fields only, never secondaryStat (see lib/enhancement.ts)
+  // Every item rolls 1+ of these (count driven by rarity — see
+  // AFFIX_COUNT_RANGE in lib/equipment.ts), sampled without repeats from a
+  // slot-themed pool. Always an array, even for a single roll, so every
+  // consumer (combat aggregation, tooltips) has one shape to handle instead
+  // of a legacy singular-vs-plural split.
+  secondaryStats: { type: SecondaryStatType; value: number }[];
+  enhanceLevel: number; // Forja upgrade, 0-10 — scales this item's *Bonus fields only, never secondaryStats (see lib/enhancement.ts)
   // false only while sitting unpurchased in Character.merchantStock — name,
   // icon and stats are hidden in the UI until the player buys it, at which
   // point it's set back to true (or just dropped, since undefined === true).
@@ -477,8 +490,10 @@ export interface CombatStats {
   // crowd control (stun/sleep/silence) an enemy attempts to apply to you.
   // Distinct from evasion (which dodges the hit itself, damage included) —
   // this only ever intercepts the status/CC riding along on a hit that
-  // already landed. Capped at 40%, same ceiling as evasion/accuracy.
-  resistPct: number;
+  // already landed. Capped at 40%, same ceiling as evasion/accuracy. Named
+  // "Tenacidade" in the UI — "Resistência" read as too easily confused with
+  // def/mdef (which resist damage, not status/CC).
+  tenacityPct: number;
 }
 
 // ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──

@@ -33,11 +33,11 @@ const ATTR_COEF = {
   supportPctPerWis: 0.01,
   dropChancePctPerLuk: 0.004,
   itemQualityPctPerLuk: 0.005,
-  // New "resistência" channel (see CombatStats.resistPct) — mirrors mdef's
+  // New "tenacidade" channel (see CombatStats.tenacityPct) — mirrors mdef's
   // own wis-primary/vit-secondary split, since it's the same "magical
   // fortitude + physical toughness" duo resisting status/CC that mdef
   // already leans on for resisting spell damage.
-  resistPerWis: 0.002, resistPerVit: 0.001,
+  tenacityPerWis: 0.002, tenacityPerVit: 0.001,
 };
 
 // The same attribute point is worth more to a class built around that
@@ -88,7 +88,9 @@ export function computeCombatStats(ch: Character): CombatStats {
   const bonuses = computeSkillBonuses(ch.classId, ch.unlockedSkills);
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
 
-  let itemDmg = 0, itemDef = 0, itemHp = 0, itemMatk = 0, itemMdef = 0, itemCrit = 0, itemCritDmg = 0, itemBlock = 0;
+  let itemDmg = 0, itemDef = 0, itemHp = 0, itemMatk = 0, itemMdef = 0, itemCrit = 0, itemCritDmg = 0, itemBlock = 0,
+    itemEvasion = 0, itemAccuracy = 0, itemTenacity = 0, itemSpeed = 0, itemLifesteal = 0, itemThorns = 0, itemCdr = 0,
+    itemDropChance = 0, itemItemQuality = 0;
   for (const raw of equippedItems(ch)) {
     const item = enhancedItem(raw);
     itemDmg += item.dmgBonus;
@@ -98,15 +100,25 @@ export function computeCombatStats(ch: Character): CombatStats {
     itemMdef += item.mdefBonus;
     itemCrit += item.critChanceBonus;
     itemCritDmg += item.critDmgBonus;
-    const sec = item.secondaryStat;
-    if (sec?.type === 'crit') itemCrit += sec.value;
-    else if (sec?.type === 'critDmg') itemCritDmg += sec.value;
-    else if (sec?.type === 'def') itemDef += sec.value;
-    else if (sec?.type === 'mdef') itemMdef += sec.value;
-    else if (sec?.type === 'hp') itemHp += sec.value;
-    else if (sec?.type === 'block') itemBlock += sec.value;
-    else if (sec?.type === 'atk') itemDmg += sec.value;
-    else if (sec?.type === 'matk') itemMatk += sec.value;
+    for (const sec of item.secondaryStats) {
+      if (sec.type === 'crit') itemCrit += sec.value;
+      else if (sec.type === 'critDmg') itemCritDmg += sec.value;
+      else if (sec.type === 'def') itemDef += sec.value;
+      else if (sec.type === 'mdef') itemMdef += sec.value;
+      else if (sec.type === 'hp') itemHp += sec.value;
+      else if (sec.type === 'block') itemBlock += sec.value;
+      else if (sec.type === 'atk') itemDmg += sec.value;
+      else if (sec.type === 'matk') itemMatk += sec.value;
+      else if (sec.type === 'evasion') itemEvasion += sec.value;
+      else if (sec.type === 'accuracy') itemAccuracy += sec.value;
+      else if (sec.type === 'tenacity') itemTenacity += sec.value;
+      else if (sec.type === 'speed') itemSpeed += sec.value;
+      else if (sec.type === 'lifesteal') itemLifesteal += sec.value;
+      else if (sec.type === 'thorns') itemThorns += sec.value;
+      else if (sec.type === 'cdr') itemCdr += sec.value;
+      else if (sec.type === 'itemFind') itemDropChance += sec.value;
+      else if (sec.type === 'itemQuality') itemItemQuality += sec.value;
+    }
   }
 
   const mult = (key: AttributeKey) => classAttrMult(ch.classId, key);
@@ -117,7 +129,7 @@ export function computeCombatStats(ch: Character): CombatStats {
   const critFromAttr = attrs.luk * ATTR_COEF.critPerLuk * mult('luk');
   const accuracyFromAttr = attrs.dex * ATTR_COEF.accuracyPerDex * mult('dex');
   const evasionFromAttr = attrs.agi * ATTR_COEF.evasionPerAgi * mult('agi');
-  const resistFromAttr = attrs.wis * ATTR_COEF.resistPerWis * mult('wis') + attrs.vit * ATTR_COEF.resistPerVit * mult('vit');
+  const tenacityFromAttr = attrs.wis * ATTR_COEF.tenacityPerWis * mult('wis') + attrs.vit * ATTR_COEF.tenacityPerVit * mult('vit');
   const hpFromAttr = curved(attrs.vit) * ATTR_COEF.hpPerVit * mult('vit');
   const speedFromAttr = attrs.agi * ATTR_COEF.speedPerAgi * mult('agi');
 
@@ -147,19 +159,19 @@ export function computeCombatStats(ch: Character): CombatStats {
     // comment above — so this is purely skill-tree + item affix now.
     blockChance: Math.min(0.6, bonuses.blockChance + itemBlock),
     maxHpBonus: itemHp + bonuses.maxHpFlat + hpFromAttr,
-    lifestealPct: bonuses.lifestealPct,
-    thornsPct: bonuses.thornsPct,
+    lifestealPct: bonuses.lifestealPct + itemLifesteal,
+    thornsPct: bonuses.thornsPct + itemThorns,
     onCritHealPct: bonuses.onCritHealPct,
     dmgPctVsPoison: bonuses.dmgPctVsPoison,
     dmgPctVsBurn: bonuses.dmgPctVsBurn,
     supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis * mult('wis'),
-    dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk,
-    itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk,
-    evasion: Math.min(0.4, bonuses.evasionPct + evasionFromAttr),
-    accuracy: Math.min(0.4, bonuses.accuracyPct + accuracyFromAttr),
-    cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct),
-    speedPct: Math.min(0.5, speedFromAttr),
-    resistPct: Math.min(0.4, resistFromAttr),
+    dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk + itemDropChance,
+    itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk + itemItemQuality,
+    evasion: Math.min(0.4, bonuses.evasionPct + evasionFromAttr + itemEvasion),
+    accuracy: Math.min(0.4, bonuses.accuracyPct + accuracyFromAttr + itemAccuracy),
+    cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct + itemCdr),
+    speedPct: Math.min(0.5, speedFromAttr + itemSpeed),
+    tenacityPct: Math.min(0.4, tenacityFromAttr + itemTenacity),
   };
 }
 
@@ -203,7 +215,7 @@ export function describeAttribute(ch: Character, key: AttributeKey): AttrDescrip
       contributions.push({ label: 'Defesa Física', value: `+${Math.round(curved(points) * ATTR_COEF.defPerVit * mult)}` });
       contributions.push({ label: 'Vida Máxima', value: `+${Math.round(curved(points) * ATTR_COEF.hpPerVit * mult)}` });
       contributions.push({ label: 'Defesa Mágica', value: `+${Math.round(curved(points) * ATTR_COEF.mdefPerVit * mult)}` });
-      contributions.push({ label: 'Resistência', value: `+${(points * ATTR_COEF.resistPerVit * mult * 100).toFixed(1)}%` });
+      contributions.push({ label: 'Tenacidade', value: `+${(points * ATTR_COEF.tenacityPerVit * mult * 100).toFixed(1)}%` });
       break;
     case 'int':
       contributions.push({ label: 'Ataque Mágico', value: `+${Math.round(curved(points) * ATTR_COEF.matkPerInt * mult)}` });
@@ -211,7 +223,7 @@ export function describeAttribute(ch: Character, key: AttributeKey): AttrDescrip
     case 'wis':
       contributions.push({ label: 'Defesa Mágica', value: `+${Math.round(curved(points) * ATTR_COEF.mdefPerWis * mult)}` });
       contributions.push({ label: 'Poder de Suporte', value: `+${(points * ATTR_COEF.supportPctPerWis * mult * 100).toFixed(1)}%` });
-      contributions.push({ label: 'Resistência', value: `+${(points * ATTR_COEF.resistPerWis * mult * 100).toFixed(1)}%` });
+      contributions.push({ label: 'Tenacidade', value: `+${(points * ATTR_COEF.tenacityPerWis * mult * 100).toFixed(1)}%` });
       break;
     case 'luk':
       contributions.push({ label: 'Crítico', value: `+${(points * ATTR_COEF.critPerLuk * mult * 100).toFixed(1)}%` });

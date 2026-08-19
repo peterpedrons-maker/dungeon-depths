@@ -3,7 +3,7 @@ import { Character, EquipmentItem } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
 import { rarityColor } from '../lib/equipment';
-import { itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
+import { itemDisplayName, primaryStatLines, secondaryStatLabels } from '../lib/enhancement';
 import { priceForStockItem, STOCK_COLS, STOCK_ROWS } from '../lib/merchantStock';
 import { canFitInInventory, placeInInventory, SLOT_FOOTPRINT } from '../lib/inventoryGrid';
 import { MAX_POTIONS } from '../lib/consumables';
@@ -210,7 +210,7 @@ function StockItemModal({ item, price, disabled, onClose, onBuy }: {
         {identified ? (
           <div className="flex flex-col items-center gap-0.5">
             {primaryLines.map((line) => <div key={line} className="text-sm text-parchment/90">{line}</div>)}
-            {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
+            {secondaryStatLabels(item).map((line) => <div key={line} className="text-sm text-sky-300">{line}</div>)}
           </div>
         ) : (
           <p className="text-xs text-parchment/50 italic text-center">A identidade só é revelada depois da compra.</p>
