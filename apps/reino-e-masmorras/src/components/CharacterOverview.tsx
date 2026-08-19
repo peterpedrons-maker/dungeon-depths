@@ -4,7 +4,7 @@ import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
-import { compareItemStatRows, enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
+import { compareItemStatRows, enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel, StatCompareRow } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
@@ -484,36 +484,63 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
   );
 }
 
-// A bag item's own small card, reused for both sides of the compare view —
-// null means "nothing equipped in this slot", rendered as an empty frame
-// instead of skipping the column, so the two sides always line up.
-function ItemCompareCard({ item, label }: { item: EquipmentItem | null; label: string }) {
-  const color = item ? rarityColor(item.rarity) : undefined;
-  return (
-    <div className="flex flex-col items-center gap-1 min-w-0">
-      <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
-      <div className="w-16 h-16 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
-        {item ? <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} /> : <span className="text-parchment/30 text-[10px]">Vazio</span>}
-      </div>
-      <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
-        {item ? itemDisplayName(item) : '—'}
-      </span>
-    </div>
-  );
-}
-
-function statRowValueColor(mine: number, other: number): string {
-  if (mine === other) return 'text-parchment/70';
-  return mine > other ? 'text-green-400' : 'text-crimson';
-}
 function fmtStatValue(v: number, isPct: boolean): string {
   return isPct ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
 }
 
+// Two fully independent item windows side by side — each one reads exactly
+// like the single-item tooltip (icon, name, its own stat list), just placed
+// next to its counterpart instead of merged into one shared table, which
+// read as a single confusing block. `mine`/`other` pick which side of each
+// StatCompareRow this window's stats come from, so the same row list drives
+// both windows without duplicating the comparison math.
+function ItemStatWindow({ item, label, rows, mine, other }: {
+  item: EquipmentItem | null;
+  label: string;
+  rows: StatCompareRow[];
+  mine: 'equippedValue' | 'newValue';
+  other: 'equippedValue' | 'newValue';
+}) {
+  const color = item ? rarityColor(item.rarity) : undefined;
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded border border-panelborder/40 bg-black/25 p-2.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
+      <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
+      <div className="w-14 h-14 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+        {item ? <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} /> : <span className="text-parchment/30 text-[9px]">Vazio</span>}
+      </div>
+      <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
+        {item ? itemDisplayName(item) : '—'}
+      </span>
+      {rows.length > 0 && (
+        <div className="w-full mt-1 space-y-1 border-t border-panelborder/30 pt-1.5">
+          {rows.map((r) => {
+            const mineVal = r[mine];
+            const otherVal = r[other];
+            const arrow = mineVal === otherVal ? null : mineVal > otherVal ? 'up' : 'down';
+            return (
+              <div key={r.label} className="flex items-center justify-between gap-1 text-[11px]">
+                <span className="text-parchment/60 truncate min-w-0">{r.label}</span>
+                <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
+                  <span className={arrow === 'up' ? 'text-green-400' : arrow === 'down' ? 'text-crimson' : 'text-parchment'}>
+                    {fmtStatValue(mineVal, r.isPct)}
+                  </span>
+                  {arrow === 'up' && <span className="text-green-400 text-[9px] leading-none">▲</span>}
+                  {arrow === 'down' && <span className="text-crimson text-[9px] leading-none">▼</span>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Diablo/PoE-style side-by-side compare: the equipped item and the bag item
-// as two full cards, with every stat that differs between them rendered
-// once per side and colored toward whichever side wins it — the player sees
-// both full pictures at a glance instead of hunting for a delta list.
+// as two independent windows, each with its own icon/name/stat list, so the
+// player reads either side on its own instead of parsing a shared table.
+// Every stat that differs gets a colored ▲/▼ pointing toward whichever side
+// wins it.
 function ItemCompareModal({ item, equipped, onClose, onEquip, onSell }: {
   item: EquipmentItem;
   equipped: EquipmentItem | null;
@@ -521,14 +548,11 @@ function ItemCompareModal({ item, equipped, onClose, onEquip, onSell }: {
   onEquip: (item: EquipmentItem) => void;
   onSell: (item: EquipmentItem) => void;
 }) {
-  const color = rarityColor(item.rarity);
-  const boosted = enhancedItem(item);
-  const primaryLines = primaryStatLines(boosted);
   const rows = compareItemStatRows(item, equipped);
 
   return (
     <Modal onClose={onClose} bare>
-      <div className="relative w-[min(90vw,360px)] flex flex-col items-center gap-3 px-4 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+      <div className="relative w-[min(94vw,420px)] flex flex-col items-center gap-3 px-4 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
@@ -537,38 +561,12 @@ function ItemCompareModal({ item, equipped, onClose, onEquip, onSell }: {
           ×
         </button>
 
-        <div className="font-bold text-base text-center" style={{ color }}>{itemDisplayName(item)}</div>
+        <div className="font-bold text-base text-center" style={{ color: rarityColor(item.rarity) }}>{itemDisplayName(item)}</div>
 
-        <div className="grid grid-cols-2 gap-4 w-full">
-          <ItemCompareCard item={equipped} label="Equipado" />
-          <ItemCompareCard item={item} label="Novo" />
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <ItemStatWindow item={equipped} label="Equipado" rows={rows} mine="equippedValue" other="newValue" />
+          <ItemStatWindow item={item} label="Novo" rows={rows} mine="newValue" other="equippedValue" />
         </div>
-
-        {rows.length > 0 ? (
-          <div className="w-full rounded border border-panelborder/40 bg-black/25 px-2.5 py-1.5">
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 text-[9px] uppercase tracking-wide text-parchment/40 font-bold mb-1">
-              <span />
-              <span className="text-right">Equipado</span>
-              <span className="text-right">Novo</span>
-            </div>
-            {rows.map((r) => (
-              <div key={r.label} className="grid grid-cols-[1fr_auto_auto] gap-x-2 items-center text-xs py-0.5">
-                <span className="text-parchment/60 truncate">{r.label}</span>
-                <span className={`font-bold tabular-nums text-right ${statRowValueColor(r.equippedValue, r.newValue)}`}>
-                  {fmtStatValue(r.equippedValue, r.isPct)}
-                </span>
-                <span className={`font-bold tabular-nums text-right ${statRowValueColor(r.newValue, r.equippedValue)}`}>
-                  {fmtStatValue(r.newValue, r.isPct)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-0.5">
-            {primaryLines.map((line) => <div key={line} className="text-sm text-parchment/90">{line}</div>)}
-            {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
-          </div>
-        )}
 
         <div className="flex gap-2 mt-1">
           <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
