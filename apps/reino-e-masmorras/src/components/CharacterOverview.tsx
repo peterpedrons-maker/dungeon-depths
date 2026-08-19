@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { CSSProperties, useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
-import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
+import { hexToRgba, rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
 import { compareItemStatRows, itemDisplayName, itemStatLines } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
@@ -36,6 +36,34 @@ const EMPTY_SLOT_ICON: Record<ItemSlot, string> = {
 // empty, unusable frame.
 const PAPERDOLL_LEFT_SLOTS: ItemSlot[] = ['weapon', 'offhand', 'hands'];
 const RIGHT_SLOTS: ItemSlot[] = ['body', 'legs', 'accessory'];
+
+// Neutral slate-blue used for an empty slot (nothing to tint by rarity yet).
+const NEUTRAL_SLOT_BG = 'rgba(96,148,210,0.09)';
+const NEUTRAL_SLOT_BG_HOVER = 'rgba(96,148,210,0.17)';
+const NEUTRAL_SLOT_BORDER = 'rgba(96,148,210,0.4)';
+const NEUTRAL_SLOT_BORDER_HOVER = 'rgba(96,148,210,0.65)';
+
+// Tints an item slot's background/border by the item's own rarity color
+// (via CSS custom properties, so the existing Tailwind hover: classes still
+// work) instead of every slot sharing one fixed neutral blue regardless of
+// what's inside — an empty slot keeps the neutral look.
+function slotTintStyle(item: EquipmentItem | null): CSSProperties {
+  if (!item) {
+    return {
+      ['--slot-bg' as string]: NEUTRAL_SLOT_BG,
+      ['--slot-bg-hover' as string]: NEUTRAL_SLOT_BG_HOVER,
+      ['--slot-border' as string]: NEUTRAL_SLOT_BORDER,
+      ['--slot-border-hover' as string]: NEUTRAL_SLOT_BORDER_HOVER,
+    } as CSSProperties;
+  }
+  const color = rarityColor(item.rarity);
+  return {
+    ['--slot-bg' as string]: hexToRgba(color, 0.16),
+    ['--slot-bg-hover' as string]: hexToRgba(color, 0.26),
+    ['--slot-border' as string]: hexToRgba(color, 0.5),
+    ['--slot-border-hover' as string]: hexToRgba(color, 0.75),
+  } as CSSProperties;
+}
 
 interface Props {
   character: Character;
@@ -110,8 +138,9 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
         onClick={() => { if (!isGhostOffhand) setSelected({ kind: 'equipped', slot, item }); }}
         disabled={isGhostOffhand}
         title={isGhostOffhand ? 'Arma de duas mãos — ocupa as duas mãos' : undefined}
-        className={`relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,transform] duration-150 ${
-          isGhostOffhand ? 'opacity-40 cursor-default' : 'hover:scale-105 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)]'
+        style={slotTintStyle(item)}
+        className={`relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,transform] duration-150 ${
+          isGhostOffhand ? 'opacity-40 cursor-default' : 'hover:scale-105 hover:bg-[var(--slot-bg-hover)] hover:border-[var(--slot-border-hover)]'
         }`}
       >
         <div className="w-[88%] h-[88%] flex items-center justify-center">
@@ -221,8 +250,9 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                     <button
                       key={item.id}
                       onClick={() => setSelected({ kind: 'inventory', item })}
-                      className={`absolute flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,opacity] duration-150 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)] ${dimmed ? 'opacity-30 grayscale' : ''}`}
+                      className={`absolute flex items-center justify-center rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,opacity] duration-150 hover:bg-[var(--slot-bg-hover)] hover:border-[var(--slot-border-hover)] ${dimmed ? 'opacity-30 grayscale' : ''}`}
                       style={{
+                        ...slotTintStyle(item),
                         left: `${(x / GRID_COLS) * 100}%`,
                         top: `${(y / gridRows) * 100}%`,
                         width: `${(w / GRID_COLS) * 100}%`,
@@ -439,7 +469,7 @@ function ItemStatWindow({ item, label, compareAgainst }: {
   return (
     <div className="flex flex-col items-center gap-1.5 rounded border border-panelborder/40 bg-black/25 p-2.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
       <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
-      <div className="w-14 h-14 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+      <div style={slotTintStyle(item)} className="w-14 h-14 rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
         {item ? <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} /> : <span className="text-parchment/30 text-[9px]">Vazio</span>}
       </div>
       <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
@@ -539,7 +569,7 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 
         <div className="font-bold text-base text-center" style={{ color }}>{itemDisplayName(item)}</div>
 
-        <div className="w-24 h-24 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+        <div style={slotTintStyle(item)} className="w-24 h-24 rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
           <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
         </div>
 
