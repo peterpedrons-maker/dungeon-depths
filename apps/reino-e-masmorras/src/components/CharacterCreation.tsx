@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { AttributeKey, Attributes, Character, ClassId } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES, STARTING_ATTR_POINTS, createCharacter } from '../lib/classes';
+import { effectiveMaxHp } from '../lib/combatStats';
+import { CLASS_ICON } from '../lib/classIcons';
 import { WEIGHT_GROUP, WeightGroup } from '../lib/itemTiers';
 import { heroSprites } from '../game/sprites';
 import { Button, SmallButton } from './Button';
@@ -177,7 +179,11 @@ export function CharacterCreation({ onCreated }: Props) {
     if (!selectedId) return;
     const finalName = name.trim();
     if (!finalName) return;
-    onCreated(createCharacter(finalName, selectedId, allocated, ironMode));
+    const created = createCharacter(finalName, selectedId, allocated, ironMode);
+    // createCharacter() sets hp to the class's raw baseHp, before the
+    // starting equipment/attribute-point bonuses above it are counted —
+    // a fresh hero otherwise began already short of their real max.
+    onCreated({ ...created, hp: effectiveMaxHp(created) });
   }
 
   return (
@@ -207,12 +213,7 @@ export function CharacterCreation({ onCreated }: Props) {
               style={{ borderColor: `${c.color}55` }}
               className="flex flex-col items-center gap-1 rounded-lg border bg-panel/80 px-1 py-2 transition hover:-translate-y-0.5 hover:brightness-110"
             >
-              <span
-                className="w-7 h-7 rounded-full border border-dashed flex items-center justify-center text-[11px] font-display"
-                style={{ borderColor: `${c.color}90`, color: c.color }}
-              >
-                {c.name.slice(0, 1)}
-              </span>
+              <img src={CLASS_ICON[id]} alt="" className="w-8 h-8 drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]" draggable={false} />
               <img
                 src={sprite}
                 alt=""
@@ -261,12 +262,7 @@ export function CharacterCreation({ onCreated }: Props) {
 
           <div className="flex flex-row items-center gap-3 mt-3">
             <div className="flex flex-col items-center text-center w-24 shrink-0">
-              <span
-                className="w-11 h-11 rounded-full border-2 border-dashed flex items-center justify-center text-base font-display mb-1"
-                style={{ borderColor: `${selected.color}90`, color: selected.color, background: `${selected.color}22` }}
-              >
-                {selected.name.slice(0, 1)}
-              </span>
+              <img src={CLASS_ICON[selectedId]} alt="" className="w-11 h-11 mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" draggable={false} />
               <div className="relative flex items-center justify-center mb-1">
                 <div
                   className="absolute w-14 h-14 rounded-full blur-xl opacity-30"
