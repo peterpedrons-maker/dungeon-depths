@@ -305,7 +305,7 @@ const BOSS_DEF_MULT = 1.15;
 // a well-geared character at any given depth instead of keeping pace with
 // it. minDepth's own base stats are untouched — only how fast enemies scale
 // past that floor changes.
-function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt'): EnemyInstance {
+function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt', difficultyMult = 1): EnemyInstance {
   const isBossTier = tier.isBoss === true;
   const hpMult = isBossTier ? BOSS_HP_MULT : REGULAR_HP_MULT;
   const atkMult = isBossTier ? BOSS_ATK_MULT : REGULAR_ATK_MULT;
@@ -313,9 +313,15 @@ function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt
   const modeStatMult = mode === 'elite' ? ELITE_STAT_MULT : mode === 'hunt' ? HUNT_STAT_MULT : 1;
   const modeDefMult = mode === 'elite' ? ELITE_DEF_MULT : mode === 'hunt' ? HUNT_DEF_MULT : 1;
   const rewardMult = mode === 'elite' ? ELITE_REWARD_MULT : mode === 'hunt' ? HUNT_REWARD_MULT : 1;
-  const hpGrowth = (1 + depth * 0.12) * hpMult * modeStatMult;
-  const atkGrowth = (1 + depth * 0.12) * atkMult * modeStatMult;
-  const defGrowth = (1 + depth * 0.07) * baseDefMult * modeDefMult;
+  // difficultyMult is the per-dungeon CP-anchor knob (see DungeonDef) — hits
+  // hp/atk/matk in full (that's what actually makes a dungeon feel harder or
+  // softer) but def/mdef only at its square root, since defense already
+  // compounds non-linearly through rollAttack's mitigation cap and doubling
+  // it in lockstep with attack would over-tighten fights at the high end.
+  const defDifficultyMult = Math.sqrt(difficultyMult);
+  const hpGrowth = (1 + depth * 0.12) * hpMult * modeStatMult * difficultyMult;
+  const atkGrowth = (1 + depth * 0.12) * atkMult * modeStatMult * difficultyMult;
+  const defGrowth = (1 + depth * 0.07) * baseDefMult * modeDefMult * defDifficultyMult;
   const hp = Math.round(tier.hp * hpGrowth);
   return {
     name: mode === 'elite' ? `${tier.name} Veterano` : tier.name,
@@ -351,13 +357,14 @@ function randomRegularTier(depth: number, allowed?: EnemyShape[]): EnemyTier {
 // Spawns the dungeon's boss at its fixed bossDepth, or a regular enemy drawn
 // at random from the dungeon's own pool otherwise.
 function spawnRegularOrBoss(depth: number, dungeon: DungeonDef): EnemyInstance {
+  const difficultyMult = dungeon.difficultyMult ?? 1;
   if (depth >= dungeon.bossDepth) {
     const bossTier = TIERS_BY_SHAPE[dungeon.boss];
-    if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth, dungeon.isHunt ? 'hunt' : undefined);
+    if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth, dungeon.isHunt ? 'hunt' : undefined, difficultyMult);
   }
   const tier = randomRegularTier(depth, dungeon.enemyPool);
   const isMiniBossDepth = dungeon.miniBossDepths?.includes(depth) ?? false;
-  return instanceFromTier(tier, depth, isMiniBossDepth ? 'elite' : undefined);
+  return instanceFromTier(tier, depth, isMiniBossDepth ? 'elite' : undefined, difficultyMult);
 }
 
 export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {

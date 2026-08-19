@@ -379,6 +379,15 @@ export interface DungeonDef {
   boss: EnemyShape;
   miniBossDepths?: number[]; // depths shown as milestone markers on the progress bar; no dungeon defines any yet
   itemTier: number; // 1-10 — the base tier (lib/itemTiers.ts) every item found in this dungeon rolls at, hand-authored like bossDepth so item power tracks dungeon progression, not the in-run depth counter
+  // Hand-authored per-dungeon knob (see lib/enemies.ts's instanceFromTier) —
+  // scales every enemy in the dungeon on top of the normal depth/regular-vs-
+  // boss curve, calibrated against an "anchor" player (roughly levelReq-2,
+  // geared for what that region expects — see dungeons.ts) instead of the
+  // old one-curve-fits-every-dungeon approach. 1 = the curve's own baseline;
+  // below 1 softens a dungeon (early Região 1, still teaching the player),
+  // above 1 tightens one (later regions, expects the player to actually be
+  // geared up). Omitted = 1.
+  difficultyMult?: number;
   isHunt?: boolean; // lib/hunts.ts entries only — startDepth === bossDepth (the fight IS the boss), stats get an extra multiplier on top of the normal boss curve, and the guaranteed kill-drop forces a high rarity
   // Never set on a DUNGEONS entry itself — GameShell.tsx builds a runtime
   // copy with this (and goldMult/dropMult/xpMult bumped) when the player
