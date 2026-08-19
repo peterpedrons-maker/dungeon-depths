@@ -1,4 +1,4 @@
-import { CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
@@ -11,6 +11,7 @@ import { computeAttributeTotals } from '../lib/skills';
 import { heroSprites } from '../game/sprites';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
+import { Modal } from './Modal';
 import { ItemIcon } from './ItemIcon';
 import emptyWeapon from '../assets/items/empty-weapon.webp';
 import emptyBody from '../assets/items/empty-body.webp';
@@ -44,18 +45,7 @@ interface Props {
   onAllocateAttrs: (deltas: Partial<Record<AttributeKey, number>>) => void;
 }
 
-// The rect of whichever slot/icon button was clicked or hovered — the
-// popup anchors itself right next to that button instead of opening as a
-// centered dialog, Path of Exile style.
-interface PopupAnchor { top: number; left: number; width: number; height: number }
-type Selected =
-  | { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null; anchor: PopupAnchor }
-  | { kind: 'inventory'; item: EquipmentItem; anchor: PopupAnchor };
-
-function anchorFromEvent(e: { currentTarget: HTMLElement }): PopupAnchor {
-  const r = e.currentTarget.getBoundingClientRect();
-  return { top: r.top, left: r.left, width: r.width, height: r.height };
-}
+type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
 const ZERO_ALLOC: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
@@ -117,8 +107,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
     return (
       <button
         key={slot}
-        onClick={(e) => { if (!isGhostOffhand) setSelected({ kind: 'equipped', slot, item, anchor: anchorFromEvent(e) }); }}
-        onMouseEnter={(e) => { if (!isGhostOffhand) setSelected({ kind: 'equipped', slot, item, anchor: anchorFromEvent(e) }); }}
+        onClick={() => { if (!isGhostOffhand) setSelected({ kind: 'equipped', slot, item }); }}
         disabled={isGhostOffhand}
         title={isGhostOffhand ? 'Arma de duas mãos — ocupa as duas mãos' : undefined}
         className={`relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,transform] duration-150 ${
@@ -231,8 +220,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                   return (
                     <button
                       key={item.id}
-                      onClick={(e) => setSelected({ kind: 'inventory', item, anchor: anchorFromEvent(e) })}
-                      onMouseEnter={(e) => setSelected({ kind: 'inventory', item, anchor: anchorFromEvent(e) })}
+                      onClick={() => setSelected({ kind: 'inventory', item })}
                       className={`absolute flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color,opacity] duration-150 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)] ${dimmed ? 'opacity-30 grayscale' : ''}`}
                       style={{
                         left: `${(x / GRID_COLS) * 100}%`,
@@ -407,7 +395,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       )}
 
       {selected && (
-        <ItemPopup
+        <ItemModal
           selected={selected}
           equippedInSlot={selected.kind === 'inventory' ? ch.equipment[selected.item.slot] : null}
           onClose={() => setSelected(null)}
@@ -424,60 +412,54 @@ function fmtStatValue(v: number, isPct: boolean): string {
   return isPct ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
 }
 
-// Positions the popup right next to whatever button was clicked/hovered
-// instead of centering it as a dialog — clamped to the viewport so it never
-// spills off-screen, and flipped above the anchor when there isn't enough
-// room below.
-function popupStyle(anchor: PopupAnchor): CSSProperties {
-  const width = 236;
-  const estHeight = 320;
-  const margin = 8;
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 800;
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 600;
-  let left = anchor.left + anchor.width / 2 - width / 2;
-  left = Math.max(margin, Math.min(left, vw - width - margin));
-  let top = anchor.top + anchor.height + margin;
-  if (top + estHeight > vh - margin) {
-    top = Math.max(margin, anchor.top - margin - estHeight);
-  }
-  return { left, top, width };
-}
-
-// Lightweight anchored popup — no dimmed backdrop, no centered dialog frame,
-// just the card itself floating next to the item that triggered it (Path of
-// Exile-style item tooltip). The invisible full-screen layer behind it only
-// exists to catch a tap/click elsewhere and close it.
-function Popover({ anchor, onClose, children }: { anchor: PopupAnchor; onClose: () => void; children: React.ReactNode }) {
+// One column of the compare window — just the item's icon/name plus its
+// stat lines. `compareAgainst` controls whether those lines carry a colored
+// ▲/▼ delta: the equipped side reads its stats plainly (nothing to compare
+// itself to), the new/bag side shows the delta against what's equipped, so
+// only one side ever claims a direction — no more "6 ▲" on one column and
+// "5 ▼" on the other for what is really a single -1 change.
+function ItemStatWindow({ item, label, compareAgainst }: {
+  item: EquipmentItem | null;
+  label: string;
+  compareAgainst: EquipmentItem | null | undefined;
+}) {
+  const color = item ? rarityColor(item.rarity) : undefined;
+  const lines = item ? itemStatLines(item, compareAgainst ?? null) : [];
+  const showDelta = compareAgainst !== undefined;
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div
-        className="fixed z-50 rounded-md border border-gold/30 bg-black/90 backdrop-blur-sm shadow-[0_12px_30px_rgba(0,0,0,0.7)] px-3 pt-3 pb-2.5"
-        style={popupStyle(anchor)}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-1 right-1.5 text-parchment/50 hover:text-parchment text-base leading-none px-1"
-          aria-label="Fechar"
-        >
-          ×
-        </button>
-        {children}
+    <div className="flex flex-col items-center gap-1.5 rounded border border-panelborder/40 bg-black/25 p-2.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
+      <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
+      <div className="w-14 h-14 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+        {item ? <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} /> : <span className="text-parchment/30 text-[9px]">Vazio</span>}
       </div>
-    </>
+      <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
+        {item ? itemDisplayName(item) : '—'}
+      </span>
+      {lines.length > 0 && (
+        <div className="w-full mt-1 space-y-1 border-t border-panelborder/30 pt-1.5">
+          {lines.map((l) => (
+            <div key={l.label} className="flex items-center justify-between gap-1 text-[11px]">
+              <span className="text-parchment/60 truncate min-w-0">{l.label}</span>
+              <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
+                <span className="text-parchment">{fmtStatValue(l.value, l.isPct)}</span>
+                {showDelta && l.delta !== 0 && (
+                  <span className={l.delta > 0 ? 'text-green-400' : 'text-crimson'}>
+                    {l.delta > 0 ? '▲' : '▼'}{l.delta > 0 ? '+' : ''}{fmtStatValue(l.delta, l.isPct)}
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
-// One item, its own tooltip — matches Path of Exile: hovering/tapping an
-// item never opens a separate window, it just shows this floating card next
-// to it. An inventory item's stat lines carry a colored ▲/▼ delta against
-// whatever's equipped in that slot; an equipped item (nothing to compare it
-// against but itself) just shows its plain values.
-function ItemPopup({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSell }: {
+function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSell }: {
   selected: Selected;
   // Only meaningful for an inventory item — what's presently equipped in
-  // that same slot, so each stat line can show the delta of swapping in.
+  // that same slot, so the compare window can show the delta of swapping in.
   equippedInSlot: EquipmentItem | null;
   onClose: () => void;
   onEquip: (item: EquipmentItem) => void;
@@ -486,56 +468,82 @@ function ItemPopup({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 }) {
   if (selected.kind === 'equipped' && !selected.item) {
     return (
-      <Popover anchor={selected.anchor} onClose={onClose}>
-        <p className="text-parchment/50 italic text-xs px-1 py-1 w-40">Nenhum item equipado neste slot.</p>
-      </Popover>
+      <Modal onClose={onClose} bare>
+        <div className="px-5 py-4 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+          <p className="text-parchment/50 italic text-sm">Nenhum item equipado neste slot.</p>
+        </div>
+      </Modal>
     );
   }
 
   const item = selected.item as EquipmentItem;
+
+  // An inventory item gets the two-window compare: the equipped item on the
+  // left reads plainly, the new item on the right carries the ▲/▼ delta.
+  if (selected.kind === 'inventory') {
+    return (
+      <Modal onClose={onClose} bare>
+        <div className="relative w-[min(94vw,420px)] flex flex-col items-center gap-3 px-4 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+
+          <div className="font-bold text-base text-center" style={{ color: rarityColor(item.rarity) }}>{itemDisplayName(item)}</div>
+
+          <div className="grid grid-cols-2 gap-3 w-full">
+            <ItemStatWindow item={equippedInSlot} label="Equipado" compareAgainst={undefined} />
+            <ItemStatWindow item={item} label="Novo" compareAgainst={equippedInSlot} />
+          </div>
+
+          <div className="flex gap-2 mt-1">
+            <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
+            <SmallButton onClick={() => onSell(item)} variant="ghost">Vender ({sellValue(item)} ouro)</SmallButton>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   const color = rarityColor(item.rarity);
-  const isInventory = selected.kind === 'inventory';
-  const lines = itemStatLines(item, isInventory ? equippedInSlot : null);
+  const lines = itemStatLines(item, null);
 
   return (
-    <Popover anchor={selected.anchor} onClose={onClose}>
-      <div className="flex flex-col items-center gap-2 w-[210px]">
-        <div className="font-bold text-sm text-center" style={{ color }}>{itemDisplayName(item)}</div>
+    <Modal onClose={onClose} bare>
+      {/* Path of Exile-style floating tooltip: name on top, big art in the
+          middle, bare stat lines below — no title bar, no section labels,
+          no boxes-within-boxes. Enhancing now only happens via the Ferreiro
+          (which already has its own full confirm/roll/result screen), so
+          there's no enhance widget cluttering this quick-view card. */}
+      <div className="relative w-64 flex flex-col items-center gap-2 px-5 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
 
-        <div className="w-14 h-14 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
-          <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} />
+        <div className="font-bold text-base text-center" style={{ color }}>{itemDisplayName(item)}</div>
+
+        <div className="w-24 h-24 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+          <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
         </div>
 
-        {lines.length > 0 && (
-          <div className="w-full space-y-0.5">
-            {lines.map((l) => (
-              <div key={l.label} className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">{l.label}</span>
-                <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
-                  <span className="text-parchment/90">{fmtStatValue(l.value, l.isPct)}</span>
-                  {isInventory && l.delta !== 0 && (
-                    <span className={l.delta > 0 ? 'text-green-400' : 'text-crimson'}>
-                      {l.delta > 0 ? '▲' : '▼'}{l.delta > 0 ? '+' : ''}{fmtStatValue(l.delta, l.isPct)}
-                    </span>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-col items-center gap-0.5">
+          {lines.map((l) => (
+            <div key={l.label} className="text-sm text-parchment/90">+{fmtStatValue(l.value, l.isPct)} {l.label.toLowerCase()}</div>
+          ))}
+        </div>
 
-        <div className="flex gap-2 mt-1">
-          {selected.kind === 'equipped' ? (
-            <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
-          ) : (
-            <>
-              <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
-              <SmallButton onClick={() => onSell(item)} variant="ghost">Vender ({sellValue(item)} ouro)</SmallButton>
-            </>
-          )}
+        <div className="flex gap-2 mt-2">
+          <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
         </div>
       </div>
-    </Popover>
+    </Modal>
   );
 }
 
