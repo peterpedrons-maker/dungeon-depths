@@ -303,6 +303,16 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   const pausedRef = useRef(false);
   const phaseRef = useRef<Phase>('fight');
   const mountedRef = useRef(true);
+  // Bumped every time a new enemy actually spawns — nothing in this file
+  // ever clearTimeout()s a pending scheduleEnemy() callback, so when the
+  // previous enemy dies mid-cycle its own still-pending action timer stays
+  // alive. Before this ref existed, that stale timer (scheduled against the
+  // OLD enemy's remaining delay) would go on to attack with the NEW enemy
+  // once it fired, landing a hit well before the freshly-reset ATB bar had
+  // actually filled. scheduleEnemy() captures the generation at schedule
+  // time and a mismatch at fire time means "this timer belongs to an enemy
+  // that's already gone" — silently drop it instead of acting.
+  const enemyGenRef = useRef(0);
 
   // Ability/status engine state — session-only, reset whenever this dungeon
   // run starts (never persisted). enemyStatusRef/playerStatusRef are the DOT
@@ -410,10 +420,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function scheduleEnemy(delay = ATTACK_INTERVAL) {
+    const gen = enemyGenRef.current;
     setEnemyRoundMs(delay);
     setEnemyRoundKey((k) => k + 1);
     setTimeout(() => {
       if (!mountedRef.current) return;
+      if (gen !== enemyGenRef.current) return; // stale timer from an enemy that's already gone
       if (!pausedRef.current && phaseRef.current === 'fight') enemyAct();
     }, delay);
   }
@@ -867,6 +879,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             updateDepth(nextDepth);
             const next = spawnEnemy(nextDepth, dungeon);
             updateEnemy(next);
+            enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
             if (next.isElite) pushLog(`${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`);
             enemyStatusRef.current = [];
             enemyModsRef.current = [];
