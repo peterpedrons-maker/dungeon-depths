@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Character, DungeonDef } from '../types/game';
 import { DUNGEONS, isDungeonUnlocked } from '../lib/dungeons';
 import { REGIONS, regionMinLevel } from '../lib/dungeonMap';
@@ -25,15 +26,38 @@ interface Props {
 export function DungeonMap({ character, onEnterDungeon }: Props) {
   const visibleRegions = REGIONS.slice(0, firstHiddenIndex(character.level));
   const nextRegion = REGIONS[visibleRegions.length];
+  // Default to the most recently unlocked region — the one the player is
+  // most likely mid-progress through, and specifically the one that used to
+  // force a scroll to reach (it rendered above Região 1 in the old
+  // always-stacked layout). Re-derived from character.level on every
+  // render, not sticky state, so leveling up while this screen is mounted
+  // (or switching characters) can't leave the selector pointed at a region
+  // that's no longer the newest.
+  const [selected, setSelected] = useState(() => visibleRegions.length - 1);
+  const activeIndex = Math.min(selected, visibleRegions.length - 1);
+  const region = visibleRegions[activeIndex];
 
   return (
     <Panel title="Mapa de Masmorras">
-      <div className="flex flex-col-reverse gap-4">
-        {visibleRegions.map((region) => (
-          <div key={region.region}>
-            <div className="text-xs font-display uppercase tracking-[0.15em] text-gold/80 mb-1.5">
-              Região {region.region} — {region.name}
-            </div>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap gap-2">
+          {visibleRegions.map((r, i) => (
+            <button
+              key={r.region}
+              onClick={() => setSelected(i)}
+              className={`px-3 py-1.5 rounded-sm border text-xs font-bold tracking-wide transition ${
+                i === activeIndex
+                  ? 'border-gold bg-gold/15 text-gold'
+                  : 'border-panelborder/50 text-parchment/60 hover:text-parchment hover:border-gold/40'
+              }`}
+            >
+              {r.name} <span className="opacity-70">— {r.region}ª Região</span>
+            </button>
+          ))}
+        </div>
+
+        {region && (
+          <div>
             <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
               <img src={region.image!} alt={region.name} className="w-full h-auto block" draggable={false} />
               {region.markers.map((marker) => {
@@ -66,7 +90,7 @@ export function DungeonMap({ character, onEnterDungeon }: Props) {
               })}
             </div>
           </div>
-        ))}
+        )}
 
         {nextRegion && (
           <div className="rounded border border-panelborder/40 bg-black/25 p-4 text-center">

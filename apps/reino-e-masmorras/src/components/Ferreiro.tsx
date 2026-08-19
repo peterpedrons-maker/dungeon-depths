@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Character, EquipmentItem } from '../types/game';
 import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
-import {
-  enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, maxEnhanceLevelForForja, successChanceForLevel,
-} from '../lib/enhancement';
+import { enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, successChanceForLevel } from '../lib/enhancement';
 import { fmt } from '../lib/format';
 import { Button } from './Button';
 import { ItemIcon as ItemIconGlyph } from './ItemIcon';
@@ -14,9 +12,11 @@ import marteloParado from '../assets/aprimoramento-martelo-parado.webp';
 import marteloAnimado from '../assets/aprimoramento-martelo.webp';
 import { playUpgradeSfx } from '../lib/audio';
 
+export interface EnhanceResult { success: boolean; regressed: boolean }
+
 interface Props {
   character: Character;
-  onEnhance: (item: EquipmentItem) => boolean | undefined;
+  onEnhance: (item: EquipmentItem) => EnhanceResult | undefined;
   onClose: () => void;
 }
 
@@ -55,14 +55,16 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
 // (so gold is spent and the result is already known), but the reveal is
 // held back until the hammer animation finishes playing, so the drama
 // matches what's actually happening instead of racing ahead of it.
-function EnhanceFlow({ item, gold, onEnhance, onDone }: {
-  item: EquipmentItem; gold: number; onEnhance: (item: EquipmentItem) => boolean | undefined; onDone: (success: boolean) => void;
+function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
+  item: EquipmentItem; gold: number; forjaLevel: number; onEnhance: (item: EquipmentItem) => EnhanceResult | undefined; onDone: (success: boolean) => void;
 }) {
   const [phase, setPhase] = useState<'confirm' | 'rolling' | 'result'>('confirm');
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<EnhanceResult>({ success: false, regressed: false });
   const cost = enhanceCost(item);
-  const chance = successChanceForLevel(item.enhanceLevel);
+  const chance = successChanceForLevel(item.enhanceLevel, forjaLevel);
   const nextItem = { ...item, enhanceLevel: item.enhanceLevel + 1 };
+  const regressedItem = { ...item, enhanceLevel: Math.max(0, item.enhanceLevel - 1) };
+  const previewItem = result.success ? nextItem : result.regressed ? regressedItem : item;
 
   useEffect(() => {
     if (phase !== 'rolling') return;
@@ -71,8 +73,8 @@ function EnhanceFlow({ item, gold, onEnhance, onDone }: {
   }, [phase]);
 
   function handleConfirm() {
-    const result = onEnhance(item) ?? false;
-    setSuccess(result);
+    const outcome = onEnhance(item) ?? { success: false, regressed: false };
+    setResult(outcome);
     setPhase('rolling');
     playUpgradeSfx();
   }
@@ -88,23 +90,30 @@ function EnhanceFlow({ item, gold, onEnhance, onDone }: {
           style={{ imageRendering: 'pixelated' }}
           draggable={false}
         />
-        <ItemIcon item={nextItem} dim={phase !== 'result' || !success} lit={phase === 'result' && success} />
+        <ItemIcon item={previewItem} dim={phase !== 'result' || !result.success} lit={phase === 'result' && result.success} />
       </div>
 
       {phase === 'result' ? (
         <>
-          <p className={`text-sm font-bold mb-1 ${success ? 'text-emerald-400' : 'text-crimson'}`}>
-            {success ? 'Deu certo! Ficou até melhor.' : 'Não dessa vez... o metal não aguentou.'}
+          <p className={`text-sm font-bold mb-1 ${result.success ? 'text-emerald-400' : 'text-crimson'}`}>
+            {result.success ? 'Deu certo! Ficou até melhor.' : result.regressed ? 'Não deu certo... e o metal enfraqueceu!' : 'Não dessa vez... o metal não aguentou.'}
           </p>
           <p className="text-xs text-parchment/50 mb-3">
-            {success ? `${item.name} agora está +${nextItem.enhanceLevel}.` : `${item.name} continua +${item.enhanceLevel}.`}
+            {result.success
+              ? `${item.name} agora está +${nextItem.enhanceLevel}.`
+              : result.regressed
+              ? `${item.name} caiu para +${regressedItem.enhanceLevel}.`
+              : `${item.name} continua +${item.enhanceLevel}.`}
           </p>
-          <Button onClick={() => onDone(success)} className="w-full">Continuar</Button>
+          <Button onClick={() => onDone(result.success)} className="w-full">Continuar</Button>
         </>
       ) : (
         <>
           <p className="text-xs text-parchment/60 mb-1">+{item.enhanceLevel} → +{nextItem.enhanceLevel}</p>
-          <p className="text-xs text-parchment/50 mb-3">Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro</p>
+          <p className="text-xs text-parchment/50 mb-3">
+            Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro
+            {item.enhanceLevel >= 7 && ' · Falhar pode fazer o item retroceder um nível'}
+          </p>
           {phase === 'confirm' ? (
             <div className="flex gap-2">
               <Button onClick={() => onDone(false)} className="flex-1">Cancelar</Button>
@@ -128,7 +137,6 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const [enhancingItem, setEnhancingItem] = useState<EquipmentItem | null>(null);
   const forjaLevel = ch.buildings.forja ?? 0;
-  const cap = maxEnhanceLevelForForja(forjaLevel);
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
 
   return (
@@ -178,6 +186,7 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
           <EnhanceFlow
             item={enhancingItem}
             gold={ch.gold}
+            forjaLevel={forjaLevel}
             onEnhance={onEnhance}
             onDone={() => {
               const live = findLiveItem(ch, enhancingItem.id);
@@ -202,10 +211,6 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
               </div>
               {openItem.enhanceLevel >= MAX_ENHANCE_LEVEL ? (
                 <p className="text-xs text-parchment/40 italic">Nível máximo de aprimoramento atingido.</p>
-              ) : openItem.enhanceLevel >= cap ? (
-                <p className="text-xs text-parchment/40 italic">
-                  Requer Forja nível {Math.ceil((openItem.enhanceLevel + 1) / 2)} (atual: {forjaLevel}).
-                </p>
               ) : (
                 <Button onClick={() => setEnhancingItem(openItem)} className="w-full">
                   Aprimorar para +{openItem.enhanceLevel + 1}
@@ -217,8 +222,8 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
           <>
             <p className="text-xs text-parchment/60 mb-3">
               {forjaLevel > 0
-                ? `Nível da Forja: ${forjaLevel}/5 — aprimoramento liberado até +${Math.min(10, forjaLevel * 2)}. Toque num item pra aprimorar.`
-                : 'Construa a Forja pra liberar o aprimoramento de itens.'}
+                ? `Nível da Forja: ${forjaLevel}/5 — melhora sua chance de sucesso ao aprimorar. Toque num item pra aprimorar.`
+                : 'Toque num item pra aprimorar. Melhore a Forja pra aumentar sua chance de sucesso.'}
             </p>
             {forgeableItems.length === 0 ? (
               <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>

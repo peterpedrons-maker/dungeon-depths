@@ -71,6 +71,12 @@ create table if not exists public.ranking (
 -- idempotent add-column instead of just being in the create table above.
 alter table public.ranking add column if not exists iron_mode boolean not null default false;
 
+-- Ranking sort switched from "maior profundidade" to "maior nível, empate
+-- por CP" — cp is the new tiebreaker column; depth stays in place
+-- unused rather than dropped, so no data is destroyed on installs that
+-- already have rows keyed on it.
+alter table public.ranking add column if not exists cp integer not null default 0;
+
 alter table public.ranking enable row level security;
 
 drop policy if exists "ranking_select_all" on public.ranking;

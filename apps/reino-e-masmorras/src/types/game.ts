@@ -436,7 +436,7 @@ export interface DungeonDef {
 export interface RankEntry {
   name: string;
   classId: ClassId;
-  depth: number;
+  cp: number; // computeCombatPower() at run-end — the ranking's tiebreaker for same-level entries
   level: number;
   date: string;
   ironMode?: boolean; // badges a hardcore run on the leaderboard — the run that ended this character's life, or their best retreat/victory while still alive

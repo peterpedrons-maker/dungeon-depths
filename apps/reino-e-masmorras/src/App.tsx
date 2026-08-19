@@ -8,7 +8,7 @@ import {
   fetchProfile, saveProfile,
 } from './lib/cloudSave';
 import { COSMETICS } from './lib/cosmetics';
-import { effectiveMaxHp } from './lib/combatStats';
+import { effectiveMaxHp, computeCombatPower } from './lib/combatStats';
 import { armBackgroundMusic } from './lib/audio';
 import { TitleScreen } from './components/TitleScreen';
 import { AuthScreen } from './components/AuthScreen';
@@ -133,7 +133,7 @@ export default function App() {
     setScreen('game');
   }
 
-  function handleRunEnd(finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', prestigeGained: number) {
+  function handleRunEnd(finalCharacter: Character, _depthReached: number, endedReason: 'death' | 'retreat' | 'victory', prestigeGained: number) {
     if (prestigeGained > 0) persistProfile({ ...profile, prestige: profile.prestige + prestigeGained });
 
     // Modo Ferro's whole point: death inside a dungeon is permanent, not a
@@ -158,7 +158,7 @@ export default function App() {
     }
 
     const entry: RankEntry = {
-      name: finalCharacter.name, classId: finalCharacter.classId, depth: depthReached,
+      name: finalCharacter.name, classId: finalCharacter.classId, cp: computeCombatPower(finalCharacter),
       level: finalCharacter.level, date: new Date().toISOString().slice(0, 10),
       ironMode: finalCharacter.ironMode,
     };

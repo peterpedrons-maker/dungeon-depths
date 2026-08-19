@@ -13,22 +13,40 @@ import { EquipmentItem, SecondaryStatType } from '../types/game';
 export const MAX_ENHANCE_LEVEL = 10;
 const PCT_PER_LEVEL = 0.10;
 
-// The Forja building's own level gates how far items can be pushed — level
-// 0 (not built yet) locks enhancement entirely, level 5 (maxed) unlocks the
-// full +10, so investing in the building's passive bonuses also buys into
-// the active system.
-export function maxEnhanceLevelForForja(forjaLevel: number): number {
-  return Math.min(MAX_ENHANCE_LEVEL, forjaLevel * 2);
-}
+// Enhancement itself is available from the very first visit to the
+// Ferreiro — no Forja level required. The Forja building's own level used
+// to gate how far an item could be pushed at all; now it just nudges the
+// success chance a little (see successChanceForLevel below), so investing
+// in the building is a bonus, not a prerequisite. Matches BUILDINGS'
+// forja.maxLevel in lib/buildings.ts (kept as a literal here rather than
+// imported, since buildings.ts already imports FROM this file).
+const FORJA_MAX_LEVEL = 5;
 
 // Chance to succeed when attempting to push FROM this enhanceLevel to the
-// next one — early levels are basically free, but risk climbs steeply
-// toward +10 so the gold spent on a late attempt is a real gamble, not just
-// a formality. Index = current enhanceLevel (0-9).
-const SUCCESS_CHANCE = [1.00, 1.00, 0.95, 0.90, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
+// next one — the first five levels are a formality, +5 and +6 are real but
+// still-favorable coinflips-and-better, and from +7 on the odds fall off a
+// cliff so a late attempt is a genuine gamble, down to a near-lottery 0.5%
+// shot at the very last step. Index = current enhanceLevel (0-9).
+const SUCCESS_CHANCE_BASE = [1.00, 1.00, 1.00, 1.00, 1.00, 0.50, 0.20, 0.08, 0.02, 0.005];
 
-export function successChanceForLevel(level: number): number {
-  return SUCCESS_CHANCE[level] ?? 0;
+// The Forja's passive bonus: up to double the base chance at max Forja
+// level (5), scaled linearly in between. Doubling only matters where the
+// base chance is already small (e.g. +9→+10 goes from 0.5% to at most 1%
+// at a maxed Forja) — every level under +7 is already at or near 100% and
+// the multiplier just gets clamped away, so in practice this reads as a
+// subtle, late-game-only bonus rather than a game-wide chance overhaul.
+export function successChanceForLevel(level: number, forjaLevel = 0): number {
+  const base = SUCCESS_CHANCE_BASE[level] ?? 0;
+  const mult = 1 + (Math.min(forjaLevel, FORJA_MAX_LEVEL) / FORJA_MAX_LEVEL);
+  return Math.min(1, base * mult);
+}
+
+// From +7 onward a failed attempt doesn't just waste the gold — it can also
+// knock the item back a level, so pushing into this range is a real risk
+// and not just a slow grind. Chance grows with how deep into that range the
+// item already is. Below +7 a failure only costs gold, never levels.
+export function regressChanceOnFail(level: number): number {
+  return level >= 7 ? 0.15 + (level - 6) * 0.15 : 0;
 }
 
 // Gold cost to push `item` from its current enhanceLevel to the next one —

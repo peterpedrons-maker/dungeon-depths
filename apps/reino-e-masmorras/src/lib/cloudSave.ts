@@ -33,14 +33,15 @@ export async function deleteCloudCharacter(userId: string, slot: number): Promis
 export async function fetchGlobalRanking(): Promise<RankEntry[]> {
   const { data, error } = await supabase
     .from('ranking')
-    .select('name,class_id,depth,level,created_at,iron_mode')
-    .order('depth', { ascending: false })
+    .select('name,class_id,cp,level,created_at,iron_mode')
+    .order('level', { ascending: false })
+    .order('cp', { ascending: false })
     .limit(20);
   if (error || !data) return [];
   return data.map((r) => ({
     name: r.name as string,
     classId: r.class_id as ClassId,
-    depth: r.depth as number,
+    cp: (r.cp as number | null) ?? 0,
     level: r.level as number,
     date: (r.created_at as string).slice(0, 10),
     ironMode: r.iron_mode as boolean,
@@ -49,7 +50,7 @@ export async function fetchGlobalRanking(): Promise<RankEntry[]> {
 
 export async function insertGlobalRankEntry(userId: string, entry: RankEntry): Promise<void> {
   await supabase.from('ranking').insert({
-    user_id: userId, name: entry.name, class_id: entry.classId, depth: entry.depth, level: entry.level,
+    user_id: userId, name: entry.name, class_id: entry.classId, cp: entry.cp, level: entry.level,
     iron_mode: entry.ironMode ?? false,
   });
 }
