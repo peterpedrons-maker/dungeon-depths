@@ -134,3 +134,19 @@ export function compareItemStatRows(newItem: EquipmentItem, equipped: EquipmentI
     .map(({ key, label, isPct }) => ({ label, isPct, equippedValue: b[key] ?? 0, newValue: a[key] ?? 0 }))
     .filter((row) => row.equippedValue !== 0 || row.newValue !== 0);
 }
+
+export interface ItemStatLine { label: string; isPct: boolean; value: number; delta: number }
+
+// `target`'s own stat picture — Path of Exile style: one item's real stats,
+// each line optionally carrying a delta against whatever's equipped in that
+// slot (delta = target's value minus the equipped item's value for that
+// same stat, 0 when there's nothing to compare against or nothing changed).
+// Unlike compareItemStatRows this only lists stats `target` itself actually
+// has — the equipped item's stats that target lacks don't show up at all,
+// since this reads as a single tooltip, not a two-item table.
+export function itemStatLines(target: EquipmentItem, equipped: EquipmentItem | null): ItemStatLine[] {
+  const rows = compareItemStatRows(target, equipped);
+  return rows
+    .filter((r) => r.newValue !== 0)
+    .map((r) => ({ label: r.label, isPct: r.isPct, value: r.newValue, delta: r.newValue - r.equippedValue }));
+}
