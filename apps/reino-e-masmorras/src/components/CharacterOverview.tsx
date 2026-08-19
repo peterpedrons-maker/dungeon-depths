@@ -1,7 +1,7 @@
 import { CSSProperties, useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
-import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
+import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { hexToRgba, rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
 import { compareItemStatRows, itemDisplayName, itemStatLines } from '../lib/enhancement';
@@ -84,6 +84,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const heroImg = heroSprites(ch.classId).idle.image.src;
   const [tab, setTab] = useState<'equipamentos' | 'atributos'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
+  const [attrInfo, setAttrInfo] = useState<AttributeKey | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   // Points the player is staging before committing — lets them see the
   // secondary-stat payoff (atk/def/hp/...) of a spend before it's permanent,
@@ -284,7 +285,16 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                 const staged = pendingAlloc[key];
                 return (
                   <div key={key} className="flex items-center justify-between text-xs gap-1.5">
-                    <span className="text-parchment/60 truncate min-w-0">{meta.label}:</span>
+                    <span className="text-parchment/60 truncate min-w-0 flex items-center gap-1">
+                      {meta.label}:
+                      <button
+                        onClick={() => setAttrInfo(key)}
+                        className="w-3.5 h-3.5 shrink-0 flex items-center justify-center rounded-full bg-black/40 border border-parchment/30 text-parchment/60 text-[9px] font-bold leading-none hover:border-gold/60 hover:text-gold"
+                        aria-label={`O que ${meta.label} faz`}
+                      >
+                        ?
+                      </button>
+                    </span>
                     <span className="flex items-center gap-1.5 shrink-0">
                       <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
                       {staged > 0 && <span className="font-bold tabular-nums text-sky-300">+{staged}</span>}
@@ -352,6 +362,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
               <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" />
               <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" />
+              <PreviewStatRow label="Resistência" from={Math.round(stats.resistPct * 100)} to={Math.round(previewStats.resistPct * 100)} suffix="%" />
             </div>
           </div>
         </div>
@@ -367,7 +378,54 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           onSell={(item) => { onSell(item); setSelected(null); }}
         />
       )}
+
+      {attrInfo && <AttrInfoModal ch={ch} attrKey={attrInfo} onClose={() => setAttrInfo(null)} />}
     </Panel>
+  );
+}
+
+// Powered by describeAttribute() (lib/combatStats.ts), so every number shown
+// here is this specific character's real current contribution — same
+// coefficients/curve/class-weight computeCombatStats() itself uses, not a
+// generic class-agnostic blurb. The weight badge makes visible why the same
+// attribute point is worth more on some classes than others (2.0×/1.5×/1.0×
+// depending on how much that class's baseAttrs prioritizes it) — except for
+// Chance/Qualidade de Item, LUK's two loot-luck lines, which deliberately
+// never get the class weight (see describeAttribute's own comment).
+function AttrInfoModal({ ch, attrKey, onClose }: { ch: Character; attrKey: AttributeKey; onClose: () => void }) {
+  const meta = ATTR_META[attrKey];
+  const { weight, contributions } = describeAttribute(ch, attrKey);
+  const isLuk = attrKey === 'luk';
+  return (
+    <Modal onClose={onClose} bare>
+      <div className="relative w-[min(90vw,300px)] flex flex-col gap-2.5 px-5 py-4 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+        <div className="font-bold text-base" style={{ color: meta.color }}>{meta.label}</div>
+        <div className="flex items-center gap-1.5 text-[11px]">
+          <span className="text-parchment/50">Peso para {CLASSES[ch.classId].name}:</span>
+          <span className="font-bold text-gold">×{weight.toFixed(1)}</span>
+        </div>
+        <div className="space-y-1 border-t border-panelborder/30 pt-2">
+          {contributions.map((c) => (
+            <div key={c.label} className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-parchment/70">{c.label}</span>
+              <span className="font-bold tabular-nums text-parchment">{c.value}</span>
+            </div>
+          ))}
+        </div>
+        {isLuk && (
+          <p className="text-[10px] text-parchment/40 italic border-t border-panelborder/30 pt-2">
+            Chance/Qualidade de Item não recebem o peso de classe — sorte de item é universal, não amarrada à identidade de combate da classe.
+          </p>
+        )}
+      </div>
+    </Modal>
   );
 }
 

@@ -8,17 +8,24 @@ export const BASE_CRIT_DMG_MULT = 1.6;
 // Fixed per-point coefficients converting the 7 primary attributes (class
 // baseAttrs + the player's freely-spent attributePoints, see classes.ts)
 // into the same stat channels equipment and skill-tree secondary stats
-// already feed. STR/DEX feed physical ATK only (weapon swings are always
-// physical); INT feeds MATK only. VIT feeds physical DEF; WIS feeds MDEF
-// ("resistência mágica") plus a small VIT-adjacent toughness contribution.
-// AGI also feeds speedPct — DungeonPanel uses it to shorten the delay
-// between the player's own actions, so a high-AGI build genuinely acts
-// more often than a slow one instead of just dodging/blocking more.
+// already feed. Each attribute owns one clear identity now — Crítico used
+// to leak in from DEX and AGI too (on top of LUK), Bloqueio came from AGI
+// with no equivalent for Evasão/Precisão at all, which made "what does this
+// attribute actually do" a genuinely confusing question. Rebalanced so:
+// STR = ataque físico puro; DEX = ataque físico secundário + Precisão;
+// AGI = Evasão + velocidade; VIT = defesa + vida (+ resistência, small);
+// INT = ataque mágico puro; WIS = defesa mágica + poder de suporte (+
+// resistência, primary); LUK = crítico (now its sole source) + sorte de
+// item. Bloqueio has no attribute source at all anymore — it reads as an
+// equipment/shield thing (see lib/equipment.ts's SHIELD_SCALE) and a
+// skill-tree pick, not an innate stat, which fits it better than AGI ever
+// did.
 const ATTR_COEF = {
   atkPerStr: 1.0, atkPerDex: 0.6,
   matkPerInt: 1.0,
-  critPerDex: 0.003, critPerAgi: 0.0015, critPerLuk: 0.0025,
-  blockPerAgi: 0.004,
+  critPerLuk: 0.007,
+  accuracyPerDex: 0.0025,
+  evasionPerAgi: 0.0025,
   speedPerAgi: 0.008,
   defPerVit: 0.6,
   mdefPerWis: 0.5, mdefPerVit: 0.15,
@@ -26,6 +33,11 @@ const ATTR_COEF = {
   supportPctPerWis: 0.01,
   dropChancePctPerLuk: 0.004,
   itemQualityPctPerLuk: 0.005,
+  // New "resistência" channel (see CombatStats.resistPct) — mirrors mdef's
+  // own wis-primary/vit-secondary split, since it's the same "magical
+  // fortitude + physical toughness" duo resisting status/CC that mdef
+  // already leans on for resisting spell damage.
+  resistPerWis: 0.002, resistPerVit: 0.001,
 };
 
 // The same attribute point is worth more to a class built around that
@@ -102,8 +114,10 @@ export function computeCombatStats(ch: Character): CombatStats {
   const matkFromAttr = curved(attrs.int) * ATTR_COEF.matkPerInt * mult('int');
   const defFromAttr = curved(attrs.vit) * ATTR_COEF.defPerVit * mult('vit');
   const mdefFromAttr = curved(attrs.wis) * ATTR_COEF.mdefPerWis * mult('wis') + curved(attrs.vit) * ATTR_COEF.mdefPerVit * mult('vit');
-  const critFromAttr = attrs.dex * ATTR_COEF.critPerDex * mult('dex') + attrs.agi * ATTR_COEF.critPerAgi * mult('agi') + attrs.luk * ATTR_COEF.critPerLuk * mult('luk');
-  const blockFromAttr = attrs.agi * ATTR_COEF.blockPerAgi * mult('agi');
+  const critFromAttr = attrs.luk * ATTR_COEF.critPerLuk * mult('luk');
+  const accuracyFromAttr = attrs.dex * ATTR_COEF.accuracyPerDex * mult('dex');
+  const evasionFromAttr = attrs.agi * ATTR_COEF.evasionPerAgi * mult('agi');
+  const resistFromAttr = attrs.wis * ATTR_COEF.resistPerWis * mult('wis') + attrs.vit * ATTR_COEF.resistPerVit * mult('vit');
   const hpFromAttr = curved(attrs.vit) * ATTR_COEF.hpPerVit * mult('vit');
   const speedFromAttr = attrs.agi * ATTR_COEF.speedPerAgi * mult('agi');
 
@@ -129,7 +143,9 @@ export function computeCombatStats(ch: Character): CombatStats {
     mdef: Math.round(mdef),
     critChance,
     critDmgMult,
-    blockChance: Math.min(0.6, bonuses.blockChance + itemBlock + blockFromAttr),
+    // Bloqueio no longer has an attribute source at all — see the ATTR_COEF
+    // comment above — so this is purely skill-tree + item affix now.
+    blockChance: Math.min(0.6, bonuses.blockChance + itemBlock),
     maxHpBonus: itemHp + bonuses.maxHpFlat + hpFromAttr,
     lifestealPct: bonuses.lifestealPct,
     thornsPct: bonuses.thornsPct,
@@ -139,10 +155,11 @@ export function computeCombatStats(ch: Character): CombatStats {
     supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis * mult('wis'),
     dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk,
     itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk,
-    evasion: Math.min(0.4, bonuses.evasionPct),
-    accuracy: Math.min(0.4, bonuses.accuracyPct),
+    evasion: Math.min(0.4, bonuses.evasionPct + evasionFromAttr),
+    accuracy: Math.min(0.4, bonuses.accuracyPct + accuracyFromAttr),
     cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct),
     speedPct: Math.min(0.5, speedFromAttr),
+    resistPct: Math.min(0.4, resistFromAttr),
   };
 }
 
@@ -151,6 +168,58 @@ export function computeCombatStats(ch: Character): CombatStats {
 // against "max HP" should use this instead of the raw field.
 export function effectiveMaxHp(ch: Character): number {
   return Math.round(ch.maxHp + computeCombatStats(ch).maxHpBonus);
+}
+
+export interface AttrContribution { label: string; value: string }
+export interface AttrDescription { weight: number; contributions: AttrContribution[] }
+
+// Powers the "?" tooltip on each primary attribute in CharacterOverview's
+// Atributos tab. Reuses the exact same coefficients/curve/class-multiplier
+// computeCombatStats() itself uses, so the numbers shown are this specific
+// character's real current contribution — not a generic, class-agnostic
+// blurb — including the class weight multiplier (classAttrMult) that makes
+// the same point worth more to a class built around that attribute.
+// dropChanceBonusPct/itemQualityBonusPct are the one deliberate exception:
+// they never apply the class weight (see the ATTR_COEF/classAttrMult
+// comments above), so LUK's two loot-luck lines below skip `mult` on purpose.
+export function describeAttribute(ch: Character, key: AttributeKey): AttrDescription {
+  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
+  const mult = classAttrMult(ch.classId, key);
+  const points = attrs[key];
+  const contributions: AttrContribution[] = [];
+  switch (key) {
+    case 'str':
+      contributions.push({ label: 'Ataque Físico', value: `+${Math.round(curved(points) * ATTR_COEF.atkPerStr * mult)}` });
+      break;
+    case 'dex':
+      contributions.push({ label: 'Ataque Físico', value: `+${Math.round(curved(points) * ATTR_COEF.atkPerDex * mult)}` });
+      contributions.push({ label: 'Precisão', value: `+${(points * ATTR_COEF.accuracyPerDex * mult * 100).toFixed(1)}%` });
+      break;
+    case 'agi':
+      contributions.push({ label: 'Evasão', value: `+${(points * ATTR_COEF.evasionPerAgi * mult * 100).toFixed(1)}%` });
+      contributions.push({ label: 'Velocidade', value: `+${(points * ATTR_COEF.speedPerAgi * mult * 100).toFixed(1)}%` });
+      break;
+    case 'vit':
+      contributions.push({ label: 'Defesa Física', value: `+${Math.round(curved(points) * ATTR_COEF.defPerVit * mult)}` });
+      contributions.push({ label: 'Vida Máxima', value: `+${Math.round(curved(points) * ATTR_COEF.hpPerVit * mult)}` });
+      contributions.push({ label: 'Defesa Mágica', value: `+${Math.round(curved(points) * ATTR_COEF.mdefPerVit * mult)}` });
+      contributions.push({ label: 'Resistência', value: `+${(points * ATTR_COEF.resistPerVit * mult * 100).toFixed(1)}%` });
+      break;
+    case 'int':
+      contributions.push({ label: 'Ataque Mágico', value: `+${Math.round(curved(points) * ATTR_COEF.matkPerInt * mult)}` });
+      break;
+    case 'wis':
+      contributions.push({ label: 'Defesa Mágica', value: `+${Math.round(curved(points) * ATTR_COEF.mdefPerWis * mult)}` });
+      contributions.push({ label: 'Poder de Suporte', value: `+${(points * ATTR_COEF.supportPctPerWis * mult * 100).toFixed(1)}%` });
+      contributions.push({ label: 'Resistência', value: `+${(points * ATTR_COEF.resistPerWis * mult * 100).toFixed(1)}%` });
+      break;
+    case 'luk':
+      contributions.push({ label: 'Crítico', value: `+${(points * ATTR_COEF.critPerLuk * mult * 100).toFixed(1)}%` });
+      contributions.push({ label: 'Chance de Item', value: `+${(points * ATTR_COEF.dropChancePctPerLuk * 100).toFixed(1)}%` });
+      contributions.push({ label: 'Qualidade de Item', value: `+${(points * ATTR_COEF.itemQualityPctPerLuk * 100).toFixed(1)}%` });
+      break;
+  }
+  return { weight: mult, contributions };
 }
 
 // A single headline number summarizing "how strong is this character" —
