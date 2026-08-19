@@ -274,6 +274,30 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
   };
 }
 
+// Regular (non-boss) tiers' base hp/atk/def, straight from the TIERS table
+// above, were tuned for a player power curve the game has long since
+// outgrown — a fresh level-1 character in full starter gear was one/two-
+// shotting every regular encounter in a dungeon while taking almost no
+// cumulative damage over an entire clear, then hitting the dungeon boss
+// (tuned as its own, much higher, baseline) as a near-unavoidable wall —
+// simulated at 0% boss win rate through level 3 across every class, then
+// close to 100% by the time gear caught up, with almost no room in between.
+// HP gets the biggest bump (mostly-Comum trash should survive more than
+// one hit) and DEF a moderate one (stops instant one-shots outright); ATK
+// only "um pouco" per the actual bug report, since regular enemies were
+// already lethal to the squishier classes (a Mago died mid-run to trash
+// alone over 90% of simulated runs at level 1) — pushing ATK up hard would
+// have made that worse while barely registering against a tank. Bosses get
+// the opposite treatment: HP/ATK dialed back so an appropriately-leveled
+// attempt is a genuine fight instead of an auto-loss, DEF nudged up so
+// they don't melt the moment gear catches up either.
+const REGULAR_HP_MULT = 1.3;
+const REGULAR_ATK_MULT = 1.05;
+const REGULAR_DEF_MULT = 1.15;
+const BOSS_HP_MULT = 0.85;
+const BOSS_ATK_MULT = 0.75;
+const BOSS_DEF_MULT = 1.15;
+
 // Second steepening of the per-depth growth curve (was 0.075/0.045, itself
 // already a steepening of the original 0.055/0.03) — the player's own power
 // has grown faster than this curve since then (equipment's primary-stat
@@ -282,18 +306,23 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // it. minDepth's own base stats are untouched — only how fast enemies scale
 // past that floor changes.
 function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt'): EnemyInstance {
-  const statMult = mode === 'elite' ? ELITE_STAT_MULT : mode === 'hunt' ? HUNT_STAT_MULT : 1;
-  const defMult = mode === 'elite' ? ELITE_DEF_MULT : mode === 'hunt' ? HUNT_DEF_MULT : 1;
+  const isBossTier = tier.isBoss === true;
+  const hpMult = isBossTier ? BOSS_HP_MULT : REGULAR_HP_MULT;
+  const atkMult = isBossTier ? BOSS_ATK_MULT : REGULAR_ATK_MULT;
+  const baseDefMult = isBossTier ? BOSS_DEF_MULT : REGULAR_DEF_MULT;
+  const modeStatMult = mode === 'elite' ? ELITE_STAT_MULT : mode === 'hunt' ? HUNT_STAT_MULT : 1;
+  const modeDefMult = mode === 'elite' ? ELITE_DEF_MULT : mode === 'hunt' ? HUNT_DEF_MULT : 1;
   const rewardMult = mode === 'elite' ? ELITE_REWARD_MULT : mode === 'hunt' ? HUNT_REWARD_MULT : 1;
-  const growth = (1 + depth * 0.12) * statMult;
-  const defGrowth = (1 + depth * 0.07) * defMult;
-  const hp = Math.round(tier.hp * growth);
+  const hpGrowth = (1 + depth * 0.12) * hpMult * modeStatMult;
+  const atkGrowth = (1 + depth * 0.12) * atkMult * modeStatMult;
+  const defGrowth = (1 + depth * 0.07) * baseDefMult * modeDefMult;
+  const hp = Math.round(tier.hp * hpGrowth);
   return {
     name: mode === 'elite' ? `${tier.name} Veterano` : tier.name,
     shape: tier.shape,
     color: tier.color,
     hp, maxHp: hp,
-    atk: Math.round(tier.atk * growth),
+    atk: Math.round(tier.atk * atkGrowth),
     def: Math.round(tier.def * defGrowth),
     xpReward: Math.round(tier.xp * (1 + depth * 0.08) * rewardMult),
     goldReward: Math.round(tier.gold * (1 + depth * 0.08) * rewardMult),
@@ -301,7 +330,7 @@ function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt
     abilities: tier.abilities,
     phases: tier.phases,
     evasion: tier.evasion,
-    matk: tier.matk !== undefined ? Math.round(tier.matk * growth) : undefined,
+    matk: tier.matk !== undefined ? Math.round(tier.matk * atkGrowth) : undefined,
     mdef: tier.mdef !== undefined ? Math.round(tier.mdef * defGrowth) : undefined,
     atkType: tier.atkType,
     isBoss: tier.isBoss,
