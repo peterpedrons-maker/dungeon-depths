@@ -6,7 +6,7 @@ import {
 import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
-import { generateItem, rarityColor } from '../lib/equipment';
+import { generateItem, rarityColor, sellValue } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -166,17 +166,50 @@ interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; 
 // tryDropEquipment) without resorting to raw HTML in the log.
 interface LogSegment { text: string; color?: string }
 type LogLine = LogSegment[];
+// What one attempt actually produced — folded by GameShell into a running
+// total across a "repetir automaticamente" sequence (see repeatProgress
+// below) and shown on the summary once the sequence ends.
+export interface RunStats {
+  kills: number;
+  goldFromKills: number;
+  xpGained: number;
+  itemsDropped: number;
+  itemsAutoSold: number;
+  goldFromAutoSell: number;
+}
+export const EMPTY_RUN_STATS: RunStats = { kills: 0, goldFromKills: 0, xpGained: 0, itemsDropped: 0, itemsAutoSold: 0, goldFromAutoSell: 0 };
+
 interface Props {
   character: Character;
   dungeon: DungeonDef;
   kingdomBonuses: KingdomBonuses;
   onLiveUpdate: (c: Character) => void;
-  onRunEnd: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory') => void;
+  onRunEnd: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) => void;
   // Same finalization as onRunEnd (heal, reroll stock, record depth) but
   // GameShell reacts by immediately re-entering this same dungeon instead
   // of returning to the kingdom — the "Reiniciar Masmorra" shortcut on the
   // ended screen, for a death or a finished run.
-  onRestart: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory') => void;
+  onRestart: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) => void;
+  // Rarities the player armed "Vender Automático" for on the loadout screen
+  // — a drop of one of these never touches the inventory, it's sold on the
+  // spot. Undefined/empty = off.
+  autoSellRarities?: Rarity[];
+  // "Não Utilizar Poção de HP" from the loadout screen — for a pure farm
+  // run where the player doesn't want potions spent (or auto-triggered)
+  // getting in the way of a clean repeat sequence.
+  noPotions?: boolean;
+  // Set only while a "repetir automaticamente" sequence (GameShell) is
+  // running — this attempt's 1-indexed position in it (repeatCurrent) out of
+  // the sequence's total (repeatTotal). Passed as two primitives rather than
+  // one object so the auto-advance effect below can depend on them directly
+  // without an object literal (rebuilt fresh every GameShell render) making
+  // that effect re-fire on every unrelated re-render while sitting in
+  // 'ended'. Drives the ended screen to auto-advance instead of waiting for
+  // a click (current < total -> next attempt, current >= total -> back to
+  // the kingdom with the sequence's summary), unless the player retreated
+  // or hit "Parar".
+  repeatCurrent?: number;
+  repeatTotal?: number;
 }
 
 type Phase = 'fight' | 'ended';
@@ -257,7 +290,9 @@ function EffectBadgeRow({ badges, align, activeKey, onToggle }: {
   );
 }
 
-export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd, onRestart }: Props) {
+export function DungeonPanel({
+  character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd, onRestart, autoSellRarities, noPotions, repeatCurrent, repeatTotal,
+}: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
   const [enemy, setEnemy] = useState<EnemyInstance>(() => spawnEnemy(dungeon.startDepth, dungeon));
@@ -313,6 +348,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   // time and a mismatch at fire time means "this timer belongs to an enemy
   // that's already gone" — silently drop it instead of acting.
   const enemyGenRef = useRef(0);
+  // This attempt's own tally, reported alongside onRunEnd/onRestart so
+  // GameShell can fold it into a repeat sequence's running summary.
+  const runStatsRef = useRef<RunStats>({ ...EMPTY_RUN_STATS });
 
   // Ability/status engine state — session-only, reset whenever this dungeon
   // run starts (never persisted). enemyStatusRef/playerStatusRef are the DOT
@@ -443,16 +481,34 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     }
     const availableSlots = OFFHAND_KIND[chRef.current.classId] ? DROP_SLOTS : DROP_SLOTS.filter((s) => s !== 'offhand');
     const slot = availableSlots[Math.floor(Math.random() * availableSlots.length)];
-    if (!canFitInInventory(chRef.current.inventory, slot)) {
-      pushLog('Inventário cheio — o item foi perdido.');
-      return;
-    }
     // Um Alvo de Caçada é bem mais difícil que o chefe normal do seu nível
     // (ver HUNT_STAT_MULT em lib/enemies.ts) — a recompensa precisa refletir
     // isso: em vez da rolagem normal de raridade, força pelo menos Raro,
     // com uma chance real de Épico ou até Lendário.
     const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : undefined;
     const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct, forcedRarity);
+    runStatsRef.current.itemsDropped += 1;
+
+    // "Vender Automático" (armado na tela de preparação) — o item nem passa
+    // pelo inventário, vai direto pro ouro. Não compete pelo espaço da
+    // mochila, então o "inventário cheio" abaixo nunca se aplica a ele.
+    if (autoSellRarities?.includes(item.rarity)) {
+      const gold = sellValue(item);
+      updateCh({ ...chRef.current, gold: chRef.current.gold + gold });
+      runStatsRef.current.itemsAutoSold += 1;
+      runStatsRef.current.goldFromAutoSell += gold;
+      pushLog([
+        { text: 'Você encontrou: ' },
+        { text: itemDisplayName(item), color: rarityColor(item.rarity) },
+        { text: ` — vendido automaticamente por ${gold} de ouro.` },
+      ]);
+      return;
+    }
+
+    if (!canFitInInventory(chRef.current.inventory, slot)) {
+      pushLog('Inventário cheio — o item foi perdido.');
+      return;
+    }
     updateCh({ ...chRef.current, inventory: placeInInventory(chRef.current.inventory, item) });
     pushLog([
       { text: 'Você encontrou: ' },
@@ -855,6 +911,9 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           const kills = { ...withXp.kills, [shape]: (withXp.kills?.[shape] ?? 0) + 1 };
           const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
           updateCh(finalChar);
+          runStatsRef.current.kills += 1;
+          runStatsRef.current.goldFromKills += goldGain;
+          runStatsRef.current.xpGained += xpGain;
           pushLog(`${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`);
           if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
           // Elite checkpoint kills always drop something too, same as a
@@ -1054,6 +1113,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function maybeAutoHeal() {
+    if (noPotions) return;
     const c = chRef.current;
     const maxHp = effectiveMaxHp(c);
     if (c.hp / maxHp > c.potionThreshold || c.potions <= 0 || potionCooldownRef.current > 0) return;
@@ -1066,6 +1126,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function drinkPotionManually() {
+    if (noPotions) return;
     const c = chRef.current;
     const maxHp = effectiveMaxHp(c);
     if (phaseRef.current !== 'fight' || c.potions <= 0 || c.hp >= maxHp || potionCooldownRef.current > 0) return;
@@ -1099,14 +1160,14 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
   }
 
   function confirmReturnToHub() {
-    onRunEnd(finalRunCharacter(), depthRef.current, endedReason ?? 'retreat');
+    onRunEnd(finalRunCharacter(), depthRef.current, endedReason ?? 'retreat', runStatsRef.current);
   }
 
   // Same finalization as returning to the hub, just handed to onRestart
   // instead — GameShell reacts by remounting this panel fresh on the same
   // dungeon rather than navigating to the kingdom screen.
   function confirmRestart() {
-    onRestart(finalRunCharacter(), depthRef.current, endedReason ?? 'death');
+    onRestart(finalRunCharacter(), depthRef.current, endedReason ?? 'death', runStatsRef.current);
   }
 
   // Kick off the auto-battle loop once, and make sure no stray timeout
@@ -1119,6 +1180,22 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "Repetir automaticamente" (GameShell) — once this attempt ends, move on
+  // to the next one (or, on the last attempt, back to the kingdom so the
+  // sequence's summary shows up) without waiting for a click. A manual
+  // retreat always breaks the sequence — that's the player choosing to
+  // stop, not an outcome to auto-continue past.
+  useEffect(() => {
+    if (phase !== 'ended' || !repeatTotal || endedReason === 'retreat') return;
+    const isLast = (repeatCurrent ?? 1) >= repeatTotal;
+    const t = setTimeout(() => {
+      if (!mountedRef.current) return;
+      if (isLast) confirmReturnToHub(); else confirmRestart();
+    }, 1600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, endedReason, repeatCurrent, repeatTotal]);
 
   // Combat music swaps in for the kingdom loop for every fight — the battle
   // track for regular encounters, the boss track the instant the guardian
@@ -1316,12 +1393,22 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
                 {endedReason === 'death' && (ironDeath ? 'Modo Ferro não perdoa — seu herói caiu para sempre.' : 'Sua expedição terminou.')}
                 {endedReason === 'retreat' && 'Você retornou em segurança.'}
               </p>
-              <div className="flex gap-2 justify-center flex-wrap">
-                <Button onClick={confirmReturnToHub}>{ironDeath ? 'Aceitar o Destino' : 'Voltar ao Reino'}</Button>
-                {endedReason !== 'retreat' && !ironDeath && (
-                  <Button onClick={confirmRestart}>Reiniciar Masmorra</Button>
-                )}
-              </div>
+              {repeatTotal && endedReason !== 'retreat' ? (
+                <>
+                  <p className="text-xs text-parchment/60 mb-3">
+                    Expedição {repeatCurrent ?? 1}/{repeatTotal} concluída —{' '}
+                    {(repeatCurrent ?? 1) >= repeatTotal ? 'voltando ao Reino' : 'a próxima começa'} automaticamente...
+                  </p>
+                  <Button onClick={confirmReturnToHub}>Parar Sequência</Button>
+                </>
+              ) : (
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <Button onClick={confirmReturnToHub}>{ironDeath ? 'Aceitar o Destino' : 'Voltar ao Reino'}</Button>
+                  {endedReason !== 'retreat' && !ironDeath && (
+                    <Button onClick={confirmRestart}>Reiniciar Masmorra</Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1339,13 +1426,13 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             const potionLeft = potionCooldownRef.current;
             const potionOnCooldown = potionLeft > 0;
             const potionPct = potionOnCooldown ? potionLeft / POTION_COOLDOWN_ROUNDS : 0;
-            const potionDisabled = ch.potions <= 0 || ch.hp >= effMaxHp || potionOnCooldown;
+            const potionDisabled = noPotions || ch.potions <= 0 || ch.hp >= effMaxHp || potionOnCooldown;
             return (
               <button
                 onClick={drinkPotionManually}
                 disabled={potionDisabled}
                 className={`relative w-11 h-11 shrink-0 ${potionDisabled ? 'cursor-default' : 'hover:brightness-110'}`}
-                title={`Poção (${ch.potions})${potionOnCooldown ? ` — recarregando` : ''}`}
+                title={noPotions ? 'Poções desativadas nesta expedição' : `Poção (${ch.potions})${potionOnCooldown ? ` — recarregando` : ''}`}
               >
                 <img
                   src={pocaoIcon}

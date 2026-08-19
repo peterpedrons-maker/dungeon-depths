@@ -166,13 +166,13 @@ export default function App() {
     }
   }
 
-  // Wipes the currently active hero for good and drops back to the
-  // character-select hub — used by the Sidebar's "Abandonar Herói".
+  // Drops back to the character-select hub — used by the Sidebar's
+  // "Abandonar Herói / Novo Jogo". Just navigation: the hero is untouched
+  // and still sitting in their slot when the player comes back. Deleting a
+  // character for real is a separate, explicit action already offered from
+  // the select screen itself (onDelete below), not something this button
+  // should do as a side effect of "I want to go pick someone else."
   function handleAbandon() {
-    if (activeSlot === null) { setScreen('select'); return; }
-    clearCharacter(activeSlot);
-    if (session) deleteCloudCharacter(session.user.id, activeSlot);
-    setSlots((prev) => prev.map((c, i) => (i === activeSlot ? null : c)));
     setActiveSlot(null);
     setScreen('select');
   }
