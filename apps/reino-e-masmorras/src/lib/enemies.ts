@@ -291,10 +291,19 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // the opposite treatment: HP/ATK dialed back so an appropriately-leveled
 // attempt is a genuine fight instead of an auto-loss, DEF nudged up so
 // they don't melt the moment gear catches up either.
-const REGULAR_HP_MULT = 1.3;
+// Second HP pass — even after the CP-anchor difficultyMult tuning (see
+// dungeons.ts), a hits-to-kill check against real anchor characters showed
+// regular enemies dying in 1-2 hits to every class at every checkpoint,
+// bosses in as few as 3 — "instakill de qualquer classe" per the actual bug
+// report. difficultyMult's own relative shape (Região 1 lenient, Região 2
+// tighter, Torre extra dangerous) is already right, so this only pushes the
+// shared HP baseline both curves sit on — not ATK or DEF, which the report
+// didn't flag — up hard enough that even Região 1 trash takes several real
+// hits and a boss is a genuine multi-round fight everywhere, not just late.
+const REGULAR_HP_MULT = 5.5;
 const REGULAR_ATK_MULT = 1.05;
 const REGULAR_DEF_MULT = 1.15;
-const BOSS_HP_MULT = 0.85;
+const BOSS_HP_MULT = 1.5;
 const BOSS_ATK_MULT = 0.75;
 const BOSS_DEF_MULT = 1.15;
 

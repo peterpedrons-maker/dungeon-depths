@@ -66,7 +66,7 @@ export function itemDisplayName(item: EquipmentItem): string {
 // never drift apart on wording.
 export function primaryStatLines(item: EquipmentItem): string[] {
   return [
-    item.dmgBonus > 0 && `+${item.dmgBonus} dano`,
+    item.dmgBonus > 0 && `+${item.dmgBonus} ataque físico`,
     item.defBonus > 0 && `+${item.defBonus} defesa`,
     item.hpBonus > 0 && `+${item.hpBonus} vida máxima`,
     item.matkBonus > 0 && `+${item.matkBonus} ataque mágico`,
@@ -83,7 +83,7 @@ export function secondaryStatLabel(item: EquipmentItem): string {
   if (s.type === 'block') return `+${Math.round(s.value * 100)}% chance de bloqueio`;
   if (s.type === 'def') return `+${s.value} defesa`;
   if (s.type === 'mdef') return `+${s.value} defesa mágica`;
-  if (s.type === 'atk') return `+${s.value} ataque`;
+  if (s.type === 'atk') return `+${s.value} ataque físico`;
   if (s.type === 'matk') return `+${s.value} ataque mágico`;
   return `+${s.value} vida máxima`;
 }
@@ -95,7 +95,7 @@ export function secondaryStatLabel(item: EquipmentItem): string {
 // secondaryStat roll — no item slot has a base block stat of its own.
 type StatKey = typeof PRIMARY_KEYS[number] | 'blockBonus';
 const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
-  { key: 'dmgBonus', label: 'Dano', isPct: false },
+  { key: 'dmgBonus', label: 'Ataque Físico', isPct: false },
   { key: 'defBonus', label: 'Defesa', isPct: false },
   { key: 'hpBonus', label: 'Vida Máxima', isPct: false },
   { key: 'matkBonus', label: 'Ataque Mágico', isPct: false },

@@ -84,7 +84,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Apenas horrores e criaturas ancestrais habitam suas escadarias. Perigosa, mas generosa em experiência.',
     startDepth: 12, levelReq: 12, special: true, enemyPool: ['horror', 'dragon'],
     xpMult: 1.6, dmgTakenMult: 1.25, dropMult: 1.5,
-    bossDepth: 23, boss: 'horrorAncient', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 0.48,
+    bossDepth: 23, boss: 'horrorAncient', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 0.75,
   },
   {
     id: 'minas', name: 'Minas Abandonadas',
