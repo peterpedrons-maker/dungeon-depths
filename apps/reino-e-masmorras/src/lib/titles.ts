@@ -32,7 +32,7 @@ export const TITLES: TitleDef[] = [
   { id: 'exterminador', name: 'Exterminador', desc: 'Derrote 300 inimigos, no total.', condition: (c) => totalKills(c) >= 300 },
   { id: 'cacador-incansavel', name: 'Caçador Incansável', desc: 'Derrote 1.500 inimigos, no total.', condition: (c) => totalKills(c) >= 1500 },
 
-  { id: 'terror-trolls', name: 'Terror dos Trolls', desc: 'Derrote 30 trolls.', condition: (c) => (c.kills?.troll ?? 0) >= 30 },
+  { id: 'terror-ursos', name: 'Terror dos Ursos', desc: 'Derrote 30 ursos amaldiçoados.', condition: (c) => (c.kills?.cursedBear ?? 0) >= 30 },
   { id: 'flagelo-dragoes', name: 'Flagelo dos Dragões', desc: 'Derrote 20 dragões.', condition: (c) => (c.kills?.dragon ?? 0) >= 20 },
 
   { id: 'rico', name: 'Rico como um Rei', desc: 'Acumule 5.000 de ouro.', condition: (c) => c.gold >= 5000 },

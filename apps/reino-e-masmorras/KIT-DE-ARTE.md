@@ -1393,13 +1393,32 @@ Matriarca Negra, facing left: massive black widow spider queen, far bigger than 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
-### Chefes da Região 2 — sem roster próprio, reaproveitam os inimigos genéricos (Inimigos I e II) já cobertos acima
+### Região 2 — cada masmorra tem seu próprio roster, igual à Região 1
 
-A Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) não tem roster de inimigos regulares próprio — todas as 7 masmorras sorteiam entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc (prompt "Inimigos I") e Troll/Aberração das Sombras/Dragão Jovem (prompt "Inimigos II"), já cobertos mais acima nesta seção. Nenhum inimigo regular novo precisa de prompt.
+As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1.
 
-O que falta são os **5 chefes** dessas 7 masmorras (dois shapes de chefe são reaproveitados em duas masmorras cada — Cacique Troll em Floresta e Ruínas Élficas, Senhor da Guerra Orc em Minas e Arena de Sangue) — hoje eles usam o mesmo sprite do inimigo genérico comum (ex. o chefe Senhor da Guerra Orc usa o mesmo desenho do Orc Guerreiro comum), sem arte própria de chefe como a Região 1 já tem. Os 5 prompts abaixo dão a cada um uma versão maior e mais elaborada do seu shape base, no mesmo padrão dos chefes da Região 1.
+**Covil dos Dragões é a única exceção do lado do chefe**: o chefe dela é "Dragão Jovem" — o mesmo dragão já coberto no prompt "Inimigos II" mais acima, cujo sprite já está integrado ao jogo (`dragao.webp`). Não precisa de prompt novo — dragões mais fortes (adultos, anciões, lendários) ficam guardados para masmorras de regiões futuras.
 
-### Chefe — Torre Amaldiçoada: Aberração Ancestral
+### Inimigos VIII — Torre Amaldiçoada: Gárgula, Espectro do Bibliotecário, Cavaleiro Selado, Olho Vigilante e Sombra Rastejante
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Torre Amaldiçoada (5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Gárgula Desperta (facing left): a stone gargoyle come to life, dark gray weathered stone hide, small leathery wings, sharp claws, crouched perched stance.
+2) Espectro do Bibliotecário (facing left): a translucent ghostly spectral scholar in tattered robes, pale blue-white glow, clutching a floating spectral tome, hollow mournful face.
+3) Cavaleiro Selado (facing left): an animated suit of ancient cursed armor, dark corroded plate, faint purple runic glow between the joints, wielding a heavy sword, no visible face inside the helm.
+4) Olho Vigilante (facing left): a small floating magical eyeball wrapped in thin arcane tendrils, faint purple glow, eerie and unsettling.
+5) Sombra Rastejante (facing left): a low creeping mass of living shadow, faint glowing pale eyes, clawed shadow-limbs dragging across the ground.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Torre Amaldiçoada: Arquimago Caído
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Torre Amaldiçoada, spawna na profundidade 23 com barra de vida própria no topo da tela de batalha
 
 ```
@@ -1409,13 +1428,32 @@ IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never fa
 
 One large boss creature filling most of the frame, calm static threatening pose.
 
-Aberração Ancestral, facing left: a much larger and older amorphous eldritch horror than a common shadow creature, a churning mass of dark purple-black smoke and shadow far denser and taller, many more glowing pale eyes scattered across its form, long clawed shadow-limbs reaching outward, faint ancient glowing runes/glyphs floating suspended around its body, an aura of dread far greater than a regular horror.
+Arquimago Caído, facing left: an undead archmage bound to the tower forever, tattered once-regal purple-and-gold robes over a gaunt withered frame, a broken ornate staff crackling with dark arcane energy, faint glowing runes swirling around its hands, hollow glowing eyes, an aura of forbidden magic.
 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
-### Chefe — Minas Abandonadas / Arena de Sangue: Senhor da Guerra Orc
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Minas Abandonadas (profundidade 24) e reaproveitado como boss da Arena de Sangue (profundidade 34), ambos com barra de vida própria no topo da tela de batalha
+### Inimigos IX — Minas Abandonadas: Coveiro Amaldiçoado, Golem de Minério, Kobold Saqueador, Enxame de Morcegos e Espírito do Metano
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Minas Abandonadas (5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Coveiro Amaldiçoado (facing left): an undead miner in ragged work clothes, decaying gray skin, gripping a rusty pickaxe, a dented mining helmet with a faint glowing lamp.
+2) Golem de Minério (facing left): a blocky golem built from raw dark ore and rock chunks, glowing faint orange veins of mineral running through its body, heavy stone fists.
+3) Kobold Saqueador (facing left): a small scrawny reptilian kobold in scrappy leather, gripping a rusty dagger, sneaky crouched posture, beady eyes.
+4) Enxame de Morcegos (facing left): a tight swarm of small dark cave bats flying together as one mass, leathery wings, beady red eyes.
+5) Espírito do Metano (facing left): a small floating ball of flickering sickly greenish gas/flame, faint toxic glow, wispy trailing fumes.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Minas Abandonadas: Titã de Minério
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Minas Abandonadas, spawna na profundidade 24 com barra de vida própria no topo da tela de batalha
 
 ```
 IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
@@ -1424,13 +1462,32 @@ IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never fa
 
 One large boss creature filling most of the frame, calm static threatening pose.
 
-Senhor da Guerra Orc, facing left: a massive battle-scarred green-skinned orc warlord, much bigger and bulkier than a common orc warrior, wielding two heavy war axes (one in each hand), thick spiked dark plate armor decorated with trophy skulls and bones, tribal war paint across its face, oversized tusks, deep battle scars, a fierce commanding presence.
+Titã de Minério, facing left: a massive humanoid golem built from raw ore and jagged rock, far bigger than a common ore golem, glowing molten-orange veins running through cracks across its body, huge crushing fists, an imposing hulking presence.
 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
-### Chefe — Floresta Amaldiçoada / Ruínas Élficas: Cacique Troll
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Floresta Amaldiçoada (profundidade 27) e reaproveitado como boss das Ruínas Élficas (profundidade 31), ambos com barra de vida própria no topo da tela de batalha
+### Inimigos X — Floresta Amaldiçoada: Ent Corrompido, Lobo Espectral, Fada Sombria, Urso Amaldiçoado e Trepadeira Estranguladora
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Floresta Amaldiçoada (5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Ent Corrompido (facing left): a corrupted tree-like creature, twisted dark bark skin, glowing sickly-red cracks across its trunk, gnarled branch-limbs, hunched menacing stance.
+2) Lobo Espectral (facing left): a translucent ghostly wolf, pale blue-white spectral fur, glowing eyes, mid-stride snarling.
+3) Fada Sombria (facing left): a small corrupted fairy with tattered dark wings, faint sickly-purple glow, a mischievous menacing expression.
+4) Urso Amaldiçoado (facing left): a large corrupted bear, matted dark fur with faint cursed purple markings, bared teeth, aggressive stance on all fours.
+5) Trepadeira Estranguladora (facing left): a carnivorous vine creature coiled and ready to strike, dark green tendrils with thorny barbs, a toothy plant-maw.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Floresta Amaldiçoada: Coração da Floresta
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Floresta Amaldiçoada, spawna na profundidade 27 com barra de vida própria no topo da tela de batalha
 
 ```
 IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
@@ -1439,24 +1496,47 @@ IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never fa
 
 One large boss creature filling most of the frame, calm static threatening pose.
 
-Cacique Troll, facing left: a huge hunched brown-gray troll chieftain, noticeably bigger and thicker-hided than a common cave troll, wearing a crude bone-and-antler headdress, tribal warpaint markings across its warty skin, gripping a massive spiked stone club in each hand, more battle scars than a regular troll, low imposing ape-like stance.
+Coração da Floresta, facing left: a massive ancient tree spirit, thick gnarled bark body pulsing with a faint glowing red-orange core visible through cracks, many twisted branch-limbs, glowing eyes deep within a hollow in its trunk, an ancient dreadful presence.
 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
-### Chefe — Covil dos Dragões: Dragão Ancião
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil dos Dragões, spawna na profundidade 29 com barra de vida própria no topo da tela de batalha
+### Inimigos XI — Covil dos Dragões: Filhote de Dragão, Wyvern Selvagem, Guardião Escamado, Cultista Dracônico e Serpente de Fogo
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil dos Dragões (5 inimigos regulares — o chefe é o Dragão Jovem já coberto no prompt "Inimigos II", sem prompt novo)
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
-One large boss creature filling most of the frame, calm static threatening pose.
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose. These are all smaller/weaker than a full young dragon — dragonets and dragon-kin, not adult dragons.
 
-Dragão Ancião, facing left: a much larger and older bipedal dragon than a young dragon, fully grown wings spread wide instead of folded, deep dark-crimson overlapping scales weathered by age, longer curved horns, battle-worn hide with old scars, bared teeth, a commanding ancient presence.
+1) Filhote de Dragão (facing left): a small baby dragon (dragonet), stubby half-grown wings, bright orange-red scales, an inquisitive but feisty stance.
+2) Wyvern Selvagem (facing left): a wild wyvern, leaner and smaller than a true dragon, dark green scales, sharp claws, wings half-spread.
+3) Guardião Escamado (facing left): a reptilian humanoid guardian in scaled hide armor, teal-green scales, gripping a spear, alert protective stance.
+4) Cultista Dracônico (facing left): a human cultist in dark red hooded robes decorated with draconic symbols, chanting pose, faint reddish magical glow around its hands.
+5) Serpente de Fogo (facing left): a long coiled serpent with fiery orange-red scales, faint heat shimmer, reared up ready to strike.
 
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XII — Necrópole Esquecida: Ceifador Sombrio, Corvo da Morte, Carrasco Ossudo, Pranteador Fantasma e Verme Cadavérico
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Esquecida (5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Ceifador Sombrio (facing left): a dark hooded reaper-like undead, tattered black robes, gripping a curved scythe, no visible face beneath the hood.
+2) Corvo da Morte (facing left): a large undead crow, patchy decaying black feathers, glowing faint red eyes, wings half-spread.
+3) Carrasco Ossudo (facing left): a hulking skeletal executioner, thick bone frame, wielding a heavy bone axe, a crude bone mask over its skull face.
+4) Pranteador Fantasma (facing left): a translucent wailing ghost in tattered burial shrouds, pale blue-white glow, an anguished mournful expression.
+5) Verme Cadavérico (facing left): a large pale undead grave worm, segmented rotting flesh-toned body, small toothy maw, low crawling posture.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
 ### Chefe — Necrópole Esquecida: Lorde Esqueleto
@@ -1470,6 +1550,74 @@ IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never fa
 One large boss creature filling most of the frame, calm static threatening pose.
 
 Lorde Esqueleto, facing left: a tall noble undead skeleton lord, more elaborate than a common skeleton warrior, wearing a tattered regal dark-purple cloak over ornate ancient armor, a jagged crown-like circlet, gripping a ceremonial ornate blade, brighter ghostly pale-blue glow in its hollow eye sockets, a commanding regal-but-decayed presence.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XIII — Ruínas Élficas: Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas, Espectro Élfico e Golem de Cristal
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Élficas (5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Guardião Élfico Corrompido (facing left): an animated elven statue-warrior overgrown with vines, cracked pale stone body, faint corrupted green glow in the cracks, gripping an ancient elven blade.
+2) Vinha Sussurrante (facing left): a magical animated vine creature coiled and reaching, pale glowing leaves, thin whip-like tendrils.
+3) Fera das Ruínas (facing left): a feral overgrown wildcat-like beast, matted fur streaked with moss, sharp claws, low stalking stance.
+4) Espectro Élfico (facing left): a translucent ghostly elf in tattered once-elegant robes, pale green-white glow, a sorrowful ancient expression.
+5) Golem de Cristal (facing left): a humanoid golem built from glowing pale-blue elven crystal shards, faint inner light, heavy crystalline fists.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Ruínas Élficas: Guardiã Ancestral
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Élficas, spawna na profundidade 31 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Guardiã Ancestral, facing left: a majestic and imposing elven guardian statue brought to life, elegant weathered stone-and-gold armor overgrown with glowing vines, wielding an ornate ancient elven greatsword, faint glowing green-gold runes across its body, a solemn ancient presence.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XIV — Arena de Sangue: Gladiador Amaldiçoado, Fera de Arena, Executor Mascarado, Domador de Bestas e Campeão Caído
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Arena de Sangue (5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Gladiador Amaldiçoado (facing left): a battle-scarred human gladiator in dark cursed leather armor, gripping a notched sword and a small round shield, grim aggressive stance.
+2) Fera de Arena (facing left): a caged monstrous beast, muscular dark-furred body, chains hanging broken from a spiked collar, snarling.
+3) Executor Mascarado (facing left): a hulking masked executioner in dark leather, an iron featureless mask, gripping a massive two-handed axe.
+4) Domador de Bestas (facing left): a wiry human beast tamer in worn leather, cracking a long barbed whip, sharp calculating expression.
+5) Campeão Caído (facing left): a ghostly translucent fallen gladiator champion, faint pale glow, tattered once-glorious armor, gripping a ghostly blade.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Arena de Sangue: Grão-Campeão da Arena
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Arena de Sangue, spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Grão-Campeão da Arena, facing left: a massive undefeated gladiator champion, heavily muscled, ornate battle-worn dark-red-and-gold armor, a legendary notched greatsword, a horned champion's helm, countless old battle scars, a fierce commanding presence.
 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
