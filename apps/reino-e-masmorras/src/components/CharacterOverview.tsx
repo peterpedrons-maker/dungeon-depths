@@ -4,7 +4,7 @@ import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
-import { compareItemStats, enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
+import { compareItemStatRows, enhancedItem, itemDisplayName, primaryStatLines, secondaryStatLabel } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
@@ -54,7 +54,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
   const heroImg = heroSprites(ch.classId).idle.image.src;
-  const [tab, setTab] = useState<'equipamentos' | 'inventario'>('equipamentos');
+  const [tab, setTab] = useState<'equipamentos' | 'atributos'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   // Points the player is staging before committing — lets them see the
@@ -128,7 +128,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
           screen no longer repeats them. */}
       <div className="flex gap-2 mb-3">
         <MainTab active={tab === 'equipamentos'} onClick={() => setTab('equipamentos')}>Equipamentos</MainTab>
-        <MainTab active={tab === 'inventario'} onClick={() => setTab('inventario')}>Inventário</MainTab>
+        <MainTab active={tab === 'atributos'} onClick={() => setTab('atributos')}>Atributos</MainTab>
       </div>
 
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
@@ -175,156 +175,11 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             </div>
           </div>
 
-          {/* Stats box: attributes on the left, physical/magical power on the right. */}
-          <div className="rounded border border-black/50 bg-black/25 p-3 mb-4 grid grid-cols-2 gap-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-            <div className="space-y-3 pr-3 border-r border-panelborder/40">
-              <div className="space-y-1">
-                {ATTR_ORDER.map((key) => {
-                  const meta = ATTR_META[key];
-                  const staged = pendingAlloc[key];
-                  return (
-                    <div key={key} className="flex items-center justify-between text-xs gap-1.5">
-                      <span className="text-parchment/60 truncate min-w-0">{meta.label}:</span>
-                      <span className="flex items-center gap-1.5 shrink-0">
-                        <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
-                        {staged > 0 && <span className="font-bold tabular-nums text-sky-300">+{staged}</span>}
-                        {staged > 0 && (
-                          <button
-                            onClick={() => stagePoint(key, -1)}
-                            className="w-4 h-4 flex items-center justify-center rounded-full bg-black/40 border border-parchment/30 text-parchment/70 text-[10px] font-bold leading-none hover:border-parchment/60"
-                            aria-label={`-1 ${meta.label}`}
-                          >
-                            −
-                          </button>
-                        )}
-                        {ch.attributePoints - pendingTotal > 0 && (
-                          <button
-                            onClick={() => stagePoint(key, 1)}
-                            className="w-4 h-4 flex items-center justify-center rounded-full bg-sky-500/30 border border-sky-400/60 text-sky-300 text-[10px] font-bold leading-none hover:bg-sky-500/50"
-                            aria-label={`+1 ${meta.label}`}
-                          >
-                            +
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              {pendingTotal > 0 && (
-                <div className="rounded border border-sky-400/40 bg-sky-500/10 p-2 space-y-1">
-                  <div className="text-[10px] uppercase tracking-wide text-sky-300 font-bold mb-0.5">Prévia com {pendingTotal} ponto{pendingTotal > 1 ? 's' : ''}</div>
-                  <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} />
-                  <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} />
-                  <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} />
-                  <PreviewStatRow label="Ataque Mágico" from={stats.matk} to={previewStats.matk} />
-                  <PreviewStatRow label="Defesa Mágica" from={stats.mdef} to={previewStats.mdef} />
-                  <PreviewStatRow label="Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" />
-                  <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
-                  <div className="flex gap-2 pt-1">
-                    <SmallButton onClick={confirmAlloc}>Confirmar</SmallButton>
-                    <SmallButton onClick={cancelAlloc} variant="ghost">Cancelar</SmallButton>
-                  </div>
-                </div>
-              )}
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Redução de Recarga</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.cooldownReductionPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Roubo de Vida</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.lifestealPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Espinhos</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.thornsPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Cura ao Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.onCritHealPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Dano vs. Envenenado</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Dano vs. Queimando</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Poder de Suporte</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.supportPowerPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Chance de Item</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Qualidade de Item</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Vida</div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Vida Máxima</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(effectiveMaxHp(ch))}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Físico</div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Ataque</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.atk)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Defesa</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.def)}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Mágico</div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Ataque</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.matk)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Defesa</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.mdef)}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Chance de Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critChance * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Dano Crítico</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critDmgMult * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Bloqueio</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.blockChance * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Evasão</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.evasion * 100)}%</span>
-                </div>
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <span className="text-parchment/60 truncate min-w-0">Precisão</span>
-                  <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.accuracy * 100)}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
+          {/* Inventory lives right below the paperdoll now — equip/unequip
+              and "what's in the bag" used to be two separate tabs, but in
+              practice the player almost always wants both in view at once
+              (comparing a bag item against what's worn), so they're merged
+              into one tab. Secondary stats moved to their own tab below. */}
           <div className="flex items-center justify-between mb-2 gap-3">
             <span className="text-[10px] text-parchment/40 shrink-0">
               {ch.inventory.length} item{ch.inventory.length !== 1 ? 's' : ''}
@@ -388,6 +243,155 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             </div>
           )}
         </>
+      ) : (
+        /* Attribute allocation + secondary stats — its own tab now that the
+           inventory moved in with the paperdoll above. */
+        <div className="rounded border border-black/50 bg-black/25 p-3 mb-4 grid grid-cols-2 gap-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+          <div className="space-y-3 pr-3 border-r border-panelborder/40">
+            <div className="space-y-1">
+              {ATTR_ORDER.map((key) => {
+                const meta = ATTR_META[key];
+                const staged = pendingAlloc[key];
+                return (
+                  <div key={key} className="flex items-center justify-between text-xs gap-1.5">
+                    <span className="text-parchment/60 truncate min-w-0">{meta.label}:</span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-bold tabular-nums" style={{ color: meta.color }}>{attrs[key]}</span>
+                      {staged > 0 && <span className="font-bold tabular-nums text-sky-300">+{staged}</span>}
+                      {staged > 0 && (
+                        <button
+                          onClick={() => stagePoint(key, -1)}
+                          className="w-4 h-4 flex items-center justify-center rounded-full bg-black/40 border border-parchment/30 text-parchment/70 text-[10px] font-bold leading-none hover:border-parchment/60"
+                          aria-label={`-1 ${meta.label}`}
+                        >
+                          −
+                        </button>
+                      )}
+                      {ch.attributePoints - pendingTotal > 0 && (
+                        <button
+                          onClick={() => stagePoint(key, 1)}
+                          className="w-4 h-4 flex items-center justify-center rounded-full bg-sky-500/30 border border-sky-400/60 text-sky-300 text-[10px] font-bold leading-none hover:bg-sky-500/50"
+                          aria-label={`+1 ${meta.label}`}
+                        >
+                          +
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            {pendingTotal > 0 && (
+              <div className="rounded border border-sky-400/40 bg-sky-500/10 p-2 space-y-1">
+                <div className="text-[10px] uppercase tracking-wide text-sky-300 font-bold mb-0.5">Prévia com {pendingTotal} ponto{pendingTotal > 1 ? 's' : ''}</div>
+                <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} />
+                <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} />
+                <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} />
+                <PreviewStatRow label="Ataque Mágico" from={stats.matk} to={previewStats.matk} />
+                <PreviewStatRow label="Defesa Mágica" from={stats.mdef} to={previewStats.mdef} />
+                <PreviewStatRow label="Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" />
+                <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
+                <div className="flex gap-2 pt-1">
+                  <SmallButton onClick={confirmAlloc}>Confirmar</SmallButton>
+                  <SmallButton onClick={cancelAlloc} variant="ghost">Cancelar</SmallButton>
+                </div>
+              </div>
+            )}
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Redução de Recarga</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.cooldownReductionPct * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Roubo de Vida</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.lifestealPct * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Espinhos</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.thornsPct * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Cura ao Crítico</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.onCritHealPct * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Dano vs. Envenenado</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Dano vs. Queimando</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Poder de Suporte</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.supportPowerPct * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Chance de Item</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Qualidade de Item</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Vida</div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Vida Máxima</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(effectiveMaxHp(ch))}</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Físico</div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Ataque</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.atk)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Defesa</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.def)}</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Mágico</div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Ataque</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.matk)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Defesa</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.mdef)}</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Chance de Crítico</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critChance * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Dano Crítico</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critDmgMult * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Bloqueio</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.blockChance * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Evasão</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.evasion * 100)}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-1.5 text-xs">
+                <span className="text-parchment/60 truncate min-w-0">Precisão</span>
+                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.accuracy * 100)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {selected && (
@@ -425,6 +429,22 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
   }
 
   const item = selected.item as EquipmentItem;
+
+  // An inventory item gets the full side-by-side compare view; an equipped
+  // slot (nothing to compare it against but itself) keeps the simple
+  // single-card tooltip.
+  if (selected.kind === 'inventory') {
+    return (
+      <ItemCompareModal
+        item={item}
+        equipped={equippedInSlot}
+        onClose={onClose}
+        onEquip={onEquip}
+        onSell={onSell}
+      />
+    );
+  }
+
   const color = rarityColor(item.rarity);
   const boosted = enhancedItem(item);
   const primaryLines = primaryStatLines(boosted);
@@ -456,45 +476,106 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
           {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
         </div>
 
-        {selected.kind === 'inventory' && (
-          <ItemCompare newItem={item} equipped={equippedInSlot} />
-        )}
-
         <div className="flex gap-2 mt-2">
-          {selected.kind === 'equipped' ? (
-            <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
-          ) : (
-            <>
-              <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
-              <SmallButton onClick={() => onSell(item)} variant="ghost">Vender ({sellValue(item)} ouro)</SmallButton>
-            </>
-          )}
+          <SmallButton onClick={() => onUnequip(item.slot)}>Desequipar</SmallButton>
         </div>
       </div>
     </Modal>
   );
 }
 
-// Diablo/PoE-style compare block under an inventory item's stats — what it
-// gives more or less than whatever's already equipped in that slot, so the
-// player doesn't have to tab back and forth or do the math themselves.
-function ItemCompare({ newItem, equipped }: { newItem: EquipmentItem; equipped: EquipmentItem | null }) {
-  const lines = compareItemStats(newItem, equipped);
-  if (lines.length === 0) return null;
+// A bag item's own small card, reused for both sides of the compare view —
+// null means "nothing equipped in this slot", rendered as an empty frame
+// instead of skipping the column, so the two sides always line up.
+function ItemCompareCard({ item, label }: { item: EquipmentItem | null; label: string }) {
+  const color = item ? rarityColor(item.rarity) : undefined;
   return (
-    <div className="w-full rounded border border-panelborder/40 bg-black/25 px-2.5 py-1.5 mt-0.5">
-      <div className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold mb-0.5">
-        {equipped ? 'Comparado ao equipado' : 'Slot vazio — tudo é ganho'}
+    <div className="flex flex-col items-center gap-1 min-w-0">
+      <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
+      <div className="w-16 h-16 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+        {item ? <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} /> : <span className="text-parchment/30 text-[10px]">Vazio</span>}
       </div>
-      {lines.map((l) => (
-        <div key={l.label} className="flex items-center justify-between text-xs">
-          <span className="text-parchment/60">{l.label}</span>
-          <span className={`font-bold tabular-nums ${l.delta > 0 ? 'text-green-400' : 'text-crimson'}`}>
-            {l.delta > 0 ? '+' : ''}{l.isPct ? `${Math.round(l.delta * 100)}%` : Math.round(l.delta)}
-          </span>
-        </div>
-      ))}
+      <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
+        {item ? itemDisplayName(item) : '—'}
+      </span>
     </div>
+  );
+}
+
+function statRowValueColor(mine: number, other: number): string {
+  if (mine === other) return 'text-parchment/70';
+  return mine > other ? 'text-green-400' : 'text-crimson';
+}
+function fmtStatValue(v: number, isPct: boolean): string {
+  return isPct ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
+}
+
+// Diablo/PoE-style side-by-side compare: the equipped item and the bag item
+// as two full cards, with every stat that differs between them rendered
+// once per side and colored toward whichever side wins it — the player sees
+// both full pictures at a glance instead of hunting for a delta list.
+function ItemCompareModal({ item, equipped, onClose, onEquip, onSell }: {
+  item: EquipmentItem;
+  equipped: EquipmentItem | null;
+  onClose: () => void;
+  onEquip: (item: EquipmentItem) => void;
+  onSell: (item: EquipmentItem) => void;
+}) {
+  const color = rarityColor(item.rarity);
+  const boosted = enhancedItem(item);
+  const primaryLines = primaryStatLines(boosted);
+  const rows = compareItemStatRows(item, equipped);
+
+  return (
+    <Modal onClose={onClose} bare>
+      <div className="relative w-[min(90vw,360px)] flex flex-col items-center gap-3 px-4 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+
+        <div className="font-bold text-base text-center" style={{ color }}>{itemDisplayName(item)}</div>
+
+        <div className="grid grid-cols-2 gap-4 w-full">
+          <ItemCompareCard item={equipped} label="Equipado" />
+          <ItemCompareCard item={item} label="Novo" />
+        </div>
+
+        {rows.length > 0 ? (
+          <div className="w-full rounded border border-panelborder/40 bg-black/25 px-2.5 py-1.5">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 text-[9px] uppercase tracking-wide text-parchment/40 font-bold mb-1">
+              <span />
+              <span className="text-right">Equipado</span>
+              <span className="text-right">Novo</span>
+            </div>
+            {rows.map((r) => (
+              <div key={r.label} className="grid grid-cols-[1fr_auto_auto] gap-x-2 items-center text-xs py-0.5">
+                <span className="text-parchment/60 truncate">{r.label}</span>
+                <span className={`font-bold tabular-nums text-right ${statRowValueColor(r.equippedValue, r.newValue)}`}>
+                  {fmtStatValue(r.equippedValue, r.isPct)}
+                </span>
+                <span className={`font-bold tabular-nums text-right ${statRowValueColor(r.newValue, r.equippedValue)}`}>
+                  {fmtStatValue(r.newValue, r.isPct)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-0.5">
+            {primaryLines.map((line) => <div key={line} className="text-sm text-parchment/90">{line}</div>)}
+            {item.secondaryStat && <div className="text-sm text-sky-300">{secondaryStatLabel(item)}</div>}
+          </div>
+        )}
+
+        <div className="flex gap-2 mt-1">
+          <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
+          <SmallButton onClick={() => onSell(item)} variant="ghost">Vender ({sellValue(item)} ouro)</SmallButton>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
