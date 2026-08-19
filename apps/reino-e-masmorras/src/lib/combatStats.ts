@@ -154,18 +154,31 @@ export function effectiveMaxHp(ch: Character): number {
 }
 
 // A single headline number summarizing "how strong is this character" —
-// deliberately attribute-only (no equipment), so it reads purely as
-// character progression the way level does, just with more nuance. Each
-// attribute counts for a class exactly as much as that class already leans
-// on it: reusing baseAttrs (5 primary / 2-3 secondary / 1 floor, see
-// classAttrMult above) as the per-point weight means the same 10 points of
-// STR are worth far more Combat Power on a Guerreiro (baseAttrs.str = 5)
-// than on a Mago (baseAttrs.str = 1) — matching how little a mage's
-// swordarm actually contributes to its damage output.
+// pulled straight from computeCombatStats(), so every source that feeds
+// real combat numbers (class/level base, equipment, skill-tree bonuses, and
+// attribute investment) counts toward the score, and swapping in a better
+// weapon or armor piece visibly moves it. An earlier version was
+// deliberately attribute-only and ignored equipment entirely, which read as
+// broken once gear started mattering as much as it now does. Percentage
+// stats (crit chance, evasion, ...) are 0-1 fractions internally — ×100
+// puts them on the same order of magnitude as flat stats like atk instead
+// of rounding away to almost nothing.
 export function computeCombatPower(ch: Character): number {
-  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
-  const base = CLASSES[ch.classId].baseAttrs;
-  let power = 0;
-  for (const key of Object.keys(attrs) as AttributeKey[]) power += attrs[key] * (base[key] ?? 1);
+  const stats = computeCombatStats(ch);
+  const maxHp = effectiveMaxHp(ch);
+  const power =
+    stats.atk * 2 +
+    stats.matk * 2 +
+    stats.def * 1.5 +
+    stats.mdef * 1.5 +
+    maxHp * 0.4 +
+    stats.critChance * 100 * 1.5 +
+    (stats.critDmgMult - 1) * 100 * 0.8 +
+    stats.blockChance * 100 * 1.2 +
+    stats.evasion * 100 * 1.2 +
+    stats.accuracy * 100 * 0.8 +
+    stats.cooldownReductionPct * 100 * 1.2 +
+    stats.lifestealPct * 100 +
+    ch.level * 4;
   return Math.round(power);
 }

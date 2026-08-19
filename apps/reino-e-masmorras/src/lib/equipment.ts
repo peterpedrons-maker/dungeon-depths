@@ -190,3 +190,14 @@ export function rarityName(r: Rarity): string {
 export function rarityMult(r: Rarity): number {
   return RARITIES.find((x) => x.id === r)?.mult ?? 1;
 }
+
+// `#rrggbb` -> `rgba(r,g,b,alpha)` — used to tint an item slot's background
+// by its own rarity color at a low alpha, instead of every slot sharing one
+// fixed neutral blue regardless of what's in it.
+export function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
