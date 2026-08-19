@@ -1,10 +1,10 @@
-import { EquipmentItem } from '../types/game';
+import { EquipmentItem, SecondaryStatType } from '../types/game';
 
 // Forja upgrade system (v1 — deliberately simple, gets more complex later):
 // spend gold at the Forja to push an item's enhanceLevel up, which scales
 // only its *Bonus fields (dmgBonus/defBonus/hpBonus/matkBonus/mdefBonus/
-// critChanceBonus/critDmgBonus) by a flat % per level. secondaryStat (the
-// rolled affix) is untouched — enhancement is about the item's own base
+// critChanceBonus/critDmgBonus) by a flat % per level. secondaryStats (the
+// rolled affixes) are untouched — enhancement is about the item's own base
 // stat, not its bonus roll. The stored item's *Bonus fields always stay the
 // original rolled values; enhancedItem() below is the one place the +%
 // actually gets applied, so every consumer (combat, item modals, sell
@@ -76,24 +76,42 @@ export function primaryStatLines(item: EquipmentItem): string[] {
   ].filter((l): l is string => !!l);
 }
 
-export function secondaryStatLabel(item: EquipmentItem): string {
-  const s = item.secondaryStat!;
-  if (s.type === 'crit') return `+${Math.round(s.value * 100)}% chance de crítico`;
-  if (s.type === 'critDmg') return `+${Math.round(s.value * 100)}% dano crítico`;
-  if (s.type === 'block') return `+${Math.round(s.value * 100)}% chance de bloqueio`;
-  if (s.type === 'def') return `+${s.value} defesa`;
-  if (s.type === 'mdef') return `+${s.value} defesa mágica`;
-  if (s.type === 'atk') return `+${s.value} ataque físico`;
-  if (s.type === 'matk') return `+${s.value} ataque mágico`;
-  return `+${s.value} vida máxima`;
+function affixLabel(type: SecondaryStatType, value: number): string {
+  switch (type) {
+    case 'crit': return `+${Math.round(value * 100)}% chance de crítico`;
+    case 'critDmg': return `+${Math.round(value * 100)}% dano crítico`;
+    case 'block': return `+${Math.round(value * 100)}% chance de bloqueio`;
+    case 'def': return `+${value} defesa`;
+    case 'mdef': return `+${value} defesa mágica`;
+    case 'atk': return `+${value} ataque físico`;
+    case 'matk': return `+${value} ataque mágico`;
+    case 'hp': return `+${value} vida máxima`;
+    case 'evasion': return `+${Math.round(value * 100)}% evasão`;
+    case 'accuracy': return `+${Math.round(value * 100)}% precisão`;
+    case 'tenacity': return `+${Math.round(value * 100)}% tenacidade`;
+    case 'speed': return `+${Math.round(value * 100)}% velocidade`;
+    case 'lifesteal': return `+${Math.round(value * 100)}% roubo de vida`;
+    case 'thorns': return `+${Math.round(value * 100)}% espinhos`;
+    case 'cdr': return `+${Math.round(value * 100)}% redução de recarga`;
+    case 'itemFind': return `+${Math.round(value * 100)}% chance de item`;
+    case 'itemQuality': return `+${Math.round(value * 100)}% qualidade de item`;
+  }
 }
 
-// One shared key space for both the 7 flat *Bonus fields and the rolled
-// secondaryStat affix, so an item's full stat picture (base roll + affix)
-// can be compared against another item's picture stat-for-stat instead of
-// comparing two different shapes. blockBonus only ever comes from a
-// secondaryStat roll — no item slot has a base block stat of its own.
-type StatKey = typeof PRIMARY_KEYS[number] | 'blockBonus';
+// An item can now roll several affixes (see AFFIX_COUNT_RANGE in
+// lib/equipment.ts) — one line per rolled affix, in roll order.
+export function secondaryStatLabels(item: EquipmentItem): string[] {
+  return item.secondaryStats.map((s) => affixLabel(s.type, s.value));
+}
+
+// One shared label space for both the 7 flat *Bonus fields and every
+// possible secondaryStats affix, so an item's full stat picture (base roll +
+// every affix) can be compared against another item's picture stat-for-stat
+// instead of comparing two different shapes. The 10 affix-only stats (block
+// plus the 9 added alongside it — see SecondaryStatType) have no primary
+// *Bonus field of their own, so they key straight off their own affix type
+// name instead of an EquipmentItem field.
+type StatKey = typeof PRIMARY_KEYS[number] | 'block' | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'cdr' | 'itemFind' | 'itemQuality';
 const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'dmgBonus', label: 'Ataque Físico', isPct: false },
   { key: 'defBonus', label: 'Defesa', isPct: false },
@@ -102,19 +120,34 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'mdefBonus', label: 'Defesa Mágica', isPct: false },
   { key: 'critChanceBonus', label: 'Chance de Crítico', isPct: true },
   { key: 'critDmgBonus', label: 'Dano Crítico', isPct: true },
-  { key: 'blockBonus', label: 'Chance de Bloqueio', isPct: true },
+  { key: 'block', label: 'Chance de Bloqueio', isPct: true },
+  { key: 'evasion', label: 'Evasão', isPct: true },
+  { key: 'accuracy', label: 'Precisão', isPct: true },
+  { key: 'tenacity', label: 'Tenacidade', isPct: true },
+  { key: 'speed', label: 'Velocidade', isPct: true },
+  { key: 'lifesteal', label: 'Roubo de Vida', isPct: true },
+  { key: 'thorns', label: 'Espinhos', isPct: true },
+  { key: 'cdr', label: 'Redução de Recarga', isPct: true },
+  { key: 'itemFind', label: 'Chance de Item', isPct: true },
+  { key: 'itemQuality', label: 'Qualidade de Item', isPct: true },
 ];
-const SECONDARY_TO_STAT_KEY: Record<NonNullable<EquipmentItem['secondaryStat']>['type'], StatKey> = {
-  crit: 'critChanceBonus', critDmg: 'critDmgBonus', block: 'blockBonus',
+// crit/critDmg/def/mdef/atk/matk/hp affixes fold into the same totals line
+// as their matching primary field (a weapon's secondary "atk" affix stacks
+// with its primary dmgBonus into one "Ataque Físico" number) — every other
+// affix type has no primary twin and keys off its own name.
+const SECONDARY_TO_STAT_KEY: Record<SecondaryStatType, StatKey> = {
+  crit: 'critChanceBonus', critDmg: 'critDmgBonus', block: 'block',
   def: 'defBonus', mdef: 'mdefBonus', atk: 'dmgBonus', matk: 'matkBonus', hp: 'hpBonus',
+  evasion: 'evasion', accuracy: 'accuracy', tenacity: 'tenacity', speed: 'speed',
+  lifesteal: 'lifesteal', thorns: 'thorns', cdr: 'cdr', itemFind: 'itemFind', itemQuality: 'itemQuality',
 };
 
 function statTotals(item: EquipmentItem): Record<StatKey, number> {
-  const totals = { blockBonus: 0 } as Record<StatKey, number>;
+  const totals = {} as Record<StatKey, number>;
   for (const key of PRIMARY_KEYS) totals[key] = item[key];
-  if (item.secondaryStat) {
-    const key = SECONDARY_TO_STAT_KEY[item.secondaryStat.type];
-    totals[key] = (totals[key] ?? 0) + item.secondaryStat.value;
+  for (const s of item.secondaryStats) {
+    const key = SECONDARY_TO_STAT_KEY[s.type];
+    totals[key] = (totals[key] ?? 0) + s.value;
   }
   return totals;
 }

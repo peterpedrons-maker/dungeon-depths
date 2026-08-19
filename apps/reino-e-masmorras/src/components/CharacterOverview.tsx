@@ -362,7 +362,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
               <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" />
               <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" />
-              <PreviewStatRow label="Resistência" from={Math.round(stats.resistPct * 100)} to={Math.round(previewStats.resistPct * 100)} suffix="%" />
+              <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" />
             </div>
           </div>
         </div>

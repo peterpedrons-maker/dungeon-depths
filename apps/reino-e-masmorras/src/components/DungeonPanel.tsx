@@ -598,14 +598,15 @@ export function DungeonPanel({
     return playerImmuneRoundsRef.current > 0;
   }
 
-  // resistPct (see CombatStats.resistPct, WIS/VIT-derived) rolls a chance to
-  // fully resist a new status effect or CC an enemy is trying to land — a
-  // permanent, always-on defense distinct from playerImmune()'s temporary
-  // Immunity buff. Deliberately NOT checked by applyEnemyHp's BossPhase.cc
-  // above: a boss's scripted phase-transition CC stays guaranteed by design,
-  // only the regular per-hit status/CC rolls below can be resisted.
-  function playerResists(defStats: { resistPct: number }): boolean {
-    return Math.random() < defStats.resistPct;
+  // tenacityPct (see CombatStats.tenacityPct, WIS/VIT-derived + item affix)
+  // rolls a chance to fully resist a new status effect or CC an enemy is
+  // trying to land — a permanent, always-on defense distinct from
+  // playerImmune()'s temporary Immunity buff. Deliberately NOT checked by
+  // applyEnemyHp's BossPhase.cc above: a boss's scripted phase-transition CC
+  // stays guaranteed by design, only the regular per-hit status/CC rolls
+  // below can be resisted.
+  function playerResists(defStats: { tenacityPct: number }): boolean {
+    return Math.random() < defStats.tenacityPct;
   }
 
   // True while an ability's own persistent effect is still up — lets
