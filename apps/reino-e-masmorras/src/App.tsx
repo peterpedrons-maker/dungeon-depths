@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Character, ProfileState, RankEntry, Screen } from './types/game';
-import { loadCharacter, saveCharacter, clearCharacter, loadProfile, saveProfileLocal, MAX_CHARACTER_SLOTS } from './lib/storage';
+import { loadCharacter, saveCharacter, clearCharacter, loadProfile, saveProfileLocal, migrateCharacter, MAX_CHARACTER_SLOTS } from './lib/storage';
 import { supabase } from './lib/supabaseClient';
 import {
   fetchCloudCharacterSlots, saveCloudCharacter, deleteCloudCharacter, fetchGlobalRanking, insertGlobalRankEntry,
@@ -60,7 +60,8 @@ export default function App() {
       if (cancelled) return;
       const next: (Character | null)[] = [];
       for (let slot = 0; slot < MAX_CHARACTER_SLOTS; slot++) {
-        let c = cloudMap.get(slot) ?? null;
+        const cloudRaw = cloudMap.get(slot);
+        let c = cloudRaw ? migrateCharacter(cloudRaw) : null;
         if (c) {
           saveCharacter(slot, c);
         } else {

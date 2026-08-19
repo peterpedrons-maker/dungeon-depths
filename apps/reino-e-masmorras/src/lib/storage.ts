@@ -48,12 +48,16 @@ function migrateItem(item: any): EquipmentItem {
 
 // Saves from before the class/skill/equipment rework may be missing fields
 // (or reference a class that no longer exists) — back-fill or discard rather
-// than let the app crash on an old localStorage save.
-export function loadCharacter(slot: number): Character | null {
+// than let the app crash on an old save. Shared by loadCharacter (localStorage)
+// and App.tsx's cloud-fetch effect (Supabase) — a character can reach this
+// app from either source, and a row saved to the cloud before some later
+// schema change (e.g. the multi-affix rework) is just as "old" as a stale
+// localStorage entry, so it needs the exact same back-fill, not a narrower
+// one. Input is raw parsed JSON/DB data, hence `any`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function migrateCharacter(raw: any): Character | null {
   try {
-    const raw = localStorage.getItem(charKey(slot)) ?? (slot === 0 ? localStorage.getItem(LEGACY_CHAR_KEY) : null);
-    if (!raw) return null;
-    const c = JSON.parse(raw) as Character;
+    const c = raw as Character;
     const classId = migrateClassId(c.classId as unknown as string) as ClassId;
     if (!(classId in CLASSES)) return null;
     const eq = c.equipment ?? ({} as Character['equipment']);
@@ -130,6 +134,12 @@ export function loadCharacter(slot: number): Character | null {
       merchantStock,
     };
   } catch { return null; }
+}
+
+export function loadCharacter(slot: number): Character | null {
+  const raw = localStorage.getItem(charKey(slot)) ?? (slot === 0 ? localStorage.getItem(LEGACY_CHAR_KEY) : null);
+  if (!raw) return null;
+  try { return migrateCharacter(JSON.parse(raw)); } catch { return null; }
 }
 
 // Old saves invested gold levels into "guilda" (XP bonus), a building the
