@@ -267,7 +267,7 @@ export interface Character {
 }
 
 export type EnemyShape =
-  | 'goblin' | 'wolf' | 'skeleton' | 'orc' | 'troll' | 'dragon' | 'horror'
+  | 'goblin' | 'wolf' | 'skeleton' | 'dragon'
   // Região 1 — Ruínas Superficiais (skeleton reused above)
   | 'ruinBat' | 'acidSlime' | 'ruinBandit' | 'carrionCrow' | 'boneKing'
   // Região 1 — Caverna dos Goblins (goblin reused above)
@@ -278,8 +278,20 @@ export type EnemyShape =
   | 'poisonToad' | 'swampViper' | 'crawlingBog' | 'cursedWisp' | 'rottingGator' | 'mudMother'
   // Região 1 — Covil de Aranhas
   | 'huntingSpider' | 'venomSpider' | 'giantSpider' | 'spiderlingSwarm' | 'darkWeaver' | 'blackMatriarch'
-  // Bosses reaproveitados (Região 2+, sem arte própria ainda — placeholder no sprite do shape base)
-  | 'horrorAncient' | 'orcWarlord' | 'trollChieftain' | 'dragonElder' | 'skeletonLord'
+  // Região 2 — Torre Amaldiçoada
+  | 'gargoyle' | 'spectralMage' | 'cursedKnight' | 'watchingEye' | 'crawlingShadow' | 'fallenArchmage'
+  // Região 2 — Minas Abandonadas
+  | 'cursedMiner' | 'oreGolem' | 'koboldRaider' | 'batSwarm' | 'gasWisp' | 'oreTitan'
+  // Região 2 — Floresta Amaldiçoada
+  | 'corruptedEnt' | 'ghostWolf' | 'darkFairy' | 'cursedBear' | 'stranglingVine' | 'forestHeart'
+  // Região 2 — Covil dos Dragões (dragon acima, agora bossificado como Dragão Jovem, é o chefe)
+  | 'dragonHatchling' | 'wildWyvern' | 'scaledGuardian' | 'draconicCultist' | 'fireSerpent'
+  // Região 2 — Necrópole Esquecida (skeletonLord abaixo continua o chefe, já combinava)
+  | 'darkReaper' | 'deathCrow' | 'boneExecutioner' | 'wailingGhost' | 'graveWorm' | 'skeletonLord'
+  // Região 2 — Ruínas Élficas
+  | 'corruptedGuardian' | 'whisperingVine' | 'ruinBeast' | 'elvenWraith' | 'crystalGolem' | 'ancestralGuardian'
+  // Região 2 — Arena de Sangue
+  | 'cursedGladiator' | 'arenaBeast' | 'maskedExecutioner' | 'beastTamer' | 'fallenChampion' | 'grandChampion'
   // Alvos de Caçada (lib/hunts.ts) — superchefes opcionais e reaproveitáveis, bem mais fortes que o chefe normal do mesmo nível
   | 'boneTyrant' | 'swampLeviathan' | 'infernalWyrm';
 

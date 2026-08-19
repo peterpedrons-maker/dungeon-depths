@@ -49,7 +49,10 @@ export interface Sprite {
 // bosses already read as large, so the fiction's size gap stays intact.
 const HERO_DISPLAY_H = 165;
 const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
-  goblin: 120, wolf: 95, skeleton: 132, orc: 144, troll: 163, dragon: 150, horror: 144,
+  goblin: 120, wolf: 95, skeleton: 132,
+  // Dragão Jovem is now Covil dos Dragões' own boss (see lib/enemies.ts) —
+  // bumped up from its old regular-enemy height accordingly.
+  dragon: 180,
 
   // Região 1 — Ruínas Superficiais
   ruinBat: 88, acidSlime: 90, ruinBandit: 121, carrionCrow: 88, boneKing: 173,
@@ -62,8 +65,20 @@ const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
   // Região 1 — Covil de Aranhas
   huntingSpider: 113, venomSpider: 106, giantSpider: 138, spiderlingSwarm: 81, darkWeaver: 132, blackMatriarch: 184,
 
-  // Bosses da Região 2+ reaproveitando o shape base — maiores que o normal
-  horrorAncient: 163, orcWarlord: 163, trollChieftain: 184, dragonElder: 168, skeletonLord: 152,
+  // Região 2 — Torre Amaldiçoada
+  gargoyle: 140, spectralMage: 118, cursedKnight: 150, watchingEye: 85, crawlingShadow: 120, fallenArchmage: 175,
+  // Região 2 — Minas Abandonadas
+  cursedMiner: 120, oreGolem: 148, koboldRaider: 100, batSwarm: 82, gasWisp: 90, oreTitan: 178,
+  // Região 2 — Floresta Amaldiçoada
+  corruptedEnt: 155, ghostWolf: 100, darkFairy: 85, cursedBear: 145, stranglingVine: 110, forestHeart: 182,
+  // Região 2 — Covil dos Dragões (dragon acima é o chefe)
+  dragonHatchling: 110, wildWyvern: 130, scaledGuardian: 140, draconicCultist: 118, fireSerpent: 100,
+  // Região 2 — Necrópole Esquecida (skeletonLord já existia)
+  darkReaper: 135, deathCrow: 90, boneExecutioner: 150, wailingGhost: 120, graveWorm: 95, skeletonLord: 152,
+  // Região 2 — Ruínas Élficas
+  corruptedGuardian: 150, whisperingVine: 115, ruinBeast: 130, elvenWraith: 118, crystalGolem: 148, ancestralGuardian: 184,
+  // Região 2 — Arena de Sangue
+  cursedGladiator: 122, arenaBeast: 140, maskedExecutioner: 125, beastTamer: 118, fallenChampion: 130, grandChampion: 186,
 
   // Alvos de Caçada (lib/hunts.ts) — maiores ainda, para reforçar visualmente
   // que são o desafio mais duro disponível.
@@ -88,16 +103,18 @@ const HERO_SOURCES: Record<ClassId, string> = {
   feiticeiro: feiticeiroUrl, bruxo: bruxoUrl, druida: druidaUrl, necromante: necromanteUrl,
 };
 // Ruínas Superficiais and Caverna dos Goblins now have their own dedicated
-// art (regulars + boss). The remaining Região 1 shapes (Cripta, Pântano,
-// Aranhas) still don't — each temporarily reuses the sprite of an existing
-// shape from the same dungeon (or the closest thematic fit) until real art
-// is generated and integrated, same placeholder pattern already used for
-// classes without their own sprite. Região 2+ bosses intentionally and
-// permanently reuse their own base shape's sprite (a boss there literally
-// IS a bigger version of that same creature), not a placeholder.
+// art (regulars + boss). Every other dungeon's roster (the remaining Região
+// 1 shapes, and all of Região 2's bespoke Região-2 rosters below) still
+// doesn't — each shape temporarily reuses the sprite of an existing,
+// already-integrated shape with the closest thematic fit (a stone golem
+// borrows the troll's bulky silhouette, a cultist borrows the ruin bandit's
+// robed-human one, ...) until real art is generated and integrated, same
+// placeholder pattern already used for classes without their own sprite.
+// skeletonLord (Necrópole's boss) and dragon (Covil dos Dragões' boss,
+// "Dragão Jovem") are the two exceptions with real dedicated art already —
+// they're existing shapes wearing their own actual sprite, not a stand-in.
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
-  goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, orc: orcUrl,
-  troll: trollUrl, dragon: dragaoUrl, horror: aberracaoUrl,
+  goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, dragon: dragaoUrl,
 
   // Região 1 — Ruínas Superficiais
   ruinBat: ruinBatUrl, acidSlime: acidSlimeUrl, ruinBandit: ruinBanditUrl, carrionCrow: carrionCrowUrl, boneKing: boneKingUrl,
@@ -105,13 +122,25 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblinShaman: goblinShamanUrl, goblinThrower: goblinThrowerUrl, goblinFanatic: goblinFanaticUrl, goblinWolfRider: goblinWolfRiderUrl, grash: grashUrl,
   // Região 1 — Cripta do Tesouro (placeholder: esqueleto, tema morto-vivo)
   zombieLooter: esqueletoUrl, stoneGuardian: esqueletoUrl, greedyWraith: esqueletoUrl, wrappedMummy: esqueletoUrl, mimicChest: esqueletoUrl, cursedCustodian: esqueletoUrl,
-  // Região 1 — Pântano Podre (placeholder: orc)
-  poisonToad: orcUrl, swampViper: orcUrl, crawlingBog: orcUrl, cursedWisp: orcUrl, rottingGator: orcUrl, mudMother: orcUrl,
+  // Região 1 — Pântano Podre (placeholder: orc placeholder retirado — troll cobre o tema de fera grande; demais usam esqueleto/aberração)
+  poisonToad: trollUrl, swampViper: trollUrl, crawlingBog: trollUrl, cursedWisp: trollUrl, rottingGator: trollUrl, mudMother: trollUrl,
   // Região 1 — Covil de Aranhas (placeholder: troll)
   huntingSpider: trollUrl, venomSpider: trollUrl, giantSpider: trollUrl, spiderlingSwarm: trollUrl, darkWeaver: trollUrl, blackMatriarch: trollUrl,
 
-  // Bosses da Região 2+ — reaproveitam o sprite do próprio shape base
-  horrorAncient: aberracaoUrl, orcWarlord: orcUrl, trollChieftain: trollUrl, dragonElder: dragaoUrl, skeletonLord: esqueletoUrl,
+  // Região 2 — Torre Amaldiçoada (placeholder: troll pro corpo-a-corpo pesado, aberração pro arcano/fantasmagórico, esqueleto pro cavaleiro blindado)
+  gargoyle: trollUrl, spectralMage: aberracaoUrl, cursedKnight: boneKingUrl, watchingEye: aberracaoUrl, crawlingShadow: aberracaoUrl, fallenArchmage: aberracaoUrl,
+  // Região 2 — Minas Abandonadas (placeholder: esqueleto/orc/goblin/morcego/limo conforme o tema de cada um)
+  cursedMiner: esqueletoUrl, oreGolem: orcUrl, koboldRaider: goblinUrl, batSwarm: ruinBatUrl, gasWisp: acidSlimeUrl, oreTitan: orcUrl,
+  // Região 2 — Floresta Amaldiçoada (placeholder: troll pros grandões, lobo/aberração pros menores)
+  corruptedEnt: trollUrl, ghostWolf: loboUrl, darkFairy: aberracaoUrl, cursedBear: trollUrl, stranglingVine: acidSlimeUrl, forestHeart: trollUrl,
+  // Região 2 — Covil dos Dragões (placeholder: dragão pros dracônicos, bandido pro cultista humano)
+  dragonHatchling: dragaoUrl, wildWyvern: dragaoUrl, scaledGuardian: dragaoUrl, draconicCultist: ruinBanditUrl, fireSerpent: dragaoUrl,
+  // Região 2 — Necrópole Esquecida (placeholder: esqueleto/corvo/aberração/limo conforme o tema; skeletonLord já tem arte própria)
+  darkReaper: boneKingUrl, deathCrow: carrionCrowUrl, boneExecutioner: boneKingUrl, wailingGhost: aberracaoUrl, graveWorm: acidSlimeUrl, skeletonLord: esqueletoUrl,
+  // Região 2 — Ruínas Élficas (placeholder: troll pros grandões, lobo pra fera, aberração pro espectro)
+  corruptedGuardian: trollUrl, whisperingVine: acidSlimeUrl, ruinBeast: loboUrl, elvenWraith: aberracaoUrl, crystalGolem: trollUrl, ancestralGuardian: trollUrl,
+  // Região 2 — Arena de Sangue (placeholder: bandido pros lutadores humanos, troll pra fera, esqueleto morto-vivo pro campeão caído)
+  cursedGladiator: ruinBanditUrl, arenaBeast: trollUrl, maskedExecutioner: ruinBanditUrl, beastTamer: ruinBanditUrl, fallenChampion: boneKingUrl, grandChampion: boneKingUrl,
 
   // Alvos de Caçada (lib/hunts.ts) — placeholder no shape temático mais
   // próximo (mesmo padrão acima) até ganharem arte própria.
