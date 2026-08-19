@@ -22,6 +22,7 @@ import {
   playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
 } from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
+import pocaoIcon from '../assets/pocao.webp';
 import iconVeneno from '../assets/effects/effect-veneno.webp';
 import iconQueimadura from '../assets/effects/effect-queimadura.webp';
 import iconSangramento from '../assets/effects/effect-sangramento.webp';
@@ -825,6 +826,10 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
           const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
           const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
           const withXp = grantXp(chRef.current, xpGain);
+          // grantXp() heals to its own raw maxHp field on every level gained,
+          // which undercounts equipment/attribute/building bonuses — bump it
+          // up to the real cap so a level-up genuinely tops the player off.
+          if (withXp.level > prevLevel) withXp.hp = effectiveMaxHp(withXp);
           const shape = enemyRef.current.shape;
           const kills = { ...withXp.kills, [shape]: (withXp.kills?.[shape] ?? 0) + 1 };
           const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
@@ -1301,8 +1306,41 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         </p>
       )}
 
-      {phase === 'fight' && equippedAbilities().length > 0 && (
+      {phase === 'fight' && (
         <div className="flex gap-2 mt-3">
+          {(() => {
+            const potionLeft = potionCooldownRef.current;
+            const potionOnCooldown = potionLeft > 0;
+            const potionPct = potionOnCooldown ? potionLeft / POTION_COOLDOWN_ROUNDS : 0;
+            const potionDisabled = ch.potions <= 0 || ch.hp >= effMaxHp || potionOnCooldown;
+            return (
+              <button
+                onClick={drinkPotionManually}
+                disabled={potionDisabled}
+                className={`relative w-11 h-11 shrink-0 ${potionDisabled ? 'cursor-default' : 'hover:brightness-110'}`}
+                title={`Poção (${ch.potions})${potionOnCooldown ? ` — recarregando` : ''}`}
+              >
+                <img
+                  src={pocaoIcon}
+                  alt=""
+                  className={`absolute inset-[16%] w-[68%] h-[68%] object-contain pointer-events-none select-none ${potionDisabled ? 'opacity-40 grayscale' : ''}`}
+                  draggable={false}
+                />
+                <div
+                  className="absolute inset-0 rounded-full pointer-events-none"
+                  style={{
+                    background: 'conic-gradient(rgba(0,0,0,0.75) var(--cd-pct), transparent var(--cd-pct))',
+                    ['--cd-pct' as string]: `${potionPct * 100}%`,
+                    transition: potionPct === 1 ? 'none' : `--cd-pct ${ATTACK_INTERVAL}ms linear`,
+                  } as CSSProperties}
+                />
+                <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-gold text-ink rounded-full px-1 min-w-[16px] text-center border border-black/40 shadow pointer-events-none">
+                  {ch.potions}
+                </span>
+              </button>
+            );
+          })()}
           {equippedAbilities().map((ab) => {
             const left = cooldownsRef.current[ab.id] ?? 0;
             const onCooldown = left > 0;
@@ -1364,9 +1402,6 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
         <div className="mt-4 flex gap-2 flex-wrap">
           <Button onClick={togglePause}>
             {paused ? 'Retomar Combate' : 'Pausar'}
-          </Button>
-          <Button onClick={drinkPotionManually} disabled={ch.potions <= 0 || ch.hp >= effMaxHp || potionCooldownRef.current > 0}>
-            Poção ({ch.potions}){potionCooldownRef.current > 0 ? ` — ${potionCooldownRef.current}` : ''}
           </Button>
           <Button onClick={retreatSafely}>Retornar ao Reino</Button>
         </div>

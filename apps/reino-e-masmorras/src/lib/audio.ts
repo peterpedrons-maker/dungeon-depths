@@ -24,20 +24,31 @@ function getMusicEl(): HTMLAudioElement {
 }
 
 // Browsers refuse to autoplay audio before any user gesture, so the loop
-// can't just start on mount — this arms a one-time listener that starts it
-// on the very first tap/click/keypress anywhere in the app (the title
-// screen's own "toque para pular" already trains the player to do this).
+// can't just start on mount — this arms a listener that starts it on the
+// first tap/click/keypress anywhere in the app (the title screen's own
+// "toque para pular" already trains the player to do this).
+//
+// musicStarted only flips to true once play() actually resolves — a first
+// gesture that's too early (audio not yet decodable, or the browser not
+// yet convinced it counts as activation) used to mark the music "started"
+// regardless and permanently give up retrying, leaving the kingdom loop
+// silent until something else (returning from a dungeon) called play()
+// again on its own. Listeners now stay armed across a failed attempt so
+// the very next gesture gets another shot.
 export function armBackgroundMusic() {
   if (musicStarted) return;
   const start = () => {
     if (musicStarted) return;
-    musicStarted = true;
-    getMusicEl().play().catch(() => {});
-    window.removeEventListener('pointerdown', start);
-    window.removeEventListener('keydown', start);
+    getMusicEl().play().then(() => {
+      musicStarted = true;
+      window.removeEventListener('pointerdown', start);
+      window.removeEventListener('keydown', start);
+      window.removeEventListener('click', start);
+    }).catch(() => {});
   };
   window.addEventListener('pointerdown', start);
   window.addEventListener('keydown', start);
+  window.addEventListener('click', start);
 }
 
 export function pauseBackgroundMusic() {

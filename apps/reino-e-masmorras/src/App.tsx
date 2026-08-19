@@ -8,6 +8,7 @@ import {
   fetchProfile, saveProfile,
 } from './lib/cloudSave';
 import { COSMETICS } from './lib/cosmetics';
+import { effectiveMaxHp } from './lib/combatStats';
 import { armBackgroundMusic } from './lib/audio';
 import { TitleScreen } from './components/TitleScreen';
 import { AuthScreen } from './components/AuthScreen';
@@ -147,7 +148,11 @@ export default function App() {
       }
       setScreen('select');
     } else {
-      const healed = { ...finalCharacter, hp: finalCharacter.maxHp };
+      // effectiveMaxHp, not the raw maxHp field — equipment, attribute
+      // points and Kingdom buildings can push the real cap above the
+      // character's bare class/level base, so healing to the raw field
+      // left the player visibly short of a full bar back in the Reino.
+      const healed = { ...finalCharacter, hp: effectiveMaxHp(finalCharacter) };
       persist(healed);
     }
 
