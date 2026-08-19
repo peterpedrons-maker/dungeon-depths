@@ -77,6 +77,12 @@ alter table public.ranking add column if not exists iron_mode boolean not null d
 -- already have rows keyed on it.
 alter table public.ranking add column if not exists cp integer not null default 0;
 
+-- depth was `not null` with no default, but insertGlobalRankEntry no
+-- longer sends it (cp replaced it) — left as-is, that NOT NULL made every
+-- insert fail silently (the app never checked the insert's error). Column
+-- stays for old rows' sake, just no longer required going forward.
+alter table public.ranking alter column depth drop not null;
+
 alter table public.ranking enable row level security;
 
 drop policy if exists "ranking_select_all" on public.ranking;

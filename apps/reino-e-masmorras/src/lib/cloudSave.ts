@@ -49,10 +49,16 @@ export async function fetchGlobalRanking(): Promise<RankEntry[]> {
 }
 
 export async function insertGlobalRankEntry(userId: string, entry: RankEntry): Promise<void> {
-  await supabase.from('ranking').insert({
+  const { error } = await supabase.from('ranking').insert({
     user_id: userId, name: entry.name, class_id: entry.classId, cp: entry.cp, level: entry.level,
     iron_mode: entry.ironMode ?? false,
   });
+  // Never surfaced to the player (a failed leaderboard write shouldn't
+  // interrupt the run-end flow), but logged instead of swallowed outright —
+  // a silent failure here once meant a NOT NULL constraint on an unrelated
+  // column (depth) quietly dropped every insert with no visible symptom
+  // beyond "the ranking never fills in".
+  if (error) console.error('insertGlobalRankEntry failed', error);
 }
 
 // Loja de Prestígio — uma linha por conta (não por slot de personagem), ver
