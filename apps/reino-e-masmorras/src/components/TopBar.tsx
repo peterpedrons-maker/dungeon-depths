@@ -3,6 +3,7 @@ import { CLASSES, MAX_LEVEL } from '../lib/classes';
 import { effectiveMaxHp } from '../lib/combatStats';
 import { TITLES } from '../lib/titles';
 import { fmt } from '../lib/format';
+import { CLASS_ICON } from '../lib/classIcons';
 import moedaIcon from '../assets/moeda.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
@@ -30,9 +31,11 @@ export function TopBar({ character: ch, accentColor, onMenuClick }: { character:
         </button>
 
         <span
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full shrink-0 ring-2 ring-gold/60"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full shrink-0 ring-2 ring-gold/60 overflow-hidden flex items-center justify-center"
           style={{ background: avatarColor, boxShadow: `0 0 10px 2px ${avatarColor}80` }}
-        />
+        >
+          <img src={CLASS_ICON[ch.classId]} alt={cls.name} className="w-full h-full object-cover" draggable={false} />
+        </span>
 
         <div className="min-w-0">
           <div className="flex items-baseline gap-1.5">

@@ -6,17 +6,21 @@ import { IconTrophy } from './icons';
 const MEDAL_COLOR = ['#e0b93c', '#c9c9d4', '#c98a55'];
 
 export function RankingScreen({ ranking }: { ranking: RankEntry[] }) {
+  // Server already orders by level desc / cp desc, but sort again client-side
+  // so the screen is correct even if `ranking` ever arrives unsorted (e.g. a
+  // future local/offline source).
+  const sorted = [...ranking].sort((a, b) => b.level - a.level || b.cp - a.cp);
   return (
     <Panel title="Ranking do Reino">
-      {ranking.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="flex flex-col items-center text-center py-10 gap-3">
           <IconTrophy className="w-12 h-12 text-parchment/20" />
           <p className="text-parchment/50">Nenhuma expedição registrada ainda.</p>
-          <p className="text-parchment/30 text-xs max-w-xs">Complete uma masmorra (ou recue em segurança) pra aparecer aqui com sua maior profundidade alcançada.</p>
+          <p className="text-parchment/30 text-xs max-w-xs">Complete uma masmorra (ou recue em segurança) pra aparecer aqui com seu nível e poder de combate.</p>
         </div>
       ) : (
         <ol className="space-y-1.5">
-          {ranking.map((r, i) => (
+          {sorted.map((r, i) => (
             <li
               key={i}
               className={`flex justify-between items-center gap-2 py-2 px-3 rounded border ${
@@ -35,7 +39,7 @@ export function RankingScreen({ ranking }: { ranking: RankEntry[] }) {
                 {r.ironMode && <span className="text-crimson text-xs shrink-0" title="Modo Ferro">☠</span>}
                 <span className="text-parchment/40 text-xs shrink-0">Nv.{r.level}</span>
               </span>
-              <span className="text-gold font-bold shrink-0">Prof. {r.depth}</span>
+              <span className="text-gold font-bold shrink-0">CP {r.cp}</span>
             </li>
           ))}
         </ol>

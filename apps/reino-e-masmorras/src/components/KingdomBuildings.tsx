@@ -4,6 +4,8 @@ import { Character } from '../types/game';
 import { fmt } from '../lib/format';
 import { BUILDINGS, BuildingDef } from '../lib/buildings';
 import { Panel } from './Panel';
+import { Modal } from './Modal';
+import { SmallButton } from './Button';
 import mapaConstrucoes from '../assets/reino-construcoes.webp';
 import pergaminho from '../assets/pergaminho.webp';
 
@@ -166,6 +168,7 @@ function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onU
   popoverRef: RefObject<HTMLDivElement>; anchorRect: DOMRect; building: BuildingDef; level: number; gold: number;
   onUpgrade: () => void; talk?: { label: string; onOpen: () => void }; onClose: () => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
   const maxed = level >= b.maxLevel;
   const cost = maxed ? 0 : b.costForLevel(level);
   const centerX = anchorRect.left + anchorRect.width / 2;
@@ -175,39 +178,61 @@ function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onU
     : { bottom: window.innerHeight - anchorRect.top + 10 };
 
   return createPortal(
-    <div
-      ref={popoverRef}
-      className="fixed z-50 w-56 rounded-sm border-2 border-gold/50 bg-panel shadow-[0_12px_30px_rgba(0,0,0,0.6)] p-3 text-xs"
-      style={{
-        left: `clamp(120px, ${centerX}px, calc(100vw - 120px))`,
-        transform: 'translateX(-50%)',
-        backgroundImage: `url(${pergaminho})`, backgroundSize: '200px', backgroundBlendMode: 'multiply',
-        ...vertical,
-      }}
-    >
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="font-display text-gold font-bold tracking-wide leading-tight">{b.name}</span>
-        <button onClick={onClose} className="text-parchment/50 hover:text-parchment text-base leading-none px-1 shrink-0" aria-label="Fechar">×</button>
-      </div>
-      <span className="inline-block text-[10px] bg-gold/20 border border-gold/50 text-gold rounded-full px-2 py-0.5 font-bold mb-2">
-        Nível {level}/{b.maxLevel}
-      </span>
-      <button
-        onClick={onUpgrade}
-        disabled={maxed || gold < cost}
-        className="w-full text-center font-bold text-ink bg-gold rounded px-2 py-1.5 mb-1.5 hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:grayscale disabled:hover:brightness-100"
+    <>
+      <div
+        ref={popoverRef}
+        className="fixed z-50 w-56 rounded-sm border-2 border-gold/50 bg-panel shadow-[0_12px_30px_rgba(0,0,0,0.6)] p-3 text-xs"
+        style={{
+          left: `clamp(120px, ${centerX}px, calc(100vw - 120px))`,
+          transform: 'translateX(-50%)',
+          backgroundImage: `url(${pergaminho})`, backgroundSize: '200px', backgroundBlendMode: 'multiply',
+          ...vertical,
+        }}
       >
-        {maxed ? 'Nível Máximo' : `Melhorar — ${fmt(cost)} ouro`}
-      </button>
-      {talk && (
-        <button
-          onClick={talk.onOpen}
-          className="w-full text-center font-bold text-parchment/80 border border-panelborder rounded px-2 py-1.5 hover:border-gold/50 hover:text-parchment"
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="font-display text-gold font-bold tracking-wide leading-tight">{b.name}</span>
+          <button onClick={onClose} className="text-parchment/50 hover:text-parchment text-base leading-none px-1 shrink-0" aria-label="Fechar">×</button>
+        </div>
+        <span className="inline-block text-[10px] bg-gold/20 border border-gold/50 text-gold rounded-full px-2 py-0.5 font-bold mb-2">
+          Nível {level}/{b.maxLevel}
+        </span>
+        {b.disabled ? (
+          <p className="text-parchment/40 italic mb-1.5">Temporariamente indisponível — voltará com uma nova função em breve.</p>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            disabled={maxed || gold < cost}
+            className="w-full text-center font-bold text-ink bg-gold rounded px-2 py-1.5 mb-1.5 hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:grayscale disabled:hover:brightness-100"
+          >
+            {maxed ? 'Nível Máximo' : `Melhorar — ${fmt(cost)} ouro`}
+          </button>
+        )}
+        {talk && (
+          <button
+            onClick={talk.onOpen}
+            className="w-full text-center font-bold text-parchment/80 border border-panelborder rounded px-2 py-1.5 hover:border-gold/50 hover:text-parchment"
+          >
+            {talk.label}
+          </button>
+        )}
+      </div>
+      {confirming && (
+        <Modal
+          title={b.name}
+          onClose={() => setConfirming(false)}
+          footer={
+            <>
+              <SmallButton onClick={() => setConfirming(false)} variant="ghost">Cancelar</SmallButton>
+              <SmallButton onClick={() => { onUpgrade(); setConfirming(false); }}>
+                Melhorar — {fmt(cost)} ouro
+              </SmallButton>
+            </>
+          }
         >
-          {talk.label}
-        </button>
+          <p>{b.desc}</p>
+        </Modal>
       )}
-    </div>,
+    </>,
     document.body
   );
 }

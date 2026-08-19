@@ -3,6 +3,7 @@ import { Character } from '../types/game';
 import { MAX_CHARACTER_SLOTS } from '../lib/storage';
 import { CLASSES } from '../lib/classes';
 import { computeCombatPower } from '../lib/combatStats';
+import { CLASS_ICON } from '../lib/classIcons';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconEmptySlot } from './icons';
@@ -58,7 +59,12 @@ export function CharacterSelect({ slots, onSelect, onCreateNew, onDelete }: Prop
                 {c.ironMode && (
                   <span className="absolute top-1 left-1.5 text-crimson text-[10px] font-bold" title="Modo Ferro">☠</span>
                 )}
-                <span className="w-10 h-10 rounded-full ring-2 ring-gold/50 shrink-0" style={{ background: cls.color }} />
+                <span
+                  className="w-10 h-10 rounded-full ring-2 ring-gold/50 shrink-0 overflow-hidden flex items-center justify-center"
+                  style={{ background: cls.color }}
+                >
+                  <img src={CLASS_ICON[c.classId]} alt={cls.name} className="w-full h-full object-cover" draggable={false} />
+                </span>
                 <span className="text-parchment font-bold text-sm truncate w-full text-center">{c.name}</span>
                 <span className="text-parchment/50 text-[11px]">{cls.name} · Nv.{c.level}</span>
                 <span className="text-amber-300/90 text-[10px] font-bold">⚔ {computeCombatPower(c)}</span>
