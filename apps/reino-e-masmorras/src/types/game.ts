@@ -368,8 +368,19 @@ export interface DungeonDef {
   name: string;
   desc: string;
   startDepth: number;
-  levelReq: number; // minimum character level to enter — shown locked on the map below this
+  // Kept for flavor/display and as the CP-anchor calibration reference (see
+  // instanceFromTier) even though it no longer gates entry for non-special
+  // dungeons — see unlockAfter below and isDungeonUnlocked() in dungeons.ts.
+  levelReq: number;
   special?: boolean;
+  // Dungeon ids (OR logic — unlocked once ANY is cleared) that unlock this
+  // one. Undefined/empty on a non-special dungeon = always unlocked (the
+  // start of a chain, e.g. Ruínas Superficiais). Ignored entirely on a
+  // `special` dungeon, which keeps the old levelReq gate instead — the
+  // "algumas exceções pras dungeons especiais" the level-gate removal asked
+  // for, since a bonus/side dungeon (Cripta, Torre, Arena) isn't part of the
+  // mainline chain a player is expected to clear in order.
+  unlockAfter?: string[];
   enemyPool?: EnemyShape[];
   goldMult?: number;
   xpMult?: number;
