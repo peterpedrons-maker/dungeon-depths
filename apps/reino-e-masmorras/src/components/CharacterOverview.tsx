@@ -312,113 +312,46 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               })}
             </div>
             {pendingTotal > 0 && (
-              <div className="rounded border border-sky-400/40 bg-sky-500/10 p-2 space-y-1">
-                <div className="text-[10px] uppercase tracking-wide text-sky-300 font-bold mb-0.5">Prévia com {pendingTotal} ponto{pendingTotal > 1 ? 's' : ''}</div>
-                <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} />
-                <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} />
-                <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} />
-                <PreviewStatRow label="Ataque Mágico" from={stats.matk} to={previewStats.matk} />
-                <PreviewStatRow label="Defesa Mágica" from={stats.mdef} to={previewStats.mdef} />
-                <PreviewStatRow label="Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" />
-                <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
-                <div className="flex gap-2 pt-1">
-                  <SmallButton onClick={confirmAlloc}>Confirmar</SmallButton>
-                  <SmallButton onClick={cancelAlloc} variant="ghost">Cancelar</SmallButton>
-                </div>
+              <div className="flex gap-2">
+                <SmallButton onClick={confirmAlloc}>Confirmar</SmallButton>
+                <SmallButton onClick={cancelAlloc} variant="ghost">Cancelar</SmallButton>
               </div>
             )}
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Redução de Recarga</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.cooldownReductionPct * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Roubo de Vida</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.lifestealPct * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Espinhos</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.thornsPct * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Cura ao Crítico</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.onCritHealPct * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Dano vs. Envenenado</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsPoison * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Dano vs. Queimando</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.dmgPctVsBurn * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Poder de Suporte</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.supportPowerPct * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Chance de Item</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.dropChanceBonusPct * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Qualidade de Item</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">+{Math.round(stats.itemQualityBonusPct * 100)}%</span>
-              </div>
+              <PreviewStatRow label="Redução de Recarga" from={Math.round(stats.cooldownReductionPct * 100)} to={Math.round(previewStats.cooldownReductionPct * 100)} suffix="%" />
+              <PreviewStatRow label="Roubo de Vida" from={Math.round(stats.lifestealPct * 100)} to={Math.round(previewStats.lifestealPct * 100)} suffix="%" />
+              <PreviewStatRow label="Espinhos" from={Math.round(stats.thornsPct * 100)} to={Math.round(previewStats.thornsPct * 100)} suffix="%" />
+              <PreviewStatRow label="Cura ao Crítico" from={Math.round(stats.onCritHealPct * 100)} to={Math.round(previewStats.onCritHealPct * 100)} suffix="%" />
+              <PreviewStatRow label="Dano vs. Envenenado" from={Math.round(stats.dmgPctVsPoison * 100)} to={Math.round(previewStats.dmgPctVsPoison * 100)} suffix="%" />
+              <PreviewStatRow label="Dano vs. Queimando" from={Math.round(stats.dmgPctVsBurn * 100)} to={Math.round(previewStats.dmgPctVsBurn * 100)} suffix="%" />
+              <PreviewStatRow label="Poder de Suporte" from={Math.round(stats.supportPowerPct * 100)} to={Math.round(previewStats.supportPowerPct * 100)} suffix="%" />
+              <PreviewStatRow label="Chance de Item" from={Math.round(stats.dropChanceBonusPct * 100)} to={Math.round(previewStats.dropChanceBonusPct * 100)} suffix="%" prefix="+" />
+              <PreviewStatRow label="Qualidade de Item" from={Math.round(stats.itemQualityBonusPct * 100)} to={Math.round(previewStats.itemQualityBonusPct * 100)} suffix="%" prefix="+" />
             </div>
           </div>
           <div className="space-y-3">
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Vida</div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Vida Máxima</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(effectiveMaxHp(ch))}</span>
-              </div>
+              <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Físico</div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Ataque</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.atk)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Defesa</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.def)}</span>
-              </div>
+              <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} />
+              <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Mágico</div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Ataque</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.matk)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Defesa</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{fmt(stats.mdef)}</span>
-              </div>
+              <PreviewStatRow label="Ataque" from={stats.matk} to={previewStats.matk} />
+              <PreviewStatRow label="Defesa" from={stats.mdef} to={previewStats.mdef} />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Chance de Crítico</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critChance * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Dano Crítico</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.critDmgMult * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Bloqueio</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.blockChance * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Evasão</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.evasion * 100)}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-xs">
-                <span className="text-parchment/60 truncate min-w-0">Precisão</span>
-                <span className="font-bold tabular-nums text-parchment shrink-0">{Math.round(stats.accuracy * 100)}%</span>
-              </div>
+              <PreviewStatRow label="Chance de Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" />
+              <PreviewStatRow label="Dano Crítico" from={Math.round(stats.critDmgMult * 100)} to={Math.round(previewStats.critDmgMult * 100)} suffix="%" />
+              <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
+              <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" />
+              <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" />
             </div>
           </div>
         </div>
@@ -587,14 +520,18 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
   );
 }
 
-function PreviewStatRow({ label, from, to, suffix = '' }: { label: string; from: number; to: number; suffix?: string }) {
+// Every derived-stat row in the Atributos tab goes through this — shows the
+// live value, and once a point is staged (see pendingAlloc), an inline
+// "→ new value" in sky blue right where the stat already lives instead of
+// a second floating box duplicating a subset of the same numbers below.
+function PreviewStatRow({ label, from, to, suffix = '', prefix = '' }: { label: string; from: number; to: number; suffix?: string; prefix?: string }) {
   const changed = to !== from;
   return (
-    <div className="flex items-center justify-between gap-1.5 text-[11px]">
+    <div className="flex items-center justify-between gap-1.5 text-xs">
       <span className="text-parchment/60 truncate min-w-0">{label}</span>
       <span className="font-bold tabular-nums shrink-0">
-        <span className={changed ? 'text-parchment/50' : 'text-parchment'}>{from}{suffix}</span>
-        {changed && <span className="text-sky-300"> → {to}{suffix}</span>}
+        <span className={changed ? 'text-parchment/50' : 'text-parchment'}>{prefix}{fmt(from)}{suffix}</span>
+        {changed && <span className="text-sky-300"> → {prefix}{fmt(to)}{suffix}</span>}
       </span>
     </div>
   );

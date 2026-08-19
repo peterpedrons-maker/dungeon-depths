@@ -33,7 +33,7 @@ const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'access
 export function generateMerchantStock(ch: Character, kingdomBonuses: KingdomBonuses): EquipmentItem[] {
   const offhandKind = OFFHAND_KIND[ch.classId];
   const slots = offhandKind ? SLOTS : SLOTS.filter((s) => s !== 'offhand');
-  const itemTier = highestAccessibleItemTier(ch.level);
+  const itemTier = highestAccessibleItemTier(ch);
   const targetCount = MIN_ITEMS + Math.floor(Math.random() * (MAX_ITEMS - MIN_ITEMS + 1));
 
   let stock: EquipmentItem[] = [];

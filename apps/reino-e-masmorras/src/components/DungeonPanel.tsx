@@ -756,9 +756,11 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
             const eff = offenseAbility.effect;
             // Abilities from magical classes cast as spells by default (matk vs
-            // mdef); basic attacks (the `else` branch below) are always
-            // physical regardless of class — only an ability's own dmgType
-            // override or the caster's class decides which channel a spell uses.
+            // mdef) — only an ability's own dmgType override or the caster's
+            // class decides which channel a spell uses. The plain attack (the
+            // `else` branch below) follows the same class split now, so a
+            // caster's INT/matk investment does something before their first
+            // active ability unlocks, not just after.
             const dmgType = eff.dmgType ?? (MAGICAL_CLASSES.includes(chRef.current.classId) ? 'magical' : 'physical');
             playerHitMagical = dmgType === 'magical';
             const power = dmgType === 'magical' ? stats.matk : stats.atk;
@@ -786,8 +788,15 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
               }
             }
           } else {
-            const effDef = Math.max(0, computeEnemyDef() * (1 - stats.defPenPct));
-            const r = rollAttack(stats.atk, effDef, stats.critChance, stats.critDmgMult);
+            // Plain attack — magical classes swing with matk/mdef instead of
+            // atk/def, same class split as an ability's default dmgType
+            // above, so their INT investment isn't dead weight before they
+            // have an ability equipped.
+            const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
+            playerHitMagical = isMagicalClass;
+            const power = isMagicalClass ? stats.matk : stats.atk;
+            const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+            const r = rollAttack(power, effDef, stats.critChance, stats.critDmgMult);
             dmg = r.dmg; crit = r.crit;
           }
 
@@ -868,7 +877,12 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
             syncEnemyStatuses();
             syncEnemyCC();
             syncEnemyMods();
+            // Both clocks restart clean for the new encounter — previously
+            // only the player's got a fresh schedulePlayer() call here, so
+            // the enemy inherited whatever was left on the OLD enemy's timer
+            // (its ATB bar would visibly pick up mid-fill instead of empty).
             schedulePlayer(nextPlayerDelay());
+            scheduleEnemy();
           }, 900);
           return;
         }
@@ -1175,7 +1189,7 @@ export function DungeonPanel({ character, dungeon, kingdomBonuses, onLiveUpdate,
 
   return (
     <Panel title={dungeon.name}>
-      {phase === 'fight' && (
+      {(phase === 'fight' || phase === 'ended') && (
         <div className="mb-4">
           <div className="flex justify-between items-baseline text-[11px] text-parchment/50 uppercase tracking-wide mb-1">
             <span>Progresso da Masmorra</span>
