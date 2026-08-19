@@ -426,7 +426,20 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // shared HP baseline both curves sit on — not ATK or DEF, which the report
 // didn't flag — up hard enough that even Região 1 trash takes several real
 // hits and a boss is a genuine multi-round fight everywhere, not just late.
-const REGULAR_HP_MULT = 5.5;
+//
+// Third pass — 5.5 overshot. It was tuned only against per-hit "does this
+// die in one shot" checks, never against a full dungeon clear (11-12 fights
+// back to back, HP carrying over, potions not scaling with fight count) —
+// a full-clear simulation across every class/dungeon afterward found most
+// dungeons landing at 5-35% win rate for an at-level anchor, some (Torre)
+// at 0%, against the original "high/forgiving Região 1, moderate Região 2"
+// target. Every extra HP point on a regular enemy doesn't just cost one
+// fight more damage, it costs that same extra exposure ~11-12 times per
+// run, compounding hard. Pulled back to a value that still avoids the
+// original 1-2-hit instakill (a hits-to-kill check at 3.0 still lands
+// multi-round fights everywhere) without re-inflating total run-length
+// chip damage past what the potion economy can keep up with.
+const REGULAR_HP_MULT = 3.0;
 const REGULAR_ATK_MULT = 1.05;
 const REGULAR_DEF_MULT = 1.15;
 const BOSS_HP_MULT = 1.5;
