@@ -119,17 +119,18 @@ function statTotals(item: EquipmentItem): Record<StatKey, number> {
   return totals;
 }
 
-export interface StatCompareLine { label: string; delta: number; isPct: boolean }
+export interface StatCompareRow { label: string; isPct: boolean; equippedValue: number; newValue: number }
 
-// What `newItem` gives more or less than whatever's currently equipped in
-// its slot — both sides go through enhancedItem() first so a comparison
+// Side-by-side stat picture of `newItem` vs. whatever's currently equipped
+// in its slot — both sides go through enhancedItem() first so a comparison
 // against a forged item reflects what's actually in play, not the raw roll.
-// A null `equipped` (empty slot) makes every one of the new item's stats
-// read as a pure gain, which is exactly right for "nothing to lose here."
-export function compareItemStats(newItem: EquipmentItem, equipped: EquipmentItem | null): StatCompareLine[] {
+// A null `equipped` (empty slot) reads as zero on every stat, which is
+// exactly right for "nothing to lose here" — every one of the new item's
+// stats shows as a pure gain.
+export function compareItemStatRows(newItem: EquipmentItem, equipped: EquipmentItem | null): StatCompareRow[] {
   const a = statTotals(enhancedItem(newItem));
   const b = equipped ? statTotals(enhancedItem(equipped)) : ({} as Record<StatKey, number>);
   return STAT_META
-    .map(({ key, label, isPct }) => ({ label, isPct, delta: (a[key] ?? 0) - (b[key] ?? 0) }))
-    .filter((line) => line.delta !== 0);
+    .map(({ key, label, isPct }) => ({ label, isPct, equippedValue: b[key] ?? 0, newValue: a[key] ?? 0 }))
+    .filter((row) => row.equippedValue !== 0 || row.newValue !== 0);
 }
