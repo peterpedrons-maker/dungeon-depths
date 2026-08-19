@@ -4,7 +4,7 @@ import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
-import { itemDisplayName, itemStatLines } from '../lib/enhancement';
+import { compareItemStatRows, itemDisplayName, itemStatLines } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
 import { computeAttributeTotals } from '../lib/skills';
@@ -424,8 +424,18 @@ function ItemStatWindow({ item, label, compareAgainst }: {
   compareAgainst: EquipmentItem | null | undefined;
 }) {
   const color = item ? rarityColor(item.rarity) : undefined;
-  const lines = item ? itemStatLines(item, compareAgainst ?? null) : [];
   const showDelta = compareAgainst !== undefined;
+  // The "Novo" column (showDelta=true) must also surface stats the equipped
+  // item grants that this item doesn't — otherwise a swap that drops, say,
+  // Ataque Mágico entirely just silently omits that line instead of showing
+  // the loss. compareItemStatRows() includes both sides' nonzero stats;
+  // itemStatLines() (used for the plain "Equipado" listing) only lists the
+  // item's own stats, which is correct there since nothing is being lost.
+  const lines = !item
+    ? []
+    : showDelta
+    ? compareItemStatRows(item, compareAgainst ?? null).map((r) => ({ label: r.label, isPct: r.isPct, value: r.newValue, delta: r.newValue - r.equippedValue }))
+    : itemStatLines(item, null);
   return (
     <div className="flex flex-col items-center gap-1.5 rounded border border-panelborder/40 bg-black/25 p-2.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
       <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
