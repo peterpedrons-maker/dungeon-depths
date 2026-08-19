@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AttributeKey, Character, ProfileState, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot } from '../types/game';
+import { AttributeKey, Character, ProfileState, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot, Rarity } from '../types/game';
 import { findCosmetic } from '../lib/cosmetics';
 import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
@@ -24,12 +24,52 @@ import { PrestigeShop } from './PrestigeShop';
 import { Bestiario } from './Bestiario';
 import { Titulos } from './Titulos';
 import { DungeonLoadout } from './DungeonLoadout';
-import { DungeonPanel } from './DungeonPanel';
+import { DungeonPanel, RunStats, EMPTY_RUN_STATS } from './DungeonPanel';
 import { Ferreiro } from './Ferreiro';
 import { Modal } from './Modal';
 import { SmallButton } from './Button';
 
 const POTION_COST = 15;
+
+// Tracks a "repetir automaticamente" farming sequence in progress —
+// `current` is the attempt DungeonPanel is on right now (1-indexed);
+// `stats` is the running total across every attempt so far, folded in via
+// mergeRunIntoPlan each time one ends. Once the sequence itself is done,
+// the same shape gets frozen into `repeatSummary` for the results modal.
+interface RepeatPlan {
+  total: number;
+  current: number;
+  wins: number;
+  deaths: number;
+  retreats: number;
+  stats: RunStats;
+}
+
+function mergeRunIntoPlan(plan: RepeatPlan, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats): RepeatPlan {
+  return {
+    ...plan,
+    wins: plan.wins + (endedReason === 'victory' ? 1 : 0),
+    deaths: plan.deaths + (endedReason === 'death' ? 1 : 0),
+    retreats: plan.retreats + (endedReason === 'retreat' ? 1 : 0),
+    stats: {
+      kills: plan.stats.kills + runStats.kills,
+      goldFromKills: plan.stats.goldFromKills + runStats.goldFromKills,
+      xpGained: plan.stats.xpGained + runStats.xpGained,
+      itemsDropped: plan.stats.itemsDropped + runStats.itemsDropped,
+      itemsAutoSold: plan.stats.itemsAutoSold + runStats.itemsAutoSold,
+      goldFromAutoSell: plan.stats.goldFromAutoSell + runStats.goldFromAutoSell,
+    },
+  };
+}
+
+function SummaryRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm py-1 border-b border-panelborder/20 last:border-0">
+      <span className="text-parchment/60">{label}</span>
+      <span className="font-bold tabular-nums text-parchment">{value}</span>
+    </div>
+  );
+}
 
 // A faint heraldic crest sitting behind the screen content — keeps the
 // leftover space below shorter panels from reading as an empty/broken void
@@ -84,6 +124,16 @@ export function GameShell({
   // dungeon already in character.clearedDungeons — reset whenever a new
   // dungeon is picked so it never silently carries over to the next one.
   const [nightmareArmed, setNightmareArmed] = useState(false);
+  // The rest of the loadout screen's farming options — same reset-per-pick
+  // rule as nightmareArmed above, for the same reason.
+  const [repeatChoice, setRepeatChoice] = useState(0);
+  const [autoSellRarities, setAutoSellRarities] = useState<Rarity[]>([]);
+  const [noPotionsArmed, setNoPotionsArmed] = useState(false);
+  // Non-null exactly while a repeat sequence is actively running (see
+  // confirmDungeonEntry/handleRunEnd/handleRestartDungeon below);
+  // repeatSummary is the frozen result shown once it's done.
+  const [repeatPlan, setRepeatPlan] = useState<RepeatPlan | null>(null);
+  const [repeatSummary, setRepeatSummary] = useState<RepeatPlan | null>(null);
 
   const kingdomBonuses = computeKingdomBonuses(character.buildings);
 
@@ -92,11 +142,19 @@ export function GameShell({
     setSection('dungeon');
   }
 
+  function toggleAutoSellRarity(r: Rarity) {
+    setAutoSellRarities((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+  }
+
   // Clicking a map marker only stages the choice — the run doesn't actually
   // start (and the retreat-penalty guard doesn't arm) until the loadout
   // screen's "Iniciar Expedição" is confirmed.
-  function selectDungeon(d: DungeonDef) { setPendingDungeon(d); setNightmareArmed(false); }
-  function cancelDungeonSelect() { setPendingDungeon(null); setNightmareArmed(false); }
+  function selectDungeon(d: DungeonDef) {
+    setPendingDungeon(d); setNightmareArmed(false); setRepeatChoice(0); setAutoSellRarities([]); setNoPotionsArmed(false);
+  }
+  function cancelDungeonSelect() {
+    setPendingDungeon(null); setNightmareArmed(false); setRepeatChoice(0); setAutoSellRarities([]); setNoPotionsArmed(false);
+  }
   function confirmDungeonEntry() {
     if (!pendingDungeon) return;
     const d = nightmareArmed
@@ -107,6 +165,8 @@ export function GameShell({
           xpMult: (pendingDungeon.xpMult ?? 1) * 1.4,
         }
       : pendingDungeon;
+    setRepeatSummary(null);
+    setRepeatPlan(repeatChoice > 0 ? { total: repeatChoice, current: 1, wins: 0, deaths: 0, retreats: 0, stats: { ...EMPTY_RUN_STATS } } : null);
     enterDungeon(d);
     setPendingDungeon(null);
     setRunInProgress(true);
@@ -139,7 +199,7 @@ export function GameShell({
   // The Mercador's stock only re-rolls here, on an actual victory or death —
   // never just from opening the shop, and never on a mid-run retreat — so
   // there's no way to farm it for a good roll by walking in and out.
-  function handleRunEnd(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+  function handleRunEnd(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) {
     const finalCharacter = withDungeonClear(finalCharacterIn, endedReason);
     const withStock = endedReason === 'retreat'
       ? finalCharacter
@@ -147,18 +207,32 @@ export function GameShell({
     onRunEnd(withStock, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
     setSection('kingdom');
     setRunInProgress(false);
+    // This is the sequence's last leg (DungeonPanel only ever routes here
+    // instead of onRestart once repeatProgress.current has reached its
+    // total, or the player retreated/hit "Parar Sequência") — fold this
+    // attempt in and freeze the total as the summary to show.
+    if (repeatPlan) {
+      setRepeatSummary(mergeRunIntoPlan(repeatPlan, endedReason, runStats));
+      setRepeatPlan(null);
+    }
   }
 
   // Same finalization as handleRunEnd, but stays in the dungeon section and
   // remounts DungeonPanel on the same dungeon instead of going to the
-  // kingdom — the "Reiniciar Masmorra" shortcut on the ended screen.
-  function handleRestartDungeon(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory') {
+  // kingdom — the "Reiniciar Masmorra" shortcut on the ended screen, and
+  // also what a "repetir automaticamente" sequence's non-final attempts
+  // auto-advance through (see DungeonPanel's repeatProgress effect).
+  function handleRestartDungeon(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) {
     const finalCharacter = withDungeonClear(finalCharacterIn, endedReason);
     const withStock = endedReason === 'retreat'
       ? finalCharacter
       : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
     onRunEnd(withStock, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
     setDungeonRunKey((k) => k + 1);
+    if (repeatPlan) {
+      const merged = mergeRunIntoPlan(repeatPlan, endedReason, runStats);
+      setRepeatPlan({ ...merged, current: merged.current + 1 });
+    }
   }
 
   // Sidebar navigation and "Abandonar" get routed through these while a run
@@ -178,6 +252,11 @@ export function GameShell({
     else if (navConfirmTarget) setSection(navConfirmTarget);
     setRunInProgress(false);
     setNavConfirmTarget(null);
+    // Forcing a way out mid-run also cuts short any repeat sequence in
+    // progress — DungeonPanel is about to unmount, so nothing would ever
+    // resolve it otherwise. No partial summary; the next sequence starts
+    // clean regardless (confirmDungeonEntry always resets both anyway).
+    setRepeatPlan(null);
   }
 
   function handleBuyPotion() {
@@ -355,6 +434,10 @@ export function GameShell({
               onLiveUpdate={onCharacterChange}
               onRunEnd={handleRunEnd}
               onRestart={handleRestartDungeon}
+              autoSellRarities={autoSellRarities}
+              noPotions={noPotionsArmed}
+              repeatCurrent={repeatPlan?.current}
+              repeatTotal={repeatPlan?.total}
             />
           )}
         </main>
@@ -382,7 +465,39 @@ export function GameShell({
           nightmareUnlocked={!pendingDungeon.isHunt && (character.clearedDungeons?.includes(pendingDungeon.id) ?? false)}
           nightmareArmed={nightmareArmed}
           onToggleNightmare={setNightmareArmed}
+          repeatCount={repeatChoice}
+          onSetRepeatCount={setRepeatChoice}
+          autoSellRarities={autoSellRarities}
+          onToggleAutoSellRarity={toggleAutoSellRarity}
+          noPotionsArmed={noPotionsArmed}
+          onToggleNoPotions={setNoPotionsArmed}
         />
+      )}
+
+      {repeatSummary && (
+        <Modal
+          title="Resumo da Expedição"
+          onClose={() => setRepeatSummary(null)}
+          footer={<SmallButton onClick={() => setRepeatSummary(null)}>Fechar</SmallButton>}
+        >
+          <div>
+            <SummaryRow label="Corridas realizadas" value={`${repeatSummary.current}/${repeatSummary.total}`} />
+            <SummaryRow label="Vitórias" value={repeatSummary.wins} />
+            <SummaryRow label="Mortes" value={repeatSummary.deaths} />
+            {repeatSummary.retreats > 0 && <SummaryRow label="Recuos" value={repeatSummary.retreats} />}
+            <SummaryRow label="Inimigos derrotados" value={repeatSummary.stats.kills} />
+            <SummaryRow label="XP ganho" value={repeatSummary.stats.xpGained} />
+            <SummaryRow label="Ouro de inimigos" value={repeatSummary.stats.goldFromKills} />
+            {repeatSummary.stats.itemsAutoSold > 0 && (
+              <SummaryRow label="Ouro de itens vendidos" value={repeatSummary.stats.goldFromAutoSell} />
+            )}
+            <SummaryRow label="Ouro total" value={repeatSummary.stats.goldFromKills + repeatSummary.stats.goldFromAutoSell} />
+            <SummaryRow label="Itens obtidos" value={repeatSummary.stats.itemsDropped - repeatSummary.stats.itemsAutoSold} />
+            {repeatSummary.stats.itemsAutoSold > 0 && (
+              <SummaryRow label="Itens vendidos automaticamente" value={repeatSummary.stats.itemsAutoSold} />
+            )}
+          </div>
+        </Modal>
       )}
 
       {navConfirmTarget && (
