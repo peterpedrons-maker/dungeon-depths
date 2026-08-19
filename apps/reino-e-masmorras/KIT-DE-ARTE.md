@@ -1393,6 +1393,87 @@ Matriarca Negra, facing left: massive black widow spider queen, far bigger than 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+### Chefes da Região 2 — sem roster próprio, reaproveitam os inimigos genéricos (Inimigos I e II) já cobertos acima
+
+A Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) não tem roster de inimigos regulares próprio — todas as 7 masmorras sorteiam entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc (prompt "Inimigos I") e Troll/Aberração das Sombras/Dragão Jovem (prompt "Inimigos II"), já cobertos mais acima nesta seção. Nenhum inimigo regular novo precisa de prompt.
+
+O que falta são os **5 chefes** dessas 7 masmorras (dois shapes de chefe são reaproveitados em duas masmorras cada — Cacique Troll em Floresta e Ruínas Élficas, Senhor da Guerra Orc em Minas e Arena de Sangue) — hoje eles usam o mesmo sprite do inimigo genérico comum (ex. o chefe Senhor da Guerra Orc usa o mesmo desenho do Orc Guerreiro comum), sem arte própria de chefe como a Região 1 já tem. Os 5 prompts abaixo dão a cada um uma versão maior e mais elaborada do seu shape base, no mesmo padrão dos chefes da Região 1.
+
+### Chefe — Torre Amaldiçoada: Aberração Ancestral
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Torre Amaldiçoada, spawna na profundidade 23 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Aberração Ancestral, facing left: a much larger and older amorphous eldritch horror than a common shadow creature, a churning mass of dark purple-black smoke and shadow far denser and taller, many more glowing pale eyes scattered across its form, long clawed shadow-limbs reaching outward, faint ancient glowing runes/glyphs floating suspended around its body, an aura of dread far greater than a regular horror.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Minas Abandonadas / Arena de Sangue: Senhor da Guerra Orc
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Minas Abandonadas (profundidade 24) e reaproveitado como boss da Arena de Sangue (profundidade 34), ambos com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Senhor da Guerra Orc, facing left: a massive battle-scarred green-skinned orc warlord, much bigger and bulkier than a common orc warrior, wielding two heavy war axes (one in each hand), thick spiked dark plate armor decorated with trophy skulls and bones, tribal war paint across its face, oversized tusks, deep battle scars, a fierce commanding presence.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Floresta Amaldiçoada / Ruínas Élficas: Cacique Troll
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Floresta Amaldiçoada (profundidade 27) e reaproveitado como boss das Ruínas Élficas (profundidade 31), ambos com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Cacique Troll, facing left: a huge hunched brown-gray troll chieftain, noticeably bigger and thicker-hided than a common cave troll, wearing a crude bone-and-antler headdress, tribal warpaint markings across its warty skin, gripping a massive spiked stone club in each hand, more battle scars than a regular troll, low imposing ape-like stance.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Covil dos Dragões: Dragão Ancião
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil dos Dragões, spawna na profundidade 29 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Dragão Ancião, facing left: a much larger and older bipedal dragon than a young dragon, fully grown wings spread wide instead of folded, deep dark-crimson overlapping scales weathered by age, longer curved horns, battle-worn hide with old scars, bared teeth, a commanding ancient presence.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Necrópole Esquecida: Lorde Esqueleto
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Esquecida, spawna na profundidade 29 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Lorde Esqueleto, facing left: a tall noble undead skeleton lord, more elaborate than a common skeleton warrior, wearing a tattered regal dark-purple cloak over ornate ancient armor, a jagged crown-like circlet, gripping a ceremonial ornate blade, brighter ghostly pale-blue glow in its hollow eye sockets, a commanding regal-but-decayed presence.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
 ---
 
 ## Cenas
