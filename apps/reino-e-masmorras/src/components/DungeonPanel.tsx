@@ -598,6 +598,16 @@ export function DungeonPanel({
     return playerImmuneRoundsRef.current > 0;
   }
 
+  // resistPct (see CombatStats.resistPct, WIS/VIT-derived) rolls a chance to
+  // fully resist a new status effect or CC an enemy is trying to land — a
+  // permanent, always-on defense distinct from playerImmune()'s temporary
+  // Immunity buff. Deliberately NOT checked by applyEnemyHp's BossPhase.cc
+  // above: a boss's scripted phase-transition CC stays guaranteed by design,
+  // only the regular per-hit status/CC rolls below can be resisted.
+  function playerResists(defStats: { resistPct: number }): boolean {
+    return Math.random() < defStats.resistPct;
+  }
+
   // True while an ability's own persistent effect is still up — lets
   // pickAbility() skip re-casting a buff/shield/regen/etc. on top of itself
   // just because its cooldown happens to be ready again. Heal/dispel/bigHit
@@ -1070,13 +1080,21 @@ export function DungeonPanel({
           pushLog(`${enemyRef.current.name} recupera ${healAmt} de vida!`);
         }
       } else if (abEffect.kind === 'statusBite' && abEffect.status && !playerImmune()) {
-        playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: abEffect.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
-        syncPlayerStatuses();
-        pushLog(`Você foi ${STATUS_VERB[abEffect.status]}!`);
+        if (playerResists(defStats)) {
+          pushLog('Você resistiu ao efeito!');
+        } else {
+          playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: abEffect.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+          syncPlayerStatuses();
+          pushLog(`Você foi ${STATUS_VERB[abEffect.status]}!`);
+        }
       } else if (abEffect.kind === 'controlSlam' && abEffect.cc && !playerImmune()) {
-        playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: abEffect.ccRounds ?? 1 });
-        syncPlayerCC();
-        pushLog(`Você ficou ${CC_LABEL[abEffect.cc].toLowerCase()}!`);
+        if (playerResists(defStats)) {
+          pushLog('Você resistiu ao efeito!');
+        } else {
+          playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: abEffect.ccRounds ?? 1 });
+          syncPlayerCC();
+          pushLog(`Você ficou ${CC_LABEL[abEffect.cc].toLowerCase()}!`);
+        }
       } else if (abEffect.kind === 'weakenNova' && abEffect.statMod && !playerImmune()) {
         playerModsRef.current.push({ stat: abEffect.statMod, pct: abEffect.statModPct ?? -0.2, roundsLeft: abEffect.statModRounds ?? 3 });
         syncPlayerMods();
@@ -1088,17 +1106,21 @@ export function DungeonPanel({
       // shielded by Immunity, and only ever on the plain-attack path.
       const proc = enemyRef.current.proc;
       if (proc && Math.random() < proc.chance && !playerImmune()) {
-        if (proc.status) {
+        if ((proc.status || proc.cc) && playerResists(defStats)) {
+          pushLog('Você resistiu ao efeito!');
+        } else if (proc.status) {
           playerStatusRef.current.push({ kind: proc.status, roundsLeft: proc.rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
           syncPlayerStatuses();
+          pushLog(proc.label);
         } else if (proc.cc) {
           playerCCRef.current.push({ kind: proc.cc, roundsLeft: proc.rounds });
           syncPlayerCC();
+          pushLog(proc.label);
         } else if (proc.statMod) {
           playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: proc.rounds });
           syncPlayerMods();
+          pushLog(proc.label);
         }
-        pushLog(proc.label);
       }
     }
 

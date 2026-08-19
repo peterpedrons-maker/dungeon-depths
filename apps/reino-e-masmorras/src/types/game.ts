@@ -468,10 +468,17 @@ export interface CombatStats {
   supportPowerPct: number; // WIS-derived: scales heal/buff ability magnitudes
   dropChanceBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
   itemQualityBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
-  evasion: number; // permanent base dodge chance, from skill-tree secondary-attribute nodes
-  accuracy: number; // permanent base hit chance, from skill-tree secondary-attribute nodes
+  evasion: number; // permanent base dodge chance — AGI-derived, plus skill-tree secondary-attribute nodes
+  accuracy: number; // permanent base hit chance — DEX-derived, plus skill-tree secondary-attribute nodes
   cooldownReductionPct: number; // shortens ability cooldowns, capped at 50%
   speedPct: number; // AGI-derived — shortens the delay between the player's own actions, capped at 50%
+  // WIS+VIT-derived (mirrors mdef's own wis-primary/vit-secondary split) —
+  // chance to fully resist a new status effect (poison/burn/bleed/curse) or
+  // crowd control (stun/sleep/silence) an enemy attempts to apply to you.
+  // Distinct from evasion (which dodges the hit itself, damage included) —
+  // this only ever intercepts the status/CC riding along on a hit that
+  // already landed. Capped at 40%, same ceiling as evasion/accuracy.
+  resistPct: number;
 }
 
 // ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──
