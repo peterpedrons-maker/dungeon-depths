@@ -433,11 +433,57 @@ function fmtStatValue(v: number, isPct: boolean): string {
   return isPct ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
 }
 
-// Icon + name only — the shared header above both the plain single-item
-// card and the two-item compare table below, so an empty slot ("—") and a
-// real item render the same frame either way.
-function ItemIconHeader({ item, label }: { item: EquipmentItem | null; label: string }) {
+// One row inside a single item's own column — shows only that item's own
+// value for the stat (never a merged/shared number with the other item),
+// but still carries a verdict against whatever's on the other side: NOVO
+// for an affix the equipped item doesn't have at all, PERDE (shown on the
+// Equipado side only) for one the new item would drop entirely, or a green
+// ▲/red ▼ delta for a plain improvement/downgrade — the three buckets asked
+// for (novos / melhoram / pioram), each still reading off that item's own
+// real number instead of a unified total.
+function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' | 'new' }) {
+  const { label, isPct, equippedValue: eq, newValue: nv, isBase } = row;
+  const value = side === 'equipped' ? eq : nv;
+  const isNew = side === 'new' && eq === 0 && nv !== 0;
+  const isLostHere = side === 'equipped' && nv === 0 && eq !== 0;
+  const improved = side === 'new' && eq !== 0 && nv !== 0 && nv > eq;
+  const worsened = side === 'new' && eq !== 0 && nv !== 0 && nv < eq;
+  const valueColor = isNew || improved ? 'text-green-400' : worsened ? 'text-crimson' : isLostHere ? 'text-parchment/45' : 'text-parchment';
+  return (
+    <div className="flex items-center justify-between gap-1.5 text-[11px]">
+      {/* Base (the item's guaranteed slot stat) reads plain parchment;
+          affixes (the rolled bonuses) read sky blue — same convention
+          Mercador already uses for a fresh item's own stat list. */}
+      <span className={`truncate min-w-0 ${isBase ? 'text-parchment/70' : 'text-sky-300/80'}`}>{label}</span>
+      <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
+        <span className={valueColor}>{fmtStatValue(value, isPct)}</span>
+        {isNew && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-bold uppercase tracking-wide">Novo</span>}
+        {isLostHere && <span className="text-[9px] px-1 rounded bg-crimson/20 text-crimson font-bold uppercase tracking-wide">Perde</span>}
+        {improved && <span className="text-green-400">▲+{fmtStatValue(nv - eq, isPct)}</span>}
+        {worsened && <span className="text-crimson">▼{fmtStatValue(nv - eq, isPct)}</span>}
+      </span>
+    </div>
+  );
+}
+
+// One column of the compare window — icon, name, and this item's OWN stat
+// picture, kept fully separate from the other item's column (each reads its
+// own real numbers, never a shared/merged total) while still carrying the
+// NOVO/PERDE/▲/▼ verdict from `rows` (see CompareStatRow) so the two
+// columns stay easy to read against each other despite listing different
+// stats. `rows` is the full compareItemStatRows() output for the pair,
+// shared so both columns agree on what counts as base vs affix and what
+// changed; each column just filters to the stats *it* actually has.
+function ItemCompareColumn({ item, label, rows, side }: {
+  item: EquipmentItem | null;
+  label: string;
+  rows: StatCompareRow[];
+  side: 'equipped' | 'new';
+}) {
   const color = item ? rarityColor(item.rarity) : undefined;
+  const own = rows.filter((r) => (side === 'equipped' ? r.equippedValue !== 0 : r.newValue !== 0));
+  const baseRows = own.filter((r) => r.isBase);
+  const affixRows = own.filter((r) => !r.isBase);
   return (
     <div className="flex flex-col items-center gap-1.5 rounded border border-panelborder/40 bg-black/25 p-2.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
       <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
@@ -447,63 +493,10 @@ function ItemIconHeader({ item, label }: { item: EquipmentItem | null; label: st
       <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
         {item ? itemDisplayName(item) : '—'}
       </span>
-    </div>
-  );
-}
-
-// One row of the Equipado-vs-Novo compare table — a single stat lined up
-// once instead of split across two independently-lengthed lists (the old
-// layout could show 4 rows on one side and 6 on the other, with nothing
-// tying a row on the left to the matching one on the right). Each row now
-// carries its own verdict instead of a bare number: NOVO for an affix the
-// equipped item doesn't have at all, PERDE for one the new item would drop
-// entirely, or a green ▲/red ▼ delta for a plain improvement/downgrade —
-// exactly the three buckets asked for (novos / melhoram / pioram).
-function CompareStatRow({ row }: { row: StatCompareRow }) {
-  const { label, isPct, equippedValue: eq, newValue: nv, isBase } = row;
-  const isNew = eq === 0 && nv !== 0;
-  const isLost = nv === 0 && eq !== 0;
-  const improved = !isNew && !isLost && nv > eq;
-  const worsened = !isNew && !isLost && nv < eq;
-  const valueColor = isLost ? 'text-parchment/35 line-through' : isNew || improved ? 'text-green-400' : worsened ? 'text-crimson' : 'text-parchment';
-  return (
-    <div className="flex items-center justify-between gap-2 text-[11px]">
-      {/* Base (the item's guaranteed slot stat) reads plain parchment;
-          affixes (the rolled bonuses) read sky blue — same convention
-          Mercador already uses for a fresh item's own stat list. */}
-      <span className={`truncate min-w-0 ${isBase ? 'text-parchment/70' : 'text-sky-300/80'}`}>{label}</span>
-      <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
-        <span className={valueColor}>{fmtStatValue(isLost ? eq : nv, isPct)}</span>
-        {isNew && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-bold uppercase tracking-wide">Novo</span>}
-        {isLost && <span className="text-[9px] px-1 rounded bg-crimson/20 text-crimson font-bold uppercase tracking-wide">Perde</span>}
-        {improved && <span className="text-green-400">▲+{fmtStatValue(nv - eq, isPct)}</span>}
-        {worsened && <span className="text-crimson">▼{fmtStatValue(nv - eq, isPct)}</span>}
-      </span>
-    </div>
-  );
-}
-
-// Full compare table between what's equipped and a candidate item — one row
-// per stat either side has, grouped into "Atributo Base" (the slot's
-// guaranteed primary roll) and "Afixos" (everything else), each section in
-// STAT_META order.
-function CompareStatTable({ item, equipped }: { item: EquipmentItem; equipped: EquipmentItem | null }) {
-  const rows = compareItemStatRows(item, equipped);
-  const baseRows = rows.filter((r) => r.isBase);
-  const affixRows = rows.filter((r) => !r.isBase);
-  if (rows.length === 0) return null;
-  return (
-    <div className="w-full space-y-2.5">
-      {baseRows.length > 0 && (
-        <div className="space-y-1">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">Atributo Base</span>
-          {baseRows.map((r) => <CompareStatRow key={r.label} row={r} />)}
-        </div>
-      )}
-      {affixRows.length > 0 && (
-        <div className="space-y-1">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">Afixos</span>
-          {affixRows.map((r) => <CompareStatRow key={r.label} row={r} />)}
+      {own.length > 0 && (
+        <div className="w-full mt-1 space-y-2 border-t border-panelborder/30 pt-1.5">
+          {baseRows.length > 0 && <div className="space-y-1">{baseRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>}
+          {affixRows.length > 0 && <div className="space-y-1">{affixRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>}
         </div>
       )}
     </div>
@@ -532,9 +525,12 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 
   const item = selected.item as EquipmentItem;
 
-  // An inventory item gets the two-window compare: the equipped item on the
-  // left reads plainly, the new item on the right carries the ▲/▼ delta.
+  // An inventory item gets the two-column compare: each column lists that
+  // item's own real stats (never a shared/merged number) — the equipped
+  // side plain plus a PERDE tag for anything the swap would drop, the new
+  // side carrying NOVO/▲/▼ against whatever's currently equipped.
   if (selected.kind === 'inventory') {
+    const compareRows = compareItemStatRows(item, equippedInSlot);
     return (
       <Modal onClose={onClose} bare>
         <div className="relative w-[min(94vw,420px)] flex flex-col items-center gap-3 px-4 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
@@ -548,12 +544,10 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 
           <div className="font-bold text-base text-center" style={{ color: rarityColor(item.rarity) }}>{itemDisplayName(item)}</div>
 
-          <div className="grid grid-cols-2 gap-3 w-full">
-            <ItemIconHeader item={equippedInSlot} label="Equipado" />
-            <ItemIconHeader item={item} label="Novo" />
+          <div className="grid grid-cols-2 gap-3 w-full items-start">
+            <ItemCompareColumn item={equippedInSlot} label="Equipado" rows={compareRows} side="equipped" />
+            <ItemCompareColumn item={item} label="Novo" rows={compareRows} side="new" />
           </div>
-
-          <CompareStatTable item={item} equipped={equippedInSlot} />
 
           <div className="flex gap-2 mt-1">
             <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
