@@ -11,6 +11,10 @@ import pergaminho from '../assets/pergaminho.webp';
 
 interface Props {
   onCreated: (c: Character) => void;
+  // Case-insensitive global name-availability check (see character_names in
+  // schema.sql) — the leaderboard shows names alone, so two heroes sharing
+  // one would be genuinely ambiguous there, not just a cosmetic clash.
+  checkNameTaken: (name: string) => Promise<boolean>;
 }
 
 // Fixed declaration order in classes.ts happens to split into 5+5+4 — the
@@ -81,7 +85,7 @@ function AttributeRadar({ totals }: { totals: Attributes }) {
   );
 }
 
-export function CharacterCreation({ onCreated }: Props) {
+export function CharacterCreation({ onCreated, checkNameTaken }: Props) {
   const [name, setName] = useState('');
   const [selectedId, setSelectedId] = useState<ClassId | null>(null);
   const [closing, setClosing] = useState(false);
@@ -92,6 +96,8 @@ export function CharacterCreation({ onCreated }: Props) {
   // even knows which hero they're naming.
   const [naming, setNaming] = useState(false);
   const [ironMode, setIronMode] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [checkingName, setCheckingName] = useState(false);
 
   const cardRefs = useRef<Partial<Record<ClassId, HTMLButtonElement>>>({});
   const panelRef = useRef<HTMLDivElement>(null);
@@ -175,10 +181,15 @@ export function CharacterCreation({ onCreated }: Props) {
     setNaming(true);
   }
 
-  function finalizeCreate() {
-    if (!selectedId) return;
+  async function finalizeCreate() {
+    if (!selectedId || checkingName) return;
     const finalName = name.trim();
     if (!finalName) return;
+    setNameError(null);
+    setCheckingName(true);
+    const taken = await checkNameTaken(finalName);
+    setCheckingName(false);
+    if (taken) { setNameError('Esse nome já está em uso — escolha outro.'); return; }
     const created = createCharacter(finalName, selectedId, allocated, ironMode);
     // createCharacter() sets hp to the class's raw baseHp, before the
     // starting equipment/attribute-point bonuses above it are counted —
@@ -349,12 +360,13 @@ export function CharacterCreation({ onCreated }: Props) {
             <input
               autoFocus
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setNameError(null); }}
               onKeyDown={(e) => { if (e.key === 'Enter') finalizeCreate(); }}
               placeholder="Nome do herói"
               maxLength={18}
               className="w-56 px-3 py-2 rounded bg-black/40 border border-white/20 text-center text-parchment placeholder:text-parchment/40 focus:outline-none focus:border-gold"
             />
+            {nameError && <p className="text-xs text-crimson -mt-1">{nameError}</p>}
 
             <label className={`flex items-start gap-2 w-full max-w-xs px-3 py-2 rounded border cursor-pointer text-left transition ${
               ironMode ? 'border-crimson bg-crimson/15' : 'border-panelborder/40 bg-black/20 hover:border-crimson/40'
@@ -377,7 +389,9 @@ export function CharacterCreation({ onCreated }: Props) {
 
             <div className="flex gap-2 mt-1">
               <SmallButton onClick={() => setNaming(false)} variant="ghost">Voltar</SmallButton>
-              <SmallButton onClick={finalizeCreate} disabled={!name.trim()}>Iniciar Jornada</SmallButton>
+              <SmallButton onClick={finalizeCreate} disabled={!name.trim() || checkingName}>
+                {checkingName ? 'Verificando...' : 'Iniciar Jornada'}
+              </SmallButton>
             </div>
           </div>
         </Modal>

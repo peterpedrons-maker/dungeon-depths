@@ -35,6 +35,42 @@ begin
   end if;
 end $$;
 
+-- Reserves a case-insensitive-unique display name per character slot,
+-- world-readable (like ranking below) so CharacterCreation can check
+-- availability before letting the player commit to a name — `characters`
+-- itself can't be queried across accounts for this (its RLS above only lets
+-- an account see its own rows), and the name lives inside its jsonb `data`
+-- blob anyway, not its own column. Kept in sync by saveCloudCharacter
+-- (upserts the reservation alongside every character save) and
+-- deleteCloudCharacter (frees it back up on delete/permadeath) in
+-- lib/cloudSave.ts.
+create table if not exists public.character_names (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  slot integer not null,
+  name_lower text not null,
+  primary key (user_id, slot)
+);
+
+create unique index if not exists character_names_unique_idx on public.character_names (name_lower);
+
+alter table public.character_names enable row level security;
+
+drop policy if exists "character_names_select_all" on public.character_names;
+create policy "character_names_select_all" on public.character_names
+  for select using (true);
+
+drop policy if exists "character_names_insert_own" on public.character_names;
+create policy "character_names_insert_own" on public.character_names
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "character_names_update_own" on public.character_names;
+create policy "character_names_update_own" on public.character_names
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "character_names_delete_own" on public.character_names;
+create policy "character_names_delete_own" on public.character_names
+  for delete using (auth.uid() = user_id);
+
 alter table public.characters enable row level security;
 
 drop policy if exists "characters_select_own" on public.characters;
@@ -74,6 +110,18 @@ create table if not exists public.ranking (
   created_at timestamptz not null default now()
 );
 
+-- Migration: collapse pre-existing duplicate rows (same account+character
+-- name) down to the most recent one before the unique index below goes on,
+-- or it fails to attach on old data — a run ending used to INSERT a fresh
+-- row every time, so a character finishing several runs flooded the board
+-- with duplicates of itself instead of the leaderboard showing one row per
+-- player. New runs now UPSERT onto (user_id, name) instead (see
+-- insertGlobalRankEntry in lib/cloudSave.ts).
+delete from public.ranking a using public.ranking b
+  where a.user_id = b.user_id and a.name = b.name and a.id < b.id;
+
+create unique index if not exists ranking_user_name_idx on public.ranking (user_id, name);
+
 alter table public.ranking enable row level security;
 
 drop policy if exists "ranking_select_all" on public.ranking;
@@ -83,6 +131,10 @@ create policy "ranking_select_all" on public.ranking
 drop policy if exists "ranking_insert_own" on public.ranking;
 create policy "ranking_insert_own" on public.ranking
   for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ranking_update_own" on public.ranking;
+create policy "ranking_update_own" on public.ranking
+  for update using (auth.uid() = user_id);
 
 -- One row per account (not per character slot) — prestígio and cosméticos
 -- da Loja de Prestígio survive character deletion, including Modo Ferro
