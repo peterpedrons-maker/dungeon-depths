@@ -87,7 +87,10 @@ export default function App() {
   }, [session]);
 
   useEffect(() => {
-    fetchGlobalRanking().then(setRanking);
+    fetchGlobalRanking().then(({ ranking, error }) => {
+      setRanking(ranking);
+      if (error) setRankingError(error);
+    });
   }, []);
 
   // Loja de Prestígio is account-wide, not per-slot, so this is a single
@@ -168,9 +171,11 @@ export default function App() {
       ironMode: finalCharacter.ironMode,
     };
     if (session) {
-      insertGlobalRankEntry(session.user.id, entry).then((err) => {
-        setRankingError(err);
-        fetchGlobalRanking().then(setRanking);
+      insertGlobalRankEntry(session.user.id, entry).then((insertErr) => {
+        fetchGlobalRanking().then(({ ranking, error: fetchErr }) => {
+          setRanking(ranking);
+          setRankingError(insertErr ?? fetchErr);
+        });
       });
     }
   }

@@ -118,3 +118,10 @@ create policy "profiles_insert_own" on public.profiles
 drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = user_id);
+
+-- PostgREST (the API layer the app's supabase-js client talks to) caches
+-- the schema and doesn't always notice DDL run through the SQL Editor right
+-- away — a column that was just added/altered above can 404 as "does not
+-- exist" from the app for a bit until the cache catches up. This forces an
+-- immediate reload instead of waiting on it. Harmless to run any time.
+notify pgrst, 'reload schema';

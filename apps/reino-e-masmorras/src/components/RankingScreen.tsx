@@ -5,10 +5,10 @@ import { IconTrophy } from './icons';
 
 const MEDAL_COLOR = ['#e0b93c', '#c9c9d4', '#c98a55'];
 
-// debugError: the raw error from the last leaderboard write attempt, if any
-// — shown inline instead of only logged to console, since a phone has no
-// devtools to read that console from. Temporary diagnostic surface, not a
-// permanent UI feature.
+// debugError: the raw error from the last leaderboard read OR write attempt,
+// if any — shown inline instead of only logged to console, since a phone
+// has no devtools to read that console from. Temporary diagnostic surface,
+// not a permanent UI feature.
 export function RankingScreen({ ranking, debugError }: { ranking: RankEntry[]; debugError?: string | null }) {
   // Server already orders by level desc / cp desc, but sort again client-side
   // so the screen is correct even if `ranking` ever arrives unsorted (e.g. a
@@ -18,7 +18,7 @@ export function RankingScreen({ ranking, debugError }: { ranking: RankEntry[]; d
     <Panel title="Ranking do Reino">
       {debugError && (
         <p className="text-crimson text-xs bg-crimson/10 border border-crimson/40 rounded px-3 py-2 mb-3">
-          Sua última expedição não foi salva no ranking: {debugError}
+          O ranking não carregou direito: {debugError}
         </p>
       )}
       {sorted.length === 0 ? (

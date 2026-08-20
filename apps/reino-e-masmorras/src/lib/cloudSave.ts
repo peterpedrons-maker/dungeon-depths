@@ -26,26 +26,41 @@ export async function deleteCloudCharacter(userId: string, slot: number): Promis
   await supabase.from('characters').delete().eq('user_id', userId).eq('slot', slot);
 }
 
+export interface RankingFetchResult { ranking: RankEntry[]; error: string | null }
+
 // Top 20 across every account, not just this browser — the whole point of
 // a global leaderboard. Unlike the local-only version this never caps or
 // dedupes per player: every completed/retreated run gets its own row, and
 // only the best 20 overall are shown.
-export async function fetchGlobalRanking(): Promise<RankEntry[]> {
+//
+// Also returns the raw error (if any) alongside the (possibly empty) list —
+// a prior version swallowed read errors just like insertGlobalRankEntry
+// used to swallow write errors, which meant "the insert reported success
+// but the ranking still shows nothing" had no way to be told apart from
+// "there really is nothing to show" without direct DB access.
+export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
   const { data, error } = await supabase
     .from('ranking')
     .select('name,class_id,cp,level,created_at,iron_mode')
     .order('level', { ascending: false })
     .order('cp', { ascending: false })
     .limit(20);
-  if (error || !data) return [];
-  return data.map((r) => ({
-    name: r.name as string,
-    classId: r.class_id as ClassId,
-    cp: (r.cp as number | null) ?? 0,
-    level: r.level as number,
-    date: (r.created_at as string).slice(0, 10),
-    ironMode: r.iron_mode as boolean,
-  }));
+  if (error) {
+    console.error('fetchGlobalRanking failed', error);
+    return { ranking: [], error: `${error.message}${error.hint ? ` (${error.hint})` : ''}` };
+  }
+  if (!data) return { ranking: [], error: null };
+  return {
+    ranking: data.map((r) => ({
+      name: r.name as string,
+      classId: r.class_id as ClassId,
+      cp: (r.cp as number | null) ?? 0,
+      level: r.level as number,
+      date: (r.created_at as string).slice(0, 10),
+      ironMode: r.iron_mode as boolean,
+    })),
+    error: null,
+  };
 }
 
 // Returns null on success, or the Postgres/PostgREST error message on
