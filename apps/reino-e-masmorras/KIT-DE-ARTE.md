@@ -1291,181 +1291,11 @@ Grash, facing left: huge muscular green-skinned goblin chieftain, much bigger an
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
-### Inimigos V — Cripta do Tesouro: Zumbi Saqueador, Guardião de Pedra, Espectro Ganancioso, Múmia Enrolada e Baú Mímico
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cripta do Tesouro (5 inimigos regulares)
-
-```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Zumbi Saqueador (facing left): decaying gray-green shambling zombie in tattered burial clothes, fistful of stolen gold coins and a rusty dagger, milky dead eyes.
-2) Guardião de Pedra (facing left): squat blocky animated stone golem covered in faintly glowing ancient runes, cracked gray granite body, heavy stone fists.
-3) Espectro Ganancioso (facing left): translucent ghostly wraith in tattered spectral robes, pale-blue glow, clutching a hoard of ghostly floating gold coins.
-4) Múmia Enrolada (facing left): mummified undead figure wrapped head to toe in dusty aged bandages, one arm outstretched, slow lumbering stance.
-5) Baú Mímico (facing left): wooden treasure chest with a toothy monstrous maw where the lid should open, small beady eyes, iron bands.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Chefe — Cripta do Tesouro: Custódio Amaldiçoado
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Cripta do Tesouro, spawna na profundidade 9 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Custódio Amaldiçoado, facing left: massive undead knight, ornate corroded gold-and-black burial armor fused to its skeletal frame, ceremonial key/treasure-bound chain on its belt, heavy ornamental warhammer, faint cursed purple-green necrotic energy leaking from the armor's joints.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Inimigos VI — Pântano Podre: Sapo Venenoso, Víbora do Pântano, Lodaçal Rastejante, Fogo-Fátuo Amaldiçoado e Jacaré Podre
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Pântano Podre (5 inimigos regulares)
-
-```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Sapo Venenoso (facing left): bloated warty dark-green toad, dripping toxic purple secretions on its back, bulging yellow eyes, squat low stance.
-2) Víbora do Pântano (facing left): long coiled dark-scaled swamp snake, dull olive-and-black pattern, reared up ready to strike, flicking forked tongue.
-3) Lodaçal Rastejante (facing left): shapeless creature of animated black swamp mud and tangled rotting roots, glowing faint sickly-yellow eyes in the muck.
-4) Fogo-Fátuo Amaldiçoado (facing left): small floating ball of flickering pale-green ghostly flame, a faint malevolent face barely visible inside the glow.
-5) Jacaré Podre (facing left): decaying undead alligator, patches of exposed bone and rotting gray-green hide, jaws open showing jagged teeth.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Chefe — Pântano Podre: Mãe do Lodo
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Pântano Podre, spawna na profundidade 13 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Mãe do Lodo, facing left: huge bloated swamp hag, part rotting flesh and part living black mud and tangled roots, several thin root-like tendrils from her back like spider legs, glowing sickly yellow-green eyes, crown of thorny reeds. Clearly the biggest, most menacing creature of the swamp.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Inimigos VII — Covil de Aranhas: Aranha Caçadora, Aranha Venenosa, Aranha Gigante, Enxame de Aranhinhas e Tecelã Sombria
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil de Aranhas (5 inimigos regulares)
-
-```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Aranha Caçadora (facing left): medium brown-and-tan hairy spider, low crouched stalking stance, eight legs spread wide.
-2) Aranha Venenosa (facing left): sleek dark-purple spider, glistening dripping venom-green fangs, venom-green markings on its abdomen.
-3) Aranha Gigante (facing left): large hulking black-and-gray spider, thick spiky legs, oversized fanged mandibles — clearly bigger than the other spiders.
-4) Enxame de Aranhinhas (facing left): tight cluster of many small black spiderlings swarming together as a single mass.
-5) Tecelã Sombria (facing left): humanoid-spider hybrid — gaunt shadowy torso emerging from a large black spider's thorax/legs, long clawed fingers trailing web-silk.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Chefe — Covil de Aranhas: Matriarca Negra
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil de Aranhas, spawna na profundidade 16 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Matriarca Negra, facing left: massive black widow spider queen, far bigger than any other spider in the den, glossy jet-black bulbous abdomen with a blood-red hourglass marking, thick spiky segmented legs, oversized venom-dripping fangs, multiple gleaming red eyes.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
 ### Região 2 — cada masmorra tem seu próprio roster, igual à Região 1
 
-As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1.
+As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada (regulares + chefe); faltam Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida (só falta o roster de regulares — o chefe Lorde Esqueleto já existe), Ruínas Élficas e Arena de Sangue.
 
 **Covil dos Dragões é a única exceção do lado do chefe**: o chefe dela é "Dragão Jovem" — o mesmo dragão já coberto no prompt "Inimigos II" mais acima, cujo sprite já está integrado ao jogo (`dragao.webp`). Não precisa de prompt novo — dragões mais fortes (adultos, anciões, lendários) ficam guardados para masmorras de regiões futuras.
-
-### Inimigos VIII — Torre Amaldiçoada: Gárgula, Espectro do Bibliotecário, Cavaleiro Selado, Olho Vigilante e Sombra Rastejante
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Torre Amaldiçoada (5 inimigos regulares)
-
-```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Gárgula Desperta (facing left): a stone gargoyle come to life, dark gray weathered stone hide, small leathery wings, sharp claws, crouched perched stance.
-2) Espectro do Bibliotecário (facing left): a translucent ghostly spectral scholar in tattered robes, pale blue-white glow, clutching a floating spectral tome, hollow mournful face.
-3) Cavaleiro Selado (facing left): an animated suit of ancient cursed armor, dark corroded plate, faint purple runic glow between the joints, wielding a heavy sword, no visible face inside the helm.
-4) Olho Vigilante (facing left): a small floating magical eyeball wrapped in thin arcane tendrils, faint purple glow, eerie and unsettling.
-5) Sombra Rastejante (facing left): a low creeping mass of living shadow, faint glowing pale eyes, clawed shadow-limbs dragging across the ground.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Chefe — Torre Amaldiçoada: Arquimago Caído
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Torre Amaldiçoada, spawna na profundidade 23 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Arquimago Caído, facing left: an undead archmage bound to the tower forever, tattered once-regal purple-and-gold robes over a gaunt withered frame, a broken ornate staff crackling with dark arcane energy, faint glowing runes swirling around its hands, hollow glowing eyes, an aura of forbidden magic.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Inimigos IX — Minas Abandonadas: Coveiro Amaldiçoado, Golem de Minério, Kobold Saqueador, Enxame de Morcegos e Espírito do Metano
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Minas Abandonadas (5 inimigos regulares)
-
-```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Coveiro Amaldiçoado (facing left): an undead miner in ragged work clothes, decaying gray skin, gripping a rusty pickaxe, a dented mining helmet with a faint glowing lamp.
-2) Golem de Minério (facing left): a blocky golem built from raw dark ore and rock chunks, glowing faint orange veins of mineral running through its body, heavy stone fists.
-3) Kobold Saqueador (facing left): a small scrawny reptilian kobold in scrappy leather, gripping a rusty dagger, sneaky crouched posture, beady eyes.
-4) Enxame de Morcegos (facing left): a tight swarm of small dark cave bats flying together as one mass, leathery wings, beady red eyes.
-5) Espírito do Metano (facing left): a small floating ball of flickering sickly greenish gas/flame, faint toxic glow, wispy trailing fumes.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-### Chefe — Minas Abandonadas: Titã de Minério
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Minas Abandonadas, spawna na profundidade 24 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Titã de Minério, facing left: a massive humanoid golem built from raw ore and jagged rock, far bigger than a common ore golem, glowing molten-orange veins running through cracks across its body, huge crushing fists, an imposing hulking presence.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
 
 ### Inimigos X — Floresta Amaldiçoada: Ent Corrompido, Lobo Espectral, Fada Sombria, Urso Amaldiçoado e Trepadeira Estranguladora
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Floresta Amaldiçoada (5 inimigos regulares)
@@ -1794,7 +1624,7 @@ This is a complete, self-contained background illustration — no magenta backgr
 
 ## Fundos de Batalha
 
-12 imagens — uma para cada masmorra já existente no jogo, substituindo o fundo genérico desenhado por código na tela de combate. Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
+Uma imagem por masmorra, substituindo o fundo genérico desenhado por código na tela de combate. Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada — os prompts abaixo cobrem as 5 masmorras restantes. Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
 
 ### Ruínas Superficiais
 ```
@@ -1814,61 +1644,6 @@ Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO ant
 A combat arena background for a turn-based RPG: the interior of a rocky goblin-infested cave, crude tribal totems and bone decorations mounted on the rock walls along the edges, warm flickering torchlight glow near both the left and right thirds of the upper-middle area. A packed dirt cave floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker than the back wall so a character standing on it reads clearly.
 
 Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-### Cripta do Tesouro
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: the interior of an ornate golden-lit crypt, carved stone walls with gilded engravings, small piles of glinting treasure and coins tucked into alcoves along the edges, warm golden magical glow near both the left and right thirds of the upper-middle area. A polished stone floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker than the back wall so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-### Pântano Podre
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: a murky swamp clearing, dead leafless trees with hanging moss framing the left and right edges, thick greenish mist drifting low, sickly green-grey ambient light. A muddy waterlogged ground strip runs along the bottom ~15% of the image, spanning the full width, slightly darker than the back wall so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-### Covil de Aranhas
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: a rocky cave interior thick with spider silk, dense webbing draped from the ceiling and along the left and right cave walls, dim cold greenish-white ambient light filtering through the webs. A rough rocky cave floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker than the back wall so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (and clear of thick webbing) — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-### Torre Amaldiçoada
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: the interior of a cursed tower chamber, dark stone walls etched with glowing purple runes, a tall arched window near the back center glowing with violet moonlight, floating dust motes catching the light. A dark stone floor strip runs along the bottom ~15% of the image, spanning the full width, slightly lighter than the walls so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-### Minas Abandonadas
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: an abandoned mineshaft tunnel, wooden support beams framing the left and right edges, warm lantern glow near both upper thirds, pickaxes and mining equipment leaning against the walls at the edges only. Rusted rail tracks run along a dirt floor strip along the bottom ~15% of the image, spanning the full width.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (rails may pass through but nothing tall) — this is where two combat sprites will stand, one near the left third and one near the right third.
 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```

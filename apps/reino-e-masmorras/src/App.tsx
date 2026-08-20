@@ -5,7 +5,7 @@ import { loadCharacter, saveCharacter, clearCharacter, loadProfile, saveProfileL
 import { supabase } from './lib/supabaseClient';
 import {
   fetchCloudCharacterSlots, saveCloudCharacter, deleteCloudCharacter, fetchGlobalRanking, insertGlobalRankEntry,
-  fetchProfile, saveProfile,
+  fetchProfile, saveProfile, isCharacterNameTaken,
 } from './lib/cloudSave';
 import { COSMETICS } from './lib/cosmetics';
 import { effectiveMaxHp, computeCombatPower } from './lib/combatStats';
@@ -238,7 +238,7 @@ export default function App() {
       );
       break;
     case 'create':
-      content = <CharacterCreation onCreated={handleCreated} />;
+      content = <CharacterCreation onCreated={handleCreated} checkNameTaken={isCharacterNameTaken} />;
       break;
     case 'game':
       if (!character) { setScreen('select'); break; }

@@ -20,18 +20,45 @@ export async function fetchCloudCharacterSlots(userId: string): Promise<Map<numb
 
 export async function saveCloudCharacter(userId: string, slot: number, character: Character): Promise<void> {
   await supabase.from('characters').upsert({ user_id: userId, slot, data: character, updated_at: new Date().toISOString() });
+  // Keeps the world-readable name reservation (see character_names in
+  // schema.sql) in step with every save, not just creation — covers both a
+  // brand-new character and the one-time upload of a pre-account local save
+  // (App.tsx's slot-migration effect) without needing its own call site.
+  // Name never changes post-creation, so this is a no-op upsert most saves.
+  await supabase.from('character_names').upsert({ user_id: userId, slot, name_lower: character.name.trim().toLowerCase() });
 }
 
 export async function deleteCloudCharacter(userId: string, slot: number): Promise<void> {
   await supabase.from('characters').delete().eq('user_id', userId).eq('slot', slot);
+  // Frees the name back up — otherwise a deleted (or Modo Ferro permadeath)
+  // character's name would stay reserved forever with no character left to
+  // own it.
+  await supabase.from('character_names').delete().eq('user_id', userId).eq('slot', slot);
+}
+
+// Case-insensitive global availability check backing CharacterCreation's
+// name field — reads the world-readable character_names reservation table
+// (see schema.sql) instead of `characters` itself, whose RLS only lets an
+// account see its own rows.
+export async function isCharacterNameTaken(name: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('character_names')
+    .select('user_id')
+    .eq('name_lower', name.trim().toLowerCase())
+    .limit(1);
+  if (error) {
+    console.error('isCharacterNameTaken failed', error);
+    return false; // fail open — a spurious read error shouldn't block creating a character
+  }
+  return (data?.length ?? 0) > 0;
 }
 
 export interface RankingFetchResult { ranking: RankEntry[]; error: string | null }
 
 // Top 20 across every account, not just this browser — the whole point of
-// a global leaderboard. Unlike the local-only version this never caps or
-// dedupes per player: every completed/retreated run gets its own row, and
-// only the best 20 overall are shown.
+// a global leaderboard. One row per character (see insertGlobalRankEntry),
+// so this is naturally already deduped per player — no repeat runs by the
+// same character flooding the top 20 with copies of themselves.
 //
 // Also returns the raw error (if any) alongside the (possibly empty) list —
 // a prior version swallowed read errors just like insertGlobalRankEntry
@@ -63,6 +90,11 @@ export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
   };
 }
 
+// Upserts onto (user_id, name) — see the unique index in schema.sql —
+// instead of always inserting, so a character finishing several runs
+// updates its one leaderboard row in place rather than piling up a fresh
+// duplicate of itself every time.
+//
 // Returns null on success, or the Postgres/PostgREST error message on
 // failure — callers can surface this in the UI. A failed leaderboard write
 // shouldn't interrupt the run-end flow, but this used to be swallowed
@@ -73,10 +105,10 @@ export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
 // show it on-screen too, which matters on mobile where devtools aren't an
 // option.
 export async function insertGlobalRankEntry(userId: string, entry: RankEntry): Promise<string | null> {
-  const { error } = await supabase.from('ranking').insert({
+  const { error } = await supabase.from('ranking').upsert({
     user_id: userId, name: entry.name, class_id: entry.classId, cp: entry.cp, level: entry.level,
-    iron_mode: entry.ironMode ?? false,
-  });
+    iron_mode: entry.ironMode ?? false, created_at: new Date().toISOString(),
+  }, { onConflict: 'user_id,name' });
   if (error) {
     console.error('insertGlobalRankEntry failed', error);
     return `${error.message}${error.hint ? ` (${error.hint})` : ''}`;
