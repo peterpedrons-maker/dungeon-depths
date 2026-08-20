@@ -170,7 +170,15 @@ function statTotals(item: EquipmentItem): Record<StatKey, number> {
   return totals;
 }
 
-export interface StatCompareRow { label: string; isPct: boolean; equippedValue: number; newValue: number }
+// isBase marks the item's own primary roll (the 7 PRIMARY_KEYS — a weapon's
+// Ataque Físico, armor's Defesa, etc., the stat every item of that slot is
+// guaranteed to roll) as opposed to a secondary affix (Precisão, Chance de
+// Item, and the other roll-of-the-dice bonuses with no primary field of
+// their own) — lets the UI color the two differently instead of listing
+// them as one undifferentiated pile of numbers.
+export interface StatCompareRow { label: string; isPct: boolean; equippedValue: number; newValue: number; isBase: boolean }
+
+const PRIMARY_KEY_SET: ReadonlySet<string> = new Set(PRIMARY_KEYS);
 
 // Side-by-side stat picture of `newItem` vs. whatever's currently equipped
 // in its slot — both sides go through enhancedItem() first so a comparison
@@ -182,11 +190,11 @@ export function compareItemStatRows(newItem: EquipmentItem, equipped: EquipmentI
   const a = statTotals(enhancedItem(newItem));
   const b = equipped ? statTotals(enhancedItem(equipped)) : ({} as Record<StatKey, number>);
   return STAT_META
-    .map(({ key, label, isPct }) => ({ label, isPct, equippedValue: b[key] ?? 0, newValue: a[key] ?? 0 }))
+    .map(({ key, label, isPct }) => ({ label, isPct, equippedValue: b[key] ?? 0, newValue: a[key] ?? 0, isBase: PRIMARY_KEY_SET.has(key) }))
     .filter((row) => row.equippedValue !== 0 || row.newValue !== 0);
 }
 
-export interface ItemStatLine { label: string; isPct: boolean; value: number; delta: number }
+export interface ItemStatLine { label: string; isPct: boolean; value: number; delta: number; isBase: boolean }
 
 // `target`'s own stat picture — Path of Exile style: one item's real stats,
 // each line optionally carrying a delta against whatever's equipped in that
@@ -199,5 +207,5 @@ export function itemStatLines(target: EquipmentItem, equipped: EquipmentItem | n
   const rows = compareItemStatRows(target, equipped);
   return rows
     .filter((r) => r.newValue !== 0)
-    .map((r) => ({ label: r.label, isPct: r.isPct, value: r.newValue, delta: r.newValue - r.equippedValue }));
+    .map((r) => ({ label: r.label, isPct: r.isPct, value: r.newValue, delta: r.newValue - r.equippedValue, isBase: r.isBase }));
 }
