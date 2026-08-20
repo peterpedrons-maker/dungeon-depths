@@ -192,6 +192,30 @@ export function heroSprites(classId: ClassId): { idle: Sprite; attack: Sprite } 
   return { idle: spr, attack: spr };
 }
 
+// Shapes still borrowing another shape's sprite as a stand-in (see the
+// "(placeholder: ...)" comments above) rather than skeleton/dragon-style
+// intentional reuse — Bestiario.tsx shows a "?" for these instead of a
+// picture that would otherwise look like some unrelated creature's, or
+// worse, an exact duplicate of a different entry's sprite.
+export const PLACEHOLDER_ENEMY_SHAPES = new Set<EnemyShape>([
+  // Região 2 — Floresta Amaldiçoada
+  'corruptedEnt', 'ghostWolf', 'darkFairy', 'cursedBear', 'stranglingVine', 'forestHeart',
+  // Região 2 — Covil dos Dragões (dragon, o chefe, já tem arte própria)
+  'dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent',
+  // Região 2 — Necrópole Esquecida (skeletonLord, o chefe, já tem arte própria)
+  'darkReaper', 'deathCrow', 'boneExecutioner', 'wailingGhost', 'graveWorm',
+  // Região 2 — Ruínas Élficas
+  'corruptedGuardian', 'whisperingVine', 'ruinBeast', 'elvenWraith', 'crystalGolem', 'ancestralGuardian',
+  // Região 2 — Arena de Sangue
+  'cursedGladiator', 'arenaBeast', 'maskedExecutioner', 'beastTamer', 'fallenChampion', 'grandChampion',
+  // Alvos de Caçada (lib/hunts.ts)
+  'boneTyrant', 'swampLeviathan', 'infernalWyrm',
+]);
+
+export function hasOwnEnemyArt(shape: EnemyShape): boolean {
+  return !PLACEHOLDER_ENEMY_SHAPES.has(shape);
+}
+
 const enemyCache: Partial<Record<EnemyShape, Sprite>> = {};
 export function enemySprite(shape: EnemyShape): Sprite {
   if (!enemyCache[shape]) {
