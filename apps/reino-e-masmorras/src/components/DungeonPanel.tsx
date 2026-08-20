@@ -15,6 +15,7 @@ import { rollAttack, rollAbilityHit } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
+import { Modal } from './Modal';
 import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
@@ -62,6 +63,20 @@ const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_DROP_CHANCE = 0.12;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
+// A phone locking or a tab backgrounding pauses every setTimeout in it —
+// there's no way for a web page to keep actually running while suspended
+// by the OS/browser. Instead, on return the fight fast-forwards silently
+// (see runCatchUp) through however much real time passed, using the exact
+// same combat functions as live play, just driven synchronously instead of
+// through their normal setTimeout chain. Capped so a forgotten tab open for
+// days doesn't turn into unattended multi-day farming — a few hours is
+// "went out and came back", not an idle-game exploit.
+const MAX_CATCHUP_MS = 3 * 60 * 60 * 1000;
+// Below this, whatever drift the live timers picked up while backgrounded
+// isn't worth a silent fast-forward pass over — a quick tab switch already
+// mostly keeps pace.
+const CATCHUP_MIN_MS = 4000;
+const CATCHUP_SAFETY_MAX_STEPS = 30000;
 
 // Weighted floor for a Hunt boss's guaranteed drop — Raro is the baseline,
 // with a real (not token) shot at Épico or Lendário, since the fight itself
@@ -178,6 +193,20 @@ export interface RunStats {
   goldFromAutoSell: number;
 }
 export const EMPTY_RUN_STATS: RunStats = { kills: 0, goldFromKills: 0, xpGained: 0, itemsDropped: 0, itemsAutoSold: 0, goldFromAutoSell: 0 };
+
+// What runCatchUp fast-forwarded through while the tab was backgrounded —
+// shown once in a summary modal on return (see CATCHUP_MIN_MS/MAX_CATCHUP_MS).
+interface CatchUpSummary {
+  elapsedMs: number;
+  kills: number;
+  gold: number;
+  xp: number;
+  itemsFound: number;
+  itemsAutoSold: number;
+  leveledUp: boolean;
+  died: boolean;
+  won: boolean;
+}
 
 interface Props {
   character: Character;
@@ -303,6 +332,10 @@ export function DungeonPanel({
   const [activeBadgeKey, setActiveBadgeKey] = useState<string | null>(null);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
+  // Non-null only right after a runCatchUp pass (see the visibilitychange
+  // effect below) — shows the "enquanto você estava fora" summary modal
+  // once, then goes back to null on dismiss.
+  const [catchUpSummary, setCatchUpSummary] = useState<CatchUpSummary | null>(null);
   const [enemyStatuses, setEnemyStatuses] = useState<StatusEffectKind[]>([]);
   const [playerStatuses, setPlayerStatuses] = useState<StatusEffectKind[]>([]);
   const [enemyCCState, setEnemyCCState] = useState<CrowdControlKind[]>([]);
@@ -338,6 +371,22 @@ export function DungeonPanel({
   const pausedRef = useRef(false);
   const phaseRef = useRef<Phase>('fight');
   const mountedRef = useRef(true);
+  // True only while runCatchUp is fast-forwarding through backgrounded
+  // time — every visual/audio side effect (log lines, floaters, flashes,
+  // sfx, the ATB-bar sync* setters) short-circuits while this is up, and
+  // the two 900ms kill/victory transition delays resolve immediately
+  // instead of via setTimeout, so a loop of real combat functions can run
+  // synchronously instead of trickling out over real wall-clock time.
+  const silentRef = useRef(false);
+  // Mirrors the `endedReason` state so runCatchUp (running synchronously,
+  // outside React's render cycle) can read the just-set value immediately
+  // instead of the stale one React would still return before its next
+  // render — every setEndedReason call below also writes this ref.
+  const endedReasonRef = useRef<'death' | 'retreat' | 'victory' | null>(null);
+  // Set the instant the tab goes hidden (see the visibilitychange effect
+  // below); cleared back to null once a catch-up pass (or a no-op skip) has
+  // been handled for that hidden period.
+  const hiddenAtRef = useRef<number | null>(null);
   // Bumped every time a new enemy actually spawns — nothing in this file
   // ever clearTimeout()s a pending scheduleEnemy() callback, so when the
   // previous enemy dies mid-cycle its own still-pending action timer stays
@@ -379,7 +428,10 @@ export function DungeonPanel({
 
   const heroSpr = heroSprites(ch.classId);
 
-  function updateCh(next: Character) { chRef.current = next; setCh(next); onLiveUpdate(next); }
+  // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
+  // touch chRef hundreds of times in one synchronous pass) in favor of a
+  // single call with the final state once runCatchUp finishes.
+  function updateCh(next: Character) { chRef.current = next; setCh(next); if (!silentRef.current) onLiveUpdate(next); }
   function updateEnemy(next: EnemyInstance) { enemyRef.current = next; setEnemy(next); }
 
   // Every hp-reducing hit on the enemy (the player's own attack, thorns
@@ -412,24 +464,35 @@ export function DungeonPanel({
   }
 
   function updateDepth(next: number) { depthRef.current = next; setDepth(next); }
-  function syncEnemyStatuses() { setEnemyStatuses(enemyStatusRef.current.map((s) => s.kind)); }
-  function syncPlayerStatuses() { setPlayerStatuses(playerStatusRef.current.map((s) => s.kind)); }
-  function syncEnemyCC() { setEnemyCCState(enemyCCRef.current.map((c) => c.kind)); }
-  function syncPlayerCC() { setPlayerCCState(playerCCRef.current.map((c) => c.kind)); }
-  function syncPlayerMods() { setPlayerModsState([...playerModsRef.current]); }
-  function syncEnemyMods() { setEnemyModsState([...enemyModsRef.current]); }
-  function syncShield() { setPlayerShieldState(playerShieldRef.current); }
+  // All seven mirror a ref into displayed React state purely for the UI —
+  // pointless (and, at catch-up volume, wasteful) while nothing is on
+  // screen to show it to.
+  function syncEnemyStatuses() { if (!silentRef.current) setEnemyStatuses(enemyStatusRef.current.map((s) => s.kind)); }
+  function syncPlayerStatuses() { if (!silentRef.current) setPlayerStatuses(playerStatusRef.current.map((s) => s.kind)); }
+  function syncEnemyCC() { if (!silentRef.current) setEnemyCCState(enemyCCRef.current.map((c) => c.kind)); }
+  function syncPlayerCC() { if (!silentRef.current) setPlayerCCState(playerCCRef.current.map((c) => c.kind)); }
+  function syncPlayerMods() { if (!silentRef.current) setPlayerModsState([...playerModsRef.current]); }
+  function syncEnemyMods() { if (!silentRef.current) setEnemyModsState([...enemyModsRef.current]); }
+  function syncShield() { if (!silentRef.current) setPlayerShieldState(playerShieldRef.current); }
 
+  // The combat log, damage floaters, and hit-flash are all pure on-screen
+  // feedback for something the player is watching happen live — none of it
+  // means anything during a silent catch-up pass (see runCatchUp), which
+  // ends with its own summary instead. Skipping them there also avoids
+  // hundreds of pointless setState/setTimeout calls in one synchronous loop.
   function pushLog(line: string | LogLine) {
+    if (silentRef.current) return;
     const segments = typeof line === 'string' ? [{ text: line }] : line;
     setLog((l) => [...l.slice(-4), segments]);
   }
   function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean) {
+    if (silentRef.current) return;
     const id = floaterId.current++;
     setFloaters((f) => [...f, { id, side, value, crit, blocked, miss }]);
     setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
   }
   function flash(side: 'player' | 'enemy') {
+    if (silentRef.current) return;
     setFlashSide(side);
     setTimeout(() => { if (mountedRef.current) setFlashSide(null); }, 150);
   }
@@ -441,7 +504,12 @@ export function DungeonPanel({
   // AGI (stats.speedPct) — a fast build genuinely gets more actions in than
   // a slow one, not just better odds to dodge/block. Enemies stay at the
   // baseline pace for now (no per-shape speed stat yet).
+  // All three no-op while silentRef is up — runCatchUp drives playerAct/
+  // enemyAct/envTick directly in a tight synchronous loop instead, and none
+  // of them should also queue a real setTimeout that would otherwise fire
+  // (and double up on) an action a moment after catch-up already resolved it.
   function scheduleEnv(delay = ATTACK_INTERVAL) {
+    if (silentRef.current) return;
     setTimeout(() => {
       if (!mountedRef.current) return;
       if (!pausedRef.current && phaseRef.current === 'fight') envTick();
@@ -449,6 +517,7 @@ export function DungeonPanel({
   }
 
   function schedulePlayer(delay: number) {
+    if (silentRef.current) return;
     setPlayerRoundMs(delay);
     setPlayerRoundKey((k) => k + 1);
     setTimeout(() => {
@@ -458,6 +527,7 @@ export function DungeonPanel({
   }
 
   function scheduleEnemy(delay = ATTACK_INTERVAL) {
+    if (silentRef.current) return;
     const gen = enemyGenRef.current;
     setEnemyRoundMs(delay);
     setEnemyRoundKey((k) => k + 1);
@@ -894,7 +964,7 @@ export function DungeonPanel({
         applyEnemyHp(enemyHp);
         pushFloat('enemy', dmg, crit);
         flash('enemy');
-        if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx();
+        if (!silentRef.current) { if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx(); }
         // Plain-attack damage already shows on screen via the floater — the
         // log only needs to note it when an ability (and/or the status/CC/
         // buff it applied) made the round more than just a routine hit.
@@ -932,18 +1002,25 @@ export function DungeonPanel({
           // feel worth the extra danger, not just riskier for the same odds.
           tryDropEquipment(isBossKill || isEliteKill);
 
+          // Both transitions below normally wait 900ms so the kill lands
+          // before the screen moves on — pointless during a silent
+          // catch-up pass (see runCatchUp), where they instead resolve the
+          // instant this function returns so the fast-forward loop can move
+          // straight to the next action.
           if (isBossKill) {
-            setTimeout(() => {
+            const finishVictory = () => {
               if (!mountedRef.current) return;
               pushLog(`Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`);
               phaseRef.current = 'ended';
+              endedReasonRef.current = 'victory';
               setEndedReason('victory');
               setPhase('ended');
-            }, 900);
+            };
+            if (silentRef.current) finishVictory(); else setTimeout(finishVictory, 900);
             return;
           }
 
-          setTimeout(() => {
+          const advanceToNextEnemy = () => {
             if (!mountedRef.current) return;
             const nextDepth = depthRef.current + 1;
             updateDepth(nextDepth);
@@ -966,7 +1043,8 @@ export function DungeonPanel({
             // (its ATB bar would visibly pick up mid-fill instead of empty).
             schedulePlayer(nextPlayerDelay());
             scheduleEnemy();
-          }, 900);
+          };
+          if (silentRef.current) advanceToNextEnemy(); else setTimeout(advanceToNextEnemy, 900);
           return;
         }
       }
@@ -1048,8 +1126,10 @@ export function DungeonPanel({
     const hp = Math.max(0, chRef.current.hp - edmg);
     updateCh({ ...chRef.current, hp });
     pushFloat('player', edmg, ecrit, blocked);
-    if (enemyAtkType === 'magical') playMagicAttackSfx(); else playPhysicalAttackSfx();
-    if (edmg > 0) playHurtSfx();
+    if (!silentRef.current) {
+      if (enemyAtkType === 'magical') playMagicAttackSfx(); else playPhysicalAttackSfx();
+      if (edmg > 0) playHurtSfx();
+    }
     flash('player');
     const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
     // Plain-attack damage already shows on screen via the floater — the log
@@ -1128,6 +1208,7 @@ export function DungeonPanel({
     if (hp <= 0) {
       pushLog('Você caiu em combate...');
       phaseRef.current = 'ended';
+      endedReasonRef.current = 'death';
       setEndedReason('death');
       setPhase('ended');
       return;
@@ -1174,6 +1255,7 @@ export function DungeonPanel({
 
   function retreatSafely() {
     phaseRef.current = 'ended';
+    endedReasonRef.current = 'retreat';
     setEndedReason('retreat');
     setPhase('ended');
   }
@@ -1193,6 +1275,76 @@ export function DungeonPanel({
     onRestart(finalRunCharacter(), depthRef.current, endedReason ?? 'death', runStatsRef.current);
   }
 
+  function formatCatchUpDuration(ms: number): string {
+    const totalMinutes = Math.round(ms / 60000);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h <= 0) return `${m}min`;
+    if (m <= 0) return `${h}h`;
+    return `${h}h ${m}min`;
+  }
+
+  // Fast-forwards through however much real time passed while the tab was
+  // backgrounded (see the visibilitychange effect below), driving envTick/
+  // playerAct/enemyAct directly in a tight synchronous loop instead of
+  // relying on their normal setTimeout self-scheduling — same abilities,
+  // status effects, CC, drop/reward formulas as live play, since it's
+  // literally the same functions, just silenced (silentRef) and stepped
+  // through virtual time instead of real time. Capped at MAX_CATCHUP_MS so
+  // a tab forgotten open for days doesn't turn into unattended multi-day
+  // farming, and step-capped (CATCHUP_SAFETY_MAX_STEPS) as a backstop against
+  // any runaway loop.
+  function runCatchUp(elapsedMs: number) {
+    const capped = Math.min(elapsedMs, MAX_CATCHUP_MS);
+    const before = { ...runStatsRef.current };
+    const levelBefore = chRef.current.level;
+
+    silentRef.current = true;
+    let nextPlayerAt = 0;
+    let nextEnemyAt = 0;
+    let nextEnvAt = ATTACK_INTERVAL;
+    let steps = 0;
+
+    while (phaseRef.current === 'fight' && steps < CATCHUP_SAFETY_MAX_STEPS) {
+      const nextAt = Math.min(nextPlayerAt, nextEnemyAt, nextEnvAt);
+      if (nextAt > capped) break;
+      steps += 1;
+      if (nextAt === nextPlayerAt) {
+        playerAct();
+        nextPlayerAt += nextPlayerDelay();
+      } else if (nextAt === nextEnemyAt) {
+        enemyAct();
+        nextEnemyAt += ATTACK_INTERVAL;
+      } else {
+        envTick();
+        nextEnvAt += ATTACK_INTERVAL;
+      }
+    }
+
+    silentRef.current = false;
+
+    const after = runStatsRef.current;
+    const summary: CatchUpSummary = {
+      elapsedMs: capped,
+      kills: after.kills - before.kills,
+      gold: after.goldFromKills - before.goldFromKills + (after.goldFromAutoSell - before.goldFromAutoSell),
+      xp: after.xpGained - before.xpGained,
+      itemsFound: after.itemsDropped - before.itemsDropped,
+      itemsAutoSold: after.itemsAutoSold - before.itemsAutoSold,
+      leveledUp: chRef.current.level > levelBefore,
+      died: endedReasonRef.current === 'death',
+      won: endedReasonRef.current === 'victory',
+    };
+    onLiveUpdate(chRef.current);
+    setCatchUpSummary(summary);
+
+    if (phaseRef.current === 'fight') {
+      schedulePlayer(nextPlayerDelay());
+      scheduleEnemy();
+      scheduleEnv();
+    }
+  }
+
   // Kick off the auto-battle loop once, and make sure no stray timeout
   // touches state after this panel is unmounted (leaving for another section).
   useEffect(() => {
@@ -1201,6 +1353,34 @@ export function DungeonPanel({
     schedulePlayer(700);
     scheduleEnemy(700 + LEAN_MS + 120);
     return () => { mountedRef.current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A phone locking or the tab going to the background pauses every
+  // setTimeout in this component — there's no way for a web page to keep a
+  // fight actually running while suspended by the OS/browser. Instead, note
+  // when it happened, and on return fast-forward silently through however
+  // much real time passed (see runCatchUp) rather than just leaving the
+  // fight frozen at the moment the player left.
+  useEffect(() => {
+    function onVisibility() {
+      if (document.hidden) {
+        hiddenAtRef.current = Date.now();
+        return;
+      }
+      const hiddenAt = hiddenAtRef.current;
+      hiddenAtRef.current = null;
+      if (hiddenAt === null) return;
+      const elapsed = Date.now() - hiddenAt;
+      // A quick tab switch isn't worth a fast-forward pass over — the live
+      // timers barely drifted. Also skip if the player had deliberately
+      // paused before backgrounding, or the fight already ended.
+      if (elapsed < CATCHUP_MIN_MS) return;
+      if (pausedRef.current || phaseRef.current !== 'fight' || !mountedRef.current) return;
+      runCatchUp(elapsed);
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1301,6 +1481,7 @@ export function DungeonPanel({
   const miniBossPcts = (dungeon.miniBossDepths ?? []).map(depthPct);
 
   return (
+    <>
     <Panel title={dungeon.name}>
       {(phase === 'fight' || phase === 'ended') && (
         <div className="mb-4">
@@ -1556,5 +1737,30 @@ export function DungeonPanel({
         </div>
       </div>
     </Panel>
+    {catchUpSummary && (
+      <Modal
+        title="Enquanto você estava fora"
+        onClose={() => setCatchUpSummary(null)}
+        footer={<Button onClick={() => setCatchUpSummary(null)}>Continuar</Button>}
+      >
+        <p>
+          Se passaram {formatCatchUpDuration(catchUpSummary.elapsedMs)} enquanto você estava fora — o combate
+          continuou sozinho nesse tempo. Veja o que aconteceu:
+        </p>
+        <ul className="space-y-1 list-disc list-inside">
+          <li>Inimigos derrotados: {catchUpSummary.kills}</li>
+          <li>Ouro ganho: {catchUpSummary.gold}</li>
+          <li>XP ganho: {catchUpSummary.xp}</li>
+          <li>
+            Itens encontrados: {catchUpSummary.itemsFound}
+            {catchUpSummary.itemsAutoSold > 0 ? ` (${catchUpSummary.itemsAutoSold} vendidos automaticamente)` : ''}
+          </li>
+          {catchUpSummary.leveledUp && <li className="text-gold font-bold">Você subiu de nível!</li>}
+          {catchUpSummary.died && <li className="text-red-400 font-bold">Você caiu em combate enquanto estava fora.</li>}
+          {catchUpSummary.won && <li className="text-emerald-400 font-bold">Você derrotou o guardião da masmorra enquanto estava fora!</li>}
+        </ul>
+      </Modal>
+    )}
+    </>
   );
 }
