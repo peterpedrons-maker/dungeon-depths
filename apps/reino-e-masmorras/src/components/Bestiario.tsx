@@ -1,7 +1,7 @@
 import { Character, EnemyShape } from '../types/game';
 import { TIERS } from '../lib/enemies';
 import { HUNTS } from '../lib/hunts';
-import { enemySprite } from '../game/sprites';
+import { enemySprite, hasOwnEnemyArt } from '../game/sprites';
 import { Panel } from './Panel';
 
 const HUNT_SHAPES = new Set(HUNTS.map((h) => h.boss));
@@ -24,16 +24,28 @@ function tierFor(kills: number): [string, string] | null {
 function EntryCard({ shape, name, kills }: { shape: EnemyShape; name: string; kills: number }) {
   const discovered = kills > 0;
   const tier = tierFor(kills);
+  const hasArt = hasOwnEnemyArt(shape);
   return (
     <div className={`rounded border p-2.5 flex flex-col items-center gap-1.5 text-center ${
       discovered ? 'border-panelborder/40 bg-black/20' : 'border-panelborder/20 bg-black/10'
     }`}>
-      <img
-        src={enemySprite(shape).image.src}
-        alt=""
-        className={`h-14 w-auto object-contain ${discovered ? '' : 'grayscale brightness-[0.35]'}`}
-        style={{ imageRendering: 'pixelated' }}
-      />
+      {hasArt ? (
+        <img
+          src={enemySprite(shape).image.src}
+          alt=""
+          className={`h-14 w-auto object-contain ${discovered ? '' : 'grayscale brightness-[0.35]'}`}
+          style={{ imageRendering: 'pixelated' }}
+        />
+      ) : (
+        // No dedicated art yet — a reused/placeholder sprite here would
+        // otherwise look like a duplicate of some unrelated entry's
+        // picture, which reads as a bug rather than "art not in yet".
+        <div className={`h-14 w-14 flex items-center justify-center font-display text-2xl font-bold ${
+          discovered ? 'text-parchment/40' : 'text-parchment/20'
+        }`}>
+          ?
+        </div>
+      )}
       <span className={`text-xs font-bold leading-tight ${discovered ? 'text-parchment' : 'text-parchment/30'}`}>
         {discovered ? name : '???'}
       </span>
