@@ -56,32 +56,23 @@ create policy "characters_delete_own" on public.characters
 -- One row per completed/retreated run, across every account — the global
 -- leaderboard the Ranking screen reads from. Anyone can read it (it's a
 -- public leaderboard); only the run's own owner can insert their own row.
+-- Collapsed back down to a single create (previously a create-table plus a
+-- trail of incremental `alter table add column` migrations for iron_mode,
+-- cp, and dropping depth's NOT NULL) after the real install's table was
+-- found stuck on an old shape those alters were never actually landing on
+-- — ranking rows are a disposable leaderboard, not a save, so losing old
+-- ones in a rebuild is a non-issue. `if not exists` keeps this a no-op on
+-- an install that already has the current shape.
 create table if not exists public.ranking (
   id bigint generated always as identity primary key,
   user_id uuid references auth.users(id) on delete cascade,
   name text not null,
   class_id text not null,
-  depth integer not null,
   level integer not null,
+  cp integer not null default 0,
+  iron_mode boolean not null default false,
   created_at timestamptz not null default now()
 );
-
--- Badges a Modo Ferro run on the leaderboard — added after the table
--- already existed on installs from before Modo Ferro shipped, hence the
--- idempotent add-column instead of just being in the create table above.
-alter table public.ranking add column if not exists iron_mode boolean not null default false;
-
--- Ranking sort switched from "maior profundidade" to "maior nível, empate
--- por CP" — cp is the new tiebreaker column; depth stays in place
--- unused rather than dropped, so no data is destroyed on installs that
--- already have rows keyed on it.
-alter table public.ranking add column if not exists cp integer not null default 0;
-
--- depth was `not null` with no default, but insertGlobalRankEntry no
--- longer sends it (cp replaced it) — left as-is, that NOT NULL made every
--- insert fail silently (the app never checked the insert's error). Column
--- stays for old rows' sake, just no longer required going forward.
-alter table public.ranking alter column depth drop not null;
 
 alter table public.ranking enable row level security;
 
