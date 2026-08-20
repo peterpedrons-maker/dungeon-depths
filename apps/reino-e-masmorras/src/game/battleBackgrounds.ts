@@ -3,10 +3,20 @@
 // procedural canvas background for any dungeon id not listed here.
 import ruinasUrl from '../assets/battle-bg/ruinas.webp';
 import goblinsUrl from '../assets/battle-bg/goblins.webp';
+import criptaUrl from '../assets/battle-bg/cripta.webp';
+import pantanoUrl from '../assets/battle-bg/pantano.webp';
+import aranhasUrl from '../assets/battle-bg/aranhas.webp';
+import torreUrl from '../assets/battle-bg/torre.webp';
+import minasUrl from '../assets/battle-bg/minas.webp';
 
 const SOURCES: Partial<Record<string, string>> = {
   ruinas: ruinasUrl,
   goblins: goblinsUrl,
+  cripta: criptaUrl,
+  pantano: pantanoUrl,
+  aranhas: aranhasUrl,
+  torre: torreUrl,
+  minas: minasUrl,
 };
 
 const cache: Partial<Record<string, HTMLImageElement>> = {};

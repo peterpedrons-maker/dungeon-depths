@@ -21,7 +21,6 @@ import necromanteUrl from '../assets/sprites/necromante.webp';
 import goblinUrl from '../assets/sprites/goblin.webp';
 import loboUrl from '../assets/sprites/lobo.webp';
 import esqueletoUrl from '../assets/sprites/esqueleto.webp';
-import orcUrl from '../assets/sprites/orc.webp';
 import trollUrl from '../assets/sprites/troll.webp';
 import dragaoUrl from '../assets/sprites/dragao.webp';
 import aberracaoUrl from '../assets/sprites/aberracao.webp';
@@ -35,6 +34,41 @@ import goblinFanaticUrl from '../assets/sprites/goblinFanatic.webp';
 import goblinThrowerUrl from '../assets/sprites/goblinThrower.webp';
 import goblinShamanUrl from '../assets/sprites/goblinShaman.webp';
 import grashUrl from '../assets/sprites/grash.webp';
+// Região 1 — Cripta do Tesouro
+import zombieLooterUrl from '../assets/sprites/zombieLooter.webp';
+import stoneGuardianUrl from '../assets/sprites/stoneGuardian.webp';
+import greedyWraithUrl from '../assets/sprites/greedyWraith.webp';
+import wrappedMummyUrl from '../assets/sprites/wrappedMummy.webp';
+import mimicChestUrl from '../assets/sprites/mimicChest.webp';
+import cursedCustodianUrl from '../assets/sprites/cursedCustodian.webp';
+// Região 1 — Pântano Podre
+import poisonToadUrl from '../assets/sprites/poisonToad.webp';
+import swampViperUrl from '../assets/sprites/swampViper.webp';
+import crawlingBogUrl from '../assets/sprites/crawlingBog.webp';
+import cursedWispUrl from '../assets/sprites/cursedWisp.webp';
+import rottingGatorUrl from '../assets/sprites/rottingGator.webp';
+import mudMotherUrl from '../assets/sprites/mudMother.webp';
+// Região 1 — Covil de Aranhas
+import huntingSpiderUrl from '../assets/sprites/huntingSpider.webp';
+import venomSpiderUrl from '../assets/sprites/venomSpider.webp';
+import giantSpiderUrl from '../assets/sprites/giantSpider.webp';
+import spiderlingSwarmUrl from '../assets/sprites/spiderlingSwarm.webp';
+import darkWeaverUrl from '../assets/sprites/darkWeaver.webp';
+import blackMatriarchUrl from '../assets/sprites/blackMatriarch.webp';
+// Região 2 — Torre Amaldiçoada
+import gargoyleUrl from '../assets/sprites/gargoyle.webp';
+import spectralMageUrl from '../assets/sprites/spectralMage.webp';
+import cursedKnightUrl from '../assets/sprites/cursedKnight.webp';
+import watchingEyeUrl from '../assets/sprites/watchingEye.webp';
+import crawlingShadowUrl from '../assets/sprites/crawlingShadow.webp';
+import fallenArchmageUrl from '../assets/sprites/fallenArchmage.webp';
+// Região 2 — Minas Abandonadas
+import cursedMinerUrl from '../assets/sprites/cursedMiner.webp';
+import oreGolemUrl from '../assets/sprites/oreGolem.webp';
+import koboldRaiderUrl from '../assets/sprites/koboldRaider.webp';
+import batSwarmUrl from '../assets/sprites/batSwarm.webp';
+import gasWispUrl from '../assets/sprites/gasWisp.webp';
+import oreTitanUrl from '../assets/sprites/oreTitan.webp';
 
 export interface Sprite {
   image: HTMLImageElement;
@@ -102,16 +136,16 @@ const HERO_SOURCES: Record<ClassId, string> = {
   cacador: cacadorUrl, bardo: bardoUrl,
   feiticeiro: feiticeiroUrl, bruxo: bruxoUrl, druida: druidaUrl, necromante: necromanteUrl,
 };
-// Ruínas Superficiais and Caverna dos Goblins now have their own dedicated
-// art (regulars + boss). Every other dungeon's roster (the remaining Região
-// 1 shapes, and all of Região 2's bespoke Região-2 rosters below) still
-// doesn't — each shape temporarily reuses the sprite of an existing,
-// already-integrated shape with the closest thematic fit (a stone golem
-// borrows the troll's bulky silhouette, a cultist borrows the ruin bandit's
+// Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano
+// Podre, Covil de Aranhas (Região 1), and Torre Amaldiçoada + Minas
+// Abandonadas (Região 2) now have their own dedicated art (regulars +
+// boss). Every other dungeon's roster still doesn't — each shape
+// temporarily reuses the sprite of an existing, already-integrated shape
+// with the closest thematic fit (a cultist borrows the ruin bandit's
 // robed-human one, ...) until real art is generated and integrated, same
 // placeholder pattern already used for classes without their own sprite.
 // skeletonLord (Necrópole's boss) and dragon (Covil dos Dragões' boss,
-// "Dragão Jovem") are the two exceptions with real dedicated art already —
+// "Dragão Jovem") are also exceptions with real dedicated art already —
 // they're existing shapes wearing their own actual sprite, not a stand-in.
 const ENEMY_SOURCES: Record<EnemyShape, string> = {
   goblin: goblinUrl, wolf: loboUrl, skeleton: esqueletoUrl, dragon: dragaoUrl,
@@ -120,17 +154,17 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
   ruinBat: ruinBatUrl, acidSlime: acidSlimeUrl, ruinBandit: ruinBanditUrl, carrionCrow: carrionCrowUrl, boneKing: boneKingUrl,
   // Região 1 — Caverna dos Goblins
   goblinShaman: goblinShamanUrl, goblinThrower: goblinThrowerUrl, goblinFanatic: goblinFanaticUrl, goblinWolfRider: goblinWolfRiderUrl, grash: grashUrl,
-  // Região 1 — Cripta do Tesouro (placeholder: esqueleto, tema morto-vivo)
-  zombieLooter: esqueletoUrl, stoneGuardian: esqueletoUrl, greedyWraith: esqueletoUrl, wrappedMummy: esqueletoUrl, mimicChest: esqueletoUrl, cursedCustodian: esqueletoUrl,
-  // Região 1 — Pântano Podre (placeholder: orc placeholder retirado — troll cobre o tema de fera grande; demais usam esqueleto/aberração)
-  poisonToad: trollUrl, swampViper: trollUrl, crawlingBog: trollUrl, cursedWisp: trollUrl, rottingGator: trollUrl, mudMother: trollUrl,
-  // Região 1 — Covil de Aranhas (placeholder: troll)
-  huntingSpider: trollUrl, venomSpider: trollUrl, giantSpider: trollUrl, spiderlingSwarm: trollUrl, darkWeaver: trollUrl, blackMatriarch: trollUrl,
+  // Região 1 — Cripta do Tesouro
+  zombieLooter: zombieLooterUrl, stoneGuardian: stoneGuardianUrl, greedyWraith: greedyWraithUrl, wrappedMummy: wrappedMummyUrl, mimicChest: mimicChestUrl, cursedCustodian: cursedCustodianUrl,
+  // Região 1 — Pântano Podre
+  poisonToad: poisonToadUrl, swampViper: swampViperUrl, crawlingBog: crawlingBogUrl, cursedWisp: cursedWispUrl, rottingGator: rottingGatorUrl, mudMother: mudMotherUrl,
+  // Região 1 — Covil de Aranhas
+  huntingSpider: huntingSpiderUrl, venomSpider: venomSpiderUrl, giantSpider: giantSpiderUrl, spiderlingSwarm: spiderlingSwarmUrl, darkWeaver: darkWeaverUrl, blackMatriarch: blackMatriarchUrl,
 
-  // Região 2 — Torre Amaldiçoada (placeholder: troll pro corpo-a-corpo pesado, aberração pro arcano/fantasmagórico, esqueleto pro cavaleiro blindado)
-  gargoyle: trollUrl, spectralMage: aberracaoUrl, cursedKnight: boneKingUrl, watchingEye: aberracaoUrl, crawlingShadow: aberracaoUrl, fallenArchmage: aberracaoUrl,
-  // Região 2 — Minas Abandonadas (placeholder: esqueleto/orc/goblin/morcego/limo conforme o tema de cada um)
-  cursedMiner: esqueletoUrl, oreGolem: orcUrl, koboldRaider: goblinUrl, batSwarm: ruinBatUrl, gasWisp: acidSlimeUrl, oreTitan: orcUrl,
+  // Região 2 — Torre Amaldiçoada
+  gargoyle: gargoyleUrl, spectralMage: spectralMageUrl, cursedKnight: cursedKnightUrl, watchingEye: watchingEyeUrl, crawlingShadow: crawlingShadowUrl, fallenArchmage: fallenArchmageUrl,
+  // Região 2 — Minas Abandonadas
+  cursedMiner: cursedMinerUrl, oreGolem: oreGolemUrl, koboldRaider: koboldRaiderUrl, batSwarm: batSwarmUrl, gasWisp: gasWispUrl, oreTitan: oreTitanUrl,
   // Região 2 — Floresta Amaldiçoada (placeholder: troll pros grandões, lobo/aberração pros menores)
   corruptedEnt: trollUrl, ghostWolf: loboUrl, darkFairy: aberracaoUrl, cursedBear: trollUrl, stranglingVine: acidSlimeUrl, forestHeart: trollUrl,
   // Região 2 — Covil dos Dragões (placeholder: dragão pros dracônicos, bandido pro cultista humano)
