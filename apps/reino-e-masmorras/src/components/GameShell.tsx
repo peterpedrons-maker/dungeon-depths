@@ -95,6 +95,7 @@ function EmblemWatermark() {
 interface Props {
   character: Character;
   ranking: RankEntry[];
+  rankingError: string | null;
   profile: ProfileState;
   onCharacterChange: (c: Character) => void;
   onRunEnd: (finalCharacter: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', prestigeGained: number) => void;
@@ -105,7 +106,7 @@ interface Props {
 }
 
 export function GameShell({
-  character, ranking, profile, onCharacterChange, onRunEnd, onAbandon, onSignOut, onBuyCosmetic, onEquipCosmetic,
+  character, ranking, rankingError, profile, onCharacterChange, onRunEnd, onAbandon, onSignOut, onBuyCosmetic, onEquipCosmetic,
 }: Props) {
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
@@ -418,7 +419,7 @@ export function GameShell({
               onReorderAbility={handleReorderAbility}
             />
           )}
-          {section === 'highscore' && <RankingScreen ranking={ranking} />}
+          {section === 'highscore' && <RankingScreen ranking={ranking} debugError={rankingError} />}
           {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
           {section === 'hunts' && <HuntHall character={character} onEnterHunt={selectDungeon} />}
           {section === 'prestige-shop' && (

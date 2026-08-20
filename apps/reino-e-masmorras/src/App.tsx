@@ -26,6 +26,11 @@ export default function App() {
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(true);
   const [ranking, setRanking] = useState<RankEntry[]>([]);
+  // Surfaced straight in the Ranking screen (see rankingError prop below) —
+  // there's no way to reach browser devtools on a phone, so a failed
+  // leaderboard write needs to be readable in the UI itself to be
+  // diagnosable at all from a mobile session.
+  const [rankingError, setRankingError] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileState>(loadProfile());
 
   const character = activeSlot !== null ? slots[activeSlot] : null;
@@ -163,7 +168,10 @@ export default function App() {
       ironMode: finalCharacter.ironMode,
     };
     if (session) {
-      insertGlobalRankEntry(session.user.id, entry).then(() => fetchGlobalRanking().then(setRanking));
+      insertGlobalRankEntry(session.user.id, entry).then((err) => {
+        setRankingError(err);
+        fetchGlobalRanking().then(setRanking);
+      });
     }
   }
 
@@ -233,6 +241,7 @@ export default function App() {
         <GameShell
           character={character}
           ranking={ranking}
+          rankingError={rankingError}
           profile={profile}
           onCharacterChange={persist}
           onRunEnd={handleRunEnd}
