@@ -6,7 +6,8 @@ import { rarityColor } from '../lib/equipment';
 import { itemDisplayName, primaryStatLines, secondaryStatLabels } from '../lib/enhancement';
 import { priceForStockItem, STOCK_COLS, STOCK_ROWS } from '../lib/merchantStock';
 import { canFitInInventory, placeInInventory, SLOT_FOOTPRINT } from '../lib/inventoryGrid';
-import { MAX_POTIONS } from '../lib/consumables';
+import { MAX_POTIONS, potionBasePrice } from '../lib/consumables';
+import { highestAccessibleItemTier } from '../lib/dungeons';
 import { playBuySellSfx } from '../lib/audio';
 import { Button, SmallButton } from './Button';
 import { Modal } from './Modal';
@@ -15,10 +16,6 @@ import { IconCoin } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
 import pocaoIcon from '../assets/pocao.webp';
 import mercadorCena from '../assets/mercador-cena.webp';
-
-// 2026 rebalance, take three: +25% (15 -> 19) per direct instruction — gold
-// was accumulating too fast partly because sustain stayed this cheap.
-const POTION_BASE_COST = 19;
 
 interface Props {
   character: Character;
@@ -40,7 +37,7 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
   const [selected, setSelected] = useState<EquipmentItem | null>(null);
   const kingdomBonuses = computeKingdomBonuses(ch.buildings);
   const discount = kingdomBonuses.merchantDiscountPct;
-  const potionCost = Math.max(1, Math.round(POTION_BASE_COST * (1 - discount)));
+  const potionCost = Math.max(1, Math.round(potionBasePrice(highestAccessibleItemTier(ch)) * (1 - discount)));
 
   function buyStockItem(item: EquipmentItem) {
     const price = priceForStockItem(item, discount);

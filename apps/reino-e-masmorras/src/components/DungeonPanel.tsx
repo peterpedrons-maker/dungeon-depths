@@ -56,9 +56,14 @@ const ATTACK_INTERVAL = 2200;
 const FLOAT_DURATION_MS = 1500;
 // Player and enemy now run on independent action clocks (see playerAct/
 // enemyAct); this only offsets the enemy's very first action so the two
-// don't visually land in the exact same instant every round for a
-// zero-AGI build, matching the stagger the old single shared round had.
-const LEAN_MS = 260;
+// don't visually land in the exact same instant on the opening exchange.
+// Was 260ms, stacked with another +120ms at the call site (380ms total) —
+// enough to reliably let the player land a free hit before the enemy's
+// clock had even fired once, on every single dungeon start, not just a
+// cosmetic nudge. Cut down to a value too small to matter as a turn-order
+// edge, just enough to keep the two opening floaters from overlapping
+// pixel-for-pixel.
+const LEAN_MS = 90;
 const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
@@ -1364,7 +1369,7 @@ export function DungeonPanel({
     mountedRef.current = true;
     scheduleEnv(700);
     schedulePlayer(700);
-    scheduleEnemy(700 + LEAN_MS + 120);
+    scheduleEnemy(700 + LEAN_MS);
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
