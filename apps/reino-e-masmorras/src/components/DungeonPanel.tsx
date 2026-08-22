@@ -3,7 +3,7 @@ import {
   AbilityDef, Character, CrowdControlKind, EnemyAbility, EnemyInstance, DungeonDef, ItemSlot, KingdomBonuses,
   Rarity, StatModStat, StatusEffectKind,
 } from '../types/game';
-import { spawnEnemy } from '../lib/enemies';
+import { spawnEnemy, enemySpeedMult } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
 import { baseDropChanceForLevel, generateItem, rarityColor, sellValue } from '../lib/equipment';
@@ -20,10 +20,11 @@ import { Button } from './Button';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import {
-  playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx,
+  playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx, playBuySellSfx,
 } from '../lib/audio';
 import skillFrame from '../assets/slot-habilidade.webp';
 import pocaoIcon from '../assets/pocao.webp';
+import moedaIcon from '../assets/moeda.webp';
 import iconVeneno from '../assets/effects/effect-veneno.webp';
 import iconQueimadura from '../assets/effects/effect-queimadura.webp';
 import iconSangramento from '../assets/effects/effect-sangramento.webp';
@@ -206,6 +207,11 @@ interface StatModInstance { stat: StatModStat; pct: number; roundsLeft: number; 
 interface CCInstance { kind: CrowdControlKind; roundsLeft: number; }
 interface RegenInstance { pct: number; roundsLeft: number; sourceAbilityId?: string; }
 interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean }
+// A coin-icon + down-arrow burst over the player whenever an enemy's
+// stealGold effect actually takes gold — separate from FloatingNumber
+// since it isn't a damage number at all, just a distinct "you were
+// robbed" cue riding the same fixed-duration fade-out pattern.
+interface GoldStealFx { id: number; amount: number }
 // A log line is a list of segments instead of a plain string so a single
 // line can mix normal text with a rarity-colored item name (see
 // tryDropEquipment) without resorting to raw HTML in the log.
@@ -359,6 +365,7 @@ export function DungeonPanel({
   const [paused, setPaused] = useState(false);
   const [log, setLog] = useState<LogLine[]>([[{ text: `Você entra em ${dungeon.name}...` }]]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
+  const [goldSteals, setGoldSteals] = useState<GoldStealFx[]>([]);
   const [activeBadgeKey, setActiveBadgeKey] = useState<string | null>(null);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
@@ -433,6 +440,21 @@ export function DungeonPanel({
   // time and a mismatch at fire time means "this timer belongs to an enemy
   // that's already gone" — silently drop it instead of acting.
   const enemyGenRef = useRef(0);
+  // Bumped once at the start of every runCatchUp() pass (see the
+  // visibilitychange effect below) — same stale-timer problem as
+  // enemyGenRef above, but for the OTHER two clocks (player/env), and
+  // triggered by resuming from the background instead of an enemy dying.
+  // A setTimeout already in flight when the tab was hidden doesn't get
+  // cancelled (nothing here ever clearTimeout()s one), so it was still
+  // sitting in the queue once the tab came back — and since browsers fire
+  // backlogged/throttled background timers promptly on resume, it landed
+  // right on top of the fresh schedulePlayer/scheduleEnemy/scheduleEnv
+  // calls runCatchUp makes once it's done fast-forwarding, causing a
+  // second live action (double damage) immediately after catch-up already
+  // resolved that exact round. All three schedulers capture this at
+  // schedule time and refuse to fire if it's moved on by the time their
+  // timeout lands.
+  const catchUpGenRef = useRef(0);
   // This attempt's own tally, reported alongside onRunEnd/onRestart so
   // GameShell can fold it into a repeat sequence's running summary.
   const runStatsRef = useRef<RunStats>({ ...EMPTY_RUN_STATS });
@@ -532,44 +554,60 @@ export function DungeonPanel({
     setFlashSide(side);
     setTimeout(() => { if (mountedRef.current) setFlashSide(null); }, 150);
   }
+  function pushGoldSteal(amount: number) {
+    if (silentRef.current || amount <= 0) return;
+    const id = floaterId.current++;
+    setGoldSteals((g) => [...g, { id, amount }]);
+    playBuySellSfx();
+    setTimeout(() => setGoldSteals((g) => g.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
+  }
 
   // Three independent clocks instead of one shared round: envTick owns every
   // duration-based decay (cooldowns, DOT, buffs/debuffs, CC, regen) on the
   // original fixed cadence so none of that balance shifts, while the player
   // and enemy each act on their own pace. The player's pace shortens with
   // AGI (stats.speedPct) — a fast build genuinely gets more actions in than
-  // a slow one, not just better odds to dodge/block. Enemies stay at the
-  // baseline pace for now (no per-shape speed stat yet).
+  // a slow one, not just better odds to dodge/block. The enemy's own pace
+  // now shortens/lengthens the same way, keyed off its shape (see
+  // enemySpeedMult in lib/enemies.ts) — a bat swarm or crow visibly
+  // out-paces a stone golem instead of every shape sharing one identical
+  // cadence.
   // All three no-op while silentRef is up — runCatchUp drives playerAct/
   // enemyAct/envTick directly in a tight synchronous loop instead, and none
   // of them should also queue a real setTimeout that would otherwise fire
   // (and double up on) an action a moment after catch-up already resolved it.
   function scheduleEnv(delay = ATTACK_INTERVAL) {
     if (silentRef.current) return;
+    const cGen = catchUpGenRef.current;
     setTimeout(() => {
       if (!mountedRef.current) return;
+      if (cGen !== catchUpGenRef.current) return; // stale timer from before a catch-up pass
       if (!pausedRef.current && phaseRef.current === 'fight') envTick();
     }, delay);
   }
 
   function schedulePlayer(delay: number) {
     if (silentRef.current) return;
+    const cGen = catchUpGenRef.current;
     setPlayerRoundMs(delay);
     setPlayerRoundKey((k) => k + 1);
     setTimeout(() => {
       if (!mountedRef.current) return;
+      if (cGen !== catchUpGenRef.current) return; // stale timer from before a catch-up pass
       if (!pausedRef.current && phaseRef.current === 'fight') playerAct();
     }, delay);
   }
 
-  function scheduleEnemy(delay = ATTACK_INTERVAL) {
+  function scheduleEnemy(delay = nextEnemyDelay()) {
     if (silentRef.current) return;
     const gen = enemyGenRef.current;
+    const cGen = catchUpGenRef.current;
     setEnemyRoundMs(delay);
     setEnemyRoundKey((k) => k + 1);
     setTimeout(() => {
       if (!mountedRef.current) return;
       if (gen !== enemyGenRef.current) return; // stale timer from an enemy that's already gone
+      if (cGen !== catchUpGenRef.current) return; // stale timer from before a catch-up pass
       if (!pausedRef.current && phaseRef.current === 'fight') enemyAct();
     }, delay);
   }
@@ -577,6 +615,10 @@ export function DungeonPanel({
   function nextPlayerDelay(): number {
     const speedPct = computePlayerStats().speedPct;
     return Math.round(ATTACK_INTERVAL / (1 + speedPct));
+  }
+
+  function nextEnemyDelay(): number {
+    return Math.round(ATTACK_INTERVAL / enemySpeedMult(enemyRef.current.shape));
   }
 
   function tryDropEquipment(guaranteed = false) {
@@ -1135,24 +1177,15 @@ export function DungeonPanel({
     const enemyDefStat = enemyAtkType === 'magical' ? defStats.mdef : defStats.def;
 
     // A signature ability replaces the plain attack for the round when
-    // picked — stealGold is the one kind with no damage roll at all, so it
-    // short-circuits before anything else. Everything else (bigHit,
-    // lifestealHit, statusBite, controlSlam, weakenNova) still rolls a hit,
+    // picked. Every kind (bigHit, lifestealHit, statusBite, controlSlam,
+    // weakenNova, stealGold) rolls a hit through the same pipeline below,
     // just with that ability's own dmgMult and a guaranteed extra effect
-    // instead of the plain attack's chance-based EnemyProc rider.
+    // instead of the plain attack's chance-based EnemyProc rider — stealGold
+    // used to short-circuit before any damage roll at all (a Saqueador that
+    // only picked your pocket and never hurt you), which is why it now joins
+    // everyone else here instead of returning early.
     const chosenAbility = pickEnemyAbility();
     const abEffect = chosenAbility?.effect;
-
-    if (abEffect?.kind === 'stealGold') {
-      enemyAbilityCooldownsRef.current[chosenAbility!.id] = chosenAbility!.cooldown;
-      const stolen = chRef.current.gold > 0
-        ? Math.min(chRef.current.gold, Math.max(1, Math.round(chRef.current.gold * (abEffect.goldPct ?? 0.04))))
-        : 0;
-      if (stolen > 0) updateCh({ ...chRef.current, gold: chRef.current.gold - stolen });
-      pushLog(`${enemyRef.current.name} usa ${chosenAbility!.name} e rouba ${stolen} de ouro!`);
-      scheduleEnemy();
-      return;
-    }
 
     const { dmg: rawDmg, crit: ecrit } = rollAbilityHit(enemyPower, enemyDefStat, abEffect?.dmgMult ?? 1, 0.06, BASE_CRIT_DMG_MULT);
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct));
@@ -1227,6 +1260,15 @@ export function DungeonPanel({
         playerModsRef.current.push({ stat: abEffect.statMod, pct: abEffect.statModPct ?? -0.2, roundsLeft: abEffect.statModRounds ?? 3 });
         syncPlayerMods();
         pushLog('Você foi enfraquecido!');
+      } else if (abEffect.kind === 'stealGold') {
+        const stolen = chRef.current.gold > 0
+          ? Math.min(chRef.current.gold, Math.max(1, Math.round(chRef.current.gold * (abEffect.goldPct ?? 0.04))))
+          : 0;
+        if (stolen > 0) {
+          updateCh({ ...chRef.current, gold: chRef.current.gold - stolen });
+          pushGoldSteal(stolen);
+          pushLog(`${enemyRef.current.name} rouba ${stolen} de ouro!`);
+        }
       }
     } else if (!hasCC(enemyCCRef.current, 'silence') && edmg + shieldAbsorbed > 0) {
       // The enemy's signature proc — a chance-based extra debuff riding its
@@ -1298,6 +1340,11 @@ export function DungeonPanel({
     pausedRef.current = next;
     setPaused(next);
     if (!next) {
+      // Same stale-timer risk as backgrounding (see catchUpGenRef) — a timer
+      // scheduled before the player hit "Pausar" is still sitting in the
+      // queue with its original delay, and could still land after this
+      // resume's own fresh schedule if it fires late enough.
+      catchUpGenRef.current += 1;
       scheduleEnv(500);
       schedulePlayer(500);
       scheduleEnemy(500);
@@ -1346,6 +1393,15 @@ export function DungeonPanel({
   // farming, and step-capped (CATCHUP_SAFETY_MAX_STEPS) as a backstop against
   // any runaway loop.
   function runCatchUp(elapsedMs: number) {
+    // Invalidates any live setTimeout already in flight from before the tab
+    // was backgrounded (see catchUpGenRef's own comment) — without this, a
+    // stale player/enemy/env timer scheduled pre-background would still fire
+    // (browsers deliver backlogged background timers promptly on resume)
+    // right on top of the fresh schedule this function arms once it's done
+    // fast-forwarding, landing a second live action for whatever round just
+    // got resolved by the catch-up loop below.
+    catchUpGenRef.current += 1;
+
     const capped = Math.min(elapsedMs, MAX_CATCHUP_MS);
     const before = { ...runStatsRef.current };
     const levelBefore = chRef.current.level;
@@ -1365,7 +1421,7 @@ export function DungeonPanel({
         nextPlayerAt += nextPlayerDelay();
       } else if (nextAt === nextEnemyAt) {
         enemyAct();
-        nextEnemyAt += ATTACK_INTERVAL;
+        nextEnemyAt += nextEnemyDelay();
       } else {
         envTick();
         nextEnvAt += ATTACK_INTERVAL;
@@ -1668,6 +1724,17 @@ export function DungeonPanel({
           </div>
           );
         })}
+        {goldSteals.map((g) => (
+          <div
+            key={g.id}
+            className="absolute left-[24%] flex items-center gap-1 pointer-events-none"
+            style={{ top: '4%', animation: `float ${FLOAT_DURATION_MS}ms ease-out forwards` }}
+          >
+            <img src={moedaIcon} alt="" className="w-5 h-5" style={{ imageRendering: 'pixelated' }} />
+            <span className="text-red-400 font-extrabold text-base drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">▼</span>
+            <span className="text-parchment font-bold text-sm drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">-{g.amount}</span>
+          </div>
+        ))}
         {paused && phase === 'fight' && (
           <div className="absolute top-2 right-2 bg-black/70 text-gold text-xs font-bold uppercase tracking-wider px-2 py-1 rounded">
             Pausado
