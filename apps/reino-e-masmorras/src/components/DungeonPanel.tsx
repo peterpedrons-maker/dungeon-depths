@@ -55,14 +55,16 @@ const ATTACK_INTERVAL = 2200;
 // register before it's gone.
 const FLOAT_DURATION_MS = 1500;
 // Player and enemy now run on independent action clocks (see playerAct/
-// enemyAct); this only offsets the enemy's very first action so the two
-// don't visually land in the exact same instant on the opening exchange.
-// Was 260ms, stacked with another +120ms at the call site (380ms total) —
-// enough to reliably let the player land a free hit before the enemy's
-// clock had even fired once, on every single dungeon start, not just a
-// cosmetic nudge. Cut down to a value too small to matter as a turn-order
-// edge, just enough to keep the two opening floaters from overlapping
-// pixel-for-pixel.
+// enemyAct); this only offsets whichever side loses the opening coin flip
+// (see the mount effect) so the two don't visually land in the exact same
+// instant on the opening exchange. Previously this was ALWAYS applied to
+// the enemy's first action (with an even bigger +120ms stacked on top at
+// the call site, 380ms total) — the player unconditionally struck first on
+// every single dungeon start, no matter the build. Reducing the number
+// alone (as a prior fix did, 260ms -> 90ms) only shrank the edge, it never
+// removed the guarantee. Now the mount effect coin-flips who gets this
+// small lead each run, so first strike is fair over time instead of always
+// going to the player.
 const LEAN_MS = 90;
 const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_POTION_HEAL_PCT = 0.4;
@@ -1368,8 +1370,17 @@ export function DungeonPanel({
   useEffect(() => {
     mountedRef.current = true;
     scheduleEnv(700);
-    schedulePlayer(700);
-    scheduleEnemy(700 + LEAN_MS);
+    // Who gets the opening strike is a coin flip, not a guarantee — this used
+    // to always hand the player's timer the shorter delay (see LEAN_MS above),
+    // so every single dungeon start had the player land a free hit before the
+    // enemy's clock had even fired once. Now either side can win the flip.
+    if (Math.random() < 0.5) {
+      schedulePlayer(700);
+      scheduleEnemy(700 + LEAN_MS);
+    } else {
+      schedulePlayer(700 + LEAN_MS);
+      scheduleEnemy(700);
+    }
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
