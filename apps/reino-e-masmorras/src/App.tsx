@@ -76,6 +76,20 @@ export default function App() {
   // instead of silently discarded — loadCharacter(0) itself already falls
   // back to the old single-save key, so this naturally picks up an account's
   // very first pre-existing character into slot 0.
+  //
+  // Keyed on the user's id, NOT the session object itself — Supabase hands
+  // out a brand-new session object (new access token, new object reference)
+  // on every token refresh, which fires just from resuming a backgrounded
+  // tab, with the exact same logged-in user. Re-running this on the object
+  // reference alone set slotsLoading(true) synchronously, which swapped the
+  // entire GameShell subtree out for the "Carregando..." screen below
+  // (see the session===undefined||slotsLoading render gate) — unmounting
+  // GameShell, and with it any dungeon run in progress inside it. Once the
+  // refetch finished, a brand-new GameShell mounted with its section state
+  // back at its 'kingdom' default, which is exactly what looked like "my
+  // run got abandoned" every time the player switched away and back. The
+  // user id is stable across a token refresh, so this now only actually
+  // reloads when the logged-in account genuinely changes.
   useEffect(() => {
     if (!session) { setSlotsLoading(false); return; }
     let cancelled = false;
@@ -104,7 +118,8 @@ export default function App() {
       setSlotsLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
 
   useEffect(() => {
     fetchGlobalRanking().then(({ ranking, error }) => {
@@ -116,6 +131,8 @@ export default function App() {
   // Loja de Prestígio is account-wide, not per-slot, so this is a single
   // row fetch (not the per-slot reconciliation the characters effect above
   // does) — the cloud row is simply authoritative once a session exists.
+  // Same user-id keying as that effect, and for the same reason — a token
+  // refresh shouldn't trigger a redundant refetch for the same account.
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
@@ -125,7 +142,8 @@ export default function App() {
       saveProfileLocal(p);
     });
     return () => { cancelled = true; };
-  }, [session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
 
   function persistProfile(p: ProfileState) {
     setProfile(p);
