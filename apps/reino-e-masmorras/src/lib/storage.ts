@@ -98,11 +98,14 @@ export function migrateCharacter(raw: any): Character | null {
     const buildings = migrateBuildings(c.buildings ?? {});
 
     // Saves from before the Mercador redesign have no stock at all — roll a
-    // fresh one rather than leave the shop empty until the player's next
-    // dungeon run happens to end in victory or death.
+    // fresh one rather than leave the shop empty until the next time-based
+    // refresh is due.
     const merchantStock = c.merchantStock
       ? repackInventory(c.merchantStock.map(migrateItem), STOCK_COLS)
       : generateMerchantStock({ ...c, classId, level, buildings } as Character, computeKingdomBonuses(buildings));
+    // Saves from before the time-based refresh existed read as "due for a
+    // refresh immediately" (0), rather than granting a full free hour.
+    const merchantRefreshedAt = c.merchantRefreshedAt ?? 0;
 
     return {
       ...c,
@@ -132,6 +135,7 @@ export function migrateCharacter(raw: any): Character | null {
       inventory: repackInventory((c.inventory ?? []).map(migrateItem)),
       buildings,
       merchantStock,
+      merchantRefreshedAt,
     };
   } catch { return null; }
 }

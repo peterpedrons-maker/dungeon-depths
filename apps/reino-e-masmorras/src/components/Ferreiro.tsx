@@ -12,7 +12,10 @@ import marteloParado from '../assets/aprimoramento-martelo-parado.webp';
 import marteloAnimado from '../assets/aprimoramento-martelo.webp';
 import { playUpgradeSfx } from '../lib/audio';
 
-export interface EnhanceResult { success: boolean; regressed: boolean }
+// The item's level never drops on a failed attempt — a fail only costs the
+// gold/tentativa already spent (see lib/enhancement.ts), so this only ever
+// needs to report whether the push actually landed.
+export interface EnhanceResult { success: boolean }
 
 interface Props {
   character: Character;
@@ -59,12 +62,11 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
   item: EquipmentItem; gold: number; forjaLevel: number; onEnhance: (item: EquipmentItem) => EnhanceResult | undefined; onDone: (success: boolean) => void;
 }) {
   const [phase, setPhase] = useState<'confirm' | 'rolling' | 'result'>('confirm');
-  const [result, setResult] = useState<EnhanceResult>({ success: false, regressed: false });
+  const [result, setResult] = useState<EnhanceResult>({ success: false });
   const cost = enhanceCost(item);
   const chance = successChanceForLevel(item.enhanceLevel, forjaLevel);
   const nextItem = { ...item, enhanceLevel: item.enhanceLevel + 1 };
-  const regressedItem = { ...item, enhanceLevel: Math.max(0, item.enhanceLevel - 1) };
-  const previewItem = result.success ? nextItem : result.regressed ? regressedItem : item;
+  const previewItem = result.success ? nextItem : item;
 
   useEffect(() => {
     if (phase !== 'rolling') return;
@@ -73,7 +75,7 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
   }, [phase]);
 
   function handleConfirm() {
-    const outcome = onEnhance(item) ?? { success: false, regressed: false };
+    const outcome = onEnhance(item) ?? { success: false };
     setResult(outcome);
     setPhase('rolling');
     playUpgradeSfx();
@@ -96,14 +98,10 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
       {phase === 'result' ? (
         <>
           <p className={`text-sm font-bold mb-1 ${result.success ? 'text-emerald-400' : 'text-crimson'}`}>
-            {result.success ? 'Deu certo! Ficou até melhor.' : result.regressed ? 'Não deu certo... e o metal enfraqueceu!' : 'Não dessa vez... o metal não aguentou.'}
+            {result.success ? 'Deu certo! Ficou até melhor.' : 'Não dessa vez... o metal não aguentou.'}
           </p>
           <p className="text-xs text-parchment/50 mb-3">
-            {result.success
-              ? `${item.name} agora está +${nextItem.enhanceLevel}.`
-              : result.regressed
-              ? `${item.name} caiu para +${regressedItem.enhanceLevel}.`
-              : `${item.name} continua +${item.enhanceLevel}.`}
+            {result.success ? `${item.name} agora está +${nextItem.enhanceLevel}.` : `${item.name} continua +${item.enhanceLevel}.`}
           </p>
           <Button onClick={() => onDone(result.success)} className="w-full">Continuar</Button>
         </>
@@ -112,7 +110,7 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
           <p className="text-xs text-parchment/60 mb-1">+{item.enhanceLevel} → +{nextItem.enhanceLevel}</p>
           <p className="text-xs text-parchment/50 mb-3">
             Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro
-            {item.enhanceLevel >= 7 && ' · Falhar pode fazer o item retroceder um nível'}
+            {item.enhanceLevel >= 7 && ' · Falhar só custa a tentativa — o item nunca retrocede'}
           </p>
           {phase === 'confirm' ? (
             <div className="flex gap-2">

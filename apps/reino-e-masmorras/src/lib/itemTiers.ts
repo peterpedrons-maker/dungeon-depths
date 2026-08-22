@@ -1,4 +1,4 @@
-import { AccessoryType, ClassId, SecondaryStatType } from '../types/game';
+import { AccessoryType, ClassId, Rarity, SecondaryStatType } from '../types/game';
 
 // ── Base-type tier ladder ─────────────────────────────────────────────────
 // One shared 10-step material/power progression, reused across every slot by
@@ -72,3 +72,20 @@ export const ACCESSORY_STAT_POOL: Record<AccessoryType, SecondaryStatType[]> = {
 };
 
 export const ACCESSORY_TYPES: AccessoryType[] = ['anel', 'amuleto', 'bracelete'];
+
+// ── Preço de Mercador ────────────────────────────────────────────────────
+// Rebalanceamento: um item precisa custar o equivalente a várias runs de
+// farm, não uma compra trivial de 10-15 minutos — Tier 1 gira em ~60-160
+// ouro, Tier 10 em ~4400-11800. Compartilhada pelo preço de COMPRA
+// (merchantStock.ts) e, como uma fração dela, pelo preço de VENDA
+// (equipment.ts's sellValue) — um item de Tier alto que vendesse barato
+// quebraria o loop "vendi um lixo, comprei algo melhor" assim que a compra
+// ficasse cara nesse Tier.
+const MERCHANT_TIER_BASE = 60;
+const MERCHANT_TIER_GROWTH = 1.6;
+export const MERCHANT_RARITY_PRICE_MULT: Record<Rarity, number> = {
+  comum: 1.0, incomum: 1.15, raro: 1.5, epico: 2.0, legendario: 2.7,
+};
+export function merchantBasePrice(tier: number): number {
+  return Math.round(MERCHANT_TIER_BASE * Math.pow(MERCHANT_TIER_GROWTH, Math.max(1, tier) - 1));
+}

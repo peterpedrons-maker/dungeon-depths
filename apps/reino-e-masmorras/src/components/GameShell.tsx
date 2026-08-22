@@ -4,9 +4,9 @@ import { findCosmetic } from '../lib/cosmetics';
 import { DUNGEONS } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
-import { enhanceCost, MAX_ENHANCE_LEVEL, regressChanceOnFail, successChanceForLevel } from '../lib/enhancement';
+import { enhanceCost, MAX_ENHANCE_LEVEL, successChanceForLevel } from '../lib/enhancement';
 import { placeInInventory } from '../lib/inventoryGrid';
-import { generateMerchantStock } from '../lib/merchantStock';
+import { maybeRefreshMerchantStock } from '../lib/merchantStock';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS } from '../lib/consumables';
 import { playBuySellSfx } from '../lib/audio';
@@ -138,6 +138,14 @@ export function GameShell({
 
   const kingdomBonuses = computeKingdomBonuses(character.buildings);
 
+  // Checked on open rather than on a timer — re-rolls the stock only once
+  // MERCHANT_REFRESH_MS has actually elapsed since the last refresh.
+  function handleOpenMercador() {
+    const refreshed = maybeRefreshMerchantStock(character, kingdomBonuses);
+    if (refreshed !== character) onCharacterChange(refreshed);
+    setMercadorOpen(true);
+  }
+
   function enterDungeon(d: DungeonDef) {
     setDungeon(d);
     setSection('dungeon');
@@ -197,15 +205,9 @@ export function GameShell({
     return { ...c, clearedDungeons, clearedNightmareDungeons };
   }
 
-  // The Mercador's stock only re-rolls here, on an actual victory or death —
-  // never just from opening the shop, and never on a mid-run retreat — so
-  // there's no way to farm it for a good roll by walking in and out.
   function handleRunEnd(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) {
     const finalCharacter = withDungeonClear(finalCharacterIn, endedReason);
-    const withStock = endedReason === 'retreat'
-      ? finalCharacter
-      : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
-    onRunEnd(withStock, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
+    onRunEnd(finalCharacter, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
     setSection('kingdom');
     setRunInProgress(false);
     // This is the sequence's last leg (DungeonPanel only ever routes here
@@ -225,10 +227,7 @@ export function GameShell({
   // auto-advance through (see DungeonPanel's repeatProgress effect).
   function handleRestartDungeon(finalCharacterIn: Character, depthReached: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) {
     const finalCharacter = withDungeonClear(finalCharacterIn, endedReason);
-    const withStock = endedReason === 'retreat'
-      ? finalCharacter
-      : { ...finalCharacter, merchantStock: generateMerchantStock(finalCharacter, computeKingdomBonuses(finalCharacter.buildings)) };
-    onRunEnd(withStock, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
+    onRunEnd(finalCharacter, depthReached, endedReason, prestigeGain(finalCharacter, dungeon, endedReason));
     setDungeonRunKey((k) => k + 1);
     if (repeatPlan) {
       const merged = mergeRunIntoPlan(repeatPlan, endedReason, runStats);
@@ -296,22 +295,20 @@ export function GameShell({
 
   // Gold is spent on the ATTEMPT, not the outcome — success rolls against
   // successChanceForLevel(item.enhanceLevel, forjaLevel) and gets steeper
-  // near +10, so a failed roll still costs the gold. From +7 on, a failed
-  // roll can also regress the item a level (regressChanceOnFail) instead of
-  // just leaving it in place — pushing past +7 is a real gamble both ways.
-  // Returns the roll result so callers (the Ferreiro's confirm/roll screen,
-  // CharacterOverview's quick modal) can react to it; undefined means the
-  // attempt couldn't even be made (shouldn't happen since the UI already
-  // disables the button in that case).
-  function handleEnhanceItem(item: EquipmentItem): { success: boolean; regressed: boolean } | undefined {
+  // near +10, so a failed roll still costs the gold. The item's level never
+  // drops on a failed roll (Forja never breaks or regresses gear) — a fail
+  // only costs what was already spent on the attempt. Returns the roll
+  // result so callers (the Ferreiro's confirm/roll screen, CharacterOverview's
+  // quick modal) can react to it; undefined means the attempt couldn't even
+  // be made (shouldn't happen since the UI already disables the button in
+  // that case).
+  function handleEnhanceItem(item: EquipmentItem): { success: boolean } | undefined {
     if (item.enhanceLevel >= MAX_ENHANCE_LEVEL) return undefined;
     const cost = enhanceCost(item);
     if (character.gold < cost) return undefined;
     const forjaLevel = character.buildings.forja ?? 0;
     const success = Math.random() < successChanceForLevel(item.enhanceLevel, forjaLevel);
-    const regressed = !success && Math.random() < regressChanceOnFail(item.enhanceLevel);
-    const nextLevel = success ? item.enhanceLevel + 1 : regressed ? item.enhanceLevel - 1 : item.enhanceLevel;
-    const upgraded = { ...item, enhanceLevel: nextLevel };
+    const upgraded = { ...item, enhanceLevel: success ? item.enhanceLevel + 1 : item.enhanceLevel };
     const equippedSlot = character.equipment[item.slot]?.id === item.id ? item.slot : null;
     if (equippedSlot) {
       onCharacterChange({ ...character, gold: character.gold - cost, equipment: { ...character.equipment, [equippedSlot]: upgraded } });
@@ -321,7 +318,7 @@ export function GameShell({
         inventory: character.inventory.map((i) => (i.id === item.id ? upgraded : i)),
       });
     }
-    return { success, regressed };
+    return { success };
   }
 
   function handleAllocateAttrs(deltas: Partial<Record<AttributeKey, number>>) {
@@ -404,7 +401,7 @@ export function GameShell({
               character={character}
               onUpgrade={handleUpgradeBuilding}
               onOpenFerreiro={() => setFerreiroOpen(true)}
-              onOpenMercador={() => setMercadorOpen(true)}
+              onOpenMercador={handleOpenMercador}
             />
           )}
           {section === 'character' && (

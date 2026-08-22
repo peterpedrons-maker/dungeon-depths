@@ -242,10 +242,15 @@ export interface Character {
   inventory: EquipmentItem[];
   buildings: Record<string, number>; // kingdom building id -> level
   // The Mercador's current stock (see lib/merchantStock.ts) — re-rolled only
-  // when a dungeon run actually ends in victory or death (never on retreat,
-  // and never just from opening/closing the shop), so the player can't
-  // farm it for a good roll by walking in and out.
+  // by maybeRefreshMerchantStock, once merchantRefreshedAt is old enough
+  // (see MERCHANT_REFRESH_MS), checked when the shop is opened — never by
+  // finishing a run and never just from opening/closing the shop on its
+  // own, so the player can't farm a good roll by walking in and out or by
+  // repeating dungeons back to back.
   merchantStock: EquipmentItem[];
+  // Date.now() of the last stock refresh — undefined/0 on an old save reads
+  // as "due for a refresh immediately" (see storage.ts's backfill).
+  merchantRefreshedAt?: number;
   // Modo Ferro: set once at creation, never changed after. On death inside a
   // dungeon (see App.tsx's handleRunEnd) an ironMode character is deleted
   // for good instead of the normal heal-and-return-to-Reino — no second
