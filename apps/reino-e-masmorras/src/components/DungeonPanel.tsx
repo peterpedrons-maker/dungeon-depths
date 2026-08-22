@@ -1644,26 +1644,23 @@ export function DungeonPanel({
               <span className="text-lg text-parchment/60 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">erro!</span>
             ) : (
               <>
-                {/* A crit gets its own gold gradient + a nested pulse
-                    animation (see @keyframes critPulse) instead of a
-                    "CRÍTICO!" label — the number itself is unmistakably a
-                    big hit at a glance, in a size that's already bigger
-                    than a normal number below. */}
+                {/* A crit is the same color as a normal hit on that side,
+                    just one size step up with a "!" appended directly to
+                    the number — a separate gold-gradient treatment (tried
+                    earlier) read as muddy/hard to parse against the busy
+                    background, so it's gone. */}
                 <span
                   className={`inline-block ${
-                    f.crit
-                      ? `${playerHit ? 'text-6xl' : 'text-5xl'} text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-300 to-amber-500`
-                      : `${playerHit ? 'text-3xl' : 'text-2xl'} ${playerHit ? '' : 'text-yellow-300'} ${playerHit ? '' : 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`
+                    playerHit
+                      ? (f.crit ? 'text-4xl' : 'text-3xl')
+                      : `${f.crit ? 'text-3xl' : 'text-2xl'} text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]`
                   }`}
                   style={{
-                    color: !f.crit && playerHit ? '#ff4040' : undefined,
-                    textShadow: f.crit
-                      ? '0 0 10px rgba(255,190,60,0.9), 0 2px 3px rgba(0,0,0,0.95)'
-                      : (playerHit ? '0 0 3px #000, 0 2px 2px #000, 0 0 12px rgba(0,0,0,0.85)' : undefined),
-                    animation: f.crit ? 'critPulse 450ms ease-out' : undefined,
+                    color: playerHit ? '#ff4040' : undefined,
+                    textShadow: playerHit ? '0 0 3px #000, 0 2px 2px #000, 0 0 12px rgba(0,0,0,0.85)' : undefined,
                   }}
                 >
-                  -{f.value}
+                  -{f.value}{f.crit ? '!' : ''}
                 </span>
                 {f.blocked && <span className="text-sm text-sky-300 align-top"> bloq.</span>}
               </>

@@ -45,8 +45,28 @@ export default function App() {
   // it fires once immediately with whatever's already in storage (or null),
   // then again on every sign-in/sign-out, so there's no separate "check on
   // mount" call needed.
+  //
+  // A momentary null session on some event OTHER than a real SIGNED_OUT used
+  // to be treated exactly the same as an explicit sign-out — but Supabase can
+  // fire the listener with a null session for a transient reason too (e.g. a
+  // background tab's token refresh racing a phone's network reconnecting
+  // right as the app comes back to the foreground), not just a real log-out.
+  // Since `!session` unconditionally renders the login screen below, that
+  // transient null was enough to yank the player out of GameShell — and any
+  // dungeon run in progress with it — straight back to AuthScreen, which is
+  // exactly what looked like "the run ends by itself" whenever the player
+  // switched to another app and back. Only ever clear an established session
+  // on a genuine SIGNED_OUT event (or the very first check, where there's
+  // nothing to lose yet); any other null is ignored and the existing session
+  // stays put.
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession((prev) => {
+        if (s) return s;
+        if (event === 'SIGNED_OUT' || prev === undefined) return null;
+        return prev;
+      });
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
