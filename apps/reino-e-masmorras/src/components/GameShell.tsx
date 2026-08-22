@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { AttributeKey, Character, ProfileState, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot, Rarity } from '../types/game';
 import { findCosmetic } from '../lib/cosmetics';
-import { DUNGEONS } from '../lib/dungeons';
+import { DUNGEONS, highestAccessibleItemTier } from '../lib/dungeons';
 import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
 import { sellValue } from '../lib/equipment';
 import { enhanceCost, MAX_ENHANCE_LEVEL, successChanceForLevel } from '../lib/enhancement';
 import { placeInInventory } from '../lib/inventoryGrid';
 import { maybeRefreshMerchantStock } from '../lib/merchantStock';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
-import { MAX_POTIONS } from '../lib/consumables';
+import { MAX_POTIONS, potionBasePrice } from '../lib/consumables';
 import { playBuySellSfx } from '../lib/audio';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
@@ -28,8 +28,6 @@ import { DungeonPanel, RunStats, EMPTY_RUN_STATS } from './DungeonPanel';
 import { Ferreiro } from './Ferreiro';
 import { Modal } from './Modal';
 import { SmallButton } from './Button';
-
-const POTION_COST = 15;
 
 // Tracks a "repetir automaticamente" farming sequence in progress —
 // `current` is the attempt DungeonPanel is on right now (1-indexed);
@@ -260,7 +258,7 @@ export function GameShell({
   }
 
   function handleBuyPotion() {
-    const cost = Math.max(1, Math.round(POTION_COST * (1 - kingdomBonuses.merchantDiscountPct)));
+    const cost = Math.max(1, Math.round(potionBasePrice(highestAccessibleItemTier(character)) * (1 - kingdomBonuses.merchantDiscountPct)));
     if (character.gold < cost || character.potions >= MAX_POTIONS) return;
     onCharacterChange({ ...character, gold: character.gold - cost, potions: character.potions + 1 });
     playBuySellSfx();

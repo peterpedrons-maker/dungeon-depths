@@ -6,3 +6,19 @@ export const MAX_POTIONS = 5;
 // Presets for the auto-potion HP% trigger, configured on the pre-dungeon
 // loadout screen.
 export const POTION_THRESHOLD_OPTIONS = [0.2, 0.3, 0.4, 0.5];
+
+// 2026 rebalance: potions used to cost a flat 19 gold everywhere, no matter
+// how far the player had progressed — by the later regions that was pocket
+// change next to a single piece of gear, so sustain never got more of a
+// real decision the way everything else already had. Now scales with the
+// same itemTier a player's own gear/Mercador stock already tracks (see
+// highestAccessibleItemTier in lib/dungeons.ts) — reaching a new region's
+// dungeon raises this the same way it raises what drops there. Base is
+// more than double the old flat 19 at tier 1, then keeps climbing (milder
+// growth than gear's own 1.6/tier, since a potion is a repeat consumable
+// purchase, not a one-time upgrade).
+const POTION_TIER_BASE = 40;
+const POTION_TIER_GROWTH = 1.35;
+export function potionBasePrice(tier: number): number {
+  return Math.round(POTION_TIER_BASE * Math.pow(POTION_TIER_GROWTH, Math.max(1, tier) - 1));
+}
