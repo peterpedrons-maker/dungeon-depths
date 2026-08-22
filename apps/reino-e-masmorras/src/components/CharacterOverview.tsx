@@ -436,11 +436,11 @@ function fmtStatValue(v: number, isPct: boolean): string {
 // One row inside a single item's own column — shows only that item's own
 // value for the stat (never a merged/shared number with the other item),
 // but still carries a verdict against whatever's on the other side: NOVO
-// for an affix the equipped item doesn't have at all, PERDE (shown on the
-// Equipado side only) for one the new item would drop entirely, or a green
-// ▲/red ▼ delta for a plain improvement/downgrade — the three buckets asked
-// for (novos / melhoram / pioram), each still reading off that item's own
-// real number instead of a unified total.
+// for an affix the equipped item doesn't have at all, or a change written
+// as "delta → total" (green +X for an improvement, red -X for a downgrade)
+// so the amount being gained/lost reads first, left-to-right, before the
+// resulting number — a stat the swap drops entirely doesn't appear here at
+// all; see LostAttributesSection below for that case instead.
 // Amber for the item's guaranteed base stat, sky blue for a rolled affix —
 // used both on the section captions and as a small dot right before each
 // row's own label, so the base/affix split reads at a glance even before
@@ -462,13 +462,35 @@ function StatSectionCaption({ isBase }: { isBase: boolean }) {
 
 function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' | 'new' }) {
   const { label, isPct, equippedValue: eq, newValue: nv, isBase } = row;
-  const value = side === 'equipped' ? eq : nv;
   const isNew = side === 'new' && eq === 0 && nv !== 0;
-  const isLostHere = side === 'equipped' && nv === 0 && eq !== 0;
   const improved = side === 'new' && eq !== 0 && nv !== 0 && nv > eq;
   const worsened = side === 'new' && eq !== 0 && nv !== 0 && nv < eq;
-  const valueColor = isNew || improved ? 'text-green-400' : worsened ? 'text-crimson' : isLostHere ? 'text-parchment/45' : 'text-parchment';
   const accent = isBase ? BASE_ACCENT : AFFIX_ACCENT;
+
+  let valueNode: React.ReactNode;
+  if (side === 'equipped') {
+    // Plain read of what's currently equipped — no arrows here, the change
+    // itself only claims a direction once, on the Novo side below.
+    valueNode = <span className="text-parchment">{fmtStatValue(eq, isPct)}</span>;
+  } else if (isNew) {
+    valueNode = <span className="text-green-400">{fmtStatValue(nv, isPct)}</span>;
+  } else if (improved || worsened) {
+    // "delta → total": the amount changing reads first, left to right,
+    // before the number it lands on — e.g. "-7 → 17" for a stat going from
+    // 24 down to 17, so the size of the change is the first thing read.
+    const delta = improved ? nv - eq : eq - nv;
+    const changeColor = improved ? 'text-green-400' : 'text-crimson';
+    valueNode = (
+      <>
+        <span className={changeColor}>{improved ? '+' : '-'}{fmtStatValue(delta, isPct)}</span>
+        <span className="text-parchment/40">→</span>
+        <span className={changeColor}>{fmtStatValue(nv, isPct)}</span>
+      </>
+    );
+  } else {
+    valueNode = <span className="text-parchment">{fmtStatValue(nv, isPct)}</span>;
+  }
+
   return (
     <div className="flex items-center justify-between gap-1.5 text-[11px]">
       {/* Base (the item's guaranteed slot stat) reads amber; affixes (the
@@ -480,11 +502,8 @@ function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' |
         <span className={`truncate ${accent.text}`}>{label}</span>
       </span>
       <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
-        <span className={valueColor}>{fmtStatValue(value, isPct)}</span>
+        {valueNode}
         {isNew && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-bold uppercase tracking-wide">Novo</span>}
-        {isLostHere && <span className="text-[9px] px-1 rounded bg-crimson/20 text-crimson font-bold uppercase tracking-wide">Perde</span>}
-        {improved && <span className="text-green-400">▲+{fmtStatValue(nv - eq, isPct)}</span>}
-        {worsened && <span className="text-crimson">▼{fmtStatValue(nv - eq, isPct)}</span>}
       </span>
     </div>
   );
@@ -493,11 +512,14 @@ function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' |
 // One column of the compare window — icon, name, and this item's OWN stat
 // picture, kept fully separate from the other item's column (each reads its
 // own real numbers, never a shared/merged total) while still carrying the
-// NOVO/PERDE/▲/▼ verdict from `rows` (see CompareStatRow) so the two
-// columns stay easy to read against each other despite listing different
-// stats. `rows` is the full compareItemStatRows() output for the pair,
-// shared so both columns agree on what counts as base vs affix and what
-// changed; each column just filters to the stats *it* actually has.
+// NOVO/delta verdict from `rows` (see CompareStatRow) so the two columns
+// stay easy to read against each other despite listing different stats.
+// `rows` is the full compareItemStatRows() output for the pair, shared so
+// both columns agree on what counts as base vs affix and what changed;
+// each column just filters to the stats *it* actually has. A stat the swap
+// would drop entirely (nonzero here, zero on the other side) still shows
+// up plainly in its own column — see LostAttributesSection below for the
+// dedicated callout about what specifically disappears on the swap.
 function ItemCompareColumn({ item, label, rows, side }: {
   item: EquipmentItem | null;
   label: string;
@@ -541,6 +563,29 @@ function ItemCompareColumn({ item, label, rows, side }: {
   );
 }
 
+// Standalone callout for stats the equipped item has that the candidate
+// item doesn't roll at all (equippedValue nonzero, newValue zero) — pulled
+// out of both columns into its own "Atributos Perdidos" block instead of a
+// small inline tag, so a swap's full cost is legible at a glance instead of
+// buried one row at a time inside the Equipado column.
+function LostAttributesSection({ rows }: { rows: StatCompareRow[] }) {
+  const lost = rows.filter((r) => r.equippedValue !== 0 && r.newValue === 0);
+  if (lost.length === 0) return null;
+  return (
+    <div className="w-full rounded border border-crimson/30 bg-crimson/10 p-2.5">
+      <span className="text-[10px] uppercase tracking-wider font-bold text-crimson block mb-1.5">Atributos Perdidos</span>
+      <div className="space-y-1">
+        {lost.map((r) => (
+          <div key={r.label} className="flex items-center justify-between gap-1.5 text-[11px]">
+            <span className="text-crimson/80 truncate min-w-0">{r.label}</span>
+            <span className="text-crimson font-bold tabular-nums shrink-0">-{fmtStatValue(r.equippedValue, r.isPct)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSell }: {
   selected: Selected;
   // Only meaningful for an inventory item — what's presently equipped in
@@ -565,8 +610,10 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 
   // An inventory item gets the two-column compare: each column lists that
   // item's own real stats (never a shared/merged number) — the equipped
-  // side plain plus a PERDE tag for anything the swap would drop, the new
-  // side carrying NOVO/▲/▼ against whatever's currently equipped.
+  // side plain, the new side carrying NOVO or a "delta → total" change
+  // against whatever's currently equipped. Anything the swap would drop
+  // entirely gets pulled into its own callout below instead (see
+  // LostAttributesSection).
   if (selected.kind === 'inventory') {
     const compareRows = compareItemStatRows(item, equippedInSlot);
     return (
@@ -586,6 +633,8 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
             <ItemCompareColumn item={equippedInSlot} label="Equipado" rows={compareRows} side="equipped" />
             <ItemCompareColumn item={item} label="Novo" rows={compareRows} side="new" />
           </div>
+
+          <LostAttributesSection rows={compareRows} />
 
           <div className="flex gap-2 mt-1">
             <SmallButton onClick={() => onEquip(item)}>Equipar</SmallButton>
