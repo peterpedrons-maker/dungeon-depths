@@ -48,9 +48,14 @@ export function successChanceForLevel(level: number, forjaLevel = 0): number {
 // Gold cost to push `item` from its current enhanceLevel to the next one —
 // scales with the item's own tier (a tier-1 scrap sword is cheap to enhance,
 // a tier-10 legend isn't) and grows per level so +9→+10 costs far more than
-// +0→+1.
+// +0→+1. 2026 rebalance, take three: base 15->20 and exponent 1.45->1.55,
+// specified directly — +1-+4 stay affordable, +5-+6 start to bite, +7 hurts,
+// +8-+9 are expensive, +10 is a deliberate long-term investment (its own
+// 0.5% success chance already makes it a near-lottery — see
+// SUCCESS_CHANCE_BASE — so the cost multiplies onto an already-low
+// expected-attempts count, not a compounding trivial one).
 export function enhanceCost(item: EquipmentItem): number {
-  return Math.round(15 * item.tier * Math.pow(1.45, item.enhanceLevel));
+  return Math.round(20 * item.tier * Math.pow(1.55, item.enhanceLevel));
 }
 
 const PRIMARY_KEYS = ['dmgBonus', 'defBonus', 'hpBonus', 'matkBonus', 'mdefBonus', 'critChanceBonus', 'critDmgBonus'] as const;

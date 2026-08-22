@@ -16,7 +16,9 @@ import pergaminho from '../assets/pergaminho.webp';
 import pocaoIcon from '../assets/pocao.webp';
 import mercadorCena from '../assets/mercador-cena.webp';
 
-const POTION_BASE_COST = 15;
+// 2026 rebalance, take three: +25% (15 -> 19) per direct instruction — gold
+// was accumulating too fast partly because sustain stayed this cheap.
+const POTION_BASE_COST = 19;
 
 interface Props {
   character: Character;

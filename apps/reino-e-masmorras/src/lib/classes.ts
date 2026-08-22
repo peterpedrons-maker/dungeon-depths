@@ -44,6 +44,16 @@ export const MAX_LEVEL = 60;
 // signal only (the harness simulates basic attacks, not active abilities),
 // so it's deliberately a small nudge, not a redesign — no class's kit or
 // identity changed, only these five numbers.
+// 2026 rebalance, take three: cavaleiro's baseDef trimmed 8->7 after an
+// early-level (1-5) full-clear simulation showed the tank archetype
+// (guerreiro/cavaleiro/paladino/barbaro) as the only classes able to
+// survive the harder early game at all, cavaleiro clearly the strongest of
+// that cluster — a small, deliberately narrow correction (still the
+// highest baseDef+baseHp combo in the roster) rather than a nerf to the
+// tank archetype's identity as a whole, since the basic-attack-only harness
+// can't see ranged/magic/support classes' real sustain from active
+// abilities, so their own low early scores aren't a reliable signal to act
+// on the same way.
 export const CLASSES: Record<ClassId, ClassDef> = {
   guerreiro: {
     id: 'guerreiro', name: 'Guerreiro', color: '#a5432f',
@@ -77,7 +87,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     id: 'cavaleiro', name: 'Cavaleiro', color: '#7a8a9a',
     desc: 'Tanque de defesa elevada, feito para segurar a linha de frente.',
     weaponBase: 'Espada Longa', bodyBase: 'Armadura de Cavaleiro', legsBase: 'Grevas de Aço', handsBase: 'Manoplas de Aço',
-    baseHp: 50, baseAtk: 7, baseDef: 8, baseMatk: 0, baseMdef: 3, critChance: 0.04,
+    baseHp: 50, baseAtk: 7, baseDef: 7, baseMatk: 0, baseMdef: 3, critChance: 0.04,
     baseAttrs: { str: 3, dex: 1, agi: 1, vit: 5, int: 1, wis: 1, luk: 1 },
   },
   paladino: {
