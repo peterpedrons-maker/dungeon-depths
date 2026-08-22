@@ -6,7 +6,7 @@ import {
 import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
-import { baseDropChanceForTier, generateItem, rarityColor, sellValue } from '../lib/equipment';
+import { baseDropChanceForLevel, generateItem, rarityColor, sellValue } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -551,7 +551,7 @@ export function DungeonPanel({
   function tryDropEquipment(guaranteed = false) {
     const stats = computeCombatStats(chRef.current);
     if (!guaranteed) {
-      const chance = Math.min(0.6, baseDropChanceForTier(dungeon.itemTier) * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
+      const chance = Math.min(0.6, baseDropChanceForLevel(dungeon.levelReq) * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
       if (Math.random() >= chance) return;
     }
     const availableSlots = OFFHAND_KIND[chRef.current.classId] ? DROP_SLOTS : DROP_SLOTS.filter((s) => s !== 'offhand');

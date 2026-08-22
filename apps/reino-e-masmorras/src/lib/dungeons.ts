@@ -21,27 +21,21 @@ import { Character, DungeonDef } from '../types/game';
 // regardless of in-run depth, so item power tracks dungeon progression
 // rather than the floor counter. Tiers 6-10 are reserved for regions 3-7.
 // difficultyMult below is the CP-anchor knob (see DungeonDef in
-// types/game.ts), calibrated via a scratchpad simulation harness (never
-// committed) using hundreds of independently-rolled anchor characters per
-// dungeon per candidate mult, run through a full clear (every regular
-// encounter + the boss, HP carrying over between fights — only a potion
-// heals) with the real combat formulas.
-// 2026 rebalance, take two: the FIRST rebalance pass (and the original
-// pre-rebalance calibration before it) both anchored against a character
-// deliberately weaker than a normal player — roughly levelReq-2, gear one
-// itemTier behind the dungeon's own, a slot short. That anchor produced a
-// game that still played easy, because a normal, on-time player (AT the
-// dungeon's level, wearing THAT dungeon's own itemTier, full loadout) sits
-// well above it — a single-fight sim at that gear level hit 100% win rate
-// for every one of the 14 classes. This pass anchors at the dungeon's own
-// levelReq/itemTier instead, full 6 slots, incomum rarity (a typical, not
-// lucky or unlucky, roll), and targets meaningfully lower win rates for
-// THAT stronger anchor: ~55-60% Região 1 non-special, ~40% Cripta (its 2.5x
-// drop/gold multiplier justifies the extra risk), ~30-35% Região 2 non-
-// special, ~25% for the two Região 2 specials (Torre, Arena). Confirmed
-// stable across repeated calibration runs (independent rolls average out
-// the per-character noise — see the class-comparison section below for how
-// bad that noise gets against a single fixed roll).
+// types/game.ts). 2026 rebalance, take three: the first two passes both
+// tried to DERIVE this curve from simulation against an anchor character —
+// take one anchored too weak (levelReq-2, gear a tier behind), take two
+// fixed the anchor but still let simulation alone pick the numbers. The
+// game still played easy both times. This pass instead follows an explicit,
+// monotonically-increasing curve specified directly (D1=1.00 ... D12=1.96,
+// each dungeon roughly 5-8% harder than the last, never decreasing) —
+// simulation's job here is verification, not derivation: confirm the curve
+// produces the intended shape (mobs farmable but dangerous, boss a real
+// wall) and flag anything so far off that it needs a small correction, not
+// pick the base numbers from scratch again. D1-D12 map to the 12 dungeons
+// below in ascending level order (ruinas..arena). Layered on top of the
+// REGULAR_/BOSS_*_MULT global constants in lib/enemies.ts (also raised this
+// pass) rather than replacing them — the per-dungeon curve and the global
+// mob/boss toughness are two independent knobs that both needed raising.
 // unlockAfter chains the non-special dungeons into a single mainline —
 // grinding the very first dungeon over and over used to be the only way to
 // reach the level a later one required, which got old fast. A dungeon with
@@ -59,14 +53,14 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Criaturas fracas perto da entrada da masmorra. Boa para começar.',
     startDepth: 1, levelReq: 1,
     enemyPool: ['skeleton', 'ruinBat', 'acidSlime', 'ruinBandit', 'carrionCrow'],
-    bossDepth: 12, boss: 'boneKing', itemTier: 1, miniBossDepths: [5, 9], difficultyMult: 0.63,
+    bossDepth: 12, boss: 'boneKing', itemTier: 1, miniBossDepths: [5, 9], difficultyMult: 1.0,
   },
   {
     id: 'goblins', name: 'Caverna dos Goblins',
     desc: 'Uma tribo de goblins fez desta caverna seu covil.',
     startDepth: 4, levelReq: 4,
     enemyPool: ['goblin', 'goblinShaman', 'goblinThrower', 'goblinFanatic', 'goblinWolfRider'],
-    bossDepth: 15, boss: 'grash', itemTier: 1, miniBossDepths: [8, 12], difficultyMult: 0.62,
+    bossDepth: 15, boss: 'grash', itemTier: 1, miniBossDepths: [8, 12], difficultyMult: 1.08,
     unlockAfter: ['ruinas'],
   },
   {
@@ -75,14 +69,14 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 5, levelReq: 5, special: true,
     goldMult: 2, xpMult: 0.7, dropMult: 2.5,
     enemyPool: ['zombieLooter', 'stoneGuardian', 'greedyWraith', 'wrappedMummy', 'mimicChest'],
-    bossDepth: 12, boss: 'cursedCustodian', itemTier: 2, miniBossDepths: [8], difficultyMult: 0.98,
+    bossDepth: 12, boss: 'cursedCustodian', itemTier: 2, miniBossDepths: [8], difficultyMult: 1.16,
   },
   {
     id: 'pantano', name: 'Pântano Podre',
     desc: 'Água estagnada e árvores mortas escondem predadores famintos.',
     startDepth: 7, levelReq: 7,
     enemyPool: ['poisonToad', 'swampViper', 'crawlingBog', 'cursedWisp', 'rottingGator'],
-    bossDepth: 18, boss: 'mudMother', itemTier: 2, miniBossDepths: [11, 15], difficultyMult: 0.64,
+    bossDepth: 18, boss: 'mudMother', itemTier: 2, miniBossDepths: [11, 15], difficultyMult: 1.24,
     unlockAfter: ['goblins'],
   },
   {
@@ -90,7 +84,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma fenda rochosa coberta de teias — algo grande tece lá dentro.',
     startDepth: 10, levelReq: 10,
     enemyPool: ['huntingSpider', 'venomSpider', 'giantSpider', 'spiderlingSwarm', 'darkWeaver'],
-    bossDepth: 21, boss: 'blackMatriarch', itemTier: 3, miniBossDepths: [14, 18], difficultyMult: 0.61,
+    bossDepth: 21, boss: 'blackMatriarch', itemTier: 3, miniBossDepths: [14, 18], difficultyMult: 1.32,
     unlockAfter: ['pantano'],
   },
 
@@ -102,14 +96,14 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 12, levelReq: 12, special: true,
     enemyPool: ['gargoyle', 'spectralMage', 'cursedKnight', 'watchingEye', 'crawlingShadow'],
     xpMult: 1.6, dmgTakenMult: 1.25, dropMult: 1.5,
-    bossDepth: 23, boss: 'fallenArchmage', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 0.3,
+    bossDepth: 23, boss: 'fallenArchmage', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 1.4,
   },
   {
     id: 'minas', name: 'Minas Abandonadas',
     desc: 'Trilhos enferrujados descem além do que os mineiros ousaram explorar.',
     startDepth: 13, levelReq: 13,
     enemyPool: ['cursedMiner', 'oreGolem', 'koboldRaider', 'batSwarm', 'gasWisp'],
-    bossDepth: 24, boss: 'oreTitan', itemTier: 3, miniBossDepths: [17, 21], difficultyMult: 0.58,
+    bossDepth: 24, boss: 'oreTitan', itemTier: 3, miniBossDepths: [17, 21], difficultyMult: 1.49,
     unlockAfter: ['aranhas'],
   },
   {
@@ -117,7 +111,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Árvores retorcidas escondem olhos brilhando na escuridão.',
     startDepth: 16, levelReq: 16,
     enemyPool: ['corruptedEnt', 'ghostWolf', 'darkFairy', 'cursedBear', 'stranglingVine'],
-    bossDepth: 27, boss: 'forestHeart', itemTier: 4, miniBossDepths: [20, 24], difficultyMult: 0.43,
+    bossDepth: 27, boss: 'forestHeart', itemTier: 4, miniBossDepths: [20, 24], difficultyMult: 1.58,
     unlockAfter: ['minas'],
   },
   {
@@ -125,7 +119,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Filhotes e criaturas ligadas a dragões guardam o ninho — dragões realmente antigos ainda dormem em masmorras mais distantes.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent'],
-    bossDepth: 29, boss: 'dragon', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 0.43,
+    bossDepth: 29, boss: 'dragon', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 1.67,
     unlockAfter: ['floresta'],
   },
   {
@@ -133,7 +127,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um cemitério em ruínas onde os mortos não descansam.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['darkReaper', 'deathCrow', 'boneExecutioner', 'wailingGhost', 'graveWorm'],
-    bossDepth: 29, boss: 'skeletonLord', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 0.43,
+    bossDepth: 29, boss: 'skeletonLord', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 1.76,
     unlockAfter: ['floresta'],
   },
   {
@@ -141,7 +135,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Colunas élficas cobertas de vinhas, tomadas por criaturas selvagens.',
     startDepth: 20, levelReq: 20,
     enemyPool: ['corruptedGuardian', 'whisperingVine', 'ruinBeast', 'elvenWraith', 'crystalGolem'],
-    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 5, miniBossDepths: [24, 28], difficultyMult: 0.4,
+    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 5, miniBossDepths: [24, 28], difficultyMult: 1.86,
     unlockAfter: ['covil', 'necropole'],
   },
   {
@@ -150,7 +144,7 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 20, levelReq: 20, special: true,
     enemyPool: ['cursedGladiator', 'arenaBeast', 'maskedExecutioner', 'beastTamer', 'fallenChampion'],
     dmgTakenMult: 1.2, dropMult: 1.8,
-    bossDepth: 34, boss: 'grandChampion', itemTier: 5, miniBossDepths: [26, 30], difficultyMult: 0.43,
+    bossDepth: 34, boss: 'grandChampion', itemTier: 5, miniBossDepths: [26, 30], difficultyMult: 1.96,
   },
 ];
 

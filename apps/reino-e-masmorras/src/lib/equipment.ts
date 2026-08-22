@@ -17,13 +17,19 @@ import {
 // own tier-growth cut for the other half of that fix). This is layered on
 // top of tier being the real progression axis; rarity is the variance layer
 // within a tier, not the power axis itself.
+// 2026 rebalance, take three: multMin/multMax collapsed to one fixed value
+// per rarity (specified directly) — rarity's whole job is now "how much
+// better is this than a comum of the same tier," a single predictable
+// number, not a rolled band. A comum-to-Lendário spread of 1.55x is the max
+// rarity is ever allowed to swing power on its own; Tier remains the real
+// progression axis (see rollPrimaryValue).
 interface RarityDef { id: Rarity; name: string; color: string; weight: number; multMin: number; multMax: number; }
 export const RARITIES: RarityDef[] = [
-  { id: 'comum', name: 'Comum', color: '#b8ada0', weight: 55, multMin: 1.0, multMax: 1.0 },
-  { id: 'incomum', name: 'Incomum', color: '#4f9d4f', weight: 27, multMin: 1.10, multMax: 1.20 },
-  { id: 'raro', name: 'Raro', color: '#3f7ab8', weight: 12, multMin: 1.20, multMax: 1.35 },
-  { id: 'epico', name: 'Épico', color: '#9b4fc9', weight: 5, multMin: 1.40, multMax: 1.60 },
-  { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, multMin: 1.65, multMax: 1.90 },
+  { id: 'comum', name: 'Comum', color: '#b8ada0', weight: 55, multMin: 1.00, multMax: 1.00 },
+  { id: 'incomum', name: 'Incomum', color: '#4f9d4f', weight: 27, multMin: 1.10, multMax: 1.10 },
+  { id: 'raro', name: 'Raro', color: '#3f7ab8', weight: 12, multMin: 1.20, multMax: 1.20 },
+  { id: 'epico', name: 'Épico', color: '#9b4fc9', weight: 5, multMin: 1.35, multMax: 1.35 },
+  { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, multMin: 1.55, multMax: 1.55 },
 ];
 
 // How many affixes (secondaryStats entries) an item of each rarity rolls —
@@ -121,14 +127,17 @@ const AFFIX_SCALE: Record<SecondaryStatType, number> = {
 };
 
 // Odds shift with the item's own tier instead of every tier rolling the
-// same 55/27/12/5/1 split — early tiers lean comum/incomum ("início:
-// qualidade baixa/moderada"), high tiers lean raro/épico with a real (if
-// still rare) shot at legendário ("endgame: qualidade maior"). This is the
-// other half of the drop-rate rework alongside baseDropChanceForTier below:
-// fewer drops at high tier, but each one is more likely to matter, instead
-// of the same trickle of mostly-comum items forever.
-const RARITY_WEIGHTS_LOW_TIER = [58, 28, 11, 3, 0.3]; // tier 1
-const RARITY_WEIGHTS_HIGH_TIER = [20, 28, 28, 17, 7]; // tier MAX_TIER
+// same split — early tiers lean hard comum/incomum ("início: qualidade
+// baixa/moderada", the 70/20/7/2.5/0.5 split specified directly), high
+// tiers lean raro/épico with a real but still-capped shot at legendário
+// ("endgame: qualidade maior, mas farming continua exigido" — legendário
+// caps at 5% even at MAX_TIER, comum/incomum still make up most of the
+// roll pool so a good drop stays a real event, not the norm). This is the
+// other half of the drop-rate rework alongside baseDropChanceForLevel
+// below: fewer drops at high level, but each one is more likely to matter,
+// instead of the same trickle of mostly-comum items forever.
+const RARITY_WEIGHTS_LOW_TIER = [70, 20, 7, 2.5, 0.5]; // tier 1
+const RARITY_WEIGHTS_HIGH_TIER = [35, 30, 20, 10, 5]; // tier MAX_TIER
 
 function pickRarityForTier(tier: number): RarityDef {
   const t = Math.max(0, Math.min(1, (tier - 1) / (MAX_TIER - 1)));
@@ -142,16 +151,25 @@ function pickRarityForTier(tier: number): RarityDef {
   return RARITIES[0];
 }
 
-// Replaces the old flat BASE_DROP_CHANCE (12% at every tier) — drop
-// frequency now tapers off from tier 1 to tier MAX_TIER, the "início: mais
-// frequente / endgame: menos frequente" half of the loot curve (paired with
-// pickRarityForTier's rising quality curve above so a rarer drop is also a
-// better one, not just a rarer version of the same average item). Dungeons
-// with their own dropMult (Cripta/Torre/Arena) still multiply on top of
-// this, same as before.
-export function baseDropChanceForTier(tier: number): number {
-  const t = Math.max(0, Math.min(1, (tier - 1) / (MAX_TIER - 1)));
-  return 0.16 + (0.09 - 0.16) * t;
+// Keyed by the dungeon's own levelReq (1-60), not itemTier (1-10) — the
+// requested curve is specified in level buckets that run all the way to 60
+// (5 dungeons' worth of tiers wouldn't have enough resolution), and level is
+// also what "dungeon 1-5 / 6-15 / 16-30 / 31-45 / 46-60" naturally maps to
+// once regions 3-7 exist. Five buckets, each linearly interpolated across
+// its own range, monotonically decreasing overall: "início: mais frequente
+// / endgame: menos frequente," paired with pickRarityForTier's rising
+// quality curve above so a rarer drop is also a better one, not just a
+// rarer version of the same average item. Dungeons with their own dropMult
+// (Cripta/Torre/Arena) still multiply on top of this, same as before.
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+export function baseDropChanceForLevel(level: number): number {
+  if (level <= 5) return lerp(0.30, 0.25, (level - 1) / 4);
+  if (level <= 15) return lerp(0.22, 0.18, (level - 6) / 9);
+  if (level <= 30) return lerp(0.16, 0.12, (level - 16) / 14);
+  if (level <= 45) return lerp(0.12, 0.08, (level - 31) / 14);
+  return lerp(0.09, 0.05, Math.min(1, (level - 46) / 14));
 }
 
 function rarityIndex(id: Rarity): number {
@@ -323,7 +341,10 @@ export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number,
 // Mercador charging wildly different prices for them — once buy prices
 // actually scale hard with Tier, sell price has to follow or vendoring a
 // high-tier item stops being worth doing at all in the late game.
-const SELL_FRACTION = 0.25;
+// 2026 rebalance, take three: cut a further ~25% (0.25 -> 0.19) alongside
+// the Mercador's own buy prices going up ~50% — selling stayed too close to
+// a fast way to fund the next upgrade otherwise.
+const SELL_FRACTION = 0.19;
 export function sellValue(item: EquipmentItem): number {
   const base = merchantBasePrice(item.tier) * MERCHANT_RARITY_PRICE_MULT[item.rarity];
   return Math.max(1, Math.round(base * SELL_FRACTION + item.enhanceLevel * 4));

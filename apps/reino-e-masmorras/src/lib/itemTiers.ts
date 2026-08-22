@@ -81,7 +81,10 @@ export const ACCESSORY_TYPES: AccessoryType[] = ['anel', 'amuleto', 'bracelete']
 // (equipment.ts's sellValue) — um item de Tier alto que vendesse barato
 // quebraria o loop "vendi um lixo, comprei algo melhor" assim que a compra
 // ficasse cara nesse Tier.
-const MERCHANT_TIER_BASE = 60;
+// 2026 rebalance, take three: base raised ~50% (60 -> 90) per direct
+// instruction — the Mercador should read as an opportunity worth saving
+// for, not an easy alternate source of gear.
+const MERCHANT_TIER_BASE = 90;
 const MERCHANT_TIER_GROWTH = 1.6;
 export const MERCHANT_RARITY_PRICE_MULT: Record<Rarity, number> = {
   comum: 1.0, incomum: 1.15, raro: 1.5, epico: 2.0, legendario: 2.7,

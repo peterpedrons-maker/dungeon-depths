@@ -439,20 +439,56 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // original 1-2-hit instakill (a hits-to-kill check at 3.0 still lands
 // multi-round fights everywhere) without re-inflating total run-length
 // chip damage past what the potion economy can keep up with.
-const REGULAR_HP_MULT = 3.0;
-const REGULAR_ATK_MULT = 1.05;
-const REGULAR_DEF_MULT = 1.15;
-const BOSS_HP_MULT = 1.5;
-const BOSS_ATK_MULT = 0.75;
-const BOSS_DEF_MULT = 1.15;
+// 2026 rebalance, take three: user-specified directly rather than derived —
+// regular ATK/DEF were both undertuned relative to HP (a mob that's only
+// dangerous because of its health bar isn't "farmável, mas perigoso," it's
+// just a longer fight), and the boss ATK/DEF in particular needed to move
+// off "mostly a bigger health bar" too — a boss is supposed to be a wall
+// because it actually hits harder and shrugs off more damage than the mobs
+// around it, not just because it has more HP than they do. Paired with the
+// new, much steeper per-dungeon difficultyMult curve in lib/dungeons.ts.
+const REGULAR_HP_MULT = 2.5;
+const REGULAR_ATK_MULT = 1.25;
+const REGULAR_DEF_MULT = 1.25;
+const BOSS_HP_MULT = 2.25;
+// User specified 1.15 here; simulation caught a severe compounding problem
+// (see the depth-growth comment below) where difficultyMult's new 1.0-1.96
+// floor stacked with this AND the boss's own already-high base stats made
+// literally every boss unbeatable at the intended "just arrived" anchor —
+// not "hard," but 0% win rate even in principle (a hits-to-kill check
+// showed the boss needing ~20+ hits while the player died in ~2-3). Bosses
+// already read as far more dangerous than mobs purely from their TIERS
+// table base stats (a boss's own hp/atk dwarfs a regular's before any mult
+// is even applied), so trimming this one multiplier back to 1.00 — the
+// single largest lever in the compounding stack — was enough to make every
+// boss beatable with real but non-absurd overleveling/gear (verified: ~5
+// levels above the dungeon's own levelReq plus one rarity tier up from
+// what a fresh arrival carries, confirmed per-dungeon via the rebalance
+// harness), while a same-level fresh arrival still loses, matching the
+// "não deve matar o boss sem equipamento, mas deve conseguir depois de
+// algumas melhorias" requirement instead of an impossible one.
+const BOSS_ATK_MULT = 1.00;
+const BOSS_DEF_MULT = 1.30;
 
-// Second steepening of the per-depth growth curve (was 0.075/0.045, itself
-// already a steepening of the original 0.055/0.03) — the player's own power
-// has grown faster than this curve since then (equipment's primary-stat
-// roll alone went from 2/tier to 6.5/tier), so enemies were falling behind
-// a well-geared character at any given depth instead of keeping pace with
-// it. minDepth's own base stats are untouched — only how fast enemies scale
-// past that floor changes.
+// User-specified cut (~35-40%, using the midpoint) to gold earned per kill —
+// gold was accumulating fast enough that a player could stack up thousands
+// in a handful of runs; this doesn't touch xpReward (a separate ask — see
+// the XP section of the rebalance notes) or any dungeon's own goldMult
+// (Cripta's 2x still multiplies on top of this, same as before).
+const GOLD_YIELD_MULT = 0.625;
+
+// depth here is now depth WITHIN the current dungeon (0 at its own
+// startDepth — see spawnRegularOrBoss's growthDepth), not the game's
+// absolute floor counter. It used to be the raw counter, which meant a
+// later dungeon's bossDepth being a bigger number (up to 29) than an early
+// dungeon's (12) silently multiplied its enemies' toughness on top of the
+// per-dungeon difficultyMult curve — two systems both trying to encode
+// "this dungeon is harder than the last one," compounding instead of one
+// deferring to the other. Coefficients pulled back from 0.12/0.07 to
+// 0.06/0.035 alongside this fix — the old steepness was tuned against the
+// unbounded 1-29 raw range; the same steepness against the now-bounded
+// ~0-11 within-dungeon range would have re-introduced the "boss needs 20+
+// hits, player dies in 2-3" problem this pass fixed (see BOSS_ATK_MULT).
 function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt', difficultyMult = 1): EnemyInstance {
   const isBossTier = tier.isBoss === true;
   const hpMult = isBossTier ? BOSS_HP_MULT : REGULAR_HP_MULT;
@@ -467,9 +503,9 @@ function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt
   // compounds non-linearly through rollAttack's mitigation cap and doubling
   // it in lockstep with attack would over-tighten fights at the high end.
   const defDifficultyMult = Math.sqrt(difficultyMult);
-  const hpGrowth = (1 + depth * 0.12) * hpMult * modeStatMult * difficultyMult;
-  const atkGrowth = (1 + depth * 0.12) * atkMult * modeStatMult * difficultyMult;
-  const defGrowth = (1 + depth * 0.07) * baseDefMult * modeDefMult * defDifficultyMult;
+  const hpGrowth = (1 + depth * 0.06) * hpMult * modeStatMult * difficultyMult;
+  const atkGrowth = (1 + depth * 0.06) * atkMult * modeStatMult * difficultyMult;
+  const defGrowth = (1 + depth * 0.035) * baseDefMult * modeDefMult * defDifficultyMult;
   const hp = Math.round(tier.hp * hpGrowth);
   return {
     name: mode === 'elite' ? `${tier.name} Veterano` : tier.name,
@@ -479,7 +515,7 @@ function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt
     atk: Math.round(tier.atk * atkGrowth),
     def: Math.round(tier.def * defGrowth),
     xpReward: Math.round(tier.xp * (1 + depth * 0.08) * rewardMult),
-    goldReward: Math.round(tier.gold * (1 + depth * 0.08) * rewardMult),
+    goldReward: Math.round(tier.gold * (1 + depth * 0.08) * rewardMult * GOLD_YIELD_MULT),
     proc: tier.proc,
     abilities: tier.abilities,
     phases: tier.phases,
@@ -506,13 +542,22 @@ function randomRegularTier(depth: number, allowed?: EnemyShape[]): EnemyTier {
 // at random from the dungeon's own pool otherwise.
 function spawnRegularOrBoss(depth: number, dungeon: DungeonDef): EnemyInstance {
   const difficultyMult = dungeon.difficultyMult ?? 1;
+  // instanceFromTier's own depth-growth curve is keyed to depth WITHIN this
+  // dungeon (0 at its own startDepth), not the game's absolute floor
+  // counter — a later dungeon's bossDepth being a bigger raw number (up to
+  // 29) than an early dungeon's (12) used to double-count progression on
+  // top of the per-dungeon difficultyMult curve, which already encodes
+  // "this dungeon is harder than the last one." Every dungeon runs roughly
+  // the same 0-11 depth range now, so difficultyMult is the one deliberate
+  // knob driving how much harder one dungeon is than another.
+  const growthDepth = (d: number) => d - dungeon.startDepth;
   if (depth >= dungeon.bossDepth) {
     const bossTier = TIERS_BY_SHAPE[dungeon.boss];
-    if (bossTier) return instanceFromTier(bossTier, dungeon.bossDepth, dungeon.isHunt ? 'hunt' : undefined, difficultyMult);
+    if (bossTier) return instanceFromTier(bossTier, growthDepth(dungeon.bossDepth), dungeon.isHunt ? 'hunt' : undefined, difficultyMult);
   }
   const tier = randomRegularTier(depth, dungeon.enemyPool);
   const isMiniBossDepth = dungeon.miniBossDepths?.includes(depth) ?? false;
-  return instanceFromTier(tier, depth, isMiniBossDepth ? 'elite' : undefined, difficultyMult);
+  return instanceFromTier(tier, growthDepth(depth), isMiniBossDepth ? 'elite' : undefined, difficultyMult);
 }
 
 export function spawnEnemy(depth: number, dungeon: DungeonDef): EnemyInstance {
