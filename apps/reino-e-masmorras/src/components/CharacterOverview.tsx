@@ -1,9 +1,9 @@
-import { CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp } from '../lib/combatStats';
 import { fmt } from '../lib/format';
-import { hexToRgba, rarityColor, sellValue, SLOT_NAMES } from '../lib/equipment';
+import { rarityColor, sellValue, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import { compareItemStatRows, itemDisplayName, itemStatLines, StatCompareRow } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
@@ -36,34 +36,6 @@ const EMPTY_SLOT_ICON: Record<ItemSlot, string> = {
 // empty, unusable frame.
 const PAPERDOLL_LEFT_SLOTS: ItemSlot[] = ['weapon', 'offhand', 'hands'];
 const RIGHT_SLOTS: ItemSlot[] = ['body', 'legs', 'accessory'];
-
-// Neutral slate-blue used for an empty slot (nothing to tint by rarity yet).
-const NEUTRAL_SLOT_BG = 'rgba(96,148,210,0.09)';
-const NEUTRAL_SLOT_BG_HOVER = 'rgba(96,148,210,0.17)';
-const NEUTRAL_SLOT_BORDER = 'rgba(96,148,210,0.4)';
-const NEUTRAL_SLOT_BORDER_HOVER = 'rgba(96,148,210,0.65)';
-
-// Tints an item slot's background/border by the item's own rarity color
-// (via CSS custom properties, so the existing Tailwind hover: classes still
-// work) instead of every slot sharing one fixed neutral blue regardless of
-// what's inside — an empty slot keeps the neutral look.
-function slotTintStyle(item: EquipmentItem | null): CSSProperties {
-  if (!item) {
-    return {
-      ['--slot-bg' as string]: NEUTRAL_SLOT_BG,
-      ['--slot-bg-hover' as string]: NEUTRAL_SLOT_BG_HOVER,
-      ['--slot-border' as string]: NEUTRAL_SLOT_BORDER,
-      ['--slot-border-hover' as string]: NEUTRAL_SLOT_BORDER_HOVER,
-    } as CSSProperties;
-  }
-  const color = rarityColor(item.rarity);
-  return {
-    ['--slot-bg' as string]: hexToRgba(color, 0.16),
-    ['--slot-bg-hover' as string]: hexToRgba(color, 0.26),
-    ['--slot-border' as string]: hexToRgba(color, 0.5),
-    ['--slot-border-hover' as string]: hexToRgba(color, 0.75),
-  } as CSSProperties;
-}
 
 interface Props {
   character: Character;

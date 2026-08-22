@@ -1,4 +1,4 @@
-import { Character, ClassId, ProfileState, RankEntry } from '../types/game';
+import { Character, ClassId, Equipment, ProfileState, RankEntry } from '../types/game';
 import { supabase } from './supabaseClient';
 
 // Cloud counterpart of lib/storage.ts's local-only loadCharacter/
@@ -68,7 +68,7 @@ export interface RankingFetchResult { ranking: RankEntry[]; error: string | null
 export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
   const { data, error } = await supabase
     .from('ranking')
-    .select('name,class_id,cp,level,created_at,iron_mode')
+    .select('name,class_id,cp,level,created_at,iron_mode,equipment')
     .order('level', { ascending: false })
     .order('cp', { ascending: false })
     .limit(20);
@@ -85,6 +85,7 @@ export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
       level: r.level as number,
       date: (r.created_at as string).slice(0, 10),
       ironMode: r.iron_mode as boolean,
+      equipment: (r.equipment as Equipment | null) ?? undefined,
     })),
     error: null,
   };
@@ -107,7 +108,7 @@ export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
 export async function insertGlobalRankEntry(userId: string, entry: RankEntry): Promise<string | null> {
   const { error } = await supabase.from('ranking').upsert({
     user_id: userId, name: entry.name, class_id: entry.classId, cp: entry.cp, level: entry.level,
-    iron_mode: entry.ironMode ?? false, created_at: new Date().toISOString(),
+    iron_mode: entry.ironMode ?? false, equipment: entry.equipment ?? null, created_at: new Date().toISOString(),
   }, { onConflict: 'user_id,name' });
   if (error) {
     console.error('insertGlobalRankEntry failed', error);
