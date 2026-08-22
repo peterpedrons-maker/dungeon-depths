@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { AccessoryType, ClassId, EquipmentItem, ItemSlot, Rarity, SecondaryStatType } from '../types/game';
 import { CLASSES, MAGICAL_CLASSES } from './classes';
 import {
@@ -374,4 +375,35 @@ export function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// Neutral slate-blue used for an empty slot (nothing to tint by rarity yet).
+const NEUTRAL_SLOT_BG = 'rgba(96,148,210,0.09)';
+const NEUTRAL_SLOT_BG_HOVER = 'rgba(96,148,210,0.17)';
+const NEUTRAL_SLOT_BORDER = 'rgba(96,148,210,0.4)';
+const NEUTRAL_SLOT_BORDER_HOVER = 'rgba(96,148,210,0.65)';
+
+// Tints an item slot's background/border by the item's own rarity color (via
+// CSS custom properties, so callers' existing Tailwind hover: classes still
+// work) instead of every slot sharing one fixed neutral blue regardless of
+// what's inside — an empty slot (or, for a merchant/loot grid, an unidentified
+// one) keeps the neutral look. Shared by CharacterOverview's paperdoll/
+// inventory grid and Mercador's stock grid, so a rare item reads as rare
+// everywhere it's shown, not just in the player's own bag.
+export function slotTintStyle(item: EquipmentItem | null): CSSProperties {
+  if (!item) {
+    return {
+      ['--slot-bg' as string]: NEUTRAL_SLOT_BG,
+      ['--slot-bg-hover' as string]: NEUTRAL_SLOT_BG_HOVER,
+      ['--slot-border' as string]: NEUTRAL_SLOT_BORDER,
+      ['--slot-border-hover' as string]: NEUTRAL_SLOT_BORDER_HOVER,
+    } as CSSProperties;
+  }
+  const color = rarityColor(item.rarity);
+  return {
+    ['--slot-bg' as string]: hexToRgba(color, 0.16),
+    ['--slot-bg-hover' as string]: hexToRgba(color, 0.26),
+    ['--slot-border' as string]: hexToRgba(color, 0.5),
+    ['--slot-border-hover' as string]: hexToRgba(color, 0.75),
+  } as CSSProperties;
 }

@@ -225,11 +225,17 @@ export function enemySprite(shape: EnemyShape): Sprite {
 }
 
 // ═══ Draw helpers ════════════════════════════════════════════════════════════
+// Keyed by image src + color, not just src — drawSprite used to only ever
+// tint white for the hit-flash, so keying on src alone was harmless, but now
+// also tints per status-effect color (see statusTintFor in DungeonPanel.tsx)
+// a src-only key would silently return a stale, wrong-colored canvas the
+// first time two different colors were requested for the same sprite.
 const tintCache = new Map<string, HTMLCanvasElement>();
 function tint(spr: Sprite, color: string): HTMLCanvasElement | null {
   const { image } = spr;
   if (!image.complete || image.naturalWidth === 0) return null;
-  const cached = tintCache.get(image.src);
+  const key = `${image.src}::${color}`;
+  const cached = tintCache.get(key);
   if (cached) return cached;
   const c = document.createElement('canvas');
   c.width = image.naturalWidth; c.height = image.naturalHeight;
@@ -238,13 +244,13 @@ function tint(spr: Sprite, color: string): HTMLCanvasElement | null {
   g.globalCompositeOperation = 'source-in';
   g.fillStyle = color;
   g.fillRect(0, 0, c.width, c.height);
-  tintCache.set(image.src, c);
+  tintCache.set(key, c);
   return c;
 }
 
 export function drawSprite(
   ctx: CanvasRenderingContext2D, spr: Sprite, cx: number, cy: number,
-  flip: boolean, flashAlpha = 0, lean = 0,
+  flip: boolean, flashAlpha = 0, lean = 0, statusTint?: { color: string; alpha: number },
 ): void {
   const { image } = spr;
   if (!image.complete || image.naturalWidth === 0) return;
@@ -255,6 +261,19 @@ export function drawSprite(
   ctx.scale(flip ? -1 : 1, 1);
   if (lean) ctx.rotate(lean * (flip ? -0.12 : 0.12));
   ctx.drawImage(image, Math.round(-w / 2), Math.round(-h), w, h);
+  // A persistent, low-alpha color wash over the sprite's own silhouette
+  // (same source-in tint trick as the white hit-flash below, just a
+  // standing wash instead of a brief pulse) — the small buff/debuff badges
+  // already name exactly what's active, but a poisoned enemy that doesn't
+  // visibly look poisoned is easy to miss mid-fight at a glance.
+  if (statusTint) {
+    const tinted = tint(spr, statusTint.color);
+    if (tinted) {
+      ctx.globalAlpha = statusTint.alpha;
+      ctx.drawImage(tinted, Math.round(-w / 2), Math.round(-h), w, h);
+      ctx.globalAlpha = 1;
+    }
+  }
   if (flashAlpha > 0) {
     const tinted = tint(spr, '#ffffff');
     if (tinted) {

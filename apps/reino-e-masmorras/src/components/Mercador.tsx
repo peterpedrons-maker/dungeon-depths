@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Character, EquipmentItem } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
-import { rarityColor } from '../lib/equipment';
+import { rarityColor, slotTintStyle } from '../lib/equipment';
 import { itemDisplayName, primaryStatLines, secondaryStatLabels } from '../lib/enhancement';
 import { priceForStockItem, STOCK_COLS, STOCK_ROWS } from '../lib/merchantStock';
 import { canFitInInventory, placeInInventory, SLOT_FOOTPRINT } from '../lib/inventoryGrid';
@@ -141,8 +141,9 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
                   <button
                     key={item.id}
                     onClick={() => setSelected(item)}
-                    className="absolute flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color] duration-150 hover:bg-[rgba(96,148,210,0.17)] hover:border-[rgba(96,148,210,0.65)]"
+                    className="absolute flex items-center justify-center rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[background-color,border-color] duration-150 hover:bg-[var(--slot-bg-hover)] hover:border-[var(--slot-border-hover)]"
                     style={{
+                      ...slotTintStyle(identified ? item : null),
                       left: `${(x / STOCK_COLS) * 100}%`,
                       top: `${(y / STOCK_ROWS) * 100}%`,
                       width: `${(w / STOCK_COLS) * 100}%`,
@@ -205,7 +206,7 @@ function StockItemModal({ item, price, disabled, onClose, onBuy }: {
           {identified ? itemDisplayName(item) : 'Item Misterioso'}
         </div>
 
-        <div className="w-24 h-24 rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+        <div style={slotTintStyle(identified ? item : null)} className="w-24 h-24 rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
           {identified ? (
             <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
           ) : (

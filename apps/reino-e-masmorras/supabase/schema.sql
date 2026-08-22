@@ -107,8 +107,15 @@ create table if not exists public.ranking (
   level integer not null,
   cp integer not null default 0,
   iron_mode boolean not null default false,
+  equipment jsonb,
   created_at timestamptz not null default now()
 );
+
+-- Migration: snapshot of the 6 equipment slots at run-end, so clicking a
+-- leaderboard row can show what that character was wearing (RankingScreen)
+-- instead of just their name/level/CP. Nullable — an old row written before
+-- this column existed just has nothing to show.
+alter table public.ranking add column if not exists equipment jsonb;
 
 -- Migration: collapse pre-existing duplicate rows (same account+character
 -- name) down to the most recent one before the unique index below goes on,

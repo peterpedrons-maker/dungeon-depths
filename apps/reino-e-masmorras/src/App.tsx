@@ -168,7 +168,7 @@ export default function App() {
     const entry: RankEntry = {
       name: finalCharacter.name, classId: finalCharacter.classId, cp: computeCombatPower(finalCharacter),
       level: finalCharacter.level, date: new Date().toISOString().slice(0, 10),
-      ironMode: finalCharacter.ironMode,
+      ironMode: finalCharacter.ironMode, equipment: finalCharacter.equipment,
     };
     if (session) {
       insertGlobalRankEntry(session.user.id, entry).then((insertErr) => {

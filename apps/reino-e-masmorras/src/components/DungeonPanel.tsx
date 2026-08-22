@@ -107,7 +107,6 @@ const MISS_CHANCE_CAP = 0.45;
 
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Envenenado', burn: 'Em Chamas', bleed: 'Sangrando', curse: 'Amaldiçoado' };
 const STATUS_VERB: Record<StatusEffectKind, string> = { poison: 'envenenado', burn: 'incendiado', bleed: 'posto a sangrar', curse: 'amaldiçoado' };
-const STATUS_TICK_LABEL: Record<StatusEffectKind, string> = { poison: 'veneno', burn: 'queimadura', bleed: 'sangramento', curse: 'maldição' };
 const STATUS_DESC: Record<StatusEffectKind, string> = {
   poison: 'Sofre dano de veneno a cada rodada até o efeito passar.',
   burn: 'Sofre dano de fogo a cada rodada até o efeito passar.',
@@ -172,6 +171,31 @@ function buildEffectBadges(side: 'player' | 'enemy', statuses: StatusEffectKind[
       };
     }),
   ];
+}
+
+// One ambient color wash per side's sprite (see drawSprite's statusTint
+// param) so a poisoned/burning/etc. combatant visibly looks the part instead
+// of that only being communicated by the small badge icons above them. A DOT
+// status wins over a CC wins over a plain stat buff/debuff — the most
+// "you don't look like yourself right now" case takes priority — and only
+// ever one color shows at once so several active effects don't blend into
+// mud; the badges are still the place to see everything that's active.
+const STATUS_TINT_COLOR: Record<StatusEffectKind, string> = {
+  poison: '#22c55e', burn: '#f97316', bleed: '#dc2626', curse: '#a855f7',
+};
+const CC_TINT_COLOR: Record<CrowdControlKind, string> = {
+  stun: '#eab308', sleep: '#38bdf8', silence: '#64748b',
+};
+function statusTintFor(
+  statuses: StatusEffectKind[], ccs: CrowdControlKind[], mods: StatModInstance[],
+): { color: string; alpha: number } | undefined {
+  if (statuses.length > 0) return { color: STATUS_TINT_COLOR[statuses[0]], alpha: 0.38 };
+  if (ccs.length > 0) return { color: CC_TINT_COLOR[ccs[0]], alpha: 0.34 };
+  if (mods.length > 0) {
+    if (mods.some((m) => !statModBadgeIsBuff(m))) return { color: '#ef4444', alpha: 0.22 };
+    return { color: '#fbbf24', alpha: 0.2 };
+  }
+  return undefined;
 }
 
 interface StatusInstance { kind: StatusEffectKind; roundsLeft: number; dmgPerTick: number; }
@@ -819,15 +843,21 @@ export function DungeonPanel({
   // advance) only happens from the direct attack-roll codepath, so a DOT
   // "kill" would otherwise vanish silently. Same clamp applied to the player
   // for consistency (death is only ever detected from the enemy's direct hit).
-  function tickStatus(ref: { current: StatusInstance[] }, hp: number, applyHp: (hp: number) => void, name: string): string | null {
-    if (ref.current.length === 0) return null;
+  // Reports through the same floating-number/flash feedback as any other
+  // hit (see pushFloat) instead of a log line — a status tick used to only
+  // show up as combat-log text, so poison/burn/bleed/curse damage was the
+  // one kind of damage in the whole fight with no floating number at all.
+  // The persistent status badge already names which effect is ticking, so a
+  // log line would just repeat that.
+  function tickStatus(ref: { current: StatusInstance[] }, hp: number, applyHp: (hp: number) => void, side: 'player' | 'enemy'): void {
+    if (ref.current.length === 0) return;
     const ticking = ref.current;
     const totalDmg = ticking.reduce((s, e) => s + e.dmgPerTick, 0);
     ref.current = ticking.map((s) => ({ ...s, roundsLeft: s.roundsLeft - 1 })).filter((s) => s.roundsLeft > 0);
-    if (totalDmg <= 0) return null;
+    if (totalDmg <= 0) return;
     applyHp(Math.max(1, hp - totalDmg));
-    const label = STATUS_TICK_LABEL[ticking[0].kind];
-    return `${name} sofre ${totalDmg} de dano de ${label}.`;
+    pushFloat(side, totalDmg, false);
+    flash(side);
   }
 
   // Duration-based decay (cooldowns, DOT, buffs/debuffs, CC, regen) — kept on
@@ -848,12 +878,10 @@ export function DungeonPanel({
     syncPlayerMods();
     syncEnemyMods();
 
-    const enemyDotLine = tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => applyEnemyHp(hp), enemyRef.current.name);
+    tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => applyEnemyHp(hp), 'enemy');
     syncEnemyStatuses();
-    if (enemyDotLine) pushLog(enemyDotLine);
-    const playerDotLine = tickStatus(playerStatusRef, chRef.current.hp, (hp) => updateCh({ ...chRef.current, hp }), ch.name);
+    tickStatus(playerStatusRef, chRef.current.hp, (hp) => updateCh({ ...chRef.current, hp }), 'player');
     syncPlayerStatuses();
-    if (playerDotLine) pushLog(playerDotLine);
 
     if (playerRegenRef.current.length > 0) {
       const maxHp = effectiveMaxHp(chRef.current);
@@ -1007,8 +1035,8 @@ export function DungeonPanel({
           runStatsRef.current.kills += 1;
           runStatsRef.current.goldFromKills += goldGain;
           runStatsRef.current.xpGained += xpGain;
-          pushLog(`${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`);
-          if (finalChar.level > prevLevel) pushLog(`Você subiu para o nível ${finalChar.level}!`);
+          pushLog([{ text: `${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`, color: '#4ade80' }]);
+          if (finalChar.level > prevLevel) pushLog([{ text: `Você subiu para o nível ${finalChar.level}!`, color: '#c89a2e' }]);
           // Elite checkpoint kills always drop something too, same as a
           // boss — clearing one of these mid-run milestones is meant to
           // feel worth the extra danger, not just riskier for the same odds.
@@ -1022,7 +1050,7 @@ export function DungeonPanel({
           if (isBossKill) {
             const finishVictory = () => {
               if (!mountedRef.current) return;
-              pushLog(`Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`);
+              pushLog([{ text: `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`, color: '#c89a2e' }]);
               phaseRef.current = 'ended';
               endedReasonRef.current = 'victory';
               setEndedReason('victory');
@@ -1043,7 +1071,7 @@ export function DungeonPanel({
             const next = spawnEnemy(nextDepth, dungeon);
             updateEnemy(next);
             enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
-            if (next.isElite) pushLog(`${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`);
+            if (next.isElite) pushLog([{ text: `${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`, color: '#f59e0b' }]);
             enemyStatusRef.current = [];
             enemyModsRef.current = [];
             enemyCCRef.current = [];
@@ -1163,7 +1191,10 @@ export function DungeonPanel({
     // that reward flow only runs from the direct attack-roll above.
     if (defStats.thornsPct > 0 && edmg > 0) {
       const reflected = Math.round(edmg * defStats.thornsPct);
-      if (reflected > 0) applyEnemyHp(Math.max(1, enemyRef.current.hp - reflected));
+      if (reflected > 0) {
+        applyEnemyHp(Math.max(1, enemyRef.current.hp - reflected));
+        pushFloat('enemy', reflected, false);
+      }
     }
 
     if (chosenAbility && abEffect) {
@@ -1222,7 +1253,7 @@ export function DungeonPanel({
     }
 
     if (hp <= 0) {
-      pushLog('Você caiu em combate...');
+      pushLog([{ text: 'Você caiu em combate...', color: '#8a2030' }]);
       phaseRef.current = 'ended';
       endedReasonRef.current = 'death';
       setEndedReason('death');
@@ -1246,7 +1277,7 @@ export function DungeonPanel({
     const healed = Math.min(maxHp, c.hp + heal);
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
     potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
-    pushLog(`Vida baixa — você bebe uma poção e recupera ${healed - prevHp} de vida.`);
+    pushLog([{ text: `Vida baixa — você bebe uma poção e recupera ${healed - prevHp} de vida.`, color: '#38bdf8' }]);
   }
 
   function drinkPotionManually() {
@@ -1477,14 +1508,19 @@ export function DungeonPanel({
       const groundY = h - 42;
       if (phase !== 'ended') {
         const px1 = w * 0.27, ex = w * 0.73;
-        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0);
-        drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0);
+        const playerTint = statusTintFor(playerStatuses, playerCCState, playerModsState);
+        const enemyTint = statusTintFor(enemyStatuses, enemyCCState, enemyModsState);
+        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0, 0, playerTint);
+        drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint);
       }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [ch.classId, enemy.shape, phase, flashSide, heroSpr]);
+  }, [
+    ch.classId, enemy.shape, phase, flashSide, heroSpr,
+    playerStatuses, playerCCState, playerModsState, enemyStatuses, enemyCCState, enemyModsState,
+  ]);
 
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
   const weapon = ch.equipment.weapon;
@@ -1598,22 +1634,39 @@ export function DungeonPanel({
           return (
           <div
             key={f.id}
-            className={`absolute font-extrabold pointer-events-none ${
-              playerHit
-                ? (f.crit ? 'text-5xl' : 'text-3xl')
-                : `drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] ${f.crit ? 'text-4xl' : 'text-2xl'}`
-            } ${
-              playerHit ? 'left-[24%]' : 'text-yellow-300 left-[68%]'
-            }`}
+            className={`absolute font-extrabold pointer-events-none ${playerHit ? 'left-[24%]' : 'left-[68%]'}`}
             style={{
               top: playerHit ? '14%' : '38%',
-              color: playerHit ? '#ff4040' : undefined,
-              textShadow: playerHit ? '0 0 3px #000, 0 2px 2px #000, 0 0 12px rgba(0,0,0,0.85)' : undefined,
               animation: `${playerHit ? 'floatStatic' : 'float'} ${FLOAT_DURATION_MS}ms ease-out forwards`,
             }}
           >
-            {f.miss ? <span className="text-lg text-parchment/60">erro!</span> : (
-              <>-{f.value}{f.crit ? <span className="text-amber-300"> CRÍTICO!</span> : ''}{f.blocked ? <span className="text-sm text-sky-300 align-top"> bloq.</span> : ''}</>
+            {f.miss ? (
+              <span className="text-lg text-parchment/60 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">erro!</span>
+            ) : (
+              <>
+                {/* A crit gets its own gold gradient + a nested pulse
+                    animation (see @keyframes critPulse) instead of a
+                    "CRÍTICO!" label — the number itself is unmistakably a
+                    big hit at a glance, in a size that's already bigger
+                    than a normal number below. */}
+                <span
+                  className={`inline-block ${
+                    f.crit
+                      ? `${playerHit ? 'text-6xl' : 'text-5xl'} text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-300 to-amber-500`
+                      : `${playerHit ? 'text-3xl' : 'text-2xl'} ${playerHit ? '' : 'text-yellow-300'} ${playerHit ? '' : 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`
+                  }`}
+                  style={{
+                    color: !f.crit && playerHit ? '#ff4040' : undefined,
+                    textShadow: f.crit
+                      ? '0 0 10px rgba(255,190,60,0.9), 0 2px 3px rgba(0,0,0,0.95)'
+                      : (playerHit ? '0 0 3px #000, 0 2px 2px #000, 0 0 12px rgba(0,0,0,0.85)' : undefined),
+                    animation: f.crit ? 'critPulse 450ms ease-out' : undefined,
+                  }}
+                >
+                  -{f.value}
+                </span>
+                {f.blocked && <span className="text-sm text-sky-300 align-top"> bloq.</span>}
+              </>
             )}
           </div>
           );

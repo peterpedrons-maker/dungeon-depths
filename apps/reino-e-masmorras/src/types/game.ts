@@ -445,6 +445,12 @@ export interface RankEntry {
   level: number;
   date: string;
   ironMode?: boolean; // badges a hardcore run on the leaderboard — the run that ended this character's life, or their best retreat/victory while still alive
+  // Snapshot of the 6 equipment slots at run-end, so RankingScreen can show
+  // what a leaderboard entry is actually wearing when the player clicks it
+  // — a separate copy frozen at submit time, not a live reference to the
+  // character (whoever's climbing the board keeps playing and re-gearing
+  // after their row was written).
+  equipment?: Equipment;
 }
 
 export type Screen = 'title' | 'select' | 'create' | 'game';
