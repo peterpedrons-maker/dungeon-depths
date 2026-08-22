@@ -7,6 +7,7 @@ import { Button } from './Button';
 import { ItemIcon as ItemIconGlyph } from './ItemIcon';
 import { IconHammer } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
+import moedaIcon from '../assets/moeda.webp';
 import ferreiroCena from '../assets/ferreiro-cena.webp';
 import marteloParado from '../assets/aprimoramento-martelo-parado.webp';
 import marteloAnimado from '../assets/aprimoramento-martelo.webp';
@@ -152,13 +153,19 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
           <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
             Ferreiro
           </h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
-            aria-label="Fechar"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 bg-black/55 border border-gold/50 rounded-full pl-1.5 pr-2.5 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+              <img src={moedaIcon} alt="" className="w-4 h-4" />
+              <span className="font-bold tabular-nums text-gold text-xs [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{fmt(ch.gold)}</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+          </div>
         </div>
       </div>
 

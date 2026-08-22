@@ -15,6 +15,7 @@ import { ItemIcon } from './ItemIcon';
 import { IconCoin } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
 import pocaoIcon from '../assets/pocao.webp';
+import moedaIcon from '../assets/moeda.webp';
 import mercadorCena from '../assets/mercador-cena.webp';
 
 interface Props {
@@ -67,13 +68,19 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
           <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
             Mercador
           </h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
-            aria-label="Fechar"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 bg-black/55 border border-gold/50 rounded-full pl-1.5 pr-2.5 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+              <img src={moedaIcon} alt="" className="w-4 h-4" />
+              <span className="font-bold tabular-nums text-gold text-xs [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{fmt(ch.gold)}</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+          </div>
         </div>
       </div>
 
@@ -155,7 +162,7 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
           </div>
         )}
 
-        <p className="mt-4 text-xs text-parchment/40">Você possui {fmt(ch.potions)} poção(ões) e {fmt(ch.gold)} de ouro.</p>
+        <p className="mt-4 text-xs text-parchment/40">Você possui {fmt(ch.potions)} poção(ões).</p>
         {ch.equipment.weapon && (
           <p className="mt-1 text-xs">
             Arma equipada: <span style={{ color: rarityColor(ch.equipment.weapon.rarity) }}>{itemDisplayName(ch.equipment.weapon)}</span>
