@@ -6,7 +6,7 @@ import {
 import { spawnEnemy } from '../lib/enemies';
 import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
-import { generateItem, rarityColor, sellValue } from '../lib/equipment';
+import { baseDropChanceForTier, generateItem, rarityColor, sellValue } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -60,7 +60,6 @@ const FLOAT_DURATION_MS = 1500;
 // zero-AGI build, matching the stagger the old single shared round had.
 const LEAN_MS = 260;
 const POTION_COOLDOWN_ROUNDS = 4;
-const BASE_DROP_CHANCE = 0.12;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
 // A phone locking or a tab backgrounding pauses every setTimeout in it —
@@ -552,7 +551,7 @@ export function DungeonPanel({
   function tryDropEquipment(guaranteed = false) {
     const stats = computeCombatStats(chRef.current);
     if (!guaranteed) {
-      const chance = Math.min(0.6, BASE_DROP_CHANCE * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
+      const chance = Math.min(0.6, baseDropChanceForTier(dungeon.itemTier) * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
       if (Math.random() >= chance) return;
     }
     const availableSlots = OFFHAND_KIND[chRef.current.classId] ? DROP_SLOTS : DROP_SLOTS.filter((s) => s !== 'offhand');

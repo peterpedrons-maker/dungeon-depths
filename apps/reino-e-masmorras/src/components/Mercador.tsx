@@ -30,10 +30,10 @@ interface Props {
 // grid reads like the player's own inventory (same footprint/packing rules,
 // same item card on click) instead of the old "pick a slot, get something
 // random" mystery cards — real items sitting in the shop that the player
-// can see and choose between, closer to a PoE vendor tab. Stock only
-// re-rolls when a dungeon run ends in victory or death (see
-// GameShell.handleRunEnd) — opening/closing this screen never changes it,
-// so there's no free re-roll by walking in and out.
+// can see and choose between, closer to a PoE vendor tab. Stock re-rolls
+// on a timer (see MERCHANT_REFRESH_MS/maybeRefreshMerchantStock, checked
+// by GameShell.handleOpenMercador right before this screen opens) instead
+// of on every dungeon run — walking in and out doesn't refresh it.
 export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClose }: Props) {
   const [selected, setSelected] = useState<EquipmentItem | null>(null);
   const kingdomBonuses = computeKingdomBonuses(ch.buildings);
@@ -112,7 +112,7 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
 
         {ch.merchantStock.length === 0 ? (
           <p className="text-parchment/40 text-sm italic">
-            Sem itens no estoque agora. Termine ou sobreviva a uma expedição pra o Mercador reabastecer.
+            Sem itens no estoque agora. O Mercador renova sua mercadoria a cada hora — volte mais tarde.
           </p>
         ) : (
           <div className="rounded border border-black/50 bg-black/25 p-2 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">

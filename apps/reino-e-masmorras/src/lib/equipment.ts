@@ -1,34 +1,40 @@
 import { AccessoryType, ClassId, EquipmentItem, ItemSlot, Rarity, SecondaryStatType } from '../types/game';
 import { CLASSES, MAGICAL_CLASSES } from './classes';
 import {
-  ACCESSORY_NOUN, ACCESSORY_STAT_POOL, ACCESSORY_TYPES, ARMOR_NOUN, OFFHAND_KIND, OFFHAND_NOUN,
-  WEIGHT_GROUP, tierName,
+  ACCESSORY_NOUN, ACCESSORY_STAT_POOL, ACCESSORY_TYPES, ARMOR_NOUN, MAX_TIER, MERCHANT_RARITY_PRICE_MULT,
+  OFFHAND_KIND, OFFHAND_NOUN, WEIGHT_GROUP, merchantBasePrice, tierName,
 } from './itemTiers';
 
 // multMin/multMax replaced a single fixed `mult` — each item now rolls its
 // own quality within its rarity's band instead of every item of a rarity
-// hitting the exact same number. Bands deliberately overlap (incomum's top
-// end sits inside raro's range, raro's inside épico's, ...) so a lucky roll
-// on a lower rarity can occasionally rival an unlucky roll one tier up —
-// the "magic item that's still relevant" moment ARPGs lean on. This is
-// layered on top of tier (see rollPrimaryValue) being the real progression
-// axis; rarity is the variance layer within a tier, not the power axis
-// itself — a raro from a higher-tier dungeon already outscales a legendário
-// from a lower-tier one on tier alone, same as before this change.
+// hitting the exact same number. Bands deliberately overlap a little
+// (incomum's top end sits inside raro's range, ...) so a lucky roll on a
+// lower rarity can occasionally rival an unlucky roll one tier up — the
+// "magic item that's still relevant" moment ARPGs lean on — without letting
+// rarity alone explode an item's power the way the old, much wider bands
+// did (Lendário used to reach 3.5x; a single excellent drop shouldn't be
+// able to double a character's power on its own — see rollPrimaryValue's
+// own tier-growth cut for the other half of that fix). This is layered on
+// top of tier being the real progression axis; rarity is the variance layer
+// within a tier, not the power axis itself.
 interface RarityDef { id: Rarity; name: string; color: string; weight: number; multMin: number; multMax: number; }
 export const RARITIES: RarityDef[] = [
   { id: 'comum', name: 'Comum', color: '#b8ada0', weight: 55, multMin: 1.0, multMax: 1.0 },
-  { id: 'incomum', name: 'Incomum', color: '#4f9d4f', weight: 27, multMin: 0.8, multMax: 1.3 },
-  { id: 'raro', name: 'Raro', color: '#3f7ab8', weight: 12, multMin: 1.1, multMax: 1.8 },
-  { id: 'epico', name: 'Épico', color: '#9b4fc9', weight: 5, multMin: 1.5, multMax: 2.3 },
-  { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, multMin: 2.0, multMax: 3.5 },
+  { id: 'incomum', name: 'Incomum', color: '#4f9d4f', weight: 27, multMin: 1.10, multMax: 1.20 },
+  { id: 'raro', name: 'Raro', color: '#3f7ab8', weight: 12, multMin: 1.20, multMax: 1.35 },
+  { id: 'epico', name: 'Épico', color: '#9b4fc9', weight: 5, multMin: 1.40, multMax: 1.60 },
+  { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, multMin: 1.65, multMax: 1.90 },
 ];
 
 // How many affixes (secondaryStats entries) an item of each rarity rolls —
 // a range, not a fixed count, so two items of the same rarity can still feel
 // different. Sampled without repeats from the slot's affix pool below.
+// Cut down from the original (up to 6 on a Lendário) — Tier + raridade +
+// qualidade + Forja already stack on the primary roll; letting a single
+// item also carry 6 independent affix rolls turned "one great drop" into a
+// whole build's worth of power by itself.
 const AFFIX_COUNT_RANGE: Record<Rarity, [number, number]> = {
-  comum: [1, 3], incomum: [2, 3], raro: [2, 4], epico: [3, 5], legendario: [4, 6],
+  comum: [1, 1], incomum: [1, 2], raro: [2, 2], epico: [2, 3], legendario: [3, 4],
 };
 
 // Rarity prefixes/suffixes wrap around whatever base-tier name the item
@@ -114,14 +120,38 @@ const AFFIX_SCALE: Record<SecondaryStatType, number> = {
   itemFind: 0.15, itemQuality: 0.15,
 };
 
-function pickRarity(): RarityDef {
-  const total = RARITIES.reduce((s, r) => s + r.weight, 0);
+// Odds shift with the item's own tier instead of every tier rolling the
+// same 55/27/12/5/1 split — early tiers lean comum/incomum ("início:
+// qualidade baixa/moderada"), high tiers lean raro/épico with a real (if
+// still rare) shot at legendário ("endgame: qualidade maior"). This is the
+// other half of the drop-rate rework alongside baseDropChanceForTier below:
+// fewer drops at high tier, but each one is more likely to matter, instead
+// of the same trickle of mostly-comum items forever.
+const RARITY_WEIGHTS_LOW_TIER = [58, 28, 11, 3, 0.3]; // tier 1
+const RARITY_WEIGHTS_HIGH_TIER = [20, 28, 28, 17, 7]; // tier MAX_TIER
+
+function pickRarityForTier(tier: number): RarityDef {
+  const t = Math.max(0, Math.min(1, (tier - 1) / (MAX_TIER - 1)));
+  const weights = RARITY_WEIGHTS_LOW_TIER.map((low, i) => low + (RARITY_WEIGHTS_HIGH_TIER[i] - low) * t);
+  const total = weights.reduce((s, w) => s + w, 0);
   let roll = Math.random() * total;
-  for (const r of RARITIES) {
-    if (roll < r.weight) return r;
-    roll -= r.weight;
+  for (let i = 0; i < RARITIES.length; i++) {
+    if (roll < weights[i]) return RARITIES[i];
+    roll -= weights[i];
   }
   return RARITIES[0];
+}
+
+// Replaces the old flat BASE_DROP_CHANCE (12% at every tier) — drop
+// frequency now tapers off from tier 1 to tier MAX_TIER, the "início: mais
+// frequente / endgame: menos frequente" half of the loot curve (paired with
+// pickRarityForTier's rising quality curve above so a rarer drop is also a
+// better one, not just a rarer version of the same average item). Dungeons
+// with their own dropMult (Cripta/Torre/Arena) still multiply on top of
+// this, same as before.
+export function baseDropChanceForTier(tier: number): number {
+  const t = Math.max(0, Math.min(1, (tier - 1) / (MAX_TIER - 1)));
+  return 0.16 + (0.09 - 0.16) * t;
 }
 
 function rarityIndex(id: Rarity): number {
@@ -143,15 +173,13 @@ function baseNounFor(slot: ItemSlot, classId: ClassId, accessoryType?: Accessory
 // damage and an accessory's flat HP need very different magnitudes to feel
 // meaningful next to the class's base stats. baseTier (1-10, from the
 // dungeon it dropped in — see DungeonDef.itemTier) replaces the old in-run
-// depth counter as the power-progression driver. The per-tier term is
-// deliberately steep (6.5/tier, not 2) — this is the "buff gear" half of
-// the balance pass alongside the attribute diminishing-returns curve in
-// combatStats.ts: a tier-5 legendary weapon now contributes roughly as
-// much ATK as a level-60 character's own attribute investment, instead of
-// a fraction of it, so gear choice is a real part of a build's power
-// rather than a rounding error next to level/attributes.
+// depth counter as the power-progression driver. Cut from the original
+// 6.5/tier (which, stacked across rarity, up to 6 affixes, Forja and 6
+// equipment slots at once, let gear alone dwarf level/attribute/skill power)
+// down to 4/tier — equipment stays a major, but no longer dominant, source
+// of power. See the 2026 rebalance pass notes for the full reasoning.
 function rollPrimaryValue(baseTier: number, mult: number, scale: number): number {
-  const roll = 3 + Math.floor(Math.random() * 5) + baseTier * 6.5;
+  const roll = 3 + Math.floor(Math.random() * 5) + baseTier * 4;
   return Math.round(roll * mult * scale);
 }
 
@@ -252,9 +280,11 @@ let _iid = 0;
 // stacked on top of the item's rolled primary stat. forcedRarity skips the
 // normal weighted roll entirely — used for a brand-new character's
 // guaranteed starter gear (see createCharacter in lib/classes.ts), which
-// always wants exactly comum, never whatever pickRarity() would've rolled.
+// always wants exactly comum, never whatever pickRarityForTier() would've
+// rolled, and for a Hunt's guaranteed Raro+ floor (see pickHuntDropRarity
+// in DungeonPanel.tsx).
 export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number, qualityBonusPct = 0, forcedRarity?: Rarity): EquipmentItem {
-  const rarity = forcedRarity ? RARITIES.find((r) => r.id === forcedRarity)! : pickRarity();
+  const rarity = forcedRarity ? RARITIES.find((r) => r.id === forcedRarity)! : pickRarityForTier(baseTier);
   const rarityTier = rarityIndex(rarity.id);
   // One roll governs the whole item's luck — primary AND every affix reuse
   // it, instead of each stat re-rolling its own independent quality, so
@@ -286,9 +316,17 @@ export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number,
   };
 }
 
+// Priced as a fraction of the Mercador's own buy price for an equivalent
+// item (same tier + rarity — see merchantBasePrice/MERCHANT_RARITY_PRICE_MULT
+// in lib/itemTiers.ts) instead of a flat raridade-only formula. A Tier-1 and
+// a Tier-10 Lendário used to sell for the same handful of gold despite the
+// Mercador charging wildly different prices for them — once buy prices
+// actually scale hard with Tier, sell price has to follow or vendoring a
+// high-tier item stops being worth doing at all in the late game.
+const SELL_FRACTION = 0.25;
 export function sellValue(item: EquipmentItem): number {
-  const tier = rarityIndex(item.rarity);
-  return 6 + tier * 8 + item.enhanceLevel * 4;
+  const base = merchantBasePrice(item.tier) * MERCHANT_RARITY_PRICE_MULT[item.rarity];
+  return Math.max(1, Math.round(base * SELL_FRACTION + item.enhanceLevel * 4));
 }
 
 export function rarityColor(r: Rarity): string {

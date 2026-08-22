@@ -11,7 +11,11 @@ import { EquipmentItem, SecondaryStatType } from '../types/game';
 // value) reads the same number and the formula can be retuned later
 // without needing to "unwind" anything already saved.
 export const MAX_ENHANCE_LEVEL = 10;
-const PCT_PER_LEVEL = 0.10;
+// Cut from 10%/level (+10 = +100%, doubling the item's primary stat) to
+// 5%/level (+10 = +50%) — the Forja is meant to be a long-term optimization
+// on top of gear you already found, not a second source of Tier-scale
+// power growth that happens to double whatever you push it on.
+const PCT_PER_LEVEL = 0.05;
 
 // Enhancement itself is available from the very first visit to the
 // Ferreiro — no Forja level required. The Forja building's own level used
@@ -39,14 +43,6 @@ export function successChanceForLevel(level: number, forjaLevel = 0): number {
   const base = SUCCESS_CHANCE_BASE[level] ?? 0;
   const mult = 1 + (Math.min(forjaLevel, FORJA_MAX_LEVEL) / FORJA_MAX_LEVEL);
   return Math.min(1, base * mult);
-}
-
-// From +7 onward a failed attempt doesn't just waste the gold — it can also
-// knock the item back a level, so pushing into this range is a real risk
-// and not just a slow grind. Chance grows with how deep into that range the
-// item already is. Below +7 a failure only costs gold, never levels.
-export function regressChanceOnFail(level: number): number {
-  return level >= 7 ? 0.15 + (level - 6) * 0.15 : 0;
 }
 
 // Gold cost to push `item` from its current enhanceLevel to the next one —

@@ -35,6 +35,15 @@ export const MAX_LEVEL = 60;
 // that floor. This magnitude also drives how well the class scales with
 // that attribute later (see classAttrMult in combatStats.ts) — everything
 // past this head start comes from the player's own attributePoints spend.
+// 2026 rebalance pass: ladino/cacador (baseAtk 10->12) and druida/bardo
+// (baseMatk 9/6->13/8, bardo also baseAtk 5->6, baseHp 29->34, baseDef 3->4)
+// got small base-stat bumps after simulation (see the scratchpad harness
+// notes in the rebalance report) showed them landing >20% below the other
+// 14 classes' median combat output at matched level/gear — bardo in
+// particular came out weakest under every metric tried. This is a coarse
+// signal only (the harness simulates basic attacks, not active abilities),
+// so it's deliberately a small nudge, not a redesign — no class's kit or
+// identity changed, only these five numbers.
 export const CLASSES: Record<ClassId, ClassDef> = {
   guerreiro: {
     id: 'guerreiro', name: 'Guerreiro', color: '#a5432f',
@@ -54,7 +63,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     id: 'ladino', name: 'Ladino', color: '#4a5a48',
     desc: 'Rápido e traiçoeiro, aposta tudo no crítico e no veneno.',
     weaponBase: 'Adaga', bodyBase: 'Colete de Couro', legsBase: 'Calças de Couro', handsBase: 'Luvas de Couro',
-    baseHp: 30, baseAtk: 10, baseDef: 4, baseMatk: 0, baseMdef: 2, critChance: 0.16,
+    baseHp: 30, baseAtk: 12, baseDef: 4, baseMatk: 0, baseMdef: 2, critChance: 0.16,
     baseAttrs: { str: 1, dex: 5, agi: 3, vit: 1, int: 1, wis: 1, luk: 2 },
   },
   clerigo: {
@@ -96,7 +105,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     id: 'cacador', name: 'Caçador', color: '#6a7a4a',
     desc: 'Dano à distância com armadilhas e efeitos de controle.',
     weaponBase: 'Besta', bodyBase: 'Manto de Caçador', legsBase: 'Calças de Trilha', handsBase: 'Luvas de Rastreador',
-    baseHp: 30, baseAtk: 10, baseDef: 3, baseMatk: 0, baseMdef: 2, critChance: 0.12,
+    baseHp: 30, baseAtk: 12, baseDef: 3, baseMatk: 0, baseMdef: 2, critChance: 0.12,
     baseAttrs: { str: 1, dex: 5, agi: 3, vit: 1, int: 1, wis: 2, luk: 1 },
   },
   feiticeiro: {
@@ -117,14 +126,14 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     id: 'druida', name: 'Druida', color: '#3f8a5a',
     desc: 'Natureza — cura, buffs, debuffs e dano mágico.',
     weaponBase: 'Cajado Élfico', bodyBase: 'Vestes Naturais', legsBase: 'Calças de Folhas', handsBase: 'Luvas de Vinha',
-    baseHp: 32, baseAtk: 4, baseDef: 4, baseMatk: 9, baseMdef: 5, critChance: 0.06,
+    baseHp: 32, baseAtk: 4, baseDef: 4, baseMatk: 13, baseMdef: 5, critChance: 0.06,
     baseAttrs: { str: 1, dex: 1, agi: 1, vit: 2, int: 3, wis: 5, luk: 1 },
   },
   bardo: {
     id: 'bardo', name: 'Bardo', color: '#c9663c',
     desc: 'Buffs, debuffs e suporte — vitória através da inspiração.',
     weaponBase: 'Alaúde Encantado', bodyBase: 'Traje de Bardo', legsBase: 'Calças de Viajante', handsBase: 'Luvas de Bardo',
-    baseHp: 29, baseAtk: 5, baseDef: 3, baseMatk: 6, baseMdef: 4, critChance: 0.10,
+    baseHp: 34, baseAtk: 9, baseDef: 4, baseMatk: 13, baseMdef: 4, critChance: 0.10,
     baseAttrs: { str: 1, dex: 3, agi: 1, vit: 1, int: 1, wis: 5, luk: 2 },
   },
   necromante: {
@@ -158,8 +167,14 @@ export function xpToNextLevel(level: number): number {
 // Free attribute points granted at character creation, on top of the
 // class's baseAttrs floor — spent immediately in CharacterCreation's
 // allocator before the run ever starts (separate from the 1-per-level pool
-// grantXp hands out afterward via the normal in-game allocator).
-export const STARTING_ATTR_POINTS = 5;
+// grantXp hands out afterward via the normal in-game allocator). Cut from 5
+// to 3 in the 2026 rebalance pass — 5 points dumped straight into a
+// primary attribute pushed a level-1 character's curved contribution (see
+// ATTR_CURVE_EXP in combatStats.ts) up by ~17% over the class's floor
+// alone, letting a brand-new hero already hit noticeably above the
+// baseline before a single dungeon run — the character should earn that
+// power by farming, not start with a meaningful chunk of it for free.
+export const STARTING_ATTR_POINTS = 3;
 
 // initialAllocatedAttrs is the creation-time allocator's result (already
 // fully spent — see STARTING_ATTR_POINTS), so attributePoints starts at 0
@@ -189,7 +204,11 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
   // player who racks up some gold retreating early a few times before ever
   // finishing or dying in a dungeon, which is the only thing that re-rolls
   // stock afterward.
-  return { ...base, merchantStock: generateMerchantStock(base, computeKingdomBonuses(base.buildings)) };
+  return {
+    ...base,
+    merchantStock: generateMerchantStock(base, computeKingdomBonuses(base.buildings)),
+    merchantRefreshedAt: Date.now(),
+  };
 }
 
 // Levels up as many times as the accumulated XP allows (capped at MAX_LEVEL,
