@@ -365,6 +365,43 @@ export const TIERS: EnemyTier[] = [
 const TIERS_BY_SHAPE: Partial<Record<EnemyShape, EnemyTier>> = {};
 for (const t of TIERS) TIERS_BY_SHAPE[t.shape] = t;
 
+// Every enemy used to act on the exact same fixed pace (ATTACK_INTERVAL in
+// DungeonPanel.tsx) regardless of shape — a bat swarm and a stone golem
+// landed hits at an identical rate, which read as wrong the moment you
+// actually paid attention to what these things are supposed to be. This
+// multiplies that base interval the same way the player's own AGI already
+// does (see nextPlayerDelay) — >1 acts faster/more often, <1 slower.
+// Unlisted shapes (the large majority — goblins, skeletons, most bosses,
+// etc.) stay at the original baseline pace; only shapes with an obvious,
+// unambiguous agility identity got a number, rather than guessing at every
+// one of the ~70 shapes in TIERS above.
+const SPEED_MULT_BY_SHAPE: Partial<Record<EnemyShape, number>> = {
+  // Fast — small, airborne, or famously quick shapes.
+  ruinBat: 1.35, batSwarm: 1.35,
+  carrionCrow: 1.3, deathCrow: 1.3,
+  cursedWisp: 1.3, gasWisp: 1.3, darkFairy: 1.3,
+  huntingSpider: 1.2, venomSpider: 1.2, giantSpider: 1.15, spiderlingSwarm: 1.25, darkWeaver: 1.2,
+  swampViper: 1.25, fireSerpent: 1.2,
+  wolf: 1.15, goblinWolfRider: 1.15, ghostWolf: 1.2,
+  koboldRaider: 1.15,
+  wildWyvern: 1.15, dragonHatchling: 1.1,
+  greedyWraith: 1.15, elvenWraith: 1.15, wailingGhost: 1.15, crawlingShadow: 1.15,
+  watchingEye: 1.1, gargoyle: 1.1,
+
+  // Slow — heavy, armored, massive, or shambling shapes.
+  stoneGuardian: 0.8, oreGolem: 0.78, oreTitan: 0.72, crystalGolem: 0.78,
+  scaledGuardian: 0.85, corruptedGuardian: 0.82, ancestralGuardian: 0.75,
+  boneTyrant: 0.78, swampLeviathan: 0.72, corruptedEnt: 0.75, forestHeart: 0.7,
+  wrappedMummy: 0.85, zombieLooter: 0.82, cursedKnight: 0.85,
+  boneExecutioner: 0.85, maskedExecutioner: 0.85,
+  mudMother: 0.78, crawlingBog: 0.85, graveWorm: 0.8,
+  cursedBear: 0.88,
+};
+
+export function enemySpeedMult(shape: EnemyShape): number {
+  return SPEED_MULT_BY_SHAPE[shape] ?? 1;
+}
+
 // A checkpoint fight at one of the dungeon's miniBossDepths — same shape
 // roster, zero new art, just a heavier stat/reward multiplier than a
 // regular encounter and its own name so it reads as a step up mid-run.
