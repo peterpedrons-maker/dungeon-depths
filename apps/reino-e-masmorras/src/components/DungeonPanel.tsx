@@ -332,6 +332,12 @@ export function DungeonPanel({
   const [activeBadgeKey, setActiveBadgeKey] = useState<string | null>(null);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
+  // Big "VITÓRIA"/"DERROTA" banner over the canvas — set the instant the
+  // boss falls or the player does, cleared ~2s later by its own timeout.
+  // Skipped entirely during a silent catch-up pass (see runCatchUp/
+  // silentRef) same as every other on-screen effect, and never set on a
+  // retreat, which isn't a win or a loss.
+  const [resultBanner, setResultBanner] = useState<'victory' | 'defeat' | null>(null);
   // Non-null only right after a runCatchUp pass (see the visibilitychange
   // effect below) — shows the "enquanto você estava fora" summary modal
   // once, then goes back to null on dismiss.
@@ -1015,6 +1021,10 @@ export function DungeonPanel({
               endedReasonRef.current = 'victory';
               setEndedReason('victory');
               setPhase('ended');
+              if (!silentRef.current) {
+                setResultBanner('victory');
+                setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
+              }
             };
             if (silentRef.current) finishVictory(); else setTimeout(finishVictory, 900);
             return;
@@ -1211,6 +1221,10 @@ export function DungeonPanel({
       endedReasonRef.current = 'death';
       setEndedReason('death');
       setPhase('ended');
+      if (!silentRef.current) {
+        setResultBanner('defeat');
+        setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
+      }
       return;
     }
     scheduleEnemy();
@@ -1533,6 +1547,23 @@ export function DungeonPanel({
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
+        {resultBanner && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <span
+              className={`font-display text-5xl sm:text-6xl font-bold uppercase tracking-[0.15em] ${
+                resultBanner === 'victory' ? 'text-amber-300' : 'text-crimson'
+              }`}
+              style={{
+                animation: 'resultBannerPop 2000ms ease-out forwards',
+                textShadow: resultBanner === 'victory'
+                  ? '0 0 18px rgba(255,200,60,0.85), 0 3px 0 rgba(0,0,0,0.9)'
+                  : '0 0 18px rgba(220,40,40,0.85), 0 3px 0 rgba(0,0,0,0.9)',
+              }}
+            >
+              {resultBanner === 'victory' ? 'Vitória!' : 'Derrota'}
+            </span>
+          </div>
+        )}
         {activeBadgeKey && (
           <div className="absolute inset-0 z-10" onClick={() => setActiveBadgeKey(null)} />
         )}

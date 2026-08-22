@@ -441,6 +441,25 @@ function fmtStatValue(v: number, isPct: boolean): string {
 // ▲/red ▼ delta for a plain improvement/downgrade — the three buckets asked
 // for (novos / melhoram / pioram), each still reading off that item's own
 // real number instead of a unified total.
+// Amber for the item's guaranteed base stat, sky blue for a rolled affix —
+// used both on the section captions and as a small dot right before each
+// row's own label, so the base/affix split reads at a glance even before
+// parsing the actual stat name (color + dot, not just a text-color nuance).
+const BASE_ACCENT = { dot: 'bg-amber-300', text: 'text-amber-200/90' };
+const AFFIX_ACCENT = { dot: 'bg-sky-400', text: 'text-sky-300/90' };
+
+function StatSectionCaption({ isBase }: { isBase: boolean }) {
+  const accent = isBase ? BASE_ACCENT : AFFIX_ACCENT;
+  return (
+    <div className="flex items-center gap-1.5 mb-1">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${accent.dot}`} />
+      <span className={`text-[9px] uppercase tracking-wider font-bold ${accent.text}`}>
+        {isBase ? 'Atributo Base' : 'Afixos'}
+      </span>
+    </div>
+  );
+}
+
 function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' | 'new' }) {
   const { label, isPct, equippedValue: eq, newValue: nv, isBase } = row;
   const value = side === 'equipped' ? eq : nv;
@@ -449,12 +468,17 @@ function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' |
   const improved = side === 'new' && eq !== 0 && nv !== 0 && nv > eq;
   const worsened = side === 'new' && eq !== 0 && nv !== 0 && nv < eq;
   const valueColor = isNew || improved ? 'text-green-400' : worsened ? 'text-crimson' : isLostHere ? 'text-parchment/45' : 'text-parchment';
+  const accent = isBase ? BASE_ACCENT : AFFIX_ACCENT;
   return (
     <div className="flex items-center justify-between gap-1.5 text-[11px]">
-      {/* Base (the item's guaranteed slot stat) reads plain parchment;
-          affixes (the rolled bonuses) read sky blue — same convention
-          Mercador already uses for a fresh item's own stat list. */}
-      <span className={`truncate min-w-0 ${isBase ? 'text-parchment/70' : 'text-sky-300/80'}`}>{label}</span>
+      {/* Base (the item's guaranteed slot stat) reads amber; affixes (the
+          rolled bonuses) read sky blue — same dot+color pairing as the
+          section caption above, repeated per row so it still reads once
+          rows from both categories sit next to each other. */}
+      <span className="flex items-center gap-1.5 min-w-0">
+        <span className={`w-1 h-1 rounded-full shrink-0 ${accent.dot}`} />
+        <span className={`truncate ${accent.text}`}>{label}</span>
+      </span>
       <span className="flex items-center gap-1 font-bold tabular-nums shrink-0">
         <span className={valueColor}>{fmtStatValue(value, isPct)}</span>
         {isNew && <span className="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-bold uppercase tracking-wide">Novo</span>}
@@ -485,18 +509,32 @@ function ItemCompareColumn({ item, label, rows, side }: {
   const baseRows = own.filter((r) => r.isBase);
   const affixRows = own.filter((r) => !r.isBase);
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded border border-panelborder/40 bg-black/25 p-2.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
+    <div className="relative flex flex-col items-center gap-1.5 rounded overflow-hidden border border-panelborder/40 bg-black/25 p-2.5 pt-3.5 min-w-0 shadow-[inset_0_2px_6px_rgba(0,0,0,0.4)]">
+      {/* Rarity-colored strip along the top, echoing the icon frame's own
+          rarity tint below — makes the whole card read as "this item",
+          not just the little icon square in the middle of it. */}
+      {item && <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: color }} />}
       <span className="text-[10px] uppercase tracking-wide text-parchment/40 font-bold">{label}</span>
-      <div style={slotTintStyle(item)} className="w-14 h-14 rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+      <div style={slotTintStyle(item)} className="w-16 h-16 rounded-[3px] bg-[var(--slot-bg)] border-2 border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
         {item ? <ItemIcon item={item} className="w-[85%] h-[85%]" style={{ color }} /> : <span className="text-parchment/30 text-[9px]">Vazio</span>}
       </div>
       <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
         {item ? itemDisplayName(item) : '—'}
       </span>
       {own.length > 0 && (
-        <div className="w-full mt-1 space-y-2 border-t border-panelborder/30 pt-1.5">
-          {baseRows.length > 0 && <div className="space-y-1">{baseRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>}
-          {affixRows.length > 0 && <div className="space-y-1">{affixRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>}
+        <div className="w-full mt-1 space-y-2.5 border-t border-panelborder/30 pt-2">
+          {baseRows.length > 0 && (
+            <div>
+              <StatSectionCaption isBase />
+              <div className="space-y-1">{baseRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>
+            </div>
+          )}
+          {affixRows.length > 0 && (
+            <div>
+              <StatSectionCaption isBase={false} />
+              <div className="space-y-1">{affixRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -584,11 +622,14 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
         </div>
 
         <div className="flex flex-col items-center gap-0.5">
-          {/* Base (the slot's guaranteed roll) in plain parchment, affixes
-              (everything else) in sky blue — same split Mercador uses for a
-              fresh item's stat list. */}
+          {/* Base (the slot's guaranteed roll) in amber, affixes (everything
+              else) in sky blue — same dot+color pairing as the compare
+              window's columns (see BASE_ACCENT/AFFIX_ACCENT above), so an
+              item reads the same way whether it's being compared or just
+              viewed on its own. */}
           {lines.map((l) => (
-            <div key={l.label} className={`text-sm ${l.isBase ? 'text-parchment/90' : 'text-sky-300'}`}>
+            <div key={l.label} className={`text-sm flex items-center gap-1.5 ${l.isBase ? BASE_ACCENT.text : AFFIX_ACCENT.text}`}>
+              <span className={`w-1 h-1 rounded-full shrink-0 ${l.isBase ? BASE_ACCENT.dot : AFFIX_ACCENT.dot}`} />
               +{fmtStatValue(l.value, l.isPct)} {l.label.toLowerCase()}
             </div>
           ))}
