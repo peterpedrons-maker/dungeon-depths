@@ -103,6 +103,7 @@ export function equipmentContribution(ch: Character): EquipmentContribution {
     mdef += item.mdefBonus;
     crit += item.critChanceBonus;
     critDmg += item.critDmgBonus;
+    cdr += item.cdrBonus;
     for (const sec of item.secondaryStats) {
       if (sec.type === 'crit') crit += sec.value;
       else if (sec.type === 'critDmg') critDmg += sec.value;
