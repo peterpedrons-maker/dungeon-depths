@@ -6,7 +6,7 @@ import {
 import { spawnEnemy, enemySpeedMult } from '../lib/enemies';
 import { CLASS_SPEED_MULT, CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
-import { baseDropChanceForLevel, generateItem, rarityColor, sellValue } from '../lib/equipment';
+import { baseDropChanceForLevel, generateItem, pickBossDropRarity, rarityColor, sellValue } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -667,7 +667,11 @@ export function DungeonPanel({
     // (ver HUNT_STAT_MULT em lib/enemies.ts) — a recompensa precisa refletir
     // isso: em vez da rolagem normal de raridade, força pelo menos Raro,
     // com uma chance real de Épico ou até Lendário.
-    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : undefined;
+    // A guaranteed drop (boss/elite kill) always rolls from the fixed,
+    // better-odds boss rarity table instead of the dungeon-tier-interpolated
+    // curve regular trash uses — see pickBossDropRarity's own comment in
+    // lib/equipment.ts. Hunt bosses still get their own even-higher floor.
+    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : guaranteed ? pickBossDropRarity() : undefined;
     const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct, forcedRarity);
     runStatsRef.current.itemsDropped += 1;
 
@@ -1755,12 +1759,19 @@ export function DungeonPanel({
           // rising) and reads bigger/sharper — it was hard to read as a
           // pale, moving red against the busy background.
           const playerHit = f.side === 'player';
+          // Two numbers landing on the same side at once (a hit plus a DOT
+          // tick, a heal plus incoming damage, ...) used to spawn at the
+          // exact same spot and render right on top of each other, making
+          // both unreadable — stackIndex offsets each additional same-side
+          // floater upward a bit more than the last so simultaneous numbers
+          // sit in a small vertical stack instead of stacking literally.
+          const stackIndex = floaters.filter((x) => x.side === f.side).findIndex((x) => x.id === f.id);
           return (
           <div
             key={f.id}
             className={`absolute font-extrabold pointer-events-none ${playerHit ? 'left-[24%]' : 'left-[68%]'}`}
             style={{
-              top: playerHit ? '14%' : '38%',
+              top: `calc(${playerHit ? '14%' : '38%'} - ${stackIndex * 26}px)`,
               animation: `${playerHit ? 'floatStatic' : 'float'} ${FLOAT_DURATION_MS}ms ease-out forwards`,
             }}
           >
@@ -1819,12 +1830,19 @@ export function DungeonPanel({
               className={`absolute top-1/2 flex flex-col items-center gap-1 pointer-events-none -translate-y-1/2 ${playerCast ? 'left-[24%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2'}`}
               style={{ animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
             >
-              <div
-                className={`w-11 h-11 rounded border-2 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)] ${playerCast ? 'border-gold bg-black/70' : 'border-crimson bg-black/70'}`}
-                style={a.icon ?? undefined}
-              >
-                {!a.icon && <IconActive className={`w-6 h-6 ${playerCast ? 'text-gold' : 'text-crimson'}`} />}
-              </div>
+              {/* Only the player's own class has real per-ability icon art
+                  (see activeAbilityIconStyle) — an enemy callout stays
+                  text-only (name + damage) instead of showing a made-up
+                  placeholder glyph that would look like missing/wrong art
+                  next to everything else in the game that IS hand-drawn. */}
+              {playerCast && (
+                <div
+                  className="w-11 h-11 rounded border-2 border-gold bg-black/70 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)]"
+                  style={a.icon ?? undefined}
+                >
+                  {!a.icon && <IconActive className="w-6 h-6 text-gold" />}
+                </div>
+              )}
               <span className="text-[11px] font-bold text-parchment text-center leading-tight whitespace-nowrap drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
                 {a.name}
               </span>
