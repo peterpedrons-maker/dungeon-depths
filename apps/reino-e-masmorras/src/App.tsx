@@ -12,6 +12,7 @@ import { effectiveMaxHp, computeCombatPower } from './lib/combatStats';
 import { armBackgroundMusic } from './lib/audio';
 import { TitleScreen } from './components/TitleScreen';
 import { AuthScreen } from './components/AuthScreen';
+import { AccountGate } from './components/AccountGate';
 import { CharacterSelect } from './components/CharacterSelect';
 import { CharacterCreation } from './components/CharacterCreation';
 import { GameShell } from './components/GameShell';
@@ -22,6 +23,13 @@ const EMPTY_SLOTS: (Character | null)[] = Array(MAX_CHARACTER_SLOTS).fill(null);
 export default function App() {
   const [screen, setScreen] = useState<Screen>('title');
   const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = still checking
+  // A session Supabase restored from storage on page load (event
+  // INITIAL_SESSION) needs an explicit "yes, it's me" before the game
+  // trusts it — see the accountConfirmed gate below. A session created by
+  // an actual sign-in action this same visit (event SIGNED_IN, whether via
+  // the form or an OAuth redirect) skips that gate: the player just proved
+  // it's them by typing/authorizing it a moment ago.
+  const [accountConfirmed, setAccountConfirmed] = useState(false);
   const [slots, setSlots] = useState<(Character | null)[]>(EMPTY_SLOTS);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(true);
@@ -66,6 +74,13 @@ export default function App() {
         if (event === 'SIGNED_OUT' || prev === undefined) return null;
         return prev;
       });
+      // SIGNED_IN only fires for a session created THIS visit (form submit
+      // or an OAuth redirect landing back) — that's already an explicit
+      // "yes, it's me" action, so it skips the confirmation gate. A restored
+      // INITIAL_SESSION does not set this, leaving accountConfirmed at its
+      // false default until the player picks Continuar on that gate.
+      if (event === 'SIGNED_IN') setAccountConfirmed(true);
+      if (event === 'SIGNED_OUT') setAccountConfirmed(false);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -244,7 +259,7 @@ export default function App() {
     setScreen('title');
   }
 
-  if (session === undefined || (session && slotsLoading)) {
+  if (session === undefined) {
     return (
       <ScreenFrame>
         <div className="flex-1 flex items-center justify-center bg-nightsky text-parchment/50 text-sm">Carregando...</div>
@@ -256,6 +271,30 @@ export default function App() {
     return (
       <ScreenFrame>
         <AuthScreen />
+      </ScreenFrame>
+    );
+  }
+
+  // Gate shown every fresh visit for a session Supabase restored on its own
+  // (see accountConfirmed above) — lets the player confirm it's really
+  // their account before it loads, or bail out to a normal login for a
+  // different one, on a shared/borrowed device.
+  if (!accountConfirmed) {
+    return (
+      <ScreenFrame>
+        <AccountGate
+          user={session.user}
+          onContinue={() => setAccountConfirmed(true)}
+          onSwitch={handleSignOut}
+        />
+      </ScreenFrame>
+    );
+  }
+
+  if (slotsLoading) {
+    return (
+      <ScreenFrame>
+        <div className="flex-1 flex items-center justify-center bg-nightsky text-parchment/50 text-sm">Carregando...</div>
       </ScreenFrame>
     );
   }
