@@ -8,6 +8,7 @@ import {
   fetchProfile, saveProfile, isCharacterNameTaken,
 } from './lib/cloudSave';
 import { COSMETICS } from './lib/cosmetics';
+import { TITLES } from './lib/titles';
 import { effectiveMaxHp, computeCombatPower } from './lib/combatStats';
 import { armBackgroundMusic } from './lib/audio';
 import { TitleScreen } from './components/TitleScreen';
@@ -218,10 +219,15 @@ export default function App() {
       persist(healed);
     }
 
+    const equippedTitleDef = finalCharacter.equippedTitle
+      ? TITLES.find((t) => t.id === finalCharacter.equippedTitle && t.condition(finalCharacter))
+      : undefined;
+    const equippedCosmetic = COSMETICS.find((c) => c.id === profile.equippedCosmetic);
     const entry: RankEntry = {
       name: finalCharacter.name, classId: finalCharacter.classId, cp: computeCombatPower(finalCharacter),
       level: finalCharacter.level, date: new Date().toISOString().slice(0, 10),
       ironMode: finalCharacter.ironMode, equipment: finalCharacter.equipment,
+      equippedTitleName: equippedTitleDef?.name ?? null, cosmeticColor: equippedCosmetic?.color ?? null,
     };
     if (session) {
       insertGlobalRankEntry(session.user.id, entry).then((insertErr) => {

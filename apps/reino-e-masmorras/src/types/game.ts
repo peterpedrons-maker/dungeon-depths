@@ -451,6 +451,14 @@ export interface RankEntry {
   // character (whoever's climbing the board keeps playing and re-gearing
   // after their row was written).
   equipment?: Equipment;
+  // Same "frozen snapshot" reasoning as equipment above, applied to the two
+  // cosmetic flexes the Ranking screen is actually for: the title equipped
+  // on the character (Character.equippedTitle, looked up against
+  // lib/titles.ts's name at submit time since only the id would otherwise
+  // survive a titles.ts rename) and the color from the account's equipped
+  // Prestige Shop cosmetic (ProfileState.equippedCosmetic), if any.
+  equippedTitleName?: string | null;
+  cosmeticColor?: string | null;
 }
 
 export type Screen = 'title' | 'select' | 'create' | 'game';

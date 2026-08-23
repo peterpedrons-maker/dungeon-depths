@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Section } from '../types/game';
 import pergaminho from '../assets/pergaminho.webp';
-import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon } from './icons';
-import { playClickSfx } from '../lib/audio';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon, IconSpeaker, IconSpeakerMuted } from './icons';
+import { playClickSfx, isMuted, toggleMuted } from '../lib/audio';
 
 interface Props {
   section: Section;
@@ -13,9 +14,11 @@ interface Props {
 }
 
 export function Sidebar({ section, open, onClose, onNavigate, onAbandon, onSignOut }: Props) {
+  const [muted, setMutedState] = useState(isMuted());
   const nav = (s: Section) => { playClickSfx(); onNavigate(s); onClose(); };
   const abandon = () => { playClickSfx(); onAbandon(); onClose(); };
   const signOut = () => { playClickSfx(); onSignOut(); onClose(); };
+  const toggleSound = () => setMutedState(toggleMuted());
 
   return (
     <>
@@ -54,6 +57,10 @@ export function Sidebar({ section, open, onClose, onNavigate, onAbandon, onSignO
         </Group>
 
         <div className="mt-auto p-3 border-t border-panelborder flex flex-col items-start gap-1.5">
+          <button onClick={toggleSound} className="flex items-center gap-1.5 text-xs text-parchment/40 hover:text-parchment/70">
+            {muted ? <IconSpeakerMuted className="w-3.5 h-3.5" /> : <IconSpeaker className="w-3.5 h-3.5" />}
+            {muted ? 'Som Desativado' : 'Som Ativado'}
+          </button>
           <button onClick={abandon} className="text-xs text-parchment/40 hover:text-parchment/70">
             Abandonar Herói / Novo Jogo
           </button>

@@ -58,9 +58,16 @@ export function RankingScreen({ ranking, debugError }: { ranking: RankEntry[]; d
                     alt={CLASSES[r.classId].name}
                     title={CLASSES[r.classId].name}
                     className="w-6 h-6 rounded-full shrink-0 ring-1 ring-black/40"
-                    style={{ imageRendering: 'pixelated' }}
+                    style={{ imageRendering: 'pixelated', boxShadow: r.cosmeticColor ? `0 0 6px 1px ${r.cosmeticColor}80` : undefined }}
                   />
-                  <span className="text-parchment truncate">{r.name}</span>
+                  <span className="min-w-0 flex flex-col leading-tight">
+                    <span className={`truncate ${r.cosmeticColor ? '' : 'text-parchment'}`} style={r.cosmeticColor ? { color: r.cosmeticColor } : undefined}>
+                      {r.name}
+                    </span>
+                    {r.equippedTitleName && (
+                      <span className="text-[10px] text-gold/60 italic truncate">{r.equippedTitleName}</span>
+                    )}
+                  </span>
                   {r.ironMode && <span className="text-crimson text-xs shrink-0" title="Modo Ferro">☠</span>}
                   <span className="text-parchment/40 text-xs shrink-0">Nv.{r.level}</span>
                 </span>
@@ -97,12 +104,15 @@ function RankEntryModal({ entry, onClose }: { entry: RankEntry; onClose: () => v
             src={CLASS_ICON[entry.classId]}
             alt={cls.name}
             className="w-9 h-9 rounded-full ring-2 ring-black/40"
-            style={{ imageRendering: 'pixelated' }}
+            style={{ imageRendering: 'pixelated', boxShadow: entry.cosmeticColor ? `0 0 8px 2px ${entry.cosmeticColor}80` : undefined }}
           />
           <div className="min-w-0">
-            <div className="font-bold text-base truncate" style={{ color: cls.color }}>
+            <div className="font-bold text-base truncate" style={{ color: entry.cosmeticColor ?? cls.color }}>
               {entry.name}{entry.ironMode && <span className="text-crimson ml-1" title="Modo Ferro">☠</span>}
             </div>
+            {entry.equippedTitleName && (
+              <div className="text-[11px] text-gold/70 italic truncate">{entry.equippedTitleName}</div>
+            )}
             <div className="text-[11px] text-parchment/50">{cls.name} · Nv.{entry.level} · CP {entry.cp}</div>
           </div>
         </div>

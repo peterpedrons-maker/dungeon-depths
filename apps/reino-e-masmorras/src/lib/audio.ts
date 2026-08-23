@@ -10,6 +10,34 @@ import clickUrl from '../assets/audio/clique-menu.mp3';
 
 const MUSIC_VOLUME = 0.35;
 const SFX_VOLUME = 0.6;
+const MUTE_STORAGE_KEY = 'reino-masmorras-muted';
+
+// One flag gates every music track and one-shot SFX in the file — mirrors
+// how the player thinks about it ("mute the game"), not per-channel volume
+// sliders nobody asked for. Persisted so the choice survives a reload.
+let muted = localStorage.getItem(MUTE_STORAGE_KEY) === '1';
+
+export function isMuted(): boolean {
+  return muted;
+}
+
+// Applied to whichever <audio> elements already exist — a track created
+// before the toggle flips still needs its live volume updated, since
+// pausing on mute would lose the current playback position/track choice
+// (battle vs. boss) that stopCombatMusic/resumeBackgroundMusic rely on.
+export function setMuted(next: boolean) {
+  muted = next;
+  localStorage.setItem(MUTE_STORAGE_KEY, muted ? '1' : '0');
+  const vol = muted ? 0 : MUSIC_VOLUME;
+  if (musicEl) musicEl.volume = vol;
+  if (battleMusicEl) battleMusicEl.volume = vol;
+  if (bossMusicEl) bossMusicEl.volume = vol;
+}
+
+export function toggleMuted(): boolean {
+  setMuted(!muted);
+  return muted;
+}
 
 let musicEl: HTMLAudioElement | null = null;
 let musicStarted = false;
@@ -18,7 +46,7 @@ function getMusicEl(): HTMLAudioElement {
   if (!musicEl) {
     musicEl = new Audio(bgMusicUrl);
     musicEl.loop = true;
-    musicEl.volume = MUSIC_VOLUME;
+    musicEl.volume = muted ? 0 : MUSIC_VOLUME;
   }
   return musicEl;
 }
@@ -72,7 +100,7 @@ function getBattleMusicEl(): HTMLAudioElement {
   if (!battleMusicEl) {
     battleMusicEl = new Audio(battleMusicUrl);
     battleMusicEl.loop = true;
-    battleMusicEl.volume = MUSIC_VOLUME;
+    battleMusicEl.volume = muted ? 0 : MUSIC_VOLUME;
   }
   return battleMusicEl;
 }
@@ -81,7 +109,7 @@ function getBossMusicEl(): HTMLAudioElement {
   if (!bossMusicEl) {
     bossMusicEl = new Audio(bossMusicUrl);
     bossMusicEl.loop = true;
-    bossMusicEl.volume = MUSIC_VOLUME;
+    bossMusicEl.volume = muted ? 0 : MUSIC_VOLUME;
   }
   return bossMusicEl;
 }
@@ -113,6 +141,7 @@ export function stopCombatMusic() {
 // Each call gets its own throwaway <audio> element so overlapping one-shots
 // (e.g. two hits landing in the same round) don't cut each other off.
 function playOneShot(url: string, volume: number) {
+  if (muted) return;
   const el = new Audio(url);
   el.volume = volume;
   el.play().catch(() => {});
