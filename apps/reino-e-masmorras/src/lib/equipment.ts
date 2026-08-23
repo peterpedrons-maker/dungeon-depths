@@ -6,31 +6,29 @@ import {
   OFFHAND_KIND, OFFHAND_NOUN, WEIGHT_GROUP, merchantBasePrice, tierName,
 } from './itemTiers';
 
-// multMin/multMax replaced a single fixed `mult` — each item now rolls its
-// own quality within its rarity's band instead of every item of a rarity
-// hitting the exact same number. Bands deliberately overlap a little
-// (incomum's top end sits inside raro's range, ...) so a lucky roll on a
-// lower rarity can occasionally rival an unlucky roll one tier up — the
-// "magic item that's still relevant" moment ARPGs lean on — without letting
-// rarity alone explode an item's power the way the old, much wider bands
-// did (Lendário used to reach 3.5x; a single excellent drop shouldn't be
-// able to double a character's power on its own — see rollPrimaryValue's
-// own tier-growth cut for the other half of that fix). This is layered on
+// multMin/multMax roll its own quality within its rarity's band instead of
+// every item of a rarity hitting the exact same number. Bands deliberately
+// overlap — a lucky roll on a lower rarity can occasionally rival, or even
+// beat, an unlucky roll one or two tiers up (Raro can outroll Épico,
+// Incomum can outroll Raro, a Comum can even reach a Raro on a good day) —
+// the "magic item that's still relevant" moment ARPGs lean on. Lendário is
+// the one rarity that's deliberately walled off from this at the low end:
+// its floor (1.50x) sits above every other rarity's ceiling, so nothing
+// below it can ever roll higher on this axis alone — see AFFIX_COUNT_RANGE
+// below for the other half of that guarantee (a Lendário's affix-count
+// floor was raised to close a similar gap on that axis). This is layered on
 // top of tier being the real progression axis; rarity is the variance layer
-// within a tier, not the power axis itself.
-// 2026 rebalance, take three: multMin/multMax collapsed to one fixed value
-// per rarity (specified directly) — rarity's whole job is now "how much
-// better is this than a comum of the same tier," a single predictable
-// number, not a rolled band. A comum-to-Lendário spread of 1.55x is the max
-// rarity is ever allowed to swing power on its own; Tier remains the real
-// progression axis (see rollPrimaryValue).
+// within a tier, not the power axis itself — see rollPrimaryValue's own
+// tier-growth cut for why a single rarity roll still can't double a
+// character's power on its own the way the old, much wider bands
+// (Lendário reaching 3.5x) could.
 interface RarityDef { id: Rarity; name: string; color: string; weight: number; multMin: number; multMax: number; }
 export const RARITIES: RarityDef[] = [
-  { id: 'comum', name: 'Comum', color: '#b8ada0', weight: 55, multMin: 1.00, multMax: 1.00 },
-  { id: 'incomum', name: 'Incomum', color: '#4f9d4f', weight: 27, multMin: 1.10, multMax: 1.10 },
-  { id: 'raro', name: 'Raro', color: '#3f7ab8', weight: 12, multMin: 1.20, multMax: 1.20 },
-  { id: 'epico', name: 'Épico', color: '#9b4fc9', weight: 5, multMin: 1.35, multMax: 1.35 },
-  { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, multMin: 1.55, multMax: 1.55 },
+  { id: 'comum', name: 'Comum', color: '#b8ada0', weight: 55, multMin: 0.90, multMax: 1.30 },
+  { id: 'incomum', name: 'Incomum', color: '#4f9d4f', weight: 27, multMin: 1.00, multMax: 1.38 },
+  { id: 'raro', name: 'Raro', color: '#3f7ab8', weight: 12, multMin: 1.18, multMax: 1.55 },
+  { id: 'epico', name: 'Épico', color: '#9b4fc9', weight: 5, multMin: 1.34, multMax: 1.85 },
+  { id: 'legendario', name: 'Legendário', color: '#e0a030', weight: 1, multMin: 1.50, multMax: 2.10 },
 ];
 
 // How many affixes (secondaryStats entries) an item of each rarity rolls —
@@ -41,14 +39,17 @@ export const RARITIES: RarityDef[] = [
 // item also carry 6 independent affix rolls turned "one great drop" into a
 // whole build's worth of power by itself.
 // Ranges deliberately overlap wide across rarities now — a Comum can roll
-// as low as 0 affixes (a plain, no-frills piece) or as many as a Raro, and
-// a Lendário can never roll fewer than 2. Affix count alone no longer
-// signals rarity on its own — the per-affix VALUE still scales with the
-// item's rolled rarity multiplier (see RARITIES above), so a Lendário with
-// the same affix count as a Comum still hits harder per line; count is now
-// purely a variance knob, not a power tier.
+// as low as 0 affixes (a plain, no-frills piece) or as many as a Raro.
+// Affix count alone no longer signals rarity on its own — the per-affix
+// VALUE still scales with the item's rolled rarity multiplier (see
+// RARITIES above), so a Lendário with the same affix count as a Comum
+// still hits harder per line; count is now purely a variance knob, not a
+// power tier. Lendário's floor is raised to 3 (not 2) specifically so its
+// worst-case total (min rarity roll × min affix count) can never fall
+// below a Comum or Incomum's best-case total — see the RARITIES comment
+// above for the matching floor on the multiplier side of that guarantee.
 const AFFIX_COUNT_RANGE: Record<Rarity, [number, number]> = {
-  comum: [0, 3], incomum: [1, 3], raro: [1, 4], epico: [2, 4], legendario: [2, 5],
+  comum: [0, 3], incomum: [1, 3], raro: [1, 4], epico: [2, 4], legendario: [3, 5],
 };
 
 // Rarity prefixes/suffixes wrap around whatever base-tier name the item
@@ -300,6 +301,17 @@ function primaryFieldsFor(
   }
 }
 
+// Independent +/-5% wobble applied per affix, on top of the item's shared
+// rarity roll — the rarity mult still decides "how good is this item
+// overall" (identical across the primary stat and every affix), but each
+// affix also gets its own tiny nudge so two lines on the same item don't
+// read as literally proportional copies of each other. Deliberately narrow:
+// wide enough to give each affix some personality, narrow enough that it
+// can't meaningfully reopen the power gap RARITIES' multMin and
+// AFFIX_COUNT_RANGE's Lendário floor were raised to close (a Comum/Incomum
+// beating a Lendário stays astronomically unlikely, not just "rare").
+const AFFIX_VARIANCE_RANGE: [number, number] = [0.95, 1.05];
+
 // Every item gets 1+ affixes (see AFFIX_COUNT_RANGE) sampled without repeats
 // from `pool` — a Fisher-Yates-ish shuffle-and-slice, so a 6-affix legendário
 // can't roll the same stat type twice just because the pool is small.
@@ -310,7 +322,8 @@ function rollSecondaryStats(baseTier: number, rarityMult: number, pool: Secondar
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled.slice(0, Math.min(count, shuffled.length)).map((type) => {
-    const raw = rollPrimaryValue(baseTier, rarityMult, AFFIX_SCALE[type]);
+    const variance = AFFIX_VARIANCE_RANGE[0] + Math.random() * (AFFIX_VARIANCE_RANGE[1] - AFFIX_VARIANCE_RANGE[0]);
+    const raw = rollPrimaryValue(baseTier, rarityMult * variance, AFFIX_SCALE[type]);
     const value = PCT_AFFIX_TYPES.has(type) ? raw / 100 : raw;
     return { type, value };
   });
