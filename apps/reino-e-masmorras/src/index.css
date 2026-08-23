@@ -63,6 +63,18 @@ body {
   to   { width: 100%; }
 }
 
+/* Ability-cast callout in the middle of the combat canvas (see
+   AbilityCastFx in DungeonPanel.tsx) — pops in, holds so the name/icon is
+   actually readable, then fades. Same beats as resultBannerPop but smaller
+   and shorter, matching ABILITY_CAST_DURATION_MS. */
+@keyframes abilityCastPop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  15%  { transform: scale(1.08); opacity: 1; }
+  25%  { transform: scale(1); opacity: 1; }
+  78%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
 @keyframes buildingGlow {
   0%   { box-shadow: 0 0 0 0 rgba(200,154,46,0); background-color: transparent; }
   30%  { box-shadow: 0 0 22px 10px rgba(200,154,46,0.85); background-color: rgba(200,154,46,0.25); }

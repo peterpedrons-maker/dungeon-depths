@@ -55,6 +55,9 @@ const ATTACK_INTERVAL = 2200;
 // apart. Bumped up from the original 900ms so a hit has time to actually
 // register before it's gone.
 const FLOAT_DURATION_MS = 1500;
+// Ability-cast callouts linger a bit longer than a plain floating number —
+// there's a name to actually read, not just a number at a glance.
+const ABILITY_CAST_DURATION_MS = 1800;
 // Player and enemy now run on independent action clocks (see playerAct/
 // enemyAct); this only offsets whichever side loses the opening coin flip
 // (see the mount effect) so the two don't visually land in the exact same
@@ -206,12 +209,29 @@ interface PlayerBuff { kind: 'def' | 'block'; pct: number; roundsLeft: number; s
 interface StatModInstance { stat: StatModStat; pct: number; roundsLeft: number; sourceAbilityId?: string; }
 interface CCInstance { kind: CrowdControlKind; roundsLeft: number; }
 interface RegenInstance { pct: number; roundsLeft: number; sourceAbilityId?: string; }
-interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean }
+// heal marks a recovery instead of a hit — rendered as a green "+value"
+// instead of the usual red/yellow "-value", and never carries crit/blocked/
+// miss (a heal is never any of those). Added because every healing source
+// (ability heal, regen tick, potion, lifesteal) used to update HP silently
+// and only ever show up as a combat-log line — damage got a floating
+// number for every source, but recovering HP got none at all.
+interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean }
 // A coin-icon + down-arrow burst over the player whenever an enemy's
 // stealGold effect actually takes gold — separate from FloatingNumber
 // since it isn't a damage number at all, just a distinct "you were
 // robbed" cue riding the same fixed-duration fade-out pattern.
 interface GoldStealFx { id: number; amount: number }
+// The ability-icon-in-the-middle-of-the-screen callout — shown whenever
+// either side actually uses a named ability (not the plain attack), naming
+// it and, when it deals damage or heals, the amount, instead of that only
+// ever being legible in the combat log below the fold. `icon` is null for
+// enemy abilities (no per-shape ability art exists) and for a player class
+// with no active-ability sheet yet, both of which fall back to the generic
+// star glyph — same fallback activeAbilityIconStyle's own callers already
+// use everywhere else in this file.
+interface AbilityCastFx {
+  id: number; side: 'player' | 'enemy'; name: string; icon: CSSProperties | null; value: number | null; heal: boolean;
+}
 // A log line is a list of segments instead of a plain string so a single
 // line can mix normal text with a rarity-colored item name (see
 // tryDropEquipment) without resorting to raw HTML in the log.
@@ -366,6 +386,7 @@ export function DungeonPanel({
   const [log, setLog] = useState<LogLine[]>([[{ text: `Você entra em ${dungeon.name}...` }]]);
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
   const [goldSteals, setGoldSteals] = useState<GoldStealFx[]>([]);
+  const [abilityCasts, setAbilityCasts] = useState<AbilityCastFx[]>([]);
   const [activeBadgeKey, setActiveBadgeKey] = useState<string | null>(null);
   const [flashSide, setFlashSide] = useState<'player' | 'enemy' | null>(null);
   const [endedReason, setEndedReason] = useState<'death' | 'retreat' | 'victory' | null>(null);
@@ -543,11 +564,24 @@ export function DungeonPanel({
     const segments = typeof line === 'string' ? [{ text: line }] : line;
     setLog((l) => [...l.slice(-4), segments]);
   }
-  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean) {
+  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean, heal?: boolean) {
+    if (silentRef.current) return;
+    if (heal && value <= 0) return;
+    const id = floaterId.current++;
+    setFloaters((f) => [...f, { id, side, value, crit, blocked, miss, heal }]);
+    setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
+  }
+  // The name+icon(+amount) callout over the middle of the canvas whenever
+  // either side actually uses a named ability — see AbilityCastFx's own
+  // comment for why this exists alongside pushFloat instead of replacing it:
+  // a damage/heal ability still gets its usual floater over the
+  // player/enemy sprite too, this just additionally names what caused it
+  // front-and-center instead of that only ever being legible in the log.
+  function pushAbilityCast(side: 'player' | 'enemy', name: string, icon: CSSProperties | null, value: number | null, heal: boolean) {
     if (silentRef.current) return;
     const id = floaterId.current++;
-    setFloaters((f) => [...f, { id, side, value, crit, blocked, miss }]);
-    setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
+    setAbilityCasts((a) => [...a, { id, side, name, icon, value, heal }]);
+    setTimeout(() => setAbilityCasts((a) => a.filter((x) => x.id !== id)), ABILITY_CAST_DURATION_MS);
   }
   function flash(side: 'player' | 'enemy') {
     if (silentRef.current) return;
@@ -819,6 +853,7 @@ export function DungeonPanel({
   function resolveSelfAbility(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>): string | null {
     const supportMult = 1 + stats.supportPowerPct;
     const eff = ab.effect;
+    const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
     if (eff.kind === 'heal') {
       const c = chRef.current;
       const baselineMaxHp = CLASSES[c.classId].baseHp + 6 * (c.level - 1);
@@ -826,31 +861,41 @@ export function DungeonPanel({
       const prevHp = c.hp;
       const healed = Math.min(maxHp, c.hp + Math.round(baselineMaxHp * (eff.healPct ?? 0.2) * supportMult));
       updateCh({ ...c, hp: healed });
-      return `${ab.name}: você recupera ${healed - prevHp} de vida.`;
+      const healedAmount = healed - prevHp;
+      pushFloat('player', healedAmount, false, undefined, undefined, true);
+      pushAbilityCast('player', ab.name, icon, healedAmount, true);
+      return `${ab.name}: você recupera ${healedAmount} de vida.`;
     } else if (eff.kind === 'buffDef') {
       playerBuffsRef.current.push({ kind: 'def', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: sua defesa aumenta.`;
     } else if (eff.kind === 'buffBlock') {
       playerBuffsRef.current.push({ kind: 'block', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: sua chance de bloqueio aumenta.`;
     } else if (eff.kind === 'shield') {
       const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.shieldPct ?? 0.25) * supportMult);
       playerShieldRef.current += amount;
       syncShield();
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: um escudo absorve ${amount} de dano.`;
     } else if (eff.kind === 'regen') {
       playerRegenRef.current.push({ pct: (eff.regenPct ?? 0.08) * supportMult, roundsLeft: eff.regenRounds ?? 4, sourceAbilityId: ab.id });
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você começa a regenerar vida.`;
     } else if (eff.kind === 'immunity') {
       playerImmuneRoundsRef.current = Math.max(playerImmuneRoundsRef.current, eff.immunityRounds ?? 3);
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você fica imune a novos efeitos negativos.`;
     } else if (eff.kind === 'haste') {
       playerHasteRoundsRef.current = Math.max(playerHasteRoundsRef.current, eff.hasteRounds ?? 4);
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: suas habilidades recarregam mais rápido.`;
     } else if (eff.kind === 'berserk') {
       playerModsRef.current.push({ stat: 'atk', pct: eff.berserkAtkPct ?? 0.3, roundsLeft: eff.berserkRounds ?? 4, sourceAbilityId: ab.id });
       playerModsRef.current.push({ stat: 'def', pct: eff.berserkDefPct ?? -0.2, roundsLeft: eff.berserkRounds ?? 4, sourceAbilityId: ab.id });
       syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: fúria berserker — mais dano, menos defesa.`;
     } else if (eff.kind === 'taunt') {
       // Provoca o inimigo — hoje é só a redução de dano recebido (útil já
@@ -858,6 +903,7 @@ export function DungeonPanel({
       // sistema de múltiplos inimigos/coop existir.
       playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
       syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você provoca o inimigo, reduzindo o dano recebido.`;
     } else if (eff.kind === 'dispel') {
       playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
@@ -866,14 +912,17 @@ export function DungeonPanel({
       syncPlayerStatuses();
       syncPlayerCC();
       syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você remove os efeitos negativos.`;
     } else if (eff.kind === 'lifestealBuff') {
       playerModsRef.current.push({ stat: 'lifestealPct', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
       syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você começa a roubar vida do inimigo.`;
     } else if (eff.kind === 'atkBuff') {
       playerModsRef.current.push({ stat: 'atk', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
       syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: seu ataque aumenta.`;
     }
     return null;
@@ -931,7 +980,12 @@ export function DungeonPanel({
       playerRegenRef.current = playerRegenRef.current.map((r) => ({ ...r, roundsLeft: r.roundsLeft - 1 })).filter((r) => r.roundsLeft > 0);
       if (healPct > 0 && chRef.current.hp > 0) {
         const healed = Math.min(maxHp, chRef.current.hp + Math.round(maxHp * healPct));
-        if (healed > chRef.current.hp) { updateCh({ ...chRef.current, hp: healed }); pushLog(`Você regenera ${healed - chRef.current.hp} de vida.`); }
+        if (healed > chRef.current.hp) {
+          const healedAmount = healed - chRef.current.hp;
+          updateCh({ ...chRef.current, hp: healed });
+          pushLog(`Você regenera ${healedAmount} de vida.`);
+          pushFloat('player', healedAmount, false, undefined, undefined, true);
+        }
       }
     }
 
@@ -961,6 +1015,7 @@ export function DungeonPanel({
     {
       const stats = computePlayerStats();
       let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false, playerHitMagical = false;
+      let castAbility: AbilityDef | null = null;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -999,6 +1054,7 @@ export function DungeonPanel({
             const r = rollAbilityHit(power, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
             abilityTag = ` [${offenseAbility.name}]`;
+            castAbility = offenseAbility;
             if (eff.kind === 'applyStatus' && eff.status) {
               enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * (eff.statusDmgPct ?? 0.4))) });
               syncEnemyStatuses();
@@ -1047,6 +1103,7 @@ export function DungeonPanel({
         pushFloat('enemy', dmg, crit);
         flash('enemy');
         if (!silentRef.current) { if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx(); }
+        if (castAbility) pushAbilityCast('player', castAbility.name, activeAbilityIconStyle(chRef.current.classId, castAbility.id), dmg, false);
         // Plain-attack damage already shows on screen via the floater — the
         // log only needs to note it when an ability (and/or the status/CC/
         // buff it applied) made the round more than just a routine hit.
@@ -1055,7 +1112,10 @@ export function DungeonPanel({
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
           const maxHp = effectiveMaxHp(chRef.current);
           const healAmount = Math.round(dmg * stats.lifestealPct) + (crit ? Math.round(maxHp * stats.onCritHealPct) : 0);
-          if (healAmount > 0) updateCh({ ...chRef.current, hp: Math.min(maxHp, chRef.current.hp + healAmount) });
+          if (healAmount > 0) {
+            updateCh({ ...chRef.current, hp: Math.min(maxHp, chRef.current.hp + healAmount) });
+            pushFloat('player', healAmount, false, undefined, undefined, true);
+          }
         }
 
         if (enemyHp <= 0) {
@@ -1211,7 +1271,12 @@ export function DungeonPanel({
     const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
     // Plain-attack damage already shows on screen via the floater — the log
     // only needs to note it when the enemy used a named ability this round.
-    if (chosenAbility) pushLog(`${enemyRef.current.name} usa ${chosenAbility.name}!${shieldTag}`);
+    if (chosenAbility) {
+      pushLog(`${enemyRef.current.name} usa ${chosenAbility.name}!${shieldTag}`);
+      // No per-shape ability art exists yet, so icon is always null here —
+      // pushAbilityCast/AbilityCastCallout fall back to the generic glyph.
+      pushAbilityCast('enemy', chosenAbility.name, null, edmg > 0 ? edmg : null, false);
+    }
 
     // Sleep breaks the instant its target takes damage.
     if (hasCC(playerCCRef.current, 'sleep') && (edmg > 0 || shieldAbsorbed > 0)) {
@@ -1239,6 +1304,7 @@ export function DungeonPanel({
         if (healAmt > 0) {
           updateEnemy({ ...enemyRef.current, hp: Math.min(enemyRef.current.maxHp, enemyRef.current.hp + healAmt) });
           pushLog(`${enemyRef.current.name} recupera ${healAmt} de vida!`);
+          pushFloat('enemy', healAmt, false, undefined, undefined, true);
         }
       } else if (abEffect.kind === 'statusBite' && abEffect.status && !playerImmune()) {
         if (playerResists(defStats)) {
@@ -1320,6 +1386,7 @@ export function DungeonPanel({
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
     potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
     pushLog([{ text: `Vida baixa — você bebe uma poção e recupera ${healed - prevHp} de vida.`, color: '#38bdf8' }]);
+    pushFloat('player', healed - prevHp, false, undefined, undefined, true);
   }
 
   function drinkPotionManually() {
@@ -1333,6 +1400,7 @@ export function DungeonPanel({
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
     potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
     pushLog(`Você bebe uma poção e recupera ${healed - prevHp} de vida.`);
+    pushFloat('player', healed - prevHp, false, undefined, undefined, true);
   }
 
   function togglePause() {
@@ -1698,6 +1766,14 @@ export function DungeonPanel({
           >
             {f.miss ? (
               <span className="text-lg text-parchment/60 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">erro!</span>
+            ) : f.heal ? (
+              // Green "+value" for any HP recovered — ability heal, regen
+              // tick, potion, lifesteal — all of which used to update HP
+              // silently with no on-screen number at all, only ever a
+              // combat-log line.
+              <span className="inline-block text-3xl text-green-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                +{f.value}
+              </span>
             ) : (
               <>
                 {/* A crit is the same color as a normal hit on that side,
@@ -1735,6 +1811,31 @@ export function DungeonPanel({
             <span className="text-parchment font-bold text-sm drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">-{g.amount}</span>
           </div>
         ))}
+        {abilityCasts.map((a) => {
+          const playerCast = a.side === 'player';
+          return (
+            <div
+              key={a.id}
+              className={`absolute top-1/2 flex flex-col items-center gap-1 pointer-events-none -translate-y-1/2 ${playerCast ? 'left-[24%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2'}`}
+              style={{ animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
+            >
+              <div
+                className={`w-11 h-11 rounded border-2 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)] ${playerCast ? 'border-gold bg-black/70' : 'border-crimson bg-black/70'}`}
+                style={a.icon ?? undefined}
+              >
+                {!a.icon && <IconActive className={`w-6 h-6 ${playerCast ? 'text-gold' : 'text-crimson'}`} />}
+              </div>
+              <span className="text-[11px] font-bold text-parchment text-center leading-tight whitespace-nowrap drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
+                {a.name}
+              </span>
+              {a.value !== null && (
+                <span className={`text-sm font-extrabold drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] ${a.heal ? 'text-green-400' : 'text-parchment'}`}>
+                  {a.heal ? '+' : '-'}{a.value}
+                </span>
+              )}
+            </div>
+          );
+        })}
         {paused && phase === 'fight' && (
           <div className="absolute top-2 right-2 bg-black/70 text-gold text-xs font-bold uppercase tracking-wider px-2 py-1 rounded">
             Pausado
