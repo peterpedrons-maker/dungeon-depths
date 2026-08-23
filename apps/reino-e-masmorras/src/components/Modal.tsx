@@ -36,16 +36,22 @@ export function Modal({ title, onClose, children, footer, plain, bare }: Props) 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={onClose}>
       <div
-        className={`relative w-full max-w-sm rounded-sm border-2 border-gold/50 shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden ${plain ? 'bg-nightsky' : 'bg-panel'}`}
+        className={`relative w-full max-w-sm max-h-[85vh] flex flex-col rounded-sm border-2 border-gold/50 shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden ${plain ? 'bg-nightsky' : 'bg-panel'}`}
         style={plain ? undefined : { backgroundImage: `url(${pergaminho})`, backgroundSize: '340px', backgroundBlendMode: 'multiply' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative border-b-2 border-gold/40 px-4 py-3 flex items-center justify-between gap-3">
+        <div className="relative border-b-2 border-gold/40 px-4 py-3 flex items-center justify-between gap-3 shrink-0">
           <h3 className="font-display text-gold text-sm font-bold tracking-[0.1em] uppercase leading-snug">{title}</h3>
           <button onClick={onClose} className="text-parchment/50 hover:text-parchment text-xl leading-none px-1 shrink-0" aria-label="Fechar">×</button>
         </div>
-        <div className="relative p-4 text-sm text-parchment/90 space-y-2">{children}</div>
-        {footer && <div className="relative border-t border-gold/20 p-3 flex gap-2 justify-end flex-wrap">{footer}</div>}
+        {/* min-h-0 is load-bearing here — without it a flex child refuses to
+            shrink below its content's natural height, which would silently
+            defeat overflow-y-auto and let a tall body (e.g. 4 equipped
+            habilidades with HP-threshold pickers) push the footer's
+            confirm/cancel buttons off-screen again, same as before this
+            fix — the footer must always stay reachable. */}
+        <div className="relative p-4 text-sm text-parchment/90 space-y-2 overflow-y-auto min-h-0">{children}</div>
+        {footer && <div className="relative border-t border-gold/20 p-3 flex gap-2 justify-end flex-wrap shrink-0">{footer}</div>}
       </div>
     </div>
   );
