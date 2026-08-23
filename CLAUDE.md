@@ -24,3 +24,18 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 - `apps/reino-e-masmorras/` — RPG single-player de masmorras em fantasia medieval, com
   menus/texto e um painel visual simples de combate estilo plataforma 2D. Publicado em
   `/reino-e-masmorras/`.
+
+## reino-e-masmorras: KIT-DE-ARTE.md
+
+`apps/reino-e-masmorras/KIT-DE-ARTE.md` é o arquivo com todos os prompts de arte
+(sprites de inimigos/chefes/classes, cenas, mapas, ícones, etc.) do jogo, mais um
+índice no topo do arquivo listando cada item com status (✅ pronto/integrado,
+🕓 prompt escrito aguardando arte, 🎨 arte existe mas não foi integrada, ⛔ prompt
+ainda não escrito).
+
+**Toda vez que uma tarefa que tocar esse arquivo (ou adicionar conteúdo que precisa
+de arte nova) for concluída, mande o arquivo pro usuário via SendUserFile** — ele
+usa isso pra saber o que ainda falta gerar. Ao adicionar prompts novos, sempre
+atualize o índice no mesmo commit (nova linha com status, e `<a id="...">` acima
+do heading correspondente se for uma seção nova) — o índice não pode ficar
+desatualizado.

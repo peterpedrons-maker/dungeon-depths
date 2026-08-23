@@ -2,6 +2,149 @@
 
 Prompts prontos para gerar as peças de interface e os sprites de personagens/inimigos de **Reino & Masmorras**. Copie o conteúdo de qualquer bloco abaixo (o botão de copiar aparece ao passar o mouse sobre o bloco, no GitHub) e cole direto no seu gerador de imagens.
 
+
+## Índice — o que já está pronto e o que ainda falta
+
+Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esperando a arte · 🎨 arte já existe no repositório mas ainda não foi ligada em nenhuma tela · ⛔ ainda nem tem prompt escrito.
+
+### Interface (molduras, botões, ícones, barras)
+- ✅ [Moldura Principal — janelas e painéis](#moldura-principal-janelas-e-paineis)
+- ✅ [Pergaminho — fundo dos painéis](#pergaminho-fundo-dos-paineis)
+- ✅ [Slot de Equipamento — paperdoll](#slot-de-equipamento-paperdoll-de-arma-armadura-acessorio)
+- ✅ [Ícones de Slot Vazio](#icones-de-slot-vazio-paperdoll-de-equipamentos-slot-sem-item)
+- ✅ [Slot de Habilidade](#slot-de-habilidade-nos-da-arvore-e-barra-de-habilidades-equipadas)
+- ✅ [Botão Dourado](#dourado-acao-principal-confirmar)
+- 🕓 [Botão Carmesim](#carmesim-combate-acoes-perigosas) — jogo hoje usa cor lisa (CSS) no lugar
+- 🕓 [Botão Neutro](#neutro-cancelar-voltar-pausar) — jogo hoje usa cor lisa (CSS) no lugar
+- ✅ [Moeda de Ouro](#moeda-de-ouro-recurso-ouro)
+- ✅ [Poção de Vida](#pocao-de-vida-recurso-pocoes)
+- 🕓 [Coração de Rubi — barra de vida](#coracao-de-rubi-barra-de-vida) — jogo hoje usa barra lisa (CSS) no lugar
+- 🕓 [Runa Arcana — barra de XP](#runa-arcana-barra-de-experiencia) — jogo hoje usa barra lisa (CSS) no lugar
+- ✅ [Ícones de Efeito (Buffs & Debuffs)](#icones-de-efeito-buffs-debuffs-hud-de-combate)
+- 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
+- ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
+- 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
+- ✅ [Emblemas de Classe](#emblemas-de-classe-avatar-no-topo-da-tela) — 14/14 classes
+- 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
+- 🎨 [Florão Divisor](#florao-divisor-separador-entre-secoes)
+
+### Ícones de Itens (equipamentos no inventário/loja)
+- ✅ [Armas — 14 folhas, uma por classe](#armas-14-folhas-uma-por-classe)
+- ✅ [Armaduras — 9 folhas (3 pesos × Corpo/Pernas/Mãos)](#armaduras-9-folhas-3-grupos-de-peso-corpo-pernas-maos)
+- ✅ [Mão Secundária — 2 folhas](#mao-secundaria-2-folhas)
+- ✅ [Acessórios — 3 folhas](#acessorios-3-folhas)
+
+### Sprites de Personagens — Classes (14/14 ✅)
+- ✅ [Guerreiro, Mago e Ladino](#classes-guerreiro-mago-e-ladino)
+- ✅ [Clérigo](#classe-clerigo)
+- ✅ [Cavaleiro, Paladino, Bárbaro e Arqueiro](#classes-iii-cavaleiro-paladino-barbaro-e-arqueiro)
+- ✅ [Caçador, Feiticeiro, Bruxo e Druida](#classes-iv-cacador-feiticeiro-bruxo-e-druida)
+- ✅ [Bardo e Necromante](#classes-v-bardo-e-necromante)
+
+### Inimigos & Chefes — Região 1 · Valdren (nível 1-10)
+- ✅ [Genéricos: Goblin, Lobo, Esqueleto e Orc](#inimigos-i-goblin-lobo-esqueleto-e-orc)
+- ✅ [Genéricos: Troll, Aberração das Sombras e Dragão Jovem](#inimigos-ii-troll-aberracao-das-sombras-e-dragao-jovem)
+- ✅ [Ruínas Superficiais — inimigos](#inimigos-iii-ruinas-superficiais-morcego-lodo-acido-bandido-e-corvo)
+- ✅ [Ruínas Superficiais — chefe (Rei Ossudo)](#chefe-ruinas-superficiais-rei-ossudo)
+- ✅ [Caverna dos Goblins — inimigos](#inimigos-iv-caverna-dos-goblins-xama-arremessador-fanatico-e-montador-de-lobo)
+- ✅ [Caverna dos Goblins — chefe (Grash)](#chefe-caverna-dos-goblins-grash)
+- ✅ Cripta do Tesouro — inimigos + chefe (Custódio Amaldiçoado) — prompt já usado, removido do kit
+- ✅ Pântano Podre — inimigos + chefe (Mãe-Lodo) — prompt já usado, removido do kit
+- ✅ Covil de Aranhas — inimigos + chefe (Matriarca Negra) — prompt já usado, removido do kit
+
+### Inimigos & Chefes — Região 2 · Umbrália (nível 11-20)
+- ✅ Torre Amaldiçoada — inimigos + chefe (Arquimago Caído) — prompt já usado, removido do kit
+- ✅ Minas Abandonadas — inimigos + chefe (Titã de Minério) — prompt já usado, removido do kit
+- 🕓 [Floresta Amaldiçoada — inimigos](#inimigos-x-floresta-amaldicoada-ent-corrompido-lobo-espectral-fada-sombria-urso-amaldicoado-e-trepadeira-estranguladora)
+- 🕓 [Floresta Amaldiçoada — chefe (Coração da Floresta)](#chefe-floresta-amaldicoada-coracao-da-floresta)
+- 🕓 [Covil dos Dragões — inimigos](#inimigos-xi-covil-dos-dragoes-filhote-de-dragao-wyvern-selvagem-guardiao-escamado-cultista-draconico-e-serpente-de-fogo)
+- ✅ [Covil dos Dragões — chefe (Dragão Jovem)](#inimigos-ii-troll-aberracao-das-sombras-e-dragao-jovem) — reaproveita o Dragão Jovem já pronto acima
+- 🕓 [Necrópole Esquecida — inimigos](#inimigos-xii-necropole-esquecida-ceifador-sombrio-corvo-da-morte-carrasco-ossudo-pranteador-fantasma-e-verme-cadaverico)
+- ✅ [Necrópole Esquecida — chefe (Lorde Esqueleto)](#chefe-necropole-esquecida-lorde-esqueleto)
+- 🕓 [Ruínas Élficas — inimigos](#inimigos-xiii-ruinas-elficas-guardiao-elfico-corrompido-vinha-sussurrante-fera-das-ruinas-espectro-elfico-e-golem-de-cristal)
+- 🕓 [Ruínas Élficas — chefe (Guardiã Ancestral)](#chefe-ruinas-elficas-guardia-ancestral)
+- 🕓 [Arena de Sangue — inimigos](#inimigos-xiv-arena-de-sangue-gladiador-amaldicoado-fera-de-arena-executor-mascarado-domador-de-bestas-e-campeao-caido)
+- 🕓 [Arena de Sangue — chefe (Grão-Campeão da Arena)](#chefe-arena-de-sangue-grao-campeao-da-arena)
+
+### Inimigos & Chefes — Região 3 · Thurgard (nível 21-30) — tudo pendente
+- 🕓 [Fortaleza Orc — inimigos](#inimigos-xv-fortaleza-orc-guerreiro-orc-arqueiro-orc-xama-orc-orc-berserker-e-porta-estandarte-orc)
+- 🕓 [Fortaleza Orc — chefe (Warchief Grukmar)](#chefe-fortaleza-orc-warchief-grukmar)
+- 🕓 [Labirinto de Gelo — inimigos](#inimigos-xvi-labirinto-de-gelo-elemental-de-gelo-lobo-gelido-morcego-glacial-espectro-de-gelo-e-sentinela-congelada)
+- 🕓 [Labirinto de Gelo — chefe (Monarca do Gelo)](#chefe-labirinto-de-gelo-monarca-do-gelo)
+- 🕓 [Templo Afundado — inimigos](#inimigos-xvii-templo-afundado-acolito-afogado-sacerdote-congelado-espectro-do-lago-guardiao-submerso-e-enguia-de-gelo)
+- 🕓 [Templo Afundado — chefe (Alto Sacerdote Submerso)](#chefe-templo-afundado-alto-sacerdote-submerso)
+- 🕓 [Cavernas de Cristal — inimigos](#inimigos-xviii-cavernas-de-cristal-morcego-de-cristal-aranha-de-cristal-golem-prismatico-vagalume-de-cristal-e-rastreador-reluzente)
+- 🕓 [Cavernas de Cristal — chefe (Soberana de Cristal)](#chefe-cavernas-de-cristal-soberana-de-cristal)
+- 🕓 [Covil do Lobo Alfa — inimigos](#inimigos-xix-covil-do-lobo-alfa-filhote-do-alfa-lobo-terrivel-perseguidor-da-neve-cacador-da-alcateia-e-lobo-presa-gelo)
+- 🕓 [Covil do Lobo Alfa — chefe (Alfa, o Terrível)](#chefe-covil-do-lobo-alfa-alfa-o-terrivel)
+- 🕓 [Catacumbas Reais — inimigos](#inimigos-xx-catacumbas-reais-esqueleto-real-sentinela-da-cripta-nobre-ossudo-camareiro-espectral-e-cavaleiro-sepultado)
+- 🕓 [Catacumbas Reais — chefe (Lich Real)](#chefe-catacumbas-reais-lich-real)
+- 🕓 [Poço sem Fundo (especial) — inimigos](#inimigos-xxi-poco-sem-fundo-rastejante-do-poco-tentaculo-do-vazio-espectro-afogante-perseguidor-abissal-e-habitante-oco)
+- 🕓 [Poço sem Fundo (especial) — chefe final (O Que Habita o Poço)](#chefe-poco-sem-fundo-o-que-habita-o-poco)
+
+### Inimigos & Chefes — Região 4 · Xilvana (nível 31-40) — tudo pendente
+- 🕓 [Covil da Aranha-Rainha — inimigos](#inimigos-xxii-covil-da-aranha-rainha-aranha-da-selva-perseguidor-de-seda-ninhada-de-aranhas-tecela-da-selva-e-cria-venenosa)
+- 🕓 [Covil da Aranha-Rainha — chefe (Aranha-Rainha)](#chefe-covil-da-aranha-rainha-aranha-rainha)
+- 🕓 [Cidadela em Ruínas — inimigos](#inimigos-xxiii-cidadela-em-ruinas-sentinela-em-ruinas-guerreiro-de-vinhas-golem-desmoronado-fantasma-da-selva-e-guardiao-coberto-de-vinhas)
+- 🕓 [Cidadela em Ruínas — chefe (Guardião da Cidadela)](#chefe-cidadela-em-ruinas-guardiao-da-cidadela)
+- 🕓 [Santuário Profanado — inimigos](#inimigos-xxiv-santuario-profanado-sacerdote-profanado-idolo-profano-acolito-corrompido-estatua-enfeiticada-e-cultista-ritualistico)
+- 🕓 [Santuário Profanado — chefe (Alto Sacerdote Profano)](#chefe-santuario-profanado-alto-sacerdote-profano)
+- 🕓 [Mina de Obsidiana — inimigos](#inimigos-xxv-mina-de-obsidiana-golem-de-obsidiana-morcego-de-magma-mineiro-de-obsidiana-espectro-de-brasas-e-besouro-de-obsidiana)
+- 🕓 [Mina de Obsidiana — chefe (Colosso de Obsidiana)](#chefe-mina-de-obsidiana-colosso-de-obsidiana)
+- 🕓 [Selva Esquecida — inimigos](#inimigos-xxvi-selva-esquecida-guardiao-esquecido-predador-da-selva-vinha-ancestral-jaguar-selvagem-e-esporideo)
+- 🕓 [Selva Esquecida — chefe (Colosso Esquecido)](#chefe-selva-esquecida-colosso-esquecido)
+- 🕓 [Fortaleza dos Ossos — inimigos](#inimigos-xxvii-fortaleza-dos-ossos-soldado-ossudo-arqueiro-ossudo-golem-de-medula-fera-catapulta-e-espectro-do-ossario)
+- 🕓 [Fortaleza dos Ossos — chefe (Senhor de Guerra Ossudo)](#chefe-fortaleza-dos-ossos-senhor-de-guerra-ossudo)
+- 🕓 [Torre dos Ecos (especial) — inimigos](#inimigos-xxviii-torre-dos-ecos-espectro-do-eco-espectro-ressonante-horror-espelhado-sentinela-do-eco-e-cantico-oco)
+- 🕓 [Torre dos Ecos (especial) — chefe final (Soberano dos Ecos)](#chefe-torre-dos-ecos-soberano-dos-ecos)
+
+### Inimigos & Chefes — Região 5 · Ignares (nível 41-50) — tudo pendente
+- 🕓 [Abismo de Gelo — inimigos](#inimigos-xxix-abismo-de-gelo-espectro-glacial-elemental-de-gelo-abissal-rastejante-gelido-behemoth-de-gelo-e-gelido-oco)
+- 🕓 [Abismo de Gelo — chefe (Senhor do Abismo Glacial)](#chefe-abismo-de-gelo-senhor-do-abismo-glacial)
+- 🕓 [Ruínas Vulcânicas — inimigos](#inimigos-xxx-ruinas-vulcanicas-golem-de-magma-espectro-de-cinzas-morcego-de-brasas-perseguidor-vulcanico-e-cao-de-cinzas)
+- 🕓 [Ruínas Vulcânicas — chefe (Colosso Infernal)](#chefe-ruinas-vulcanicas-colosso-infernal)
+- 🕓 [Covil do Dragão Ancião — inimigos](#inimigos-xxxi-covil-do-dragao-anciao-draguinho-anciao-cultista-draconico-anciao-serpente-escamosa-guardiao-draconico-e-draque-de-brasas)
+- 🕓 [Covil do Dragão Ancião — chefe (Dragão Ancião)](#chefe-covil-do-dragao-anciao-dragao-anciao)
+- 🕓 [Salão dos Titãs — inimigos](#inimigos-xxxii-salao-dos-titas-guardiao-titanico-colosso-de-pedra-sentinela-ancestral-golem-runico-e-vigia-titanico)
+- 🕓 [Salão dos Titãs — chefe (Titã Caído)](#chefe-salao-dos-titas-tita-caido)
+- 🕓 [Necrópole Real — inimigos](#inimigos-xxxiii-necropole-real-espectro-real-guarda-acinzentado-embalsamador-amaldicoado-mumia-real-e-arauto-da-morte)
+- 🕓 [Necrópole Real — chefe (Necromante Real)](#chefe-necropole-real-necromante-real)
+- 🕓 [Palácio Submerso — inimigos](#inimigos-xxxiv-palacio-submerso-cortesao-afogado-guarda-submerso-espectro-das-mares-horror-de-coral-e-acolito-das-profundezas)
+- 🕓 [Palácio Submerso — chefe (Monarca Afogado)](#chefe-palacio-submerso-monarca-afogado)
+- 🕓 [Arena do Campeão (especial) — inimigos](#inimigos-xxxv-arena-do-campeao-gladiador-campeao-fera-campea-da-arena-duelista-veterano-senhor-de-guerra-da-arena-e-campeao-ensanguentado)
+- 🕓 [Arena do Campeão (especial) — chefe final (Campeão Eterno)](#chefe-arena-do-campeao-campeao-eterno)
+
+### Alvos de Caçada (Hunts — 3 superchefes opcionais)
+- ⛔ Tirano Ossudo, Leviatã do Pântano, Wyrm Infernal — ainda nem tem prompt escrito — avise se quiser que eu escreva
+
+### Cenas (telas em tela cheia)
+- ✅ [Cena do Reino](#cena-do-reino-tela-de-visao-geral-do-reino)
+- ✅ [Mapa de Construções](#mapa-de-construcoes-tela-de-reino-construcoes)
+- ✅ [Cena do Ferreiro](#cena-do-ferreiro-tela-do-ferreiro-aberta-pela-forja)
+- ✅ [Cena do Mercador](#cena-do-mercador-tela-do-mercador-aberta-pela-construcao-mercador)
+- ✅ [Cena de Título](#cena-de-titulo-tela-inicial-logo-menu)
+
+### Mapa de Masmorras (fundo de cada região, 7 no total)
+- ✅ [Região 1 — Valdren (nível 1-10)](#regiao-1-valdren-nivel-1-10)
+- ✅ [Região 2 — Umbrália (nível 11-20)](#regiao-2-umbralia-nivel-11-20)
+- 🕓 [Região 3 — Thurgard (nível 21-30)](#regiao-3-thurgard-nivel-21-30)
+- 🕓 [Região 4 — Xilvana (nível 31-40)](#regiao-4-xilvana-nivel-31-40)
+- 🕓 [Região 5 — Ignares (nível 41-50)](#regiao-5-ignares-nivel-41-50)
+- 🕓 [Região 6 — Nyxheim (nível 51-58)](#regiao-6-nyxheim-nivel-51-58) — fora de escopo por enquanto — masmorras dessa região ainda não existem nos dados do jogo
+- 🕓 [Região 7 — Aetherion (nível 60)](#regiao-7-aetherion-nivel-60) — fora de escopo por enquanto — masmorras dessa região ainda não existem nos dados do jogo
+
+### Fundos de Batalha (imagem atrás do combate, por masmorra)
+- ✅ Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada, Minas Abandonadas — 7 masmorras — prompts já usados, removidos do kit
+- 🕓 [Floresta Amaldiçoada](#floresta-amaldicoada)
+- 🕓 [Covil dos Dragões](#covil-dos-dragoes)
+- 🕓 [Necrópole Esquecida](#necropole-esquecida)
+- 🕓 [Ruínas Élficas](#ruinas-elficas)
+- 🕓 [Arena de Sangue](#arena-de-sangue)
+- ⛔ As 21 masmorras das Regiões 3, 4 e 5 (Thurgard/Xilvana/Ignares) — ainda nem tem prompt escrito — avise se quiser que eu escreva
+
+---
+
+<a id="configuracao-da-conta-supabase"></a>
 ## Configuração da Conta (Supabase)
 
 Passo único de configuração pra ativar contas/login/save na nuvem/ranking global — nada a ver com arte, mas fica aqui pra ficar fácil de achar. Rode isso uma vez no painel do Supabase do projeto (**Dashboard → SQL Editor → New query**, cole e clique em **Run**). O mesmo conteúdo também vive em `apps/reino-e-masmorras/supabase/schema.sql`, versionado no repo.
@@ -114,6 +257,7 @@ create policy "profiles_update_own" on public.profiles
 
 Depois de rodar: se quiser testar login sem precisar confirmar e-mail toda vez, vá em **Authentication → Settings** e desative "Confirm email" (opcional, só facilita testes).
 
+<a id="antes-de-usar"></a>
 ## Antes de usar
 
 - **Fundo magenta:** todo prompt de recorte já pede fundo sólido `#FF00FF` — assim dá pra remover o fundo depois, já que a maioria das IAs de imagem não exporta com transparência real.
@@ -128,10 +272,12 @@ Depois de rodar: se quiser testar login sem precisar confirmar e-mail toda vez, 
 
 ---
 
+<a id="molduras-texturas"></a>
 ## Molduras & Texturas
 
 As peças estruturais — moldura das janelas, fundo de pergaminho.
 
+<a id="moldura-principal-janelas-e-paineis"></a>
 ### Moldura Principal — Janelas e painéis
 **Tamanho:** 1024×1024 px · **Uso:** borda de toda janela/painel do jogo
 
@@ -145,6 +291,7 @@ The entire center/interior of the frame (where a parchment background will show 
 Square canvas, 1024×1024 px, viewed perfectly flat-on (no perspective, no rotation). No text, no watermark, no drop shadow floating outside the frame.
 ```
 
+<a id="pergaminho-fundo-dos-paineis"></a>
 ### Pergaminho — Fundo dos painéis
 **Tamanho:** 512×512 px · **Uso:** preenchimento interno dos painéis, tileável
 
@@ -156,10 +303,12 @@ No border, no frame, no vignette, no writing, no illustrations — flat texture 
 
 ---
 
+<a id="slots-de-equipamento-habilidade"></a>
 ## Slots de Equipamento & Habilidade
 
 Molduras pequenas para os ícones dos slots — quadrada para o equipamento (paperdoll), circular para os nós da árvore de habilidades, estilo World of Warcraft.
 
+<a id="slot-de-equipamento-paperdoll-de-arma-armadura-acessorio"></a>
 ### Slot de Equipamento — Paperdoll de arma/armadura/acessório
 **Tamanho:** 256×256 px · **Uso:** moldura de cada slot na tela de Personagem
 
@@ -169,6 +318,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, in the
 The entire flat center of the frame (where an item icon will be placed by the game) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area, just a clean hollow square hole. Square canvas, 256×256 px, viewed perfectly flat-on, thin frame border only (see the 5-7% note above — this is the main thing distinguishing it from the old, much thicker frame this replaces). No text, no watermark, no drop shadow floating outside the frame.
 ```
 
+<a id="icones-de-slot-vazio-paperdoll-de-equipamentos-slot-sem-item"></a>
 ### Ícones de Slot Vazio — Paperdoll de Equipamentos (slot sem item)
 **Tamanho:** 1536×1024 px · **Uso:** 6 ícones (recortar em grade 3×2) pros 6 slots do paperdoll (Arma, Corpo, Pernas, Mãos, Mão Secundária, Acessório) quando estão vazios — substitui o glifo de linha simples usado hoje, que destoa da arte pintada dos itens reais.
 
@@ -184,6 +334,7 @@ Row 2: 4) a simple pair of gloves silhouette, front view, oriented cuff-up with 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1536×1024 px. No text, no labels, no numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
 ```
 
+<a id="slot-de-habilidade-nos-da-arvore-e-barra-de-habilidades-equipadas"></a>
 ### Slot de Habilidade — Nós da árvore e barra de habilidades equipadas
 **Tamanho:** 256×256 px · **Uso:** moldura circular de cada nó/ícone na tela de Habilidades
 
@@ -195,10 +346,12 @@ The entire flat circular center (where a skill icon will be placed by the game) 
 
 ---
 
+<a id="botoes"></a>
 ## Botões
 
 1024×384 px cada — retangular com cantos levemente arredondados, visto de frente, sem texto (o texto é adicionado depois pelo código). Hoje o jogo usa só o **Dourado**; os outros dois ficam aqui como alternativa caso queira variar por contexto.
 
+<a id="dourado-acao-principal-confirmar"></a>
 ### Dourado — Ação principal, confirmar
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style. A rectangular game button with gently rounded corners, carved from polished golden brass with a raised beveled edge and a subtle engraved knotwork border running along the rim. Warm gold-to-amber gradient across the surface with a bright specular highlight along the top edge and a darker warm shadow along the bottom edge, giving it a raised, pressable, 3D metal look.
@@ -206,6 +359,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style. A rect
 Solid magenta background (#FF00FF) filling the rest of the canvas around the button. Front-on view, no perspective. No text or icon on the button face — leave the center clear. Canvas 1024×384 px, button centered and filling most of the frame.
 ```
 
+<a id="carmesim-combate-acoes-perigosas"></a>
 ### Carmesim — Combate, ações perigosas
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style. A rectangular game button with gently rounded corners, forged from dark blackened iron with a raised beveled edge, inlaid with a deep red enamel band along the center and small rivets at the corners. Dark iron-to-charcoal gradient with a red enamel glow strip, a subtle warm highlight along the top edge, giving it a raised, pressable, weighty metal look.
@@ -213,6 +367,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style. A rect
 Solid magenta background (#FF00FF) filling the rest of the canvas around the button. Front-on view, no perspective. No text or icon on the button face — leave the center clear. Canvas 1024×384 px, button centered and filling most of the frame.
 ```
 
+<a id="neutro-cancelar-voltar-pausar"></a>
 ### Neutro — Cancelar, voltar, pausar
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style. A rectangular game button with gently rounded corners, carved from weathered gray fieldstone with a raised beveled edge and a simple worn rope-carved border. Cool gray stone gradient with a soft highlight along the top edge and a darker mossy shadow along the bottom edge, giving it a raised, pressable, sturdy stone look.
@@ -222,10 +377,12 @@ Solid magenta background (#FF00FF) filling the rest of the canvas around the but
 
 ---
 
+<a id="icones"></a>
 ## Ícones
 
 256×256 px cada — objeto único centralizado, mesmo estilo pintado, luz vindo de cima-esquerda em todos.
 
+<a id="moeda-de-ouro-recurso-ouro"></a>
 ### Moeda de Ouro — Recurso: ouro
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon for a game's resource counter. A single thick gold coin, embossed with a crude stamped castle-and-crown emblem, slightly worn and scratched edges, warm gold color with darker recessed engraving details and a bright specular highlight top-left. Soft warm lighting from the upper left.
@@ -233,6 +390,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, icon f
 Centered in frame, filling about 80% of the canvas. Solid magenta background (#FF00FF). No other coins, no pile, no text, no border. Canvas 256×256 px.
 ```
 
+<a id="pocao-de-vida-recurso-pocoes"></a>
 ### Poção de Vida — Recurso: poções
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon for a game's resource counter. A small round glass vial corked with a wooden stopper, filled with a glowing translucent red liquid, wrapped with a thin leather strap and a small wax seal. Warm rim-light catching the glass edge, soft glow emanating from the liquid inside. Soft warm lighting from the upper left.
@@ -240,6 +398,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, icon f
 Centered in frame, filling about 80% of the canvas. Solid magenta background (#FF00FF). No other vials, no hand holding it, no text, no border. Canvas 256×256 px.
 ```
 
+<a id="coracao-de-rubi-barra-de-vida"></a>
 ### Coração de Rubi — Barra de vida
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon for a game's health bar. A stylized heart shape carved from a single polished ruby gemstone, faceted surface catching warm light, deep red color with bright specular highlights and darker red in the recessed facets. A thin bronze wire wraps around the base like a claw setting. Soft warm lighting from the upper left.
@@ -247,6 +406,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, icon f
 Centered in frame, filling about 80% of the canvas. Solid magenta background (#FF00FF). No text, no border, no other gems. Canvas 256×256 px.
 ```
 
+<a id="runa-arcana-barra-de-experiencia"></a>
 ### Runa Arcana — Barra de experiência
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon for a game's experience bar. A small carved stone rune tablet, roughly circular, etched with a glowing blue-white arcane symbol that emits a soft magical glow. Weathered gray stone texture around the glowing engraving. Soft warm lighting from the upper left, contrasted with the cool glow of the rune itself.
@@ -254,6 +414,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style, icon f
 Centered in frame, filling about 80% of the canvas. Solid magenta background (#FF00FF). No text, no border, no hand holding it. Canvas 256×256 px.
 ```
 
+<a id="icones-de-efeito-buffs-debuffs-hud-de-combate"></a>
 ### Ícones de Efeito (Buffs & Debuffs) — HUD de Combate
 
 Pedido do usuário: os badges de status/buff/debuff que aparecem ao lado dos sprites em combate (ver `EffectBadgeRow` em `DungeonPanel.tsx`) hoje são só um círculo colorido com 1-2 letras — placeholder, difícil de identificar de relance. Esta folha cobre TODOS os efeitos que podem aparecer ali: os 4 status periódicos, os 3 de controle, e os 8 atributos que podem ser buffados ou debuffados (2 versões cada, exceto os 2 que só existem como buff no jogo hoje).
@@ -280,6 +441,7 @@ Row 4 (resto dos debuffs de atributo): 19) Crítico Reduzido — a cracked, off-
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons, including the empty 24th cell — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1536×1024 px. No watermark, no outer border, no frame around the whole sheet (the game already has its own frame it composites on top), no text of any kind — only the per-icon circular badge rims described above.
 ```
 
+<a id="icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas"></a>
 ### Ícones de Habilidades — Ativas por Classe + Biblioteca de Passivas
 
 Reformulado a pedido do usuário: antes, essas duas folhas ("Grade I/II") cobriam só **temas** de efeito (fogo, veneno, crítico, cura...), e cada nó da árvore — ativo ou passivo — era associado ao tema mais parecido, então habilidades bem diferentes entre si (de classes diferentes, ou até dentro da mesma classe) podiam acabar reaproveitando exatamente o mesmo ícone. Agora a divisão é outra:
@@ -546,6 +708,7 @@ Row 3 ("Ceifador" path, gold-violet crit theme): 11) "Golpe da Foice" — a curv
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
 ```
 
+<a id="icones-de-atributo-combate-tela-de-personagem"></a>
 ### Ícones de Atributo & Combate — Tela de Personagem
 **Tamanho:** 1536×1536 px · **Uso:** 9 ícones (recortar em grade 3×3) pros 7 atributos primários (Força, Destreza, Agilidade, Vitalidade, Inteligência, Sabedoria, Sorte) e os 2 sub-ícones de Físico/Mágico da seção de Combate — hoje esses 9 lugares mostram só texto, sem ícone nenhum
 
@@ -565,6 +728,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 **Cores de referência** (pra bater com o que o jogo já usa em cada atributo, caso a IA de imagem aceite direcionamento de cor mais preciso): Força `#c1502e`, Destreza `#4f9d4f`, Agilidade `#4fb8b0`, Vitalidade `#c9863c`, Inteligência `#3f7ab8`, Sabedoria `#9b6fc9`, Sorte `#e0b93c`.
 
+<a id="emblemas-de-classe-avatar-no-topo-da-tela"></a>
 ### Emblemas de Classe — Avatar no topo da tela
 14 emblemas no total, um por classe — vai substituir o círculo de cor lisa que hoje fica ao lado do nome do personagem no topo da tela (`TopBar`), mesmo lugar em todas as telas do jogo. Divididos em 3 folhas de até 5 emblemas cada (em vez de uma folha só com os 14 espremidos) — mais espaço por emblema, e dá pra gerar aos poucos.
 
@@ -619,6 +783,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 ---
 
+<a id="icones-de-itens-armas-armaduras-mao-secundaria-acessorios"></a>
 ## Ícones de Itens — Armas, Armaduras, Mão Secundária & Acessórios
 
 Os ícones que aparecem dentro de cada slot de equipamento/inventário (hoje são só os glifos genéricos de `icons.tsx` — uma espada simples pra qualquer arma, um peitoral simples pra qualquer armadura de corpo etc, sem diferenciar classe nem tier). Mesmo estilo pintado dos outros ícones de UI do jogo (moeda de ouro, poção, coração, runa, ícones de habilidade) — **não** é o pixel art usado nos sprites de personagem/inimigo/cenas nem nos emblemas de classe, já que esses ícones representam objetos dentro de um slot pequeno, igual a moeda e a poção, não um personagem.
@@ -640,6 +805,7 @@ Os ícones que aparecem dentro de cada slot de equipamento/inventário (hoje sã
 
 **Convenção de cada folha:** imagem única 1280×512 px, grade de 10 ícones em 5 colunas × 2 linhas (linha 1 = tiers 1-5, linha 2 = tiers 6-10), fundo e vãos em magenta sólido (#FF00FF), sem texto/número/rótulo em nenhum ícone.
 
+<a id="armas-14-folhas-uma-por-classe"></a>
 ### Armas — 14 folhas, uma por classe
 
 Cada classe tem sua própria arma exclusiva (nome já usado no jogo em `classes.ts`/`weaponBase`) — a folha cobre os 10 tiers dela.
@@ -854,6 +1020,7 @@ Row 2 (tiers 6-10): 6) a pale luminous mithril scepter, topped with a skull that
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
 ```
 
+<a id="armaduras-9-folhas-3-grupos-de-peso-corpo-pernas-maos"></a>
 ### Armaduras — 9 folhas, 3 grupos de peso × Corpo/Pernas/Mãos
 
 As 14 classes se agrupam em 3 grupos de peso (leve/médio/pesado, ver `WEIGHT_GROUP` em `itemTiers.ts`) em vez de 14 escadas próprias — leve: Mago, Clérigo, Feiticeiro, Bruxo, Druida, Necromante, Bardo; médio: Ladino, Bárbaro, Arqueiro, Caçador; pesado: Guerreiro, Cavaleiro, Paladino.
@@ -997,6 +1164,7 @@ Row 2 (tiers 6-10): 6) pale luminous mithril gauntlets that seem to shimmer, imp
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
 ```
 
+<a id="mao-secundaria-2-folhas"></a>
 ### Mão Secundária — 2 folhas
 
 Só as classes de uma mão só têm esse slot: Guerreiro/Cavaleiro/Paladino recebem um Escudo, Clérigo/Feiticeiro/Bruxo/Necromante recebem um Relicário — as demais classes (arma de duas mãos ou dual-wield) nunca veem esse slot preenchido.
@@ -1031,6 +1199,7 @@ Row 2 (tiers 6-10): 6) a pale luminous mithril reliquary, a softly glowing white
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×512 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own equipment-slot frame it composites on top).
 ```
 
+<a id="acessorios-3-folhas"></a>
 ### Acessórios — 3 folhas
 
 Só existe 1 slot de acessório equipável, mas 3 tipos podem dropar — cada um com seu próprio domínio de stat (Anel: crítico; Amuleto: vida/defesa física/defesa mágica; Bracelete: ataque/ataque mágico), então o jogador escolhe qual prioridade levar.
@@ -1084,10 +1253,12 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 ---
 
+<a id="ornamentos"></a>
 ## Ornamentos
 
 Peças decorativas — faixa de título dos painéis, florão divisor entre seções.
 
+<a id="banner-de-titulo-cabecalho-dos-paineis"></a>
 ### Banner de Título — Cabeçalho dos painéis
 **Tamanho:** 1024×256 px · **Uso:** faixa atrás do título de cada janela
 
@@ -1097,6 +1268,7 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style. A wide
 The flat central area of the banner (where a title will be written in the app) is a solid magenta color (#FF00FF) — no texture there. Wide rectangular canvas, 1024×256 px, viewed flat-on, centered. No text, no watermark.
 ```
 
+<a id="florao-divisor-separador-entre-secoes"></a>
 ### Florão Divisor — Separador entre seções
 **Tamanho:** 512×256 px · **Uso:** enfeite pequeno entre blocos de texto
 
@@ -1108,12 +1280,14 @@ Centered horizontally in frame, with generous empty magenta space on either side
 
 ---
 
+<a id="sprites-de-personagens"></a>
 ## Sprites de Personagens
 
 Pixel art nítida (não estilo pintado/realista) — uma pose estática por personagem, vários personagens juntos na mesma folha (é só recortar cada um depois), sem animação, sem movimento.
 
 **Direção obrigatória:** no jogo, o herói do jogador sempre fica do lado esquerdo da tela e o inimigo do lado direito. Os inimigos ficam de perfil olhando pra **ESQUERDA** (na direção do herói) — isso continua exigido nos prompts de inimigo abaixo. Os heróis/classes, porém, seguem o estilo das 3 artes já integradas no jogo (Guerreiro/Mago/Ladino): **quase de frente**, sem ser um perfil de lado, com o corpo e a arma levemente inclinados pro lado **direito** da imagem. Todo prompt de herói/classe abaixo já pede essa pose — se uma imagem sair de perfil de lado, olhando pra esquerda, ou totalmente simétrica de frente, gere de novo reforçando essa pose no prompt.
 
+<a id="classes-guerreiro-mago-e-ladino"></a>
 ### Classes — Guerreiro, Mago e Ladino
 **Tamanho:** 1536×768 px · **Uso:** recortar os 3 personagens jogáveis individualmente. (A classe no jogo se chama "Ladino" — o prompt abaixo ainda descreve o personagem como "Assassino" porque é a arte original já integrada; o visual serve para as duas.)
 
@@ -1131,6 +1305,7 @@ Right — "Assassino" (Assassin): a lithe human rogue in dark mossy-green and ch
 Solid flat magenta background (#FF00FF) filling the entire canvas behind and around all three characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+<a id="classe-clerigo"></a>
 ### Classe — Clérigo
 **Tamanho:** 768×768 px · **Uso:** 4ª classe jogável, ainda sem arte própria (usa o sprite do Mago como placeholder no código até esta imagem ser gerada e integrada)
 
@@ -1144,6 +1319,7 @@ One single full-body character sprite, in a calm static idle pose — no motion 
 Solid flat magenta background (#FF00FF) filling the entire canvas behind the character — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the character (skin, cloth, metal, glow effects) — that color is reserved only for the background and will be removed later. Square canvas, 768×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+<a id="classes-iii-cavaleiro-paladino-barbaro-e-arqueiro"></a>
 ### Classes III — Cavaleiro, Paladino, Bárbaro e Arqueiro
 **Tamanho:** 1536×768 px · **Uso:** 4 novas classes jogáveis, ainda sem arte própria (usam sprites de outras classes como placeholder no código até esta imagem ser gerada e integrada)
 
@@ -1160,6 +1336,7 @@ One single wide image containing FOUR separate full-body character sprites stand
 Solid flat magenta background (#FF00FF) filling the entire canvas behind and around all four characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+<a id="classes-iv-cacador-feiticeiro-bruxo-e-druida"></a>
 ### Classes IV — Caçador, Feiticeiro, Bruxo e Druida
 **Tamanho:** 1536×768 px · **Uso:** 4 novas classes jogáveis, ainda sem arte própria
 
@@ -1176,6 +1353,7 @@ One single wide image containing FOUR separate full-body character sprites stand
 Solid flat magenta background (#FF00FF) filling the entire canvas behind and around all four characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1536×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+<a id="classes-v-bardo-e-necromante"></a>
 ### Classes V — Bardo e Necromante
 **Tamanho:** 1024×768 px · **Uso:** 2 novas classes jogáveis, ainda sem arte própria
 
@@ -1190,6 +1368,7 @@ One single wide image containing TWO separate full-body character sprites standi
 Solid flat magenta background (#FF00FF) filling the entire canvas behind and around both characters — no texture, no gradient, no dithering, no ground shadow, no scenery. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the characters themselves (skin, cloth, metal, weapons, glow effects) — that color is reserved only for the background and will be removed later. Wide canvas, 1024×768 px, simple directional lighting from the upper-left. No text, no labels, no watermark, no border.
 ```
 
+<a id="inimigos-i-goblin-lobo-esqueleto-e-orc"></a>
 ### Inimigos I — Goblin, Lobo, Esqueleto e Orc
 **Tamanho:** 1536×768 px · **Uso:** inimigos de profundidade baixa/média (Ruínas, Cavernas)
 
@@ -1208,6 +1387,7 @@ Wide image, 4 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-ii-troll-aberracao-das-sombras-e-dragao-jovem"></a>
 ### Inimigos II — Troll, Aberração das Sombras e Dragão Jovem
 **Tamanho:** 1536×768 px · **Uso:** inimigos de profundidade alta (Covil dos Dragões, Torre Amaldiçoada)
 
@@ -1225,6 +1405,7 @@ Wide image, 3 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-iii-ruinas-superficiais-morcego-lodo-acido-bandido-e-corvo"></a>
 ### Inimigos III — Ruínas Superficiais: Morcego, Lodo Ácido, Bandido e Corvo
 **Tamanho:** 1536×768 px · **Uso:** roster da masmorra Ruínas Superficiais (o Esqueleto já integrado continua fazendo parte do roster, sem prompt novo)
 
@@ -1243,6 +1424,7 @@ Wide image, 4 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-ruinas-superficiais-rei-ossudo"></a>
 ### Chefe — Ruínas Superficiais: Rei Ossudo
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Superficiais, spawna na profundidade 7 com barra de vida própria no topo da tela de batalha
 
@@ -1258,6 +1440,7 @@ Rei Ossudo (Bone King), facing left: towering skeleton warlord, bigger and more 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-iv-caverna-dos-goblins-xama-arremessador-fanatico-e-montador-de-lobo"></a>
 ### Inimigos IV — Caverna dos Goblins: Xamã, Arremessador, Fanático e Montador de Lobo
 **Tamanho:** 1536×768 px · **Uso:** roster da masmorra Caverna dos Goblins (o Goblin comum já integrado continua fazendo parte do roster, sem prompt novo)
 
@@ -1276,6 +1459,7 @@ Wide image, 4 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-caverna-dos-goblins-grash"></a>
 ### Chefe — Caverna dos Goblins: Grash
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Caverna dos Goblins, spawna na profundidade 10 com barra de vida própria no topo da tela de batalha
 
@@ -1291,12 +1475,14 @@ Grash, facing left: huge muscular green-skinned goblin chieftain, much bigger an
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="regiao-2-cada-masmorra-tem-seu-proprio-roster-igual-a-regiao-1"></a>
 ### Região 2 — cada masmorra tem seu próprio roster, igual à Região 1
 
 As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada (regulares + chefe); faltam Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida (só falta o roster de regulares — o chefe Lorde Esqueleto já existe), Ruínas Élficas e Arena de Sangue.
 
 **Covil dos Dragões é a única exceção do lado do chefe**: o chefe dela é "Dragão Jovem" — o mesmo dragão já coberto no prompt "Inimigos II" mais acima, cujo sprite já está integrado ao jogo (`dragao.webp`). Não precisa de prompt novo — dragões mais fortes (adultos, anciões, lendários) ficam guardados para masmorras de regiões futuras.
 
+<a id="inimigos-x-floresta-amaldicoada-ent-corrompido-lobo-espectral-fada-sombria-urso-amaldicoado-e-trepadeira-estranguladora"></a>
 ### Inimigos X — Floresta Amaldiçoada: Ent Corrompido, Lobo Espectral, Fada Sombria, Urso Amaldiçoado e Trepadeira Estranguladora
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Floresta Amaldiçoada (5 inimigos regulares)
 
@@ -1316,6 +1502,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-floresta-amaldicoada-coracao-da-floresta"></a>
 ### Chefe — Floresta Amaldiçoada: Coração da Floresta
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Floresta Amaldiçoada, spawna na profundidade 27 com barra de vida própria no topo da tela de batalha
 
@@ -1331,6 +1518,7 @@ Coração da Floresta, facing left: a massive ancient tree spirit, thick gnarled
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xi-covil-dos-dragoes-filhote-de-dragao-wyvern-selvagem-guardiao-escamado-cultista-draconico-e-serpente-de-fogo"></a>
 ### Inimigos XI — Covil dos Dragões: Filhote de Dragão, Wyvern Selvagem, Guardião Escamado, Cultista Dracônico e Serpente de Fogo
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil dos Dragões (5 inimigos regulares — o chefe é o Dragão Jovem já coberto no prompt "Inimigos II", sem prompt novo)
 
@@ -1350,6 +1538,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xii-necropole-esquecida-ceifador-sombrio-corvo-da-morte-carrasco-ossudo-pranteador-fantasma-e-verme-cadaverico"></a>
 ### Inimigos XII — Necrópole Esquecida: Ceifador Sombrio, Corvo da Morte, Carrasco Ossudo, Pranteador Fantasma e Verme Cadavérico
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Esquecida (5 inimigos regulares)
 
@@ -1369,6 +1558,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-necropole-esquecida-lorde-esqueleto"></a>
 ### Chefe — Necrópole Esquecida: Lorde Esqueleto
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Esquecida, spawna na profundidade 29 com barra de vida própria no topo da tela de batalha
 
@@ -1384,6 +1574,7 @@ Lorde Esqueleto, facing left: a tall noble undead skeleton lord, more elaborate 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xiii-ruinas-elficas-guardiao-elfico-corrompido-vinha-sussurrante-fera-das-ruinas-espectro-elfico-e-golem-de-cristal"></a>
 ### Inimigos XIII — Ruínas Élficas: Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas, Espectro Élfico e Golem de Cristal
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Élficas (5 inimigos regulares)
 
@@ -1403,6 +1594,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-ruinas-elficas-guardia-ancestral"></a>
 ### Chefe — Ruínas Élficas: Guardiã Ancestral
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Élficas, spawna na profundidade 31 com barra de vida própria no topo da tela de batalha
 
@@ -1418,6 +1610,7 @@ Guardiã Ancestral, facing left: a majestic and imposing elven guardian statue b
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xiv-arena-de-sangue-gladiador-amaldicoado-fera-de-arena-executor-mascarado-domador-de-bestas-e-campeao-caido"></a>
 ### Inimigos XIV — Arena de Sangue: Gladiador Amaldiçoado, Fera de Arena, Executor Mascarado, Domador de Bestas e Campeão Caído
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Arena de Sangue (5 inimigos regulares)
 
@@ -1437,6 +1630,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-arena-de-sangue-grao-campeao-da-arena"></a>
 ### Chefe — Arena de Sangue: Grão-Campeão da Arena
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Arena de Sangue, spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
 
@@ -1452,6 +1646,7 @@ Grão-Campeão da Arena, facing left: a massive undefeated gladiator champion, h
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xv-fortaleza-orc-guerreiro-orc-arqueiro-orc-xama-orc-orc-berserker-e-porta-estandarte-orc"></a>
 ### Inimigos XV — Fortaleza Orc: Guerreiro Orc, Arqueiro Orc, Xamã Orc, Orc Berserker e Porta-Estandarte Orc
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza Orc (Região 3 — Thurgard, 5 inimigos regulares)
 
@@ -1471,6 +1666,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-fortaleza-orc-warchief-grukmar"></a>
 ### Chefe — Fortaleza Orc: Warchief Grukmar
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza Orc (Região 3), spawna na profundidade 32 com barra de vida própria no topo da tela de batalha
 
@@ -1486,6 +1682,7 @@ Warchief Grukmar, facing left: an enormous battle-hardened orc warchief in heavy
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xvi-labirinto-de-gelo-elemental-de-gelo-lobo-gelido-morcego-glacial-espectro-de-gelo-e-sentinela-congelada"></a>
 ### Inimigos XVI — Labirinto de Gelo: Elemental de Gelo, Lobo Gélido, Morcego Glacial, Espectro de Gelo e Sentinela Congelada
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Labirinto de Gelo (Região 3, 5 inimigos regulares)
 
@@ -1505,6 +1702,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-labirinto-de-gelo-monarca-do-gelo"></a>
 ### Chefe — Labirinto de Gelo: Monarca do Gelo
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Labirinto de Gelo (Região 3), spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
 
@@ -1520,6 +1718,7 @@ Monarca do Gelo, facing left: a tall regal ice monarch in a flowing crown and ro
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xvii-templo-afundado-acolito-afogado-sacerdote-congelado-espectro-do-lago-guardiao-submerso-e-enguia-de-gelo"></a>
 ### Inimigos XVII — Templo Afundado: Acólito Afogado, Sacerdote Congelado, Espectro do Lago, Guardião Submerso e Enguia de Gelo
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Templo Afundado (Região 3, fork com Cavernas de Cristal, 5 inimigos regulares)
 
@@ -1539,6 +1738,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-templo-afundado-alto-sacerdote-submerso"></a>
 ### Chefe — Templo Afundado: Alto Sacerdote Submerso
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Templo Afundado (Região 3), spawna na profundidade 36 com barra de vida própria no topo da tela de batalha
 
@@ -1554,6 +1754,7 @@ Alto Sacerdote Submerso, facing left: a towering drowned high priest in ornate w
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xviii-cavernas-de-cristal-morcego-de-cristal-aranha-de-cristal-golem-prismatico-vagalume-de-cristal-e-rastreador-reluzente"></a>
 ### Inimigos XVIII — Cavernas de Cristal: Morcego de Cristal, Aranha de Cristal, Golem Prismático, Vagalume de Cristal e Rastreador Reluzente
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cavernas de Cristal (Região 3, fork com Templo Afundado, 5 inimigos regulares)
 
@@ -1573,6 +1774,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-cavernas-de-cristal-soberana-de-cristal"></a>
 ### Chefe — Cavernas de Cristal: Soberana de Cristal
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Cavernas de Cristal (Região 3), spawna na profundidade 36 com barra de vida própria no topo da tela de batalha
 
@@ -1588,6 +1790,7 @@ Soberana de Cristal, facing left: a majestic feminine crystalline being with a b
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xix-covil-do-lobo-alfa-filhote-do-alfa-lobo-terrivel-perseguidor-da-neve-cacador-da-alcateia-e-lobo-presa-gelo"></a>
 ### Inimigos XIX — Covil do Lobo Alfa: Filhote do Alfa, Lobo Terrível, Perseguidor da Neve, Caçador da Alcateia e Lobo Presa-Gelo
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Lobo Alfa (Região 3, 5 inimigos regulares)
 
@@ -1607,6 +1810,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-covil-do-lobo-alfa-alfa-o-terrivel"></a>
 ### Chefe — Covil do Lobo Alfa: Alfa, o Terrível
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Lobo Alfa (Região 3), spawna na profundidade 38 com barra de vida própria no topo da tela de batalha
 
@@ -1622,6 +1826,7 @@ Alfa, o Terrível, facing left: an enormous dark-furred dire wolf towering over 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xx-catacumbas-reais-esqueleto-real-sentinela-da-cripta-nobre-ossudo-camareiro-espectral-e-cavaleiro-sepultado"></a>
 ### Inimigos XX — Catacumbas Reais: Esqueleto Real, Sentinela da Cripta, Nobre Ossudo, Camareiro Espectral e Cavaleiro Sepultado
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Catacumbas Reais (Região 3, 5 inimigos regulares)
 
@@ -1641,6 +1846,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-catacumbas-reais-lich-real"></a>
 ### Chefe — Catacumbas Reais: Lich Real
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Catacumbas Reais (Região 3), spawna na profundidade 40 com barra de vida própria no topo da tela de batalha
 
@@ -1656,6 +1862,7 @@ Lich Real, facing left: a regal skeletal lich draped in tattered royal robes and
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxi-poco-sem-fundo-rastejante-do-poco-tentaculo-do-vazio-espectro-afogante-perseguidor-abissal-e-habitante-oco"></a>
 ### Inimigos XXI — Poço sem Fundo: Rastejante do Poço, Tentáculo do Vazio, Espectro Afogante, Perseguidor Abissal e Habitante Oco
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Poço sem Fundo (Região 3, majoritariamente minibosses, 5 inimigos regulares)
 
@@ -1675,6 +1882,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-poco-sem-fundo-o-que-habita-o-poco"></a>
 ### Chefe — Poço sem Fundo: O Que Habita o Poço
 **Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Poço sem Fundo (Região 3) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 42 com barra de vida própria no topo da tela de batalha
 
@@ -1690,6 +1898,7 @@ O Que Habita o Poço, facing left: an immense formless horror of writhing black 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxii-covil-da-aranha-rainha-aranha-da-selva-perseguidor-de-seda-ninhada-de-aranhas-tecela-da-selva-e-cria-venenosa"></a>
 ### Inimigos XXII — Covil da Aranha-Rainha: Aranha da Selva, Perseguidor de Seda, Ninhada de Aranhas, Tecelã da Selva e Cria Venenosa
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil da Aranha-Rainha (Região 4 — Xilvana, 5 inimigos regulares)
 
@@ -1709,6 +1918,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-covil-da-aranha-rainha-aranha-rainha"></a>
 ### Chefe — Covil da Aranha-Rainha: Aranha-Rainha
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil da Aranha-Rainha (Região 4), spawna na profundidade 42 com barra de vida própria no topo da tela de batalha
 
@@ -1724,6 +1934,7 @@ Aranha-Rainha, facing left: a colossal jungle spider queen with a bulbous gliste
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxiii-cidadela-em-ruinas-sentinela-em-ruinas-guerreiro-de-vinhas-golem-desmoronado-fantasma-da-selva-e-guardiao-coberto-de-vinhas"></a>
 ### Inimigos XXIII — Cidadela em Ruínas: Sentinela em Ruínas, Guerreiro de Vinhas, Golem Desmoronado, Fantasma da Selva e Guardião Coberto de Vinhas
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cidadela em Ruínas (Região 4, 5 inimigos regulares)
 
@@ -1743,6 +1954,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-cidadela-em-ruinas-guardiao-da-cidadela"></a>
 ### Chefe — Cidadela em Ruínas: Guardião da Cidadela
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Cidadela em Ruínas (Região 4), spawna na profundidade 44 com barra de vida própria no topo da tela de batalha
 
@@ -1758,6 +1970,7 @@ Guardião da Cidadela, facing left: an immense ancient stone guardian entwined w
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxiv-santuario-profanado-sacerdote-profanado-idolo-profano-acolito-corrompido-estatua-enfeiticada-e-cultista-ritualistico"></a>
 ### Inimigos XXIV — Santuário Profanado: Sacerdote Profanado, Ídolo Profano, Acólito Corrompido, Estátua Enfeitiçada e Cultista Ritualístico
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Santuário Profanado (Região 4, fork com Mina de Obsidiana, 5 inimigos regulares)
 
@@ -1777,6 +1990,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-santuario-profanado-alto-sacerdote-profano"></a>
 ### Chefe — Santuário Profanado: Alto Sacerdote Profano
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Santuário Profanado (Região 4), spawna na profundidade 46 com barra de vida própria no topo da tela de batalha
 
@@ -1792,6 +2006,7 @@ Alto Sacerdote Profano, facing left: a towering corrupted high priest in ornate 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxv-mina-de-obsidiana-golem-de-obsidiana-morcego-de-magma-mineiro-de-obsidiana-espectro-de-brasas-e-besouro-de-obsidiana"></a>
 ### Inimigos XXV — Mina de Obsidiana: Golem de Obsidiana, Morcego de Magma, Mineiro de Obsidiana, Espectro de Brasas e Besouro de Obsidiana
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Mina de Obsidiana (Região 4, fork com Santuário Profanado, 5 inimigos regulares)
 
@@ -1811,6 +2026,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-mina-de-obsidiana-colosso-de-obsidiana"></a>
 ### Chefe — Mina de Obsidiana: Colosso de Obsidiana
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Mina de Obsidiana (Região 4), spawna na profundidade 46 com barra de vida própria no topo da tela de batalha
 
@@ -1826,6 +2042,7 @@ Colosso de Obsidiana, facing left: an immense hulking colossus of glossy black v
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxvi-selva-esquecida-guardiao-esquecido-predador-da-selva-vinha-ancestral-jaguar-selvagem-e-esporideo"></a>
 ### Inimigos XXVI — Selva Esquecida: Guardião Esquecido, Predador da Selva, Vinha Ancestral, Jaguar Selvagem e Esporídeo
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Selva Esquecida (Região 4, 5 inimigos regulares)
 
@@ -1845,6 +2062,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-selva-esquecida-colosso-esquecido"></a>
 ### Chefe — Selva Esquecida: Colosso Esquecido
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Selva Esquecida (Região 4), spawna na profundidade 48 com barra de vida própria no topo da tela de batalha
 
@@ -1860,6 +2078,7 @@ Colosso Esquecido, facing left: an ancient towering colossus of stone and root f
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxvii-fortaleza-dos-ossos-soldado-ossudo-arqueiro-ossudo-golem-de-medula-fera-catapulta-e-espectro-do-ossario"></a>
 ### Inimigos XXVII — Fortaleza dos Ossos: Soldado Ossudo, Arqueiro Ossudo, Golem de Medula, Fera Catapulta e Espectro do Ossário
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza dos Ossos (Região 4, 5 inimigos regulares)
 
@@ -1879,6 +2098,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-fortaleza-dos-ossos-senhor-de-guerra-ossudo"></a>
 ### Chefe — Fortaleza dos Ossos: Senhor de Guerra Ossudo
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza dos Ossos (Região 4), spawna na profundidade 50 com barra de vida própria no topo da tela de batalha
 
@@ -1894,6 +2114,7 @@ Senhor de Guerra Ossudo, facing left: an imposing bone-construct warlord clad in
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxviii-torre-dos-ecos-espectro-do-eco-espectro-ressonante-horror-espelhado-sentinela-do-eco-e-cantico-oco"></a>
 ### Inimigos XXVIII — Torre dos Ecos: Espectro do Eco, Espectro Ressonante, Horror Espelhado, Sentinela do Eco e Cântico Oco
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Torre dos Ecos (Região 4, majoritariamente minibosses, 5 inimigos regulares)
 
@@ -1913,6 +2134,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-torre-dos-ecos-soberano-dos-ecos"></a>
 ### Chefe — Torre dos Ecos: Soberano dos Ecos
 **Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Torre dos Ecos (Região 4) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 52 com barra de vida própria no topo da tela de batalha
 
@@ -1928,6 +2150,7 @@ Soberano dos Ecos, facing left: a tall spectral sovereign wrapped in layered tra
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxix-abismo-de-gelo-espectro-glacial-elemental-de-gelo-abissal-rastejante-gelido-behemoth-de-gelo-e-gelido-oco"></a>
 ### Inimigos XXIX — Abismo de Gelo: Espectro Glacial, Elemental de Gelo Abissal, Rastejante Gélido, Behemoth de Gelo e Gélido Oco
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Abismo de Gelo (Região 5 — Ignares, 5 inimigos regulares)
 
@@ -1947,6 +2170,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-abismo-de-gelo-senhor-do-abismo-glacial"></a>
 ### Chefe — Abismo de Gelo: Senhor do Abismo Glacial
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Abismo de Gelo (Região 5), spawna na profundidade 52 com barra de vida própria no topo da tela de batalha
 
@@ -1962,6 +2186,7 @@ Senhor do Abismo Glacial, facing left: an immense towering lord of glacial ice, 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxx-ruinas-vulcanicas-golem-de-magma-espectro-de-cinzas-morcego-de-brasas-perseguidor-vulcanico-e-cao-de-cinzas"></a>
 ### Inimigos XXX — Ruínas Vulcânicas: Golem de Magma, Espectro de Cinzas, Morcego de Brasas, Perseguidor Vulcânico e Cão de Cinzas
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Vulcânicas (Região 5, 5 inimigos regulares)
 
@@ -1981,6 +2206,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-ruinas-vulcanicas-colosso-infernal"></a>
 ### Chefe — Ruínas Vulcânicas: Colosso Infernal
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Vulcânicas (Região 5), spawna na profundidade 54 com barra de vida própria no topo da tela de batalha
 
@@ -1996,6 +2222,7 @@ Colosso Infernal, facing left: a massive towering colossus of cracked black volc
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxxi-covil-do-dragao-anciao-draguinho-anciao-cultista-draconico-anciao-serpente-escamosa-guardiao-draconico-e-draque-de-brasas"></a>
 ### Inimigos XXXI — Covil do Dragão Ancião: Draguinho Ancião, Cultista Dracônico Ancião, Serpente Escamosa, Guardião Dracônico e Draque de Brasas
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Dragão Ancião (Região 5, fork com Salão dos Titãs, 5 inimigos regulares)
 
@@ -2015,6 +2242,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-covil-do-dragao-anciao-dragao-anciao"></a>
 ### Chefe — Covil do Dragão Ancião: Dragão Ancião
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Dragão Ancião (Região 5), spawna na profundidade 56 com barra de vida própria no topo da tela de batalha
 
@@ -2030,6 +2258,7 @@ Dragão Ancião, facing left: an immense ancient dark-red dragon with huge weath
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxxii-salao-dos-titas-guardiao-titanico-colosso-de-pedra-sentinela-ancestral-golem-runico-e-vigia-titanico"></a>
 ### Inimigos XXXII — Salão dos Titãs: Guardião Titânico, Colosso de Pedra, Sentinela Ancestral, Golem Rúnico e Vigia Titânico
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Salão dos Titãs (Região 5, fork com Covil do Dragão Ancião, 5 inimigos regulares)
 
@@ -2049,6 +2278,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-salao-dos-titas-tita-caido"></a>
 ### Chefe — Salão dos Titãs: Titã Caído
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Salão dos Titãs (Região 5), spawna na profundidade 56 com barra de vida própria no topo da tela de batalha
 
@@ -2064,6 +2294,7 @@ Titã Caído, facing left: a colossal ancient titan of cracked grey stone and ta
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxxiii-necropole-real-espectro-real-guarda-acinzentado-embalsamador-amaldicoado-mumia-real-e-arauto-da-morte"></a>
 ### Inimigos XXXIII — Necrópole Real: Espectro Real, Guarda Acinzentado, Embalsamador Amaldiçoado, Múmia Real e Arauto da Morte
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Real (Região 5, 5 inimigos regulares)
 
@@ -2083,6 +2314,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-necropole-real-necromante-real"></a>
 ### Chefe — Necrópole Real: Necromante Real
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Real (Região 5), spawna na profundidade 58 com barra de vida própria no topo da tela de batalha
 
@@ -2098,6 +2330,7 @@ Necromante Real, facing left: a regal skeletal-faced necromancer draped in tatte
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxxiv-palacio-submerso-cortesao-afogado-guarda-submerso-espectro-das-mares-horror-de-coral-e-acolito-das-profundezas"></a>
 ### Inimigos XXXIV — Palácio Submerso: Cortesão Afogado, Guarda Submerso, Espectro das Marés, Horror de Coral e Acólito das Profundezas
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Palácio Submerso (Região 5, 5 inimigos regulares)
 
@@ -2117,6 +2350,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-palacio-submerso-monarca-afogado"></a>
 ### Chefe — Palácio Submerso: Monarca Afogado
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Palácio Submerso (Região 5), spawna na profundidade 60 com barra de vida própria no topo da tela de batalha
 
@@ -2132,6 +2366,7 @@ Monarca Afogado, facing left: a towering drowned monarch draped in tattered wate
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="inimigos-xxxv-arena-do-campeao-gladiador-campeao-fera-campea-da-arena-duelista-veterano-senhor-de-guerra-da-arena-e-campeao-ensanguentado"></a>
 ### Inimigos XXXV — Arena do Campeão: Gladiador Campeão, Fera Campeã da Arena, Duelista Veterano, Senhor de Guerra da Arena e Campeão Ensanguentado
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Arena do Campeão (Região 5, majoritariamente minibosses, 5 inimigos regulares)
 
@@ -2151,6 +2386,7 @@ Wide image, 5 creatures standing side by side with clear empty gaps between them
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+<a id="chefe-arena-do-campeao-campeao-eterno"></a>
 ### Chefe — Arena do Campeão: Campeão Eterno
 **Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Arena do Campeão (Região 5) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 62 com barra de vida própria no topo da tela de batalha
 
@@ -2168,10 +2404,12 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 
 ---
 
+<a id="cenas"></a>
 ## Cenas
 
 Ilustração completa, preenchendo a tela inteira — sem fundo magenta, não é para recortar.
 
+<a id="cena-do-reino-tela-de-visao-geral-do-reino"></a>
 ### Cena do Reino — Tela de Visão Geral do Reino
 **Tamanho:** 1536×640 px · **Uso:** substitui o desenho procedural do castelo na tela do Reino
 
@@ -2183,6 +2421,7 @@ A wide nighttime kingdom scene viewed from just outside the walls: a fortified s
 This is a complete, self-contained illustration meant to fill the entire canvas edge-to-edge — unlike the sprite sheets above, this one should NOT have a magenta background and should NOT be treated as a cutout; it's a finished scene, not something to key out. Wide canvas, 1536×640 px. No text, no watermark, no UI elements, no frame or border.
 ```
 
+<a id="mapa-de-construcoes-tela-de-reino-construcoes"></a>
 ### Mapa de Construções — Tela de Reino: Construções
 **Tamanho:** 1536×640 px · **Uso:** substitui a lista simples de construções por um mapa clicável (mesmo padrão do Mapa de Masmorras — marcadores por cima da própria arte)
 
@@ -2200,6 +2439,7 @@ Each of the three has a small wooden signpost bearing its Portuguese name near i
 This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Wide canvas, 1536×640 px. No text beyond the small signs described, no watermark, no UI elements, no frame or border.
 ```
 
+<a id="cena-do-ferreiro-tela-do-ferreiro-aberta-pela-forja"></a>
 ### Cena do Ferreiro — Tela do Ferreiro (aberta pela Forja)
 **Tamanho:** 1536×1536 px (quadrado) · **Uso:** banner grande em tela cheia no topo da tela do Ferreiro (aberta ao tocar "Conversar com o Ferreiro" no balão da Forja) — substitui o placeholder de brilho em CSS. Ocupa ~44% da altura da tela do celular, largura total (`object-fit: cover`), então o quadrado garante uma sobra segura pra cortar tanto em celulares mais largos quanto mais altos sem perder o assunto principal. O nome "Ferreiro" e o botão de fechar ficam sobrepostos no canto superior, com um gradiente escuro por trás pra legibilidade — não precisa deixar essa área vazia de propósito.
 
@@ -2213,6 +2453,7 @@ Composition: keep the blacksmith and anvil — the main subject — comfortably 
 This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
 ```
 
+<a id="cena-do-mercador-tela-do-mercador-aberta-pela-construcao-mercador"></a>
 ### Cena do Mercador — Tela do Mercador (aberta pela construção Mercador)
 **Tamanho:** 1536×1536 px (quadrado) · **Uso:** banner grande em tela cheia no topo da tela do Mercador (aberta ao tocar "Conversar com o Mercador" no balão da construção) — substitui o placeholder de gradiente liso em CSS usado hoje. Mesmo tratamento do Ferreiro: ocupa ~44% da altura da tela do celular, largura total (`object-fit: cover`), quadrado garante sobra segura pra cortar em telas mais largas ou mais altas. Nome "Mercador" e botão de fechar ficam sobrepostos no canto superior, com gradiente escuro por trás pra legibilidade.
 
@@ -2226,6 +2467,7 @@ Composition: keep the merchant and counter — the main subject — comfortably 
 This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
 ```
 
+<a id="cena-de-titulo-tela-inicial-logo-menu"></a>
 ### Cena de Título — Tela Inicial (logo + menu)
 **Tamanho:** 1536×1536 px (quadrado) · **Uso:** fundo em tela cheia atrás do logo do jogo, do texto de apresentação e dos botões "Continuar Jornada"/"Nova Jornada" na tela inicial (`TitleScreen.tsx`) — substitui o fundo liso `bg-nightsky` usado hoje. Mesmo tratamento do Ferreiro/Mercador: quadrado garante sobra segura pra cortar (`object-fit: cover`) em telas mais largas ou mais altas. O logo do jogo, o texto e os botões ficam centralizados por cima, então a faixa vertical central da imagem deve ficar visualmente mais calma (menos detalhe, tons mais escuros) pra não brigar com esses elementos — o jogo já aplica um leve gradiente escuro por trás deles, mas a arte não deve depender só disso pra ficar legível.
 
@@ -2239,10 +2481,12 @@ Composition: keep the busy, detailed elements (castle, dungeon mouth, silhouette
 This is a complete, self-contained illustration meant to fill the canvas edge-to-edge — no magenta background, not a cutout. Square canvas, 1536×1536 px. No text, no watermark, no UI elements, no frame or border.
 ```
 
+<a id="mapa-de-masmorras-tela-de-selecao-de-masmorra-7-imagens-uma-por-regiao"></a>
 ### Mapa de Masmorras — Tela de seleção de masmorra (7 imagens, uma por região)
 
 As 7 imagens abaixo empilham verticalmente no jogo formando um único caminho de exploração, com scroll — Região 1 (Valdren) embaixo, Região 7 (Aetherion) no topo, o jogador rola a tela pra cima conforme sobe de nível. Cada prompt já está completo e pronto pra colar, sem precisar combinar com nenhum outro bloco.
 
+<a id="regiao-1-valdren-nivel-1-10"></a>
 ### Região 1 — Valdren (nível 1-10)
 **Tamanho:** 1024×2560 px · **Uso:** primeiro trecho (mais baixo) do Mapa de Masmorras
 
@@ -2256,6 +2500,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
+<a id="regiao-2-umbralia-nivel-11-20"></a>
 ### Região 2 — Umbrália (nível 11-20)
 **Tamanho:** 1024×2560 px · **Uso:** segundo trecho do Mapa de Masmorras
 
@@ -2269,6 +2514,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
+<a id="regiao-3-thurgard-nivel-21-30"></a>
 ### Região 3 — Thurgard (nível 21-30)
 **Tamanho:** 1024×2560 px · **Uso:** terceiro trecho do Mapa de Masmorras
 
@@ -2282,6 +2528,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
+<a id="regiao-4-xilvana-nivel-31-40"></a>
 ### Região 4 — Xilvana (nível 31-40)
 **Tamanho:** 1024×2560 px · **Uso:** quarto trecho do Mapa de Masmorras
 
@@ -2295,6 +2542,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
+<a id="regiao-5-ignares-nivel-41-50"></a>
 ### Região 5 — Ignares (nível 41-50)
 **Tamanho:** 1024×2560 px · **Uso:** quinto trecho do Mapa de Masmorras
 
@@ -2308,6 +2556,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
+<a id="regiao-6-nyxheim-nivel-51-58"></a>
 ### Região 6 — Nyxheim (nível 51-58)
 **Tamanho:** 1024×2560 px · **Uso:** sexto trecho do Mapa de Masmorras
 
@@ -2321,6 +2570,7 @@ Location markers along the path, bottom to top, each a small distinct landmark w
 Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
+<a id="regiao-7-aetherion-nivel-60"></a>
 ### Região 7 — Aetherion (nível 60)
 **Tamanho:** 1024×2560 px · **Uso:** sétimo e último trecho (mais alto) do Mapa de Masmorras
 
@@ -2336,10 +2586,12 @@ This is a complete, self-contained background illustration — no magenta backgr
 
 ---
 
+<a id="fundos-de-batalha"></a>
 ## Fundos de Batalha
 
 Uma imagem por masmorra, substituindo o fundo genérico desenhado por código na tela de combate. Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada — os prompts abaixo cobrem as 5 masmorras restantes. Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
 
+<a id="ruinas-superficiais"></a>
 ### Ruínas Superficiais
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
@@ -2351,6 +2603,7 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
 
+<a id="caverna-dos-goblins"></a>
 ### Caverna dos Goblins
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
@@ -2362,6 +2615,7 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
 
+<a id="floresta-amaldicoada"></a>
 ### Floresta Amaldiçoada
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
@@ -2373,6 +2627,7 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
 
+<a id="covil-dos-dragoes"></a>
 ### Covil dos Dragões
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
@@ -2384,6 +2639,7 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
 
+<a id="necropole-esquecida"></a>
 ### Necrópole Esquecida
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
@@ -2395,6 +2651,7 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
 
+<a id="ruinas-elficas"></a>
 ### Ruínas Élficas
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
@@ -2406,6 +2663,7 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
 
+<a id="arena-de-sangue"></a>
 ### Arena de Sangue
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
