@@ -264,7 +264,7 @@ Depois de rodar: se quiser testar login sem precisar confirmar e-mail toda vez, 
 - **Nas folhas de sprite, cuidado especial:** como os personagens/inimigos ficam bem próximos da cor de fundo, todo prompt de sprite pede explicitamente para **não** usar magenta/rosa/fúcsia em nada do personagem (pele, roupa, armadura, arma, brilho de magia) — só o fundo deve ser magenta. Isso evita que o recorte "coma" pedaços do próprio personagem.
 - **Sobre os slots:** a moldura de equipamento (quadrada) e a de habilidade (circular) pedem exatamente o mesmo material/estilo, só muda o formato — gere as duas na mesma sessão/conversa com a IA se possível, para saírem parecidas. O centro magenta é onde o ícone do jogo aparece por baixo da moldura.
 - **Pixel art, mas nítida:** os personagens e inimigos do jogo são pixel art (desenhados no código), mas a técnica original saía borrada. Por isso os prompts de sprite abaixo pedem pixel art de verdade — pixels nítidos, sem anti-aliasing/borrão, contorno escuro definido e paleta de cores limitada, no estilo de RPGs pixel art modernos (Octopath Traveler, Stardew Valley, Eastward) — em resolução alta o bastante para ficar nítido mesmo ampliado no jogo.
-- **Inimigos sempre virados para a esquerda:** no jogo o personagem do jogador fica à esquerda da tela e o inimigo à direita, olhando um para o outro — os prompts de inimigos pedem que toda criatura seja desenhada de perfil virada para a esquerda, nunca de frente ou para a direita. Os prompts foram simplificados para deixar essa instrução curta e logo na primeira linha (em vez de enterrada num parágrafo longo), e cada criatura da lista carrega seu próprio "(facing left)" — isso ajuda bastante a IA a não errar o lado. Se mesmo assim uma criatura específica sair virada errado dentro de uma folha com várias, o mais eficaz costuma ser gerar só aquela criatura sozinha (prompt de 1 personagem, mesmo texto, só trocando "N creatures" por "one creature") em vez de repetir a folha inteira — IAs de imagem erram mais direção quando têm que controlar vários personagens ao mesmo tempo numa imagem só.
+- **Inimigos sempre virados para a esquerda:** no jogo o personagem do jogador fica à esquerda da tela e o inimigo à direita, olhando um para o outro — os prompts de inimigos pedem que toda criatura seja desenhada de perfil virada para a esquerda, nunca de frente ou para a direita. A instrução na primeira linha de cada prompt (2026: reforçada) não pede só "vire pra esquerda" — descreve anatomicamente o que isso significa (cabeça/rosto/boca/patas da frente apontando pro lado esquerdo do quadro, costas/rabo/patas de trás pro lado direito) e avisa que uma criatura virada errado inviabiliza a folha inteira — IAs de imagem seguem uma instrução concreta e "com consequência" bem melhor do que uma abstrata. Cada criatura da lista também carrega seu próprio "(facing left)" reforçando individualmente. Ainda assim, se uma criatura específica sair virada errado dentro de uma folha com várias, duas saídas práticas, dos mais rápidos aos mais confiáveis: (1) espelhar horizontalmente só aquela criatura depois de pronta em qualquer editor de imagem (Preview, Photos, GIMP, etc. — "Flip Horizontal") — sprite de perfil sem texto escrito não perde nada nesse espelhamento, é a forma mais rápida de resolver; (2) se preferir gerar de novo, peça só aquela criatura sozinha (prompt de 1 personagem, mesmo texto, só trocando "N creatures" por "one creature") em vez de repetir a folha inteira — IAs de imagem erram mais direção quando têm que controlar vários personagens ao mesmo tempo numa imagem só.
 - **Sobre a moldura principal:** os *cantos* têm entalhes ornamentados únicos, mas as *bordas retas* entre os cantos são um padrão de madeira uniforme e repetitivo — de propósito, para permitir esticar a moldura em caixas de tamanhos diferentes sem distorcer os desenhos ornamentados.
 - **Sobre o Mapa de Masmorras:** são 7 imagens (uma por região), empilhadas verticalmente no jogo formando um caminho único que sobe da região Valdren até Aetherion — role a tela pra cima pra avançar. Cada uma já reserva 2-3 marcadores "???" (nevoeiro/silhueta, sem nome legível) espalhados nas bordas, reservados pra masmorras futuras além das 52 já planejadas — assim dá pra crescer o conteúdo sem regerar a arte inteira.
 - **Sobre os Fundos de Batalha:** cada masmorra tem seu próprio cenário de combate, combinando com o tema dela no Mapa de Masmorras. O personagem fica parado a ~27% da largura e o inimigo a ~73%, os dois em cima de uma faixa de chão perto da base da imagem (~15% da altura) — por isso todo prompt pede uma composição com o centro-baixo livre de objetos grandes, pra não cobrir os sprites.
@@ -1373,7 +1373,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas behind and aro
 **Tamanho:** 1536×768 px · **Uso:** inimigos de profundidade baixa/média (Ruínas, Cavernas)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1392,7 +1392,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** inimigos de profundidade alta (Covil dos Dragões, Torre Amaldiçoada)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1410,7 +1410,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster da masmorra Ruínas Superficiais (o Esqueleto já integrado continua fazendo parte do roster, sem prompt novo)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1429,7 +1429,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Superficiais, spawna na profundidade 7 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1445,7 +1445,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster da masmorra Caverna dos Goblins (o Goblin comum já integrado continua fazendo parte do roster, sem prompt novo)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1464,7 +1464,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Caverna dos Goblins, spawna na profundidade 10 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1487,7 +1487,7 @@ As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Ama
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Floresta Amaldiçoada (5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1507,7 +1507,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Floresta Amaldiçoada, spawna na profundidade 27 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1523,7 +1523,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil dos Dragões (5 inimigos regulares — o chefe é o Dragão Jovem já coberto no prompt "Inimigos II", sem prompt novo)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1543,7 +1543,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Esquecida (5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1563,7 +1563,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Esquecida, spawna na profundidade 29 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1579,7 +1579,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Élficas (5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1599,7 +1599,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Élficas, spawna na profundidade 31 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1615,7 +1615,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Arena de Sangue (5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1635,7 +1635,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Arena de Sangue, spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1651,7 +1651,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza Orc (Região 3 — Thurgard, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1671,7 +1671,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza Orc (Região 3), spawna na profundidade 32 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1687,7 +1687,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Labirinto de Gelo (Região 3, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1707,7 +1707,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Labirinto de Gelo (Região 3), spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1723,7 +1723,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Templo Afundado (Região 3, fork com Cavernas de Cristal, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1743,7 +1743,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Templo Afundado (Região 3), spawna na profundidade 36 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1759,7 +1759,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cavernas de Cristal (Região 3, fork com Templo Afundado, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1779,7 +1779,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Cavernas de Cristal (Região 3), spawna na profundidade 36 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1795,7 +1795,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Lobo Alfa (Região 3, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1815,7 +1815,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Lobo Alfa (Região 3), spawna na profundidade 38 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1831,7 +1831,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Catacumbas Reais (Região 3, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1851,7 +1851,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Catacumbas Reais (Região 3), spawna na profundidade 40 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1867,7 +1867,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Poço sem Fundo (Região 3, majoritariamente minibosses, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1887,7 +1887,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Poço sem Fundo (Região 3) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 42 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1903,7 +1903,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil da Aranha-Rainha (Região 4 — Xilvana, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1923,7 +1923,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil da Aranha-Rainha (Região 4), spawna na profundidade 42 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1939,7 +1939,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cidadela em Ruínas (Região 4, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1959,7 +1959,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Cidadela em Ruínas (Região 4), spawna na profundidade 44 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1975,7 +1975,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Santuário Profanado (Região 4, fork com Mina de Obsidiana, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -1995,7 +1995,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Santuário Profanado (Região 4), spawna na profundidade 46 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2011,7 +2011,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Mina de Obsidiana (Região 4, fork com Santuário Profanado, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2031,7 +2031,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Mina de Obsidiana (Região 4), spawna na profundidade 46 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2047,7 +2047,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Selva Esquecida (Região 4, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2067,7 +2067,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Selva Esquecida (Região 4), spawna na profundidade 48 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2083,7 +2083,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza dos Ossos (Região 4, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2103,7 +2103,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza dos Ossos (Região 4), spawna na profundidade 50 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2119,7 +2119,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Torre dos Ecos (Região 4, majoritariamente minibosses, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2139,7 +2139,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Torre dos Ecos (Região 4) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 52 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2155,7 +2155,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Abismo de Gelo (Região 5 — Ignares, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2175,7 +2175,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Abismo de Gelo (Região 5), spawna na profundidade 52 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2191,7 +2191,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Vulcânicas (Região 5, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2211,7 +2211,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Vulcânicas (Região 5), spawna na profundidade 54 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2227,7 +2227,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Dragão Ancião (Região 5, fork com Salão dos Titãs, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2247,7 +2247,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Dragão Ancião (Região 5), spawna na profundidade 56 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2263,7 +2263,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Salão dos Titãs (Região 5, fork com Covil do Dragão Ancião, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2283,7 +2283,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Salão dos Titãs (Região 5), spawna na profundidade 56 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2299,7 +2299,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Real (Região 5, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2319,7 +2319,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Real (Região 5), spawna na profundidade 58 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2335,7 +2335,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Palácio Submerso (Região 5, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2355,7 +2355,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** boss da masmorra Palácio Submerso (Região 5), spawna na profundidade 60 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2371,7 +2371,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Arena do Campeão (Região 5, majoritariamente minibosses, 5 inimigos regulares)
 
 ```
-IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
@@ -2391,7 +2391,7 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 **Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Arena do Campeão (Região 5) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 62 com barra de vida própria no topo da tela de batalha
 
 ```
-IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
