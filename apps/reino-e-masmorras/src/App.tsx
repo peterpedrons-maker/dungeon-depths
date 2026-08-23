@@ -254,7 +254,17 @@ export default function App() {
   // player never has to open a hero just to delete it.
   function handleDeleteSlot(slot: number) {
     clearCharacter(slot);
-    if (session) deleteCloudCharacter(session.user.id, slot);
+    if (session) {
+      deleteCloudCharacter(session.user.id, slot, slots[slot]?.name).then(() => {
+        // The already-loaded `ranking` array in state would otherwise keep
+        // showing this character until the next unrelated refetch (e.g. a
+        // different run ending) or a full page reload.
+        fetchGlobalRanking().then(({ ranking, error }) => {
+          setRanking(ranking);
+          if (error) setRankingError(error);
+        });
+      });
+    }
     setSlots((prev) => prev.map((c, i) => (i === slot ? null : c)));
   }
 

@@ -151,6 +151,14 @@ drop policy if exists "ranking_update_own" on public.ranking;
 create policy "ranking_update_own" on public.ranking
   for update using (auth.uid() = user_id);
 
+-- Without this, deleteCloudCharacter's `delete from ranking` (lib/cloudSave.ts)
+-- silently matched zero rows under RLS — a deleted character's leaderboard
+-- row had no policy allowing it to ever be removed, so it kept showing up
+-- on the Ranking screen forever.
+drop policy if exists "ranking_delete_own" on public.ranking;
+create policy "ranking_delete_own" on public.ranking
+  for delete using (auth.uid() = user_id);
+
 -- One row per account (not per character slot) — prestígio and cosméticos
 -- da Loja de Prestígio survive character deletion, including Modo Ferro
 -- permadeath, and are shared across every slot on the account, same as the
