@@ -11,11 +11,17 @@ import { EquipmentItem, SecondaryStatType } from '../types/game';
 // value) reads the same number and the formula can be retuned later
 // without needing to "unwind" anything already saved.
 export const MAX_ENHANCE_LEVEL = 10;
-// Cut from 10%/level (+10 = +100%, doubling the item's primary stat) to
-// 5%/level (+10 = +50%) — the Forja is meant to be a long-term optimization
-// on top of gear you already found, not a second source of Tier-scale
-// power growth that happens to double whatever you push it on.
-const PCT_PER_LEVEL = 0.05;
+// Cumulative bonus multiplier by enhance level — per-level increments grow
+// instead of staying flat (was a flat 5%/level, so +10 = +50% no matter
+// which levels it came from). A late push (+9->+10, +8%) now adds
+// noticeably more raw power than an early one (+0->+1, +3%), matching how
+// much harder/rarer a late success actually is (see SUCCESS_CHANCE_BASE
+// and enhanceCost below) — the early levels are the "easy, cheap" ones, so
+// they shouldn't hand out equally aggressive power as the late "expensive,
+// near-lottery" ones. Total at +10 (54%) stays close to the old flat curve
+// (50%) on purpose — this reshapes WHERE the power comes from, not how
+// much overall.
+const ENHANCE_PCT_BY_LEVEL = [0, 0.03, 0.06, 0.10, 0.14, 0.19, 0.24, 0.30, 0.37, 0.45, 0.54];
 
 // Enhancement itself is available from the very first visit to the
 // Ferreiro — no Forja level required. The Forja building's own level used
@@ -27,11 +33,13 @@ const PCT_PER_LEVEL = 0.05;
 const FORJA_MAX_LEVEL = 5;
 
 // Chance to succeed when attempting to push FROM this enhanceLevel to the
-// next one — the first five levels are a formality, +5 and +6 are real but
-// still-favorable coinflips-and-better, and from +7 on the odds fall off a
-// cliff so a late attempt is a genuine gamble, down to a near-lottery 0.5%
-// shot at the very last step. Index = current enhanceLevel (0-9).
-const SUCCESS_CHANCE_BASE = [1.00, 1.00, 1.00, 1.00, 1.00, 0.50, 0.20, 0.08, 0.02, 0.005];
+// next one — only the first two levels are still a pure formality; +3/+4/+5
+// already ask for a real (if still favorable) roll instead of all five
+// being free, +5 and +6 are real but still-favorable coinflips-and-better,
+// and from +7 on the odds fall off a cliff so a late attempt is a genuine
+// gamble, down to a near-lottery 0.5% shot at the very last step. Index =
+// current enhanceLevel (0-9).
+const SUCCESS_CHANCE_BASE = [1.00, 1.00, 0.80, 0.75, 0.65, 0.50, 0.20, 0.08, 0.02, 0.005];
 
 // The Forja's passive bonus: up to double the base chance at max Forja
 // level (5), scaled linearly in between. Doubling only matters where the
@@ -65,7 +73,7 @@ const PRIMARY_KEYS = ['dmgBonus', 'defBonus', 'hpBonus', 'matkBonus', 'mdefBonus
 // read instead of the raw stored fields.
 export function enhancedItem(item: EquipmentItem): EquipmentItem {
   if (item.enhanceLevel <= 0) return item;
-  const mult = 1 + PCT_PER_LEVEL * item.enhanceLevel;
+  const mult = 1 + (ENHANCE_PCT_BY_LEVEL[item.enhanceLevel] ?? 0);
   const scaled = { ...item };
   for (const key of PRIMARY_KEYS) {
     if (item[key] === 0) continue;

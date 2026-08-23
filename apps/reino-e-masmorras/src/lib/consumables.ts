@@ -17,8 +17,13 @@ export const POTION_THRESHOLD_OPTIONS = [0.2, 0.3, 0.4, 0.5];
 // more than double the old flat 19 at tier 1, then keeps climbing (milder
 // growth than gear's own 1.6/tier, since a potion is a repeat consumable
 // purchase, not a one-time upgrade).
-const POTION_TIER_BASE = 40;
-const POTION_TIER_GROWTH = 1.35;
+// Take two, per direct user feedback: tripled again (40 -> 120) and the
+// growth steepened (1.35 -> 1.5) — a repeat consumable purchase needing to
+// stay this relevant at every tier, on top of gold income being cut hard
+// again (see GOLD_YIELD_MULT in lib/enemies.ts), is exactly the sustain
+// pressure the Forja/Mercador economy is meant to create.
+const POTION_TIER_BASE = 120;
+const POTION_TIER_GROWTH = 1.5;
 export function potionBasePrice(tier: number): number {
   return Math.round(POTION_TIER_BASE * Math.pow(POTION_TIER_GROWTH, Math.max(1, tier) - 1));
 }

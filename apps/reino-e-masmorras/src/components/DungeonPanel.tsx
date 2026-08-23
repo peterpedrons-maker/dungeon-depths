@@ -1859,11 +1859,6 @@ export function DungeonPanel({
             Pausado
           </div>
         )}
-        {dungeon.special && !dungeon.isNightmare && (
-          <div className="absolute top-2 left-2 bg-black/70 text-gold text-xs font-bold px-2 py-1 rounded">
-            ✦ Masmorra Especial
-          </div>
-        )}
         {dungeon.isNightmare && (
           <div className="absolute top-2 left-2 bg-black/70 text-crimson text-xs font-bold px-2 py-1 rounded">
             ☠ Modo Pesadelo

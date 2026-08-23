@@ -154,18 +154,25 @@ function LostAttributesSection({ rows }: { rows: StatCompareRow[] }) {
   );
 }
 
-// Full two-column compare block (Equipado vs. Novo) plus the lost-attributes
-// callout beneath it — the one thing both CharacterOverview's inventory
-// item view and the Mercador's shop item view need, so a candidate item
-// always reads against whatever's presently worn in that slot the same way
-// no matter where the player is looking at it from.
-export function ItemCompareGrid({ equipped, candidate }: { equipped: EquipmentItem | null; candidate: EquipmentItem }) {
+// Full two-column compare block (Equipado vs. Novo by default) plus the
+// lost-attributes callout beneath it — the one thing CharacterOverview's
+// inventory item view, the Mercador's shop item view, and the Ferreiro's
+// pre/post-enhance reveal all need, so a candidate item always reads
+// against whatever it's being compared to the same way no matter where the
+// player is looking at it from. `labels` lets the Ferreiro relabel the
+// columns "Antes"/"Depois" for an enhance reveal instead of the
+// equip-a-new-item framing the default wording assumes.
+export function ItemCompareGrid({ equipped, candidate, labels }: {
+  equipped: EquipmentItem | null; candidate: EquipmentItem; labels?: { left: string; right: string };
+}) {
   const rows = compareItemStatRows(candidate, equipped);
+  const left = labels?.left ?? 'Equipado';
+  const right = labels?.right ?? 'Novo';
   return (
     <>
       <div className="grid grid-cols-2 gap-3 w-full items-start">
-        <ItemCompareColumn item={equipped} label="Equipado" rows={rows} side="equipped" />
-        <ItemCompareColumn item={candidate} label="Novo" rows={rows} side="new" />
+        <ItemCompareColumn item={equipped} label={left} rows={rows} side="equipped" />
+        <ItemCompareColumn item={candidate} label={right} rows={rows} side="new" />
       </div>
       <LostAttributesSection rows={rows} />
     </>

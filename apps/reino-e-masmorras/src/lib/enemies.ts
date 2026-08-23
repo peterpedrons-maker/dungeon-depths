@@ -515,10 +515,15 @@ const BOSS_DEF_MULT = 1.30;
 // gold was accumulating fast enough that a player could stack up thousands
 // in a handful of runs; this doesn't touch xpReward (a separate ask — see
 // the XP section of the rebalance notes) or any dungeon's own goldMult
-// (Cripta's 2x still multiplies on top of this, same as before). Halved
-// again per a later user request (0.625 -> 0.3125) after poções and other
-// costs climbed — gold per kill needed to come down to match.
-const GOLD_YIELD_MULT = 0.3125;
+// (Cripta's own bonus was separately cut way down — see its goldMult in
+// lib/dungeons.ts). Halved again per a later user request (0.625 -> 0.3125)
+// after poções and other costs climbed — gold per kill needed to come down
+// to match. Cut again, harder this time ("diminua em 300%" — read as "to
+// roughly a third" of the current value, not a literal >100% reduction):
+// 0.3125 -> 0.1. Gold is meant to be genuinely scarce now, something a
+// player has to grind several runs for, not a byproduct of just playing —
+// Mercador/potion prices were raised to match in this same pass.
+const GOLD_YIELD_MULT = 0.1;
 
 // depth here is now depth WITHIN the current dungeon (0 at its own
 // startDepth — see spawnRegularOrBoss's growthDepth), not the game's
