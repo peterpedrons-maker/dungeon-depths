@@ -42,9 +42,47 @@ export const REGIONS: RegionDef[] = [
       { dungeonId: 'arena', xPct: 42.0, yPct: 14.0 },
     ],
   },
-  { region: 3, name: 'Thurgard', image: null, markers: [] },
-  { region: 4, name: 'Xilvana', image: null, markers: [] },
-  { region: 5, name: 'Ignares', image: null, markers: [] },
+  // Regiões 3-5: art ainda não gerada (image: null — ver KIT-DE-ARTE.md para
+  // os prompts), então estas coordenadas são placeholders evenly-spaced (não
+  // medidas de uma imagem real como as de cima) só para o mapa já funcionar
+  // com os 7 marcadores de cada região; re-medir quando a arte entrar, igual
+  // Região 1/2 acima.
+  {
+    region: 3, name: 'Thurgard', image: null,
+    markers: [
+      { dungeonId: 'fortalezaOrc', xPct: 52, yPct: 82 },
+      { dungeonId: 'labirintoGelo', xPct: 55, yPct: 69 },
+      { dungeonId: 'temploAfundado', xPct: 42, yPct: 56 },
+      { dungeonId: 'cavernasCristal', xPct: 63, yPct: 56 },
+      { dungeonId: 'covilLoboAlfa', xPct: 53, yPct: 43 },
+      { dungeonId: 'catacumbasReais', xPct: 56, yPct: 30 },
+      { dungeonId: 'pocoSemFundo', xPct: 50, yPct: 15 },
+    ],
+  },
+  {
+    region: 4, name: 'Xilvana', image: null,
+    markers: [
+      { dungeonId: 'covilAranhaRainha', xPct: 52, yPct: 82 },
+      { dungeonId: 'cidadelaRuinas', xPct: 55, yPct: 69 },
+      { dungeonId: 'santuarioProfanado', xPct: 42, yPct: 56 },
+      { dungeonId: 'minaObsidiana', xPct: 63, yPct: 56 },
+      { dungeonId: 'selvaEsquecida', xPct: 53, yPct: 43 },
+      { dungeonId: 'fortalezaOssos', xPct: 56, yPct: 30 },
+      { dungeonId: 'torreDosEcos', xPct: 50, yPct: 15 },
+    ],
+  },
+  {
+    region: 5, name: 'Ignares', image: null,
+    markers: [
+      { dungeonId: 'abismoGelo', xPct: 52, yPct: 82 },
+      { dungeonId: 'ruinasVulcanicas', xPct: 55, yPct: 69 },
+      { dungeonId: 'covilDragaoAnciao', xPct: 42, yPct: 56 },
+      { dungeonId: 'salaoTitas', xPct: 63, yPct: 56 },
+      { dungeonId: 'necropoleReal', xPct: 53, yPct: 43 },
+      { dungeonId: 'palacioSubmerso', xPct: 56, yPct: 30 },
+      { dungeonId: 'arenaCampeao', xPct: 50, yPct: 15 },
+    ],
+  },
   { region: 6, name: 'Nyxheim', image: null, markers: [] },
   { region: 7, name: 'Aetherion', image: null, markers: [] },
 ];

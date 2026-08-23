@@ -299,7 +299,49 @@ export type EnemyShape =
   // Região 2 — Arena de Sangue
   | 'cursedGladiator' | 'arenaBeast' | 'maskedExecutioner' | 'beastTamer' | 'fallenChampion' | 'grandChampion'
   // Alvos de Caçada (lib/hunts.ts) — superchefes opcionais e reaproveitáveis, bem mais fortes que o chefe normal do mesmo nível
-  | 'boneTyrant' | 'swampLeviathan' | 'infernalWyrm';
+  | 'boneTyrant' | 'swampLeviathan' | 'infernalWyrm'
+  // Região 3 — Fortaleza Orc
+  | 'orcWarrior' | 'orcArcher' | 'orcShaman' | 'orcBerserker' | 'orcStandardBearer' | 'orcWarchief'
+  // Região 3 — Labirinto de Gelo
+  | 'iceElemental' | 'frostWolf' | 'glacialBat' | 'iceWraith' | 'frozenSentinel' | 'iceMonarch'
+  // Região 3 — Templo Afundado (fork)
+  | 'drownedAcolyte' | 'frozenPriest' | 'lakeWraith' | 'submergedGuardian' | 'iceEel' | 'sunkenHighPriest'
+  // Região 3 — Cavernas de Cristal (fork)
+  | 'crystalBat' | 'crystalSpider' | 'prismGolem' | 'crystalWisp' | 'glimmeringStalker' | 'crystalSovereign'
+  // Região 3 — Covil do Lobo Alfa
+  | 'alphaWolfPup' | 'direWolf' | 'snowStalker' | 'packHunter' | 'frostFangWolf' | 'alphaDireWolf'
+  // Região 3 — Catacumbas Reais
+  | 'royalSkeleton' | 'cryptSentinel' | 'boneNoble' | 'spectralChamberlain' | 'entombedKnight' | 'royalLich'
+  // Região 3 — Poço sem Fundo (especial)
+  | 'wellCrawler' | 'voidTendril' | 'drowningWraith' | 'abyssalStalker' | 'hollowDweller' | 'pitDweller'
+  // Região 4 — Covil da Aranha-Rainha
+  | 'jungleSpider' | 'silkStalker' | 'spiderBrood' | 'webWeaverJungle' | 'venomousBroodling' | 'spiderQueen'
+  // Região 4 — Cidadela em Ruínas
+  | 'ruinedSentinel' | 'vineWarrior' | 'crumblingGolem' | 'junglePhantom' | 'overgrownGuardian' | 'citadelGuardian'
+  // Região 4 — Santuário Profanado (fork)
+  | 'defiledPriest' | 'profaneIdol' | 'corruptedAcolyte' | 'hexedStatue' | 'ritualCultist' | 'profaneHighPriest'
+  // Região 4 — Mina de Obsidiana (fork)
+  | 'obsidianGolem' | 'magmaBat' | 'obsidianMiner' | 'emberWraith' | 'obsidianBeetle' | 'obsidianColossus'
+  // Região 4 — Selva Esquecida
+  | 'forgottenGuardian' | 'junglePredator' | 'ancientVine' | 'feralJaguar' | 'sporeling' | 'forgottenColossus'
+  // Região 4 — Fortaleza dos Ossos
+  | 'boneSoldier' | 'boneArcher' | 'marrowGolem' | 'boneCatapultBeast' | 'ossuaryWraith' | 'boneWarlord'
+  // Região 4 — Torre dos Ecos (especial)
+  | 'echoWraith' | 'resonantSpecter' | 'mirroredHorror' | 'echoSentinel' | 'hollowChant' | 'echoSovereign'
+  // Região 5 — Abismo de Gelo
+  | 'glacialWraith' | 'abyssalIceElemental' | 'frostcrawler' | 'iceBehemoth' | 'hollowFrost' | 'glacialAbyssLord'
+  // Região 5 — Ruínas Vulcânicas
+  | 'magmaGolem' | 'ashWraith' | 'emberBat' | 'volcanicStalker' | 'cinderHound' | 'infernoColossus'
+  // Região 5 — Covil do Dragão Ancião (fork)
+  | 'ancientDrakeling' | 'dragonCultistElder' | 'scaleWyrmling' | 'drakeGuardian' | 'emberDrake' | 'elderDragon'
+  // Região 5 — Salão dos Titãs (fork)
+  | 'titanGuardian' | 'stoneColossus' | 'ancientSentinel' | 'runicGolem' | 'titanWarden' | 'fallenTitan'
+  // Região 5 — Necrópole Real
+  | 'royalWraith' | 'ashenGuard' | 'cursedEmbalmer' | 'royalMummy' | 'deathHerald' | 'royalNecromancer'
+  // Região 5 — Palácio Submerso
+  | 'drownedCourtier' | 'submergedGuard' | 'tidalWraith' | 'coralHorror' | 'deepOneAcolyte' | 'drownedMonarch'
+  // Região 5 — Arena do Campeão (especial)
+  | 'championGladiator' | 'arenaChampionBeast' | 'veteranDuelist' | 'arenaWarlord' | 'bloodiedChampion' | 'eternalChampion';
 
 // A signature debuff each enemy shape has a chance to land alongside its
 // normal attack each round — gives every enemy type a distinct combat feel

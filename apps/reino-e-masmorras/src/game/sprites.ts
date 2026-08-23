@@ -117,6 +117,51 @@ const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
   // Alvos de Caçada (lib/hunts.ts) — maiores ainda, para reforçar visualmente
   // que são o desafio mais duro disponível.
   boneTyrant: 190, swampLeviathan: 196, infernalWyrm: 184,
+
+  // Região 3 — Fortaleza Orc
+  orcWarrior: 122, orcArcher: 118, orcShaman: 116, orcBerserker: 124, orcStandardBearer: 128, orcWarchief: 176,
+  // Região 3 — Labirinto de Gelo
+  iceElemental: 128, frostWolf: 100, glacialBat: 84, iceWraith: 120, frozenSentinel: 148, iceMonarch: 182,
+  // Região 3 — Templo Afundado
+  drownedAcolyte: 118, frozenPriest: 120, lakeWraith: 116, submergedGuardian: 150, iceEel: 96, sunkenHighPriest: 184,
+  // Região 3 — Cavernas de Cristal
+  crystalBat: 84, crystalSpider: 118, prismGolem: 150, crystalWisp: 82, glimmeringStalker: 122, crystalSovereign: 184,
+  // Região 3 — Covil do Lobo Alfa
+  alphaWolfPup: 92, direWolf: 108, snowStalker: 104, packHunter: 106, frostFangWolf: 112, alphaDireWolf: 190,
+  // Região 3 — Catacumbas Reais
+  royalSkeleton: 130, cryptSentinel: 150, boneNoble: 126, spectralChamberlain: 118, entombedKnight: 152, royalLich: 186,
+  // Região 3 — Poço sem Fundo (especial)
+  wellCrawler: 120, voidTendril: 122, drowningWraith: 118, abyssalStalker: 126, hollowDweller: 128, pitDweller: 200,
+
+  // Região 4 — Covil da Aranha-Rainha
+  jungleSpider: 118, silkStalker: 122, spiderBrood: 90, webWeaverJungle: 134, venomousBroodling: 100, spiderQueen: 192,
+  // Região 4 — Cidadela em Ruínas
+  ruinedSentinel: 150, vineWarrior: 126, crumblingGolem: 152, junglePhantom: 122, overgrownGuardian: 155, citadelGuardian: 194,
+  // Região 4 — Santuário Profanado
+  defiledPriest: 122, profaneIdol: 148, corruptedAcolyte: 124, hexedStatue: 150, ritualCultist: 120, profaneHighPriest: 196,
+  // Região 4 — Mina de Obsidiana
+  obsidianGolem: 152, magmaBat: 86, obsidianMiner: 122, emberWraith: 120, obsidianBeetle: 110, obsidianColossus: 198,
+  // Região 4 — Selva Esquecida
+  forgottenGuardian: 152, junglePredator: 112, ancientVine: 118, feralJaguar: 108, sporeling: 96, forgottenColossus: 196,
+  // Região 4 — Fortaleza dos Ossos
+  boneSoldier: 128, boneArcher: 124, marrowGolem: 154, boneCatapultBeast: 140, ossuaryWraith: 122, boneWarlord: 198,
+  // Região 4 — Torre dos Ecos (especial)
+  echoWraith: 124, resonantSpecter: 122, mirroredHorror: 130, echoSentinel: 150, hollowChant: 120, echoSovereign: 202,
+
+  // Região 5 — Abismo de Gelo
+  glacialWraith: 126, abyssalIceElemental: 132, frostcrawler: 120, iceBehemoth: 158, hollowFrost: 118, glacialAbyssLord: 206,
+  // Região 5 — Ruínas Vulcânicas
+  magmaGolem: 154, ashWraith: 124, emberBat: 88, volcanicStalker: 122, cinderHound: 110, infernoColossus: 208,
+  // Região 5 — Covil do Dragão Ancião
+  ancientDrakeling: 118, dragonCultistElder: 122, scaleWyrmling: 128, drakeGuardian: 148, emberDrake: 126, elderDragon: 210,
+  // Região 5 — Salão dos Titãs
+  titanGuardian: 156, stoneColossus: 160, ancientSentinel: 132, runicGolem: 150, titanWarden: 154, fallenTitan: 210,
+  // Região 5 — Necrópole Real
+  royalWraith: 126, ashenGuard: 150, cursedEmbalmer: 122, royalMummy: 128, deathHerald: 130, royalNecromancer: 208,
+  // Região 5 — Palácio Submerso
+  drownedCourtier: 122, submergedGuard: 150, tidalWraith: 124, coralHorror: 116, deepOneAcolyte: 120, drownedMonarch: 208,
+  // Região 5 — Arena do Campeão (especial)
+  championGladiator: 128, arenaChampionBeast: 148, veteranDuelist: 126, arenaWarlord: 130, bloodiedChampion: 128, eternalChampion: 212,
 };
 
 function loadImage(url: string, displayH: number): Sprite {
@@ -179,6 +224,51 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
   // Alvos de Caçada (lib/hunts.ts) — placeholder no shape temático mais
   // próximo (mesmo padrão acima) até ganharem arte própria.
   boneTyrant: esqueletoUrl, swampLeviathan: trollUrl, infernalWyrm: dragaoUrl,
+
+  // Região 3 — Fortaleza Orc (placeholder: goblin pros orcs rasos, goblin xamã/grash reaproveitados)
+  orcWarrior: goblinUrl, orcArcher: goblinUrl, orcShaman: goblinShamanUrl, orcBerserker: goblinUrl, orcStandardBearer: goblinUrl, orcWarchief: grashUrl,
+  // Região 3 — Labirinto de Gelo (placeholder: aberração pros elementais/espectros, lobo pro lobo, morcego das ruínas pro morcego)
+  iceElemental: aberracaoUrl, frostWolf: loboUrl, glacialBat: ruinBatUrl, iceWraith: aberracaoUrl, frozenSentinel: stoneGuardianUrl, iceMonarch: trollUrl,
+  // Região 3 — Templo Afundado (placeholder: bandido pros humanoides, aberração pro espectro, guardião de pedra, limo pra enguia)
+  drownedAcolyte: ruinBanditUrl, frozenPriest: ruinBanditUrl, lakeWraith: aberracaoUrl, submergedGuardian: stoneGuardianUrl, iceEel: acidSlimeUrl, sunkenHighPriest: trollUrl,
+  // Região 3 — Cavernas de Cristal (placeholder: aranha caçadora pras aranhas/rastreador, morcego das ruínas pro morcego, vagalume amaldiçoado pro vagalume, guardião de pedra pro golem)
+  crystalBat: ruinBatUrl, crystalSpider: huntingSpiderUrl, prismGolem: stoneGuardianUrl, crystalWisp: cursedWispUrl, glimmeringStalker: huntingSpiderUrl, crystalSovereign: trollUrl,
+  // Região 3 — Covil do Lobo Alfa (placeholder: lobo pra toda a alcateia)
+  alphaWolfPup: loboUrl, direWolf: loboUrl, snowStalker: loboUrl, packHunter: loboUrl, frostFangWolf: loboUrl, alphaDireWolf: loboUrl,
+  // Região 3 — Catacumbas Reais (placeholder: esqueleto/rei ossos pros mortos-vivos, aberração pro camareiro espectral)
+  royalSkeleton: esqueletoUrl, cryptSentinel: boneKingUrl, boneNoble: esqueletoUrl, spectralChamberlain: aberracaoUrl, entombedKnight: boneKingUrl, royalLich: boneKingUrl,
+  // Região 3 — Poço sem Fundo (especial, placeholder: aberração pros horrores do vazio, aranha caçadora pro perseguidor, troll pro chefe final)
+  wellCrawler: aberracaoUrl, voidTendril: aberracaoUrl, drowningWraith: aberracaoUrl, abyssalStalker: huntingSpiderUrl, hollowDweller: aberracaoUrl, pitDweller: trollUrl,
+
+  // Região 4 — Covil da Aranha-Rainha (placeholder: reaproveita o tema aracnídeo já existente)
+  jungleSpider: huntingSpiderUrl, silkStalker: huntingSpiderUrl, spiderBrood: spiderlingSwarmUrl, webWeaverJungle: darkWeaverUrl, venomousBroodling: venomSpiderUrl, spiderQueen: blackMatriarchUrl,
+  // Região 4 — Cidadela em Ruínas (placeholder: guardião de pedra pros golens/sentinelas, bandido pro guerreiro, aberração pro fantasma, troll pro guardião coberto/chefe)
+  ruinedSentinel: stoneGuardianUrl, vineWarrior: ruinBanditUrl, crumblingGolem: stoneGuardianUrl, junglePhantom: aberracaoUrl, overgrownGuardian: trollUrl, citadelGuardian: trollUrl,
+  // Região 4 — Santuário Profanado (placeholder: bandido pros humanos, guardião de pedra pros ídolos/estátuas, troll pro chefe)
+  defiledPriest: ruinBanditUrl, profaneIdol: stoneGuardianUrl, corruptedAcolyte: ruinBanditUrl, hexedStatue: stoneGuardianUrl, ritualCultist: ruinBanditUrl, profaneHighPriest: trollUrl,
+  // Região 4 — Mina de Obsidiana (placeholder: guardião de pedra pro golem, morcego das ruínas pro morcego, coveiro amaldiçoado pro mineiro, aberração pro espectro, limo pro besouro, troll pro chefe)
+  obsidianGolem: stoneGuardianUrl, magmaBat: ruinBatUrl, obsidianMiner: cursedMinerUrl, emberWraith: aberracaoUrl, obsidianBeetle: acidSlimeUrl, obsidianColossus: trollUrl,
+  // Região 4 — Selva Esquecida (placeholder: guardião de pedra pro guardião, lobo pro predador/jaguar, limo pra vinha/esporídeo, troll pro chefe)
+  forgottenGuardian: stoneGuardianUrl, junglePredator: loboUrl, ancientVine: acidSlimeUrl, feralJaguar: loboUrl, sporeling: acidSlimeUrl, forgottenColossus: trollUrl,
+  // Região 4 — Fortaleza dos Ossos (placeholder: esqueleto/rei ossos pros mortos-vivos, troll pra fera catapulta, aberração pro espectro)
+  boneSoldier: esqueletoUrl, boneArcher: esqueletoUrl, marrowGolem: boneKingUrl, boneCatapultBeast: trollUrl, ossuaryWraith: aberracaoUrl, boneWarlord: boneKingUrl,
+  // Região 4 — Torre dos Ecos (especial, placeholder: aberração pros ecos/horrores, guardião de pedra pra sentinela, troll pro chefe final)
+  echoWraith: aberracaoUrl, resonantSpecter: aberracaoUrl, mirroredHorror: aberracaoUrl, echoSentinel: stoneGuardianUrl, hollowChant: aberracaoUrl, echoSovereign: trollUrl,
+
+  // Região 5 — Abismo de Gelo (placeholder: aberração pros elementais/espectros, aranha caçadora pro rastejante, troll pros grandões/chefe)
+  glacialWraith: aberracaoUrl, abyssalIceElemental: aberracaoUrl, frostcrawler: huntingSpiderUrl, iceBehemoth: trollUrl, hollowFrost: aberracaoUrl, glacialAbyssLord: trollUrl,
+  // Região 5 — Ruínas Vulcânicas (placeholder: guardião de pedra pro golem, aberração pro espectro, morcego das ruínas pro morcego, lobo pros caçadores, troll pro chefe)
+  magmaGolem: stoneGuardianUrl, ashWraith: aberracaoUrl, emberBat: ruinBatUrl, volcanicStalker: loboUrl, cinderHound: loboUrl, infernoColossus: trollUrl,
+  // Região 5 — Covil do Dragão Ancião (placeholder: reaproveita o tema dracônico já existente)
+  ancientDrakeling: dragaoUrl, dragonCultistElder: ruinBanditUrl, scaleWyrmling: dragaoUrl, drakeGuardian: dragaoUrl, emberDrake: dragaoUrl, elderDragon: dragaoUrl,
+  // Região 5 — Salão dos Titãs (placeholder: guardião de pedra/troll pros titãs e colossos)
+  titanGuardian: stoneGuardianUrl, stoneColossus: trollUrl, ancientSentinel: stoneGuardianUrl, runicGolem: stoneGuardianUrl, titanWarden: trollUrl, fallenTitan: trollUrl,
+  // Região 5 — Necrópole Real (placeholder: reaproveita o tema morto-vivo/múmia já existente)
+  royalWraith: aberracaoUrl, ashenGuard: boneKingUrl, cursedEmbalmer: ruinBanditUrl, royalMummy: wrappedMummyUrl, deathHerald: esqueletoUrl, royalNecromancer: boneKingUrl,
+  // Região 5 — Palácio Submerso (placeholder: bandido pros cortesãos/acólitos, guardião de pedra pro guarda, aberração pro espectro, limo pro horror de coral, troll pro chefe)
+  drownedCourtier: ruinBanditUrl, submergedGuard: stoneGuardianUrl, tidalWraith: aberracaoUrl, coralHorror: acidSlimeUrl, deepOneAcolyte: ruinBanditUrl, drownedMonarch: trollUrl,
+  // Região 5 — Arena do Campeão (especial, placeholder: bandido pros duelistas humanos, troll pra fera, rei ossos pro campeão ensanguentado/chefe final)
+  championGladiator: ruinBanditUrl, arenaChampionBeast: trollUrl, veteranDuelist: ruinBanditUrl, arenaWarlord: ruinBanditUrl, bloodiedChampion: boneKingUrl, eternalChampion: boneKingUrl,
 };
 
 const heroCache: Partial<Record<ClassId, Sprite>> = {};
@@ -210,6 +300,48 @@ export const PLACEHOLDER_ENEMY_SHAPES = new Set<EnemyShape>([
   'cursedGladiator', 'arenaBeast', 'maskedExecutioner', 'beastTamer', 'fallenChampion', 'grandChampion',
   // Alvos de Caçada (lib/hunts.ts)
   'boneTyrant', 'swampLeviathan', 'infernalWyrm',
+  // Região 3 — Fortaleza Orc
+  'orcWarrior', 'orcArcher', 'orcShaman', 'orcBerserker', 'orcStandardBearer', 'orcWarchief',
+  // Região 3 — Labirinto de Gelo
+  'iceElemental', 'frostWolf', 'glacialBat', 'iceWraith', 'frozenSentinel', 'iceMonarch',
+  // Região 3 — Templo Afundado
+  'drownedAcolyte', 'frozenPriest', 'lakeWraith', 'submergedGuardian', 'iceEel', 'sunkenHighPriest',
+  // Região 3 — Cavernas de Cristal
+  'crystalBat', 'crystalSpider', 'prismGolem', 'crystalWisp', 'glimmeringStalker', 'crystalSovereign',
+  // Região 3 — Covil do Lobo Alfa
+  'alphaWolfPup', 'direWolf', 'snowStalker', 'packHunter', 'frostFangWolf', 'alphaDireWolf',
+  // Região 3 — Catacumbas Reais
+  'royalSkeleton', 'cryptSentinel', 'boneNoble', 'spectralChamberlain', 'entombedKnight', 'royalLich',
+  // Região 3 — Poço sem Fundo (especial)
+  'wellCrawler', 'voidTendril', 'drowningWraith', 'abyssalStalker', 'hollowDweller', 'pitDweller',
+  // Região 4 — Covil da Aranha-Rainha
+  'jungleSpider', 'silkStalker', 'spiderBrood', 'webWeaverJungle', 'venomousBroodling', 'spiderQueen',
+  // Região 4 — Cidadela em Ruínas
+  'ruinedSentinel', 'vineWarrior', 'crumblingGolem', 'junglePhantom', 'overgrownGuardian', 'citadelGuardian',
+  // Região 4 — Santuário Profanado
+  'defiledPriest', 'profaneIdol', 'corruptedAcolyte', 'hexedStatue', 'ritualCultist', 'profaneHighPriest',
+  // Região 4 — Mina de Obsidiana
+  'obsidianGolem', 'magmaBat', 'obsidianMiner', 'emberWraith', 'obsidianBeetle', 'obsidianColossus',
+  // Região 4 — Selva Esquecida
+  'forgottenGuardian', 'junglePredator', 'ancientVine', 'feralJaguar', 'sporeling', 'forgottenColossus',
+  // Região 4 — Fortaleza dos Ossos
+  'boneSoldier', 'boneArcher', 'marrowGolem', 'boneCatapultBeast', 'ossuaryWraith', 'boneWarlord',
+  // Região 4 — Torre dos Ecos (especial)
+  'echoWraith', 'resonantSpecter', 'mirroredHorror', 'echoSentinel', 'hollowChant', 'echoSovereign',
+  // Região 5 — Abismo de Gelo
+  'glacialWraith', 'abyssalIceElemental', 'frostcrawler', 'iceBehemoth', 'hollowFrost', 'glacialAbyssLord',
+  // Região 5 — Ruínas Vulcânicas
+  'magmaGolem', 'ashWraith', 'emberBat', 'volcanicStalker', 'cinderHound', 'infernoColossus',
+  // Região 5 — Covil do Dragão Ancião
+  'ancientDrakeling', 'dragonCultistElder', 'scaleWyrmling', 'drakeGuardian', 'emberDrake', 'elderDragon',
+  // Região 5 — Salão dos Titãs
+  'titanGuardian', 'stoneColossus', 'ancientSentinel', 'runicGolem', 'titanWarden', 'fallenTitan',
+  // Região 5 — Necrópole Real
+  'royalWraith', 'ashenGuard', 'cursedEmbalmer', 'royalMummy', 'deathHerald', 'royalNecromancer',
+  // Região 5 — Palácio Submerso
+  'drownedCourtier', 'submergedGuard', 'tidalWraith', 'coralHorror', 'deepOneAcolyte', 'drownedMonarch',
+  // Região 5 — Arena do Campeão (especial)
+  'championGladiator', 'arenaChampionBeast', 'veteranDuelist', 'arenaWarlord', 'bloodiedChampion', 'eternalChampion',
 ]);
 
 export function hasOwnEnemyArt(shape: EnemyShape): boolean {

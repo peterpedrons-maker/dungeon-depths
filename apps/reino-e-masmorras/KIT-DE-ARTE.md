@@ -1452,6 +1452,720 @@ Grão-Campeão da Arena, facing left: a massive undefeated gladiator champion, h
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
+### Inimigos XV — Fortaleza Orc: Guerreiro Orc, Arqueiro Orc, Xamã Orc, Orc Berserker e Porta-Estandarte Orc
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza Orc (Região 3 — Thurgard, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Guerreiro Orc (facing left): a stocky green-skinned orc warrior in crude fur-and-iron armor, gripping a notched battle axe, tusked scowl.
+2) Arqueiro Orc (facing left): a lean orc archer in leather wraps, drawing a short recurve bow, a quiver of crude arrows on the back.
+3) Xamã Orc (facing left): a hunched orc shaman draped in bone fetishes and furs, gripping a crooked totem staff glowing with tribal magic.
+4) Orc Berserker (facing left): a massive shirtless orc berserker covered in war-paint and scars, wielding two crude cleavers, wild-eyed fury.
+5) Porta-Estandarte Orc (facing left): an armored orc standard-bearer holding aloft a tall tribal banner of bones and hide, a curved horn at the belt.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Fortaleza Orc: Warchief Grukmar
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza Orc (Região 3), spawna na profundidade 32 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Warchief Grukmar, facing left: an enormous battle-hardened orc warchief in heavy spiked iron armor stitched with trophies, wielding a massive double-headed war axe, a jagged war-paint mask, an intimidating commanding stance.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XVI — Labirinto de Gelo: Elemental de Gelo, Lobo Gélido, Morcego Glacial, Espectro de Gelo e Sentinela Congelada
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Labirinto de Gelo (Região 3, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Elemental de Gelo (facing left): a humanoid mass of jagged translucent blue ice with a faint inner glow, frost mist drifting off its body.
+2) Lobo Gélido (facing left): a pale frost-furred wolf with icy blue eyes, frozen breath visible, sharp ice-rimed claws.
+3) Morcego Glacial (facing left): a small pale-blue bat with crystalline frost-edged wings, sharp icicle-like fangs.
+4) Espectro de Gelo (facing left): a translucent frozen ghost trailing frost mist, hollow pale-blue glowing eyes, tattered icy shroud.
+5) Sentinela Congelada (facing left): a heavy humanoid statue of solid blue-white ice, cracked glowing runic lines, fists like glacial blocks.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Labirinto de Gelo: Monarca do Gelo
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Labirinto de Gelo (Região 3), spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Monarca do Gelo, facing left: a tall regal ice monarch in a flowing crown and robe of living glacial crystal, wielding a jagged ice-shard cetro/scepter, a crown of frozen spikes, an aura of swirling frost.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XVII — Templo Afundado: Acólito Afogado, Sacerdote Congelado, Espectro do Lago, Guardião Submerso e Enguia de Gelo
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Templo Afundado (Região 3, fork com Cavernas de Cristal, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Acólito Afogado (facing left): a waterlogged drowned acolyte in tattered ceremonial robes, pale bloated skin, dripping wet hair, hollow eyes.
+2) Sacerdote Congelado (facing left): a frozen-solid priest still upright in icy ceremonial vestments, frost creeping over his robes, a cracked holy amulet.
+3) Espectro do Lago (facing left): a translucent watery specter shaped like a drowned figure, dark rippling form, faint pale-green glow.
+4) Guardião Submerso (facing left): a heavy stone guardian statue encrusted with algae and barnacles, dripping wet, a cracked ceremonial shield.
+5) Enguia de Gelo (facing left): a long serpentine ice-blue eel with faint electric frost crackling along its body, sharp fanged mouth.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Templo Afundado: Alto Sacerdote Submerso
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Templo Afundado (Região 3), spawna na profundidade 36 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Alto Sacerdote Submerso, facing left: a towering drowned high priest in ornate waterlogged ceremonial robes trailing kelp, a cracked golden ceremonial mask, gripping a coral-encrusted ritual staff, faint sickly green glow.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XVIII — Cavernas de Cristal: Morcego de Cristal, Aranha de Cristal, Golem Prismático, Vagalume de Cristal e Rastreador Reluzente
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cavernas de Cristal (Região 3, fork com Templo Afundado, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Morcego de Cristal (facing left): a small bat with translucent blue crystal wings that catch the light, faceted crystalline body.
+2) Aranha de Cristal (facing left): a spider with a body made of glassy blue crystal shards, legs like sharp crystal needles.
+3) Golem Prismático (facing left): a tall humanoid golem built from stacked glowing prismatic crystal chunks, faint rainbow refraction along its edges.
+4) Vagalume de Cristal (facing left): a tiny floating orb of crystalline light, trailing sparkling prismatic motes.
+5) Rastreador Reluzente (facing left): a sleek crystal-scaled predator crouched low, faceted glinting hide, sharp crystal claws.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Cavernas de Cristal: Soberana de Cristal
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Cavernas de Cristal (Região 3), spawna na profundidade 36 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Soberana de Cristal, facing left: a majestic feminine crystalline being with a body of faceted glowing blue-white crystal, a jagged crystal crown, trailing shards floating around her like a halo.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XIX — Covil do Lobo Alfa: Filhote do Alfa, Lobo Terrível, Perseguidor da Neve, Caçador da Alcateia e Lobo Presa-Gelo
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Lobo Alfa (Região 3, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Filhote do Alfa (facing left): a young grey wolf pup with oversized paws, alert ears, a scrappy eager stance.
+2) Lobo Terrível (facing left): a large muscular dire wolf with shaggy dark-grey fur, oversized fangs, a heavy powerful build.
+3) Perseguidor da Neve (facing left): a lean white-furred wolf crouched low in a hunting stance, sharp icy-blue eyes.
+4) Caçador da Alcateia (facing left): a battle-scarred grey wolf with a notched ear, alert and coordinated stance, muscular frame.
+5) Lobo Presa-Gelo (facing left): a pale blue-grey wolf with frost-rimed fangs and frosty breath, ice crystals clinging to its fur.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Covil do Lobo Alfa: Alfa, o Terrível
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Lobo Alfa (Região 3), spawna na profundidade 38 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Alfa, o Terrível, facing left: an enormous dark-furred dire wolf towering over ordinary wolves, jagged scars across its muzzle, glowing amber eyes, bared oversized fangs, a commanding predatory stance.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XX — Catacumbas Reais: Esqueleto Real, Sentinela da Cripta, Nobre Ossudo, Camareiro Espectral e Cavaleiro Sepultado
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Catacumbas Reais (Região 3, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Esqueleto Real (facing left): an armored royal skeleton in tarnished gilded plate, gripping an ornate ceremonial longsword, a faded royal crest on the chest.
+2) Sentinela da Cripta (facing left): a heavy stone crypt guardian statue holding a ceremonial halberd, weathered engravings across its armor.
+3) Nobre Ossudo (facing left): a skeletal noble in tattered fine velvet robes, a rotted crown fragment, bony fingers adorned with rings.
+4) Camareiro Espectral (facing left): a translucent ghostly chamberlain in faded court attire, a spectral tray still balanced on one arm, pale mournful glow.
+5) Cavaleiro Sepultado (facing left): an entombed knight in rusted ceremonial plate, gripping a chipped royal blade, faint dust falling from the joints.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Catacumbas Reais: Lich Real
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Catacumbas Reais (Região 3), spawna na profundidade 40 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Lich Real, facing left: a regal skeletal lich draped in tattered royal robes and a tarnished golden crown, glowing teal-green eye sockets, gripping an ornate necrotic scepter crackling with dark magic.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXI — Poço sem Fundo: Rastejante do Poço, Tentáculo do Vazio, Espectro Afogante, Perseguidor Abissal e Habitante Oco
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Poço sem Fundo (Região 3, majoritariamente minibosses, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Rastejante do Poço (facing left): a hunched pale humanoid horror crawling low, elongated clawed limbs, milky blind eyes.
+2) Tentáculo do Vazio (facing left): a writhing mass of dark purple-black tentacles emerging from a shapeless core, faint void-glow along the ridges.
+3) Espectro Afogante (facing left): a translucent drowned specter reaching forward, dripping shadowy water, hollow drowning-scream expression.
+4) Perseguidor Abissal (facing left): a sleek black many-limbed stalker with faint glowing violet eyes, low predatory crouch.
+5) Habitante Oco (facing left): a gaunt hollow-faced humanoid wrapped in tattered dark rags, an unnervingly still posture.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Poço sem Fundo: O Que Habita o Poço
+**Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Poço sem Fundo (Região 3) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 42 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose — noticeably larger and more menacing than a regular dungeon boss, to read as the strongest thing in the region.
+
+O Que Habita o Poço, facing left: an immense formless horror of writhing black tendrils and a vaguely humanoid torso emerging from a bottomless void, countless faint glowing violet eyes scattered across its mass, an overwhelming ancient dread.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXII — Covil da Aranha-Rainha: Aranha da Selva, Perseguidor de Seda, Ninhada de Aranhas, Tecelã da Selva e Cria Venenosa
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil da Aranha-Rainha (Região 4 — Xilvana, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Aranha da Selva (facing left): a large mottled-green jungle spider with long spindly legs, glistening venomous fangs.
+2) Perseguidor de Seda (facing left): a lean silk-wrapped spider-creature trailing loose webbing, quick low crouch.
+3) Ninhada de Aranhas (facing left): a small cluster of tiny brown spiderlings scurrying together as one visual unit.
+4) Tecelã da Selva (facing left): a large dark jungle weaver-spider with elaborate patterned markings, thick web-spinning abdomen.
+5) Cria Venenosa (facing left): a small vividly-colored venomous spiderling with bright warning patterns, raised front legs.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Covil da Aranha-Rainha: Aranha-Rainha
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil da Aranha-Rainha (Região 4), spawna na profundidade 42 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Aranha-Rainha, facing left: a colossal jungle spider queen with a bulbous glistening dark-purple abdomen, eight sharp segmented legs, rows of gleaming eyes, dripping venomous fangs.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXIII — Cidadela em Ruínas: Sentinela em Ruínas, Guerreiro de Vinhas, Golem Desmoronado, Fantasma da Selva e Guardião Coberto de Vinhas
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Cidadela em Ruínas (Região 4, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Sentinela em Ruínas (facing left): a crumbling stone sentinel statue overtaken by cracks and moss, gripping a broken ceremonial spear.
+2) Guerreiro de Vinhas (facing left): a humanoid warrior whose body is woven from thick living jungle vines, thorny knuckles.
+3) Golem Desmoronado (facing left): a hulking golem built from crumbling ruined masonry, chunks visibly falling away, glowing cracks.
+4) Fantasma da Selva (facing left): a translucent green-glowing jungle phantom drifting low, wisps of mist trailing behind.
+5) Guardião Coberto de Vinhas (facing left): a heavy stone guardian entirely swallowed by thick overgrown vines and flowers.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Cidadela em Ruínas: Guardião da Cidadela
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Cidadela em Ruínas (Região 4), spawna na profundidade 44 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Guardião da Cidadela, facing left: an immense ancient stone guardian entwined with thick glowing jungle vines, ornate crumbling ceremonial armor plates, gripping a massive vine-wrapped stone warhammer.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXIV — Santuário Profanado: Sacerdote Profanado, Ídolo Profano, Acólito Corrompido, Estátua Enfeitiçada e Cultista Ritualístico
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Santuário Profanado (Região 4, fork com Mina de Obsidiana, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Sacerdote Profanado (facing left): a gaunt corrupted priest in torn dark ceremonial robes, defaced holy symbols, a faint sickly purple glow.
+2) Ídolo Profano (facing left): a squat carved stone idol with a defaced grotesque face, dark ritual markings etched across its body.
+3) Acólito Corrompido (facing left): a hooded corrupted acolyte gripping a jagged ritual dagger, eyes glowing faint purple.
+4) Estátua Enfeitiçada (facing left): a cracked ceremonial statue animated by dark magic, glowing purple eyes, ritual chains draped across it.
+5) Cultista Ritualístico (facing left): a robed cultist chanting with arms raised, dark tattoos glowing faintly along the exposed skin.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Santuário Profanado: Alto Sacerdote Profano
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Santuário Profanado (Região 4), spawna na profundidade 46 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Alto Sacerdote Profano, facing left: a towering corrupted high priest in ornate torn dark-purple ceremonial vestments, a defaced golden ritual mask, gripping a twisted ceremonial staff crackling with profane energy.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXV — Mina de Obsidiana: Golem de Obsidiana, Morcego de Magma, Mineiro de Obsidiana, Espectro de Brasas e Besouro de Obsidiana
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Mina de Obsidiana (Região 4, fork com Santuário Profanado, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Golem de Obsidiana (facing left): a hulking humanoid golem carved from glossy black volcanic obsidian, faint orange glow through cracks.
+2) Morcego de Magma (facing left): a small bat with wings that look like thin cooling magma, glowing orange veins across dark leathery skin.
+3) Mineiro de Obsidiana (facing left): a soot-covered miner in scorched leather gear, gripping an obsidian-tipped pickaxe.
+4) Espectro de Brasas (facing left): a translucent ember-orange specter trailing wisps of smoke and floating embers.
+5) Besouro de Obsidiana (facing left): a large armored beetle with a glossy black obsidian shell, glowing orange seams between plates.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Mina de Obsidiana: Colosso de Obsidiana
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Mina de Obsidiana (Região 4), spawna na profundidade 46 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Colosso de Obsidiana, facing left: an immense hulking colossus of glossy black volcanic glass, deep glowing orange fissures running across its body like molten veins, massive obsidian fists.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXVI — Selva Esquecida: Guardião Esquecido, Predador da Selva, Vinha Ancestral, Jaguar Selvagem e Esporídeo
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Selva Esquecida (Região 4, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Guardião Esquecido (facing left): an ancient forgotten stone guardian statue half-swallowed by giant roots, weathered carvings barely visible.
+2) Predador da Selva (facing left): a lean muscular jungle predator beast with dark mottled hide, low stalking crouch, sharp claws.
+3) Vinha Ancestral (facing left): a massive gnarled living vine creature coiled like a serpent, ancient bark-like texture, small glowing flowers.
+4) Jaguar Selvagem (facing left): a powerful spotted wild jaguar crouched low, sharp fangs bared, alert golden eyes.
+5) Esporídeo (facing left): a small mushroom-like creature covered in glowing spore pods, stubby fungal limbs.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Selva Esquecida: Colosso Esquecido
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Selva Esquecida (Região 4), spawna na profundidade 48 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Colosso Esquecido, facing left: an ancient towering colossus of stone and root fused together over untold ages, thick glowing vines pulsing across its cracked ancient surface, moss-covered shoulders.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXVII — Fortaleza dos Ossos: Soldado Ossudo, Arqueiro Ossudo, Golem de Medula, Fera Catapulta e Espectro do Ossário
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza dos Ossos (Região 4, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Soldado Ossudo (facing left): an armored bone-construct soldier assembled from stacked bones and rib-plates, gripping a bone-hilted sword.
+2) Arqueiro Ossudo (facing left): a lanky bone-construct archer drawing a bow carved from a large curved rib bone.
+3) Golem de Medula (facing left): a hulking golem built from thick fused marrow-bones, faint pale glow seeping from the joints.
+4) Fera Catapulta (facing left): a hunched bony beast with an oversized launching arm made of fused bone, coiled to fling debris.
+5) Espectro do Ossário (facing left): a translucent pale specter drifting amid loose rattling bones, hollow mournful expression.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Fortaleza dos Ossos: Senhor de Guerra Ossudo
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza dos Ossos (Região 4), spawna na profundidade 50 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Senhor de Guerra Ossudo, facing left: an imposing bone-construct warlord clad in armor forged from fused giant bones, gripping a massive bone-bladed greatsword, a crown of jagged bone spikes.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXVIII — Torre dos Ecos: Espectro do Eco, Espectro Ressonante, Horror Espelhado, Sentinela do Eco e Cântico Oco
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Torre dos Ecos (Região 4, majoritariamente minibosses, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Espectro do Eco (facing left): a translucent violet-glowing specter that appears to shimmer with faint duplicate afterimages of itself.
+2) Espectro Ressonante (facing left): a wavering ghostly figure surrounded by faint concentric sound-ripple glyphs.
+3) Horror Espelhado (facing left): a distorted humanoid horror with a fractured mirror-like reflective surface for skin.
+4) Sentinela do Eco (facing left): a tall stone sentinel etched with glowing runic sound-wave patterns, faint violet aura.
+5) Cântico Oco (facing left): a gaunt hollow-mouthed wraith-like singer, faint musical glyphs drifting from its open jaw.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Torre dos Ecos: Soberano dos Ecos
+**Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Torre dos Ecos (Região 4) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 52 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose — noticeably larger and more menacing than a regular dungeon boss, to read as the strongest thing in the region.
+
+Soberano dos Ecos, facing left: a tall spectral sovereign wrapped in layered translucent violet robes that seem to echo into faint duplicate silhouettes, a crown of resonating glowing runes, an aura of rippling sound-wave energy.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXIX — Abismo de Gelo: Espectro Glacial, Elemental de Gelo Abissal, Rastejante Gélido, Behemoth de Gelo e Gélido Oco
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Abismo de Gelo (Região 5 — Ignares, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Espectro Glacial (facing left): a translucent deep-blue glacial specter trailing sharp icicle shards, hollow frozen eyes.
+2) Elemental de Gelo Abissal (facing left): a hulking mass of dark abyssal ice with faint deep-blue inner glow, jagged frozen edges.
+3) Rastejante Gélido (facing left): a low pale-blue crawling ice-beast with elongated frost-covered limbs.
+4) Behemoth de Gelo (facing left): a massive hulking beast entirely encased in thick blue glacial ice, heavy lumbering frame.
+5) Gélido Oco (facing left): a gaunt hollow ice-wraith with a cracked frozen chest cavity, faint cold mist seeping out.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Abismo de Gelo: Senhor do Abismo Glacial
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Abismo de Gelo (Região 5), spawna na profundidade 52 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Senhor do Abismo Glacial, facing left: an immense towering lord of glacial ice, a jagged crown of deep-blue icicles, a body of cracked living glacier pulsing with an inner abyssal glow, trailing freezing mist.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXX — Ruínas Vulcânicas: Golem de Magma, Espectro de Cinzas, Morcego de Brasas, Perseguidor Vulcânico e Cão de Cinzas
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Vulcânicas (Região 5, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Golem de Magma (facing left): a hulking humanoid golem of cracked dark rock with molten orange magma glowing through the fissures.
+2) Espectro de Cinzas (facing left): a translucent grey-ash specter trailing drifting embers and soot.
+3) Morcego de Brasas (facing left): a small bat with wings like thin glowing embers, a faint orange-red glow along the edges.
+4) Perseguidor Vulcânico (facing left): a lean charcoal-black predator beast with glowing orange cracks along its hide, low stalking crouch.
+5) Cão de Cinzas (facing left): a lean ash-grey hound with smoldering ember eyes, faint smoke trailing from its jaws.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Ruínas Vulcânicas: Colosso Infernal
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Vulcânicas (Região 5), spawna na profundidade 54 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Colosso Infernal, facing left: a massive towering colossus of cracked black volcanic rock, glowing molten-orange fissures running across its entire body like veins of fire, embers drifting off its shoulders.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXXI — Covil do Dragão Ancião: Draguinho Ancião, Cultista Dracônico Ancião, Serpente Escamosa, Guardião Dracônico e Draque de Brasas
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Dragão Ancião (Região 5, fork com Salão dos Titãs, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Draguinho Ancião (facing left): a small dark-red winged drakeling with old weathered scales, faint smoke curling from its nostrils.
+2) Cultista Dracônico Ancião (facing left): a robed elder cultist adorned with dragon-scale trinkets, gripping a scale-wrapped ritual staff.
+3) Serpente Escamosa (facing left): a long sinewy dark-green scaled serpent with small clawed forelimbs, sharp fangs.
+4) Guardião Dracônico (facing left): a heavily armored draconic guardian beast with thick teal scales and a spiked tail.
+5) Draque de Brasas (facing left): a small orange-red winged drake wreathed in faint smoldering embers.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Covil do Dragão Ancião: Dragão Ancião
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Dragão Ancião (Região 5), spawna na profundidade 56 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose — noticeably larger and more ancient-looking than the young dragon boss from Covil dos Dragões in Região 2, with weathered battle-worn scales and a long white beard-like set of chin barbels to sell its great age.
+
+Dragão Ancião, facing left: an immense ancient dark-red dragon with huge weathered scales, long curved horns, glowing amber eyes full of age-old malice, wisps of smoke escaping between its fangs.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXXII — Salão dos Titãs: Guardião Titânico, Colosso de Pedra, Sentinela Ancestral, Golem Rúnico e Vigia Titânico
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Salão dos Titãs (Região 5, fork com Covil do Dragão Ancião, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Guardião Titânico (facing left): a massive stone-and-bronze titanic guardian statue with weathered ancient engravings, heavy fists.
+2) Colosso de Pedra (facing left): a hulking colossus built from stacked ancient grey megaliths, faint glowing seams between the blocks.
+3) Sentinela Ancestral (facing left): a tall slender ancient stone sentinel crackling with faint golden arcane energy along its limbs.
+4) Golem Rúnico (facing left): a heavy stone golem covered in glowing golden runic engravings across its chest and arms.
+5) Vigia Titânico (facing left): a broad-shouldered titanic warden statue gripping a massive ancient stone spear.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Salão dos Titãs: Titã Caído
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Salão dos Titãs (Região 5), spawna na profundidade 56 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Titã Caído, facing left: a colossal ancient titan of cracked grey stone and tarnished bronze plating, faint golden runic light glowing from deep fissures, a weathered fallen-god presence, gripping a massive ancient warhammer.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXXIII — Necrópole Real: Espectro Real, Guarda Acinzentado, Embalsamador Amaldiçoado, Múmia Real e Arauto da Morte
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Real (Região 5, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Espectro Real (facing left): a translucent royal specter draped in faded once-golden burial shrouds, a faint regal glow.
+2) Guarda Acinzentado (facing left): a heavily armored ash-grey mummified guard in ceremonial plate, gripping a ceremonial khopesh.
+3) Embalsamador Amaldiçoado (facing left): a gaunt cursed embalmer wrapped in stained ritual bandages, carrying a jar of dark toxins.
+4) Múmia Real (facing left): a regal mummy wrapped in gilded ceremonial bandages, a tarnished golden burial mask.
+5) Arauto da Morte (facing left): a tall gaunt robed herald with a skeletal face beneath a dark hood, gripping a ceremonial scythe-staff.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Necrópole Real: Necromante Real
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Real (Região 5), spawna na profundidade 58 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Necromante Real, facing left: a regal skeletal-faced necromancer draped in tattered golden royal burial robes, a jeweled dark crown, gripping an ornate scepter-staff crackling with necrotic green energy.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXXIV — Palácio Submerso: Cortesão Afogado, Guarda Submerso, Espectro das Marés, Horror de Coral e Acólito das Profundezas
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Palácio Submerso (Região 5, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Cortesão Afogado (facing left): a bloated drowned courtier in once-fine waterlogged court attire, pale blue-grey skin, dripping wet.
+2) Guarda Submerso (facing left): a heavily armored drowned palace guard encrusted with barnacles, gripping a coral-crusted spear.
+3) Espectro das Marés (facing left): a translucent watery specter shaped like a swirling tide, dark teal glow, flowing kelp-like tendrils.
+4) Horror de Coral (facing left): a jagged coral-encrusted horror with sharp branching coral limbs, dripping seawater.
+5) Acólito das Profundezas (facing left): a robed deep-sea cultist with pale webbed hands, faint bioluminescent markings.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Palácio Submerso: Monarca Afogado
+**Tamanho:** 768×768 px · **Uso:** boss da masmorra Palácio Submerso (Região 5), spawna na profundidade 60 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose.
+
+Monarca Afogado, facing left: a towering drowned monarch draped in tattered waterlogged royal robes and a coral-encrusted crown, pale blue-grey bloated skin, gripping an ornate trident-scepter, faint teal bioluminescent glow.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Inimigos XXXV — Arena do Campeão: Gladiador Campeão, Fera Campeã da Arena, Duelista Veterano, Senhor de Guerra da Arena e Campeão Ensanguentado
+**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra especial Arena do Campeão (Região 5, majoritariamente minibosses, 5 inimigos regulares)
+
+```
+IMPORTANT: every creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
+
+1) Gladiador Campeão (facing left): a heavily muscled champion gladiator in ornate battle-scarred red-and-bronze armor, gripping a notched longsword.
+2) Fera Campeã da Arena (facing left): a powerful muscular arena beast with a dark scarred hide, broken chains hanging from a spiked collar.
+3) Duelista Veterano (facing left): a lean scarred veteran duelist in worn leather, gripping twin curved blades, confident stance.
+4) Senhor de Guerra da Arena (facing left): a broad-shouldered arena warlord in heavy spiked armor, gripping a massive warhammer.
+5) Campeão Ensanguentado (facing left): a blood-spattered battle-worn champion in cracked armor, gripping a notched greatsword, fierce grin.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
+```
+
+### Chefe — Arena do Campeão: Campeão Eterno
+**Tamanho:** 768×768 px · **Uso:** chefe final da masmorra especial Arena do Campeão (Região 5) — bem mais forte que os chefes das masmorras regulares da região, spawna na profundidade 62 com barra de vida própria no topo da tela de batalha
+
+```
+IMPORTANT: the creature faces LEFT, shown from the side (left profile). Never facing right, never facing forward toward the viewer.
+
+2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
+
+One large boss creature filling most of the frame, calm static threatening pose — noticeably larger and more menacing than a regular dungeon boss, to read as the strongest thing in the region.
+
+Campeão Eterno, facing left: an immense legendary undefeated champion in ornate battle-worn dark-red-and-gold armor covered in countless ancient battle scars, a tall horned champion's helm, gripping a massive legendary greatsword wreathed in a faint golden aura.
+
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+```
+
 ---
 
 ## Cenas
