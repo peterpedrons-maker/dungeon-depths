@@ -2,14 +2,19 @@ import { EquipmentItem, SecondaryStatType } from '../types/game';
 
 // Forja upgrade system (v1 — deliberately simple, gets more complex later):
 // spend gold at the Forja to push an item's enhanceLevel up, which scales
-// only its *Bonus fields (dmgBonus/defBonus/hpBonus/matkBonus/mdefBonus/
-// critChanceBonus/critDmgBonus) by a flat % per level. secondaryStats (the
-// rolled affixes) are untouched — enhancement is about the item's own base
-// stat, not its bonus roll. The stored item's *Bonus fields always stay the
-// original rolled values; enhancedItem() below is the one place the +%
-// actually gets applied, so every consumer (combat, item modals, sell
-// value) reads the same number and the formula can be retuned later
-// without needing to "unwind" anything already saved.
+// EVERY stat the item actually carries — its primary *Bonus field
+// (dmgBonus/defBonus/hpBonus/matkBonus/mdefBonus/critChanceBonus/
+// critDmgBonus) AND every rolled secondaryStats affix — by the same flat %
+// per level, each stat scaling off its own base value (a %-based stat like
+// Crítico grows in percentage points, a flat one like Ataque grows in raw
+// points). Enhancing used to only touch the primary field, leaving an
+// item's afixos completely unaffected by its own +N — a +10 Lendário with
+// 4 rolled affixes looked no different on 3 of its 4 stat lines than a +0
+// copy of itself. The stored item's fields always stay the original rolled
+// values; enhancedItem() below is the one place the +% actually gets
+// applied, so every consumer (combat, item modals, sell value) reads the
+// same number and the formula can be retuned later without needing to
+// "unwind" anything already saved.
 export const MAX_ENHANCE_LEVEL = 10;
 // Cumulative bonus multiplier by enhance level — per-level increments grow
 // instead of staying flat (was a flat 5%/level, so +10 = +50% no matter
@@ -80,6 +85,10 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
     const isPct = key === 'critChanceBonus' || key === 'critDmgBonus';
     scaled[key] = isPct ? item[key] * mult : Math.round(item[key] * mult);
   }
+  scaled.secondaryStats = item.secondaryStats.map((s) => {
+    const isPct = STAT_META_BY_KEY.get(SECONDARY_TO_STAT_KEY[s.type])?.isPct ?? false;
+    return { type: s.type, value: isPct ? s.value * mult : Math.round(s.value * mult) };
+  });
   return scaled;
 }
 
@@ -168,6 +177,10 @@ const SECONDARY_TO_STAT_KEY: Record<SecondaryStatType, StatKey> = {
   evasion: 'evasion', accuracy: 'accuracy', tenacity: 'tenacity', speed: 'speed',
   lifesteal: 'lifesteal', thorns: 'thorns', cdr: 'cdr', itemFind: 'itemFind', itemQuality: 'itemQuality',
 };
+// Lets enhancedItem() (declared above, but only ever called after the whole
+// module has finished loading) look up whether a given affix is a percent
+// or a flat stat without duplicating STAT_META's own isPct classification.
+const STAT_META_BY_KEY = new Map(STAT_META.map((m) => [m.key, m]));
 
 function statTotals(item: EquipmentItem): Record<StatKey, number> {
   const totals = {} as Record<StatKey, number>;

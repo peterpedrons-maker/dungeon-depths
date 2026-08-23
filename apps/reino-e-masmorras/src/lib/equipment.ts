@@ -129,9 +129,16 @@ const PCT_AFFIX_TYPES = new Set<SecondaryStatType>([
 // Velocidade/Redução de Recarga/Roubo de Vida roll conservatively (0.12-0.15)
 // since they're strong per-point and already stack with attributes/talentos;
 // sorte de item stays modest too since it's pure loot-rate, not combat power.
+// atk/matk/def/mdef/hp were cut (0.5->0.25/0.3, 2->1.1) and accuracy raised
+// slightly (0.25->0.35) after simulation showed these "mirror the primary
+// attribute" affixes contributing 2-7x the Combat Power of the other
+// support-flavored affixes (Crítico/Bloqueio/Evasão/etc.) at the exact same
+// rarity roll — a weapon's own dmgBonus already carries the "this item hits
+// harder" job; the atk/matk/def/mdef/hp AFFIX shouldn't also dwarf every
+// other affix option just because it reuses the same big attribute weight.
 const AFFIX_SCALE: Record<SecondaryStatType, number> = {
-  crit: 0.3, critDmg: 0.4, block: 0.25, hp: 2, def: 0.5, mdef: 0.5, atk: 0.5, matk: 0.5,
-  evasion: 0.25, accuracy: 0.25, tenacity: 0.25, speed: 0.12, lifesteal: 0.15, thorns: 0.3, cdr: 0.12,
+  crit: 0.3, critDmg: 0.4, block: 0.25, hp: 1.1, def: 0.3, mdef: 0.3, atk: 0.25, matk: 0.25,
+  evasion: 0.25, accuracy: 0.35, tenacity: 0.25, speed: 0.12, lifesteal: 0.15, thorns: 0.3, cdr: 0.12,
   itemFind: 0.15, itemQuality: 0.15,
 };
 
