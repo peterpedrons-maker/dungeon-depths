@@ -162,6 +162,29 @@ const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0,
 // (no ability active) is still always physical.
 export const MAGICAL_CLASSES: ClassId[] = ['mago', 'feiticeiro', 'bruxo', 'necromante', 'clerigo', 'druida', 'bardo'];
 
+// A class's baseline combat pace, applied on top of its AGI-driven
+// speedPct in DungeonPanel's nextPlayerDelay() — separate from the
+// attribute system entirely (doesn't touch combatStats.ts, doesn't cost
+// attribute points, doesn't affect evasion/anything else AGI feeds) so it
+// can't be min-maxed or invested in, just an identity trait every class
+// always has. Needed because baseAttrs.agi is 1 (the shared floor) for 11
+// of the 14 classes — only ladino/arqueiro/cacador carry it as a secondary
+// stat — which left every other class's action pace statistically
+// identical to every other's, and to most enemies (see enemySpeedMult in
+// lib/enemies.ts, whose own default is 1 for any shape not explicitly
+// listed): a heavily-armored Paladino swung exactly as often as a
+// Mago, which swung exactly as often as a lightly-armed Ladino. Three
+// tiers matching the classes' actual armor/weight archetype: heavy
+// melee in plate (slower), light-robed casters (baseline), agile
+// DEX/AGI physical classes (faster, on top of their own already-higher
+// AGI) — mirroring the spread enemies already have instead of being flat
+// at 1.0 everywhere.
+export const CLASS_SPEED_MULT: Record<ClassId, number> = {
+  guerreiro: 0.92, cavaleiro: 0.9, paladino: 0.92, barbaro: 0.94,
+  mago: 1.0, clerigo: 1.0, feiticeiro: 1.0, bruxo: 1.0, druida: 1.0, bardo: 1.02, necromante: 1.0,
+  ladino: 1.1, arqueiro: 1.08, cacador: 1.08,
+};
+
 // Third cut, 5x steeper than the last one (18 + level*14 -> 40 + level*55
 // -> 100 + level*140 -> this) — deliberately turns leveling into something
 // that requires replaying a dungeon multiple times, not a byproduct of

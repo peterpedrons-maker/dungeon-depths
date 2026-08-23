@@ -4,7 +4,7 @@ import {
   Rarity, StatModStat, StatusEffectKind,
 } from '../types/game';
 import { spawnEnemy, enemySpeedMult } from '../lib/enemies';
-import { CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
+import { CLASS_SPEED_MULT, CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
 import { baseDropChanceForLevel, generateItem, rarityColor, sellValue } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
@@ -614,7 +614,7 @@ export function DungeonPanel({
 
   function nextPlayerDelay(): number {
     const speedPct = computePlayerStats().speedPct;
-    return Math.round(ATTACK_INTERVAL / (1 + speedPct));
+    return Math.round(ATTACK_INTERVAL / ((1 + speedPct) * CLASS_SPEED_MULT[chRef.current.classId]));
   }
 
   function nextEnemyDelay(): number {
