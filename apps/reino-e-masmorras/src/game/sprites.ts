@@ -69,6 +69,11 @@ import koboldRaiderUrl from '../assets/sprites/koboldRaider.webp';
 import batSwarmUrl from '../assets/sprites/batSwarm.webp';
 import gasWispUrl from '../assets/sprites/gasWisp.webp';
 import oreTitanUrl from '../assets/sprites/oreTitan.webp';
+import corruptedEntUrl from '../assets/sprites/corruptedEnt.webp';
+import ghostWolfUrl from '../assets/sprites/ghostWolf.webp';
+import darkFairyUrl from '../assets/sprites/darkFairy.webp';
+import cursedBearUrl from '../assets/sprites/cursedBear.webp';
+import stranglingVineUrl from '../assets/sprites/stranglingVine.webp';
 
 export interface Sprite {
   image: HTMLImageElement;
@@ -210,8 +215,8 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
   gargoyle: gargoyleUrl, spectralMage: spectralMageUrl, cursedKnight: cursedKnightUrl, watchingEye: watchingEyeUrl, crawlingShadow: crawlingShadowUrl, fallenArchmage: fallenArchmageUrl,
   // Região 2 — Minas Abandonadas
   cursedMiner: cursedMinerUrl, oreGolem: oreGolemUrl, koboldRaider: koboldRaiderUrl, batSwarm: batSwarmUrl, gasWisp: gasWispUrl, oreTitan: oreTitanUrl,
-  // Região 2 — Floresta Amaldiçoada (placeholder: troll pros grandões, lobo/aberração pros menores)
-  corruptedEnt: trollUrl, ghostWolf: loboUrl, darkFairy: aberracaoUrl, cursedBear: trollUrl, stranglingVine: acidSlimeUrl, forestHeart: trollUrl,
+  // Região 2 — Floresta Amaldiçoada (forestHeart/chefe ainda é placeholder — sem arte própria)
+  corruptedEnt: corruptedEntUrl, ghostWolf: ghostWolfUrl, darkFairy: darkFairyUrl, cursedBear: cursedBearUrl, stranglingVine: stranglingVineUrl, forestHeart: trollUrl,
   // Região 2 — Covil dos Dragões (placeholder: dragão pros dracônicos, bandido pro cultista humano)
   dragonHatchling: dragaoUrl, wildWyvern: dragaoUrl, scaledGuardian: dragaoUrl, draconicCultist: ruinBanditUrl, fireSerpent: dragaoUrl,
   // Região 2 — Necrópole Esquecida (placeholder: esqueleto/corvo/aberração/limo conforme o tema; skeletonLord já tem arte própria)
@@ -288,8 +293,8 @@ export function heroSprites(classId: ClassId): { idle: Sprite; attack: Sprite } 
 // picture that would otherwise look like some unrelated creature's, or
 // worse, an exact duplicate of a different entry's sprite.
 export const PLACEHOLDER_ENEMY_SHAPES = new Set<EnemyShape>([
-  // Região 2 — Floresta Amaldiçoada
-  'corruptedEnt', 'ghostWolf', 'darkFairy', 'cursedBear', 'stranglingVine', 'forestHeart',
+  // Região 2 — Floresta Amaldiçoada (chefe forestHeart ainda sem arte própria)
+  'forestHeart',
   // Região 2 — Covil dos Dragões (dragon, o chefe, já tem arte própria)
   'dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent',
   // Região 2 — Necrópole Esquecida (skeletonLord, o chefe, já tem arte própria)

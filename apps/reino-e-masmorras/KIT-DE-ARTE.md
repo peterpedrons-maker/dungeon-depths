@@ -55,7 +55,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 ### Inimigos & Chefes — Região 2 · Umbrália (nível 11-20)
 - ✅ Torre Amaldiçoada — inimigos + chefe (Arquimago Caído) — prompt já usado, removido do kit
 - ✅ Minas Abandonadas — inimigos + chefe (Titã de Minério) — prompt já usado, removido do kit
-- 🕓 [Floresta Amaldiçoada — inimigos](#inimigos-x-floresta-amaldicoada-ent-corrompido-lobo-espectral-fada-sombria-urso-amaldicoado-e-trepadeira-estranguladora)
+- ✅ Floresta Amaldiçoada — inimigos (Ent Corrompido, Lobo Espectral, Fada Sombria, Urso Amaldiçoado, Trepadeira Estranguladora) — prompt já usado, removido do kit
 - 🕓 [Floresta Amaldiçoada — chefe (Coração da Floresta)](#chefe-floresta-amaldicoada-coracao-da-floresta)
 - 🕓 [Covil dos Dragões — inimigos](#inimigos-xi-covil-dos-dragoes-filhote-de-dragao-wyvern-selvagem-guardiao-escamado-cultista-draconico-e-serpente-de-fogo)
 - ✅ [Covil dos Dragões — chefe (Dragão Jovem)](#inimigos-ii-troll-aberracao-das-sombras-e-dragao-jovem) — reaproveita o Dragão Jovem já pronto acima
@@ -1481,26 +1481,6 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada (regulares + chefe); faltam Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida (só falta o roster de regulares — o chefe Lorde Esqueleto já existe), Ruínas Élficas e Arena de Sangue.
 
 **Covil dos Dragões é a única exceção do lado do chefe**: o chefe dela é "Dragão Jovem" — o mesmo dragão já coberto no prompt "Inimigos II" mais acima, cujo sprite já está integrado ao jogo (`dragao.webp`). Não precisa de prompt novo — dragões mais fortes (adultos, anciões, lendários) ficam guardados para masmorras de regiões futuras.
-
-<a id="inimigos-x-floresta-amaldicoada-ent-corrompido-lobo-espectral-fada-sombria-urso-amaldicoado-e-trepadeira-estranguladora"></a>
-### Inimigos X — Floresta Amaldiçoada: Ent Corrompido, Lobo Espectral, Fada Sombria, Urso Amaldiçoado e Trepadeira Estranguladora
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Floresta Amaldiçoada (5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Ent Corrompido (facing left): a corrupted tree-like creature, twisted dark bark skin, glowing sickly-red cracks across its trunk, gnarled branch-limbs, hunched menacing stance.
-2) Lobo Espectral (facing left): a translucent ghostly wolf, pale blue-white spectral fur, glowing eyes, mid-stride snarling.
-3) Fada Sombria (facing left): a small corrupted fairy with tattered dark wings, faint sickly-purple glow, a mischievous menacing expression.
-4) Urso Amaldiçoado (facing left): a large corrupted bear, matted dark fur with faint cursed purple markings, bared teeth, aggressive stance on all fours.
-5) Trepadeira Estranguladora (facing left): a carnivorous vine creature coiled and ready to strike, dark green tendrils with thorny barbs, a toothy plant-maw.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
 
 <a id="chefe-floresta-amaldicoada-coracao-da-floresta"></a>
 ### Chefe — Floresta Amaldiçoada: Coração da Floresta
