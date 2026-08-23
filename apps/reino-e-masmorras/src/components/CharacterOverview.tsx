@@ -251,8 +251,8 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       ) : (
         /* Attribute allocation + secondary stats — its own tab now that the
            inventory moved in with the paperdoll above. */
-        <div className="rounded border border-black/50 bg-black/25 p-3 mb-4 grid grid-cols-2 gap-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-          <div className="space-y-3 pr-3 border-r border-panelborder/40">
+        <div className="rounded border border-black/50 bg-black/25 p-3 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+          <div className="space-y-3 pb-3 border-b sm:pb-0 sm:border-b-0 sm:pr-3 sm:border-r border-panelborder/40">
             <div className="space-y-1">
               {ATTR_ORDER.map((key) => {
                 const meta = ATTR_META[key];
@@ -386,21 +386,22 @@ function AttrInfoModal({ ch, attrKey, onClose }: { ch: Character; attrKey: Attri
           <span className="font-bold text-gold">×{weight.toFixed(1)}</span>
         </div>
         <div className="border-t border-panelborder/30 pt-2">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span />
-            <span className="flex items-center gap-3 text-[9px] uppercase tracking-wide text-parchment/40 font-bold">
-              <span className="w-12 text-right">Total</span>
-              <span className="w-14 text-right">Próx. ponto</span>
-            </span>
+          <div className="flex items-center justify-end gap-3 mb-1 text-[9px] uppercase tracking-wide text-parchment/40 font-bold">
+            <span className="w-14 text-right">Total</span>
+            <span className="w-14 text-right">Próx. ponto</span>
           </div>
-          <div className="space-y-1">
+          {/* Label gets its own line instead of sharing a row squeezed against
+              two fixed-width number columns — "Qualidade de Item" and
+              "Poder de Suporte" were getting truncated mid-word in the old
+              single-row layout, especially on narrow phone screens. */}
+          <div className="space-y-1.5">
             {contributions.map((c) => (
-              <div key={c.label} className="flex items-center justify-between gap-2 text-xs">
-                <span className="text-parchment/70 truncate min-w-0">{c.label}</span>
-                <span className="flex items-center gap-3 shrink-0">
-                  <span className="w-12 text-right font-bold tabular-nums text-parchment">{c.total}</span>
+              <div key={c.label} className="text-xs">
+                <div className="text-parchment/70">{c.label}</div>
+                <div className="flex items-center justify-end gap-3 mt-0.5">
+                  <span className="w-14 text-right font-bold tabular-nums text-parchment">{c.total}</span>
                   <span className="w-14 text-right font-bold tabular-nums text-sky-300">{c.nextPoint}</span>
-                </span>
+                </div>
               </div>
             ))}
           </div>

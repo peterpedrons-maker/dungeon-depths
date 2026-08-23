@@ -40,8 +40,15 @@ export const RARITIES: RarityDef[] = [
 // qualidade + Forja already stack on the primary roll; letting a single
 // item also carry 6 independent affix rolls turned "one great drop" into a
 // whole build's worth of power by itself.
+// Ranges deliberately overlap wide across rarities now — a Comum can roll
+// as low as 0 affixes (a plain, no-frills piece) or as many as a Raro, and
+// a Lendário can never roll fewer than 2. Affix count alone no longer
+// signals rarity on its own — the per-affix VALUE still scales with the
+// item's rolled rarity multiplier (see RARITIES above), so a Lendário with
+// the same affix count as a Comum still hits harder per line; count is now
+// purely a variance knob, not a power tier.
 const AFFIX_COUNT_RANGE: Record<Rarity, [number, number]> = {
-  comum: [1, 1], incomum: [1, 2], raro: [2, 2], epico: [2, 3], legendario: [3, 4],
+  comum: [0, 3], incomum: [1, 3], raro: [1, 4], epico: [2, 4], legendario: [2, 5],
 };
 
 // Rarity prefixes/suffixes wrap around whatever base-tier name the item
