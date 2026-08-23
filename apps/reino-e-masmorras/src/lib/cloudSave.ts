@@ -68,7 +68,7 @@ export interface RankingFetchResult { ranking: RankEntry[]; error: string | null
 export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
   const { data, error } = await supabase
     .from('ranking')
-    .select('name,class_id,cp,level,created_at,iron_mode,equipment')
+    .select('name,class_id,cp,level,created_at,iron_mode,equipment,equipped_title_name,cosmetic_color')
     .order('level', { ascending: false })
     .order('cp', { ascending: false })
     .limit(20);
@@ -86,6 +86,8 @@ export async function fetchGlobalRanking(): Promise<RankingFetchResult> {
       date: (r.created_at as string).slice(0, 10),
       ironMode: r.iron_mode as boolean,
       equipment: (r.equipment as Equipment | null) ?? undefined,
+      equippedTitleName: (r.equipped_title_name as string | null) ?? null,
+      cosmeticColor: (r.cosmetic_color as string | null) ?? null,
     })),
     error: null,
   };
@@ -109,6 +111,7 @@ export async function insertGlobalRankEntry(userId: string, entry: RankEntry): P
   const { error } = await supabase.from('ranking').upsert({
     user_id: userId, name: entry.name, class_id: entry.classId, cp: entry.cp, level: entry.level,
     iron_mode: entry.ironMode ?? false, equipment: entry.equipment ?? null, created_at: new Date().toISOString(),
+    equipped_title_name: entry.equippedTitleName ?? null, cosmetic_color: entry.cosmeticColor ?? null,
   }, { onConflict: 'user_id,name' });
   if (error) {
     console.error('insertGlobalRankEntry failed', error);

@@ -1107,7 +1107,11 @@ export function DungeonPanel({
         pushFloat('enemy', dmg, crit);
         flash('enemy');
         if (!silentRef.current) { if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx(); }
-        if (castAbility) pushAbilityCast('player', castAbility.name, activeAbilityIconStyle(chRef.current.classId, castAbility.id), dmg, false);
+        // Value stays null: the damage this ability dealt to the enemy is
+        // already shown at the enemy's own position via pushFloat above —
+        // repeating it here, over the player who cast it, read as if the
+        // caster took its own hit.
+        if (castAbility) pushAbilityCast('player', castAbility.name, activeAbilityIconStyle(chRef.current.classId, castAbility.id), null, false);
         // Plain-attack damage already shows on screen via the floater — the
         // log only needs to note it when an ability (and/or the status/CC/
         // buff it applied) made the round more than just a routine hit.
@@ -1279,7 +1283,10 @@ export function DungeonPanel({
       pushLog(`${enemyRef.current.name} usa ${chosenAbility.name}!${shieldTag}`);
       // No per-shape ability art exists yet, so icon is always null here —
       // pushAbilityCast/AbilityCastCallout fall back to the generic glyph.
-      pushAbilityCast('enemy', chosenAbility.name, null, edmg > 0 ? edmg : null, false);
+      // Value stays null: the damage lands on the player and already shows
+      // there via pushFloat — showing it again over the enemy that cast it
+      // read as the enemy taking damage from its own attack.
+      pushAbilityCast('enemy', chosenAbility.name, null, null, false);
     }
 
     // Sleep breaks the instant its target takes damage.

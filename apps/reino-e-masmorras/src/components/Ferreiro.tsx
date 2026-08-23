@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Character, EquipmentItem } from '../types/game';
-import { rarityColor, rarityName, SLOT_NAMES } from '../lib/equipment';
+import { rarityColor, rarityName, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import { enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, successChanceForLevel } from '../lib/enhancement';
 import { fmt } from '../lib/format';
 import { Button } from './Button';
@@ -39,7 +39,8 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
   const color = rarityColor(item.rarity);
   return (
     <div
-      className={`relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center rounded-[2px] bg-[rgba(96,148,210,0.09)] border border-[rgba(96,148,210,0.4)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[filter,opacity] duration-500 ${dim ? 'grayscale opacity-40' : 'opacity-100'} ${lit ? 'animate-[buildingGlow_0.9s_ease-out]' : ''}`}
+      style={slotTintStyle(item)}
+      className={`relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] transition-[filter,opacity] duration-500 ${dim ? 'grayscale opacity-40' : 'opacity-100'} ${lit ? 'animate-[buildingGlow_0.9s_ease-out]' : ''}`}
     >
       <div className="w-[88%] h-[88%] flex items-center justify-center">
         <ItemIconGlyph item={item} className="w-full h-full" style={{ color }} />

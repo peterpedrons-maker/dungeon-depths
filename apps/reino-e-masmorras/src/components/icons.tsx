@@ -222,3 +222,22 @@ export function IconTarget({ className, style }: IconProps) {
     </svg>
   );
 }
+
+export function IconSpeaker({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M4 9.5v5h4l5 4V5.5l-5 4H4Z" fill="currentColor" />
+      <path d="M17 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M19.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconSpeakerMuted({ className, style }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
+      <path d="M4 9.5v5h4l5 4V5.5l-5 4H4Z" fill="currentColor" />
+      <path d="m16.5 9.5 5 5M21.5 9.5l-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}

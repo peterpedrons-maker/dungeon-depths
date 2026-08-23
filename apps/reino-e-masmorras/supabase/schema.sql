@@ -117,6 +117,14 @@ create table if not exists public.ranking (
 -- this column existed just has nothing to show.
 alter table public.ranking add column if not exists equipment jsonb;
 
+-- Migration: frozen snapshot of the character's equipped title (name, not
+-- id — titles.ts's condition() needs a live Character to re-check, which a
+-- leaderboard row doesn't have) and the account's equipped Prestige Shop
+-- cosmetic color at run-end, so RankingScreen can actually show the title/
+-- color a player earned instead of the board silently ignoring them.
+alter table public.ranking add column if not exists equipped_title_name text;
+alter table public.ranking add column if not exists cosmetic_color text;
+
 -- Migration: collapse pre-existing duplicate rows (same account+character
 -- name) down to the most recent one before the unique index below goes on,
 -- or it fails to attach on old data — a run ending used to INSERT a fresh
