@@ -2,25 +2,20 @@ import { EquipmentItem, SecondaryStatType } from '../types/game';
 
 // Forja upgrade system (v1 — deliberately simple, gets more complex later):
 // spend gold at the Forja to push an item's enhanceLevel up, which scales
-// every stat shown under the item's "Atributo Base" section (gold, in
-// ItemCompareGrid) by the same flat % per level — the item's primary
-// *Bonus field, PLUS any rolled secondaryStats affix whose type mirrors one
-// of the 7 primary fields (crit/critDmg/atk/matk/def/mdef/hp — see
-// SECONDARY_TO_STAT_KEY below), since those fold into the very same "Atributo
-// Base" line as the primary roll and would otherwise look identical to it
-// on screen while secretly not scaling. A true afixo (Precisão, Roubo de
-// Vida, Redução de Recarga, ...) — the "Afixos" section, sky blue — is left
-// alone: enhancement is about the item's own base stat(s), not its rolled
-// bonus lines. This used to only touch the ONE PRIMARY_KEYS field that
-// happened to be the item's real primary, so an item whose "Atributo Base"
-// section showed two lines (e.g. Chance de Crítico from the primary roll +
-// Dano Crítico from a same-key-folding affix) only had the first one
-// actually grow on enhance, even though both read as "base" on screen. The
-// stored item's fields always stay the original rolled values;
-// enhancedItem() below is the one place the +% actually gets applied, so
-// every consumer (combat, item modals, sell value) reads the same number
-// and the formula can be retuned later without needing to "unwind"
-// anything already saved.
+// only its *Bonus fields (dmgBonus/defBonus/hpBonus/matkBonus/mdefBonus/
+// critChanceBonus/critDmgBonus) by a flat % per level — the item's one true
+// base stat, never its rolled secondaryStats affixes. An affix of type
+// crit/critDmg/atk/matk/def/mdef/hp used to get folded into the SAME
+// displayed number as a matching primary field (see the old
+// SECONDARY_TO_STAT_KEY design), which made an item look like it had two
+// "base" stats when it actually only ever has exactly one — see
+// compareItemStatRows below, which now keeps every affix on its own row,
+// tagged isBase:false, even when it happens to share a stat name with the
+// item's real base stat. The stored item's *Bonus fields always stay the
+// original rolled values; enhancedItem() below is the one place the +%
+// actually gets applied, so every consumer (combat, item modals, sell
+// value) reads the same number and the formula can be retuned later
+// without needing to "unwind" anything already saved.
 export const MAX_ENHANCE_LEVEL = 10;
 // Cumulative bonus multiplier by enhance level — per-level increments grow
 // instead of staying flat (was a flat 5%/level, so +10 = +50% no matter
@@ -81,7 +76,9 @@ const PRIMARY_KEYS = ['dmgBonus', 'defBonus', 'hpBonus', 'matkBonus', 'mdefBonus
 
 // Returns a copy of `item` with its *Bonus fields scaled up by its current
 // enhanceLevel — this is what combat, item modals and sell value should
-// read instead of the raw stored fields.
+// read instead of the raw stored fields. secondaryStats (every rolled
+// afixo) are untouched — enhancement is about the item's own single base
+// stat, never its afixos.
 export function enhancedItem(item: EquipmentItem): EquipmentItem {
   if (item.enhanceLevel <= 0) return item;
   const mult = 1 + (ENHANCE_PCT_BY_LEVEL[item.enhanceLevel] ?? 0);
@@ -91,12 +88,6 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
     const isPct = key === 'critChanceBonus' || key === 'critDmgBonus';
     scaled[key] = isPct ? item[key] * mult : Math.round(item[key] * mult);
   }
-  scaled.secondaryStats = item.secondaryStats.map((s) => {
-    const mappedKey = SECONDARY_TO_STAT_KEY[s.type];
-    if (!PRIMARY_KEY_SET.has(mappedKey)) return s; // a true afixo (Precisão, Roubo de Vida, ...) — enhancement never touches these
-    const isPct = STAT_META_BY_KEY.get(mappedKey)?.isPct ?? false;
-    return { type: s.type, value: isPct ? s.value * mult : Math.round(s.value * mult) };
-  });
   return scaled;
 }
 
@@ -175,53 +166,72 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'itemFind', label: 'Chance de Item', isPct: true },
   { key: 'itemQuality', label: 'Qualidade de Item', isPct: true },
 ];
-// crit/critDmg/def/mdef/atk/matk/hp affixes fold into the same totals line
-// as their matching primary field (a weapon's secondary "atk" affix stacks
-// with its primary dmgBonus into one "Ataque Físico" number) — every other
-// affix type has no primary twin and keys off its own name.
+// Which display label an affix type reads under — shares its name with a
+// primary field for 7 of the 17 types (crit/critDmg/def/mdef/atk/matk/hp),
+// but a same-named affix is NEVER summed into the primary's own number
+// (see statEntries below): an item only ever has one real base stat, so a
+// same-type affix always shows as its own separate "Afixos" row instead of
+// quietly inflating the "Atributo Base" line it happens to share a name
+// with. Every other affix type has no primary twin at all and always keys
+// off its own name.
 const SECONDARY_TO_STAT_KEY: Record<SecondaryStatType, StatKey> = {
   crit: 'critChanceBonus', critDmg: 'critDmgBonus', block: 'block',
   def: 'defBonus', mdef: 'mdefBonus', atk: 'dmgBonus', matk: 'matkBonus', hp: 'hpBonus',
   evasion: 'evasion', accuracy: 'accuracy', tenacity: 'tenacity', speed: 'speed',
   lifesteal: 'lifesteal', thorns: 'thorns', cdr: 'cdr', itemFind: 'itemFind', itemQuality: 'itemQuality',
 };
-// Lets enhancedItem() (declared above, but only ever called after the whole
-// module has finished loading) look up whether a given affix is a percent
-// or a flat stat without duplicating STAT_META's own isPct classification.
-const STAT_META_BY_KEY = new Map(STAT_META.map((m) => [m.key, m]));
-
-function statTotals(item: EquipmentItem): Record<StatKey, number> {
-  const totals = {} as Record<StatKey, number>;
-  for (const key of PRIMARY_KEYS) totals[key] = item[key];
-  for (const s of item.secondaryStats) {
-    const key = SECONDARY_TO_STAT_KEY[s.type];
-    totals[key] = (totals[key] ?? 0) + s.value;
-  }
-  return totals;
-}
-
-// isBase marks the item's own primary roll (the 7 PRIMARY_KEYS — a weapon's
-// Ataque Físico, armor's Defesa, etc., the stat every item of that slot is
-// guaranteed to roll) as opposed to a secondary affix (Precisão, Chance de
-// Item, and the other roll-of-the-dice bonuses with no primary field of
-// their own) — lets the UI color the two differently instead of listing
-// them as one undifferentiated pile of numbers.
-export interface StatCompareRow { label: string; isPct: boolean; equippedValue: number; newValue: number; isBase: boolean }
 
 const PRIMARY_KEY_SET: ReadonlySet<string> = new Set(PRIMARY_KEYS);
+
+// isBase marks the item's own primary roll (the 7 PRIMARY_KEYS — a weapon's
+// Ataque Físico, armor's Defesa, etc., the ONE stat every item is guaranteed
+// to roll) as opposed to a secondary affix (Precisão, Chance de Item, and
+// every other roll-of-the-dice bonus, including a crit/critDmg/atk/matk/
+// def/mdef/hp-type one) — lets the UI color the two differently and, more
+// importantly, keeps enhancement from ever touching the affix side.
+export interface StatCompareRow { label: string; isPct: boolean; equippedValue: number; newValue: number; isBase: boolean }
+
+interface StatEntry { key: StatKey; isBase: boolean; value: number }
+
+// An item's stat picture as a flat list of independent entries — never
+// merged by key — so a primary roll and a same-named affix (e.g. a weapon
+// whose primary is Ataque Físico that also rolled an Ataque Físico affix)
+// stay two distinct entries instead of silently summing into one number
+// that reads as pure "Atributo Base" on screen.
+function statEntries(item: EquipmentItem): StatEntry[] {
+  const entries: StatEntry[] = [];
+  for (const key of PRIMARY_KEYS) {
+    if (item[key] !== 0) entries.push({ key, isBase: true, value: item[key] });
+  }
+  for (const s of item.secondaryStats) {
+    entries.push({ key: SECONDARY_TO_STAT_KEY[s.type], isBase: false, value: s.value });
+  }
+  return entries;
+}
 
 // Side-by-side stat picture of `newItem` vs. whatever's currently equipped
 // in its slot — both sides go through enhancedItem() first so a comparison
 // against a forged item reflects what's actually in play, not the raw roll.
 // A null `equipped` (empty slot) reads as zero on every stat, which is
 // exactly right for "nothing to lose here" — every one of the new item's
-// stats shows as a pure gain.
+// stats shows as a pure gain. Iterates STAT_META twice per stat (once for a
+// possible base row, once for a possible affix row) instead of once per
+// StatKey, so the rare item that rolls the same stat name as both its base
+// and an affix gets two separate rows instead of one merged number.
 export function compareItemStatRows(newItem: EquipmentItem, equipped: EquipmentItem | null): StatCompareRow[] {
-  const a = statTotals(enhancedItem(newItem));
-  const b = equipped ? statTotals(enhancedItem(equipped)) : ({} as Record<StatKey, number>);
-  return STAT_META
-    .map(({ key, label, isPct }) => ({ label, isPct, equippedValue: b[key] ?? 0, newValue: a[key] ?? 0, isBase: PRIMARY_KEY_SET.has(key) }))
-    .filter((row) => row.equippedValue !== 0 || row.newValue !== 0);
+  const newEntries = statEntries(enhancedItem(newItem));
+  const eqEntries = equipped ? statEntries(enhancedItem(equipped)) : [];
+  const rows: StatCompareRow[] = [];
+  for (const { key, label, isPct } of STAT_META) {
+    const variants = PRIMARY_KEY_SET.has(key) ? [true, false] : [false];
+    for (const isBase of variants) {
+      const equippedValue = eqEntries.find((e) => e.key === key && e.isBase === isBase)?.value ?? 0;
+      const newValue = newEntries.find((e) => e.key === key && e.isBase === isBase)?.value ?? 0;
+      if (equippedValue === 0 && newValue === 0) continue;
+      rows.push({ label, isPct, equippedValue, newValue, isBase });
+    }
+  }
+  return rows;
 }
 
 export interface ItemStatLine { label: string; isPct: boolean; value: number; delta: number; isBase: boolean }
