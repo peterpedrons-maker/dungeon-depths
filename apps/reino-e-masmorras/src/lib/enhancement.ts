@@ -129,8 +129,8 @@ function affixLabel(type: SecondaryStatType, value: number): string {
     case 'lifesteal': return `+${Math.round(value * 100)}% roubo de vida`;
     case 'thorns': return `+${Math.round(value * 100)}% espinhos`;
     case 'cdr': return `+${Math.round(value * 100)}% redução de recarga`;
-    case 'itemFind': return `+${Math.round(value * 100)}% chance de item`;
-    case 'itemQuality': return `+${Math.round(value * 100)}% qualidade de item`;
+    case 'itemFind': return `+${Math.round(value * 100)}% chance de encontrar item`;
+    case 'itemQuality': return `+${Math.round(value * 100)}% qualidade dos itens`;
   }
 }
 
@@ -164,8 +164,8 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'speed', label: 'Velocidade', isPct: true },
   { key: 'lifesteal', label: 'Roubo de Vida', isPct: true },
   { key: 'thorns', label: 'Espinhos', isPct: true },
-  { key: 'itemFind', label: 'Chance de Item', isPct: true },
-  { key: 'itemQuality', label: 'Qualidade de Item', isPct: true },
+  { key: 'itemFind', label: 'Chance de Encontrar Item', isPct: true },
+  { key: 'itemQuality', label: 'Qualidade dos Itens', isPct: true },
 ];
 // Which display label an affix type reads under — shares its name with a
 // primary field for 8 of the 17 types (crit/critDmg/cdr/def/mdef/atk/matk/

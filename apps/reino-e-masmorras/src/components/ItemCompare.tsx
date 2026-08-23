@@ -16,18 +16,6 @@ export function fmtStatValue(v: number, isPct: boolean): string {
   return isPct ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
 }
 
-function StatSectionCaption({ isBase }: { isBase: boolean }) {
-  const accent = isBase ? BASE_ACCENT : AFFIX_ACCENT;
-  return (
-    <div className="flex items-center gap-1.5 mb-1">
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${accent.dot}`} />
-      <span className={`text-[9px] uppercase tracking-wider font-bold ${accent.text}`}>
-        {isBase ? 'Atributo Base' : 'Afixos'}
-      </span>
-    </div>
-  );
-}
-
 function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' | 'new' }) {
   const { label, isPct, equippedValue: eq, newValue: nv, isBase } = row;
   const isNew = side === 'new' && eq === 0 && nv !== 0;
@@ -111,19 +99,18 @@ function ItemCompareColumn({ item, label, rows, side }: {
       <span className="text-xs font-bold text-center leading-tight break-words" style={item ? { color } : undefined}>
         {item ? itemDisplayName(item) : '—'}
       </span>
+      {/* No "Atributo Base"/"Afixos" caption above each group — every row
+          already carries its own dot+color (amber vs sky blue, see
+          CompareStatRow), so the split reads clearly without spending a
+          text line on it. A slightly larger gap between the two groups
+          (vs. within a group) keeps the base/affix split visible. */}
       {own.length > 0 && (
         <div className="w-full mt-1 space-y-2.5 border-t border-panelborder/30 pt-2">
           {baseRows.length > 0 && (
-            <div>
-              <StatSectionCaption isBase />
-              <div className="space-y-1">{baseRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>
-            </div>
+            <div className="space-y-1">{baseRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>
           )}
           {affixRows.length > 0 && (
-            <div>
-              <StatSectionCaption isBase={false} />
-              <div className="space-y-1">{affixRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>
-            </div>
+            <div className="space-y-1">{affixRows.map((r) => <CompareStatRow key={r.label} row={r} side={side} />)}</div>
           )}
         </div>
       )}

@@ -59,6 +59,8 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const [tab, setTab] = useState<'equipamentos' | 'atributos'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
   const [attrInfo, setAttrInfo] = useState<AttributeKey | null>(null);
+  const [statInfo, setStatInfo] = useState<{ label: string; info: string } | null>(null);
+  const openStatInfo = (label: string, info: string) => setStatInfo({ label, info });
   const [filter, setFilter] = useState<'all' | ItemSlot>('all');
   // Points the player is staging before committing — lets them see the
   // secondary-stat payoff (atk/def/hp/...) of a spend before it's permanent,
@@ -303,15 +305,15 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             )}
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-              <PreviewStatRow label="Redução de Recarga" from={Math.round(stats.cooldownReductionPct * 100)} to={Math.round(previewStats.cooldownReductionPct * 100)} suffix="%" equip={Math.round(equip.cdr * 100)} />
-              <PreviewStatRow label="Roubo de Vida" from={Math.round(stats.lifestealPct * 100)} to={Math.round(previewStats.lifestealPct * 100)} suffix="%" equip={Math.round(equip.lifesteal * 100)} />
-              <PreviewStatRow label="Espinhos" from={Math.round(stats.thornsPct * 100)} to={Math.round(previewStats.thornsPct * 100)} suffix="%" equip={Math.round(equip.thorns * 100)} />
-              <PreviewStatRow label="Cura ao Crítico" from={Math.round(stats.onCritHealPct * 100)} to={Math.round(previewStats.onCritHealPct * 100)} suffix="%" />
-              <PreviewStatRow label="Dano vs. Envenenado" from={Math.round(stats.dmgPctVsPoison * 100)} to={Math.round(previewStats.dmgPctVsPoison * 100)} suffix="%" />
-              <PreviewStatRow label="Dano vs. Queimando" from={Math.round(stats.dmgPctVsBurn * 100)} to={Math.round(previewStats.dmgPctVsBurn * 100)} suffix="%" />
-              <PreviewStatRow label="Poder de Suporte" from={Math.round(stats.supportPowerPct * 100)} to={Math.round(previewStats.supportPowerPct * 100)} suffix="%" />
-              <PreviewStatRow label="Chance de Item" from={Math.round(stats.dropChanceBonusPct * 100)} to={Math.round(previewStats.dropChanceBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.dropChance * 100)} />
-              <PreviewStatRow label="Qualidade de Item" from={Math.round(stats.itemQualityBonusPct * 100)} to={Math.round(previewStats.itemQualityBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.itemQuality * 100)} />
+              <PreviewStatRow label="Redução de Recarga" from={Math.round(stats.cooldownReductionPct * 100)} to={Math.round(previewStats.cooldownReductionPct * 100)} suffix="%" equip={Math.round(equip.cdr * 100)} onInfo={openStatInfo} info="Reduz o tempo de recarga de todas as suas habilidades ativas, deixando-as disponíveis mais cedo." />
+              <PreviewStatRow label="Roubo de Vida" from={Math.round(stats.lifestealPct * 100)} to={Math.round(previewStats.lifestealPct * 100)} suffix="%" equip={Math.round(equip.lifesteal * 100)} onInfo={openStatInfo} info="Cura uma parte do dano físico e mágico que você causa, na forma de vida recuperada." />
+              <PreviewStatRow label="Espinhos" from={Math.round(stats.thornsPct * 100)} to={Math.round(previewStats.thornsPct * 100)} suffix="%" equip={Math.round(equip.thorns * 100)} onInfo={openStatInfo} info="Reflete de volta uma parte do dano físico que você recebe de um inimigo, direto nele." />
+              <PreviewStatRow label="Cura ao Crítico" from={Math.round(stats.onCritHealPct * 100)} to={Math.round(previewStats.onCritHealPct * 100)} suffix="%" onInfo={openStatInfo} info="Cura uma parte da sua vida máxima toda vez que você acerta um golpe crítico." />
+              <PreviewStatRow label="Dano vs. Envenenado" from={Math.round(stats.dmgPctVsPoison * 100)} to={Math.round(previewStats.dmgPctVsPoison * 100)} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão sob efeito de veneno." />
+              <PreviewStatRow label="Dano vs. Queimando" from={Math.round(stats.dmgPctVsBurn * 100)} to={Math.round(previewStats.dmgPctVsBurn * 100)} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão queimando." />
+              <PreviewStatRow label="Poder de Suporte" from={Math.round(stats.supportPowerPct * 100)} to={Math.round(previewStats.supportPowerPct * 100)} suffix="%" onInfo={openStatInfo} info="Aumenta a força de curas e bônus concedidos pelas suas próprias habilidades de suporte." />
+              <PreviewStatRow label="Chance de Encontrar Item" from={Math.round(stats.dropChanceBonusPct * 100)} to={Math.round(previewStats.dropChanceBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.dropChance * 100)} onInfo={openStatInfo} info="Aumenta a chance de um inimigo derrotado deixar cair um item de equipamento." />
+              <PreviewStatRow label="Qualidade dos Itens" from={Math.round(stats.itemQualityBonusPct * 100)} to={Math.round(previewStats.itemQualityBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.itemQuality * 100)} onInfo={openStatInfo} info="Aumenta o valor dos atributos que os itens encontrados vêm com (números maiores). Não muda a raridade do item, só a força dele." />
             </div>
           </div>
           <div className="space-y-3">
@@ -331,18 +333,18 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
-              <PreviewStatRow label="Chance de Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" equip={Math.round(equip.crit * 100)} />
-              <PreviewStatRow label="Dano Crítico" from={Math.round(stats.critDmgMult * 100)} to={Math.round(previewStats.critDmgMult * 100)} suffix="%" equip={Math.round(equip.critDmg * 100)} />
-              <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" equip={Math.round(equip.block * 100)} />
-              <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" equip={Math.round(equip.evasion * 100)} />
-              <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" equip={Math.round(equip.accuracy * 100)} />
-              <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" equip={Math.round(equip.tenacity * 100)} />
+              <PreviewStatRow label="Chance de Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" equip={Math.round(equip.crit * 100)} onInfo={openStatInfo} info="Chance de cada ataque seu causar dano crítico (dano ampliado, ver Dano Crítico)." />
+              <PreviewStatRow label="Dano Crítico" from={Math.round(stats.critDmgMult * 100)} to={Math.round(previewStats.critDmgMult * 100)} suffix="%" equip={Math.round(equip.critDmg * 100)} onInfo={openStatInfo} info="Quanto dano extra um golpe crítico causa, além do dano normal do ataque." />
+              <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" equip={Math.round(equip.block * 100)} onInfo={openStatInfo} info="Chance de bloquear um ataque inimigo, reduzindo o dano recebido dele pela metade. Vem de talentos na árvore de habilidades e de afixos em itens (escudos, principalmente) — não é garantido em todo equipamento." />
+              <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" equip={Math.round(equip.evasion * 100)} onInfo={openStatInfo} info="Chance de esquivar completamente de um ataque inimigo, não recebendo dano nenhum. É reduzida pela Precisão do inimigo." />
+              <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" equip={Math.round(equip.accuracy * 100)} onInfo={openStatInfo} info="Reduz a chance de você mesmo errar um ataque contra a Evasão do inimigo." />
+              <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" equip={Math.round(equip.tenacity * 100)} onInfo={openStatInfo} info="Reduz a duração de venenos, sangramentos, atordoamentos e outros efeitos negativos aplicados em você." />
               {/* A bare number on the same 10-baseline scale the Bestiário
                   shows for enemies (see speedScore) — not a "+N%" bonus like
                   every other row here, since Velocidade is meant to read as
                   a comparable stat against an enemy's own speed, not as a
                   delta off some hidden baseline. */}
-              <PreviewStatRow label="Velocidade" from={speedScore(1 + stats.speedPct)} to={speedScore(1 + previewStats.speedPct)} equip={Math.round(equip.speed * 10)} />
+              <PreviewStatRow label="Velocidade" from={speedScore(1 + stats.speedPct)} to={speedScore(1 + previewStats.speedPct)} equip={Math.round(equip.speed * 10)} onInfo={openStatInfo} info="Define a frequência com que você age no combate comparado ao inimigo — quanto maior, mais vezes você age no mesmo intervalo de tempo." />
             </div>
           </div>
         </div>
@@ -360,7 +362,30 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       )}
 
       {attrInfo && <AttrInfoModal ch={ch} attrKey={attrInfo} onClose={() => setAttrInfo(null)} />}
+      {statInfo && <StatInfoModal label={statInfo.label} info={statInfo.info} onClose={() => setStatInfo(null)} />}
     </Panel>
+  );
+}
+
+// Simpler sibling of AttrInfoModal for the secondary/derived stats (Bônus +
+// Combate sections) — these are flat bonuses with no per-class weight or
+// attribute-point curve to break down, so a plain-language blurb is the
+// whole tooltip instead of a formula table.
+function StatInfoModal({ label, info, onClose }: { label: string; info: string; onClose: () => void }) {
+  return (
+    <Modal onClose={onClose} bare>
+      <div className="relative w-[min(90vw,300px)] flex flex-col gap-2 px-5 py-4 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+        <div className="font-bold text-base text-gold">{label}</div>
+        <p className="text-xs text-parchment/80 leading-snug">{info}</p>
+      </div>
+    </Modal>
   );
 }
 
@@ -532,13 +557,30 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 // the same as always), but with no visible line ever singling that portion
 // out, a stronger weapon or a new affix roll just silently became part of
 // one bigger number with no confirmation gear was counted at all.
-function PreviewStatRow({ label, from, to, suffix = '', prefix = '', equip }: {
+function PreviewStatRow({ label, from, to, suffix = '', prefix = '', equip, info, onInfo }: {
   label: string; from: number; to: number; suffix?: string; prefix?: string; equip?: number;
+  // Same "?" pattern as the primary attributes above (see setAttrInfo) —
+  // `info` is a static plain-language blurb (these are flat bonuses, not
+  // attribute-point curves, so there's no per-class breakdown to compute
+  // like describeAttribute() does), shown via `onInfo` so the caller
+  // decides how (a shared modal, one instance per screen).
+  info?: string; onInfo?: (label: string, info: string) => void;
 }) {
   const changed = to !== from;
   return (
     <div className="flex items-center justify-between gap-1.5 text-xs">
-      <span className="text-parchment/60 truncate min-w-0">{label}</span>
+      <span className="text-parchment/60 truncate min-w-0 flex items-center gap-1">
+        {label}
+        {info && onInfo && (
+          <button
+            onClick={() => onInfo(label, info)}
+            className="w-3.5 h-3.5 shrink-0 flex items-center justify-center rounded-full bg-black/40 border border-parchment/30 text-parchment/60 text-[9px] font-bold leading-none hover:border-gold/60 hover:text-gold"
+            aria-label={`O que ${label} faz`}
+          >
+            ?
+          </button>
+        )}
+      </span>
       <span className="flex items-center gap-1 shrink-0">
         {!!equip && (
           <span className="text-[9px] text-amber-300/80 font-bold" title="Contribuição do equipamento">
