@@ -2,19 +2,25 @@ import { EquipmentItem, SecondaryStatType } from '../types/game';
 
 // Forja upgrade system (v1 — deliberately simple, gets more complex later):
 // spend gold at the Forja to push an item's enhanceLevel up, which scales
-// EVERY stat the item actually carries — its primary *Bonus field
-// (dmgBonus/defBonus/hpBonus/matkBonus/mdefBonus/critChanceBonus/
-// critDmgBonus) AND every rolled secondaryStats affix — by the same flat %
-// per level, each stat scaling off its own base value (a %-based stat like
-// Crítico grows in percentage points, a flat one like Ataque grows in raw
-// points). Enhancing used to only touch the primary field, leaving an
-// item's afixos completely unaffected by its own +N — a +10 Lendário with
-// 4 rolled affixes looked no different on 3 of its 4 stat lines than a +0
-// copy of itself. The stored item's fields always stay the original rolled
-// values; enhancedItem() below is the one place the +% actually gets
-// applied, so every consumer (combat, item modals, sell value) reads the
-// same number and the formula can be retuned later without needing to
-// "unwind" anything already saved.
+// every stat shown under the item's "Atributo Base" section (gold, in
+// ItemCompareGrid) by the same flat % per level — the item's primary
+// *Bonus field, PLUS any rolled secondaryStats affix whose type mirrors one
+// of the 7 primary fields (crit/critDmg/atk/matk/def/mdef/hp — see
+// SECONDARY_TO_STAT_KEY below), since those fold into the very same "Atributo
+// Base" line as the primary roll and would otherwise look identical to it
+// on screen while secretly not scaling. A true afixo (Precisão, Roubo de
+// Vida, Redução de Recarga, ...) — the "Afixos" section, sky blue — is left
+// alone: enhancement is about the item's own base stat(s), not its rolled
+// bonus lines. This used to only touch the ONE PRIMARY_KEYS field that
+// happened to be the item's real primary, so an item whose "Atributo Base"
+// section showed two lines (e.g. Chance de Crítico from the primary roll +
+// Dano Crítico from a same-key-folding affix) only had the first one
+// actually grow on enhance, even though both read as "base" on screen. The
+// stored item's fields always stay the original rolled values;
+// enhancedItem() below is the one place the +% actually gets applied, so
+// every consumer (combat, item modals, sell value) reads the same number
+// and the formula can be retuned later without needing to "unwind"
+// anything already saved.
 export const MAX_ENHANCE_LEVEL = 10;
 // Cumulative bonus multiplier by enhance level — per-level increments grow
 // instead of staying flat (was a flat 5%/level, so +10 = +50% no matter
@@ -86,7 +92,9 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
     scaled[key] = isPct ? item[key] * mult : Math.round(item[key] * mult);
   }
   scaled.secondaryStats = item.secondaryStats.map((s) => {
-    const isPct = STAT_META_BY_KEY.get(SECONDARY_TO_STAT_KEY[s.type])?.isPct ?? false;
+    const mappedKey = SECONDARY_TO_STAT_KEY[s.type];
+    if (!PRIMARY_KEY_SET.has(mappedKey)) return s; // a true afixo (Precisão, Roubo de Vida, ...) — enhancement never touches these
+    const isPct = STAT_META_BY_KEY.get(mappedKey)?.isPct ?? false;
     return { type: s.type, value: isPct ? s.value * mult : Math.round(s.value * mult) };
   });
   return scaled;
