@@ -5,6 +5,7 @@ import { enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, successChanceForLevel 
 import { fmt } from '../lib/format';
 import { Button } from './Button';
 import { ItemIcon as ItemIconGlyph } from './ItemIcon';
+import { ItemCompareGrid } from './ItemCompare';
 import { IconHammer } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
 import moedaIcon from '../assets/moeda.webp';
@@ -104,6 +105,16 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
           <p className="text-xs text-parchment/50 mb-3">
             {result.success ? `${item.name} agora está +${nextItem.enhanceLevel}.` : `${item.name} continua +${item.enhanceLevel}.`}
           </p>
+          {/* A successful push used to only show the already-upgraded icon
+              with its new "+N" badge — no indication of WHAT actually got
+              better. Same Antes/Depois compare window CharacterOverview and
+              the Mercador already use, just relabeled for a before/after
+              reveal instead of an equip-a-new-item decision. */}
+          {result.success && (
+            <div className="mb-3">
+              <ItemCompareGrid equipped={item} candidate={nextItem} labels={{ left: 'Antes', right: 'Depois' }} />
+            </div>
+          )}
           <Button onClick={() => onDone(result.success)} className="w-full">Continuar</Button>
         </>
       ) : (

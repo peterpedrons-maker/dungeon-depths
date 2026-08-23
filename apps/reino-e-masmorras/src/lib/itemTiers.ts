@@ -84,8 +84,15 @@ export const ACCESSORY_TYPES: AccessoryType[] = ['anel', 'amuleto', 'bracelete']
 // 2026 rebalance, take three: base raised ~50% (60 -> 90) per direct
 // instruction — the Mercador should read as an opportunity worth saving
 // for, not an easy alternate source of gear.
-const MERCHANT_TIER_BASE = 90;
-const MERCHANT_TIER_GROWTH = 1.6;
+// Take four: still too cheap per direct user feedback — base doubled again
+// (90 -> 180) and the growth exponent steepened (1.6 -> 1.75) so high-tier
+// gear costs noticeably more than a linear doubling alone would give
+// (Tier 10 goes from ~6.2k to ~24k gold), on top of the same pass halving
+// gold income yet again (see GOLD_YIELD_MULT in lib/enemies.ts) — the
+// Mercador needs to feel like a real long-term saving goal at every tier,
+// not just early game.
+const MERCHANT_TIER_BASE = 180;
+const MERCHANT_TIER_GROWTH = 1.75;
 export const MERCHANT_RARITY_PRICE_MULT: Record<Rarity, number> = {
   comum: 1.0, incomum: 1.15, raro: 1.5, epico: 2.0, legendario: 2.7,
 };

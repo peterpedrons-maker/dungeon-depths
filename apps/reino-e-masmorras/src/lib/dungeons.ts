@@ -65,9 +65,14 @@ export const DUNGEONS: DungeonDef[] = [
   },
   {
     id: 'cripta', name: 'Cripta do Tesouro',
-    desc: 'Guardada por criaturas comuns, mas rica em ouro e equipamentos.',
+    desc: 'Guardada por criaturas comuns, mas rica em equipamentos.',
     startDepth: 5, levelReq: 5, special: true,
-    goldMult: 2, xpMult: 0.7, dropMult: 2.5,
+    // goldMult cut from 2 (double gold) to a token 1.05 per direct user
+    // feedback — gold is meant to be scarce game-wide now (see
+    // GOLD_YIELD_MULT in lib/enemies.ts), so a dungeon doubling it
+    // undermined that on its own. dropMult (better loot, not more gold) is
+    // this dungeon's real identity now.
+    goldMult: 1.05, xpMult: 0.7, dropMult: 2.5,
     enemyPool: ['zombieLooter', 'stoneGuardian', 'greedyWraith', 'wrappedMummy', 'mimicChest'],
     bossDepth: 12, boss: 'cursedCustodian', itemTier: 2, miniBossDepths: [8], difficultyMult: 1.3,
   },
