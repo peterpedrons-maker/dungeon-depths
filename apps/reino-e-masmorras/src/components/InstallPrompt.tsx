@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import gameLogo from '../assets/reino-masmorras-logo.webp';
-import { Button } from './Button';
+import pergaminho from '../assets/pergaminho.webp';
+import { Button, SmallButton } from './Button';
 
 // Fires once per Chrome/Android page load (as long as install criteria are
 // still met and the app isn't already installed) — captured instead of
@@ -67,38 +68,41 @@ export function InstallPrompt() {
     setVisible(false);
   }
 
+  // A separate front-and-center window rather than a bottom banner — a
+  // dismissible strip along the edge of the screen was too easy to miss or
+  // mistake for a lesser notification. Hand-rolled instead of the shared
+  // Modal component (rather than reusing it) so this can sit on its own
+  // z-[100] layer, above any other Modal (z-50) that might already be open
+  // when the prompt fires.
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[100] flex justify-center px-3 pb-3 pointer-events-none">
-      <div className="pointer-events-auto flex items-center gap-3 max-w-sm w-full rounded border-2 border-gold/60 bg-nightsky/95 shadow-lg px-3 py-2.5">
-        <img src={gameLogo} alt="" className="w-10 h-10 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-gold leading-tight">Instale Reino & Masmorras</p>
-          <p className="text-[11px] text-parchment/80 leading-snug mt-0.5">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70" onClick={() => setVisible(false)}>
+      <div
+        className="relative w-full max-w-sm rounded-sm border-2 border-gold/60 shadow-[0_20px_50px_rgba(0,0,0,0.7)] bg-panel overflow-hidden"
+        style={{ backgroundImage: `url(${pergaminho})`, backgroundSize: '340px', backgroundBlendMode: 'multiply' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative border-b-2 border-gold/40 px-4 py-3 flex items-center justify-between gap-3">
+          <h3 className="font-display text-gold text-sm font-bold tracking-[0.1em] uppercase leading-snug">Instale Reino & Masmorras</h3>
+          <button onClick={() => setVisible(false)} className="text-parchment/50 hover:text-parchment text-xl leading-none px-1 shrink-0" aria-label="Fechar">×</button>
+        </div>
+        <div className="relative p-4 flex items-center gap-3">
+          <img src={gameLogo} alt="" className="w-14 h-14 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
+          <p className="text-sm text-parchment/90 leading-snug">
             {ios
               ? 'Toque em Compartilhar e depois em "Adicionar à Tela de Início".'
               : 'Jogue direto da tela inicial, sem precisar abrir o navegador.'}
           </p>
         </div>
-        {ios ? (
-          <button
-            onClick={() => setVisible(false)}
-            className="text-parchment/60 hover:text-parchment text-lg leading-none px-1 shrink-0"
-            aria-label="Fechar"
-          >
-            ×
-          </button>
-        ) : (
-          <div className="flex items-center gap-1 shrink-0">
-            <Button className="!min-w-0 !px-3 !py-1.5 text-xs" onClick={handleInstallClick}>Instalar</Button>
-            <button
-              onClick={() => setVisible(false)}
-              className="text-parchment/60 hover:text-parchment text-lg leading-none px-1"
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
-        )}
+        <div className="relative border-t border-gold/20 p-3 flex gap-2 justify-end">
+          {ios ? (
+            <SmallButton onClick={() => setVisible(false)}>Entendi</SmallButton>
+          ) : (
+            <>
+              <SmallButton onClick={() => setVisible(false)} variant="ghost">Agora não</SmallButton>
+              <Button className="!min-w-0 !px-4 !py-1.5 text-xs" onClick={handleInstallClick}>Instalar</Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

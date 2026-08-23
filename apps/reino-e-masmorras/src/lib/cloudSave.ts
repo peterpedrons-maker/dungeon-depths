@@ -28,12 +28,18 @@ export async function saveCloudCharacter(userId: string, slot: number, character
   await supabase.from('character_names').upsert({ user_id: userId, slot, name_lower: character.name.trim().toLowerCase() });
 }
 
-export async function deleteCloudCharacter(userId: string, slot: number): Promise<void> {
+export async function deleteCloudCharacter(userId: string, slot: number, name?: string): Promise<void> {
   await supabase.from('characters').delete().eq('user_id', userId).eq('slot', slot);
   // Frees the name back up — otherwise a deleted (or Modo Ferro permadeath)
   // character's name would stay reserved forever with no character left to
   // own it.
   await supabase.from('character_names').delete().eq('user_id', userId).eq('slot', slot);
+  // `ranking` (see insertGlobalRankEntry) is keyed by (user_id, name), not
+  // by slot — it used to survive a character deletion untouched, leaving a
+  // ghost row on the global leaderboard for a hero that no longer exists.
+  // name is optional only because some historical call sites may not have
+  // it handy; the row lingers if it's omitted.
+  if (name) await supabase.from('ranking').delete().eq('user_id', userId).eq('name', name);
 }
 
 // Case-insensitive global availability check backing CharacterCreation's
