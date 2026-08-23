@@ -3,7 +3,8 @@ import { Character, EquipmentItem } from '../types/game';
 import { fmt } from '../lib/format';
 import { computeKingdomBonuses } from '../lib/buildings';
 import { rarityColor, slotTintStyle } from '../lib/equipment';
-import { itemDisplayName, primaryStatLines, secondaryStatLabels } from '../lib/enhancement';
+import { itemDisplayName } from '../lib/enhancement';
+import { ItemCompareGrid } from './ItemCompare';
 import { priceForStockItem, STOCK_COLS, STOCK_ROWS } from '../lib/merchantStock';
 import { canFitInInventory, placeInInventory, SLOT_FOOTPRINT } from '../lib/inventoryGrid';
 import { MAX_POTIONS, potionBasePrice } from '../lib/consumables';
@@ -174,6 +175,7 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
       {selected && (
         <StockItemModal
           item={selected}
+          equippedInSlot={ch.equipment[selected.slot] ?? null}
           price={priceForStockItem(selected, discount)}
           disabled={ch.gold < priceForStockItem(selected, discount) || !canFitInInventory(ch.inventory, selected.slot)}
           onClose={() => setSelected(null)}
@@ -184,16 +186,23 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
   );
 }
 
-function StockItemModal({ item, price, disabled, onClose, onBuy }: {
-  item: EquipmentItem; price: number; disabled: boolean; onClose: () => void; onBuy: (item: EquipmentItem) => void;
+function StockItemModal({ item, equippedInSlot, price, disabled, onClose, onBuy }: {
+  item: EquipmentItem;
+  // What the player already has worn in this item's slot, if anything — so
+  // an identified item can show the same Equipado/Novo compare window as
+  // the inventory does, instead of just listing its own stats in isolation.
+  equippedInSlot: EquipmentItem | null;
+  price: number;
+  disabled: boolean;
+  onClose: () => void;
+  onBuy: (item: EquipmentItem) => void;
 }) {
   const identified = item.identified !== false;
   const color = identified ? rarityColor(item.rarity) : '#8a8078';
-  const primaryLines = identified ? primaryStatLines(item) : [];
 
   return (
     <Modal onClose={onClose} bare>
-      <div className="relative w-64 flex flex-col items-center gap-2 px-5 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+      <div className={`relative flex flex-col items-center gap-2 px-5 py-5 rounded-md border border-gold/30 bg-black/55 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)] ${identified ? 'w-[min(94vw,420px)]' : 'w-64'}`}>
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-parchment/50 hover:text-parchment text-lg leading-none px-1"
@@ -206,21 +215,15 @@ function StockItemModal({ item, price, disabled, onClose, onBuy }: {
           {identified ? itemDisplayName(item) : 'Item Misterioso'}
         </div>
 
-        <div style={slotTintStyle(identified ? item : null)} className="w-24 h-24 rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
-          {identified ? (
-            <ItemIcon item={item} className="w-[88%] h-[88%]" style={{ color }} />
-          ) : (
-            <span className="text-4xl font-display text-parchment/40">?</span>
-          )}
-        </div>
-
         {identified ? (
-          <div className="flex flex-col items-center gap-0.5">
-            {primaryLines.map((line) => <div key={line} className="text-sm text-parchment/90">{line}</div>)}
-            {secondaryStatLabels(item).map((line) => <div key={line} className="text-sm text-sky-300">{line}</div>)}
-          </div>
+          <ItemCompareGrid equipped={equippedInSlot} candidate={item} />
         ) : (
-          <p className="text-xs text-parchment/50 italic text-center">A identidade só é revelada depois da compra.</p>
+          <>
+            <div style={slotTintStyle(null)} className="w-24 h-24 rounded-[2px] bg-[var(--slot-bg)] border border-[var(--slot-border)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.35)] flex items-center justify-center shrink-0">
+              <span className="text-4xl font-display text-parchment/40">?</span>
+            </div>
+            <p className="text-xs text-parchment/50 italic text-center">A identidade só é revelada depois da compra.</p>
+          </>
         )}
 
         <div className="flex gap-2 mt-2">
