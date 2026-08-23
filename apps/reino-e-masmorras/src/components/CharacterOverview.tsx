@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
-import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp } from '../lib/combatStats';
+import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp, equipmentContribution } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import { itemDisplayName, itemStatLines } from '../lib/enhancement';
@@ -54,6 +54,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const cls = CLASSES[ch.classId];
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
+  const equip = equipmentContribution(ch);
   const heroImg = heroSprites(ch.classId).idle.image.src;
   const [tab, setTab] = useState<'equipamentos' | 'atributos'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -302,40 +303,40 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             )}
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-              <PreviewStatRow label="Redução de Recarga" from={Math.round(stats.cooldownReductionPct * 100)} to={Math.round(previewStats.cooldownReductionPct * 100)} suffix="%" />
-              <PreviewStatRow label="Roubo de Vida" from={Math.round(stats.lifestealPct * 100)} to={Math.round(previewStats.lifestealPct * 100)} suffix="%" />
-              <PreviewStatRow label="Espinhos" from={Math.round(stats.thornsPct * 100)} to={Math.round(previewStats.thornsPct * 100)} suffix="%" />
+              <PreviewStatRow label="Redução de Recarga" from={Math.round(stats.cooldownReductionPct * 100)} to={Math.round(previewStats.cooldownReductionPct * 100)} suffix="%" equip={Math.round(equip.cdr * 100)} />
+              <PreviewStatRow label="Roubo de Vida" from={Math.round(stats.lifestealPct * 100)} to={Math.round(previewStats.lifestealPct * 100)} suffix="%" equip={Math.round(equip.lifesteal * 100)} />
+              <PreviewStatRow label="Espinhos" from={Math.round(stats.thornsPct * 100)} to={Math.round(previewStats.thornsPct * 100)} suffix="%" equip={Math.round(equip.thorns * 100)} />
               <PreviewStatRow label="Cura ao Crítico" from={Math.round(stats.onCritHealPct * 100)} to={Math.round(previewStats.onCritHealPct * 100)} suffix="%" />
               <PreviewStatRow label="Dano vs. Envenenado" from={Math.round(stats.dmgPctVsPoison * 100)} to={Math.round(previewStats.dmgPctVsPoison * 100)} suffix="%" />
               <PreviewStatRow label="Dano vs. Queimando" from={Math.round(stats.dmgPctVsBurn * 100)} to={Math.round(previewStats.dmgPctVsBurn * 100)} suffix="%" />
               <PreviewStatRow label="Poder de Suporte" from={Math.round(stats.supportPowerPct * 100)} to={Math.round(previewStats.supportPowerPct * 100)} suffix="%" />
-              <PreviewStatRow label="Chance de Item" from={Math.round(stats.dropChanceBonusPct * 100)} to={Math.round(previewStats.dropChanceBonusPct * 100)} suffix="%" prefix="+" />
-              <PreviewStatRow label="Qualidade de Item" from={Math.round(stats.itemQualityBonusPct * 100)} to={Math.round(previewStats.itemQualityBonusPct * 100)} suffix="%" prefix="+" />
+              <PreviewStatRow label="Chance de Item" from={Math.round(stats.dropChanceBonusPct * 100)} to={Math.round(previewStats.dropChanceBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.dropChance * 100)} />
+              <PreviewStatRow label="Qualidade de Item" from={Math.round(stats.itemQualityBonusPct * 100)} to={Math.round(previewStats.itemQualityBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.itemQuality * 100)} />
             </div>
           </div>
           <div className="space-y-3">
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Vida</div>
-              <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} />
+              <PreviewStatRow label="Vida Máxima" from={effectiveMaxHp(ch)} to={previewMaxHp} equip={Math.round(equip.hp)} />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Físico</div>
-              <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} />
-              <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} />
+              <PreviewStatRow label="Ataque" from={stats.atk} to={previewStats.atk} equip={Math.round(equip.dmg)} />
+              <PreviewStatRow label="Defesa" from={stats.def} to={previewStats.def} equip={Math.round(equip.def)} />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Mágico</div>
-              <PreviewStatRow label="Ataque" from={stats.matk} to={previewStats.matk} />
-              <PreviewStatRow label="Defesa" from={stats.mdef} to={previewStats.mdef} />
+              <PreviewStatRow label="Ataque" from={stats.matk} to={previewStats.matk} equip={Math.round(equip.matk)} />
+              <PreviewStatRow label="Defesa" from={stats.mdef} to={previewStats.mdef} equip={Math.round(equip.mdef)} />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
-              <PreviewStatRow label="Chance de Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" />
-              <PreviewStatRow label="Dano Crítico" from={Math.round(stats.critDmgMult * 100)} to={Math.round(previewStats.critDmgMult * 100)} suffix="%" />
-              <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" />
-              <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" />
-              <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" />
-              <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" />
+              <PreviewStatRow label="Chance de Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" equip={Math.round(equip.crit * 100)} />
+              <PreviewStatRow label="Dano Crítico" from={Math.round(stats.critDmgMult * 100)} to={Math.round(previewStats.critDmgMult * 100)} suffix="%" equip={Math.round(equip.critDmg * 100)} />
+              <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" equip={Math.round(equip.block * 100)} />
+              <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" equip={Math.round(equip.evasion * 100)} />
+              <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" equip={Math.round(equip.accuracy * 100)} />
+              <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" equip={Math.round(equip.tenacity * 100)} />
             </div>
           </div>
         </div>
@@ -384,13 +385,25 @@ function AttrInfoModal({ ch, attrKey, onClose }: { ch: Character; attrKey: Attri
           <span className="text-parchment/50">Peso para {CLASSES[ch.classId].name}:</span>
           <span className="font-bold text-gold">×{weight.toFixed(1)}</span>
         </div>
-        <div className="space-y-1 border-t border-panelborder/30 pt-2">
-          {contributions.map((c) => (
-            <div key={c.label} className="flex items-center justify-between gap-2 text-xs">
-              <span className="text-parchment/70">{c.label}</span>
-              <span className="font-bold tabular-nums text-parchment">{c.value}</span>
-            </div>
-          ))}
+        <div className="border-t border-panelborder/30 pt-2">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span />
+            <span className="flex items-center gap-3 text-[9px] uppercase tracking-wide text-parchment/40 font-bold">
+              <span className="w-12 text-right">Total</span>
+              <span className="w-14 text-right">Próx. ponto</span>
+            </span>
+          </div>
+          <div className="space-y-1">
+            {contributions.map((c) => (
+              <div key={c.label} className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-parchment/70 truncate min-w-0">{c.label}</span>
+                <span className="flex items-center gap-3 shrink-0">
+                  <span className="w-12 text-right font-bold tabular-nums text-parchment">{c.total}</span>
+                  <span className="w-14 text-right font-bold tabular-nums text-sky-300">{c.nextPoint}</span>
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
         {isLuk && (
           <p className="text-[10px] text-parchment/40 italic border-t border-panelborder/30 pt-2">
@@ -506,14 +519,29 @@ function ItemModal({ selected, equippedInSlot, onClose, onEquip, onUnequip, onSe
 // live value, and once a point is staged (see pendingAlloc), an inline
 // "→ new value" in sky blue right where the stat already lives instead of
 // a second floating box duplicating a subset of the same numbers below.
-function PreviewStatRow({ label, from, to, suffix = '', prefix = '' }: { label: string; from: number; to: number; suffix?: string; prefix?: string }) {
+// `equip`, when passed and nonzero, tags on exactly how much of that live
+// value currently comes from gear — the numbers already included equipment
+// (see equipmentContribution in combatStats.ts, folded into computeCombatStats
+// the same as always), but with no visible line ever singling that portion
+// out, a stronger weapon or a new affix roll just silently became part of
+// one bigger number with no confirmation gear was counted at all.
+function PreviewStatRow({ label, from, to, suffix = '', prefix = '', equip }: {
+  label: string; from: number; to: number; suffix?: string; prefix?: string; equip?: number;
+}) {
   const changed = to !== from;
   return (
     <div className="flex items-center justify-between gap-1.5 text-xs">
       <span className="text-parchment/60 truncate min-w-0">{label}</span>
-      <span className="font-bold tabular-nums shrink-0">
-        <span className={changed ? 'text-parchment/50' : 'text-parchment'}>{prefix}{fmt(from)}{suffix}</span>
-        {changed && <span className="text-sky-300"> → {prefix}{fmt(to)}{suffix}</span>}
+      <span className="flex items-center gap-1 shrink-0">
+        {!!equip && (
+          <span className="text-[9px] text-amber-300/80 font-bold" title="Contribuição do equipamento">
+            (equip {prefix}{fmt(equip)}{suffix})
+          </span>
+        )}
+        <span className="font-bold tabular-nums">
+          <span className={changed ? 'text-parchment/50' : 'text-parchment'}>{prefix}{fmt(from)}{suffix}</span>
+          {changed && <span className="text-sky-300"> → {prefix}{fmt(to)}{suffix}</span>}
+        </span>
       </span>
     </div>
   );

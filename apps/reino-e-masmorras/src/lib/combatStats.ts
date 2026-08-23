@@ -77,6 +77,55 @@ function equippedItems(ch: Character): EquipmentItem[] {
   return Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null);
 }
 
+export interface EquipmentContribution {
+  dmg: number; def: number; hp: number; matk: number; mdef: number; crit: number; critDmg: number; block: number;
+  evasion: number; accuracy: number; tenacity: number; speed: number; lifesteal: number; thorns: number; cdr: number;
+  dropChance: number; itemQuality: number;
+}
+
+// Sums every equipped item's *Bonus fields and secondaryStats rolls into one
+// flat total per stat channel — the exact numbers computeCombatStats folds
+// into atk/def/etc. below. Pulled out on its own (not just inlined there)
+// so CharacterOverview's Atributos tab can show "how much of your current
+// power comes from gear" directly instead of only ever seeing gear and
+// attributes pre-mixed into one final number, which read as equipment
+// simply not being counted at all even though it always was.
+export function equipmentContribution(ch: Character): EquipmentContribution {
+  let dmg = 0, def = 0, hp = 0, matk = 0, mdef = 0, crit = 0, critDmg = 0, block = 0,
+    evasion = 0, accuracy = 0, tenacity = 0, speed = 0, lifesteal = 0, thorns = 0, cdr = 0,
+    dropChance = 0, itemQuality = 0;
+  for (const raw of equippedItems(ch)) {
+    const item = enhancedItem(raw);
+    dmg += item.dmgBonus;
+    def += item.defBonus;
+    hp += item.hpBonus;
+    matk += item.matkBonus;
+    mdef += item.mdefBonus;
+    crit += item.critChanceBonus;
+    critDmg += item.critDmgBonus;
+    for (const sec of item.secondaryStats) {
+      if (sec.type === 'crit') crit += sec.value;
+      else if (sec.type === 'critDmg') critDmg += sec.value;
+      else if (sec.type === 'def') def += sec.value;
+      else if (sec.type === 'mdef') mdef += sec.value;
+      else if (sec.type === 'hp') hp += sec.value;
+      else if (sec.type === 'block') block += sec.value;
+      else if (sec.type === 'atk') dmg += sec.value;
+      else if (sec.type === 'matk') matk += sec.value;
+      else if (sec.type === 'evasion') evasion += sec.value;
+      else if (sec.type === 'accuracy') accuracy += sec.value;
+      else if (sec.type === 'tenacity') tenacity += sec.value;
+      else if (sec.type === 'speed') speed += sec.value;
+      else if (sec.type === 'lifesteal') lifesteal += sec.value;
+      else if (sec.type === 'thorns') thorns += sec.value;
+      else if (sec.type === 'cdr') cdr += sec.value;
+      else if (sec.type === 'itemFind') dropChance += sec.value;
+      else if (sec.type === 'itemQuality') itemQuality += sec.value;
+    }
+  }
+  return { dmg, def, hp, matk, mdef, crit, critDmg, block, evasion, accuracy, tenacity, speed, lifesteal, thorns, cdr, dropChance, itemQuality };
+}
+
 // Combines class base + level growth (already baked into ch.atk/ch.def/
 // ch.matk/ch.mdef) with every equipped item across all 6 slots, every
 // unlocked talent node, and the primary attributes those talents grant into
@@ -87,39 +136,7 @@ function equippedItems(ch: Character): EquipmentItem[] {
 export function computeCombatStats(ch: Character): CombatStats {
   const bonuses = computeSkillBonuses(ch.classId, ch.unlockedSkills);
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
-
-  let itemDmg = 0, itemDef = 0, itemHp = 0, itemMatk = 0, itemMdef = 0, itemCrit = 0, itemCritDmg = 0, itemBlock = 0,
-    itemEvasion = 0, itemAccuracy = 0, itemTenacity = 0, itemSpeed = 0, itemLifesteal = 0, itemThorns = 0, itemCdr = 0,
-    itemDropChance = 0, itemItemQuality = 0;
-  for (const raw of equippedItems(ch)) {
-    const item = enhancedItem(raw);
-    itemDmg += item.dmgBonus;
-    itemDef += item.defBonus;
-    itemHp += item.hpBonus;
-    itemMatk += item.matkBonus;
-    itemMdef += item.mdefBonus;
-    itemCrit += item.critChanceBonus;
-    itemCritDmg += item.critDmgBonus;
-    for (const sec of item.secondaryStats) {
-      if (sec.type === 'crit') itemCrit += sec.value;
-      else if (sec.type === 'critDmg') itemCritDmg += sec.value;
-      else if (sec.type === 'def') itemDef += sec.value;
-      else if (sec.type === 'mdef') itemMdef += sec.value;
-      else if (sec.type === 'hp') itemHp += sec.value;
-      else if (sec.type === 'block') itemBlock += sec.value;
-      else if (sec.type === 'atk') itemDmg += sec.value;
-      else if (sec.type === 'matk') itemMatk += sec.value;
-      else if (sec.type === 'evasion') itemEvasion += sec.value;
-      else if (sec.type === 'accuracy') itemAccuracy += sec.value;
-      else if (sec.type === 'tenacity') itemTenacity += sec.value;
-      else if (sec.type === 'speed') itemSpeed += sec.value;
-      else if (sec.type === 'lifesteal') itemLifesteal += sec.value;
-      else if (sec.type === 'thorns') itemThorns += sec.value;
-      else if (sec.type === 'cdr') itemCdr += sec.value;
-      else if (sec.type === 'itemFind') itemDropChance += sec.value;
-      else if (sec.type === 'itemQuality') itemItemQuality += sec.value;
-    }
-  }
+  const item = equipmentContribution(ch);
 
   const mult = (key: AttributeKey) => classAttrMult(ch.classId, key);
   const atkFromAttr = curved(attrs.str) * ATTR_COEF.atkPerStr * mult('str') + curved(attrs.dex) * ATTR_COEF.atkPerDex * mult('dex');
@@ -133,8 +150,8 @@ export function computeCombatStats(ch: Character): CombatStats {
   const hpFromAttr = curved(attrs.vit) * ATTR_COEF.hpPerVit * mult('vit');
   const speedFromAttr = attrs.agi * ATTR_COEF.speedPerAgi * mult('agi');
 
-  let atk = (ch.atk + itemDmg + atkFromAttr) * (1 + bonuses.dmgPct);
-  let matk = (ch.matk + itemMatk + matkFromAttr) * (1 + bonuses.dmgPct);
+  let atk = (ch.atk + item.dmg + atkFromAttr) * (1 + bonuses.dmgPct);
+  let matk = (ch.matk + item.matk + matkFromAttr) * (1 + bonuses.dmgPct);
   if (bonuses.lowHpDmgScale > 0) {
     const missing = 1 - ch.hp / ch.maxHp;
     atk *= 1 + bonuses.lowHpDmgScale * missing;
@@ -143,10 +160,10 @@ export function computeCombatStats(ch: Character): CombatStats {
   atk += bonuses.flatBonusDmg;
   matk += bonuses.flatBonusMagicDmg;
 
-  const def = (ch.def + itemDef + defFromAttr) * (1 + bonuses.defPct);
-  const mdef = (ch.mdef + itemMdef + mdefFromAttr) * (1 + bonuses.mdefPct);
-  const critChance = Math.min(0.75, CLASSES[ch.classId].critChance + bonuses.critPct + itemCrit + critFromAttr);
-  const critDmgMult = BASE_CRIT_DMG_MULT + bonuses.critDmgPct + itemCritDmg;
+  const def = (ch.def + item.def + defFromAttr) * (1 + bonuses.defPct);
+  const mdef = (ch.mdef + item.mdef + mdefFromAttr) * (1 + bonuses.mdefPct);
+  const critChance = Math.min(0.75, CLASSES[ch.classId].critChance + bonuses.critPct + item.crit + critFromAttr);
+  const critDmgMult = BASE_CRIT_DMG_MULT + bonuses.critDmgPct + item.critDmg;
 
   return {
     atk: Math.round(atk),
@@ -157,21 +174,21 @@ export function computeCombatStats(ch: Character): CombatStats {
     critDmgMult,
     // Bloqueio no longer has an attribute source at all — see the ATTR_COEF
     // comment above — so this is purely skill-tree + item affix now.
-    blockChance: Math.min(0.6, bonuses.blockChance + itemBlock),
-    maxHpBonus: itemHp + bonuses.maxHpFlat + hpFromAttr,
-    lifestealPct: bonuses.lifestealPct + itemLifesteal,
-    thornsPct: bonuses.thornsPct + itemThorns,
+    blockChance: Math.min(0.6, bonuses.blockChance + item.block),
+    maxHpBonus: item.hp + bonuses.maxHpFlat + hpFromAttr,
+    lifestealPct: bonuses.lifestealPct + item.lifesteal,
+    thornsPct: bonuses.thornsPct + item.thorns,
     onCritHealPct: bonuses.onCritHealPct,
     dmgPctVsPoison: bonuses.dmgPctVsPoison,
     dmgPctVsBurn: bonuses.dmgPctVsBurn,
     supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis * mult('wis'),
-    dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk + itemDropChance,
-    itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk + itemItemQuality,
-    evasion: Math.min(0.4, bonuses.evasionPct + evasionFromAttr + itemEvasion),
-    accuracy: Math.min(0.4, bonuses.accuracyPct + accuracyFromAttr + itemAccuracy),
-    cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct + itemCdr),
-    speedPct: Math.min(0.5, speedFromAttr + itemSpeed),
-    tenacityPct: Math.min(0.4, tenacityFromAttr + itemTenacity),
+    dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk + item.dropChance,
+    itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk + item.itemQuality,
+    evasion: Math.min(0.4, bonuses.evasionPct + evasionFromAttr + item.evasion),
+    accuracy: Math.min(0.4, bonuses.accuracyPct + accuracyFromAttr + item.accuracy),
+    cooldownReductionPct: Math.min(0.5, bonuses.cooldownReductionPct + item.cdr),
+    speedPct: Math.min(0.5, speedFromAttr + item.speed),
+    tenacityPct: Math.min(0.4, tenacityFromAttr + item.tenacity),
   };
 }
 
@@ -182,55 +199,89 @@ export function effectiveMaxHp(ch: Character): number {
   return Math.round(ch.maxHp + computeCombatStats(ch).maxHpBonus);
 }
 
-export interface AttrContribution { label: string; value: string }
+export interface AttrContribution { label: string; total: string; nextPoint: string }
 export interface AttrDescription { weight: number; contributions: AttrContribution[] }
+
+interface RawContribution { label: string; raw: number; isPct: boolean }
+
+// One evaluation of an attribute's formulas at a given point count — called
+// twice by describeAttribute below (at the current total and at +1) so the
+// tooltip can show both "how much this attribute gives you right now" and
+// "what the very next point actually adds", instead of only the former.
+// That total-only version used to read as a flat "per point" rate at a
+// glance (it's formatted with a leading "+"), but every flat stat here
+// (atk/def/mdef/hp from STR/DEX/VIT/INT/WIS) runs through curved() —
+// diminishing returns past ATTR_CURVE_ANCHOR — so the total stopped being
+// points × a constant rate once a character had invested more than a
+// handful of points. Allocating a point and watching a much smaller number
+// show up than the tooltip's total implied read as the tooltip lying about
+// a completely different stat instead of just being cumulative vs. marginal.
+function rawAttrContributions(key: AttributeKey, points: number, mult: number): RawContribution[] {
+  switch (key) {
+    case 'str':
+      return [{ label: 'Ataque Físico', raw: curved(points) * ATTR_COEF.atkPerStr * mult, isPct: false }];
+    case 'dex':
+      return [
+        { label: 'Ataque Físico', raw: curved(points) * ATTR_COEF.atkPerDex * mult, isPct: false },
+        { label: 'Precisão', raw: points * ATTR_COEF.accuracyPerDex * mult, isPct: true },
+      ];
+    case 'agi':
+      return [
+        { label: 'Evasão', raw: points * ATTR_COEF.evasionPerAgi * mult, isPct: true },
+        { label: 'Velocidade', raw: points * ATTR_COEF.speedPerAgi * mult, isPct: true },
+      ];
+    case 'vit':
+      return [
+        { label: 'Defesa Física', raw: curved(points) * ATTR_COEF.defPerVit * mult, isPct: false },
+        { label: 'Vida Máxima', raw: curved(points) * ATTR_COEF.hpPerVit * mult, isPct: false },
+        { label: 'Defesa Mágica', raw: curved(points) * ATTR_COEF.mdefPerVit * mult, isPct: false },
+        { label: 'Tenacidade', raw: points * ATTR_COEF.tenacityPerVit * mult, isPct: true },
+      ];
+    case 'int':
+      return [{ label: 'Ataque Mágico', raw: curved(points) * ATTR_COEF.matkPerInt * mult, isPct: false }];
+    case 'wis':
+      return [
+        { label: 'Defesa Mágica', raw: curved(points) * ATTR_COEF.mdefPerWis * mult, isPct: false },
+        { label: 'Poder de Suporte', raw: points * ATTR_COEF.supportPctPerWis * mult, isPct: true },
+        { label: 'Tenacidade', raw: points * ATTR_COEF.tenacityPerWis * mult, isPct: true },
+      ];
+    case 'luk':
+      return [
+        { label: 'Crítico', raw: points * ATTR_COEF.critPerLuk * mult, isPct: true },
+        // dropChancePctPerLuk/itemQualityPctPerLuk deliberately skip `mult` —
+        // see the classAttrMult comment above: loot luck stays universal,
+        // never weighted by class identity like combat stats are.
+        { label: 'Chance de Item', raw: points * ATTR_COEF.dropChancePctPerLuk, isPct: true },
+        { label: 'Qualidade de Item', raw: points * ATTR_COEF.itemQualityPctPerLuk, isPct: true },
+      ];
+  }
+}
+
+function fmtContribution(raw: number, isPct: boolean): string {
+  return isPct ? `${(raw * 100).toFixed(1)}%` : `${Math.round(raw)}`;
+}
 
 // Powers the "?" tooltip on each primary attribute in CharacterOverview's
 // Atributos tab. Reuses the exact same coefficients/curve/class-multiplier
 // computeCombatStats() itself uses, so the numbers shown are this specific
 // character's real current contribution — not a generic, class-agnostic
 // blurb — including the class weight multiplier (classAttrMult) that makes
-// the same point worth more to a class built around that attribute.
-// dropChanceBonusPct/itemQualityBonusPct are the one deliberate exception:
-// they never apply the class weight (see the ATTR_COEF/classAttrMult
-// comments above), so LUK's two loot-luck lines below skip `mult` on purpose.
+// the same point worth more to a class built around that attribute. Each
+// row now shows both the running total AND the marginal gain the next
+// point would actually add (see rawAttrContributions' comment) — clicking
+// "+1" moves the stat by exactly the nextPoint number shown here, not by
+// the total.
 export function describeAttribute(ch: Character, key: AttributeKey): AttrDescription {
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const mult = classAttrMult(ch.classId, key);
   const points = attrs[key];
-  const contributions: AttrContribution[] = [];
-  switch (key) {
-    case 'str':
-      contributions.push({ label: 'Ataque Físico', value: `+${Math.round(curved(points) * ATTR_COEF.atkPerStr * mult)}` });
-      break;
-    case 'dex':
-      contributions.push({ label: 'Ataque Físico', value: `+${Math.round(curved(points) * ATTR_COEF.atkPerDex * mult)}` });
-      contributions.push({ label: 'Precisão', value: `+${(points * ATTR_COEF.accuracyPerDex * mult * 100).toFixed(1)}%` });
-      break;
-    case 'agi':
-      contributions.push({ label: 'Evasão', value: `+${(points * ATTR_COEF.evasionPerAgi * mult * 100).toFixed(1)}%` });
-      contributions.push({ label: 'Velocidade', value: `+${(points * ATTR_COEF.speedPerAgi * mult * 100).toFixed(1)}%` });
-      break;
-    case 'vit':
-      contributions.push({ label: 'Defesa Física', value: `+${Math.round(curved(points) * ATTR_COEF.defPerVit * mult)}` });
-      contributions.push({ label: 'Vida Máxima', value: `+${Math.round(curved(points) * ATTR_COEF.hpPerVit * mult)}` });
-      contributions.push({ label: 'Defesa Mágica', value: `+${Math.round(curved(points) * ATTR_COEF.mdefPerVit * mult)}` });
-      contributions.push({ label: 'Tenacidade', value: `+${(points * ATTR_COEF.tenacityPerVit * mult * 100).toFixed(1)}%` });
-      break;
-    case 'int':
-      contributions.push({ label: 'Ataque Mágico', value: `+${Math.round(curved(points) * ATTR_COEF.matkPerInt * mult)}` });
-      break;
-    case 'wis':
-      contributions.push({ label: 'Defesa Mágica', value: `+${Math.round(curved(points) * ATTR_COEF.mdefPerWis * mult)}` });
-      contributions.push({ label: 'Poder de Suporte', value: `+${(points * ATTR_COEF.supportPctPerWis * mult * 100).toFixed(1)}%` });
-      contributions.push({ label: 'Tenacidade', value: `+${(points * ATTR_COEF.tenacityPerWis * mult * 100).toFixed(1)}%` });
-      break;
-    case 'luk':
-      contributions.push({ label: 'Crítico', value: `+${(points * ATTR_COEF.critPerLuk * mult * 100).toFixed(1)}%` });
-      contributions.push({ label: 'Chance de Item', value: `+${(points * ATTR_COEF.dropChancePctPerLuk * 100).toFixed(1)}%` });
-      contributions.push({ label: 'Qualidade de Item', value: `+${(points * ATTR_COEF.itemQualityPctPerLuk * 100).toFixed(1)}%` });
-      break;
-  }
+  const current = rawAttrContributions(key, points, mult);
+  const next = rawAttrContributions(key, points + 1, mult);
+  const contributions: AttrContribution[] = current.map((c, i) => ({
+    label: c.label,
+    total: `+${fmtContribution(c.raw, c.isPct)}`,
+    nextPoint: `+${fmtContribution(next[i].raw - c.raw, c.isPct)}`,
+  }));
   return { weight: mult, contributions };
 }
 
