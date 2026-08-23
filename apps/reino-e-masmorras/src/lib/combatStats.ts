@@ -263,8 +263,8 @@ function rawAttrContributions(key: AttributeKey, points: number, mult: number): 
         // dropChancePctPerLuk/itemQualityPctPerLuk deliberately skip `mult` —
         // see the classAttrMult comment above: loot luck stays universal,
         // never weighted by class identity like combat stats are.
-        { label: 'Chance de Item', raw: points * ATTR_COEF.dropChancePctPerLuk, isPct: true },
-        { label: 'Qualidade de Item', raw: points * ATTR_COEF.itemQualityPctPerLuk, isPct: true },
+        { label: 'Chance de Encontrar Item', raw: points * ATTR_COEF.dropChancePctPerLuk, isPct: true },
+        { label: 'Qualidade dos Itens', raw: points * ATTR_COEF.itemQualityPctPerLuk, isPct: true },
       ];
   }
 }
