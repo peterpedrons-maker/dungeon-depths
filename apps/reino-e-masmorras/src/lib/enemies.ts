@@ -484,10 +484,14 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // because it actually hits harder and shrugs off more damage than the mobs
 // around it, not just because it has more HP than they do. Paired with the
 // new, much steeper per-dungeon difficultyMult curve in lib/dungeons.ts.
-const REGULAR_HP_MULT = 2.5;
+// Doubled again (2.5->5.0, 2.25->4.5) per a later user request to raise the
+// game-wide HP baseline by "1x" (i.e. +100%) on top of everything above —
+// ATK/DEF and the per-dungeon difficultyMult curve (lib/dungeons.ts) are
+// untouched by this, it only makes every fight last longer, not hit harder.
+const REGULAR_HP_MULT = 5.0;
 const REGULAR_ATK_MULT = 1.25;
 const REGULAR_DEF_MULT = 1.25;
-const BOSS_HP_MULT = 2.25;
+const BOSS_HP_MULT = 4.5;
 // User specified 1.15 here; simulation caught a severe compounding problem
 // (see the depth-growth comment below) where difficultyMult's new 1.0-1.96
 // floor stacked with this AND the boss's own already-high base stats made

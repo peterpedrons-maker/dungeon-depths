@@ -26,8 +26,8 @@ import { Character, DungeonDef } from '../types/game';
 // take one anchored too weak (levelReq-2, gear a tier behind), take two
 // fixed the anchor but still let simulation alone pick the numbers. The
 // game still played easy both times. This pass instead follows an explicit,
-// monotonically-increasing curve specified directly (D1=1.00 ... D12=1.96,
-// each dungeon roughly 5-8% harder than the last, never decreasing) —
+// monotonically-increasing curve specified directly (D1=1.00 ... D12=2.65,
+// a flat +0.15 per dungeon, never decreasing) —
 // simulation's job here is verification, not derivation: confirm the curve
 // produces the intended shape (mobs farmable but dangerous, boss a real
 // wall) and flag anything so far off that it needs a small correction, not
@@ -60,7 +60,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma tribo de goblins fez desta caverna seu covil.',
     startDepth: 4, levelReq: 4,
     enemyPool: ['goblin', 'goblinShaman', 'goblinThrower', 'goblinFanatic', 'goblinWolfRider'],
-    bossDepth: 15, boss: 'grash', itemTier: 1, miniBossDepths: [8, 12], difficultyMult: 1.08,
+    bossDepth: 15, boss: 'grash', itemTier: 1, miniBossDepths: [8, 12], difficultyMult: 1.15,
     unlockAfter: ['ruinas'],
   },
   {
@@ -69,14 +69,14 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 5, levelReq: 5, special: true,
     goldMult: 2, xpMult: 0.7, dropMult: 2.5,
     enemyPool: ['zombieLooter', 'stoneGuardian', 'greedyWraith', 'wrappedMummy', 'mimicChest'],
-    bossDepth: 12, boss: 'cursedCustodian', itemTier: 2, miniBossDepths: [8], difficultyMult: 1.16,
+    bossDepth: 12, boss: 'cursedCustodian', itemTier: 2, miniBossDepths: [8], difficultyMult: 1.3,
   },
   {
     id: 'pantano', name: 'Pântano Podre',
     desc: 'Água estagnada e árvores mortas escondem predadores famintos.',
     startDepth: 7, levelReq: 7,
     enemyPool: ['poisonToad', 'swampViper', 'crawlingBog', 'cursedWisp', 'rottingGator'],
-    bossDepth: 18, boss: 'mudMother', itemTier: 2, miniBossDepths: [11, 15], difficultyMult: 1.24,
+    bossDepth: 18, boss: 'mudMother', itemTier: 2, miniBossDepths: [11, 15], difficultyMult: 1.45,
     unlockAfter: ['goblins'],
   },
   {
@@ -84,7 +84,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma fenda rochosa coberta de teias — algo grande tece lá dentro.',
     startDepth: 10, levelReq: 10,
     enemyPool: ['huntingSpider', 'venomSpider', 'giantSpider', 'spiderlingSwarm', 'darkWeaver'],
-    bossDepth: 21, boss: 'blackMatriarch', itemTier: 3, miniBossDepths: [14, 18], difficultyMult: 1.32,
+    bossDepth: 21, boss: 'blackMatriarch', itemTier: 3, miniBossDepths: [14, 18], difficultyMult: 1.6,
     unlockAfter: ['pantano'],
   },
 
@@ -96,14 +96,14 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 12, levelReq: 12, special: true,
     enemyPool: ['gargoyle', 'spectralMage', 'cursedKnight', 'watchingEye', 'crawlingShadow'],
     xpMult: 1.6, dmgTakenMult: 1.25, dropMult: 1.5,
-    bossDepth: 23, boss: 'fallenArchmage', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 1.4,
+    bossDepth: 23, boss: 'fallenArchmage', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 1.75,
   },
   {
     id: 'minas', name: 'Minas Abandonadas',
     desc: 'Trilhos enferrujados descem além do que os mineiros ousaram explorar.',
     startDepth: 13, levelReq: 13,
     enemyPool: ['cursedMiner', 'oreGolem', 'koboldRaider', 'batSwarm', 'gasWisp'],
-    bossDepth: 24, boss: 'oreTitan', itemTier: 3, miniBossDepths: [17, 21], difficultyMult: 1.49,
+    bossDepth: 24, boss: 'oreTitan', itemTier: 3, miniBossDepths: [17, 21], difficultyMult: 1.9,
     unlockAfter: ['aranhas'],
   },
   {
@@ -111,7 +111,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Árvores retorcidas escondem olhos brilhando na escuridão.',
     startDepth: 16, levelReq: 16,
     enemyPool: ['corruptedEnt', 'ghostWolf', 'darkFairy', 'cursedBear', 'stranglingVine'],
-    bossDepth: 27, boss: 'forestHeart', itemTier: 4, miniBossDepths: [20, 24], difficultyMult: 1.58,
+    bossDepth: 27, boss: 'forestHeart', itemTier: 4, miniBossDepths: [20, 24], difficultyMult: 2.05,
     unlockAfter: ['minas'],
   },
   {
@@ -119,7 +119,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Filhotes e criaturas ligadas a dragões guardam o ninho — dragões realmente antigos ainda dormem em masmorras mais distantes.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent'],
-    bossDepth: 29, boss: 'dragon', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 1.67,
+    bossDepth: 29, boss: 'dragon', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 2.2,
     unlockAfter: ['floresta'],
   },
   {
@@ -127,7 +127,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um cemitério em ruínas onde os mortos não descansam.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['darkReaper', 'deathCrow', 'boneExecutioner', 'wailingGhost', 'graveWorm'],
-    bossDepth: 29, boss: 'skeletonLord', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 1.76,
+    bossDepth: 29, boss: 'skeletonLord', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 2.35,
     unlockAfter: ['floresta'],
   },
   {
@@ -135,7 +135,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Colunas élficas cobertas de vinhas, tomadas por criaturas selvagens.',
     startDepth: 20, levelReq: 20,
     enemyPool: ['corruptedGuardian', 'whisperingVine', 'ruinBeast', 'elvenWraith', 'crystalGolem'],
-    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 5, miniBossDepths: [24, 28], difficultyMult: 1.86,
+    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 5, miniBossDepths: [24, 28], difficultyMult: 2.5,
     unlockAfter: ['covil', 'necropole'],
   },
   {
@@ -144,7 +144,7 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 20, levelReq: 20, special: true,
     enemyPool: ['cursedGladiator', 'arenaBeast', 'maskedExecutioner', 'beastTamer', 'fallenChampion'],
     dmgTakenMult: 1.2, dropMult: 1.8,
-    bossDepth: 34, boss: 'grandChampion', itemTier: 5, miniBossDepths: [26, 30], difficultyMult: 1.96,
+    bossDepth: 34, boss: 'grandChampion', itemTier: 5, miniBossDepths: [26, 30], difficultyMult: 2.65,
   },
 ];
 
