@@ -65,6 +65,7 @@ export interface EquipmentItem {
   mdefBonus: number; // Amuleto primary stat, 0 on other slots
   critChanceBonus: number; // Anel primary stat, 0 on other slots
   critDmgBonus: number; // Anel primary stat, 0 on other slots
+  cdrBonus: number; // Foco's alternate primary stat (50/50 vs matkBonus), 0 on other slots
   // Every item rolls 1+ of these (count driven by rarity — see
   // AFFIX_COUNT_RANGE in lib/equipment.ts), sampled without repeats from a
   // slot-themed pool. Always an array, even for a single roll, so every

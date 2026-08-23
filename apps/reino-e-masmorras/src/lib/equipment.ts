@@ -76,6 +76,14 @@ const DEF_SLOT_SCALE: Record<'body' | 'legs' | 'hands', number> = {
 };
 const SHIELD_SCALE = 0.5;
 const FOCO_SCALE = 1;
+// A Foco's second possible primary, alongside matkBonus (see
+// primaryFieldsFor's offhand branch) — a caster built around ability uptime
+// can now roll a "cooldown focus" instead of a flat magic-power one, the
+// same 2-option pattern Mãos already uses for Crítico/Dano Crítico. Set
+// above cdr's own AFFIX_SCALE (0.12) since this is a guaranteed primary
+// roll, not a rider, but still modest given how strong cdr already reads
+// per point in real combat (see AFFIX_SCALE's own comment).
+const FOCO_CDR_SCALE = 0.18;
 
 // Per-stat-type scale applied to an accessory's themed primary roll — keeps
 // chance-based stats (crit/critDmg, stored as 0-1 fractions) from rolling as
@@ -237,8 +245,8 @@ function rollPrimaryValue(baseTier: number, mult: number, scale: number): number
   return Math.round(roll * mult * scale);
 }
 
-type PrimaryFields = Pick<EquipmentItem, 'dmgBonus' | 'defBonus' | 'hpBonus' | 'matkBonus' | 'mdefBonus' | 'critChanceBonus' | 'critDmgBonus'>;
-const ZERO_PRIMARY: PrimaryFields = { dmgBonus: 0, defBonus: 0, hpBonus: 0, matkBonus: 0, mdefBonus: 0, critChanceBonus: 0, critDmgBonus: 0 };
+type PrimaryFields = Pick<EquipmentItem, 'dmgBonus' | 'defBonus' | 'hpBonus' | 'matkBonus' | 'mdefBonus' | 'critChanceBonus' | 'critDmgBonus' | 'cdrBonus'>;
+const ZERO_PRIMARY: PrimaryFields = { dmgBonus: 0, defBonus: 0, hpBonus: 0, matkBonus: 0, mdefBonus: 0, critChanceBonus: 0, critDmgBonus: 0, cdrBonus: 0 };
 
 // Armor no longer always rolls Defesa as its primary — each slot picks from
 // a small themed pool of the *existing* primary fields (no new stat types
@@ -289,7 +297,13 @@ function primaryFieldsFor(
   if (slot === 'offhand') {
     const kind = OFFHAND_KIND[classId];
     if (kind === 'shield') return { defBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, SHIELD_SCALE) * qualityMult) };
-    if (kind === 'foco') return { matkBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, FOCO_SCALE) * qualityMult) };
+    if (kind === 'foco') {
+      if (Math.random() < 0.5) {
+        const raw = rollPrimaryValue(baseTier, rarityMult, FOCO_CDR_SCALE) * qualityMult;
+        return { cdrBonus: Math.round(raw) / 100 };
+      }
+      return { matkBonus: Math.round(rollPrimaryValue(baseTier, rarityMult, FOCO_SCALE) * qualityMult) };
+    }
     return {};
   }
   // accessory — rolls one stat from its themed pool as the primary

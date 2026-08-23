@@ -34,7 +34,7 @@ function migrateItem(item: any): EquipmentItem {
     tier: item.tier ?? 1, accessoryType: item.accessoryType,
     dmgBonus: item.dmgBonus ?? 0, defBonus: item.defBonus ?? 0, hpBonus: item.hpBonus ?? 0,
     matkBonus: item.matkBonus ?? 0, mdefBonus: item.mdefBonus ?? 0,
-    critChanceBonus: item.critChanceBonus ?? 0, critDmgBonus: item.critDmgBonus ?? 0,
+    critChanceBonus: item.critChanceBonus ?? 0, critDmgBonus: item.critDmgBonus ?? 0, cdrBonus: item.cdrBonus ?? 0,
     // Pre-multi-affix saves had a single optional `secondaryStat` object
     // instead of an array — wrap it into a 1-element array rather than lose
     // that item's one rolled affix on load.

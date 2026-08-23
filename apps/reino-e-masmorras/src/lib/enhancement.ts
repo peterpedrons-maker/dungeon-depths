@@ -72,7 +72,7 @@ export function enhanceCost(item: EquipmentItem): number {
   return Math.round(20 * item.tier * Math.pow(1.55, item.enhanceLevel));
 }
 
-const PRIMARY_KEYS = ['dmgBonus', 'defBonus', 'hpBonus', 'matkBonus', 'mdefBonus', 'critChanceBonus', 'critDmgBonus'] as const;
+const PRIMARY_KEYS = ['dmgBonus', 'defBonus', 'hpBonus', 'matkBonus', 'mdefBonus', 'critChanceBonus', 'critDmgBonus', 'cdrBonus'] as const;
 
 // Returns a copy of `item` with its *Bonus fields scaled up by its current
 // enhanceLevel — this is what combat, item modals and sell value should
@@ -85,7 +85,7 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
   const scaled = { ...item };
   for (const key of PRIMARY_KEYS) {
     if (item[key] === 0) continue;
-    const isPct = key === 'critChanceBonus' || key === 'critDmgBonus';
+    const isPct = key === 'critChanceBonus' || key === 'critDmgBonus' || key === 'cdrBonus';
     scaled[key] = isPct ? item[key] * mult : Math.round(item[key] * mult);
   }
   return scaled;
@@ -108,6 +108,7 @@ export function primaryStatLines(item: EquipmentItem): string[] {
     item.mdefBonus > 0 && `+${item.mdefBonus} defesa mágica`,
     item.critChanceBonus > 0 && `+${Math.round(item.critChanceBonus * 100)}% chance de crítico`,
     item.critDmgBonus > 0 && `+${Math.round(item.critDmgBonus * 100)}% dano crítico`,
+    item.cdrBonus > 0 && `+${Math.round(item.cdrBonus * 100)}% redução de recarga`,
   ].filter((l): l is string => !!l);
 }
 
@@ -146,7 +147,7 @@ export function secondaryStatLabels(item: EquipmentItem): string[] {
 // plus the 9 added alongside it — see SecondaryStatType) have no primary
 // *Bonus field of their own, so they key straight off their own affix type
 // name instead of an EquipmentItem field.
-type StatKey = typeof PRIMARY_KEYS[number] | 'block' | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'cdr' | 'itemFind' | 'itemQuality';
+type StatKey = typeof PRIMARY_KEYS[number] | 'block' | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'itemFind' | 'itemQuality';
 const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'dmgBonus', label: 'Ataque Físico', isPct: false },
   { key: 'defBonus', label: 'Defesa', isPct: false },
@@ -155,6 +156,7 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'mdefBonus', label: 'Defesa Mágica', isPct: false },
   { key: 'critChanceBonus', label: 'Chance de Crítico', isPct: true },
   { key: 'critDmgBonus', label: 'Dano Crítico', isPct: true },
+  { key: 'cdrBonus', label: 'Redução de Recarga', isPct: true },
   { key: 'block', label: 'Chance de Bloqueio', isPct: true },
   { key: 'evasion', label: 'Evasão', isPct: true },
   { key: 'accuracy', label: 'Precisão', isPct: true },
@@ -162,13 +164,12 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'speed', label: 'Velocidade', isPct: true },
   { key: 'lifesteal', label: 'Roubo de Vida', isPct: true },
   { key: 'thorns', label: 'Espinhos', isPct: true },
-  { key: 'cdr', label: 'Redução de Recarga', isPct: true },
   { key: 'itemFind', label: 'Chance de Item', isPct: true },
   { key: 'itemQuality', label: 'Qualidade de Item', isPct: true },
 ];
 // Which display label an affix type reads under — shares its name with a
-// primary field for 7 of the 17 types (crit/critDmg/def/mdef/atk/matk/hp),
-// but a same-named affix is NEVER summed into the primary's own number
+// primary field for 8 of the 17 types (crit/critDmg/cdr/def/mdef/atk/matk/
+// hp), but a same-named affix is NEVER summed into the primary's own number
 // (see statEntries below): an item only ever has one real base stat, so a
 // same-type affix always shows as its own separate "Afixos" row instead of
 // quietly inflating the "Atributo Base" line it happens to share a name
@@ -178,7 +179,7 @@ const SECONDARY_TO_STAT_KEY: Record<SecondaryStatType, StatKey> = {
   crit: 'critChanceBonus', critDmg: 'critDmgBonus', block: 'block',
   def: 'defBonus', mdef: 'mdefBonus', atk: 'dmgBonus', matk: 'matkBonus', hp: 'hpBonus',
   evasion: 'evasion', accuracy: 'accuracy', tenacity: 'tenacity', speed: 'speed',
-  lifesteal: 'lifesteal', thorns: 'thorns', cdr: 'cdr', itemFind: 'itemFind', itemQuality: 'itemQuality',
+  lifesteal: 'lifesteal', thorns: 'thorns', cdr: 'cdrBonus', itemFind: 'itemFind', itemQuality: 'itemQuality',
 };
 
 const PRIMARY_KEY_SET: ReadonlySet<string> = new Set(PRIMARY_KEYS);
