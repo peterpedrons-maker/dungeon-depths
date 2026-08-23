@@ -157,7 +157,7 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'critChanceBonus', label: 'Chance de Crítico', isPct: true },
   { key: 'critDmgBonus', label: 'Dano Crítico', isPct: true },
   { key: 'cdrBonus', label: 'Redução de Recarga', isPct: true },
-  { key: 'block', label: 'Chance de Bloqueio', isPct: true },
+  { key: 'block', label: 'Bloqueio', isPct: true },
   { key: 'evasion', label: 'Evasão', isPct: true },
   { key: 'accuracy', label: 'Precisão', isPct: true },
   { key: 'tenacity', label: 'Tenacidade', isPct: true },
