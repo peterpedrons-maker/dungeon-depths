@@ -215,7 +215,17 @@ interface RegenInstance { pct: number; roundsLeft: number; sourceAbilityId?: str
 // (ability heal, regen tick, potion, lifesteal) used to update HP silently
 // and only ever show up as a combat-log line — damage got a floating
 // number for every source, but recovering HP got none at all.
-interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean }
+// slot is a stable per-floater vertical stacking position, assigned once at
+// creation (see pushFloat) and never recomputed afterward — an earlier
+// version derived it from this floater's live index in the `floaters` array,
+// which meant every other floater on the same side silently shifted
+// position the instant one of them expired (a heal sitting still while a
+// poison tick above it vanished would visibly jump down). Assigning it once
+// and reusing the lowest free slot keeps simultaneous numbers (a poison
+// tick, the hit that follows it, a heal, a block tag — all in the same
+// round) each in their own fixed spot near the character, never overlapping
+// and never relocating mid-flight.
+interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean; slot: number }
 // A coin-icon + down-arrow burst over the player whenever an enemy's
 // stealGold effect actually takes gold — separate from FloatingNumber
 // since it isn't a damage number at all, just a distinct "you were
@@ -568,7 +578,14 @@ export function DungeonPanel({
     if (silentRef.current) return;
     if (heal && value <= 0) return;
     const id = floaterId.current++;
-    setFloaters((f) => [...f, { id, side, value, crit, blocked, miss, heal }]);
+    setFloaters((f) => {
+      // Lowest slot not already held by a still-visible floater on this same
+      // side — reused the instant its previous occupant's timeout clears it.
+      const used = new Set(f.filter((x) => x.side === side).map((x) => x.slot));
+      let slot = 0;
+      while (used.has(slot)) slot++;
+      return [...f, { id, side, value, crit, blocked, miss, heal, slot }];
+    });
     setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
   }
   // The name+icon(+amount) callout over the middle of the canvas whenever
@@ -1766,19 +1783,17 @@ export function DungeonPanel({
           // rising) and reads bigger/sharper — it was hard to read as a
           // pale, moving red against the busy background.
           const playerHit = f.side === 'player';
-          // Two numbers landing on the same side at once (a hit plus a DOT
-          // tick, a heal plus incoming damage, ...) used to spawn at the
-          // exact same spot and render right on top of each other, making
-          // both unreadable — stackIndex offsets each additional same-side
-          // floater upward a bit more than the last so simultaneous numbers
-          // sit in a small vertical stack instead of stacking literally.
-          const stackIndex = floaters.filter((x) => x.side === f.side).findIndex((x) => x.id === f.id);
           return (
           <div
             key={f.id}
             className={`absolute font-extrabold pointer-events-none ${playerHit ? 'left-[24%]' : 'left-[68%]'}`}
             style={{
-              top: `calc(${playerHit ? '14%' : '38%'} - ${stackIndex * 26}px)`,
+              // f.slot is assigned once at creation (see pushFloat) and never
+              // recomputed — keeps every simultaneous number (a poison tick,
+              // the hit right after it, a heal, a block tag) in its own
+              // fixed spot near the character the whole time it's visible,
+              // instead of jumping every time an unrelated floater expires.
+              top: `calc(${playerHit ? '14%' : '38%'} - ${f.slot * 22}px)`,
               animation: `${playerHit ? 'floatStatic' : 'float'} ${FLOAT_DURATION_MS}ms ease-out forwards`,
             }}
           >
@@ -1812,7 +1827,14 @@ export function DungeonPanel({
                 >
                   -{f.value}{f.crit ? '!' : ''}
                 </span>
-                {f.blocked && <span className="text-sm text-sky-300 align-top"> bloq.</span>}
+                {/* Cutting the number in half already shows the effect, but
+                    a tiny " bloq." suffix was easy to miss entirely — this
+                    is meant to read as unmistakably as the crit "!" does. */}
+                {f.blocked && (
+                  <div className="text-center text-sm font-bold text-sky-300 leading-tight drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
+                    Bloqueado!
+                  </div>
+                )}
               </>
             )}
           </div>
