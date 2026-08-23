@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
-import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp, equipmentContribution } from '../lib/combatStats';
+import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp, equipmentContribution, speedScore } from '../lib/combatStats';
 import { fmt } from '../lib/format';
 import { rarityColor, sellValue, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import { itemDisplayName, itemStatLines } from '../lib/enhancement';
@@ -337,6 +337,12 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" equip={Math.round(equip.evasion * 100)} />
               <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" equip={Math.round(equip.accuracy * 100)} />
               <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" equip={Math.round(equip.tenacity * 100)} />
+              {/* A bare number on the same 10-baseline scale the Bestiário
+                  shows for enemies (see speedScore) — not a "+N%" bonus like
+                  every other row here, since Velocidade is meant to read as
+                  a comparable stat against an enemy's own speed, not as a
+                  delta off some hidden baseline. */}
+              <PreviewStatRow label="Velocidade" from={speedScore(1 + stats.speedPct)} to={speedScore(1 + previewStats.speedPct)} equip={Math.round(equip.speed * 10)} />
             </div>
           </div>
         </div>

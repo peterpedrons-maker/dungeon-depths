@@ -200,6 +200,17 @@ export function effectiveMaxHp(ch: Character): number {
   return Math.round(ch.maxHp + computeCombatStats(ch).maxHpBonus);
 }
 
+// Speed as a plain integer on the same "stat number" scale as HP/ATK/etc,
+// instead of exposing the internal multiplier as a raw "Normal (100%)"-style
+// label — 10 is the baseline every combatant would show at 1.0x speed, so a
+// player and an enemy can be compared at a glance the same way any other
+// stat already is. Used by the Bestiário's enemy detail (mult = enemy's own
+// enemySpeedMult) and CharacterOverview's Combate block (mult = 1 +
+// stats.speedPct) so both sides render off the exact same formula.
+export function speedScore(mult: number): number {
+  return Math.round(10 * mult);
+}
+
 export interface AttrContribution { label: string; total: string; nextPoint: string }
 export interface AttrDescription { weight: number; contributions: AttrContribution[] }
 

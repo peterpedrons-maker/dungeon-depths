@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Character, CrowdControlKind, EnemyAbility, EnemyAbilityEffect, EnemyShape, EnemyTier, StatModStat, StatusEffectKind } from '../types/game';
+import { Character, CrowdControlKind, EnemyAbility, EnemyAbilityEffect, EnemyTier, StatModStat, StatusEffectKind } from '../types/game';
 import { TIERS, enemySpeedMult } from '../lib/enemies';
+import { speedScore } from '../lib/combatStats';
 import { HUNTS } from '../lib/hunts';
 import { enemySprite, hasOwnEnemyArt } from '../game/sprites';
 import { Panel } from './Panel';
@@ -73,14 +74,6 @@ function abilitiesFor(t: EnemyTier): EnemyAbility[] {
   return [...base, ...phaseAbilities];
 }
 
-function speedLabel(shape: EnemyShape): string {
-  const mult = enemySpeedMult(shape);
-  const pct = Math.round(mult * 100);
-  if (mult >= 1.05) return `Rápida (${pct}%)`;
-  if (mult <= 0.95) return `Lenta (${pct}%)`;
-  return `Normal (${pct}%)`;
-}
-
 function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between text-xs border-b border-panelborder/20 py-1.5 last:border-0">
@@ -102,7 +95,7 @@ function EnemyDetailModal({ tier, onClose }: { tier: EnemyTier; onClose: () => v
         <StatRow label="HP" value={tier.hp} />
         <StatRow label="Ataque" value={tier.atk} />
         {!!tier.matk && <StatRow label="Ataque Mágico" value={tier.matk} />}
-        <StatRow label="Velocidade" value={speedLabel(tier.shape)} />
+        <StatRow label="Velocidade" value={speedScore(enemySpeedMult(tier.shape))} />
       </div>
       <div>
         <h4 className="font-display text-[11px] uppercase tracking-wide text-gold/80 mb-1.5">Habilidades</h4>
