@@ -171,6 +171,12 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Migration: Baú de Armazém — shared storage across every character slot on
+-- the account, same account-wide row as prestige/cosméticos above. Holds a
+-- full EquipmentItem[] as JSON, unlimited count (no cell cap, unlike a
+-- character's own 50-cell inventory).
+alter table public.profiles add column if not exists vault_items jsonb not null default '[]'::jsonb;
+
 alter table public.profiles enable row level security;
 
 drop policy if exists "profiles_select_own" on public.profiles;

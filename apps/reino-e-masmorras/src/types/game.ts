@@ -72,7 +72,22 @@ export interface EquipmentItem {
   // consumer (combat aggregation, tooltips) has one shape to handle instead
   // of a legacy singular-vs-plural split.
   secondaryStats: { type: SecondaryStatType; value: number }[];
-  enhanceLevel: number; // Forja upgrade, 0-10 — scales this item's *Bonus fields only, never secondaryStats (see lib/enhancement.ts)
+  enhanceLevel: number; // Forja upgrade, 0-10 — scales this item's *Bonus fields only, and (see affixBoosts below) one chosen affix per level
+  // Parallel to secondaryStats — affixBoosts[i] is the cumulative fractional
+  // bonus (e.g. 0.25 = +25%) applied to secondaryStats[i].value by
+  // enhancedItem() in lib/enhancement.ts. Grows only when that specific
+  // affix is the one picked (by Runa de Aprimoramento or, lacking one, at
+  // random) on a successful Forja level-up — see AFFIX_PCT_BY_LEVEL.
+  // Undefined/missing entries read as 0 (old saves, or an affix added after
+  // generation — see originalAffixCount below).
+  affixBoosts?: number[];
+  // secondaryStats.length at generateItem() time — lets Resetar (see
+  // lib/enhancement.ts's resetItem) tell an originally-rolled affix apart
+  // from one a Runa de Aprimoramento added later to a Comum item that rolled
+  // zero affixes (see Ferreiro's rune flow), so resetting can strip the
+  // added one instead of just zeroing its boost. Undefined reads as "every
+  // current affix is original" (old saves, pre-rune items).
+  originalAffixCount?: number;
   // false only while sitting unpurchased in Character.merchantStock — name,
   // icon and stats are hidden in the UI until the player buys it, at which
   // point it's set back to true (or just dropped, since undefined === true).
@@ -83,6 +98,18 @@ export interface EquipmentItem {
   // item is actually sitting in Character.inventory.
   gridX?: number;
   gridY?: number;
+}
+
+// A Runa de Aprimoramento stack — one entry per distinct (rarity, tier)
+// combination the player owns, count-stacked like a potion instead of
+// occupying individual grid cells (there's no per-item variance to track
+// like equipment has — every rune of the same rarity+tier is identical).
+// Usable at the Ferreiro on an item whose own tier/rarity it's >= both of
+// (see lib/runes.ts's canUseRuneOn).
+export interface RuneStack {
+  rarity: Rarity;
+  tier: number; // 1-10
+  count: number;
 }
 
 export interface Equipment {
@@ -241,7 +268,11 @@ export interface Character {
   abilityThresholds: Record<string, number>; // ability id -> custom 0-1 HP fraction, overriding its hpBelow condition's default pct when the player has customized it on the loadout screen
   equipment: Equipment;
   inventory: EquipmentItem[];
-  buildings: Record<string, number>; // kingdom building id -> level
+  // Runas de Aprimoramento owned — stacked by (rarity, tier) like potions,
+  // never merged across a different rarity or tier (see lib/runes.ts).
+  // Consumed at the Ferreiro to choose which affix improves on a Forja
+  // level-up instead of leaving it to chance.
+  runes: RuneStack[];
   // The Mercador's current stock (see lib/merchantStock.ts) — re-rolled only
   // by maybeRefreshMerchantStock, once merchantRefreshedAt is old enough
   // (see MERCHANT_REFRESH_MS), checked when the shop is opened — never by
@@ -535,6 +566,11 @@ export interface ProfileState {
   prestige: number;
   ownedCosmetics: string[]; // CosmeticDef ids
   equippedCosmetic: string | null;
+  // Baú de Armazém — account-wide, shared across every character slot (like
+  // prestige/cosmetics above), unlimited capacity. Items sitting here have
+  // no gridX/gridY (same convention as an equipped item) until withdrawn
+  // back into a character's own inventory. See components/Bau.tsx.
+  vaultItems: EquipmentItem[];
 }
 
 // ── Combat-facing stat bundle, after class base + level growth + equipment + skill tree + attributes ──
@@ -568,12 +604,4 @@ export interface CombatStats {
   // "Tenacidade" in the UI — "Resistência" read as too easily confused with
   // def/mdef (which resist damage, not status/CC).
   tenacityPct: number;
-}
-
-// ── Kingdom buildings: permanent, gold-funded upgrades that persist across runs ──
-export interface KingdomBonuses {
-  dropChanceBonusPct: number;
-  itemQualityBonusPct: number; // Forja: bonus on top of an item's rolled primary stat
-  potionHealBonusPct: number;
-  merchantDiscountPct: number; // Mercador: discount off potion/item shop prices
 }

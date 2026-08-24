@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Character, EquipmentItem } from '../types/game';
 import { fmt } from '../lib/format';
-import { computeKingdomBonuses } from '../lib/buildings';
 import { rarityColor, slotTintStyle } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
 import { ItemCompareGrid } from './ItemCompare';
@@ -37,12 +36,10 @@ interface Props {
 // of on every dungeon run — walking in and out doesn't refresh it.
 export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClose }: Props) {
   const [selected, setSelected] = useState<EquipmentItem | null>(null);
-  const kingdomBonuses = computeKingdomBonuses(ch.buildings);
-  const discount = kingdomBonuses.merchantDiscountPct;
-  const potionCost = Math.max(1, Math.round(potionBasePrice(highestAccessibleItemTier(ch)) * (1 - discount)));
+  const potionCost = potionBasePrice(highestAccessibleItemTier(ch));
 
   function buyStockItem(item: EquipmentItem) {
-    const price = priceForStockItem(item, discount);
+    const price = priceForStockItem(item);
     if (ch.gold < price || !canFitInInventory(ch.inventory, item.slot)) return;
     onCharacterChange({
       ...ch,
@@ -176,8 +173,8 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
         <StockItemModal
           item={selected}
           equippedInSlot={ch.equipment[selected.slot] ?? null}
-          price={priceForStockItem(selected, discount)}
-          disabled={ch.gold < priceForStockItem(selected, discount) || !canFitInInventory(ch.inventory, selected.slot)}
+          price={priceForStockItem(selected)}
+          disabled={ch.gold < priceForStockItem(selected) || !canFitInInventory(ch.inventory, selected.slot)}
           onClose={() => setSelected(null)}
           onBuy={buyStockItem}
         />

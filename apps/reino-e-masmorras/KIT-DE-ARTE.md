@@ -33,6 +33,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ [Armaduras — 9 folhas (3 pesos × Corpo/Pernas/Mãos)](#armaduras-9-folhas-3-grupos-de-peso-corpo-pernas-maos)
 - ✅ [Mão Secundária — 2 folhas](#mao-secundaria-2-folhas)
 - ✅ [Acessórios — 3 folhas](#acessorios-3-folhas)
+- 🕓 [Runa de Aprimoramento — 1 folha, 5 raridades](#runa-de-aprimoramento-1-folha-5-raridades)
 
 ### Sprites de Personagens — Classes (14/14 ✅)
 - ✅ [Guerreiro, Mago e Ladino](#classes-guerreiro-mago-e-ladino)
@@ -1253,6 +1254,25 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 
 ---
 
+<a id="runa-de-aprimoramento-1-folha-5-raridades"></a>
+### Runa de Aprimoramento — 1 folha, 5 raridades
+
+Item novo: dropa de inimigos comuns e chefes, ocupa 1 célula do inventário, e é consumido no Ferreiro pra escolher qual afixo de um equipamento melhora (em vez de sortear aleatoriamente). Cada raridade tem sua própria arte — não reaproveita a mesma pedra recolorida — seguindo as mesmas cores de raridade já usadas no resto do jogo (cinza/esverdeado → verde → azul → roxo → dourado).
+
+**Tamanho:** 1280×256 px · **Uso:** 5 ícones (grade 5×1), um por raridade (Comum, Incomum, Raro, Épico, Lendário)
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ring/amulet/bracelet icons), NOT flat vector, NOT pixel art. Each icon is a single small carved rune stone/shard, a flat-ish polished fragment etched with a glowing engraved symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+
+One single wide image containing FIVE separate icons arranged in an even 5-column × 1-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all five — this is a rarity progression from plain (left) to radiant (right), so make the visual richness and the glow escalate clearly across the grid, matching this game's existing rarity color coding.
+
+1) Comum: a dull grayish-tan chipped stone shard, faint scratched engraving, barely glowing, worn and plain. 2) Incomum: a smooth mossy-green stone shard, a clearer engraved symbol glowing with a soft green light. 3) Raro: a polished deep-blue stone shard, sharper facets, the engraved symbol glowing with a steady blue light. 4) Épico: a faceted violet-purple crystal shard, ornate engraving, glowing with a rich purple-magenta light and small motes drifting off it. 5) Lendário: a radiant gold-amber crystal shard wreathed in a soft golden aura, intricate glowing engraving covering its whole surface, bright warm light and sparks radiating outward.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×256 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own inventory-slot frame it composites on top).
+```
+
+---
+
 <a id="ornamentos"></a>
 ## Ornamentos
 
@@ -2405,13 +2425,17 @@ This is a complete, self-contained illustration meant to fill the entire canvas 
 ### Mapa de Construções — Tela de Reino: Construções
 **Tamanho:** 1536×640 px · **Uso:** substitui a lista simples de construções por um mapa clicável (mesmo padrão do Mapa de Masmorras — marcadores por cima da própria arte)
 
+**Nota:** a construção do meio era a "Capela" (bônus de cura de poção) e virou o "Baú de Armazém" quando esse
+sistema de bônus por nível de construção foi removido. A arte já gerada/integrada ainda mostra uma capela ali —
+o prompt abaixo já está atualizado pra descrever um baú/tesouraria em vez disso, pra quando a arte for regenerada.
+
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and Kingdom scene (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
 
 A wide nighttime view of the castle's inner courtyard, seen from just inside the gates — the same fortified stone walls and deep indigo night sky as the Reino overview scene, but now looking IN at the grounds instead of at the gate from outside. Warm torchlight and a pale moon overhead, a few scattered stars. Cobblestone paths connect three distinct structures spread across the courtyard, left to right:
 
 1) "Forja" — a sturdy stone forge building with a chimney glowing orange from an internal furnace, sparks drifting upward, a blacksmith's anvil visible near the open door.
-2) "Capela" — a small stone chapel with a modest bell tower and a stained-glass window glowing soft blue-white from within.
+2) "Baú de Armazém" — a sturdy stone vault/treasury structure with a heavy iron-studded door, a large ornate lock, and a small barred window, a lantern hung beside the door casting warm light.
 3) "Mercador" — a timber-framed market stall with an awning, wooden crates and barrels stacked beside it, a few visible wares (potions, coiled rope, a shield) hanging or displayed on a simple counter, a lantern lit for evening trade.
 
 Each of the three has a small wooden signpost bearing its Portuguese name near its entrance (small spelling mistakes acceptable). Leave one clearly buildable empty plot near the right edge — bare ground with a low stone foundation outline and a fog-shrouded silhouette of scaffolding, suggesting a future construction site, no legible sign.

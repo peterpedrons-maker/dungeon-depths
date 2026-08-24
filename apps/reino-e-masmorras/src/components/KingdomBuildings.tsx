@@ -1,59 +1,50 @@
 import { useEffect, useRef, useState, CSSProperties, RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { Character } from '../types/game';
-import { fmt } from '../lib/format';
 import { BUILDINGS, BuildingDef } from '../lib/buildings';
 import { Panel } from './Panel';
-import { Modal } from './Modal';
-import { SmallButton } from './Button';
-import mapaConstrucoes from '../assets/reino-construcoes.webp';
 import pergaminho from '../assets/pergaminho.webp';
+import mapaConstrucoes from '../assets/reino-construcoes.webp';
 
 interface Props {
-  character: Character;
-  onUpgrade: (buildingId: string) => void;
   onOpenFerreiro: () => void;
   onOpenMercador: () => void;
+  onOpenBau: () => void;
 }
 
 // Coordinates were measured directly from the generated map art (each
-// building's own sign-post, or the scaffolding for the reserved plot) —
-// %-based so they stay aligned even if the image is regenerated at a
-// different resolution. Same pattern as lib/dungeonMap.ts's markers.
+// building's own sign-post) — %-based so they stay aligned even if the
+// image is regenerated at a different resolution. Same pattern as
+// lib/dungeonMap.ts's markers. The 'capela' plot was repurposed into the
+// Baú de Armazém — same marker position, new purpose.
 const MARKERS: Record<string, { xPct: number; yPct: number }> = {
   forja: { xPct: 15.6, yPct: 68.3 },
-  capela: { xPct: 40.6, yPct: 61.7 },
+  bau: { xPct: 40.6, yPct: 61.7 },
   mercador: { xPct: 68.1, yPct: 63.3 },
 };
 const RESERVED_MARKER = { xPct: 89.4, yPct: 56.4 };
 
-export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onOpenMercador }: Props) {
+// Every marker opens straight into its own scene — there's no "melhorar
+// nível" purchase flow anymore (the whole building-level meta was removed:
+// Forja's success chance, Mercador's prices and the old Capela's heal bonus
+// are all flat now, nothing to invest gold into).
+export function KingdomBuildings({ onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
   const [openBuildingId, setOpenBuildingId] = useState<string | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-  const [glowId, setGlowId] = useState<string | null>(null);
   const markerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const popoverRef = useRef<HTMLDivElement>(null);
-  const glowTimer = useRef<number | undefined>(undefined);
 
   const openBuilding = BUILDINGS.find((b) => b.id === openBuildingId) ?? null;
 
-  // Buildings whose marker also opens a full NPC scene, beyond the plain
-  // "melhorar nível" upgrade every building has — keyed by building id so
-  // adding a future NPC building doesn't require touching BuildingPopover.
   const talkActions: Record<string, { label: string; onOpen: () => void }> = {
     forja: { label: 'Conversar com o Ferreiro', onOpen: onOpenFerreiro },
     mercador: { label: 'Conversar com o Mercador', onOpen: onOpenMercador },
+    bau: { label: 'Abrir o Baú', onOpen: onOpenBau },
   };
 
   useEffect(() => {
     if (!openBuildingId) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenBuildingId(null); };
     window.addEventListener('keydown', onKey);
-    // A full-screen click-catcher would intercept the click needed to swap
-    // straight from one marker's balloon to another's, so instead we just
-    // watch for clicks that land outside both the balloon and every marker.
-    // Marker clicks are left alone — toggleBuilding already handles them
-    // (close if same marker, switch anchor if a different one).
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node;
       if (popoverRef.current?.contains(target)) return;
@@ -67,8 +58,6 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onO
     };
   }, [openBuildingId]);
 
-  useEffect(() => () => window.clearTimeout(glowTimer.current), []);
-
   function toggleBuilding(id: string) {
     if (openBuildingId === id) { setOpenBuildingId(null); return; }
     const el = markerRefs.current[id];
@@ -76,18 +65,10 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onO
     setOpenBuildingId(id);
   }
 
-  function handleUpgradeClick(id: string) {
-    onUpgrade(id);
-    setGlowId(id);
-    window.clearTimeout(glowTimer.current);
-    glowTimer.current = window.setTimeout(() => setGlowId(null), 900);
-  }
-
   return (
     <Panel title="Reino — Mercadores">
       <p className="text-parchment/70 mb-4">
-        Invista seu ouro em melhorias permanentes que continuam valendo em toda expedição futura. Toque numa
-        construção no mapa pra ver os detalhes.
+        Toque numa construção no mapa pra visitá-la.
       </p>
 
       <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[2/1]">
@@ -101,7 +82,6 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onO
         {BUILDINGS.map((b) => {
           const marker = MARKERS[b.id];
           if (!marker) return null;
-          const level = ch.buildings[b.id] ?? 0;
           return (
             <button
               key={b.id}
@@ -109,16 +89,10 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onO
               onClick={() => toggleBuilding(b.id)}
               title={b.name}
               className={`absolute w-16 h-16 sm:w-20 sm:h-20 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition hover:bg-gold/15 hover:ring-2 hover:ring-gold/50 ${
-                glowId === b.id ? 'animate-[buildingGlow_0.9s_ease-out]' : ''
-              } ${openBuildingId === b.id ? 'bg-gold/15 ring-2 ring-gold/50' : ''}`}
+                openBuildingId === b.id ? 'bg-gold/15 ring-2 ring-gold/50' : ''
+              }`}
               style={{ left: `${marker.xPct}%`, top: `${markerYPct(marker.yPct)}%` }}
-            >
-              {level > 0 && (
-                <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-gold text-ink rounded-full w-5 h-5 flex items-center justify-center border border-black/40 shadow">
-                  {level}
-                </span>
-              )}
-            </button>
+            />
           );
         })}
         <div
@@ -135,13 +109,7 @@ export function KingdomBuildings({ character: ch, onUpgrade, onOpenFerreiro, onO
           popoverRef={popoverRef}
           anchorRect={anchorRect}
           building={openBuilding}
-          level={ch.buildings[openBuilding.id] ?? 0}
-          gold={ch.gold}
-          onUpgrade={() => handleUpgradeClick(openBuilding.id)}
-          talk={talkActions[openBuilding.id] ? {
-            label: talkActions[openBuilding.id].label,
-            onOpen: () => { talkActions[openBuilding.id].onOpen(); setOpenBuildingId(null); },
-          } : undefined}
+          talk={talkActions[openBuilding.id]}
           onClose={() => setOpenBuildingId(null)}
         />
       )}
@@ -159,18 +127,15 @@ function markerYPct(sourceYPct: number): number {
 }
 
 // A small balloon anchored right next to the marker that was tapped, instead
-// of a centered full-screen Modal — keeps the "melhorar / conversar" choice
-// feeling like part of the map rather than a separate window. Portaled to
-// <body> and positioned via the marker's own getBoundingClientRect() so it's
-// never clipped by an ancestor's overflow-hidden (the map crop, the Panel
-// card, etc.) no matter where on the page it renders.
-function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onUpgrade, talk, onClose }: {
-  popoverRef: RefObject<HTMLDivElement>; anchorRect: DOMRect; building: BuildingDef; level: number; gold: number;
-  onUpgrade: () => void; talk?: { label: string; onOpen: () => void }; onClose: () => void;
+// of a centered full-screen Modal — keeps opening a building feeling like
+// part of the map rather than a separate window. Portaled to <body> and
+// positioned via the marker's own getBoundingClientRect() so it's never
+// clipped by an ancestor's overflow-hidden (the map crop, the Panel card,
+// etc.) no matter where on the page it renders.
+function BuildingPopover({ popoverRef, anchorRect, building: b, talk, onClose }: {
+  popoverRef: RefObject<HTMLDivElement>; anchorRect: DOMRect; building: BuildingDef;
+  talk?: { label: string; onOpen: () => void }; onClose: () => void;
 }) {
-  const [confirming, setConfirming] = useState(false);
-  const maxed = level >= b.maxLevel;
-  const cost = maxed ? 0 : b.costForLevel(level);
   const centerX = anchorRect.left + anchorRect.width / 2;
   const placeBelow = anchorRect.top < window.innerHeight / 2;
   const vertical: CSSProperties = placeBelow
@@ -178,61 +143,30 @@ function BuildingPopover({ popoverRef, anchorRect, building: b, level, gold, onU
     : { bottom: window.innerHeight - anchorRect.top + 10 };
 
   return createPortal(
-    <>
-      <div
-        ref={popoverRef}
-        className="fixed z-50 w-56 rounded-sm border-2 border-gold/50 bg-panel shadow-[0_12px_30px_rgba(0,0,0,0.6)] p-3 text-xs"
-        style={{
-          left: `clamp(120px, ${centerX}px, calc(100vw - 120px))`,
-          transform: 'translateX(-50%)',
-          backgroundImage: `url(${pergaminho})`, backgroundSize: '200px', backgroundBlendMode: 'multiply',
-          ...vertical,
-        }}
-      >
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="font-display text-gold font-bold tracking-wide leading-tight">{b.name}</span>
-          <button onClick={onClose} className="text-parchment/50 hover:text-parchment text-base leading-none px-1 shrink-0" aria-label="Fechar">×</button>
-        </div>
-        <span className="inline-block text-[10px] bg-gold/20 border border-gold/50 text-gold rounded-full px-2 py-0.5 font-bold mb-2">
-          Nível {level}/{b.maxLevel}
-        </span>
-        {b.disabled ? (
-          <p className="text-parchment/40 italic mb-1.5">Temporariamente indisponível — voltará com uma nova função em breve.</p>
-        ) : (
-          <button
-            onClick={() => setConfirming(true)}
-            disabled={maxed || gold < cost}
-            className="w-full text-center font-bold text-ink bg-gold rounded px-2 py-1.5 mb-1.5 hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:grayscale disabled:hover:brightness-100"
-          >
-            {maxed ? 'Nível Máximo' : `Melhorar — ${fmt(cost)} ouro`}
-          </button>
-        )}
-        {talk && (
-          <button
-            onClick={talk.onOpen}
-            className="w-full text-center font-bold text-parchment/80 border border-panelborder rounded px-2 py-1.5 hover:border-gold/50 hover:text-parchment"
-          >
-            {talk.label}
-          </button>
-        )}
+    <div
+      ref={popoverRef}
+      className="fixed z-50 w-56 rounded-sm border-2 border-gold/50 bg-panel shadow-[0_12px_30px_rgba(0,0,0,0.6)] p-3 text-xs"
+      style={{
+        left: `clamp(120px, ${centerX}px, calc(100vw - 120px))`,
+        transform: 'translateX(-50%)',
+        backgroundImage: `url(${pergaminho})`, backgroundSize: '200px', backgroundBlendMode: 'multiply',
+        ...vertical,
+      }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="font-display text-gold font-bold tracking-wide leading-tight">{b.name}</span>
+        <button onClick={onClose} className="text-parchment/50 hover:text-parchment text-base leading-none px-1 shrink-0" aria-label="Fechar">×</button>
       </div>
-      {confirming && (
-        <Modal
-          title={b.name}
-          onClose={() => setConfirming(false)}
-          footer={
-            <>
-              <SmallButton onClick={() => setConfirming(false)} variant="ghost">Cancelar</SmallButton>
-              <SmallButton onClick={() => { onUpgrade(); setConfirming(false); }}>
-                Melhorar — {fmt(cost)} ouro
-              </SmallButton>
-            </>
-          }
+      <p className="text-parchment/70 mb-2">{b.desc}</p>
+      {talk && (
+        <button
+          onClick={() => { talk.onOpen(); onClose(); }}
+          className="w-full text-center font-bold text-ink bg-gold rounded px-2 py-1.5 hover:brightness-110 active:brightness-95"
         >
-          <p>{b.desc}</p>
-        </Modal>
+          {talk.label}
+        </button>
       )}
-    </>,
-    document.body
+    </div>,
+    document.body,
   );
 }

@@ -1,5 +1,4 @@
 import { AttributeKey, Attributes, ClassDef, ClassId, Character } from '../types/game';
-import { computeKingdomBonuses } from './buildings';
 import { generateMerchantStock } from './merchantStock';
 import { generateItem } from './equipment';
 
@@ -230,7 +229,7 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
       legs: null, hands: null, offhand: null, accessory: null,
     },
     inventory: [],
-    buildings: {}, merchantStock: [],
+    runes: [], merchantStock: [],
   };
   // Seeded up front (not left empty until the first run ends) so a
   // brand-new character never sees a bare shop — mainly matters for a
@@ -239,7 +238,7 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
   // stock afterward.
   return {
     ...base,
-    merchantStock: generateMerchantStock(base, computeKingdomBonuses(base.buildings)),
+    merchantStock: generateMerchantStock(base),
     merchantRefreshedAt: Date.now(),
   };
 }
