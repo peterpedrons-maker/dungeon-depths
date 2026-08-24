@@ -132,14 +132,15 @@ export async function insertGlobalRankEntry(userId: string, entry: RankEntry): P
 export async function fetchProfile(userId: string): Promise<ProfileState> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('prestige,owned_cosmetics,equipped_cosmetic')
+    .select('prestige,owned_cosmetics,equipped_cosmetic,vault_items')
     .eq('user_id', userId)
     .maybeSingle();
-  if (error || !data) return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null };
+  if (error || !data) return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null, vaultItems: [] };
   return {
     prestige: data.prestige as number,
     ownedCosmetics: (data.owned_cosmetics as string[]) ?? [],
     equippedCosmetic: (data.equipped_cosmetic as string | null) ?? null,
+    vaultItems: (data.vault_items as ProfileState['vaultItems']) ?? [],
   };
 }
 
@@ -149,6 +150,7 @@ export async function saveProfile(userId: string, profile: ProfileState): Promis
     prestige: profile.prestige,
     owned_cosmetics: profile.ownedCosmetics,
     equipped_cosmetic: profile.equippedCosmetic,
+    vault_items: profile.vaultItems,
     updated_at: new Date().toISOString(),
   });
 }

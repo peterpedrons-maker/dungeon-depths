@@ -183,6 +183,12 @@ export default function App() {
     persistProfile({ ...profile, equippedCosmetic: id });
   }
 
+  // Baú de Armazém — account-wide, so it persists through persistProfile
+  // like prestige/cosméticos above, not through the per-character `persist`.
+  function handleVaultChange(vaultItems: ProfileState['vaultItems']) {
+    persistProfile({ ...profile, vaultItems });
+  }
+
   function persist(c: Character) {
     if (activeSlot === null) return;
     setSlots((prev) => prev.map((old, i) => (i === activeSlot ? c : old)));
@@ -347,6 +353,7 @@ export default function App() {
           onSignOut={handleSignOut}
           onBuyCosmetic={handleBuyCosmetic}
           onEquipCosmetic={handleEquipCosmetic}
+          onVaultChange={handleVaultChange}
         />
       );
       break;

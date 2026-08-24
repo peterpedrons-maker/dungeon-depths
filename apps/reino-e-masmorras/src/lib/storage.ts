@@ -3,7 +3,6 @@ import { CLASSES, MAX_LEVEL } from './classes';
 import { SKILL_TREES } from './skills';
 import { MAX_POTIONS } from './consumables';
 import { repackInventory } from './inventoryGrid';
-import { computeKingdomBonuses } from './buildings';
 import { generateMerchantStock, STOCK_COLS } from './merchantStock';
 
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
@@ -95,14 +94,16 @@ export function migrateCharacter(raw: any): Character | null {
     // forward, and back-fill the auto-use threshold new saves get by default.
     const potions = Math.min(c.potions ?? 1, MAX_POTIONS);
     const potionThreshold = c.potionThreshold ?? 0.3;
-    const buildings = migrateBuildings(c.buildings ?? {});
+    // Runas de Aprimoramento are a brand-new resource — old saves simply
+    // have none yet.
+    const runes = c.runes ?? [];
 
     // Saves from before the Mercador redesign have no stock at all — roll a
     // fresh one rather than leave the shop empty until the next time-based
     // refresh is due.
     const merchantStock = c.merchantStock
       ? repackInventory(c.merchantStock.map(migrateItem), STOCK_COLS)
-      : generateMerchantStock({ ...c, classId, level, buildings } as Character, computeKingdomBonuses(buildings));
+      : generateMerchantStock({ ...c, classId, level } as Character);
     // Saves from before the time-based refresh existed read as "due for a
     // refresh immediately" (0), rather than granting a full free hour.
     const merchantRefreshedAt = c.merchantRefreshedAt ?? 0;
@@ -133,7 +134,7 @@ export function migrateCharacter(raw: any): Character | null {
       // could invalidate previously-saved positions anyway — repacking from
       // scratch on every load is cheap and guarantees no overlaps either way.
       inventory: repackInventory((c.inventory ?? []).map(migrateItem)),
-      buildings,
+      runes,
       merchantStock,
       merchantRefreshedAt,
     };
@@ -144,15 +145,6 @@ export function loadCharacter(slot: number): Character | null {
   const raw = localStorage.getItem(charKey(slot)) ?? (slot === 0 ? localStorage.getItem(LEGACY_CHAR_KEY) : null);
   if (!raw) return null;
   try { return migrateCharacter(JSON.parse(raw)); } catch { return null; }
-}
-
-// Old saves invested gold levels into "guilda" (XP bonus), a building the
-// Mercador replaced — carry that investment forward under the new id
-// instead of silently discarding it.
-function migrateBuildings(b: Record<string, number>): Record<string, number> {
-  if (!b.guilda || b.mercador !== undefined) return b;
-  const { guilda, ...rest } = b;
-  return { ...rest, mercador: guilda };
 }
 
 export function saveCharacter(slot: number, c: Character): void {
@@ -174,10 +166,13 @@ const PROFILE_KEY = 'rm_profile_v1';
 export function loadProfile(): ProfileState {
   try {
     const raw = localStorage.getItem(PROFILE_KEY);
-    if (!raw) return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null };
+    if (!raw) return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null, vaultItems: [] };
     const p = JSON.parse(raw) as Partial<ProfileState>;
-    return { prestige: p.prestige ?? 0, ownedCosmetics: p.ownedCosmetics ?? [], equippedCosmetic: p.equippedCosmetic ?? null };
-  } catch { return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null }; }
+    return {
+      prestige: p.prestige ?? 0, ownedCosmetics: p.ownedCosmetics ?? [], equippedCosmetic: p.equippedCosmetic ?? null,
+      vaultItems: p.vaultItems ?? [],
+    };
+  } catch { return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null, vaultItems: [] }; }
 }
 export function saveProfileLocal(p: ProfileState): void {
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch { /* ignore */ }

@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { AttributeKey, Character, ProfileState, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot, Rarity } from '../types/game';
+import { AttributeKey, Character, ProfileState, RankEntry, Section, DungeonDef, EquipmentItem, ItemSlot, Rarity, RuneStack } from '../types/game';
 import { findCosmetic } from '../lib/cosmetics';
 import { DUNGEONS, highestAccessibleItemTier } from '../lib/dungeons';
-import { BUILDINGS, computeKingdomBonuses } from '../lib/buildings';
-import { sellValue } from '../lib/equipment';
-import { enhanceCost, MAX_ENHANCE_LEVEL, successChanceForLevel } from '../lib/enhancement';
-import { placeInInventory } from '../lib/inventoryGrid';
+import { rollAffixForItem, sellValue } from '../lib/equipment';
+import {
+  applyAffixGrowth, enhanceCost, MAX_ENHANCE_LEVEL, resetItem, resetItemCost, successChanceForLevel,
+} from '../lib/enhancement';
+import { canUseRuneOn, removeRune } from '../lib/runes';
+import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { maybeRefreshMerchantStock } from '../lib/merchantStock';
 import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS, potionBasePrice } from '../lib/consumables';
@@ -26,6 +28,7 @@ import { Titulos } from './Titulos';
 import { DungeonLoadout } from './DungeonLoadout';
 import { DungeonPanel, RunStats, EMPTY_RUN_STATS } from './DungeonPanel';
 import { Ferreiro } from './Ferreiro';
+import { Bau } from './Bau';
 import { Modal } from './Modal';
 import { SmallButton } from './Button';
 
@@ -101,10 +104,12 @@ interface Props {
   onSignOut: () => void;
   onBuyCosmetic: (id: string) => void;
   onEquipCosmetic: (id: string | null) => void;
+  onVaultChange: (vaultItems: EquipmentItem[]) => void;
 }
 
 export function GameShell({
   character, ranking, rankingError, profile, onCharacterChange, onRunEnd, onAbandon, onSignOut, onBuyCosmetic, onEquipCosmetic,
+  onVaultChange,
 }: Props) {
   const [section, setSection] = useState<Section>('kingdom');
   const [dungeon, setDungeon] = useState<DungeonDef>(DUNGEONS[0]);
@@ -119,6 +124,7 @@ export function GameShell({
   const [navConfirmTarget, setNavConfirmTarget] = useState<Section | 'abandon' | null>(null);
   const [ferreiroOpen, setFerreiroOpen] = useState(false);
   const [mercadorOpen, setMercadorOpen] = useState(false);
+  const [bauOpen, setBauOpen] = useState(false);
   // Armed on the loadout screen (DungeonLoadout.tsx), only offered for a
   // dungeon already in character.clearedDungeons — reset whenever a new
   // dungeon is picked so it never silently carries over to the next one.
@@ -134,12 +140,10 @@ export function GameShell({
   const [repeatPlan, setRepeatPlan] = useState<RepeatPlan | null>(null);
   const [repeatSummary, setRepeatSummary] = useState<RepeatPlan | null>(null);
 
-  const kingdomBonuses = computeKingdomBonuses(character.buildings);
-
   // Checked on open rather than on a timer — re-rolls the stock only once
   // MERCHANT_REFRESH_MS has actually elapsed since the last refresh.
   function handleOpenMercador() {
-    const refreshed = maybeRefreshMerchantStock(character, kingdomBonuses);
+    const refreshed = maybeRefreshMerchantStock(character);
     if (refreshed !== character) onCharacterChange(refreshed);
     setMercadorOpen(true);
   }
@@ -258,7 +262,7 @@ export function GameShell({
   }
 
   function handleBuyPotion() {
-    const cost = Math.max(1, Math.round(potionBasePrice(highestAccessibleItemTier(character)) * (1 - kingdomBonuses.merchantDiscountPct)));
+    const cost = potionBasePrice(highestAccessibleItemTier(character));
     if (character.gold < cost || character.potions >= MAX_POTIONS) return;
     onCharacterChange({ ...character, gold: character.gold - cost, potions: character.potions + 1 });
     playBuySellSfx();
@@ -292,31 +296,71 @@ export function GameShell({
   }
 
   // Gold is spent on the ATTEMPT, not the outcome — success rolls against
-  // successChanceForLevel(item.enhanceLevel, forjaLevel) and gets steeper
-  // near +10, so a failed roll still costs the gold. The item's level never
-  // drops on a failed roll (Forja never breaks or regresses gear) — a fail
-  // only costs what was already spent on the attempt. Returns the roll
-  // result so callers (the Ferreiro's confirm/roll screen, CharacterOverview's
-  // quick modal) can react to it; undefined means the attempt couldn't even
-  // be made (shouldn't happen since the UI already disables the button in
-  // that case).
-  function handleEnhanceItem(item: EquipmentItem): { success: boolean } | undefined {
+  // successChanceForLevel(item.enhanceLevel) and gets steeper near +10, so a
+  // failed roll still costs the gold. The item's level never drops on a
+  // failed roll (Forja never breaks or regresses gear) — a fail only costs
+  // what was already spent on the attempt.
+  //
+  // On a SUCCESS, exactly one affix also improves (see applyAffixGrowth in
+  // lib/enhancement.ts): `runeChoice` (from the Ferreiro's rune picker) lets
+  // the player consume a Runa de Aprimoramento to pick which one — or, on an
+  // item with zero affixes, to roll it a brand-new one instead (see
+  // rollAffixForItem) — omitting it falls back to improving a random
+  // existing affix (a no-op on a zero-affix item). Returns the roll result
+  // so callers (the Ferreiro's confirm/roll screen) can react to it;
+  // undefined means the attempt couldn't even be made (shouldn't happen
+  // since the UI already disables the button in that case).
+  function handleEnhanceItem(
+    item: EquipmentItem, runeChoice?: { rune: RuneStack; affixIndex?: number },
+  ): { success: boolean } | undefined {
     if (item.enhanceLevel >= MAX_ENHANCE_LEVEL) return undefined;
     const cost = enhanceCost(item);
     if (character.gold < cost) return undefined;
-    const forjaLevel = character.buildings.forja ?? 0;
-    const success = Math.random() < successChanceForLevel(item.enhanceLevel, forjaLevel);
-    const upgraded = { ...item, enhanceLevel: success ? item.enhanceLevel + 1 : item.enhanceLevel };
+    if (runeChoice && !canUseRuneOn(runeChoice.rune, item)) return undefined;
+    const success = Math.random() < successChanceForLevel(item.enhanceLevel);
+
+    let upgraded = item;
+    if (success) {
+      if (runeChoice) {
+        upgraded = item.secondaryStats.length === 0
+          ? (() => {
+              const rolled = rollAffixForItem(item);
+              return rolled ? { ...item, secondaryStats: [...item.secondaryStats, rolled] } : item;
+            })()
+          : applyAffixGrowth(item, runeChoice.affixIndex ?? 0);
+      } else if (item.secondaryStats.length > 0) {
+        upgraded = applyAffixGrowth(item, Math.floor(Math.random() * item.secondaryStats.length));
+      }
+      upgraded = { ...upgraded, enhanceLevel: item.enhanceLevel + 1 };
+    }
+
+    const runes = runeChoice ? removeRune(character.runes, runeChoice.rune.rarity, runeChoice.rune.tier) : character.runes;
     const equippedSlot = character.equipment[item.slot]?.id === item.id ? item.slot : null;
     if (equippedSlot) {
-      onCharacterChange({ ...character, gold: character.gold - cost, equipment: { ...character.equipment, [equippedSlot]: upgraded } });
+      onCharacterChange({ ...character, gold: character.gold - cost, runes, equipment: { ...character.equipment, [equippedSlot]: upgraded } });
     } else {
       onCharacterChange({
-        ...character, gold: character.gold - cost,
+        ...character, gold: character.gold - cost, runes,
         inventory: character.inventory.map((i) => (i.id === item.id ? upgraded : i)),
       });
     }
     return { success };
+  }
+
+  // Undoes every gold-funded push on `item` back to +0 (see resetItem in
+  // lib/enhancement.ts) — costs gold scaled to how much was actually undone
+  // (resetItemCost), refunds nothing already spent getting there.
+  function handleResetItem(item: EquipmentItem): void {
+    if (item.enhanceLevel <= 0) return;
+    const cost = resetItemCost(item);
+    if (character.gold < cost) return;
+    const reset = resetItem(item);
+    const equippedSlot = character.equipment[item.slot]?.id === item.id ? item.slot : null;
+    if (equippedSlot) {
+      onCharacterChange({ ...character, gold: character.gold - cost, equipment: { ...character.equipment, [equippedSlot]: reset } });
+    } else {
+      onCharacterChange({ ...character, gold: character.gold - cost, inventory: character.inventory.map((i) => (i.id === item.id ? reset : i)) });
+    }
   }
 
   function handleAllocateAttrs(deltas: Partial<Record<AttributeKey, number>>) {
@@ -342,6 +386,23 @@ export function GameShell({
     });
   }
 
+  // 300 ouro por ponto já alocado (1 ponto = 300, 2 = 600...) — refunds every
+  // point spent so far and clears the loadout (an equipped ability's
+  // unlocking node no longer exists once unlockedSkills is wiped, so it has
+  // to go too).
+  const SKILL_RESET_COST_PER_POINT = 300;
+  const skillResetCost = SKILL_RESET_COST_PER_POINT * character.unlockedSkills.length;
+  function handleResetSkills() {
+    if (character.unlockedSkills.length === 0 || character.gold < skillResetCost) return;
+    onCharacterChange({
+      ...character,
+      gold: character.gold - skillResetCost,
+      skillPoints: character.skillPoints + character.unlockedSkills.length,
+      unlockedSkills: [],
+      equippedAbilities: [],
+    });
+  }
+
   function handleEquipAbility(abilityId: string) {
     if (character.equippedAbilities.includes(abilityId) || character.equippedAbilities.length >= MAX_EQUIPPED_ABILITIES) return;
     onCharacterChange({ ...character, equippedAbilities: [...character.equippedAbilities, abilityId] });
@@ -363,14 +424,18 @@ export function GameShell({
     onCharacterChange({ ...character, abilityThresholds: { ...character.abilityThresholds, [abilityId]: pct } });
   }
 
-  function handleUpgradeBuilding(buildingId: string) {
-    const building = BUILDINGS.find((b) => b.id === buildingId);
-    if (!building) return;
-    const level = character.buildings[buildingId] ?? 0;
-    if (level >= building.maxLevel) return;
-    const cost = building.costForLevel(level);
-    if (character.gold < cost) return;
-    onCharacterChange({ ...character, gold: character.gold - cost, buildings: { ...character.buildings, [buildingId]: level + 1 } });
+  // Baú de Armazém — account-wide (see App.tsx's onVaultChange), so these
+  // move an item between `character.inventory` (this slot only) and
+  // `profile.vaultItems` (shared across every slot on the account) instead
+  // of between two character-scoped lists.
+  function handleDepositToVault(item: EquipmentItem) {
+    onCharacterChange({ ...character, inventory: character.inventory.filter((i) => i.id !== item.id) });
+    onVaultChange([...profile.vaultItems, { ...item, gridX: undefined, gridY: undefined }]);
+  }
+  function handleWithdrawFromVault(item: EquipmentItem) {
+    if (!canFitInInventory(character.inventory, item.slot)) return;
+    onVaultChange(profile.vaultItems.filter((i) => i.id !== item.id));
+    onCharacterChange({ ...character, inventory: placeInInventory(character.inventory, item) });
   }
 
   return (
@@ -396,10 +461,9 @@ export function GameShell({
           {section === 'kingdom' && <KingdomOverview character={character} />}
           {section === 'buildings' && (
             <KingdomBuildings
-              character={character}
-              onUpgrade={handleUpgradeBuilding}
               onOpenFerreiro={() => setFerreiroOpen(true)}
               onOpenMercador={handleOpenMercador}
+              onOpenBau={() => setBauOpen(true)}
             />
           )}
           {section === 'character' && (
@@ -412,6 +476,8 @@ export function GameShell({
               onEquipAbility={handleEquipAbility}
               onUnequipAbility={handleUnequipAbility}
               onReorderAbility={handleReorderAbility}
+              onResetSkills={handleResetSkills}
+              resetCost={skillResetCost}
             />
           )}
           {section === 'highscore' && <RankingScreen ranking={ranking} debugError={rankingError} />}
@@ -429,7 +495,6 @@ export function GameShell({
               key={dungeonRunKey}
               character={character}
               dungeon={dungeon}
-              kingdomBonuses={kingdomBonuses}
               onLiveUpdate={onCharacterChange}
               onRunEnd={handleRunEnd}
               onRestart={handleRestartDungeon}
@@ -443,11 +508,21 @@ export function GameShell({
       </div>
 
       {ferreiroOpen && (
-        <Ferreiro character={character} onEnhance={handleEnhanceItem} onClose={() => setFerreiroOpen(false)} />
+        <Ferreiro character={character} onEnhance={handleEnhanceItem} onReset={handleResetItem} onClose={() => setFerreiroOpen(false)} />
       )}
 
       {mercadorOpen && (
         <Mercador character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} onClose={() => setMercadorOpen(false)} />
+      )}
+
+      {bauOpen && (
+        <Bau
+          character={character}
+          vaultItems={profile.vaultItems}
+          onDeposit={handleDepositToVault}
+          onWithdraw={handleWithdrawFromVault}
+          onClose={() => setBauOpen(false)}
+        />
       )}
 
       {pendingDungeon && (

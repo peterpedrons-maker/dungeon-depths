@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Character, EquipmentItem } from '../types/game';
+import { Character, EquipmentItem, RuneStack } from '../types/game';
 import { rarityColor, rarityName, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
-import { enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, successChanceForLevel } from '../lib/enhancement';
+import {
+  enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, resetItemCost, secondaryStatLabels, successChanceForLevel,
+} from '../lib/enhancement';
+import { canUseRuneOn } from '../lib/runes';
 import { fmt } from '../lib/format';
-import { Button } from './Button';
+import { Button, SmallButton } from './Button';
+import { Modal } from './Modal';
 import { ItemIcon as ItemIconGlyph } from './ItemIcon';
 import { ItemCompareGrid } from './ItemCompare';
 import { IconHammer } from './icons';
@@ -21,7 +25,8 @@ export interface EnhanceResult { success: boolean }
 
 interface Props {
   character: Character;
-  onEnhance: (item: EquipmentItem) => EnhanceResult | undefined;
+  onEnhance: (item: EquipmentItem, runeChoice?: { rune: RuneStack; affixIndex?: number }) => EnhanceResult | undefined;
+  onReset: (item: EquipmentItem) => void;
   onClose: () => void;
 }
 
@@ -54,6 +59,10 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
   );
 }
 
+function runeChipLabel(r: RuneStack): string {
+  return `${rarityName(r.rarity)} T${r.tier} ×${r.count}`;
+}
+
 // The confirm → roll → result screen opened when the player taps "Aprimorar"
 // on an item. Nothing is spent until "Confirmar" — before that, the hammer
 // sprite sits on its first frame (paused) and the right-hand preview icon is
@@ -61,13 +70,23 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
 // (so gold is spent and the result is already known), but the reveal is
 // held back until the hammer animation finishes playing, so the drama
 // matches what's actually happening instead of racing ahead of it.
-function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
-  item: EquipmentItem; gold: number; forjaLevel: number; onEnhance: (item: EquipmentItem) => EnhanceResult | undefined; onDone: (success: boolean) => void;
+//
+// Before confirming, the player can optionally spend a Runa de Aprimoramento
+// (any owned stack whose tier/rarity both cover the item's own — see
+// canUseRuneOn) to CHOOSE which affix improves alongside the base stat,
+// instead of leaving it to chance. No rune = a random existing affix
+// improves automatically (a no-op on an item with zero affixes).
+function EnhanceFlow({ item, character, onEnhance, onDone }: {
+  item: EquipmentItem; character: Character; onEnhance: Props['onEnhance']; onDone: (success: boolean) => void;
 }) {
   const [phase, setPhase] = useState<'confirm' | 'rolling' | 'result'>('confirm');
   const [result, setResult] = useState<EnhanceResult>({ success: false });
+  const [selectedRune, setSelectedRune] = useState<RuneStack | null>(null);
+  const [affixIndex, setAffixIndex] = useState(0);
   const cost = enhanceCost(item);
-  const chance = successChanceForLevel(item.enhanceLevel, forjaLevel);
+  const chance = successChanceForLevel(item.enhanceLevel);
+  const usableRunes = character.runes.filter((r) => canUseRuneOn(r, item));
+  const affixLabels = secondaryStatLabels(item);
   const nextItem = { ...item, enhanceLevel: item.enhanceLevel + 1 };
   const previewItem = result.success ? nextItem : item;
 
@@ -78,7 +97,8 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
   }, [phase]);
 
   function handleConfirm() {
-    const outcome = onEnhance(item) ?? { success: false };
+    const runeChoice = selectedRune ? { rune: selectedRune, affixIndex } : undefined;
+    const outcome = onEnhance(item, runeChoice) ?? { success: false };
     setResult(outcome);
     setPhase('rolling');
     playUpgradeSfx();
@@ -125,10 +145,60 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
             Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro
             {item.enhanceLevel >= 7 && ' · Falhar só custa a tentativa — o item nunca retrocede'}
           </p>
+
+          {phase === 'confirm' && (
+            <div className="mb-3 text-left">
+              <p className="text-[11px] text-parchment/50 mb-1.5">
+                {usableRunes.length > 0
+                  ? 'Runa de Aprimoramento (opcional — escolhe qual afixo melhora; sem runa, melhora um aleatório):'
+                  : 'Sem Runa de Aprimoramento disponível pra esse item — vai melhorar um afixo aleatório no sucesso.'}
+              </p>
+              {usableRunes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  <button
+                    onClick={() => setSelectedRune(null)}
+                    className={`text-[11px] font-bold rounded-full px-2.5 py-1 border ${!selectedRune ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/60 hover:border-gold/50'}`}
+                  >
+                    Sem runa
+                  </button>
+                  {usableRunes.map((r) => (
+                    <button
+                      key={`${r.rarity}-${r.tier}`}
+                      onClick={() => { setSelectedRune(r); setAffixIndex(0); }}
+                      style={{ color: rarityColor(r.rarity) }}
+                      className={`text-[11px] font-bold rounded-full px-2.5 py-1 border ${selectedRune === r ? 'bg-white/10 border-current' : 'border-panelborder/50 hover:border-current'}`}
+                    >
+                      {runeChipLabel(r)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedRune && affixLabels.length > 0 && (
+                <>
+                  <p className="text-[11px] text-parchment/50 mb-1.5">Qual afixo melhorar:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {affixLabels.map((label, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setAffixIndex(i)}
+                        className={`text-[11px] rounded-full px-2.5 py-1 border ${i === affixIndex ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70 hover:border-gold/50'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {selectedRune && affixLabels.length === 0 && (
+                <p className="text-[11px] text-emerald-400/80 italic">Este item não tem afixos — a runa vai conceder um novo.</p>
+              )}
+            </div>
+          )}
+
           {phase === 'confirm' ? (
             <div className="flex gap-2">
               <Button onClick={() => onDone(false)} className="flex-1">Cancelar</Button>
-              <Button onClick={handleConfirm} disabled={gold < cost} className="flex-1">Confirmar</Button>
+              <Button onClick={handleConfirm} disabled={character.gold < cost} className="flex-1">Confirmar</Button>
             </div>
           ) : (
             <p className="text-xs text-gold italic">Batendo o martelo...</p>
@@ -144,10 +214,10 @@ function EnhanceFlow({ item, gold, forjaLevel, onEnhance, onDone }: {
 // full-bleed hero area sized to a near-square crop that stays safe across
 // phone aspect ratios (see KIT-DE-ARTE.md's Cena do Ferreiro prompt for why
 // the source art is a 1536x1536 square).
-export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
+export function Ferreiro({ character: ch, onEnhance, onReset, onClose }: Props) {
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const [enhancingItem, setEnhancingItem] = useState<EquipmentItem | null>(null);
-  const forjaLevel = ch.buildings.forja ?? 0;
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
 
   return (
@@ -202,8 +272,7 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
         {enhancingItem ? (
           <EnhanceFlow
             item={enhancingItem}
-            gold={ch.gold}
-            forjaLevel={forjaLevel}
+            character={ch}
             onEnhance={onEnhance}
             onDone={() => {
               const live = findLiveItem(ch, enhancingItem.id);
@@ -233,15 +302,19 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
                   Aprimorar para +{openItem.enhanceLevel + 1}
                 </Button>
               )}
+              {openItem.enhanceLevel > 0 && (
+                <button
+                  onClick={() => setConfirmingReset(true)}
+                  className="w-full mt-2 text-center text-xs font-bold text-crimson/80 border border-crimson/40 rounded px-2 py-1.5 hover:text-crimson hover:border-crimson"
+                >
+                  Resetar para +0 — {fmt(resetItemCost(openItem))} ouro
+                </button>
+              )}
             </div>
           </div>
         ) : (
           <>
-            <p className="text-xs text-parchment/60 mb-3">
-              {forjaLevel > 0
-                ? `Nível da Forja: ${forjaLevel}/5 — melhora sua chance de sucesso ao aprimorar. Toque num item pra aprimorar.`
-                : 'Toque num item pra aprimorar. Melhore a Forja pra aumentar sua chance de sucesso.'}
-            </p>
+            <p className="text-xs text-parchment/60 mb-3">Toque num item pra aprimorar.</p>
             {forgeableItems.length === 0 ? (
               <p className="text-parchment/40 text-sm italic">Nenhum item pra aprimorar ainda.</p>
             ) : (
@@ -263,6 +336,32 @@ export function Ferreiro({ character: ch, onEnhance, onClose }: Props) {
           </>
         )}
       </div>
+
+      {confirmingReset && openItem && (
+        <Modal
+          title="Resetar item"
+          onClose={() => setConfirmingReset(false)}
+          footer={
+            <>
+              <SmallButton onClick={() => setConfirmingReset(false)} variant="ghost">Cancelar</SmallButton>
+              <SmallButton
+                onClick={() => {
+                  onReset(openItem);
+                  setConfirmingReset(false);
+                  setOpenItem(null);
+                }}
+              >
+                Confirmar — {fmt(resetItemCost(openItem))} ouro
+              </SmallButton>
+            </>
+          }
+        >
+          <p>
+            Isso vai reverter {itemDisplayName(openItem)} pra +0, desfazendo o atributo base aprimorado e qualquer
+            afixo melhorado ao longo do caminho. O ouro já gasto nas tentativas não é devolvido.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

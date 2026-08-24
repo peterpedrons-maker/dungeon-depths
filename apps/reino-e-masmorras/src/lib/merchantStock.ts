@@ -1,4 +1,4 @@
-import { Character, EquipmentItem, ItemSlot, KingdomBonuses } from '../types/game';
+import { Character, EquipmentItem, ItemSlot } from '../types/game';
 import { generateItem } from './equipment';
 import { highestAccessibleItemTier } from './dungeons';
 import { merchantBasePrice, MERCHANT_RARITY_PRICE_MULT, OFFHAND_KIND } from './itemTiers';
@@ -44,7 +44,7 @@ const SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'access
 // rolled item's footprint no longer fits the grid, which is what naturally
 // leaves empty cells behind instead of always packing the shop completely
 // full.
-export function generateMerchantStock(ch: Character, kingdomBonuses: KingdomBonuses): EquipmentItem[] {
+export function generateMerchantStock(ch: Character): EquipmentItem[] {
   const offhandKind = OFFHAND_KIND[ch.classId];
   const slots = offhandKind ? SLOTS : SLOTS.filter((s) => s !== 'offhand');
   const itemTier = highestAccessibleItemTier(ch);
@@ -56,7 +56,7 @@ export function generateMerchantStock(ch: Character, kingdomBonuses: KingdomBonu
     const { w, h } = SLOT_FOOTPRINT[slot];
     const pos = findFreeSlot(stock, w, h, STOCK_COLS, STOCK_ROWS);
     if (!pos) break;
-    const item = generateItem(slot, ch.classId, itemTier, kingdomBonuses.itemQualityBonusPct);
+    const item = generateItem(slot, ch.classId, itemTier);
     const identified = Math.random() >= MYSTERY_CHANCE;
     stock.push({ ...item, identified, gridX: pos.x, gridY: pos.y });
   }
@@ -67,10 +67,10 @@ export function generateMerchantStock(ch: Character, kingdomBonuses: KingdomBonu
 // every run's end — re-rolls the stock (and stamps merchantRefreshedAt)
 // only once MERCHANT_REFRESH_MS has actually passed, otherwise returns `ch`
 // untouched so callers can skip writing an update at all.
-export function maybeRefreshMerchantStock(ch: Character, kingdomBonuses: KingdomBonuses): Character {
+export function maybeRefreshMerchantStock(ch: Character): Character {
   const last = ch.merchantRefreshedAt ?? 0;
   if (Date.now() - last < MERCHANT_REFRESH_MS) return ch;
-  return { ...ch, merchantStock: generateMerchantStock(ch, kingdomBonuses), merchantRefreshedAt: Date.now() };
+  return { ...ch, merchantStock: generateMerchantStock(ch), merchantRefreshedAt: Date.now() };
 }
 
 export function canFitInStock(stock: EquipmentItem[], slot: ItemSlot): boolean {
@@ -82,13 +82,12 @@ export function canFitInStock(stock: EquipmentItem[], slot: ItemSlot): boolean {
 // merchantBasePrice/MERCHANT_RARITY_PRICE_MULT in lib/itemTiers.ts — the
 // same curve lib/equipment.ts's sellValue prices a sale against, so buying
 // and selling stay in sync); a mystery item's scales with tier only (its
-// rarity is exactly what the player doesn't get to see). Both get the
-// Mercador building's discount applied the same way potions already do.
-export function priceForStockItem(item: EquipmentItem, discountPct: number): number {
-  const base = item.identified === false
+// rarity is exactly what the player doesn't get to see). Always the plain
+// price — no building discount exists anymore.
+export function priceForStockItem(item: EquipmentItem): number {
+  return item.identified === false
     ? Math.round(merchantBasePrice(item.tier) * MYSTERY_PRICE_MULT)
     : Math.round(merchantBasePrice(item.tier) * MERCHANT_RARITY_PRICE_MULT[item.rarity]);
-  return Math.max(1, Math.round(base * (1 - discountPct)));
 }
 
 export { STOCK_CELLS };

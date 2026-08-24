@@ -193,7 +193,7 @@ function applyLuckBoost(weights: number[], qualityBonusPct: number): number[] {
 // Mercador's stock, starting gear) can still fall back to an itemTier-based
 // approximation at the call site instead of this function needing to know
 // about dungeons at all.
-function pickRarityForTier(progress: number, qualityBonusPct = 0): RarityDef {
+export function pickRarityForTier(progress: number, qualityBonusPct = 0): RarityDef {
   const t = Math.max(0, Math.min(1, progress));
   const base = RARITY_WEIGHTS_LOW.map((low, i) => low + (RARITY_WEIGHTS_HIGH[i] - low) * t);
   const weights = applyLuckBoost(base, qualityBonusPct);
@@ -254,7 +254,7 @@ export function baseDropChanceForLevel(level: number): number {
   return lerp(0.09, 0.05, Math.min(1, (level - 46) / 14));
 }
 
-function rarityIndex(id: Rarity): number {
+export function rarityIndex(id: Rarity): number {
   return RARITIES.findIndex((r) => r.id === id);
 }
 
@@ -440,7 +440,27 @@ export function generateItem(
     ...ZERO_PRIMARY, ...primary,
     secondaryStats: rollSecondaryStats(baseTier, rolledMult, pool, count),
     enhanceLevel: 0,
+    originalAffixCount: count,
   };
+}
+
+// Rolls exactly one brand-new affix for `item`, from the same slot-themed
+// pool generateItem itself draws from, excluding any type it already has.
+// Used only by the Ferreiro's Runa de Aprimoramento flow, on a Comum item
+// that rolled zero affixes (see AFFIX_COUNT_RANGE's comum floor of 0) — a
+// rune there has nothing existing to improve, so it grants one instead.
+// Approximates the item's original rarity roll with rarityMult()'s band
+// midpoint (the item itself doesn't store its exact rolledMult) — the same
+// approximation merchantStock.ts's pricing already leans on.
+export function rollAffixForItem(item: EquipmentItem): { type: SecondaryStatType; value: number } | null {
+  const poolKey = affixPoolKeyFor(item.slot, item.classId);
+  if (!poolKey) return null;
+  let pool = SLOT_AFFIX_POOL[poolKey].filter((t) => !item.secondaryStats.some((s) => s.type === t));
+  const rarityTier = rarityIndex(item.rarity);
+  if (rarityTier >= LUCK_AFFIX_MIN_RARITY_INDEX) pool = [...pool, ...LUCK_AFFIXES.filter((t) => !item.secondaryStats.some((s) => s.type === t))];
+  if (pool.length === 0) return null;
+  const rolled = rollSecondaryStats(item.tier, rarityMult(item.rarity), pool, 1);
+  return rolled[0] ?? null;
 }
 
 // Priced as a fraction of the Mercador's own buy price for an equivalent

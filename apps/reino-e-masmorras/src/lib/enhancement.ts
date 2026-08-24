@@ -29,14 +29,39 @@ export const MAX_ENHANCE_LEVEL = 10;
 // much overall.
 const ENHANCE_PCT_BY_LEVEL = [0, 0.03, 0.06, 0.10, 0.14, 0.19, 0.24, 0.30, 0.37, 0.45, 0.54];
 
-// Enhancement itself is available from the very first visit to the
-// Ferreiro — no Forja level required. The Forja building's own level used
-// to gate how far an item could be pushed at all; now it just nudges the
-// success chance a little (see successChanceForLevel below), so investing
-// in the building is a bonus, not a prerequisite. Matches BUILDINGS'
-// forja.maxLevel in lib/buildings.ts (kept as a literal here rather than
-// imported, since buildings.ts already imports FROM this file).
-const FORJA_MAX_LEVEL = 5;
+// Every successful Forja level-up also improves exactly one of the item's
+// affixes (see applyAffixGrowth below) — chosen by the player if they spend
+// a Runa de Aprimoramento for that level-up, or picked at random otherwise.
+// This is the SAME shape/curve as ENHANCE_PCT_BY_LEVEL above (increments
+// grow per level, so a late pick matters more than an early one), just
+// rescaled so a single affix picked at every one of the 10 level-ups totals
+// ~25% instead of the primary stat's ~54% — user call: "algo como um terço"
+// of the primary bonus was the starting idea, raised to "pode chegar até
+// uns vinte e cinco por cento" as the final number. Scale factor is exactly
+// 0.25/0.54, so AFFIX_PCT_BY_LEVEL[10] lands on 0.25 by construction.
+const AFFIX_PCT_BY_LEVEL = ENHANCE_PCT_BY_LEVEL.map((v) => (v * 0.25) / 0.54);
+
+// Per-transition increment (index = the level being left, 0-9) — how much
+// affixBoosts[i] grows when affix i is the one picked going from that level
+// to the next. Diffs of AFFIX_PCT_BY_LEVEL, so picking the SAME affix at
+// every level-up reproduces that table's cumulative total exactly; spreading
+// picks across several affixes instead splits the same total budget between
+// them.
+const AFFIX_BOOST_INCREMENT_BY_LEVEL = AFFIX_PCT_BY_LEVEL.slice(1).map((v, i) => v - AFFIX_PCT_BY_LEVEL[i]);
+
+// Applies one affix's growth for a successful push from `item.enhanceLevel`
+// to the next level. `affixIndex` is which secondaryStats entry improves —
+// the Ferreiro's rune flow passes the player's choice, or a random existing
+// index when no rune was used. Returns `item` unchanged if it has no affixes
+// at all (nothing to grow — see the Ferreiro's separate "add a first affix
+// via rune" path for that case instead).
+export function applyAffixGrowth(item: EquipmentItem, affixIndex: number): EquipmentItem {
+  if (!item.secondaryStats[affixIndex]) return item;
+  const increment = AFFIX_BOOST_INCREMENT_BY_LEVEL[item.enhanceLevel] ?? 0;
+  const boosts = item.secondaryStats.map((_, i) => item.affixBoosts?.[i] ?? 0);
+  boosts[affixIndex] += increment;
+  return { ...item, affixBoosts: boosts };
+}
 
 // Chance to succeed when attempting to push FROM this enhanceLevel to the
 // next one — only the first two levels are still a pure formality; +3/+4/+5
@@ -44,19 +69,12 @@ const FORJA_MAX_LEVEL = 5;
 // being free, +5 and +6 are real but still-favorable coinflips-and-better,
 // and from +7 on the odds fall off a cliff so a late attempt is a genuine
 // gamble, down to a near-lottery 0.5% shot at the very last step. Index =
-// current enhanceLevel (0-9).
+// current enhanceLevel (0-9). No building bonus anymore (the Forja's level
+// system was removed entirely) — this base curve is the whole story.
 const SUCCESS_CHANCE_BASE = [1.00, 1.00, 0.80, 0.75, 0.65, 0.50, 0.20, 0.08, 0.02, 0.005];
 
-// The Forja's passive bonus: up to double the base chance at max Forja
-// level (5), scaled linearly in between. Doubling only matters where the
-// base chance is already small (e.g. +9→+10 goes from 0.5% to at most 1%
-// at a maxed Forja) — every level under +7 is already at or near 100% and
-// the multiplier just gets clamped away, so in practice this reads as a
-// subtle, late-game-only bonus rather than a game-wide chance overhaul.
-export function successChanceForLevel(level: number, forjaLevel = 0): number {
-  const base = SUCCESS_CHANCE_BASE[level] ?? 0;
-  const mult = 1 + (Math.min(forjaLevel, FORJA_MAX_LEVEL) / FORJA_MAX_LEVEL);
-  return Math.min(1, base * mult);
+export function successChanceForLevel(level: number): number {
+  return SUCCESS_CHANCE_BASE[level] ?? 0;
 }
 
 // Gold cost to push `item` from its current enhanceLevel to the next one —
@@ -75,12 +93,12 @@ export function enhanceCost(item: EquipmentItem): number {
 const PRIMARY_KEYS = ['dmgBonus', 'defBonus', 'hpBonus', 'matkBonus', 'mdefBonus', 'critChanceBonus', 'critDmgBonus', 'cdrBonus'] as const;
 
 // Returns a copy of `item` with its *Bonus fields scaled up by its current
-// enhanceLevel — this is what combat, item modals and sell value should
-// read instead of the raw stored fields. secondaryStats (every rolled
-// afixo) are untouched — enhancement is about the item's own single base
-// stat, never its afixos.
+// enhanceLevel, AND each secondaryStats entry scaled up by its own
+// affixBoosts[i] (see applyAffixGrowth above) — this is what combat, item
+// modals and sell value should all read instead of the raw stored fields.
 export function enhancedItem(item: EquipmentItem): EquipmentItem {
-  if (item.enhanceLevel <= 0) return item;
+  const hasAffixBoost = item.affixBoosts?.some((b) => b > 0) ?? false;
+  if (item.enhanceLevel <= 0 && !hasAffixBoost) return item;
   const mult = 1 + (ENHANCE_PCT_BY_LEVEL[item.enhanceLevel] ?? 0);
   const scaled = { ...item };
   for (const key of PRIMARY_KEYS) {
@@ -88,7 +106,47 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
     const isPct = key === 'critChanceBonus' || key === 'critDmgBonus' || key === 'cdrBonus';
     scaled[key] = isPct ? item[key] * mult : Math.round(item[key] * mult);
   }
+  if (hasAffixBoost) {
+    scaled.secondaryStats = item.secondaryStats.map((s, i) => {
+      const boost = item.affixBoosts?.[i] ?? 0;
+      if (boost <= 0) return s;
+      const raw = s.value * (1 + boost);
+      return { ...s, value: PCT_AFFIX_TYPE_SET.has(s.type) ? raw : Math.round(raw) };
+    });
+  }
   return scaled;
+}
+
+// secondaryStats percent-fraction types (stored 0-1) need their boosted
+// value left as a fraction; every other type is a flat integer stat — same
+// split lib/equipment.ts's PCT_AFFIX_TYPES draws, duplicated here (rather
+// than imported) since equipment.ts already imports FROM this file and a
+// cross-import back would be circular.
+const PCT_AFFIX_TYPE_SET = new Set<SecondaryStatType>([
+  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality',
+]);
+
+// Gold cost to fully reset `item` back to +0 (undoing both the primary-stat
+// enhancement and every affix improvement it picked up along the way) —
+// scales with how much is actually being undone (tier × current level), not
+// a flat fee, so resetting a heavily-invested item costs more than a fresh
+// +1. Gold already spent on getting there is never refunded.
+export function resetItemCost(item: EquipmentItem): number {
+  return Math.round(10 * item.tier * item.enhanceLevel);
+}
+
+// Reverts an item to +0 — clears every affix's boost, and drops any affix a
+// Runa de Aprimoramento added past the item's original roll (see
+// originalAffixCount on EquipmentItem) rather than leaving a "free" affix
+// behind after the enhancement that created it is undone.
+export function resetItem(item: EquipmentItem): EquipmentItem {
+  const keepCount = item.originalAffixCount ?? item.secondaryStats.length;
+  return {
+    ...item,
+    enhanceLevel: 0,
+    secondaryStats: item.secondaryStats.slice(0, keepCount),
+    affixBoosts: undefined,
+  };
 }
 
 export function itemDisplayName(item: EquipmentItem): string {

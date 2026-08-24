@@ -14,6 +14,8 @@ interface Props {
   onEquipAbility: (abilityId: string) => void;
   onUnequipAbility: (abilityId: string) => void;
   onReorderAbility: (index: number, dir: -1 | 1) => void;
+  onResetSkills: () => void;
+  resetCost: number;
 }
 
 const TYPE_LABEL: Record<SkillNodeType, string> = { attribute: 'Atributo', passive: 'Passiva', active: 'Ativa' };
@@ -45,10 +47,11 @@ function posOf(index: number): { x: number; y: number } {
   return { x: COL_X[index % 3], y: ROW_Y[Math.floor(index / 3)] };
 }
 
-export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility }: Props) {
+export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost }: Props) {
   const paths = SKILL_TREES[ch.classId];
   const [activePath, setActivePath] = useState(0);
   const [selected, setSelected] = useState<{ node: SkillNode; state: NodeState } | null>(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const path = paths[activePath];
 
   // Equipped-loadout slots, in priority order, padded with empty placeholders.
@@ -59,11 +62,21 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
 
   return (
     <Panel title="Árvore de Habilidades">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2">
         <p className="text-parchment/60 text-sm">Toque num nó pra ver detalhes, desbloquear ou equipar.</p>
-        <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold shrink-0 ml-3">
-          {ch.skillPoints} disponível{ch.skillPoints !== 1 ? 'is' : ''}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {ch.unlockedSkills.length > 0 && (
+            <button
+              onClick={() => setConfirmingReset(true)}
+              className="text-[11px] font-bold text-crimson/80 border border-crimson/40 rounded-full px-2.5 py-1 hover:text-crimson hover:border-crimson"
+            >
+              Resetar
+            </button>
+          )}
+          <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold">
+            {ch.skillPoints} disponível{ch.skillPoints !== 1 ? 'is' : ''}
+          </span>
+        </div>
       </div>
 
       <h3 className="font-display text-gold/90 text-xs uppercase tracking-[0.15em] mb-2">
@@ -127,6 +140,29 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
           onUnequipAbility={(id) => { onUnequipAbility(id); setSelected(null); }}
           onReorderAbility={onReorderAbility}
         />
+      )}
+
+      {confirmingReset && (
+        <Modal
+          title="Resetar Habilidades"
+          onClose={() => setConfirmingReset(false)}
+          footer={
+            <>
+              <SmallButton onClick={() => setConfirmingReset(false)} variant="ghost">Cancelar</SmallButton>
+              <SmallButton
+                onClick={() => { onResetSkills(); setConfirmingReset(false); }}
+                disabled={ch.gold < resetCost}
+              >
+                Confirmar — {resetCost} ouro
+              </SmallButton>
+            </>
+          }
+        >
+          <p>
+            Isso devolve todos os {ch.unlockedSkills.length} pontos de habilidade já gastos (e desequipa qualquer
+            habilidade ativa em uso), por {resetCost} de ouro. Não dá pra desfazer.
+          </p>
+        </Modal>
       )}
     </Panel>
   );

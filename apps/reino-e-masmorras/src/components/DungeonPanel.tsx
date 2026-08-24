@@ -1,13 +1,14 @@
 import { CSSProperties, useEffect, useRef, useState } from 'react';
 import {
-  AbilityDef, Character, CrowdControlKind, EnemyAbility, EnemyInstance, DungeonDef, ItemSlot, KingdomBonuses,
+  AbilityDef, Character, CrowdControlKind, EnemyAbility, EnemyInstance, DungeonDef, ItemSlot,
   Rarity, StatModStat, StatusEffectKind,
 } from '../types/game';
 import { spawnEnemy, enemySpeedMult } from '../lib/enemies';
 import { CLASS_SPEED_MULT, CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
-import { baseDropChanceForLevel, generateItem, pickBossDropRarity, rarityColor, sellValue } from '../lib/equipment';
+import { baseDropChanceForLevel, generateItem, pickBossDropRarity, rarityColor, rarityName, sellValue } from '../lib/equipment';
 import { difficultyProgress } from '../lib/dungeons';
+import { RUNE_DROP_CHANCE_REGULAR, RUNE_DROP_CHANCE_BOSS, rollRuneDrop, addRune } from '../lib/runes';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -312,7 +313,6 @@ interface CatchUpSummary {
 interface Props {
   character: Character;
   dungeon: DungeonDef;
-  kingdomBonuses: KingdomBonuses;
   onLiveUpdate: (c: Character) => void;
   onRunEnd: (finalCharacter: Character, deepestDepth: number, endedReason: 'death' | 'retreat' | 'victory', runStats: RunStats) => void;
   // Same finalization as onRunEnd (heal, reroll stock, record depth) but
@@ -421,7 +421,7 @@ function EffectBadgeRow({ badges, align, activeKey, onToggle }: {
 }
 
 export function DungeonPanel({
-  character, dungeon, kingdomBonuses, onLiveUpdate, onRunEnd, onRestart, autoSellRarities, noPotions, repeatCurrent, repeatTotal,
+  character, dungeon, onLiveUpdate, onRunEnd, onRestart, autoSellRarities, noPotions, repeatCurrent, repeatTotal,
 }: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
@@ -710,7 +710,7 @@ export function DungeonPanel({
   function tryDropEquipment(guaranteed = false) {
     const stats = computeCombatStats(chRef.current);
     if (!guaranteed) {
-      const chance = Math.min(0.6, baseDropChanceForLevel(dungeon.levelReq) * (dungeon.dropMult ?? 1) + kingdomBonuses.dropChanceBonusPct + stats.dropChanceBonusPct);
+      const chance = Math.min(0.6, baseDropChanceForLevel(dungeon.levelReq) * (dungeon.dropMult ?? 1) + stats.dropChanceBonusPct);
       if (Math.random() >= chance) return;
     }
     const availableSlots = OFFHAND_KIND[chRef.current.classId] ? DROP_SLOTS : DROP_SLOTS.filter((s) => s !== 'offhand');
@@ -726,7 +726,7 @@ export function DungeonPanel({
     // difficultyProgress (0-1, from its difficultyMult), not its coarser
     // itemTier — see difficultyProgress's own comment in lib/dungeons.ts for
     // why (several dungeons share an itemTier; none share a difficultyMult).
-    const qualityBonusPct = kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct;
+    const qualityBonusPct = stats.itemQualityBonusPct;
     const progress = difficultyProgress(dungeon);
     const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : guaranteed ? pickBossDropRarity(progress, qualityBonusPct) : undefined;
     const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, qualityBonusPct, forcedRarity, progress);
@@ -757,6 +757,24 @@ export function DungeonPanel({
       { text: 'Você encontrou: ' },
       { text: itemDisplayName(item), color: rarityColor(item.rarity) },
       { text: '!' },
+    ]);
+  }
+
+  // Rolled independently of tryDropEquipment (a separate chance, not
+  // competing with the equipment roll) — see RUNE_DROP_CHANCE_REGULAR/BOSS
+  // in lib/runes.ts. Runas stack by (rarity, tier), never occupy inventory
+  // grid space, so there's no "inventário cheio" case to handle here.
+  function tryDropRune(guaranteed = false) {
+    const chance = guaranteed ? RUNE_DROP_CHANCE_BOSS : RUNE_DROP_CHANCE_REGULAR;
+    if (Math.random() >= chance) return;
+    const stats = computeCombatStats(chRef.current);
+    const progress = difficultyProgress(dungeon);
+    const drop = rollRuneDrop(dungeon.itemTier, progress, stats.itemQualityBonusPct, guaranteed);
+    updateCh({ ...chRef.current, runes: addRune(chRef.current.runes, drop) });
+    pushLog([
+      { text: 'Você encontrou: ' },
+      { text: `Runa de Aprimoramento (Tier ${drop.tier})`, color: rarityColor(drop.rarity) },
+      { text: ` — ${rarityName(drop.rarity)}!` },
     ]);
   }
 
@@ -1208,6 +1226,7 @@ export function DungeonPanel({
           // boss — clearing one of these mid-run milestones is meant to
           // feel worth the extra danger, not just riskier for the same odds.
           tryDropEquipment(isBossKill || isEliteKill);
+          tryDropRune(isBossKill || isEliteKill);
 
           // Both transitions below normally wait 900ms so the kill lands
           // before the screen moves on — pointless during a silent
@@ -1449,7 +1468,7 @@ export function DungeonPanel({
     const maxHp = effectiveMaxHp(c);
     if (c.hp / maxHp > c.potionThreshold || c.potions <= 0 || potionCooldownRef.current > 0) return;
     const prevHp = c.hp;
-    const heal = Math.round(maxHp * (BASE_POTION_HEAL_PCT + kingdomBonuses.potionHealBonusPct));
+    const heal = Math.round(maxHp * BASE_POTION_HEAL_PCT);
     const healed = Math.min(maxHp, c.hp + heal);
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
     potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
@@ -1463,7 +1482,7 @@ export function DungeonPanel({
     const maxHp = effectiveMaxHp(c);
     if (phaseRef.current !== 'fight' || c.potions <= 0 || c.hp >= maxHp || potionCooldownRef.current > 0) return;
     const prevHp = c.hp;
-    const heal = Math.round(maxHp * (BASE_POTION_HEAL_PCT + kingdomBonuses.potionHealBonusPct));
+    const heal = Math.round(maxHp * BASE_POTION_HEAL_PCT);
     const healed = Math.min(maxHp, c.hp + heal);
     updateCh({ ...c, hp: healed, potions: c.potions - 1 });
     potionCooldownRef.current = POTION_COOLDOWN_ROUNDS;
