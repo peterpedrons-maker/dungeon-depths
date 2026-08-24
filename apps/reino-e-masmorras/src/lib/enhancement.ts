@@ -168,15 +168,18 @@ export function itemDisplayName(item: EquipmentItem): string {
   return item.enhanceLevel > 0 ? `${item.name} +${item.enhanceLevel}` : item.name;
 }
 
-// One decimal place for an item's own percentage stats (crit, lifesteal,
+// Two decimal places for an item's own percentage stats (crit, lifesteal,
 // evasão...) instead of a rounded whole number — a roll/enhance step can
 // move a value by well under 1 percentage point (see applyAffixGrowth's
 // pct-type branch, deliberately unfloored so a strong stat like roubo de
-// vida grows in small relative steps rather than a flat +1pp/pick), and
-// whole-number rounding could hide that real, intentional growth entirely.
-// Comma decimal separator to match fmt()'s pt-BR number formatting elsewhere.
+// vida grows in small relative steps rather than a flat +1pp/pick). One
+// decimal place still wasn't enough: a small base value (e.g. 2.00%) times
+// the ~1.4% relative first-pick growth lands at 2.03%, which rounds right
+// back to "2,0%" and reads as "nothing changed" even though it's a real
+// increase — two decimals is what actually keeps that visible. Comma
+// decimal separator to match fmt()'s pt-BR number formatting elsewhere.
 export function fmtItemPct(value: number): string {
-  return (value * 100).toFixed(1).replace('.', ',');
+  return (value * 100).toFixed(2).replace('.', ',');
 }
 
 // Bare "+N stat" lines for an item's primary roll (already enhance-scaled —
