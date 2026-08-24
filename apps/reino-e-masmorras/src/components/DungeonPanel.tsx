@@ -1922,20 +1922,28 @@ export function DungeonPanel({
           return (
             <div
               key={a.id}
-              className={`absolute top-1/2 flex flex-col items-center gap-1 pointer-events-none -translate-y-1/2 ${playerCast ? 'left-[24%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2'}`}
-              style={{ animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
+              // Anchored near the top of the stage instead of vertically
+              // centered on the sprite — floating damage numbers land around
+              // chest height on the same X (see PLAYER_FLOAT_LEFT_PCT/
+              // ENEMY_FLOAT_LEFT_PCT + floatBaseTopPct above), so a
+              // center-screen callout used to sit right on top of them,
+              // hiding the very numbers the ability just caused.
+              className={`absolute flex flex-col items-center gap-1 pointer-events-none -translate-x-1/2 ${playerCast ? 'left-[24%]' : 'left-[68%]'}`}
+              style={{ top: '13%', animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
             >
               {/* Only the player's own class has real per-ability icon art
                   (see activeAbilityIconStyle) — an enemy callout stays
                   text-only (name + damage) instead of showing a made-up
                   placeholder glyph that would look like missing/wrong art
-                  next to everything else in the game that IS hand-drawn. */}
+                  next to everything else in the game that IS hand-drawn.
+                  Shrunk from w-11/h-6 to w-8/h-4 — big enough to read which
+                  ability fired, small enough to not dominate the stage. */}
               {playerCast && (
                 <div
-                  className="w-11 h-11 rounded border-2 border-gold bg-black/70 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)]"
+                  className="w-8 h-8 rounded border-2 border-gold bg-black/70 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)]"
                   style={a.icon ?? undefined}
                 >
-                  {!a.icon && <IconActive className="w-6 h-6 text-gold" />}
+                  {!a.icon && <IconActive className="w-4 h-4 text-gold" />}
                 </div>
               )}
               <span className="text-[11px] font-bold text-parchment text-center leading-tight whitespace-nowrap drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
