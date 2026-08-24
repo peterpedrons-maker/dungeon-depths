@@ -56,30 +56,22 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 ### Inimigos & Chefes — Região 2 · Umbrália (nível 11-20)
 - ✅ Torre Amaldiçoada — inimigos + chefe (Arquimago Caído) — prompt já usado, removido do kit
 - ✅ Minas Abandonadas — inimigos + chefe (Titã de Minério) — prompt já usado, removido do kit
-- ✅ Floresta Amaldiçoada — inimigos (Ent Corrompido, Lobo Espectral, Fada Sombria, Urso Amaldiçoado, Trepadeira Estranguladora) — prompt já usado, removido do kit
-- 🕓 [Floresta Amaldiçoada — chefe (Coração da Floresta)](#chefe-floresta-amaldicoada-coracao-da-floresta)
-- 🕓 [Covil dos Dragões — inimigos](#inimigos-xi-covil-dos-dragoes-filhote-de-dragao-wyvern-selvagem-guardiao-escamado-cultista-draconico-e-serpente-de-fogo)
-- ✅ [Covil dos Dragões — chefe (Dragão Jovem)](#inimigos-ii-troll-aberracao-das-sombras-e-dragao-jovem) — reaproveita o Dragão Jovem já pronto acima
-- 🕓 [Necrópole Esquecida — inimigos](#inimigos-xii-necropole-esquecida-ceifador-sombrio-corvo-da-morte-carrasco-ossudo-pranteador-fantasma-e-verme-cadaverico)
-- ✅ [Necrópole Esquecida — chefe (Lorde Esqueleto)](#chefe-necropole-esquecida-lorde-esqueleto)
-- 🕓 [Ruínas Élficas — inimigos](#inimigos-xiii-ruinas-elficas-guardiao-elfico-corrompido-vinha-sussurrante-fera-das-ruinas-espectro-elfico-e-golem-de-cristal)
-- 🕓 [Ruínas Élficas — chefe (Guardiã Ancestral)](#chefe-ruinas-elficas-guardia-ancestral)
-- 🕓 [Arena de Sangue — inimigos](#inimigos-xiv-arena-de-sangue-gladiador-amaldicoado-fera-de-arena-executor-mascarado-domador-de-bestas-e-campeao-caido)
-- 🕓 [Arena de Sangue — chefe (Grão-Campeão da Arena)](#chefe-arena-de-sangue-grao-campeao-da-arena)
+- ✅ Floresta Amaldiçoada — inimigos + chefe (Coração da Floresta) — prompt já usado, removido do kit
+- ✅ Covil dos Dragões — inimigos + chefe (Dragão Jovem, reaproveitado) — prompt já usado, removido do kit
+- ✅ Necrópole Esquecida — inimigos + chefe (Lorde Esqueleto) — prompt já usado, removido do kit
+- 🕓 [Ruínas Élficas — inimigos (falta só o Golem de Cristal)](#inimigos-xiii-ruinas-elficas-golem-de-cristal) — Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas e Espectro Élfico já integrados
+- ✅ Ruínas Élficas — chefe (Guardiã Ancestral) — prompt já usado, removido do kit
+- ✅ Arena de Sangue — inimigos + chefe (Grão-Campeão da Arena) — prompt já usado, removido do kit
 
-### Inimigos & Chefes — Região 3 · Thurgard (nível 21-30) — tudo pendente
-- 🕓 [Fortaleza Orc — inimigos](#inimigos-xv-fortaleza-orc-guerreiro-orc-arqueiro-orc-xama-orc-orc-berserker-e-porta-estandarte-orc)
-- 🕓 [Fortaleza Orc — chefe (Warchief Grukmar)](#chefe-fortaleza-orc-warchief-grukmar)
-- 🕓 [Labirinto de Gelo — inimigos](#inimigos-xvi-labirinto-de-gelo-elemental-de-gelo-lobo-gelido-morcego-glacial-espectro-de-gelo-e-sentinela-congelada)
-- 🕓 [Labirinto de Gelo — chefe (Monarca do Gelo)](#chefe-labirinto-de-gelo-monarca-do-gelo)
+### Inimigos & Chefes — Região 3 · Thurgard (nível 21-30)
+- ✅ Fortaleza Orc — inimigos + chefe (Warchief Grukmar) — prompt já usado, removido do kit
+- ✅ Labirinto de Gelo — inimigos + chefe (Monarca do Gelo) — prompt já usado, removido do kit
 - 🕓 [Templo Afundado — inimigos](#inimigos-xvii-templo-afundado-acolito-afogado-sacerdote-congelado-espectro-do-lago-guardiao-submerso-e-enguia-de-gelo)
 - 🕓 [Templo Afundado — chefe (Alto Sacerdote Submerso)](#chefe-templo-afundado-alto-sacerdote-submerso)
 - 🕓 [Cavernas de Cristal — inimigos](#inimigos-xviii-cavernas-de-cristal-morcego-de-cristal-aranha-de-cristal-golem-prismatico-vagalume-de-cristal-e-rastreador-reluzente)
 - 🕓 [Cavernas de Cristal — chefe (Soberana de Cristal)](#chefe-cavernas-de-cristal-soberana-de-cristal)
-- 🕓 [Covil do Lobo Alfa — inimigos](#inimigos-xix-covil-do-lobo-alfa-filhote-do-alfa-lobo-terrivel-perseguidor-da-neve-cacador-da-alcateia-e-lobo-presa-gelo)
-- 🕓 [Covil do Lobo Alfa — chefe (Alfa, o Terrível)](#chefe-covil-do-lobo-alfa-alfa-o-terrivel)
-- 🕓 [Catacumbas Reais — inimigos](#inimigos-xx-catacumbas-reais-esqueleto-real-sentinela-da-cripta-nobre-ossudo-camareiro-espectral-e-cavaleiro-sepultado)
-- 🕓 [Catacumbas Reais — chefe (Lich Real)](#chefe-catacumbas-reais-lich-real)
+- ✅ Covil do Lobo Alfa — inimigos + chefe (Alfa, o Terrível) — prompt já usado, removido do kit
+- ✅ Catacumbas Reais — inimigos + chefe (Lich Real) — prompt já usado, removido do kit
 - 🕓 [Poço sem Fundo (especial) — inimigos](#inimigos-xxi-poco-sem-fundo-rastejante-do-poco-tentaculo-do-vazio-espectro-afogante-perseguidor-abissal-e-habitante-oco)
 - 🕓 [Poço sem Fundo (especial) — chefe final (O Que Habita o Poço)](#chefe-poco-sem-fundo-o-que-habita-o-poco)
 
@@ -1518,224 +1510,24 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 <a id="regiao-2-cada-masmorra-tem-seu-proprio-roster-igual-a-regiao-1"></a>
 ### Região 2 — cada masmorra tem seu próprio roster, igual à Região 1
 
-As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada (regulares + chefe); faltam Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida (só falta o roster de regulares — o chefe Lorde Esqueleto já existe), Ruínas Élficas e Arena de Sangue.
+As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Todas já têm arte própria integrada, exceto o Golem de Cristal de Ruínas Élficas (prompt abaixo).
 
 **Covil dos Dragões é a única exceção do lado do chefe**: o chefe dela é "Dragão Jovem" — o mesmo dragão já coberto no prompt "Inimigos II" mais acima, cujo sprite já está integrado ao jogo (`dragao.webp`). Não precisa de prompt novo — dragões mais fortes (adultos, anciões, lendários) ficam guardados para masmorras de regiões futuras.
 
-<a id="chefe-floresta-amaldicoada-coracao-da-floresta"></a>
-### Chefe — Floresta Amaldiçoada: Coração da Floresta
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Floresta Amaldiçoada, spawna na profundidade 27 com barra de vida própria no topo da tela de batalha
+<a id="inimigos-xiii-ruinas-elficas-golem-de-cristal"></a>
+### Inimigos XIII — Ruínas Élficas: Golem de Cristal
+**Tamanho:** 768×768 px · **Uso:** último inimigo regular pendente da masmorra Ruínas Élficas — Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas e Espectro Élfico já foram integrados
 
 ```
 IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
 
 2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
 
-One large boss creature filling most of the frame, calm static threatening pose.
+One creature filling most of the frame, calm static pose.
 
-Coração da Floresta, facing left: a massive ancient tree spirit, thick gnarled bark body pulsing with a faint glowing red-orange core visible through cracks, many twisted branch-limbs, glowing eyes deep within a hollow in its trunk, an ancient dreadful presence.
+Golem de Cristal, facing left: a humanoid golem built from glowing pale-blue elven crystal shards, faint inner light, heavy crystalline fists.
 
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xi-covil-dos-dragoes-filhote-de-dragao-wyvern-selvagem-guardiao-escamado-cultista-draconico-e-serpente-de-fogo"></a>
-### Inimigos XI — Covil dos Dragões: Filhote de Dragão, Wyvern Selvagem, Guardião Escamado, Cultista Dracônico e Serpente de Fogo
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil dos Dragões (5 inimigos regulares — o chefe é o Dragão Jovem já coberto no prompt "Inimigos II", sem prompt novo)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose. These are all smaller/weaker than a full young dragon — dragonets and dragon-kin, not adult dragons.
-
-1) Filhote de Dragão (facing left): a small baby dragon (dragonet), stubby half-grown wings, bright orange-red scales, an inquisitive but feisty stance.
-2) Wyvern Selvagem (facing left): a wild wyvern, leaner and smaller than a true dragon, dark green scales, sharp claws, wings half-spread.
-3) Guardião Escamado (facing left): a reptilian humanoid guardian in scaled hide armor, teal-green scales, gripping a spear, alert protective stance.
-4) Cultista Dracônico (facing left): a human cultist in dark red hooded robes decorated with draconic symbols, chanting pose, faint reddish magical glow around its hands.
-5) Serpente de Fogo (facing left): a long coiled serpent with fiery orange-red scales, faint heat shimmer, reared up ready to strike.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xii-necropole-esquecida-ceifador-sombrio-corvo-da-morte-carrasco-ossudo-pranteador-fantasma-e-verme-cadaverico"></a>
-### Inimigos XII — Necrópole Esquecida: Ceifador Sombrio, Corvo da Morte, Carrasco Ossudo, Pranteador Fantasma e Verme Cadavérico
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Necrópole Esquecida (5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Ceifador Sombrio (facing left): a dark hooded reaper-like undead, tattered black robes, gripping a curved scythe, no visible face beneath the hood.
-2) Corvo da Morte (facing left): a large undead crow, patchy decaying black feathers, glowing faint red eyes, wings half-spread.
-3) Carrasco Ossudo (facing left): a hulking skeletal executioner, thick bone frame, wielding a heavy bone axe, a crude bone mask over its skull face.
-4) Pranteador Fantasma (facing left): a translucent wailing ghost in tattered burial shrouds, pale blue-white glow, an anguished mournful expression.
-5) Verme Cadavérico (facing left): a large pale undead grave worm, segmented rotting flesh-toned body, small toothy maw, low crawling posture.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-necropole-esquecida-lorde-esqueleto"></a>
-### Chefe — Necrópole Esquecida: Lorde Esqueleto
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Necrópole Esquecida, spawna na profundidade 29 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Lorde Esqueleto, facing left: a tall noble undead skeleton lord, more elaborate than a common skeleton warrior, wearing a tattered regal dark-purple cloak over ornate ancient armor, a jagged crown-like circlet, gripping a ceremonial ornate blade, brighter ghostly pale-blue glow in its hollow eye sockets, a commanding regal-but-decayed presence.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xiii-ruinas-elficas-guardiao-elfico-corrompido-vinha-sussurrante-fera-das-ruinas-espectro-elfico-e-golem-de-cristal"></a>
-### Inimigos XIII — Ruínas Élficas: Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas, Espectro Élfico e Golem de Cristal
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Ruínas Élficas (5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Guardião Élfico Corrompido (facing left): an animated elven statue-warrior overgrown with vines, cracked pale stone body, faint corrupted green glow in the cracks, gripping an ancient elven blade.
-2) Vinha Sussurrante (facing left): a magical animated vine creature coiled and reaching, pale glowing leaves, thin whip-like tendrils.
-3) Fera das Ruínas (facing left): a feral overgrown wildcat-like beast, matted fur streaked with moss, sharp claws, low stalking stance.
-4) Espectro Élfico (facing left): a translucent ghostly elf in tattered once-elegant robes, pale green-white glow, a sorrowful ancient expression.
-5) Golem de Cristal (facing left): a humanoid golem built from glowing pale-blue elven crystal shards, faint inner light, heavy crystalline fists.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-ruinas-elficas-guardia-ancestral"></a>
-### Chefe — Ruínas Élficas: Guardiã Ancestral
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Ruínas Élficas, spawna na profundidade 31 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Guardiã Ancestral, facing left: a majestic and imposing elven guardian statue brought to life, elegant weathered stone-and-gold armor overgrown with glowing vines, wielding an ornate ancient elven greatsword, faint glowing green-gold runes across its body, a solemn ancient presence.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xiv-arena-de-sangue-gladiador-amaldicoado-fera-de-arena-executor-mascarado-domador-de-bestas-e-campeao-caido"></a>
-### Inimigos XIV — Arena de Sangue: Gladiador Amaldiçoado, Fera de Arena, Executor Mascarado, Domador de Bestas e Campeão Caído
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Arena de Sangue (5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Gladiador Amaldiçoado (facing left): a battle-scarred human gladiator in dark cursed leather armor, gripping a notched sword and a small round shield, grim aggressive stance.
-2) Fera de Arena (facing left): a caged monstrous beast, muscular dark-furred body, chains hanging broken from a spiked collar, snarling.
-3) Executor Mascarado (facing left): a hulking masked executioner in dark leather, an iron featureless mask, gripping a massive two-handed axe.
-4) Domador de Bestas (facing left): a wiry human beast tamer in worn leather, cracking a long barbed whip, sharp calculating expression.
-5) Campeão Caído (facing left): a ghostly translucent fallen gladiator champion, faint pale glow, tattered once-glorious armor, gripping a ghostly blade.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-arena-de-sangue-grao-campeao-da-arena"></a>
-### Chefe — Arena de Sangue: Grão-Campeão da Arena
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Arena de Sangue, spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Grão-Campeão da Arena, facing left: a massive undefeated gladiator champion, heavily muscled, ornate battle-worn dark-red-and-gold armor, a legendary notched greatsword, a horned champion's helm, countless old battle scars, a fierce commanding presence.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xv-fortaleza-orc-guerreiro-orc-arqueiro-orc-xama-orc-orc-berserker-e-porta-estandarte-orc"></a>
-### Inimigos XV — Fortaleza Orc: Guerreiro Orc, Arqueiro Orc, Xamã Orc, Orc Berserker e Porta-Estandarte Orc
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Fortaleza Orc (Região 3 — Thurgard, 5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Guerreiro Orc (facing left): a stocky green-skinned orc warrior in crude fur-and-iron armor, gripping a notched battle axe, tusked scowl.
-2) Arqueiro Orc (facing left): a lean orc archer in leather wraps, drawing a short recurve bow, a quiver of crude arrows on the back.
-3) Xamã Orc (facing left): a hunched orc shaman draped in bone fetishes and furs, gripping a crooked totem staff glowing with tribal magic.
-4) Orc Berserker (facing left): a massive shirtless orc berserker covered in war-paint and scars, wielding two crude cleavers, wild-eyed fury.
-5) Porta-Estandarte Orc (facing left): an armored orc standard-bearer holding aloft a tall tribal banner of bones and hide, a curved horn at the belt.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-fortaleza-orc-warchief-grukmar"></a>
-### Chefe — Fortaleza Orc: Warchief Grukmar
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Fortaleza Orc (Região 3), spawna na profundidade 32 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Warchief Grukmar, facing left: an enormous battle-hardened orc warchief in heavy spiked iron armor stitched with trophies, wielding a massive double-headed war axe, a jagged war-paint mask, an intimidating commanding stance.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xvi-labirinto-de-gelo-elemental-de-gelo-lobo-gelido-morcego-glacial-espectro-de-gelo-e-sentinela-congelada"></a>
-### Inimigos XVI — Labirinto de Gelo: Elemental de Gelo, Lobo Gélido, Morcego Glacial, Espectro de Gelo e Sentinela Congelada
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Labirinto de Gelo (Região 3, 5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Elemental de Gelo (facing left): a humanoid mass of jagged translucent blue ice with a faint inner glow, frost mist drifting off its body.
-2) Lobo Gélido (facing left): a pale frost-furred wolf with icy blue eyes, frozen breath visible, sharp ice-rimed claws.
-3) Morcego Glacial (facing left): a small pale-blue bat with crystalline frost-edged wings, sharp icicle-like fangs.
-4) Espectro de Gelo (facing left): a translucent frozen ghost trailing frost mist, hollow pale-blue glowing eyes, tattered icy shroud.
-5) Sentinela Congelada (facing left): a heavy humanoid statue of solid blue-white ice, cracked glowing runic lines, fists like glacial blocks.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-labirinto-de-gelo-monarca-do-gelo"></a>
-### Chefe — Labirinto de Gelo: Monarca do Gelo
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Labirinto de Gelo (Região 3), spawna na profundidade 34 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Monarca do Gelo, facing left: a tall regal ice monarch in a flowing crown and robe of living glacial crystal, wielding a jagged ice-shard cetro/scepter, a crown of frozen spikes, an aura of swirling frost.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
+Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```
 
 <a id="inimigos-xvii-templo-afundado-acolito-afogado-sacerdote-congelado-espectro-do-lago-guardiao-submerso-e-enguia-de-gelo"></a>
@@ -1806,78 +1598,6 @@ IMPORTANT — the single most critical rule in this prompt, more important than 
 One large boss creature filling most of the frame, calm static threatening pose.
 
 Soberana de Cristal, facing left: a majestic feminine crystalline being with a body of faceted glowing blue-white crystal, a jagged crystal crown, trailing shards floating around her like a halo.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xix-covil-do-lobo-alfa-filhote-do-alfa-lobo-terrivel-perseguidor-da-neve-cacador-da-alcateia-e-lobo-presa-gelo"></a>
-### Inimigos XIX — Covil do Lobo Alfa: Filhote do Alfa, Lobo Terrível, Perseguidor da Neve, Caçador da Alcateia e Lobo Presa-Gelo
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Covil do Lobo Alfa (Região 3, 5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Filhote do Alfa (facing left): a young grey wolf pup with oversized paws, alert ears, a scrappy eager stance.
-2) Lobo Terrível (facing left): a large muscular dire wolf with shaggy dark-grey fur, oversized fangs, a heavy powerful build.
-3) Perseguidor da Neve (facing left): a lean white-furred wolf crouched low in a hunting stance, sharp icy-blue eyes.
-4) Caçador da Alcateia (facing left): a battle-scarred grey wolf with a notched ear, alert and coordinated stance, muscular frame.
-5) Lobo Presa-Gelo (facing left): a pale blue-grey wolf with frost-rimed fangs and frosty breath, ice crystals clinging to its fur.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-covil-do-lobo-alfa-alfa-o-terrivel"></a>
-### Chefe — Covil do Lobo Alfa: Alfa, o Terrível
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Covil do Lobo Alfa (Região 3), spawna na profundidade 38 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Alfa, o Terrível, facing left: an enormous dark-furred dire wolf towering over ordinary wolves, jagged scars across its muzzle, glowing amber eyes, bared oversized fangs, a commanding predatory stance.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="inimigos-xx-catacumbas-reais-esqueleto-real-sentinela-da-cripta-nobre-ossudo-camareiro-espectral-e-cavaleiro-sepultado"></a>
-### Inimigos XX — Catacumbas Reais: Esqueleto Real, Sentinela da Cripta, Nobre Ossudo, Camareiro Espectral e Cavaleiro Sepultado
-**Tamanho:** 1536×768 px · **Uso:** roster completo da masmorra Catacumbas Reais (Região 3, 5 inimigos regulares)
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: every creature must be drawn in strict side profile facing LEFT and only LEFT. For each one individually: head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. None of them may face right, face the viewer, or face away — check every single creature in the row before finishing, since even one facing the wrong way makes the whole sheet unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-Wide image, 5 creatures standing side by side with clear empty gaps between them so they can be cropped apart later (roughly a fifth of the width each — keep each one simple and readable at that scale). Same scale, same ground line, calm static pose.
-
-1) Esqueleto Real (facing left): an armored royal skeleton in tarnished gilded plate, gripping an ornate ceremonial longsword, a faded royal crest on the chest.
-2) Sentinela da Cripta (facing left): a heavy stone crypt guardian statue holding a ceremonial halberd, weathered engravings across its armor.
-3) Nobre Ossudo (facing left): a skeletal noble in tattered fine velvet robes, a rotted crown fragment, bony fingers adorned with rings.
-4) Camareiro Espectral (facing left): a translucent ghostly chamberlain in faded court attire, a spectral tray still balanced on one arm, pale mournful glow.
-5) Cavaleiro Sepultado (facing left): an entombed knight in rusted ceremonial plate, gripping a chipped royal blade, faint dust falling from the joints.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creatures. Canvas 1536×768 px, soft light from upper-left. No text, no watermark.
-```
-
-<a id="chefe-catacumbas-reais-lich-real"></a>
-### Chefe — Catacumbas Reais: Lich Real
-**Tamanho:** 768×768 px · **Uso:** boss da masmorra Catacumbas Reais (Região 3), spawna na profundidade 40 com barra de vida própria no topo da tela de batalha
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One large boss creature filling most of the frame, calm static threatening pose.
-
-Lich Real, facing left: a regal skeletal lich draped in tattered royal robes and a tarnished golden crown, glowing teal-green eye sockets, gripping an ornate necrotic scepter crackling with dark magic.
 
 Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the background, never on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
 ```

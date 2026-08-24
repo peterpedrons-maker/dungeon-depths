@@ -74,6 +74,53 @@ import ghostWolfUrl from '../assets/sprites/ghostWolf.webp';
 import darkFairyUrl from '../assets/sprites/darkFairy.webp';
 import cursedBearUrl from '../assets/sprites/cursedBear.webp';
 import stranglingVineUrl from '../assets/sprites/stranglingVine.webp';
+import forestHeartUrl from '../assets/sprites/forestHeart.webp';
+import dragonHatchlingUrl from '../assets/sprites/dragonHatchling.webp';
+import wildWyvernUrl from '../assets/sprites/wildWyvern.webp';
+import scaledGuardianUrl from '../assets/sprites/scaledGuardian.webp';
+import draconicCultistUrl from '../assets/sprites/draconicCultist.webp';
+import fireSerpentUrl from '../assets/sprites/fireSerpent.webp';
+import darkReaperUrl from '../assets/sprites/darkReaper.webp';
+import deathCrowUrl from '../assets/sprites/deathCrow.webp';
+import boneExecutionerUrl from '../assets/sprites/boneExecutioner.webp';
+import wailingGhostUrl from '../assets/sprites/wailingGhost.webp';
+import graveWormUrl from '../assets/sprites/graveWorm.webp';
+import skeletonLordUrl from '../assets/sprites/skeletonLord.webp';
+import corruptedGuardianUrl from '../assets/sprites/corruptedGuardian.webp';
+import whisperingVineUrl from '../assets/sprites/whisperingVine.webp';
+import ruinBeastUrl from '../assets/sprites/ruinBeast.webp';
+import elvenWraithUrl from '../assets/sprites/elvenWraith.webp';
+import ancestralGuardianUrl from '../assets/sprites/ancestralGuardian.webp';
+import cursedGladiatorUrl from '../assets/sprites/cursedGladiator.webp';
+import arenaBeastUrl from '../assets/sprites/arenaBeast.webp';
+import maskedExecutionerUrl from '../assets/sprites/maskedExecutioner.webp';
+import beastTamerUrl from '../assets/sprites/beastTamer.webp';
+import fallenChampionUrl from '../assets/sprites/fallenChampion.webp';
+import grandChampionUrl from '../assets/sprites/grandChampion.webp';
+import orcWarriorUrl from '../assets/sprites/orcWarrior.webp';
+import orcArcherUrl from '../assets/sprites/orcArcher.webp';
+import orcShamanUrl from '../assets/sprites/orcShaman.webp';
+import orcBerserkerUrl from '../assets/sprites/orcBerserker.webp';
+import orcStandardBearerUrl from '../assets/sprites/orcStandardBearer.webp';
+import orcWarchiefUrl from '../assets/sprites/orcWarchief.webp';
+import iceElementalUrl from '../assets/sprites/iceElemental.webp';
+import frostWolfUrl from '../assets/sprites/frostWolf.webp';
+import glacialBatUrl from '../assets/sprites/glacialBat.webp';
+import iceWraithUrl from '../assets/sprites/iceWraith.webp';
+import frozenSentinelUrl from '../assets/sprites/frozenSentinel.webp';
+import iceMonarchUrl from '../assets/sprites/iceMonarch.webp';
+import alphaWolfPupUrl from '../assets/sprites/alphaWolfPup.webp';
+import direWolfUrl from '../assets/sprites/direWolf.webp';
+import snowStalkerUrl from '../assets/sprites/snowStalker.webp';
+import packHunterUrl from '../assets/sprites/packHunter.webp';
+import frostFangWolfUrl from '../assets/sprites/frostFangWolf.webp';
+import alphaDireWolfUrl from '../assets/sprites/alphaDireWolf.webp';
+import royalSkeletonUrl from '../assets/sprites/royalSkeleton.webp';
+import cryptSentinelUrl from '../assets/sprites/cryptSentinel.webp';
+import boneNobleUrl from '../assets/sprites/boneNoble.webp';
+import spectralChamberlainUrl from '../assets/sprites/spectralChamberlain.webp';
+import entombedKnightUrl from '../assets/sprites/entombedKnight.webp';
+import royalLichUrl from '../assets/sprites/royalLich.webp';
 
 export interface Sprite {
   image: HTMLImageElement;
@@ -215,33 +262,33 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
   gargoyle: gargoyleUrl, spectralMage: spectralMageUrl, cursedKnight: cursedKnightUrl, watchingEye: watchingEyeUrl, crawlingShadow: crawlingShadowUrl, fallenArchmage: fallenArchmageUrl,
   // Região 2 — Minas Abandonadas
   cursedMiner: cursedMinerUrl, oreGolem: oreGolemUrl, koboldRaider: koboldRaiderUrl, batSwarm: batSwarmUrl, gasWisp: gasWispUrl, oreTitan: oreTitanUrl,
-  // Região 2 — Floresta Amaldiçoada (forestHeart/chefe ainda é placeholder — sem arte própria)
-  corruptedEnt: corruptedEntUrl, ghostWolf: ghostWolfUrl, darkFairy: darkFairyUrl, cursedBear: cursedBearUrl, stranglingVine: stranglingVineUrl, forestHeart: trollUrl,
-  // Região 2 — Covil dos Dragões (placeholder: dragão pros dracônicos, bandido pro cultista humano)
-  dragonHatchling: dragaoUrl, wildWyvern: dragaoUrl, scaledGuardian: dragaoUrl, draconicCultist: ruinBanditUrl, fireSerpent: dragaoUrl,
-  // Região 2 — Necrópole Esquecida (placeholder: esqueleto/corvo/aberração/limo conforme o tema; skeletonLord já tem arte própria)
-  darkReaper: boneKingUrl, deathCrow: carrionCrowUrl, boneExecutioner: boneKingUrl, wailingGhost: aberracaoUrl, graveWorm: acidSlimeUrl, skeletonLord: esqueletoUrl,
-  // Região 2 — Ruínas Élficas (placeholder: troll pros grandões, lobo pra fera, aberração pro espectro)
-  corruptedGuardian: trollUrl, whisperingVine: acidSlimeUrl, ruinBeast: loboUrl, elvenWraith: aberracaoUrl, crystalGolem: trollUrl, ancestralGuardian: trollUrl,
-  // Região 2 — Arena de Sangue (placeholder: bandido pros lutadores humanos, troll pra fera, esqueleto morto-vivo pro campeão caído)
-  cursedGladiator: ruinBanditUrl, arenaBeast: trollUrl, maskedExecutioner: ruinBanditUrl, beastTamer: ruinBanditUrl, fallenChampion: boneKingUrl, grandChampion: boneKingUrl,
+  // Região 2 — Floresta Amaldiçoada
+  corruptedEnt: corruptedEntUrl, ghostWolf: ghostWolfUrl, darkFairy: darkFairyUrl, cursedBear: cursedBearUrl, stranglingVine: stranglingVineUrl, forestHeart: forestHeartUrl,
+  // Região 2 — Covil dos Dragões
+  dragonHatchling: dragonHatchlingUrl, wildWyvern: wildWyvernUrl, scaledGuardian: scaledGuardianUrl, draconicCultist: draconicCultistUrl, fireSerpent: fireSerpentUrl,
+  // Região 2 — Necrópole Esquecida
+  darkReaper: darkReaperUrl, deathCrow: deathCrowUrl, boneExecutioner: boneExecutionerUrl, wailingGhost: wailingGhostUrl, graveWorm: graveWormUrl, skeletonLord: skeletonLordUrl,
+  // Região 2 — Ruínas Élficas (crystalGolem ainda placeholder — sem arte própria)
+  corruptedGuardian: corruptedGuardianUrl, whisperingVine: whisperingVineUrl, ruinBeast: ruinBeastUrl, elvenWraith: elvenWraithUrl, crystalGolem: trollUrl, ancestralGuardian: ancestralGuardianUrl,
+  // Região 2 — Arena de Sangue
+  cursedGladiator: cursedGladiatorUrl, arenaBeast: arenaBeastUrl, maskedExecutioner: maskedExecutionerUrl, beastTamer: beastTamerUrl, fallenChampion: fallenChampionUrl, grandChampion: grandChampionUrl,
 
   // Alvos de Caçada (lib/hunts.ts) — placeholder no shape temático mais
   // próximo (mesmo padrão acima) até ganharem arte própria.
   boneTyrant: esqueletoUrl, swampLeviathan: trollUrl, infernalWyrm: dragaoUrl,
 
-  // Região 3 — Fortaleza Orc (placeholder: goblin pros orcs rasos, goblin xamã/grash reaproveitados)
-  orcWarrior: goblinUrl, orcArcher: goblinUrl, orcShaman: goblinShamanUrl, orcBerserker: goblinUrl, orcStandardBearer: goblinUrl, orcWarchief: grashUrl,
-  // Região 3 — Labirinto de Gelo (placeholder: aberração pros elementais/espectros, lobo pro lobo, morcego das ruínas pro morcego)
-  iceElemental: aberracaoUrl, frostWolf: loboUrl, glacialBat: ruinBatUrl, iceWraith: aberracaoUrl, frozenSentinel: stoneGuardianUrl, iceMonarch: trollUrl,
+  // Região 3 — Fortaleza Orc
+  orcWarrior: orcWarriorUrl, orcArcher: orcArcherUrl, orcShaman: orcShamanUrl, orcBerserker: orcBerserkerUrl, orcStandardBearer: orcStandardBearerUrl, orcWarchief: orcWarchiefUrl,
+  // Região 3 — Labirinto de Gelo
+  iceElemental: iceElementalUrl, frostWolf: frostWolfUrl, glacialBat: glacialBatUrl, iceWraith: iceWraithUrl, frozenSentinel: frozenSentinelUrl, iceMonarch: iceMonarchUrl,
   // Região 3 — Templo Afundado (placeholder: bandido pros humanoides, aberração pro espectro, guardião de pedra, limo pra enguia)
   drownedAcolyte: ruinBanditUrl, frozenPriest: ruinBanditUrl, lakeWraith: aberracaoUrl, submergedGuardian: stoneGuardianUrl, iceEel: acidSlimeUrl, sunkenHighPriest: trollUrl,
   // Região 3 — Cavernas de Cristal (placeholder: aranha caçadora pras aranhas/rastreador, morcego das ruínas pro morcego, vagalume amaldiçoado pro vagalume, guardião de pedra pro golem)
   crystalBat: ruinBatUrl, crystalSpider: huntingSpiderUrl, prismGolem: stoneGuardianUrl, crystalWisp: cursedWispUrl, glimmeringStalker: huntingSpiderUrl, crystalSovereign: trollUrl,
-  // Região 3 — Covil do Lobo Alfa (placeholder: lobo pra toda a alcateia)
-  alphaWolfPup: loboUrl, direWolf: loboUrl, snowStalker: loboUrl, packHunter: loboUrl, frostFangWolf: loboUrl, alphaDireWolf: loboUrl,
-  // Região 3 — Catacumbas Reais (placeholder: esqueleto/rei ossos pros mortos-vivos, aberração pro camareiro espectral)
-  royalSkeleton: esqueletoUrl, cryptSentinel: boneKingUrl, boneNoble: esqueletoUrl, spectralChamberlain: aberracaoUrl, entombedKnight: boneKingUrl, royalLich: boneKingUrl,
+  // Região 3 — Covil do Lobo Alfa
+  alphaWolfPup: alphaWolfPupUrl, direWolf: direWolfUrl, snowStalker: snowStalkerUrl, packHunter: packHunterUrl, frostFangWolf: frostFangWolfUrl, alphaDireWolf: alphaDireWolfUrl,
+  // Região 3 — Catacumbas Reais
+  royalSkeleton: royalSkeletonUrl, cryptSentinel: cryptSentinelUrl, boneNoble: boneNobleUrl, spectralChamberlain: spectralChamberlainUrl, entombedKnight: entombedKnightUrl, royalLich: royalLichUrl,
   // Região 3 — Poço sem Fundo (especial, placeholder: aberração pros horrores do vazio, aranha caçadora pro perseguidor, troll pro chefe final)
   wellCrawler: aberracaoUrl, voidTendril: aberracaoUrl, drowningWraith: aberracaoUrl, abyssalStalker: huntingSpiderUrl, hollowDweller: aberracaoUrl, pitDweller: trollUrl,
 
@@ -293,30 +340,14 @@ export function heroSprites(classId: ClassId): { idle: Sprite; attack: Sprite } 
 // picture that would otherwise look like some unrelated creature's, or
 // worse, an exact duplicate of a different entry's sprite.
 export const PLACEHOLDER_ENEMY_SHAPES = new Set<EnemyShape>([
-  // Região 2 — Floresta Amaldiçoada (chefe forestHeart ainda sem arte própria)
-  'forestHeart',
-  // Região 2 — Covil dos Dragões (dragon, o chefe, já tem arte própria)
-  'dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent',
-  // Região 2 — Necrópole Esquecida (skeletonLord, o chefe, já tem arte própria)
-  'darkReaper', 'deathCrow', 'boneExecutioner', 'wailingGhost', 'graveWorm',
-  // Região 2 — Ruínas Élficas
-  'corruptedGuardian', 'whisperingVine', 'ruinBeast', 'elvenWraith', 'crystalGolem', 'ancestralGuardian',
-  // Região 2 — Arena de Sangue
-  'cursedGladiator', 'arenaBeast', 'maskedExecutioner', 'beastTamer', 'fallenChampion', 'grandChampion',
+  // Região 2 — Ruínas Élficas (crystalGolem ainda sem arte própria)
+  'crystalGolem',
   // Alvos de Caçada (lib/hunts.ts)
   'boneTyrant', 'swampLeviathan', 'infernalWyrm',
-  // Região 3 — Fortaleza Orc
-  'orcWarrior', 'orcArcher', 'orcShaman', 'orcBerserker', 'orcStandardBearer', 'orcWarchief',
-  // Região 3 — Labirinto de Gelo
-  'iceElemental', 'frostWolf', 'glacialBat', 'iceWraith', 'frozenSentinel', 'iceMonarch',
   // Região 3 — Templo Afundado
   'drownedAcolyte', 'frozenPriest', 'lakeWraith', 'submergedGuardian', 'iceEel', 'sunkenHighPriest',
   // Região 3 — Cavernas de Cristal
   'crystalBat', 'crystalSpider', 'prismGolem', 'crystalWisp', 'glimmeringStalker', 'crystalSovereign',
-  // Região 3 — Covil do Lobo Alfa
-  'alphaWolfPup', 'direWolf', 'snowStalker', 'packHunter', 'frostFangWolf', 'alphaDireWolf',
-  // Região 3 — Catacumbas Reais
-  'royalSkeleton', 'cryptSentinel', 'boneNoble', 'spectralChamberlain', 'entombedKnight', 'royalLich',
   // Região 3 — Poço sem Fundo (especial)
   'wellCrawler', 'voidTendril', 'drowningWraith', 'abyssalStalker', 'hollowDweller', 'pitDweller',
   // Região 4 — Covil da Aranha-Rainha
