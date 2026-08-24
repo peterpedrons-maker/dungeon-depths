@@ -169,7 +169,14 @@ const AFFIX_SCALE: Record<SecondaryStatType, number> = {
 // lowest at progress 1 — a new player can get hooked by an early miracle
 // drop, while a late-game Lendário (built on far higher itemTier power)
 // stays the rarer, more meaningful pull the user wanted for endgame.
-const RARITY_WEIGHTS_LOW = [60, 15, 16, 6, 3];  // progress 0 — easiest dungeon in the game
+// Lendário's floor at progress 0 was cut twice more after this comment was
+// written (3% -> 1% -> 0.4%, comum absorbing the difference each time) —
+// direct user call after seeing the actual odds table: a level-1 trash kill
+// having a full 3% (then 1%) shot at Lendário read as too generous once laid
+// out next to the endgame floor below, even before the boss table's own
+// (much larger) cut. 0.4% keeps early trash strictly worse than early boss
+// (BOSS_WEIGHTS_LOW's own 1.5%) while still sitting above the endgame floor.
+const RARITY_WEIGHTS_LOW = [62.6, 15, 16, 6, 0.4];  // progress 0 — easiest dungeon in the game
 // Lendário's floor at progress 1 was 2%, cut to 0.15% (comum absorbs the
 // difference) once the game's repeatability came up directly — 10 dungeon
 // runs every 5 minutes means even a rare-feeling 2% adds up fast over a
@@ -233,7 +240,15 @@ export function pickRarityForTier(progress: number, qualityBonusPct = 0): Rarity
 // or above RARITY_WEIGHTS_LOW/HIGH's own raro/épico/lendário at the
 // matching end, so a boss kill is never a worse bet than farming trash at
 // the same dungeon.
-const BOSS_WEIGHTS_LOW = [10, 15, 30, 35, 10];      // progress 0 — easiest dungeon's boss
+// Lendário's floor at progress 0 was cut twice more after this comment was
+// written (10% -> 3% -> 1.5%, comum absorbing the difference each time) —
+// direct user call once the actual odds table was laid out: a level-1 boss
+// having a 3-in-4 shot at Raro-or-better (let alone 10% Lendário specifically)
+// felt too generous for the very first dungeon in the game, especially since
+// that boss is trivially farmable via "repetir sequência." 1.5% keeps the
+// early boss meaningfully above early trash's own 0.4% without making a
+// level-1 Lendário feel like an every-few-runs certainty.
+const BOSS_WEIGHTS_LOW = [18.5, 15, 30, 35, 1.5];      // progress 0 — easiest dungeon's boss
 const BOSS_WEIGHTS_HIGH = [41.7, 28, 15, 15, 0.3]; // progress 1 — hardest dungeon's boss
 
 export function pickBossDropRarity(progress: number, qualityBonusPct = 0): Rarity {
