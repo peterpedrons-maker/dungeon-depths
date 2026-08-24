@@ -1922,28 +1922,30 @@ export function DungeonPanel({
           return (
             <div
               key={a.id}
-              // Anchored near the top of the stage instead of vertically
-              // centered on the sprite — floating damage numbers land around
-              // chest height on the same X (see PLAYER_FLOAT_LEFT_PCT/
-              // ENEMY_FLOAT_LEFT_PCT + floatBaseTopPct above), so a
-              // center-screen callout used to sit right on top of them,
-              // hiding the very numbers the ability just caused.
-              className={`absolute flex flex-col items-center gap-1 pointer-events-none -translate-x-1/2 ${playerCast ? 'left-[24%]' : 'left-[68%]'}`}
-              style={{ top: '13%', animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
+              // Player side sits behind/beside the hero (further left than
+              // the hero's own X, toward their back — away from the enemy
+              // they're facing) instead of directly above them, so it stays
+              // close and still readable without ever sitting on top of the
+              // floating numbers, which land right on the hero's own column
+              // (see PLAYER_FLOAT_LEFT_PCT + floatBaseTopPct above). Enemy
+              // side has no icon (see below) so it stays up top out of the
+              // way of its own floaters instead.
+              className={`absolute flex flex-col items-center gap-1 pointer-events-none -translate-x-1/2 ${playerCast ? 'left-[9%] top-1/2 -translate-y-1/2' : 'left-[68%] top-[13%]'}`}
+              style={{ animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
             >
               {/* Only the player's own class has real per-ability icon art
                   (see activeAbilityIconStyle) — an enemy callout stays
                   text-only (name + damage) instead of showing a made-up
                   placeholder glyph that would look like missing/wrong art
                   next to everything else in the game that IS hand-drawn.
-                  Shrunk from w-11/h-6 to w-8/h-4 — big enough to read which
-                  ability fired, small enough to not dominate the stage. */}
+                  Small enough to just confirm "an ability fired" without
+                  dominating the stage. */}
               {playerCast && (
                 <div
-                  className="w-8 h-8 rounded border-2 border-gold bg-black/70 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)]"
+                  className="w-6 h-6 rounded border-2 border-gold bg-black/70 flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.7)]"
                   style={a.icon ?? undefined}
                 >
-                  {!a.icon && <IconActive className="w-4 h-4 text-gold" />}
+                  {!a.icon && <IconActive className="w-3 h-3 text-gold" />}
                 </div>
               )}
               <span className="text-[11px] font-bold text-parchment text-center leading-tight whitespace-nowrap drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
