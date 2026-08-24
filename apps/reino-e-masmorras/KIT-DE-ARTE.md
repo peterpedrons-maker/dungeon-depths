@@ -33,7 +33,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ [Armaduras — 9 folhas (3 pesos × Corpo/Pernas/Mãos)](#armaduras-9-folhas-3-grupos-de-peso-corpo-pernas-maos)
 - ✅ [Mão Secundária — 2 folhas](#mao-secundaria-2-folhas)
 - ✅ [Acessórios — 3 folhas](#acessorios-3-folhas)
-- 🕓 [Runa de Aprimoramento — 1 folha, 5 raridades](#runa-de-aprimoramento-1-folha-5-raridades)
+- ✅ Runa de Aprimoramento — 5 raridades — prompt já usado, removido do kit
 
 ### Sprites de Personagens — Classes (14/14 ✅)
 - ✅ [Guerreiro, Mago e Ladino](#classes-guerreiro-mago-e-ladino)
@@ -1263,25 +1263,6 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 ```
 
 **Como isso vai virar arte no jogo:** hoje o ícone dentro de cada slot é só um glifo genérico por tipo de slot (`SLOT_ICON` em `CharacterOverview.tsx`/`Ferreiro.tsx`/`Merchant.tsx` — uma espada simples pra qualquer arma, um peitoral simples pra qualquer corpo etc, ignorando classe/grupo de peso/tier/tipo de acessório). Depois que as 28 folhas acima forem geradas e recortadas em 280 ícones individuais, cada item passa a resolver seu ícone por `baseNoun` (o mesmo texto usado no nome do item — "Espada", "Peitoral", "Escudo", "Anel" etc) + `tier` (1-10), em vez do glifo genérico por slot — essa troca de código é um follow-up separado, depois que a arte estiver pronta (mesmo padrão dos ícones de inimigos/chefes, que também tiveram os prompts escritos primeiro e a integração de código depois).
-
----
-
-<a id="runa-de-aprimoramento-1-folha-5-raridades"></a>
-### Runa de Aprimoramento — 1 folha, 5 raridades
-
-Item novo: dropa de inimigos comuns e chefes, ocupa 1 célula do inventário, e é consumido no Ferreiro pra escolher qual afixo de um equipamento melhora (em vez de sortear aleatoriamente). Cada raridade tem sua própria arte — não reaproveita a mesma pedra recolorida — seguindo as mesmas cores de raridade já usadas no resto do jogo (cinza/esverdeado → verde → azul → roxo → dourado).
-
-**Tamanho:** 1280×256 px · **Uso:** 5 ícones (grade 5×1), um por raridade (Comum, Incomum, Raro, Épico, Lendário)
-
-```
-Hand-painted medieval fantasy game UI asset, rich digital painting style — same painted style as the game's other UI icons (gold coin, health potion, ring/amulet/bracelet icons), NOT flat vector, NOT pixel art. Each icon is a single small carved rune stone/shard, a flat-ish polished fragment etched with a glowing engraved symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
-
-One single wide image containing FIVE separate icons arranged in an even 5-column × 1-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all five — this is a rarity progression from plain (left) to radiant (right), so make the visual richness and the glow escalate clearly across the grid, matching this game's existing rarity color coding.
-
-1) Comum: a dull grayish-tan chipped stone shard, faint scratched engraving, barely glowing, worn and plain. 2) Incomum: a smooth mossy-green stone shard, a clearer engraved symbol glowing with a soft green light. 3) Raro: a polished deep-blue stone shard, sharper facets, the engraved symbol glowing with a steady blue light. 4) Épico: a faceted violet-purple crystal shard, ornate engraving, glowing with a rich purple-magenta light and small motes drifting off it. 5) Lendário: a radiant gold-amber crystal shard wreathed in a soft golden aura, intricate glowing engraving covering its whole surface, bright warm light and sparks radiating outward.
-
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Wide canvas, 1280×256 px. No text, no labels, no tier numbers, no watermark, no border or frame around any icon (the game already has its own inventory-slot frame it composites on top).
-```
 
 ---
 
