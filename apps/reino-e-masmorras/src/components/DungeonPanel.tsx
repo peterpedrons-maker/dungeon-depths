@@ -688,8 +688,9 @@ export function DungeonPanel({
     // better-odds boss rarity table instead of the dungeon-tier-interpolated
     // curve regular trash uses — see pickBossDropRarity's own comment in
     // lib/equipment.ts. Hunt bosses still get their own even-higher floor.
-    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : guaranteed ? pickBossDropRarity() : undefined;
-    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct, forcedRarity);
+    const qualityBonusPct = kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct;
+    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : guaranteed ? pickBossDropRarity(qualityBonusPct) : undefined;
+    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, qualityBonusPct, forcedRarity);
     runStatsRef.current.itemsDropped += 1;
 
     // "Vender Automático" (armado na tela de preparação) — o item nem passa
