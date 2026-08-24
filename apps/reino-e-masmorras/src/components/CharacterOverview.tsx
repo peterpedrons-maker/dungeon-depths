@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot } from '../types/game';
+import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot, Rarity } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp, equipmentContribution, speedScore } from '../lib/combatStats';
 import { fmt } from '../lib/format';
@@ -13,6 +13,7 @@ import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { ItemIcon } from './ItemIcon';
+import { RuneShelf } from './RuneShelf';
 import { AFFIX_ACCENT, BASE_ACCENT, fmtStatValue, ItemCompareGrid } from './ItemCompare';
 import emptyWeapon from '../assets/items/empty-weapon.webp';
 import emptyBody from '../assets/items/empty-body.webp';
@@ -44,13 +45,14 @@ interface Props {
   onUnequip: (slot: ItemSlot) => void;
   onSell: (item: EquipmentItem) => void;
   onAllocateAttrs: (deltas: Partial<Record<AttributeKey, number>>) => void;
+  onSellRunes: (rarity: Rarity, tier: number, count: number) => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
 const ZERO_ALLOC: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs }: Props) {
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs, onSellRunes }: Props) {
   const cls = CLASSES[ch.classId];
   const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
   const stats = computeCombatStats(ch);
@@ -186,6 +188,8 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               practice the player almost always wants both in view at once
               (comparing a bag item against what's worn), so they're merged
               into one tab. Secondary stats moved to their own tab below. */}
+          <RuneShelf runes={ch.runes} onSell={onSellRunes} />
+
           <div className="flex items-center justify-between mb-2 gap-3">
             <span className="text-[10px] text-parchment/40 shrink-0">
               {ch.inventory.length} item{ch.inventory.length !== 1 ? 's' : ''}

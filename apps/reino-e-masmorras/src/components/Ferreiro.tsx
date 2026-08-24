@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Character, EquipmentItem, RuneStack } from '../types/game';
+import { Character, EquipmentItem, Rarity, RuneStack } from '../types/game';
+import { RuneShelf } from './RuneShelf';
 import { rarityColor, rarityName, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import {
-  enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, resetItemCost, secondaryStatLabels, successChanceForLevel,
+  enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, primaryStatLines, resetItemCost, secondaryStatLabels, successChanceForLevel,
 } from '../lib/enhancement';
-import { canUseRuneOn } from '../lib/runes';
+import { pickBestRuneFor } from '../lib/runes';
 import { fmt } from '../lib/format';
 import { Button, SmallButton } from './Button';
 import { Modal } from './Modal';
@@ -27,6 +28,7 @@ interface Props {
   character: Character;
   onEnhance: (item: EquipmentItem, runeChoice?: { rune: RuneStack; affixIndex?: number }) => EnhanceResult | undefined;
   onReset: (item: EquipmentItem) => void;
+  onSellRunes: (rarity: Rarity, tier: number, count: number) => void;
   onClose: () => void;
 }
 
@@ -39,8 +41,11 @@ function findLiveItem(ch: Character, id: string): EquipmentItem | null {
 
 // One item's circular icon, reused for the grid and for the before/after
 // preview cards — `dim` grays it out for "outcome not decided yet" and
-// "attempt failed", `lit` briefly pulses it for "attempt succeeded".
-function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?: boolean }) {
+// "attempt failed", `lit` briefly pulses it for "attempt succeeded",
+// `equipped` adds a small ribbon marking this exact item as currently worn
+// (so browsing the grid always shows at a glance what's equipped, without
+// needing to open it or compare it against anything).
+function ItemIcon({ item, dim, lit, equipped }: { item: EquipmentItem; dim?: boolean; lit?: boolean; equipped?: boolean }) {
   const color = rarityColor(item.rarity);
   return (
     <div
@@ -55,38 +60,43 @@ function ItemIcon({ item, dim, lit }: { item: EquipmentItem; dim?: boolean; lit?
           +{item.enhanceLevel}
         </span>
       )}
+      {equipped && (
+        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold uppercase tracking-wide bg-emerald-600 text-white rounded-full px-1.5 py-px border border-black/40 shadow whitespace-nowrap">
+          Equipado
+        </span>
+      )}
     </div>
   );
 }
 
-function runeChipLabel(r: RuneStack): string {
-  return `${rarityName(r.rarity)} T${r.tier} ×${r.count}`;
-}
-
-// The confirm → roll → result screen opened when the player taps "Aprimorar"
-// on an item. Nothing is spent until "Confirmar" — before that, the hammer
-// sprite sits on its first frame (paused) and the right-hand preview icon is
-// dimmed since the outcome isn't decided yet. Confirming rolls immediately
-// (so gold is spent and the result is already known), but the reveal is
-// held back until the hammer animation finishes playing, so the drama
-// matches what's actually happening instead of racing ahead of it.
+// The pick → roll → result screen opened when the player taps "Aprimorar"
+// on an item. Nothing is spent until "Confirmar" — the "pick" phase reads
+// like the item's own detail view (icon/name/rarity, its actual stat
+// lines) rather than a separate small panel, and the affix lines themselves
+// ARE the picker: tap one to mark it as what you want to improve. A rune is
+// resolved automatically behind the scenes (see pickBestRuneFor — the
+// smallest owned stack that still qualifies for this item) the moment an
+// affix is picked; nothing is asked about WHICH rune, only which affix. If
+// no owned rune qualifies for this item at all, none of the affix lines are
+// tappable and the push always improves a random existing affix instead
+// (still true on a zero-affix item — nothing to improve without a rune to
+// grant a first one).
 //
-// Before confirming, the player can optionally spend a Runa de Aprimoramento
-// (any owned stack whose tier/rarity both cover the item's own — see
-// canUseRuneOn) to CHOOSE which affix improves alongside the base stat,
-// instead of leaving it to chance. No rune = a random existing affix
-// improves automatically (a no-op on an item with zero affixes).
+// Confirming rolls immediately (so gold is spent and the result is already
+// known), but the reveal is held back until the hammer animation finishes
+// playing, so the drama matches what's actually happening instead of
+// racing ahead of it.
 function EnhanceFlow({ item, character, onEnhance, onDone }: {
   item: EquipmentItem; character: Character; onEnhance: Props['onEnhance']; onDone: (success: boolean) => void;
 }) {
-  const [phase, setPhase] = useState<'confirm' | 'rolling' | 'result'>('confirm');
+  const [phase, setPhase] = useState<'pick' | 'rolling' | 'result'>('pick');
   const [result, setResult] = useState<EnhanceResult>({ success: false });
-  const [selectedRune, setSelectedRune] = useState<RuneStack | null>(null);
-  const [affixIndex, setAffixIndex] = useState(0);
+  const [affixIndex, setAffixIndex] = useState<number | null>(null);
   const cost = enhanceCost(item);
   const chance = successChanceForLevel(item.enhanceLevel);
-  const usableRunes = character.runes.filter((r) => canUseRuneOn(r, item));
+  const bestRune = pickBestRuneFor(character.runes, item);
   const affixLabels = secondaryStatLabels(item);
+  const primaryLine = primaryStatLines(item)[0];
   // The item as it actually came back from onEnhance (affix growth and all)
   // — NOT a locally-guessed `{...item, enhanceLevel: +1}`, which would only
   // ever show the base-stat bump and silently hide whichever affix just
@@ -102,11 +112,69 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
   }, [phase]);
 
   function handleConfirm() {
-    const runeChoice = selectedRune ? { rune: selectedRune, affixIndex } : undefined;
+    const runeChoice = bestRune && affixIndex !== null ? { rune: bestRune, affixIndex } : undefined;
     const outcome = onEnhance(item, runeChoice) ?? { success: false };
     setResult(outcome);
     setPhase('rolling');
     playUpgradeSfx();
+  }
+
+  if (phase === 'pick') {
+    return (
+      <div className="rounded border border-black/50 bg-black/30 p-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-3 mb-3">
+          <ItemIcon item={item} />
+          <div>
+            <div className="font-bold text-base" style={{ color: rarityColor(item.rarity) }}>{itemDisplayName(item)}</div>
+            <div className="text-xs text-parchment/50">{rarityName(item.rarity)} · Tier {item.tier} · {SLOT_NAMES[item.slot]}</div>
+          </div>
+        </div>
+
+        <p className="text-xs text-parchment/60 mb-1">+{item.enhanceLevel} → +{item.enhanceLevel + 1}</p>
+        <p className="text-xs text-parchment/50 mb-3">
+          Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro
+          {item.enhanceLevel >= 7 && ' · Falhar só custa a tentativa — o item nunca retrocede'}
+        </p>
+
+        <p className="text-[11px] text-parchment/50 mb-1.5">
+          {bestRune
+            ? 'Toque num atributo pra escolher qual melhora (consome uma Runa de Aprimoramento). Sem escolher, melhora um aleatório:'
+            : 'Sem Runa de Aprimoramento disponível pra esse item — vai melhorar um atributo aleatório no sucesso:'}
+        </p>
+        <div className="flex flex-col gap-1.5 mb-3">
+          {primaryLine && (
+            <div className="text-xs text-parchment/70 rounded px-2.5 py-1.5 border border-panelborder/30 bg-black/20">
+              {primaryLine} <span className="text-parchment/40 italic">(atributo base — sempre melhora)</span>
+            </div>
+          )}
+          {affixLabels.length === 0 ? (
+            <button
+              disabled={!bestRune}
+              onClick={() => setAffixIndex((i) => (i === 0 ? null : 0))}
+              className={`text-left text-xs rounded px-2.5 py-1.5 border ${affixIndex === 0 ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70'} ${bestRune ? 'hover:border-gold/50' : 'opacity-40 cursor-not-allowed'}`}
+            >
+              Sem afixos — a runa concede um novo
+            </button>
+          ) : (
+            affixLabels.map((label, i) => (
+              <button
+                key={i}
+                disabled={!bestRune}
+                onClick={() => setAffixIndex((cur) => (cur === i ? null : i))}
+                className={`text-left text-xs rounded px-2.5 py-1.5 border ${affixIndex === i ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70'} ${bestRune ? 'hover:border-gold/50' : 'opacity-40 cursor-not-allowed'}`}
+              >
+                {label}
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={() => onDone(false)} className="flex-1">Cancelar</Button>
+          <Button onClick={handleConfirm} disabled={character.gold < cost} className="flex-1">Confirmar</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -144,71 +212,7 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
           <Button onClick={() => onDone(result.success)} className="w-full">Continuar</Button>
         </>
       ) : (
-        <>
-          <p className="text-xs text-parchment/60 mb-1">+{item.enhanceLevel} → +{nextItem.enhanceLevel}</p>
-          <p className="text-xs text-parchment/50 mb-3">
-            Chance de sucesso: {Math.round(chance * 100)}% · Custo: {fmt(cost)} ouro
-            {item.enhanceLevel >= 7 && ' · Falhar só custa a tentativa — o item nunca retrocede'}
-          </p>
-
-          {phase === 'confirm' && (
-            <div className="mb-3 text-left">
-              <p className="text-[11px] text-parchment/50 mb-1.5">
-                {usableRunes.length > 0
-                  ? 'Runa de Aprimoramento (opcional — escolhe qual afixo melhora; sem runa, melhora um aleatório):'
-                  : 'Sem Runa de Aprimoramento disponível pra esse item — vai melhorar um afixo aleatório no sucesso.'}
-              </p>
-              {usableRunes.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  <button
-                    onClick={() => setSelectedRune(null)}
-                    className={`text-[11px] font-bold rounded-full px-2.5 py-1 border ${!selectedRune ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/60 hover:border-gold/50'}`}
-                  >
-                    Sem runa
-                  </button>
-                  {usableRunes.map((r) => (
-                    <button
-                      key={`${r.rarity}-${r.tier}`}
-                      onClick={() => { setSelectedRune(r); setAffixIndex(0); }}
-                      style={{ color: rarityColor(r.rarity) }}
-                      className={`text-[11px] font-bold rounded-full px-2.5 py-1 border ${selectedRune === r ? 'bg-white/10 border-current' : 'border-panelborder/50 hover:border-current'}`}
-                    >
-                      {runeChipLabel(r)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {selectedRune && affixLabels.length > 0 && (
-                <>
-                  <p className="text-[11px] text-parchment/50 mb-1.5">Qual afixo melhorar:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {affixLabels.map((label, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setAffixIndex(i)}
-                        className={`text-[11px] rounded-full px-2.5 py-1 border ${i === affixIndex ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70 hover:border-gold/50'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-              {selectedRune && affixLabels.length === 0 && (
-                <p className="text-[11px] text-emerald-400/80 italic">Este item não tem afixos — a runa vai conceder um novo.</p>
-              )}
-            </div>
-          )}
-
-          {phase === 'confirm' ? (
-            <div className="flex gap-2">
-              <Button onClick={() => onDone(false)} className="flex-1">Cancelar</Button>
-              <Button onClick={handleConfirm} disabled={character.gold < cost} className="flex-1">Confirmar</Button>
-            </div>
-          ) : (
-            <p className="text-xs text-gold italic">Batendo o martelo...</p>
-          )}
-        </>
+        <p className="text-xs text-gold italic">Batendo o martelo...</p>
       )}
     </div>
   );
@@ -219,11 +223,12 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
 // full-bleed hero area sized to a near-square crop that stays safe across
 // phone aspect ratios (see KIT-DE-ARTE.md's Cena do Ferreiro prompt for why
 // the source art is a 1536x1536 square).
-export function Ferreiro({ character: ch, onEnhance, onReset, onClose }: Props) {
+export function Ferreiro({ character: ch, onEnhance, onReset, onSellRunes, onClose }: Props) {
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const [enhancingItem, setEnhancingItem] = useState<EquipmentItem | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
+  const equippedIds = new Set(Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null).map((i) => i.id));
 
   return (
     <div className="fixed inset-0 z-40 bg-nightsky overflow-y-auto flex flex-col">
@@ -274,6 +279,8 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onClose }: Props) 
           </div>
         </div>
 
+        {!enhancingItem && <RuneShelf runes={ch.runes} onSell={onSellRunes} />}
+
         {enhancingItem ? (
           <EnhanceFlow
             item={enhancingItem}
@@ -289,7 +296,7 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onClose }: Props) 
           <div className="rounded border border-black/50 bg-black/30 p-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
             <button onClick={() => setOpenItem(null)} className="text-xs text-parchment/50 hover:text-parchment mb-2">‹ Voltar</button>
             <div className="flex items-center gap-3">
-              <ItemIcon item={openItem} />
+              <ItemIcon item={openItem} equipped={equippedIds.has(openItem.id)} />
               <div>
                 <div className="font-bold text-base" style={{ color: rarityColor(openItem.rarity) }}>{itemDisplayName(openItem)}</div>
                 <div className="text-xs text-parchment/50">{rarityName(openItem.rarity)} · Tier {openItem.tier} · {SLOT_NAMES[openItem.slot]}</div>
@@ -332,7 +339,7 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onClose }: Props) 
                       title={itemDisplayName(item)}
                       className="transition-transform duration-150 hover:scale-105"
                     >
-                      <ItemIcon item={item} />
+                      <ItemIcon item={item} equipped={equippedIds.has(item.id)} />
                     </button>
                   ))}
                 </div>

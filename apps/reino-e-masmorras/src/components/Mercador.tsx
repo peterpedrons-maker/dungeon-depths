@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Character, EquipmentItem } from '../types/game';
+import { Character, EquipmentItem, Rarity } from '../types/game';
+import { RuneShelf } from './RuneShelf';
 import { fmt } from '../lib/format';
 import { rarityColor, slotTintStyle } from '../lib/equipment';
 import { itemDisplayName } from '../lib/enhancement';
@@ -22,6 +23,7 @@ interface Props {
   character: Character;
   onBuyPotion: () => void;
   onCharacterChange: (c: Character) => void;
+  onSellRunes: (rarity: Rarity, tier: number, count: number) => void;
   onClose: () => void;
 }
 
@@ -34,7 +36,7 @@ interface Props {
 // on a timer (see MERCHANT_REFRESH_MS/maybeRefreshMerchantStock, checked
 // by GameShell.handleOpenMercador right before this screen opens) instead
 // of on every dungeon run — walking in and out doesn't refresh it.
-export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClose }: Props) {
+export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onSellRunes, onClose }: Props) {
   const [selected, setSelected] = useState<EquipmentItem | null>(null);
   const potionCost = potionBasePrice(highestAccessibleItemTier(ch));
 
@@ -95,6 +97,8 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onClos
             "Poções frescas, direto da destilaria, e umas peças... encontradas por aí. Nunca pergunto de onde vêm."
           </div>
         </div>
+
+        <RuneShelf runes={ch.runes} onSell={onSellRunes} />
 
         <div className="rounded border border-panelborder/60 bg-panel2/40 p-3 flex items-center gap-3 mb-4">
           <img src={pocaoIcon} alt="" className="w-10 h-11 object-contain shrink-0" />

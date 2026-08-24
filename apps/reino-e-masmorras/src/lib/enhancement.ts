@@ -49,6 +49,14 @@ const AFFIX_PCT_BY_LEVEL = ENHANCE_PCT_BY_LEVEL.map((v) => (v * 0.25) / 0.54);
 // them.
 const AFFIX_BOOST_INCREMENT_BY_LEVEL = AFFIX_PCT_BY_LEVEL.slice(1).map((v, i) => v - AFFIX_PCT_BY_LEVEL[i]);
 
+// secondaryStats percent-fraction types (stored 0-1) vs. flat-number ones —
+// same split lib/equipment.ts's PCT_AFFIX_TYPES draws, duplicated here
+// (rather than imported) since equipment.ts already imports FROM this file
+// and a cross-import back would be circular.
+const PCT_AFFIX_TYPE_SET = new Set<SecondaryStatType>([
+  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality',
+]);
+
 // Applies one affix's growth for a successful push from `item.enhanceLevel`
 // to the next level. `affixIndex` is which secondaryStats entry improves —
 // the Ferreiro's rune flow passes the player's choice, or a random existing
@@ -56,10 +64,21 @@ const AFFIX_BOOST_INCREMENT_BY_LEVEL = AFFIX_PCT_BY_LEVEL.slice(1).map((v, i) =>
 // at all (nothing to grow — see the Ferreiro's separate "add a first affix
 // via rune" path for that case instead).
 export function applyAffixGrowth(item: EquipmentItem, affixIndex: number): EquipmentItem {
-  if (!item.secondaryStats[affixIndex]) return item;
-  const increment = AFFIX_BOOST_INCREMENT_BY_LEVEL[item.enhanceLevel] ?? 0;
+  const affix = item.secondaryStats[affixIndex];
+  if (!affix) return item;
+  const incrementPct = AFFIX_BOOST_INCREMENT_BY_LEVEL[item.enhanceLevel] ?? 0;
+  // Percentage affixes (crítico, evasão, velocidade...) keep the pure
+  // percentage, unfloored — they're already strong per point and read
+  // clearly at whole percentage points. Flat-number affixes (defesa, vida,
+  // ataque...) instead always gain at least +1 per pick: a pure percentage
+  // of a small roll (e.g. 7 ataque mágico) can round to 0 and read as
+  // "nada aconteceu" even though the pick was real — see the affixBoosts
+  // comment on EquipmentItem for how the two units (fraction vs. flat
+  // delta) coexist in the same array.
+  const isPct = PCT_AFFIX_TYPE_SET.has(affix.type);
+  const delta = isPct ? incrementPct : Math.max(1, Math.round(affix.value * incrementPct));
   const boosts = item.secondaryStats.map((_, i) => item.affixBoosts?.[i] ?? 0);
-  boosts[affixIndex] += increment;
+  boosts[affixIndex] += delta;
   return { ...item, affixBoosts: boosts };
 }
 
@@ -107,24 +126,20 @@ export function enhancedItem(item: EquipmentItem): EquipmentItem {
     scaled[key] = isPct ? item[key] * mult : Math.round(item[key] * mult);
   }
   if (hasAffixBoost) {
+    // Two different units share the same affixBoosts array depending on
+    // type (see applyAffixGrowth): a pct-type boost is a fraction, applied
+    // multiplicatively; a flat-type boost is an absolute delta already in
+    // the stat's own unit, applied additively (its minimum-+1-per-pick
+    // floor was already baked in at growth time, not here).
     scaled.secondaryStats = item.secondaryStats.map((s, i) => {
       const boost = item.affixBoosts?.[i] ?? 0;
       if (boost <= 0) return s;
-      const raw = s.value * (1 + boost);
-      return { ...s, value: PCT_AFFIX_TYPE_SET.has(s.type) ? raw : Math.round(raw) };
+      if (PCT_AFFIX_TYPE_SET.has(s.type)) return { ...s, value: s.value * (1 + boost) };
+      return { ...s, value: s.value + boost };
     });
   }
   return scaled;
 }
-
-// secondaryStats percent-fraction types (stored 0-1) need their boosted
-// value left as a fraction; every other type is a flat integer stat — same
-// split lib/equipment.ts's PCT_AFFIX_TYPES draws, duplicated here (rather
-// than imported) since equipment.ts already imports FROM this file and a
-// cross-import back would be circular.
-const PCT_AFFIX_TYPE_SET = new Set<SecondaryStatType>([
-  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality',
-]);
 
 // Gold cost to fully reset `item` back to +0 (undoing both the primary-stat
 // enhancement and every affix improvement it picked up along the way) —

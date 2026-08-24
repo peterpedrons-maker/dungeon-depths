@@ -295,6 +295,20 @@ export function GameShell({
     playBuySellSfx();
   }
 
+  // 1 ouro por runa, não importa raridade/tier — runas dropam bem mais que
+  // equipamento (ver RUNE_DROP_CHANCE_REGULAR/BOSS), então isso é só um jeito
+  // de não deixar sobra acumulando pra sempre, não uma fonte de ouro de
+  // verdade.
+  function handleSellRunes(rarity: Rarity, tier: number, count: number) {
+    const stack = character.runes.find((r) => r.rarity === rarity && r.tier === tier);
+    if (!stack || count <= 0 || count > stack.count) return;
+    const runes = count >= stack.count
+      ? character.runes.filter((r) => !(r.rarity === rarity && r.tier === tier))
+      : character.runes.map((r) => (r.rarity === rarity && r.tier === tier ? { ...r, count: r.count - count } : r));
+    onCharacterChange({ ...character, gold: character.gold + count, runes });
+    playBuySellSfx();
+  }
+
   // Gold is spent on the ATTEMPT, not the outcome — success rolls against
   // successChanceForLevel(item.enhanceLevel) and gets steeper near +10, so a
   // failed roll still costs the gold. The item's level never drops on a
@@ -427,9 +441,17 @@ export function GameShell({
   // Baú de Armazém — account-wide (see App.tsx's onVaultChange), so these
   // move an item between `character.inventory` (this slot only) and
   // `profile.vaultItems` (shared across every slot on the account) instead
-  // of between two character-scoped lists.
+  // of between two character-scoped lists. The Baú's own "Sua Mochila" tab
+  // also lists equipped items (with an "Equipado" badge, confirmed before
+  // acting on one) — depositing one has to actually unequip it here, or
+  // it'd stay worn AND get duplicated into the vault.
   function handleDepositToVault(item: EquipmentItem) {
-    onCharacterChange({ ...character, inventory: character.inventory.filter((i) => i.id !== item.id) });
+    const equippedSlot = character.equipment[item.slot]?.id === item.id ? item.slot : null;
+    onCharacterChange({
+      ...character,
+      inventory: character.inventory.filter((i) => i.id !== item.id),
+      equipment: equippedSlot ? { ...character.equipment, [equippedSlot]: null } : character.equipment,
+    });
     onVaultChange([...profile.vaultItems, { ...item, gridX: undefined, gridY: undefined }]);
   }
   function handleWithdrawFromVault(item: EquipmentItem) {
@@ -467,7 +489,14 @@ export function GameShell({
             />
           )}
           {section === 'character' && (
-            <CharacterOverview character={character} onEquip={handleEquip} onUnequip={handleUnequip} onSell={handleSellItem} onAllocateAttrs={handleAllocateAttrs} />
+            <CharacterOverview
+              character={character}
+              onEquip={handleEquip}
+              onUnequip={handleUnequip}
+              onSell={handleSellItem}
+              onAllocateAttrs={handleAllocateAttrs}
+              onSellRunes={handleSellRunes}
+            />
           )}
           {section === 'skills' && (
             <SkillTree
@@ -508,11 +537,23 @@ export function GameShell({
       </div>
 
       {ferreiroOpen && (
-        <Ferreiro character={character} onEnhance={handleEnhanceItem} onReset={handleResetItem} onClose={() => setFerreiroOpen(false)} />
+        <Ferreiro
+          character={character}
+          onEnhance={handleEnhanceItem}
+          onReset={handleResetItem}
+          onSellRunes={handleSellRunes}
+          onClose={() => setFerreiroOpen(false)}
+        />
       )}
 
       {mercadorOpen && (
-        <Mercador character={character} onBuyPotion={handleBuyPotion} onCharacterChange={onCharacterChange} onClose={() => setMercadorOpen(false)} />
+        <Mercador
+          character={character}
+          onBuyPotion={handleBuyPotion}
+          onCharacterChange={onCharacterChange}
+          onSellRunes={handleSellRunes}
+          onClose={() => setMercadorOpen(false)}
+        />
       )}
 
       {bauOpen && (
@@ -521,6 +562,7 @@ export function GameShell({
           vaultItems={profile.vaultItems}
           onDeposit={handleDepositToVault}
           onWithdraw={handleWithdrawFromVault}
+          onSellRunes={handleSellRunes}
           onClose={() => setBauOpen(false)}
         />
       )}
