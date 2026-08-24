@@ -87,7 +87,12 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
   const chance = successChanceForLevel(item.enhanceLevel);
   const usableRunes = character.runes.filter((r) => canUseRuneOn(r, item));
   const affixLabels = secondaryStatLabels(item);
-  const nextItem = { ...item, enhanceLevel: item.enhanceLevel + 1 };
+  // The item as it actually came back from onEnhance (affix growth and all)
+  // — NOT a locally-guessed `{...item, enhanceLevel: +1}`, which would only
+  // ever show the base-stat bump and silently hide whichever affix just
+  // improved. onEnhance already applied the real change via onCharacterChange
+  // before this re-renders, so `character` here already reflects it.
+  const nextItem = (result.success && findLiveItem(character, item.id)) || { ...item, enhanceLevel: item.enhanceLevel + 1 };
   const previewItem = result.success ? nextItem : item;
 
   useEffect(() => {
