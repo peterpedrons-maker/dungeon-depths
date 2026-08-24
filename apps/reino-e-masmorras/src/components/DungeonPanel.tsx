@@ -7,6 +7,7 @@ import { spawnEnemy, enemySpeedMult } from '../lib/enemies';
 import { CLASS_SPEED_MULT, CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
 import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
 import { baseDropChanceForLevel, generateItem, pickBossDropRarity, rarityColor, sellValue } from '../lib/equipment';
+import { difficultyProgress } from '../lib/dungeons';
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -718,13 +719,17 @@ export function DungeonPanel({
     // (ver HUNT_STAT_MULT em lib/enemies.ts) — a recompensa precisa refletir
     // isso: em vez da rolagem normal de raridade, força pelo menos Raro,
     // com uma chance real de Épico ou até Lendário.
-    // A guaranteed drop (boss/elite kill) always rolls from the fixed,
-    // better-odds boss rarity table instead of the dungeon-tier-interpolated
-    // curve regular trash uses — see pickBossDropRarity's own comment in
-    // lib/equipment.ts. Hunt bosses still get their own even-higher floor.
+    // A guaranteed drop (boss/elite kill) always rolls from the boss rarity
+    // table instead of the one regular trash uses — see pickBossDropRarity's
+    // own comment in lib/equipment.ts. Hunt bosses still get their own
+    // even-higher floor. Both tables key off this dungeon's own
+    // difficultyProgress (0-1, from its difficultyMult), not its coarser
+    // itemTier — see difficultyProgress's own comment in lib/dungeons.ts for
+    // why (several dungeons share an itemTier; none share a difficultyMult).
     const qualityBonusPct = kingdomBonuses.itemQualityBonusPct + stats.itemQualityBonusPct;
-    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : guaranteed ? pickBossDropRarity(qualityBonusPct) : undefined;
-    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, qualityBonusPct, forcedRarity);
+    const progress = difficultyProgress(dungeon);
+    const forcedRarity = dungeon.isHunt ? pickHuntDropRarity() : guaranteed ? pickBossDropRarity(progress, qualityBonusPct) : undefined;
+    const item = generateItem(slot, chRef.current.classId, dungeon.itemTier, qualityBonusPct, forcedRarity, progress);
     runStatsRef.current.itemsDropped += 1;
 
     // "Vender Automático" (armado na tela de preparação) — o item nem passa
