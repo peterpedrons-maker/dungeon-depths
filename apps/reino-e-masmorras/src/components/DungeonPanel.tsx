@@ -767,9 +767,7 @@ export function DungeonPanel({
   function tryDropRune(guaranteed = false) {
     const chance = guaranteed ? RUNE_DROP_CHANCE_BOSS : RUNE_DROP_CHANCE_REGULAR;
     if (Math.random() >= chance) return;
-    const stats = computeCombatStats(chRef.current);
-    const progress = difficultyProgress(dungeon);
-    const drop = rollRuneDrop(dungeon.itemTier, progress, stats.itemQualityBonusPct, guaranteed);
+    const drop = rollRuneDrop(dungeon.itemTier);
     updateCh({ ...chRef.current, runes: addRune(chRef.current.runes, drop) });
     pushLog([
       { text: 'Você encontrou: ' },

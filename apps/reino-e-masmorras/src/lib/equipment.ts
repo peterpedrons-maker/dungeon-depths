@@ -170,7 +170,15 @@ const AFFIX_SCALE: Record<SecondaryStatType, number> = {
 // drop, while a late-game Lendário (built on far higher itemTier power)
 // stays the rarer, more meaningful pull the user wanted for endgame.
 const RARITY_WEIGHTS_LOW = [60, 15, 16, 6, 3];  // progress 0 — easiest dungeon in the game
-const RARITY_WEIGHTS_HIGH = [60, 15, 12, 11, 2]; // progress 1 — hardest dungeon in the game
+// Lendário's floor at progress 1 was 2%, cut to 0.15% (comum absorbs the
+// difference) once the game's repeatability came up directly — 10 dungeon
+// runs every 5 minutes means even a rare-feeling 2% adds up fast over a
+// farming session, and trash's own extra gate (baseDropChanceForLevel, an
+// item has to drop AT ALL first) still isn't enough on its own to keep an
+// endgame Lendário feeling earned. This also had to move so the boss table
+// below could go as low as its own requested ~0.3% floor while staying
+// strictly better than trash at every rarity — see BOSS_WEIGHTS_HIGH.
+const RARITY_WEIGHTS_HIGH = [61.85, 15, 12, 11, 0.15]; // progress 1 — hardest dungeon in the game
 
 // Sorte (LUK) and the Qualidade dos Itens affix already boost how good an
 // item's own stat roll is (qualityMult, see generateItem below) — this is
@@ -210,15 +218,23 @@ export function pickRarityForTier(progress: number, qualityBonusPct = 0): Rarity
 // every boss in the game (a Ruínas kill and an Arena do Campeão kill rolled
 // identically), which meant regressing to an early, fast boss for loot was
 // never actually worse than fighting the current one. Now scales with the
-// same `progress` axis as regular drops, but in the OPPOSITE direction on
-// Lendário specifically: every rarity climbs with progress (unlike trash's
-// inverted Lendário), so the toughest boss currently available is always
-// strictly the best Lendário source in the game — never worth backtracking
-// for. Every weight here sits at or above RARITY_WEIGHTS_LOW/HIGH's own
-// raro/épico/lendário at the matching end, so a boss kill is never a worse
-// bet than farming trash at the same dungeon.
-const BOSS_WEIGHTS_LOW = [44, 20, 23, 9, 4];   // progress 0 — easiest dungeon's boss
-const BOSS_WEIGHTS_HIGH = [20, 18, 30, 22, 10]; // progress 1 — hardest dungeon's boss
+// same `progress` axis as regular drops.
+// 2026 pass: every rarity here now moves the SAME direction as trash's own
+// Lendário (easier early, harder late), not just Lendário — explicit user
+// call, reasoning that a boss is a repeatable, guaranteed-drop farm target
+// (via "repetir sequência"), so the SAME "early miracle hook, earned late-
+// game" logic that already justified trash's inverted Lendário should
+// apply across the board here too, not just to one rarity. This does
+// technically reopen a duller version of the old "farm an easy boss"
+// question the previous (rising) design closed — accepted deliberately,
+// since an early boss's Lendário/Épico still rolls on a far lower baseTier
+// than a late one, so it's a weaker item either way, same tradeoff trash's
+// own inverted Lendário already leans on. Every weight here still sits at
+// or above RARITY_WEIGHTS_LOW/HIGH's own raro/épico/lendário at the
+// matching end, so a boss kill is never a worse bet than farming trash at
+// the same dungeon.
+const BOSS_WEIGHTS_LOW = [10, 15, 30, 35, 10];      // progress 0 — easiest dungeon's boss
+const BOSS_WEIGHTS_HIGH = [41.7, 28, 15, 15, 0.3]; // progress 1 — hardest dungeon's boss
 
 export function pickBossDropRarity(progress: number, qualityBonusPct = 0): Rarity {
   const t = Math.max(0, Math.min(1, progress));

@@ -1,5 +1,5 @@
 import { EquipmentItem, Rarity, RuneStack } from '../types/game';
-import { pickRarityForTier, pickBossDropRarity, rarityIndex } from './equipment';
+import { RARITIES, rarityIndex } from './equipment';
 
 // Drop chance for a Runa de Aprimoramento, rolled independently of the
 // normal equipment drop (see DungeonPanel.tsx's tryDropRune) — "não precisa
@@ -8,8 +8,8 @@ import { pickRarityForTier, pickBossDropRarity, rarityIndex } from './equipment'
 // it: a regular kill has a real but occasional shot, a boss/elite kill
 // (which already guarantees an equipment drop) adds a second, much better
 // shot at one on top.
-export const RUNE_DROP_CHANCE_REGULAR = 0.08;
-export const RUNE_DROP_CHANCE_BOSS = 0.30;
+export const RUNE_DROP_CHANCE_REGULAR = 0.30;
+export const RUNE_DROP_CHANCE_BOSS = 0.60;
 
 // A rune's rarity/tier gate what it can be used on at the Ferreiro — both
 // axes work the same way: a rune can be equal or HIGHER than the item on
@@ -20,14 +20,50 @@ export function canUseRuneOn(rune: RuneStack, item: EquipmentItem): boolean {
   return rune.tier >= item.tier && rarityIndex(rune.rarity) >= rarityIndex(item.rarity);
 }
 
-// Rolls what a rune drop should be — same rarity curve as regular loot
-// (progress-based, boosted by Sorte/Qualidade dos Itens the same way), tier
-// pinned to the dungeon's own itemTier like equipment. `guaranteed` (a
-// boss/elite kill) reuses the boss table, same as a guaranteed equipment
-// drop does.
-export function rollRuneDrop(tier: number, progress: number, qualityBonusPct: number, guaranteed: boolean): RuneStack {
-  const rarity: Rarity = guaranteed ? pickBossDropRarity(progress, qualityBonusPct) : pickRarityForTier(progress, qualityBonusPct).id;
-  return { rarity, tier, count: 1 };
+// Picks which owned rune stack to spend on `item`, so the Ferreiro's UI can
+// just ask "which affix?" without also making the player pick a stack —
+// the smallest (lowest rarity, then lowest tier) stack that still qualifies,
+// so a player naturally conserves their rarer/higher-tier runes for the
+// items that actually need them instead of burning them on anything.
+export function pickBestRuneFor(runes: RuneStack[], item: EquipmentItem): RuneStack | null {
+  const usable = runes.filter((r) => canUseRuneOn(r, item));
+  if (usable.length === 0) return null;
+  return usable.reduce((best, r) => {
+    const byRarity = rarityIndex(r.rarity) - rarityIndex(best.rarity);
+    const better = byRarity !== 0 ? byRarity < 0 : r.tier < best.tier;
+    return better ? r : best;
+  });
+}
+
+// A rune's own rarity curve — deliberately its own table, not a reuse of
+// equipment's (pickRarityForTier/pickBossDropRarity): a rune is a
+// consumable spent repeatedly across a whole gear set, not a single big
+// roll, so it needs to be noticeably easier to come by at every rarity
+// (not just Comum) than the equivalent equipment rarity — "não precisa ser
+// tão baixo... a não ser o comum, que pode dropar bastante". Flat across
+// the whole game (doesn't scale with dungeon progress like equipment does)
+// — only the rune's TIER tracks progress (pinned to the dungeon's own
+// itemTier below), rarity odds stay the same from the first dungeon to the
+// last. Order matches RARITIES: comum, incomum, raro, épico, legendario.
+const RUNE_RARITY_WEIGHTS = [45, 27, 16, 9, 3];
+
+function pickRuneRarity(): Rarity {
+  const total = RUNE_RARITY_WEIGHTS.reduce((s, w) => s + w, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < RARITIES.length; i++) {
+    if (roll < RUNE_RARITY_WEIGHTS[i]) return RARITIES[i].id;
+    roll -= RUNE_RARITY_WEIGHTS[i];
+  }
+  return RARITIES[0].id;
+}
+
+// Rolls what a rune drop should be — tier pinned to the dungeon's own
+// itemTier, same as equipment. A boss/elite kill vs. a regular one only
+// changes whether a rune drops AT ALL (RUNE_DROP_CHANCE_BOSS vs.
+// RUNE_DROP_CHANCE_REGULAR, checked by the caller) — its rarity odds
+// (RUNE_RARITY_WEIGHTS above) are the same either way.
+export function rollRuneDrop(tier: number): RuneStack {
+  return { rarity: pickRuneRarity(), tier, count: 1 };
 }
 
 // Adds one rune to `runes`, stacking onto an existing (rarity, tier) entry
