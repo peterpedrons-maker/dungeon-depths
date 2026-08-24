@@ -18,7 +18,6 @@ const MARKERS: Record<string, { xPct: number; yPct: number }> = {
   bau: { xPct: 40.6, yPct: 61.7 },
   mercador: { xPct: 68.1, yPct: 63.3 },
 };
-const RESERVED_MARKER = { xPct: 89.4, yPct: 56.4 };
 
 // Every marker opens straight into its own scene — there's no "melhorar
 // nível" purchase flow anymore (the whole building-level meta was removed:
@@ -41,7 +40,7 @@ export function KingdomBuildings({ onOpenFerreiro, onOpenMercador, onOpenBau }: 
         Toque numa construção no mapa pra visitá-la.
       </p>
 
-      <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[4/3]">
+      <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[7/4]">
         <img
           src={mapaConstrucoes}
           alt="Mapa de construções do Reino"
@@ -71,23 +70,16 @@ export function KingdomBuildings({ onOpenFerreiro, onOpenMercador, onOpenBau }: 
             </button>
           );
         })}
-        <div
-          title="Reservado para uma futura construção"
-          className="absolute w-16 h-16 sm:w-20 sm:h-20 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center opacity-70"
-          style={{ left: `${RESERVED_MARKER.xPct}%`, top: `${markerYPct(RESERVED_MARKER.yPct)}%` }}
-        >
-          <span className="text-[10px] font-bold text-parchment [text-shadow:0_1px_3px_rgba(0,0,0,0.95),0_0_4px_rgba(0,0,0,0.95)]">Em breve</span>
-        </div>
       </div>
     </Panel>
   );
 }
 
 // Marker Y coordinates were measured against the full uncropped image; the
-// map renders cropped into a 4:3 box (see objectPosition below), so the
+// map renders cropped into a 7:4 box (see objectPosition below), so the
 // same source-pixel position needs remapping into the cropped viewport.
 function markerYPct(sourceYPct: number): number {
-  const cropTopPct = 28.1; // matches objectPosition '50% 62%' at aspect-[4/3] on a 2.44:1 source
-  const cropHeightPct = 54.7;
+  const cropTopPct = 17.5; // matches objectPosition '50% 62%' at aspect-[7/4] on a 2.44:1 source
+  const cropHeightPct = 71.75;
   return ((sourceYPct - cropTopPct) / cropHeightPct) * 100;
 }
