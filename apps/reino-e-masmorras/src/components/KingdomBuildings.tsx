@@ -40,7 +40,7 @@ export function KingdomBuildings({ onOpenFerreiro, onOpenMercador, onOpenBau }: 
         Toque numa construção no mapa pra visitá-la.
       </p>
 
-      <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[7/4]">
+      <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)] aspect-[2/1]">
         <img
           src={mapaConstrucoes}
           alt="Mapa de construções do Reino"
@@ -76,10 +76,10 @@ export function KingdomBuildings({ onOpenFerreiro, onOpenMercador, onOpenBau }: 
 }
 
 // Marker Y coordinates were measured against the full uncropped image; the
-// map renders cropped into a 7:4 box (see objectPosition below), so the
+// map renders cropped into a 2:1 box (see objectPosition below), so the
 // same source-pixel position needs remapping into the cropped viewport.
 function markerYPct(sourceYPct: number): number {
-  const cropTopPct = 17.5; // matches objectPosition '50% 62%' at aspect-[7/4] on a 2.44:1 source
-  const cropHeightPct = 71.75;
+  const cropTopPct = 12; // matches objectPosition '50% 62%' at aspect-[2/1] on a 2.44:1 source
+  const cropHeightPct = 82;
   return ((sourceYPct - cropTopPct) / cropHeightPct) * 100;
 }
