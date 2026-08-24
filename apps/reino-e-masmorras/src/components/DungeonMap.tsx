@@ -57,15 +57,9 @@ export function DungeonMap({ character, onEnterDungeon }: Props) {
         </div>
 
         {region && (
-          <div className="flex justify-center">
-            {/* Height-capped instead of width-stretched, so the whole region
-                map (portrait art, taller than it is wide) fits on screen
-                without the player having to scroll to see the dungeons at
-                the top/bottom — `inline-block` keeps this wrapper's own box
-                shrunk to the image's actual rendered size, so the markers'
-                %-based positions below still land exactly where they did. */}
-            <div className="relative inline-block rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-              <img src={region.image!} alt={region.name} className="w-auto max-w-full block" style={{ maxHeight: '56vh' }} draggable={false} />
+          <div>
+            <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+              <img src={region.image!} alt={region.name} className="w-full h-auto block" draggable={false} />
               {region.markers.map((marker) => {
                 const dungeon = DUNGEONS.find((d) => d.id === marker.dungeonId);
                 if (!dungeon) return null;
