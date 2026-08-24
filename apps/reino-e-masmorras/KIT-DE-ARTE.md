@@ -141,7 +141,27 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Necrópole Esquecida](#necropole-esquecida)
 - 🕓 [Ruínas Élficas](#ruinas-elficas)
 - 🕓 [Arena de Sangue](#arena-de-sangue)
-- ⛔ As 21 masmorras das Regiões 3, 4 e 5 (Thurgard/Xilvana/Ignares) — ainda nem tem prompt escrito — avise se quiser que eu escreva
+- 🕓 [Fortaleza Orc](#fortaleza-orc)
+- 🕓 [Labirinto de Gelo](#labirinto-de-gelo)
+- 🕓 [Templo Afundado](#templo-afundado)
+- 🕓 [Cavernas de Cristal](#cavernas-de-cristal)
+- 🕓 [Covil do Lobo Alfa](#covil-do-lobo-alfa)
+- 🕓 [Catacumbas Reais](#catacumbas-reais)
+- 🕓 [Poço sem Fundo](#poco-sem-fundo)
+- 🕓 [Covil da Aranha-Rainha](#covil-da-aranha-rainha)
+- 🕓 [Cidadela em Ruínas](#cidadela-em-ruinas)
+- 🕓 [Santuário Profanado](#santuario-profanado)
+- 🕓 [Mina de Obsidiana](#mina-de-obsidiana)
+- 🕓 [Selva Esquecida](#selva-esquecida)
+- 🕓 [Fortaleza dos Ossos](#fortaleza-dos-ossos)
+- 🕓 [Torre dos Ecos](#torre-dos-ecos)
+- 🕓 [Abismo de Gelo](#abismo-de-gelo)
+- 🕓 [Ruínas Vulcânicas](#ruinas-vulcanicas)
+- 🕓 [Covil do Dragão Ancião](#covil-do-dragao-anciao)
+- 🕓 [Salão dos Titãs](#salao-dos-titas)
+- 🕓 [Necrópole Real](#necropole-real)
+- 🕓 [Palácio Submerso](#palacio-submerso)
+- 🕓 [Arena do Campeão](#arena-do-campeao)
 
 ---
 
@@ -2593,7 +2613,7 @@ This is a complete, self-contained background illustration — no magenta backgr
 <a id="fundos-de-batalha"></a>
 ## Fundos de Batalha
 
-Uma imagem por masmorra, substituindo o fundo genérico desenhado por código na tela de combate. Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada — os prompts abaixo cobrem as 5 masmorras restantes. Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
+Uma imagem por masmorra, substituindo o fundo genérico desenhado por código na tela de combate. Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada — os prompts abaixo cobrem as 26 masmorras restantes (5 da Região 2 + as 21 das Regiões 3, 4 e 5 — Thurgard/Xilvana/Ignares). Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
 
 <a id="ruinas-superficiais"></a>
 ### Ruínas Superficiais
@@ -2675,6 +2695,258 @@ Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO ant
 A combat arena background for a turn-based RPG: a stone gladiator arena pit, tiered stone seating and rusted hanging chains framing the left and right edges, dramatic warm torchlight glow, a couple of torn banners hanging from the upper corners. A blood-stained sand-and-stone floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker reddish tone so a character standing on it reads clearly.
 
 Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="fortaleza-orc"></a>
+### Fortaleza Orc
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a fortified orc war-camp on a snowy mountainside, tall wooden spiked palisade walls and crude war banners with painted skull emblems framing the left and right edges, smoke rising from distant campfires, an overcast grey-white sky. A packed snow-and-mud floor strip runs along the bottom ~15% of the image, spanning the full width, trampled and darker in tone so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="labirinto-de-gelo"></a>
+### Labirinto de Gelo
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a corridor of translucent pale-blue ice walls that curve disorientingly, faint distorted reflections visible within the ice along the left and right edges, a cold dim glow with no clear light source. A smooth frozen-ice floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker and less reflective than the walls so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="templo-afundado"></a>
+### Templo Afundado
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: the interior of an ancient stone temple half-submerged in a frozen lake, cracked pillars rising through thick ice along the left and right edges, pale cold light filtering through the icy ceiling above, frost creeping up the carved stone. A cracked lake-ice floor strip runs along the bottom ~15% of the image, spanning the full width, with faint dark water visible beneath cracks, slightly darker than the walls so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (no open water in the center) — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="cavernas-de-cristal"></a>
+### Cavernas de Cristal
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a cavern lined with large glowing azure-blue crystal formations jutting from the rock walls along the left and right edges, a bright cool cyan glow reflecting off the stone ceiling above, small drifting motes of light. A smooth crystalline-rock floor strip runs along the bottom ~15% of the image, spanning the full width, dimmer than the glowing crystals so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (no crystal spikes in the center) — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="covil-do-lobo-alfa"></a>
+### Covil do Lobo Alfa
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a rocky den entrance nestled among snow-covered boulders, a dark cave mouth visible along one edge, gnawed bones and oversized paw prints in the snow near the edges, pale moonlight over a night sky. A trampled snow-and-rock floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker and packed-down so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="catacumbas-reais"></a>
+### Catacumbas Reais
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a royal burial stairway descending under a forgotten tomb, ornately carved stone walls with faded gold royal crests and dying torches mounted along the left and right edges, a heavy, still darkness above. A worn stone-slab floor strip runs along the bottom ~15% of the image, spanning the full width, slightly lighter than the walls so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="poco-sem-fundo"></a>
+### Poço sem Fundo
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: the inside of an impossibly deep stone well shaft, damp mossy stone rings framing the left and right edges, a heavy rusted chain hanging down from above into darkness, a faint sourceless glow rising from the unseen depths below. A narrow wet-stone floor strip runs along the bottom ~15% of the image, spanning the full width, dark and glistening so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third. This dungeon is significantly more dangerous than others in its region, so the mood should read notably more oppressive and ominous than a standard dungeon of this tier.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="covil-da-aranha-rainha"></a>
+### Covil da Aranha-Rainha
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a jungle grotto interior thick with dense white silk webbing draped between mossy rock walls and hanging vines along the left and right edges, dim greenish light filtering through a web-covered opening above, a few wrapped cocoon shapes visible in the shadows. A silk-strewn dirt floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker than the walls so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (no thick webbing blocking the center) — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="cidadela-em-ruinas"></a>
+### Cidadela em Ruínas
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: crumbling stone citadel walls deep in a jungle, thick vines and broad tropical leaves overtaking the ruined masonry along the left and right edges, dappled warm sunlight breaking through a jungle canopy above. A cracked stone-and-moss floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker with patches of moss so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="santuario-profanado"></a>
+### Santuário Profanado
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a defiled jungle shrine interior, a cracked stone altar defaced with jagged dark ritual markings, broken idol fragments and guttering purple-black candle flames along the left and right edges, an unsettling violet-tinged ambient light. A stained stone floor strip runs along the bottom ~15% of the image, spanning the full width, marked with faint dark ritual streaks so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (the altar itself sits off to one side, not centered) — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="mina-de-obsidiana"></a>
+### Mina de Obsidiana
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a mine tunnel carved through glossy black volcanic obsidian, jagged glassy rock faces reflecting a faint warm ember glow along the left and right edges, abandoned mining tools leaning against the walls, wisps of hot vapor drifting near the ceiling. A dark obsidian-gravel floor strip runs along the bottom ~15% of the image, spanning the full width, with a faint warm reflection so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="selva-esquecida"></a>
+### Selva Esquecida
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: ancient weathered stone statues half-swallowed by enormous tree roots in a dense, long-abandoned jungle clearing, thick tangled vines and giant roots framing the left and right edges, hazy green-gold light filtering through a thick canopy above. An overgrown root-and-earth floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker with patches of exposed dirt so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="fortaleza-dos-ossos"></a>
+### Fortaleza dos Ossos
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: the interior of a grim fortress with walls built from thousands of stacked bones and bleached skulls, jagged bone spikes and tattered dark banners framing the left and right edges, a cold pale light with no warmth to it. A floor strip of packed bone-fragments and dust runs along the bottom ~15% of the image, spanning the full width, slightly darker than the walls so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="torre-dos-ecos"></a>
+### Torre dos Ecos
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: the inside of a tall slender stone tower, curved walls etched with glowing pale-violet runic markings that pulse faintly along the left and right edges, faint ghostly light with a subtle sense of echoing distance above. A smooth polished-stone floor strip runs along the bottom ~15% of the image, spanning the full width, faintly reflecting the runic glow so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third. This dungeon is significantly more dangerous than others in its region, so the mood should read notably more oppressive and otherworldly than a standard dungeon of this tier.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="abismo-de-gelo"></a>
+### Abismo de Gelo
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: the inside of a deep glacial crevasse, sheer walls of layered blue-white ice towering along the left and right edges, thick cold mist drifting low near the ground, a faint pale light filtering down from a narrow crack far above. A frost-covered ice-and-rock floor strip runs along the bottom ~15% of the image, spanning the full width, dimmer than the glowing ice walls so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="ruinas-vulcanicas"></a>
+### Ruínas Vulcânicas
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: heat-cracked ancient stone columns standing amid a scorched volcanic landscape, a distant fiery orange river of lava glowing beyond crumbling ruins along the left and right edges, thick drifting ash and a hazy orange-red sky. A blackened ash-and-cracked-stone floor strip runs along the bottom ~15% of the image, spanning the full width, with a faint warm glow so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (no lava in the center) — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="covil-do-dragao-anciao"></a>
+### Covil do Dragão Ancião
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a vast ancient dragon's lair carved into rock, massive claw-gouged scars scoring the stone walls along the left and right edges, scattered glinting piles of gold coins and treasure near the edges, a dim warm amber glow with no visible flame source. A scorched stone floor strip runs along the bottom ~15% of the image, spanning the full width, with scattered gold coins glinting faintly so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (treasure piles stay near the edges) — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="salao-dos-titas"></a>
+### Salão dos Titãs
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a colossal ancient hall built at an inhuman scale, towering carved stone pillars etched with primordial runes rising out of frame along the left and right edges, a vast sense of scale emphasized by tiny details on the massive stonework, a cold otherworldly white-blue light from above. A polished colossal-stone floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker than the pillars so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="necropole-real"></a>
+### Necrópole Real
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: an opulent golden royal mausoleum half-buried in drifted grey volcanic ash, gilded carved columns and faded royal tapestries along the left and right edges, a dim ash-hazed amber light filtering in from above. An ash-covered marble floor strip runs along the bottom ~15% of the image, spanning the full width, with a faint golden sheen showing through the ash so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="palacio-submerso"></a>
+### Palácio Submerso
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: the inside of a grand stone palace dome slowly sinking into dark water, ornate waterlogged archways and drifting silt along the left and right edges, dim greenish-blue light filtering down through murky water above, small bubbles rising. A wet stone-tile floor strip runs along the bottom ~15% of the image, spanning the full width, with a faint shallow-water sheen so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
+```
+
+<a id="arena-do-campeao"></a>
+### Arena do Campeão
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A combat arena background for a turn-based RPG: a grand marble champion's arena, tall gold-trimmed pillars and tattered ceremonial banners framing the left and right edges, dramatic golden late-afternoon light, tiered stone seating rising in the background — grander and more legendary in scale than an ordinary blood-sport arena, befitting a final endgame challenge. A polished marble-and-sand floor strip runs along the bottom ~15% of the image, spanning the full width, with a warm golden tone so a character standing on it reads clearly.
+
+Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third. This dungeon is significantly more dangerous than others in its region, so the mood should read notably more grand and climactic than a standard dungeon of this tier.
 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
