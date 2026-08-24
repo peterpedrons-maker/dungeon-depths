@@ -168,6 +168,17 @@ export function itemDisplayName(item: EquipmentItem): string {
   return item.enhanceLevel > 0 ? `${item.name} +${item.enhanceLevel}` : item.name;
 }
 
+// One decimal place for an item's own percentage stats (crit, lifesteal,
+// evasão...) instead of a rounded whole number — a roll/enhance step can
+// move a value by well under 1 percentage point (see applyAffixGrowth's
+// pct-type branch, deliberately unfloored so a strong stat like roubo de
+// vida grows in small relative steps rather than a flat +1pp/pick), and
+// whole-number rounding could hide that real, intentional growth entirely.
+// Comma decimal separator to match fmt()'s pt-BR number formatting elsewhere.
+export function fmtItemPct(value: number): string {
+  return (value * 100).toFixed(1).replace('.', ',');
+}
+
 // Bare "+N stat" lines for an item's primary roll (already enhance-scaled —
 // pass the item through enhancedItem() first), shared by every item-detail
 // card (CharacterOverview's quick-view, the Mercador's buy card) so the two
@@ -179,31 +190,31 @@ export function primaryStatLines(item: EquipmentItem): string[] {
     item.hpBonus > 0 && `+${item.hpBonus} vida máxima`,
     item.matkBonus > 0 && `+${item.matkBonus} ataque mágico`,
     item.mdefBonus > 0 && `+${item.mdefBonus} defesa mágica`,
-    item.critChanceBonus > 0 && `+${Math.round(item.critChanceBonus * 100)}% chance de crítico`,
-    item.critDmgBonus > 0 && `+${Math.round(item.critDmgBonus * 100)}% dano crítico`,
-    item.cdrBonus > 0 && `+${Math.round(item.cdrBonus * 100)}% redução de recarga`,
+    item.critChanceBonus > 0 && `+${fmtItemPct(item.critChanceBonus)}% chance de crítico`,
+    item.critDmgBonus > 0 && `+${fmtItemPct(item.critDmgBonus)}% dano crítico`,
+    item.cdrBonus > 0 && `+${fmtItemPct(item.cdrBonus)}% redução de recarga`,
   ].filter((l): l is string => !!l);
 }
 
 function affixLabel(type: SecondaryStatType, value: number): string {
   switch (type) {
-    case 'crit': return `+${Math.round(value * 100)}% chance de crítico`;
-    case 'critDmg': return `+${Math.round(value * 100)}% dano crítico`;
-    case 'block': return `+${Math.round(value * 100)}% chance de bloqueio`;
+    case 'crit': return `+${fmtItemPct(value)}% chance de crítico`;
+    case 'critDmg': return `+${fmtItemPct(value)}% dano crítico`;
+    case 'block': return `+${fmtItemPct(value)}% chance de bloqueio`;
     case 'def': return `+${value} defesa`;
     case 'mdef': return `+${value} defesa mágica`;
     case 'atk': return `+${value} ataque físico`;
     case 'matk': return `+${value} ataque mágico`;
     case 'hp': return `+${value} vida máxima`;
-    case 'evasion': return `+${Math.round(value * 100)}% evasão`;
-    case 'accuracy': return `+${Math.round(value * 100)}% precisão`;
-    case 'tenacity': return `+${Math.round(value * 100)}% tenacidade`;
-    case 'speed': return `+${Math.round(value * 100)}% velocidade`;
-    case 'lifesteal': return `+${Math.round(value * 100)}% roubo de vida`;
-    case 'thorns': return `+${Math.round(value * 100)}% espinhos`;
-    case 'cdr': return `+${Math.round(value * 100)}% redução de recarga`;
-    case 'itemFind': return `+${Math.round(value * 100)}% chance de encontrar item`;
-    case 'itemQuality': return `+${Math.round(value * 100)}% qualidade dos itens`;
+    case 'evasion': return `+${fmtItemPct(value)}% evasão`;
+    case 'accuracy': return `+${fmtItemPct(value)}% precisão`;
+    case 'tenacity': return `+${fmtItemPct(value)}% tenacidade`;
+    case 'speed': return `+${fmtItemPct(value)}% velocidade`;
+    case 'lifesteal': return `+${fmtItemPct(value)}% roubo de vida`;
+    case 'thorns': return `+${fmtItemPct(value)}% espinhos`;
+    case 'cdr': return `+${fmtItemPct(value)}% redução de recarga`;
+    case 'itemFind': return `+${fmtItemPct(value)}% chance de encontrar item`;
+    case 'itemQuality': return `+${fmtItemPct(value)}% qualidade dos itens`;
   }
 }
 

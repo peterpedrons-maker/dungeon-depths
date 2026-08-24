@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Character, EquipmentItem, Rarity } from '../types/game';
 import { RuneShelf } from './RuneShelf';
 import { rarityColor, slotTintStyle } from '../lib/equipment';
-import { itemDisplayName, itemStatLines } from '../lib/enhancement';
+import { fmtItemPct, itemDisplayName, itemStatLines } from '../lib/enhancement';
 import { GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, repackInventory } from '../lib/inventoryGrid';
 import { canFitInInventory } from '../lib/inventoryGrid';
 import { SmallButton } from './Button';
@@ -21,7 +21,7 @@ interface Props {
 }
 
 function statLineText(line: ReturnType<typeof itemStatLines>[number]): string {
-  const value = line.isPct ? `${Math.round(line.value * 100)}%` : line.value;
+  const value = line.isPct ? `${fmtItemPct(line.value)}%` : line.value;
   return `+${value} ${line.label}`;
 }
 

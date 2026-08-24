@@ -1,6 +1,6 @@
 import { EquipmentItem } from '../types/game';
 import { rarityColor, slotTintStyle } from '../lib/equipment';
-import { compareItemStatRows, itemDisplayName, StatCompareRow } from '../lib/enhancement';
+import { compareItemStatRows, fmtItemPct, itemDisplayName, StatCompareRow } from '../lib/enhancement';
 import { ItemIcon } from './ItemIcon';
 
 // Shared between CharacterOverview's inventory-vs-equipped compare window
@@ -13,7 +13,7 @@ export const BASE_ACCENT = { dot: 'bg-amber-300', text: 'text-amber-200/90' };
 export const AFFIX_ACCENT = { dot: 'bg-sky-400', text: 'text-sky-300/90' };
 
 export function fmtStatValue(v: number, isPct: boolean): string {
-  return isPct ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
+  return isPct ? `${fmtItemPct(v)}%` : `${Math.round(v)}`;
 }
 
 function CompareStatRow({ row, side }: { row: StatCompareRow; side: 'equipped' | 'new' }) {
