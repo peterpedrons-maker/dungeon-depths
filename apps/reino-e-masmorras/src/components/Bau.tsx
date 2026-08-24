@@ -162,7 +162,7 @@ export function Bau({ character: ch, vaultItems, onDeposit, onWithdraw, onSellRu
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
+            className="w-9 h-9 rounded-full bg-black/70 border-2 border-gold/70 text-gold hover:bg-black/85 hover:border-gold text-2xl font-black leading-none flex items-center justify-center shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
             aria-label="Fechar"
           >
             ×

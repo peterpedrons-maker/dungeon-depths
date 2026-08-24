@@ -3,7 +3,7 @@ import { Character, EquipmentItem, Rarity, RuneStack } from '../types/game';
 import { RuneShelf } from './RuneShelf';
 import { rarityColor, rarityName, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import {
-  enhanceCost, itemDisplayName, MAX_ENHANCE_LEVEL, primaryStatLines, resetItemCost, secondaryStatLabels, successChanceForLevel,
+  enhanceCost, enhancedItem, itemDisplayName, MAX_ENHANCE_LEVEL, primaryStatLines, resetItemCost, secondaryStatLabels, successChanceForLevel,
 } from '../lib/enhancement';
 import { pickBestRuneFor } from '../lib/runes';
 import { fmt } from '../lib/format';
@@ -95,8 +95,14 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
   const cost = enhanceCost(item);
   const chance = successChanceForLevel(item.enhanceLevel);
   const bestRune = pickBestRuneFor(character.runes, item);
-  const affixLabels = secondaryStatLabels(item);
-  const primaryLine = primaryStatLines(item)[0];
+  // The item as currently displayed everywhere else (its already-applied
+  // enhanceLevel scaling and any past affix growth) — NOT the raw stored
+  // item, which only ever holds the original roll. Reading straight off
+  // `item` here made a +2 item's pick screen show its +0 base value again,
+  // hiding every earlier successful push instead of building on top of it.
+  const displayItem = enhancedItem(item);
+  const affixLabels = secondaryStatLabels(displayItem);
+  const primaryLine = primaryStatLines(displayItem)[0];
   // The item as it actually came back from onEnhance (affix growth and all)
   // — NOT a locally-guessed `{...item, enhanceLevel: +1}`, which would only
   // ever show the base-stat bump and silently hide whichever affix just
@@ -245,19 +251,13 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onSellRunes, onClo
           <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
             Ferreiro
           </h2>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 bg-black/55 border border-gold/50 rounded-full pl-1.5 pr-2.5 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-              <img src={moedaIcon} alt="" className="w-4 h-4" />
-              <span className="font-bold tabular-nums text-gold text-xs [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{fmt(ch.gold)}</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-black/70 border-2 border-gold/70 text-gold hover:bg-black/85 hover:border-gold text-2xl font-black leading-none flex items-center justify-center shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
       </div>
 
@@ -279,6 +279,15 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onSellRunes, onClo
           </div>
         </div>
 
+        {/* Kept down here with the items/actions that actually cost gold,
+            not just in the hero banner up top — that one scrolls out of
+            view together with the banner, so the player couldn't see their
+            balance anymore once they scrolled down to the item grid. */}
+        <div className="flex items-center gap-1.5 bg-black/40 border border-gold/40 rounded-full pl-1.5 pr-3 py-1 w-fit mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+          <img src={moedaIcon} alt="" className="w-4 h-4" />
+          <span className="font-bold tabular-nums text-gold text-xs">{fmt(ch.gold)} ouro</span>
+        </div>
+
         {!enhancingItem && <RuneShelf runes={ch.runes} onSell={onSellRunes} />}
 
         {enhancingItem ? (
@@ -294,7 +303,12 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onSellRunes, onClo
           />
         ) : openItem ? (
           <div className="rounded border border-black/50 bg-black/30 p-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-            <button onClick={() => setOpenItem(null)} className="text-xs text-parchment/50 hover:text-parchment mb-2">‹ Voltar</button>
+            <button
+              onClick={() => setOpenItem(null)}
+              className="flex items-center gap-1 text-sm font-bold text-gold bg-black/40 border border-gold/40 rounded-full pl-2 pr-3 py-1 mb-3 hover:bg-black/60 hover:border-gold active:brightness-90"
+            >
+              <span className="text-base leading-none">‹</span> Voltar
+            </button>
             <div className="flex items-center gap-3">
               <ItemIcon item={openItem} equipped={equippedIds.has(openItem.id)} />
               <div>

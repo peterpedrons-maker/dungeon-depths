@@ -41,6 +41,17 @@ function migrateItem(item: any): EquipmentItem {
       ? item.secondaryStats
       : item.secondaryStat ? [item.secondaryStat] : [],
     enhanceLevel: item.enhanceLevel ?? 0,
+    // These three were missing from this whitelist entirely — every reload
+    // (localStorage OR the Supabase cloud round-trip, both go through this
+    // same function) silently wiped any Forja affix progress (affixBoosts),
+    // the original-affix-count Resetar needs, and an inventory item's grid
+    // position (repackInventory papered over that last one by re-placing
+    // the item somewhere, so it never crashed, just quietly moved/reset
+    // things a reload shouldn't touch).
+    affixBoosts: item.affixBoosts,
+    originalAffixCount: item.originalAffixCount,
+    gridX: item.gridX,
+    gridY: item.gridY,
     identified: item.identified ?? true,
   };
 }
