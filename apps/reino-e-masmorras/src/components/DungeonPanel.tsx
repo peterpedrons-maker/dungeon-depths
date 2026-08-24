@@ -1750,7 +1750,7 @@ export function DungeonPanel({
       )}
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
-        <canvas ref={canvasRef} width={640} height={280} className="w-full block" style={{ imageRendering: 'pixelated' }} />
+        <canvas ref={canvasRef} width={640} height={360} className="w-full block" style={{ imageRendering: 'pixelated' }} />
         {resultBanner && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <span
@@ -2024,11 +2024,11 @@ export function DungeonPanel({
       </div>
 
       {phase === 'fight' && (
-        <div className="mt-4 flex gap-2 flex-wrap">
-          <Button onClick={togglePause}>
+        <div className="mt-4 flex gap-2">
+          <Button className="flex-1 !min-w-0 !px-2 text-sm" onClick={togglePause}>
             {paused ? 'Retomar Combate' : 'Pausar'}
           </Button>
-          <Button onClick={retreatSafely}>Retornar ao Reino</Button>
+          <Button className="flex-1 !min-w-0 !px-2 text-sm" onClick={retreatSafely}>Retornar ao Reino</Button>
         </div>
       )}
 
