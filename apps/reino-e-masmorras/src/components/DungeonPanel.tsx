@@ -55,6 +55,40 @@ const ATTACK_INTERVAL = 2200;
 // apart. Bumped up from the original 900ms so a hit has time to actually
 // register before it's gone.
 const FLOAT_DURATION_MS = 1500;
+// Single source of truth for the battle canvas's own pixel size — read by
+// both the <canvas> element itself and the floating-number math below, so
+// the two can never drift apart the way they did when the canvas grew
+// taller but the floaters' anchor points stayed hard-coded percentages.
+const CANVAS_W = 640;
+const CANVAS_H = 360;
+// Sprites are drawn anchored to this ground line (see the draw() effect),
+// feet at groundY, extending upward by the sprite's own pixel height.
+const GROUND_Y = CANVAS_H - 42;
+// Where a floating number should anchor on a given sprite — 25% down from
+// its top (roughly chest/head height) expressed as a % of the canvas, so a
+// number lands near the character no matter how tall the canvas is or how
+// tall that particular sprite happens to be (a tiny Fada Sombria and a
+// towering chefe both get a sensible spot instead of one shared constant
+// tuned for neither).
+function floatBaseTopPct(spriteHeightPx: number): number {
+  const spriteTopY = GROUND_Y - spriteHeightPx;
+  return ((spriteTopY + spriteHeightPx * 0.25) / CANVAS_H) * 100;
+}
+const PLAYER_FLOAT_LEFT_PCT = 24;
+const ENEMY_FLOAT_LEFT_PCT = 68;
+// Small scatter per stacked slot (see FloatingNumber.slot) — replaces the
+// old approach of stacking simultaneous numbers straight upward, which read
+// like a staircase once 3-4 were on screen at once. A tight cluster close
+// to the character reads as "several things just happened to them" without
+// numbers drifting away from the sprite or piling into a tower.
+const FLOATER_JITTER: { x: number; y: number }[] = [
+  { x: 0, y: 0 },
+  { x: 16, y: 10 },
+  { x: -16, y: 10 },
+  { x: 26, y: -8 },
+  { x: -26, y: -8 },
+  { x: 0, y: 20 },
+];
 // Ability-cast callouts linger a bit longer than a plain floating number —
 // there's a name to actually read, not just a number at a glance.
 const ABILITY_CAST_DURATION_MS = 1800;
@@ -1750,7 +1784,7 @@ export function DungeonPanel({
       )}
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
-        <canvas ref={canvasRef} width={640} height={360} className="w-full block" style={{ imageRendering: 'pixelated' }} />
+        <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="w-full block" style={{ imageRendering: 'pixelated' }} />
         {resultBanner && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <span
@@ -1784,17 +1818,26 @@ export function DungeonPanel({
           // rising) and reads bigger/sharper — it was hard to read as a
           // pale, moving red against the busy background.
           const playerHit = f.side === 'player';
+          const spriteHeight = playerHit ? heroSpr.idle.scale : enemySprite(enemy.shape).scale;
+          const baseTopPct = floatBaseTopPct(spriteHeight);
+          const baseLeftPct = playerHit ? PLAYER_FLOAT_LEFT_PCT : ENEMY_FLOAT_LEFT_PCT;
+          const jitter = FLOATER_JITTER[f.slot % FLOATER_JITTER.length];
           return (
           <div
             key={f.id}
-            className={`absolute font-extrabold pointer-events-none ${playerHit ? 'left-[24%]' : 'left-[68%]'}`}
+            className="absolute font-extrabold pointer-events-none"
             style={{
               // f.slot is assigned once at creation (see pushFloat) and never
               // recomputed — keeps every simultaneous number (a poison tick,
               // the hit right after it, a heal, a block tag) in its own
               // fixed spot near the character the whole time it's visible,
               // instead of jumping every time an unrelated floater expires.
-              top: `calc(${playerHit ? '14%' : '38%'} - ${f.slot * 22}px)`,
+              // baseTopPct/baseLeftPct anchor to the actual sprite (see
+              // floatBaseTopPct) instead of a fixed screen position, and
+              // FLOATER_JITTER scatters simultaneous numbers slightly instead
+              // of stacking them into a tall staircase.
+              left: `calc(${baseLeftPct}% + ${jitter.x}px)`,
+              top: `calc(${baseTopPct}% + ${jitter.y}px)`,
               animation: `${playerHit ? 'floatStatic' : 'float'} ${FLOAT_DURATION_MS}ms ease-out forwards`,
             }}
           >
