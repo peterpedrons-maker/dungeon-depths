@@ -68,19 +68,13 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onSell
           <h2 className="font-display text-gold text-sm sm:text-base font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
             Mercador
           </h2>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 bg-black/55 border border-gold/50 rounded-full pl-1.5 pr-2.5 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-              <img src={moedaIcon} alt="" className="w-4 h-4" />
-              <span className="font-bold tabular-nums text-gold text-xs [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{fmt(ch.gold)}</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-black/50 border border-gold/40 text-parchment/80 hover:text-parchment hover:border-gold text-lg leading-none flex items-center justify-center shrink-0"
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-black/70 border-2 border-gold/70 text-gold hover:bg-black/85 hover:border-gold text-2xl font-black leading-none flex items-center justify-center shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
       </div>
 
@@ -96,6 +90,15 @@ export function Mercador({ character: ch, onBuyPotion, onCharacterChange, onSell
             <span className="absolute -left-[7px] top-4 w-3 h-3 bg-panel border-l-2 border-b-2 border-gold/40 rotate-45" />
             "Poções frescas, direto da destilaria, e umas peças... encontradas por aí. Nunca pergunto de onde vêm."
           </div>
+        </div>
+
+        {/* Kept down here with the items that actually cost gold, not just
+            in the hero banner up top — that one scrolls out of view together
+            with the banner, so the player couldn't see their balance
+            anymore once they scrolled down to the stock grid. */}
+        <div className="flex items-center gap-1.5 bg-black/40 border border-gold/40 rounded-full pl-1.5 pr-3 py-1 w-fit mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+          <img src={moedaIcon} alt="" className="w-4 h-4" />
+          <span className="font-bold tabular-nums text-gold text-xs">{fmt(ch.gold)} ouro</span>
         </div>
 
         <RuneShelf runes={ch.runes} onSell={onSellRunes} />
