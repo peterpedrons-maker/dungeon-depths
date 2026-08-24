@@ -11,7 +11,7 @@ import { Button, SmallButton } from './Button';
 import { Modal } from './Modal';
 import { ItemIcon as ItemIconGlyph } from './ItemIcon';
 import { ItemCompareGrid } from './ItemCompare';
-import { IconHammer } from './icons';
+import { IconHammer, IconGem } from './icons';
 import pergaminho from '../assets/pergaminho.webp';
 import moedaIcon from '../assets/moeda.webp';
 import ferreiroCena from '../assets/ferreiro-cena.webp';
@@ -249,6 +249,8 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onSellRunes, onClo
   const [openItem, setOpenItem] = useState<EquipmentItem | null>(null);
   const [enhancingItem, setEnhancingItem] = useState<EquipmentItem | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [showRunes, setShowRunes] = useState(false);
+  const totalRunes = ch.runes.reduce((s, r) => s + r.count, 0);
   const forgeableItems = [...Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null), ...ch.inventory];
   const equippedIds = new Set(Object.values(ch.equipment).filter((i): i is EquipmentItem => i !== null).map((i) => i.id));
 
@@ -304,7 +306,29 @@ export function Ferreiro({ character: ch, onEnhance, onReset, onSellRunes, onClo
           <span className="font-bold tabular-nums text-gold text-xs">{fmt(ch.gold)} ouro</span>
         </div>
 
-        {!enhancingItem && <RuneShelf runes={ch.runes} onSell={onSellRunes} />}
+        {/* Just a "do I have any?" chip here, not the full grid — the player
+            doesn't need to browse every stack while picking what to enhance,
+            only whether a rune exists at all (a rune is auto-picked behind
+            the scenes at the pick screen, see EnhanceFlow). The full grid
+            (with selling) still lives one tap away in this same modal, and
+            permanently in Personagem → Runas for browsing outside the Ferreiro. */}
+        {!enhancingItem && (
+          <button
+            onClick={() => setShowRunes(true)}
+            className="flex items-center gap-1.5 bg-black/40 border border-gold/30 rounded-full pl-1.5 pr-3 py-1 w-fit mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.4)] hover:border-gold/60"
+          >
+            <IconGem className="w-3.5 h-3.5 text-gold/80" />
+            <span className="text-xs text-parchment/70">
+              {ch.runes.length > 0 ? `${totalRunes} runa${totalRunes !== 1 ? 's' : ''}` : 'Sem runas'}
+            </span>
+          </button>
+        )}
+
+        {showRunes && (
+          <Modal title="Runas de Aprimoramento" onClose={() => setShowRunes(false)}>
+            <RuneShelf runes={ch.runes} onSell={onSellRunes} hideLabel />
+          </Modal>
+        )}
 
         {enhancingItem ? (
           <EnhanceFlow

@@ -58,7 +58,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   const stats = computeCombatStats(ch);
   const equip = equipmentContribution(ch);
   const heroImg = heroSprites(ch.classId).idle.image.src;
-  const [tab, setTab] = useState<'equipamentos' | 'atributos'>('equipamentos');
+  const [tab, setTab] = useState<'equipamentos' | 'atributos' | 'runas'>('equipamentos');
   const [selected, setSelected] = useState<Selected | null>(null);
   const [attrInfo, setAttrInfo] = useState<AttributeKey | null>(null);
   const [statInfo, setStatInfo] = useState<{ label: string; info: string } | null>(null);
@@ -137,6 +137,9 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
       <div className="flex gap-2 mb-3">
         <MainTab active={tab === 'equipamentos'} onClick={() => setTab('equipamentos')}>Equipamentos</MainTab>
         <MainTab active={tab === 'atributos'} onClick={() => setTab('atributos')}>Atributos</MainTab>
+        <MainTab active={tab === 'runas'} onClick={() => setTab('runas')}>
+          Runas{ch.runes.length > 0 ? ` (${ch.runes.length})` : ''}
+        </MainTab>
       </div>
 
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
@@ -187,9 +190,10 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               and "what's in the bag" used to be two separate tabs, but in
               practice the player almost always wants both in view at once
               (comparing a bag item against what's worn), so they're merged
-              into one tab. Secondary stats moved to their own tab below. */}
-          <RuneShelf runes={ch.runes} onSell={onSellRunes} />
-
+              into one tab. Secondary stats moved to their own tab below.
+              Runas moved to their own tab too — they're a Ferreiro-only
+              resource, not gear, so they don't need to sit in the middle of
+              the equipment/bag view. */}
           <div className="flex items-center justify-between mb-2 gap-3">
             <span className="text-[10px] text-parchment/40 shrink-0">
               {ch.inventory.length} item{ch.inventory.length !== 1 ? 's' : ''}
@@ -254,6 +258,8 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             </div>
           )}
         </>
+      ) : tab === 'runas' ? (
+        <RuneShelf runes={ch.runes} onSell={onSellRunes} />
       ) : (
         /* Attribute allocation + secondary stats — its own tab now that the
            inventory moved in with the paperdoll above. */

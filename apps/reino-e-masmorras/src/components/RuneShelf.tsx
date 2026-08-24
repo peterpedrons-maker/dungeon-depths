@@ -14,6 +14,10 @@ interface Props {
   // Omitted on a read-only surface (none currently) — every screen that
   // renders this today can also sell from it.
   onSell: (rarity: Rarity, tier: number, count: number) => void;
+  // Set by callers that already show their own heading around this (the
+  // Ferreiro's rune modal has its own Modal title) — skips the internal
+  // "Runas de Aprimoramento" label so it isn't printed twice.
+  hideLabel?: boolean;
 }
 
 const RUNE_ART: Record<Rarity, string> = {
@@ -33,16 +37,18 @@ const RUNE_ART: Record<Rarity, string> = {
 // than a couple of stacks. Shown identically on the Inventário, Baú,
 // Ferreiro and Mercador screens so the player always knows what they have on
 // hand, wherever they might want to spend or sell one.
-export function RuneShelf({ runes, onSell }: Props) {
+export function RuneShelf({ runes, onSell, hideLabel }: Props) {
   const [selling, setSelling] = useState<RuneStack | null>(null);
-  if (runes.length === 0) return null;
+  if (runes.length === 0) {
+    return <p className="text-parchment/40 text-sm italic">Vazio. Derrote inimigos nas masmorras para encontrar runas.</p>;
+  }
   const sorted = [...runes].sort((a, b) => {
     const byRarity = rarityIndex(b.rarity) - rarityIndex(a.rarity);
     return byRarity !== 0 ? byRarity : b.tier - a.tier;
   });
   return (
     <div className="mb-3">
-      <p className="text-[10px] text-parchment/40 uppercase tracking-wide mb-1.5">Runas de Aprimoramento</p>
+      {!hideLabel && <p className="text-[10px] text-parchment/40 uppercase tracking-wide mb-1.5">Runas de Aprimoramento</p>}
       <div className="flex flex-wrap gap-2">
         {sorted.map((r) => {
           const color = rarityColor(r.rarity);
