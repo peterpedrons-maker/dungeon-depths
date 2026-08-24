@@ -150,32 +150,27 @@ const AFFIX_SCALE: Record<SecondaryStatType, number> = {
   itemFind: 0.15, itemQuality: 0.15,
 };
 
-// Odds shift with the item's own tier instead of every tier rolling the
-// same split — but the low end was raised a lot (2026 pass, user feedback:
-// raro/épico/lendário felt "basically impossible" this early) while the high
-// end was left untouched, so the CURVE got gentler instead of just sliding
-// up: tier 1's raro/épico/lendário odds are now a real, if still uncommon,
-// possibility instead of a lottery ticket, while tier MAX_TIER is exactly as
-// hard-won as before — "início: mais fácil de ver algo bom cedo; fim:
-// lendário continua sendo o item que você caça por último."
-// This is the other half of the drop-rate rework alongside
-// baseDropChanceForLevel below: fewer drops at high level, but each one is
-// more likely to matter, instead of the same trickle of mostly-comum items
-// forever.
-// This is the REGULAR-enemy table specifically — every rarity above comum
-// stays strictly at or below pickBossDropRarity's own fixed weights (see
-// below) at both ends of the tier range, so a boss kill is always at least
-// as likely to drop something good as farming trash ever is, no matter how
-// deep into a dungeon's tier ladder that trash sits. applyLuckBoost below
-// scales both tables by the exact same per-rarity factor, so that ordering
-// survives any amount of Sorte/Qualidade dos Itens too.
-const RARITY_WEIGHTS_LOW_TIER = [78, 15, 5, 1.7, 0.3]; // tier 1
-// Lendário's high-tier weight sits at 0.45, not the boss table's 0.50 — with
-// applyLuckBoost's differing comum/incomum split between this table and
-// pickBossDropRarity's, a flat 0.50/0.50 tie at tier MAX_TIER could invert
-// under normalization once luck scales both, letting farming trash edge out
-// a guaranteed boss kill; this keeps a hair of margin so that never happens.
-const RARITY_WEIGHTS_HIGH_TIER = [72, 19, 6.5, 2, 0.45]; // tier MAX_TIER
+// 2026 rebalance, take two — replaces the old itemTier-based (1-10) curve.
+// Two problems with keying this off itemTier: (1) only 10 buckets for 30+
+// dungeons meant every dungeon sharing a bucket (e.g. today, 7 different
+// dungeons all sit at itemTier 7) rolled identical odds, so the easiest
+// dungeon in a shared bucket was always the optimal farm — no reason to
+// ever touch the harder ones. (2) Comum/Incomum drifting across tiers on
+// top of raro/épico/lendário added a knob nobody asked to tune. Both are
+// fixed by keying off `progress` (0-1), a continuous position derived from
+// each dungeon's own difficultyMult (see lib/dungeons.ts's
+// difficultyProgress) instead of its coarse itemTier — every dungeon gets a
+// distinct spot on the curve now, so there's no shared bucket to farm the
+// easy end of.
+// Comum/Incomum are now flat across the whole curve (60/15 always) — user
+// call: "só muda mesmo entre raro, épico e lendário." Raro falls and Épico
+// rises with progress like before. Lendário is deliberately INVERTED from
+// the old design: it peaks at progress 0 (early dungeons) and tapers to its
+// lowest at progress 1 — a new player can get hooked by an early miracle
+// drop, while a late-game Lendário (built on far higher itemTier power)
+// stays the rarer, more meaningful pull the user wanted for endgame.
+const RARITY_WEIGHTS_LOW = [60, 15, 16, 6, 3];  // progress 0 — easiest dungeon in the game
+const RARITY_WEIGHTS_HIGH = [60, 15, 12, 11, 2]; // progress 1 — hardest dungeon in the game
 
 // Sorte (LUK) and the Qualidade dos Itens affix already boost how good an
 // item's own stat roll is (qualityMult, see generateItem below) — this is
@@ -192,9 +187,15 @@ function applyLuckBoost(weights: number[], qualityBonusPct: number): number[] {
   return weights.map((w, i) => w * (i >= 2 ? 1 + boost * 1.5 : 1 - boost * 0.35));
 }
 
-function pickRarityForTier(tier: number, qualityBonusPct = 0): RarityDef {
-  const t = Math.max(0, Math.min(1, (tier - 1) / (MAX_TIER - 1)));
-  const base = RARITY_WEIGHTS_LOW_TIER.map((low, i) => low + (RARITY_WEIGHTS_HIGH_TIER[i] - low) * t);
+// progress is 0-1 — see lib/dungeons.ts's difficultyProgress for how a
+// dungeon maps onto this axis. Kept as a plain number (not re-deriving it
+// from a tier here) so callers without a specific dungeon in hand (the
+// Mercador's stock, starting gear) can still fall back to an itemTier-based
+// approximation at the call site instead of this function needing to know
+// about dungeons at all.
+function pickRarityForTier(progress: number, qualityBonusPct = 0): RarityDef {
+  const t = Math.max(0, Math.min(1, progress));
+  const base = RARITY_WEIGHTS_LOW.map((low, i) => low + (RARITY_WEIGHTS_HIGH[i] - low) * t);
   const weights = applyLuckBoost(base, qualityBonusPct);
   const total = weights.reduce((s, w) => s + w, 0);
   let roll = Math.random() * total;
@@ -205,16 +206,24 @@ function pickRarityForTier(tier: number, qualityBonusPct = 0): RarityDef {
   return RARITIES[0];
 }
 
-// Fixed (not tier-interpolated) rarity split for a boss/elite's guaranteed
-// drop — user-specified directly, unrelated to the dungeon's own item tier,
-// so a Ruínas boss and an Arena boss roll from the exact same table. Every
-// non-comum weight here sits at or above pickRarityForTier's own ceiling
-// (see RARITY_WEIGHTS_HIGH_TIER above), so a guaranteed boss/elite drop is
-// never a worse bet than a lucky trash-mob roll.
-const BOSS_RARITY_WEIGHTS = [70, 20, 7, 2.5, 0.5];
+// Boss/elite guaranteed drop — used to be one fixed table for literally
+// every boss in the game (a Ruínas kill and an Arena do Campeão kill rolled
+// identically), which meant regressing to an early, fast boss for loot was
+// never actually worse than fighting the current one. Now scales with the
+// same `progress` axis as regular drops, but in the OPPOSITE direction on
+// Lendário specifically: every rarity climbs with progress (unlike trash's
+// inverted Lendário), so the toughest boss currently available is always
+// strictly the best Lendário source in the game — never worth backtracking
+// for. Every weight here sits at or above RARITY_WEIGHTS_LOW/HIGH's own
+// raro/épico/lendário at the matching end, so a boss kill is never a worse
+// bet than farming trash at the same dungeon.
+const BOSS_WEIGHTS_LOW = [44, 20, 23, 9, 4];   // progress 0 — easiest dungeon's boss
+const BOSS_WEIGHTS_HIGH = [20, 18, 30, 22, 10]; // progress 1 — hardest dungeon's boss
 
-export function pickBossDropRarity(qualityBonusPct = 0): Rarity {
-  const weights = applyLuckBoost(BOSS_RARITY_WEIGHTS, qualityBonusPct);
+export function pickBossDropRarity(progress: number, qualityBonusPct = 0): Rarity {
+  const t = Math.max(0, Math.min(1, progress));
+  const base = BOSS_WEIGHTS_LOW.map((low, i) => low + (BOSS_WEIGHTS_HIGH[i] - low) * t);
+  const weights = applyLuckBoost(base, qualityBonusPct);
   const total = weights.reduce((s, w) => s + w, 0);
   let roll = Math.random() * total;
   for (let i = 0; i < RARITIES.length; i++) {
@@ -391,9 +400,18 @@ let _iid = 0;
 // guaranteed starter gear (see createCharacter in lib/classes.ts), which
 // always wants exactly comum, never whatever pickRarityForTier() would've
 // rolled, and for a Hunt's guaranteed Raro+ floor (see pickHuntDropRarity
-// in DungeonPanel.tsx).
-export function generateItem(slot: ItemSlot, classId: ClassId, baseTier: number, qualityBonusPct = 0, forcedRarity?: Rarity): EquipmentItem {
-  const rarity = forcedRarity ? RARITIES.find((r) => r.id === forcedRarity)! : pickRarityForTier(baseTier, qualityBonusPct);
+// in DungeonPanel.tsx). rarityProgress (0-1, see lib/dungeons.ts's
+// difficultyProgress) drives the RARITY roll specifically — a finer-grained
+// axis than baseTier, since many dungeons share the same itemTier but each
+// has its own distinct difficultyMult. Callers with an actual dungeon in
+// hand (DungeonPanel) should always pass it; callers without one (the
+// Mercador's stock, which isn't tied to one specific dungeon) can omit it
+// and fall back to baseTier's own coarse position on the curve.
+export function generateItem(
+  slot: ItemSlot, classId: ClassId, baseTier: number, qualityBonusPct = 0, forcedRarity?: Rarity, rarityProgress?: number,
+): EquipmentItem {
+  const progress = rarityProgress ?? Math.max(0, Math.min(1, (baseTier - 1) / (MAX_TIER - 1)));
+  const rarity = forcedRarity ? RARITIES.find((r) => r.id === forcedRarity)! : pickRarityForTier(progress, qualityBonusPct);
   const rarityTier = rarityIndex(rarity.id);
   // One roll governs the whole item's luck — primary AND every affix reuse
   // it, instead of each stat re-rolling its own independent quality, so

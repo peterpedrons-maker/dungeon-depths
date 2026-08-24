@@ -363,3 +363,22 @@ export function highestAccessibleItemTier(character: Pick<Character, 'level' | '
   const reachable = DUNGEONS.filter((d) => isDungeonUnlocked(d, character)).map((d) => d.itemTier);
   return reachable.length > 0 ? Math.max(...reachable) : 1;
 }
+
+// A dungeon's position (0-1) on the rarity-roll curve (see lib/equipment.ts's
+// pickRarityForTier/pickBossDropRarity) — derived from difficultyMult
+// instead of itemTier. itemTier only has 10 rungs for 30+ dungeons (several
+// dungeons share the same one today), which meant every dungeon in a shared
+// rung rolled identical rarity odds and the easiest of them was always the
+// optimal farm. difficultyMult is unique per dungeon and strictly
+// increasing by design (see its own comment in DUNGEONS above), so this
+// gives every dungeon its own distinct spot on the curve — min/max are
+// computed from DUNGEONS itself, so this keeps working with no changes
+// needed once Regiões 6-7 add more dungeons on top.
+const DIFFICULTY_MULTS = DUNGEONS.map((d) => d.difficultyMult ?? 1);
+const MIN_DIFFICULTY_MULT = Math.min(...DIFFICULTY_MULTS);
+const MAX_DIFFICULTY_MULT = Math.max(...DIFFICULTY_MULTS);
+export function difficultyProgress(dungeon: DungeonDef): number {
+  const range = MAX_DIFFICULTY_MULT - MIN_DIFFICULTY_MULT;
+  if (range <= 0) return 0;
+  return ((dungeon.difficultyMult ?? 1) - MIN_DIFFICULTY_MULT) / range;
+}
