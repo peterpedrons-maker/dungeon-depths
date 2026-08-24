@@ -144,7 +144,7 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
 
         <p className="text-[11px] text-parchment/50 mb-1.5">
           {bestRune
-            ? 'Toque num atributo pra escolher qual melhora (consome uma Runa de Aprimoramento). Sem escolher, melhora um aleatório:'
+            ? 'Toque num atributo pra escolher qual melhora, gastando uma Runa de Aprimoramento — ou toque em "Sem runa" pra melhorar um aleatório sem gastar nenhuma:'
             : 'Sem Runa de Aprimoramento disponível pra esse item — vai melhorar um atributo aleatório no sucesso:'}
         </p>
         <div className="flex flex-col gap-1.5 mb-3">
@@ -152,6 +152,22 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
             <div className="text-xs text-parchment/70 rounded px-2.5 py-1.5 border border-panelborder/30 bg-black/20">
               {primaryLine} <span className="text-parchment/40 italic">(atributo base — sempre melhora)</span>
             </div>
+          )}
+          {/* Explicit "skip the rune" choice, only shown when one is
+              actually available to skip — the game already fell back to a
+              random pick with no rune spent whenever nothing was selected,
+              but that only worked as an unlabeled default state. A player
+              who owns a usable rune but doesn't want to spend it on this
+              particular push needs a real button to say so, not just
+              "don't click anything" (and without a rune at all, this would
+              be the only reachable option anyway, so it'd just be noise). */}
+          {bestRune && (
+            <button
+              onClick={() => setAffixIndex(null)}
+              className={`text-left text-xs rounded px-2.5 py-1.5 border ${affixIndex === null ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70 hover:border-gold/50'}`}
+            >
+              Sem runa — melhora um afixo aleatório (não gasta runa)
+            </button>
           )}
           {affixLabels.length === 0 ? (
             <button
