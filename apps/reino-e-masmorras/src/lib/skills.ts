@@ -44,6 +44,7 @@ interface NodeSpec {
   effect?: SkillEffect;
   ability?: Omit<AbilityDef, 'id'>;
   scaling?: ScalingEntry[];
+  mechanicRefs?: string[];
 }
 
 function buildPath(classId: ClassId, pathId: string, name: string, color: string, specs: NodeSpec[]): SkillPath {
@@ -57,6 +58,7 @@ function buildPath(classId: ClassId, pathId: string, name: string, color: string
     };
     if (slot.type === 'active' && s.ability) node.ability = { id, ...s.ability };
     if (s.scaling) node.scaling = s.scaling;
+    if (s.mechanicRefs) node.mechanicRefs = s.mechanicRefs;
     return node;
   });
   return { id: pathId, name, color, nodes };
@@ -487,18 +489,19 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
   // block (display-only — never itself read by the combat engine).
   barbaro: [
     buildPath('barbaro', 'furia', 'Fúria', '#a5432f', [
-      { name: 'Força Furiosa', desc: '+2% de ataque físico. Com Fúria 50+, ganha bônus de dano direto final por FOR total (até +4%).', effect: { dmgPct: 0.02 },
+      { name: 'Força Furiosa', desc: '+2% de ataque físico. Com Fúria 50+, ganha bônus de dano direto final por FOR total (até +4%).', effect: { dmgPct: 0.02 }, mechanicRefs: ['barbaro:fury'],
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o ATK físico; com Fúria 50+, também aumenta o dano direto final (até +4%).' }] },
-      { name: 'Coração de Guerra', desc: '+8 de vida máxima. Durante Frenesi, reduz a penalidade de +10% de dano recebido por VIT total (piso de +6%).', effect: { maxHpFlat: 8 },
+      { name: 'Coração de Guerra', desc: '+8 de vida máxima. Durante Frenesi, reduz a penalidade de +10% de dano recebido por VIT total (piso de +6%).', effect: { maxHpFlat: 8 }, mechanicRefs: ['barbaro:frenzy'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima e reduz a penalidade de dano recebido do Frenesi (piso +6%).' }] },
-      { name: 'Olho de Sangue', desc: '+1% de chance de crítico. Com Fúria 50+, ganha crítico adicional por SOR total (até +3%).', effect: { critPct: 0.01 },
+      { name: 'Olho de Sangue', desc: '+1% de chance de crítico. Com Fúria 50+, ganha crítico adicional por SOR total (até +3%).', effect: { critPct: 0.01 }, mechanicRefs: ['barbaro:fury'],
         scaling: [{ attribute: 'luk', label: 'SOR', role: 'principal', description: 'Aumenta a chance de crítico; com Fúria 50+, ganha ainda mais crítico (até +3%).' }] },
-      { name: 'Pressão Crescente', desc: '+2.5% de ataque físico. A cada 25 de Fúria atual, +0.5% de dano direto final (até +2% com 100 de Fúria).', effect: { dmgPct: 0.025 },
+      { name: 'Pressão Crescente', desc: '+2.5% de ataque físico. A cada 25 de Fúria atual, +0.5% de dano direto final (até +2% com 100 de Fúria).', effect: { dmgPct: 0.025 }, mechanicRefs: ['barbaro:fury'],
         scaling: [
           { attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o ATK físico.' },
           { label: 'Fúria', role: 'mecanica', description: '+0.5% de dano direto final a cada 25 de Fúria atual (até +2%).' },
         ] },
       { name: 'Golpe Selvagem', desc: 'Habilidade ativa: custa 20 de Fúria — golpe com 1.75x de dano; um crítico devolve 5 de Fúria. Recarga de 5s.',
+        mechanicRefs: ['barbaro:fury'],
         ability: {
           name: 'Golpe Selvagem', desc: 'Custa 20 de Fúria. Golpe com 1.75x de dano; um crítico devolve 5 de Fúria.',
           cooldown: 3, condition: { type: 'resourceAtLeast', resource: 'fury', value: 20 },
@@ -508,22 +511,23 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o ATK físico usado pelo golpe.' },
           { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Aumenta a chance de crítico, que devolve Fúria.' },
         ] },
-      { name: 'Corpo em Frenesi', desc: '+8 de vida máxima. Durante Frenesi, ganha Tenacidade por VIT total (até +4%).', effect: { maxHpFlat: 8 },
+      { name: 'Corpo em Frenesi', desc: '+8 de vida máxima. Durante Frenesi, ganha Tenacidade por VIT total (até +4%).', effect: { maxHpFlat: 8 }, mechanicRefs: ['barbaro:frenzy'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima; durante Frenesi, também ganha Tenacidade (até +4%).' }] },
       // PASSIVA — fora de Frenesi, ataque básico +10->+12 Fúria e receber
       // dano direto +8->+10 (lib/barbarian.ts's *_SANGUE_QUENTE constants,
       // checked via hasSkill in DungeonPanel). Não altera a geração de
       // habilidades ofensivas.
-      { name: 'Sangue Quente', desc: 'Fora de Frenesi: ataque básico gera 12 de Fúria (em vez de 10) e receber dano direto gera 10 (em vez de 8).', effect: {},
+      { name: 'Sangue Quente', desc: 'Fora de Frenesi: ataque básico gera 12 de Fúria (em vez de 10) e receber dano direto gera 10 (em vez de 8).', effect: {}, mechanicRefs: ['barbaro:fury', 'barbaro:frenzy'],
         scaling: [{ label: 'Fixo', role: 'fixo', description: 'Não escala com atributos.' }, { label: 'Fúria', role: 'mecanica', description: 'Só se aplica fora de Frenesi.' }] },
-      { name: 'Golpe Devastador', desc: '+4% de dano crítico. Durante Frenesi, ganha dano crítico adicional por SOR total (até +4%).', effect: { critDmgPct: 0.04 },
+      { name: 'Golpe Devastador', desc: '+4% de dano crítico. Durante Frenesi, ganha dano crítico adicional por SOR total (até +4%).', effect: { critDmgPct: 0.04 }, mechanicRefs: ['barbaro:frenzy'],
         scaling: [{ attribute: 'luk', label: 'SOR', role: 'principal', description: 'Aumenta o dano crítico; durante Frenesi, ganha ainda mais (até +4%).' }] },
       // PASSIVA — durante Frenesi, bônus de dano direto 18%->23% (ver
       // FRENZY_DMG_BONUS_SEM_FREIOS). A penalidade de +10% dano recebido
       // continua igual; o bônus de velocidade não muda.
-      { name: 'Sem Freios', desc: 'Durante Frenesi, o bônus de dano direto sobe de 18% para 23%.', effect: {},
+      { name: 'Sem Freios', desc: 'Durante Frenesi, o bônus de dano direto sobe de 18% para 23%.', effect: {}, mechanicRefs: ['barbaro:frenzy'],
         scaling: [{ label: 'Fúria/Frenesi', role: 'mecanica', description: 'Não escala com atributos.' }] },
       { name: 'Corte Sangrento', desc: 'Habilidade ativa: custa 25 de Fúria — golpe com 1.55x de dano que aplica 2 Feridas. Recarga de 6s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:wounds'],
         ability: {
           name: 'Corte Sangrento', desc: 'Custa 25 de Fúria. Golpe com 1.55x de dano que aplica 2 Feridas.',
           cooldown: 4, condition: { type: 'resourceAtLeast', resource: 'fury', value: 25 },
@@ -535,6 +539,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { label: 'Feridas', role: 'mecanica', description: 'Aplica 2 Feridas ao acertar; um crítico pode ativar Cortes Abertos.' },
         ] },
       { name: 'Grito de Guerra', desc: 'Habilidade de suporte: fora de Frenesi e com Fúria até 70 — ganha 40 de Fúria imediatamente (pode ativar Frenesi). Recarga de 13s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:frenzy'],
         ability: {
           name: 'Grito de Guerra', desc: 'Ganha 40 de Fúria imediatamente. Só fora de Frenesi e com Fúria até 70.',
           cooldown: 8,
@@ -542,9 +547,10 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'furyBoost', furyGainFlat: 40 },
         },
         scaling: [{ label: 'Fixo', role: 'fixo', description: 'Não escala com atributos — valor fixo por design, para controlar a economia de Fúria.' }] },
-      { name: 'Força sem Limite', desc: '+2% de ataque físico. Habilidades com custo de Fúria de 30 ou mais ganham dano direto final adicional por FOR total (até +3%).', effect: { dmgPct: 0.02 },
+      { name: 'Força sem Limite', desc: '+2% de ataque físico. Habilidades com custo de Fúria de 30 ou mais ganham dano direto final adicional por FOR total (até +3%).', effect: { dmgPct: 0.02 }, mechanicRefs: ['barbaro:fury'],
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o ATK físico e o dano de habilidades com custo de Fúria >= 30 (até +3%).' }] },
       { name: 'Massacre', desc: 'Habilidade ativa: custa 40 de Fúria — golpe com 2.50x de dano. Recarga de 8s.',
+        mechanicRefs: ['barbaro:fury'],
         ability: {
           name: 'Massacre', desc: 'Custa 40 de Fúria. Golpe com 2.50x de dano.',
           cooldown: 5, condition: { type: 'resourceAtLeast', resource: 'fury', value: 40 },
@@ -557,6 +563,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       // Substitui o nome exibido "Fúria Berserker" deste caminho — o ID não
       // muda. Mecânica idêntica ao pass anterior.
       { name: 'Despertar Berserker', desc: 'Habilidade de suporte: só com vida abaixo de 40% e fora de Frenesi — eleva a Fúria a 100 e ativa Frenesi imediatamente. Recarga de 19s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:frenzy'],
         ability: {
           name: 'Despertar Berserker', desc: 'Eleva a Fúria a 100 e ativa Frenesi. Só com vida abaixo de 40% e fora de Frenesi.',
           cooldown: 12,
@@ -566,22 +573,23 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         scaling: [{ label: 'Fixo', role: 'fixo', description: 'VIT influencia indiretamente a chance de sobreviver até poder usá-la.' }] },
       // PASSIVA FINAL — drenagem de Frenesi ao final de cada ação 25->20
       // (ver FRENZY_DRAIN_PER_ACTION_IMPARAVEL). Não aumenta o máximo de Fúria.
-      { name: 'Frenesi Imparável', desc: 'Durante Frenesi, o dreno de Fúria ao final de cada ação cai de 25 para 20.', effect: {},
+      { name: 'Frenesi Imparável', desc: 'Durante Frenesi, o dreno de Fúria ao final de cada ação cai de 25 para 20.', effect: {}, mechanicRefs: ['barbaro:frenzy', 'barbaro:fury'],
         scaling: [{ label: 'Fúria/Frenesi', role: 'mecanica', description: 'Não escala com atributos.' }] },
     ]),
     buildPath('barbaro', 'resistencia', 'Resistência Selvagem', '#6b7280', [
-      { name: 'Pele Endurecida', desc: '+10 de vida máxima. Aumenta a capacidade máxima de Dor por VIT total (até +4 pontos percentuais).', effect: { maxHpFlat: 10 },
+      { name: 'Pele Endurecida', desc: '+10 de vida máxima. Aumenta a capacidade máxima de Dor por VIT total (até +4 pontos percentuais).', effect: { maxHpFlat: 10 }, mechanicRefs: ['barbaro:pain'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima e a capacidade máxima de Dor (até +4pp).' }] },
       { name: 'Espírito Indomável', desc: '+2% de defesa mágica. Ganha Tenacidade permanente por VIT total (até +3%).', effect: { mdefPct: 0.02 },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa mágica e concede Tenacidade permanente (até +3%).' }] },
       { name: 'Corpo Duro', desc: '+2% de defesa física. Se um golpe direto inimigo passaria de 15% da vida máxima efetiva, reduz esse golpe ainda mais por VIT total (até 4%).', effect: { defPct: 0.02 },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa física e reduz golpes diretos grandes (>15% da vida) ainda mais.' }] },
-      { name: 'Constituição Selvagem', desc: '+10 de vida máxima. Enquanto a Dor acumulada for 10% da vida máxima ou mais, ganha defesa física adicional por VIT total (até +4%).', effect: { maxHpFlat: 10 },
+      { name: 'Constituição Selvagem', desc: '+10 de vida máxima. Enquanto a Dor acumulada for 10% da vida máxima ou mais, ganha defesa física adicional por VIT total (até +4%).', effect: { maxHpFlat: 10 }, mechanicRefs: ['barbaro:pain'],
         scaling: [
           { attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima e, com Dor alta, a defesa física (até +4%).' },
           { label: 'Dor', role: 'mecanica', description: 'O bônus de defesa só se aplica com Dor >= 10% da vida máxima.' },
         ] },
       { name: 'Postura Selvagem', desc: 'Habilidade de suporte: por 3s, 30% (até 35% com VIT) do dano direto que chegaria à sua vida é redirecionado para Dor (paga depois, não é redução). Recarga de 10s.',
+        mechanicRefs: ['barbaro:pain'],
         ability: {
           name: 'Postura Selvagem', desc: 'Por 3s, 30-35% do dano direto que chegaria à sua vida vira Dor, paga depois.',
           cooldown: 6, condition: { type: 'always' },
@@ -591,21 +599,22 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta o quanto é redirecionado para Dor (30% base, até 35%).' },
           { label: 'Dor', role: 'mecanica', description: 'Não reduz o dano — apenas adia parte dele.' },
         ] },
-      { name: 'Ossos Fortes', desc: '+2.5% de defesa mágica. Reduz o dano dos próprios ciclos de Dor por VIT total (até 4%).', effect: { mdefPct: 0.025 },
+      { name: 'Ossos Fortes', desc: '+2.5% de defesa mágica. Reduz o dano dos próprios ciclos de Dor por VIT total (até 4%).', effect: { mdefPct: 0.025 }, mechanicRefs: ['barbaro:pain'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa mágica e reduz o dano dos ciclos de Dor (até -4%).' }] },
       // PASSIVA — sempre que um envTick realmente causar dano de Dor, +3 de
       // Fúria (no máximo uma vez por envTick). Não funciona durante Frenesi
       // (Frenesi bloqueia toda geração normal de Fúria).
-      { name: 'Dor Alimenta a Raiva', desc: 'Sempre que um ciclo de Dor causar dano de verdade, ganha 3 de Fúria (uma vez por ciclo).', effect: {},
+      { name: 'Dor Alimenta a Raiva', desc: 'Sempre que um ciclo de Dor causar dano de verdade, ganha 3 de Fúria (uma vez por ciclo).', effect: {}, mechanicRefs: ['barbaro:pain', 'barbaro:fury'],
         scaling: [{ label: 'Dor', role: 'mecanica', description: 'Não escala com atributos.' }] },
-      { name: 'Vigor Doloroso', desc: '+2.5% de defesa física. Enquanto houver Dor acumulada, a cura de roubo de vida é multiplicada por um bônus de VIT total (até +5% de eficiência).', effect: { defPct: 0.025 },
+      { name: 'Vigor Doloroso', desc: '+2.5% de defesa física. Enquanto houver Dor acumulada, a cura de roubo de vida é multiplicada por um bônus de VIT total (até +5% de eficiência).', effect: { defPct: 0.025 }, mechanicRefs: ['barbaro:pain'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa física e a eficiência da cura de roubo de vida enquanto há Dor (até +5%).' }] },
       // PASSIVA — 10% permanente de todo dano direto que chegaria à vida é
       // redirecionado para Dor. Com Postura Selvagem ativa, o total NÃO soma
       // (usa o maior dos dois — ver barbPainRedirectPct em DungeonPanel).
-      { name: 'Carne que Não Cede', desc: 'Permanentemente, 10% de todo dano direto que chegaria à sua vida vira Dor (não soma com Postura Selvagem — usa o maior dos dois).', effect: {},
+      { name: 'Carne que Não Cede', desc: 'Permanentemente, 10% de todo dano direto que chegaria à sua vida vira Dor (não soma com Postura Selvagem — usa o maior dos dois).', effect: {}, mechanicRefs: ['barbaro:pain'],
         scaling: [{ label: 'Dor', role: 'mecanica', description: 'Não escala com atributos.' }] },
       { name: 'Fúria Berserker', desc: 'Habilidade ativa ofensiva: exige Dor acumulada de ao menos 5% da vida máxima — golpe com 1.75x de dano (até 2.10x consumindo mais Dor) e ganha 15 de Fúria ao acertar. Recarga de 8s.',
+        mechanicRefs: ['barbaro:pain', 'barbaro:fury'],
         ability: {
           name: 'Fúria Berserker', desc: 'Consome até 10% da vida máxima em Dor para golpear mais forte (até 2.10x) e ganha 15 de Fúria ao acertar.',
           cooldown: 5, condition: { type: 'painAtLeastPct', pct: 0.05 },
@@ -617,6 +626,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { label: 'Dor', role: 'mecanica', description: 'Consome Dor para aumentar o multiplicador do golpe.' },
         ] },
       { name: 'Fome Sanguinária', desc: 'Habilidade de suporte: só com vida abaixo de 50% e Dor de ao menos 3% da vida máxima — apaga 8% da vida máxima em Dor (até 11% com VIT), +15% de roubo de vida por 3s e ganha 10 de Fúria. Recarga de 16s.',
+        mechanicRefs: ['barbaro:pain', 'barbaro:fury'],
         ability: {
           name: 'Fome Sanguinária', desc: 'Apaga 8-11% da vida máxima em Dor, +15% de roubo de vida por 3s e ganha 10 de Fúria.',
           cooldown: 10,
@@ -631,6 +641,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Coração Selvagem', desc: '+14 de vida máxima. Enquanto a vida estiver abaixo de 35%, reduz o dano direto recebido por VIT total (até 5%).', effect: { maxHpFlat: 14 },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima; com vida baixa (<35%), também reduz dano direto recebido (até -5%).' }] },
       { name: 'Muralha Selvagem', desc: 'Habilidade de suporte: por 4s, -15% de dano recebido (até -19% com VIT); cada ataque inimigo que acertar você nesse período gera 4 de Fúria. Recarga de 13s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:pain'],
         ability: {
           name: 'Muralha Selvagem', desc: 'Por 4s, -15% a -19% de dano recebido; cada ataque inimigo que acertar gera 4 de Fúria.',
           cooldown: 8, condition: { type: 'always' },
@@ -641,6 +652,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { label: 'Dor/Fúria', role: 'mecanica', description: 'A redução ocorre antes do redirecionamento para Dor; gera Fúria por hit sofrido.' },
         ] },
       { name: 'Resistência Absoluta', desc: 'Habilidade de suporte: só com vida abaixo de 30% e (Dor de ao menos 5%, ou algum efeito negativo/DOT/silêncio ativo) — remove DOTs, penalidades e silêncio, apaga 12% da vida máxima em Dor (até 16% com VIT), ganha 20 de Fúria e reduz o dano recebido em 20% por 2s. Recarga de 24s.',
+        mechanicRefs: ['barbaro:pain', 'barbaro:fury'],
         ability: {
           name: 'Resistência Absoluta', desc: 'Remove DOTs, penalidades e silêncio, apaga 12-16% de Dor, ganha 20 de Fúria e -20% de dano recebido por 2s.',
           cooldown: 15,
@@ -658,31 +670,32 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       // existir (base 35% + bônus de Pele Endurecida, até 44% total); novos
       // pacotes pagam em 4 envTicks (era 3); com vida abaixo de 35%, dano
       // dos ticks de Dor (só o de Dor) reduzido em 20%.
-      { name: 'Inquebrável', desc: 'A capacidade máxima de Dor sobe +5 pontos percentuais (até 44% com Pele Endurecida no máximo) e novos pacotes passam a pagar em 4 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {},
+      { name: 'Inquebrável', desc: 'A capacidade máxima de Dor sobe +5 pontos percentuais (até 44% com Pele Endurecida no máximo) e novos pacotes passam a pagar em 4 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {}, mechanicRefs: ['barbaro:pain'],
         scaling: [
           { attribute: 'vit', label: 'VIT', role: 'terciario', description: 'Indiretamente via vida máxima e a capacidade de Dor que Pele Endurecida já escalou.' },
           { label: 'Dor', role: 'mecanica', description: 'Aumenta o teto de Dor e sua janela de pagamento.' },
         ] },
     ]),
     buildPath('barbaro', 'selvageria', 'Selvageria', '#c89a2e', [
-      { name: 'Olhar Predador', desc: '+1.5% de precisão. Contra um inimigo com ao menos 1 Ferida, ganha precisão adicional por DES total (até +2%).', effect: { accuracyPct: 0.015 },
+      { name: 'Olhar Predador', desc: '+1.5% de precisão. Contra um inimigo com ao menos 1 Ferida, ganha precisão adicional por DES total (até +2%).', effect: { accuracyPct: 0.015 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'dex', label: 'DES', role: 'principal', description: 'Aumenta a precisão, ainda mais contra um inimigo com Feridas (até +2%).' },
           { label: 'Feridas', role: 'mecanica', description: 'O bônus extra só existe contra um inimigo com Feridas.' },
         ] },
-      { name: 'Força da Caça', desc: '+2% de ataque físico. Golpes que aplicarem ao menos 1 Ferida ganham dano direto final adicional por FOR total (até +3%) — só no golpe inicial.', effect: { dmgPct: 0.02 },
+      { name: 'Força da Caça', desc: '+2% de ataque físico. Golpes que aplicarem ao menos 1 Ferida ganham dano direto final adicional por FOR total (até +3%) — só no golpe inicial.', effect: { dmgPct: 0.02 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o ATK físico e o dano de golpes que aplicam Feridas (até +3%, só no golpe inicial).' }] },
-      { name: 'Sangue de Caça', desc: '+8 de vida máxima. Ao matar um inimigo com 3+ Feridas, recupera 1% da vida máxima efetiva (até 2% com VIT).', effect: { maxHpFlat: 8 },
+      { name: 'Sangue de Caça', desc: '+8 de vida máxima. Ao matar um inimigo com 3+ Feridas, recupera 1% da vida máxima efetiva (até 2% com VIT).', effect: { maxHpFlat: 8 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a cura ao abater um inimigo com 3+ Feridas (1% base, até 2%).' },
           { label: 'Feridas', role: 'mecanica', description: 'Só ativa se o inimigo tinha 3 ou mais Feridas ao morrer, uma vez por inimigo.' },
         ] },
-      { name: 'Mão Pesada', desc: '+3% de dano crítico. Contra um inimigo com Ferida, ganha dano crítico adicional por SOR total (até +3%).', effect: { critDmgPct: 0.03 },
+      { name: 'Mão Pesada', desc: '+3% de dano crítico. Contra um inimigo com Ferida, ganha dano crítico adicional por SOR total (até +3%).', effect: { critDmgPct: 0.03 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'luk', label: 'SOR', role: 'principal', description: 'Aumenta o dano crítico, ainda mais contra um inimigo com Feridas (até +3%).' },
           { label: 'Feridas', role: 'mecanica', description: 'O bônus extra só existe contra um inimigo com Feridas.' },
         ] },
       { name: 'Fúria Explosiva', desc: 'Habilidade ativa: custa 15 de Fúria — golpe garantidamente crítico com 1.30x de dano que aplica 1 Ferida. Recarga de 6s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:wounds'],
         ability: {
           name: 'Fúria Explosiva', desc: 'Custa 15 de Fúria. Crítico garantido com 1.30x de dano; aplica 1 Ferida.',
           cooldown: 4, condition: { type: 'resourceAtLeast', resource: 'fury', value: 15 },
@@ -693,7 +706,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Aumenta o dano crítico do golpe garantido.' },
           { label: 'Feridas', role: 'mecanica', description: 'Crítico garantido pode ativar Cortes Abertos, aplicando uma segunda Ferida.' },
         ] },
-      { name: 'Músculo Rasgador', desc: '+2.5% de ataque físico. Aumenta o coeficiente das Feridas de 3.0% para 3.2% do ATK por stack/tick.', effect: { dmgPct: 0.025 },
+      { name: 'Músculo Rasgador', desc: '+2.5% de ataque físico. Aumenta o coeficiente das Feridas de 3.0% para 3.2% do ATK por stack/tick.', effect: { dmgPct: 0.025 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o ATK físico, que também é a base do dano das Feridas.' },
           { label: 'Feridas', role: 'mecanica', description: 'Sobe o coeficiente das Feridas de 3.0% para 3.2% do ATK.' },
@@ -701,22 +714,23 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       // PASSIVA — todo crítico DIRETO do Bárbaro aplica 1 Ferida (máx. 1 por
       // ação). Combina naturalmente com um crítico garantido (ex.: Fúria
       // Explosiva) para render uma segunda Ferida na mesma ação.
-      { name: 'Cortes Abertos', desc: 'Todo crítico direto seu aplica 1 Ferida no inimigo (no máximo uma vez por ação).', effect: {},
+      { name: 'Cortes Abertos', desc: 'Todo crítico direto seu aplica 1 Ferida no inimigo (no máximo uma vez por ação).', effect: {}, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Mais crítico significa mais chances de aplicar uma Ferida extra.' },
           { label: 'Feridas', role: 'mecanica', description: 'Não escala diretamente — depende de um crítico direto acontecer.' },
         ] },
-      { name: 'Olfato Aguçado', desc: '+1.5% de precisão. Cada Ferida no inimigo dá +0.4% de precisão contra ele (até +2% com 5 Feridas).', effect: { accuracyPct: 0.015 },
+      { name: 'Olfato Aguçado', desc: '+1.5% de precisão. Cada Ferida no inimigo dá +0.4% de precisão contra ele (até +2% com 5 Feridas).', effect: { accuracyPct: 0.015 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'dex', label: 'DES', role: 'terciario', description: 'Base de precisão do nó.' },
           { label: 'Feridas', role: 'mecanica', description: '+0.4% de precisão por Ferida no inimigo (até +2% com 5).' },
         ] },
-      { name: 'Cheiro de Sangue', desc: 'Cada Ferida ativa no inimigo dá +1.5% de chance de crítico contra ele (até +7.5% com 5 Feridas).', effect: {},
+      { name: 'Cheiro de Sangue', desc: 'Cada Ferida ativa no inimigo dá +1.5% de chance de crítico contra ele (até +7.5% com 5 Feridas).', effect: {}, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Sinergiza com builds de crítico.' },
           { label: 'Feridas', role: 'mecanica', description: '+1.5% de crítico por Ferida no inimigo (até +7.5% com 5).' },
         ] },
       { name: 'Investida Selvagem', desc: 'Habilidade ativa: custa 20 de Fúria — golpe com 1.70x de dano que aplica 2 Feridas. Recarga de 6s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:wounds'],
         ability: {
           name: 'Investida Selvagem', desc: 'Custa 20 de Fúria. Golpe com 1.70x de dano que aplica 2 Feridas.',
           cooldown: 4, condition: { type: 'resourceAtLeast', resource: 'fury', value: 20 },
@@ -728,6 +742,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { label: 'Feridas', role: 'mecanica', description: 'Aplica 2 Feridas ao acertar.' },
         ] },
       { name: 'Golpe de Caça', desc: 'Habilidade ativa: custa 20 de Fúria — exige o inimigo com ao menos 2 Feridas — golpe com 1.95x de dano que renova a duração das Feridas sem consumi-las. Recarga de 6s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:wounds'],
         ability: {
           name: 'Golpe de Caça', desc: 'Custa 20 de Fúria. Golpe com 1.95x de dano contra um inimigo com 2+ Feridas; renova a duração delas.',
           cooldown: 4,
@@ -739,12 +754,13 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Aumenta a chance de crítico.' },
           { label: 'Feridas', role: 'mecanica', description: 'Exige 2+ Feridas no inimigo; renova a duração delas sem consumir.' },
         ] },
-      { name: 'Instinto Mortal', desc: '+1.5% de chance de crítico. Contra um inimigo com exatamente 5 Feridas, ganha dano crítico adicional por SOR total (até +3%).', effect: { critPct: 0.015 },
+      { name: 'Instinto Mortal', desc: '+1.5% de chance de crítico. Contra um inimigo com exatamente 5 Feridas, ganha dano crítico adicional por SOR total (até +3%).', effect: { critPct: 0.015 }, mechanicRefs: ['barbaro:wounds'],
         scaling: [
           { attribute: 'luk', label: 'SOR', role: 'principal', description: 'Aumenta a chance de crítico e, com o inimigo em 5 Feridas, o dano crítico (até +3%).' },
           { label: 'Feridas', role: 'mecanica', description: 'O bônus de dano crítico só existe com exatamente 5 Feridas no inimigo.' },
         ] },
       { name: 'Fúria Total', desc: 'Habilidade ativa: custa 35 de Fúria — exige ao menos 1 Ferida — golpe com 1.55x de dano +0.25x por Ferida (até 2.80x com 5), consumindo todas as Feridas ao acertar. Recarga de 10s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:wounds'],
         ability: {
           name: 'Fúria Total', desc: 'Custa 35 de Fúria. Golpe com 1.55x +0.25x por Ferida (até 2.80x); consome todas as Feridas ao acertar.',
           cooldown: 6,
@@ -757,6 +773,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Aumenta a chance de crítico.' },
         ] },
       { name: 'Aniquilação', desc: 'Habilidade ativa: custa 45 de Fúria — exige o inimigo abaixo de 25% de vida e com ao menos 3 Feridas — golpe com 2.15x de dano +0.25x por Ferida (até 3.40x com 5), consumindo todas as Feridas ao acertar. Recarga de 13s.',
+        mechanicRefs: ['barbaro:fury', 'barbaro:wounds'],
         ability: {
           name: 'Aniquilação', desc: 'Custa 45 de Fúria. Golpe com 2.15x +0.25x por Ferida (até 3.40x) contra inimigos abaixo de 25% de vida com 3+ Feridas; consome todas as Feridas ao acertar.',
           cooldown: 8,
@@ -781,7 +798,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       // diretos — não pelos próprios ticks de Ferida, e bloqueado durante
       // Frenesi, seguindo a regra geral). Some imediatamente se as Feridas
       // forem consumidas.
-      { name: 'Predador Supremo', desc: 'Enquanto o inimigo tiver exatamente 5 Feridas: +8% de dano direto a ele, e cada golpe direto seu que acertar ganha +3 de Fúria adicional.', effect: {},
+      { name: 'Predador Supremo', desc: 'Enquanto o inimigo tiver exatamente 5 Feridas: +8% de dano direto a ele, e cada golpe direto seu que acertar ganha +3 de Fúria adicional.', effect: {}, mechanicRefs: ['barbaro:wounds', 'barbaro:fury'],
         scaling: [
           { attribute: 'str', label: 'FOR', role: 'secundario', description: 'Beneficia-se do dano base que o bônus de +8% multiplica.' },
           { label: 'Feridas', role: 'mecanica', description: 'Só ativo com exatamente 5 Feridas; some se elas forem consumidas.' },

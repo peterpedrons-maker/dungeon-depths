@@ -6,6 +6,7 @@ import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconActive } from './icons';
+import { ClassMechanicsButton, MechanicRefsRow, MechanicText } from './ClassMechanics';
 import skillFrame from '../assets/slot-habilidade.webp';
 
 interface Props {
@@ -74,6 +75,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
       <div className="flex items-center justify-between mb-4 gap-2">
         <p className="text-parchment/60 text-sm">Toque num nó pra ver detalhes, desbloquear ou equipar.</p>
         <div className="flex items-center gap-1.5 shrink-0">
+          <ClassMechanicsButton classId={ch.classId} />
           {ch.unlockedSkills.length > 0 && (
             <button
               onClick={() => setConfirmingReset(true)}
@@ -276,7 +278,8 @@ function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEqu
       <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-panel2 text-parchment/60 border border-panelborder/60">
         {TYPE_LABEL[node.type]}
       </span>
-      <p className="text-parchment/80">{node.desc}</p>
+      <p className="text-parchment/80"><MechanicText text={node.desc} mechanicRefs={node.mechanicRefs} /></p>
+      <MechanicRefsRow mechanicRefs={node.mechanicRefs} />
       {node.scaling && node.scaling.length > 0 && (
         <div className="mt-1 pt-1 border-t border-panelborder/40">
           <p className="text-[10px] uppercase tracking-wide text-parchment/50 mb-1">Escala:</p>

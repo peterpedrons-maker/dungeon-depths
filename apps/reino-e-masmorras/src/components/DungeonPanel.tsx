@@ -52,6 +52,7 @@ import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
 import { Modal } from './Modal';
 import { Button } from './Button';
+import { MechanicQuickModal } from './ClassMechanics';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import {
@@ -606,6 +607,10 @@ export function DungeonPanel({
   const [barbFuryState, setBarbFuryState] = useState(0);
   const [barbFrenzyState, setBarbFrenzyState] = useState(false);
   const [barbPainState, setBarbPainState] = useState(0);
+  // Universal class-mechanic explainer (see components/ClassMechanics.tsx) —
+  // any combat-UI element tied to a mechanic (Fúria/Frenesi/Dor bars,
+  // Feridas badge) opens the same generic quick-explain popup by id.
+  const [openMechanicId, setOpenMechanicId] = useState<string | null>(null);
 
   const heroSpr = heroSprites(ch.classId);
 
@@ -2287,9 +2292,14 @@ export function DungeonPanel({
   const barbPainCap = effMaxHp * (PAIN_MAX_PCT + barbPeleBonus + barbInquebravelBonus);
   const enemyWounds = enemy.barbarianWounds;
   const woundBadge = enemyWounds && enemyWounds.stacks > 0 ? (
-    <span className="inline-flex items-center gap-0.5 text-[10px] text-red-400 ml-1 shrink-0" title={`Feridas x${enemyWounds.stacks}`}>
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); setOpenMechanicId('barbaro:wounds'); }}
+      className="inline-flex items-center gap-0.5 text-[10px] text-red-400 ml-1 shrink-0"
+      title={`Feridas x${enemyWounds.stacks}`}
+    >
       <img src={iconSangramento} alt="" className="w-3.5 h-3.5 rounded-full" />x{enemyWounds.stacks}
-    </span>
+    </button>
   ) : null;
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
@@ -2642,10 +2652,22 @@ export function DungeonPanel({
 
       {isBarbaroChar && phase === 'fight' && (
         <div className="mt-3">
-          <div className="flex justify-between items-baseline text-[10px] text-parchment/50 uppercase tracking-wide">
-            <span>Fúria{barbFrenzyState ? <span className="text-amber-400"> — FRENESI!</span> : null}</span>
+          <button
+            type="button"
+            onClick={() => setOpenMechanicId('barbaro:fury')}
+            className="w-full flex justify-between items-baseline text-[10px] text-parchment/50 uppercase tracking-wide underline decoration-dotted decoration-parchment/30 underline-offset-2"
+          >
+            <span>
+              Fúria
+              {barbFrenzyState && (
+                <span
+                  onClick={(e) => { e.stopPropagation(); setOpenMechanicId('barbaro:frenzy'); }}
+                  className="text-amber-400"
+                > — FRENESI!</span>
+              )}
+            </span>
             <span>{Math.round(barbFuryState)}/{FURY_MAX}</span>
-          </div>
+          </button>
           <div className="h-2 bg-black/50 rounded overflow-hidden">
             <div
               className={`h-2 rounded transition-[width] duration-300 ${barbFrenzyState ? 'bg-amber-400' : 'bg-orange-600'}`}
@@ -2654,10 +2676,14 @@ export function DungeonPanel({
           </div>
           {barbPainState > 0 && (
             <>
-              <div className="flex justify-between items-baseline text-[10px] text-purple-300/70 uppercase tracking-wide mt-1">
+              <button
+                type="button"
+                onClick={() => setOpenMechanicId('barbaro:pain')}
+                className="w-full flex justify-between items-baseline text-[10px] text-purple-300/70 uppercase tracking-wide mt-1 underline decoration-dotted decoration-purple-300/30 underline-offset-2"
+              >
                 <span>Dor</span>
                 <span>{Math.round(barbPainState)}</span>
-              </div>
+              </button>
               <div className="h-1.5 bg-black/50 rounded overflow-hidden">
                 <div className="h-1.5 bg-purple-500 rounded transition-[width] duration-300" style={{ width: `${Math.min(100, (barbPainState / barbPainCap) * 100)}%` }} />
               </div>
@@ -2665,6 +2691,7 @@ export function DungeonPanel({
           )}
         </div>
       )}
+      {openMechanicId && <MechanicQuickModal mechanicId={openMechanicId} onClose={() => setOpenMechanicId(null)} />}
 
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>

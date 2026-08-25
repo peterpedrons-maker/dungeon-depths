@@ -302,6 +302,58 @@ export interface SkillNode {
   // inferred, only ever hand-authored per node so it can't drift from what
   // the node's mechanic in DungeonPanel.tsx actually does.
   scaling?: ScalingEntry[];
+  // Universal class-mechanic explainer system (see lib/classMechanics.ts) —
+  // ids of the ClassMechanic entries this node's own effect/ability touches
+  // (e.g. ['barbaro:fury', 'barbaro:wounds']), rendered as tappable chips at
+  // the bottom of the node's popup. Never inferred from text — hand-authored
+  // per node, same discipline as `scaling`.
+  mechanicRefs?: string[];
+}
+
+// ── Universal class-mechanic explainer system ──
+// A generic, reusable data model for any class's exclusive resources/stacks/
+// marks/postures/states/etc. (Fúria, Frenesi, Dor, Feridas for Bárbaro today;
+// Determinação/Retaliação/Momentum/Ordens for a future Cavaleiro, and so on).
+// Nothing in the UI layer ever branches on classId or on a mechanic's name —
+// every component here takes a ClassMechanic (or its id) and renders it
+// generically. See components/ClassMechanics.tsx.
+export type MechanicCategory = 'resource' | 'state' | 'stack' | 'mark' | 'other';
+
+export interface ClassMechanic {
+  id: string; // stable id, e.g. "barbaro:fury" — referenced by SkillNode.mechanicRefs
+  classId: ClassId;
+  name: string;
+  category: MechanicCategory;
+  shortDescription: string; // 1-2 sentences, for the quick tap-to-explain popup
+  fullDescription: string; // full explanation, for the "Mecânicas da Classe" panel
+}
+
+// One entry per attribute the class actually cares about, for the "Atributos
+// Importantes" section of the class mechanics panel — explains WHY the
+// attribute matters for this class's kit, not just its raw combatStats.ts
+// coefficient.
+export interface ClassAttributeNote {
+  attribute: AttributeKey;
+  label: string; // e.g. "FOR"
+  role: string; // e.g. "Principal", "Principal defensivo", "Secundário", "Terciário"
+  description: string;
+}
+
+// Per-specialization (SkillPath) identity summary for the class mechanics
+// panel — keyed by the path's own id (e.g. "furia", "resistencia").
+export interface ClassSpecializationNote {
+  pathId: string;
+  identity: string; // e.g. "FOR + Fúria + Frenesi."
+  style: string; // e.g. "Alto risco, alto dano."
+  loop: string; // e.g. "Gerar Fúria → entrar em Frenesi → escolher entre manter ou gastar o recurso."
+}
+
+// Named combination of two specializations, when the class was designed
+// with cross-path synergy in mind — optional, only where it adds real signal.
+export interface ClassCombinationNote {
+  pathIds: [string, string];
+  name: string; // e.g. "Fúria + Selvageria"
+  description: string; // e.g. "Maior dano, maior risco."
 }
 
 export interface SkillPath {
