@@ -117,6 +117,49 @@ import {
   ABALADO_DMG_TAKEN_PCT, ABALADO_ROUNDS,
   isGolpePesado,
 } from '../lib/knight';
+import {
+  TRAP_MAX_ARMED_BASE, TRAP_MAX_ARMED_MESTRE_ARMADILHEIRO, PRIMED_TRAP_BONUS_PCT, MESTRE_ARMADILHEIRO_NEXT_TRAP_BONUS_PCT,
+  RECENT_TRAP_TRIGGER_WINDOW_TICKS,
+  ENGENHARIA_PRECISA_TRAP_DMG_RATE, ENGENHARIA_PRECISA_TRAP_DMG_CAP,
+  CONHECIMENTO_VENENOS_POISON_RATE, CONHECIMENTO_VENENOS_POISON_CAP,
+  PASSOS_ARMADILHEIRO_SPEED_UNCONDITIONAL_PCT, PASSOS_ARMADILHEIRO_SPEED_RATE, PASSOS_ARMADILHEIRO_SPEED_CAP,
+  MAO_DO_ARMEIRO_NEXT_SHOT_RATE, MAO_DO_ARMEIRO_NEXT_SHOT_CAP,
+  SOBREVIVENCIA_CAMPO_DMG_REDUCTION_RATE, SOBREVIVENCIA_CAMPO_DMG_REDUCTION_CAP,
+  MECANICA_REFINADA_TRAP_DMG_RATE, MECANICA_REFINADA_TRAP_DMG_CAP,
+  DESORIENTADO_ACCURACY_PCT, DESORIENTADO_ACCURACY_PCT_MARKED, DESORIENTADO_ROUNDS,
+  PACIENCIA_DA_CACA_EVASION_RATE, PACIENCIA_DA_CACA_EVASION_CAP,
+  TIRO_ENVENENADO_FALLBACK_POISON_ROUNDS, TIRO_ENVENENADO_FALLBACK_POISON_DMG_MULT_PER_TICK,
+  GOLPE_MISERICORDIA_DMG_MULT_VS_POISON,
+  EXECUCAO_PRESA_PER_TRAP_MULT, EXECUCAO_PRESA_MAX_TRAPS_COUNTED, EXECUCAO_PRESA_MARKED_BONUS_MULT,
+  TRAIL_MAX, TRAIL_GAIN_PER_ACTION, MEMORIA_DA_TRILHA_FIRST_ACTION_BONUS, MARKED_PREY_THRESHOLD,
+  OLHOS_RASTREADOR_ACCURACY_RATE, OLHOS_RASTREADOR_ACCURACY_CAP,
+  PASSOS_SILENCIOSOS_EVASION_RATE, PASSOS_SILENCIOSOS_EVASION_CAP,
+  LEITURA_MOVIMENTO_DMG_REDUCTION_RATE, LEITURA_MOVIMENTO_DMG_REDUCTION_CAP,
+  MIRA_PERSEGUICAO_ACCURACY_RATE, MIRA_PERSEGUICAO_ACCURACY_CAP,
+  PRESA_MARCADA_DMG_BONUS_PCT, PRESA_MARCADA_ACCURACY_BONUS_PCT, PRESA_MARCADA_TRAP_DMG_BONUS_PCT,
+  FOLEGO_PERSEGUICAO_SPEED_BASE, FOLEGO_PERSEGUICAO_SPEED_RATE, FOLEGO_PERSEGUICAO_SPEED_CAP,
+  INSTINTO_FUGA_DMG_BONUS_PCT, INSTINTO_FUGA_WINDOW_TICKS,
+  LEITURA_COMPLETA_CRIT_RATE, LEITURA_COMPLETA_CRIT_CAP,
+  SUMIR_NA_MATA_TRAIL_GAIN,
+  PASSO_ETEREO_TRAIL_GAIN, PASSO_ETEREO_TRAIL_GAIN_ON_MISS,
+  MANTO_SOMBRAS_MAX_BREACHES_PER_CAST,
+  PREDADOR_PACIENTE_HITS_PER_CDR,
+  BREACH_MAX, BREACH_DURATION_TICKS,
+  MIRA_CIRURGICA_ACCURACY_RATE, MIRA_CIRURGICA_ACCURACY_CAP,
+  CONTROLE_RECUO_BREACH_CONSUME_DMG_RATE, CONTROLE_RECUO_BREACH_CONSUME_DMG_CAP,
+  PULSO_FRIO_CRIT_RATE, PULSO_FRIO_CRIT_CAP,
+  LEITURA_BALISTICA_CRIT_DMG_BONUS_AT_3_BREACHES,
+  MUNICAO_SELECIONADA_CRIT_DMG_RATE, MUNICAO_SELECIONADA_CRIT_DMG_CAP,
+  RITMO_ABATE_SPEED_UNCONDITIONAL_PCT, RITMO_ABATE_SPEED_RATE, RITMO_ABATE_SPEED_CAP,
+  PONTO_FRACO_ACCURACY_PER_BREACH, PONTO_FRACO_CRIT_DMG_PER_BREACH,
+  ABRIR_A_GUARDA_CRITS_PER_BREACH,
+  TIRO_DUPLO_SECOND_HIT_BONUS_PCT_MARKED,
+  ABATE_DEFPEN_PCT_MARKED,
+  FOCO_CARRASCO_HP_THRESHOLD, FOCO_CARRASCO_CRIT_RATE, FOCO_CARRASCO_CRIT_CAP,
+  DISPARO_MORTAL_CRIT_DMG_BONUS_MARKED,
+  CACA_PERFEITA_DMG_MULT_TRAIL_5,
+  JANELA_PERFEITA_DMG_BONUS_PCT, JANELA_PERFEITA_SPEED_BONUS_PCT, JANELA_PERFEITA_SPEED_ROUNDS,
+} from '../lib/hunter';
 import { rollAttack, rollAbilityHit, mitigatedBase } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
@@ -255,6 +298,8 @@ const SELF_ABILITY_KINDS = [
   'cleanseOne', 'consecrationGuard', 'divineWall', 'reviveWindow',
   // Cavaleiro redesign (lib/knight.ts) — all consume the whole action, no attack roll.
   'ironWall', 'livingFortress', 'colossalShield', 'lastGuard', 'counterStance', 'orderResist', 'kingsBanner',
+  // Caçador redesign (lib/hunter.ts) — all consume the whole action, no attack roll.
+  'armTrap', 'buffEvasion', 'huntWithPrey',
 ];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -364,6 +409,28 @@ interface PlayerBuff { kind: 'def' | 'block'; pct: number; roundsLeft: number; s
 interface StatModInstance { stat: StatModStat; pct: number; roundsLeft: number; sourceAbilityId?: string; }
 interface CCInstance { kind: CrowdControlKind; roundsLeft: number; }
 interface RegenInstance { pct: number; roundsLeft: number; sourceAbilityId?: string; }
+// Caçador redesign (lib/hunter.ts) — a generic combat object, never a
+// per-ability `if (name === ...)` branch (see the redesign spec's own
+// "TRAP SYSTEM GENÉRICO"). Armed by an 'armTrap' ability, resolved once the
+// enemy completes a real action (see enemyAct's hunterTriggerOldestTrap()).
+// primed/nextTrapBonus are one-shot flags consumed the instant this trap
+// itself activates.
+interface CombatTrap {
+  sourceAbilityId: string;
+  name: string;
+  directDmgMultBase: number;
+  directDmgMultMarked?: number;
+  poisonRounds?: number;
+  poisonDmgMultPerTick?: number;
+  debuffStat?: StatModStat;
+  debuffPct?: number;
+  debuffPctMarked?: number;
+  debuffRounds?: number;
+  trailGainBase?: number;
+  trailGainMarked?: number;
+  primed: boolean;
+  nextTrapBonus: boolean; // Mestre Armadilheiro — +15% direct dmg, granted when the trap ahead of it activated
+}
 // heal marks a recovery instead of a hit — rendered as a green "+value"
 // instead of the usual red/yellow "-value", and never carries crit/blocked/
 // miss (a heal is never any of those). Added because every healing source
@@ -758,6 +825,26 @@ export function DungeonPanel({
   const [knightMomentumState, setKnightMomentumState] = useState(0);
   const [knightOrdersState, setKnightOrdersState] = useState(0);
   const [knightCommandSupremeState, setKnightCommandSupremeState] = useState(false);
+
+  // ── Caçador redesign — ARMADILHAS/RASTRO/BRECHAS, session-only, never
+  // persisted (see lib/hunter.ts). Rastro/Brechas live ON the enemy instance
+  // itself (hunterTrail/hunterBreaches, same shape as barbarianWounds/
+  // judgment) so they already reset with a fresh spawnEnemy() and need no
+  // dedicated reset logic here. Traps are the Caçador's own combat objects —
+  // they never persist between enemies (cleared on death/dungeon end).
+  const hunterTrapsRef = useRef<CombatTrap[]>([]);
+  const hunterRecentTrapTriggerTicksRef = useRef(0); // Golpe de Misericórdia's own gate
+  const hunterTrapsTriggeredThisEnemyRef = useRef(0); // Execução da Presa's scaling + condition
+  const hunterFirstTrapTriggeredThisEnemyRef = useRef(false); // Armadilheiro Adaptável's first-trap Brecha
+  const hunterNextShotBonusAvailableRef = useRef(false); // Mão do Armeiro — granted when a trap is newly armed, consumed on the next landed hit
+  const hunterInstintoFugaWindowTicksRef = useRef(0); // Instinto de Fuga's +12% dmg window after an enemy miss
+  const hunterPassoEthereoMissPendingRef = useRef(false); // Passo Etéreo's "primeiro erro durante o efeito"
+  const hunterMantoSombrasBreachesGrantedRef = useRef(0); // Manto das Sombras — max 2 Brechas per cast
+  const hunterConsecutiveHitCounterRef = useRef(0); // Predador Paciente's 3-hit CDR trigger
+  const hunterCritCounterRef = useRef(0); // Abrir a Guarda's 2-crit Brecha trigger
+  const hunterMemoriaTrilhaGrantedRef = useRef(false); // per enemy — Memória da Trilha's extra first-action Rastro
+
+  const [hunterTrapsState, setHunterTrapsState] = useState<CombatTrap[]>([]);
 
   const heroSpr = heroSprites(ch.classId);
 
@@ -1748,6 +1835,302 @@ export function DungeonPanel({
     return capped(ESTRATEGIA_CDR_RATE, attrTotal(chRef.current, 'wis'), ESTRATEGIA_CDR_CAP);
   }
 
+  // ── Caçador (lib/hunter.ts) ──
+  function isHunter(): boolean { return chRef.current.classId === 'cacador'; }
+  function hunterHasSkill(nodeId: string): boolean { return hasSkill(chRef.current, nodeId); }
+  // Each resource is only "ativada" once the Caçador has at least one talent
+  // in its own specialization (per spec sections 6/11/14), mirroring the
+  // same per-specialization gate used by Cavaleiro's Determinação/Momentum/
+  // Ordens.
+  function hunterHasArmadilhas(): boolean { return isHunter() && chRef.current.unlockedSkills.some((s) => s.startsWith('cacador:armadilhas:')); }
+  function hunterHasRastreio(): boolean { return isHunter() && chRef.current.unlockedSkills.some((s) => s.startsWith('cacador:rastreio:')); }
+  function hunterHasPrecisao(): boolean { return isHunter() && chRef.current.unlockedSkills.some((s) => s.startsWith('cacador:precisao-caca:')); }
+  function hunterTrail(): number { return enemyRef.current.hunterTrail ?? 0; }
+  function hunterMarkedPrey(): boolean { return hunterTrail() >= MARKED_PREY_THRESHOLD; }
+  function hunterBreachStacks(): number { return enemyRef.current.hunterBreaches?.stacks ?? 0; }
+  function hunterMaxTraps(): number { return hunterHasSkill('cacador:armadilhas:14') ? TRAP_MAX_ARMED_MESTRE_ARMADILHEIRO : TRAP_MAX_ARMED_BASE; }
+  function syncHunterTraps() { if (!silentRef.current) setHunterTrapsState([...hunterTrapsRef.current]); }
+
+  // ── RASTRO ──
+  function hunterGainTrail(amount: number) {
+    if (!hunterHasRastreio() || amount <= 0) return;
+    const next = Math.min(TRAIL_MAX, hunterTrail() + amount);
+    if (next !== hunterTrail()) updateEnemy({ ...enemyRef.current, hunterTrail: next });
+  }
+  // The universal "+1 Rastro per real enemy action" gain (see hunterOnEnemyRealAction
+  // call-sites in enemyAct) — includes Memória da Trilha's one-time +1 bonus
+  // on the very first real action against a new enemy.
+  function hunterGainTrailOnEnemyAction() {
+    if (!hunterHasRastreio()) return;
+    let amount = TRAIL_GAIN_PER_ACTION;
+    if (hunterHasSkill('cacador:rastreio:2') && !hunterMemoriaTrilhaGrantedRef.current) {
+      amount += MEMORIA_DA_TRILHA_FIRST_ACTION_BONUS;
+      hunterMemoriaTrilhaGrantedRef.current = true;
+    }
+    hunterGainTrail(amount);
+  }
+
+  // ── BRECHAS ──
+  // Applying a new Brecha stack renews the FULL duration for every stack
+  // already present — same shape as Feridas/Julgamento.
+  function hunterGainBreach(amount: number) {
+    if (!hunterHasPrecisao() || amount <= 0) return;
+    const stacks = Math.min(BREACH_MAX, hunterBreachStacks() + amount);
+    updateEnemy({ ...enemyRef.current, hunterBreaches: { stacks, ticksLeft: BREACH_DURATION_TICKS } });
+  }
+  // Only ever called after a hit that actually landed — a miss must never
+  // touch Brechas (see AbilityEffect.breachConsumeOnHit's own call-site).
+  function hunterConsumeBreach(amount: number) {
+    const current = enemyRef.current.hunterBreaches;
+    if (!current || current.stacks <= 0 || amount <= 0) return;
+    const stacks = Math.max(0, current.stacks - amount);
+    updateEnemy({ ...enemyRef.current, hunterBreaches: stacks > 0 ? { ...current, stacks } : undefined });
+  }
+  function hunterTickBreaches() {
+    const b = enemyRef.current.hunterBreaches;
+    if (!b) return;
+    const ticksLeft = b.ticksLeft - 1;
+    updateEnemy({ ...enemyRef.current, hunterBreaches: ticksLeft > 0 ? { ...b, ticksLeft } : undefined });
+  }
+
+  // ── ARMADILHAS (traps) ──
+  function hunterArmTrap(ab: AbilityDef) {
+    if (!hunterHasArmadilhas()) return;
+    const eff = ab.effect;
+    if (hunterTrapsRef.current.length >= hunterMaxTraps()) return; // guarded by cooldown/abilityAlreadyActive in practice
+    const trap: CombatTrap = {
+      sourceAbilityId: ab.id, name: ab.name,
+      directDmgMultBase: eff.trapDirectDmgMultBase ?? 1,
+      directDmgMultMarked: eff.trapDirectDmgMultMarked,
+      poisonRounds: eff.trapPoisonRounds,
+      poisonDmgMultPerTick: eff.trapPoisonDmgMultPerTick,
+      debuffStat: eff.trapDebuffStat,
+      debuffPct: eff.trapDebuffPct,
+      debuffPctMarked: eff.trapDebuffPctMarked,
+      debuffRounds: eff.trapDebuffRounds,
+      trailGainBase: eff.trapTrailGainBase,
+      trailGainMarked: eff.trapTrailGainMarked,
+      primed: false, nextTrapBonus: false,
+    };
+    hunterTrapsRef.current = [...hunterTrapsRef.current, trap];
+    syncHunterTraps();
+    // Mão do Armeiro (cacador:armadilhas:3) — a fresh trap re-arms the bonus.
+    if (hunterHasSkill('cacador:armadilhas:3')) hunterNextShotBonusAvailableRef.current = true;
+  }
+  // Tiro Envenenado (cacador:armadilhas:9) — primes the oldest unprimed trap;
+  // returns whether one existed to prime.
+  function hunterPrimeOldestUnprimedTrap(): boolean {
+    const idx = hunterTrapsRef.current.findIndex((t) => !t.primed);
+    if (idx === -1) return false;
+    hunterTrapsRef.current = hunterTrapsRef.current.map((t, i) => (i === idx ? { ...t, primed: true } : t));
+    syncHunterTraps();
+    return true;
+  }
+  function hunterAbilityIsTrap(ab: AbilityDef): boolean { return ab.effect.kind === 'armTrap'; }
+  // Preparação em Cadeia (cacador:armadilhas:6) — reduces the highest-CD
+  // OTHER trap-tagged ability by 1 envTick, at most once per enemy action.
+  function hunterChainCooldownReduction(excludeAbilityId: string) {
+    if (!hunterHasSkill('cacador:armadilhas:6')) return;
+    let bestId: string | null = null, bestCd = 0;
+    for (const ab of equippedAbilities()) {
+      if (!hunterAbilityIsTrap(ab) || ab.id === excludeAbilityId) continue;
+      const cd = cooldownsRef.current[ab.id] ?? 0;
+      if (cd > bestCd) { bestCd = cd; bestId = ab.id; }
+    }
+    if (bestId) cooldownsRef.current[bestId] = Math.max(0, bestCd - 1);
+  }
+  // Predador Paciente's own "maior cooldown entre TODAS as habilidades".
+  function hunterReduceHighestCooldown() {
+    let bestId: string | null = null, bestCd = 0;
+    for (const ab of equippedAbilities()) {
+      const cd = cooldownsRef.current[ab.id] ?? 0;
+      if (cd > bestCd) { bestCd = cd; bestId = ab.id; }
+    }
+    if (bestId) cooldownsRef.current[bestId] = Math.max(0, bestCd - 1);
+  }
+  // Resolves the oldest ARMED trap once the enemy completes a real action
+  // (see enemyAct) — the sole place trap direct damage/Poison/debuffs/Rastro
+  // riders are ever applied, all read at THIS trigger moment (never at arm
+  // time), per the redesign spec's own worked examples.
+  function hunterTriggerOldestTrap() {
+    if (!isHunter() || hunterTrapsRef.current.length === 0) return;
+    const trap = hunterTrapsRef.current[0];
+    const rest = hunterTrapsRef.current.slice(1);
+    // Mestre Armadilheiro (cacador:armadilhas:14) — the next trap in queue
+    // gets a one-shot +15% direct dmg bonus once this one fires.
+    hunterTrapsRef.current = hunterHasSkill('cacador:armadilhas:14') && rest.length > 0
+      ? rest.map((t, i) => (i === 0 ? { ...t, nextTrapBonus: true } : t))
+      : rest;
+    syncHunterTraps();
+
+    const marked = hunterMarkedPrey();
+    const stats = computePlayerStats();
+    let dmgMult = marked && trap.directDmgMultMarked !== undefined ? trap.directDmgMultMarked : trap.directDmgMultBase;
+    if (trap.primed) dmgMult *= 1 + PRIMED_TRAP_BONUS_PCT;
+    if (trap.nextTrapBonus) dmgMult *= 1 + MESTRE_ARMADILHEIRO_NEXT_TRAP_BONUS_PCT;
+    let extraPct = 0;
+    if (hunterHasSkill('cacador:armadilhas:0')) extraPct += capped(ENGENHARIA_PRECISA_TRAP_DMG_RATE, attrTotal(chRef.current, 'dex'), ENGENHARIA_PRECISA_TRAP_DMG_CAP);
+    if (hunterHasSkill('cacador:armadilhas:7')) extraPct += capped(MECANICA_REFINADA_TRAP_DMG_RATE, attrTotal(chRef.current, 'dex'), MECANICA_REFINADA_TRAP_DMG_CAP);
+    if (marked && hunterHasSkill('cacador:rastreio:6')) extraPct += PRESA_MARCADA_TRAP_DMG_BONUS_PCT;
+    dmgMult *= 1 + extraPct;
+
+    // Trap direct damage: no accuracy roll, no crit, no lifesteal, no
+    // "on direct hit" triggers — only normal DEF mitigation.
+    const dmg = Math.max(1, Math.round(mitigatedBase(Math.max(1, Math.round(stats.atk * dmgMult)), computeEnemyDef())));
+    const newHp = Math.max(0, enemyRef.current.hp - dmg);
+    applyEnemyHp(newHp);
+    pushFloat('enemy', dmg, false);
+    pushLog(`${trap.name} ativa!`);
+    hunterTrapsTriggeredThisEnemyRef.current += 1;
+    hunterRecentTrapTriggerTicksRef.current = RECENT_TRAP_TRIGGER_WINDOW_TICKS;
+    hunterChainCooldownReduction(trap.sourceAbilityId);
+    if (newHp <= 0) { resolveEnemyDeath(); return; }
+
+    // Armadilheiro Adaptável (cacador:armadilhas:8).
+    if (hunterHasSkill('cacador:armadilhas:8')) {
+      const accPct = marked ? DESORIENTADO_ACCURACY_PCT_MARKED : DESORIENTADO_ACCURACY_PCT;
+      enemyModsRef.current = enemyModsRef.current.filter((m) => m.sourceAbilityId !== 'cacador:desoriented');
+      enemyModsRef.current.push({ stat: 'accuracy', pct: accPct, roundsLeft: DESORIENTADO_ROUNDS, sourceAbilityId: 'cacador:desoriented' });
+      syncEnemyMods();
+      if (!hunterFirstTrapTriggeredThisEnemyRef.current) {
+        hunterFirstTrapTriggeredThisEnemyRef.current = true;
+        hunterGainBreach(1);
+      } else if (marked) {
+        hunterGainBreach(1);
+      }
+    }
+    // Poison rider (Armadilha de Veneno) — locked in at trigger time.
+    if (trap.poisonRounds && trap.poisonDmgMultPerTick) {
+      enemyStatusRef.current.push({ kind: 'poison', roundsLeft: trap.poisonRounds, dmgPerTick: Math.max(1, Math.round(stats.atk * trap.poisonDmgMultPerTick * (1 + (hunterHasSkill('cacador:armadilhas:1') ? capped(CONHECIMENTO_VENENOS_POISON_RATE, attrTotal(chRef.current, 'wis'), CONHECIMENTO_VENENOS_POISON_CAP) : 0)))) });
+      syncEnemyStatuses();
+    }
+    // Stat debuff rider (Armadilha Mortal's -ATK / Armadilha de Ferro's -DEF).
+    if (trap.debuffStat && trap.debuffPct !== undefined) {
+      const pct = marked && trap.debuffPctMarked !== undefined ? trap.debuffPctMarked : trap.debuffPct;
+      enemyModsRef.current.push({ stat: trap.debuffStat, pct, roundsLeft: trap.debuffRounds ?? 2, sourceAbilityId: trap.sourceAbilityId });
+      syncEnemyMods();
+    }
+    // Rastro rider (Armadilha de Ferro).
+    if (trap.trailGainBase !== undefined) {
+      hunterGainTrail(marked && trap.trailGainMarked !== undefined ? trap.trailGainMarked : trap.trailGainBase);
+    }
+  }
+  // Called once per completed real enemy action (hit OR miss, never on a
+  // stun/sleep-negated action) — advances every Caçador mechanic that reacts
+  // to "the presa acted", in the exact order the spec's own death-ordering
+  // rule requires (this only ever runs AFTER the player-death check).
+  function hunterOnEnemyRealAction() {
+    if (!isHunter()) return;
+    hunterGainTrailOnEnemyAction();
+    hunterTriggerOldestTrap();
+  }
+  // Enemy attack MISSED the player — Instinto de Fuga / Passo Etéreo / Manto
+  // das Sombras all react to this specific sub-case (never to a stun/sleep
+  // skip, which never reaches the accuracy roll at all).
+  function hunterOnEnemyMiss() {
+    if (!isHunter()) return;
+    if (hunterHasSkill('cacador:rastreio:8')) {
+      hunterInstintoFugaWindowTicksRef.current = INSTINTO_FUGA_WINDOW_TICKS;
+      hunterGainBreach(1);
+    }
+    if (hunterPassoEthereoMissPendingRef.current) {
+      hunterPassoEthereoMissPendingRef.current = false;
+      hunterGainTrail(PASSO_ETEREO_TRAIL_GAIN_ON_MISS);
+      hunterGainBreach(1);
+    }
+    if (playerModsRef.current.some((m) => m.sourceAbilityId === 'cacador:rastreio:12')) {
+      hunterGainTrail(1);
+      if (hunterMantoSombrasBreachesGrantedRef.current < MANTO_SOMBRAS_MAX_BREACHES_PER_CAST) {
+        hunterGainBreach(1);
+        hunterMantoSombrasBreachesGrantedRef.current += 1;
+      }
+    }
+  }
+  function hunterInstintoFugaBonusPct(): number {
+    if (hunterInstintoFugaWindowTicksRef.current <= 0) return 0;
+    hunterInstintoFugaWindowTicksRef.current = 0;
+    return INSTINTO_FUGA_DMG_BONUS_PCT;
+  }
+  // Mão do Armeiro's next-shot bonus (cacador:armadilhas:3) — consumed the
+  // instant a direct hit actually lands.
+  function hunterConsumeNextShotBonusPct(): number {
+    if (!hunterNextShotBonusAvailableRef.current || hunterTrapsRef.current.length === 0) return 0;
+    hunterNextShotBonusAvailableRef.current = false;
+    return capped(MAO_DO_ARMEIRO_NEXT_SHOT_RATE, attrTotal(chRef.current, 'dex'), MAO_DO_ARMEIRO_NEXT_SHOT_CAP);
+  }
+  // Called after every landed direct hit from the Caçador (never trap/Poison/
+  // thorns/DOT) — Abrir a Guarda's crit counter, Predador Paciente's hit
+  // counter.
+  function hunterOnPlayerDirectHit(crit: boolean) {
+    if (!isHunter()) return;
+    if (crit && hunterHasSkill('cacador:precisao-caca:6')) {
+      hunterCritCounterRef.current += 1;
+      if (hunterCritCounterRef.current >= ABRIR_A_GUARDA_CRITS_PER_BREACH) {
+        hunterCritCounterRef.current = 0;
+        hunterGainBreach(1);
+      }
+    }
+    if (hunterHasSkill('cacador:rastreio:14') && hunterTrail() === TRAIL_MAX) {
+      hunterConsecutiveHitCounterRef.current += 1;
+      if (hunterConsecutiveHitCounterRef.current >= PREDADOR_PACIENTE_HITS_PER_CDR) {
+        hunterConsecutiveHitCounterRef.current = 0;
+        hunterReduceHighestCooldown();
+      }
+    }
+  }
+  function hunterOnPlayerMiss() {
+    if (!isHunter()) return;
+    hunterConsecutiveHitCounterRef.current = 0;
+  }
+  // Tiro Duplo (cacador:precisao-caca:9) — the one multiHit ability today;
+  // hitCount/dmgMultPerHit are generic (redesign spec section 26) so a
+  // future ability could reuse this same resolution without a new kind.
+  // Each of the hitCount shots rolls its own accuracy/crit independently —
+  // this is why multiHit can't reuse the shared single-roll `missed`
+  // pipeline every other ability goes through. Deliberately does NOT
+  // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
+  // (both scoped to the single-hit/plain-attack path only) — a scoped
+  // simplification, called out in the final report.
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number) {
+    const eff = ab.effect;
+    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct);
+    const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
+    const power = isMagicalClass ? stats.matk : stats.atk;
+    const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+    const marked = hunterMarkedPrey();
+    const hitCount = eff.hitCount ?? 2;
+    let allLanded = true;
+    pushAbilityCast('player', ab.name, activeAbilityIconStyle(chRef.current.classId, ab.id), null, false);
+    pushLog(`Você usa [${ab.name}]!`);
+    for (let i = 0; i < hitCount; i++) {
+      if (enemyRef.current.hp <= 0) break;
+      if (rollMiss(accuracyForRoll, enemyEvasion)) {
+        allLanded = false;
+        pushFloat('enemy', 0, false, false, true);
+        hunterOnPlayerMiss();
+        continue;
+      }
+      let dmgMult = eff.dmgMultPerHit ?? 0.8;
+      // Tiro Duplo's own marked-prey bonus applies only to the SECOND shot.
+      if (i === 1 && marked && ab.id === 'cacador:precisao-caca:9') dmgMult *= 1 + TIRO_DUPLO_SECOND_HIT_BONUS_PCT_MARKED;
+      const { dmg, crit } = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll);
+      const newHp = Math.max(0, enemyRef.current.hp - dmg);
+      applyEnemyHp(newHp);
+      pushFloat('enemy', dmg, crit);
+      hunterOnPlayerDirectHit(crit);
+      if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
+        const maxHp = effectiveMaxHp(chRef.current);
+        const healAmount = Math.round(dmg * stats.lifestealPct) + (crit ? Math.round(maxHp * stats.onCritHealPct) : 0);
+        if (healAmount > 0) {
+          updateCh({ ...chRef.current, hp: Math.min(maxHp, chRef.current.hp + healAmount) });
+          pushFloat('player', healAmount, false, undefined, undefined, true);
+        }
+      }
+      if (newHp <= 0) { resolveEnemyDeath(); return; }
+    }
+    if (allLanded && eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
+  }
+
   function equippedAbilities(): AbilityDef[] {
     const c = chRef.current;
     return getEquippedAbilities(c.classId, c.unlockedSkills, c.equippedAbilities);
@@ -1855,27 +2238,123 @@ export function DungeonPanel({
       }
     }
 
+    // Caçador conditional bonuses — each node's own UNCONDITIONAL slice
+    // (accuracyPct/evasionPct/critPct/critDmgPct/dmgPct/maxHpFlat) is already
+    // folded into `base` by computeCombatStats; only the extra conditional
+    // interaction lives here. Reads enemyRef.current directly (Rastro/
+    // Brechas/HP all live on the current enemy instance), same closure
+    // access every other class's conditional block above already relies on.
+    let hunterAccuracyBonus = 0, hunterEvasionBonus = 0, hunterCritBonus = 0, hunterCritDmgBonus = 0;
+    let hunterSpeedBonus = 0, hunterDmgTakenBonus = 0;
+    const hunterActiveStats = isHunter();
+    if (hunterActiveStats) {
+      const trapArmed = hunterTrapsRef.current.length > 0;
+      const marked = hunterMarkedPrey();
+      const trail5 = hunterTrail() === TRAIL_MAX;
+      const breaches = hunterBreachStacks();
+      // Passos do Armadilheiro (armadilhas:2) — unconditional base + AGI
+      // while a trap is armed.
+      hunterSpeedBonus += PASSOS_ARMADILHEIRO_SPEED_UNCONDITIONAL_PCT;
+      if (trapArmed && hunterHasSkill('cacador:armadilhas:2')) {
+        hunterSpeedBonus += capped(PASSOS_ARMADILHEIRO_SPEED_RATE, attrTotal(ch, 'agi'), PASSOS_ARMADILHEIRO_SPEED_CAP);
+      }
+      // Sobrevivência de Campo (armadilhas:5) — VIT-scaled direct-dmg
+      // reduction while a trap is armed.
+      if (trapArmed && hunterHasSkill('cacador:armadilhas:5')) {
+        hunterDmgTakenBonus -= capped(SOBREVIVENCIA_CAMPO_DMG_REDUCTION_RATE, attrTotal(ch, 'vit'), SOBREVIVENCIA_CAMPO_DMG_REDUCTION_CAP);
+      }
+      // Paciência da Caça (armadilhas:11) — AGI-scaled evasion while a trap
+      // is armed (its own unconditional evasionPct is already in `base`).
+      if (trapArmed && hunterHasSkill('cacador:armadilhas:11')) {
+        hunterEvasionBonus += capped(PACIENCIA_DA_CACA_EVASION_RATE, attrTotal(ch, 'agi'), PACIENCIA_DA_CACA_EVASION_CAP);
+      }
+      // Olhos do Rastreador (rastreio:0) / Mira de Perseguição (rastreio:5) —
+      // DES-scaled accuracy vs Presa Marcada.
+      if (marked && hunterHasSkill('cacador:rastreio:0')) {
+        hunterAccuracyBonus += capped(OLHOS_RASTREADOR_ACCURACY_RATE, attrTotal(ch, 'dex'), OLHOS_RASTREADOR_ACCURACY_CAP);
+      }
+      if (marked && hunterHasSkill('cacador:rastreio:5')) {
+        hunterAccuracyBonus += capped(MIRA_PERSEGUICAO_ACCURACY_RATE, attrTotal(ch, 'dex'), MIRA_PERSEGUICAO_ACCURACY_CAP);
+      }
+      // Passos Silenciosos (rastreio:1) — AGI-scaled evasion vs Presa Marcada.
+      if (marked && hunterHasSkill('cacador:rastreio:1')) {
+        hunterEvasionBonus += capped(PASSOS_SILENCIOSOS_EVASION_RATE, attrTotal(ch, 'agi'), PASSOS_SILENCIOSOS_EVASION_CAP);
+      }
+      // Leitura de Movimento (rastreio:3) — AGI-scaled dmg reduction at
+      // Rastro máximo (its own unconditional evasionPct is already baked).
+      if (trail5 && hunterHasSkill('cacador:rastreio:3')) {
+        hunterDmgTakenBonus -= capped(LEITURA_MOVIMENTO_DMG_REDUCTION_RATE, attrTotal(ch, 'agi'), LEITURA_MOVIMENTO_DMG_REDUCTION_CAP);
+      }
+      // Presa Marcada (rastreio:6) — its own +4pp precisão half; the +4%
+      // dmg half is applied live in playerAct's damage pipeline instead
+      // (a direct-dmg multiplier, not a stat).
+      if (marked && hunterHasSkill('cacador:rastreio:6')) {
+        hunterAccuracyBonus += PRESA_MARCADA_ACCURACY_BONUS_PCT;
+      }
+      // Fôlego da Perseguição (rastreio:7) — base + AGI speed at Rastro máx.
+      if (trail5 && hunterHasSkill('cacador:rastreio:7')) {
+        hunterSpeedBonus += FOLEGO_PERSEGUICAO_SPEED_BASE + capped(FOLEGO_PERSEGUICAO_SPEED_RATE, attrTotal(ch, 'agi'), FOLEGO_PERSEGUICAO_SPEED_CAP);
+      }
+      // Leitura Completa (rastreio:11) — SOR-scaled crit at Rastro máximo.
+      if (trail5 && hunterHasSkill('cacador:rastreio:11')) {
+        hunterCritBonus += capped(LEITURA_COMPLETA_CRIT_RATE, attrTotal(ch, 'luk'), LEITURA_COMPLETA_CRIT_CAP);
+      }
+      // Mira Cirúrgica (precisao-caca:0) — DES-scaled accuracy vs a target
+      // carrying at least 1 Brecha.
+      if (breaches >= 1 && hunterHasSkill('cacador:precisao-caca:0')) {
+        hunterAccuracyBonus += capped(MIRA_CIRURGICA_ACCURACY_RATE, attrTotal(ch, 'dex'), MIRA_CIRURGICA_ACCURACY_CAP);
+      }
+      // Pulso Frio (precisao-caca:2) — SOR-scaled crit vs a target with a Brecha.
+      if (breaches >= 1 && hunterHasSkill('cacador:precisao-caca:2')) {
+        hunterCritBonus += capped(PULSO_FRIO_CRIT_RATE, attrTotal(ch, 'luk'), PULSO_FRIO_CRIT_CAP);
+      }
+      // Leitura Balística (precisao-caca:3) — flat critDmg vs exactly 3 Brechas.
+      if (breaches === BREACH_MAX && hunterHasSkill('cacador:precisao-caca:3')) {
+        hunterCritDmgBonus += LEITURA_BALISTICA_CRIT_DMG_BONUS_AT_3_BREACHES;
+      }
+      // Munição Selecionada (precisao-caca:5) — SOR-scaled critDmg vs marked.
+      if (marked && hunterHasSkill('cacador:precisao-caca:5')) {
+        hunterCritDmgBonus += capped(MUNICAO_SELECIONADA_CRIT_DMG_RATE, attrTotal(ch, 'luk'), MUNICAO_SELECIONADA_CRIT_DMG_CAP);
+      }
+      // Ritmo de Abate (precisao-caca:7) — base + AGI speed while the enemy
+      // carries at least 1 Brecha.
+      if (hunterHasSkill('cacador:precisao-caca:7')) {
+        hunterSpeedBonus += RITMO_ABATE_SPEED_UNCONDITIONAL_PCT;
+        if (breaches >= 1) hunterSpeedBonus += capped(RITMO_ABATE_SPEED_RATE, attrTotal(ch, 'agi'), RITMO_ABATE_SPEED_CAP);
+      }
+      // Ponto Fraco (precisao-caca:8) — per active Brecha stack, up to 3.
+      if (hunterHasSkill('cacador:precisao-caca:8') && breaches > 0) {
+        hunterAccuracyBonus += breaches * PONTO_FRACO_ACCURACY_PER_BREACH;
+        hunterCritDmgBonus += breaches * PONTO_FRACO_CRIT_DMG_PER_BREACH;
+      }
+      // Foco do Carrasco (precisao-caca:11) — SOR-scaled crit vs a weak,
+      // opened-up target.
+      if (breaches >= 1 && enemyRef.current.hp / enemyRef.current.maxHp < FOCO_CARRASCO_HP_THRESHOLD && hunterHasSkill('cacador:precisao-caca:11')) {
+        hunterCritBonus += capped(FOCO_CARRASCO_CRIT_RATE, attrTotal(ch, 'luk'), FOCO_CARRASCO_CRIT_CAP);
+      }
+    }
+
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct)),
       def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult)),
       mdef: Math.max(0, Math.round(base.mdef * defMult * clerigoMdefBonusMult * knightMdefBonusMult)),
-      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd)),
-      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus,
+      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus)),
+      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
-      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion')),
-      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy'),
-      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct'),
+      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus),
+      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus,
+      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct')),
       tenacityPct: base.tenacityPct + tenacityBonus,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
       // playerAct's damage pipeline.
-      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0)),
+      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus),
     };
   }
 
@@ -1967,6 +2446,11 @@ export function DungeonPanel({
     if (eff.kind === 'lastGuard') return knightLastGuardActive() || knightLastGuardUsedThisEnemyRef.current;
     if (eff.kind === 'counterStance') return knightCounterStanceActive();
     if (eff.kind === 'orderResist' || eff.kind === 'kingsBanner') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    // Caçador: an already-armed trap from THIS ability blocks re-arming it
+    // (spec section 36's "no trap respam") — a DIFFERENT trap ability can
+    // still be picked, and this one frees up again once its trap triggers.
+    if (eff.kind === 'armTrap') return hunterTrapsRef.current.some((t) => t.sourceAbilityId === ab.id);
+    if (eff.kind === 'buffEvasion' || eff.kind === 'huntWithPrey') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
     return false;
   }
 
@@ -2307,6 +2791,49 @@ export function DungeonPanel({
       barbGainFuryDirect(eff.furyGainFlat ?? 0);
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você se alimenta da própria dor, apagando ${Math.round(consumed)} de Dor.`;
+    } else if (eff.kind === 'armTrap') {
+      // Caçador: arms a generic CombatTrap — no attack roll, no immediate
+      // damage. Its riders (direct dmg/Poison/debuff/Rastro) only resolve
+      // once the enemy completes a real action (see hunterTriggerOldestTrap).
+      hunterArmTrap(ab);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: uma armadilha é armada.`;
+    } else if (eff.kind === 'buffEvasion') {
+      // Sumir na Mata / Passo Etéreo / Manto das Sombras — pure evasion
+      // buff via the generic playerModsRef 'evasion' channel; each ability's
+      // own extra Rastro/Brecha side effects are layered on right after.
+      playerModsRef.current.push({ stat: 'evasion', pct: (eff.buffPct ?? 0.15) * supportMult, roundsLeft: eff.buffRounds ?? 2, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      if (ab.id === 'cacador:rastreio:4') {
+        // Sumir na Mata — immediate +2 Rastro, no miss-tracking needed.
+        hunterGainTrail(SUMIR_NA_MATA_TRAIL_GAIN);
+      } else if (ab.id === 'cacador:rastreio:10') {
+        // Passo Etéreo — immediate +1 Rastro; the FIRST enemy miss during
+        // the effect grants +1 Rastro more (and +1 Brecha) via
+        // hunterOnEnemyMiss's hunterPassoEthereoMissPendingRef check.
+        hunterGainTrail(PASSO_ETEREO_TRAIL_GAIN);
+        hunterPassoEthereoMissPendingRef.current = true;
+      } else if (ab.id === 'cacador:rastreio:12') {
+        // Manto das Sombras — resets the per-cast Brecha counter; every
+        // enemy miss during the effect (tracked by this mod's own
+        // sourceAbilityId still being active) grants Rastro (+Brecha, up to
+        // MANTO_SOMBRAS_MAX_BREACHES_PER_CAST) via hunterOnEnemyMiss.
+        hunterMantoSombrasBreachesGrantedRef.current = 0;
+      }
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: sua evasão aumenta.`;
+    } else if (eff.kind === 'huntWithPrey') {
+      // Um com a Caça — the one bespoke simultaneous dmg+speed+evasion buff,
+      // scoped to the CURRENT enemy via normal roundsLeft decay (it never
+      // outlives a 4-tick window, so it can't meaningfully carry to a new
+      // enemy in practice).
+      const rounds = eff.buffRounds ?? 4;
+      playerModsRef.current.push({ stat: 'atk', pct: (eff.buffPct ?? 0.08) * supportMult, roundsLeft: rounds, sourceAbilityId: ab.id });
+      playerModsRef.current.push({ stat: 'speedPct', pct: (eff.speedBuffPct ?? 0.08) * supportMult, roundsLeft: rounds, sourceAbilityId: ab.id });
+      playerModsRef.current.push({ stat: 'evasion', pct: (eff.evasionBuffPct ?? 0.12) * supportMult, roundsLeft: rounds, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você se torna um só com a caça.`;
     }
     return null;
   }
@@ -2420,6 +2947,12 @@ export function DungeonPanel({
     syncPlayerCC();
     enemyCCRef.current = tickCC(enemyCCRef.current);
     syncEnemyCC();
+
+    if (isHunter()) {
+      if (hunterRecentTrapTriggerTicksRef.current > 0) hunterRecentTrapTriggerTicksRef.current -= 1;
+      if (hunterInstintoFugaWindowTicksRef.current > 0) hunterInstintoFugaWindowTicksRef.current -= 1;
+      hunterTickBreaches();
+    }
 
     scheduleEnv();
   }
@@ -2582,6 +3115,25 @@ export function DungeonPanel({
         syncKnightOrders();
         syncKnightCommandSupreme();
       }
+      // Caçador: Rastro/Brechas live ON the enemy instance itself, so they
+      // reset for free the instant spawnEnemy() hands back a fresh one with
+      // no hunterTrail/hunterBreaches fields — only the session-only refs
+      // below (traps, per-enemy counters/windows) need an explicit reset.
+      // Traps never persist between enemies or dungeon runs (spec section 6).
+      if (isHunter()) {
+        hunterTrapsRef.current = [];
+        syncHunterTraps();
+        hunterRecentTrapTriggerTicksRef.current = 0;
+        hunterTrapsTriggeredThisEnemyRef.current = 0;
+        hunterFirstTrapTriggeredThisEnemyRef.current = false;
+        hunterNextShotBonusAvailableRef.current = false;
+        hunterInstintoFugaWindowTicksRef.current = 0;
+        hunterPassoEthereoMissPendingRef.current = false;
+        hunterMantoSombrasBreachesGrantedRef.current = 0;
+        hunterConsecutiveHitCounterRef.current = 0;
+        hunterCritCounterRef.current = 0;
+        hunterMemoriaTrilhaGrantedRef.current = false;
+      }
       // Both clocks restart clean for the new encounter — previously
       // only the player's got a fresh schedulePlayer() call here, so
       // the enemy inherited whatever was left on the OLD enemy's timer
@@ -2715,9 +3267,16 @@ export function DungeonPanel({
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
           const accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus;
-          missed = rollMiss(accuracyForRoll, enemyEvasion);
+          // Disparo Preciso (cacador:precisao-caca:4) — bypasses the evasion
+          // roll entirely (crit still rolls normally downstream).
+          missed = offenseAbility?.effect.guaranteedHit ? false : rollMiss(accuracyForRoll, enemyEvasion);
 
-          if (missed) {
+          if (offenseAbility && offenseAbility.effect.kind === 'multiHit') {
+            // Tiro Duplo — two independent rolls, handled entirely by its
+            // own self-contained resolver; `missed`/`dmg` stay at their
+            // initial false/0 so the shared post-processing below is a no-op.
+            hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll);
+          } else if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
             // A miss breaks Investida's hit-streak mechanics — Pressão
@@ -2727,6 +3286,7 @@ export function DungeonPanel({
               knightPressureStacksRef.current = 0;
               knightConsecutiveHitsRef.current = 0;
             }
+            hunterOnPlayerMiss();
           } else if (offenseAbility) {
             if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined) {
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
@@ -2748,7 +3308,15 @@ export function DungeonPanel({
             const knightAbilityDefPen = eff.defPenPctBase !== undefined
               ? Math.min(eff.defPenPctCap ?? 1, eff.defPenPctBase + (eff.defPenPctPerMomentum ?? 0) * momentumAtActionStart)
               : 0;
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen));
+            // Abate (cacador:precisao-caca:10) — its own flat DEF
+            // penetration rises from 10% to 15% against Presa Marcada (its
+            // BASE penetration is already folded into knightAbilityDefPen
+            // above via the shared defPenPctBase field — this only adds the
+            // extra delta for the marked-prey case).
+            const hunterMarkedDefPenExtra = isHunter() && offenseAbility.id === 'cacador:precisao-caca:10' && hunterMarkedPrey()
+              ? ABATE_DEFPEN_PCT_MARKED - (eff.defPenPctBase ?? 0)
+              : 0;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
@@ -2802,10 +3370,72 @@ export function DungeonPanel({
               if (offenseAbility.id === 'cavaleiro:comando:4') dmgMult = ORDEM_ATAQUE_DMG_MULT_SUPREME;
               else if (offenseAbility.id === 'cavaleiro:comando:9') dmgMult = ORDEM_AVANCAR_DMG_MULT_SUPREME;
             }
-            const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll, eff.kind === 'guaranteedCrit');
+            // Caçador: a handful of dynamic dmgMult overrides special-cased
+            // by ability id — same discipline as Cavaleiro/Bárbaro's own
+            // id-gated overrides above, rather than inventing a dedicated
+            // AbilityEffect field for each one-off.
+            const hunterMarkedForDmg = isHunter() && hunterMarkedPrey();
+            if (isHunter()) {
+              // Golpe de Misericórdia (armadilhas:12) — dmgMult swaps
+              // wholesale vs a poisoned enemy.
+              if (offenseAbility.id === 'cacador:armadilhas:12' && enemyStatusRef.current.some((s) => s.kind === 'poison')) {
+                dmgMult = GOLPE_MISERICORDIA_DMG_MULT_VS_POISON;
+              }
+              // Execução da Presa (armadilhas:13) — base + per-trap-already-
+              // triggered (capped) + marked-prey bonus.
+              else if (offenseAbility.id === 'cacador:armadilhas:13') {
+                dmgMult = (eff.dmgMult ?? 1) + EXECUCAO_PRESA_PER_TRAP_MULT * Math.min(EXECUCAO_PRESA_MAX_TRAPS_COUNTED, hunterTrapsTriggeredThisEnemyRef.current)
+                  + (hunterMarkedForDmg ? EXECUCAO_PRESA_MARKED_BONUS_MULT : 0);
+              }
+              // Caça Perfeita (precisao-caca:13) — dmgMult swaps wholesale
+              // at Rastro máximo.
+              else if (offenseAbility.id === 'cacador:precisao-caca:13' && hunterTrail() === TRAIL_MAX) {
+                dmgMult = CACA_PERFEITA_DMG_MULT_TRAIL_5;
+              }
+              // Controle de Recuo (precisao-caca:1) — DES-scaled dmg bonus,
+              // only for abilities that actually consume Brechas on hit.
+              if (eff.breachConsumeOnHit && hunterHasSkill('cacador:precisao-caca:1')) {
+                dmgMult *= 1 + capped(CONTROLE_RECUO_BREACH_CONSUME_DMG_RATE, attrTotal(chRef.current, 'dex'), CONTROLE_RECUO_BREACH_CONSUME_DMG_CAP);
+              }
+            }
+            // Presa Marcada/Instinto de Fuga/Mão do Armeiro/Janela Perfeita
+            // apply to ANY direct hit (ability or plain attack) — see the
+            // shared hunterActive block further below, same discipline as
+            // Bárbaro/Cavaleiro/Clérigo's own "applies to any direct hit"
+            // bonuses.
+            // Disparo Mortal (precisao-caca:12) — +15% critDmg on this one
+            // guaranteed crit only, vs Presa Marcada.
+            const hunterCritDmgMultForRoll = isHunter() && offenseAbility.id === 'cacador:precisao-caca:12' && hunterMarkedForDmg
+              ? critDmgMultForRoll + DISPARO_MORTAL_CRIT_DMG_BONUS_MARKED
+              : critDmgMultForRoll;
+            const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, hunterCritDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
             abilityTag = ` [${offenseAbility.name}]`;
             castAbility = offenseAbility;
+            // Caçador: generic Brecha gain/consume — only ever on a hit that
+            // actually lands (this whole branch already sits inside "not
+            // missed"), per spec section 15. Janela Perfeita's "+10%
+            // velocidade quando consumir as 3 de uma vez" reads the breach
+            // count BEFORE the consume call below.
+            if (isHunter()) {
+              // Tiro Envenenado (armadilhas:9) — primes the oldest unprimed
+              // trap on hit; with none to prime, falls back to a direct
+              // Poison application instead (never arms a new trap).
+              if (offenseAbility.id === 'cacador:armadilhas:9' && !hunterPrimeOldestUnprimedTrap()) {
+                enemyStatusRef.current.push({ kind: 'poison', roundsLeft: TIRO_ENVENENADO_FALLBACK_POISON_ROUNDS, dmgPerTick: Math.max(1, Math.round(stats.atk * TIRO_ENVENENADO_FALLBACK_POISON_DMG_MULT_PER_TICK)) });
+                syncEnemyStatuses();
+                statusLine = ` ${enemyRef.current.name} foi envenenado!`;
+              }
+              if (eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
+              if (eff.breachConsumeOnHit) {
+                const hadAllThree = hunterBreachStacks() === BREACH_MAX;
+                hunterConsumeBreach(eff.breachConsumeOnHit);
+                if (hadAllThree && eff.breachConsumeOnHit >= BREACH_MAX && hunterHasSkill('cacador:precisao-caca:14')) {
+                  playerModsRef.current.push({ stat: 'speedPct', pct: JANELA_PERFEITA_SPEED_BONUS_PCT, roundsLeft: JANELA_PERFEITA_SPEED_ROUNDS, sourceAbilityId: 'cacador:precisao-caca:14' });
+                  syncPlayerMods();
+                }
+              }
+            }
             if (eff.kind === 'applyStatus' && eff.status) {
               enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * (eff.statusDmgPct ?? 0.4))) });
               syncEnemyStatuses();
@@ -2988,6 +3618,28 @@ export function DungeonPanel({
               // touches Ferida tick damage (barbTickWounds doesn't call this).
               if (barbFrenzyRef.current) dmg = Math.round(dmg * (1 + barbFrenzyDmgBonus()));
             }
+            if (isHunter()) {
+              // Presa Marcada (rastreio:6) — its own +4% direct dmg half
+              // (the +4pp precisão half lives in computePlayerStats), applies
+              // to ANY direct hit (ability or plain attack).
+              if (hunterMarkedPrey() && hunterHasSkill('cacador:rastreio:6')) dmg = Math.round(dmg * (1 + PRESA_MARCADA_DMG_BONUS_PCT));
+              // Janela Perfeita (precisao-caca:14) — +8% while the target
+              // sits at 3 Brechas, read here before any consuming ability
+              // (handled separately above) actually spends them.
+              if (hunterHasSkill('cacador:precisao-caca:14') && hunterBreachStacks() === BREACH_MAX) {
+                dmg = Math.round(dmg * (1 + JANELA_PERFEITA_DMG_BONUS_PCT));
+              }
+              // Instinto de Fuga (rastreio:8) — one-shot +12% dmg window
+              // opened by the enemy's last miss, consumed on the next direct
+              // hit regardless of path.
+              const instintoBonus = hunterInstintoFugaBonusPct();
+              if (instintoBonus > 0) dmg = Math.round(dmg * (1 + instintoBonus));
+              // Mão do Armeiro (armadilhas:3) — DES-scaled next-shot bonus,
+              // consumed the instant a direct hit lands, regardless of path.
+              const maoArmeiroBonus = hunterConsumeNextShotBonusPct();
+              if (maoArmeiroBonus > 0) dmg = Math.round(dmg * (1 + maoArmeiroBonus));
+              hunterOnPlayerDirectHit(crit);
+            }
             // Vulnerabilidade do inimigo — sempre por último, per Section 18.
             if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
             if (barbActive) {
@@ -3162,6 +3814,11 @@ export function DungeonPanel({
     if (enemyMissed) {
       // No log line — the floater's "erro!" already shows this on screen.
       pushFloat('player', 0, false, false, true);
+      // Caçador: a miss is still a "real action" from the presa (Rastro
+      // gain + oldest-trap trigger), PLUS its own miss-specific reactions
+      // (Instinto de Fuga/Passo Etéreo/Manto das Sombras).
+      hunterOnEnemyRealAction();
+      hunterOnEnemyMiss();
       scheduleEnemy();
       return;
     }
@@ -3516,6 +4173,11 @@ export function DungeonPanel({
     }
 
     if (hp <= 0 && !resolvePlayerDeath()) return;
+    // Caçador: the enemy just completed a real (landed) action — Rastro gain
+    // + oldest-trap trigger. Deliberately AFTER the death check above, so a
+    // hit that finishes the Caçador off resolves death first and never lets
+    // a trap still activate against an already-dead run (spec section 8).
+    hunterOnEnemyRealAction();
     scheduleEnemy();
   }
 
@@ -3826,6 +4488,18 @@ export function DungeonPanel({
   const knightHasBastiao = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:bastiao:'));
   const knightHasInvestida = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:investida:'));
   const knightHasComando = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:comando:'));
+  // Caçador redesign UI (lib/hunter.ts) — Armadilhas (traps), Rastro/Presa
+  // Marcada (Rastreio), Brechas (Precisão da Caça) — same per-specialization
+  // gate as Cavaleiro above. Rastro/Brechas live on the enemy instance
+  // itself, so they read straight off `enemy` (the render-side mirror of
+  // enemyRef) instead of a dedicated ref/state pair.
+  const isHunterChar = ch.classId === 'cacador';
+  const hunterHasArmadilhasChar = ch.unlockedSkills.some((s) => s.startsWith('cacador:armadilhas:'));
+  const hunterHasRastreioChar = ch.unlockedSkills.some((s) => s.startsWith('cacador:rastreio:'));
+  const hunterHasPrecisaoChar = ch.unlockedSkills.some((s) => s.startsWith('cacador:precisao-caca:'));
+  const enemyTrail = enemy.hunterTrail ?? 0;
+  const enemyMarkedPrey = enemyTrail >= MARKED_PREY_THRESHOLD;
+  const enemyBreaches = enemy.hunterBreaches?.stacks ?? 0;
   const enemyJudgment = enemy.judgment;
   const judgmentBadge = enemyJudgment && enemyJudgment.stacks > 0 ? (
     <button
@@ -4320,6 +4994,55 @@ export function DungeonPanel({
               <span className="text-sm tracking-wider text-gold">
                 {Array.from({ length: ORDERS_MAX }, (_, i) => (i < knightOrdersState ? '◆' : '◇')).join(' ')}
               </span>
+            </button>
+          )}
+        </div>
+      )}
+      {isHunterChar && phase === 'fight' && (
+        <div className="mt-3">
+          {hunterHasArmadilhasChar && hunterTrapsState.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setOpenMechanicId('cacador:traps')}
+              className="w-full flex justify-between items-baseline text-[10px] text-lime-300/80 uppercase tracking-wide underline decoration-dotted decoration-lime-300/30 underline-offset-2"
+            >
+              <span>Armadilhas</span>
+              <span className="text-sm tracking-wider text-lime-300 normal-case">
+                {hunterTrapsState.map((t, i) => (i === 0 ? (t.primed ? '◆✦' : '◆') : (t.primed ? '◇✦' : '◇'))).join(' ')}
+              </span>
+            </button>
+          )}
+          {hunterHasRastreioChar && (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpenMechanicId('cacador:trail')}
+                className="w-full flex justify-between items-baseline text-[10px] text-emerald-300/80 uppercase tracking-wide mt-1 underline decoration-dotted decoration-emerald-300/30 underline-offset-2"
+              >
+                <span>Rastro</span>
+                <span className="text-sm tracking-wider text-emerald-300">
+                  {Array.from({ length: TRAIL_MAX }, (_, i) => (i < enemyTrail ? '●' : '○')).join(' ')}
+                </span>
+              </button>
+              {enemyMarkedPrey && (
+                <button
+                  type="button"
+                  onClick={() => setOpenMechanicId('cacador:markedPrey')}
+                  className="w-full text-left text-[10px] text-amber-400 uppercase tracking-wide mt-0.5 underline decoration-dotted decoration-amber-400/30 underline-offset-2"
+                >
+                  ⊙ Presa Marcada
+                </button>
+              )}
+            </>
+          )}
+          {hunterHasPrecisaoChar && enemyBreaches > 0 && (
+            <button
+              type="button"
+              onClick={() => setOpenMechanicId('cacador:breaches')}
+              className="w-full flex justify-between items-baseline text-[10px] text-sky-300/80 uppercase tracking-wide mt-1 underline decoration-dotted decoration-sky-300/30 underline-offset-2"
+            >
+              <span>Brechas</span>
+              <span className="text-sm tracking-wider text-sky-300">{`x${enemyBreaches}`}</span>
             </button>
           )}
         </div>

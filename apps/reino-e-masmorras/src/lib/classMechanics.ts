@@ -205,6 +205,68 @@ A ordem de prioridade das habilidades equipadas determina qual comando receberá
 O Cavaleiro não muda essa regra, mas constrói em cima dela: Guarda Elevada e Escudo Disciplinado aumentam a chance de Bloqueio; um Bloqueio bem-sucedido gera Determinação e alimenta Retaliação; e Fortaleza Viva garante um piso temporário de 45% de Bloqueio.`,
     },
   ],
+  cacador: [
+    {
+      id: 'cacador:traps', classId: 'cacador', name: 'Armadilhas', category: 'other',
+      shortDescription: 'Armadilhas de Armadilhas ficam armadas em silêncio e só disparam quando a presa completa uma ação real (acerto ou erro) — nunca no instante em que são preparadas.',
+      fullDescription: `Armadilhas são a mecânica central da especialização Armadilhas.
+
+Uma habilidade de armadilha não causa dano ao ser usada — ela apenas arma um dispositivo, que fica esperando.
+
+O Caçador pode manter até 2 armadilhas armadas ao mesmo tempo (3 com Mestre Armadilheiro).
+
+Assim que o inimigo completa uma ação real — um ataque que acerta ou erra o Caçador, nunca uma ação perdida por atordoamento/sono — a armadilha mais antiga ainda armada dispara automaticamente, no máximo uma vez por ação inimiga.
+
+O dano direto de uma armadilha usa o ATK atual do Caçador no momento em que ela dispara (não no momento em que foi armada), mas nunca rola precisão, crítico, roubo de vida ou gatilhos de acerto direto — apenas a mitigação normal de defesa.
+
+Algumas armadilhas primadas recebem um bônus de dano direto único; outras aplicam Poison, um enfraquecimento no inimigo ou geram Rastro ao disparar.
+
+Armadilhas nunca persistem entre inimigos ou entre tentativas de masmorra.`,
+    },
+    {
+      id: 'cacador:trail', classId: 'cacador', name: 'Rastro', category: 'stack',
+      shortDescription: 'Stacks de 0 a 5 acumulados contra o inimigo atual, ganhos sempre que a presa completa uma ação — nunca quando o Caçador acerta um golpe. Em 3 ou mais, o inimigo se torna Presa Marcada.',
+      fullDescription: `Rastro é a mecânica central da especialização Rastreio.
+
+Um inimigo pode acumular de 0 a 5 Rastro. O stack nunca é consumido — ele só sobe até o teto e é reiniciado quando um novo inimigo aparece.
+
+Rastro é ganho quando o INIMIGO completa uma ação real (acerto ou erro), não quando o Caçador o atinge — a mecânica representa estudar os padrões da presa, não golpeá-la.
+
+Algumas habilidades concedem Rastro adicional diretamente.
+
+Ao atingir 3 ou mais Rastro, o inimigo se torna Presa Marcada — um estado sempre calculado a partir do Rastro atual, nunca armazenado separadamente.
+
+Alcançar o Rastro máximo (5) desbloqueia os bônus mais fortes de talentos que exigem "leitura completa" da presa.`,
+    },
+    {
+      id: 'cacador:markedPrey', classId: 'cacador', name: 'Presa Marcada', category: 'mark',
+      shortDescription: 'Estado automático quando o inimigo atual possui 3 ou mais Rastro. Concede bônus de dano, precisão e dano de armadilhas, e potencializa diversos talentos das três especializações.',
+      fullDescription: `Presa Marcada é o estado que representa ter estudado o suficiente sobre o inimigo atual para explorá-lo.
+
+Ele nunca é ativado manualmente — é sempre derivado automaticamente do Rastro atual (3 ou mais).
+
+Enquanto ativo, Presa Marcada concede diretamente mais dano direto do Caçador, mais precisão e mais dano de armadilhas.
+
+Além disso, diversos talentos de todas as três especializações recebem bônus adicionais especificamente contra Presa Marcada — de penetração de defesa a dano crítico.
+
+Presa Marcada nunca amplia dano contínuo (Poison).`,
+    },
+    {
+      id: 'cacador:breaches', classId: 'cacador', name: 'Brechas', category: 'stack',
+      shortDescription: 'Stacks de 0 a 3 no inimigo, com duração renovada a cada novo ganho. Não causam dano — abrem oportunidades de precisão, crítico e execuções que as consomem.',
+      fullDescription: `Brechas são a mecânica central da especialização Precisão da Caça.
+
+Um inimigo pode possuir de 0 a 3 Brechas, com duração limitada — ganhar uma nova Brecha renova a duração de todas as já presentes.
+
+Brechas não causam nenhum dano por si só. Elas representam uma oportunidade tática: aberturas na guarda do inimigo.
+
+Diversos talentos concedem bônus de precisão e dano crítico proporcionais às Brechas ativas no alvo.
+
+Habilidades de execução consomem Brechas — sempre apenas quando o golpe realmente acerta — para causar dano ampliado ou garantir efeitos como crítico automático.
+
+Brechas nunca funcionam como Feridas do Bárbaro: não causam dano por stack, representam oportunidade tática, não acúmulo de sofrimento.`,
+    },
+  ],
 };
 
 const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
@@ -226,6 +288,13 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute: 'wis', label: 'SAB', role: 'Especializado em Comando', description: 'Amplia o Support Power usado pelo CommandPotency das Ordens.' },
     { attribute: 'dex', label: 'DES', role: 'Terciário', description: 'Melhora precisão, com sinergia em Pressão Constante.' },
     { attribute: 'agi', label: 'AGI', role: 'Terciário', description: 'Melhora a velocidade de ação, com sinergia em Passo de Guerra.' },
+  ],
+  cacador: [
+    { attribute: 'dex', label: 'DES', role: 'Principal', description: 'Aumenta ATK físico, precisão e o dano direto de armadilhas — base de todas as três especializações.' },
+    { attribute: 'agi', label: 'AGI', role: 'Secundário', description: 'Aumenta evasão e velocidade de ação, com sinergia forte em Rastreio (armadilha armada, Presa Marcada, Rastro máximo).' },
+    { attribute: 'wis', label: 'SAB', role: 'Secundário tático', description: 'Amplia o dano de Poison originado de armadilhas — nunca o dano direto do Caçador.' },
+    { attribute: 'luk', label: 'SOR', role: 'Secundário ofensivo', description: 'Aumenta chance e dano crítico, com sinergia em Precisão da Caça (Brechas, Presa Marcada).' },
+    { attribute: 'vit', label: 'VIT', role: 'Terciário', description: 'Aumenta vida máxima e reduz dano direto recebido enquanto uma armadilha está armada ou o Rastro está máximo.' },
   ],
 };
 
@@ -290,6 +359,26 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
       loop: 'Gerar Ordens → utilizar ordens menores → alcançar 3 → escolher qual habilidade receberá Comando Supremo.',
     },
   ],
+  cacador: [
+    {
+      pathId: 'armadilhas',
+      identity: 'DES + Armadilhas.',
+      style: 'Preparação silenciosa — a especialização mais segura e a de menor DPS sustentado, mas com o maior burst quando várias armadilhas disparam em sequência.',
+      loop: 'Armar armadilhas → esperar a presa agir → deixar a mais antiga disparar → primar/reabastecer para o próximo ciclo.',
+    },
+    {
+      pathId: 'rastreio',
+      identity: 'DES + AGI + Rastro/Presa Marcada.',
+      style: 'Paciência tática — cresce em lutas longas, nunca compete com um Arqueiro em burst inicial.',
+      loop: 'Deixar a presa agir → acumular Rastro → alcançar Presa Marcada (e depois Rastro máximo) → converter a leitura completa em dano/evasão/velocidade.',
+    },
+    {
+      pathId: 'precisao-caca',
+      identity: 'DES + SOR + Brechas.',
+      style: 'Dano sustentado mais próximo de um atirador puro — a especialização de maior DPS direto do Caçador, sem preparação de armadilhas.',
+      loop: 'Abrir Brechas com acertos/críticos/erros do inimigo → manter ou consumir as Brechas → executar com bônus de precisão/crítico/penetração.',
+    },
+  ],
 };
 
 const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
@@ -307,6 +396,11 @@ const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
     { pathIds: ['bastiao', 'investida'], name: 'Bastião + Investida', description: 'Cavaleiro de choque — DPS intermediário-alto com alta sobrevivência; o mais consistente das três combinações.' },
     { pathIds: ['bastiao', 'comando'], name: 'Bastião + Comando', description: 'Fortaleza tática — a combinação mais resistente do Cavaleiro, mas também a mais lenta para matar.' },
     { pathIds: ['investida', 'comando'], name: 'Investida + Comando', description: 'Comandante de carga — o maior DPS do Cavaleiro, porém abaixo de um Bárbaro Fúria + Selvageria com equipamento equivalente.' },
+  ],
+  cacador: [
+    { pathIds: ['armadilhas', 'rastreio'], name: 'Armadilhas + Rastreio', description: 'Caçador de emboscada — a combinação mais segura e de menor DPS sustentado, mas a mais resistente das três.' },
+    { pathIds: ['armadilhas', 'precisao-caca'], name: 'Armadilhas + Precisão da Caça', description: 'Explosão preparada — o maior burst do Caçador quando várias armadilhas primadas disparam em sequência, sem sustentação de longo prazo.' },
+    { pathIds: ['rastreio', 'precisao-caca'], name: 'Rastreio + Precisão da Caça', description: 'Atirador puro — o maior DPS direto sustentado do Caçador, o mais próximo de um Arqueiro em jogo prolongado.' },
   ],
 };
 
