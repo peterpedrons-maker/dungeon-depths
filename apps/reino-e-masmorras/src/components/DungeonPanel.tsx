@@ -18,9 +18,32 @@ import {
   FURY_GAIN_CRIT_BONUS, FURY_GAIN_TAKE_DAMAGE, FURY_GAIN_TAKE_DAMAGE_SANGUE_QUENTE, FURY_GAIN_PAIN_TICK,
   FURY_GAIN_WALL_HIT_TAKEN, FURY_GAIN_PREDADOR_SUPREMO, FRENZY_DRAIN_PER_ACTION, FRENZY_DRAIN_PER_ACTION_IMPARAVEL,
   FRENZY_DMG_BONUS, FRENZY_DMG_BONUS_SEM_FREIOS, FRENZY_SPEED_BONUS, FRENZY_DMG_TAKEN_BONUS,
-  WOUND_MAX_STACKS, WOUND_TICK_DURATION, WOUND_DMG_PCT_PER_STACK, WOUND_CRIT_PCT_PER_STACK,
-  PREDADOR_SUPREMO_DMG_BONUS, PAIN_MAX_PCT, PAIN_MAX_PCT_INQUEBRAVEL, PAIN_TICKS, PAIN_TICKS_INQUEBRAVEL,
+  WOUND_MAX_STACKS, WOUND_TICK_DURATION, WOUND_DMG_PCT_PER_STACK, WOUND_DMG_PCT_PER_STACK_MUSCULO_RASGADOR,
+  WOUND_CRIT_PCT_PER_STACK, WOUND_ACCURACY_PCT_PER_STACK,
+  PREDADOR_SUPREMO_DMG_BONUS, PAIN_MAX_PCT, PAIN_TICKS, PAIN_TICKS_INQUEBRAVEL,
   PAIN_PASSIVE_REDIRECT_PCT, PAIN_TICK_REDUCTION_LOW_HP_PCT, PAIN_TICK_REDUCTION_LOW_HP_THRESHOLD,
+  FURY_INTERACTION_THRESHOLD, POSTURA_BASE_REDIRECT_PCT, INQUEBRAVEL_PAIN_CAP_BONUS,
+  FURIA_FORCA_FURIOSA_RATE, FURIA_FORCA_FURIOSA_CAP, FURIA_CORACAO_DE_GUERRA_RATE, FURIA_CORACAO_DE_GUERRA_CAP,
+  FURIA_OLHO_DE_SANGUE_RATE, FURIA_OLHO_DE_SANGUE_CAP, FURIA_PRESSAO_CRESCENTE_PER_25_FURY,
+  FURIA_CORPO_EM_FRENESI_RATE, FURIA_CORPO_EM_FRENESI_CAP, FURIA_GOLPE_DEVASTADOR_RATE, FURIA_GOLPE_DEVASTADOR_CAP,
+  FURIA_FORCA_SEM_LIMITE_MIN_FURY_COST, FURIA_FORCA_SEM_LIMITE_RATE, FURIA_FORCA_SEM_LIMITE_CAP,
+  RESISTENCIA_PELE_ENDURECIDA_RATE, RESISTENCIA_PELE_ENDURECIDA_CAP,
+  RESISTENCIA_ESPIRITO_INDOMAVEL_RATE, RESISTENCIA_ESPIRITO_INDOMAVEL_CAP,
+  RESISTENCIA_CORPO_DURO_HIT_THRESHOLD_PCT, RESISTENCIA_CORPO_DURO_RATE, RESISTENCIA_CORPO_DURO_CAP,
+  RESISTENCIA_CONSTITUICAO_PAIN_THRESHOLD_PCT, RESISTENCIA_CONSTITUICAO_RATE, RESISTENCIA_CONSTITUICAO_CAP,
+  RESISTENCIA_OSSOS_FORTES_RATE, RESISTENCIA_OSSOS_FORTES_CAP,
+  RESISTENCIA_VIGOR_DOLOROSO_RATE, RESISTENCIA_VIGOR_DOLOROSO_CAP,
+  RESISTENCIA_CORACAO_SELVAGEM_HP_THRESHOLD, RESISTENCIA_CORACAO_SELVAGEM_RATE, RESISTENCIA_CORACAO_SELVAGEM_CAP,
+  POSTURA_VIT_RATE, POSTURA_VIT_CAP,
+  FOME_SANGUINARIA_BASE_PCT, FOME_SANGUINARIA_VIT_RATE, FOME_SANGUINARIA_VIT_CAP,
+  MURALHA_BASE_DMG_TAKEN_PCT, MURALHA_VIT_RATE, MURALHA_VIT_CAP,
+  RESISTENCIA_ABSOLUTA_BASE_PCT, RESISTENCIA_ABSOLUTA_VIT_RATE, RESISTENCIA_ABSOLUTA_VIT_CAP,
+  SELVAGERIA_OLHAR_PREDADOR_RATE, SELVAGERIA_OLHAR_PREDADOR_CAP,
+  SELVAGERIA_FORCA_DA_CACA_RATE, SELVAGERIA_FORCA_DA_CACA_CAP,
+  SANGUE_DE_CACA_MIN_WOUNDS, SANGUE_DE_CACA_BASE_HEAL_PCT, SANGUE_DE_CACA_VIT_RATE, SANGUE_DE_CACA_VIT_CAP,
+  SELVAGERIA_MAO_PESADA_RATE, SELVAGERIA_MAO_PESADA_CAP,
+  SELVAGERIA_INSTINTO_MORTAL_RATE, SELVAGERIA_INSTINTO_MORTAL_CAP,
+  capped, attrTotal,
   hasSkill, evalAbilityCondition, PainPacket, AbilityConditionContext,
 } from '../lib/barbarian';
 import { rollAttack, rollAbilityHit } from '../game/combat';
@@ -917,7 +940,10 @@ export function DungeonPanel({
   function barbTickWounds() {
     const w = enemyRef.current.barbarianWounds;
     if (!w || w.stacks <= 0 || enemyRef.current.hp <= 0) return;
-    const dmg = Math.max(1, Math.round(computePlayerStats().atk * WOUND_DMG_PCT_PER_STACK * w.stacks));
+    // Músculo Rasgador (barbaro:selvageria:5) raises the per-stack/tick
+    // coefficient from 3.0% to 3.2% of ATK.
+    const woundPct = barbHasSkill('barbaro:selvageria:5') ? WOUND_DMG_PCT_PER_STACK_MUSCULO_RASGADOR : WOUND_DMG_PCT_PER_STACK;
+    const dmg = Math.max(1, Math.round(computePlayerStats().atk * woundPct * w.stacks));
     const ticksLeft = w.ticksLeft - 1;
     const nextHp = Math.max(0, enemyRef.current.hp - dmg);
     applyEnemyHp(nextHp);
@@ -930,8 +956,14 @@ export function DungeonPanel({
   function barbEffMaxHp(): number { return effectiveMaxHp(chRef.current); }
   function barbPainTotal(): number { return barbPainPacketsRef.current.reduce((s, p) => s + p.amountLeft, 0); }
   function barbPainMaxAllowed(): number {
-    const pct = barbHasSkill('barbaro:resistencia:14') ? PAIN_MAX_PCT_INQUEBRAVEL : PAIN_MAX_PCT;
-    return barbEffMaxHp() * pct;
+    // Additive per the "definitivo" spec: base 35% + Pele Endurecida's own
+    // VIT-scaled bonus (up to +4pp) + Inquebrável's flat +5pp on top of
+    // whatever that already is (up to 44% total) — never a flat swap.
+    const peleBonus = barbHasSkill('barbaro:resistencia:0')
+      ? capped(RESISTENCIA_PELE_ENDURECIDA_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_PELE_ENDURECIDA_CAP)
+      : 0;
+    const inquebravelBonus = barbHasSkill('barbaro:resistencia:14') ? INQUEBRAVEL_PAIN_CAP_BONUS : 0;
+    return barbEffMaxHp() * (PAIN_MAX_PCT + peleBonus + inquebravelBonus);
   }
   // Dor is stored as real HP amounts (not a %), each packet paid off in
   // equal installments over its own fixed tick count — capped so it can
@@ -985,7 +1017,13 @@ export function DungeonPanel({
     barbPainPacketsRef.current = kept;
     syncBarbPain();
     if (totalPay <= 0) return;
-    const dmg = Math.max(1, Math.round(lowHp ? totalPay * (1 - PAIN_TICK_REDUCTION_LOW_HP_PCT) : totalPay));
+    // Ossos Fortes (barbaro:resistencia:5) — reduces Dor's own tick damage
+    // by VIT total, unconditional once unlocked (stacks with Inquebrável's
+    // separate low-HP reduction).
+    const ossosBonus = barbHasSkill('barbaro:resistencia:5')
+      ? capped(RESISTENCIA_OSSOS_FORTES_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_OSSOS_FORTES_CAP)
+      : 0;
+    const dmg = Math.max(1, Math.round(totalPay * (1 - ossosBonus) * (lowHp ? 1 - PAIN_TICK_REDUCTION_LOW_HP_PCT : 1)));
     const nextHp = Math.max(0, chRef.current.hp - dmg);
     updateCh({ ...chRef.current, hp: nextHp });
     pushFloat('player', dmg, false);
@@ -1014,6 +1052,39 @@ export function DungeonPanel({
     const atkPct = getModTotal(playerModsRef.current, 'atk');
     const critAdd = getModTotal(playerModsRef.current, 'critChance');
     const critDmgAdd = getModTotal(playerModsRef.current, 'critDmgMult');
+
+    // Bárbaro "definitivo" attribute interactions that don't depend on the
+    // current enemy's Ferida state (those live in playerAct, where the
+    // enemy context is available) — all VIT/SOR-total-scaled, each with its
+    // own mandatory cap per lib/barbarian.ts.
+    const ch = chRef.current;
+    const barbActive = isBarbaro();
+    if (barbActive) {
+      // Constituição Selvagem (barbaro:resistencia:3) — DEF% bonus while Dor
+      // accumulated is >= 10% of effective max HP.
+      if (barbHasSkill('barbaro:resistencia:3') && barbPainTotal() / barbEffMaxHp() >= RESISTENCIA_CONSTITUICAO_PAIN_THRESHOLD_PCT) {
+        defMult *= 1 + capped(RESISTENCIA_CONSTITUICAO_RATE, attrTotal(ch, 'vit'), RESISTENCIA_CONSTITUICAO_CAP);
+      }
+    }
+    let tenacityBonus = 0;
+    let critDmgBonus = 0;
+    if (barbActive) {
+      // Espírito Indomável (barbaro:resistencia:1) — permanent Tenacidade.
+      if (barbHasSkill('barbaro:resistencia:1')) {
+        tenacityBonus += capped(RESISTENCIA_ESPIRITO_INDOMAVEL_RATE, attrTotal(ch, 'vit'), RESISTENCIA_ESPIRITO_INDOMAVEL_CAP);
+      }
+      if (barbFrenzyRef.current) {
+        // Corpo em Frenesi (barbaro:furia:5) — Tenacidade only during Frenesi.
+        if (barbHasSkill('barbaro:furia:5')) {
+          tenacityBonus += capped(FURIA_CORPO_EM_FRENESI_RATE, attrTotal(ch, 'vit'), FURIA_CORPO_EM_FRENESI_CAP);
+        }
+        // Golpe Devastador (barbaro:furia:7) — critDmg only during Frenesi.
+        if (barbHasSkill('barbaro:furia:7')) {
+          critDmgBonus += capped(FURIA_GOLPE_DEVASTADOR_RATE, attrTotal(ch, 'luk'), FURIA_GOLPE_DEVASTADOR_CAP);
+        }
+      }
+    }
+
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
@@ -1021,13 +1092,14 @@ export function DungeonPanel({
       def: Math.max(0, Math.round(base.def * defMult)),
       mdef: Math.max(0, Math.round(base.mdef * defMult)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd)),
-      critDmgMult: base.critDmgMult + critDmgAdd,
+      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus,
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd)),
       evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion')),
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy'),
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct'),
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct')),
+      tenacityPct: base.tenacityPct + tenacityBonus,
     };
   }
 
@@ -1228,8 +1300,9 @@ export function DungeonPanel({
       // Bárbaro (Muralha Selvagem) — dmgTakenPct debuff via the existing
       // generic StatModStat channel, plus a Fúria-per-hit-taken window
       // tracked separately (no existing channel fits "gain a resource each
-      // time you're hit").
-      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.15, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
+      // time you're hit"). Base -15%, VIT-scaled up to -19% total.
+      const wallPct = MURALHA_BASE_DMG_TAKEN_PCT - capped(MURALHA_VIT_RATE, attrTotal(chRef.current, 'vit'), MURALHA_VIT_CAP);
+      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: wallPct, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
       syncPlayerMods();
       barbWallRoundsLeftRef.current = eff.buffRounds ?? 4;
       barbWallFuryPerHitRef.current = eff.furyPerHitTaken ?? FURY_GAIN_WALL_HIT_TAKEN;
@@ -1246,7 +1319,9 @@ export function DungeonPanel({
       playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
       syncPlayerStatuses();
       syncPlayerCC();
-      const consumed = barbConsumePain(eff.painConsumeMaxPct ?? 0);
+      // Base 12% of max HP in Dor cleared, VIT-scaled up to 16% total.
+      const absolutaPct = RESISTENCIA_ABSOLUTA_BASE_PCT + capped(RESISTENCIA_ABSOLUTA_VIT_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_ABSOLUTA_VIT_CAP);
+      const consumed = barbConsumePain(absolutaPct);
       barbGainFuryDirect(eff.furyGainFlat ?? 0);
       playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 2, sourceAbilityId: ab.id });
       syncPlayerMods();
@@ -1255,7 +1330,9 @@ export function DungeonPanel({
     } else if (eff.kind === 'bloodFeast') {
       // Bárbaro (Fome Sanguinária) — consume Dor + temporary lifesteal
       // (reuses the existing lifestealPct StatModStat channel) + Fúria.
-      const consumed = barbConsumePain(eff.painConsumeMaxPct ?? 0);
+      // Base 8% of max HP in Dor cleared, VIT-scaled up to 11% total.
+      const feastPct = FOME_SANGUINARIA_BASE_PCT + capped(FOME_SANGUINARIA_VIT_RATE, attrTotal(chRef.current, 'vit'), FOME_SANGUINARIA_VIT_CAP);
+      const consumed = barbConsumePain(feastPct);
       playerModsRef.current.push({ stat: 'lifestealPct', pct: eff.buffPct ?? 0.15, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
       syncPlayerMods();
       barbGainFuryDirect(eff.furyGainFlat ?? 0);
@@ -1365,7 +1442,19 @@ export function DungeonPanel({
     if (withXp.level > prevLevel) withXp.hp = effectiveMaxHp(withXp);
     const shape = enemyRef.current.shape;
     const kills = { ...withXp.kills, [shape]: (withXp.kills?.[shape] ?? 0) + 1 };
-    const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
+    let finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
+    // Sangue de Caça (barbaro:selvageria:2) — heal on kill if the enemy
+    // carried 3+ Feridas at the moment it died (read before any state below
+    // clears barbarianWounds), base 1% of max HP, VIT-scaled up to 2%.
+    if (isBarbaro() && barbHasSkill('barbaro:selvageria:2') && (enemyRef.current.barbarianWounds?.stacks ?? 0) >= SANGUE_DE_CACA_MIN_WOUNDS) {
+      const healPct = SANGUE_DE_CACA_BASE_HEAL_PCT + capped(SANGUE_DE_CACA_VIT_RATE, attrTotal(finalChar, 'vit'), SANGUE_DE_CACA_VIT_CAP);
+      const maxHp = effectiveMaxHp(finalChar);
+      const healAmt = Math.round(maxHp * healPct);
+      if (healAmt > 0) {
+        finalChar = { ...finalChar, hp: Math.min(maxHp, finalChar.hp + healAmt) };
+        pushFloat('player', healAmt, false, undefined, undefined, true);
+      }
+    }
     updateCh(finalChar);
     runStatsRef.current.kills += 1;
     runStatsRef.current.goldFromKills += goldGain;
@@ -1486,10 +1575,27 @@ export function DungeonPanel({
           const enemyEvasion = enemyStunned ? 0 : computeEnemyEvasion();
           // Cheiro de Sangue (barbaro:selvageria:8) — +2% crit chance per
           // current Ferida stack against this enemy, capped by the same 0.9
-          // ceiling computePlayerStats() already applies.
+          // ceiling computePlayerStats() already applies. Olho de Sangue
+          // (barbaro:furia:2) — SOR-scaled crit, only with Fúria >= 50.
           const woundCritBonus = barbActive && barbHasSkill('barbaro:selvageria:8') ? woundsAtActionStart * WOUND_CRIT_PCT_PER_STACK : 0;
-          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus);
-          missed = rollMiss(stats.accuracy, enemyEvasion);
+          const olhoDeSangueBonus = barbActive && barbHasSkill('barbaro:furia:2') && barbFuryRef.current >= FURY_INTERACTION_THRESHOLD
+            ? capped(FURIA_OLHO_DE_SANGUE_RATE, attrTotal(chRef.current, 'luk'), FURIA_OLHO_DE_SANGUE_CAP) : 0;
+          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus);
+          // Mão Pesada / Instinto Mortal (barbaro:selvageria:3 / :11) —
+          // SOR-scaled critDmg vs a wounded enemy (any Ferida / exactly max).
+          const maoPesadaBonus = barbActive && barbHasSkill('barbaro:selvageria:3') && woundsAtActionStart >= 1
+            ? capped(SELVAGERIA_MAO_PESADA_RATE, attrTotal(chRef.current, 'luk'), SELVAGERIA_MAO_PESADA_CAP) : 0;
+          const instintoMortalBonus = barbActive && barbHasSkill('barbaro:selvageria:11') && woundsAtActionStart === WOUND_MAX_STACKS
+            ? capped(SELVAGERIA_INSTINTO_MORTAL_RATE, attrTotal(chRef.current, 'luk'), SELVAGERIA_INSTINTO_MORTAL_CAP) : 0;
+          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus;
+          // Olhar Predador (barbaro:selvageria:0) — DES-scaled accuracy vs a
+          // wounded enemy. Olfato Aguçado (barbaro:selvageria:7) — flat
+          // +0.4% accuracy per current Ferida stack (mechanic, not attribute).
+          const olharPredadorBonus = barbActive && barbHasSkill('barbaro:selvageria:0') && woundsAtActionStart >= 1
+            ? capped(SELVAGERIA_OLHAR_PREDADOR_RATE, attrTotal(chRef.current, 'dex'), SELVAGERIA_OLHAR_PREDADOR_CAP) : 0;
+          const olfatoBonus = barbActive && barbHasSkill('barbaro:selvageria:7') ? woundsAtActionStart * WOUND_ACCURACY_PCT_PER_STACK : 0;
+          const accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus;
+          missed = rollMiss(accuracyForRoll, enemyEvasion);
 
           if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
@@ -1518,7 +1624,7 @@ export function DungeonPanel({
               const consumed = barbConsumePain(eff.painConsumeMaxPct);
               dmgMult += eff.painConsumeDmgMultPer2Pct * (consumed / (barbEffMaxHp() * 0.02));
             }
-            const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, stats.critDmgMult, eff.kind === 'guaranteedCrit');
+            const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
             abilityTag = ` [${offenseAbility.name}]`;
             castAbility = offenseAbility;
@@ -1557,27 +1663,50 @@ export function DungeonPanel({
             playerHitMagical = isMagicalClass;
             const power = isMagicalClass ? stats.matk : stats.atk;
             const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
-            const r = rollAttack(power, effDef, critChanceForRoll, stats.critDmgMult);
+            const r = rollAttack(power, effDef, critChanceForRoll, critDmgMultForRoll);
             dmg = r.dmg; crit = r.crit;
           }
 
-          // Conditional passives ("+15% dano contra inimigo envenenado") and
-          // Vulnerability-family debuffs apply on top of whatever hit landed.
+          // Damage-modifier pipeline order per the "definitivo" spec's
+          // Section 18: ATK/DEF/dmgMult/crítico are already baked into `dmg`
+          // by the roll above — from here it's bônus diretos condicionais,
+          // then Frenesi, then (last) the enemy's own vulnerability.
           if (!missed) {
             if (enemyStatusRef.current.some((s) => s.kind === 'poison') && stats.dmgPctVsPoison > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsPoison));
             if (enemyStatusRef.current.some((s) => s.kind === 'burn') && stats.dmgPctVsBurn > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsBurn));
-            if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
             if (barbActive) {
+              // Força Furiosa (barbaro:furia:0) — FOR-scaled, only with Fúria >= 50.
+              if (barbHasSkill('barbaro:furia:0') && barbFuryRef.current >= FURY_INTERACTION_THRESHOLD) {
+                dmg = Math.round(dmg * (1 + capped(FURIA_FORCA_FURIOSA_RATE, attrTotal(chRef.current, 'str'), FURIA_FORCA_FURIOSA_CAP)));
+              }
+              // Pressão Crescente (barbaro:furia:3) — +0.5% per 25 Fúria atual.
+              if (barbHasSkill('barbaro:furia:3')) {
+                dmg = Math.round(dmg * (1 + Math.floor(barbFuryRef.current / 25) * FURIA_PRESSAO_CRESCENTE_PER_25_FURY));
+              }
+              // Força sem Limite (barbaro:furia:11) — FOR-scaled, only for
+              // abilities whose own furyCost is >= 30.
+              if (barbHasSkill('barbaro:furia:11') && castAbility && (castAbility.effect.furyCost ?? 0) >= FURIA_FORCA_SEM_LIMITE_MIN_FURY_COST) {
+                dmg = Math.round(dmg * (1 + capped(FURIA_FORCA_SEM_LIMITE_RATE, attrTotal(chRef.current, 'str'), FURIA_FORCA_SEM_LIMITE_CAP)));
+              }
+              // Força da Caça (barbaro:selvageria:1) — FOR-scaled, only on
+              // the initiating hit of an ability that itself applies a
+              // Ferida (never the renew/consume-only ones).
+              if (barbHasSkill('barbaro:selvageria:1') && castAbility && (castAbility.effect.woundStacksOnHit ?? 0) >= 1) {
+                dmg = Math.round(dmg * (1 + capped(SELVAGERIA_FORCA_DA_CACA_RATE, attrTotal(chRef.current, 'str'), SELVAGERIA_FORCA_DA_CACA_CAP)));
+              }
               // Predador Supremo (barbaro:selvageria:14) — while the enemy
               // sat at exactly 5 Feridas at the START of this action.
               if (woundsAtActionStart === WOUND_MAX_STACKS && barbHasSkill('barbaro:selvageria:14')) {
                 dmg = Math.round(dmg * (1 + PREDADOR_SUPREMO_DMG_BONUS));
                 barbGainNormalFury(FURY_GAIN_PREDADOR_SUPREMO);
               }
-              // Frenesi's own direct-damage multiplier — a final multiplier
-              // on top of everything else, and deliberately never touches
-              // Ferida tick damage (barbTickWounds doesn't call this).
+              // Frenesi's own direct-damage multiplier — deliberately never
+              // touches Ferida tick damage (barbTickWounds doesn't call this).
               if (barbFrenzyRef.current) dmg = Math.round(dmg * (1 + barbFrenzyDmgBonus()));
+            }
+            // Vulnerabilidade do inimigo — sempre por último, per Section 18.
+            if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
+            if (barbActive) {
               // Cortes Abertos (barbaro:selvageria:6) — any direct crit
               // applies 1 Ferida, at most once per action; naturally stacks
               // with an ability's own woundStacksOnHit (e.g. Fúria
@@ -1617,7 +1746,13 @@ export function DungeonPanel({
 
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
           const maxHp = effectiveMaxHp(chRef.current);
-          const healAmount = Math.round(dmg * stats.lifestealPct) + (crit ? Math.round(maxHp * stats.onCritHealPct) : 0);
+          // Vigor Doloroso (barbaro:resistencia:7) — multiplies the HEAL
+          // AMOUNT from lifesteal specifically (not the onCritHealPct part)
+          // while there's Dor accumulated, VIT-scaled.
+          const vigorBonus = isBarbaro() && barbHasSkill('barbaro:resistencia:7') && barbPainTotal() > 0
+            ? capped(RESISTENCIA_VIGOR_DOLOROSO_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_VIGOR_DOLOROSO_CAP)
+            : 0;
+          const healAmount = Math.round(dmg * stats.lifestealPct * (1 + vigorBonus)) + (crit ? Math.round(maxHp * stats.onCritHealPct) : 0);
           if (healAmount > 0) {
             updateCh({ ...chRef.current, hp: Math.min(maxHp, chRef.current.hp + healAmount) });
             pushFloat('player', healAmount, false, undefined, undefined, true);
@@ -1698,9 +1833,26 @@ export function DungeonPanel({
     const { dmg: rawDmg, crit: ecrit } = rollAbilityHit(enemyPower, enemyDefStat, abEffect?.dmgMult ?? 1, 0.06, BASE_CRIT_DMG_MULT);
     // Frenesi's own +10% dano recebido applies at the same point as the
     // dungeon's own dmgTakenMult/dmgTakenPct — before block/shield/Dor, same
-    // as everything else here that scales the incoming hit itself.
-    const frenzyTakenBonus = barbActive && barbFrenzyRef.current ? FRENZY_DMG_TAKEN_BONUS : 0;
+    // as everything else here that scales the incoming hit itself. Coração
+    // de Guerra (barbaro:furia:1) shaves this penalty down by VIT total,
+    // floored at +6% (10% - up to 4pp).
+    const coracaoDeGuerraReduction = barbActive && barbFrenzyRef.current && barbHasSkill('barbaro:furia:1')
+      ? capped(FURIA_CORACAO_DE_GUERRA_RATE, attrTotal(chRef.current, 'vit'), FURIA_CORACAO_DE_GUERRA_CAP)
+      : 0;
+    const frenzyTakenBonus = barbActive && barbFrenzyRef.current ? FRENZY_DMG_TAKEN_BONUS - coracaoDeGuerraReduction : 0;
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus));
+    if (barbActive && edmg > 0) {
+      // Corpo Duro (barbaro:resistencia:2) — a single direct hit exceeding
+      // 15% of effective max HP gets reduced further, VIT-scaled.
+      if (barbHasSkill('barbaro:resistencia:2') && edmg > RESISTENCIA_CORPO_DURO_HIT_THRESHOLD_PCT * barbEffMaxHp()) {
+        edmg = Math.round(edmg * (1 - capped(RESISTENCIA_CORPO_DURO_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_CORPO_DURO_CAP)));
+      }
+      // Coração Selvagem (barbaro:resistencia:11) — direct dmg-taken
+      // reduction while HP < 35%, VIT-scaled (never touches Dor/DOT ticks).
+      if (barbHasSkill('barbaro:resistencia:11') && chRef.current.hp / barbEffMaxHp() < RESISTENCIA_CORACAO_SELVAGEM_HP_THRESHOLD) {
+        edmg = Math.round(edmg * (1 - capped(RESISTENCIA_CORACAO_SELVAGEM_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_CORACAO_SELVAGEM_CAP)));
+      }
+    }
     const blocked = Math.random() < defStats.blockChance;
     if (blocked) edmg = Math.round(edmg * 0.5);
 
@@ -1719,8 +1871,9 @@ export function DungeonPanel({
     // applied to the part of the hit that survives block/shield, per the
     // redesign spec's own worked example.
     if (barbActive && edmg > 0) {
+      // Postura Selvagem — base 30%, VIT-scaled up to 35% total while active.
       const redirectPct = barbPostureRoundsLeftRef.current > 0
-        ? 0.35
+        ? POSTURA_BASE_REDIRECT_PCT + capped(POSTURA_VIT_RATE, attrTotal(chRef.current, 'vit'), POSTURA_VIT_CAP)
         : (barbHasSkill('barbaro:resistencia:8') ? PAIN_PASSIVE_REDIRECT_PCT : 0);
       if (redirectPct > 0) {
         const redirected = Math.round(edmg * redirectPct);
@@ -2127,7 +2280,11 @@ export function DungeonPanel({
   // off state (barbFuryState/barbFrenzyState/barbPainState), never refs, so
   // it re-renders like everything else on screen.
   const isBarbaroChar = ch.classId === 'barbaro';
-  const barbPainCap = effMaxHp * (ch.unlockedSkills.includes('barbaro:resistencia:14') ? PAIN_MAX_PCT_INQUEBRAVEL : PAIN_MAX_PCT);
+  const barbPeleBonus = ch.unlockedSkills.includes('barbaro:resistencia:0')
+    ? capped(RESISTENCIA_PELE_ENDURECIDA_RATE, attrTotal(ch, 'vit'), RESISTENCIA_PELE_ENDURECIDA_CAP)
+    : 0;
+  const barbInquebravelBonus = ch.unlockedSkills.includes('barbaro:resistencia:14') ? INQUEBRAVEL_PAIN_CAP_BONUS : 0;
+  const barbPainCap = effMaxHp * (PAIN_MAX_PCT + barbPeleBonus + barbInquebravelBonus);
   const enemyWounds = enemy.barbarianWounds;
   const woundBadge = enemyWounds && enemyWounds.stacks > 0 ? (
     <span className="inline-flex items-center gap-0.5 text-[10px] text-red-400 ml-1 shrink-0" title={`Feridas x${enemyWounds.stacks}`}>

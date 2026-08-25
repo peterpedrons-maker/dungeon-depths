@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClassId, Character, SkillNode, SkillNodeType, SkillPath } from '../types/game';
+import { ClassId, Character, ScalingRole, SkillNode, SkillNodeType, SkillPath } from '../types/game';
 import { SKILL_TREES, canUnlockNode, unlockedCountInPath, MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { activeAbilityIconStyle, passiveIconStyle } from '../lib/abilityIcons';
 import { Panel } from './Panel';
@@ -19,6 +19,15 @@ interface Props {
 }
 
 const TYPE_LABEL: Record<SkillNodeType, string> = { attribute: 'Atributo', passive: 'Passiva', active: 'Ativa' };
+// Display-only — feeds the "ESCALA:" tooltip block in NodeModal, never read
+// by the combat engine itself (see SkillNode.scaling in types/game.ts).
+const SCALING_ROLE_COLOR: Record<ScalingRole, string> = {
+  principal: 'text-amber-400',
+  secundario: 'text-sky-400',
+  terciario: 'text-emerald-400',
+  mecanica: 'text-purple-400',
+  fixo: 'text-parchment/50',
+};
 
 // Active nodes get their own unique painted icon (per-ability sheet, when
 // the class has one) instead of the generic star; attribute/passive nodes
@@ -268,6 +277,19 @@ function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEqu
         {TYPE_LABEL[node.type]}
       </span>
       <p className="text-parchment/80">{node.desc}</p>
+      {node.scaling && node.scaling.length > 0 && (
+        <div className="mt-1 pt-1 border-t border-panelborder/40">
+          <p className="text-[10px] uppercase tracking-wide text-parchment/50 mb-1">Escala:</p>
+          <ul className="space-y-0.5">
+            {node.scaling.map((s, i) => (
+              <li key={i} className="text-xs text-parchment/70 flex gap-1.5">
+                <span className={`shrink-0 uppercase text-[10px] font-bold ${SCALING_ROLE_COLOR[s.role]}`}>{s.label}</span>
+                <span className="text-parchment/60">{s.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {node.type === 'active' && node.ability && (
         <p className="text-xs text-parchment/50">Recarga: {node.ability.cooldown} rodadas.</p>
       )}
