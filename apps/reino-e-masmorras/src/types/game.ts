@@ -165,7 +165,7 @@ export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
 // ability introduces a miss chance. 'dmgTakenPct' covers both Damage
 // Reduction (negative) and Vulnerability (positive). 'defPenPct' covers
 // Physical/Magic Penetration (ignores a % of the target's defense).
-export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct' | 'tenacityPct';
+export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct' | 'tenacityPct' | 'speedPct';
 
 // Composable conditions (see lib/combatConditions.ts's evalAbilityCondition)
 // — 'all'/'any'/'not' recurse into `conditions` ('not' only ever reads its
@@ -215,7 +215,20 @@ export interface AbilityEffect {
     // window. bigHit/dispel/heal/shield/regen (existing kinds above) cover
     // the rest of the kit via the faith*/consecration*/judgment*/shield*
     // fields below, composed with extraEffects exactly like Bárbaro's kit.
-    | 'cleanseOne' | 'consecrationGuard' | 'divineWall' | 'reviveWindow';
+    | 'cleanseOne' | 'consecrationGuard' | 'divineWall' | 'reviveWindow'
+    // Cavaleiro redesign — see lib/knight.ts. All self-targeted (added to
+    // SELF_ABILITY_KINDS) except orderResist/kingsBanner which are also
+    // self-targeted support kinds: ironWall/livingFortress are mutually
+    // exclusive postures; colossalShield is a barrier that negates the first
+    // stun/sleep it's up for; lastGuard clamps HP at 1 for a window, once per
+    // enemy; counterStance stores a % of direct damage taken to release on
+    // the next landed hit; orderResist is Ordem: Resistir's barrier + damage
+    // reduction bundle; kingsBanner is Estandarte do Rei's multi-buff +
+    // Ordem-refund-window bundle. bigHit (existing kind) covers the rest of
+    // Investida/Comando's offense kit via the momentum*/order*/execute*
+    // fields below, same composition discipline as the other two classes.
+    | 'ironWall' | 'livingFortress' | 'colossalShield' | 'lastGuard' | 'counterStance'
+    | 'orderResist' | 'kingsBanner';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -295,6 +308,62 @@ export interface AbilityEffect {
   reviveWindowRounds?: number; // reviveWindow: duration of the death-prevention window
   reviveHealPct?: number; // reviveWindow: % of BaselineMaxHp restored when the window actually triggers
   reviveHealCapPct?: number; // caps that restore as a % of EffectiveMaxHp
+
+  // ── Cavaleiro redesign fields (lib/knight.ts) — same composition
+  // discipline as the two blocks above. determinationCost/orderCost are
+  // deducted the instant an ability is CHOSEN (same timing as furyCost/
+  // faithCost) — see playerAct.
+  determinationCost?: number;
+  orderCost?: number; // Ordem: Avançar/Resistir/Executar
+  orderGainOnCast?: number; // Ordem: Ataque/Estandarte do Rei — granted at cast time regardless of hit
+  // Investida offense (bigHit) — Momentum generation/consumption/scaling.
+  momentumGainOnHitExtra?: number; // Investida: flat bonus ON TOP of the normal per-hit generation
+  momentumGainOnHitExtraVsHighHp?: number; // Investida: replaces the above when the enemy is still >=90% HP
+  dmgMultVsHighEnemyHp?: number; // Investida: replaces dmgMult when the enemy is still >=90% HP
+  momentumConsumeAll?: boolean; // Carga Implacável/Última Carga: consumes ALL current Momentum at cast time, even on a miss
+  dmgMultPerMomentumConsumed?: number; // extra dmgMult per point of Momentum actually consumed, read before rollAbilityHit
+  abaladoThreshold?: number; // Carga Implacável: apply Abalado if consumed Momentum >= this
+  abaladoDmgTakenPct?: number;
+  abaladoRounds?: number;
+  defPenPctPerMomentum?: number; // Romper Formação: extra defPenPct per CURRENT Momentum point (base is eff's own flat via dmgMult sibling field defPenPctBase)
+  defPenPctBase?: number;
+  defPenPctCap?: number;
+  enemyDefReductionPctBase?: number; // Golpe de Ruptura: enemy DEF debuff base
+  enemyDefReductionPctPerMomentum?: number;
+  enemyDefReductionPctCap?: number;
+  enemyDefReductionRounds?: number;
+  selfDebuffOnCastAlways?: boolean; // Última Carga: the self dmg/speed penalty below applies whether the hit connects or misses
+  selfDebuffDefPct?: number;
+  selfDebuffSpeedPct?: number;
+  selfDebuffRounds?: number;
+  selfBuffAtkPctOnHit?: number; // Ordem: Ataque/Avançar — self ATK buff applied only if the hit actually lands, CommandPotency-scaled
+  selfBuffSpeedPctOnHit?: number; // Ordem: Avançar — self speed buff applied only if the hit actually lands, CommandPotency-scaled
+  selfBuffRoundsOnHit?: number;
+  executeBaseMult?: number; // Ordem: Executar
+  executePerHpBelowPct?: number;
+  executeMultCap?: number;
+  executeSupremeExtraCap?: number; // additional cap headroom unlocked only while resolving the Comando Supremo cast
+  // Bastião postures/actives (ironWall/livingFortress/colossalShield/
+  // lastGuard/counterStance kinds) and Comando's orderResist/kingsBanner.
+  dmgReductionPctBase?: number;
+  dmgReductionPctPerVit?: number;
+  dmgReductionPctCap?: number;
+  postureRounds?: number;
+  minBlockChancePct?: number; // livingFortress
+  shieldPctBase?: number; // colossalShield/lastGuard's post-effect barrier/orderResist
+  shieldPctPerVit?: number;
+  shieldPctCap?: number;
+  shieldRounds?: number;
+  lastGuardRounds?: number;
+  counterStoragePct?: number; // counterStance: % of direct dmg taken while active that's stored
+  counterCapPctBase?: number;
+  counterCapPctPerVit?: number;
+  counterCapPctCap?: number;
+  bonusDmgTakenReductionPct?: number; // orderResist's extra -dano direto recebido buff, layered onto its own barrier
+  atkBuffPctBase?: number; // kingsBanner
+  defBuffPctBase?: number;
+  tenacityBuffPctBase?: number;
+  opensOrderRefundWindow?: boolean; // kingsBanner: the first other Comando ability used during its duration refunds +1 Ordem
 }
 
 export interface AbilityDef {

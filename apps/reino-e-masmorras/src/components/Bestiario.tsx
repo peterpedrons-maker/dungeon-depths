@@ -33,7 +33,7 @@ const CC_LABEL: Record<CrowdControlKind, string> = { stun: 'Atordoamento', sleep
 const STAT_MOD_LABEL: Record<StatModStat, string> = {
   atk: 'Ataque', def: 'Defesa', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
   evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
-  tenacityPct: 'Tenacidade',
+  tenacityPct: 'Tenacidade', speedPct: 'Velocidade',
 };
 
 function roundsText(n: number): string {
