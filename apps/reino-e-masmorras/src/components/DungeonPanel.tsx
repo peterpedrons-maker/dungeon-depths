@@ -1924,13 +1924,21 @@ export function DungeonPanel({
               key={a.id}
               // Player side sits behind/beside the hero (further left than
               // the hero's own X, toward their back — away from the enemy
-              // they're facing) instead of directly above them, so it stays
-              // close and still readable without ever sitting on top of the
-              // floating numbers, which land right on the hero's own column
+              // they're facing) AND a bit above chest height, instead of
+              // dead center — center (top-1/2) turned out to still land in
+              // the same vertical band the player's own floating numbers
+              // cluster in (floatBaseTopPct anchors ~54% up the sprite), so
+              // once 2+ floaters jittered at once (see FLOATER_JITTER —
+              // e.g. a heal and a hit landing the same instant) one of them
+              // could still slide close enough to left-9%/center to clip
+              // the callout. Pushed further left AND up onto the
+              // shoulder/head band, clear of that whole cluster on both
+              // axes, while staying part of the hero's own silhouette
+              // instead of floating disconnected near the frame's top edge
               // (see PLAYER_FLOAT_LEFT_PCT + floatBaseTopPct above). Enemy
               // side has no icon (see below) so it stays up top out of the
               // way of its own floaters instead.
-              className={`absolute flex flex-col items-center gap-1 pointer-events-none -translate-x-1/2 ${playerCast ? 'left-[9%] top-1/2 -translate-y-1/2' : 'left-[68%] top-[13%]'}`}
+              className={`absolute flex flex-col items-center gap-1 pointer-events-none -translate-x-1/2 ${playerCast ? 'left-[4%] top-[34%] -translate-y-1/2' : 'left-[68%] top-[13%]'}`}
               style={{ animation: `abilityCastPop ${ABILITY_CAST_DURATION_MS}ms ease-out forwards` }}
             >
               {/* Only the player's own class has real per-ability icon art
