@@ -131,6 +131,80 @@ Algumas habilidades consomem Julgamentos para golpes mais fortes; outras aprovei
 Atingir 3 e depois 5 stacks pela primeira vez em um inimigo gera Fé.`,
     },
   ],
+  cavaleiro: [
+    {
+      id: 'cavaleiro:determination', classId: 'cavaleiro', name: 'Determinação', category: 'resource',
+      shortDescription: 'Recurso defensivo de Bastião. Bloqueios e algumas defesas geram Determinação, usada para ativar as técnicas mais poderosas do Cavaleiro.',
+      fullDescription: `Determinação representa a capacidade do Cavaleiro de transformar defesa em oportunidade.
+
+Bloqueios bem-sucedidos geram Determinação. Algumas barreiras e posturas defensivas também podem gerar o recurso ao impedir dano.
+
+A Determinação varia de 0 a 100 e é reiniciada contra cada novo inimigo.
+
+Habilidades poderosas de Bastião, como Escudo Colossal, Contra-Ataque Absoluto e Fortaleza Viva, consomem Determinação.
+
+A decisão principal é escolher entre utilizar o recurso para sobreviver imediatamente ou preservá-lo para uma defesa ou contra-ataque mais poderoso.`,
+    },
+    {
+      id: 'cavaleiro:retaliation', classId: 'cavaleiro', name: 'Retaliação', category: 'stack',
+      shortDescription: 'Bloquear repetidamente prepara um contra-ataque baseado na DEF do Cavaleiro.',
+      fullDescription: `Retaliação transforma a defesa do Cavaleiro em poder ofensivo.
+
+Após bloquear três ataques, o Cavaleiro recebe uma carga de Retaliação.
+
+A próxima ação ofensiva direta consome a carga e causa dano físico adicional baseado na DEF atual, com um limite relacionado ao ATK.
+
+Isso permite que uma build defensiva responda ao inimigo sem transformar DEF em uma fonte ilimitada de dano.`,
+    },
+    {
+      id: 'cavaleiro:momentum', classId: 'cavaleiro', name: 'Momentum', category: 'resource',
+      shortDescription: 'Recurso ofensivo de Investida. Ataques consecutivos acumulam Momentum, aumentando dano e velocidade.',
+      fullDescription: `Momentum representa o ritmo ofensivo do Cavaleiro durante uma carga.
+
+Ataques diretos acertados acumulam Momentum. O primeiro golpe contra cada inimigo gera uma quantidade maior.
+
+Quanto mais Momentum possuir, maior a pressão ofensiva do Cavaleiro, aumentando gradualmente dano e velocidade.
+
+Golpes inimigos muito pesados podem remover parte do Momentum.
+
+Algumas habilidades preservam o recurso para aproveitar seus bônus, enquanto outras consomem tudo para realizar uma grande carga.
+
+A escolha central é decidir quando continuar pressionando e quando transformar o Momentum acumulado em um ataque decisivo.`,
+    },
+    {
+      id: 'cavaleiro:orders', classId: 'cavaleiro', name: 'Ordens', category: 'resource',
+      shortDescription: 'Recurso tático de Comando. Algumas habilidades geram Ordens e outras as consomem para produzir efeitos mais poderosos.',
+      fullDescription: `Ordens representam a preparação tática do Cavaleiro.
+
+O Cavaleiro pode armazenar até três Ordens.
+
+Algumas habilidades de Comando geram Ordens, enquanto técnicas como Ordem: Avançar, Ordem: Resistir e Ordem: Executar consomem o recurso.
+
+Como o combate é solo, o Cavaleiro utiliza as Ordens para controlar seu próprio ritmo de batalha.
+
+Ao desbloquear Grande Comandante, alcançar três Ordens prepara um Comando Supremo.`,
+    },
+    {
+      id: 'cavaleiro:commandSupreme', classId: 'cavaleiro', name: 'Comando Supremo', category: 'state',
+      shortDescription: 'Ao alcançar três Ordens, a próxima habilidade de Comando recebe uma versão muito mais poderosa.',
+      fullDescription: `Comando Supremo é o auge da árvore de Comando.
+
+Ao acumular três Ordens, o Cavaleiro prepara automaticamente um Comando Supremo.
+
+A próxima habilidade de Comando utilizada recebe um efeito adicional específico.
+
+As três Ordens são consumidas no início da habilidade.
+
+A ordem de prioridade das habilidades equipadas determina qual comando receberá o benefício, permitindo que o jogador programe sua estratégia através do sistema de autobattle.`,
+    },
+    {
+      id: 'cavaleiro:block', classId: 'cavaleiro', name: 'Bloqueio', category: 'other',
+      shortDescription: 'Bloqueio é uma mecânica universal do jogo, mas o Cavaleiro possui interações exclusivas com ela.',
+      fullDescription: `Bloqueio continua sendo a mesma mecânica universal usada por todas as classes: uma chance (até 60%) de reduzir o dano direto de um golpe em 50%.
+
+O Cavaleiro não muda essa regra, mas constrói em cima dela: Guarda Elevada e Escudo Disciplinado aumentam a chance de Bloqueio; um Bloqueio bem-sucedido gera Determinação e alimenta Retaliação; e Fortaleza Viva garante um piso temporário de 45% de Bloqueio.`,
+    },
+  ],
 };
 
 const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
@@ -145,6 +219,13 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute: 'int', label: 'INT', role: 'Secundário ofensivo', description: 'Aumenta MATK, a base de todo o dano sagrado direto — Provação nunca usa um coeficiente próprio por cima disso.' },
     { attribute: 'vit', label: 'VIT', role: 'Secundário defensivo', description: 'Aumenta vida máxima, DEF, parte da defesa mágica e Tenacidade — também amplia o teto de Graça e o tamanho de barreiras.' },
     { attribute: 'luk', label: 'SOR', role: 'Situacional', description: 'Aumenta chance de crítico, útil em Provação — nunca obrigatório para nenhuma build.' },
+  ],
+  cavaleiro: [
+    { attribute: 'vit', label: 'VIT', role: 'Principal defensivo', description: 'Aumenta HP, DEF, barreiras e resistência — nunca concede Bloqueio diretamente.' },
+    { attribute: 'str', label: 'FOR', role: 'Secundário ofensivo', description: 'Aumenta ATK físico e o teto de Retaliação/Contra-Ataque baseado nele.' },
+    { attribute: 'wis', label: 'SAB', role: 'Especializado em Comando', description: 'Amplia o Support Power usado pelo CommandPotency das Ordens.' },
+    { attribute: 'dex', label: 'DES', role: 'Terciário', description: 'Melhora precisão, com sinergia em Pressão Constante.' },
+    { attribute: 'agi', label: 'AGI', role: 'Terciário', description: 'Melhora a velocidade de ação, com sinergia em Passo de Guerra.' },
   ],
 };
 
@@ -189,6 +270,26 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
       loop: 'Aplicar Julgamento → escalar dano/precisão com os stacks → escolher entre consumir para um golpe forte ou manter para pressão contínua.',
     },
   ],
+  cavaleiro: [
+    {
+      pathId: 'bastiao',
+      identity: 'VIT — Principal. FOR — Secundário para Retaliação.',
+      style: 'Sobrevivência e resposta — a maior sobrevivência do Cavaleiro, sem ser seu maior DPS.',
+      loop: 'Bloquear → gerar Determinação → preparar Retaliação → escolher entre barreira, postura ou contra-ataque.',
+    },
+    {
+      pathId: 'investida',
+      identity: 'FOR — Principal. VIT — Secundário. DES/AGI — Terciários.',
+      style: 'Ofensiva sustentada — a maior árvore de dano do Cavaleiro, mas nunca o maior DPS do jogo.',
+      loop: 'Atacar → ganhar Momentum → aumentar pressão → manter ou consumir → executar.',
+    },
+    {
+      pathId: 'comando',
+      identity: 'VIT — Principal defensivo. SAB — Principal tático. FOR — Secundário ofensivo.',
+      style: 'Planejamento e controle do ritmo — o Cavaleiro dá ordens a si mesmo, já que o combate é solo.',
+      loop: 'Gerar Ordens → utilizar ordens menores → alcançar 3 → escolher qual habilidade receberá Comando Supremo.',
+    },
+  ],
 };
 
 const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
@@ -201,6 +302,11 @@ const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
     { pathIds: ['devocao', 'retidao'], name: 'Devoção + Retidão', description: 'Sacerdote de sobrevivência — a melhor defesa do Clérigo, com o menor dano das três combinações.' },
     { pathIds: ['devocao', 'provacao'], name: 'Devoção + Provação', description: 'Sacerdote de batalha — equilíbrio entre sustento e dano, sem ser o melhor em nenhum dos dois.' },
     { pathIds: ['retidao', 'provacao'], name: 'Retidão + Provação', description: 'Inquisidor protegido — o maior dano possível para o Clérigo, mas o menor sustento das três.' },
+  ],
+  cavaleiro: [
+    { pathIds: ['bastiao', 'investida'], name: 'Bastião + Investida', description: 'Cavaleiro de choque — DPS intermediário-alto com alta sobrevivência; o mais consistente das três combinações.' },
+    { pathIds: ['bastiao', 'comando'], name: 'Bastião + Comando', description: 'Fortaleza tática — a combinação mais resistente do Cavaleiro, mas também a mais lenta para matar.' },
+    { pathIds: ['investida', 'comando'], name: 'Investida + Comando', description: 'Comandante de carga — o maior DPS do Cavaleiro, porém abaixo de um Bárbaro Fúria + Selvageria com equipamento equivalente.' },
   ],
 };
 

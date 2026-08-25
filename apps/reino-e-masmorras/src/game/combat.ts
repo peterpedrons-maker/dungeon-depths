@@ -16,7 +16,7 @@ export interface AttackResult {
 // nothing — some of a hit always gets through, on both sides of the fight.
 const MAX_MITIGATION_PCT = 0.65;
 
-function mitigatedBase(atk: number, def: number): number {
+export function mitigatedBase(atk: number, def: number): number {
   const mitigation = Math.min(def * 0.5, atk * MAX_MITIGATION_PCT);
   return Math.max(1, atk - mitigation);
 }

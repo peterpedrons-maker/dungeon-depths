@@ -73,7 +73,51 @@ import {
   VEU_DA_ALMA_HEAL_EFFICIENCY_PCT, MISERICORDIA_ATIVA_DOT_REDUCTION_TICKS,
   BarrierPortion,
 } from '../lib/clerigo';
-import { rollAttack, rollAbilityHit } from '../game/combat';
+import {
+  DETERMINATION_MAX, DETERMINATION_GEN_BLOCK, DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA,
+  DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION,
+  RETALIATION_MAX_CHARGES, RETALIATION_BLOCKS_PER_CHARGE, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR,
+  MOMENTUM_MAX_BASE, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, MOMENTUM_GAIN_FIRST_HIT_PASSO_DE_GUERRA_BONUS,
+  MOMENTUM_LOSS_HEAVY_HIT_PCT_BASE, MOMENTUM_LOSS_AMOUNT_BASE,
+  SANGUE_DE_COMBATE_THRESHOLD_RATE, SANGUE_DE_COMBATE_THRESHOLD_CAP,
+  INSTINTO_SOBREVIVENCIA_VIT_DIVISOR, INSTINTO_SOBREVIVENCIA_LOSS_REDUCTION_CAP, MOMENTUM_LOSS_MIN,
+  MOMENTUM_BONUS_DMG_PER_20_BASE, MOMENTUM_BONUS_SPEED_PER_20_BASE,
+  MOMENTUM_BONUS_DMG_PER_20_UPGRADED, MOMENTUM_BONUS_SPEED_PER_20_UPGRADED,
+  MOMENTUM_MAX_VETERANO_BONUS, SEDE_DE_VITORIA_HEAL_PCT, SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP,
+  IMPARAVEL_HITS_PER_MAX_BONUS, IMPARAVEL_MAX_BONUS_PER_TRIGGER, IMPARAVEL_MAX_BONUS_CAP_PER_ENEMY,
+  IMPARAVEL_HIGH_MOMENTUM_PCT_THRESHOLD, IMPARAVEL_HIGH_MOMENTUM_DMG_BONUS, IMPARAVEL_HIGH_MOMENTUM_TENACITY_BONUS,
+  PRESSAO_CONSTANTE_PER_STACK, PRESSAO_CONSTANTE_MAX_STACKS,
+  ORDERS_MAX, COMMAND_POTENCY_COEF_BASE, COMMAND_POTENCY_COEF_VOZ_DE_COMANDO, commandPotency,
+  PRESENCA_LIDER_VIT_THRESHOLD, PRESENCA_LIDER_DURATION_BONUS,
+  ESTRATEGIA_DE_CAMPO_SAB_THRESHOLD, ESTRATEGIA_DE_CAMPO_DURATION_BONUS, COMANDO_BUFF_DURATION_BONUS_COMBINED_CAP,
+  DISCIPLINA_MILITAR_TENACITY_RATE, DISCIPLINA_MILITAR_TENACITY_CAP,
+  ESTRATEGIA_CDR_RATE, ESTRATEGIA_CDR_CAP, FORMACAO_DEF_RATE, FORMACAO_DEF_CAP, DISCIPLINA_INABALAVEL_THRESHOLD,
+  ORDEM_ATAQUE_DMG_MULT_SUPREME, ORDEM_ATAQUE_ATK_BUFF_SUPREME,
+  ORDEM_AVANCAR_DMG_MULT_SUPREME, ORDEM_AVANCAR_SPEED_BUFF_SUPREME, ORDEM_AVANCAR_DMG_BUFF_SUPREME,
+  ORDEM_RESISTIR_SHIELD_BASE_SUPREME, ORDEM_RESISTIR_SHIELD_CAP_SUPREME, ORDEM_RESISTIR_DMG_RED_SUPREME,
+  ESTANDARTE_ATK_SUPREME, ESTANDARTE_DEF_SUPREME, ESTANDARTE_TENACITY_SUPREME, ESTANDARTE_DURATION,
+  ARMADURA_ACO_HEAVY_HIT_PCT, ARMADURA_ACO_RATE, ARMADURA_ACO_CAP,
+  PULSO_VITAL_BARRIER_EFF_RATE, PULSO_VITAL_BARRIER_EFF_CAP,
+  PESO_ARMADURA_RATE, PESO_ARMADURA_CAP,
+  ESCUDO_DISCIPLINADO_WINDOW_TICKS, ESCUDO_DISCIPLINADO_REDUCTION_PCT,
+  CORPO_BLINDADO_DEF_TO_MDEF_PCT, CORPO_BLINDADO_CAP_PCT_OF_MDEF,
+  JURAMENTO_RESISTENCIA_THRESHOLD, JURAMENTO_RESISTENCIA_DURATION_CUT,
+  NUCLEO_ACO_HP_THRESHOLD, NUCLEO_ACO_RATE, NUCLEO_ACO_CAP,
+  IRON_WALL_DMG_RED_BASE, IRON_WALL_DMG_RED_CAP, IRON_WALL_DET_GEN_PER_2PCT, IRON_WALL_DET_GEN_CAP_PER_ACTION,
+  LIVING_FORTRESS_DMG_RED_BASE, LIVING_FORTRESS_DMG_RED_CAP, LIVING_FORTRESS_SPEED_PENALTY, LIVING_FORTRESS_MIN_BLOCK_CHANCE,
+  COLOSSAL_SHIELD_CC_NEGATE_CONSUME_PCT,
+  LAST_GUARD_POST_BARRIER_BASE, LAST_GUARD_POST_BARRIER_PER_VIT, LAST_GUARD_POST_BARRIER_CAP,
+  COUNTER_STANCE_CAP_BASE, COUNTER_STANCE_CAP_PER_VIT, COUNTER_STANCE_CAP_CAP, COUNTER_STANCE_STORE_PCT,
+  COUNTER_STANCE_RELEASE_STORED_FACTOR, COUNTER_STANCE_RELEASE_ATK_FACTOR,
+  BASTIAO_INQUEBRAVEL_BARRIER_PCT, BASTIAO_INQUEBRAVEL_DETERMINATION_GAIN,
+  BASTIAO_INQUEBRAVEL_DMG_REDUCTION_PCT, BASTIAO_INQUEBRAVEL_DMG_REDUCTION_ROUNDS,
+  FORCA_DE_IMPACTO_HP_THRESHOLD, FORCA_DE_IMPACTO_RATE, FORCA_DE_IMPACTO_CAP,
+  CAVALGADA_MOMENTUM_THRESHOLD, CAVALGADA_RATE, CAVALGADA_CAP,
+  CARGA_IMPLACAVEL_DMG_CAP, ULTIMA_CARGA_DMG_CAP, INVESTIDA_ABILITY_HIGH_HP_THRESHOLD,
+  ABALADO_DMG_TAKEN_PCT, ABALADO_ROUNDS,
+  isGolpePesado,
+} from '../lib/knight';
+import { rollAttack, rollAbilityHit, mitigatedBase } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
@@ -209,6 +253,8 @@ const SELF_ABILITY_KINDS = [
   'furyBoost', 'furyMaxFrenzy', 'painGuard', 'wallStance', 'lastStand', 'bloodFeast',
   // Clérigo redesign (lib/clerigo.ts) — all consume the whole action, no attack roll.
   'cleanseOne', 'consecrationGuard', 'divineWall', 'reviveWindow',
+  // Cavaleiro redesign (lib/knight.ts) — all consume the whole action, no attack roll.
+  'ironWall', 'livingFortress', 'colossalShield', 'lastGuard', 'counterStance', 'orderResist', 'kingsBanner',
 ];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -247,14 +293,16 @@ const STAT_MOD_ICON: Record<StatModStat, { buff: string; debuff: string }> = {
   dmgTakenPct: { buff: iconDanoRecebidoBuff, debuff: iconDanoRecebidoDebuff },
   defPenPct: { buff: iconDefPenBuff, debuff: iconDefPenBuff },
   lifestealPct: { buff: iconRouboVidaBuff, debuff: iconRouboVidaBuff },
-  // No dedicated Tenacidade icon exists yet — reuses the Defesa glyph, same
-  // "buff-only in practice" treatment as defPenPct/lifestealPct above.
+  // No dedicated Tenacidade/Velocidade icon exists yet — reuses the Defesa/
+  // Ataque glyphs, same "buff-only in practice" treatment as defPenPct/
+  // lifestealPct above.
   tenacityPct: { buff: iconDefBuff, debuff: iconDefDebuff },
+  speedPct: { buff: iconAtkBuff, debuff: iconAtkDebuff },
 };
 const STAT_MOD_LABEL: Record<StatModStat, string> = {
   atk: 'Ataque', def: 'Defesa', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
   evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
-  tenacityPct: 'Tenacidade',
+  tenacityPct: 'Tenacidade', speedPct: 'Velocidade',
 };
 
 interface EffectBadge { key: string; icon: string; title: string; desc: string; }
@@ -671,12 +719,59 @@ export function DungeonPanel({
   const [clerigoGraceState, setClerigoGraceState] = useState(0);
   const [clerigoConsecrationState, setClerigoConsecrationState] = useState(0);
 
+  // ── Cavaleiro redesign — DETERMINAÇÃO/RETALIAÇÃO/MOMENTUM/ORDENS, session-
+  // only, never persisted (see lib/knight.ts). All four reset every new
+  // enemy EXCEPT Momentum's Sede de Vitória carry-over (capped) and Ordens'
+  // Liderança carry-over (capped at 1) — and Bastião Inquebrável's once-per-
+  // ATTEMPT save, which persists across enemies. Inert for every other class.
+  const knightDeterminationRef = useRef(0);
+  const knightBlockCountRef = useRef(0); // toward the next Retaliação charge (every 3)
+  const knightRetaliationChargesRef = useRef(0);
+  const knightIronWallRoundsLeftRef = useRef(0);
+  const knightFortressRoundsLeftRef = useRef(0); // mutually exclusive with Muralha de Ferro
+  const knightNextHitReductionWindowRef = useRef(0); // Escudo Disciplinado — ticks left on the -8% next-hit window
+  const knightLastGuardRoundsLeftRef = useRef(0);
+  const knightLastGuardUsedThisEnemyRef = useRef(false);
+  const knightCounterStanceRoundsLeftRef = useRef(0);
+  const knightCounterStoredDmgRef = useRef(0);
+  const knightColossalShieldRef = useRef<{ remaining: number; ccNegated: boolean } | null>(null);
+  const knightBastiaoInquebravelUsedThisRunRef = useRef(false); // once per ATTEMPT, never resets per enemy
+  const knightBastiaoInquebravelActiveRoundsRef = useRef(0); // -25% dmg taken for a couple rounds after it saves you
+  const knightNegativeCounterBastiaoRef = useRef(0); // Juramento de Resistência
+  const knightJuramentoReductionReadyRef = useRef(false); // set once the counter hits 3 — consumed by the NEXT negative effect
+  const knightNegativeCounterComandoRef = useRef(0); // Disciplina Inabalável
+  const knightNegativeCounterComandoTickRef = useRef(0); // "no máximo uma geração por envTick" — reset to 0 every envTick
+
+  const knightMomentumRef = useRef(0);
+  const knightFirstHitLandedRef = useRef(false); // per-enemy — the first successful hit gains more Momentum
+  const knightMomentumMaxBonusRef = useRef(0); // Cavaleiro Imparável's per-enemy stacking bonus (max +30)
+  const knightConsecutiveHitsRef = useRef(0); // Cavaleiro Imparável's 4-hit trigger
+  const knightPressureStacksRef = useRef(0); // Pressão Constante
+
+  const knightOrdersRef = useRef(0);
+  const knightCommandSupremeRef = useRef(false);
+  const knightBannerRefundWindowRef = useRef(false); // Estandarte do Rei — first other Comando ability during its window refunds +1 Ordem
+  const knightContraordemUsedThisActionRef = useRef(false);
+
+  const [knightDeterminationState, setKnightDeterminationState] = useState(0);
+  const [knightRetaliationState, setKnightRetaliationState] = useState(0);
+  const [knightMomentumState, setKnightMomentumState] = useState(0);
+  const [knightOrdersState, setKnightOrdersState] = useState(0);
+  const [knightCommandSupremeState, setKnightCommandSupremeState] = useState(false);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
   // touch chRef hundreds of times in one synchronous pass) in favor of a
   // single call with the final state once runCatchUp finishes.
-  function updateCh(next: Character) { chRef.current = next; setCh(next); if (!silentRef.current) onLiveUpdate(next); }
+  // Última Guarda (cavaleiro:bastiao:10) floors HP at 1 for its whole
+  // window regardless of which source dropped it there (direct hit, DOT
+  // tick, thorns) — checked centrally here since every HP change on the
+  // player funnels through this one setter.
+  function updateCh(next: Character) {
+    if (next.hp <= 0 && isKnight() && knightLastGuardActive()) next = { ...next, hp: 1 };
+    chRef.current = next; setCh(next); if (!silentRef.current) onLiveUpdate(next);
+  }
   function updateEnemy(next: EnemyInstance) { enemyRef.current = next; setEnemy(next); }
 
   // Every hp-reducing hit on the enemy (the player's own attack, thorns
@@ -914,8 +1009,11 @@ export function DungeonPanel({
       enemyMaxHp: enemyRef.current.maxHp,
       enemyStatuses: enemyStatusRef.current.map((s) => s.kind),
       selfDebuffed: playerStatusRef.current.length > 0 || playerCCRef.current.length > 0 || playerModsRef.current.some((m) => m.pct < 0),
-      resources: { fury: barbFuryRef.current, faith: clerigoFaithRef.current },
-      states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive() },
+      resources: {
+        fury: barbFuryRef.current, faith: clerigoFaithRef.current,
+        determination: knightDeterminationRef.current, momentum: knightMomentumRef.current, orders: knightOrdersRef.current,
+      },
+      states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks() },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
     };
@@ -1361,6 +1459,295 @@ export function DungeonPanel({
     return bonus;
   }
 
+  // ── Cavaleiro redesign helpers (lib/knight.ts has the shared constants) ──
+  function isKnight(): boolean { return chRef.current.classId === 'cavaleiro'; }
+  function knightHasSkill(nodeId: string): boolean { return hasSkill(chRef.current, nodeId); }
+  function knightEffMaxHp(): number { return effectiveMaxHp(chRef.current); }
+  // Each resource is only "ativada" once the Cavaleiro has at least one
+  // talent in its own specialization (per spec sections 7/9/11) — a
+  // Cavaleiro with zero Bastião nodes never generates Determinação, etc.
+  function knightBastiaoActive(): boolean { return isKnight() && chRef.current.unlockedSkills.some((s) => s.startsWith('cavaleiro:bastiao:')); }
+  function knightInvestidaActive(): boolean { return isKnight() && chRef.current.unlockedSkills.some((s) => s.startsWith('cavaleiro:investida:')); }
+  function knightComandoActive(): boolean { return isKnight() && chRef.current.unlockedSkills.some((s) => s.startsWith('cavaleiro:comando:')); }
+  // Pulso Vital (cavaleiro:bastiao:1) — every barrier the Cavaleiro creates
+  // (Escudo Colossal, Ordem: Resistir, Última Guarda's post-barrier,
+  // Bastião Inquebrável's emergency barrier) gets multiplicatively bigger by
+  // VIT, up to +4%. Never applies to Clérigo/generic barriers.
+  function knightBarrierMult(): number {
+    return 1 + capped(PULSO_VITAL_BARRIER_EFF_RATE, attrTotal(chRef.current, 'vit'), PULSO_VITAL_BARRIER_EFF_CAP);
+  }
+  function syncKnightDetermination() { if (!silentRef.current) setKnightDeterminationState(knightDeterminationRef.current); }
+  function syncKnightRetaliation() { if (!silentRef.current) setKnightRetaliationState(knightRetaliationChargesRef.current); }
+  function syncKnightMomentum() { if (!silentRef.current) setKnightMomentumState(knightMomentumRef.current); }
+  function syncKnightOrders() { if (!silentRef.current) setKnightOrdersState(knightOrdersRef.current); }
+  function syncKnightCommandSupreme() { if (!silentRef.current) setKnightCommandSupremeState(knightCommandSupremeRef.current); }
+
+  // ── DETERMINAÇÃO ──
+  function knightGainDetermination(amount: number) {
+    if (!knightBastiaoActive() || amount <= 0) return;
+    knightDeterminationRef.current = Math.min(DETERMINATION_MAX, knightDeterminationRef.current + amount);
+    syncKnightDetermination();
+  }
+  function knightSpendDetermination(amount: number) {
+    if (!isKnight()) return;
+    knightDeterminationRef.current = Math.max(0, knightDeterminationRef.current - amount);
+    syncKnightDetermination();
+  }
+  // Barreiras/Muralha de Ferro convertem dano impedido em Determinação — "a
+  // cada N% do HP máximo efetivo" com um teto por ação inimiga. Fortaleza
+  // Viva bloqueia toda geração de Determinação por bloqueio/barreira enquanto
+  // ativa (ver knightFortressActive), então os call-sites checam isso antes.
+  function knightDeterminationFromPct(amountPrevented: number, pctPerPoint: number, capPoints: number): number {
+    if (amountPrevented <= 0) return 0;
+    return Math.min(capPoints, Math.floor(amountPrevented / knightEffMaxHp() / pctPerPoint));
+  }
+
+  // ── RETALIAÇÃO (cavaleiro:bastiao:6 Reação Defensiva) ──
+  function knightOnBlockSuccess() {
+    if (!isKnight() || !knightHasSkill('cavaleiro:bastiao:6')) return;
+    knightBlockCountRef.current += 1;
+    if (knightBlockCountRef.current >= RETALIATION_BLOCKS_PER_CHARGE) {
+      knightBlockCountRef.current = 0;
+      knightRetaliationChargesRef.current = Math.min(RETALIATION_MAX_CHARGES, knightRetaliationChargesRef.current + 1);
+      syncKnightRetaliation();
+    }
+  }
+  function knightConsumeRetaliationCharge(): boolean {
+    if (knightRetaliationChargesRef.current <= 0) return false;
+    knightRetaliationChargesRef.current -= 1;
+    syncKnightRetaliation();
+    return true;
+  }
+  // min(DEF*0.45, ATK*0.60) — resolvido como dano físico bônus separado, com
+  // mitigação normal do inimigo; nunca crita, nunca dá lifesteal.
+  function knightReactivePower(stats: { def: number; atk: number }): number {
+    return Math.min(stats.def * RETALIATION_DEF_FACTOR, stats.atk * RETALIATION_ATK_FACTOR);
+  }
+
+  // ── JURAMENTO DE RESISTÊNCIA (cavaleiro:bastiao:8) / DISCIPLINA INABALÁVEL (cavaleiro:comando:8) ──
+  // Called once for every negative effect that actually lands on the
+  // Cavaleiro (never for one that was resisted) — DOT, stat debuff,
+  // silence, stun, sleep.
+  function knightOnNegativeEffectApplied() {
+    if (!isKnight()) return;
+    if (knightHasSkill('cavaleiro:bastiao:8')) {
+      knightNegativeCounterBastiaoRef.current += 1;
+      if (knightNegativeCounterBastiaoRef.current >= JURAMENTO_RESISTENCIA_THRESHOLD) {
+        knightNegativeCounterBastiaoRef.current = 0;
+        knightJuramentoReductionReadyRef.current = true;
+      }
+    }
+    if (knightHasSkill('cavaleiro:comando:8')) {
+      knightNegativeCounterComandoRef.current += 1;
+      if (knightNegativeCounterComandoRef.current >= DISCIPLINA_INABALAVEL_THRESHOLD && knightNegativeCounterComandoTickRef.current === 0) {
+        knightNegativeCounterComandoRef.current = 0;
+        knightNegativeCounterComandoTickRef.current = 1;
+        knightGainOrders(1);
+      }
+    }
+  }
+  // Shaves 1 off an about-to-land negative effect's own duration if
+  // Juramento de Resistência's counter is ready — consumed immediately,
+  // never stacks. Called BEFORE knightOnNegativeEffectApplied() registers
+  // this same effect toward the NEXT reduction.
+  function knightJuramentoConsumeReduction(rounds: number): number {
+    if (!isKnight() || !knightJuramentoReductionReadyRef.current) return rounds;
+    knightJuramentoReductionReadyRef.current = false;
+    return Math.max(0, rounds - JURAMENTO_RESISTENCIA_DURATION_CUT);
+  }
+
+  // ── MURALHA DE FERRO / FORTALEZA VIVA (posturas mutuamente exclusivas) ──
+  function knightIronWallActive(): boolean { return knightIronWallRoundsLeftRef.current > 0; }
+  function knightFortressActive(): boolean { return knightFortressRoundsLeftRef.current > 0; }
+  function knightStartIronWall(rounds: number) {
+    knightFortressRoundsLeftRef.current = 0;
+    knightIronWallRoundsLeftRef.current = rounds;
+  }
+  function knightStartFortress(rounds: number) {
+    knightIronWallRoundsLeftRef.current = 0;
+    knightFortressRoundsLeftRef.current = rounds;
+  }
+  function knightIronWallDmgReductionPct(): number {
+    return IRON_WALL_DMG_RED_BASE + capped(0.001, attrTotal(chRef.current, 'vit'), IRON_WALL_DMG_RED_CAP);
+  }
+  function knightFortressDmgReductionPct(): number {
+    return LIVING_FORTRESS_DMG_RED_BASE + capped(0.001, attrTotal(chRef.current, 'vit'), LIVING_FORTRESS_DMG_RED_CAP);
+  }
+
+  // ── ESCUDO DISCIPLINADO (cavaleiro:bastiao:5) ──
+  function knightEscudoDisciplinadoActive(): boolean { return knightNextHitReductionWindowRef.current > 0; }
+
+  // ── ÚLTIMA GUARDA (cavaleiro:bastiao:10) ──
+  function knightLastGuardActive(): boolean { return knightLastGuardRoundsLeftRef.current > 0; }
+
+  // ── ESCUDO COLOSSAL (cavaleiro:bastiao:9) ──
+  function knightCreateColossalShield(amount: number) {
+    knightColossalShieldRef.current = { remaining: amount, ccNegated: false };
+  }
+  // Chamado quando o pool genérico de escudo absorve dano — reduz também a
+  // porção específica do Escudo Colossal, e detecta sua destruição para o
+  // bônus de Retaliação.
+  function knightAbsorbColossalShield(amount: number) {
+    const portion = knightColossalShieldRef.current;
+    if (!portion || amount <= 0) return;
+    const remaining = portion.remaining - amount;
+    if (remaining <= 0.01) {
+      knightColossalShieldRef.current = null;
+      if (knightHasSkill('cavaleiro:bastiao:6')) {
+        knightRetaliationChargesRef.current = Math.min(RETALIATION_MAX_CHARGES, knightRetaliationChargesRef.current + 1);
+        syncKnightRetaliation();
+      }
+    } else {
+      knightColossalShieldRef.current = { ...portion, remaining };
+    }
+  }
+  // Nega o primeiro stun/sleep recebido enquanto a barreira existir,
+  // consumindo 25% do que resta dela. Retorna se negou.
+  function knightColossalShieldNegateCC(): boolean {
+    const portion = knightColossalShieldRef.current;
+    if (!portion || portion.ccNegated) return false;
+    const consumed = portion.remaining * COLOSSAL_SHIELD_CC_NEGATE_CONSUME_PCT;
+    const remaining = portion.remaining - consumed;
+    if (remaining <= 0.01) {
+      knightColossalShieldRef.current = null;
+    } else {
+      knightColossalShieldRef.current = { remaining, ccNegated: true };
+    }
+    playerShieldRef.current = Math.max(0, playerShieldRef.current - consumed);
+    syncShield();
+    return true;
+  }
+
+  // ── CONTRA-ATAQUE ABSOLUTO (cavaleiro:bastiao:12) ──
+  function knightCounterStanceActive(): boolean { return knightCounterStanceRoundsLeftRef.current > 0; }
+  function knightCounterStanceCap(): number {
+    return COUNTER_STANCE_CAP_BASE + capped(COUNTER_STANCE_CAP_PER_VIT, attrTotal(chRef.current, 'vit'), COUNTER_STANCE_CAP_CAP);
+  }
+  function knightStoreCounterDamage(amount: number) {
+    if (!knightCounterStanceActive() || amount <= 0) return;
+    const cap = knightCounterStanceCap() * knightEffMaxHp();
+    knightCounterStoredDmgRef.current = Math.min(cap, knightCounterStoredDmgRef.current + amount * COUNTER_STANCE_STORE_PCT);
+  }
+  // Libera o dano armazenado (se houver) como bônus físico no próximo acerto
+  // direto — substitui o bônus normal de Retaliação (consome uma carga se
+  // existir, mas não soma os dois).
+  function knightReleaseCounterDamage(atk: number): number {
+    const stored = knightCounterStoredDmgRef.current;
+    if (stored <= 0) return 0;
+    knightCounterStoredDmgRef.current = 0;
+    knightConsumeRetaliationCharge();
+    return Math.min(stored * COUNTER_STANCE_RELEASE_STORED_FACTOR, atk * COUNTER_STANCE_RELEASE_ATK_FACTOR);
+  }
+
+  // ── MOMENTUM (Investida) ──
+  function knightMomentumMax(): number {
+    let max = MOMENTUM_MAX_BASE;
+    if (knightHasSkill('cavaleiro:investida:7')) max += MOMENTUM_MAX_VETERANO_BONUS;
+    max += knightMomentumMaxBonusRef.current;
+    return max;
+  }
+  function knightGainMomentum(amount: number) {
+    if (!knightInvestidaActive() || amount <= 0) return;
+    knightMomentumRef.current = Math.min(knightMomentumMax(), knightMomentumRef.current + amount);
+    syncKnightMomentum();
+  }
+  function knightLoseMomentum(amount: number) {
+    if (!isKnight()) return;
+    knightMomentumRef.current = Math.max(0, knightMomentumRef.current - amount);
+    syncKnightMomentum();
+  }
+  // Carga Implacável / Última Carga consomem TODO o Momentum no início do
+  // cast, mesmo se o golpe errar — retorna quanto foi consumido.
+  function knightConsumeAllMomentum(): number {
+    const consumed = knightMomentumRef.current;
+    knightMomentumRef.current = 0;
+    syncKnightMomentum();
+    return consumed;
+  }
+  // Golpe Pesado (perda de Momentum) — base 15% da vida máxima efetiva,
+  // elevado por Sangue de Combate (cavaleiro:investida:2) até 18%.
+  function knightMomentumLossThresholdPct(): number {
+    return MOMENTUM_LOSS_HEAVY_HIT_PCT_BASE + (knightHasSkill('cavaleiro:investida:2')
+      ? capped(SANGUE_DE_COMBATE_THRESHOLD_RATE, attrTotal(chRef.current, 'vit'), SANGUE_DE_COMBATE_THRESHOLD_CAP) : 0);
+  }
+  // Instinto de Sobrevivência (cavaleiro:investida:11) reduz a perda (mínimo 8).
+  function knightMomentumLossAmount(): number {
+    const reduction = knightHasSkill('cavaleiro:investida:11')
+      ? Math.min(INSTINTO_SOBREVIVENCIA_LOSS_REDUCTION_CAP, Math.floor(attrTotal(chRef.current, 'vit') / INSTINTO_SOBREVIVENCIA_VIT_DIVISOR))
+      : 0;
+    return Math.max(MOMENTUM_LOSS_MIN, MOMENTUM_LOSS_AMOUNT_BASE - reduction);
+  }
+  // Bônus base por faixa de 20 de Momentum, melhorado pela passiva Momentum
+  // (cavaleiro:investida:6).
+  function knightMomentumBonusDmgPct(): number {
+    const perTier = knightHasSkill('cavaleiro:investida:6') ? MOMENTUM_BONUS_DMG_PER_20_UPGRADED : MOMENTUM_BONUS_DMG_PER_20_BASE;
+    return Math.floor(knightMomentumRef.current / 20) * perTier;
+  }
+  function knightMomentumBonusSpeedPct(): number {
+    const perTier = knightHasSkill('cavaleiro:investida:6') ? MOMENTUM_BONUS_SPEED_PER_20_UPGRADED : MOMENTUM_BONUS_SPEED_PER_20_BASE;
+    return Math.floor(knightMomentumRef.current / 20) * perTier;
+  }
+
+  // ── ORDENS (Comando) ──
+  function knightGainOrders(amount: number) {
+    if (!knightComandoActive() || amount <= 0) return;
+    knightOrdersRef.current = Math.min(ORDERS_MAX, knightOrdersRef.current + amount);
+    syncKnightOrders();
+    knightMaybeEnterCommandSupreme();
+  }
+  function knightSpendOrders(amount: number) {
+    if (!isKnight()) return;
+    knightOrdersRef.current = Math.max(0, knightOrdersRef.current - amount);
+    syncKnightOrders();
+  }
+  // Grande Comandante (cavaleiro:comando:14) — 3 Ordens entra automaticamente
+  // em Comando Supremo.
+  function knightMaybeEnterCommandSupreme() {
+    if (!isKnight() || !knightHasSkill('cavaleiro:comando:14') || knightCommandSupremeRef.current) return;
+    if (knightOrdersRef.current >= ORDERS_MAX) {
+      knightCommandSupremeRef.current = true;
+      syncKnightCommandSupreme();
+    }
+  }
+  // Consumido no início do cast de UMA habilidade de Comando (mesmo se
+  // errar) — retorna se a versão Suprema deve ser usada.
+  function knightConsumeCommandSupremeForCast(): boolean {
+    if (!knightCommandSupremeRef.current) return false;
+    knightCommandSupremeRef.current = false;
+    syncKnightCommandSupreme();
+    knightSpendOrders(ORDERS_MAX);
+    return true;
+  }
+  // CommandPotency — eficiência RELATIVA de SupportPowerPct sobre o valor
+  // base de um buff de Comando, nunca dobrando o scaling de SAB.
+  function knightCommandPotency(supportPowerPct: number): number {
+    const coef = knightHasSkill('cavaleiro:comando:0') ? COMMAND_POTENCY_COEF_VOZ_DE_COMANDO : COMMAND_POTENCY_COEF_BASE;
+    return commandPotency(supportPowerPct, coef);
+  }
+  // Presença de Líder / Estratégia de Campo — +1 ciclo cada num buff temporário
+  // de Comando, teto combinado de +2.
+  function knightCommandBuffDurationBonus(): number {
+    let bonus = 0;
+    if (knightHasSkill('cavaleiro:comando:1') && attrTotal(chRef.current, 'vit') >= PRESENCA_LIDER_VIT_THRESHOLD) bonus += PRESENCA_LIDER_DURATION_BONUS;
+    if (knightHasSkill('cavaleiro:comando:7') && attrTotal(chRef.current, 'wis') >= ESTRATEGIA_DE_CAMPO_SAB_THRESHOLD) bonus += ESTRATEGIA_DE_CAMPO_DURATION_BONUS;
+    return Math.min(COMANDO_BUFF_DURATION_BONUS_COMBINED_CAP, bonus);
+  }
+  // Contraordem (cavaleiro:comando:11) — consumir uma Ordem reduz 1 ciclo da
+  // recarga das OUTRAS habilidades de Comando, uma vez por ação.
+  function knightContraordemTick(exceptAbilityId: string) {
+    if (!isKnight() || !knightHasSkill('cavaleiro:comando:11') || knightContraordemUsedThisActionRef.current) return;
+    knightContraordemUsedThisActionRef.current = true;
+    for (const id in cooldownsRef.current) {
+      if (id === exceptAbilityId || !id.startsWith('cavaleiro:comando:')) continue;
+      cooldownsRef.current[id] = Math.max(0, cooldownsRef.current[id] - 1);
+    }
+  }
+  // Estratégia (cavaleiro:comando:3) — CDR só para habilidades de Comando.
+  function knightCdrBonusFor(abilityId: string): number {
+    if (!isKnight() || !abilityId.startsWith('cavaleiro:comando:') || !knightHasSkill('cavaleiro:comando:3')) return 0;
+    return capped(ESTRATEGIA_CDR_RATE, attrTotal(chRef.current, 'wis'), ESTRATEGIA_CDR_CAP);
+  }
+
   function equippedAbilities(): AbilityDef[] {
     const c = chRef.current;
     return getEquippedAbilities(c.classId, c.unlockedSkills, c.equippedAbilities);
@@ -1435,21 +1822,60 @@ export function DungeonPanel({
       }
     }
 
+    // Cavaleiro conditional bonuses that don't need the live enemy hit
+    // context — the per-hit ones (Armadura de Aço/Peso da Armadura's extra
+    // mitigation against a big single hit, Núcleo de Aço's low-HP direct-dmg
+    // reduction) live in enemyAct instead, mirroring Bárbaro's Corpo Duro.
+    let knightDefBonusMult = 1, knightMdefBonusMult = 1;
+    const knightActiveStats = isKnight();
+    if (knightActiveStats) {
+      // Disciplina Militar (cavaleiro:comando:2) — unconditional Tenacidade
+      // by VIT total.
+      if (knightHasSkill('cavaleiro:comando:2')) {
+        tenacityBonus += capped(DISCIPLINA_MILITAR_TENACITY_RATE, attrTotal(ch, 'vit'), DISCIPLINA_MILITAR_TENACITY_CAP);
+      }
+      // Cavaleiro Imparável (cavaleiro:investida:14) — while Momentum sits at
+      // >=90% of its CURRENT max, extra Tenacidade (the dmg-bonus half of
+      // this same passive is applied live in playerAct's damage pipeline).
+      if (knightHasSkill('cavaleiro:investida:14') && knightMomentumRef.current >= IMPARAVEL_HIGH_MOMENTUM_PCT_THRESHOLD * knightMomentumMax()) {
+        tenacityBonus += IMPARAVEL_HIGH_MOMENTUM_TENACITY_BONUS;
+      }
+      // Formação (cavaleiro:comando:5) — extra DEF while >=1 Comando buff is
+      // currently active on the player (never stacks with more than one).
+      if (knightHasSkill('cavaleiro:comando:5') && playerModsRef.current.some((m) => m.sourceAbilityId?.startsWith('cavaleiro:comando:'))) {
+        knightDefBonusMult *= 1 + capped(FORMACAO_DEF_RATE, attrTotal(ch, 'vit'), FORMACAO_DEF_CAP);
+      }
+      // Corpo Blindado (cavaleiro:bastiao:8) — a slice of DEF converts into
+      // MDEF, capped as a fraction of MDEF BEFORE the conversion (so it can
+      // never spiral by feeding its own cap).
+      if (knightHasSkill('cavaleiro:bastiao:8')) {
+        const preConversionMdef = base.mdef * defMult;
+        const converted = Math.min(preConversionMdef * CORPO_BLINDADO_CAP_PCT_OF_MDEF, base.def * defMult * CORPO_BLINDADO_DEF_TO_MDEF_PCT);
+        if (preConversionMdef > 0) knightMdefBonusMult *= 1 + converted / preConversionMdef;
+      }
+    }
+
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct)),
-      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * clerigoMdefBonusMult)),
+      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * clerigoMdefBonusMult * knightMdefBonusMult)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus,
-      blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd)),
+      // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
+      // while active, still respecting the global 60% cap.
+      blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
       evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion')),
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy'),
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct'),
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct')),
       tenacityPct: base.tenacityPct + tenacityBonus,
+      // Momentum's own base speed bonus (per-20 tiers, upgraded by the
+      // Momentum passive node) — mirrors the dmg-bonus half applied live in
+      // playerAct's damage pipeline.
+      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0)),
     };
   }
 
@@ -1535,6 +1961,12 @@ export function DungeonPanel({
     if (eff.kind === 'divineWall') return clerigoWallBonusActive();
     if (eff.kind === 'consecrationGuard') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
     if (eff.kind === 'reviveWindow') return clerigoReviveWindowRoundsLeftRef.current > 0 || clerigoResurrectionTriggeredRef.current;
+    if (eff.kind === 'ironWall') return knightIronWallActive();
+    if (eff.kind === 'livingFortress') return knightFortressActive();
+    if (eff.kind === 'colossalShield') return knightColossalShieldRef.current !== null;
+    if (eff.kind === 'lastGuard') return knightLastGuardActive() || knightLastGuardUsedThisEnemyRef.current;
+    if (eff.kind === 'counterStance') return knightCounterStanceActive();
+    if (eff.kind === 'orderResist' || eff.kind === 'kingsBanner') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
     return false;
   }
 
@@ -1724,6 +2156,87 @@ export function DungeonPanel({
       clerigoOpenReviveWindow(eff.reviveWindowRounds ?? 3);
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: por alguns instantes, sua morte será evitada.`;
+    } else if (eff.kind === 'ironWall') {
+      // Muralha de Ferro (cavaleiro:bastiao:4) — postura mutuamente exclusiva
+      // com Fortaleza Viva; a redução de dano e a geração de Determinação
+      // pelo dano impedido são lidas ao vivo em enemyAct via
+      // knightIronWallActive()/knightIronWallDmgReductionPct().
+      knightStartIronWall(eff.postureRounds ?? 3);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você se firma, reduzindo o dano recebido — mas abre mão de críticos.`;
+    } else if (eff.kind === 'livingFortress') {
+      // Fortaleza Viva (cavaleiro:bastiao:13) — custa Determinação; enquanto
+      // ativa, bloqueios/barreiras não geram mais Determinação (ver
+      // knightFortressActive() nos call-sites de geração).
+      if (eff.determinationCost) knightSpendDetermination(eff.determinationCost);
+      knightStartFortress(eff.postureRounds ?? 3);
+      playerModsRef.current.push({ stat: 'speedPct', pct: LIVING_FORTRESS_SPEED_PENALTY, roundsLeft: eff.postureRounds ?? 3, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: sua defesa se torna quase impenetrável, mas você fica mais lento.`;
+    } else if (eff.kind === 'colossalShield') {
+      // Escudo Colossal (cavaleiro:bastiao:9) — cria a barreira genérica E
+      // sua própria porção rastreada (nega CC uma vez, +1 Retaliação se
+      // destruída por dano).
+      if (eff.determinationCost) knightSpendDetermination(eff.determinationCost);
+      const amount = Math.round(Math.min((eff.shieldPctBase ?? 0.10) + (eff.shieldPctCap ?? 0), (eff.shieldPctBase ?? 0.10) + capped(eff.shieldPctPerVit ?? 0, attrTotal(chRef.current, 'vit'), eff.shieldPctCap ?? 0)) * knightEffMaxHp() * knightBarrierMult());
+      playerShieldRef.current += amount;
+      knightCreateColossalShield(amount);
+      syncShield();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: uma barreira colossal surge, capaz de negar o próximo atordoamento ou sono.`;
+    } else if (eff.kind === 'lastGuard') {
+      // Última Guarda (cavaleiro:bastiao:10) — uma vez por inimigo; a barreira
+      // pós-efeito é concedida quando o efeito termina em envTick, não aqui.
+      knightLastGuardRoundsLeftRef.current = eff.lastGuardRounds ?? 2;
+      knightLastGuardUsedThisEnemyRef.current = true;
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: sua vida não pode cair abaixo de 1 por um momento.`;
+    } else if (eff.kind === 'counterStance') {
+      // Contra-Ataque Absoluto (cavaleiro:bastiao:12) — o dano armazenado é
+      // acumulado ao vivo em enemyAct via knightStoreCounterDamage(), e
+      // liberado no próximo acerto direto em playerAct.
+      if (eff.determinationCost) knightSpendDetermination(eff.determinationCost);
+      knightCounterStanceRoundsLeftRef.current = eff.postureRounds ?? 2;
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você se prepara para armazenar e devolver o dano recebido.`;
+    } else if (eff.kind === 'orderResist') {
+      // Ordem: Resistir (cavaleiro:comando:10) — barreira NÃO escalada por
+      // CommandPotency (per spec) + uma redução de dano recebido que É.
+      const isSupreme = ab.id.startsWith('cavaleiro:comando:') && knightConsumeCommandSupremeForCast();
+      if (eff.orderCost) knightSpendOrders(eff.orderCost);
+      const shieldBase = isSupreme ? ORDEM_RESISTIR_SHIELD_BASE_SUPREME : (eff.shieldPctBase ?? 0.09);
+      const shieldCap = isSupreme ? ORDEM_RESISTIR_SHIELD_CAP_SUPREME : (eff.shieldPctCap ?? 0.03);
+      const amount = Math.round((shieldBase + capped(eff.shieldPctPerVit ?? 0.0008, attrTotal(chRef.current, 'vit'), shieldCap)) * knightEffMaxHp() * knightBarrierMult());
+      playerShieldRef.current += amount;
+      syncShield();
+      const potency = knightCommandPotency(supportMult - 1);
+      const reductionPct = (isSupreme ? ORDEM_RESISTIR_DMG_RED_SUPREME : (eff.bonusDmgTakenReductionPct ?? 0.10)) * (1 + potency);
+      const rounds = (eff.buffRounds ?? 3) + knightCommandBuffDurationBonus();
+      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: -reductionPct, roundsLeft: rounds, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      if (knightHasSkill('cavaleiro:comando:11')) knightContraordemTick(ab.id);
+      return `${ab.name}: uma barreira surge e o dano recebido cai.`;
+    } else if (eff.kind === 'kingsBanner') {
+      // Estandarte do Rei (cavaleiro:comando:13) — os três buffs escalam por
+      // CommandPotency; a janela de reembolso é consumida pela PRÓXIMA outra
+      // habilidade de Comando usada (ver playerAct/resolveSelfAbility's
+      // shared post-resolution check).
+      const isSupreme = knightConsumeCommandSupremeForCast();
+      const potency = knightCommandPotency(supportMult - 1);
+      const rounds = (eff.buffRounds ?? ESTANDARTE_DURATION) + knightCommandBuffDurationBonus();
+      const atkPct = (isSupreme ? ESTANDARTE_ATK_SUPREME : (eff.atkBuffPctBase ?? 0.10)) * (1 + potency);
+      const defPct = (isSupreme ? ESTANDARTE_DEF_SUPREME : (eff.defBuffPctBase ?? 0.12)) * (1 + potency);
+      const tenacityPct = (isSupreme ? ESTANDARTE_TENACITY_SUPREME : (eff.tenacityBuffPctBase ?? 0.10)) * (1 + potency);
+      playerModsRef.current.push({ stat: 'atk', pct: atkPct, roundsLeft: rounds, sourceAbilityId: ab.id });
+      playerModsRef.current.push({ stat: 'def', pct: defPct, roundsLeft: rounds, sourceAbilityId: ab.id });
+      playerModsRef.current.push({ stat: 'tenacityPct', pct: tenacityPct, roundsLeft: rounds, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      if (!isSupreme && eff.orderGainOnCast) knightGainOrders(eff.orderGainOnCast);
+      if (isSupreme && knightHasSkill('cavaleiro:comando:11')) knightContraordemTick(ab.id);
+      if (eff.opensOrderRefundWindow) knightBannerRefundWindowRef.current = true;
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: o estandarte se ergue, fortalecendo você.`;
     } else if (eff.kind === 'lifestealBuff') {
       playerModsRef.current.push({ stat: 'lifestealPct', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
       syncPlayerMods();
@@ -1867,6 +2380,26 @@ export function DungeonPanel({
         clerigoJuizoFinalActiveRef.current = false;
       }
     }
+    if (isKnight()) {
+      // Disciplina Inabalável's own "no máximo uma geração por envTick" gate.
+      knightNegativeCounterComandoTickRef.current = 0;
+      if (knightIronWallRoundsLeftRef.current > 0) knightIronWallRoundsLeftRef.current -= 1;
+      if (knightFortressRoundsLeftRef.current > 0) knightFortressRoundsLeftRef.current -= 1;
+      if (knightNextHitReductionWindowRef.current > 0) knightNextHitReductionWindowRef.current -= 1;
+      if (knightCounterStanceRoundsLeftRef.current > 0) knightCounterStanceRoundsLeftRef.current -= 1;
+      if (knightBastiaoInquebravelActiveRoundsRef.current > 0) knightBastiaoInquebravelActiveRoundsRef.current -= 1;
+      // Última Guarda — the barrier is only granted once the window ends
+      // naturally AND the player is still alive (updateCh's floor already
+      // guaranteed hp stayed at 1+ throughout).
+      if (knightLastGuardRoundsLeftRef.current > 0) {
+        knightLastGuardRoundsLeftRef.current -= 1;
+        if (knightLastGuardRoundsLeftRef.current === 0 && chRef.current.hp > 0) {
+          const pct = LAST_GUARD_POST_BARRIER_BASE + capped(LAST_GUARD_POST_BARRIER_PER_VIT, attrTotal(chRef.current, 'vit'), LAST_GUARD_POST_BARRIER_CAP);
+          playerShieldRef.current += Math.round(pct * knightEffMaxHp() * knightBarrierMult());
+          syncShield();
+        }
+      }
+    }
 
     if (playerRegenRef.current.length > 0) {
       const maxHp = effectiveMaxHp(chRef.current);
@@ -1924,6 +2457,16 @@ export function DungeonPanel({
       const healPct = SANGUE_DE_CACA_BASE_HEAL_PCT + capped(SANGUE_DE_CACA_VIT_RATE, attrTotal(finalChar, 'vit'), SANGUE_DE_CACA_VIT_CAP);
       const maxHp = effectiveMaxHp(finalChar);
       const healAmt = Math.round(maxHp * healPct);
+      if (healAmt > 0) {
+        finalChar = { ...finalChar, hp: Math.min(maxHp, finalChar.hp + healAmt) };
+        pushFloat('player', healAmt, false, undefined, undefined, true);
+      }
+    }
+    // Sede de Vitória (cavaleiro:investida:8) — flat heal on every kill,
+    // VIT-uninvolved (fixed % of effective max HP).
+    if (isKnight() && knightHasSkill('cavaleiro:investida:8')) {
+      const maxHp = effectiveMaxHp(finalChar);
+      const healAmt = Math.round(maxHp * SEDE_DE_VITORIA_HEAL_PCT);
       if (healAmt > 0) {
         finalChar = { ...finalChar, hp: Math.min(maxHp, finalChar.hp + healAmt) };
         pushFloat('player', healAmt, false, undefined, undefined, true);
@@ -2007,6 +2550,38 @@ export function DungeonPanel({
         syncClerigoGrace();
         syncClerigoConsecration();
       }
+      // Cavaleiro: everything resets per enemy EXCEPT Sede de Vitória's
+      // capped Momentum carry and Liderança's capped Ordens carry, and
+      // EXCEPT Bastião Inquebrável's once-per-ATTEMPT save (untouched here).
+      if (isKnight()) {
+        knightDeterminationRef.current = 0;
+        knightBlockCountRef.current = 0;
+        knightRetaliationChargesRef.current = 0;
+        knightIronWallRoundsLeftRef.current = 0;
+        knightFortressRoundsLeftRef.current = 0;
+        knightNextHitReductionWindowRef.current = 0;
+        knightLastGuardRoundsLeftRef.current = 0;
+        knightLastGuardUsedThisEnemyRef.current = false;
+        knightCounterStanceRoundsLeftRef.current = 0;
+        knightCounterStoredDmgRef.current = 0;
+        knightColossalShieldRef.current = null;
+        knightBastiaoInquebravelActiveRoundsRef.current = 0;
+        const carriedMomentum = knightHasSkill('cavaleiro:investida:8') ? Math.min(SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP, knightMomentumRef.current) : 0;
+        knightMomentumRef.current = carriedMomentum;
+        knightFirstHitLandedRef.current = false;
+        knightMomentumMaxBonusRef.current = 0;
+        knightConsecutiveHitsRef.current = 0;
+        knightPressureStacksRef.current = 0;
+        const carriedOrders = knightHasSkill('cavaleiro:comando:6') && knightOrdersRef.current >= 1 ? 1 : 0;
+        knightOrdersRef.current = carriedOrders;
+        knightCommandSupremeRef.current = false;
+        knightBannerRefundWindowRef.current = false;
+        syncKnightDetermination();
+        syncKnightRetaliation();
+        syncKnightMomentum();
+        syncKnightOrders();
+        syncKnightCommandSupreme();
+      }
       // Both clocks restart clean for the new encounter — previously
       // only the player's got a fresh schedulePlayer() call here, so
       // the enemy inherited whatever was left on the OLD enemy's timer
@@ -2040,6 +2615,13 @@ export function DungeonPanel({
     // the START of the action, not after a consuming ability (Sentença
     // Final/Apocalipse Sagrado) clears it mid-resolution.
     const judgmentAtActionStart = clerigoActive ? clerigoEnemyJudgmentStacks() : 0;
+    const knightActive = isKnight();
+    // Same discipline again — Cavalgada/Romper Formação/Golpe de Ruptura/
+    // Ira Consumidora-equivalent all read Momentum as it stood at the START
+    // of the action, before Carga Implacável/Última Carga's own consume-all
+    // clears it mid-resolution, and before this hit's own normal generation
+    // (first-hit/next-hit) lands.
+    const momentumAtActionStart = knightActive ? knightMomentumRef.current : 0;
 
     {
       const stats = computePlayerStats();
@@ -2061,6 +2643,7 @@ export function DungeonPanel({
           if (line) pushLog(line);
         } else {
           const offenseAbility = chosen;
+          let knightSupremeThisCast = false;
           // Bárbaro: a Fúria-costed ability spends its cost and locks its
           // cooldown the instant it's CHOSEN — before the hit roll — so
           // missing still pays the cost and starts the cooldown (redesign
@@ -2077,6 +2660,29 @@ export function DungeonPanel({
           if (offenseAbility && offenseAbility.effect.faithCost !== undefined) {
             clerigoSpendFaith(offenseAbility.effect.faithCost);
             cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
+          }
+          // Cavaleiro: same timing again — any Comando offense ability first
+          // checks/consumes Comando Supremo (even Ordem: Ataque, which has no
+          // orderCost of its own), then pays its own Ordem cost if any
+          // (Ordem: Avançar/Executar), all before the hit roll and never
+          // refunded on a miss.
+          if (offenseAbility && offenseAbility.id.startsWith('cavaleiro:comando:')) {
+            knightSupremeThisCast = knightConsumeCommandSupremeForCast();
+            const paidOrderCost = offenseAbility.effect.orderCost !== undefined && offenseAbility.effect.orderCost > 0;
+            if (paidOrderCost) knightSpendOrders(offenseAbility.effect.orderCost!);
+            // Ordem: Ataque's own "gera +1 Ordem mesmo se errar" — same
+            // always-pays-at-cast-time timing as the cost above.
+            if (!knightSupremeThisCast && offenseAbility.effect.orderGainOnCast) knightGainOrders(offenseAbility.effect.orderGainOnCast);
+            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + knightCdrBonusFor(offenseAbility.id));
+            if ((knightSupremeThisCast || paidOrderCost) && knightHasSkill('cavaleiro:comando:11')) knightContraordemTick(offenseAbility.id);
+          }
+          // Última Carga (cavaleiro:investida:13) — the self dmg/speed
+          // penalty always applies "tenha acertado ou errado", same as
+          // Fúria/Fé/Ordens cost timing above (outside the hit/miss branch).
+          if (offenseAbility && offenseAbility.effect.selfDebuffOnCastAlways) {
+            playerModsRef.current.push({ stat: 'def', pct: offenseAbility.effect.selfDebuffDefPct ?? 0, roundsLeft: offenseAbility.effect.selfDebuffRounds ?? 3, sourceAbilityId: offenseAbility.id });
+            playerModsRef.current.push({ stat: 'speedPct', pct: offenseAbility.effect.selfDebuffSpeedPct ?? 0, roundsLeft: offenseAbility.effect.selfDebuffRounds ?? 3, sourceAbilityId: offenseAbility.id });
+            syncPlayerMods();
           }
           const enemyEvasion = enemyStunned ? 0 : computeEnemyEvasion();
           // Cheiro de Sangue (barbaro:selvageria:8) — +2% crit chance per
@@ -2114,6 +2720,13 @@ export function DungeonPanel({
           if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
+            // A miss breaks Investida's hit-streak mechanics — Pressão
+            // Constante's stacks and Cavaleiro Imparável's consecutive-hit
+            // counter both require successive LANDED hits.
+            if (knightActive) {
+              knightPressureStacksRef.current = 0;
+              knightConsecutiveHitsRef.current = 0;
+            }
           } else if (offenseAbility) {
             if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined) {
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
@@ -2128,7 +2741,14 @@ export function DungeonPanel({
             const dmgType = eff.dmgType ?? (MAGICAL_CLASSES.includes(chRef.current.classId) ? 'magical' : 'physical');
             playerHitMagical = dmgType === 'magical';
             const power = dmgType === 'magical' ? stats.matk : stats.atk;
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+            // Romper Formação (cavaleiro:investida:9) — its own DEF
+            // penetration on top of the generic stats.defPenPct, scaled by
+            // the CURRENT Momentum (read before this same hit's own
+            // generation lands).
+            const knightAbilityDefPen = eff.defPenPctBase !== undefined
+              ? Math.min(eff.defPenPctCap ?? 1, eff.defPenPctBase + (eff.defPenPctPerMomentum ?? 0) * momentumAtActionStart)
+              : 0;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
@@ -2148,6 +2768,39 @@ export function DungeonPanel({
               ? Math.min(eff.judgmentConsumeMax, judgmentAtActionStart) : 0;
             if (eff.dmgMultPerJudgmentStack) {
               dmgMult += eff.dmgMultPerJudgmentStack * (eff.judgmentReadOnly ? judgmentAtActionStart : judgmentStacksToConsume);
+            }
+            // Cavaleiro: Investida's dmgMult swaps entirely against a
+            // near-untouched enemy; Carga Implacável/Última Carga consume
+            // ALL current Momentum at cast time (even on a miss — but the
+            // consumption itself already happened up in the cost block
+            // above for orderCost-bearing abilities; momentumConsumeAll
+            // abilities have no resource-cost timing precedent to reuse
+            // since Momentum isn't spent by choice like Fúria/Fé/Ordens, so
+            // it's consumed here, right before the roll, matching the
+            // "consumido mesmo se errar" requirement by sitting outside any
+            // hit/miss branch); Ordem: Executar recomputes its own dmgMult
+            // from the enemy's current HP.
+            const knightHighEnemyHp = enemyRef.current.hp / enemyRef.current.maxHp >= INVESTIDA_ABILITY_HIGH_HP_THRESHOLD;
+            if (eff.dmgMultVsHighEnemyHp !== undefined && knightHighEnemyHp) dmgMult = eff.dmgMultVsHighEnemyHp;
+            let knightMomentumConsumed = 0;
+            if (eff.momentumConsumeAll) {
+              knightMomentumConsumed = knightConsumeAllMomentum();
+              if (eff.dmgMultPerMomentumConsumed) {
+                dmgMult = (eff.dmgMult ?? 1) + eff.dmgMultPerMomentumConsumed * knightMomentumConsumed;
+                if (offenseAbility.id === 'cavaleiro:investida:10') dmgMult = Math.min(CARGA_IMPLACAVEL_DMG_CAP, dmgMult);
+                else if (offenseAbility.id === 'cavaleiro:investida:13') dmgMult = Math.min(ULTIMA_CARGA_DMG_CAP, dmgMult);
+              }
+            }
+            if (eff.executeBaseMult !== undefined) {
+              const hpBelowPct = Math.max(0, (0.30 - enemyRef.current.hp / enemyRef.current.maxHp) * 100);
+              const cap = (eff.executeMultCap ?? 0) + (knightSupremeThisCast ? (eff.executeSupremeExtraCap ?? 0) : 0);
+              dmgMult = eff.executeBaseMult + Math.min(cap, (eff.executePerHpBelowPct ?? 0) * hpBelowPct);
+            } else if (knightSupremeThisCast) {
+              // Ordem: Ataque/Avançar's Comando Supremo version simply
+              // replaces dmgMult wholesale (their own literal Supreme
+              // multiplier), no additive scaling involved.
+              if (offenseAbility.id === 'cavaleiro:comando:4') dmgMult = ORDEM_ATAQUE_DMG_MULT_SUPREME;
+              else if (offenseAbility.id === 'cavaleiro:comando:9') dmgMult = ORDEM_AVANCAR_DMG_MULT_SUPREME;
             }
             const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
@@ -2208,6 +2861,41 @@ export function DungeonPanel({
             }
             if (eff.judgmentDurationCutOnHit) clerigoReduceJudgmentDuration(eff.judgmentDurationCutOnHit);
             if (eff.extendConsecrationOnHit && clerigoConsecrationActive()) clerigoExtendConsecration(eff.extendConsecrationOnHit);
+            // Cavaleiro: Investida's own extra Momentum generation (on top of
+            // the normal per-hit gain, applied later below); Golpe de
+            // Ruptura's enemy DEF debuff; Carga Implacável's Abalado;
+            // Ordem: Ataque/Avançar's on-hit self buffs (Comando Supremo
+            // swaps in the literal Supreme values).
+            if (eff.momentumGainOnHitExtra !== undefined) {
+              knightGainMomentum(knightHighEnemyHp && eff.momentumGainOnHitExtraVsHighHp !== undefined ? eff.momentumGainOnHitExtraVsHighHp : eff.momentumGainOnHitExtra);
+            }
+            if (eff.enemyDefReductionPctBase !== undefined) {
+              const pct = -Math.min(eff.enemyDefReductionPctCap ?? 1, eff.enemyDefReductionPctBase + (eff.enemyDefReductionPctPerMomentum ?? 0) * momentumAtActionStart);
+              enemyModsRef.current.push({ stat: 'def', pct, roundsLeft: eff.enemyDefReductionRounds ?? 3 });
+              syncEnemyMods();
+            }
+            if (eff.abaladoThreshold !== undefined && knightMomentumConsumed >= eff.abaladoThreshold) {
+              enemyModsRef.current.push({ stat: 'dmgTakenPct', pct: ABALADO_DMG_TAKEN_PCT, roundsLeft: ABALADO_ROUNDS });
+              syncEnemyMods();
+            }
+            if (eff.selfBuffAtkPctOnHit !== undefined) {
+              const potency = knightCommandPotency(stats.supportPowerPct);
+              let atkPct = eff.selfBuffAtkPctOnHit * (1 + potency);
+              if (knightSupremeThisCast) {
+                if (offenseAbility.id === 'cavaleiro:comando:4') atkPct = ORDEM_ATAQUE_ATK_BUFF_SUPREME * (1 + potency);
+                else if (offenseAbility.id === 'cavaleiro:comando:9') atkPct = ORDEM_AVANCAR_DMG_BUFF_SUPREME * (1 + potency);
+              }
+              const rounds = (eff.selfBuffRoundsOnHit ?? 3) + knightCommandBuffDurationBonus();
+              playerModsRef.current.push({ stat: 'atk', pct: atkPct, roundsLeft: rounds, sourceAbilityId: offenseAbility.id });
+              syncPlayerMods();
+            }
+            if (eff.selfBuffSpeedPctOnHit !== undefined) {
+              const potency = knightCommandPotency(stats.supportPowerPct);
+              const speedPct = (knightSupremeThisCast ? ORDEM_AVANCAR_SPEED_BUFF_SUPREME : eff.selfBuffSpeedPctOnHit) * (1 + potency);
+              const rounds = (eff.selfBuffRoundsOnHit ?? 3) + knightCommandBuffDurationBonus();
+              playerModsRef.current.push({ stat: 'speedPct', pct: speedPct, roundsLeft: rounds, sourceAbilityId: offenseAbility.id });
+              syncPlayerMods();
+            }
           } else {
             // Plain attack — magical classes swing with matk/mdef instead of
             // atk/def, same class split as an ability's default dmgType
@@ -2242,6 +2930,32 @@ export function DungeonPanel({
               }
               if (clerigoHasSkill('clerigo:provacao:8') && judgmentAtActionStart > 0) {
                 dmg = Math.round(dmg * (1 + JUDGMENT_DMG_PCT_PER_STACK * judgmentAtActionStart));
+              }
+            }
+            if (knightActive) {
+              // Força de Impacto (cavaleiro:investida:0) — bonus while the
+              // enemy is still nearly untouched. Cavalgada (cavaleiro:
+              // investida:3) — bonus while Momentum (read at action start)
+              // is 60+. Both apply to any direct hit, ability or plain.
+              if (knightHasSkill('cavaleiro:investida:0') && enemyRef.current.hp / enemyRef.current.maxHp >= FORCA_DE_IMPACTO_HP_THRESHOLD) {
+                dmg = Math.round(dmg * (1 + capped(FORCA_DE_IMPACTO_RATE, attrTotal(chRef.current, 'str'), FORCA_DE_IMPACTO_CAP)));
+              }
+              if (knightHasSkill('cavaleiro:investida:3') && momentumAtActionStart >= CAVALGADA_MOMENTUM_THRESHOLD) {
+                dmg = Math.round(dmg * (1 + capped(CAVALGADA_RATE, attrTotal(chRef.current, 'str'), CAVALGADA_CAP)));
+              }
+              // Momentum's own per-20 passive dmg bonus (base, or upgraded by
+              // cavaleiro:investida:6's Momentum passive node).
+              dmg = Math.round(dmg * (1 + knightMomentumBonusDmgPct()));
+              // Cavaleiro Imparável (cavaleiro:investida:14) — bonus while
+              // near the CURRENT (possibly boosted) Momentum max.
+              if (knightHasSkill('cavaleiro:investida:14') && knightMomentumRef.current >= IMPARAVEL_HIGH_MOMENTUM_PCT_THRESHOLD * knightMomentumMax()) {
+                dmg = Math.round(dmg * (1 + IMPARAVEL_HIGH_MOMENTUM_DMG_BONUS));
+              }
+              // Pressão Constante (cavaleiro:investida:5) — stacks per
+              // consecutive direct hit on the SAME enemy (reset on miss/new
+              // enemy, see below and resolveEnemyDeath).
+              if (knightHasSkill('cavaleiro:investida:5')) {
+                dmg = Math.round(dmg * (1 + knightPressureStacksRef.current * PRESSAO_CONSTANTE_PER_STACK));
               }
             }
             if (barbActive) {
@@ -2355,6 +3069,38 @@ export function DungeonPanel({
         }
 
         if (enemyHp <= 0) { resolveEnemyDeath(); return; }
+
+        if (knightActive) {
+          const knightFirstHit = !knightFirstHitLandedRef.current;
+          knightFirstHitLandedRef.current = true;
+          const knightBaseGain = knightFirstHit
+            ? MOMENTUM_GAIN_FIRST_HIT + (knightHasSkill('cavaleiro:investida:1') ? MOMENTUM_GAIN_FIRST_HIT_PASSO_DE_GUERRA_BONUS : 0)
+            : MOMENTUM_GAIN_NEXT_HIT;
+          knightGainMomentum(knightBaseGain);
+          if (knightHasSkill('cavaleiro:investida:5')) {
+            knightPressureStacksRef.current = Math.min(PRESSAO_CONSTANTE_MAX_STACKS, knightPressureStacksRef.current + 1);
+          }
+          if (knightHasSkill('cavaleiro:investida:14')) {
+            knightConsecutiveHitsRef.current += 1;
+            if (knightConsecutiveHitsRef.current >= IMPARAVEL_HITS_PER_MAX_BONUS) {
+              knightConsecutiveHitsRef.current = 0;
+              knightMomentumMaxBonusRef.current = Math.min(IMPARAVEL_MAX_BONUS_CAP_PER_ENEMY, knightMomentumMaxBonusRef.current + IMPARAVEL_MAX_BONUS_PER_TRIGGER);
+            }
+          }
+          let knightBonusRaw = 0;
+          if (knightCounterStanceActive() && knightCounterStoredDmgRef.current > 0) {
+            knightBonusRaw = knightReleaseCounterDamage(stats.atk);
+          } else if (knightConsumeRetaliationCharge()) {
+            knightBonusRaw = knightReactivePower(stats);
+          }
+          if (knightBonusRaw > 0) {
+            const knightBonusDmg = Math.max(1, Math.round(mitigatedBase(knightBonusRaw, computeEnemyDef())));
+            const enemyHpAfterBonus = Math.max(0, enemyRef.current.hp - knightBonusDmg);
+            applyEnemyHp(enemyHpAfterBonus);
+            pushFloat('enemy', knightBonusDmg, false);
+            if (enemyHpAfterBonus <= 0) { resolveEnemyDeath(); return; }
+          }
+        }
       }
     }
 
@@ -2373,6 +3119,11 @@ export function DungeonPanel({
     // finalized; if the window is open and unused this attempt, it restores
     // HP and combat simply continues instead of ending.
     if (isClerigo() && clerigoCheckDeathPrevention()) return true;
+    // Última Guarda (cavaleiro:bastiao:10) — updateCh already floors HP at 1
+    // for the whole window (see updateCh), so by the time a caller's own
+    // locally-computed "would be <= 0" check gets here, chRef.current.hp is
+    // already back above 0 — just confirm that and continue the fight.
+    if (isKnight() && knightLastGuardActive() && chRef.current.hp > 0) return true;
     pushLog([{ text: 'Você caiu em combate...', color: '#8a2030' }]);
     phaseRef.current = 'ended';
     endedReasonRef.current = 'death';
@@ -2480,8 +3231,80 @@ export function DungeonPanel({
       clerigoAncoraSagradaWindowRef.current = 0;
     }
 
+    const knightActiveEnemy = isKnight();
+    if (knightActiveEnemy && edmg > 0) {
+      // Armadura de Aço (cavaleiro:bastiao:0) — a direct physical hit that,
+      // even after normal mitigation, still represents >=15% of effective
+      // max HP gets reduced further, VIT-scaled (never touches DOT).
+      if (enemyAtkType !== 'magical' && knightHasSkill('cavaleiro:bastiao:0') && edmg >= ARMADURA_ACO_HEAVY_HIT_PCT * knightEffMaxHp()) {
+        edmg = Math.round(edmg * (1 - capped(ARMADURA_ACO_RATE, attrTotal(chRef.current, 'vit'), ARMADURA_ACO_CAP)));
+      }
+      // Peso da Armadura (cavaleiro:bastiao:3) — same idea against an even
+      // bigger "Golpe Pesado" (>=18%), its own separate threshold/rate/cap.
+      if (enemyAtkType !== 'magical' && knightHasSkill('cavaleiro:bastiao:3') && isGolpePesado(edmg, knightEffMaxHp())) {
+        edmg = Math.round(edmg * (1 - capped(PESO_ARMADURA_RATE, attrTotal(chRef.current, 'vit'), PESO_ARMADURA_CAP)));
+      }
+      // Núcleo de Aço (cavaleiro:bastiao:11) — extra direct-dmg reduction
+      // while HP is below 35% (never touches DOT).
+      if (knightHasSkill('cavaleiro:bastiao:11') && chRef.current.hp / knightEffMaxHp() < NUCLEO_ACO_HP_THRESHOLD) {
+        edmg = Math.round(edmg * (1 - capped(NUCLEO_ACO_RATE, attrTotal(chRef.current, 'vit'), NUCLEO_ACO_CAP)));
+      }
+    }
+    // Escudo Colossal nega o primeiro stun/sleep desta luta enquanto
+    // durar — checado antes de qualquer outra coisa, pois CC nem chega a
+    // ser aplicado depois (esse branch só cuida de dano; a negação de CC
+    // em si roda no ponto onde o inimigo tenta aplicar o status).
     const blocked = Math.random() < defStats.blockChance;
-    if (blocked) edmg = Math.round(edmg * 0.5);
+    if (blocked) {
+      edmg = Math.round(edmg * 0.5);
+      if (knightActiveEnemy) {
+        knightOnBlockSuccess();
+        // Escudo Disciplinado (cavaleiro:bastiao:5) — opens/renews the
+        // next-hit reduction window; consumed at the first hit inside it.
+        if (knightHasSkill('cavaleiro:bastiao:5')) knightNextHitReductionWindowRef.current = ESCUDO_DISCIPLINADO_WINDOW_TICKS;
+      }
+    }
+    // Bastião Inquebrável (cavaleiro:bastiao:13) — uma vez por TENTATIVA de
+    // masmorra: se este golpe seria fatal, a vida fica em 1 em vez de 0 (não
+    // cura), concede uma barreira/Determinação/redução temporária. O resto
+    // da resolução (resolvePlayerDeath) nunca chega a rodar para este hit.
+    if (knightActiveEnemy && knightHasSkill('cavaleiro:bastiao:13') && !knightBastiaoInquebravelUsedThisRunRef.current
+      && chRef.current.hp > 0 && chRef.current.hp - edmg <= 0) {
+      knightBastiaoInquebravelUsedThisRunRef.current = true;
+      edmg = chRef.current.hp - 1;
+      playerShieldRef.current += Math.round(BASTIAO_INQUEBRAVEL_BARRIER_PCT * knightEffMaxHp() * knightBarrierMult());
+      syncShield();
+      knightGainDetermination(BASTIAO_INQUEBRAVEL_DETERMINATION_GAIN);
+      knightBastiaoInquebravelActiveRoundsRef.current = BASTIAO_INQUEBRAVEL_DMG_REDUCTION_ROUNDS;
+      pushLog('Bastião Inquebrável salva você de um golpe fatal!');
+    }
+    // Muralha de Ferro / Fortaleza Viva — reduções de postura, mutuamente
+    // exclusivas (nunca ambas ativas ao mesmo tempo, ver knightStartIronWall/
+    // knightStartFortress). Fortaleza Viva também garante um piso de
+    // Bloqueio mínimo mesmo sem gear/talento (ver computePlayerStats).
+    let knightPostureReduced = 0;
+    if (knightActiveEnemy && edmg > 0) {
+      if (knightIronWallActive()) knightPostureReduced = edmg * knightIronWallDmgReductionPct();
+      else if (knightFortressActive()) knightPostureReduced = edmg * knightFortressDmgReductionPct();
+      if (knightBastiaoInquebravelActiveRoundsRef.current > 0) {
+        knightPostureReduced += edmg * BASTIAO_INQUEBRAVEL_DMG_REDUCTION_PCT;
+      }
+      if (knightPostureReduced > 0) {
+        knightPostureReduced = Math.min(edmg, knightPostureReduced);
+        edmg -= knightPostureReduced;
+      }
+    }
+    // Escudo Disciplinado (cavaleiro:bastiao:5) — reduz o PRÓXIMO golpe após
+    // um bloqueio bem-sucedido, consumido nesta mesma janela.
+    let knightEscudoReduced = 0;
+    // !blocked — the window opens on a block success just above, but the
+    // reduction it grants is for the NEXT separate hit, not this same one
+    // (which already got the normal block halving).
+    if (knightActiveEnemy && !blocked && edmg > 0 && knightEscudoDisciplinadoActive()) {
+      knightEscudoReduced = Math.round(edmg * ESCUDO_DISCIPLINADO_REDUCTION_PCT);
+      edmg -= knightEscudoReduced;
+      knightNextHitReductionWindowRef.current = 0;
+    }
 
     let shieldAbsorbed = 0;
     if (playerShieldRef.current > 0 && edmg > 0) {
@@ -2489,6 +3312,29 @@ export function DungeonPanel({
       playerShieldRef.current -= shieldAbsorbed;
       edmg -= shieldAbsorbed;
       syncShield();
+      if (knightActiveEnemy) knightAbsorbColossalShield(shieldAbsorbed);
+    }
+    // Contra-Ataque Absoluto (cavaleiro:bastiao:12) — armazena uma fração do
+    // dano que a postura acabou de absorver/bloquear, liberado como bônus no
+    // próximo golpe do Cavaleiro (ver playerAct).
+    if (knightActiveEnemy && knightCounterStanceActive()) {
+      knightStoreCounterDamage(knightPostureReduced + knightEscudoReduced + shieldAbsorbed);
+    }
+    // Determinação — gerada por bloqueio bem-sucedido e por barreiras/
+    // posturas do Cavaleiro que absorveram dano (nunca por DEF/MDEF comuns,
+    // regen, evasão ou miss). Fortaleza Viva desliga essa geração por
+    // completo enquanto ativa (ver Seção 24 do redesign).
+    if (knightActiveEnemy && !knightFortressActive()) {
+      if (blocked) {
+        knightGainDetermination(knightHasSkill('cavaleiro:bastiao:2') ? DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA : DETERMINATION_GEN_BLOCK);
+      }
+      const knightBarrierAbsorbed = shieldAbsorbed + knightEscudoReduced;
+      if (knightBarrierAbsorbed > 0) {
+        knightGainDetermination(knightDeterminationFromPct(knightBarrierAbsorbed, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION));
+      }
+      if (knightPostureReduced > 0 && knightIronWallActive()) {
+        knightGainDetermination(knightDeterminationFromPct(knightPostureReduced, IRON_WALL_DET_GEN_PER_2PCT, IRON_WALL_DET_GEN_CAP_PER_ACTION));
+      }
     }
     // Clérigo absorption order per spec: mitigation → shield/barreira normal
     // (the generic pool above) → distribute that same absorption across the
@@ -2522,6 +3368,12 @@ export function DungeonPanel({
     const hp = Math.max(0, chRef.current.hp - edmg);
     updateCh({ ...chRef.current, hp });
     pushFloat('player', edmg, ecrit, blocked);
+    // Momentum loss — a single direct hit dealing >= the Golpe Pesado
+    // threshold (base 15% of effective max HP, raised by Sangue de Combate)
+    // costs Momentum, at most once per enemy action.
+    if (knightActiveEnemy && edmg > 0 && edmg >= knightMomentumLossThresholdPct() * knightEffMaxHp()) {
+      knightLoseMomentum(knightMomentumLossAmount());
+    }
     if (!silentRef.current) {
       if (enemyAtkType === 'magical') playMagicAttackSfx(); else playPhysicalAttackSfx();
       if (edmg > 0) playHurtSfx();
@@ -2582,7 +3434,8 @@ export function DungeonPanel({
         if (playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else {
-          const rounds = clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3);
+          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3));
+          knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
             syncPlayerStatuses();
@@ -2592,8 +3445,14 @@ export function DungeonPanel({
       } else if (abEffect.kind === 'controlSlam' && abEffect.cc && !playerImmune()) {
         if (playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
+        } else if (isKnight() && (abEffect.cc === 'stun' || abEffect.cc === 'sleep') && knightColossalShieldNegateCC()) {
+          // Escudo Colossal (cavaleiro:bastiao:9) — negates the first stun
+          // or sleep while its barrier lasts, at the cost of 25% of what's
+          // left of it. Silence is never negated (per spec).
+          pushLog('Seu Escudo Colossal absorve o golpe atordoante!');
         } else {
-          const rounds = clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1);
+          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1));
+          knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: rounds });
             syncPlayerCC();
@@ -2601,8 +3460,12 @@ export function DungeonPanel({
           pushLog(`Você ficou ${CC_LABEL[abEffect.cc].toLowerCase()}!`);
         }
       } else if (abEffect.kind === 'weakenNova' && abEffect.statMod && !playerImmune()) {
-        playerModsRef.current.push({ stat: abEffect.statMod, pct: abEffect.statModPct ?? -0.2, roundsLeft: abEffect.statModRounds ?? 3 });
-        syncPlayerMods();
+        const rounds = knightJuramentoConsumeReduction(abEffect.statModRounds ?? 3);
+        knightOnNegativeEffectApplied();
+        if (rounds > 0) {
+          playerModsRef.current.push({ stat: abEffect.statMod, pct: abEffect.statModPct ?? -0.2, roundsLeft: rounds });
+          syncPlayerMods();
+        }
         pushLog('Você foi enfraquecido!');
       } else if (abEffect.kind === 'stealGold') {
         const stolen = chRef.current.gold > 0
@@ -2623,22 +3486,30 @@ export function DungeonPanel({
         if ((proc.status || proc.cc) && playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else if (proc.status) {
-          const rounds = clerigoSoloConsagradoFirstNegative(proc.rounds);
+          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds));
+          knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerStatusRef.current.push({ kind: proc.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
             syncPlayerStatuses();
           }
           pushLog(proc.label);
+        } else if (proc.cc && isKnight() && (proc.cc === 'stun' || proc.cc === 'sleep') && knightColossalShieldNegateCC()) {
+          pushLog('Seu Escudo Colossal absorve o golpe atordoante!');
         } else if (proc.cc) {
-          const rounds = clerigoSoloConsagradoFirstNegative(proc.rounds);
+          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds));
+          knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerCCRef.current.push({ kind: proc.cc, roundsLeft: rounds });
             syncPlayerCC();
           }
           pushLog(proc.label);
         } else if (proc.statMod) {
-          playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: proc.rounds });
-          syncPlayerMods();
+          const rounds = knightJuramentoConsumeReduction(proc.rounds);
+          knightOnNegativeEffectApplied();
+          if (rounds > 0) {
+            playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: rounds });
+            syncPlayerMods();
+          }
           pushLog(proc.label);
         }
       }
@@ -2947,6 +3818,14 @@ export function DungeonPanel({
   // player's own HP, Julgamento badge near the enemy's, same read-off-state
   // discipline as Bárbaro's bars above.
   const isClerigoChar = ch.classId === 'clerigo';
+  // Cavaleiro redesign UI (lib/knight.ts) — Determinação/Retaliação
+  // (Bastião), Momentum (Investida), Ordens/Comando Supremo (Comando) —
+  // each block only shows once the player actually has a talent in that
+  // specialization, same "at least one node unlocked" gate the engine uses.
+  const isKnightChar = ch.classId === 'cavaleiro';
+  const knightHasBastiao = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:bastiao:'));
+  const knightHasInvestida = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:investida:'));
+  const knightHasComando = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:comando:'));
   const enemyJudgment = enemy.judgment;
   const judgmentBadge = enemyJudgment && enemyJudgment.stacks > 0 ? (
     <button
@@ -3383,6 +4262,64 @@ export function DungeonPanel({
             >
               <span>✦ Consagração</span>
               <span>{clerigoConsecrationState}</span>
+            </button>
+          )}
+        </div>
+      )}
+      {isKnightChar && phase === 'fight' && (
+        <div className="mt-3">
+          {knightHasBastiao && (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpenMechanicId('cavaleiro:determination')}
+                className="w-full flex justify-between items-baseline text-[10px] text-slate-300/80 uppercase tracking-wide underline decoration-dotted decoration-slate-300/30 underline-offset-2"
+              >
+                <span>Determinação</span>
+                <span>{Math.round(knightDeterminationState)}/{DETERMINATION_MAX}</span>
+              </button>
+              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
+                <div className="h-1.5 bg-slate-300 rounded transition-[width] duration-300" style={{ width: `${(knightDeterminationState / DETERMINATION_MAX) * 100}%` }} />
+              </div>
+              {knightRetaliationState > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOpenMechanicId('cavaleiro:retaliation')}
+                  className="w-full flex justify-between items-baseline text-[10px] text-slate-300/70 uppercase tracking-wide mt-1 underline decoration-dotted decoration-slate-300/30 underline-offset-2"
+                >
+                  <span>Retaliação</span>
+                  <span className="text-sm tracking-wider text-slate-200">
+                    {Array.from({ length: RETALIATION_MAX_CHARGES }, (_, i) => (i < knightRetaliationState ? '◆' : '◇')).join(' ')}
+                  </span>
+                </button>
+              )}
+            </>
+          )}
+          {knightHasInvestida && (
+            <button
+              type="button"
+              onClick={() => setOpenMechanicId('cavaleiro:momentum')}
+              className="w-full mt-1"
+            >
+              <div className="flex justify-between items-baseline text-[10px] text-orange-300/80 uppercase tracking-wide underline decoration-dotted decoration-orange-300/30 underline-offset-2">
+                <span>Momentum</span>
+                <span>{Math.round(knightMomentumState)}/{knightMomentumMax()}</span>
+              </div>
+              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
+                <div className="h-1.5 bg-orange-400 rounded transition-[width] duration-300" style={{ width: `${(knightMomentumState / knightMomentumMax()) * 100}%` }} />
+              </div>
+            </button>
+          )}
+          {knightHasComando && (
+            <button
+              type="button"
+              onClick={() => setOpenMechanicId(knightCommandSupremeState ? 'cavaleiro:commandSupreme' : 'cavaleiro:orders')}
+              className="w-full flex justify-between items-baseline text-[10px] text-gold uppercase tracking-wide mt-1 underline decoration-dotted decoration-gold/30 underline-offset-2"
+            >
+              <span>{knightCommandSupremeState ? '✦ Comando Supremo' : 'Ordens'}</span>
+              <span className="text-sm tracking-wider text-gold">
+                {Array.from({ length: ORDERS_MAX }, (_, i) => (i < knightOrdersState ? '◆' : '◇')).join(' ')}
+              </span>
             </button>
           )}
         </div>
