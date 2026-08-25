@@ -469,72 +469,193 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Radiância', desc: 'Cura 8% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.08 } },
     ]),
   ],
+  // 2026 redesign — see the balance-report artifact for the full spec this
+  // was built from. The Bárbaro stopped being "+dano / +crítico / golpe
+  // maior" (identical shape to half the other classes' trees, just bigger
+  // multipliers) and got its own resource loop instead: FÚRIA (0-100, built
+  // by fighting, spent on finishers, auto-triggers FRENESI at 100), FERIDAS
+  // (a bespoke stacking DOT the Selvageria tree preps and cashes in) and DOR
+  // (damage some Resistência abilities defer instead of blocking outright).
+  // All three live in DungeonPanel.tsx as session-only combat state, never
+  // on Character — see lib/barbarian.ts for the shared constants/condition
+  // evaluator. Node ids/active-slot positions (4/9/10/12/13) and every
+  // ability's display name are kept exactly as before on purpose, so this
+  // reads as the SAME 15+15+15 tree structurally (old saves' unlockedSkills/
+  // equippedAbilities/loadout stay valid, and the existing barbaro.webp
+  // ability-icon sheet — 3 rows × 5 active slots — still maps correctly);
+  // only the numbers and mechanics underneath changed.
   barbaro: [
     buildPath('barbaro', 'furia', 'Fúria', '#a5432f', [
       { name: 'Ímpeto Fatal', desc: '+3% de dano crítico.', effect: { critDmgPct: 0.03 } },
-      { name: 'Potência Crua', desc: '+2 de dano.', effect: { flatBonusDmg: 2 } },
-      { name: 'Precisão Brutal', desc: '+3% de dano crítico.', effect: { critDmgPct: 0.03 } },
-      { name: 'Golpe Pesado', desc: '+3 de dano.', effect: { flatBonusDmg: 3 } },
-      { name: 'Golpe Selvagem', desc: 'Habilidade ativa: golpe com 2.0x de dano. Recarga de 5s.',
-        ability: { name: 'Golpe Selvagem', desc: 'Golpe com 2.0x de dano.', cooldown: 3, condition: { type: 'always' }, effect: { kind: 'bigHit', dmgMult: 2.0 } } },
+      { name: 'Potência da Ira', desc: '+2% de ataque físico.', effect: { dmgPct: 0.02 } },
+      { name: 'Fôlego de Guerra', desc: '+6 de vida máxima.', effect: { maxHpFlat: 6 } },
+      { name: 'Força em Movimento', desc: '+2.5% de ataque físico.', effect: { dmgPct: 0.025 } },
+      { name: 'Golpe Selvagem', desc: 'Habilidade ativa: custa 20 de Fúria — golpe com 1.80x de dano; um crítico devolve 5 de Fúria. Recarga de 5s.',
+        ability: {
+          name: 'Golpe Selvagem', desc: 'Custa 20 de Fúria. Golpe com 1.80x de dano; um crítico devolve 5 de Fúria.',
+          cooldown: 3, condition: { type: 'resourceAtLeast', resource: 'fury', value: 20 },
+          effect: { kind: 'bigHit', dmgMult: 1.80, furyCost: 20, furyGainOnCrit: 5 },
+        } },
       { name: 'Golpe Devastador', desc: '+4% de dano crítico.', effect: { critDmgPct: 0.04 } },
-      { name: 'Sede de Sangue', desc: 'Cura 7% do dano causado.', effect: { lifestealPct: 0.07 } },
-      { name: 'Força Bruta', desc: '+4 de dano.', effect: { flatBonusDmg: 4 } },
-      { name: 'Fúria Descontrolada', desc: 'Quanto menor sua vida, mais dano você causa (até +20%).', effect: { lowHpDmgScale: 0.20 } },
-      { name: 'Corte Sangrento', desc: 'Habilidade ativa: golpe com 2.2x de dano que faz o inimigo sangrar por 5s. Recarga de 6s.',
-        ability: { name: 'Corte Sangrento', desc: 'Golpe com 2.2x de dano que faz o inimigo sangrar por 5s.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'applyStatus', dmgMult: 2.2, status: 'bleed', statusRounds: 3, statusDmgPct: 0.45 } } },
-      { name: 'Grito de Guerra', desc: 'Habilidade ativa: garante um acerto crítico. Recarga de 6s.',
-        ability: { name: 'Grito de Guerra', desc: 'Garante um acerto crítico.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'guaranteedCrit' } } },
-      { name: 'Fúria Concentrada', desc: '+6% de dano crítico.', effect: { critDmgPct: 0.06 } },
-      { name: 'Massacre', desc: 'Habilidade ativa: golpe com 2.8x de dano. Recarga de 8s.',
-        ability: { name: 'Massacre', desc: 'Golpe com 2.8x de dano.', cooldown: 5, condition: { type: 'always' }, effect: { kind: 'bigHit', dmgMult: 2.8 } } },
-      { name: 'Fúria Berserker', desc: 'Habilidade ativa: só pode ser usada com sua vida abaixo de 40% — golpe com 3.2x de dano. Recarga de 10s.',
-        ability: { name: 'Fúria Berserker', desc: 'Golpe de 3.2x de dano quando sua vida está abaixo de 40%.', cooldown: 6, condition: { type: 'hpBelow', pct: 0.4 }, effect: { kind: 'bigHit', dmgMult: 3.2 } } },
-      { name: 'Instinto Selvagem', desc: 'Cura 8% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.08 } },
+      // PASSIVA — fora de Frenesi, ataque básico +10->+12 Fúria e receber
+      // dano direto +8->+10 (lib/barbarian.ts's *_SANGUE_QUENTE constants,
+      // checked via hasSkill in DungeonPanel). Não altera a geração de
+      // habilidades ofensivas.
+      { name: 'Sangue Quente', desc: 'Fora de Frenesi: ataque básico gera 12 de Fúria (em vez de 10) e receber dano direto gera 10 (em vez de 8).', effect: {} },
+      { name: 'Sede de Sangue', desc: '+3% de roubo de vida permanente.', effect: { lifestealPct: 0.03 } },
+      // PASSIVA — durante Frenesi, bônus de dano direto 18%->23% (ver
+      // FRENZY_DMG_BONUS_SEM_FREIOS). A penalidade de +10% dano recebido
+      // continua igual; o bônus de velocidade não muda.
+      { name: 'Sem Freios', desc: 'Durante Frenesi, o bônus de dano direto sobe de 18% para 23%.', effect: {} },
+      { name: 'Corte Sangrento', desc: 'Habilidade ativa: custa 25 de Fúria — golpe com 1.60x de dano que aplica 2 Feridas. Recarga de 6s.',
+        ability: {
+          name: 'Corte Sangrento', desc: 'Custa 25 de Fúria. Golpe com 1.60x de dano que aplica 2 Feridas.',
+          cooldown: 4, condition: { type: 'resourceAtLeast', resource: 'fury', value: 25 },
+          effect: { kind: 'bigHit', dmgMult: 1.60, furyCost: 25, woundStacksOnHit: 2 },
+        } },
+      { name: 'Grito de Guerra', desc: 'Habilidade de suporte: fora de Frenesi e com Fúria até 70 — ganha 40 de Fúria imediatamente (pode ativar Frenesi). Recarga de 13s.',
+        ability: {
+          name: 'Grito de Guerra', desc: 'Ganha 40 de Fúria imediatamente. Só fora de Frenesi e com Fúria até 70.',
+          cooldown: 8,
+          condition: { type: 'all', conditions: [{ type: 'stateInactive', state: 'frenzy' }, { type: 'resourceBelow', resource: 'fury', value: 71 }] },
+          effect: { kind: 'furyBoost', furyGainFlat: 40 },
+        } },
+      { name: 'Instinto Brutal', desc: '+2% de chance de crítico.', effect: { critPct: 0.02 } },
+      { name: 'Massacre', desc: 'Habilidade ativa: custa 40 de Fúria — golpe com 2.70x de dano. Recarga de 8s.',
+        ability: {
+          name: 'Massacre', desc: 'Custa 40 de Fúria. Golpe com 2.70x de dano.',
+          cooldown: 5, condition: { type: 'resourceAtLeast', resource: 'fury', value: 40 },
+          effect: { kind: 'bigHit', dmgMult: 2.70, furyCost: 40 },
+        } },
+      { name: 'Fúria Berserker', desc: 'Habilidade de suporte: só com vida abaixo de 40% e fora de Frenesi — eleva a Fúria a 100 e ativa Frenesi imediatamente. Recarga de 19s.',
+        ability: {
+          name: 'Fúria Berserker', desc: 'Eleva a Fúria a 100 e ativa Frenesi. Só com vida abaixo de 40% e fora de Frenesi.',
+          cooldown: 12,
+          condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.4 }, { type: 'stateInactive', state: 'frenzy' }] },
+          effect: { kind: 'furyMaxFrenzy' },
+        } },
+      // PASSIVA FINAL — drenagem de Frenesi ao final de cada ação 25->20
+      // (ver FRENZY_DRAIN_PER_ACTION_IMPARAVEL). Não aumenta o máximo de Fúria.
+      { name: 'Frenesi Imparável', desc: 'Durante Frenesi, o dreno de Fúria ao final de cada ação cai de 25 para 20.', effect: {} },
     ]),
-    buildPath('barbaro', 'resistencia', 'Resistência', '#6b7280', [
-      { name: 'Escudo Interior', desc: '+2% de defesa.', effect: { defPct: 0.02 } },
-      { name: 'Fôlego Extra', desc: '+6 de vida máxima.', effect: { maxHpFlat: 6 } },
-      { name: 'Postura Firme', desc: '+2% de defesa.', effect: { defPct: 0.02 } },
-      { name: 'Constituição Firme', desc: '+8 de vida máxima.', effect: { maxHpFlat: 8 } },
-      { name: 'Postura Selvagem', desc: 'Habilidade ativa: +28% de defesa por 5s. Recarga de 8s.',
-        ability: { name: 'Postura Selvagem', desc: '+28% de defesa por 5s.', cooldown: 5, condition: { type: 'always' }, effect: { kind: 'buffDef', buffPct: 0.28, buffRounds: 3 } } },
-      { name: 'Couraça Reforçada', desc: '+2.5% de defesa.', effect: { defPct: 0.025 } },
-      { name: 'Couro Curtido', desc: '10% de chance de bloquear metade do dano recebido.', effect: { blockChance: 0.10 } },
-      { name: 'Vigor Interior', desc: '+10 de vida máxima.', effect: { maxHpFlat: 10 } },
-      { name: 'Represália Selvagem', desc: 'Reflete 14% de todo dano recebido de volta no inimigo.', effect: { thornsPct: 0.14 } },
-      { name: 'Fúria Berserker', desc: 'Habilidade ativa: +30% de dano e -20% de defesa por 6s. Recarga de 10s.',
-        ability: { name: 'Fúria Berserker', desc: '+30% de dano e -20% de defesa por 6s.', cooldown: 6, condition: { type: 'always' }, effect: { kind: 'berserk', berserkAtkPct: 0.30, berserkDefPct: -0.20, berserkRounds: 4 } } },
-      { name: 'Fome Sanguinária', desc: 'Habilidade ativa: só pode ser usada com sua vida abaixo de 40% — +20% de roubo de vida por 5s. Recarga de 24s.',
-        ability: { name: 'Fome Sanguinária', desc: '+20% de roubo de vida por 5s quando sua vida está abaixo de 40%.', cooldown: 15, condition: { type: 'hpBelow', pct: 0.4 }, effect: { kind: 'lifestealBuff', buffPct: 0.20, buffRounds: 3 } } },
-      { name: 'Guarda Sólida', desc: '+4% de defesa.', effect: { defPct: 0.04 } },
-      { name: 'Muralha Selvagem', desc: 'Habilidade ativa: +45% de defesa por 6s. Recarga de 11s.',
-        ability: { name: 'Muralha Selvagem', desc: '+45% de defesa por 6s.', cooldown: 7, condition: { type: 'always' }, effect: { kind: 'buffDef', buffPct: 0.45, buffRounds: 4 } } },
-      { name: 'Resistência Absoluta', desc: 'Habilidade ativa: +55% de defesa por 8s. Recarga de 11s.',
-        ability: { name: 'Resistência Absoluta', desc: '+55% de defesa por 8s.', cooldown: 7, condition: { type: 'always' }, effect: { kind: 'buffDef', buffPct: 0.55, buffRounds: 5 } } },
-      { name: 'Coração Selvagem', desc: '+22 de vida máxima.', effect: { maxHpFlat: 22 } },
+    buildPath('barbaro', 'resistencia', 'Resistência Selvagem', '#6b7280', [
+      { name: 'Pele Endurecida', desc: '+8 de vida máxima.', effect: { maxHpFlat: 8 } },
+      { name: 'Espírito Indomável', desc: '+2% de defesa mágica.', effect: { mdefPct: 0.02 } },
+      { name: 'Corpo Duro', desc: '+2% de defesa física.', effect: { defPct: 0.02 } },
+      { name: 'Constituição Selvagem', desc: '+10 de vida máxima.', effect: { maxHpFlat: 10 } },
+      { name: 'Postura Selvagem', desc: 'Habilidade de suporte: por 3s, 35% do dano direto que chegaria à sua vida é redirecionado para Dor (paga depois, não é redução). Recarga de 10s.',
+        ability: {
+          name: 'Postura Selvagem', desc: 'Por 3s, 35% do dano direto que chegaria à sua vida vira Dor, paga depois.',
+          cooldown: 6, condition: { type: 'always' },
+          effect: { kind: 'painGuard', painRedirectPct: 0.35, buffRounds: 3 },
+        } },
+      { name: 'Ossos Fortes', desc: '+2.5% de defesa mágica.', effect: { mdefPct: 0.025 } },
+      // PASSIVA — sempre que um envTick realmente causar dano de Dor, +3 de
+      // Fúria (no máximo uma vez por envTick). Não funciona durante Frenesi
+      // (Frenesi bloqueia toda geração normal de Fúria).
+      { name: 'Dor Alimenta a Raiva', desc: 'Sempre que um ciclo de Dor causar dano de verdade, ganha 3 de Fúria (uma vez por ciclo).', effect: {} },
+      { name: 'Carne Resistente', desc: '+2.5% de defesa física.', effect: { defPct: 0.025 } },
+      // PASSIVA — 10% permanente de todo dano direto que chegaria à vida é
+      // redirecionado para Dor. Com Postura Selvagem ativa o total continua
+      // 35% (não soma 45%).
+      { name: 'Carne que Não Cede', desc: 'Permanentemente, 10% de todo dano direto que chegaria à sua vida vira Dor (não soma com Postura Selvagem — o total continua 35%).', effect: {} },
+      { name: 'Fúria Berserker', desc: 'Habilidade ativa ofensiva: exige Dor acumulada de ao menos 5% da vida máxima — golpe com 1.80x de dano (até 2.20x consumindo mais Dor) e ganha 15 de Fúria ao acertar. Recarga de 8s.',
+        ability: {
+          name: 'Fúria Berserker', desc: 'Consome até 10% da vida máxima em Dor para golpear mais forte (até 2.20x) e ganha 15 de Fúria ao acertar.',
+          cooldown: 5, condition: { type: 'painAtLeastPct', pct: 0.05 },
+          effect: { kind: 'bigHit', dmgMult: 1.80, painConsumeMaxPct: 0.10, painConsumeDmgMultPer2Pct: 0.08, furyGainOnHit: 15 },
+        } },
+      { name: 'Fome Sanguinária', desc: 'Habilidade de suporte: só com vida abaixo de 50% e Dor de ao menos 3% da vida máxima — apaga até 8% da vida máxima em Dor, +15% de roubo de vida por 3s e ganha 10 de Fúria. Recarga de 16s.',
+        ability: {
+          name: 'Fome Sanguinária', desc: 'Apaga até 8% da vida máxima em Dor, +15% de roubo de vida por 3s e ganha 10 de Fúria.',
+          cooldown: 10,
+          condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.5 }, { type: 'painAtLeastPct', pct: 0.03 }] },
+          effect: { kind: 'bloodFeast', painConsumeMaxPct: 0.08, buffPct: 0.15, buffRounds: 3, furyGainFlat: 10 },
+        } },
+      { name: 'Coração Selvagem', desc: '+14 de vida máxima.', effect: { maxHpFlat: 14 } },
+      { name: 'Muralha Selvagem', desc: 'Habilidade de suporte: por 4s, -15% de dano recebido; cada ataque inimigo que acertar você nesse período gera 4 de Fúria. Recarga de 13s.',
+        ability: {
+          name: 'Muralha Selvagem', desc: 'Por 4s, -15% de dano recebido; cada ataque inimigo que acertar gera 4 de Fúria.',
+          cooldown: 8, condition: { type: 'always' },
+          effect: { kind: 'wallStance', buffPct: -0.15, buffRounds: 4, furyPerHitTaken: 4 },
+        } },
+      { name: 'Resistência Absoluta', desc: 'Habilidade de suporte: só com vida abaixo de 30% e (Dor de ao menos 5%, ou algum efeito negativo/DOT/silêncio ativo) — remove DOTs, penalidades e silêncio, apaga até 15% da vida máxima em Dor, ganha 20 de Fúria e reduz o dano recebido em 20% por 2s. Recarga de 24s.',
+        ability: {
+          name: 'Resistência Absoluta', desc: 'Remove DOTs, penalidades e silêncio, apaga até 15% de Dor, ganha 20 de Fúria e -20% de dano recebido por 2s.',
+          cooldown: 15,
+          condition: {
+            type: 'all',
+            conditions: [{ type: 'hpBelow', pct: 0.3 }, { type: 'any', conditions: [{ type: 'painAtLeastPct', pct: 0.05 }, { type: 'selfDebuffed' }] }],
+          },
+          effect: { kind: 'lastStand', painConsumeMaxPct: 0.15, furyGainFlat: 20, buffPct: -0.20, buffRounds: 2 },
+        } },
+      // PASSIVA FINAL — teto de Dor 35%->40%; novos pacotes pagam em 4
+      // envTicks (era 3); com vida abaixo de 35%, dano dos ticks de Dor
+      // (só o de Dor) reduzido em 20%.
+      { name: 'Inquebrável', desc: 'O teto de Dor sobe para 40% e novos pacotes passam a pagar em 4 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {} },
     ]),
     buildPath('barbaro', 'selvageria', 'Selvageria', '#c89a2e', [
-      { name: 'Reflexo Assassino', desc: '+1% de chance de crítico.', effect: { critPct: 0.01 } },
-      { name: 'Talento Natural', desc: '-2% de recarga das habilidades.', effect: { cooldownReductionPct: 0.02 } },
-      { name: 'Olhar Predador', desc: '+1% de chance de crítico.', effect: { critPct: 0.01 } },
-      { name: 'Ritmo Acelerado', desc: '-2.5% de recarga das habilidades.', effect: { cooldownReductionPct: 0.025 } },
-      { name: 'Fúria Explosiva', desc: 'Habilidade ativa: garante um acerto crítico. Recarga de 6s.',
-        ability: { name: 'Fúria Explosiva', desc: 'Garante um acerto crítico.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'guaranteedCrit' } } },
-      { name: 'Golpe Calculado', desc: '+1.2% de chance de crítico.', effect: { critPct: 0.012 } },
-      { name: 'Sede pelo Sangue', desc: 'Cura 6% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.06 } },
-      { name: 'Fluxo Constante', desc: '-3% de recarga das habilidades.', effect: { cooldownReductionPct: 0.03 } },
-      { name: 'Golpe Devastador', desc: '+18% de dano crítico.', effect: { critDmgPct: 0.18 } },
-      { name: 'Investida Selvagem', desc: 'Habilidade ativa: golpe com 2.1x de dano. Recarga de 5s.',
-        ability: { name: 'Investida Selvagem', desc: 'Golpe com 2.1x de dano.', cooldown: 3, condition: { type: 'always' }, effect: { kind: 'bigHit', dmgMult: 2.1 } } },
-      { name: 'Golpe de Caça', desc: 'Habilidade ativa: só pode ser usada com o inimigo abaixo de 30% de vida — 2.6x de dano. Recarga de 6s.',
-        ability: { name: 'Golpe de Caça', desc: '2.6x de dano contra inimigos abaixo de 30% de vida.', cooldown: 4, condition: { type: 'enemyHpBelow', pct: 0.3 }, effect: { kind: 'bigHit', dmgMult: 2.6 } } },
-      { name: 'Instinto Mortal', desc: '+1.8% de chance de crítico.', effect: { critPct: 0.018 } },
-      { name: 'Fúria Total', desc: 'Habilidade ativa: golpe garantidamente crítico com 1.6x de dano adicional. Recarga de 8s.',
-        ability: { name: 'Fúria Total', desc: 'Golpe garantidamente crítico com 1.6x de dano adicional.', cooldown: 5, condition: { type: 'always' }, effect: { kind: 'guaranteedCrit', dmgMult: 1.6 } } },
-      { name: 'Aniquilação', desc: 'Habilidade ativa: só pode ser usada com o inimigo abaixo de 25% de vida — 3.4x de dano. Recarga de 10s.',
-        ability: { name: 'Aniquilação', desc: '3.4x de dano contra inimigos abaixo de 25% de vida.', cooldown: 6, condition: { type: 'enemyHpBelow', pct: 0.25 }, effect: { kind: 'bigHit', dmgMult: 3.4 } } },
-      { name: 'Instinto Assassino Selvagem', desc: '+7% de chance de crítico.', effect: { critPct: 0.07 } },
+      { name: 'Olhar Predador', desc: '+1.5% de precisão.', effect: { accuracyPct: 0.015 } },
+      { name: 'Instinto Assassino', desc: '+1% de chance de crítico.', effect: { critPct: 0.01 } },
+      { name: 'Força da Caça', desc: '+2% de ataque físico.', effect: { dmgPct: 0.02 } },
+      { name: 'Mira da Fera', desc: '+2% de precisão.', effect: { accuracyPct: 0.02 } },
+      { name: 'Fúria Explosiva', desc: 'Habilidade ativa: custa 15 de Fúria — golpe garantidamente crítico com 1.35x de dano que aplica 1 Ferida. Recarga de 6s.',
+        ability: {
+          name: 'Fúria Explosiva', desc: 'Custa 15 de Fúria. Crítico garantido com 1.35x de dano; aplica 1 Ferida.',
+          cooldown: 4, condition: { type: 'resourceAtLeast', resource: 'fury', value: 15 },
+          effect: { kind: 'guaranteedCrit', dmgMult: 1.35, furyCost: 15, woundStacksOnHit: 1 },
+        } },
+      { name: 'Golpe Devastador', desc: '+3% de dano crítico.', effect: { critDmgPct: 0.03 } },
+      // PASSIVA — todo crítico DIRETO do Bárbaro aplica 1 Ferida (máx. 1 por
+      // ação). Combina naturalmente com um crítico garantido (ex.: Fúria
+      // Explosiva) para render uma segunda Ferida na mesma ação.
+      { name: 'Cortes Abertos', desc: 'Todo crítico direto seu aplica 1 Ferida no inimigo (no máximo uma vez por ação).', effect: {} },
+      { name: 'Instinto de Matança', desc: '+2.5% de ataque físico.', effect: { dmgPct: 0.025 } },
+      // PASSIVA — +2 pontos percentuais de chance de crítico contra o
+      // inimigo atual por Ferida ativa nele (até +10% com 5 stacks),
+      // respeitando o teto global de crítico.
+      { name: 'Cheiro de Sangue', desc: 'Cada Ferida ativa no inimigo dá +2% de chance de crítico contra ele (até +10% com 5 Feridas).', effect: {} },
+      { name: 'Investida Selvagem', desc: 'Habilidade ativa: custa 20 de Fúria — golpe com 1.75x de dano que aplica 2 Feridas. Recarga de 6s.',
+        ability: {
+          name: 'Investida Selvagem', desc: 'Custa 20 de Fúria. Golpe com 1.75x de dano que aplica 2 Feridas.',
+          cooldown: 4, condition: { type: 'resourceAtLeast', resource: 'fury', value: 20 },
+          effect: { kind: 'bigHit', dmgMult: 1.75, furyCost: 20, woundStacksOnHit: 2 },
+        } },
+      { name: 'Golpe de Caça', desc: 'Habilidade ativa: custa 20 de Fúria — exige o inimigo com ao menos 2 Feridas — golpe com 2.00x de dano que renova a duração das Feridas sem consumi-las. Recarga de 6s.',
+        ability: {
+          name: 'Golpe de Caça', desc: 'Custa 20 de Fúria. Golpe com 2.00x de dano contra um inimigo com 2+ Feridas; renova a duração delas.',
+          cooldown: 4,
+          condition: { type: 'all', conditions: [{ type: 'resourceAtLeast', resource: 'fury', value: 20 }, { type: 'enemyWoundsAtLeast', stacks: 2 }] },
+          effect: { kind: 'bigHit', dmgMult: 2.00, furyCost: 20, renewWoundsOnHit: true },
+        } },
+      { name: 'Reflexo Mortal', desc: '+1.5% de chance de crítico.', effect: { critPct: 0.015 } },
+      { name: 'Fúria Total', desc: 'Habilidade ativa: custa 35 de Fúria — exige ao menos 1 Ferida — golpe com 1.60x de dano +0.28x por Ferida (até 3.00x com 5), consumindo todas as Feridas ao acertar. Recarga de 10s.',
+        ability: {
+          name: 'Fúria Total', desc: 'Custa 35 de Fúria. Golpe com 1.60x +0.28x por Ferida (até 3.00x); consome todas as Feridas ao acertar.',
+          cooldown: 6,
+          condition: { type: 'all', conditions: [{ type: 'resourceAtLeast', resource: 'fury', value: 35 }, { type: 'enemyWoundsAtLeast', stacks: 1 }] },
+          effect: { kind: 'bigHit', dmgMult: 1.60, dmgMultPerWoundStack: 0.28, furyCost: 35, consumeWoundsOnHit: true },
+        } },
+      { name: 'Aniquilação', desc: 'Habilidade ativa: custa 45 de Fúria — exige o inimigo abaixo de 25% de vida e com ao menos 3 Feridas — golpe com 2.20x de dano +0.28x por Ferida (até 3.60x com 5), consumindo todas as Feridas ao acertar. Recarga de 13s.',
+        ability: {
+          name: 'Aniquilação', desc: 'Custa 45 de Fúria. Golpe com 2.20x +0.28x por Ferida (até 3.60x) contra inimigos abaixo de 25% de vida com 3+ Feridas; consome todas as Feridas ao acertar.',
+          cooldown: 8,
+          condition: {
+            type: 'all',
+            conditions: [
+              { type: 'resourceAtLeast', resource: 'fury', value: 45 },
+              { type: 'enemyHpBelow', pct: 0.25 },
+              { type: 'enemyWoundsAtLeast', stacks: 3 },
+            ],
+          },
+          effect: { kind: 'bigHit', dmgMult: 2.20, dmgMultPerWoundStack: 0.28, furyCost: 45, consumeWoundsOnHit: true },
+        } },
+      // PASSIVA FINAL — enquanto o inimigo estiver com exatamente 5
+      // Feridas: +8% de dano direto causado a ele, e cada golpe direto seu
+      // que acertar esse inimigo ganha +3 de Fúria adicional (só de golpes
+      // diretos — não pelos próprios ticks de Ferida). Some imediatamente se
+      // as Feridas forem consumidas.
+      { name: 'Predador Supremo', desc: 'Enquanto o inimigo tiver exatamente 5 Feridas: +8% de dano direto a ele, e cada golpe direto seu que acertar ganha +3 de Fúria adicional.', effect: {} },
     ]),
   ],
   arqueiro: [
