@@ -228,7 +228,18 @@ export interface AbilityEffect {
     // Investida/Comando's offense kit via the momentum*/order*/execute*
     // fields below, same composition discipline as the other two classes.
     | 'ironWall' | 'livingFortress' | 'colossalShield' | 'lastGuard' | 'counterStance'
-    | 'orderResist' | 'kingsBanner';
+    | 'orderResist' | 'kingsBanner'
+    // Caçador redesign — see lib/hunter.ts. armTrap is self-targeted (added
+    // to SELF_ABILITY_KINDS): arms a generic CombatTrap instance (direct
+    // physical damage + optional Poison/stat-debuff/trail-gain riders,
+    // resolved only once the enemy completes a real action — never on cast).
+    // multiHit resolves N independent hit rolls (own accuracy/crit each) in
+    // one action, generalized for reuse beyond Tiro Duplo. buffEvasion is a
+    // pure self evasion buff (Sumir na Mata/Passo Etéreo/Manto das Sombras) —
+    // reuses buffPct/buffRounds like buffDef/atkBuff do, pushed through the
+    // generic playerModsRef 'evasion' StatModStat channel. huntWithPrey (Um
+    // com a Caça) is the one bespoke simultaneous dmg+speed+evasion buff.
+    | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -364,6 +375,36 @@ export interface AbilityEffect {
   defBuffPctBase?: number;
   tenacityBuffPctBase?: number;
   opensOrderRefundWindow?: boolean; // kingsBanner: the first other Comando ability used during its duration refunds +1 Ordem
+
+  // ── Caçador redesign fields (lib/hunter.ts) — same composition discipline
+  // as the three blocks above. Marked-Prey/Rastro=5/Poison-status overrides
+  // on top of these base values are resolved by ability id in DungeonPanel
+  // (mirrors how Cavaleiro/Bárbaro special-case a handful of nodes) rather
+  // than inventing a dedicated field per override.
+  guaranteedHit?: boolean; // bigHit/multiHit: bypasses the evasion roll entirely (crit still rolls normally)
+  breachGainOnHit?: number; // offense: +N Brecha on the enemy once this hit actually lands
+  breachConsumeOnHit?: number; // offense: consumes up to N current Brechas, ONLY if the hit actually lands
+  // multiHit (Tiro Duplo) — hitCount independent rolls, each dealing
+  // dmgMultPerHit of ATK; breachGainOnHit here means "only if ALL hits land".
+  hitCount?: number;
+  dmgMultPerHit?: number;
+  // armTrap — arms a CombatTrap instance; resolved (direct dmg + riders)
+  // only once the enemy completes a real action, never at cast time.
+  trapDirectDmgMultBase?: number;
+  trapDirectDmgMultMarked?: number; // overrides the base mult once the enemy is Presa Marcada, checked at TRIGGER time
+  trapPoisonRounds?: number;
+  trapPoisonDmgMultPerTick?: number; // % of the Caçador's ATK at the moment the trap triggers
+  trapDebuffStat?: StatModStat;
+  trapDebuffPct?: number;
+  trapDebuffPctMarked?: number; // overrides trapDebuffPct once Presa Marcada, checked at TRIGGER time
+  trapDebuffRounds?: number;
+  trapTrailGainBase?: number;
+  trapTrailGainMarked?: number; // overrides trapTrailGainBase once already Presa Marcada at TRIGGER time
+  // huntWithPrey (Um com a Caça) — buffPct/buffRounds above cover the dmg
+  // half; these two cover the speed/evasion halves of the same simultaneous
+  // buff, all sharing buffRounds and all scoped to the current enemy only.
+  speedBuffPct?: number;
+  evasionBuffPct?: number;
 }
 
 export interface AbilityDef {
@@ -703,6 +744,14 @@ export interface EnemyInstance {
   // stacks' duration, and Julgamento by itself deals no periodic damage —
   // it only feeds conditional dmg bonuses/spenders. Absent = no Julgamento.
   judgment?: { stacks: number; ticksLeft: number };
+  // Caçador-only Rastro (lib/hunter.ts) — 0 to 5, never decays/consumed on
+  // its own, only reset when this enemy dies (see resolveEnemyDeath). Absent
+  // = 0. Presa Marcada is a DERIVED state (trail >= 3), never stored here.
+  hunterTrail?: number;
+  // Caçador-only Brechas (lib/hunter.ts) — a bespoke Precisão da Caça mark,
+  // stacking to 3, each application renews ALL stacks' duration (same shape
+  // as Feridas/Julgamento). Absent = no Brechas active.
+  hunterBreaches?: { stacks: number; ticksLeft: number };
 }
 
 export interface DungeonDef {
