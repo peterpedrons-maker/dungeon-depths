@@ -167,18 +167,40 @@ export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
 // Physical/Magic Penetration (ignores a % of the target's defense).
 export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct';
 
+// Composable conditions (see lib/barbarian.ts's evalAbilityCondition) —
+// 'all'/'any'/'not' recurse into `conditions` ('not' only ever reads its
+// first entry), everything else is a leaf test evaluated against the live
+// AbilityConditionContext built by DungeonPanel.conditionMet(). Added for
+// the Bárbaro redesign's resource/state-gated kit (e.g. "Fúria >= 20 AND
+// not already in Frenesi"), generic so any future class's kit can compose
+// the same leaves instead of each condition needing its own bespoke field.
 export interface AbilityCondition {
-  type: 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed';
+  type:
+    | 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed'
+    | 'all' | 'any' | 'not'
+    | 'resourceAtLeast' | 'resourceBelow' | 'stateActive' | 'stateInactive' | 'painAtLeastPct' | 'enemyWoundsAtLeast';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
+  conditions?: AbilityCondition[]; // all/any (every entry) / not (only conditions[0])
+  resource?: 'fury'; // resourceAtLeast/resourceBelow
+  value?: number; // resourceAtLeast/resourceBelow threshold
+  state?: 'frenzy'; // stateActive/stateInactive
+  stacks?: number; // enemyWoundsAtLeast
 }
 
 export interface AbilityEffect {
   kind:
     | 'bigHit' | 'guaranteedCrit' | 'applyStatus' | 'bonusVsStatus' | 'heal' | 'buffDef' | 'buffBlock'
     | 'crowdControl' | 'statMod' | 'shield' | 'regen' | 'dispel' | 'immunity' | 'haste' | 'berserk' | 'taunt'
-    | 'lifestealBuff' | 'atkBuff';
+    | 'lifestealBuff' | 'atkBuff'
+    // Bárbaro redesign — see lib/barbarian.ts. furyBoost/furyMaxFrenzy/
+    // painGuard/wallStance/lastStand/bloodFeast are self-targeted (added to
+    // SELF_ABILITY_KINDS in DungeonPanel.tsx); the fury*/wound*/pain* fields
+    // below layer onto ANY kind (mainly bigHit/guaranteedCrit) instead of
+    // each combination needing its own kind — see AbilityDef.extraEffects
+    // for the general multi-effect mechanism this pairs with.
+    | 'furyBoost' | 'furyMaxFrenzy' | 'painGuard' | 'wallStance' | 'lastStand' | 'bloodFeast';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -216,6 +238,25 @@ export interface AbilityEffect {
   berserkRounds?: number;
   // lifestealBuff / atkBuff: pure self buffs (no attack roll), reusing
   // buffPct/buffRounds like buffDef/buffBlock do
+
+  // ── Bárbaro redesign fields (lib/barbarian.ts) — all optional, layered on
+  // top of whichever `kind` above actually resolves the ability, instead of
+  // each combination (dano + Ferida, consumir Dor + dano + Fúria, ...)
+  // needing its own kind. furyCost is deducted the instant an ability is
+  // CHOSEN (before the hit roll), same round an ability with it also always
+  // goes on cooldown regardless of hit/miss — see DungeonPanel's playerAct.
+  furyCost?: number;
+  furyGainOnHit?: number; // offense: flat Fúria on a successful hit
+  furyGainOnCrit?: number; // offense: additional Fúria if that hit crit
+  furyGainFlat?: number; // self ability: flat Fúria with no hit roll (furyBoost)
+  woundStacksOnHit?: number; // offense: applies N Ferida stacks on a successful hit
+  renewWoundsOnHit?: boolean; // offense: refresh Ferida duration without adding stacks
+  consumeWoundsOnHit?: boolean; // offense: clears all Ferida stacks after a successful hit
+  dmgMultPerWoundStack?: number; // offense: extra dmgMult per CURRENT Ferida stack, read before consumption
+  painRedirectPct?: number; // painGuard: % of direct dmg-to-HP redirected to Dor while active
+  painConsumeMaxPct?: number; // max % of effective max HP of Dor this ability cancels/spends
+  painConsumeDmgMultPer2Pct?: number; // offense: +dmgMult per 2% max HP of Dor actually consumed
+  furyPerHitTaken?: number; // wallStance: Fúria gained each enemy hit that lands while active
 }
 
 export interface AbilityDef {
@@ -225,6 +266,13 @@ export interface AbilityDef {
   cooldown: number; // in combat rounds
   condition: AbilityCondition;
   effect: AbilityEffect;
+  // General multi-effect support (see Bárbaro redesign, section 13 of its
+  // spec) — resolved right after `effect` itself, in order, through the same
+  // small per-kind branches. Lets an ability do more than one thing (e.g.
+  // Resistência Absoluta: cleanse + consume Dor + gain Fúria + temporary
+  // damage reduction) without inventing a new AbilityEffect.kind per
+  // combination.
+  extraEffects?: AbilityEffect[];
 }
 
 export interface SkillNode {
@@ -465,6 +513,13 @@ export interface EnemyInstance {
   isBoss?: boolean;
   isElite?: boolean; // a milestone encounter at one of the dungeon's miniBossDepths — boosted stats/rewards, same shape roster, no bespoke art needed
   phases?: BossPhase[];
+  // Bárbaro-only Ferida stacks (lib/barbarian.ts) — a bespoke DOT mechanic,
+  // deliberately not reusing StatusInstance/StatusEffectKind (see the
+  // redesign spec's "não usar simplesmente o array atual de bleed"):
+  // stacking to 5, each application renews ALL stacks' duration, and its
+  // damage is a % of the Bárbaro's own current ATK, not a fixed roll like
+  // poison/burn/bleed. Absent/undefined = no Feridas active.
+  barbarianWounds?: { stacks: number; ticksLeft: number };
 }
 
 export interface DungeonDef {

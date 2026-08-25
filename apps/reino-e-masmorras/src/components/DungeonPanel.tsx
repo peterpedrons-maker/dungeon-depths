@@ -13,6 +13,16 @@ import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { getEquippedAbilities } from '../lib/skills';
+import {
+  FURY_MAX, FURY_MIN, FURY_GAIN_BASIC_HIT, FURY_GAIN_BASIC_HIT_SANGUE_QUENTE, FURY_GAIN_ABILITY_HIT,
+  FURY_GAIN_CRIT_BONUS, FURY_GAIN_TAKE_DAMAGE, FURY_GAIN_TAKE_DAMAGE_SANGUE_QUENTE, FURY_GAIN_PAIN_TICK,
+  FURY_GAIN_WALL_HIT_TAKEN, FURY_GAIN_PREDADOR_SUPREMO, FRENZY_DRAIN_PER_ACTION, FRENZY_DRAIN_PER_ACTION_IMPARAVEL,
+  FRENZY_DMG_BONUS, FRENZY_DMG_BONUS_SEM_FREIOS, FRENZY_SPEED_BONUS, FRENZY_DMG_TAKEN_BONUS,
+  WOUND_MAX_STACKS, WOUND_TICK_DURATION, WOUND_DMG_PCT_PER_STACK, WOUND_CRIT_PCT_PER_STACK,
+  PREDADOR_SUPREMO_DMG_BONUS, PAIN_MAX_PCT, PAIN_MAX_PCT_INQUEBRAVEL, PAIN_TICKS, PAIN_TICKS_INQUEBRAVEL,
+  PAIN_PASSIVE_REDIRECT_PCT, PAIN_TICK_REDUCTION_LOW_HP_PCT, PAIN_TICK_REDUCTION_LOW_HP_THRESHOLD,
+  hasSkill, evalAbilityCondition, PainPacket, AbilityConditionContext,
+} from '../lib/barbarian';
 import { rollAttack, rollAbilityHit } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
@@ -142,7 +152,11 @@ function pickHuntDropRarity(): Rarity {
 // the one action exactly like everything else in the priority list; a
 // self-targeted 'statMod' is the one exception, since it's a hybrid hit+buff
 // that already rolls damage in the offense branch below.
-const SELF_ABILITY_KINDS = ['heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt', 'lifestealBuff', 'atkBuff'];
+const SELF_ABILITY_KINDS = [
+  'heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt', 'lifestealBuff', 'atkBuff',
+  // Bárbaro redesign (lib/barbarian.ts) — all consume the whole action, no attack roll.
+  'furyBoost', 'furyMaxFrenzy', 'painGuard', 'wallStance', 'lastStand', 'bloodFeast',
+];
 const MISS_CHANCE_CAP = 0.45;
 
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Envenenado', burn: 'Em Chamas', bleed: 'Sangrando', curse: 'Amaldiçoado' };
@@ -550,6 +564,26 @@ export function DungeonPanel({
   const playerHasteRoundsRef = useRef(0);
   const potionCooldownRef = useRef(0);
 
+  // ── Bárbaro redesign — FÚRIA/FRENESI/FERIDAS/DOR, session-only, never
+  // persisted on Character (see lib/barbarian.ts). Fúria/Frenesi/Feridas
+  // reset every new enemy (see resolveEnemyDeath's advanceToNextEnemy);
+  // Dor persists across enemies within the same attempt and only resets
+  // because this whole component remounts fresh on the next attempt. Inert
+  // (never read) for every other class.
+  const barbFuryRef = useRef(0);
+  const barbFrenzyRef = useRef(false);
+  const barbPainPacketsRef = useRef<PainPacket[]>([]);
+  // Postura Selvagem's temporary 35%-total redirect window.
+  const barbPostureRoundsLeftRef = useRef(0);
+  // Muralha Selvagem's temporary dmgTakenPct-debuff-for-attacker window —
+  // furyPerHitTaken is captured at cast time so the passive's own default
+  // constant doesn't need to be re-read every enemy action.
+  const barbWallRoundsLeftRef = useRef(0);
+  const barbWallFuryPerHitRef = useRef(0);
+  const [barbFuryState, setBarbFuryState] = useState(0);
+  const [barbFrenzyState, setBarbFrenzyState] = useState(false);
+  const [barbPainState, setBarbPainState] = useState(0);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -700,7 +734,8 @@ export function DungeonPanel({
 
   function nextPlayerDelay(): number {
     const speedPct = computePlayerStats().speedPct;
-    return Math.round(ATTACK_INTERVAL / ((1 + speedPct) * CLASS_SPEED_MULT[chRef.current.classId]));
+    const frenzySpeedBonus = isBarbaro() && barbFrenzyRef.current ? FRENZY_SPEED_BONUS : 0;
+    return Math.round(ATTACK_INTERVAL / ((1 + speedPct + frenzySpeedBonus) * CLASS_SPEED_MULT[chRef.current.classId]));
   }
 
   function nextEnemyDelay(): number {
@@ -778,17 +813,185 @@ export function DungeonPanel({
 
   function conditionMet(ability: AbilityDef): boolean {
     const cond = ability.condition;
-    if (cond.type === 'always') return true;
-    if (cond.type === 'enemyHasStatus') return enemyStatusRef.current.some((s) => s.kind === cond.status);
-    if (cond.type === 'hpBelow') {
-      const threshold = chRef.current.abilityThresholds[ability.id] ?? cond.pct ?? 0.5;
-      return chRef.current.hp / effectiveMaxHp(chRef.current) < threshold;
+    // hpBelow's own player-customizable threshold (abilityThresholds) is a
+    // per-ability override no generic leaf could express — resolved here,
+    // same as before, then everything (including hpBelow itself, composed
+    // inside all/any/not) delegates to the shared evaluator in
+    // lib/barbarian.ts so Bárbaro's resource/state-gated kit and any future
+    // class's composed conditions share one evaluator.
+    const threshold = chRef.current.abilityThresholds[ability.id] ?? cond.pct ?? 0.5;
+    const ctx: AbilityConditionContext = {
+      hp: chRef.current.hp,
+      maxHp: effectiveMaxHp(chRef.current),
+      enemyHp: enemyRef.current.hp,
+      enemyMaxHp: enemyRef.current.maxHp,
+      enemyStatuses: enemyStatusRef.current.map((s) => s.kind),
+      selfDebuffed: playerStatusRef.current.length > 0 || playerCCRef.current.length > 0 || playerModsRef.current.some((m) => m.pct < 0),
+      resources: { fury: barbFuryRef.current },
+      states: { frenzy: barbFrenzyRef.current },
+      painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
+      enemyWoundStacks: barbEnemyWoundStacks(),
+    };
+    if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
+    return evalAbilityCondition(cond, ctx);
+  }
+
+  // ── Bárbaro redesign helpers (lib/barbarian.ts has the shared constants) ──
+  function isBarbaro(): boolean { return chRef.current.classId === 'barbaro'; }
+  function barbHasSkill(nodeId: string): boolean { return hasSkill(chRef.current, nodeId); }
+  function syncBarbFury() { if (!silentRef.current) setBarbFuryState(barbFuryRef.current); }
+  function syncBarbFrenzy() { if (!silentRef.current) setBarbFrenzyState(barbFrenzyRef.current); }
+  function syncBarbPain() { if (!silentRef.current) setBarbPainState(barbPainTotal()); }
+
+  // Every Fúria change funnels through here so entering Frenesi at 100 is
+  // never missed regardless of which source pushed it over the line.
+  function barbApplyFuryDelta(delta: number) {
+    if (!isBarbaro()) return;
+    const next = Math.max(FURY_MIN, Math.min(FURY_MAX, barbFuryRef.current + delta));
+    barbFuryRef.current = next;
+    syncBarbFury();
+    if (next >= FURY_MAX && !barbFrenzyRef.current) {
+      barbFrenzyRef.current = true;
+      syncBarbFrenzy();
+      pushLog([{ text: 'Fúria no máximo — Frenesi!', color: '#f59e0b' }]);
     }
-    if (cond.type === 'enemyHpBelow') return enemyRef.current.hp / enemyRef.current.maxHp < (cond.pct ?? 0.5);
-    if (cond.type === 'selfDebuffed') {
-      return playerStatusRef.current.length > 0 || playerCCRef.current.length > 0 || playerModsRef.current.some((m) => m.pct < 0);
+  }
+  // "Fontes normais" (ataque básico/habilidade que acerta/bônus de
+  // crítico/receber dano/Dor Alimenta a Raiva/Muralha Selvagem/Predador
+  // Supremo) — bloqueadas por completo durante Frenesi.
+  function barbGainNormalFury(amount: number) {
+    if (!isBarbaro() || barbFrenzyRef.current || amount <= 0) return;
+    barbApplyFuryDelta(amount);
+  }
+  // Fúria concedida diretamente por uma habilidade (custo/reembolso/ganho
+  // explícito no seu próprio effect) — funciona dentro ou fora de Frenesi.
+  function barbGainFuryDirect(amount: number) {
+    if (!isBarbaro() || amount <= 0) return;
+    barbApplyFuryDelta(amount);
+  }
+  function barbSpendFury(amount: number) {
+    if (!isBarbaro()) return;
+    barbFuryRef.current = Math.max(FURY_MIN, barbFuryRef.current - amount);
+    syncBarbFury();
+  }
+  function barbSetFury(value: number) { barbApplyFuryDelta(value - barbFuryRef.current); }
+  function barbFrenzyDmgBonus(): number {
+    return barbHasSkill('barbaro:furia:8') ? FRENZY_DMG_BONUS_SEM_FREIOS : FRENZY_DMG_BONUS;
+  }
+  // Chamado uma vez ao final de toda ação NÃO incapacitada do Bárbaro (self
+  // ou ofensiva, acerto ou erro) — o dreno de Frenesi é sempre o último
+  // ajuste de Fúria da rodada, depois de qualquer custo/ganho já aplicado.
+  function barbEndOfActionDrain() {
+    if (!isBarbaro() || !barbFrenzyRef.current) return;
+    const drain = barbHasSkill('barbaro:furia:14') ? FRENZY_DRAIN_PER_ACTION_IMPARAVEL : FRENZY_DRAIN_PER_ACTION;
+    const next = Math.max(FURY_MIN, barbFuryRef.current - drain);
+    barbFuryRef.current = next;
+    syncBarbFury();
+    if (next <= 0) {
+      barbFrenzyRef.current = false;
+      syncBarbFrenzy();
+      pushLog('Frenesi termina.');
     }
-    return false;
+  }
+
+  function barbEnemyWoundStacks(): number { return enemyRef.current.barbarianWounds?.stacks ?? 0; }
+  function barbApplyWounds(n: number) {
+    if (n <= 0) return;
+    const stacks = Math.min(WOUND_MAX_STACKS, barbEnemyWoundStacks() + n);
+    updateEnemy({ ...enemyRef.current, barbarianWounds: { stacks, ticksLeft: WOUND_TICK_DURATION } });
+  }
+  function barbRenewWounds() {
+    const w = enemyRef.current.barbarianWounds;
+    if (!w || w.stacks <= 0) return;
+    updateEnemy({ ...enemyRef.current, barbarianWounds: { stacks: w.stacks, ticksLeft: WOUND_TICK_DURATION } });
+  }
+  function barbConsumeWounds() {
+    if (!enemyRef.current.barbarianWounds) return;
+    updateEnemy({ ...enemyRef.current, barbarianWounds: undefined });
+  }
+  // Called once per envTick — Feridas deal real damage and CAN kill (see the
+  // redesign spec's "morte por efeito indireto"), routed through the same
+  // applyEnemyHp (boss-phase-aware) + resolveEnemyDeath every other kill
+  // source uses. Guarded the same way playerAct/enemyAct guard against a
+  // pending-respawn window (hp already <= 0).
+  function barbTickWounds() {
+    const w = enemyRef.current.barbarianWounds;
+    if (!w || w.stacks <= 0 || enemyRef.current.hp <= 0) return;
+    const dmg = Math.max(1, Math.round(computePlayerStats().atk * WOUND_DMG_PCT_PER_STACK * w.stacks));
+    const ticksLeft = w.ticksLeft - 1;
+    const nextHp = Math.max(0, enemyRef.current.hp - dmg);
+    applyEnemyHp(nextHp);
+    updateEnemy({ ...enemyRef.current, barbarianWounds: ticksLeft > 0 ? { stacks: w.stacks, ticksLeft } : undefined });
+    pushFloat('enemy', dmg, false);
+    flash('enemy');
+    if (nextHp <= 0) resolveEnemyDeath();
+  }
+
+  function barbEffMaxHp(): number { return effectiveMaxHp(chRef.current); }
+  function barbPainTotal(): number { return barbPainPacketsRef.current.reduce((s, p) => s + p.amountLeft, 0); }
+  function barbPainMaxAllowed(): number {
+    const pct = barbHasSkill('barbaro:resistencia:14') ? PAIN_MAX_PCT_INQUEBRAVEL : PAIN_MAX_PCT;
+    return barbEffMaxHp() * pct;
+  }
+  // Dor is stored as real HP amounts (not a %), each packet paid off in
+  // equal installments over its own fixed tick count — capped so it can
+  // never exceed barbPainMaxAllowed() (the OVERFLOW — the part that
+  // wouldn't fit — is simply lost, not applied to HP instead; the redirect
+  // call sites already only ever redirect damage that would otherwise have
+  // hit HP, so a full Dor bar effectively caps how much of a single big hit
+  // can be deferred at all, same spirit as the spec's own worked example).
+  function barbAddPainPacket(rawAmount: number) {
+    if (rawAmount <= 0) return;
+    const room = Math.max(0, barbPainMaxAllowed() - barbPainTotal());
+    const amount = Math.min(rawAmount, room);
+    if (amount <= 0) return;
+    const ticks = barbHasSkill('barbaro:resistencia:14') ? PAIN_TICKS_INQUEBRAVEL : PAIN_TICKS;
+    barbPainPacketsRef.current = [...barbPainPacketsRef.current, { amountLeft: amount, perTick: amount / ticks, ticksLeft: ticks }];
+    syncBarbPain();
+  }
+  // Consumes up to maxPct*effMaxHp of Dor, oldest packet first, and returns
+  // the amount actually consumed (never more than what existed).
+  function barbConsumePain(maxPct: number): number {
+    let remaining = maxPct * barbEffMaxHp();
+    let consumed = 0;
+    const kept: PainPacket[] = [];
+    for (const p of barbPainPacketsRef.current) {
+      if (remaining <= 0) { kept.push(p); continue; }
+      const take = Math.min(p.amountLeft, remaining);
+      remaining -= take;
+      consumed += take;
+      const left = p.amountLeft - take;
+      if (left > 0.01) kept.push({ amountLeft: left, perTick: left / p.ticksLeft, ticksLeft: p.ticksLeft });
+    }
+    barbPainPacketsRef.current = kept;
+    syncBarbPain();
+    return consumed;
+  }
+  // Called once per envTick — Dor CAN kill the player (same "morte por
+  // efeito indireto" requirement as Feridas above), routed through
+  // resolvePlayerDeath.
+  function barbTickPain() {
+    if (barbPainPacketsRef.current.length === 0) return;
+    const lowHp = barbHasSkill('barbaro:resistencia:14') && chRef.current.hp / barbEffMaxHp() < PAIN_TICK_REDUCTION_LOW_HP_THRESHOLD;
+    let totalPay = 0;
+    const kept: PainPacket[] = [];
+    for (const p of barbPainPacketsRef.current) {
+      const pay = Math.min(p.perTick, p.amountLeft);
+      totalPay += pay;
+      const amountLeft = p.amountLeft - pay;
+      const ticksLeft = p.ticksLeft - 1;
+      if (amountLeft > 0.01 && ticksLeft > 0) kept.push({ amountLeft, perTick: p.perTick, ticksLeft });
+    }
+    barbPainPacketsRef.current = kept;
+    syncBarbPain();
+    if (totalPay <= 0) return;
+    const dmg = Math.max(1, Math.round(lowHp ? totalPay * (1 - PAIN_TICK_REDUCTION_LOW_HP_PCT) : totalPay));
+    const nextHp = Math.max(0, chRef.current.hp - dmg);
+    updateCh({ ...chRef.current, hp: nextHp });
+    pushFloat('player', dmg, false);
+    flash('player');
+    if (barbHasSkill('barbaro:resistencia:6')) barbGainNormalFury(FURY_GAIN_PAIN_TICK);
+    if (nextHp <= 0) resolvePlayerDeath();
   }
 
   function equippedAbilities(): AbilityDef[] {
@@ -886,6 +1089,8 @@ export function DungeonPanel({
       return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
     }
     if (eff.kind === 'statMod' && eff.statModTarget === 'self') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    if (eff.kind === 'wallStance') return barbWallRoundsLeftRef.current > 0;
+    if (eff.kind === 'painGuard') return barbPostureRoundsLeftRef.current > 0;
     return false;
   }
 
@@ -1001,6 +1206,61 @@ export function DungeonPanel({
       syncPlayerMods();
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: seu ataque aumenta.`;
+    } else if (eff.kind === 'furyBoost') {
+      // Bárbaro (Grito de Guerra) — flat Fúria grant, no supportMult (that
+      // scales heal/buff MAGNITUDE, not a resource grant); may itself push
+      // Fúria to 100 and trigger Frenesi, per barbApplyFuryDelta.
+      barbGainFuryDirect(eff.furyGainFlat ?? 0);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você ganha ${eff.furyGainFlat ?? 0} de Fúria.`;
+    } else if (eff.kind === 'furyMaxFrenzy') {
+      // Bárbaro (Fúria Berserker, furia tree) — emergency Frenesi entry.
+      barbSetFury(FURY_MAX);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: sua Fúria dispara ao máximo — Frenesi!`;
+    } else if (eff.kind === 'painGuard') {
+      // Bárbaro (Postura Selvagem) — opens the temporary 35%-total redirect
+      // window read by enemyAct; see barbPostureRoundsLeftRef.
+      barbPostureRoundsLeftRef.current = eff.buffRounds ?? 3;
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: parte do dano recebido agora vira Dor.`;
+    } else if (eff.kind === 'wallStance') {
+      // Bárbaro (Muralha Selvagem) — dmgTakenPct debuff via the existing
+      // generic StatModStat channel, plus a Fúria-per-hit-taken window
+      // tracked separately (no existing channel fits "gain a resource each
+      // time you're hit").
+      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.15, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      barbWallRoundsLeftRef.current = eff.buffRounds ?? 4;
+      barbWallFuryPerHitRef.current = eff.furyPerHitTaken ?? FURY_GAIN_WALL_HIT_TAKEN;
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você se firma para o impacto.`;
+    } else if (eff.kind === 'lastStand') {
+      // Bárbaro (Resistência Absoluta) — cleanse (same filter dispel uses)
+      // + consume Dor + Fúria grant + temporary damage reduction, via
+      // AbilityDef.extraEffects-style composition kept inline here since
+      // it's a single bespoke bundle, not a combination other abilities
+      // reuse piecemeal.
+      playerStatusRef.current = [];
+      playerCCRef.current = [];
+      playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
+      syncPlayerStatuses();
+      syncPlayerCC();
+      const consumed = barbConsumePain(eff.painConsumeMaxPct ?? 0);
+      barbGainFuryDirect(eff.furyGainFlat ?? 0);
+      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 2, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você se recompõe, apagando ${Math.round(consumed)} de Dor.`;
+    } else if (eff.kind === 'bloodFeast') {
+      // Bárbaro (Fome Sanguinária) — consume Dor + temporary lifesteal
+      // (reuses the existing lifestealPct StatModStat channel) + Fúria.
+      const consumed = barbConsumePain(eff.painConsumeMaxPct ?? 0);
+      playerModsRef.current.push({ stat: 'lifestealPct', pct: eff.buffPct ?? 0.15, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      barbGainFuryDirect(eff.furyGainFlat ?? 0);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: você se alimenta da própria dor, apagando ${Math.round(consumed)} de Dor.`;
     }
     return null;
   }
@@ -1048,8 +1308,14 @@ export function DungeonPanel({
 
     tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => applyEnemyHp(hp), 'enemy');
     syncEnemyStatuses();
+    if (isBarbaro()) barbTickWounds();
     tickStatus(playerStatusRef, chRef.current.hp, (hp) => updateCh({ ...chRef.current, hp }), 'player');
     syncPlayerStatuses();
+    if (isBarbaro()) {
+      barbTickPain();
+      if (barbPostureRoundsLeftRef.current > 0) barbPostureRoundsLeftRef.current -= 1;
+      if (barbWallRoundsLeftRef.current > 0) barbWallRoundsLeftRef.current -= 1;
+    }
 
     if (playerRegenRef.current.length > 0) {
       const maxHp = effectiveMaxHp(chRef.current);
@@ -1079,6 +1345,98 @@ export function DungeonPanel({
   // gets more of these per enemy action instead of just better dodge/block
   // odds. Stun/sleep are read live here (envTick only advances their
   // remaining duration) since this can now fire between envTick pulses.
+  // Centralized "an enemy's HP just reached 0" closure — every kill source
+  // (a direct hit here in playerAct, or a Bárbaro Ferida tick in
+  // barbTickWounds) resolves through this ONE path, so XP/gold/loot/rune/
+  // boss-victory/depth-advance can never be granted twice or skipped
+  // depending on which source landed the killing blow (see the redesign
+  // spec's "morte por efeito indireto").
+  function resolveEnemyDeath() {
+    const prevLevel = chRef.current.level;
+    const isBossKill = enemyRef.current.isBoss === true;
+    const isEliteKill = enemyRef.current.isElite === true;
+    const bossBonusGold = isBossKill ? Math.round(enemyRef.current.goldReward * 0.5) : 0;
+    const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
+    const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
+    const withXp = grantXp(chRef.current, xpGain);
+    // grantXp() heals to its own raw maxHp field on every level gained,
+    // which undercounts equipment/attribute/building bonuses — bump it
+    // up to the real cap so a level-up genuinely tops the player off.
+    if (withXp.level > prevLevel) withXp.hp = effectiveMaxHp(withXp);
+    const shape = enemyRef.current.shape;
+    const kills = { ...withXp.kills, [shape]: (withXp.kills?.[shape] ?? 0) + 1 };
+    const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
+    updateCh(finalChar);
+    runStatsRef.current.kills += 1;
+    runStatsRef.current.goldFromKills += goldGain;
+    runStatsRef.current.xpGained += xpGain;
+    pushLog([{ text: `${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`, color: '#4ade80' }]);
+    if (finalChar.level > prevLevel) pushLog([{ text: `Você subiu para o nível ${finalChar.level}!`, color: '#c89a2e' }]);
+    // Elite checkpoint kills always drop something too, same as a
+    // boss — clearing one of these mid-run milestones is meant to
+    // feel worth the extra danger, not just riskier for the same odds.
+    tryDropEquipment(isBossKill || isEliteKill);
+    tryDropRune(isBossKill || isEliteKill);
+
+    // Both transitions below normally wait 900ms so the kill lands
+    // before the screen moves on — pointless during a silent
+    // catch-up pass (see runCatchUp), where they instead resolve the
+    // instant this function returns so the fast-forward loop can move
+    // straight to the next action.
+    if (isBossKill) {
+      const finishVictory = () => {
+        if (!mountedRef.current) return;
+        pushLog([{ text: `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`, color: '#c89a2e' }]);
+        phaseRef.current = 'ended';
+        endedReasonRef.current = 'victory';
+        setEndedReason('victory');
+        setPhase('ended');
+        if (!silentRef.current) {
+          setResultBanner('victory');
+          setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
+        }
+      };
+      if (silentRef.current) finishVictory(); else setTimeout(finishVictory, 900);
+      return;
+    }
+
+    const advanceToNextEnemy = () => {
+      if (!mountedRef.current) return;
+      const nextDepth = depthRef.current + 1;
+      updateDepth(nextDepth);
+      const next = spawnEnemy(nextDepth, dungeon);
+      updateEnemy(next);
+      enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
+      if (next.isElite) pushLog([{ text: `${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`, color: '#f59e0b' }]);
+      enemyStatusRef.current = [];
+      enemyModsRef.current = [];
+      enemyCCRef.current = [];
+      enemyAbilityCooldownsRef.current = {};
+      bossPhaseIndexRef.current = 0;
+      setBossPhaseName(null);
+      syncEnemyStatuses();
+      syncEnemyCC();
+      syncEnemyMods();
+      // Bárbaro's Fúria/Frenesi/Feridas reset every new enemy (Dor persists
+      // across the whole dungeon attempt — see barbPainPacketsRef's comment).
+      if (isBarbaro()) {
+        barbFuryRef.current = 0;
+        barbFrenzyRef.current = false;
+        barbPostureRoundsLeftRef.current = 0;
+        barbWallRoundsLeftRef.current = 0;
+        syncBarbFury();
+        syncBarbFrenzy();
+      }
+      // Both clocks restart clean for the new encounter — previously
+      // only the player's got a fresh schedulePlayer() call here, so
+      // the enemy inherited whatever was left on the OLD enemy's timer
+      // (its ATB bar would visibly pick up mid-fill instead of empty).
+      schedulePlayer(nextPlayerDelay());
+      scheduleEnemy();
+    };
+    if (silentRef.current) advanceToNextEnemy(); else setTimeout(advanceToNextEnemy, 900);
+  }
+
   function playerAct() {
     if (!mountedRef.current || phaseRef.current !== 'fight') return;
 
@@ -1088,6 +1446,13 @@ export function DungeonPanel({
 
     const playerStunned = hasCC(playerCCRef.current, 'stun') || hasCC(playerCCRef.current, 'sleep');
     const enemyStunned = hasCC(enemyCCRef.current, 'stun') || hasCC(enemyCCRef.current, 'sleep');
+    const barbActive = isBarbaro();
+    // Captured once, before this action can consume/renew Feridas itself —
+    // Fúria Total/Aniquilação's dmgMultPerWoundStack, Cheiro de Sangue's
+    // crit bonus and Predador Supremo's +8%/+3 Fúria all read the stack
+    // count as it stood at the START of the action, not after their own
+    // consumeWoundsOnHit clears it.
+    const woundsAtActionStart = barbActive ? barbEnemyWoundStacks() : 0;
 
     {
       const stats = computePlayerStats();
@@ -1109,14 +1474,30 @@ export function DungeonPanel({
           if (line) pushLog(line);
         } else {
           const offenseAbility = chosen;
+          // Bárbaro: a Fúria-costed ability spends its cost and locks its
+          // cooldown the instant it's CHOSEN — before the hit roll — so
+          // missing still pays the cost and starts the cooldown (redesign
+          // spec section 12). Only Bárbaro abilities ever carry furyCost,
+          // so every other class's timing is completely unaffected.
+          if (offenseAbility && offenseAbility.effect.furyCost !== undefined) {
+            barbSpendFury(offenseAbility.effect.furyCost);
+            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
+          }
           const enemyEvasion = enemyStunned ? 0 : computeEnemyEvasion();
+          // Cheiro de Sangue (barbaro:selvageria:8) — +2% crit chance per
+          // current Ferida stack against this enemy, capped by the same 0.9
+          // ceiling computePlayerStats() already applies.
+          const woundCritBonus = barbActive && barbHasSkill('barbaro:selvageria:8') ? woundsAtActionStart * WOUND_CRIT_PCT_PER_STACK : 0;
+          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus);
           missed = rollMiss(stats.accuracy, enemyEvasion);
 
           if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
           } else if (offenseAbility) {
-            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
+            if (offenseAbility.effect.furyCost === undefined) {
+              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
+            }
             const eff = offenseAbility.effect;
             // Abilities from magical classes cast as spells by default (matk vs
             // mdef) — only an ability's own dmgType override or the caster's
@@ -1128,7 +1509,16 @@ export function DungeonPanel({
             playerHitMagical = dmgType === 'magical';
             const power = dmgType === 'magical' ? stats.matk : stats.atk;
             const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
-            const r = rollAbilityHit(power, effDef, eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult, eff.kind === 'guaranteedCrit');
+            // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
+            // Ferida stack; Resistência's Fúria Berserker trades consumed
+            // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
+            let dmgMult = eff.dmgMult ?? 1;
+            if (eff.dmgMultPerWoundStack) dmgMult += eff.dmgMultPerWoundStack * woundsAtActionStart;
+            if (eff.painConsumeMaxPct && eff.painConsumeDmgMultPer2Pct) {
+              const consumed = barbConsumePain(eff.painConsumeMaxPct);
+              dmgMult += eff.painConsumeDmgMultPer2Pct * (consumed / (barbEffMaxHp() * 0.02));
+            }
+            const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, stats.critDmgMult, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
             abilityTag = ` [${offenseAbility.name}]`;
             castAbility = offenseAbility;
@@ -1151,6 +1541,13 @@ export function DungeonPanel({
                 statusLine = ` ${enemyRef.current.name} foi enfraquecido!`;
               }
             }
+            // Bárbaro: Ferida apply/renew/consume + fury-on-hit/-on-crit —
+            // only ever set on Bárbaro abilities, inert for every other class.
+            if (eff.woundStacksOnHit) barbApplyWounds(eff.woundStacksOnHit);
+            if (eff.renewWoundsOnHit) barbRenewWounds();
+            if (eff.consumeWoundsOnHit) barbConsumeWounds();
+            if (eff.furyGainOnHit) barbGainFuryDirect(eff.furyGainOnHit);
+            if (eff.furyGainOnCrit && crit) barbGainFuryDirect(eff.furyGainOnCrit);
           } else {
             // Plain attack — magical classes swing with matk/mdef instead of
             // atk/def, same class split as an ability's default dmgType
@@ -1160,7 +1557,7 @@ export function DungeonPanel({
             playerHitMagical = isMagicalClass;
             const power = isMagicalClass ? stats.matk : stats.atk;
             const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
-            const r = rollAttack(power, effDef, stats.critChance, stats.critDmgMult);
+            const r = rollAttack(power, effDef, critChanceForRoll, stats.critDmgMult);
             dmg = r.dmg; crit = r.crit;
           }
 
@@ -1170,9 +1567,37 @@ export function DungeonPanel({
             if (enemyStatusRef.current.some((s) => s.kind === 'poison') && stats.dmgPctVsPoison > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsPoison));
             if (enemyStatusRef.current.some((s) => s.kind === 'burn') && stats.dmgPctVsBurn > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsBurn));
             if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
+            if (barbActive) {
+              // Predador Supremo (barbaro:selvageria:14) — while the enemy
+              // sat at exactly 5 Feridas at the START of this action.
+              if (woundsAtActionStart === WOUND_MAX_STACKS && barbHasSkill('barbaro:selvageria:14')) {
+                dmg = Math.round(dmg * (1 + PREDADOR_SUPREMO_DMG_BONUS));
+                barbGainNormalFury(FURY_GAIN_PREDADOR_SUPREMO);
+              }
+              // Frenesi's own direct-damage multiplier — a final multiplier
+              // on top of everything else, and deliberately never touches
+              // Ferida tick damage (barbTickWounds doesn't call this).
+              if (barbFrenzyRef.current) dmg = Math.round(dmg * (1 + barbFrenzyDmgBonus()));
+              // Cortes Abertos (barbaro:selvageria:6) — any direct crit
+              // applies 1 Ferida, at most once per action; naturally stacks
+              // with an ability's own woundStacksOnHit (e.g. Fúria
+              // Explosiva's guaranteed crit both applies its own stack AND
+              // triggers this one).
+              if (crit && barbHasSkill('barbaro:selvageria:6')) barbApplyWounds(1);
+              // Sangue Quente (barbaro:furia:6) raises the basic-hit rate;
+              // ability-hit generation is unaffected by it either way.
+              barbGainNormalFury(castAbility ? FURY_GAIN_ABILITY_HIT : (barbHasSkill('barbaro:furia:6') ? FURY_GAIN_BASIC_HIT_SANGUE_QUENTE : FURY_GAIN_BASIC_HIT));
+              if (crit) barbGainNormalFury(FURY_GAIN_CRIT_BONUS);
+            }
           }
         }
       }
+
+      // Fúria's per-action Frenesi drain — the LAST Fúria adjustment of the
+      // round, after any cost/gain already applied above, whether this
+      // action hit, missed, or was a self-ability. No-op for every other
+      // class and for a Bárbaro not currently in Frenesi.
+      barbEndOfActionDrain();
 
       if (!missed && dmg > 0) {
         const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
@@ -1199,86 +1624,26 @@ export function DungeonPanel({
           }
         }
 
-        if (enemyHp <= 0) {
-          const prevLevel = chRef.current.level;
-          const isBossKill = enemyRef.current.isBoss === true;
-          const isEliteKill = enemyRef.current.isElite === true;
-          const bossBonusGold = isBossKill ? Math.round(enemyRef.current.goldReward * 0.5) : 0;
-          const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
-          const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
-          const withXp = grantXp(chRef.current, xpGain);
-          // grantXp() heals to its own raw maxHp field on every level gained,
-          // which undercounts equipment/attribute/building bonuses — bump it
-          // up to the real cap so a level-up genuinely tops the player off.
-          if (withXp.level > prevLevel) withXp.hp = effectiveMaxHp(withXp);
-          const shape = enemyRef.current.shape;
-          const kills = { ...withXp.kills, [shape]: (withXp.kills?.[shape] ?? 0) + 1 };
-          const finalChar = { ...withXp, gold: withXp.gold + goldGain, bestDepth: Math.max(withXp.bestDepth, depthRef.current), kills };
-          updateCh(finalChar);
-          runStatsRef.current.kills += 1;
-          runStatsRef.current.goldFromKills += goldGain;
-          runStatsRef.current.xpGained += xpGain;
-          pushLog([{ text: `${enemyRef.current.name} foi derrotado! +${xpGain} XP, +${goldGain} de ouro.`, color: '#4ade80' }]);
-          if (finalChar.level > prevLevel) pushLog([{ text: `Você subiu para o nível ${finalChar.level}!`, color: '#c89a2e' }]);
-          // Elite checkpoint kills always drop something too, same as a
-          // boss — clearing one of these mid-run milestones is meant to
-          // feel worth the extra danger, not just riskier for the same odds.
-          tryDropEquipment(isBossKill || isEliteKill);
-          tryDropRune(isBossKill || isEliteKill);
-
-          // Both transitions below normally wait 900ms so the kill lands
-          // before the screen moves on — pointless during a silent
-          // catch-up pass (see runCatchUp), where they instead resolve the
-          // instant this function returns so the fast-forward loop can move
-          // straight to the next action.
-          if (isBossKill) {
-            const finishVictory = () => {
-              if (!mountedRef.current) return;
-              pushLog([{ text: `Você derrotou o guardião de ${dungeon.name} — masmorra concluída!`, color: '#c89a2e' }]);
-              phaseRef.current = 'ended';
-              endedReasonRef.current = 'victory';
-              setEndedReason('victory');
-              setPhase('ended');
-              if (!silentRef.current) {
-                setResultBanner('victory');
-                setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
-              }
-            };
-            if (silentRef.current) finishVictory(); else setTimeout(finishVictory, 900);
-            return;
-          }
-
-          const advanceToNextEnemy = () => {
-            if (!mountedRef.current) return;
-            const nextDepth = depthRef.current + 1;
-            updateDepth(nextDepth);
-            const next = spawnEnemy(nextDepth, dungeon);
-            updateEnemy(next);
-            enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
-            if (next.isElite) pushLog([{ text: `${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`, color: '#f59e0b' }]);
-            enemyStatusRef.current = [];
-            enemyModsRef.current = [];
-            enemyCCRef.current = [];
-            enemyAbilityCooldownsRef.current = {};
-            bossPhaseIndexRef.current = 0;
-            setBossPhaseName(null);
-            syncEnemyStatuses();
-            syncEnemyCC();
-            syncEnemyMods();
-            // Both clocks restart clean for the new encounter — previously
-            // only the player's got a fresh schedulePlayer() call here, so
-            // the enemy inherited whatever was left on the OLD enemy's timer
-            // (its ATB bar would visibly pick up mid-fill instead of empty).
-            schedulePlayer(nextPlayerDelay());
-            scheduleEnemy();
-          };
-          if (silentRef.current) advanceToNextEnemy(); else setTimeout(advanceToNextEnemy, 900);
-          return;
-        }
+        if (enemyHp <= 0) { resolveEnemyDeath(); return; }
       }
     }
 
     schedulePlayer(nextPlayerDelay());
+  }
+
+  // Centralized "the player's HP just reached 0" closure — mirrors
+  // resolveEnemyDeath above. Both a direct enemy hit here in enemyAct and a
+  // Bárbaro Dor tick (barbTickPain) resolve through this ONE path.
+  function resolvePlayerDeath() {
+    pushLog([{ text: 'Você caiu em combate...', color: '#8a2030' }]);
+    phaseRef.current = 'ended';
+    endedReasonRef.current = 'death';
+    setEndedReason('death');
+    setPhase('ended');
+    if (!silentRef.current) {
+      setResultBanner('defeat');
+      setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
+    }
   }
 
   // The enemy's own action clock — independent of the player's, currently
@@ -1329,8 +1694,13 @@ export function DungeonPanel({
     const chosenAbility = pickEnemyAbility();
     const abEffect = chosenAbility?.effect;
 
+    const barbActive = isBarbaro();
     const { dmg: rawDmg, crit: ecrit } = rollAbilityHit(enemyPower, enemyDefStat, abEffect?.dmgMult ?? 1, 0.06, BASE_CRIT_DMG_MULT);
-    let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct));
+    // Frenesi's own +10% dano recebido applies at the same point as the
+    // dungeon's own dmgTakenMult/dmgTakenPct — before block/shield/Dor, same
+    // as everything else here that scales the incoming hit itself.
+    const frenzyTakenBonus = barbActive && barbFrenzyRef.current ? FRENZY_DMG_TAKEN_BONUS : 0;
+    let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus));
     const blocked = Math.random() < defStats.blockChance;
     if (blocked) edmg = Math.round(edmg * 0.5);
 
@@ -1342,6 +1712,25 @@ export function DungeonPanel({
       syncShield();
     }
 
+    // Bárbaro: Postura Selvagem (35% total while active) or the passive
+    // Carne que Não Cede (10% permanent, not additive with Postura) defers
+    // part of the damage that would otherwise hit HP right now into Dor,
+    // paid off over the next few envTicks (see barbTickPain) — only ever
+    // applied to the part of the hit that survives block/shield, per the
+    // redesign spec's own worked example.
+    if (barbActive && edmg > 0) {
+      const redirectPct = barbPostureRoundsLeftRef.current > 0
+        ? 0.35
+        : (barbHasSkill('barbaro:resistencia:8') ? PAIN_PASSIVE_REDIRECT_PCT : 0);
+      if (redirectPct > 0) {
+        const redirected = Math.round(edmg * redirectPct);
+        if (redirected > 0) {
+          edmg -= redirected;
+          barbAddPainPacket(redirected);
+        }
+      }
+    }
+
     const hp = Math.max(0, chRef.current.hp - edmg);
     updateCh({ ...chRef.current, hp });
     pushFloat('player', edmg, ecrit, blocked);
@@ -1350,6 +1739,16 @@ export function DungeonPanel({
       if (edmg > 0) playHurtSfx();
     }
     flash('player');
+    if (barbActive) {
+      // Muralha Selvagem — Fúria per enemy hit that actually lands while
+      // its window is open, regardless of how much (if any) HP it cost
+      // after block/shield/Dor.
+      if (barbWallRoundsLeftRef.current > 0) barbGainNormalFury(barbWallFuryPerHitRef.current);
+      // "Receber dano direto" — the base normal-generation trigger, gated
+      // on HP actually dropping (post pain-redirect), same reading as the
+      // spec's own "Receber dano direto de um ataque/habilidade inimiga".
+      if (edmg > 0) barbGainNormalFury(barbHasSkill('barbaro:furia:6') ? FURY_GAIN_TAKE_DAMAGE_SANGUE_QUENTE : FURY_GAIN_TAKE_DAMAGE);
+    }
     const shieldTag = shieldAbsorbed > 0 ? ` (escudo absorveu ${shieldAbsorbed})` : '';
     // Plain-attack damage already shows on screen via the floater — the log
     // only needs to note it when the enemy used a named ability this round.
@@ -1445,18 +1844,7 @@ export function DungeonPanel({
       }
     }
 
-    if (hp <= 0) {
-      pushLog([{ text: 'Você caiu em combate...', color: '#8a2030' }]);
-      phaseRef.current = 'ended';
-      endedReasonRef.current = 'death';
-      setEndedReason('death');
-      setPhase('ended');
-      if (!silentRef.current) {
-        setResultBanner('defeat');
-        setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
-      }
-      return;
-    }
+    if (hp <= 0) { resolvePlayerDeath(); return; }
     scheduleEnemy();
   }
 
@@ -1734,6 +2122,18 @@ export function DungeonPanel({
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
   const weapon = ch.equipment.weapon;
   const effMaxHp = effectiveMaxHp(ch);
+  // Bárbaro redesign UI (lib/barbarian.ts) — Fúria/Frenesi/Dor bars near the
+  // player's own HP, Feridas badge near the enemy's. Every value here reads
+  // off state (barbFuryState/barbFrenzyState/barbPainState), never refs, so
+  // it re-renders like everything else on screen.
+  const isBarbaroChar = ch.classId === 'barbaro';
+  const barbPainCap = effMaxHp * (ch.unlockedSkills.includes('barbaro:resistencia:14') ? PAIN_MAX_PCT_INQUEBRAVEL : PAIN_MAX_PCT);
+  const enemyWounds = enemy.barbarianWounds;
+  const woundBadge = enemyWounds && enemyWounds.stacks > 0 ? (
+    <span className="inline-flex items-center gap-0.5 text-[10px] text-red-400 ml-1 shrink-0" title={`Feridas x${enemyWounds.stacks}`}>
+      <img src={iconSangramento} alt="" className="w-3.5 h-3.5 rounded-full" />x{enemyWounds.stacks}
+    </span>
+  ) : null;
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
   const enemyTags = [...enemyStatuses.map((s) => allStatusLabel[s]), ...enemyCCState.map((c) => CC_LABEL[c])];
@@ -1792,8 +2192,8 @@ export function DungeonPanel({
       {phase === 'fight' && enemy.isBoss && (
         <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
           <div className="flex justify-between items-baseline gap-2">
-            <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate">
-              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}
+            <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate flex items-center">
+              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}{woundBadge}
             </span>
             <span className="text-xs text-parchment/70 shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
           </div>
@@ -2083,6 +2483,32 @@ export function DungeonPanel({
         </div>
       )}
 
+      {isBarbaroChar && phase === 'fight' && (
+        <div className="mt-3">
+          <div className="flex justify-between items-baseline text-[10px] text-parchment/50 uppercase tracking-wide">
+            <span>Fúria{barbFrenzyState ? <span className="text-amber-400"> — FRENESI!</span> : null}</span>
+            <span>{Math.round(barbFuryState)}/{FURY_MAX}</span>
+          </div>
+          <div className="h-2 bg-black/50 rounded overflow-hidden">
+            <div
+              className={`h-2 rounded transition-[width] duration-300 ${barbFrenzyState ? 'bg-amber-400' : 'bg-orange-600'}`}
+              style={{ width: `${(barbFuryState / FURY_MAX) * 100}%` }}
+            />
+          </div>
+          {barbPainState > 0 && (
+            <>
+              <div className="flex justify-between items-baseline text-[10px] text-purple-300/70 uppercase tracking-wide mt-1">
+                <span>Dor</span>
+                <span>{Math.round(barbPainState)}</span>
+              </div>
+              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
+                <div className="h-1.5 bg-purple-500 rounded transition-[width] duration-300" style={{ width: `${Math.min(100, (barbPainState / barbPainCap) * 100)}%` }} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>
           <div className="flex justify-between items-baseline gap-2">
@@ -2096,7 +2522,7 @@ export function DungeonPanel({
         {!enemy.isBoss && (
           <div>
             <div className="flex justify-between">
-              <span className={`truncate ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}</span>
+              <span className={`truncate flex items-center ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}{woundBadge}</span>
               <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
             </div>
             <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
