@@ -178,7 +178,8 @@ export interface AbilityCondition {
   type:
     | 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed'
     | 'all' | 'any' | 'not'
-    | 'resourceAtLeast' | 'resourceBelow' | 'stateActive' | 'stateInactive' | 'painAtLeastPct' | 'enemyWoundsAtLeast';
+    | 'resourceAtLeast' | 'resourceBelow' | 'resourceAtMost' | 'stateActive' | 'stateInactive'
+    | 'painAtLeastPct' | 'enemyWoundsAtLeast' | 'enemyWoundsEqual';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
@@ -275,6 +276,20 @@ export interface AbilityDef {
   extraEffects?: AbilityEffect[];
 }
 
+// Bárbaro redesign, section 6 — purely a DISPLAY concern (the "ESCALA:"
+// block on a node's tooltip/card in SkillTree.tsx), separate from whatever
+// mechanical bonus DungeonPanel.tsx actually computes for that node. `role`
+// is a free label because a single node can carry more than one relevant
+// axis (e.g. "FOR — Principal" and "Feridas — Mecânica" on the same node);
+// `attribute` is omitted for a non-attribute-tied role ('mecanica'/'fixo').
+export type ScalingRole = 'principal' | 'secundario' | 'terciario' | 'mecanica' | 'fixo';
+export interface ScalingEntry {
+  attribute?: AttributeKey;
+  label: string; // e.g. "FOR", "Dor", "Feridas", "Fixo"
+  role: ScalingRole;
+  description: string;
+}
+
 export interface SkillNode {
   id: string;
   name: string;
@@ -283,6 +298,10 @@ export interface SkillNode {
   effect: SkillEffect;
   ability?: AbilityDef; // present only when type === 'active'
   prereqIds: string[]; // OR logic — unlockable once ANY prereq is unlocked; empty = root node
+  // Optional "ESCALA:" tooltip metadata (see ScalingEntry above) — never
+  // inferred, only ever hand-authored per node so it can't drift from what
+  // the node's mechanic in DungeonPanel.tsx actually does.
+  scaling?: ScalingEntry[];
 }
 
 export interface SkillPath {
