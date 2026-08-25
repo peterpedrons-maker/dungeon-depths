@@ -169,23 +169,34 @@ const AFFIX_SCALE: Record<SecondaryStatType, number> = {
 // lowest at progress 1 — a new player can get hooked by an early miracle
 // drop, while a late-game Lendário (built on far higher itemTier power)
 // stays the rarer, more meaningful pull the user wanted for endgame.
-// Lendário's floor at progress 0 was cut twice more after this comment was
-// written (3% -> 1% -> 0.4%, comum absorbing the difference each time) —
-// direct user call after seeing the actual odds table: a level-1 trash kill
-// having a full 3% (then 1%) shot at Lendário read as too generous once laid
-// out next to the endgame floor below, even before the boss table's own
-// (much larger) cut. 0.4% keeps early trash strictly worse than early boss
-// (BOSS_WEIGHTS_LOW's own 1.5%) while still sitting above the endgame floor.
-const RARITY_WEIGHTS_LOW = [62.6, 15, 16, 6, 0.4];  // progress 0 — easiest dungeon in the game
-// Lendário's floor at progress 1 was 2%, cut to 0.15% (comum absorbs the
-// difference) once the game's repeatability came up directly — 10 dungeon
-// runs every 5 minutes means even a rare-feeling 2% adds up fast over a
-// farming session, and trash's own extra gate (baseDropChanceForLevel, an
-// item has to drop AT ALL first) still isn't enough on its own to keep an
-// endgame Lendário feeling earned. This also had to move so the boss table
-// below could go as low as its own requested ~0.3% floor while staying
-// strictly better than trash at every rarity — see BOSS_WEIGHTS_HIGH.
-const RARITY_WEIGHTS_HIGH = [61.85, 15, 12, 11, 0.15]; // progress 1 — hardest dungeon in the game
+// Lendário's floor at progress 0 was cut twice after this comment was first
+// written (3% -> 1% -> 0.4%, comum absorbing the difference each time), then
+// raised back to 1% in a later pass — explicit user call, wanting the very
+// first dungeon's trash kills to feel a bit more generous again, comum
+// giving back the same 0.6% it had absorbed.
+const RARITY_WEIGHTS_LOW = [62.0, 15, 16, 6, 1.0];  // progress 0 — easiest dungeon in the game
+// Lendário's floor at progress 1 was 2%, cut to 0.15%, then raised slightly
+// to 0.3% (comum gives back 0.15%) in the same pass as the progress-0 bump
+// above — user wanted both ends nudged, endgame kept meaningfully rarer than
+// early-game but not quite as vanishingly small as 0.15%. This also had to
+// stay strictly below the boss table's own endgame floor — see
+// BOSS_WEIGHTS_HIGH.
+const RARITY_WEIGHTS_HIGH = [61.70, 15, 12, 11, 0.3]; // progress 1 — hardest dungeon in the game
+// Interpolating LOW->HIGH on progress directly (t itself) fell at a constant
+// rate the whole way — user wanted the opposite feel: early/mid dungeons
+// keep dropping close to the progress-0 rate, and the fall only picks up
+// pace once a dungeon's itemTier crosses into the ~7/8 range (progress
+// ~0.5-0.9, see lib/dungeons.ts's difficultyProgress). Raising t to a power
+// > 1 does exactly this — a 0-1 fraction raised to a power stays small (so
+// the interpolation stays close to LOW) across most of the range and only
+// climbs toward 1 near the top end, so the same LOW/HIGH endpoints above are
+// preserved exactly (progress 0 and 1 are unaffected — 0^p=0, 1^p=1) while
+// everything in between now falls more gently at first, more steeply later.
+const LOOT_CURVE_EXPONENT = 3;
+function shapedProgress(progress: number): number {
+  const t = Math.max(0, Math.min(1, progress));
+  return t ** LOOT_CURVE_EXPONENT;
+}
 
 // Sorte (LUK) and the Qualidade dos Itens affix already boost how good an
 // item's own stat roll is (qualityMult, see generateItem below) — this is
@@ -209,7 +220,7 @@ function applyLuckBoost(weights: number[], qualityBonusPct: number): number[] {
 // approximation at the call site instead of this function needing to know
 // about dungeons at all.
 export function pickRarityForTier(progress: number, qualityBonusPct = 0): RarityDef {
-  const t = Math.max(0, Math.min(1, progress));
+  const t = shapedProgress(progress);
   const base = RARITY_WEIGHTS_LOW.map((low, i) => low + (RARITY_WEIGHTS_HIGH[i] - low) * t);
   const weights = applyLuckBoost(base, qualityBonusPct);
   const total = weights.reduce((s, w) => s + w, 0);
@@ -241,18 +252,18 @@ export function pickRarityForTier(progress: number, qualityBonusPct = 0): Rarity
 // matching end, so a boss kill is never a worse bet than farming trash at
 // the same dungeon.
 // Lendário's floor at progress 0 was cut twice more after this comment was
-// written (10% -> 3% -> 1.5%, comum absorbing the difference each time) —
-// direct user call once the actual odds table was laid out: a level-1 boss
-// having a 3-in-4 shot at Raro-or-better (let alone 10% Lendário specifically)
-// felt too generous for the very first dungeon in the game, especially since
-// that boss is trivially farmable via "repetir sequência." 1.5% keeps the
-// early boss meaningfully above early trash's own 0.4% without making a
-// level-1 Lendário feel like an every-few-runs certainty.
-const BOSS_WEIGHTS_LOW = [18.5, 15, 30, 35, 1.5];      // progress 0 — easiest dungeon's boss
-const BOSS_WEIGHTS_HIGH = [41.7, 28, 15, 15, 0.3]; // progress 1 — hardest dungeon's boss
+// written (10% -> 3% -> 1.5%), then raised back to 3% in the same later pass
+// that bumped trash's own floor — direct user call, giving the very first
+// dungeon's boss the more generous "early miracle" odds back, comum giving
+// up the same 1.5% it had absorbed.
+// Lendário's endgame floor was raised too, 0.3% -> 0.9% (comum absorbs
+// 0.6%) — same pass, keeping the endgame boss meaningfully above endgame
+// trash's own 0.3% without going back to how generous it used to be.
+const BOSS_WEIGHTS_LOW = [17.0, 15, 30, 35, 3.0];      // progress 0 — easiest dungeon's boss
+const BOSS_WEIGHTS_HIGH = [41.1, 28, 15, 15, 0.9]; // progress 1 — hardest dungeon's boss
 
 export function pickBossDropRarity(progress: number, qualityBonusPct = 0): Rarity {
-  const t = Math.max(0, Math.min(1, progress));
+  const t = shapedProgress(progress);
   const base = BOSS_WEIGHTS_LOW.map((low, i) => low + (BOSS_WEIGHTS_HIGH[i] - low) * t);
   const weights = applyLuckBoost(base, qualityBonusPct);
   const total = weights.reduce((s, w) => s + w, 0);
