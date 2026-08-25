@@ -46,6 +46,33 @@ import {
   capped, attrTotal,
   hasSkill, evalAbilityCondition, PainPacket, AbilityConditionContext,
 } from '../lib/barbarian';
+import {
+  FAITH_MAX, FAITH_MIN, FAITH_START_FIRST_ENEMY, nextFaithForNewEnemy, SIGNIFICANT_HEAL_PCT, SIGNIFICANT_HEAL_PCT_LOWERED,
+  MAOS_CONSAGRADAS_HEAL_EFFICIENCY_PCT,
+  BARRIER_FAITH_THRESHOLD_PCT, JUDGMENT_FAITH_MILESTONES, isDevotionAbilityId,
+  GRACE_BASE_CONVERSION_PCT, GRACE_DIVINA_CONVERSION_PCT, GRACE_BASE_CAP_PCT, GRACE_DIVINA_CAP_PCT,
+  GRACE_BASE_DURATION_TICKS, GRACE_DIVINA_DURATION_TICKS, GRACE_FOLEGO_VIT_RATE, GRACE_FOLEGO_VIT_CAP,
+  GRACE_CORACAO_DEVOTO_HP_THRESHOLD, GRACE_CORACAO_DEVOTO_BONUS_PCT,
+  SANTUARIO_VIVO_MAX_ROUNDS_BONUS, SANTUARIO_VIVO_BURST_THRESHOLD_PCT, SANTUARIO_VIVO_BURST_REDUCTION_PCT,
+  SOLO_CONSAGRADO_MDEF_BONUS, SOLO_CONSAGRADO_TENACITY_BONUS, SOLO_CONSAGRADO_FIRST_NEGATIVE_DURATION_CUT,
+  VIGILIA_FIRST_DOT_TICK_REDUCTION_PCT, INTERCESSAO_HEAL_PCT, FE_VIGILANTE_EXTEND_ROUNDS,
+  BARREIRA_RITUAL_EFFICIENCY_BONUS, GUARDA_DA_ALMA_SHIELD_DEF_PCT,
+  COURACA_ESPIRITUAL_CONSECRATION_MDEF_PCT,
+  ANCORA_SAGRADA_WINDOW_TICKS, ANCORA_SAGRADA_NEXT_HIT_REDUCTION_PCT,
+  VOTO_PROTECAO_BASE_DMG_REDUCTION_PCT, VOTO_PROTECAO_DMG_REDUCTION_CAP_PCT,
+  VOTO_PROTECAO_TENACITY_BONUS_PCT, MARTELO_DA_FE_SUPPORT_FACTOR,
+  MURALHA_DIVINA_SHIELD_CAP_PCT, MURALHA_DIVINA_CONSECRATION_ROUNDS, MURALHA_DIVINA_DMG_TAKEN_PCT,
+  JUDGMENT_MAX_STACKS, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_CONVICCAO_DURATION_TICKS, JUDGMENT_DMG_PCT_PER_STACK,
+  FOGO_DA_FE_DMG_VS_JUDGMENT_PCT, OLHAR_DO_JUIZ_HIGH_JUDGMENT_THRESHOLD, OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT,
+  PALAVRA_ARDENTE_DMG_PCT, ZELO_INFLEXIVEL_EXTEND_ROUNDS, VEREDITO_PRECISO_ACCURACY_PER_STACK,
+  PURIFICACAO_DIVINA_JUDGMENT_PER_2_CLEANSED, PURIFICACAO_DIVINA_JUDGMENT_CAP,
+  SABEDORIA_JULGAMENTO_MIN_CONSUMED, SABEDORIA_JULGAMENTO_HEAL_PCT,
+  JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS, APOCALIPSE_SAGRADO_REQUIRED_JUDGMENT,
+  SABEDORIA_COMPASSIVA_HP_THRESHOLD, SABEDORIA_COMPASSIVA_HEAL_EFFICIENCY_PCT,
+  PRECE_SERENA_CDR_PCT, LITURGIA_CONTINUA_CDR_PCT, LITURGIA_CONTINUA_CDR_BOOSTED_PCT, LITURGIA_CONTINUA_FAITH_THRESHOLD,
+  VEU_DA_ALMA_HEAL_EFFICIENCY_PCT, MISERICORDIA_ATIVA_DOT_REDUCTION_TICKS,
+  BarrierPortion,
+} from '../lib/clerigo';
 import { rollAttack, rollAbilityHit } from '../game/combat';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
@@ -180,6 +207,8 @@ const SELF_ABILITY_KINDS = [
   'heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt', 'lifestealBuff', 'atkBuff',
   // Bárbaro redesign (lib/barbarian.ts) — all consume the whole action, no attack roll.
   'furyBoost', 'furyMaxFrenzy', 'painGuard', 'wallStance', 'lastStand', 'bloodFeast',
+  // Clérigo redesign (lib/clerigo.ts) — all consume the whole action, no attack roll.
+  'cleanseOne', 'consecrationGuard', 'divineWall', 'reviveWindow',
 ];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -218,10 +247,14 @@ const STAT_MOD_ICON: Record<StatModStat, { buff: string; debuff: string }> = {
   dmgTakenPct: { buff: iconDanoRecebidoBuff, debuff: iconDanoRecebidoDebuff },
   defPenPct: { buff: iconDefPenBuff, debuff: iconDefPenBuff },
   lifestealPct: { buff: iconRouboVidaBuff, debuff: iconRouboVidaBuff },
+  // No dedicated Tenacidade icon exists yet — reuses the Defesa glyph, same
+  // "buff-only in practice" treatment as defPenPct/lifestealPct above.
+  tenacityPct: { buff: iconDefBuff, debuff: iconDefDebuff },
 };
 const STAT_MOD_LABEL: Record<StatModStat, string> = {
   atk: 'Ataque', def: 'Defesa', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
   evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
+  tenacityPct: 'Tenacidade',
 };
 
 interface EffectBadge { key: string; icon: string; title: string; desc: string; }
@@ -612,6 +645,32 @@ export function DungeonPanel({
   // Feridas badge) opens the same generic quick-explain popup by id.
   const [openMechanicId, setOpenMechanicId] = useState<string | null>(null);
 
+  // ── Clérigo redesign — FÉ/GRAÇA/CONSAGRAÇÃO/JULGAMENTO, session-only,
+  // never persisted (see lib/clerigo.ts). Fé partially carries between
+  // enemies within one attempt (see nextFaithForNewEnemy); Graça/Consagração
+  // reset every new enemy same as Fúria/Frenesi; Julgamento lives on the
+  // EnemyInstance itself so it simply doesn't exist on the next spawn. Inert
+  // for every other class.
+  const clerigoFaithRef = useRef(character.classId === 'clerigo' ? FAITH_START_FIRST_ENEMY : 0);
+  const clerigoConsecrationRoundsLeftRef = useRef(0);
+  // One-shot-per-Consagração-instance flags (Solo Consagrado/Fé Vigilante/
+  // Vigília/Santuário Vivo) — cleared whenever a new Consagração starts.
+  const clerigoConsecrationFlagsRef = useRef({ soloConsagrado: false, feVigilante: false, vigilia: false, santuarioVivo: false });
+  const clerigoGraceRef = useRef<{ amount: number; ticksLeft: number }>({ amount: 0, ticksLeft: 0 });
+  // Barreiras NORMAIS (não Graça) criadas pelo Clérigo, na ordem em que
+  // foram criadas — ver clerigoAbsorbBarriers() para como o dano as consome
+  // (FIFO) e dispara os eventos de Fé/instância-destruída que várias
+  // habilidades de Retidão reagem a.
+  const clerigoBarrierPortionsRef = useRef<BarrierPortion[]>([]);
+  const clerigoAncoraSagradaWindowRef = useRef(0);
+  const clerigoReviveWindowRoundsLeftRef = useRef(0);
+  const clerigoResurrectionTriggeredRef = useRef(false); // once per attempt
+  const clerigoJudgmentFaithMilestonesRef = useRef<Set<number>>(new Set()); // per-enemy, see JUDGMENT_FAITH_MILESTONES
+  const clerigoJuizoFinalActiveRef = useRef(false); // Juízo Final's own buff can't be renewed while active
+  const [clerigoFaithState, setClerigoFaithState] = useState(0);
+  const [clerigoGraceState, setClerigoGraceState] = useState(0);
+  const [clerigoConsecrationState, setClerigoConsecrationState] = useState(0);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -855,10 +914,10 @@ export function DungeonPanel({
       enemyMaxHp: enemyRef.current.maxHp,
       enemyStatuses: enemyStatusRef.current.map((s) => s.kind),
       selfDebuffed: playerStatusRef.current.length > 0 || playerCCRef.current.length > 0 || playerModsRef.current.some((m) => m.pct < 0),
-      resources: { fury: barbFuryRef.current },
-      states: { frenzy: barbFrenzyRef.current },
+      resources: { fury: barbFuryRef.current, faith: clerigoFaithRef.current },
+      states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive() },
+      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks() },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
-      enemyWoundStacks: barbEnemyWoundStacks(),
     };
     if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
     return evalAbilityCondition(cond, ctx);
@@ -1037,6 +1096,271 @@ export function DungeonPanel({
     if (nextHp <= 0) resolvePlayerDeath();
   }
 
+  // ── Clérigo redesign helpers (lib/clerigo.ts has the shared constants) ──
+  function isClerigo(): boolean { return chRef.current.classId === 'clerigo'; }
+  function clerigoHasSkill(nodeId: string): boolean { return hasSkill(chRef.current, nodeId); }
+  function syncClerigoFaith() { if (!silentRef.current) setClerigoFaithState(clerigoFaithRef.current); }
+  function syncClerigoGrace() { if (!silentRef.current) setClerigoGraceState(clerigoGraceRef.current.amount); }
+  function syncClerigoConsecration() { if (!silentRef.current) setClerigoConsecrationState(clerigoConsecrationRoundsLeftRef.current); }
+  // Same baseline used by every class's heal formula (see resolveSelfAbility's
+  // 'heal' branch) — class/level curve, deliberately not the gear-inflated
+  // EffectiveMaxHp, so VIT+gear+heal% can't compound into near-immortality.
+  function clerigoBaselineMaxHp(): number { return CLASSES[chRef.current.classId].baseHp + 6 * (chRef.current.level - 1); }
+  function clerigoEffMaxHp(): number { return effectiveMaxHp(chRef.current); }
+
+  function clerigoGainFaith(amount: number) {
+    if (!isClerigo() || amount <= 0) return;
+    clerigoFaithRef.current = Math.min(FAITH_MAX, clerigoFaithRef.current + amount);
+    syncClerigoFaith();
+  }
+  function clerigoSpendFaith(amount: number) {
+    if (!isClerigo()) return;
+    clerigoFaithRef.current = Math.max(FAITH_MIN, clerigoFaithRef.current - amount);
+    syncClerigoFaith();
+  }
+  // Mãos Consagradas (clerigo:devocao:3) lowers the "Cura Significativa"
+  // threshold that generates Fé from 8% to 7% of BaselineMaxHp.
+  function clerigoSignificantHealThresholdPct(): number {
+    return clerigoHasSkill('clerigo:devocao:3') ? SIGNIFICANT_HEAL_PCT_LOWERED : SIGNIFICANT_HEAL_PCT;
+  }
+  // Heal-efficiency bonuses stacked on top of the shared BaselineMaxHp*
+  // healPct*supportMult formula — Mãos Consagradas is unconditional, Sabedoria
+  // Compassiva only below 40% HP, Véu da Alma only while carrying a DOT,
+  // negative stat mod, or silence.
+  function clerigoHealEfficiencyBonus(): number {
+    if (!isClerigo()) return 0;
+    let bonus = 0;
+    if (clerigoHasSkill('clerigo:devocao:3')) bonus += MAOS_CONSAGRADAS_HEAL_EFFICIENCY_PCT;
+    if (clerigoHasSkill('clerigo:devocao:0') && chRef.current.hp / clerigoEffMaxHp() < SABEDORIA_COMPASSIVA_HP_THRESHOLD) {
+      bonus += SABEDORIA_COMPASSIVA_HEAL_EFFICIENCY_PCT;
+    }
+    const debuffed = playerStatusRef.current.length > 0 || hasCC(playerCCRef.current, 'silence') || playerModsRef.current.some((m) => m.pct < 0);
+    if (clerigoHasSkill('clerigo:devocao:5') && debuffed) bonus += VEU_DA_ALMA_HEAL_EFFICIENCY_PCT;
+    return bonus;
+  }
+  // Removes the single most severe negative effect on the player (CC, then
+  // DOT, then a negative stat mod) — used by Milagre's extraEffects entry.
+  // Returns whether anything was actually removed.
+  function clerigoCleanseOne(): boolean {
+    if (playerCCRef.current.length > 0) {
+      playerCCRef.current = playerCCRef.current.slice(1);
+      syncPlayerCC();
+      return true;
+    }
+    if (playerStatusRef.current.length > 0) {
+      playerStatusRef.current = playerStatusRef.current.slice(1);
+      syncPlayerStatuses();
+      return true;
+    }
+    const negIdx = playerModsRef.current.findIndex((m) => m.pct < 0);
+    if (negIdx >= 0) {
+      playerModsRef.current = playerModsRef.current.filter((_, i) => i !== negIdx);
+      syncPlayerMods();
+      return true;
+    }
+    return false;
+  }
+
+  // ── GRAÇA ──
+  function clerigoGraceCapPct(): number {
+    const base = clerigoHasSkill('clerigo:devocao:14') ? GRACE_DIVINA_CAP_PCT : GRACE_BASE_CAP_PCT;
+    const folego = clerigoHasSkill('clerigo:devocao:2')
+      ? capped(GRACE_FOLEGO_VIT_RATE, attrTotal(chRef.current, 'vit'), GRACE_FOLEGO_VIT_CAP)
+      : 0;
+    return base + folego;
+  }
+  function clerigoGraceConversionPct(): number {
+    const base = clerigoHasSkill('clerigo:devocao:14') ? GRACE_DIVINA_CONVERSION_PCT : GRACE_BASE_CONVERSION_PCT;
+    const coracaoDevoto = clerigoHasSkill('clerigo:devocao:11') && chRef.current.hp / clerigoEffMaxHp() < GRACE_CORACAO_DEVOTO_HP_THRESHOLD
+      ? GRACE_CORACAO_DEVOTO_BONUS_PCT : 0;
+    return base + coracaoDevoto;
+  }
+  function clerigoGraceDurationTicks(): number {
+    return clerigoHasSkill('clerigo:devocao:14') ? GRACE_DIVINA_DURATION_TICKS : GRACE_BASE_DURATION_TICKS;
+  }
+  // Overheal from a heal ABILITY (never regen/lifesteal/passive cura) turns
+  // into Graça once Graça Transbordante (clerigo:devocao:6) is unlocked —
+  // adds up to the cap and renews duration, never generates Fé itself.
+  function clerigoAddOverhealAsGrace(rawOverheal: number) {
+    if (!isClerigo() || !clerigoHasSkill('clerigo:devocao:6') || rawOverheal <= 0) return;
+    const converted = rawOverheal * clerigoGraceConversionPct();
+    const capAmount = clerigoGraceCapPct() * clerigoEffMaxHp();
+    const nextAmount = Math.min(capAmount, clerigoGraceRef.current.amount + converted);
+    clerigoGraceRef.current = { amount: nextAmount, ticksLeft: clerigoGraceDurationTicks() };
+    syncClerigoGrace();
+  }
+  // Absorbs up to `amount` of incoming direct damage from Graça, returning
+  // how much it actually absorbed. Graça Divina (clerigo:devocao:14) grants
+  // +1 Fé the moment a Graça reserve is fully drained by damage.
+  function clerigoAbsorbGrace(amount: number): number {
+    if (!isClerigo() || clerigoGraceRef.current.amount <= 0 || amount <= 0) return 0;
+    const absorbed = Math.min(clerigoGraceRef.current.amount, amount);
+    const remaining = clerigoGraceRef.current.amount - absorbed;
+    clerigoGraceRef.current = remaining > 0.01 ? { ...clerigoGraceRef.current, amount: remaining } : { amount: 0, ticksLeft: 0 };
+    syncClerigoGrace();
+    if (remaining <= 0.01 && clerigoHasSkill('clerigo:devocao:14')) clerigoGainFaith(1);
+    return absorbed;
+  }
+  function clerigoTickGrace() {
+    if (clerigoGraceRef.current.amount <= 0) return;
+    const ticksLeft = clerigoGraceRef.current.ticksLeft - 1;
+    clerigoGraceRef.current = ticksLeft > 0 ? { ...clerigoGraceRef.current, ticksLeft } : { amount: 0, ticksLeft: 0 };
+    syncClerigoGrace();
+  }
+
+  // ── BARREIRAS NORMAIS (não Graça) ──
+  // Barreira Ritual (clerigo:retidao:3) — +4% de eficiência multiplicativa
+  // em barreiras normais (nunca em Graça). Aplicado no ponto de criação.
+  function clerigoBarrierEfficiencyMult(): number {
+    return clerigoHasSkill('clerigo:retidao:3') ? 1 + BARREIRA_RITUAL_EFFICIENCY_BONUS : 1;
+  }
+  // Registra uma nova barreira normal (já somada ao pool genérico
+  // playerShieldRef pelo call-site) como uma "instância" própria, para que
+  // Fé-por-threshold/Intercessão/Ancora Sagrada saibam quando ELA
+  // especificamente se esgota — o pool genérico não distingue fontes.
+  function clerigoAddBarrierPortion(amount: number, opts?: { isWallBonus?: boolean }) {
+    if (!isClerigo() || amount <= 0) return;
+    clerigoBarrierPortionsRef.current = [
+      ...clerigoBarrierPortionsRef.current,
+      { remaining: amount, absorbedTotal: 0, faithThresholdAmount: BARRIER_FAITH_THRESHOLD_PCT * clerigoEffMaxHp(), faithGranted: false, isWallBonus: opts?.isWallBonus },
+    ];
+  }
+  // Distribui `amount` de dano já absorvido pelo pool genérico entre as
+  // instâncias de barreira (mais antiga primeiro), disparando Fé-por-
+  // threshold, a cura de Intercessão e a janela de Ancora Sagrada quando uma
+  // instância se esgota por dano (não quando é apenas substituída).
+  function clerigoAbsorbBarriers(amount: number) {
+    if (!isClerigo() || amount <= 0 || clerigoBarrierPortionsRef.current.length === 0) return;
+    let remaining = amount;
+    const kept: BarrierPortion[] = [];
+    for (const portion of clerigoBarrierPortionsRef.current) {
+      if (remaining <= 0) { kept.push(portion); continue; }
+      const take = Math.min(portion.remaining, remaining);
+      remaining -= take;
+      const absorbedTotal = portion.absorbedTotal + take;
+      const nextRemaining = portion.remaining - take;
+      let faithGranted = portion.faithGranted;
+      if (!faithGranted && portion.faithThresholdAmount !== undefined && absorbedTotal >= portion.faithThresholdAmount) {
+        clerigoGainFaith(1);
+        faithGranted = true;
+      }
+      if (nextRemaining <= 0.01 && take > 0) {
+        if (clerigoHasSkill('clerigo:retidao:8') && clerigoConsecrationRoundsLeftRef.current > 0) {
+          const healAmt = Math.round(clerigoBaselineMaxHp() * INTERCESSAO_HEAL_PCT * (1 + computePlayerStats().supportPowerPct));
+          if (healAmt > 0) {
+            updateCh({ ...chRef.current, hp: Math.min(clerigoEffMaxHp(), chRef.current.hp + healAmt) });
+            pushFloat('player', healAmt, false, undefined, undefined, true);
+          }
+        }
+        if (clerigoHasSkill('clerigo:retidao:11')) clerigoAncoraSagradaWindowRef.current = ANCORA_SAGRADA_WINDOW_TICKS;
+      } else {
+        kept.push({ ...portion, remaining: nextRemaining, absorbedTotal, faithGranted });
+      }
+    }
+    clerigoBarrierPortionsRef.current = kept;
+  }
+  function clerigoWallBonusActive(): boolean {
+    return clerigoBarrierPortionsRef.current.some((p) => p.isWallBonus && p.remaining > 0);
+  }
+
+  // ── CONSAGRAÇÃO ──
+  function clerigoConsecrationActive(): boolean { return clerigoConsecrationRoundsLeftRef.current > 0; }
+  function clerigoConsecrationCeiling(): number {
+    return MURALHA_DIVINA_CONSECRATION_ROUNDS + (clerigoHasSkill('clerigo:retidao:14') ? SANTUARIO_VIVO_MAX_ROUNDS_BONUS : 0);
+  }
+  function clerigoStartConsecration(baseRounds: number) {
+    if (!isClerigo()) return;
+    clerigoConsecrationRoundsLeftRef.current = Math.min(clerigoConsecrationCeiling(), baseRounds + (clerigoHasSkill('clerigo:retidao:14') ? SANTUARIO_VIVO_MAX_ROUNDS_BONUS : 0));
+    clerigoConsecrationFlagsRef.current = { soloConsagrado: false, feVigilante: false, vigilia: false, santuarioVivo: false };
+    syncClerigoConsecration();
+  }
+  function clerigoExtendConsecration(ticks: number) {
+    if (!isClerigo() || !clerigoConsecrationActive()) return;
+    clerigoConsecrationRoundsLeftRef.current = Math.min(clerigoConsecrationCeiling(), clerigoConsecrationRoundsLeftRef.current + ticks);
+    syncClerigoConsecration();
+  }
+  function clerigoTickConsecration() {
+    if (clerigoConsecrationRoundsLeftRef.current <= 0) return;
+    clerigoConsecrationRoundsLeftRef.current -= 1;
+    syncClerigoConsecration();
+  }
+
+  // ── JULGAMENTO ──
+  function clerigoEnemyJudgmentStacks(): number { return enemyRef.current.judgment?.stacks ?? 0; }
+  function clerigoJudgmentDurationTicks(): number {
+    return clerigoHasSkill('clerigo:provacao:5') ? JUDGMENT_CONVICCAO_DURATION_TICKS : JUDGMENT_BASE_DURATION_TICKS;
+  }
+  // Aplica N stacks (renovando a duração de TODOS) e dispara os marcos de Fé
+  // de 3/5 — cada um só uma vez por inimigo (ver clerigoJudgmentFaithMilestonesRef).
+  function clerigoApplyJudgment(n: number) {
+    if (n <= 0) return;
+    const stacks = Math.min(JUDGMENT_MAX_STACKS, clerigoEnemyJudgmentStacks() + n);
+    updateEnemy({ ...enemyRef.current, judgment: { stacks, ticksLeft: clerigoJudgmentDurationTicks() } });
+    for (const milestone of JUDGMENT_FAITH_MILESTONES) {
+      if (stacks >= milestone && !clerigoJudgmentFaithMilestonesRef.current.has(milestone)) {
+        clerigoJudgmentFaithMilestonesRef.current.add(milestone);
+        clerigoGainFaith(1);
+      }
+    }
+  }
+  function clerigoRenewJudgmentDuration() {
+    const w = enemyRef.current.judgment;
+    if (!w || w.stacks <= 0) return;
+    updateEnemy({ ...enemyRef.current, judgment: { stacks: w.stacks, ticksLeft: clerigoJudgmentDurationTicks() } });
+  }
+  // Consome até N stacks atuais, retornando quantos foram realmente consumidos.
+  function clerigoConsumeJudgment(maxN: number): number {
+    const w = enemyRef.current.judgment;
+    if (!w || w.stacks <= 0 || maxN <= 0) return 0;
+    const consumed = Math.min(w.stacks, maxN);
+    const stacks = w.stacks - consumed;
+    updateEnemy({ ...enemyRef.current, judgment: stacks > 0 ? { stacks, ticksLeft: w.ticksLeft } : undefined });
+    return consumed;
+  }
+  function clerigoReduceJudgmentDuration(ticks: number) {
+    const w = enemyRef.current.judgment;
+    if (!w || w.stacks <= 0) return;
+    updateEnemy({ ...enemyRef.current, judgment: { stacks: w.stacks, ticksLeft: Math.max(1, w.ticksLeft - ticks) } });
+  }
+  function clerigoTickJudgment() {
+    const w = enemyRef.current.judgment;
+    if (!w || w.stacks <= 0) return;
+    const ticksLeft = w.ticksLeft - 1;
+    updateEnemy({ ...enemyRef.current, judgment: ticksLeft > 0 ? { stacks: w.stacks, ticksLeft } : undefined });
+  }
+
+  // ── RESSURREIÇÃO MENOR (prevenção de morte) ──
+  function clerigoOpenReviveWindow(rounds: number) { clerigoReviveWindowRoundsLeftRef.current = rounds; }
+  // Chamado do início de resolvePlayerDeath, antes de qualquer resolução
+  // definitiva — se a janela estiver aberta e ainda não tiver sido usada
+  // nesta tentativa, consome-a e restaura HP em vez de finalizar a morte.
+  function clerigoCheckDeathPrevention(): boolean {
+    if (!isClerigo() || clerigoReviveWindowRoundsLeftRef.current <= 0 || clerigoResurrectionTriggeredRef.current) return false;
+    clerigoResurrectionTriggeredRef.current = true;
+    clerigoReviveWindowRoundsLeftRef.current = 0;
+    const maxHp = clerigoEffMaxHp();
+    const supportMult = 1 + computePlayerStats().supportPowerPct;
+    const raw = clerigoBaselineMaxHp() * 0.18 * supportMult;
+    const healed = Math.min(maxHp, Math.round(Math.min(raw, maxHp * 0.20)));
+    playerStatusRef.current = [];
+    syncPlayerStatuses();
+    updateCh({ ...chRef.current, hp: Math.max(1, healed) });
+    pushLog([{ text: 'Ressurreição Menor evita sua morte!', color: '#c9a86a' }]);
+    pushFloat('player', Math.max(1, healed), false, undefined, undefined, true);
+    return true;
+  }
+  // Prece Serena/Liturgia Contínua — CDR extra SOMENTE em habilidades de
+  // Devoção (checado pelo prefixo do id, nunca pelo nome).
+  function clerigoCdrBonusFor(abilityId: string): number {
+    if (!isClerigo() || !isDevotionAbilityId(abilityId)) return 0;
+    let bonus = 0;
+    if (clerigoHasSkill('clerigo:devocao:1')) bonus += PRECE_SERENA_CDR_PCT;
+    if (clerigoHasSkill('clerigo:devocao:7')) {
+      bonus += clerigoFaithRef.current >= LITURGIA_CONTINUA_FAITH_THRESHOLD ? LITURGIA_CONTINUA_CDR_BOOSTED_PCT : LITURGIA_CONTINUA_CDR_PCT;
+    }
+    return bonus;
+  }
+
   function equippedAbilities(): AbilityDef[] {
     const c = chRef.current;
     return getEquippedAbilities(c.classId, c.unlockedSkills, c.equippedAbilities);
@@ -1064,6 +1388,7 @@ export function DungeonPanel({
     // own mandatory cap per lib/barbarian.ts.
     const ch = chRef.current;
     const barbActive = isBarbaro();
+    const clerigoActive = isClerigo();
     if (barbActive) {
       // Constituição Selvagem (barbaro:resistencia:3) — DEF% bonus while Dor
       // accumulated is >= 10% of effective max HP.
@@ -1090,12 +1415,32 @@ export function DungeonPanel({
       }
     }
 
+    // Clérigo conditional bonuses — Couraça Espiritual/Solo Consagrado only
+    // while Consagração is active (Solo Consagrado also adds Tenacidade),
+    // Guarda da Alma only while a normal barrier (shield pool or its own
+    // barrier-portion ledger) is up. Each node's own UNCONDITIONAL bonus
+    // (its mdefPct/defPct effect field) is already folded into `base` by
+    // computeCombatStats — only the extra conditional slice lives here.
+    let clerigoDefBonusMult = 1, clerigoMdefBonusMult = 1;
+    if (clerigoActive) {
+      if (clerigoConsecrationActive()) {
+        if (clerigoHasSkill('clerigo:retidao:0')) clerigoMdefBonusMult *= 1 + COURACA_ESPIRITUAL_CONSECRATION_MDEF_PCT;
+        if (clerigoHasSkill('clerigo:retidao:6')) {
+          clerigoMdefBonusMult *= 1 + SOLO_CONSAGRADO_MDEF_BONUS;
+          tenacityBonus += SOLO_CONSAGRADO_TENACITY_BONUS;
+        }
+      }
+      if (clerigoHasSkill('clerigo:retidao:5') && (playerShieldRef.current > 0 || clerigoBarrierPortionsRef.current.length > 0)) {
+        clerigoDefBonusMult *= 1 + GUARDA_DA_ALMA_SHIELD_DEF_PCT;
+      }
+    }
+
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct)),
-      def: Math.max(0, Math.round(base.def * defMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult)),
+      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * clerigoMdefBonusMult)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus,
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd)),
@@ -1145,7 +1490,26 @@ export function DungeonPanel({
   // stays guaranteed by design, only the regular per-hit status/CC rolls
   // below can be resisted.
   function playerResists(defStats: { tenacityPct: number }): boolean {
-    return Math.random() < defStats.tenacityPct;
+    const resisted = Math.random() < defStats.tenacityPct;
+    // Fé Vigilante (clerigo:retidao:2) — the first negative effect you fully
+    // resist during a Consagração instance extends it by 1 tick.
+    if (resisted && isClerigo() && clerigoConsecrationActive() && clerigoHasSkill('clerigo:retidao:2') && !clerigoConsecrationFlagsRef.current.feVigilante) {
+      clerigoConsecrationFlagsRef.current = { ...clerigoConsecrationFlagsRef.current, feVigilante: true };
+      clerigoExtendConsecration(FE_VIGILANTE_EXTEND_ROUNDS);
+    }
+    return resisted;
+  }
+
+  // Solo Consagrado (clerigo:retidao:6) — the FIRST negative effect (status/
+  // CC) that lands on you during a Consagração instance has its duration cut
+  // by 1 tick and grants +1 Fé, once per instance. Returns the (possibly
+  // shortened) duration to actually apply; a result of 0 means the effect
+  // shouldn't be applied at all.
+  function clerigoSoloConsagradoFirstNegative(rounds: number): number {
+    if (!isClerigo() || !clerigoConsecrationActive() || !clerigoHasSkill('clerigo:retidao:6') || clerigoConsecrationFlagsRef.current.soloConsagrado) return rounds;
+    clerigoConsecrationFlagsRef.current = { ...clerigoConsecrationFlagsRef.current, soloConsagrado: true };
+    clerigoGainFaith(1);
+    return Math.max(0, rounds - SOLO_CONSAGRADO_FIRST_NEGATIVE_DURATION_CUT);
   }
 
   // True while an ability's own persistent effect is still up — lets
@@ -1168,6 +1532,9 @@ export function DungeonPanel({
     if (eff.kind === 'statMod' && eff.statModTarget === 'self') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
     if (eff.kind === 'wallStance') return barbWallRoundsLeftRef.current > 0;
     if (eff.kind === 'painGuard') return barbPostureRoundsLeftRef.current > 0;
+    if (eff.kind === 'divineWall') return clerigoWallBonusActive();
+    if (eff.kind === 'consecrationGuard') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    if (eff.kind === 'reviveWindow') return clerigoReviveWindowRoundsLeftRef.current > 0 || clerigoResurrectionTriggeredRef.current;
     return false;
   }
 
@@ -1214,16 +1581,46 @@ export function DungeonPanel({
     const eff = ab.effect;
     const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
     if (eff.kind === 'heal') {
+      if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
       const c = chRef.current;
       const baselineMaxHp = CLASSES[c.classId].baseHp + 6 * (c.level - 1);
       const maxHp = effectiveMaxHp(c);
       const prevHp = c.hp;
-      const healed = Math.min(maxHp, c.hp + Math.round(baselineMaxHp * (eff.healPct ?? 0.2) * supportMult));
+      // Clérigo: Mãos Consagradas (flat)/Sabedoria Compassiva (HP<40%)/Véu da
+      // Alma (DOT/debuff/silêncio ativo) stack as heal-efficiency bonuses on
+      // top of the shared BaselineMaxHp*healPct*supportMult formula — inert
+      // (0) for every other class.
+      const efficiencyBonus = clerigoHealEfficiencyBonus();
+      const rawHeal = Math.round(baselineMaxHp * (eff.healPct ?? 0.2) * supportMult * (1 + efficiencyBonus));
+      const healed = Math.min(maxHp, c.hp + rawHeal);
       updateCh({ ...c, hp: healed });
       const healedAmount = healed - prevHp;
+      const overheal = Math.max(0, rawHeal - healedAmount);
       pushFloat('player', healedAmount, false, undefined, undefined, true);
       pushAbilityCast('player', ab.name, icon, healedAmount, true);
-      return `${ab.name}: você recupera ${healedAmount} de vida.`;
+      // "Cura Significativa" — a Fé-generating heal ability that actually
+      // restored enough of BaselineMaxHp (Mãos Consagradas lowers the bar).
+      if (eff.faithGainOnHeal && healedAmount / baselineMaxHp >= clerigoSignificantHealThresholdPct()) {
+        clerigoGainFaith(1);
+        // Misericórdia Ativa (clerigo:devocao:8) — shaves 1 tick off your
+        // own first active DOT whenever a heal like this generates Fé.
+        if (clerigoHasSkill('clerigo:devocao:8') && playerStatusRef.current.length > 0) {
+          playerStatusRef.current = playerStatusRef.current
+            .map((s, i) => (i === 0 ? { ...s, roundsLeft: s.roundsLeft - MISERICORDIA_ATIVA_DOT_REDUCTION_TICKS } : s))
+            .filter((s) => s.roundsLeft > 0);
+          syncPlayerStatuses();
+        }
+      }
+      // Graça Transbordante — overheal from THIS heal (never regen/lifesteal/
+      // passive cura) converts into Graça once unlocked; no-op otherwise.
+      clerigoAddOverhealAsGrace(overheal);
+      let extraLine = '';
+      if (ab.extraEffects) {
+        for (const ex of ab.extraEffects) {
+          if (ex.kind === 'cleanseOne' && clerigoCleanseOne()) extraLine = ' Um efeito negativo é removido.';
+        }
+      }
+      return `${ab.name}: você recupera ${healedAmount} de vida.${extraLine}`;
     } else if (eff.kind === 'buffDef') {
       playerBuffsRef.current.push({ kind: 'def', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
       pushAbilityCast('player', ab.name, icon, null, false);
@@ -1233,12 +1630,19 @@ export function DungeonPanel({
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: sua chance de bloqueio aumenta.`;
     } else if (eff.kind === 'shield') {
-      const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.shieldPct ?? 0.25) * supportMult);
+      if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
+      // Barreira Ritual (+4% multiplicativo) only ever applies to a NORMAL
+      // barrier like this one, never to Graça — clerigoBarrierEfficiencyMult
+      // returns 1 for every other class/without the talent.
+      const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.shieldPct ?? 0.25) * supportMult * clerigoBarrierEfficiencyMult());
       playerShieldRef.current += amount;
+      clerigoAddBarrierPortion(amount);
       syncShield();
+      if (eff.consecrationRoundsOnCast) clerigoStartConsecration(eff.consecrationRoundsOnCast);
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: um escudo absorve ${amount} de dano.`;
     } else if (eff.kind === 'regen') {
+      if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
       playerRegenRef.current.push({ pct: (eff.regenPct ?? 0.08) * supportMult, roundsLeft: eff.regenRounds ?? 4, sourceAbilityId: ab.id });
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você começa a regenerar vida.`;
@@ -1265,6 +1669,7 @@ export function DungeonPanel({
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você provoca o inimigo, reduzindo o dano recebido.`;
     } else if (eff.kind === 'dispel') {
+      const removedCount = playerModsRef.current.filter((m) => m.pct < 0).length + playerStatusRef.current.length + playerCCRef.current.length;
       playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
       playerStatusRef.current = [];
       playerCCRef.current = [];
@@ -1272,7 +1677,53 @@ export function DungeonPanel({
       syncPlayerCC();
       syncPlayerMods();
       pushAbilityCast('player', ab.name, icon, null, false);
+      // Purificação Divina (clerigo:provacao:9) — Fé if it actually removed
+      // something, and converts every 2 effects removed into Julgamento
+      // (capped) — no-op (removedCount stays consistent) for every other
+      // dispel-kind ability in the game.
+      if (eff.cleanseFaithGain && removedCount > 0) clerigoGainFaith(1);
+      if (eff.cleanseJudgmentPer2 && removedCount > 0) {
+        const stacks = Math.min(PURIFICACAO_DIVINA_JUDGMENT_CAP, Math.floor(removedCount / 2) * PURIFICACAO_DIVINA_JUDGMENT_PER_2_CLEANSED);
+        if (stacks > 0) clerigoApplyJudgment(stacks);
+      }
       return `${ab.name}: você remove os efeitos negativos.`;
+    } else if (eff.kind === 'cleanseOne') {
+      const removed = clerigoCleanseOne();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return removed ? `${ab.name}: um efeito negativo é removido.` : `${ab.name}: não havia efeito negativo para remover.`;
+    } else if (eff.kind === 'consecrationGuard') {
+      // Voto de Proteção (clerigo:retidao:10) — creates/renews Consagração
+      // and a temporary damage-reduction + Tenacidade buff, SAB-scaled up
+      // to the cap.
+      if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
+      if (eff.consecrationRoundsOnCast) clerigoStartConsecration(eff.consecrationRoundsOnCast);
+      const reductionPct = Math.min(VOTO_PROTECAO_DMG_REDUCTION_CAP_PCT, VOTO_PROTECAO_BASE_DMG_REDUCTION_PCT * supportMult);
+      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: -reductionPct, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      playerModsRef.current.push({ stat: 'tenacityPct', pct: VOTO_PROTECAO_TENACITY_BONUS_PCT, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
+      syncPlayerMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: Consagração se firma, e o dano recebido cai.`;
+    } else if (eff.kind === 'divineWall') {
+      // Muralha Divina (clerigo:retidao:13) — the biggest single barrier in
+      // the kit, tracked as its own barrier-portion (isWallBonus) so the
+      // -10% dmg-taken reduction can gate on THIS specific portion still
+      // having HP, not the shared pool as a whole.
+      if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
+      const amount = Math.round(Math.min(MURALHA_DIVINA_SHIELD_CAP_PCT, (eff.shieldPct ?? 0.12) * supportMult) * clerigoEffMaxHp() * clerigoBarrierEfficiencyMult());
+      playerShieldRef.current += amount;
+      clerigoAddBarrierPortion(amount, { isWallBonus: true });
+      syncShield();
+      if (eff.consecrationRoundsOnCast) clerigoStartConsecration(eff.consecrationRoundsOnCast);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: uma grande barreira surge, reduzindo o dano recebido enquanto durar.`;
+    } else if (eff.kind === 'reviveWindow') {
+      // Ressurreição Menor (clerigo:devocao:13) — opens a short window
+      // checked by clerigoCheckDeathPrevention() inside resolvePlayerDeath,
+      // at most once per attempt.
+      if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
+      clerigoOpenReviveWindow(eff.reviveWindowRounds ?? 3);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: por alguns instantes, sua morte será evitada.`;
     } else if (eff.kind === 'lifestealBuff') {
       playerModsRef.current.push({ stat: 'lifestealPct', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
       syncPlayerMods();
@@ -1362,9 +1813,15 @@ export function DungeonPanel({
   function tickStatus(ref: { current: StatusInstance[] }, hp: number, applyHp: (hp: number) => void, side: 'player' | 'enemy'): void {
     if (ref.current.length === 0) return;
     const ticking = ref.current;
-    const totalDmg = ticking.reduce((s, e) => s + e.dmgPerTick, 0);
+    let totalDmg = ticking.reduce((s, e) => s + e.dmgPerTick, 0);
     ref.current = ticking.map((s) => ({ ...s, roundsLeft: s.roundsLeft - 1 })).filter((s) => s.roundsLeft > 0);
     if (totalDmg <= 0) return;
+    // Vigília (clerigo:retidao:7) — the first DOT tick you suffer during a
+    // Consagração instance is reduced, once per instance.
+    if (side === 'player' && isClerigo() && clerigoConsecrationActive() && clerigoHasSkill('clerigo:retidao:7') && !clerigoConsecrationFlagsRef.current.vigilia) {
+      clerigoConsecrationFlagsRef.current = { ...clerigoConsecrationFlagsRef.current, vigilia: true };
+      totalDmg = Math.round(totalDmg * (1 - VIGILIA_FIRST_DOT_TICK_REDUCTION_PCT));
+    }
     applyHp(Math.max(1, hp - totalDmg));
     pushFloat(side, totalDmg, false);
     flash(side);
@@ -1397,6 +1854,18 @@ export function DungeonPanel({
       barbTickPain();
       if (barbPostureRoundsLeftRef.current > 0) barbPostureRoundsLeftRef.current -= 1;
       if (barbWallRoundsLeftRef.current > 0) barbWallRoundsLeftRef.current -= 1;
+    }
+    if (isClerigo()) {
+      clerigoTickGrace();
+      clerigoTickConsecration();
+      clerigoTickJudgment();
+      if (clerigoAncoraSagradaWindowRef.current > 0) clerigoAncoraSagradaWindowRef.current -= 1;
+      // Juízo Final's buff decays via the generic playerModsRef timer above
+      // (tickMods) — once it's gone, clear the "can't renew while active"
+      // flag so the next 5-stack consumption can trigger it again.
+      if (clerigoJuizoFinalActiveRef.current && !playerModsRef.current.some((m) => m.sourceAbilityId === 'clerigo:provacao:14')) {
+        clerigoJuizoFinalActiveRef.current = false;
+      }
     }
 
     if (playerRegenRef.current.length > 0) {
@@ -1521,6 +1990,23 @@ export function DungeonPanel({
         syncBarbFury();
         syncBarbFrenzy();
       }
+      // Clérigo: Fé partially carries over (nextFaithForNewEnemy), Graça/
+      // Consagração/barreiras/Ancora Sagrada/Juízo Final reset like Fúria/
+      // Frenesi, and Julgamento just doesn't exist on the freshly spawned
+      // enemy — per-enemy Fé-milestone tracking resets with it.
+      if (isClerigo()) {
+        clerigoFaithRef.current = nextFaithForNewEnemy(clerigoFaithRef.current);
+        clerigoGraceRef.current = { amount: 0, ticksLeft: 0 };
+        clerigoConsecrationRoundsLeftRef.current = 0;
+        clerigoConsecrationFlagsRef.current = { soloConsagrado: false, feVigilante: false, vigilia: false, santuarioVivo: false };
+        clerigoBarrierPortionsRef.current = [];
+        clerigoAncoraSagradaWindowRef.current = 0;
+        clerigoJudgmentFaithMilestonesRef.current = new Set();
+        clerigoJuizoFinalActiveRef.current = false;
+        syncClerigoFaith();
+        syncClerigoGrace();
+        syncClerigoConsecration();
+      }
       // Both clocks restart clean for the new encounter — previously
       // only the player's got a fresh schedulePlayer() call here, so
       // the enemy inherited whatever was left on the OLD enemy's timer
@@ -1547,6 +2033,13 @@ export function DungeonPanel({
     // count as it stood at the START of the action, not after their own
     // consumeWoundsOnHit clears it.
     const woundsAtActionStart = barbActive ? barbEnemyWoundStacks() : 0;
+    const clerigoActive = isClerigo();
+    // Same "snapshot before this action can itself consume/renew the stack"
+    // discipline as woundsAtActionStart above — Peso do Veredito/Fogo da
+    // Fé/Olhar do Juiz/Veredito Preciso all read Julgamento as it stood at
+    // the START of the action, not after a consuming ability (Sentença
+    // Final/Apocalipse Sagrado) clears it mid-resolution.
+    const judgmentAtActionStart = clerigoActive ? clerigoEnemyJudgmentStacks() : 0;
 
     {
       const stats = computePlayerStats();
@@ -1563,7 +2056,7 @@ export function DungeonPanel({
         // round's damage, exactly like choosing to use any other ability.
         const chosen = pickAbility();
         if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
-          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct);
+          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id));
           const line = resolveSelfAbility(chosen, stats);
           if (line) pushLog(line);
         } else {
@@ -1576,6 +2069,14 @@ export function DungeonPanel({
           if (offenseAbility && offenseAbility.effect.furyCost !== undefined) {
             barbSpendFury(offenseAbility.effect.furyCost);
             cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
+          }
+          // Clérigo: same timing as Fúria above — a Fé-costed offense
+          // ability (Martelo da Fé/Sentença Final/Ira Consumidora/Apocalipse
+          // Sagrado) pays its cost and starts its cooldown the instant it's
+          // chosen, never refunded on a miss.
+          if (offenseAbility && offenseAbility.effect.faithCost !== undefined) {
+            clerigoSpendFaith(offenseAbility.effect.faithCost);
+            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
           }
           const enemyEvasion = enemyStunned ? 0 : computeEnemyEvasion();
           // Cheiro de Sangue (barbaro:selvageria:8) — +2% crit chance per
@@ -1599,15 +2100,23 @@ export function DungeonPanel({
           const olharPredadorBonus = barbActive && barbHasSkill('barbaro:selvageria:0') && woundsAtActionStart >= 1
             ? capped(SELVAGERIA_OLHAR_PREDADOR_RATE, attrTotal(chRef.current, 'dex'), SELVAGERIA_OLHAR_PREDADOR_CAP) : 0;
           const olfatoBonus = barbActive && barbHasSkill('barbaro:selvageria:7') ? woundsAtActionStart * WOUND_ACCURACY_PCT_PER_STACK : 0;
-          const accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus;
+          // Olhar do Juiz (clerigo:provacao:1) — extra accuracy vs an enemy
+          // sitting at 3+ Julgamento. Veredito Preciso (clerigo:provacao:7)
+          // — small accuracy bonus per current Julgamento stack (up to +2%
+          // at 5). Both read the action-start snapshot, same as Bárbaro's
+          // Ferida-based accuracy bonuses above.
+          const olharDoJuizBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:1') && judgmentAtActionStart >= OLHAR_DO_JUIZ_HIGH_JUDGMENT_THRESHOLD
+            ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
+          const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
+          const accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus;
           missed = rollMiss(accuracyForRoll, enemyEvasion);
 
           if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
           } else if (offenseAbility) {
-            if (offenseAbility.effect.furyCost === undefined) {
-              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct);
+            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined) {
+              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
             }
             const eff = offenseAbility.effect;
             // Abilities from magical classes cast as spells by default (matk vs
@@ -1628,6 +2137,17 @@ export function DungeonPanel({
             if (eff.painConsumeMaxPct && eff.painConsumeDmgMultPer2Pct) {
               const consumed = barbConsumePain(eff.painConsumeMaxPct);
               dmgMult += eff.painConsumeDmgMultPer2Pct * (consumed / (barbEffMaxHp() * 0.02));
+            }
+            // Clérigo: Golpe Sagrado's own dmgMult jumps while Consagração is
+            // active. Sentença Final scales by how many Julgamentos this very
+            // hit is about to consume (capped by judgmentConsumeMax); Ira
+            // Consumidora (judgmentReadOnly) instead scales by the CURRENT
+            // stack count without consuming any.
+            if (eff.consecrationDmgMultBonus && clerigoConsecrationActive()) dmgMult += eff.consecrationDmgMultBonus;
+            const judgmentStacksToConsume = eff.judgmentConsumeMax !== undefined && !eff.judgmentReadOnly
+              ? Math.min(eff.judgmentConsumeMax, judgmentAtActionStart) : 0;
+            if (eff.dmgMultPerJudgmentStack) {
+              dmgMult += eff.dmgMultPerJudgmentStack * (eff.judgmentReadOnly ? judgmentAtActionStart : judgmentStacksToConsume);
             }
             const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
@@ -1659,6 +2179,35 @@ export function DungeonPanel({
             if (eff.consumeWoundsOnHit) barbConsumeWounds();
             if (eff.furyGainOnHit) barbGainFuryDirect(eff.furyGainOnHit);
             if (eff.furyGainOnCrit && crit) barbGainFuryDirect(eff.furyGainOnCrit);
+            // Clérigo: Julgamento apply (Chama Purificadora)/consume
+            // (Sentença Final/Apocalipse Sagrado)/duration-cut (Ira
+            // Consumidora)/Consagração-extend-on-hit (Golpe Sagrado) — all
+            // gated on this actually connecting (this whole branch already
+            // sits inside "not missed").
+            if (eff.judgmentStacksOnHit) clerigoApplyJudgment(eff.judgmentStacksOnHit);
+            if (judgmentStacksToConsume > 0) {
+              const consumed = clerigoConsumeJudgment(judgmentStacksToConsume);
+              // Sabedoria do Julgamento (clerigo:provacao:11) — small heal
+              // when a single ability consumes 3+ Julgamentos at once.
+              if (consumed >= SABEDORIA_JULGAMENTO_MIN_CONSUMED && clerigoHasSkill('clerigo:provacao:11')) {
+                const healAmt = Math.round(clerigoBaselineMaxHp() * SABEDORIA_JULGAMENTO_HEAL_PCT);
+                if (healAmt > 0) {
+                  updateCh({ ...chRef.current, hp: Math.min(clerigoEffMaxHp(), chRef.current.hp + healAmt) });
+                  pushFloat('player', healAmt, false, undefined, undefined, true);
+                }
+              }
+              // Juízo Final (clerigo:provacao:14) — consuming EXACTLY 5 at
+              // once grants +1 Fé and a temporary MATK buff that can't be
+              // renewed while it's still up.
+              if (consumed === APOCALIPSE_SAGRADO_REQUIRED_JUDGMENT && clerigoHasSkill('clerigo:provacao:14') && !clerigoJuizoFinalActiveRef.current) {
+                clerigoGainFaith(1);
+                clerigoJuizoFinalActiveRef.current = true;
+                playerModsRef.current.push({ stat: 'atk', pct: JUIZO_FINAL_MATK_BUFF_PCT, roundsLeft: JUIZO_FINAL_MATK_BUFF_ROUNDS, sourceAbilityId: 'clerigo:provacao:14' });
+                syncPlayerMods();
+              }
+            }
+            if (eff.judgmentDurationCutOnHit) clerigoReduceJudgmentDuration(eff.judgmentDurationCutOnHit);
+            if (eff.extendConsecrationOnHit && clerigoConsecrationActive()) clerigoExtendConsecration(eff.extendConsecrationOnHit);
           } else {
             // Plain attack — magical classes swing with matk/mdef instead of
             // atk/def, same class split as an ability's default dmgType
@@ -1679,6 +2228,22 @@ export function DungeonPanel({
           if (!missed) {
             if (enemyStatusRef.current.some((s) => s.kind === 'poison') && stats.dmgPctVsPoison > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsPoison));
             if (enemyStatusRef.current.some((s) => s.kind === 'burn') && stats.dmgPctVsBurn > 0) dmg = Math.round(dmg * (1 + stats.dmgPctVsBurn));
+            if (clerigoActive && playerHitMagical) {
+              // Fogo da Fé (clerigo:provacao:0) — small flat bonus vs an
+              // enemy carrying at least 1 Julgamento. Peso do Veredito
+              // (clerigo:provacao:8) is the ONE source of the per-stack
+              // bonus (never duplicated onto Julgamento's own base effect).
+              // Both apply to ANY direct magical hit, ability or plain.
+              if (clerigoHasSkill('clerigo:provacao:0') && judgmentAtActionStart >= 1) {
+                dmg = Math.round(dmg * (1 + FOGO_DA_FE_DMG_VS_JUDGMENT_PCT));
+              }
+              if (clerigoHasSkill('clerigo:provacao:2') && castAbility && (castAbility.effect.judgmentStacksOnHit ?? 0) >= 1) {
+                dmg = Math.round(dmg * (1 + PALAVRA_ARDENTE_DMG_PCT));
+              }
+              if (clerigoHasSkill('clerigo:provacao:8') && judgmentAtActionStart > 0) {
+                dmg = Math.round(dmg * (1 + JUDGMENT_DMG_PCT_PER_STACK * judgmentAtActionStart));
+              }
+            }
             if (barbActive) {
               // Força Furiosa (barbaro:furia:0) — FOR-scaled, only with Fúria >= 50.
               if (barbHasSkill('barbaro:furia:0') && barbFuryRef.current >= FURY_INTERACTION_THRESHOLD) {
@@ -1723,6 +2288,17 @@ export function DungeonPanel({
               barbGainNormalFury(castAbility ? FURY_GAIN_ABILITY_HIT : (barbHasSkill('barbaro:furia:6') ? FURY_GAIN_BASIC_HIT_SANGUE_QUENTE : FURY_GAIN_BASIC_HIT));
               if (crit) barbGainNormalFury(FURY_GAIN_CRIT_BONUS);
             }
+            if (clerigoActive && playerHitMagical && crit) {
+              // Acusação (clerigo:provacao:6) / Zelo Inflexível
+              // (clerigo:provacao:3) — apply to ANY direct magical crit
+              // (ability or plain attack), each at most once per action.
+              if (clerigoHasSkill('clerigo:provacao:6')) clerigoApplyJudgment(1);
+              if (clerigoHasSkill('clerigo:provacao:3') && clerigoEnemyJudgmentStacks() > 0) {
+                clerigoRenewJudgmentDuration();
+                const w = enemyRef.current.judgment;
+                if (w) updateEnemy({ ...enemyRef.current, judgment: { stacks: w.stacks, ticksLeft: w.ticksLeft + ZELO_INFLEXIVEL_EXTEND_ROUNDS } });
+              }
+            }
           }
         }
       }
@@ -1749,6 +2325,20 @@ export function DungeonPanel({
         // buff it applied) made the round more than just a routine hit.
         if (abilityTag) pushLog(`Você usa${abilityTag}!${statusLine}`);
 
+        // Martelo da Fé (clerigo:retidao:12) — a small barrier sized off the
+        // damage this very hit just dealt (SAB benefits it at half rate,
+        // MARTELO_DA_FE_SUPPORT_FACTOR, since it isn't a heal/shield-% base).
+        if (castAbility?.effect.shieldFromDamagePct) {
+          const supportMult = 1 + stats.supportPowerPct * MARTELO_DA_FE_SUPPORT_FACTOR;
+          const cap = (castAbility.effect.shieldFromDamageCapPct ?? 1) * clerigoEffMaxHp();
+          const shieldAmt = Math.round(Math.min(dmg * castAbility.effect.shieldFromDamagePct * supportMult, cap) * clerigoBarrierEfficiencyMult());
+          if (shieldAmt > 0) {
+            playerShieldRef.current += shieldAmt;
+            clerigoAddBarrierPortion(shieldAmt);
+            syncShield();
+          }
+        }
+
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
           const maxHp = effectiveMaxHp(chRef.current);
           // Vigor Doloroso (barbaro:resistencia:7) — multiplies the HEAL
@@ -1774,7 +2364,15 @@ export function DungeonPanel({
   // Centralized "the player's HP just reached 0" closure — mirrors
   // resolveEnemyDeath above. Both a direct enemy hit here in enemyAct and a
   // Bárbaro Dor tick (barbTickPain) resolve through this ONE path.
-  function resolvePlayerDeath() {
+  // Returns true when death was PREVENTED (Ressurreição Menor) — callers
+  // must keep scheduling the fight's clocks in that case instead of the
+  // usual "combat is over" assumption. Returns false/undefined when death
+  // was finalized as normal.
+  function resolvePlayerDeath(): boolean {
+    // Ressurreição Menor (clerigo:devocao:13) — checked BEFORE any death is
+    // finalized; if the window is open and unused this attempt, it restores
+    // HP and combat simply continues instead of ending.
+    if (isClerigo() && clerigoCheckDeathPrevention()) return true;
     pushLog([{ text: 'Você caiu em combate...', color: '#8a2030' }]);
     phaseRef.current = 'ended';
     endedReasonRef.current = 'death';
@@ -1784,6 +2382,7 @@ export function DungeonPanel({
       setResultBanner('defeat');
       setTimeout(() => { if (mountedRef.current) setResultBanner(null); }, 2000);
     }
+    return false;
   }
 
   // The enemy's own action clock — independent of the player's, currently
@@ -1845,7 +2444,12 @@ export function DungeonPanel({
       ? capped(FURIA_CORACAO_DE_GUERRA_RATE, attrTotal(chRef.current, 'vit'), FURIA_CORACAO_DE_GUERRA_CAP)
       : 0;
     const frenzyTakenBonus = barbActive && barbFrenzyRef.current ? FRENZY_DMG_TAKEN_BONUS - coracaoDeGuerraReduction : 0;
-    let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus));
+    // Muralha Divina's -10% sits at this same initial multiplier line as
+    // dungeon.dmgTakenMult/Frenesi's own bonus, per Section 18 precedent —
+    // gated on ITS OWN barrier portion (isWallBonus) still having HP.
+    const clerigoActiveEnemy = isClerigo();
+    const clerigoWallReduction = clerigoActiveEnemy && clerigoWallBonusActive() ? MURALHA_DIVINA_DMG_TAKEN_PCT : 0;
+    let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus) * (1 + clerigoWallReduction));
     if (barbActive && edmg > 0) {
       // Corpo Duro (barbaro:resistencia:2) — a single direct hit exceeding
       // 15% of effective max HP gets reduced further, VIT-scaled.
@@ -1858,6 +2462,24 @@ export function DungeonPanel({
         edmg = Math.round(edmg * (1 - capped(RESISTENCIA_CORACAO_SELVAGEM_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_CORACAO_SELVAGEM_CAP)));
       }
     }
+    // Santuário Vivo (clerigo:retidao:14) — once per Consagração instance,
+    // negates part of a genuinely big hit (after mitigation, before
+    // block/barreiras) and ends the Consagração immediately as the cost.
+    if (clerigoActiveEnemy && edmg > 0 && clerigoHasSkill('clerigo:retidao:14') && clerigoConsecrationActive()
+      && !clerigoConsecrationFlagsRef.current.santuarioVivo && edmg >= SANTUARIO_VIVO_BURST_THRESHOLD_PCT * clerigoEffMaxHp()) {
+      clerigoConsecrationFlagsRef.current = { ...clerigoConsecrationFlagsRef.current, santuarioVivo: true };
+      edmg = Math.round(edmg * (1 - SANTUARIO_VIVO_BURST_REDUCTION_PCT));
+      clerigoConsecrationRoundsLeftRef.current = 0;
+      syncClerigoConsecration();
+    }
+    // Ancora Sagrada (clerigo:retidao:11) — the next direct hit after a
+    // normal barrier was destroyed takes a small guaranteed reduction,
+    // consumed the instant it applies (never stacks).
+    if (clerigoActiveEnemy && edmg > 0 && clerigoAncoraSagradaWindowRef.current > 0) {
+      edmg = Math.round(edmg * (1 - ANCORA_SAGRADA_NEXT_HIT_REDUCTION_PCT));
+      clerigoAncoraSagradaWindowRef.current = 0;
+    }
+
     const blocked = Math.random() < defStats.blockChance;
     if (blocked) edmg = Math.round(edmg * 0.5);
 
@@ -1867,6 +2489,14 @@ export function DungeonPanel({
       playerShieldRef.current -= shieldAbsorbed;
       edmg -= shieldAbsorbed;
       syncShield();
+    }
+    // Clérigo absorption order per spec: mitigation → shield/barreira normal
+    // (the generic pool above) → distribute that same absorption across the
+    // per-instance barrier ledger (Fé-threshold/Intercessão/Ancora Sagrada
+    // triggers) → Graça → HP.
+    if (clerigoActiveEnemy) {
+      if (shieldAbsorbed > 0) clerigoAbsorbBarriers(shieldAbsorbed);
+      if (edmg > 0) edmg -= clerigoAbsorbGrace(edmg);
     }
 
     // Bárbaro: Postura Selvagem (35% total while active) or the passive
@@ -1952,16 +2582,22 @@ export function DungeonPanel({
         if (playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else {
-          playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: abEffect.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
-          syncPlayerStatuses();
+          const rounds = clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3);
+          if (rounds > 0) {
+            playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+            syncPlayerStatuses();
+          }
           pushLog(`Você foi ${STATUS_VERB[abEffect.status]}!`);
         }
       } else if (abEffect.kind === 'controlSlam' && abEffect.cc && !playerImmune()) {
         if (playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else {
-          playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: abEffect.ccRounds ?? 1 });
-          syncPlayerCC();
+          const rounds = clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1);
+          if (rounds > 0) {
+            playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: rounds });
+            syncPlayerCC();
+          }
           pushLog(`Você ficou ${CC_LABEL[abEffect.cc].toLowerCase()}!`);
         }
       } else if (abEffect.kind === 'weakenNova' && abEffect.statMod && !playerImmune()) {
@@ -1987,12 +2623,18 @@ export function DungeonPanel({
         if ((proc.status || proc.cc) && playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else if (proc.status) {
-          playerStatusRef.current.push({ kind: proc.status, roundsLeft: proc.rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
-          syncPlayerStatuses();
+          const rounds = clerigoSoloConsagradoFirstNegative(proc.rounds);
+          if (rounds > 0) {
+            playerStatusRef.current.push({ kind: proc.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+            syncPlayerStatuses();
+          }
           pushLog(proc.label);
         } else if (proc.cc) {
-          playerCCRef.current.push({ kind: proc.cc, roundsLeft: proc.rounds });
-          syncPlayerCC();
+          const rounds = clerigoSoloConsagradoFirstNegative(proc.rounds);
+          if (rounds > 0) {
+            playerCCRef.current.push({ kind: proc.cc, roundsLeft: rounds });
+            syncPlayerCC();
+          }
           pushLog(proc.label);
         } else if (proc.statMod) {
           playerModsRef.current.push({ stat: proc.statMod, pct: proc.statModPct ?? -0.15, roundsLeft: proc.rounds });
@@ -2002,7 +2644,7 @@ export function DungeonPanel({
       }
     }
 
-    if (hp <= 0) { resolvePlayerDeath(); return; }
+    if (hp <= 0 && !resolvePlayerDeath()) return;
     scheduleEnemy();
   }
 
@@ -2301,6 +2943,21 @@ export function DungeonPanel({
       <img src={iconSangramento} alt="" className="w-3.5 h-3.5 rounded-full" />x{enemyWounds.stacks}
     </button>
   ) : null;
+  // Clérigo redesign UI (lib/clerigo.ts) — Fé/Graça/Consagração near the
+  // player's own HP, Julgamento badge near the enemy's, same read-off-state
+  // discipline as Bárbaro's bars above.
+  const isClerigoChar = ch.classId === 'clerigo';
+  const enemyJudgment = enemy.judgment;
+  const judgmentBadge = enemyJudgment && enemyJudgment.stacks > 0 ? (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); setOpenMechanicId('clerigo:judgment'); }}
+      className="inline-flex items-center gap-0.5 text-[10px] text-amber-300 ml-1 shrink-0"
+      title={`Julgamento x${enemyJudgment.stacks}`}
+    >
+      ⚖ x{enemyJudgment.stacks}
+    </button>
+  ) : null;
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
   const enemyTags = [...enemyStatuses.map((s) => allStatusLabel[s]), ...enemyCCState.map((c) => CC_LABEL[c])];
@@ -2360,7 +3017,7 @@ export function DungeonPanel({
         <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
           <div className="flex justify-between items-baseline gap-2">
             <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate flex items-center">
-              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}{woundBadge}
+              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}{woundBadge}{judgmentBadge}
             </span>
             <span className="text-xs text-parchment/70 shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
           </div>
@@ -2691,6 +3348,45 @@ export function DungeonPanel({
           )}
         </div>
       )}
+      {isClerigoChar && phase === 'fight' && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setOpenMechanicId('clerigo:faith')}
+            className="w-full flex justify-between items-baseline text-[10px] text-parchment/50 uppercase tracking-wide underline decoration-dotted decoration-parchment/30 underline-offset-2"
+          >
+            <span>Fé</span>
+            <span className="text-sm tracking-wider text-amber-300">
+              {Array.from({ length: FAITH_MAX }, (_, i) => (i < clerigoFaithState ? '◆' : '◇')).join(' ')}
+            </span>
+          </button>
+          {clerigoGraceState > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpenMechanicId('clerigo:grace')}
+                className="w-full flex justify-between items-baseline text-[10px] text-sky-300/80 uppercase tracking-wide mt-1 underline decoration-dotted decoration-sky-300/30 underline-offset-2"
+              >
+                <span>Graça</span>
+                <span>{Math.round(clerigoGraceState)}</span>
+              </button>
+              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
+                <div className="h-1.5 bg-sky-300 rounded transition-[width] duration-300" style={{ width: `${Math.min(100, (clerigoGraceState / effMaxHp) * 100)}%` }} />
+              </div>
+            </>
+          )}
+          {clerigoConsecrationState > 0 && (
+            <button
+              type="button"
+              onClick={() => setOpenMechanicId('clerigo:consecration')}
+              className="w-full flex justify-between items-baseline text-[10px] text-gold uppercase tracking-wide mt-1 underline decoration-dotted decoration-gold/30 underline-offset-2"
+            >
+              <span>✦ Consagração</span>
+              <span>{clerigoConsecrationState}</span>
+            </button>
+          )}
+        </div>
+      )}
       {openMechanicId && <MechanicQuickModal mechanicId={openMechanicId} onClose={() => setOpenMechanicId(null)} />}
 
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
@@ -2706,7 +3402,7 @@ export function DungeonPanel({
         {!enemy.isBoss && (
           <div>
             <div className="flex justify-between">
-              <span className={`truncate flex items-center ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}{woundBadge}</span>
+              <span className={`truncate flex items-center ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}{woundBadge}{judgmentBadge}</span>
               <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
             </div>
             <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>

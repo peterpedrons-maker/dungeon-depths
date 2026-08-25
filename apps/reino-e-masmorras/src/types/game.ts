@@ -165,29 +165,33 @@ export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
 // ability introduces a miss chance. 'dmgTakenPct' covers both Damage
 // Reduction (negative) and Vulnerability (positive). 'defPenPct' covers
 // Physical/Magic Penetration (ignores a % of the target's defense).
-export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct';
+export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct' | 'tenacityPct';
 
-// Composable conditions (see lib/barbarian.ts's evalAbilityCondition) —
-// 'all'/'any'/'not' recurse into `conditions` ('not' only ever reads its
+// Composable conditions (see lib/combatConditions.ts's evalAbilityCondition)
+// — 'all'/'any'/'not' recurse into `conditions` ('not' only ever reads its
 // first entry), everything else is a leaf test evaluated against the live
 // AbilityConditionContext built by DungeonPanel.conditionMet(). Added for
 // the Bárbaro redesign's resource/state-gated kit (e.g. "Fúria >= 20 AND
-// not already in Frenesi"), generic so any future class's kit can compose
-// the same leaves instead of each condition needing its own bespoke field.
+// not already in Frenesi"), generic so any class's kit can compose the same
+// leaves instead of each condition needing its own bespoke field — resource/
+// state/stackId are plain strings (not a fixed union) precisely so a second
+// class (Clérigo's 'faith'/'consecration'/'judgment') can reuse them without
+// widening a hardcoded literal type every time a new class ships.
 export interface AbilityCondition {
   type:
     | 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed'
     | 'all' | 'any' | 'not'
     | 'resourceAtLeast' | 'resourceBelow' | 'resourceAtMost' | 'stateActive' | 'stateInactive'
-    | 'painAtLeastPct' | 'enemyWoundsAtLeast' | 'enemyWoundsEqual';
+    | 'painAtLeastPct' | 'enemyStacksAtLeast' | 'enemyStacksEqual';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
   conditions?: AbilityCondition[]; // all/any (every entry) / not (only conditions[0])
-  resource?: 'fury'; // resourceAtLeast/resourceBelow
-  value?: number; // resourceAtLeast/resourceBelow threshold
-  state?: 'frenzy'; // stateActive/stateInactive
-  stacks?: number; // enemyWoundsAtLeast
+  resource?: string; // resourceAtLeast/resourceBelow/resourceAtMost — e.g. 'fury' | 'faith'
+  value?: number; // resourceAtLeast/resourceBelow/resourceAtMost threshold
+  state?: string; // stateActive/stateInactive — e.g. 'frenzy' | 'consecration'
+  stackId?: string; // enemyStacksAtLeast/enemyStacksEqual — e.g. 'wounds' | 'judgment'
+  stacks?: number; // enemyStacksAtLeast/enemyStacksEqual threshold
 }
 
 export interface AbilityEffect {
@@ -201,7 +205,17 @@ export interface AbilityEffect {
     // below layer onto ANY kind (mainly bigHit/guaranteedCrit) instead of
     // each combination needing its own kind — see AbilityDef.extraEffects
     // for the general multi-effect mechanism this pairs with.
-    | 'furyBoost' | 'furyMaxFrenzy' | 'painGuard' | 'wallStance' | 'lastStand' | 'bloodFeast';
+    | 'furyBoost' | 'furyMaxFrenzy' | 'painGuard' | 'wallStance' | 'lastStand' | 'bloodFeast'
+    // Clérigo redesign — see lib/clerigo.ts. All self-targeted (added to
+    // SELF_ABILITY_KINDS): cleanseOne removes the single worst negative
+    // effect (Milagre); consecrationGuard creates/renews Consagração plus a
+    // temporary dmg-taken reduction + Tenacidade (Voto de Proteção);
+    // divineWall is Muralha Divina's compound shield+Consagração+conditional
+    // reduction; reviveWindow opens Ressurreição Menor's death-prevention
+    // window. bigHit/dispel/heal/shield/regen (existing kinds above) cover
+    // the rest of the kit via the faith*/consecration*/judgment*/shield*
+    // fields below, composed with extraEffects exactly like Bárbaro's kit.
+    | 'cleanseOne' | 'consecrationGuard' | 'divineWall' | 'reviveWindow';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -258,6 +272,29 @@ export interface AbilityEffect {
   painConsumeMaxPct?: number; // max % of effective max HP of Dor this ability cancels/spends
   painConsumeDmgMultPer2Pct?: number; // offense: +dmgMult per 2% max HP of Dor actually consumed
   furyPerHitTaken?: number; // wallStance: Fúria gained each enemy hit that lands while active
+
+  // ── Clérigo redesign fields (lib/clerigo.ts) — all optional, layered on
+  // top of whichever `kind` above resolves the ability, same composition
+  // discipline as the Bárbaro fields above. faithCost is deducted the
+  // instant an ability is CHOSEN (same timing as furyCost) — see playerAct.
+  faithCost?: number;
+  faithGainOnHeal?: boolean; // heal: +1 Fé if the EFFECTIVE amount healed meets the Cura Significativa threshold (once per action)
+  shieldFaithThresholdPct?: number; // shield/divineWall/shieldFromDamagePct: this barrier grants +1 Fé once it cumulatively absorbs this fraction of EffectiveMaxHp (once per instance)
+  consecrationRoundsOnCast?: number; // creates/renews Consagração for N envTicks
+  consecrationDmgMultBonus?: number; // offense: extra dmgMult added to the base while Consagração is active
+  extendConsecrationOnHit?: number; // offense: +N envTicks to Consagração's remaining duration on a landed hit during Consagração
+  judgmentStacksOnHit?: number; // offense: applies N Julgamento stacks on a successful hit (renews duration of all)
+  judgmentConsumeMax?: number; // offense: consumes up to N current Julgamento stacks on a successful hit
+  dmgMultPerJudgmentStack?: number; // offense: extra dmgMult per Julgamento stack read before consumption (or current, if judgmentReadOnly)
+  judgmentReadOnly?: boolean; // offense: reads current Julgamento stacks for dmgMultPerJudgmentStack WITHOUT consuming them
+  judgmentDurationCutOnHit?: number; // offense: reduces Julgamento's remaining duration by N envTicks on hit, floor 1
+  cleanseFaithGain?: boolean; // dispel/cleanseOne: +1 Fé if at least one negative effect was actually removed
+  cleanseJudgmentPer2?: boolean; // dispel: for every 2 effects actually removed, apply +1 Julgamento to the enemy (max 2)
+  shieldFromDamagePct?: number; // offense: creates a barrier sized as this % of the damage just dealt
+  shieldFromDamageCapPct?: number; // caps that barrier as a % of EffectiveMaxHp
+  reviveWindowRounds?: number; // reviveWindow: duration of the death-prevention window
+  reviveHealPct?: number; // reviveWindow: % of BaselineMaxHp restored when the window actually triggers
+  reviveHealCapPct?: number; // caps that restore as a % of EffectiveMaxHp
 }
 
 export interface AbilityDef {
@@ -591,6 +628,12 @@ export interface EnemyInstance {
   // damage is a % of the Bárbaro's own current ATK, not a fixed roll like
   // poison/burn/bleed. Absent/undefined = no Feridas active.
   barbarianWounds?: { stacks: number; ticksLeft: number };
+  // Clérigo-only Julgamento stacks (lib/clerigo.ts) — a bespoke Provação
+  // mark, deliberately not a StatusEffectKind (see the redesign spec's "não
+  // é Burn/Curse/Bleed/Poison"): stacking to 5, each application renews ALL
+  // stacks' duration, and Julgamento by itself deals no periodic damage —
+  // it only feeds conditional dmg bonuses/spenders. Absent = no Julgamento.
+  judgment?: { stacks: number; ticksLeft: number };
 }
 
 export interface DungeonDef {

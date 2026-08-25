@@ -1,5 +1,10 @@
-import { AbilityCondition, AttributeKey, Character } from '../types/game';
-import { CLASSES } from './classes';
+// Generic combat-condition infrastructure (capped/attrTotal/hasSkill/
+// AbilityConditionContext/evalAbilityCondition) now lives in
+// combatConditions.ts, shared with Clérigo's Fé/Graça/Consagração/Julgamento
+// kit — re-exported here so every existing `from '../lib/barbarian'` import
+// elsewhere in the codebase keeps working unchanged.
+export { capped, attrTotal, hasSkill, evalAbilityCondition } from './combatConditions';
+export type { AbilityConditionContext } from './combatConditions';
 
 // ── Bárbaro redesign — FÚRIA + FRENESI + FERIDAS + DOR ──
 // Shared constants/pure math for the mechanic, imported by both
@@ -165,62 +170,8 @@ export const SELVAGERIA_MAO_PESADA_CAP = 0.03;
 export const SELVAGERIA_INSTINTO_MORTAL_RATE = 0.0015; // SOR
 export const SELVAGERIA_INSTINTO_MORTAL_CAP = 0.03;
 
-export function capped(rate: number, total: number, cap: number): number {
-  return Math.max(0, Math.min(cap, rate * total));
-}
-
-// Section 5 of the spec: "FOR total"/"VIT total"/etc. means baseAttrs +
-// allocatedAttrs — deliberately NOT equipment, which doesn't grant the
-// seven primary attributes directly today.
-export function attrTotal(ch: Character, key: AttributeKey): number {
-  return (CLASSES[ch.classId].baseAttrs[key] ?? 0) + ch.allocatedAttrs[key];
-}
-
-export function hasSkill(ch: Character, nodeId: string): boolean {
-  return ch.unlockedSkills.includes(nodeId);
-}
-
 export interface PainPacket {
   amountLeft: number; // total HP still owed
   perTick: number; // HP paid per remaining tick (amountLeft / ticksLeft, recomputed isn't needed — fixed at creation)
   ticksLeft: number;
-}
-
-// ── Composable AbilityCondition evaluator ──
-// Built generically (not Bárbaro-only in shape) per the redesign spec's
-// request for reusable `all`/`any`/`not` composition + a handful of new leaf
-// types, even though Bárbaro is the only kit using it today.
-export interface AbilityConditionContext {
-  hp: number;
-  maxHp: number;
-  enemyHp: number;
-  enemyMaxHp: number;
-  enemyStatuses: string[];
-  selfDebuffed: boolean;
-  resources: Partial<Record<'fury', number>>;
-  states: Partial<Record<'frenzy', boolean>>;
-  painPct: number; // current Dor total / effective max HP
-  enemyWoundStacks: number;
-}
-
-export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditionContext): boolean {
-  switch (cond.type) {
-    case 'always': return true;
-    case 'all': return (cond.conditions ?? []).every((c) => evalAbilityCondition(c, ctx));
-    case 'any': return (cond.conditions ?? []).some((c) => evalAbilityCondition(c, ctx));
-    case 'not': return !evalAbilityCondition((cond.conditions ?? [])[0] ?? { type: 'always' }, ctx);
-    case 'enemyHasStatus': return ctx.enemyStatuses.includes(cond.status ?? '');
-    case 'hpBelow': return ctx.hp / ctx.maxHp < (cond.pct ?? 0.5);
-    case 'enemyHpBelow': return ctx.enemyHp / ctx.enemyMaxHp < (cond.pct ?? 0.5);
-    case 'selfDebuffed': return ctx.selfDebuffed;
-    case 'resourceAtLeast': return (ctx.resources[cond.resource ?? 'fury'] ?? 0) >= (cond.value ?? 0);
-    case 'resourceBelow': return (ctx.resources[cond.resource ?? 'fury'] ?? 0) < (cond.value ?? 0);
-    case 'resourceAtMost': return (ctx.resources[cond.resource ?? 'fury'] ?? 0) <= (cond.value ?? 0);
-    case 'stateActive': return ctx.states[cond.state ?? 'frenzy'] === true;
-    case 'stateInactive': return ctx.states[cond.state ?? 'frenzy'] !== true;
-    case 'painAtLeastPct': return ctx.painPct >= (cond.pct ?? 0);
-    case 'enemyWoundsAtLeast': return ctx.enemyWoundStacks >= (cond.stacks ?? 1);
-    case 'enemyWoundsEqual': return ctx.enemyWoundStacks === (cond.stacks ?? 0);
-    default: return false;
-  }
 }
