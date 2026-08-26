@@ -12,8 +12,9 @@ import { RUNE_DROP_CHANCE_REGULAR, RUNE_DROP_CHANCE_BOSS, rollRuneDrop, addRune 
 import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
-import { getEquippedAbilities } from '../lib/skills';
+import { computeSkillBonuses, getEquippedAbilities } from '../lib/skills';
 import { HEAT_AFTER_OVERHEAT, HEAT_OVERHEAT_AT, ThermalState, advanceThermal, circuitAfterCast, circuitPulseMult, fireDamageBonus, nextRunes, thermalAfterFrozenEnds, thermalAfterShatter, thermalShatterMult } from '../lib/mago';
+import { DECOMPOSITION_MAX, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, reaperExecuteMultiplier, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -314,6 +315,8 @@ const SELF_ABILITY_KINDS = [
   'armTrap', 'buffEvasion', 'huntWithPrey',
   // Guerreiro — support actions; neither consumes Guarda Quebrada actions.
   'preparedGuard', 'feint',
+  // Necromante — invocações/proteções consomem a ação inteira.
+  'boneShield', 'deathVeil', 'boneFortress', 'mortalVoracity',
 ];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -494,6 +497,14 @@ export interface RunStats {
   itemsDropped: number;
   itemsAutoSold: number;
   goldFromAutoSell: number;
+  necromancer?: {
+    directDamage: number; plagueDamage: number; servantDamage: number;
+    servantsSummoned: number; servantAttacks: number; servantsSacrificed: number;
+    soulsGenerated: number; soulsSpent: number; soulsLostAtCap: number; soulsCarried: number;
+    decompositionSamples: number; decompositionTotal: number; ticksAtFive: number;
+    plaguesApplied: number; plaguesDetonated: number; apocalypses: number; reaps: number;
+    healing: number; barriers: number; deaths: number;
+  };
 }
 export const EMPTY_RUN_STATS: RunStats = { kills: 0, goldFromKills: 0, xpGained: 0, itemsDropped: 0, itemsAutoSold: 0, goldFromAutoSell: 0 };
 
@@ -900,6 +911,27 @@ export function DungeonPanel({
   const [warriorReadingState, setWarriorReadingState] = useState<ReadingKind>(null);
   const [warriorFeintReadyState, setWarriorFeintReadyState] = useState(false);
 
+  // Necromante: recurso e invocações pertencem à tentativa; stacks/Praga e
+  // gates de threshold pertencem ao inimigo atual. Os relógios dos Servos
+  // avançam no mesmo envTick usado pelo catch-up, evitando duas simulações.
+  const necroSoulsRef = useRef(character.classId === 'necromante' ? 1 : 0);
+  const necroDecompositionRef = useRef<EnemyStackInstance | undefined>();
+  const necroPlagueRef = useRef<PeriodicEffectInstance | undefined>();
+  const necroSummonsRef = useRef<SummonInstance[]>([]);
+  const necroSoulThresholdsRef = useRef<Set<number>>(new Set());
+  const necroFirstScytheSoulRef = useRef(false);
+  const necroFirstSummonRef = useRef(false);
+  const necroNaturalExpirySoulRef = useRef(false);
+  const necroReaperDiscountRef = useRef(false);
+  const necroNextMagicBonusRef = useRef<{ ticks: number; dmgPct: number; critDmgPct: number } | null>(null);
+  const necroRetributionStacksRef = useRef(0);
+  const necroDeathVeilTicksRef = useRef(0);
+  const necroVigorTicksRef = useRef(0);
+  const [necroSoulsState, setNecroSoulsState] = useState(necroSoulsRef.current);
+  const [necroDecompositionState, setNecroDecompositionState] = useState<EnemyStackInstance | undefined>();
+  const [necroPlagueState, setNecroPlagueState] = useState<PeriodicEffectInstance | undefined>();
+  const [necroSummonsState, setNecroSummonsState] = useState<SummonInstance[]>([]);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -924,6 +956,16 @@ export function DungeonPanel({
   // that jumps past more than one threshold at once fires them all in order.
   function applyEnemyHp(hp: number) {
     const current = enemyRef.current;
+    if (chRef.current.classId === 'necromante' && hp < current.hp) {
+      const threshold = soulsForCrossedThresholds(current.hp, hp, current.maxHp, necroSoulThresholdsRef.current);
+      necroSoulThresholdsRef.current = threshold.crossed;
+      if (threshold.gained > 0) {
+        necroGainSouls(threshold.gained, true);
+        if (threshold.crossed.has(0.25) && necroHasSkill('necromante:ceifador:14') && !necroReaperDiscountRef.current) {
+          necroGainSouls(1); necroReaperDiscountRef.current = true;
+        }
+      }
+    }
     let next: EnemyInstance = { ...current, hp };
     const phases = current.phases;
     if (phases && hp > 0) {
@@ -1158,19 +1200,88 @@ export function DungeonPanel({
         fury: barbFuryRef.current, faith: clerigoFaithRef.current,
         determination: knightDeterminationRef.current, momentum: knightMomentumRef.current, orders: knightOrdersRef.current,
         heat: mageHeatRef.current,
+        souls: necroSoulsRef.current,
       },
       states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current, thermal: mageThermalRef.current !== 'normal' },
-      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks() },
+      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0 },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
       enemyPosture: isWarrior() ? warriorEnemyState().current : undefined,
       enemyPostureBand: isWarrior() ? postureBand(warriorEnemyState().current) : undefined,
       guardBroken: isWarrior() ? warriorEnemyState().guardBroken : false,
       riposteReady: isWarrior() ? warriorRiposteRef.current !== null : false,
+      periodicEffects: { [PLAGUE_EFFECT_ID]: necroPlagueRef.current !== undefined },
+      summonCount: necroSummonsRef.current.length,
+      summonMax: necroMaxSummons(),
     };
     if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
     return evalAbilityCondition(cond, ctx);
   }
   function isMage(): boolean { return chRef.current.classId === 'mago'; }
+  function isNecromancer(): boolean { return chRef.current.classId === 'necromante'; }
+  function necroHasSkill(id: string): boolean { return isNecromancer() && hasSkill(chRef.current, id); }
+  function necroSync() {
+    if (silentRef.current) return;
+    setNecroSoulsState(necroSoulsRef.current);
+    setNecroDecompositionState(necroDecompositionRef.current ? { ...necroDecompositionRef.current } : undefined);
+    setNecroPlagueState(necroPlagueRef.current ? { ...necroPlagueRef.current } : undefined);
+    setNecroSummonsState(necroSummonsRef.current.map((s) => ({ ...s })));
+  }
+  function necroMetric<K extends keyof NonNullable<RunStats['necromancer']>>(key: K, amount: number) {
+    const current = runStatsRef.current.necromancer ?? { directDamage: 0, plagueDamage: 0, servantDamage: 0, servantsSummoned: 0, servantAttacks: 0, servantsSacrificed: 0, soulsGenerated: 0, soulsSpent: 0, soulsLostAtCap: 0, soulsCarried: 0, decompositionSamples: 0, decompositionTotal: 0, ticksAtFive: 0, plaguesApplied: 0, plaguesDetonated: 0, apocalypses: 0, reaps: 0, healing: 0, barriers: 0, deaths: 0 };
+    runStatsRef.current.necromancer = { ...current, [key]: current[key] + amount };
+  }
+  function necroGainSouls(amount: number, fromThreshold = false) {
+    const before = necroSoulsRef.current;
+    necroSoulsRef.current = clampResource(before + amount);
+    necroMetric('soulsGenerated', necroSoulsRef.current - before);
+    necroMetric('soulsLostAtCap', Math.max(0, amount - (necroSoulsRef.current - before)));
+    if (necroSoulsRef.current > before && (necroHasSkill('necromante:ceifador:5') || (fromThreshold && necroHasSkill('necromante:ceifador:6')))) {
+      necroNextMagicBonusRef.current = { ticks: 2, dmgPct: necroHasSkill('necromante:ceifador:5') ? capped(0.00075, attrTotal(chRef.current, 'int'), 0.03) : 0, critDmgPct: fromThreshold && necroHasSkill('necromante:ceifador:6') ? Math.min(0.16, amount * 0.08) : 0 };
+    }
+    necroSync();
+  }
+  function necroSpendSouls(amount: number): number {
+    const paid = Math.min(necroSoulsRef.current, Math.max(0, amount));
+    necroSoulsRef.current -= paid;
+    necroMetric('soulsSpent', paid);
+    if (paid > 0 && necroHasSkill('necromante:ceifador:8')) {
+      const baseline = CLASSES[chRef.current.classId].baseHp + (chRef.current.level - 1) * 5;
+      const heal = Math.round(Math.min(0.0225, paid * 0.0075) * baseline * (1 + computePlayerStats().supportPowerPct));
+      updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) });
+      pushFloat('player', heal, false, undefined, undefined, true);
+    }
+    necroSync(); return paid;
+  }
+  function necroMaxSummons(): number { return necroHasSkill('necromante:drenar-vida:6') ? 2 : 1; }
+  function necroSummonAttacks(): number { return necroHasSkill('necromante:drenar-vida:14') ? 5 : 4; }
+  function necroSummonOne(sourceAbilityId: string, requestedAttacks?: number) {
+    if (necroSummonsRef.current.length >= necroMaxSummons()) return false;
+    let attacks = requestedAttacks ?? necroSummonAttacks();
+    if (!necroFirstSummonRef.current && necroHasSkill('necromante:drenar-vida:5') && attrTotal(chRef.current, 'wis') >= 20) attacks += 1;
+    necroFirstSummonRef.current = true;
+    const speed = necroHasSkill('necromante:drenar-vida:7') ? capped(0.003, attrTotal(chRef.current, 'wis'), 0.06) : 0;
+    necroSummonsRef.current.push(makeBoneServant(`bone-${Date.now()}-${necroSummonsRef.current.length}`, sourceAbilityId, attacks, speed));
+    necroMetric('servantsSummoned', 1);
+    necroSync(); return true;
+  }
+  function necroSacrificeOldest(voluntary = true): SummonInstance | undefined {
+    const summon = necroSummonsRef.current.shift();
+    if (summon && voluntary) necroMetric('servantsSacrificed', 1);
+    if (summon && voluntary && necroHasSkill('necromante:drenar-vida:11')) necroVigorTicksRef.current = 2;
+    necroSync(); return summon;
+  }
+  function necroApplyDecomposition(amount: number) { necroDecompositionRef.current = applyEnemyStack(necroDecompositionRef.current, amount); necroSync(); }
+  function necroApplyPlague(sourceId: string, stats: ReturnType<typeof computePlayerStats>, multiplier: number, duration: number) {
+    const essence = necroHasSkill('necromante:decomposicao:7') ? 0.01 : 0;
+    const extraDuration = necroHasSkill('necromante:decomposicao:1') && attrTotal(chRef.current, 'wis') >= 20 ? 1 : 0;
+    necroPlagueRef.current = { id: PLAGUE_EFFECT_ID, sourceId, snapshotPower: stats.matk, dmgMultiplier: multiplier + essence, ticksRemaining: duration + extraDuration, tags: ['dot', 'necrotic', 'plague'], canCrit: false, bypassDefense: true };
+    necroMetric('plaguesApplied', 1);
+    necroSync();
+  }
+  function necroCdrBonusFor(ability: AbilityDef): number {
+    if (!isNecromancer() || ability.effect.necromancerTag !== 'decomposition' || !necroHasSkill('necromante:decomposicao:5')) return 0;
+    return necroPlagueRef.current && attrTotal(chRef.current, 'wis') >= 18 ? 0.05 : 0.03;
+  }
   function isWarrior(): boolean { return chRef.current.classId === 'guerreiro'; }
   function warriorHasSkill(id: string): boolean { return isWarrior() && hasSkill(chRef.current, id); }
   function warriorEnemyState(): WarriorEnemyState {
@@ -2417,7 +2528,7 @@ export function DungeonPanel({
     const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen));
     const marked = hunterMarkedPrey();
     const hitCount = eff.hitCount ?? 2;
-    let allLanded = true, landedHits = 0, totalWarriorPosture = 0;
+    let allLanded = true, landedHits = 0, criticalHits = 0, totalWarriorPosture = 0;
     let warriorPostureBonusPending = warriorBonuses?.posture ?? 0;
     pushAbilityCast('player', ab.name, activeAbilityIconStyle(chRef.current.classId, ab.id), null, false);
     pushLog(`Você usa [${ab.name}]!`);
@@ -2445,6 +2556,7 @@ export function DungeonPanel({
       const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - liveDefPen));
       const { dmg, crit } = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll);
       landedHits += 1;
+      if (crit) criticalHits += 1;
       const newHp = Math.max(0, enemyRef.current.hp - dmg);
       applyEnemyHp(newHp);
       pushFloat('enemy', dmg, crit);
@@ -2484,6 +2596,7 @@ export function DungeonPanel({
       } else allLanded = false;
     }
     if (isMage() && landedHits > 0) mageOnSpellHit(ab, stats, mageAmplified, landedHits);
+    if (isNecromancer() && ab.effect.soulCost && ab.id === 'necromante:ceifador:12' && criticalHits >= 2) necroGainSouls(1);
     if (allLanded && eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
     if (isWarrior() && landedHits > 0) {
       if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:3')) warriorNextBasicPostureBonusRef.current = true;
@@ -2708,13 +2821,15 @@ export function DungeonPanel({
       if (warriorEnemyState().current <= 33 && warriorHasSkill('guerreiro:furioso:2')) warriorDmgTakenBonus -= 0.03;
       if (warriorRiposteRef.current && warriorHasSkill('guerreiro:guardiao:11')) tenacityBonus += 0.05;
     }
+    const necroMdefMult = isNecromancer() && necroHasSkill('necromante:ceifador:2') ? 1 + Math.min(0.03, necroSoulsRef.current * 0.005) : 1;
+    const necroMatkMult = isNecromancer() ? 1 + computeSkillBonuses(ch.classId, ch.unlockedSkills).magicDmgPct : 1;
 
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
-      matk: Math.round(base.matk * (1 + atkPct)),
+      matk: Math.round(base.matk * (1 + atkPct) * necroMatkMult),
       def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
@@ -2873,7 +2988,34 @@ export function DungeonPanel({
     const supportMult = 1 + stats.supportPowerPct;
     const eff = ab.effect;
     const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
-    if (eff.kind === 'heal') {
+    if (eff.kind === 'boneShield') {
+      necroSpendSouls(eff.soulCost ?? 1);
+      const efficiency = necroHasSkill('necromante:drenar-vida:0') ? 1 + capped(0.0015, attrTotal(chRef.current, 'wis'), 0.05) : 1;
+      const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.barrierBasePct ?? 0.05) * supportMult * efficiency);
+      necroMetric('barriers', amount);
+      playerShieldRef.current += amount; syncShield(); necroSummonOne(ab.id, eff.summonAttacks ?? necroSummonAttacks());
+      pushAbilityCast('player', ab.name, icon, null, false); return `${ab.name}: barreira de ${amount} e um Servo Ósseo.`;
+    } else if (eff.kind === 'deathVeil') {
+      necroSpendSouls(eff.soulCost ?? 1); necroDeathVeilTicksRef.current = eff.buffRounds ?? 3;
+      pushAbilityCast('player', ab.name, icon, null, false); return `${ab.name}: o Véu reduz o dano direto recebido.`;
+    } else if (eff.kind === 'boneFortress') {
+      necroSpendSouls(eff.soulCost ?? 2);
+      necroSummonsRef.current = necroSummonsRef.current.map((s) => ({ ...s, attacksRemaining: Math.max(s.attacksRemaining, Math.min(s.maxAttacks, eff.summonMaxRefresh ?? 3)) }));
+      while (necroSummonsRef.current.length < necroMaxSummons()) necroSummonOne(ab.id, eff.summonAttacks ?? necroSummonAttacks());
+      const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.barrierBasePct ?? 0.08) * supportMult);
+      necroMetric('barriers', amount);
+      playerShieldRef.current += amount; syncShield(); necroSync();
+      pushAbilityCast('player', ab.name, icon, null, false); return `${ab.name}: a legião se completa e uma barreira de ${amount} surge.`;
+    } else if (eff.kind === 'mortalVoracity') {
+      const servants = necroSummonsRef.current.length; necroSummonsRef.current = [];
+      const souls = necroSpendSouls(Math.min(eff.consumeSoulsMax ?? 3, necroSoulsRef.current));
+      const baseline = CLASSES[chRef.current.classId].baseHp + 6 * (chRef.current.level - 1);
+      const heal = Math.min(Math.round(effectiveMaxHp(chRef.current) * 0.18), Math.round(baseline * (servants * 0.04 + souls * 0.03) * supportMult));
+      necroMetric('healing', heal); necroMetric('servantsSacrificed', servants);
+      updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) });
+      playerModsRef.current.push({ stat: 'lifestealPct', pct: 0.12, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id }); syncPlayerMods(); necroSync();
+      pushFloat('player', heal, false, undefined, undefined, true); pushAbilityCast('player', ab.name, icon, heal, true); return `${ab.name}: você devora ${servants} Servo(s) e ${souls} Alma(s), recuperando ${heal}.`;
+    } else if (eff.kind === 'heal') {
       if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
       const c = chRef.current;
       const baselineMaxHp = CLASSES[c.classId].baseHp + 6 * (c.level - 1);
@@ -3388,6 +3530,58 @@ export function DungeonPanel({
       }
     }
 
+    if (isNecromancer()) {
+      if (necroPlagueRef.current && enemyRef.current.hp > 0) {
+        const plague = necroPlagueRef.current;
+        const damage = plagueTickDamage(plague, necroDecompositionRef.current?.stacks ?? 0);
+        necroMetric('plagueDamage', damage);
+        necroPlagueRef.current = plague.ticksRemaining > 1 ? { ...plague, ticksRemaining: plague.ticksRemaining - 1 } : undefined;
+        applyEnemyHp(Math.max(0, enemyRef.current.hp - damage));
+        pushFloat('enemy', damage, false); flash('enemy');
+        if (necroHasSkill('necromante:decomposicao:6')) {
+          const heal = Math.min(Math.round(effectiveMaxHp(chRef.current) * 0.0075), Math.round(damage * 0.08));
+          necroMetric('healing', heal);
+          if (heal > 0) { updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) }); pushFloat('player', heal, false, undefined, undefined, true); }
+        }
+        if (necroHasSkill('necromante:decomposicao:8') && (necroDecompositionRef.current?.stacks ?? 0) >= 4) {
+          enemyModsRef.current = enemyModsRef.current.filter((m) => m.sourceAbilityId !== 'necromante:decomposicao:8');
+          enemyModsRef.current.push({ stat: 'atk', pct: -0.06, roundsLeft: 1, sourceAbilityId: 'necromante:decomposicao:8' }); syncEnemyMods();
+        }
+        if (enemyRef.current.hp <= 0) { necroSync(); resolveEnemyDeath(); return; }
+      }
+      if (necroDecompositionRef.current) {
+        const ticks = necroDecompositionRef.current.ticksRemaining - 1;
+        necroDecompositionRef.current = ticks > 0 ? { ...necroDecompositionRef.current, ticksRemaining: ticks } : undefined;
+      }
+      const survivors: SummonInstance[] = [];
+      for (const summon of necroSummonsRef.current) {
+        const advanced = advanceSummonClock(summon, ATTACK_INTERVAL);
+        for (let i = 0; i < advanced.attacks && enemyRef.current.hp > 0; i++) {
+          const stats = computePlayerStats();
+          const bonus = necroHasSkill('necromante:drenar-vida:1') ? capped(0.001, attrTotal(chRef.current, 'int'), 0.04) : 0;
+          const damage = Math.max(1, Math.round(mitigatedBase(stats.matk * summon.damageMultiplier * (1 + bonus), computeEnemyMdef())));
+          necroMetric('servantDamage', damage); necroMetric('servantAttacks', 1);
+          applyEnemyHp(Math.max(0, enemyRef.current.hp - damage)); pushFloat('enemy', damage, false);
+          if (necroHasSkill('necromante:drenar-vida:8')) necroRetributionStacksRef.current = Math.min(3, necroRetributionStacksRef.current + 1);
+          if (enemyRef.current.hp <= 0) break;
+        }
+        if (advanced.next.attacksRemaining > 0 && enemyRef.current.hp > 0) survivors.push(advanced.next);
+        else if (advanced.next.attacksRemaining <= 0 && enemyRef.current.hp > 0 && !necroNaturalExpirySoulRef.current && necroHasSkill('necromante:drenar-vida:14')) { necroNaturalExpirySoulRef.current = true; necroGainSouls(1); }
+      }
+      necroSummonsRef.current = survivors;
+      if (necroNextMagicBonusRef.current) {
+        necroNextMagicBonusRef.current.ticks -= 1;
+        if (necroNextMagicBonusRef.current.ticks <= 0) necroNextMagicBonusRef.current = null;
+      }
+      if (necroDeathVeilTicksRef.current > 0) necroDeathVeilTicksRef.current -= 1;
+      if (necroVigorTicksRef.current > 0) necroVigorTicksRef.current -= 1;
+      const decompositionNow = necroDecompositionRef.current?.stacks ?? 0;
+      necroMetric('decompositionSamples', 1); necroMetric('decompositionTotal', decompositionNow);
+      if (decompositionNow === DECOMPOSITION_MAX) necroMetric('ticksAtFive', 1);
+      necroSync();
+      if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+    }
+
     scheduleEnv();
   }
 
@@ -3406,6 +3600,11 @@ export function DungeonPanel({
     const prevLevel = chRef.current.level;
     const isBossKill = enemyRef.current.isBoss === true;
     const isEliteKill = enemyRef.current.isElite === true;
+    const necroDeathSetup = isNecromancer() && (necroPlagueRef.current !== undefined || (necroDecompositionRef.current?.stacks ?? 0) >= 3);
+    const necroPreservedServant = isNecromancer() && necroHasSkill('necromante:drenar-vida:14') && necroSummonsRef.current[0]
+      ? { ...necroSummonsRef.current[0], attacksRemaining: Math.min(2, necroSummonsRef.current[0].attacksRemaining), elapsedMs: 0 }
+      : undefined;
+    if (isNecromancer()) necroGainSouls(1);
     const bossBonusGold = isBossKill ? Math.round(enemyRef.current.goldReward * 0.5) : 0;
     const xpGain = Math.round(enemyRef.current.xpReward * (dungeon.xpMult ?? 1));
     const goldGain = Math.round(enemyRef.current.goldReward * (dungeon.goldMult ?? 1)) + bossBonusGold;
@@ -3438,6 +3637,12 @@ export function DungeonPanel({
         finalChar = { ...finalChar, hp: Math.min(maxHp, finalChar.hp + healAmt) };
         pushFloat('player', healAmt, false, undefined, undefined, true);
       }
+    }
+    if (necroDeathSetup && necroHasSkill('necromante:decomposicao:14')) {
+      const baseline = CLASSES[finalChar.classId].baseHp + 6 * (finalChar.level - 1);
+      const healAmt = Math.round(baseline * 0.04 * (1 + computePlayerStats().supportPowerPct));
+      finalChar = { ...finalChar, hp: Math.min(effectiveMaxHp(finalChar), finalChar.hp + healAmt) };
+      pushFloat('player', healAmt, false, undefined, undefined, true);
     }
     updateCh(finalChar);
     runStatsRef.current.kills += 1;
@@ -3527,6 +3732,17 @@ export function DungeonPanel({
         mageFrozenAccuracyPendingRef.current = false; mageNextDamageReductionRef.current = 0;
         mageFrostBarrierAdvanceRef.current = 0; mageCurrentCastAmplifiedRef.current = false;
         mageSync();
+      }
+      if (isNecromancer()) {
+        necroSoulsRef.current = soulsForNextEnemy(necroSoulsRef.current, necroDeathSetup && necroHasSkill('necromante:decomposicao:14'));
+        necroMetric('soulsCarried', necroSoulsRef.current);
+        necroDecompositionRef.current = undefined; necroPlagueRef.current = undefined;
+        necroSummonsRef.current = necroPreservedServant ? [necroPreservedServant] : [];
+        necroSoulThresholdsRef.current = new Set(); necroFirstScytheSoulRef.current = false;
+        necroFirstSummonRef.current = false; necroNaturalExpirySoulRef.current = false;
+        necroReaperDiscountRef.current = false; necroNextMagicBonusRef.current = null;
+        necroRetributionStacksRef.current = 0; necroDeathVeilTicksRef.current = 0; necroVigorTicksRef.current = 0;
+        necroSync();
       }
       // Cavaleiro: everything resets per enemy EXCEPT Sede de Vitória's
       // capped Momentum carry and Liderança's capped Ordens carry, and
@@ -3636,6 +3852,8 @@ export function DungeonPanel({
       let mageHeatAtCast = 0;
       let mageCastFinished = false;
       let chosen: AbilityDef | null = null;
+      let necroSoulsAtCast = 0;
+      let necroSacrificed: SummonInstance | undefined;
       let warriorCastDmgBonus = 0, warriorCastPostureBonus = 0, warriorCastAccuracyBonus = 0, warriorCastDefPenBonus = 0;
       let warriorBreakActiveAtStart = false, warriorPostureAtActionStart = POSTURE_MAX;
 
@@ -3709,6 +3927,16 @@ export function DungeonPanel({
         } else {
           const offenseAbility = chosen;
           let knightSupremeThisCast = false;
+          if (offenseAbility && isNecromancer()) {
+            necroSoulsAtCast = necroSoulsRef.current;
+            if (offenseAbility.effect.sacrificeOldestSummon && necroSummonsRef.current.length > 0) necroSacrificed = necroSacrificeOldest(true);
+            else if (offenseAbility.effect.soulCost) {
+              let cost = offenseAbility.effect.soulCost;
+              if (offenseAbility.effect.necromancerTag === 'reaper' && enemyRef.current.hp / enemyRef.current.maxHp < 0.25 && necroHasSkill('necromante:ceifador:14') && necroReaperDiscountRef.current) { cost = Math.max(0, cost - 1); necroReaperDiscountRef.current = false; }
+              necroSpendSouls(cost);
+            }
+            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + necroCdrBonusFor(offenseAbility));
+          }
           // Bárbaro: a Fúria-costed ability spends its cost and locks its
           // cooldown the instant it's CHOSEN — before the hit roll — so
           // missing still pays the cost and starts the cooldown (redesign
@@ -3757,14 +3985,19 @@ export function DungeonPanel({
           const woundCritBonus = barbActive && barbHasSkill('barbaro:selvageria:8') ? woundsAtActionStart * WOUND_CRIT_PCT_PER_STACK : 0;
           const olhoDeSangueBonus = barbActive && barbHasSkill('barbaro:furia:2') && barbFuryRef.current >= FURY_INTERACTION_THRESHOLD
             ? capped(FURIA_OLHO_DE_SANGUE_RATE, attrTotal(chRef.current, 'luk'), FURIA_OLHO_DE_SANGUE_CAP) : 0;
-          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus);
+          const necroCritBonus = isNecromancer()
+            ? (necroHasSkill('necromante:ceifador:0') && enemyRef.current.hp / enemyRef.current.maxHp < 0.5 ? capped(0.001, attrTotal(chRef.current, 'luk'), 0.02) : 0)
+              + (necroHasSkill('necromante:ceifador:7') && necroSoulsRef.current >= 4 ? capped(0.001, attrTotal(chRef.current, 'luk'), 0.03) : 0)
+            : 0;
+          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus);
           // Mão Pesada / Instinto Mortal (barbaro:selvageria:3 / :11) —
           // SOR-scaled critDmg vs a wounded enemy (any Ferida / exactly max).
           const maoPesadaBonus = barbActive && barbHasSkill('barbaro:selvageria:3') && woundsAtActionStart >= 1
             ? capped(SELVAGERIA_MAO_PESADA_RATE, attrTotal(chRef.current, 'luk'), SELVAGERIA_MAO_PESADA_CAP) : 0;
           const instintoMortalBonus = barbActive && barbHasSkill('barbaro:selvageria:11') && woundsAtActionStart === WOUND_MAX_STACKS
             ? capped(SELVAGERIA_INSTINTO_MORTAL_RATE, attrTotal(chRef.current, 'luk'), SELVAGERIA_INSTINTO_MORTAL_CAP) : 0;
-          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus;
+          const necroMissingHpCrit = isNecromancer() && necroHasSkill('necromante:ceifador:3') ? Math.min(0.02, Math.floor((1 - enemyRef.current.hp / enemyRef.current.maxHp) / 0.20) * 0.005) : 0;
+          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus + necroMissingHpCrit + (necroNextMagicBonusRef.current?.critDmgPct ?? 0);
           // Olhar Predador (barbaro:selvageria:0) — DES-scaled accuracy vs a
           // wounded enemy. Olfato Aguçado (barbaro:selvageria:7) — flat
           // +0.4% accuracy per current Ferida stack (mechanic, not attribute).
@@ -3821,7 +4054,7 @@ export function DungeonPanel({
             }
             hunterOnPlayerMiss();
           } else if (offenseAbility) {
-            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined) {
+            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer()) {
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
@@ -3871,6 +4104,19 @@ export function DungeonPanel({
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (isNecromancer()) {
+              if (eff.enemyHpExecuteBase !== undefined) dmgMult = reaperExecuteMultiplier(enemyRef.current.hp / enemyRef.current.maxHp, eff.enemyHpExecuteBase, eff.enemyHpExecuteThreshold ?? 0, eff.enemyHpExecutePer5Pct ?? 0, eff.enemyHpExecuteCap ?? eff.enemyHpExecuteBase);
+              if (necroSacrificed) { dmgMult = 1.85 + Math.min(0.32, necroSacrificed.attacksRemaining * 0.08); eff.directHealFromDamagePct = 0.22; eff.directHealCapPct = 0.08; }
+              if (eff.decompositionConsumeMax) dmgMult += Math.min(eff.decompositionConsumeMax, necroDecompositionRef.current?.stacks ?? 0) * 0.16;
+              if (eff.plagueDetonatePct && necroPlagueRef.current) dmgMult += Math.min(eff.plagueDetonateCapMult ?? 1, (necroPlagueRef.current.ticksRemaining * plagueTickDamage(necroPlagueRef.current, necroDecompositionRef.current?.stacks ?? 0) * eff.plagueDetonatePct) / Math.max(1, stats.matk));
+              if (eff.necromancerTag === 'decomposition' && necroHasSkill('necromante:decomposicao:0') && eff.decompositionOnHit) dmgMult *= 1 + capped(0.00075, attrTotal(chRef.current, 'int'), 0.03);
+              if (necroHasSkill('necromante:decomposicao:3') && (necroDecompositionRef.current?.stacks ?? 0) >= 3) dmgMult *= 1 + capped(0.00075, attrTotal(chRef.current, 'int'), 0.03);
+              if (eff.soulCost && necroHasSkill('necromante:ceifador:1')) dmgMult *= 1 + capped(0.00075, attrTotal(chRef.current, 'int'), 0.03);
+              if (eff.soulCost && necroHasSkill('necromante:decomposicao:11') && (necroDecompositionRef.current?.stacks ?? 0) === 5) dmgMult *= 1 + capped(0.00075, attrTotal(chRef.current, 'int'), 0.03);
+              if (necroHasSkill('necromante:ceifador:11') && enemyRef.current.hp / enemyRef.current.maxHp < 0.25) dmgMult *= 1 + capped(0.00075, attrTotal(chRef.current, 'int'), 0.03);
+              if (necroRetributionStacksRef.current > 0) { dmgMult *= 1 + necroRetributionStacksRef.current * 0.03; necroRetributionStacksRef.current = 0; }
+              if (necroNextMagicBonusRef.current) { dmgMult *= 1 + necroNextMagicBonusRef.current.dmgPct; necroNextMagicBonusRef.current = null; }
+            }
             if (isWarrior()) {
               dmgMult = bandValue(eff.dmgMultByBand, postureBand(warriorEnemyState().current), dmgMult);
               dmgMult += warriorCastDmgBonus;
@@ -3978,7 +4224,7 @@ export function DungeonPanel({
             const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, hunterCritDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
             abilityTag = ` [${offenseAbility.name}]`;
-            castAbility = offenseAbility;
+            castAbility = necroSacrificed ? { ...offenseAbility, effect: { ...offenseAbility.effect, directHealFromDamagePct: 0.22, directHealCapPct: 0.08 } } : offenseAbility;
             // Caçador: generic Brecha gain/consume — only ever on a hit that
             // actually lands (this whole branch already sits inside "not
             // missed"), per spec section 15. Janela Perfeita's "+10%
@@ -4030,6 +4276,29 @@ export function DungeonPanel({
             if (eff.consumeWoundsOnHit) barbConsumeWounds();
             if (eff.furyGainOnHit) barbGainFuryDirect(eff.furyGainOnHit);
             if (eff.furyGainOnCrit && crit) barbGainFuryDirect(eff.furyGainOnCrit);
+            if (isNecromancer()) {
+              if (eff.decompositionOnHit) necroApplyDecomposition(eff.decompositionOnHit);
+              if (eff.plagueApply) necroApplyPlague(offenseAbility.id, stats, eff.plagueMultiplier ?? 0.16, eff.plagueDuration ?? 4);
+              if (eff.decompositionConsumeMax) {
+                const consumed = Math.min(eff.decompositionConsumeMax, necroDecompositionRef.current?.stacks ?? 0);
+                if (necroDecompositionRef.current) necroDecompositionRef.current = necroDecompositionRef.current.stacks > consumed ? { ...necroDecompositionRef.current, stacks: necroDecompositionRef.current.stacks - consumed } : undefined;
+                if (consumed === eff.soulGainOnConsumeExact) necroGainSouls(1);
+              }
+              if (eff.plagueDetonatePct) { necroPlagueRef.current = undefined; necroDecompositionRef.current = undefined; }
+              if (eff.plagueDetonatePct) { necroMetric('plaguesDetonated', 1); necroMetric('apocalypses', 1); }
+              if (offenseAbility.id === 'necromante:decomposicao:9') {
+                const reduction = Math.min(0.10, (necroDecompositionRef.current?.stacks ?? 0) * 0.02);
+                enemyModsRef.current = enemyModsRef.current.filter((m) => m.sourceAbilityId !== offenseAbility.id);
+                enemyModsRef.current.push({ stat: 'mdef', pct: -reduction, roundsLeft: 3, sourceAbilityId: offenseAbility.id }); syncEnemyMods();
+              }
+              if (offenseAbility.id === 'necromante:ceifador:4' && crit && !necroFirstScytheSoulRef.current) { necroFirstScytheSoulRef.current = true; necroGainSouls(1); }
+              if (offenseAbility.id === 'necromante:ceifador:9') {
+                enemyModsRef.current.push({ stat: 'accuracy', pct: -0.15, roundsLeft: 2, sourceAbilityId: offenseAbility.id });
+                if (necroSoulsAtCast >= 4) enemyModsRef.current.push({ stat: 'atk', pct: -0.08, roundsLeft: 2, sourceAbilityId: offenseAbility.id });
+                syncEnemyMods();
+              }
+              necroSync();
+            }
             // Clérigo: Julgamento apply (Chama Purificadora)/consume
             // (Sentença Final/Apocalipse Sagrado)/duration-cut (Ira
             // Consumidora)/Consagração-extend-on-hit (Golpe Sagrado) — all
@@ -4298,6 +4567,7 @@ export function DungeonPanel({
       if (!missed && dmg > 0) {
         const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
         applyEnemyHp(enemyHp);
+        if (isNecromancer()) { necroMetric('directDamage', dmg); if (castAbility?.effect.necromancerTag === 'reaper') necroMetric('reaps', 1); }
         if (isMage() && castAbility) mageOnSpellHit(castAbility, stats, mageAmplifiedThisCast);
         pushFloat('enemy', dmg, crit);
         flash('enemy');
@@ -4324,6 +4594,14 @@ export function DungeonPanel({
             clerigoAddBarrierPortion(shieldAmt);
             syncShield();
           }
+        }
+
+        if (isNecromancer() && castAbility?.effect.directHealFromDamagePct) {
+          const baseline = CLASSES[chRef.current.classId].baseHp + (chRef.current.level - 1) * 5;
+          const efficiency = necroHasSkill('necromante:drenar-vida:3') ? 1 + capped(0.0015, attrTotal(chRef.current, 'wis'), 0.05) : 1;
+          const heal = Math.min(Math.round(baseline * (castAbility.effect.directHealCapPct ?? 1)), Math.round(dmg * castAbility.effect.directHealFromDamagePct * efficiency));
+          if (heal > 0) { updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) }); pushFloat('player', heal, false, undefined, undefined, true); }
+          necroMetric('healing', heal);
         }
 
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
@@ -4399,6 +4677,7 @@ export function DungeonPanel({
     // locally-computed "would be <= 0" check gets here, chRef.current.hp is
     // already back above 0 — just confirm that and continue the fight.
     if (isKnight() && knightLastGuardActive() && chRef.current.hp > 0) return true;
+    if (isNecromancer()) necroMetric('deaths', 1);
     pushLog([{ text: 'Você caiu em combate...', color: '#8a2030' }]);
     phaseRef.current = 'ended';
     endedReasonRef.current = 'death';
@@ -4490,6 +4769,23 @@ export function DungeonPanel({
       mageNextDamageReductionRef.current = 0;
     }
     if (isMage() && chRef.current.unlockedSkills.includes('mago:gelido:5') && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen')) edmg = Math.round(edmg * 0.96);
+    if (isNecromancer() && edmg > 0) {
+      if (necroHasSkill('necromante:decomposicao:2') && necroPlagueRef.current) edmg = Math.round(edmg * (1 - capped(0.001, attrTotal(chRef.current, 'wis'), 0.03)));
+      if (necroSummonsRef.current.length > 0) {
+        if (necroHasSkill('necromante:drenar-vida:2')) edmg = Math.round(edmg * (1 - capped(0.001, attrTotal(chRef.current, 'wis'), 0.03)));
+        if (necroHasSkill('necromante:drenar-vida:6')) edmg = Math.round(edmg * 0.96);
+      }
+      if (necroVigorTicksRef.current > 0) edmg = Math.round(edmg * (1 - capped(0.001, attrTotal(chRef.current, 'vit'), 0.04)));
+      if (necroDeathVeilTicksRef.current > 0) {
+        const servant = necroSummonsRef.current[0];
+        edmg = Math.round(edmg * (servant ? 0.85 : 0.92));
+        if (servant) {
+          servant.attacksRemaining -= 1;
+          if (servant.attacksRemaining <= 0) necroSummonsRef.current.shift();
+          necroSync();
+        }
+      }
+    }
     if (barbActive && edmg > 0) {
       // Corpo Duro (barbaro:resistencia:2) — a single direct hit exceeding
       // 15% of effective max HP gets reduced further, VIT-scaled.
@@ -5102,6 +5398,16 @@ export function DungeonPanel({
         const playerTint = statusTintFor(playerStatuses, playerCCState, playerModsState);
         const enemyTint = statusTintFor(enemyStatuses, enemyCCState, enemyModsState);
         drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0, 0, playerTint);
+        if (ch.classId === 'necromante') {
+          necroSummonsState.forEach((summon, i) => {
+            const sx = px1 - 34 + i * 68, sy = groundY - 24 - Math.sin(t / 280 + i) * 3;
+            g.save(); g.shadowColor = '#a7f3d0'; g.shadowBlur = 8; g.fillStyle = '#d1fae5';
+            g.beginPath(); g.arc(sx, sy, 10, 0, Math.PI * 2); g.fill();
+            g.fillStyle = '#10251f'; g.beginPath(); g.arc(sx - 3, sy - 2, 2, 0, Math.PI * 2); g.arc(sx + 3, sy - 2, 2, 0, Math.PI * 2); g.fill();
+            g.fillRect(sx - 4, sy + 5, 8, 3); g.restore();
+            g.fillStyle = '#d1fae5'; g.font = '9px sans-serif'; g.textAlign = 'center'; g.fillText(`${summon.attacksRemaining}`, sx, sy - 15);
+          });
+        }
         drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint);
       }
       raf = requestAnimationFrame(draw);
@@ -5110,7 +5416,7 @@ export function DungeonPanel({
     return () => cancelAnimationFrame(raf);
   }, [
     ch.classId, enemy.shape, phase, flashSide, heroSpr,
-    playerStatuses, playerCCState, playerModsState, enemyStatuses, enemyCCState, enemyModsState,
+    playerStatuses, playerCCState, playerModsState, enemyStatuses, enemyCCState, enemyModsState, necroSummonsState,
   ]);
 
   const hpPct = (v: number, max: number) => Math.max(0, Math.min(100, (v / max) * 100));
@@ -5187,6 +5493,10 @@ export function DungeonPanel({
     'mago:polarity': { value: magePolarityState === 'none' ? 0 : 1, detail: magePolarityState === 'positive' ? '+' : magePolarityState === 'negative' ? '−' : undefined },
     'mago:circuit': { value: mageCircuitState, maxValue: 3 },
     'mago:resonance': { value: mageResonanceState ? 1 : 0 },
+    'necromante:souls': { value: necroSoulsState, maxValue: SOUL_MAX, visible: ch.classId === 'necromante' },
+    'necromante:decomposition': { value: necroDecompositionState?.stacks ?? 0, maxValue: DECOMPOSITION_MAX, duration: necroDecompositionState?.ticksRemaining, visible: ch.classId === 'necromante' },
+    'necromante:plague': { value: necroPlagueState ? 1 : 0, duration: necroPlagueState?.ticksRemaining, detail: necroPlagueState ? `${formatGameNumber(plagueTickDamage(necroPlagueState, necroDecompositionState?.stacks ?? 0))} por ciclo` : undefined, visible: ch.classId === 'necromante' },
+    'necromante:servants': { value: necroSummonsState.length, maxValue: necroMaxSummons(), detail: necroSummonsState.map((s, i) => `Servo ${i + 1}: ${s.attacksRemaining} ataques`).join(' · '), visible: ch.classId === 'necromante' },
   };
   const combatMechanicStates: CombatMechanicState[] = getClassMechanics(ch.classId)
     .filter((mechanic) => mechanic.combatDisplay)
@@ -5202,21 +5512,26 @@ export function DungeonPanel({
           : condition.resource === 'determination' ? knightDeterminationState
           : condition.resource === 'momentum' ? knightMomentumState
           : condition.resource === 'orders' ? knightOrdersState : 0;
-        return [`${condition.resource === 'faith' ? 'Fé' : condition.resource}: ${formatGameNumber(current)}/${formatGameNumber(condition.value ?? 0)}`];
+        const resolvedCurrent = condition.resource === 'souls' ? necroSoulsState : current;
+        return [`${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource}: ${formatGameNumber(resolvedCurrent)}/${formatGameNumber(condition.value ?? 0)}`];
       }
       if (condition.type === 'enemyStacksAtLeast' || condition.type === 'enemyStacksEqual') {
         const current = condition.stackId === 'judgment' ? (enemyJudgment?.stacks ?? 0)
           : condition.stackId === 'wounds' ? (enemyWounds?.stacks ?? 0)
           : condition.stackId === 'trail' ? enemyTrail
           : condition.stackId === 'breach' ? enemyBreaches : 0;
+        const resolvedCurrent = condition.stackId === 'decomposition' ? (necroDecompositionState?.stacks ?? 0) : current;
         const label = condition.stackId === 'judgment' ? 'Julgamento' : condition.stackId;
-        return [`${label}: ${formatGameNumber(current)}/${formatGameNumber(condition.stacks ?? 0)} necessários`];
+        return [`${condition.stackId === 'decomposition' ? 'Decomposição' : label}: ${formatGameNumber(resolvedCurrent)}/${formatGameNumber(condition.stacks ?? 0)} necessários`];
       }
       if (condition.type === 'enemyPostureAtMost') return [`Postura atual: ${warriorDisplay.current}/100 — requer ${condition.value ?? 0} ou menos`];
       if (condition.type === 'enemyPostureBand') return [`Faixa atual: ${warriorBandLabel} — requer ${condition.postureBand === 'open' ? 'ABERTO' : condition.postureBand}`];
       if (condition.type === 'guardBroken') return [`Guarda Quebrada: ${warriorDisplay.guardBroken ? 'pronta' : 'necessária'}`];
       if (condition.type === 'riposteReady') return [`Riposta: ${warriorRiposteState ? 'pronta' : 'necessária'}`];
       if (condition.type === 'notGuardBroken') return [`Guarda normal: ${warriorDisplay.guardBroken ? 'aguarde recompor' : 'ativa'}`];
+      if (condition.type === 'periodicEffectActive') return [`Praga Necrótica: ${necroPlagueState ? 'ativa' : 'necessária'}`];
+      if (condition.type === 'summonCountAtLeast') return [`Servos: ${necroSummonsState.length}/${condition.count ?? 1} necessários`];
+      if (condition.type === 'summonCountBelow') return [`Servos: ${necroSummonsState.length}/${necroMaxSummons()} — requer espaço`];
       return [];
     };
     return walk(openCombatAbility.condition);
@@ -5595,6 +5910,7 @@ export function DungeonPanel({
           <p><span className="text-parchment/45">Recarga: </span>{openCombatAbility.cooldown} ciclos</p>
           {combatAbilityRequirements.map((requirement) => <p key={requirement}><span className="text-parchment/45">Estado atual: </span>{requirement}</p>)}
           {openCombatAbility.effect.faithCost && <p><span className="text-parchment/45">Custo: </span>{openCombatAbility.effect.faithCost} Fé, cobrada ao usar</p>}
+          {openCombatAbility.effect.soulCost && <p><span className="text-parchment/45">Custo: </span>{openCombatAbility.effect.soulCost} {openCombatAbility.effect.soulCost === 1 ? 'Alma' : 'Almas'}, cobrada ao usar</p>}
           {combatAbilityHeal !== null && <p className="text-green-300"><span className="text-parchment/45">Cura atual: </span>recupera até {formatGameNumber(combatAbilityHeal)}</p>}
         </div>
       </Modal>}

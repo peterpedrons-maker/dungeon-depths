@@ -19,7 +19,7 @@ function conditions(condition: AbilityCondition): string[] {
     case 'not': return [`Não: ${(condition.conditions ?? []).flatMap(conditions).join('')}`];
     case 'hpBelow': return [`Sua Vida abaixo de ${formatGamePercent(condition.pct ?? 0)}`];
     case 'enemyHpBelow': return [`Vida do inimigo abaixo de ${formatGamePercent(condition.pct ?? 0)}`];
-    case 'resourceAtLeast': return [`Pelo menos ${condition.value ?? 0} de ${condition.resource === 'faith' ? 'Fé' : condition.resource}`];
+    case 'resourceAtLeast': return [`Pelo menos ${condition.value ?? 0} de ${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource}`];
     case 'resourceBelow': return [`Menos de ${condition.value ?? 0} de ${condition.resource}`];
     case 'resourceAtMost': return [`No máximo ${condition.value ?? 0} de ${condition.resource}`];
     case 'enemyStacksAtLeast': return [`Pelo menos ${condition.stacks ?? 0} ${condition.stackId === 'judgment' ? 'Julgamentos' : condition.stackId}`];
@@ -30,6 +30,9 @@ function conditions(condition: AbilityCondition): string[] {
     case 'stateInactive': return [`${condition.state} inativo(a)`];
     case 'painAtLeastPct': return [`Dor de pelo menos ${formatGamePercent(condition.pct ?? 0)}`];
     case 'everyNRounds': return [`A cada ${condition.n ?? 1} ciclos`];
+    case 'periodicEffectActive': return [condition.effectId === 'necromante:plague' ? 'Praga Necrótica ativa' : `${condition.effectId} ativo`];
+    case 'summonCountAtLeast': return [`Pelo menos ${condition.count ?? 1} invocação ativa`];
+    case 'summonCountBelow': return ['Espaço para uma nova invocação'];
     default: return [];
   }
 }
@@ -42,6 +45,7 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
     const requirements = conditions(ability.condition);
     if (requirements.length) rows.push({ label: 'Requisito', value: requirements.join(' e ') });
     if (ability.effect.faithCost) rows.push({ label: 'Custo', value: `${ability.effect.faithCost} Fé, cobrada ao usar` });
+    if (ability.effect.soulCost) rows.push({ label: 'Custo', value: `${ability.effect.soulCost} ${ability.effect.soulCost === 1 ? 'Alma' : 'Almas'}, cobrada ao usar` });
   }
 
   if (ch.classId !== 'clerigo') return rows;

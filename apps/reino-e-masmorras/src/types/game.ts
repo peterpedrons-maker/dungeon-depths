@@ -184,7 +184,8 @@ export interface AbilityCondition {
     | 'all' | 'any' | 'not'
     | 'resourceAtLeast' | 'resourceBelow' | 'resourceAtMost' | 'stateActive' | 'stateInactive'
     | 'painAtLeastPct' | 'enemyStacksAtLeast' | 'enemyStacksEqual'
-    | 'enemyPostureAtMost' | 'enemyPostureBand' | 'guardBroken' | 'riposteReady' | 'notGuardBroken';
+    | 'enemyPostureAtMost' | 'enemyPostureBand' | 'guardBroken' | 'riposteReady' | 'notGuardBroken'
+    | 'periodicEffectActive' | 'summonCountAtLeast' | 'summonCountBelow';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
@@ -195,6 +196,8 @@ export interface AbilityCondition {
   stackId?: string; // enemyStacksAtLeast/enemyStacksEqual — e.g. 'wounds' | 'judgment'
   stacks?: number; // enemyStacksAtLeast/enemyStacksEqual threshold
   postureBand?: 'firm' | 'unstable' | 'open' | 'broken';
+  effectId?: string;
+  count?: number;
 }
 
 export interface AbilityEffect {
@@ -243,7 +246,8 @@ export interface AbilityEffect {
     // generic playerModsRef 'evasion' StatModStat channel. huntWithPrey (Um
     // com a Caça) is the one bespoke simultaneous dmg+speed+evasion buff.
     | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey'
-    | 'preparedGuard' | 'feint';
+    | 'preparedGuard' | 'feint'
+    | 'boneShield' | 'deathVeil' | 'boneFortress' | 'mortalVoracity';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -464,6 +468,31 @@ export interface AbilityEffect {
   feintPostureDamage?: number;
   feintDefPenPct?: number;
   amplifiedMdefPenPct?: number;
+
+  // Necromante: metadados declarativos; a resolução nunca depende do nome.
+  soulCost?: number;
+  decompositionOnHit?: number;
+  decompositionConsumeMax?: number;
+  soulGainOnConsumeExact?: number;
+  plagueApply?: boolean;
+  plagueMultiplier?: number;
+  plagueDuration?: number;
+  plagueDetonatePct?: number;
+  plagueDetonateCapMult?: number;
+  summonCount?: number;
+  summonAttacks?: number;
+  summonMaxRefresh?: number;
+  sacrificeOldestSummon?: boolean;
+  consumeAllSummons?: boolean;
+  consumeSoulsMax?: number;
+  barrierBasePct?: number;
+  directHealFromDamagePct?: number;
+  directHealCapPct?: number;
+  necromancerTag?: 'decomposition' | 'soul' | 'reaper';
+  enemyHpExecuteBase?: number;
+  enemyHpExecuteThreshold?: number;
+  enemyHpExecutePer5Pct?: number;
+  enemyHpExecuteCap?: number;
 }
 
 export interface AbilityDef {
