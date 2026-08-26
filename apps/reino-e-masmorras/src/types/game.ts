@@ -166,7 +166,7 @@ export type CrowdControlKind = 'stun' | 'sleep' | 'silence';
 // ability introduces a miss chance. 'dmgTakenPct' covers both Damage
 // Reduction (negative) and Vulnerability (positive). 'defPenPct' covers
 // Physical/Magic Penetration (ignores a % of the target's defense).
-export type StatModStat = 'atk' | 'def' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct' | 'tenacityPct' | 'speedPct';
+export type StatModStat = 'atk' | 'def' | 'mdef' | 'critChance' | 'critDmgMult' | 'accuracy' | 'evasion' | 'dmgTakenPct' | 'defPenPct' | 'lifestealPct' | 'tenacityPct' | 'speedPct';
 
 // Composable conditions (see lib/combatConditions.ts's evalAbilityCondition)
 // — 'all'/'any'/'not' recurse into `conditions` ('not' only ever reads its
@@ -183,7 +183,8 @@ export interface AbilityCondition {
     | 'always' | 'enemyHasStatus' | 'hpBelow' | 'enemyHpBelow' | 'everyNRounds' | 'selfDebuffed'
     | 'all' | 'any' | 'not'
     | 'resourceAtLeast' | 'resourceBelow' | 'resourceAtMost' | 'stateActive' | 'stateInactive'
-    | 'painAtLeastPct' | 'enemyStacksAtLeast' | 'enemyStacksEqual';
+    | 'painAtLeastPct' | 'enemyStacksAtLeast' | 'enemyStacksEqual'
+    | 'enemyPostureAtMost' | 'enemyPostureBand' | 'guardBroken' | 'riposteReady' | 'notGuardBroken';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
@@ -193,6 +194,7 @@ export interface AbilityCondition {
   state?: string; // stateActive/stateInactive — e.g. 'frenzy' | 'consecration'
   stackId?: string; // enemyStacksAtLeast/enemyStacksEqual — e.g. 'wounds' | 'judgment'
   stacks?: number; // enemyStacksAtLeast/enemyStacksEqual threshold
+  postureBand?: 'firm' | 'unstable' | 'open' | 'broken';
 }
 
 export interface AbilityEffect {
@@ -240,7 +242,8 @@ export interface AbilityEffect {
     // reuses buffPct/buffRounds like buffDef/atkBuff do, pushed through the
     // generic playerModsRef 'evasion' StatModStat channel. huntWithPrey (Um
     // com a Caça) is the one bespoke simultaneous dmg+speed+evasion buff.
-    | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey';
+    | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey'
+    | 'preparedGuard' | 'feint';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -428,6 +431,38 @@ export interface AbilityEffect {
   pulseResidualOnSamePolarity?: boolean;
   resonanceEcho?: boolean;
   mdefPenPct?: number;
+
+  // ── Guerreiro redesign (lib/warrior.ts) ──
+  // Posture is a separate enemy gauge; values never use DEF, crit, lifesteal
+  // or damage effects. DungeonPanel resolves these fields generically.
+  postureDamage?: number;
+  postureDamageFirm?: number;
+  postureDamageByBand?: Partial<Record<'firm' | 'unstable' | 'open' | 'broken', number>>;
+  dmgMultByBand?: Partial<Record<'firm' | 'unstable' | 'open' | 'broken', number>>;
+  postureDamagePerHit?: number;
+  noPostureBreak?: boolean;
+  preparedParries?: number;
+  parryReductionPct?: number;
+  preparedDuration?: number;
+  canGenerateRiposte?: boolean;
+  riposteRequired?: boolean;
+  finishGuardBreak?: boolean;
+  guardBreakActionsBonusOnBreak?: number;
+  perfectCounterAccuracyOnBreak?: boolean;
+  suppressPostureRecoveryActions?: number;
+  zeroNextPostureRecoveryIfAllHits?: boolean;
+  atkDebuffOnHitPct?: number;
+  atkDebuffRounds?: number;
+  defPenPct?: number;
+  guaranteedAccuracy?: boolean;
+  duelistAbility?: boolean;
+  vanguardAbility?: boolean;
+  guardAbility?: boolean;
+  readingPerfectOnBreak?: boolean;
+  riposteDamageMult?: number;
+  ripostePostureDamage?: number;
+  feintPostureDamage?: number;
+  feintDefPenPct?: number;
   amplifiedMdefPenPct?: number;
 }
 
@@ -789,6 +824,21 @@ export interface EnemyInstance {
   // stacking to 3, each application renews ALL stacks' duration (same shape
   // as Feridas/Julgamento). Absent = no Brechas active.
   hunterBreaches?: { stacks: number; ticksLeft: number };
+  // Guerreiro-only encounter state. It is owned by the current enemy and is
+  // recreated at 100 whenever spawnEnemy produces the next target.
+  warrior?: {
+    current: number;
+    max: number;
+    guardBroken: boolean;
+    offensiveActionsLeft: number;
+    ticksLeft: number;
+    pressureRecoveryPending: boolean;
+    suppressedActionsLeft: number;
+    zeroRecoveryPending: boolean;
+    vanguardFirstHitUsed: boolean;
+    duelistFirmFirstHitUsed: boolean;
+    perfectCounterAccuracyPending: boolean;
+  };
 }
 
 export interface DungeonDef {

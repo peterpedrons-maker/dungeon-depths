@@ -31,7 +31,7 @@ function tierFor(kills: number): [string, string] | null {
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Veneno', burn: 'Queimadura', bleed: 'Sangramento', curse: 'Maldição' };
 const CC_LABEL: Record<CrowdControlKind, string> = { stun: 'Atordoamento', sleep: 'Sono', silence: 'Silêncio' };
 const STAT_MOD_LABEL: Record<StatModStat, string> = {
-  atk: 'Ataque', def: 'Defesa', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
+  atk: 'Ataque', def: 'Defesa', mdef: 'Defesa Mágica', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
   evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
   tenacityPct: 'Tenacidade', speedPct: 'Velocidade',
 };
