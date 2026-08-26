@@ -13,6 +13,7 @@ import { itemDisplayName } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { getEquippedAbilities } from '../lib/skills';
+import { HEAT_AFTER_OVERHEAT, HEAT_OVERHEAT_AT, ThermalState, advanceThermal, circuitAfterCast, circuitPulseMult, fireDamageBonus, nextRunes, thermalAfterFrozenEnds, thermalAfterShatter, thermalShatterMult } from '../lib/mago';
 import {
   FURY_MAX, FURY_MIN, FURY_GAIN_BASIC_HIT, FURY_GAIN_BASIC_HIT_SANGUE_QUENTE, FURY_GAIN_ABILITY_HIT,
   FURY_GAIN_CRIT_BONUS, FURY_GAIN_TAKE_DAMAGE, FURY_GAIN_TAKE_DAMAGE_SANGUE_QUENTE, FURY_GAIN_PAIN_TICK,
@@ -851,6 +852,31 @@ export function DungeonPanel({
 
   const [hunterTrapsState, setHunterTrapsState] = useState<CombatTrap[]>([]);
 
+  // ── Mago redesign — all session-only. The data is deliberately keyed by
+  // mechanic, never ability name: any future spell can participate through
+  // AbilityEffect metadata.
+  const mageRunesRef = useRef(0);
+  const mageHeatRef = useRef(0);
+  const mageThermalRef = useRef<ThermalState>('normal');
+  const mageThermalTicksRef = useRef(0);
+  const mageLastPolarityRef = useRef<'none' | 'positive' | 'negative'>('none');
+  const mageCircuitRef = useRef(0);
+  const mageResonanceRef = useRef(false);
+  const mageInverterPendingRef = useRef(false);
+  const mageOverheatUsedThisEnemyRef = useRef(false);
+  const mageFirstFireHitThisEnemyRef = useRef(false);
+  const mageFirstFrostHitThisEnemyRef = useRef(false);
+  const mageFrozenAccuracyPendingRef = useRef(false);
+  const mageNextDamageReductionRef = useRef(0);
+  const mageFrostBarrierAdvanceRef = useRef(0);
+  const mageCurrentCastAmplifiedRef = useRef(false);
+  const [mageRunesState, setMageRunesState] = useState(0);
+  const [mageHeatState, setMageHeatState] = useState(0);
+  const [mageThermalState, setMageThermalState] = useState<ThermalState>('normal');
+  const [magePolarityState, setMagePolarityState] = useState<'none' | 'positive' | 'negative'>('none');
+  const [mageCircuitState, setMageCircuitState] = useState(0);
+  const [mageResonanceState, setMageResonanceState] = useState(false);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -994,6 +1020,10 @@ export function DungeonPanel({
 
   function scheduleEnemy(delay = nextEnemyDelay()) {
     if (silentRef.current) return;
+    // Congelado delays exactly the next real enemy action.  The delay is
+    // attached to the scheduler (rather than repeatedly applied on every
+    // reapplication of Gelo), so it cannot stack while the target is frozen.
+    if (isMage() && mageThermalRef.current === 'frozen') delay = Math.round(delay * 1.25);
     const gen = enemyGenRef.current;
     const cGen = catchUpGenRef.current;
     setEnemyRoundMs(delay);
@@ -1104,13 +1134,148 @@ export function DungeonPanel({
       resources: {
         fury: barbFuryRef.current, faith: clerigoFaithRef.current,
         determination: knightDeterminationRef.current, momentum: knightMomentumRef.current, orders: knightOrdersRef.current,
+        heat: mageHeatRef.current,
       },
-      states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current },
+      states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current, thermal: mageThermalRef.current !== 'normal' },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks() },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
     };
     if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
     return evalAbilityCondition(cond, ctx);
+  }
+
+  function isMage(): boolean { return chRef.current.classId === 'mago'; }
+  function mageSync() {
+    if (silentRef.current) return;
+    setMageRunesState(mageRunesRef.current); setMageHeatState(mageHeatRef.current);
+    setMageThermalState(mageThermalRef.current); setMagePolarityState(mageLastPolarityRef.current);
+    setMageCircuitState(mageCircuitRef.current); setMageResonanceState(mageResonanceRef.current);
+  }
+  function mageGainHeat(amount: number) {
+    if (!isMage() || amount <= 0) return;
+    mageHeatRef.current += amount;
+    if (mageHeatRef.current >= HEAT_OVERHEAT_AT) {
+      const emergencyValve = chRef.current.unlockedSkills.includes('mago:piromante:8') && !mageOverheatUsedThisEnemyRef.current;
+      const damage = Math.max(1, Math.round(effectiveMaxHp(chRef.current) * (emergencyValve ? 0.03 : 0.05)));
+      updateCh({ ...chRef.current, hp: Math.max(1, chRef.current.hp - damage) });
+      mageOverheatUsedThisEnemyRef.current = true;
+      mageHeatRef.current = HEAT_AFTER_OVERHEAT;
+      pushLog([{ text: `Superaquecimento: -${damage} Vida; Calor → 50.`, color: '#ef4444' }]);
+    }
+    mageSync();
+  }
+  function mageThermalAdvance(amount: number) {
+    if (!isMage() || amount <= 0) return;
+    const wasFrozen = mageThermalRef.current === 'frozen';
+    mageThermalRef.current = advanceThermal(mageThermalRef.current, amount);
+    if (!wasFrozen && mageThermalRef.current === 'frozen') {
+      mageFrozenAccuracyPendingRef.current = chRef.current.unlockedSkills.includes('mago:gelido:3');
+      if (chRef.current.unlockedSkills.includes('mago:gelido:8')) {
+        playerShieldRef.current += Math.max(1, Math.round(effectiveMaxHp(chRef.current) * 0.04));
+        syncShield();
+      }
+    }
+    if (mageThermalRef.current !== 'frozen') mageThermalTicksRef.current = 0;
+    mageSync();
+  }
+
+  function mageElementDamageBonus(element: string | undefined): number {
+    if (!element) return 0;
+    const unlocked = chRef.current.unlockedSkills;
+    if (element === 'fire') return (unlocked.includes('mago:piromante:0') ? 0.02 : 0) + (unlocked.includes('mago:piromante:7') ? 0.02 : 0) + (unlocked.includes('mago:piromante:11') ? 0.03 : 0);
+    if (element === 'frost') return (unlocked.includes('mago:gelido:1') ? 0.02 : 0) + (unlocked.includes('mago:gelido:11') ? 0.03 : 0);
+    return (unlocked.includes('mago:eletromante:0') ? 0.02 : 0) + (unlocked.includes('mago:eletromante:7') ? 0.02 : 0) + (unlocked.includes('mago:eletromante:11') ? 0.03 : 0);
+  }
+
+  // Resolves the Mage's cast-level effects after its core hit(s).  This is
+  // intentionally called once per spell, never once per multi-hit impact.
+  function mageOnSpellHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, amplified: boolean, landedHits = 1) {
+    if (!isMage()) return;
+    const eff = ab.effect;
+    if (eff.element === 'fire' && !mageFirstFireHitThisEnemyRef.current) {
+      mageFirstFireHitThisEnemyRef.current = true;
+      mageGainHeat(5);
+    }
+    if (eff.element === 'frost') {
+      const wasFragileOrFrozen = mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen';
+      let steps = amplified ? (eff.amplifiedThermalAdvanceOnHit ?? eff.thermalAdvanceOnHit ?? 0) : (eff.thermalAdvanceOnHit ?? 0);
+      if (!mageFirstFrostHitThisEnemyRef.current) {
+        mageFirstFrostHitThisEnemyRef.current = true;
+        if (chRef.current.unlockedSkills.includes('mago:gelido:0')) steps += 1;
+      }
+      if (steps) mageThermalAdvance(steps);
+      if (eff.shatter) {
+        mageThermalRef.current = thermalAfterShatter(mageThermalRef.current, chRef.current.unlockedSkills.includes('mago:gelido:14'));
+        mageThermalTicksRef.current = 0;
+        mageSync();
+      }
+      if (ab.id === 'mago:gelido:10' && wasFragileOrFrozen) {
+        playerModsRef.current.push({ stat: 'dmgTakenPct', pct: amplified ? -0.10 : -0.06, roundsLeft: 2, sourceAbilityId: ab.id });
+        syncPlayerMods();
+      }
+    }
+    if (!eff.polarity) return;
+    const resonanceWasReady = mageResonanceRef.current;
+    const samePolarity = mageLastPolarityRef.current !== 'none' && mageLastPolarityRef.current === eff.polarity;
+    const next = circuitAfterCast(mageLastPolarityRef.current, eff.polarity, mageCircuitRef.current, amplified || mageInverterPendingRef.current);
+    mageInverterPendingRef.current = false;
+    mageLastPolarityRef.current = next.last;
+    let pulseMult = 0;
+    if (next.closed) {
+      const stage = next.circuit;
+      pulseMult = circuitPulseMult(stage, chRef.current.unlockedSkills.includes('mago:eletromante:14'));
+      if (stage === 1 && chRef.current.unlockedSkills.includes('mago:eletromante:0')) pulseMult += 0.05;
+      if (amplified && chRef.current.unlockedSkills.includes('mago:eletromante:3')) pulseMult *= 1.15;
+      if (landedHits >= 2 && chRef.current.unlockedSkills.includes('mago:eletromante:7')) pulseMult += 0.05;
+      mageCircuitRef.current = stage >= 3 ? 0 : stage;
+      if (stage >= 3) mageResonanceRef.current = true;
+      if (chRef.current.unlockedSkills.includes('mago:eletromante:5')) mageNextDamageReductionRef.current = Math.max(mageNextDamageReductionRef.current, 0.06);
+      if (chRef.current.unlockedSkills.includes('mago:eletromante:6')) {
+        playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== 'mago:eletromante:6');
+        playerModsRef.current.push({ stat: 'speedPct', pct: 0.04, roundsLeft: 2, sourceAbilityId: 'mago:eletromante:6' });
+        syncPlayerMods();
+      }
+    } else {
+      mageCircuitRef.current = next.circuit;
+      if (samePolarity && mageCircuitRef.current > 0 && chRef.current.unlockedSkills.includes('mago:eletromante:8')) pulseMult = 0.10;
+    }
+    if (pulseMult > 0 && enemyRef.current.hp > 0) {
+      const pulse = Math.max(1, Math.round(stats.matk * pulseMult));
+      applyEnemyHp(Math.max(0, enemyRef.current.hp - pulse));
+      pushFloat('enemy', pulse, false);
+    }
+    if (resonanceWasReady && enemyRef.current.hp > 0) {
+      const echoMult = chRef.current.unlockedSkills.includes('mago:eletromante:14') ? 0.65 : 0.45;
+      const echo = Math.max(1, Math.round(stats.matk * echoMult));
+      applyEnemyHp(Math.max(0, enemyRef.current.hp - echo));
+      pushFloat('enemy', echo, false);
+      mageResonanceRef.current = false;
+      if (chRef.current.unlockedSkills.includes('mago:eletromante:14')) mageCircuitRef.current = Math.max(1, mageCircuitRef.current);
+    }
+    mageSync();
+  }
+
+  function mageFinishCast(ab: AbilityDef | null, amplified: boolean) {
+    if (!isMage() || !ab) return;
+    const eff = ab.effect;
+    if (eff.element === 'lightning' && !eff.polarity && eff.circuitPerfectWithInverter) {
+      mageInverterPendingRef.current = true;
+      const rounds = amplified ? 4 : 3;
+      playerModsRef.current.push({ stat: 'speedPct', pct: amplified ? 0.12 : 0.08, roundsLeft: rounds, sourceAbilityId: ab.id });
+      syncPlayerMods();
+    }
+    if (eff.heatGain) mageGainHeat(amplified ? (eff.amplifiedHeatGain ?? eff.heatGain) : eff.heatGain);
+    if (eff.heatCost || eff.heatCostAll) {
+      const refund = chRef.current.unlockedSkills.includes('mago:piromante:14') ? (amplified ? 15 : 10) : 0;
+      if (refund) mageGainHeat(refund);
+    }
+  }
+
+  function mageOnEnemyRealAction() {
+    if (!isMage() || mageThermalRef.current !== 'frozen') return;
+    mageThermalRef.current = thermalAfterFrozenEnds(chRef.current.unlockedSkills.includes('mago:gelido:14'));
+    mageThermalTicksRef.current = 0;
+    mageSync();
   }
 
   // ── Bárbaro redesign helpers (lib/barbarian.ts has the shared constants) ──
@@ -2097,15 +2262,17 @@ export function DungeonPanel({
   // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
   // (both scoped to the single-hit/plain-attack path only) — a scoped
   // simplification, called out in the final report.
-  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number) {
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0) {
     const eff = ab.effect;
     cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct);
     const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
     const power = isMagicalClass ? stats.matk : stats.atk;
-    const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+    const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
+    const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
+    const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen));
     const marked = hunterMarkedPrey();
     const hitCount = eff.hitCount ?? 2;
-    let allLanded = true;
+    let allLanded = true, landedHits = 0;
     pushAbilityCast('player', ab.name, activeAbilityIconStyle(chRef.current.classId, ab.id), null, false);
     pushLog(`Você usa [${ab.name}]!`);
     for (let i = 0; i < hitCount; i++) {
@@ -2117,9 +2284,16 @@ export function DungeonPanel({
         continue;
       }
       let dmgMult = eff.dmgMultPerHit ?? 0.8;
+      if (isMage() && mageAmplified) {
+        // Arco Duplo gains one extra small hit; Tempestade replaces each hit.
+        if (ab.id === 'mago:eletromante:13') dmgMult = eff.amplifiedDmgMult ?? dmgMult;
+      }
+      if (isMage() && eff.element) dmgMult *= 1 + mageElementDamageBonus(eff.element);
+      if (isMage() && eff.element === 'fire') dmgMult *= 1 + fireDamageBonus(mageHeatAtCast);
       // Tiro Duplo's own marked-prey bonus applies only to the SECOND shot.
       if (i === 1 && marked && ab.id === 'cacador:precisao-caca:9') dmgMult *= 1 + TIRO_DUPLO_SECOND_HIT_BONUS_PCT_MARKED;
       const { dmg, crit } = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll);
+      landedHits += 1;
       const newHp = Math.max(0, enemyRef.current.hp - dmg);
       applyEnemyHp(newHp);
       pushFloat('enemy', dmg, crit);
@@ -2134,6 +2308,18 @@ export function DungeonPanel({
       }
       if (newHp <= 0) { resolveEnemyDeath(); return; }
     }
+    // Arco Duplo amplified adds a third 0.30x impact, rather than replacing
+    // either of its two normal impacts.
+    if (isMage() && mageAmplified && ab.id === 'mago:eletromante:9' && enemyRef.current.hp > 0) {
+      if (!rollMiss(accuracyForRoll, enemyEvasion)) {
+        const { dmg, crit } = rollAbilityHit(power, effDef, (eff.amplifiedDmgMult ?? 0.30) * (1 + mageElementDamageBonus('lightning')), critChanceForRoll, critDmgMultForRoll);
+        landedHits += 1;
+        const newHp = Math.max(0, enemyRef.current.hp - dmg);
+        applyEnemyHp(newHp); pushFloat('enemy', dmg, crit);
+        if (newHp <= 0) { resolveEnemyDeath(); return; }
+      } else allLanded = false;
+    }
+    if (isMage() && landedHits > 0) mageOnSpellHit(ab, stats, mageAmplified, landedHits);
     if (allLanded && eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
   }
 
@@ -2561,8 +2747,14 @@ export function DungeonPanel({
       // Barreira Ritual (+4% multiplicativo) only ever applies to a NORMAL
       // barrier like this one, never to Graça — clerigoBarrierEfficiencyMult
       // returns 1 for every other class/without the talent.
-      const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.shieldPct ?? 0.25) * supportMult * clerigoBarrierEfficiencyMult());
+      const frostBarrier = isMage() && eff.element === 'frost';
+      const frostEfficiency = frostBarrier
+        ? 1 + (chRef.current.unlockedSkills.includes('mago:gelido:2') ? 0.08 : 0) + (chRef.current.unlockedSkills.includes('mago:gelido:7') ? Math.min(0.10, attrTotal(chRef.current, 'wis') * 0.002) : 0)
+        : 1;
+      const shieldPct = frostBarrier && mageCurrentCastAmplifiedRef.current ? (eff.amplifiedDmgMult ?? eff.shieldPct ?? 0.25) : (eff.shieldPct ?? 0.25);
+      const amount = Math.round(effectiveMaxHp(chRef.current) * shieldPct * supportMult * frostEfficiency * clerigoBarrierEfficiencyMult());
       playerShieldRef.current += amount;
+      if (frostBarrier && mageCurrentCastAmplifiedRef.current) mageFrostBarrierAdvanceRef.current = 2;
       clerigoAddBarrierPortion(amount);
       syncShield();
       if (eff.consecrationRoundsOnCast) clerigoStartConsecration(eff.consecrationRoundsOnCast);
@@ -2965,6 +3157,16 @@ export function DungeonPanel({
       if (hunterInstintoFugaWindowTicksRef.current > 0) hunterInstintoFugaWindowTicksRef.current -= 1;
       hunterTickBreaches();
     }
+    // Gélido: Resfriado/Frágil naturally warm one step after four full
+    // environmental cycles without a new frost application. Congelado ends
+    // through the enemy action or an explicit shatter, never through this timer.
+    if (isMage() && mageThermalRef.current !== 'normal' && mageThermalRef.current !== 'frozen') {
+      mageThermalTicksRef.current += 1;
+      if (mageThermalTicksRef.current >= 4) {
+        mageThermalRef.current = mageThermalRef.current === 'fragile' ? 'chilled' : 'normal';
+        mageThermalTicksRef.current = 0; mageSync();
+      }
+    }
 
     scheduleEnv();
   }
@@ -3095,6 +3297,17 @@ export function DungeonPanel({
         syncClerigoGrace();
         syncClerigoConsecration();
       }
+      if (isMage()) {
+        mageRunesRef.current = Math.min(mageRunesRef.current, 1);
+        mageHeatRef.current = Math.min(mageHeatRef.current, 40);
+        mageThermalRef.current = 'normal'; mageThermalTicksRef.current = 0;
+        mageLastPolarityRef.current = 'none'; mageCircuitRef.current = 0; mageResonanceRef.current = false;
+        mageInverterPendingRef.current = false; mageOverheatUsedThisEnemyRef.current = false;
+        mageFirstFireHitThisEnemyRef.current = false; mageFirstFrostHitThisEnemyRef.current = false;
+        mageFrozenAccuracyPendingRef.current = false; mageNextDamageReductionRef.current = 0;
+        mageFrostBarrierAdvanceRef.current = 0; mageCurrentCastAmplifiedRef.current = false;
+        mageSync();
+      }
       // Cavaleiro: everything resets per enemy EXCEPT Sede de Vitória's
       // capped Momentum carry and Liderança's capped Ordens carry, and
       // EXCEPT Bastião Inquebrável's once-per-ATTEMPT save (untouched here).
@@ -3191,6 +3404,10 @@ export function DungeonPanel({
       const stats = computePlayerStats();
       let dmg = 0, crit = false, abilityTag = '', statusLine = '', missed = false, playerHitMagical = false;
       let castAbility: AbilityDef | null = null;
+      let mageAmplifiedThisCast = false;
+      let mageHeatAtCast = 0;
+      let mageCastFinished = false;
+      let chosen: AbilityDef | null = null;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -3200,7 +3417,27 @@ export function DungeonPanel({
         // the plain attack for the single pick, instead of firing for free
         // alongside whatever else happened. Using a heal costs you the
         // round's damage, exactly like choosing to use any other ability.
-        const chosen = pickAbility();
+        chosen = pickAbility();
+        // Runas advance for EVERY active Mago spell, including support, at
+        // cast time. A third-spell miss still consumes Amplificação.
+        if (isMage() && chosen) {
+          mageHeatAtCast = mageHeatRef.current;
+          const rune = nextRunes(mageRunesRef.current);
+          mageAmplifiedThisCast = rune.amplified;
+          mageCurrentCastAmplifiedRef.current = rune.amplified;
+          mageRunesRef.current = rune.next;
+          mageSync();
+          const e = chosen.effect;
+          if (e.heatCostAll) mageHeatRef.current = 0;
+          else if (e.heatCost) mageHeatRef.current = Math.max(0, mageHeatRef.current - e.heatCost);
+          if ((e.heatCost || e.heatCostAll) && mageHeatAtCast >= 40 && chRef.current.unlockedSkills.includes('mago:piromante:2')) mageNextDamageReductionRef.current = Math.max(mageNextDamageReductionRef.current, 0.06);
+          mageSync();
+        }
+        if (isMage() && (!chosen || chosen.effect.element !== 'fire')) {
+          const cooling = chRef.current.unlockedSkills.includes('mago:piromante:5') ? 15 : 10;
+          mageHeatRef.current = Math.max(0, mageHeatRef.current - cooling);
+          mageSync();
+        }
         if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
           cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id));
           const line = resolveSelfAbility(chosen, stats);
@@ -3278,7 +3515,20 @@ export function DungeonPanel({
           const olharDoJuizBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:1') && judgmentAtActionStart >= OLHAR_DO_JUIZ_HIGH_JUDGMENT_THRESHOLD
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
-          const accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus;
+          let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus;
+          if (isMage() && offenseAbility) {
+            const element = offenseAbility.effect.element;
+            if (element === 'fire') {
+              if (chRef.current.unlockedSkills.includes('mago:piromante:1')) accuracyForRoll += mageHeatAtCast >= 60 ? 0.04 : 0.02;
+              if (chRef.current.unlockedSkills.includes('mago:piromante:7') && mageHeatAtCast >= 60 && mageHeatAtCast < 90) accuracyForRoll += 0.03;
+              if (mageAmplifiedThisCast && chRef.current.unlockedSkills.includes('mago:piromante:3')) accuracyForRoll += 0.03;
+            }
+            if (element === 'frost' && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen')) accuracyForRoll += 0.02;
+            if (element === 'frost' && mageFrozenAccuracyPendingRef.current) { accuracyForRoll += 0.05; mageFrozenAccuracyPendingRef.current = false; }
+            if (element === 'lightning') {
+              if (chRef.current.unlockedSkills.includes('mago:eletromante:2')) accuracyForRoll += mageCircuitRef.current >= 2 ? 0.04 : 0.02;
+            }
+          }
           // Disparo Preciso (cacador:precisao-caca:4) — bypasses the evasion
           // roll entirely (crit still rolls normally downstream).
           missed = offenseAbility?.effect.guaranteedHit ? false : rollMiss(accuracyForRoll, enemyEvasion);
@@ -3287,7 +3537,7 @@ export function DungeonPanel({
             // Tiro Duplo — two independent rolls, handled entirely by its
             // own self-contained resolver; `missed`/`dmg` stay at their
             // initial false/0 so the shared post-processing below is a no-op.
-            hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll);
+            hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast);
           } else if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
@@ -3303,7 +3553,14 @@ export function DungeonPanel({
             if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined) {
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
             }
-            const eff = offenseAbility.effect;
+            const eff = { ...offenseAbility.effect };
+            if (isMage() && mageAmplifiedThisCast && eff.amplifiedDmgMult !== undefined) {
+              // Multi-hit uses amplifiedDmgMult as a per-hit override when
+              // its normal damage lives in dmgMultPerHit; single hits use it
+              // as their explicit amplified multiplier.
+              if (eff.kind === 'multiHit') eff.dmgMultPerHit = eff.amplifiedDmgMult;
+              else eff.dmgMult = eff.amplifiedDmgMult < 1 && eff.heatDmgMultPerPoint ? (eff.dmgMult ?? 0) + eff.amplifiedDmgMult : eff.amplifiedDmgMult;
+            }
             // Abilities from magical classes cast as spells by default (matk vs
             // mdef) — only an ability's own dmgType override or the caster's
             // class decides which channel a spell uses. The plain attack (the
@@ -3328,11 +3585,28 @@ export function DungeonPanel({
             const hunterMarkedDefPenExtra = isHunter() && offenseAbility.id === 'cacador:precisao-caca:10' && hunterMarkedPrey()
               ? ABATE_DEFPEN_PCT_MARKED - (eff.defPenPctBase ?? 0)
               : 0;
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra));
+            const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
+            const mageMdefPen = isMage() && eff.element === 'lightning'
+              ? (mageAmplifiedThisCast ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0))
+              : 0;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (isMage() && offenseAbility.id === 'mago:gelido:13') {
+              const targetFrozen = mageThermalRef.current === 'frozen';
+              dmgMult = targetFrozen ? (mageAmplifiedThisCast ? 2.65 : 2.35) : (mageAmplifiedThisCast ? 1.50 : 1.25);
+            }
+            if (isMage() && eff.element === 'fire') {
+              dmgMult *= 1 + fireDamageBonus(mageHeatAtCast);
+              if (eff.heatDmgMultPerPoint) dmgMult = Math.min(eff.heatDmgMultCap ?? Infinity, dmgMult + mageHeatAtCast * eff.heatDmgMultPerPoint);
+            }
+            if (isMage() && eff.element) dmgMult *= 1 + mageElementDamageBonus(eff.element);
+            if (isMage() && eff.element === 'lightning' && mageResonanceRef.current && chRef.current.unlockedSkills.includes('mago:eletromante:11')) dmgMult *= 1.04;
+            if (isMage() && eff.element === 'fire' && (eff.heatCost || eff.heatCostAll) && mageHeatAtCast >= 90 && chRef.current.unlockedSkills.includes('mago:piromante:11')) dmgMult *= 1.03;
+            if (isMage() && eff.element === 'fire' && (eff.heatCost || eff.heatCostAll) && mageHeatAtCast >= 90 && chRef.current.unlockedSkills.includes('mago:piromante:6')) dmgMult += 0.15;
+            if (isMage() && eff.shatter) dmgMult = thermalShatterMult(mageThermalRef.current) + (mageAmplifiedThisCast ? (eff.amplifiedDmgMult ?? 0) : 0);
             if (eff.dmgMultPerWoundStack) dmgMult += eff.dmgMultPerWoundStack * woundsAtActionStart;
             if (eff.painConsumeMaxPct && eff.painConsumeDmgMultPer2Pct) {
               const consumed = barbConsumePain(eff.painConsumeMaxPct);
@@ -3449,7 +3723,8 @@ export function DungeonPanel({
               }
             }
             if (eff.kind === 'applyStatus' && eff.status) {
-              enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * (eff.statusDmgPct ?? 0.4))) });
+              const statusDmgPct = isMage() && mageAmplifiedThisCast ? (eff.amplifiedStatusDmgPct ?? eff.statusDmgPct ?? 0.4) : (eff.statusDmgPct ?? 0.4);
+              enemyStatusRef.current.push({ kind: eff.status, roundsLeft: eff.statusRounds ?? 3, dmgPerTick: Math.max(1, Math.round(power * statusDmgPct)) });
               syncEnemyStatuses();
               statusLine = ` ${enemyRef.current.name} foi ${STATUS_VERB[eff.status]}!`;
             } else if (eff.kind === 'crowdControl' && eff.cc) {
@@ -3691,6 +3966,7 @@ export function DungeonPanel({
       if (!missed && dmg > 0) {
         const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
         applyEnemyHp(enemyHp);
+        if (isMage() && castAbility) mageOnSpellHit(castAbility, stats, mageAmplifiedThisCast);
         pushFloat('enemy', dmg, crit);
         flash('enemy');
         if (!silentRef.current) { if (playerHitMagical) playMagicAttackSfx(); else playPhysicalAttackSfx(); }
@@ -3733,7 +4009,8 @@ export function DungeonPanel({
           }
         }
 
-        if (enemyHp <= 0) { resolveEnemyDeath(); return; }
+        if (isMage() && chosen && !mageCastFinished) { mageFinishCast(chosen, mageAmplifiedThisCast); mageCastFinished = true; }
+        if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
 
         if (knightActive) {
           const knightFirstHit = !knightFirstHitLandedRef.current;
@@ -3767,6 +4044,7 @@ export function DungeonPanel({
           }
         }
       }
+      if (isMage() && chosen && !mageCastFinished) mageFinishCast(chosen, mageAmplifiedThisCast);
     }
 
     schedulePlayer(nextPlayerDelay());
@@ -3832,6 +4110,7 @@ export function DungeonPanel({
       // (Instinto de Fuga/Passo Etéreo/Manto das Sombras).
       hunterOnEnemyRealAction();
       hunterOnEnemyMiss();
+      mageOnEnemyRealAction();
       scheduleEnemy();
       return;
     }
@@ -3871,6 +4150,13 @@ export function DungeonPanel({
     const clerigoActiveEnemy = isClerigo();
     const clerigoWallReduction = clerigoActiveEnemy && clerigoWallBonusActive() ? MURALHA_DIVINA_DMG_TAKEN_PCT : 0;
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus) * (1 + clerigoWallReduction));
+    if (isMage() && mageThermalRef.current === 'frozen') edmg = Math.round(edmg * 0.90);
+    if (isMage() && mageHeatRef.current >= 90) edmg = Math.round(edmg * 1.08);
+    if (isMage() && mageNextDamageReductionRef.current > 0) {
+      edmg = Math.round(edmg * (1 - mageNextDamageReductionRef.current));
+      mageNextDamageReductionRef.current = 0;
+    }
+    if (isMage() && chRef.current.unlockedSkills.includes('mago:gelido:5') && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen')) edmg = Math.round(edmg * 0.96);
     if (barbActive && edmg > 0) {
       // Corpo Duro (barbaro:resistencia:2) — a single direct hit exceeding
       // 15% of effective max HP gets reduced further, VIT-scaled.
@@ -3982,6 +4268,10 @@ export function DungeonPanel({
       playerShieldRef.current -= shieldAbsorbed;
       edmg -= shieldAbsorbed;
       syncShield();
+      if (isMage() && shieldAbsorbed > 0 && mageFrostBarrierAdvanceRef.current > 0) {
+        mageThermalAdvance(mageFrostBarrierAdvanceRef.current);
+        mageFrostBarrierAdvanceRef.current = 0;
+      }
       if (knightActiveEnemy) knightAbsorbColossalShield(shieldAbsorbed);
     }
     // Contra-Ataque Absoluto (cavaleiro:bastiao:12) — armazena uma fração do
@@ -4191,6 +4481,7 @@ export function DungeonPanel({
     // hit that finishes the Caçador off resolves death first and never lets
     // a trap still activate against an already-dead run (spec section 8).
     hunterOnEnemyRealAction();
+    mageOnEnemyRealAction();
     scheduleEnemy();
   }
 
@@ -4523,6 +4814,14 @@ export function DungeonPanel({
     'cacador:trail': { value: enemyTrail, maxValue: TRAIL_MAX, visible: hunterHasRastreioChar },
     'cacador:markedPrey': { value: enemyMarkedPrey ? 1 : 0, visible: hunterHasRastreioChar },
     'cacador:breaches': { value: enemyBreaches, maxValue: BREACH_MAX, duration: enemy.hunterBreaches?.ticksLeft, visible: hunterHasPrecisaoChar },
+    'mago:runes': { value: mageRunesState, maxValue: 2 },
+    'mago:heat': { value: mageHeatState, maxValue: 100 },
+    'mago:overheat': { value: 0 },
+    'mago:thermal_state': { value: mageThermalState === 'normal' ? 0 : 1, detail: mageThermalState === 'normal' ? undefined : ({ chilled: 'RESFRIADO', fragile: 'FRÁGIL', frozen: 'CONGELADO' }[mageThermalState]) },
+    'mago:frozen': { value: mageThermalState === 'frozen' ? 1 : 0 },
+    'mago:polarity': { value: magePolarityState === 'none' ? 0 : 1, detail: magePolarityState === 'positive' ? '+' : magePolarityState === 'negative' ? '−' : undefined },
+    'mago:circuit': { value: mageCircuitState, maxValue: 3 },
+    'mago:resonance': { value: mageResonanceState ? 1 : 0 },
   };
   const combatMechanicStates: CombatMechanicState[] = getClassMechanics(ch.classId)
     .filter((mechanic) => mechanic.combatDisplay)
