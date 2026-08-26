@@ -47,7 +47,7 @@ import {
   hasSkill, evalAbilityCondition, PainPacket, AbilityConditionContext,
 } from '../lib/barbarian';
 import {
-  FAITH_MAX, FAITH_MIN, FAITH_START_FIRST_ENEMY, nextFaithForNewEnemy, SIGNIFICANT_HEAL_PCT, SIGNIFICANT_HEAL_PCT_LOWERED,
+  FAITH_MAX, FAITH_MIN, FAITH_START_FIRST_ENEMY, nextFaithForNewEnemy,
   MAOS_CONSAGRADAS_HEAL_EFFICIENCY_PCT,
   BARRIER_FAITH_THRESHOLD_PCT, JUDGMENT_FAITH_MILESTONES, isDevotionAbilityId,
   GRACE_BASE_CONVERSION_PCT, GRACE_DIVINA_CONVERSION_PCT, GRACE_BASE_CAP_PCT, GRACE_DIVINA_CAP_PCT,
@@ -71,7 +71,7 @@ import {
   SABEDORIA_COMPASSIVA_HP_THRESHOLD, SABEDORIA_COMPASSIVA_HEAL_EFFICIENCY_PCT,
   PRECE_SERENA_CDR_PCT, LITURGIA_CONTINUA_CDR_PCT, LITURGIA_CONTINUA_CDR_BOOSTED_PCT, LITURGIA_CONTINUA_FAITH_THRESHOLD,
   VEU_DA_ALMA_HEAL_EFFICIENCY_PCT, MISERICORDIA_ATIVA_DOT_REDUCTION_TICKS,
-  BarrierPortion,
+  BarrierPortion, clericBaseHp, clericDirectHealAmount, clericPassiveHealAmount, significantHealAmount,
 } from '../lib/clerigo';
 import {
   DETERMINATION_MAX, DETERMINATION_GEN_BLOCK, DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA,
@@ -166,7 +166,10 @@ import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
 import { Modal } from './Modal';
 import { Button } from './Button';
-import { MechanicQuickModal } from './ClassMechanics';
+import { MechanicQuickModal, MechanicText } from './ClassMechanics';
+import { CombatMechanicDisplay, CombatMechanicState } from './CombatMechanics';
+import { getClassMechanics } from '../lib/classMechanics';
+import { formatGameNumber, formatGamePercent } from '../lib/format';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import {
@@ -759,6 +762,7 @@ export function DungeonPanel({
   // any combat-UI element tied to a mechanic (Fúria/Frenesi/Dor bars,
   // Feridas badge) opens the same generic quick-explain popup by id.
   const [openMechanicId, setOpenMechanicId] = useState<string | null>(null);
+  const [openAbilityId, setOpenAbilityId] = useState<string | null>(null);
 
   // ── Clérigo redesign — FÉ/GRAÇA/CONSAGRAÇÃO/JULGAMENTO, session-only,
   // never persisted (see lib/clerigo.ts). Fé partially carries between
@@ -779,6 +783,7 @@ export function DungeonPanel({
   const clerigoBarrierPortionsRef = useRef<BarrierPortion[]>([]);
   const clerigoAncoraSagradaWindowRef = useRef(0);
   const clerigoReviveWindowRoundsLeftRef = useRef(0);
+  const clerigoReviveHealRef = useRef({ healPct: 0.40, capPct: 0.25 });
   const clerigoResurrectionTriggeredRef = useRef(false); // once per attempt
   const clerigoJudgmentFaithMilestonesRef = useRef<Set<number>>(new Set()); // per-enemy, see JUDGMENT_FAITH_MILESTONES
   const clerigoJuizoFinalActiveRef = useRef(false); // Juízo Final's own buff can't be renewed while active
@@ -1290,7 +1295,7 @@ export function DungeonPanel({
   // Same baseline used by every class's heal formula (see resolveSelfAbility's
   // 'heal' branch) — class/level curve, deliberately not the gear-inflated
   // EffectiveMaxHp, so VIT+gear+heal% can't compound into near-immortality.
-  function clerigoBaselineMaxHp(): number { return CLASSES[chRef.current.classId].baseHp + 6 * (chRef.current.level - 1); }
+  function clerigoBaselineMaxHp(): number { return clericBaseHp(CLASSES[chRef.current.classId].baseHp, chRef.current.level); }
   function clerigoEffMaxHp(): number { return effectiveMaxHp(chRef.current); }
 
   function clerigoGainFaith(amount: number) {
@@ -1302,11 +1307,6 @@ export function DungeonPanel({
     if (!isClerigo()) return;
     clerigoFaithRef.current = Math.max(FAITH_MIN, clerigoFaithRef.current - amount);
     syncClerigoFaith();
-  }
-  // Mãos Consagradas (clerigo:devocao:3) lowers the "Cura Significativa"
-  // threshold that generates Fé from 8% to 7% of BaselineMaxHp.
-  function clerigoSignificantHealThresholdPct(): number {
-    return clerigoHasSkill('clerigo:devocao:3') ? SIGNIFICANT_HEAL_PCT_LOWERED : SIGNIFICANT_HEAL_PCT;
   }
   // Heal-efficiency bonuses stacked on top of the shared BaselineMaxHp*
   // healPct*supportMult formula — Mãos Consagradas is unconditional, Sabedoria
@@ -1431,10 +1431,11 @@ export function DungeonPanel({
       }
       if (nextRemaining <= 0.01 && take > 0) {
         if (clerigoHasSkill('clerigo:retidao:8') && clerigoConsecrationRoundsLeftRef.current > 0) {
-          const healAmt = Math.round(clerigoBaselineMaxHp() * INTERCESSAO_HEAL_PCT * (1 + computePlayerStats().supportPowerPct));
-          if (healAmt > 0) {
-            updateCh({ ...chRef.current, hp: Math.min(clerigoEffMaxHp(), chRef.current.hp + healAmt) });
-            pushFloat('player', healAmt, false, undefined, undefined, true);
+          const healAmt = clericPassiveHealAmount(clerigoBaselineMaxHp(), INTERCESSAO_HEAL_PCT, computePlayerStats().supportPowerPct);
+          const effectiveHeal = Math.min(healAmt, Math.max(0, clerigoEffMaxHp() - chRef.current.hp));
+          if (effectiveHeal > 0) {
+            updateCh({ ...chRef.current, hp: chRef.current.hp + effectiveHeal });
+            pushFloat('player', effectiveHeal, false, undefined, undefined, true);
           }
         }
         if (clerigoHasSkill('clerigo:retidao:11')) clerigoAncoraSagradaWindowRef.current = ANCORA_SAGRADA_WINDOW_TICKS;
@@ -1479,12 +1480,15 @@ export function DungeonPanel({
   // de 3/5 — cada um só uma vez por inimigo (ver clerigoJudgmentFaithMilestonesRef).
   function clerigoApplyJudgment(n: number) {
     if (n <= 0) return;
-    const stacks = Math.min(JUDGMENT_MAX_STACKS, clerigoEnemyJudgmentStacks() + n);
+    const previous = clerigoEnemyJudgmentStacks();
+    const stacks = Math.min(JUDGMENT_MAX_STACKS, previous + n);
     updateEnemy({ ...enemyRef.current, judgment: { stacks, ticksLeft: clerigoJudgmentDurationTicks() } });
+    if (stacks > previous) pushLog([{ text: `Julgamento +${stacks - previous} (${stacks}/${JUDGMENT_MAX_STACKS}).`, color: '#f0c96a' }]);
     for (const milestone of JUDGMENT_FAITH_MILESTONES) {
       if (stacks >= milestone && !clerigoJudgmentFaithMilestonesRef.current.has(milestone)) {
         clerigoJudgmentFaithMilestonesRef.current.add(milestone);
         clerigoGainFaith(1);
+        pushLog([{ text: `Marco de ${milestone} Julgamentos: +1 Fé.`, color: '#d8c27a' }]);
       }
     }
   }
@@ -1500,6 +1504,7 @@ export function DungeonPanel({
     const consumed = Math.min(w.stacks, maxN);
     const stacks = w.stacks - consumed;
     updateEnemy({ ...enemyRef.current, judgment: stacks > 0 ? { stacks, ticksLeft: w.ticksLeft } : undefined });
+    pushLog([{ text: `Julgamento -${consumed} (${stacks}/${JUDGMENT_MAX_STACKS}).`, color: '#c995b5' }]);
     return consumed;
   }
   function clerigoReduceJudgmentDuration(ticks: number) {
@@ -1525,8 +1530,9 @@ export function DungeonPanel({
     clerigoReviveWindowRoundsLeftRef.current = 0;
     const maxHp = clerigoEffMaxHp();
     const supportMult = 1 + computePlayerStats().supportPowerPct;
-    const raw = clerigoBaselineMaxHp() * 0.18 * supportMult;
-    const healed = Math.min(maxHp, Math.round(Math.min(raw, maxHp * 0.20)));
+    const { healPct, capPct } = clerigoReviveHealRef.current;
+    const raw = clericPassiveHealAmount(clerigoBaselineMaxHp(), healPct, supportMult - 1);
+    const healed = Math.min(maxHp, Math.round(Math.min(raw, maxHp * capPct)));
     playerStatusRef.current = [];
     syncPlayerStatuses();
     updateCh({ ...chRef.current, hp: Math.max(1, healed) });
@@ -2507,7 +2513,7 @@ export function DungeonPanel({
       // top of the shared BaselineMaxHp*healPct*supportMult formula — inert
       // (0) for every other class.
       const efficiencyBonus = clerigoHealEfficiencyBonus();
-      const rawHeal = Math.round(baselineMaxHp * (eff.healPct ?? 0.2) * supportMult * (1 + efficiencyBonus));
+      const rawHeal = clericDirectHealAmount(baselineMaxHp, eff.healPct ?? 0.2, stats.supportPowerPct, efficiencyBonus);
       const healed = Math.min(maxHp, c.hp + rawHeal);
       updateCh({ ...c, hp: healed });
       const healedAmount = healed - prevHp;
@@ -2516,7 +2522,8 @@ export function DungeonPanel({
       pushAbilityCast('player', ab.name, icon, healedAmount, true);
       // "Cura Significativa" — a Fé-generating heal ability that actually
       // restored enough of BaselineMaxHp (Mãos Consagradas lowers the bar).
-      if (eff.faithGainOnHeal && healedAmount / baselineMaxHp >= clerigoSignificantHealThresholdPct()) {
+      const gainedFaithFromHeal = !!eff.faithGainOnHeal && healedAmount >= significantHealAmount(baselineMaxHp, clerigoHasSkill('clerigo:devocao:3'));
+      if (gainedFaithFromHeal) {
         clerigoGainFaith(1);
         // Misericórdia Ativa (clerigo:devocao:8) — shaves 1 tick off your
         // own first active DOT whenever a heal like this generates Fé.
@@ -2533,7 +2540,11 @@ export function DungeonPanel({
       let extraLine = '';
       if (ab.extraEffects) {
         for (const ex of ab.extraEffects) {
-          if (ex.kind === 'cleanseOne' && clerigoCleanseOne()) extraLine = ' Um efeito negativo é removido.';
+          if (ex.kind === 'cleanseOne' && clerigoCleanseOne()) {
+            extraLine = ' Um efeito negativo é removido.';
+            // Milagre gera no máximo 1 Fé por uso: pela cura OU pela purificação.
+            if (eff.faithGainOnHeal && !gainedFaithFromHeal) clerigoGainFaith(1);
+          }
         }
       }
       return `${ab.name}: você recupera ${healedAmount} de vida.${extraLine}`;
@@ -2637,6 +2648,7 @@ export function DungeonPanel({
       // checked by clerigoCheckDeathPrevention() inside resolvePlayerDeath,
       // at most once per attempt.
       if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
+      clerigoReviveHealRef.current = { healPct: eff.reviveHealPct ?? 0.40, capPct: eff.reviveHealCapPct ?? 0.25 };
       clerigoOpenReviveWindow(eff.reviveWindowRounds ?? 3);
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: por alguns instantes, sua morte será evitada.`;
@@ -3473,10 +3485,11 @@ export function DungeonPanel({
               // Sabedoria do Julgamento (clerigo:provacao:11) — small heal
               // when a single ability consumes 3+ Julgamentos at once.
               if (consumed >= SABEDORIA_JULGAMENTO_MIN_CONSUMED && clerigoHasSkill('clerigo:provacao:11')) {
-                const healAmt = Math.round(clerigoBaselineMaxHp() * SABEDORIA_JULGAMENTO_HEAL_PCT);
-                if (healAmt > 0) {
-                  updateCh({ ...chRef.current, hp: Math.min(clerigoEffMaxHp(), chRef.current.hp + healAmt) });
-                  pushFloat('player', healAmt, false, undefined, undefined, true);
+                const healAmt = clericPassiveHealAmount(clerigoBaselineMaxHp(), SABEDORIA_JULGAMENTO_HEAL_PCT, computePlayerStats().supportPowerPct);
+                const effectiveHeal = Math.min(healAmt, Math.max(0, clerigoEffMaxHp() - chRef.current.hp));
+                if (effectiveHeal > 0) {
+                  updateCh({ ...chRef.current, hp: chRef.current.hp + effectiveHeal });
+                  pushFloat('player', effectiveHeal, false, undefined, undefined, true);
                 }
               }
               // Juízo Final (clerigo:provacao:14) — consuming EXACTLY 5 at
@@ -4459,32 +4472,19 @@ export function DungeonPanel({
   // player's own HP, Feridas badge near the enemy's. Every value here reads
   // off state (barbFuryState/barbFrenzyState/barbPainState), never refs, so
   // it re-renders like everything else on screen.
-  const isBarbaroChar = ch.classId === 'barbaro';
   const barbPeleBonus = ch.unlockedSkills.includes('barbaro:resistencia:0')
     ? capped(RESISTENCIA_PELE_ENDURECIDA_RATE, attrTotal(ch, 'vit'), RESISTENCIA_PELE_ENDURECIDA_CAP)
     : 0;
   const barbInquebravelBonus = ch.unlockedSkills.includes('barbaro:resistencia:14') ? INQUEBRAVEL_PAIN_CAP_BONUS : 0;
   const barbPainCap = effMaxHp * (PAIN_MAX_PCT + barbPeleBonus + barbInquebravelBonus);
   const enemyWounds = enemy.barbarianWounds;
-  const woundBadge = enemyWounds && enemyWounds.stacks > 0 ? (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); setOpenMechanicId('barbaro:wounds'); }}
-      className="inline-flex items-center gap-0.5 text-[10px] text-red-400 ml-1 shrink-0"
-      title={`Feridas x${enemyWounds.stacks}`}
-    >
-      <img src={iconSangramento} alt="" className="w-3.5 h-3.5 rounded-full" />x{enemyWounds.stacks}
-    </button>
-  ) : null;
   // Clérigo redesign UI (lib/clerigo.ts) — Fé/Graça/Consagração near the
   // player's own HP, Julgamento badge near the enemy's, same read-off-state
   // discipline as Bárbaro's bars above.
-  const isClerigoChar = ch.classId === 'clerigo';
   // Cavaleiro redesign UI (lib/knight.ts) — Determinação/Retaliação
   // (Bastião), Momentum (Investida), Ordens/Comando Supremo (Comando) —
   // each block only shows once the player actually has a talent in that
   // specialization, same "at least one node unlocked" gate the engine uses.
-  const isKnightChar = ch.classId === 'cavaleiro';
   const knightHasBastiao = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:bastiao:'));
   const knightHasInvestida = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:investida:'));
   const knightHasComando = ch.unlockedSkills.some((s) => s.startsWith('cavaleiro:comando:'));
@@ -4493,7 +4493,6 @@ export function DungeonPanel({
   // gate as Cavaleiro above. Rastro/Brechas live on the enemy instance
   // itself, so they read straight off `enemy` (the render-side mirror of
   // enemyRef) instead of a dedicated ref/state pair.
-  const isHunterChar = ch.classId === 'cacador';
   const hunterHasArmadilhasChar = ch.unlockedSkills.some((s) => s.startsWith('cacador:armadilhas:'));
   const hunterHasRastreioChar = ch.unlockedSkills.some((s) => s.startsWith('cacador:rastreio:'));
   const hunterHasPrecisaoChar = ch.unlockedSkills.some((s) => s.startsWith('cacador:precisao-caca:'));
@@ -4501,16 +4500,61 @@ export function DungeonPanel({
   const enemyMarkedPrey = enemyTrail >= MARKED_PREY_THRESHOLD;
   const enemyBreaches = enemy.hunterBreaches?.stacks ?? 0;
   const enemyJudgment = enemy.judgment;
-  const judgmentBadge = enemyJudgment && enemyJudgment.stacks > 0 ? (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); setOpenMechanicId('clerigo:judgment'); }}
-      className="inline-flex items-center gap-0.5 text-[10px] text-amber-300 ml-1 shrink-0"
-      title={`Julgamento x${enemyJudgment.stacks}`}
-    >
-      ⚖ x{enemyJudgment.stacks}
-    </button>
-  ) : null;
+  const mechanicValues: Record<string, Omit<CombatMechanicState, 'mechanic'>> = {
+    'barbaro:fury': { value: barbFuryState, maxValue: FURY_MAX },
+    'barbaro:frenzy': { value: barbFrenzyState ? 1 : 0 },
+    'barbaro:pain': { value: barbPainState, maxValue: barbPainCap },
+    'barbaro:wounds': { value: enemyWounds?.stacks ?? 0, duration: enemyWounds?.ticksLeft },
+    'clerigo:faith': { value: clerigoFaithState, maxValue: FAITH_MAX },
+    'clerigo:grace': { value: clerigoGraceState, maxValue: effMaxHp * clerigoGraceCapPct() },
+    'clerigo:consecration': { value: clerigoConsecrationState, duration: clerigoConsecrationState },
+    'clerigo:judgment': {
+      value: enemyJudgment?.stacks ?? 0, duration: enemyJudgment?.ticksLeft,
+      detail: ch.unlockedSkills.includes('clerigo:provacao:8')
+        ? `Peso do Veredito: +${formatGamePercent((enemyJudgment?.stacks ?? 0) * JUDGMENT_DMG_PCT_PER_STACK)} de dano mágico direto`
+        : 'Julgamento não causa dano por si só',
+    },
+    'cavaleiro:determination': { value: knightDeterminationState, maxValue: DETERMINATION_MAX, visible: knightHasBastiao },
+    'cavaleiro:retaliation': { value: knightRetaliationState, maxValue: RETALIATION_MAX_CHARGES, visible: knightHasBastiao },
+    'cavaleiro:momentum': { value: knightMomentumState, maxValue: knightMomentumMax(), visible: knightHasInvestida },
+    'cavaleiro:orders': { value: knightOrdersState, maxValue: ORDERS_MAX, visible: knightHasComando },
+    'cavaleiro:commandSupreme': { value: knightCommandSupremeState ? 1 : 0, visible: knightHasComando },
+    'cacador:traps': { value: hunterTrapsState.length, maxValue: hunterMaxTraps(), visible: hunterHasArmadilhasChar, detail: hunterTrapsState.some((trap) => trap.primed) ? 'Há uma armadilha primada' : undefined },
+    'cacador:trail': { value: enemyTrail, maxValue: TRAIL_MAX, visible: hunterHasRastreioChar },
+    'cacador:markedPrey': { value: enemyMarkedPrey ? 1 : 0, visible: hunterHasRastreioChar },
+    'cacador:breaches': { value: enemyBreaches, maxValue: BREACH_MAX, duration: enemy.hunterBreaches?.ticksLeft, visible: hunterHasPrecisaoChar },
+  };
+  const combatMechanicStates: CombatMechanicState[] = getClassMechanics(ch.classId)
+    .filter((mechanic) => mechanic.combatDisplay)
+    .map((mechanic) => ({ mechanic, ...(mechanicValues[mechanic.id] ?? { value: 0 }) }));
+  const openMechanicState = combatMechanicStates.find(({ mechanic }) => mechanic.id === openMechanicId);
+  const openCombatAbility = equippedAbilities().find((ability) => ability.id === openAbilityId);
+  const combatAbilityRequirements = openCombatAbility ? (() => {
+    const walk = (condition: AbilityDef['condition']): string[] => {
+      if (condition.type === 'all' || condition.type === 'any') return (condition.conditions ?? []).flatMap(walk);
+      if (condition.type === 'resourceAtLeast') {
+        const current = condition.resource === 'faith' ? clerigoFaithState
+          : condition.resource === 'fury' ? barbFuryState
+          : condition.resource === 'determination' ? knightDeterminationState
+          : condition.resource === 'momentum' ? knightMomentumState
+          : condition.resource === 'orders' ? knightOrdersState : 0;
+        return [`${condition.resource === 'faith' ? 'Fé' : condition.resource}: ${formatGameNumber(current)}/${formatGameNumber(condition.value ?? 0)}`];
+      }
+      if (condition.type === 'enemyStacksAtLeast' || condition.type === 'enemyStacksEqual') {
+        const current = condition.stackId === 'judgment' ? (enemyJudgment?.stacks ?? 0)
+          : condition.stackId === 'wounds' ? (enemyWounds?.stacks ?? 0)
+          : condition.stackId === 'trail' ? enemyTrail
+          : condition.stackId === 'breach' ? enemyBreaches : 0;
+        const label = condition.stackId === 'judgment' ? 'Julgamento' : condition.stackId;
+        return [`${label}: ${formatGameNumber(current)}/${formatGameNumber(condition.stacks ?? 0)} necessários`];
+      }
+      return [];
+    };
+    return walk(openCombatAbility.condition);
+  })() : [];
+  const combatAbilityHeal = openCombatAbility?.effect.kind === 'heal'
+    ? clericDirectHealAmount(clerigoBaselineMaxHp(), openCombatAbility.effect.healPct ?? 0, computePlayerStats().supportPowerPct, clerigoHealEfficiencyBonus())
+    : null;
   const allStatusLabel: Record<StatusEffectKind, string> = STATUS_LABEL;
   const playerTags = [...playerStatuses.map((s) => allStatusLabel[s]), ...playerCCState.map((c) => CC_LABEL[c])];
   const enemyTags = [...enemyStatuses.map((s) => allStatusLabel[s]), ...enemyCCState.map((c) => CC_LABEL[c])];
@@ -4570,15 +4614,16 @@ export function DungeonPanel({
         <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
           <div className="flex justify-between items-baseline gap-2">
             <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate flex items-center">
-              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}{woundBadge}{judgmentBadge}
+              ✦ {enemy.name}{bossPhaseName && <span className="text-amber-400"> — {bossPhaseName}</span>}
             </span>
-            <span className="text-xs text-parchment/70 shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
+            <span className="text-xs text-parchment/70 shrink-0">{formatGameNumber(Math.max(0, enemy.hp))}/{formatGameNumber(enemy.maxHp)}</span>
           </div>
           <div className="h-3 bg-black/50 rounded mt-1 overflow-hidden">
             <div className="h-3 bg-crimson rounded transition-[width] duration-300" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} />
           </div>
           <AtbBar roundKey={enemyRoundKey} roundMs={enemyRoundMs} paused={paused} colorClass="bg-amber-400" />
           {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-1 truncate">{enemyTags.join(', ')}</div>}
+          <CombatMechanicDisplay owner="enemy" states={combatMechanicStates} onOpen={(state) => setOpenMechanicId(state.mechanic.id)} />
         </div>
       )}
 
@@ -4648,7 +4693,7 @@ export function DungeonPanel({
               // silently with no on-screen number at all, only ever a
               // combat-log line.
               <span className="inline-block text-3xl text-green-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                +{f.value}
+                +{formatGameNumber(f.value)}
               </span>
             ) : (
               <>
@@ -4668,7 +4713,7 @@ export function DungeonPanel({
                     textShadow: playerHit ? '0 0 3px #000, 0 2px 2px #000, 0 0 12px rgba(0,0,0,0.85)' : undefined,
                   }}
                 >
-                  -{f.value}{f.crit ? '!' : ''}
+                  -{formatGameNumber(f.value)}{f.crit ? '!' : ''}
                 </span>
                 {/* Cutting the number in half already shows the effect, but
                     a tiny " bloq." suffix was easy to miss entirely — this
@@ -4691,7 +4736,7 @@ export function DungeonPanel({
           >
             <img src={moedaIcon} alt="" className="w-5 h-5" style={{ imageRendering: 'pixelated' }} />
             <span className="text-red-400 font-extrabold text-base drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">▼</span>
-            <span className="text-parchment font-bold text-sm drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">-{g.amount}</span>
+            <span className="text-parchment font-bold text-sm drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">-{formatGameNumber(g.amount)}</span>
           </div>
         ))}
         {abilityCasts.map((a) => {
@@ -4738,7 +4783,7 @@ export function DungeonPanel({
               </span>
               {a.value !== null && (
                 <span className={`text-sm font-extrabold drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] ${a.heal ? 'text-green-400' : 'text-parchment'}`}>
-                  {a.heal ? '+' : '-'}{a.value}
+                  {a.heal ? '+' : '-'}{formatGameNumber(a.value)}
                 </span>
               )}
             </div>
@@ -4836,7 +4881,7 @@ export function DungeonPanel({
             // reads as one continuous sweep instead of a per-round jump.
             const iconBg = activeAbilityIconStyle(ch.classId, ab.id);
             return (
-              <div key={ab.id} className="relative w-11 h-11 shrink-0" title={`${ab.name}${onCooldown ? ` — recarregando` : ''}`}>
+              <button type="button" onClick={() => setOpenAbilityId(ab.id)} key={ab.id} className="relative w-11 h-11 shrink-0" title={`${ab.name}${onCooldown ? ` — recarregando` : ''}`}>
                 {iconBg ? (
                   <div
                     className={`absolute inset-[18%] rounded-full overflow-hidden ${onCooldown ? 'opacity-50' : ''}`}
@@ -4854,206 +4899,42 @@ export function DungeonPanel({
                   } as CSSProperties}
                 />
                 <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
-              </div>
+              </button>
             );
           })}
         </div>
       )}
 
-      {isBarbaroChar && phase === 'fight' && (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setOpenMechanicId('barbaro:fury')}
-            className="w-full flex justify-between items-baseline text-[10px] text-parchment/50 uppercase tracking-wide underline decoration-dotted decoration-parchment/30 underline-offset-2"
-          >
-            <span>
-              Fúria
-              {barbFrenzyState && (
-                <span
-                  onClick={(e) => { e.stopPropagation(); setOpenMechanicId('barbaro:frenzy'); }}
-                  className="text-amber-400"
-                > — FRENESI!</span>
-              )}
-            </span>
-            <span>{Math.round(barbFuryState)}/{FURY_MAX}</span>
-          </button>
-          <div className="h-2 bg-black/50 rounded overflow-hidden">
-            <div
-              className={`h-2 rounded transition-[width] duration-300 ${barbFrenzyState ? 'bg-amber-400' : 'bg-orange-600'}`}
-              style={{ width: `${(barbFuryState / FURY_MAX) * 100}%` }}
-            />
-          </div>
-          {barbPainState > 0 && (
-            <>
-              <button
-                type="button"
-                onClick={() => setOpenMechanicId('barbaro:pain')}
-                className="w-full flex justify-between items-baseline text-[10px] text-purple-300/70 uppercase tracking-wide mt-1 underline decoration-dotted decoration-purple-300/30 underline-offset-2"
-              >
-                <span>Dor</span>
-                <span>{Math.round(barbPainState)}</span>
-              </button>
-              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
-                <div className="h-1.5 bg-purple-500 rounded transition-[width] duration-300" style={{ width: `${Math.min(100, (barbPainState / barbPainCap) * 100)}%` }} />
-              </div>
-            </>
-          )}
-        </div>
+      {phase === 'fight' && (
+        <CombatMechanicDisplay
+          owner="player"
+          states={combatMechanicStates}
+          onOpen={(state) => setOpenMechanicId(state.mechanic.id)}
+        />
       )}
-      {isClerigoChar && phase === 'fight' && (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setOpenMechanicId('clerigo:faith')}
-            className="w-full flex justify-between items-baseline text-[10px] text-parchment/50 uppercase tracking-wide underline decoration-dotted decoration-parchment/30 underline-offset-2"
-          >
-            <span>Fé</span>
-            <span className="text-sm tracking-wider text-amber-300">
-              {Array.from({ length: FAITH_MAX }, (_, i) => (i < clerigoFaithState ? '◆' : '◇')).join(' ')}
-            </span>
-          </button>
-          {clerigoGraceState > 0 && (
-            <>
-              <button
-                type="button"
-                onClick={() => setOpenMechanicId('clerigo:grace')}
-                className="w-full flex justify-between items-baseline text-[10px] text-sky-300/80 uppercase tracking-wide mt-1 underline decoration-dotted decoration-sky-300/30 underline-offset-2"
-              >
-                <span>Graça</span>
-                <span>{Math.round(clerigoGraceState)}</span>
-              </button>
-              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
-                <div className="h-1.5 bg-sky-300 rounded transition-[width] duration-300" style={{ width: `${Math.min(100, (clerigoGraceState / effMaxHp) * 100)}%` }} />
-              </div>
-            </>
-          )}
-          {clerigoConsecrationState > 0 && (
-            <button
-              type="button"
-              onClick={() => setOpenMechanicId('clerigo:consecration')}
-              className="w-full flex justify-between items-baseline text-[10px] text-gold uppercase tracking-wide mt-1 underline decoration-dotted decoration-gold/30 underline-offset-2"
-            >
-              <span>✦ Consagração</span>
-              <span>{clerigoConsecrationState}</span>
-            </button>
-          )}
+      {openMechanicId && <MechanicQuickModal
+        mechanicId={openMechanicId}
+        currentValue={openMechanicState?.value}
+        maxValue={openMechanicState?.maxValue ?? openMechanicState?.mechanic.combatDisplay?.maxValue}
+        duration={openMechanicState?.duration}
+        detail={openMechanicState?.detail}
+        onClose={() => setOpenMechanicId(null)}
+      />}
+      {openCombatAbility && <Modal title={openCombatAbility.name} onClose={() => setOpenAbilityId(null)}>
+        <p className="text-parchment/80"><MechanicText text={openCombatAbility.desc} character={ch} ability={openCombatAbility} /></p>
+        <div className="rounded border border-panelborder/50 bg-panel2/50 p-2 text-xs space-y-1">
+          <p><span className="text-parchment/45">Recarga: </span>{openCombatAbility.cooldown} ciclos</p>
+          {combatAbilityRequirements.map((requirement) => <p key={requirement}><span className="text-parchment/45">Estado atual: </span>{requirement}</p>)}
+          {openCombatAbility.effect.faithCost && <p><span className="text-parchment/45">Custo: </span>{openCombatAbility.effect.faithCost} Fé, cobrada ao usar</p>}
+          {combatAbilityHeal !== null && <p className="text-green-300"><span className="text-parchment/45">Cura atual: </span>recupera até {formatGameNumber(combatAbilityHeal)}</p>}
         </div>
-      )}
-      {isKnightChar && phase === 'fight' && (
-        <div className="mt-3">
-          {knightHasBastiao && (
-            <>
-              <button
-                type="button"
-                onClick={() => setOpenMechanicId('cavaleiro:determination')}
-                className="w-full flex justify-between items-baseline text-[10px] text-slate-300/80 uppercase tracking-wide underline decoration-dotted decoration-slate-300/30 underline-offset-2"
-              >
-                <span>Determinação</span>
-                <span>{Math.round(knightDeterminationState)}/{DETERMINATION_MAX}</span>
-              </button>
-              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
-                <div className="h-1.5 bg-slate-300 rounded transition-[width] duration-300" style={{ width: `${(knightDeterminationState / DETERMINATION_MAX) * 100}%` }} />
-              </div>
-              {knightRetaliationState > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setOpenMechanicId('cavaleiro:retaliation')}
-                  className="w-full flex justify-between items-baseline text-[10px] text-slate-300/70 uppercase tracking-wide mt-1 underline decoration-dotted decoration-slate-300/30 underline-offset-2"
-                >
-                  <span>Retaliação</span>
-                  <span className="text-sm tracking-wider text-slate-200">
-                    {Array.from({ length: RETALIATION_MAX_CHARGES }, (_, i) => (i < knightRetaliationState ? '◆' : '◇')).join(' ')}
-                  </span>
-                </button>
-              )}
-            </>
-          )}
-          {knightHasInvestida && (
-            <button
-              type="button"
-              onClick={() => setOpenMechanicId('cavaleiro:momentum')}
-              className="w-full mt-1"
-            >
-              <div className="flex justify-between items-baseline text-[10px] text-orange-300/80 uppercase tracking-wide underline decoration-dotted decoration-orange-300/30 underline-offset-2">
-                <span>Momentum</span>
-                <span>{Math.round(knightMomentumState)}/{knightMomentumMax()}</span>
-              </div>
-              <div className="h-1.5 bg-black/50 rounded overflow-hidden">
-                <div className="h-1.5 bg-orange-400 rounded transition-[width] duration-300" style={{ width: `${(knightMomentumState / knightMomentumMax()) * 100}%` }} />
-              </div>
-            </button>
-          )}
-          {knightHasComando && (
-            <button
-              type="button"
-              onClick={() => setOpenMechanicId(knightCommandSupremeState ? 'cavaleiro:commandSupreme' : 'cavaleiro:orders')}
-              className="w-full flex justify-between items-baseline text-[10px] text-gold uppercase tracking-wide mt-1 underline decoration-dotted decoration-gold/30 underline-offset-2"
-            >
-              <span>{knightCommandSupremeState ? '✦ Comando Supremo' : 'Ordens'}</span>
-              <span className="text-sm tracking-wider text-gold">
-                {Array.from({ length: ORDERS_MAX }, (_, i) => (i < knightOrdersState ? '◆' : '◇')).join(' ')}
-              </span>
-            </button>
-          )}
-        </div>
-      )}
-      {isHunterChar && phase === 'fight' && (
-        <div className="mt-3">
-          {hunterHasArmadilhasChar && hunterTrapsState.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setOpenMechanicId('cacador:traps')}
-              className="w-full flex justify-between items-baseline text-[10px] text-lime-300/80 uppercase tracking-wide underline decoration-dotted decoration-lime-300/30 underline-offset-2"
-            >
-              <span>Armadilhas</span>
-              <span className="text-sm tracking-wider text-lime-300 normal-case">
-                {hunterTrapsState.map((t, i) => (i === 0 ? (t.primed ? '◆✦' : '◆') : (t.primed ? '◇✦' : '◇'))).join(' ')}
-              </span>
-            </button>
-          )}
-          {hunterHasRastreioChar && (
-            <>
-              <button
-                type="button"
-                onClick={() => setOpenMechanicId('cacador:trail')}
-                className="w-full flex justify-between items-baseline text-[10px] text-emerald-300/80 uppercase tracking-wide mt-1 underline decoration-dotted decoration-emerald-300/30 underline-offset-2"
-              >
-                <span>Rastro</span>
-                <span className="text-sm tracking-wider text-emerald-300">
-                  {Array.from({ length: TRAIL_MAX }, (_, i) => (i < enemyTrail ? '●' : '○')).join(' ')}
-                </span>
-              </button>
-              {enemyMarkedPrey && (
-                <button
-                  type="button"
-                  onClick={() => setOpenMechanicId('cacador:markedPrey')}
-                  className="w-full text-left text-[10px] text-amber-400 uppercase tracking-wide mt-0.5 underline decoration-dotted decoration-amber-400/30 underline-offset-2"
-                >
-                  ⊙ Presa Marcada
-                </button>
-              )}
-            </>
-          )}
-          {hunterHasPrecisaoChar && enemyBreaches > 0 && (
-            <button
-              type="button"
-              onClick={() => setOpenMechanicId('cacador:breaches')}
-              className="w-full flex justify-between items-baseline text-[10px] text-sky-300/80 uppercase tracking-wide mt-1 underline decoration-dotted decoration-sky-300/30 underline-offset-2"
-            >
-              <span>Brechas</span>
-              <span className="text-sm tracking-wider text-sky-300">{`x${enemyBreaches}`}</span>
-            </button>
-          )}
-        </div>
-      )}
-      {openMechanicId && <MechanicQuickModal mechanicId={openMechanicId} onClose={() => setOpenMechanicId(null)} />}
+      </Modal>}
 
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>
           <div className="flex justify-between items-baseline gap-2">
             <span className="truncate">{ch.name}{playerShieldState > 0 && <span className="text-sky-300 text-xs"> (+{playerShieldState} escudo)</span>}</span>
-            <span className="shrink-0">{Math.max(0, ch.hp)}/{effMaxHp}</span>
+            <span className="shrink-0">{formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}</span>
           </div>
           <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} /></div>
           {phase === 'fight' && <AtbBar roundKey={playerRoundKey} roundMs={playerRoundMs} paused={paused} colorClass="bg-sky-400" />}
@@ -5062,12 +4943,13 @@ export function DungeonPanel({
         {!enemy.isBoss && (
           <div>
             <div className="flex justify-between">
-              <span className={`truncate flex items-center ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}{woundBadge}{judgmentBadge}</span>
-              <span className="shrink-0">{Math.max(0, enemy.hp)}/{enemy.maxHp}</span>
+              <span className={`truncate flex items-center ${enemy.isElite ? 'text-amber-400 font-bold' : ''}`}>{enemy.isElite ? '★ ' : ''}{enemy.name}</span>
+              <span className="shrink-0">{formatGameNumber(Math.max(0, enemy.hp))}/{formatGameNumber(enemy.maxHp)}</span>
             </div>
             <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: `${hpPct(enemy.hp, enemy.maxHp)}%` }} /></div>
             {phase === 'fight' && <AtbBar roundKey={enemyRoundKey} roundMs={enemyRoundMs} paused={paused} colorClass="bg-amber-400" />}
             {enemyTags.length > 0 && <div className="text-[11px] text-green-400/90 mt-0.5 truncate">{enemyTags.join(', ')}</div>}
+            <CombatMechanicDisplay owner="enemy" states={combatMechanicStates} onOpen={(state) => setOpenMechanicId(state.mechanic.id)} />
           </div>
         )}
       </div>

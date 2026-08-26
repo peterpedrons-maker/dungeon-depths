@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClassId } from '../types/game';
+import { AbilityDef, Character, ClassId } from '../types/game';
 import {
   classHasMechanics, getClassAttributeNotes, getClassCombinations, getClassMechanics,
   getClassSpecializations, getMechanicById,
@@ -7,6 +7,8 @@ import {
 import { CLASSES } from '../lib/classes';
 import { Modal } from './Modal';
 import { SmallButton } from './Button';
+import { GlossaryText } from './Glossary';
+import { formatGameNumber } from '../lib/format';
 
 const CATEGORY_LABEL: Record<string, string> = {
   resource: 'Recurso', state: 'Estado', stack: 'Stack', mark: 'Marca', other: 'Mecânica',
@@ -17,7 +19,9 @@ const CATEGORY_LABEL: Record<string, string> = {
 // which class or which mechanic it's showing. Reused by inline term
 // highlights, the "MECÂNICAS:" chip row on a skill node, and any tappable
 // combat-UI element (Fúria bar, Feridas badge, etc.).
-export function MechanicQuickModal({ mechanicId, onClose }: { mechanicId: string; onClose: () => void }) {
+export function MechanicQuickModal({ mechanicId, currentValue, maxValue, duration, detail, onClose }: {
+  mechanicId: string; currentValue?: number; maxValue?: number; duration?: number; detail?: string; onClose: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const mechanic = getMechanicById(mechanicId);
   if (!mechanic) return null;
@@ -27,7 +31,15 @@ export function MechanicQuickModal({ mechanicId, onClose }: { mechanicId: string
       <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-panel2 text-parchment/60 border border-panelborder/60">
         {CATEGORY_LABEL[mechanic.category] ?? 'Mecânica'} exclusivo(a) do {className}
       </span>
-      <p className="text-parchment/80 whitespace-pre-line">{expanded ? mechanic.fullDescription : mechanic.shortDescription}</p>
+      {currentValue !== undefined && (
+        <p className="rounded border border-gold/25 bg-panel2/60 p-2">
+          <span className="text-parchment/50">Estado atual: </span>
+          <strong className="text-gold">{formatGameNumber(currentValue)}{maxValue !== undefined ? ` / ${formatGameNumber(maxValue)}` : ''}</strong>
+          {duration !== undefined && duration > 0 && <span className="text-parchment/50"> · {duration} {duration === 1 ? 'ciclo restante' : 'ciclos restantes'}</span>}
+          {detail && <span className="block text-xs text-parchment/60 mt-1">{detail}</span>}
+        </p>
+      )}
+      <p className="text-parchment/80 whitespace-pre-line"><GlossaryText text={expanded ? mechanic.fullDescription : mechanic.shortDescription} /></p>
       {!expanded && (
         <button
           onClick={() => setExpanded(true)}
@@ -81,12 +93,12 @@ export function MechanicRefsRow({ mechanicRefs }: { mechanicRefs?: string[] }) {
 // caller explicitly declared via mechanicRefs — never scans free text
 // against the whole mechanic database, so it can't misfire on an unrelated
 // word that happens to share a mechanic's name.
-export function MechanicText({ text, mechanicRefs }: { text: string; mechanicRefs?: string[] }) {
+export function MechanicText({ text, mechanicRefs, character, ability }: { text: string; mechanicRefs?: string[]; character?: Character; ability?: AbilityDef }) {
   const names = (mechanicRefs ?? [])
     .map((id) => getMechanicById(id))
     .filter((m): m is NonNullable<typeof m> => !!m)
     .sort((a, b) => b.name.length - a.name.length); // longest first, avoids partial-overlap matches
-  if (names.length === 0) return <>{text}</>;
+  if (names.length === 0) return <GlossaryText text={text} character={character} ability={ability} />;
 
   const pattern = new RegExp(`(${names.map((m) => m.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
   const parts = text.split(pattern);
@@ -94,7 +106,7 @@ export function MechanicText({ text, mechanicRefs }: { text: string; mechanicRef
     <>
       {parts.map((part, i) => {
         const match = names.find((m) => m.name === part);
-        if (!match) return <span key={i}>{part}</span>;
+        if (!match) return <GlossaryText key={i} text={part} character={character} ability={ability} />;
         return (
           <span key={i} className="inline-block">
             <MechanicUnderline mechanicId={match.id} label={part} />
@@ -152,8 +164,8 @@ export function ClassMechanicsModal({ classId, onClose }: { classId: ClassId; on
                   <span className="font-display text-gold text-xs font-bold uppercase tracking-wide">{m.name}</span>
                   <span className="text-parchment/40 text-xs shrink-0">{isOpen ? '▲' : '▼'}</span>
                 </button>
-                <p className="text-xs text-parchment/70 mt-1">{m.shortDescription}</p>
-                {isOpen && <p className="text-xs text-parchment/70 mt-2 whitespace-pre-line border-t border-panelborder/30 pt-2">{m.fullDescription}</p>}
+                <p className="text-xs text-parchment/70 mt-1"><GlossaryText text={m.shortDescription} /></p>
+                {isOpen && <p className="text-xs text-parchment/70 mt-2 whitespace-pre-line border-t border-panelborder/30 pt-2"><GlossaryText text={m.fullDescription} /></p>}
               </div>
             );
           })}
@@ -166,7 +178,7 @@ export function ClassMechanicsModal({ classId, onClose }: { classId: ClassId; on
           <div className="space-y-1.5">
             {attrNotes.map((a) => (
               <p key={a.attribute} className="text-xs text-parchment/70">
-                <span className="text-parchment font-bold">{a.label}</span>
+                <span className="text-parchment font-bold"><GlossaryText text={a.label} /></span>
                 <span className="text-parchment/50"> — {a.role}. </span>
                 {a.description}
               </p>

@@ -465,6 +465,18 @@ export interface SkillNode {
 // every component here takes a ClassMechanic (or its id) and renders it
 // generically. See components/ClassMechanics.tsx.
 export type MechanicCategory = 'resource' | 'state' | 'stack' | 'mark' | 'other';
+export type MechanicDisplayType = 'bar' | 'charges' | 'stack' | 'counter' | 'status';
+
+export interface MechanicCombatDisplay {
+  owner: 'player' | 'enemy';
+  displayType: MechanicDisplayType;
+  maxValue?: number;
+  duration?: boolean;
+  icon?: string;
+  hideWhenZero?: boolean;
+  priority: number;
+  color: 'amber' | 'red' | 'purple' | 'sky' | 'gold' | 'slate' | 'orange' | 'lime' | 'emerald';
+}
 
 export interface ClassMechanic {
   id: string; // stable id, e.g. "barbaro:fury" — referenced by SkillNode.mechanicRefs
@@ -473,6 +485,7 @@ export interface ClassMechanic {
   category: MechanicCategory;
   shortDescription: string; // 1-2 sentences, for the quick tap-to-explain popup
   fullDescription: string; // full explanation, for the "Mecânicas da Classe" panel
+  combatDisplay?: MechanicCombatDisplay;
 }
 
 // One entry per attribute the class actually cares about, for the "Atributos

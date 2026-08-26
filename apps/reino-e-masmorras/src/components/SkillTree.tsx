@@ -8,6 +8,8 @@ import { Modal } from './Modal';
 import { IconActive } from './icons';
 import { ClassMechanicsButton, MechanicRefsRow, MechanicText } from './ClassMechanics';
 import skillFrame from '../assets/slot-habilidade.webp';
+import { skillPresentationRows } from '../lib/skillPresentation';
+import { GlossaryText } from './Glossary';
 
 interface Props {
   character: Character;
@@ -72,9 +74,9 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
 
   return (
     <Panel title="Árvore de Habilidades">
-      <div className="flex items-center justify-between mb-4 gap-2">
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <p className="text-parchment/60 text-sm">Toque num nó pra ver detalhes, desbloquear ou equipar.</p>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
           <ClassMechanicsButton classId={ch.classId} />
           {ch.unlockedSkills.length > 0 && (
             <button
@@ -142,6 +144,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
 
       {selected && (
         <NodeModal
+          character={ch}
           selected={selected}
           equipped={ch.equippedAbilities}
           equippedCount={ch.equippedAbilities.length}
@@ -239,7 +242,8 @@ function PathGraph({ path, ch, onSelect }: {
   );
 }
 
-function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility }: {
+function NodeModal({ character, selected, equipped, equippedCount, onClose, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility }: {
+  character: Character;
   selected: { node: SkillNode; state: NodeState };
   equipped: string[];
   equippedCount: number;
@@ -252,6 +256,7 @@ function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEqu
   const { node, state } = selected;
   const isEquipped = equipped.includes(node.id);
   const equippedIndex = equipped.indexOf(node.id);
+  const details = skillPresentationRows(character, node);
 
   return (
     <Modal
@@ -278,7 +283,7 @@ function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEqu
       <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-panel2 text-parchment/60 border border-panelborder/60">
         {TYPE_LABEL[node.type]}
       </span>
-      <p className="text-parchment/80"><MechanicText text={node.desc} mechanicRefs={node.mechanicRefs} /></p>
+      <p className="text-parchment/80"><MechanicText text={node.desc} mechanicRefs={node.mechanicRefs} character={character} ability={node.ability} /></p>
       <MechanicRefsRow mechanicRefs={node.mechanicRefs} />
       {node.scaling && node.scaling.length > 0 && (
         <div className="mt-1 pt-1 border-t border-panelborder/40">
@@ -286,15 +291,18 @@ function NodeModal({ selected, equipped, equippedCount, onClose, onUnlock, onEqu
           <ul className="space-y-0.5">
             {node.scaling.map((s, i) => (
               <li key={i} className="text-xs text-parchment/70 flex gap-1.5">
-                <span className={`shrink-0 uppercase text-[10px] font-bold ${SCALING_ROLE_COLOR[s.role]}`}>{s.label}</span>
-                <span className="text-parchment/60">{s.description}</span>
+                <span className={`shrink-0 uppercase text-[10px] font-bold ${SCALING_ROLE_COLOR[s.role]}`}><GlossaryText text={s.label} character={character} ability={node.ability} /></span>
+                <span className="text-parchment/60"><GlossaryText text={s.description} character={character} ability={node.ability} /></span>
               </li>
             ))}
           </ul>
         </div>
       )}
-      {node.type === 'active' && node.ability && (
-        <p className="text-xs text-parchment/50">Recarga: {node.ability.cooldown} rodadas.</p>
+      {details.length > 0 && (
+        <div className="mt-1 pt-1 border-t border-panelborder/40 space-y-1">
+          <p className="text-[10px] uppercase tracking-wide text-parchment/50">Detalhes:</p>
+          {details.map((detail) => <p key={`${detail.label}:${detail.value}`} className="text-xs text-parchment/70"><span className="text-parchment/45">{detail.label}: </span><GlossaryText text={detail.value} character={character} ability={node.ability} /></p>)}
+        </div>
       )}
       {state === 'locked' && <p className="text-xs text-parchment/40 italic">Desbloqueie um dos nós conectados a este primeiro.</p>}
     </Modal>
