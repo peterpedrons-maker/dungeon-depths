@@ -137,6 +137,7 @@ export interface SkillEffect {
   blockChance?: number;   // chance to halve an incoming hit
   flatBonusDmg?: number;  // flat physical damage added to every hit
   flatBonusMagicDmg?: number; // flat magical damage added to every hit
+  magicDmgPct?: number; // class-specific direct magical-damage metadata
   lowHpDmgScale?: number; // extra damage% scaling with missing HP
   maxHpFlat?: number;     // flat bonus to max HP
   lifestealPct?: number;  // % of damage dealt healed back
@@ -405,6 +406,29 @@ export interface AbilityEffect {
   // buff, all sharing buffRounds and all scoped to the current enemy only.
   speedBuffPct?: number;
   evasionBuffPct?: number;
+
+  // ── Mago redesign (lib/mago.ts) ──
+  // These are declarative spell metadata. DungeonPanel resolves the shared
+  // runes/resources once per CAST; names are presentation only.
+  element?: 'fire' | 'frost' | 'lightning';
+  amplifiedDmgMult?: number;
+  /** Optional periodic-damage value used by an Amplified status spell. */
+  amplifiedStatusDmgPct?: number;
+  heatGain?: number;
+  amplifiedHeatGain?: number;
+  heatCost?: number;
+  heatCostAll?: boolean;
+  heatDmgMultPerPoint?: number;
+  heatDmgMultCap?: number;
+  thermalAdvanceOnHit?: number;
+  amplifiedThermalAdvanceOnHit?: number;
+  shatter?: boolean;
+  polarity?: 'positive' | 'negative';
+  circuitPerfectWithInverter?: boolean;
+  pulseResidualOnSamePolarity?: boolean;
+  resonanceEcho?: boolean;
+  mdefPenPct?: number;
+  amplifiedMdefPenPct?: number;
 }
 
 export interface AbilityDef {
