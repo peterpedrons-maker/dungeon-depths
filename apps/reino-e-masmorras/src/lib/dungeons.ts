@@ -74,14 +74,14 @@ export const DUNGEONS: DungeonDef[] = [
     // this dungeon's real identity now.
     goldMult: 1.05, xpMult: 0.7, dropMult: 2.5,
     enemyPool: ['zombieLooter', 'stoneGuardian', 'greedyWraith', 'wrappedMummy', 'mimicChest'],
-    bossDepth: 12, boss: 'cursedCustodian', itemTier: 2, miniBossDepths: [8], difficultyMult: 1.3,
+    bossDepth: 12, boss: 'cursedCustodian', itemTier: 1, miniBossDepths: [8], difficultyMult: 1.3,
   },
   {
     id: 'pantano', name: 'Pântano Podre',
     desc: 'Água estagnada e árvores mortas escondem predadores famintos.',
     startDepth: 7, levelReq: 7,
     enemyPool: ['poisonToad', 'swampViper', 'crawlingBog', 'cursedWisp', 'rottingGator'],
-    bossDepth: 18, boss: 'mudMother', itemTier: 2, miniBossDepths: [11, 15], difficultyMult: 1.45,
+    bossDepth: 18, boss: 'mudMother', itemTier: 1, miniBossDepths: [11, 15], difficultyMult: 1.45,
     unlockAfter: ['goblins'],
   },
   {
@@ -89,7 +89,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma fenda rochosa coberta de teias — algo grande tece lá dentro.',
     startDepth: 10, levelReq: 10,
     enemyPool: ['huntingSpider', 'venomSpider', 'giantSpider', 'spiderlingSwarm', 'darkWeaver'],
-    bossDepth: 21, boss: 'blackMatriarch', itemTier: 3, miniBossDepths: [14, 18], difficultyMult: 1.6,
+    bossDepth: 21, boss: 'blackMatriarch', itemTier: 2, miniBossDepths: [14, 18], difficultyMult: 1.6,
     unlockAfter: ['pantano'],
   },
 
@@ -101,14 +101,14 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 12, levelReq: 12, special: true,
     enemyPool: ['gargoyle', 'spectralMage', 'cursedKnight', 'watchingEye', 'crawlingShadow'],
     xpMult: 1.6, dmgTakenMult: 1.25, dropMult: 1.5,
-    bossDepth: 23, boss: 'fallenArchmage', itemTier: 3, miniBossDepths: [16, 20], difficultyMult: 1.75,
+    bossDepth: 23, boss: 'fallenArchmage', itemTier: 2, miniBossDepths: [16, 20], difficultyMult: 1.75,
   },
   {
     id: 'minas', name: 'Minas Abandonadas',
     desc: 'Trilhos enferrujados descem além do que os mineiros ousaram explorar.',
     startDepth: 13, levelReq: 13,
     enemyPool: ['cursedMiner', 'oreGolem', 'koboldRaider', 'batSwarm', 'gasWisp'],
-    bossDepth: 24, boss: 'oreTitan', itemTier: 3, miniBossDepths: [17, 21], difficultyMult: 1.9,
+    bossDepth: 24, boss: 'oreTitan', itemTier: 2, miniBossDepths: [17, 21], difficultyMult: 1.9,
     unlockAfter: ['aranhas'],
   },
   {
@@ -116,7 +116,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Árvores retorcidas escondem olhos brilhando na escuridão.',
     startDepth: 16, levelReq: 16,
     enemyPool: ['corruptedEnt', 'ghostWolf', 'darkFairy', 'cursedBear', 'stranglingVine'],
-    bossDepth: 27, boss: 'forestHeart', itemTier: 4, miniBossDepths: [20, 24], difficultyMult: 2.05,
+    bossDepth: 27, boss: 'forestHeart', itemTier: 2, miniBossDepths: [20, 24], difficultyMult: 2.05,
     unlockAfter: ['minas'],
   },
   {
@@ -124,7 +124,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Filhotes e criaturas ligadas a dragões guardam o ninho — dragões realmente antigos ainda dormem em masmorras mais distantes.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent'],
-    bossDepth: 29, boss: 'dragon', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 2.2,
+    bossDepth: 29, boss: 'dragon', itemTier: 2, miniBossDepths: [22, 26], difficultyMult: 2.2,
     unlockAfter: ['floresta'],
   },
   {
@@ -132,7 +132,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um cemitério em ruínas onde os mortos não descansam.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['darkReaper', 'deathCrow', 'boneExecutioner', 'wailingGhost', 'graveWorm'],
-    bossDepth: 29, boss: 'skeletonLord', itemTier: 4, miniBossDepths: [22, 26], difficultyMult: 2.35,
+    bossDepth: 29, boss: 'skeletonLord', itemTier: 2, miniBossDepths: [22, 26], difficultyMult: 2.35,
     unlockAfter: ['floresta'],
   },
   {
@@ -140,7 +140,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Colunas élficas cobertas de vinhas, tomadas por criaturas selvagens.',
     startDepth: 20, levelReq: 20,
     enemyPool: ['corruptedGuardian', 'whisperingVine', 'ruinBeast', 'elvenWraith', 'crystalGolem'],
-    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 5, miniBossDepths: [24, 28], difficultyMult: 2.5,
+    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 3, miniBossDepths: [24, 28], difficultyMult: 2.5,
     unlockAfter: ['covil', 'necropole'],
   },
   {
@@ -149,7 +149,7 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 20, levelReq: 20, special: true,
     enemyPool: ['cursedGladiator', 'arenaBeast', 'maskedExecutioner', 'beastTamer', 'fallenChampion'],
     dmgTakenMult: 1.2, dropMult: 1.8,
-    bossDepth: 34, boss: 'grandChampion', itemTier: 5, miniBossDepths: [26, 30], difficultyMult: 2.65,
+    bossDepth: 34, boss: 'grandChampion', itemTier: 3, miniBossDepths: [26, 30], difficultyMult: 2.65,
   },
 
   // ── Região 3 — Thurgard (nível 21-30) — os nomes/temas das 7 masmorras
@@ -173,7 +173,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um acampamento de guerra orc fortificado nas montanhas nevadas.',
     startDepth: 21, levelReq: 21,
     enemyPool: ['orcWarrior', 'orcArcher', 'orcShaman', 'orcBerserker', 'orcStandardBearer'],
-    bossDepth: 32, boss: 'orcWarchief', itemTier: 6, miniBossDepths: [25, 29], difficultyMult: 2.80,
+    bossDepth: 32, boss: 'orcWarchief', itemTier: 3, miniBossDepths: [25, 29], difficultyMult: 2.80,
     unlockAfter: ['elficas'],
   },
   {
@@ -181,7 +181,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Corredores de gelo translúcido que confundem qualquer sentido de direção.',
     startDepth: 23, levelReq: 23,
     enemyPool: ['iceElemental', 'frostWolf', 'glacialBat', 'iceWraith', 'frozenSentinel'],
-    bossDepth: 34, boss: 'iceMonarch', itemTier: 6, miniBossDepths: [27, 31], difficultyMult: 2.95,
+    bossDepth: 34, boss: 'iceMonarch', itemTier: 3, miniBossDepths: [27, 31], difficultyMult: 2.95,
     unlockAfter: ['fortalezaOrc'],
   },
   {
@@ -189,7 +189,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um templo meio submerso num lago congelado — águas antigas guardam segredos.',
     startDepth: 25, levelReq: 25,
     enemyPool: ['drownedAcolyte', 'frozenPriest', 'lakeWraith', 'submergedGuardian', 'iceEel'],
-    bossDepth: 36, boss: 'sunkenHighPriest', itemTier: 6, miniBossDepths: [29, 33], difficultyMult: 3.10,
+    bossDepth: 36, boss: 'sunkenHighPriest', itemTier: 3, miniBossDepths: [29, 33], difficultyMult: 3.10,
     unlockAfter: ['labirintoGelo'],
   },
   {
@@ -197,7 +197,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Cavernas brilhando com cristais azulados — beleza que esconde perigo.',
     startDepth: 25, levelReq: 25,
     enemyPool: ['crystalBat', 'crystalSpider', 'prismGolem', 'crystalWisp', 'glimmeringStalker'],
-    bossDepth: 36, boss: 'crystalSovereign', itemTier: 6, miniBossDepths: [29, 33], difficultyMult: 3.25,
+    bossDepth: 36, boss: 'crystalSovereign', itemTier: 3, miniBossDepths: [29, 33], difficultyMult: 3.25,
     unlockAfter: ['labirintoGelo'],
   },
   {
@@ -205,7 +205,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um covil entre rochas — enormes pegadas na neve revelam algo maior por perto.',
     startDepth: 27, levelReq: 27,
     enemyPool: ['alphaWolfPup', 'direWolf', 'snowStalker', 'packHunter', 'frostFangWolf'],
-    bossDepth: 38, boss: 'alphaDireWolf', itemTier: 7, miniBossDepths: [31, 35], difficultyMult: 3.40,
+    bossDepth: 38, boss: 'alphaDireWolf', itemTier: 3, miniBossDepths: [31, 35], difficultyMult: 3.40,
     unlockAfter: ['temploAfundado', 'cavernasCristal'],
   },
   {
@@ -213,7 +213,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Escadas de pedra descem sob um túmulo real esquecido pelo tempo.',
     startDepth: 29, levelReq: 29,
     enemyPool: ['royalSkeleton', 'cryptSentinel', 'boneNoble', 'spectralChamberlain', 'entombedKnight'],
-    bossDepth: 40, boss: 'royalLich', itemTier: 7, miniBossDepths: [33, 37], difficultyMult: 3.55,
+    bossDepth: 40, boss: 'royalLich', itemTier: 4, miniBossDepths: [33, 37], difficultyMult: 3.55,
     unlockAfter: ['covilLoboAlfa'],
   },
   {
@@ -222,7 +222,7 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 30, levelReq: 30, special: true,
     dmgTakenMult: 1.3, dropMult: 2.0, xpMult: 1.4,
     enemyPool: ['wellCrawler', 'voidTendril', 'drowningWraith', 'abyssalStalker', 'hollowDweller'],
-    bossDepth: 42, boss: 'pitDweller', itemTier: 7, miniBossDepths: [32, 34, 36, 38, 40], difficultyMult: 3.70,
+    bossDepth: 42, boss: 'pitDweller', itemTier: 4, miniBossDepths: [32, 34, 36, 38, 40], difficultyMult: 3.70,
   },
 
   // ── Região 4 — Xilvana (nível 31-40) — mesma convenção: nomes/temas vêm
@@ -233,7 +233,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma teia gigante cobre a gruta — algo enorme tece nas sombras.',
     startDepth: 31, levelReq: 31,
     enemyPool: ['jungleSpider', 'silkStalker', 'spiderBrood', 'webWeaverJungle', 'venomousBroodling'],
-    bossDepth: 42, boss: 'spiderQueen', itemTier: 7, miniBossDepths: [35, 39], difficultyMult: 3.85,
+    bossDepth: 42, boss: 'spiderQueen', itemTier: 4, miniBossDepths: [35, 39], difficultyMult: 3.85,
     unlockAfter: ['catacumbasReais'],
   },
   {
@@ -241,7 +241,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Muralhas em ruínas tomadas por vinhas — a selva reivindica o que sobrou.',
     startDepth: 33, levelReq: 33,
     enemyPool: ['ruinedSentinel', 'vineWarrior', 'crumblingGolem', 'junglePhantom', 'overgrownGuardian'],
-    bossDepth: 44, boss: 'citadelGuardian', itemTier: 7, miniBossDepths: [37, 41], difficultyMult: 4.00,
+    bossDepth: 44, boss: 'citadelGuardian', itemTier: 4, miniBossDepths: [37, 41], difficultyMult: 4.00,
     unlockAfter: ['covilAranhaRainha'],
   },
   {
@@ -249,7 +249,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um altar quebrado com símbolos desfigurados — algo profano ainda ronda o local.',
     startDepth: 35, levelReq: 35,
     enemyPool: ['defiledPriest', 'profaneIdol', 'corruptedAcolyte', 'hexedStatue', 'ritualCultist'],
-    bossDepth: 46, boss: 'profaneHighPriest', itemTier: 7, miniBossDepths: [39, 43], difficultyMult: 4.15,
+    bossDepth: 46, boss: 'profaneHighPriest', itemTier: 4, miniBossDepths: [39, 43], difficultyMult: 4.15,
     unlockAfter: ['cidadelaRuinas'],
   },
   {
@@ -257,7 +257,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Rocha vulcânica brilhante escavada nas profundezas da selva.',
     startDepth: 35, levelReq: 35,
     enemyPool: ['obsidianGolem', 'magmaBat', 'obsidianMiner', 'emberWraith', 'obsidianBeetle'],
-    bossDepth: 46, boss: 'obsidianColossus', itemTier: 7, miniBossDepths: [39, 43], difficultyMult: 4.30,
+    bossDepth: 46, boss: 'obsidianColossus', itemTier: 4, miniBossDepths: [39, 43], difficultyMult: 4.30,
     unlockAfter: ['cidadelaRuinas'],
   },
   {
@@ -265,7 +265,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Estátuas de pedra engolidas por raízes gigantes — ninguém vem aqui há eras.',
     startDepth: 37, levelReq: 37,
     enemyPool: ['forgottenGuardian', 'junglePredator', 'ancientVine', 'feralJaguar', 'sporeling'],
-    bossDepth: 48, boss: 'forgottenColossus', itemTier: 8, miniBossDepths: [41, 45], difficultyMult: 4.45,
+    bossDepth: 48, boss: 'forgottenColossus', itemTier: 4, miniBossDepths: [41, 45], difficultyMult: 4.45,
     unlockAfter: ['santuarioProfanado', 'minaObsidiana'],
   },
   {
@@ -273,7 +273,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma muralha erguida com ossos empilhados — construída por algo que não teme a morte.',
     startDepth: 39, levelReq: 39,
     enemyPool: ['boneSoldier', 'boneArcher', 'marrowGolem', 'boneCatapultBeast', 'ossuaryWraith'],
-    bossDepth: 50, boss: 'boneWarlord', itemTier: 8, miniBossDepths: [43, 47], difficultyMult: 4.60,
+    bossDepth: 50, boss: 'boneWarlord', itemTier: 4, miniBossDepths: [43, 47], difficultyMult: 4.60,
     unlockAfter: ['selvaEsquecida'],
   },
   {
@@ -282,7 +282,7 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 40, levelReq: 40, special: true,
     dmgTakenMult: 1.3, dropMult: 2.0, xpMult: 1.4,
     enemyPool: ['echoWraith', 'resonantSpecter', 'mirroredHorror', 'echoSentinel', 'hollowChant'],
-    bossDepth: 52, boss: 'echoSovereign', itemTier: 8, miniBossDepths: [42, 44, 46, 48, 50], difficultyMult: 4.75,
+    bossDepth: 52, boss: 'echoSovereign', itemTier: 5, miniBossDepths: [42, 44, 46, 48, 50], difficultyMult: 4.75,
   },
 
   // ── Região 5 — Ignares (nível 41-50) — mesma convenção: nomes/temas vêm
@@ -293,7 +293,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma fenda glacial profunda exala uma névoa fria constante.',
     startDepth: 41, levelReq: 41,
     enemyPool: ['glacialWraith', 'abyssalIceElemental', 'frostcrawler', 'iceBehemoth', 'hollowFrost'],
-    bossDepth: 52, boss: 'glacialAbyssLord', itemTier: 8, miniBossDepths: [45, 49], difficultyMult: 4.90,
+    bossDepth: 52, boss: 'glacialAbyssLord', itemTier: 5, miniBossDepths: [45, 49], difficultyMult: 4.90,
     unlockAfter: ['fortalezaOssos', 'torreDosEcos'],
   },
   {
@@ -301,7 +301,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Colunas de pedra rachadas pelo calor de rios de lava próximos.',
     startDepth: 43, levelReq: 43,
     enemyPool: ['magmaGolem', 'ashWraith', 'emberBat', 'volcanicStalker', 'cinderHound'],
-    bossDepth: 54, boss: 'infernoColossus', itemTier: 8, miniBossDepths: [47, 51], difficultyMult: 5.05,
+    bossDepth: 54, boss: 'infernoColossus', itemTier: 5, miniBossDepths: [47, 51], difficultyMult: 5.05,
     unlockAfter: ['abismoGelo'],
   },
   {
@@ -309,7 +309,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Marcas de garras gigantes cobrem a rocha — algo muito antigo dorme aqui.',
     startDepth: 45, levelReq: 45,
     enemyPool: ['ancientDrakeling', 'dragonCultistElder', 'scaleWyrmling', 'drakeGuardian', 'emberDrake'],
-    bossDepth: 56, boss: 'elderDragon', itemTier: 8, miniBossDepths: [49, 53], difficultyMult: 5.20,
+    bossDepth: 56, boss: 'elderDragon', itemTier: 5, miniBossDepths: [49, 53], difficultyMult: 5.20,
     unlockAfter: ['ruinasVulcanicas'],
   },
   {
@@ -317,7 +317,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um portal de pedra colossal guarda um salão além da compreensão humana.',
     startDepth: 45, levelReq: 45,
     enemyPool: ['titanGuardian', 'stoneColossus', 'ancientSentinel', 'runicGolem', 'titanWarden'],
-    bossDepth: 56, boss: 'fallenTitan', itemTier: 8, miniBossDepths: [49, 53], difficultyMult: 5.35,
+    bossDepth: 56, boss: 'fallenTitan', itemTier: 5, miniBossDepths: [49, 53], difficultyMult: 5.35,
     unlockAfter: ['ruinasVulcanicas'],
   },
   {
@@ -325,7 +325,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Um mausoléu dourado meio soterrado em cinzas vulcânicas.',
     startDepth: 47, levelReq: 47,
     enemyPool: ['royalWraith', 'ashenGuard', 'cursedEmbalmer', 'royalMummy', 'deathHerald'],
-    bossDepth: 58, boss: 'royalNecromancer', itemTier: 9, miniBossDepths: [51, 55], difficultyMult: 5.50,
+    bossDepth: 58, boss: 'royalNecromancer', itemTier: 5, miniBossDepths: [51, 55], difficultyMult: 5.50,
     unlockAfter: ['covilDragaoAnciao', 'salaoTitas'],
   },
   {
@@ -333,7 +333,7 @@ export const DUNGEONS: DungeonDef[] = [
     desc: 'Uma cúpula de pedra afundando lentamente em águas escuras.',
     startDepth: 49, levelReq: 49,
     enemyPool: ['drownedCourtier', 'submergedGuard', 'tidalWraith', 'coralHorror', 'deepOneAcolyte'],
-    bossDepth: 60, boss: 'drownedMonarch', itemTier: 9, miniBossDepths: [53, 57], difficultyMult: 5.65,
+    bossDepth: 60, boss: 'drownedMonarch', itemTier: 5, miniBossDepths: [53, 57], difficultyMult: 5.65,
     unlockAfter: ['necropoleReal'],
   },
   {
@@ -342,7 +342,7 @@ export const DUNGEONS: DungeonDef[] = [
     startDepth: 50, levelReq: 50, special: true,
     dmgTakenMult: 1.3, dropMult: 2.0, xpMult: 1.4,
     enemyPool: ['championGladiator', 'arenaChampionBeast', 'veteranDuelist', 'arenaWarlord', 'bloodiedChampion'],
-    bossDepth: 62, boss: 'eternalChampion', itemTier: 9, miniBossDepths: [52, 54, 56, 58, 60], difficultyMult: 5.80,
+    bossDepth: 62, boss: 'eternalChampion', itemTier: 6, miniBossDepths: [52, 54, 56, 58, 60], difficultyMult: 5.80,
   },
 ];
 
