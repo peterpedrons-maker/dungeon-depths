@@ -46,6 +46,9 @@ export interface AbilityConditionContext {
   enemyPostureBand?: 'firm' | 'unstable' | 'open' | 'broken';
   guardBroken?: boolean;
   riposteReady?: boolean;
+  periodicEffects?: Record<string, boolean>;
+  summonCount?: number;
+  summonMax?: number;
 }
 
 export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditionContext): boolean {
@@ -73,6 +76,9 @@ export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditi
     case 'guardBroken': return ctx.guardBroken === true;
     case 'notGuardBroken': return ctx.guardBroken !== true;
     case 'riposteReady': return ctx.riposteReady === true;
+    case 'periodicEffectActive': return ctx.periodicEffects?.[cond.effectId ?? ''] === true;
+    case 'summonCountAtLeast': return (ctx.summonCount ?? 0) >= (cond.count ?? 1);
+    case 'summonCountBelow': return (ctx.summonCount ?? 0) < (cond.count ?? ctx.summonMax ?? 1);
     default: return false;
   }
 }
