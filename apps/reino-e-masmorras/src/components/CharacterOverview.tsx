@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AttributeKey, Attributes, Character, EquipmentItem, ItemSlot, Rarity } from '../types/game';
 import { ATTR_META, ATTR_ORDER, CLASSES } from '../lib/classes';
 import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMaxHp, equipmentContribution, speedScore } from '../lib/combatStats';
-import { fmt } from '../lib/format';
+import { fmt, formatGameMultiplier } from '../lib/format';
 import { rarityColor, sellValue, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import { itemDisplayName, itemStatLines } from '../lib/enhancement';
 import { OFFHAND_KIND } from '../lib/itemTiers';
@@ -315,15 +315,15 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             )}
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Bônus</div>
-              <PreviewStatRow label="Redução de Recarga" from={Math.round(stats.cooldownReductionPct * 100)} to={Math.round(previewStats.cooldownReductionPct * 100)} suffix="%" equip={Math.round(equip.cdr * 100)} onInfo={openStatInfo} info="Reduz o tempo de recarga de todas as suas habilidades ativas, deixando-as disponíveis mais cedo." />
-              <PreviewStatRow label="Roubo de Vida" from={Math.round(stats.lifestealPct * 100)} to={Math.round(previewStats.lifestealPct * 100)} suffix="%" equip={Math.round(equip.lifesteal * 100)} onInfo={openStatInfo} info="Cura uma parte do dano físico e mágico que você causa, na forma de vida recuperada." />
-              <PreviewStatRow label="Espinhos" from={Math.round(stats.thornsPct * 100)} to={Math.round(previewStats.thornsPct * 100)} suffix="%" equip={Math.round(equip.thorns * 100)} onInfo={openStatInfo} info="Reflete de volta uma parte do dano físico que você recebe de um inimigo, direto nele." />
-              <PreviewStatRow label="Cura ao Crítico" from={Math.round(stats.onCritHealPct * 100)} to={Math.round(previewStats.onCritHealPct * 100)} suffix="%" onInfo={openStatInfo} info="Cura uma parte da sua vida máxima toda vez que você acerta um golpe crítico." />
-              <PreviewStatRow label="Dano vs. Envenenado" from={Math.round(stats.dmgPctVsPoison * 100)} to={Math.round(previewStats.dmgPctVsPoison * 100)} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão sob efeito de veneno." />
-              <PreviewStatRow label="Dano vs. Queimando" from={Math.round(stats.dmgPctVsBurn * 100)} to={Math.round(previewStats.dmgPctVsBurn * 100)} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão queimando." />
-              <PreviewStatRow label="Poder de Suporte" from={Math.round(stats.supportPowerPct * 100)} to={Math.round(previewStats.supportPowerPct * 100)} suffix="%" onInfo={openStatInfo} info="Aumenta a força de curas e bônus concedidos pelas suas próprias habilidades de suporte." />
-              <PreviewStatRow label="Chance de Encontrar Item" from={Math.round(stats.dropChanceBonusPct * 100)} to={Math.round(previewStats.dropChanceBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.dropChance * 100)} onInfo={openStatInfo} info="Aumenta a chance de um inimigo derrotado deixar cair um item de equipamento." />
-              <PreviewStatRow label="Qualidade dos Itens" from={Math.round(stats.itemQualityBonusPct * 100)} to={Math.round(previewStats.itemQualityBonusPct * 100)} suffix="%" prefix="+" equip={Math.round(equip.itemQuality * 100)} onInfo={openStatInfo} info="Aumenta o valor dos atributos que os itens encontrados vêm com (números maiores). Não muda a raridade do item, só a força dele." />
+              <PreviewStatRow label="Redução de Recarga" from={stats.cooldownReductionPct * 100} to={previewStats.cooldownReductionPct * 100} suffix="%" equip={equip.cdr * 100} onInfo={openStatInfo} info="Reduz o tempo de recarga de todas as suas habilidades ativas, deixando-as disponíveis mais cedo." />
+              <PreviewStatRow label="Roubo de Vida" from={stats.lifestealPct * 100} to={previewStats.lifestealPct * 100} suffix="%" equip={equip.lifesteal * 100} onInfo={openStatInfo} info="Cura uma parte do dano físico e mágico que você causa, na forma de vida recuperada." />
+              <PreviewStatRow label="Espinhos" from={stats.thornsPct * 100} to={previewStats.thornsPct * 100} suffix="%" equip={equip.thorns * 100} onInfo={openStatInfo} info="Reflete de volta uma parte do dano físico que você recebe de um inimigo, direto nele." />
+              <PreviewStatRow label="Cura ao Crítico" from={stats.onCritHealPct * 100} to={previewStats.onCritHealPct * 100} suffix="%" onInfo={openStatInfo} info="Cura uma parte da sua vida máxima toda vez que você acerta um golpe crítico." />
+              <PreviewStatRow label="Dano vs. Envenenado" from={stats.dmgPctVsPoison * 100} to={previewStats.dmgPctVsPoison * 100} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão sob efeito de veneno." />
+              <PreviewStatRow label="Dano vs. Queimando" from={stats.dmgPctVsBurn * 100} to={previewStats.dmgPctVsBurn * 100} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão queimando." />
+              <PreviewStatRow label="Poder de Suporte" from={stats.supportPowerPct * 100} to={previewStats.supportPowerPct * 100} suffix="%" onInfo={openStatInfo} info="Aumenta a força de curas e bônus concedidos pelas suas próprias habilidades de suporte." />
+              <PreviewStatRow label="Chance de Encontrar Item" from={stats.dropChanceBonusPct * 100} to={previewStats.dropChanceBonusPct * 100} suffix="%" prefix="+" equip={equip.dropChance * 100} onInfo={openStatInfo} info="Aumenta a chance de um inimigo derrotado deixar cair um item de equipamento." />
+              <PreviewStatRow label="Qualidade dos Itens" from={stats.itemQualityBonusPct * 100} to={previewStats.itemQualityBonusPct * 100} suffix="%" prefix="+" equip={equip.itemQuality * 100} onInfo={openStatInfo} info="Aumenta o valor dos atributos que os itens encontrados vêm com (números maiores). Não muda a raridade do item, só a força dele." />
             </div>
           </div>
           <div className="space-y-3">
@@ -343,12 +343,12 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide text-gold/80 font-bold mb-0.5">Combate</div>
-              <PreviewStatRow label="Chance de Crítico" from={Math.round(stats.critChance * 100)} to={Math.round(previewStats.critChance * 100)} suffix="%" equip={Math.round(equip.crit * 100)} onInfo={openStatInfo} info="Chance de cada ataque seu causar dano crítico (dano ampliado, ver Dano Crítico)." />
-              <PreviewStatRow label="Dano Crítico" from={Math.round(stats.critDmgMult * 100)} to={Math.round(previewStats.critDmgMult * 100)} suffix="%" equip={Math.round(equip.critDmg * 100)} onInfo={openStatInfo} info="Quanto dano extra um golpe crítico causa, além do dano normal do ataque." />
-              <PreviewStatRow label="Bloqueio" from={Math.round(stats.blockChance * 100)} to={Math.round(previewStats.blockChance * 100)} suffix="%" equip={Math.round(equip.block * 100)} onInfo={openStatInfo} info="Chance de bloquear um ataque inimigo, reduzindo o dano recebido dele pela metade. Vem de talentos na árvore de habilidades e de afixos em itens (escudos, principalmente) — não é garantido em todo equipamento." />
-              <PreviewStatRow label="Evasão" from={Math.round(stats.evasion * 100)} to={Math.round(previewStats.evasion * 100)} suffix="%" equip={Math.round(equip.evasion * 100)} onInfo={openStatInfo} info="Chance de esquivar completamente de um ataque inimigo, não recebendo dano nenhum. É reduzida pela Precisão do inimigo." />
-              <PreviewStatRow label="Precisão" from={Math.round(stats.accuracy * 100)} to={Math.round(previewStats.accuracy * 100)} suffix="%" equip={Math.round(equip.accuracy * 100)} onInfo={openStatInfo} info="Reduz a chance de você mesmo errar um ataque contra a Evasão do inimigo." />
-              <PreviewStatRow label="Tenacidade" from={Math.round(stats.tenacityPct * 100)} to={Math.round(previewStats.tenacityPct * 100)} suffix="%" equip={Math.round(equip.tenacity * 100)} onInfo={openStatInfo} info="Reduz a duração de venenos, sangramentos, atordoamentos e outros efeitos negativos aplicados em você." />
+              <PreviewStatRow label="Chance de Crítico" from={stats.critChance * 100} to={previewStats.critChance * 100} suffix="%" equip={equip.crit * 100} onInfo={openStatInfo} info="Chance de cada ataque seu causar dano crítico (dano ampliado, ver Dano Crítico)." />
+              <PreviewStatRow label="Dano Crítico" from={stats.critDmgMult * 100} to={previewStats.critDmgMult * 100} suffix="%" equip={equip.critDmg * 100} onInfo={openStatInfo} info="Quanto dano extra um golpe crítico causa, além do dano normal do ataque." />
+              <PreviewStatRow label="Bloqueio" from={stats.blockChance * 100} to={previewStats.blockChance * 100} suffix="%" equip={equip.block * 100} onInfo={openStatInfo} info="Chance de bloquear um ataque inimigo, reduzindo o dano recebido dele pela metade. Vem de talentos na árvore de habilidades e de afixos em itens (escudos, principalmente) — não é garantido em todo equipamento." />
+              <PreviewStatRow label="Evasão" from={stats.evasion * 100} to={previewStats.evasion * 100} suffix="%" equip={equip.evasion * 100} onInfo={openStatInfo} info="Chance de esquivar completamente de um ataque inimigo, não recebendo dano nenhum. É reduzida pela Precisão do inimigo." />
+              <PreviewStatRow label="Precisão" from={stats.accuracy * 100} to={previewStats.accuracy * 100} suffix="%" equip={equip.accuracy * 100} onInfo={openStatInfo} info="Reduz a chance de você mesmo errar um ataque contra a Evasão do inimigo." />
+              <PreviewStatRow label="Tenacidade" from={stats.tenacityPct * 100} to={previewStats.tenacityPct * 100} suffix="%" equip={equip.tenacity * 100} onInfo={openStatInfo} info="Reduz a duração de venenos, sangramentos, atordoamentos e outros efeitos negativos aplicados em você." />
               {/* A bare number on the same 10-baseline scale the Bestiário
                   shows for enemies (see speedScore) — not a "+N%" bonus like
                   every other row here, since Velocidade is meant to read as
@@ -424,7 +424,7 @@ function AttrInfoModal({ ch, attrKey, onClose }: { ch: Character; attrKey: Attri
         <div className="font-bold text-base" style={{ color: meta.color }}>{meta.label}</div>
         <div className="flex items-center gap-1.5 text-[11px]">
           <span className="text-parchment/50">Peso para {CLASSES[ch.classId].name}:</span>
-          <span className="font-bold text-gold">×{weight.toFixed(1)}</span>
+          <span className="font-bold text-gold">{formatGameMultiplier(weight)}</span>
         </div>
         <div className="border-t border-panelborder/30 pt-2">
           <div className="flex items-center justify-end gap-3 mb-1 text-[9px] uppercase tracking-wide text-parchment/40 font-bold">
@@ -631,4 +631,3 @@ function FilterTab({ active, onClick, children }: { active: boolean; onClick: ()
     </button>
   );
 }
-

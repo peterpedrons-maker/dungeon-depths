@@ -12,6 +12,7 @@ const MECHANICS: Partial<Record<ClassId, ClassMechanic[]>> = {
   barbaro: [
     {
       id: 'barbaro:fury', classId: 'barbaro', name: 'Fúria', category: 'resource',
+      combatDisplay: { owner: 'player', displayType: 'bar', maxValue: 100, icon: '🔥', hideWhenZero: false, priority: 10, color: 'orange' },
       shortDescription: 'Recurso de combate do Bárbaro. É gerado ao atacar, causar críticos e receber golpes. Ao chegar a 100, ativa Frenesi.',
       fullDescription: `Fúria representa a agressividade crescente do Bárbaro durante uma luta.
 
@@ -29,6 +30,7 @@ A Fúria é reiniciada quando um novo inimigo aparece.`,
     },
     {
       id: 'barbaro:frenzy', classId: 'barbaro', name: 'Frenesi', category: 'state',
+      combatDisplay: { owner: 'player', displayType: 'status', icon: '⚡', hideWhenZero: true, priority: 11, color: 'amber' },
       shortDescription: 'Estado ativado ao atingir 100 de Fúria. Aumenta dano e velocidade, mas também aumenta o dano recebido.',
       fullDescription: `Frenesi é o estado de agressividade máxima do Bárbaro.
 
@@ -44,6 +46,7 @@ Habilidades que gastam Fúria podem encurtar a duração de Frenesi, portanto o 
     },
     {
       id: 'barbaro:pain', classId: 'barbaro', name: 'Dor', category: 'other',
+      combatDisplay: { owner: 'player', displayType: 'bar', icon: '◈', hideWhenZero: true, priority: 12, color: 'purple' },
       shortDescription: 'Dano adiado. Parte de um golpe pode virar Dor e ser sofrida gradualmente depois.',
       fullDescription: `Dor representa dano que o Bárbaro conseguiu adiar, mas ainda não eliminou.
 
@@ -57,6 +60,7 @@ Ao contrário da Fúria, Dor permanece entre os inimigos durante a mesma tentati
     },
     {
       id: 'barbaro:wounds', classId: 'barbaro', name: 'Feridas', category: 'stack',
+      combatDisplay: { owner: 'enemy', displayType: 'stack', maxValue: 5, duration: true, icon: '🩸', hideWhenZero: true, priority: 10, color: 'red' },
       shortDescription: 'Stacks exclusivos do Bárbaro aplicados ao inimigo. Causam dano periódico e fortalecem habilidades de Selvageria.',
       fullDescription: `Feridas são uma mecânica exclusiva do Bárbaro.
 
@@ -78,12 +82,13 @@ Feridas não são o mesmo efeito que o Sangramento universal do jogo.`,
   clerigo: [
     {
       id: 'clerigo:faith', classId: 'clerigo', name: 'Fé', category: 'resource',
+      combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 5, icon: '◆', hideWhenZero: false, priority: 10, color: 'amber' },
       shortDescription: 'Recurso de combate do Clérigo, de 0 a 5. É gerado por curas significativas, purificações e barreiras que absorvem o bastante — nunca por ataques básicos.',
       fullDescription: `Fé representa a devoção acumulada do Clérigo durante uma luta.
 
 Ela varia entre 0 e 5 e nunca é gerada por ataques básicos.
 
-Fé é gerada por quatro "Atos de Fé": uma cura direta ativa que restaure uma fração significativa da vida máxima do Clérigo; uma habilidade que realmente remova pelo menos um efeito negativo; uma barreira normal (nunca Graça) que absorva o suficiente antes de se esgotar; e o Julgamento de um inimigo atingindo 3 e depois 5 stacks pela primeira vez.
+Fé é gerada por quatro "Atos de Fé": uma cura direta ativa que restaure pelo menos 15% da Vida Base (12% com Mãos Consagradas); uma habilidade que realmente remova pelo menos um efeito negativo; uma barreira normal (nunca Graça) que absorva o suficiente antes de se esgotar; e o Julgamento de um inimigo atingindo 3 e depois 5 stacks pela primeira vez.
 
 Diversas habilidades poderosas de todas as três especializações custam Fé, cobrado no início do lance e nunca devolvido caso ele erre.
 
@@ -93,19 +98,21 @@ A decisão central é escolher entre acumular Fé com jogo defensivo/utilitário
     },
     {
       id: 'clerigo:grace', classId: 'clerigo', name: 'Graça', category: 'other',
-      shortDescription: 'Reserva extra de HP criada pelo excesso ("overheal") de curas diretas ativas, quando desbloqueada. Absorve dano antes do HP, mas nunca gera Fé nem outra Graça.',
+      combatDisplay: { owner: 'player', displayType: 'bar', icon: '✧', hideWhenZero: true, priority: 11, color: 'sky' },
+      shortDescription: 'Reserva extra de Vida criada pelo excesso de curas diretas ativas, quando desbloqueada. Absorve dano antes da Vida, mas nunca gera Fé nem outra Graça.',
       fullDescription: `Graça é uma reserva de vida extra, separada do HP e de barreiras normais.
 
-Ela só existe depois de desbloqueada em Devoção, e é alimentada pelo overheal (o excedente que ultrapassaria a vida máxima) de curas diretas ATIVAS — nunca de regeneração, roubo de vida ou curas passivas.
+Ela só existe depois de desbloqueada em Devoção, e é alimentada pelo excesso que ultrapassaria a Vida Máxima de curas diretas ATIVAS — nunca de regeneração, Roubo de Vida ou curas passivas.
 
-Uma parte desse overheal é convertida em Graça, respeitando um teto baseado na vida máxima efetiva, e a Graça criada tem duração limitada, sendo renovada por uma nova conversão.
+Uma parte desse excesso é convertida em Graça, respeitando um teto baseado na Vida Máxima atual, e a Graça criada tem duração limitada, sendo renovada por uma nova conversão.
 
-Ao sofrer dano direto, a ordem de absorção é sempre: mitigação, depois barreira normal, depois Graça, e só então o HP.
+Ao sofrer dano direto, a ordem de absorção é sempre: mitigação, depois barreira normal, depois Graça, e só então a Vida.
 
 Graça nunca gera Fé, nunca conta como cura para outros efeitos, nunca aciona os gatilhos de uma barreira normal e nunca gera mais Graça a partir de si mesma.`,
     },
     {
       id: 'clerigo:consecration', classId: 'clerigo', name: 'Consagração', category: 'state',
+      combatDisplay: { owner: 'player', displayType: 'counter', duration: true, icon: '✦', hideWhenZero: true, priority: 12, color: 'gold' },
       shortDescription: 'Estado defensivo do Clérigo, criado ou renovado por várias habilidades de Retidão. Só pode existir uma instância por vez; talentos de Retidão dão a ela seus efeitos reais.',
       fullDescription: `Consagração é um estado que várias habilidades de Retidão criam ou renovam por alguns ciclos.
 
@@ -117,6 +124,7 @@ Alguns desses efeitos só acontecem uma vez por instância de Consagração.`,
     },
     {
       id: 'clerigo:judgment', classId: 'clerigo', name: 'Julgamento', category: 'stack',
+      combatDisplay: { owner: 'enemy', displayType: 'stack', maxValue: 5, duration: true, icon: '⚖', hideWhenZero: true, priority: 10, color: 'amber' },
       shortDescription: 'Stacks exclusivos do Clérigo aplicados ao inimigo (máximo 5), da especialização Provação. Não causam dano por si só — talentos de Provação os convertem em dano, precisão ou consumo.',
       fullDescription: `Julgamento é uma mecânica exclusiva da especialização Provação do Clérigo.
 
@@ -134,6 +142,7 @@ Atingir 3 e depois 5 stacks pela primeira vez em um inimigo gera Fé.`,
   cavaleiro: [
     {
       id: 'cavaleiro:determination', classId: 'cavaleiro', name: 'Determinação', category: 'resource',
+      combatDisplay: { owner: 'player', displayType: 'bar', maxValue: 100, icon: '🛡', hideWhenZero: false, priority: 10, color: 'slate' },
       shortDescription: 'Recurso defensivo de Bastião. Bloqueios e algumas defesas geram Determinação, usada para ativar as técnicas mais poderosas do Cavaleiro.',
       fullDescription: `Determinação representa a capacidade do Cavaleiro de transformar defesa em oportunidade.
 
@@ -147,6 +156,7 @@ A decisão principal é escolher entre utilizar o recurso para sobreviver imedia
     },
     {
       id: 'cavaleiro:retaliation', classId: 'cavaleiro', name: 'Retaliação', category: 'stack',
+      combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 1, icon: '↩', hideWhenZero: true, priority: 11, color: 'slate' },
       shortDescription: 'Bloquear repetidamente prepara um contra-ataque baseado na DEF do Cavaleiro.',
       fullDescription: `Retaliação transforma a defesa do Cavaleiro em poder ofensivo.
 
@@ -158,6 +168,7 @@ Isso permite que uma build defensiva responda ao inimigo sem transformar DEF em 
     },
     {
       id: 'cavaleiro:momentum', classId: 'cavaleiro', name: 'Momentum', category: 'resource',
+      combatDisplay: { owner: 'player', displayType: 'bar', icon: '➤', hideWhenZero: false, priority: 20, color: 'orange' },
       shortDescription: 'Recurso ofensivo de Investida. Ataques consecutivos acumulam Momentum, aumentando dano e velocidade.',
       fullDescription: `Momentum representa o ritmo ofensivo do Cavaleiro durante uma carga.
 
@@ -173,6 +184,7 @@ A escolha central é decidir quando continuar pressionando e quando transformar 
     },
     {
       id: 'cavaleiro:orders', classId: 'cavaleiro', name: 'Ordens', category: 'resource',
+      combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 3, icon: '◆', hideWhenZero: false, priority: 30, color: 'gold' },
       shortDescription: 'Recurso tático de Comando. Algumas habilidades geram Ordens e outras as consomem para produzir efeitos mais poderosos.',
       fullDescription: `Ordens representam a preparação tática do Cavaleiro.
 
@@ -186,6 +198,7 @@ Ao desbloquear Grande Comandante, alcançar três Ordens prepara um Comando Supr
     },
     {
       id: 'cavaleiro:commandSupreme', classId: 'cavaleiro', name: 'Comando Supremo', category: 'state',
+      combatDisplay: { owner: 'player', displayType: 'status', icon: '✦', hideWhenZero: true, priority: 31, color: 'gold' },
       shortDescription: 'Ao alcançar três Ordens, a próxima habilidade de Comando recebe uma versão muito mais poderosa.',
       fullDescription: `Comando Supremo é o auge da árvore de Comando.
 
@@ -208,6 +221,7 @@ O Cavaleiro não muda essa regra, mas constrói em cima dela: Guarda Elevada e E
   cacador: [
     {
       id: 'cacador:traps', classId: 'cacador', name: 'Armadilhas', category: 'other',
+      combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 3, icon: '◇', hideWhenZero: true, priority: 10, color: 'lime' },
       shortDescription: 'Armadilhas de Armadilhas ficam armadas em silêncio e só disparam quando a presa completa uma ação real (acerto ou erro) — nunca no instante em que são preparadas.',
       fullDescription: `Armadilhas são a mecânica central da especialização Armadilhas.
 
@@ -225,6 +239,7 @@ Armadilhas nunca persistem entre inimigos ou entre tentativas de masmorra.`,
     },
     {
       id: 'cacador:trail', classId: 'cacador', name: 'Rastro', category: 'stack',
+      combatDisplay: { owner: 'enemy', displayType: 'stack', maxValue: 5, icon: '●', hideWhenZero: false, priority: 10, color: 'emerald' },
       shortDescription: 'Stacks de 0 a 5 acumulados contra o inimigo atual, ganhos sempre que a presa completa uma ação — nunca quando o Caçador acerta um golpe. Em 3 ou mais, o inimigo se torna Presa Marcada.',
       fullDescription: `Rastro é a mecânica central da especialização Rastreio.
 
@@ -240,6 +255,7 @@ Alcançar o Rastro máximo (5) desbloqueia os bônus mais fortes de talentos que
     },
     {
       id: 'cacador:markedPrey', classId: 'cacador', name: 'Presa Marcada', category: 'mark',
+      combatDisplay: { owner: 'enemy', displayType: 'status', icon: '⊙', hideWhenZero: true, priority: 11, color: 'amber' },
       shortDescription: 'Estado automático quando o inimigo atual possui 3 ou mais Rastro. Concede bônus de dano, precisão e dano de armadilhas, e potencializa diversos talentos das três especializações.',
       fullDescription: `Presa Marcada é o estado que representa ter estudado o suficiente sobre o inimigo atual para explorá-lo.
 
@@ -253,6 +269,7 @@ Presa Marcada nunca amplia dano contínuo (Poison).`,
     },
     {
       id: 'cacador:breaches', classId: 'cacador', name: 'Brechas', category: 'stack',
+      combatDisplay: { owner: 'enemy', displayType: 'stack', maxValue: 3, duration: true, icon: '◇', hideWhenZero: true, priority: 12, color: 'sky' },
       shortDescription: 'Stacks de 0 a 3 no inimigo, com duração renovada a cada novo ganho. Não causam dano — abrem oportunidades de precisão, crítico e execuções que as consomem.',
       fullDescription: `Brechas são a mecânica central da especialização Precisão da Caça.
 
@@ -324,7 +341,7 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
       pathId: 'devocao',
       identity: 'SAB + Cura + Fé + Graça.',
       style: 'Sustento — o melhor curador do Clérigo, sem ser o de maior dano nem permanecer travado em vida cheia.',
-      loop: 'Curar com eficiência → gerar Fé por curas significativas → converter overheal em Graça → gastar Fé em utilidade/purificação.',
+      loop: 'Curar com eficiência → gerar Fé por curas significativas → converter excesso de cura em Graça → gastar Fé em utilidade/purificação.',
     },
     {
       pathId: 'retidao',

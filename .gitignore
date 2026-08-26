@@ -13,6 +13,7 @@ dist
 apps/*/dist
 dist-ssr
 *.local
+*.tsbuildinfo
 # Combined multi-app build output assembled by the deploy workflow
 /site
 

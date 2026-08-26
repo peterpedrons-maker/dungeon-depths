@@ -22,8 +22,8 @@ export function nextFaithForNewEnemy(previousFaith: number): number {
 // "Cura Significativa" — uma cura ATIVA direta que restaura pelo menos esta
 // fração do BaselineMaxHp gera +1 Fé (máximo uma vez por ação). Mãos
 // Consagradas (clerigo:devocao:3) reduz para SIGNIFICANT_HEAL_PCT_LOWERED.
-export const SIGNIFICANT_HEAL_PCT = 0.08;
-export const SIGNIFICANT_HEAL_PCT_LOWERED = 0.07; // Mãos Consagradas
+export const SIGNIFICANT_HEAL_PCT = 0.15;
+export const SIGNIFICANT_HEAL_PCT_LOWERED = 0.12; // Mãos Consagradas
 // Mãos Consagradas (clerigo:devocao:3) — flat +3% heal efficiency, always on.
 export const MAOS_CONSAGRADAS_HEAL_EFFICIENCY_PCT = 0.03;
 
@@ -192,4 +192,27 @@ export interface BarrierPortion {
 export interface GracePacket {
   amount: number;
   ticksLeft: number;
+}
+
+/** Fonte única da Vida Base usada pelas curas do Clérigo. */
+export function clericBaseHp(baseHp: number, level: number): number {
+  return baseHp + 6 * (level - 1);
+}
+
+/** Fonte única do valor bruto de uma cura direta antes de limitar pelo HP perdido. */
+export function clericDirectHealAmount(
+  baseHp: number,
+  healPct: number,
+  supportPowerPct: number,
+  healEfficiencyPct = 0,
+): number {
+  return Math.round(baseHp * healPct * (1 + supportPowerPct) * (1 + healEfficiencyPct));
+}
+
+export function clericPassiveHealAmount(baseHp: number, healPct: number, supportPowerPct: number): number {
+  return Math.round(baseHp * healPct * (1 + supportPowerPct));
+}
+
+export function significantHealAmount(baseHp: number, lowered: boolean): number {
+  return Math.ceil(baseHp * (lowered ? SIGNIFICANT_HEAL_PCT_LOWERED : SIGNIFICANT_HEAL_PCT));
 }

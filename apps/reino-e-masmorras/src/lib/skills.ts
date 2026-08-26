@@ -47,16 +47,38 @@ interface NodeSpec {
   mechanicRefs?: string[];
 }
 
+// Passe editorial universal: corrige apenas a apresentação, sempre a partir
+// dos valores mecânicos já existentes. Nenhum multiplicador/cooldown muda.
+function presentationText(text: string, ability?: Omit<AbilityDef, 'id'>): string {
+  let result = text
+    .replace(/BaselineMaxHp/g, 'Vida Base')
+    .replace(/EffectiveMaxHp/g, 'Vida Máxima')
+    .replace(/overheal/g, 'excesso de cura')
+    .replace(/(\d+)\.(\d+)(?=x|%)/g, '$1,$2')
+    .replace(/\brodadas?\b/gi, (word: string) => word.toLowerCase().endsWith('s') ? 'ciclos' : 'ciclo');
+  if (!ability) return result;
+
+  result = result.replace(/Recarga de \d+(?:[,.]\d+)?\s*(?:s|segundos?|ciclos?)/gi, `Recarga de ${ability.cooldown} ciclos`);
+  const effect = ability.effect;
+  const duration = effect.statusRounds ?? effect.ccRounds ?? effect.statModRounds ?? effect.buffRounds
+    ?? effect.regenRounds ?? effect.immunityRounds ?? effect.hasteRounds ?? effect.berserkRounds;
+  if (duration) {
+    result = result.replace(/\bpor \d+(?:[,.]\d+)?s\b/gi, `por ${duration} ${duration === 1 ? 'ciclo' : 'ciclos'}`);
+    result = result.replace(/\bdurante \d+(?:[,.]\d+)?s\b/gi, `durante ${duration} ${duration === 1 ? 'ciclo' : 'ciclos'}`);
+  }
+  return result;
+}
+
 function buildPath(classId: ClassId, pathId: string, name: string, color: string, specs: NodeSpec[]): SkillPath {
   const nodes: SkillNode[] = specs.map((s, i) => {
     const slot = TOPOLOGY[i];
     const id = `${classId}:${pathId}:${i}`;
     const node: SkillNode = {
-      id, name: s.name, desc: s.desc, type: slot.type,
+      id, name: s.name, desc: presentationText(s.desc, s.ability), type: slot.type,
       effect: s.effect ?? {},
       prereqIds: slot.prereq.map((j) => `${classId}:${pathId}:${j}`),
     };
-    if (slot.type === 'active' && s.ability) node.ability = { id, ...s.ability };
+    if (slot.type === 'active' && s.ability) node.ability = { id, ...s.ability, desc: presentationText(s.ability.desc, s.ability) };
     if (s.scaling) node.scaling = s.scaling;
     if (s.mechanicRefs) node.mechanicRefs = s.mechanicRefs;
     return node;
@@ -283,12 +305,12 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Fôlego Abençoado', desc: '+8 de vida máxima. Depois de desbloquear Graça, aumenta o teto de Graça por VIT total (até +2 pontos percentuais).', effect: { maxHpFlat: 8 },
         mechanicRefs: ['clerigo:grace'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima e, após desbloquear Graça, seu teto máximo (até +2pp).' }] },
-      { name: 'Mãos Consagradas', desc: '+3% de eficiência da cura direta ativa. Reduz o limite de Cura Significativa para gerar Fé de 8% para 7% do BaselineMaxHp.', effect: {},
+      { name: 'Mãos Consagradas', desc: '+3% de eficiência da cura direta ativa. Reduz o limite de Cura Significativa para gerar Fé de 15% para 12% da Vida Base.', effect: {},
         mechanicRefs: ['clerigo:faith'],
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a eficiência da cura direta ativa (+3%).' }, { label: 'Fé', role: 'mecanica', description: 'Facilita gerar Fé por cura (limite cai de 8% para 7%).' }] },
-      { name: 'Cura Divina', desc: 'Habilidade ativa: cura direta de 18% do BaselineMaxHp. Gera Fé se a cura for significativa. Recarga de 4 ciclos.',
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a eficiência da cura direta ativa (+3%).' }, { label: 'Fé', role: 'mecanica', description: 'Facilita gerar Fé por cura (limite cai de 15% para 12%).' }] },
+      { name: 'Cura Divina', desc: 'Habilidade ativa: recupera 35% da Vida Base, ampliado por Poder de Suporte e bônus de cura. Gera Fé quando a cura efetiva atinge o limite de Cura Significativa. Recarga de 4 ciclos.',
         mechanicRefs: ['clerigo:faith'],
-        ability: { name: 'Cura Divina', desc: 'Cura 18% do BaselineMaxHp; gera Fé se a cura for significativa.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'heal', healPct: 0.18, faithGainOnHeal: true } },
+        ability: { name: 'Cura Divina', desc: 'Recupera 35% da Vida Base, com Poder de Suporte e bônus de cura; pode gerar Fé pela cura efetiva.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'heal', healPct: 0.35, faithGainOnHeal: true } },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a quantidade curada através do Poder de Suporte.' }, { label: 'Fé', role: 'mecanica', description: 'Gera Fé se a cura efetiva atingir o limite de Cura Significativa.' }] },
       { name: 'Véu da Alma', desc: '+2.5% de defesa mágica. Enquanto você tiver um DOT, debuff ou silêncio ativo, sua cura direta ativa ganha +5% de eficiência final.', effect: { mdefPct: 0.025 },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica e a eficiência da cura direta enquanto debuffado (+5%).' }] },
@@ -320,21 +342,21 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Coração Devoto', desc: '+12 de vida máxima. Enquanto sua vida estiver abaixo de 35%, a conversão de overheal em Graça aumenta em +10 pontos percentuais.', effect: { maxHpFlat: 12 },
         mechanicRefs: ['clerigo:grace'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima; com vida baixa (<35%), também a conversão de overheal em Graça (+10pp).' }] },
-      { name: 'Milagre', desc: 'Habilidade ativa: custa 3 Fé — só com vida abaixo de 35% — cura 26% da vida máxima e remove o efeito negativo mais grave. Recarga de 10 ciclos.',
+      { name: 'Milagre', desc: 'Habilidade ativa: custa 3 Fé — só com vida abaixo de 35% — recupera 55% da Vida Base e remove o efeito negativo mais grave. Pode gerar no máximo 1 Fé, pela cura efetiva ou pela purificação. Recarga de 10 ciclos.',
         mechanicRefs: ['clerigo:faith'],
         ability: {
-          name: 'Milagre', desc: 'Custa 3 Fé. Cura 26% da vida máxima e remove o efeito negativo mais grave.',
+          name: 'Milagre', desc: 'Custa 3 Fé. Recupera 55% da Vida Base e remove o efeito negativo mais grave; pode gerar no máximo 1 Fé.',
           cooldown: 10, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.35 }, { type: 'resourceAtLeast', resource: 'faith', value: 3 }] },
-          effect: { kind: 'heal', healPct: 0.26, faithCost: 3, faithGainOnHeal: true },
+          effect: { kind: 'heal', healPct: 0.55, faithCost: 3, faithGainOnHeal: true },
           extraEffects: [{ kind: 'cleanseOne' }],
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 3 Fé; gera no máximo +1 Fé pelo cast, mesmo curando e purificando.' }, { label: 'Graça', role: 'mecanica', description: 'O overheal pode virar Graça.' }] },
-      { name: 'Ressurreição Menor', desc: 'Habilidade ativa: custa 4 Fé — só com vida abaixo de 30% — abre uma janela de 3 ciclos que impede sua morte uma vez por tentativa, restaurando até 18% da vida máxima. Recarga de 15 ciclos.',
+      { name: 'Ressurreição Menor', desc: 'Habilidade ativa: custa 4 Fé — só com vida abaixo de 30% — abre uma janela de 3 ciclos que impede sua morte uma vez por tentativa. Recupera 40% da Vida Base, ampliado por Poder de Suporte, limitado a 25% da Vida Máxima. Recarga de 15 ciclos.',
         mechanicRefs: ['clerigo:faith'],
         ability: {
           name: 'Ressurreição Menor', desc: 'Custa 4 Fé. Por 3 ciclos, um dano fatal é evitado uma vez por tentativa, restaurando parte da vida.',
           cooldown: 15, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.30 }, { type: 'resourceAtLeast', resource: 'faith', value: 4 }] },
-          effect: { kind: 'reviveWindow', faithCost: 4, reviveWindowRounds: 3, reviveHealPct: 0.18, reviveHealCapPct: 0.20 },
+          effect: { kind: 'reviveWindow', faithCost: 4, reviveWindowRounds: 3, reviveHealPct: 0.40, reviveHealCapPct: 0.25 },
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a vida restaurada se a ressurreição ativar.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 4 Fé; não é reembolsada se a janela expirar sem ativar.' }] },
       { name: 'Graça Divina', desc: 'Melhora Graça: conversão de 40% para 55%, duração de 3 para 4 ciclos, cap de 8% para 12% da vida máxima efetiva (até 14% com Fôlego Abençoado). Quando uma reserva de Graça é totalmente consumida por dano, ganha +1 Fé.', effect: {},
@@ -368,7 +390,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Vigília', desc: '+2.5% de defesa mágica. Enquanto Consagração estiver ativa, o primeiro tick de DOT que você sofrer nela causa -15% de dano.', effect: { mdefPct: 0.025 },
         mechanicRefs: ['clerigo:consecration'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica.' }, { label: 'Consagração', role: 'mecanica', description: 'Reduz o primeiro tick de DOT sofrido em cada Consagração (-15%).' }] },
-      { name: 'Intercessão', desc: 'Quando uma barreira normal criada por você é completamente destruída por dano durante Consagração, cura 4% do BaselineMaxHp (uma vez por barreira).', effect: {},
+      { name: 'Intercessão', desc: 'Quando uma barreira normal criada por você é completamente destruída por dano durante Consagração, recupera 4% da Vida Base, ampliado por Poder de Suporte (uma vez por barreira).', effect: {},
         mechanicRefs: ['clerigo:consecration'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura gerada.' }, { label: 'Consagração', role: 'mecanica', description: 'Só ativa enquanto Consagração está ativa.' }] },
       { name: 'Golpe Sagrado', desc: 'Habilidade mágica ativa: golpe com 1.45x de MATK (1.70x durante Consagração). Acertar durante Consagração estende sua duração em +1 ciclo. Recarga de 4 ciclos.',
@@ -458,7 +480,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'bigHit', dmgMult: 1.75, dmgMultPerJudgmentStack: 0.20, judgmentConsumeMax: 3, faithCost: 1 },
         },
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano do golpe.' }, { label: 'Julgamento', role: 'mecanica', description: 'Consome até 3 stacks para dano extra; se errar, os stacks não são consumidos.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé, gasta mesmo se o golpe errar.' }] },
-      { name: 'Sabedoria do Julgamento', desc: '+2.5% de defesa mágica. Quando uma habilidade consumir 3 ou mais Julgamentos de uma vez, cura 2% do BaselineMaxHp.', effect: { mdefPct: 0.025 },
+      { name: 'Sabedoria do Julgamento', desc: '+2,5% de defesa mágica. Quando uma habilidade consumir 3 ou mais Julgamentos de uma vez, recupera 2% da Vida Base, ampliado por Poder de Suporte.', effect: { mdefPct: 0.025 },
         mechanicRefs: ['clerigo:judgment'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura ao consumir 3+ Julgamentos de uma vez.' }, { label: 'Julgamento', role: 'mecanica', description: 'Só ativa ao consumir 3 ou mais stacks na mesma ação.' }] },
       { name: 'Ira Consumidora', desc: 'Habilidade ativa: custa 1 Fé — só com 3+ Julgamentos — golpe de 1.55x +0.16x por Julgamento ATUAL (até 2.35x com 5), sem consumir stacks, mas reduz sua duração restante em 2 ciclos (mínimo 1). Recarga de 6 ciclos.',
@@ -469,11 +491,11 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'bigHit', dmgMult: 1.55, dmgMultPerJudgmentStack: 0.16, judgmentReadOnly: true, judgmentDurationCutOnHit: 2, faithCost: 1 },
         },
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano do golpe.' }, { label: 'Julgamento', role: 'mecanica', description: 'Aproveita os stacks atuais sem consumi-los, mas corta sua duração.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé.' }] },
-      { name: 'Apocalipse Sagrado', desc: 'Habilidade ativa: custa 3 Fé — só com exatamente 5 Julgamentos — golpe de 2.85x de MATK que consome todos os stacks ao acertar. Recarga de 9 ciclos.',
+      { name: 'Apocalipse Sagrado', desc: 'Habilidade ativa: custa 3 Fé — exige pelo menos 5 Julgamentos — golpe de 2,85x de MATK que consome exatamente 5 ao acertar. Se errar, não consome Julgamentos. Recarga de 9 ciclos.',
         mechanicRefs: ['clerigo:faith', 'clerigo:judgment'],
         ability: {
-          name: 'Apocalipse Sagrado', desc: 'Custa 3 Fé. Golpe de 2.85x de MATK contra um inimigo com 5 Julgamentos; consome todos os stacks ao acertar.',
-          cooldown: 9, condition: { type: 'all', conditions: [{ type: 'enemyStacksEqual', stackId: 'judgment', stacks: 5 }, { type: 'resourceAtLeast', resource: 'faith', value: 3 }] },
+          name: 'Apocalipse Sagrado', desc: 'Custa 3 Fé. Golpe de 2,85x de MATK com 5 ou mais Julgamentos; consome exatamente 5 ao acertar.',
+          cooldown: 9, condition: { type: 'all', conditions: [{ type: 'enemyStacksAtLeast', stackId: 'judgment', stacks: 5 }, { type: 'resourceAtLeast', resource: 'faith', value: 3 }] },
           effect: { kind: 'bigHit', dmgMult: 2.85, judgmentConsumeMax: 5, faithCost: 3 },
         },
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano do golpe.' }, { label: 'Julgamento', role: 'mecanica', description: 'Exige e consome os 5 stacks; se errar, os stacks permanecem.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 3 Fé.' }, { attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Aumenta a chance de crítico normal.' }] },
