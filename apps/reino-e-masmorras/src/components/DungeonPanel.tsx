@@ -15,6 +15,14 @@ import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { getEquippedAbilities } from '../lib/skills';
 import { HEAT_AFTER_OVERHEAT, HEAT_OVERHEAT_AT, ThermalState, advanceThermal, circuitAfterCast, circuitPulseMult, fireDamageBonus, nextRunes, thermalAfterFrozenEnds, thermalAfterShatter, thermalShatterMult } from '../lib/mago';
 import {
+  GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
+  GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
+  GUARD_BREAK_TICKS, POSTURE_BASIC_DAMAGE, POSTURE_MAX, PreparedGuardState,
+  ReadingKind, RiposteKind, WarriorEnemyState, applyPostureDamage, bandValue,
+  createWarriorEnemyState, crossesLowerBand, duelPostureDamage, parryReduction,
+  postureBand, recoverPosture,
+} from '../lib/warrior';
+import {
   FURY_MAX, FURY_MIN, FURY_GAIN_BASIC_HIT, FURY_GAIN_BASIC_HIT_SANGUE_QUENTE, FURY_GAIN_ABILITY_HIT,
   FURY_GAIN_CRIT_BONUS, FURY_GAIN_TAKE_DAMAGE, FURY_GAIN_TAKE_DAMAGE_SANGUE_QUENTE, FURY_GAIN_PAIN_TICK,
   FURY_GAIN_WALL_HIT_TAKEN, FURY_GAIN_PREDADOR_SUPREMO, FRENZY_DRAIN_PER_ACTION, FRENZY_DRAIN_PER_ACTION_IMPARAVEL,
@@ -304,6 +312,8 @@ const SELF_ABILITY_KINDS = [
   'ironWall', 'livingFortress', 'colossalShield', 'lastGuard', 'counterStance', 'orderResist', 'kingsBanner',
   // Caçador redesign (lib/hunter.ts) — all consume the whole action, no attack roll.
   'armTrap', 'buffEvasion', 'huntWithPrey',
+  // Guerreiro — support actions; neither consumes Guarda Quebrada actions.
+  'preparedGuard', 'feint',
 ];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -335,6 +345,7 @@ const CC_BADGE_ICON: Record<CrowdControlKind, string> = {
 const STAT_MOD_ICON: Record<StatModStat, { buff: string; debuff: string }> = {
   atk: { buff: iconAtkBuff, debuff: iconAtkDebuff },
   def: { buff: iconDefBuff, debuff: iconDefDebuff },
+  mdef: { buff: iconDefBuff, debuff: iconDefDebuff },
   critChance: { buff: iconCritBuff, debuff: iconCritDebuff },
   critDmgMult: { buff: iconCritDmgBuff, debuff: iconCritDmgDebuff },
   accuracy: { buff: iconPrecisaoBuff, debuff: iconPrecisaoDebuff },
@@ -349,7 +360,7 @@ const STAT_MOD_ICON: Record<StatModStat, { buff: string; debuff: string }> = {
   speedPct: { buff: iconAtkBuff, debuff: iconAtkDebuff },
 };
 const STAT_MOD_LABEL: Record<StatModStat, string> = {
-  atk: 'Ataque', def: 'Defesa', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
+  atk: 'Ataque', def: 'Defesa', mdef: 'Defesa Mágica', critChance: 'Crítico', critDmgMult: 'Dano Crítico', accuracy: 'Precisão',
   evasion: 'Evasão', dmgTakenPct: 'Dano Recebido', defPenPct: 'Penetração de Defesa', lifestealPct: 'Roubo de Vida',
   tenacityPct: 'Tenacidade', speedPct: 'Velocidade',
 };
@@ -877,6 +888,18 @@ export function DungeonPanel({
   const [mageCircuitState, setMageCircuitState] = useState(0);
   const [mageResonanceState, setMageResonanceState] = useState(false);
 
+  // Guerreiro: Postura lives on EnemyInstance; these are player-side,
+  // encounter-only preparations and their display mirrors.
+  const warriorPreparedGuardRef = useRef<PreparedGuardState | null>(null);
+  const warriorRiposteRef = useRef<RiposteKind>(null);
+  const warriorReadingRef = useRef<ReadingKind>(null);
+  const warriorFeintReadyRef = useRef(false);
+  const warriorNextBasicPostureBonusRef = useRef(false);
+  const [warriorPreparedGuardState, setWarriorPreparedGuardState] = useState<PreparedGuardState | null>(null);
+  const [warriorRiposteState, setWarriorRiposteState] = useState<RiposteKind>(null);
+  const [warriorReadingState, setWarriorReadingState] = useState<ReadingKind>(null);
+  const [warriorFeintReadyState, setWarriorFeintReadyState] = useState(false);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -1139,12 +1162,127 @@ export function DungeonPanel({
       states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current, thermal: mageThermalRef.current !== 'normal' },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks() },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
+      enemyPosture: isWarrior() ? warriorEnemyState().current : undefined,
+      enemyPostureBand: isWarrior() ? postureBand(warriorEnemyState().current) : undefined,
+      guardBroken: isWarrior() ? warriorEnemyState().guardBroken : false,
+      riposteReady: isWarrior() ? warriorRiposteRef.current !== null : false,
     };
     if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
     return evalAbilityCondition(cond, ctx);
   }
-
   function isMage(): boolean { return chRef.current.classId === 'mago'; }
+  function isWarrior(): boolean { return chRef.current.classId === 'guerreiro'; }
+  function warriorHasSkill(id: string): boolean { return isWarrior() && hasSkill(chRef.current, id); }
+  function warriorEnemyState(): WarriorEnemyState {
+    if (!enemyRef.current.warrior) enemyRef.current = { ...enemyRef.current, warrior: createWarriorEnemyState() };
+    return enemyRef.current.warrior!;
+  }
+  function warriorCommitEnemy(next: WarriorEnemyState) {
+    updateEnemy({ ...enemyRef.current, warrior: next });
+  }
+  function warriorSyncPlayer() {
+    if (silentRef.current) return;
+    setWarriorPreparedGuardState(warriorPreparedGuardRef.current ? { ...warriorPreparedGuardRef.current } : null);
+    setWarriorRiposteState(warriorRiposteRef.current);
+    setWarriorReadingState(warriorReadingRef.current);
+    setWarriorFeintReadyState(warriorFeintReadyRef.current);
+  }
+  function warriorEndGuardBreak() {
+    if (!isWarrior()) return;
+    const state = warriorEnemyState();
+    if (!state.guardBroken) return;
+    warriorCommitEnemy({
+      ...state,
+      current: warriorHasSkill('guerreiro:furioso:14') ? GUARD_BREAK_RESET_VANGUARD : GUARD_BREAK_RESET,
+      guardBroken: false, offensiveActionsLeft: 0, ticksLeft: 0,
+      perfectCounterAccuracyPending: false,
+    });
+    pushLog('Guarda recomposta.');
+  }
+  function warriorTriggerGuardBreak(extraActions = 0) {
+    const state = warriorEnemyState();
+    if (state.guardBroken) return;
+    warriorCommitEnemy({
+      ...state, current: 0, guardBroken: true,
+      offensiveActionsLeft: Math.min(GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_ACTIONS + extraActions),
+      ticksLeft: GUARD_BREAK_TICKS,
+    });
+    pushLog([{ text: 'GUARDA QUEBRADA!', color: '#f59e0b' }]);
+  }
+  function warriorApplyPosture(amount: number, options: {
+    noBreak?: boolean; duelist?: boolean; breakActionsBonus?: number;
+    perfectCounterAccuracy?: boolean; perfectReading?: boolean; parry?: boolean;
+  } = {}): { applied: number; broke: boolean; crossed: boolean } {
+    if (!isWarrior() || amount <= 0) return { applied: 0, broke: false, crossed: false };
+    const state = warriorEnemyState();
+    if (state.guardBroken) return { applied: 0, broke: false, crossed: false };
+    const before = state.current;
+    const after = applyPostureDamage(before, amount, options.noBreak ? 1 : 0);
+    const crossed = crossesLowerBand(before, after);
+    const broke = after === 0;
+    let next: WarriorEnemyState = { ...state, current: after };
+    if (options.perfectCounterAccuracy && broke) next.perfectCounterAccuracyPending = true;
+    warriorCommitEnemy(next);
+    if (after !== before) pushLog([{ text: `-${before - after} Postura`, color: '#f59e0b' }]);
+    if (options.duelist && crossed) {
+      if (warriorHasSkill('guerreiro:duelista:6') && warriorReadingRef.current !== 'perfect') {
+        warriorReadingRef.current = 'normal';
+        pushLog([{ text: 'LEITURA', color: '#eab308' }]);
+      }
+      const from = postureBand(before), to = postureBand(after);
+      if (warriorHasSkill('guerreiro:duelista:2') && (from === 'firm' || from === 'unstable') && to !== from) {
+        playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== 'guerreiro:duelista:2');
+        playerModsRef.current.push({ stat: 'evasion', pct: 0.02, roundsLeft: 2, sourceAbilityId: 'guerreiro:duelista:2' });
+        syncPlayerMods();
+      }
+    }
+    if (broke) {
+      warriorTriggerGuardBreak(options.breakActionsBonus ?? (options.parry && warriorHasSkill('guerreiro:guardiao:14') ? 1 : 0));
+      if (options.perfectReading) {
+        warriorReadingRef.current = 'perfect';
+        pushLog([{ text: 'LEITURA PERFEITA', color: '#eab308' }]);
+      }
+    }
+    warriorSyncPlayer();
+    return { applied: before - after, broke, crossed };
+  }
+  function warriorConsumeGuardBreakAction(activeAtStart: boolean) {
+    if (!isWarrior() || !activeAtStart) return;
+    const state = warriorEnemyState();
+    if (!state.guardBroken) return;
+    const left = Math.max(0, state.offensiveActionsLeft - 1);
+    warriorCommitEnemy({ ...state, offensiveActionsLeft: left });
+    if (left === 0) warriorEndGuardBreak();
+  }
+  function warriorOnEnemyRealAction() {
+    if (!isWarrior()) return;
+    const state = warriorEnemyState();
+    if (state.guardBroken) {
+      warriorCommitEnemy({ ...state, suppressedActionsLeft: Math.max(0, state.suppressedActionsLeft - 1) });
+      return;
+    }
+    const zero = state.zeroRecoveryPending;
+    const amount = recoverPosture(state.current, {
+      zero,
+      pressure: state.pressureRecoveryPending,
+      suppressed: state.suppressedActionsLeft > 0,
+      breathless: warriorHasSkill('guerreiro:furioso:8'),
+    });
+    const recovered = zero ? 0 : Math.min(amount, state.max - state.current);
+    warriorCommitEnemy({
+      ...state,
+      current: Math.min(state.max, state.current + recovered),
+      pressureRecoveryPending: false,
+      zeroRecoveryPending: false,
+      suppressedActionsLeft: Math.max(0, state.suppressedActionsLeft - 1),
+    });
+    pushLog(zero ? 'Recuperação de Postura anulada.' : recovered > 0 ? `RECUPEROU ${recovered} POSTURA` : 'Postura já está no máximo.');
+  }
+  function warriorSetRiposte(kind: Exclude<RiposteKind, null>) {
+    if (kind === 'heavy' || warriorRiposteRef.current === null) warriorRiposteRef.current = kind;
+    pushLog([{ text: warriorRiposteRef.current === 'heavy' ? 'RIPOSTA PESADA' : 'RIPOSTA PRONTA', color: '#eab308' }]);
+    warriorSyncPlayer();
+  }
   function mageSync() {
     if (silentRef.current) return;
     setMageRunesState(mageRunesRef.current); setMageHeatState(mageHeatRef.current);
@@ -1716,6 +1854,13 @@ export function DungeonPanel({
     }
     return bonus;
   }
+  function warriorCdrBonusFor(abilityId: string): number {
+    if (!isWarrior()) return 0;
+    if (abilityId.startsWith('guerreiro:furioso:') && warriorHasSkill('guerreiro:furioso:3')) return 0.03;
+    if (abilityId.startsWith('guerreiro:guardiao:') && warriorHasSkill('guerreiro:guardiao:3')) return 0.03;
+    if (abilityId.startsWith('guerreiro:duelista:') && warriorHasSkill('guerreiro:duelista:3')) return 0.03;
+    return 0;
+  }
 
   // ── Cavaleiro redesign helpers (lib/knight.ts has the shared constants) ──
   function isKnight(): boolean { return chRef.current.classId === 'cavaleiro'; }
@@ -2262,22 +2407,25 @@ export function DungeonPanel({
   // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
   // (both scoped to the single-hit/plain-attack path only) — a scoped
   // simplification, called out in the final report.
-  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0) {
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }) {
     const eff = ab.effect;
-    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct);
+    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct + warriorCdrBonusFor(ab.id));
     const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
     const power = isMagicalClass ? stats.matk : stats.atk;
     const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
     const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
-    const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen));
+    const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen));
     const marked = hunterMarkedPrey();
     const hitCount = eff.hitCount ?? 2;
-    let allLanded = true, landedHits = 0;
+    let allLanded = true, landedHits = 0, totalWarriorPosture = 0;
+    let warriorPostureBonusPending = warriorBonuses?.posture ?? 0;
     pushAbilityCast('player', ab.name, activeAbilityIconStyle(chRef.current.classId, ab.id), null, false);
     pushLog(`Você usa [${ab.name}]!`);
     for (let i = 0; i < hitCount; i++) {
       if (enemyRef.current.hp <= 0) break;
-      if (rollMiss(accuracyForRoll, enemyEvasion)) {
+      const guardBreakNow = isWarrior() && warriorEnemyState().guardBroken;
+      const perHitAccuracy = accuracyForRoll + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_ACCURACY_BONUS : 0);
+      if (rollMiss(perHitAccuracy, enemyEvasion)) {
         allLanded = false;
         pushFloat('enemy', 0, false, false, true);
         hunterOnPlayerMiss();
@@ -2292,12 +2440,28 @@ export function DungeonPanel({
       if (isMage() && eff.element === 'fire') dmgMult *= 1 + fireDamageBonus(mageHeatAtCast);
       // Tiro Duplo's own marked-prey bonus applies only to the SECOND shot.
       if (i === 1 && marked && ab.id === 'cacador:precisao-caca:9') dmgMult *= 1 + TIRO_DUPLO_SECOND_HIT_BONUS_PCT_MARKED;
+      if (warriorBonuses) dmgMult += warriorBonuses.dmg / hitCount;
+      const liveDefPen = (warriorBonuses?.defPen ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_DEF_PEN : 0);
+      const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - liveDefPen));
       const { dmg, crit } = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll);
       landedHits += 1;
       const newHp = Math.max(0, enemyRef.current.hp - dmg);
       applyEnemyHp(newHp);
       pushFloat('enemy', dmg, crit);
       hunterOnPlayerDirectHit(crit);
+      if (isWarrior()) {
+        let posture = eff.postureDamagePerHit ?? 0;
+        if (eff.duelistAbility) posture = duelPostureDamage(posture, attrTotal(chRef.current, 'dex'), warriorHasSkill('guerreiro:duelista:7'));
+        const wsBeforeHit = warriorEnemyState();
+        if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:0') && !wsBeforeHit.vanguardFirstHitUsed) {
+          posture += 6; warriorCommitEnemy({ ...wsBeforeHit, vanguardFirstHitUsed: true });
+        } else if (eff.duelistAbility && warriorHasSkill('guerreiro:duelista:0') && !wsBeforeHit.duelistFirmFirstHitUsed && postureBand(wsBeforeHit.current) === 'firm') {
+          posture += 5; warriorCommitEnemy({ ...wsBeforeHit, duelistFirmFirstHitUsed: true });
+        }
+        posture += warriorPostureBonusPending; warriorPostureBonusPending = 0;
+        const outcome = warriorApplyPosture(posture, { duelist: eff.duelistAbility, breakActionsBonus: eff.guardBreakActionsBonusOnBreak });
+        totalWarriorPosture += outcome.applied;
+      }
       if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
         const maxHp = effectiveMaxHp(chRef.current);
         const healAmount = Math.round(dmg * stats.lifestealPct) + (crit ? Math.round(maxHp * stats.onCritHealPct) : 0);
@@ -2312,7 +2476,7 @@ export function DungeonPanel({
     // either of its two normal impacts.
     if (isMage() && mageAmplified && ab.id === 'mago:eletromante:9' && enemyRef.current.hp > 0) {
       if (!rollMiss(accuracyForRoll, enemyEvasion)) {
-        const { dmg, crit } = rollAbilityHit(power, effDef, (eff.amplifiedDmgMult ?? 0.30) * (1 + mageElementDamageBonus('lightning')), critChanceForRoll, critDmgMultForRoll);
+        const { dmg, crit } = rollAbilityHit(power, baseEffDef, (eff.amplifiedDmgMult ?? 0.30) * (1 + mageElementDamageBonus('lightning')), critChanceForRoll, critDmgMultForRoll);
         landedHits += 1;
         const newHp = Math.max(0, enemyRef.current.hp - dmg);
         applyEnemyHp(newHp); pushFloat('enemy', dmg, crit);
@@ -2321,6 +2485,15 @@ export function DungeonPanel({
     }
     if (isMage() && landedHits > 0) mageOnSpellHit(ab, stats, mageAmplified, landedHits);
     if (allLanded && eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
+    if (isWarrior() && landedHits > 0) {
+      if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:3')) warriorNextBasicPostureBonusRef.current = true;
+      if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:6')) { const ws = warriorEnemyState(); warriorCommitEnemy({ ...ws, pressureRecoveryPending: true }); }
+      if (allLanded && eff.zeroNextPostureRecoveryIfAllHits) { const ws = warriorEnemyState(); warriorCommitEnemy({ ...ws, zeroRecoveryPending: true }); }
+      if (totalWarriorPosture >= 20 && warriorHasSkill('guerreiro:furioso:7')) {
+        playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== 'guerreiro:furioso:7');
+        playerModsRef.current.push({ stat: 'def', pct: 0.03, roundsLeft: 2, sourceAbilityId: 'guerreiro:furioso:7' }); syncPlayerMods();
+      }
+    }
   }
 
   function equippedAbilities(): AbilityDef[] {
@@ -2526,27 +2699,37 @@ export function DungeonPanel({
       }
     }
 
+    let warriorMdefMult = 1, warriorCritBonus = 0, warriorSpeedBonus = 0, warriorDmgTakenBonus = 0;
+    if (isWarrior()) {
+      const band = postureBand(warriorEnemyState().current);
+      if (warriorPreparedGuardRef.current && warriorHasSkill('guerreiro:guardiao:0')) warriorMdefMult += 0.02;
+      if (band === 'open' && warriorHasSkill('guerreiro:duelista:1')) warriorCritBonus += 0.01;
+      if (warriorHasSkill('guerreiro:furioso:5')) warriorSpeedBonus += warriorEnemyState().current <= 50 ? 0.03 : 0.02;
+      if (warriorEnemyState().current <= 33 && warriorHasSkill('guerreiro:furioso:2')) warriorDmgTakenBonus -= 0.03;
+      if (warriorRiposteRef.current && warriorHasSkill('guerreiro:guardiao:11')) tenacityBonus += 0.05;
+    }
+
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct)),
       def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * clerigoMdefBonusMult * knightMdefBonusMult)),
-      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult)),
+      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
       evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus),
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus,
-      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus,
+      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct')),
       tenacityPct: base.tenacityPct + tenacityBonus,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
       // playerAct's damage pipeline.
-      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus),
+      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus),
     };
   }
 
@@ -2643,6 +2826,8 @@ export function DungeonPanel({
     // still be picked, and this one frees up again once its trap triggers.
     if (eff.kind === 'armTrap') return hunterTrapsRef.current.some((t) => t.sourceAbilityId === ab.id);
     if (eff.kind === 'buffEvasion' || eff.kind === 'huntWithPrey') return playerModsRef.current.some((m) => m.sourceAbilityId === ab.id);
+    if (eff.kind === 'preparedGuard') return warriorPreparedGuardRef.current !== null;
+    if (eff.kind === 'feint') return warriorFeintReadyRef.current;
     return false;
   }
 
@@ -3038,6 +3223,27 @@ export function DungeonPanel({
       syncPlayerMods();
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: você se torna um só com a caça.`;
+    } else if (eff.kind === 'preparedGuard') {
+      warriorPreparedGuardRef.current = {
+        sourceAbilityId: ab.id,
+        name: ab.name,
+        remainingParries: eff.preparedParries ?? 1,
+        damageReductionPct: eff.parryReductionPct ?? 0.28,
+        postureDamage: eff.postureDamage ?? 0,
+        ticksLeft: (eff.preparedDuration ?? 3) + (warriorHasSkill('guerreiro:guardiao:3') ? 1 : 0),
+        canGenerateRiposte: eff.canGenerateRiposte !== false,
+        parriesResolved: 0,
+      };
+      warriorSyncPlayer();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: guarda preparada para aparar o próximo ataque.`;
+    } else if (eff.kind === 'feint') {
+      const posture = duelPostureDamage(eff.feintPostureDamage ?? eff.postureDamage ?? 16, attrTotal(chRef.current, 'dex'), warriorHasSkill('guerreiro:duelista:7'));
+      warriorApplyPosture(posture, { noBreak: true, duelist: true });
+      if (warriorHasSkill('guerreiro:duelista:8')) warriorFeintReadyRef.current = true;
+      warriorSyncPlayer();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: a finta reduz ${posture} de Postura sem quebrar a Guarda.`;
     }
     return null;
   }
@@ -3152,6 +3358,20 @@ export function DungeonPanel({
     enemyCCRef.current = tickCC(enemyCCRef.current);
     syncEnemyCC();
 
+    if (isWarrior()) {
+      if (warriorPreparedGuardRef.current) {
+        const ticksLeft = warriorPreparedGuardRef.current.ticksLeft - 1;
+        warriorPreparedGuardRef.current = ticksLeft > 0 ? { ...warriorPreparedGuardRef.current, ticksLeft } : null;
+        warriorSyncPlayer();
+      }
+      const ws = warriorEnemyState();
+      if (ws.guardBroken) {
+        const ticksLeft = ws.ticksLeft - 1;
+        if (ticksLeft <= 0) warriorEndGuardBreak();
+        else warriorCommitEnemy({ ...ws, ticksLeft });
+      }
+    }
+
     if (isHunter()) {
       if (hunterRecentTrapTriggerTicksRef.current > 0) hunterRecentTrapTriggerTicksRef.current -= 1;
       if (hunterInstintoFugaWindowTicksRef.current > 0) hunterInstintoFugaWindowTicksRef.current -= 1;
@@ -3258,7 +3478,7 @@ export function DungeonPanel({
       const nextDepth = depthRef.current + 1;
       updateDepth(nextDepth);
       const next = spawnEnemy(nextDepth, dungeon);
-      updateEnemy(next);
+      updateEnemy(isWarrior() ? { ...next, warrior: createWarriorEnemyState() } : next);
       enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
       if (next.isElite) pushLog([{ text: `${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`, color: '#f59e0b' }]);
       enemyStatusRef.current = [];
@@ -3359,6 +3579,14 @@ export function DungeonPanel({
         hunterCritCounterRef.current = 0;
         hunterMemoriaTrilhaGrantedRef.current = false;
       }
+      if (isWarrior()) {
+        warriorPreparedGuardRef.current = null;
+        warriorRiposteRef.current = null;
+        warriorReadingRef.current = null;
+        warriorFeintReadyRef.current = false;
+        warriorNextBasicPostureBonusRef.current = false;
+        warriorSyncPlayer();
+      }
       // Both clocks restart clean for the new encounter — previously
       // only the player's got a fresh schedulePlayer() call here, so
       // the enemy inherited whatever was left on the OLD enemy's timer
@@ -3408,6 +3636,8 @@ export function DungeonPanel({
       let mageHeatAtCast = 0;
       let mageCastFinished = false;
       let chosen: AbilityDef | null = null;
+      let warriorCastDmgBonus = 0, warriorCastPostureBonus = 0, warriorCastAccuracyBonus = 0, warriorCastDefPenBonus = 0;
+      let warriorBreakActiveAtStart = false, warriorPostureAtActionStart = POSTURE_MAX;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -3418,6 +3648,40 @@ export function DungeonPanel({
         // alongside whatever else happened. Using a heal costs you the
         // round's damage, exactly like choosing to use any other ability.
         chosen = pickAbility();
+        if (isWarrior() && (!chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind))) {
+          const ws = warriorEnemyState();
+          warriorPostureAtActionStart = ws.current;
+          warriorBreakActiveAtStart = ws.guardBroken;
+          if (ws.guardBroken) {
+            warriorCastAccuracyBonus += GUARD_BREAK_ACCURACY_BONUS;
+            warriorCastDefPenBonus += GUARD_BREAK_DEF_PEN;
+            if (ws.perfectCounterAccuracyPending) {
+              warriorCastAccuracyBonus += 0.05;
+              warriorCommitEnemy({ ...ws, perfectCounterAccuracyPending: false });
+            }
+          }
+          if (chosen) {
+            const duelistAbility = chosen.effect.duelistAbility === true;
+            if (warriorRiposteRef.current) {
+              if (warriorHasSkill('guerreiro:guardiao:2')) warriorCastAccuracyBonus += 0.03;
+              if (warriorRiposteRef.current === 'heavy') { warriorCastDmgBonus += 0.28; warriorCastPostureBonus += 10; }
+              else { warriorCastDmgBonus += 0.18; warriorCastPostureBonus += 6; }
+              warriorRiposteRef.current = null;
+            }
+            if (duelistAbility && warriorReadingRef.current) {
+              warriorCastAccuracyBonus += 0.05;
+              if (warriorReadingRef.current === 'perfect') warriorCastDmgBonus += 0.20;
+              else if (warriorHasSkill('guerreiro:duelista:14')) warriorCastDmgBonus += 0.15;
+              warriorReadingRef.current = null;
+            }
+            if (duelistAbility && warriorFeintReadyRef.current) {
+              warriorCastPostureBonus += 8;
+              warriorCastDefPenBonus += 0.10;
+              warriorFeintReadyRef.current = false;
+            }
+            warriorSyncPlayer();
+          }
+        }
         // Runas advance for EVERY active Mago spell, including support, at
         // cast time. A third-spell miss still consumes Amplificação.
         if (isMage() && chosen) {
@@ -3439,7 +3703,7 @@ export function DungeonPanel({
           mageSync();
         }
         if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
-          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id));
+          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id));
           const line = resolveSelfAbility(chosen, stats);
           if (line) pushLog(line);
         } else {
@@ -3515,7 +3779,13 @@ export function DungeonPanel({
           const olharDoJuizBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:1') && judgmentAtActionStart >= OLHAR_DO_JUIZ_HIGH_JUDGMENT_THRESHOLD
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
-          let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus;
+          let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus + warriorCastAccuracyBonus;
+          if (isWarrior() && warriorHasSkill('guerreiro:furioso:1') && warriorPostureAtActionStart <= 66) accuracyForRoll += 0.02;
+          if (isWarrior() && offenseAbility) {
+            const wsBand = postureBand(warriorEnemyState().current);
+            if (offenseAbility.effect.duelistAbility && warriorHasSkill('guerreiro:duelista:3') && wsBand === 'open') accuracyForRoll += 0.02;
+            if (offenseAbility.id === 'guerreiro:duelista:4' && wsBand === 'open') accuracyForRoll += 0.08;
+          }
           if (isMage() && offenseAbility) {
             const element = offenseAbility.effect.element;
             if (element === 'fire') {
@@ -3531,13 +3801,14 @@ export function DungeonPanel({
           }
           // Disparo Preciso (cacador:precisao-caca:4) — bypasses the evasion
           // roll entirely (crit still rolls normally downstream).
-          missed = offenseAbility?.effect.guaranteedHit ? false : rollMiss(accuracyForRoll, enemyEvasion);
+          missed = offenseAbility?.effect.guaranteedHit || offenseAbility?.effect.guaranteedAccuracy ? false : rollMiss(accuracyForRoll, enemyEvasion);
 
           if (offenseAbility && offenseAbility.effect.kind === 'multiHit') {
             // Tiro Duplo — two independent rolls, handled entirely by its
             // own self-contained resolver; `missed`/`dmg` stay at their
             // initial false/0 so the shared post-processing below is a no-op.
-            hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast);
+            hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast,
+              isWarrior() ? { dmg: warriorCastDmgBonus, posture: warriorCastPostureBonus, defPen: warriorCastDefPenBonus, breakActive: warriorBreakActiveAtStart } : undefined);
           } else if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
@@ -3551,7 +3822,7 @@ export function DungeonPanel({
             hunterOnPlayerMiss();
           } else if (offenseAbility) {
             if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined) {
-              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id));
+              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
             if (isMage() && mageAmplifiedThisCast && eff.amplifiedDmgMult !== undefined) {
@@ -3589,11 +3860,21 @@ export function DungeonPanel({
             const mageMdefPen = isMage() && eff.element === 'lightning'
               ? (mageAmplifiedThisCast ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0))
               : 0;
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen));
+            let warriorConditionalDefPen = warriorCastDefPenBonus + (eff.defPenPct ?? 0);
+            if (isWarrior() && dmgType === 'physical') {
+              const band = postureBand(warriorEnemyState().current);
+              if (warriorHasSkill('guerreiro:furioso:11') && warriorEnemyState().current <= 50) warriorConditionalDefPen += 0.05;
+              if (warriorHasSkill('guerreiro:duelista:11')) warriorConditionalDefPen += band === 'broken' ? 0.08 : band === 'open' ? 0.05 : 0;
+            }
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warriorConditionalDefPen));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (isWarrior()) {
+              dmgMult = bandValue(eff.dmgMultByBand, postureBand(warriorEnemyState().current), dmgMult);
+              dmgMult += warriorCastDmgBonus;
+            }
             if (isMage() && offenseAbility.id === 'mago:gelido:13') {
               const targetFrozen = mageThermalRef.current === 'frozen';
               dmgMult = targetFrozen ? (mageAmplifiedThisCast ? 2.65 : 2.35) : (mageAmplifiedThisCast ? 1.50 : 1.25);
@@ -3814,6 +4095,38 @@ export function DungeonPanel({
               playerModsRef.current.push({ stat: 'speedPct', pct: speedPct, roundsLeft: rounds, sourceAbilityId: offenseAbility.id });
               syncPlayerMods();
             }
+            // Guerreiro: Postura is reduced only by a landed direct hit.
+            // It never alters the HP damage result above.
+            if (isWarrior()) {
+              const band = postureBand(warriorEnemyState().current);
+              let posture = bandValue(eff.postureDamageByBand, band, band === 'firm' ? (eff.postureDamageFirm ?? eff.postureDamage ?? 0) : (eff.postureDamage ?? 0));
+              if (eff.duelistAbility) posture = duelPostureDamage(posture, attrTotal(chRef.current, 'dex'), warriorHasSkill('guerreiro:duelista:7'));
+              const wsBeforeHit = warriorEnemyState();
+              if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:0') && !wsBeforeHit.vanguardFirstHitUsed) {
+                posture += 6; warriorCommitEnemy({ ...wsBeforeHit, vanguardFirstHitUsed: true });
+              } else if (eff.duelistAbility && warriorHasSkill('guerreiro:duelista:0') && !wsBeforeHit.duelistFirmFirstHitUsed && band === 'firm') {
+                posture += 5; warriorCommitEnemy({ ...wsBeforeHit, duelistFirmFirstHitUsed: true });
+              }
+              posture += warriorCastPostureBonus;
+              const outcome = warriorApplyPosture(posture, {
+                duelist: eff.duelistAbility, breakActionsBonus: eff.guardBreakActionsBonusOnBreak,
+                perfectCounterAccuracy: eff.perfectCounterAccuracyOnBreak, perfectReading: eff.readingPerfectOnBreak,
+              });
+              if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:3')) warriorNextBasicPostureBonusRef.current = true;
+              if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:6')) {
+                const ws = warriorEnemyState(); warriorCommitEnemy({ ...ws, pressureRecoveryPending: true });
+              }
+              if (eff.suppressPostureRecoveryActions) {
+                const ws = warriorEnemyState(); warriorCommitEnemy({ ...ws, suppressedActionsLeft: Math.max(ws.suppressedActionsLeft, eff.suppressPostureRecoveryActions) });
+              }
+              if (eff.atkDebuffOnHitPct) {
+                enemyModsRef.current.push({ stat: 'atk', pct: -eff.atkDebuffOnHitPct, roundsLeft: eff.atkDebuffRounds ?? 2, sourceAbilityId: offenseAbility.id }); syncEnemyMods();
+              }
+              if (outcome.applied >= 20 && warriorHasSkill('guerreiro:furioso:7')) {
+                playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== 'guerreiro:furioso:7');
+                playerModsRef.current.push({ stat: 'def', pct: 0.03, roundsLeft: 2, sourceAbilityId: 'guerreiro:furioso:7' }); syncPlayerMods();
+              }
+            }
           } else {
             // Plain attack — magical classes swing with matk/mdef instead of
             // atk/def, same class split as an ability's default dmgType
@@ -3822,9 +4135,19 @@ export function DungeonPanel({
             const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
             playerHitMagical = isMagicalClass;
             const power = isMagicalClass ? stats.matk : stats.atk;
-            const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct));
+            const warriorPlainDefPen = isWarrior()
+              ? (warriorBreakActiveAtStart ? GUARD_BREAK_DEF_PEN : 0)
+                + (warriorHasSkill('guerreiro:furioso:11') && warriorPostureAtActionStart <= 50 ? 0.05 : 0)
+                + (warriorHasSkill('guerreiro:duelista:11') ? (warriorBreakActiveAtStart ? 0.08 : postureBand(warriorPostureAtActionStart) === 'open' ? 0.05 : 0) : 0)
+              : 0;
+            const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct - warriorPlainDefPen));
             const r = rollAttack(power, effDef, critChanceForRoll, critDmgMultForRoll);
             dmg = r.dmg; crit = r.crit;
+            if (isWarrior()) {
+              const bonus = warriorNextBasicPostureBonusRef.current ? 2 : 0;
+              warriorNextBasicPostureBonusRef.current = false;
+              warriorApplyPosture(POSTURE_BASIC_DAMAGE + bonus);
+            }
           }
 
           // Damage-modifier pipeline order per the "definitivo" spec's
@@ -3928,6 +4251,10 @@ export function DungeonPanel({
               if (maoArmeiroBonus > 0) dmg = Math.round(dmg * (1 + maoArmeiroBonus));
               hunterOnPlayerDirectHit(crit);
             }
+            if (isWarrior() && warriorHasSkill('guerreiro:duelista:5')) {
+              const band = postureBand(warriorPostureAtActionStart);
+              if (band === 'open' || band === 'broken') dmg = Math.round(dmg * 1.02);
+            }
             // Vulnerabilidade do inimigo — sempre por último, per Section 18.
             if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
             if (barbActive) {
@@ -3962,6 +4289,11 @@ export function DungeonPanel({
       // action hit, missed, or was a self-ability. No-op for every other
       // class and for a Bárbaro not currently in Frenesi.
       barbEndOfActionDrain();
+
+      if (isWarrior() && !playerStunned && (!chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind))) {
+        if (chosen?.effect.finishGuardBreak) warriorEndGuardBreak();
+        else warriorConsumeGuardBreakAction(warriorBreakActiveAtStart);
+      }
 
       if (!missed && dmg > 0) {
         const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
@@ -4111,6 +4443,7 @@ export function DungeonPanel({
       hunterOnEnemyRealAction();
       hunterOnEnemyMiss();
       mageOnEnemyRealAction();
+      warriorOnEnemyRealAction();
       scheduleEnemy();
       return;
     }
@@ -4205,6 +4538,29 @@ export function DungeonPanel({
       if (knightHasSkill('cavaleiro:bastiao:11') && chRef.current.hp / knightEffMaxHp() < NUCLEO_ACO_HP_THRESHOLD) {
         edmg = Math.round(edmg * (1 - capped(NUCLEO_ACO_RATE, attrTotal(chRef.current, 'vit'), NUCLEO_ACO_CAP)));
       }
+    }
+    if (isWarrior() && edmg > 0 && warriorPreparedGuardRef.current) {
+      const guard = warriorPreparedGuardRef.current;
+      const preParryDamage = edmg;
+      const reduction = parryReduction(guard.damageReductionPct, attrTotal(chRef.current, 'vit'), warriorHasSkill('guerreiro:guardiao:7'), warriorHasSkill('guerreiro:guardiao:14'));
+      edmg = Math.max(0, Math.round(edmg * (1 - reduction)));
+      const heavy = preParryDamage >= effectiveMaxHp(chRef.current) * 0.15 && warriorHasSkill('guerreiro:guardiao:8');
+      warriorApplyPosture(guard.postureDamage + (heavy ? 8 : 0), { parry: true });
+      if (warriorHasSkill('guerreiro:guardiao:1')) {
+        playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== 'guerreiro:guardiao:1');
+        playerModsRef.current.push({ stat: 'def', pct: 0.03, roundsLeft: 2, sourceAbilityId: 'guerreiro:guardiao:1' });
+      }
+      if (warriorHasSkill('guerreiro:guardiao:5')) {
+        playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== 'guerreiro:guardiao:5');
+        playerModsRef.current.push({ stat: 'mdef', pct: 0.04, roundsLeft: 2, sourceAbilityId: 'guerreiro:guardiao:5' });
+      }
+      syncPlayerMods();
+      if (heavy) warriorSetRiposte('heavy');
+      else if (guard.canGenerateRiposte && warriorHasSkill('guerreiro:guardiao:6') && guard.parriesResolved === 0) warriorSetRiposte('normal');
+      const remaining = guard.remainingParries - 1;
+      warriorPreparedGuardRef.current = remaining > 0 ? { ...guard, remainingParries: remaining, parriesResolved: guard.parriesResolved + 1 } : null;
+      warriorSyncPlayer();
+      pushLog(`${guard.name} apara ${Math.max(0, preParryDamage - edmg)} de dano.`);
     }
     // Escudo Colossal nega o primeiro stun/sleep desta luta enquanto
     // durar — checado antes de qualquer outra coisa, pois CC nem chega a
@@ -4482,6 +4838,7 @@ export function DungeonPanel({
     // a trap still activate against an already-dead run (spec section 8).
     hunterOnEnemyRealAction();
     mageOnEnemyRealAction();
+    warriorOnEnemyRealAction();
     scheduleEnemy();
   }
 
@@ -4791,7 +5148,15 @@ export function DungeonPanel({
   const enemyMarkedPrey = enemyTrail >= MARKED_PREY_THRESHOLD;
   const enemyBreaches = enemy.hunterBreaches?.stacks ?? 0;
   const enemyJudgment = enemy.judgment;
+  const warriorDisplay = enemy.warrior ?? createWarriorEnemyState();
+  const warriorBandLabel = ({ firm: 'FIRME', unstable: 'INSTÁVEL', open: 'ABERTO', broken: 'GUARDA QUEBRADA' } as const)[postureBand(warriorDisplay.current)];
   const mechanicValues: Record<string, Omit<CombatMechanicState, 'mechanic'>> = {
+    'guerreiro:posture': { value: warriorDisplay.current, maxValue: POSTURE_MAX, detail: warriorBandLabel, visible: ch.classId === 'guerreiro' },
+    'guerreiro:guardbreak': { value: warriorDisplay.guardBroken ? 1 : 0, duration: warriorDisplay.offensiveActionsLeft, detail: warriorDisplay.guardBroken ? `${warriorDisplay.offensiveActionsLeft} ações ofensivas` : undefined, visible: ch.classId === 'guerreiro' },
+    'guerreiro:parry': { value: warriorPreparedGuardState?.remainingParries ?? 0, maxValue: warriorPreparedGuardState?.remainingParries ?? 1, duration: warriorPreparedGuardState?.ticksLeft, detail: warriorPreparedGuardState?.name, visible: ch.classId === 'guerreiro' },
+    'guerreiro:riposte': { value: warriorRiposteState ? 1 : 0, maxValue: 1, detail: warriorRiposteState === 'heavy' ? 'RIPOSTA PESADA' : undefined, visible: ch.classId === 'guerreiro' },
+    'guerreiro:reading': { value: warriorReadingState ? 1 : 0, maxValue: 1, detail: warriorReadingState === 'perfect' ? 'LEITURA PERFEITA' : undefined, visible: ch.classId === 'guerreiro' },
+    'guerreiro:feint': { value: warriorFeintReadyState ? 1 : 0, maxValue: 1, visible: ch.classId === 'guerreiro' },
     'barbaro:fury': { value: barbFuryState, maxValue: FURY_MAX },
     'barbaro:frenzy': { value: barbFrenzyState ? 1 : 0 },
     'barbaro:pain': { value: barbPainState, maxValue: barbPainCap },
@@ -4847,6 +5212,11 @@ export function DungeonPanel({
         const label = condition.stackId === 'judgment' ? 'Julgamento' : condition.stackId;
         return [`${label}: ${formatGameNumber(current)}/${formatGameNumber(condition.stacks ?? 0)} necessários`];
       }
+      if (condition.type === 'enemyPostureAtMost') return [`Postura atual: ${warriorDisplay.current}/100 — requer ${condition.value ?? 0} ou menos`];
+      if (condition.type === 'enemyPostureBand') return [`Faixa atual: ${warriorBandLabel} — requer ${condition.postureBand === 'open' ? 'ABERTO' : condition.postureBand}`];
+      if (condition.type === 'guardBroken') return [`Guarda Quebrada: ${warriorDisplay.guardBroken ? 'pronta' : 'necessária'}`];
+      if (condition.type === 'riposteReady') return [`Riposta: ${warriorRiposteState ? 'pronta' : 'necessária'}`];
+      if (condition.type === 'notGuardBroken') return [`Guarda normal: ${warriorDisplay.guardBroken ? 'aguarde recompor' : 'ativa'}`];
       return [];
     };
     return walk(openCombatAbility.condition);

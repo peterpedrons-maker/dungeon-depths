@@ -42,6 +42,10 @@ export interface AbilityConditionContext {
   states: Record<string, boolean>; // e.g. { frenzy: true, consecration: false }
   enemyStacks: Record<string, number>; // e.g. { wounds: 3, judgment: 5 }
   painPct: number; // Bárbaro-specific: Dor total / effective max HP (see barbaro:pain)
+  enemyPosture?: number;
+  enemyPostureBand?: 'firm' | 'unstable' | 'open' | 'broken';
+  guardBroken?: boolean;
+  riposteReady?: boolean;
 }
 
 export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditionContext): boolean {
@@ -64,6 +68,11 @@ export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditi
     // enemyWoundsAtLeast/enemyWoundsEqual (see stackId: 'wounds'/'judgment').
     case 'enemyStacksAtLeast': return (ctx.enemyStacks[cond.stackId ?? 'wounds'] ?? 0) >= (cond.stacks ?? 1);
     case 'enemyStacksEqual': return (ctx.enemyStacks[cond.stackId ?? 'wounds'] ?? 0) === (cond.stacks ?? 0);
+    case 'enemyPostureAtMost': return (ctx.enemyPosture ?? 100) <= (cond.value ?? 0);
+    case 'enemyPostureBand': return ctx.enemyPostureBand === cond.postureBand;
+    case 'guardBroken': return ctx.guardBroken === true;
+    case 'notGuardBroken': return ctx.guardBroken !== true;
+    case 'riposteReady': return ctx.riposteReady === true;
     default: return false;
   }
 }
