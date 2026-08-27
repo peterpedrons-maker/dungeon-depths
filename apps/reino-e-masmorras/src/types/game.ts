@@ -607,6 +607,36 @@ export interface AbilityEffect {
   warlockCreditFinancedBonus?: boolean;
   warlockMdefPenPct?: number;
   warlockSilenceRounds?: number;
+
+  // Feiticeiro — Pulso Inato, Fraturas, Ressonância e Controle. These
+  // declarative fields are resolved once per action by DungeonPanel.
+  sorcererPath?: 'rupture' | 'reverberation' | 'shaping';
+  sorcererDirectDmgPct?: number;
+  sorcererCritBonusPct?: number;
+  sorcererAccuracyBonusPct?: number;
+  sorcererMdefPenPct?: number;
+  sorcererFractureGain?: number;
+  sorcererFractureConsume?: number;
+  sorcererFracturePerHit?: number;
+  sorcererResonanceGain?: number;
+  sorcererResonanceConsume?: boolean;
+  sorcererControlGain?: number;
+  sorcererControlConsume?: number;
+  sorcererAwakenedMode?: 'intensified' | 'refracted' | 'molded';
+  sorcererEchoPotency?: number;
+  sorcererEchoCritBonusPct?: number;
+  sorcererEchoAccuracyBonusPct?: number;
+  sorcererControlAccuracyPct?: number;
+  sorcererControlPenPct?: number;
+  sorcererCorrection?: boolean;
+  sorcererCooldownCutOnHit?: boolean;
+  sorcererEnemyDmgReductionPct?: number;
+  sorcererEnemyDmgReductionRounds?: number;
+  sorcererThirdHitPenPct?: number;
+  sorcererThirdHitBonusPerFracture?: number;
+  sorcererSecondWave?: boolean;
+  sorcererPersonalLaw?: boolean;
+  sorcererPerpetuum?: boolean;
 }
 
 export interface AbilityDef {
