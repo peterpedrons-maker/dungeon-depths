@@ -57,6 +57,11 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
     if (ability.effect.archerTensionCost) rows.push({ label: 'Custo', value: `${ability.effect.archerTensionCost} Tensão, cobrada no início do cast` });
     if (ability.effect.archerCadenceCost) rows.push({ label: 'Custo', value: `${ability.effect.archerCadenceCost} Cadência, cobrada no início do cast` });
     if (ability.effect.archerShotType === 'ballistic') rows.push({ label: 'Tipo', value: 'Balístico — cria Flecha em Voo sem dano imediato' });
+    if (ch.classId === 'bardo') {
+      if (ability.effect.bardVoice && ability.effect.bardVoice !== 'finale') rows.push({ label: 'Nota', value: ability.effect.bardVoice === 'marcato' ? 'Marcato' : ability.effect.bardVoice === 'dissonant' ? 'Dissonante' : ability.effect.bardVoice === 'lyrical' ? 'Lírica' : `Coringa — ${ability.effect.bardWildcardPolicy === 'refrainFirst' ? 'Refrain First' : 'Harmony First'}` });
+      if (ability.effect.bardFinale) rows.push({ label: 'Finale', value: 'Consome 1 Ovação; não escreve Nota' });
+      if (ability.effect.bardEncore) rows.push({ label: 'Bis', value: 'Repete apenas o payload primário a 55%; não escreve Nota' });
+    }
   }
 
   if (ch.classId !== 'clerigo') return rows;
@@ -71,14 +76,14 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
   if (ability?.effect.kind === 'heal') {
     const amount = clericDirectHealAmount(baseHp, ability.effect.healPct ?? 0, stats.supportPowerPct, efficiency);
     rows.push({ label: 'Cura atual', value: `Recupera até ${formatGameNumber(amount)}` });
-    rows.push({ label: 'Cálculo', value: `${formatGamePercent(ability.effect.healPct ?? 0)} da Vida Base × Poder de Suporte × bônus de cura` });
+    rows.push({ label: 'Cálculo', value: `${formatGamePercent(ability.effect.healPct ?? 0)} da Base de Cura × Poder de Suporte × bônus de cura` });
     rows.push({ label: 'Atributos', value: 'SAB amplia pelo Poder de Suporte; INT não altera a cura' });
     if (ability.effect.faithGainOnHeal) {
       rows.push({ label: 'Cura Significativa', value: `${formatGameNumber(significantHealAmount(baseHp, hasHands))} de cura efetiva para gerar 1 Fé` });
     }
   }
   if (node.id === 'clerigo:devocao:3') {
-    rows.push({ label: 'Limite atual', value: `${formatGameNumber(significantHealAmount(baseHp, true))} de cura efetiva (${formatGamePercent(SIGNIFICANT_HEAL_PCT_LOWERED)} da Vida Base)` });
+    rows.push({ label: 'Limite atual', value: `${formatGameNumber(significantHealAmount(baseHp, true))} de cura efetiva (${formatGamePercent(SIGNIFICANT_HEAL_PCT_LOWERED)} da Base de Cura)` });
   }
   if (ability?.effect.kind === 'regen') {
     const perTick = Math.round(effectiveMaxHp(ch) * (ability.effect.regenPct ?? 0) * (1 + stats.supportPowerPct));

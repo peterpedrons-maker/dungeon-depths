@@ -442,6 +442,28 @@ export interface AbilityEffect {
   resonanceEcho?: boolean;
   mdefPenPct?: number;
 
+  // Bardo — Partitura/Frases Musicais. Metadados declarativos compartilhados
+  // pelo resolvedor universal de dano, cura, multi-hit e condições.
+  bardVoice?: 'marcato' | 'dissonant' | 'lyrical' | 'wildcard' | 'finale';
+  bardPath?: 'march' | 'dissonance' | 'improvisation';
+  bardWildcardPolicy?: 'harmonyFirst' | 'refrainFirst';
+  bardAccentAtkMult?: number;
+  bardAccent?: boolean;
+  bardFortissimo?: boolean;
+  bardAppliesCountertempo?: boolean;
+  bardEchoCost?: number;
+  bardFinale?: boolean;
+  bardOvationCost?: number;
+  bardEncore?: boolean;
+  bardEncoreEligible?: boolean;
+  bardBridgeEligible?: boolean;
+  bardPhysicalHitMults?: number[];
+  bardMagicalHitMults?: number[];
+  bardNextEnemyDamageReductionPct?: number;
+  bardNextEnemyAccuracyPenaltyPct?: number;
+  bardSustainPct?: number;
+  bardSupportHealPct?: number;
+
   // ── Guerreiro redesign (lib/warrior.ts) ──
   // Posture is a separate enemy gauge; values never use DEF, crit, lifesteal
   // or damage effects. DungeonPanel resolves these fields generically.

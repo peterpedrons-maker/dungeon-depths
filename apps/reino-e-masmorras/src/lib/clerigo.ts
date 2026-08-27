@@ -1,4 +1,5 @@
 // ── Clérigo redesign — FÉ + GRAÇA + CONSAGRAÇÃO + JULGAMENTO ──
+import { healingBaseHp as universalHealingBaseHp } from './healing.ts';
 // Shared constants/pure math for the mechanic, imported by both
 // DungeonPanel.tsx (the live combat engine, session-only refs) and any
 // future balance simulator, so the two can never drift on a number. Per the
@@ -196,7 +197,7 @@ export interface GracePacket {
 
 /** Fonte única da Vida Base usada pelas curas do Clérigo. */
 export function clericBaseHp(baseHp: number, level: number): number {
-  return baseHp + 6 * (level - 1);
+  return universalHealingBaseHp(baseHp, level);
 }
 
 /** Fonte única do valor bruto de uma cura direta antes de limitar pelo HP perdido. */

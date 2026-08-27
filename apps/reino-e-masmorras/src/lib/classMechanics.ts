@@ -367,6 +367,17 @@ Brechas nunca funcionam como Feridas do Bárbaro: não causam dano por stack, re
     { id:'feiticeiro:resonance', classId:'feiticeiro', name:'Ressonância', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:2,icon:'◌',hideWhenZero:false,priority:13,color:'sky'}, shortDescription:'Magias Despertas de Reverberação acumulam até 2 Ressonâncias para fortalecer o próximo cast normal.', fullDescription:'Ressonância persiste entre inimigos. A próxima habilidade normal consome uma carga após ser conjurada e adiciona 2 ao Pulso gerado.' },
     { id:'feiticeiro:control', classId:'feiticeiro', name:'Controle Arcano', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:2,icon:'◎',hideWhenZero:false,priority:14,color:'lime'}, shortDescription:'Controle guardado dá precisão e penetração a toda magia direta; Moldagem Desperta gera carga.', fullDescription:'Controle persiste entre inimigos. Cada carga concede +2pp de precisão e +2% de penetração de MDEF a habilidades mágicas diretas.' },
   ],
+  bardo: [
+    { id:'bardo:score', classId:'bardo', name:'Partitura', category:'resource', combatDisplay:{owner:'player',displayType:'status',icon:'♫',hideWhenZero:false,priority:10,color:'gold'}, shortDescription:'As três últimas habilidades normais escrevem Notas Marcato, Dissonante ou Lírica.', fullDescription:'Uma habilidade ativa normal escreve exatamente uma Nota após resolver. Ataques básicos, DOTs, procs, Finales e Bis não escrevem. Três Notas formam uma Frase.' },
+    { id:'bardo:phrase', classId:'bardo', name:'Frases Musicais', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'♪',hideWhenZero:true,priority:11,color:'amber'}, shortDescription:'Refrão, Contracanto e Harmonia Perfeita transformam a Partitura em efeitos.', fullDescription:'Três iguais formam Refrão e geram Ovação; duas iguais formam Contracanto e carregam a minoria; uma de cada forma Harmonia e gera cura/Ovação.' },
+    { id:'bardo:ovation', classId:'bardo', name:'Ovação', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'★',hideWhenZero:false,priority:12,color:'gold'}, shortDescription:'Recurso 0–1 gerado por Refrões e Harmonia e gasto por Finales/Bis.', fullDescription:'Ovação persiste entre inimigos da mesma tentativa e nunca passa de 1. Contracanto, ataques básicos, Finale e Bis não geram Ovação.' },
+    { id:'bardo:accent', classId:'bardo', name:'Acento', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'!',hideWhenZero:true,priority:13,color:'orange'}, shortDescription:'O próximo golpe Marcato recebe um componente físico independente.', fullDescription:'Acento é preparado por básico Marcato acertado ou Frase Marcato. É consumido no início da primeira habilidade Marcato elegível, mesmo se errar.' },
+    { id:'bardo:fortissimo', classId:'bardo', name:'Fortíssimo', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⚡',hideWhenZero:true,priority:14,color:'red'}, shortDescription:'A próxima ofensiva direta recebe +15% dano e +5pp Crítico.', fullDescription:'Fortíssimo é preparado por Refrão Marcato, consumido no início da próxima ofensiva direta e não afeta cura, DOTs ou procs.' },
+    { id:'bardo:countertempo', classId:'bardo', name:'Contratempo', category:'state', combatDisplay:{owner:'enemy',displayType:'status',icon:'◌',hideWhenZero:true,priority:15,color:'purple'}, shortDescription:'Observa a próxima ação real do inimigo para converter acertos/erros em Eco.', fullDescription:'Contratempo só resolve no fim de uma ação real. Algum acerto gera 1 Eco, erro total gera 2 e ação sem hit direto gera 1; depois termina.' },
+    { id:'bardo:echo', classId:'bardo', name:'Eco Roubado', category:'resource', combatDisplay:{owner:'enemy',displayType:'charges',maxValue:2,icon:'◇',hideWhenZero:false,priority:16,color:'purple'}, shortDescription:'Recurso 0–2 do inimigo atual, criado por Contratempo e gasto por Dissonância.', fullDescription:'Eco reseta ao surgir novo inimigo. Trítono gasta 1; Ressonância Partida ou uma habilidade com Nota Eco gasta 2.' },
+    { id:'bardo:wildcard', classId:'bardo', name:'Nota Coringa', category:'other', combatDisplay:{owner:'player',displayType:'status',icon:'?',hideWhenZero:true,priority:20,color:'amber'}, shortDescription:'Interlúdio e Verso de Improviso escolhem deterministicamente a Nota que a Partitura pede.', fullDescription:'Harmony First completa a voz faltante; Refrain First copia um par igual. A escolha altera somente a Nota, nunca o efeito principal da habilidade.' },
+    { id:'bardo:encore', classId:'bardo', name:'Bis', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'↻',hideWhenZero:true,priority:21,color:'gold'}, shortDescription:'Repete a última habilidade normal elegível a 55% sem duplicar efeitos.', fullDescription:'Bis consome Ovação e repete um payload sanitizado de dano/cura com novas rolagens. Não escreve Nota, não replica CC, debuffs, custos, recursos ou Finale.' },
+  ],
 };
 
 const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
@@ -406,6 +417,12 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute:'int', label:'INT', role:'Principal', description:'Aumenta MATK e todo o dano mágico direto das três especializações.' },
     { attribute:'luk', label:'SOR', role:'Secundário ofensivo', description:'Aumenta chance e dano crítico, especialmente em Pulso e Reverberação.' },
     { attribute:'dex', label:'DES', role:'Secundário tático', description:'Melhora a precisão, reforçando a consistência da Moldagem.' },
+  ],
+  bardo: [
+    { attribute:'wis', label:'SAB', role:'Principal', description:'Aumenta Poder de Suporte, MDEF e Tenacidade; melhora curas da composição.' },
+    { attribute:'dex', label:'DES', role:'Secundário', description:'Aumenta ATK físico, Precisão e o componente independente do Acento.' },
+    { attribute:'luk', label:'SOR', role:'Secundário', description:'Aumenta Crítico e Dano Crítico das performances ofensivas.' },
+    { attribute:'int', label:'INT', role:'Base mágica', description:'Aumenta MATK do Alaúde Encantado; não é transformada em atributo principal.' },
   ],
 };
 
@@ -500,6 +517,11 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
     { pathId:'sobrecarga', identity:'INT + Eco + Ressonância.', style:'Frequência e dano sustentado.', loop:'Despertar → gerar Ressonância → consumir no próximo cast normal.' },
     { pathId:'dominio', identity:'INT + Precisão + Controle.', style:'Consistência, penetração e correção.', loop:'Guardar Controle → moldar a magia → corrigir uma falha decisiva.' },
   ],
+  bardo: [
+    { pathId:'cancao-guerra', identity:'DES + MATK/ATK + Acento/Fortíssimo.', style:'Marcha de Guerra — híbrido ofensivo.', loop:'Escrever Marcato → fechar Refrão/Contracanto → preparar Acento e Fortíssimo → gastar no pico.' },
+    { pathId:'melodia-sombria', identity:'Dissonância + Contratempo/Eco.', style:'Interferência e controle.', loop:'Escrever Dissonantes → observar a ação inimiga → converter erros em Eco → consumir no Trítono/Ressonância.' },
+    { pathId:'inspiracao', identity:'Lírica + Coringas/Bis.', style:'Improviso, cura moderada e adaptação.', loop:'Completar Harmonia/Refrão → curar e guardar Ovação → escolher a Nota pedida → repetir payload seguro com Bis.' },
+  ],
 };
 
 const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
@@ -532,6 +554,11 @@ const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
     { pathIds:['explosao','sobrecarga'], name:'Ruptura + Reverberação', description:'Burst e ecos para alternar execução e frequência.' },
     { pathIds:['explosao','dominio'], name:'Ruptura + Moldagem', description:'Finalizadores explosivos com precisão e penetração.' },
     { pathIds:['sobrecarga','dominio'], name:'Reverberação + Moldagem', description:'Sustentação confiável, ecos e correção de erros.' },
+  ],
+  bardo: [
+    { pathIds:['cancao-guerra','melodia-sombria'], name:'Marcha + Dissonância', description:'Acento e Fortíssimo alternados com Contratempo e Eco; alto dano e utilidade.' },
+    { pathIds:['cancao-guerra','inspiracao'], name:'Marcha + Improviso', description:'Coringas fecham Refrões Marcato e a cura sustenta os picos híbridos.' },
+    { pathIds:['melodia-sombria','inspiracao'], name:'Dissonância + Improviso', description:'Controle do inimigo, Harmonia e Bis para uma performance segura.' },
   ],
 };
 
