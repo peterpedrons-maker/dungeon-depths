@@ -5,9 +5,9 @@ import {
   clericBaseHp, clericDirectHealAmount, clericPassiveHealAmount, significantHealAmount,
 } from './clerigo.ts';
 
-test('Vida Base preserva a curva da classe por nível', () => {
+test('Base de Cura preserva a curva universal por nível', () => {
   assert.equal(clericBaseHp(34, 1), 34);
-  assert.equal(clericBaseHp(34, 10), 88);
+  assert.equal(clericBaseHp(34, 10), 124);
 });
 
 test('cura direta usa Vida Base, Poder de Suporte e eficiência final', () => {

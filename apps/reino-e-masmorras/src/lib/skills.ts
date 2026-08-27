@@ -2104,6 +2104,69 @@ SKILL_TREES.feiticeiro = [
   ]),
 ];
 
+// Bardo — COMPOSITOR DO COMBATE.  The legacy nodes above remain in source
+// history, but this declarative table is the live tree used by saves/loadouts.
+const bardScale = (mechanic: string, attribute: AttributeKey = 'wis'): ScalingEntry[] => [
+  { attribute, label: attribute.toUpperCase(), role: 'principal', description: attribute === 'wis' ? 'Aumenta o Poder de Suporte; não é aplicado novamente ao percentual.' : 'Aumenta o canal usado pela habilidade.' },
+  { label: mechanic, role: 'mecanica', description: 'Estado da performance; respeita os limites da Partitura e é capturado no início do cast.' },
+];
+const bNode = (name:string, desc:string, effect:SkillEffect = {}, mechanicRefs:string[] = [], scaling?:ScalingEntry[]): NodeSpec => ({ name, desc, effect, mechanicRefs, scaling: scaling ?? bardScale('Partitura') });
+const bAct = (name:string, desc:string, cooldown:number, effect:AbilityEffect, condition:AbilityDef['condition'] = { type:'always' }): NodeSpec => ({ name, desc, ability:{ name, desc, cooldown, condition, effect }, mechanicRefs:['bardo:score'], scaling:bardScale('Notas') });
+const bVoice = (voice:'marcato'|'dissonant'|'lyrical'|'wildcard'|'finale', path:'march'|'dissonance'|'improvisation', extra:AbilityEffect = { kind:'bigHit' }): AbilityEffect => ({ ...extra, bardVoice:voice, bardPath:path, dmgType: extra.dmgType ?? 'magical' });
+SKILL_TREES.bardo = [
+  buildPath('bardo','cancao-guerra','MARCHA DE GUERRA','#c9663c',[
+    bNode('Pulso Marcial','Habilidades ofensivas de Marcha causam +2% de dano direto; com Acento, DES concede até +3%.',{magicDmgPct:0.02},['bardo:accent'],bardScale('Acento','dex')),
+    bNode('Mão Certeira','+1,5pp Precisão; habilidades Acentuadas recebem +2pp adicionais.',{accuracyPct:0.015},['bardo:accent'],bardScale('Precisão','dex')),
+    bNode('Voz de Batalha','+3% Dano Crítico; Fortíssimo concede +3% adicionais.',{critDmgPct:0.03},['bardo:fortissimo'],bardScale('Crítico','luk')),
+    bNode('Compasso de Guerra','-3% Recarga somente para Marcha de Guerra.',{cooldownReductionPct:0.03},['bardo:score'],bardScale('Recarga')),
+    bAct('Acorde de Impacto','1,30x MATK. Nota Marcato; Acento adiciona 0,35x ATK físico.',3,bVoice('marcato','march',{kind:'bigHit',dmgMult:1.30,bardAccent:true,bardAccentAtkMult:0.35,bardEncoreEligible:true})),
+    bNode('Passo no Compasso','+1,5% Velocidade; ao consumir Acento, +2% até sua próxima ação.',{},['bardo:accent'],bardScale('Acento')),
+    bNode('Batida Marcada','Desbloqueia Acento: ataque básico acertado ou Frase Marcato o prepara.',{},['bardo:accent'],bardScale('Acento')),
+    bNode('Cordas de Aço','+3% Dano Crítico; componente físico do Acento recebe DES, até +0,06x.',{critDmgPct:0.03},['bardo:accent'],bardScale('DES total','dex')),
+    bNode('Sem Perder o Ritmo','Uma vez por inimigo, erro total de Marcato com Acento devolve Acento.',{},['bardo:accent'],bardScale('Reembolso')),
+    bAct('Marcha Implacável','Dois impactos mágicos de 0,63x; Acento adiciona 0,40x ATK.',4,bVoice('marcato','march',{kind:'multiHit',hitCount:2,dmgMultPerHit:0.63,bardAccent:true,bardAccentAtkMult:0.40,bardEncoreEligible:true})),
+    bAct('Grito em Compasso','1,50x MATK; ao acertar, +5% Velocidade por 2 ciclos.',5,bVoice('marcato','march',{kind:'bigHit',dmgMult:1.50,bardEncoreEligible:true})),
+    bNode('Presença de Palco','+8 Vida Máxima; Fortíssimo reduz 3% do dano direto recebido.',{maxHpFlat:8},['bardo:fortissimo'],bardScale('Fortíssimo')),
+    bAct('Solo de Batalha','2,00x MATK; Acento adiciona 0,50x ATK.',7,bVoice('marcato','march',{kind:'bigHit',dmgMult:2.00,bardAccent:true,bardAccentAtkMult:0.50,bardEncoreEligible:true})),
+    bAct('Concerto de Guerra','Finale: requer e consome Ovação; 1,55x MATK + 0,65x ATK.',9,bVoice('finale','march',{kind:'multiHit',hitCount:2,hitDmgMults:[1.55,0.65],bardFinale:true,bardOvationCost:1,bardMagicalHitMults:[1.55],bardPhysicalHitMults:[0.65]}),{ type:'resourceAtLeast',resource:'ovation',value:1 }),
+    bNode('O Palco é Meu','Refrão Marcato prepara Entrada Triunfal: próximo básico acertado causa +30% físico e gera Acento.',{},['bardo:accent','bardo:fortissimo'],bardScale('Entrada Triunfal')),
+  ]),
+  buildPath('bardo','melodia-sombria','DISSONÂNCIA','#4a2a5a',[
+    bNode('Ouvido Cruel','+1,5pp Precisão; contra Contratempo, +2pp adicionais.',{accuracyPct:0.015},['bardo:countertempo'],bardScale('Precisão','dex')),
+    bNode('Frequência Cortante','+4% penetração de MDEF; com Eco, INT concede até +3%.',{},['bardo:echo'],bardScale('Eco','int')),
+    bNode('Tom Incômodo','+2% MDEF; com Eco, +2% DEF.',{mdefPct:0.02},['bardo:echo'],bardScale('Eco')),
+    bNode('Compasso Quebrado','-3% Recarga somente para Dissonância.',{cooldownReductionPct:0.03},['bardo:score'],bardScale('Recarga')),
+    bAct('Nota Quebrada','1,25x MATK; ao acertar aplica Contratempo.',3,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.25,bardAppliesCountertempo:true,bardEncoreEligible:true})),
+    bNode('Resistência ao Ruído','+2pp Tenacidade; com 2 Ecos, +2pp adicionais.',{},['bardo:echo'],bardScale('Tenacidade')),
+    bNode('Eco Roubado','Desbloqueia Eco 0–2 gerado por Contratempo.',{},['bardo:echo','bardo:countertempo'],bardScale('Eco')),
+    bNode('Harmonia Áspera','+3% Dano Crítico; com 2 Ecos, +3% adicionais.',{critDmgPct:0.03},['bardo:echo'],bardScale('Crítico','luk')),
+    bNode('Contratempo Perfeito','Contratempo durante Fora de Tom gera +1 Eco adicional (cap 2).',{},['bardo:countertempo','bardo:echo'],bardScale('Eco')),
+    bAct('Trítono','1,45x MATK; com Eco, consome 1 e sobe para 1,70x; ao acertar -6% MDEF por 2 ciclos.',4,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.45,bardEchoCost:1,bardEncoreEligible:true})),
+    bAct('Quebra de Compasso','1,15x MATK; aplica Contratempo e -8% dano da próxima ação (ou -14% com 2 Ecos).',5,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.15,bardAppliesCountertempo:true,bardEchoCost:2,bardNextEnemyDamageReductionPct:0.08,bardEncoreEligible:true})),
+    bNode('Som que Fica','+2% MDEF; ao consumir Eco, +4pp Tenacidade até a próxima ação.',{mdefPct:0.02},['bardo:echo'],bardScale('Eco')),
+    bAct('Ressonância Partida','Requer e consome 2 Ecos; 2,05x MATK, +12% pen; 2,25x contra Fora de Tom.',7,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:2.05,bardEchoCost:2,bardEncoreEligible:true}),{ type:'resourceAtLeast',resource:'echo',value:2 }),
+    bAct('Réquiem sem Palavras','Finale: quatro impactos 0,40/0,40/0,40/0,50x; último acerto silencia 1 ciclo e aplica Contratempo.',10,bVoice('finale','dissonance',{kind:'multiHit',hitCount:4,hitDmgMults:[0.40,0.40,0.40,0.50],bardFinale:true,bardOvationCost:1,bardAppliesCountertempo:true,bardMagicalHitMults:[0.40,0.40,0.40,0.50]}),{ type:'resourceAtLeast',resource:'ovation',value:1 }),
+    bNode('O Som Depois do Som','Consumir 2 Ecos prepara Nota Eco: a próxima Dissonante escreve D duas vezes.',{},['bardo:echo','bardo:score'],bardScale('Nota Eco')),
+  ]),
+  buildPath('bardo','inspiracao','IMPROVISO','#e0c060',[
+    bNode('Voz Serena','+2% MDEF; curas ativas de Improviso recebem até +3% por SAB.',{mdefPct:0.02},['bardo:wildcard'],bardScale('Cura','wis')),
+    bNode('Ouvido Absoluto','+1,5pp Precisão; Coringas ofensivas, +2pp.',{accuracyPct:0.015},['bardo:wildcard'],bardScale('Precisão','dex')),
+    bNode('Fôlego de Artista','+8 Vida Máxima; após Harmonia, -3% dano direto até próxima ação.',{maxHpFlat:8},['bardo:score'],bardScale('Harmonia')),
+    bNode('Respiração Musical','-3% Recarga somente para Improviso.',{cooldownReductionPct:0.03},['bardo:score'],bardScale('Recarga')),
+    bAct('Balada Restauradora','Cura 12% da Base de Cura × Poder de Suporte; escreve Lírica. HP abaixo de 75%.',4,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.12,bardSupportHealPct:0.12,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.75 }),
+    bNode('Clareza de Voz','+2pp Tenacidade; após Refrão Lírico, +2pp até a próxima ação.',{},['bardo:score'],bardScale('Tenacidade')),
+    bNode('Verso Livre','Desbloqueia Notas Coringa; Harmonia cura 7% em vez de 5%.',{},['bardo:wildcard'],bardScale('Coringa')),
+    bNode('Respiração Profunda','+2% MDEF; curas de Improviso ganham até +4% adicionais por SAB.',{mdefPct:0.02},['bardo:wildcard'],bardScale('Cura','wis')),
+    bNode('Ponte Musical','Contracanto deixa Ponte: próxima habilidade normal de Improviso recebe +6%.',{},['bardo:score'],bardScale('Ponte')),
+    bAct('Interlúdio','Cura 7% da Base; reduz 1 ciclo do debuff removível mais antigo. Coringa Harmony First.',4,bVoice('wildcard','improvisation',{kind:'heal',healPct:0.07,bardSupportHealPct:0.07,bardWildcardPolicy:'harmonyFirst',bardEncoreEligible:true}),{ type:'any',conditions:[{type:'hpBelow',pct:0.85},{type:'selfDebuffed'}] }),
+    bAct('Verso de Improviso','1,20x MATK. Coringa Refrain First.',5,bVoice('wildcard','improvisation',{kind:'bigHit',dmgMult:1.20,bardWildcardPolicy:'refrainFirst',bardEncoreEligible:true})),
+    bNode('Presença Inspiradora','+2% MDEF; enquanto Ovação estiver guardada, +3% DEF.',{mdefPct:0.02},['bardo:ovation'],bardScale('Ovação')),
+    bAct('Hino da Segunda Respiração','Cura 22% Base (25% com Ovação), HP abaixo de 45%; prepara -10% dano inimigo.',7,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.22,bardSupportHealPct:0.22,bardNextEnemyDamageReductionPct:0.10,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.45 }),
+    bAct('Bis!','Finale: requer Ovação e Encore Ready; repete payload primário a 55%, sem Nota nem efeitos colaterais.',9,bVoice('finale','improvisation',{kind:'bigHit',bardFinale:true,bardEncore:true,bardOvationCost:1}),{ type:'all',conditions:[{type:'resourceAtLeast',resource:'ovation',value:1},{type:'stateActive',state:'encoreReady'}] }),
+    bNode('O Espetáculo Continua','Ao consumir Ovação, prepara Coro da Plateia: uma Nota Lírica fantasma sem cadeia recursiva.',{},['bardo:ovation','bardo:score'],bardScale('Coro da Plateia')),
+  ]),
+];
+
 // The abilities actually used in combat: the equipped-loadout subset of the
 // unlocked abilities, in the player's chosen priority order (checked top to
 // bottom every combat round).
