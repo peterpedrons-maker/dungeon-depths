@@ -19,9 +19,9 @@ function conditions(condition: AbilityCondition): string[] {
     case 'not': return [`Não: ${(condition.conditions ?? []).flatMap(conditions).join('')}`];
     case 'hpBelow': return [`Sua Vida abaixo de ${formatGamePercent(condition.pct ?? 0)}`];
     case 'enemyHpBelow': return [`Vida do inimigo abaixo de ${formatGamePercent(condition.pct ?? 0)}`];
-    case 'resourceAtLeast': return [`Pelo menos ${condition.value ?? 0} de ${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource === 'conviction' ? 'Convicção' : condition.resource}`];
+    case 'resourceAtLeast': return [`Pelo menos ${condition.value ?? 0} de ${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource === 'conviction' ? 'Convicção' : condition.resource === 'tension' ? 'Tensão' : condition.resource === 'cadence' ? 'Cadência' : condition.resource === 'steps' ? 'Passos' : condition.resource === 'distance' ? 'Distância' : condition.resource === 'flightCount' ? 'Flechas em Voo' : condition.resource}`];
     case 'resourceBelow': return [`Menos de ${condition.value ?? 0} de ${condition.resource}`];
-    case 'resourceAtMost': return [`No máximo ${condition.value ?? 0} de ${condition.resource}`];
+    case 'resourceAtMost': return [`No máximo ${condition.value ?? 0} de ${condition.resource === 'flightCount' ? 'Flechas em Voo' : condition.resource === 'distance' ? 'Distância' : condition.resource}`];
     case 'enemyStacksAtLeast': return [`Pelo menos ${condition.stacks ?? 0} ${condition.stackId === 'judgment' ? 'Julgamentos' : condition.stackId}`];
     case 'enemyStacksEqual': return [`Exatamente ${condition.stacks ?? 0} ${condition.stackId}`];
     case 'stateActive': return [`${condition.state} ativo(a)`];
@@ -54,6 +54,9 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
     if (requirements.length) rows.push({ label: 'Requisito', value: requirements.join(' e ') });
     if (ability.effect.faithCost) rows.push({ label: 'Custo', value: `${ability.effect.faithCost} Fé, cobrada ao usar` });
     if (ability.effect.soulCost) rows.push({ label: 'Custo', value: `${ability.effect.soulCost} ${ability.effect.soulCost === 1 ? 'Alma' : 'Almas'}, cobrada ao usar` });
+    if (ability.effect.archerTensionCost) rows.push({ label: 'Custo', value: `${ability.effect.archerTensionCost} Tensão, cobrada no início do cast` });
+    if (ability.effect.archerCadenceCost) rows.push({ label: 'Custo', value: `${ability.effect.archerCadenceCost} Cadência, cobrada no início do cast` });
+    if (ability.effect.archerShotType === 'ballistic') rows.push({ label: 'Tipo', value: 'Balístico — cria Flecha em Voo sem dano imediato' });
   }
 
   if (ch.classId !== 'clerigo') return rows;
