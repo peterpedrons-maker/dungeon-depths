@@ -19,6 +19,8 @@ test('projeção cancela Assinatura antes de Crédito e só então testa Sobreco
   assert.equal(q.usesCredit, true); assert.equal(q.willOvercontract, false); assert.equal(q.debtForPower, 6);
   const r = projectWarlockCast({ debt: 6, debtGain: 1, credit: 0, maxHp: 500, currentHp: 60 });
   assert.equal(r.willOvercontract, true); assert.equal(r.collectionHpCost, 50); assert.equal(r.safeToCast, true);
+  const early = projectWarlockCast({ debt: 2, debtGain: 0, maxHp: 500, currentHp: 35, collectionPct: 0.07 });
+  assert.equal(early.collectionHpCost, 35); assert.equal(early.safeToCast, false);
 });
 
 test('dívida e poder emprestado usam snapshot antes do pagamento', () => {
