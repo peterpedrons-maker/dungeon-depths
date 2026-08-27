@@ -37,7 +37,7 @@ import {
   loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows,
   tensionForPreciseHit, accelerateOldestArrow,
 } from '../lib/archer';
-import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit } from '../lib/druid';
+import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium } from '../lib/druid';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -911,11 +911,12 @@ export function DungeonPanel({
   const druidCycleRef = useRef<DruidCycleState>(createDruidCycle());
   const druidGardenRef = useRef<GardenUnit[]>([]);
   const druidGardenIdRef = useRef(1);
+  const druidAvatarActionsRef = useRef(0);
   const [druidCycleState, setDruidCycleState] = useState(druidCycleRef.current);
   function isDruid(){return chRef.current.classId==='druida';}
   function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
   function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
-  function druidAction(mode:'synced'|'neutral'|'dissonant'='dissonant'){if(!isDruid())return; const synced=mode==='synced'; if(synced)druidGardenRef.current=growGarden(druidGardenRef.current); if(mode==='synced')druidCycleRef.current=markDruidAttunement(druidCycleRef.current); else if(mode==='dissonant' && hasSkill(chRef.current,'druida:equilibrio:6'))druidCycleRef.current=addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; const before=druidCycleRef.current.season; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); if(before==='winter'&&druidCycleRef.current.perfectYear){druidCycleRef.current={...druidCycleRef.current,renewals:1};druidGardenRef.current=growGarden(druidGardenRef.current);} druidSync();}
+  function druidAction(mode:'synced'|'neutral'|'dissonant'='dissonant'){if(!isDruid())return; const synced=mode==='synced'; if(druidCycleRef.current.avatarActions>0)druidCycleRef.current={...druidCycleRef.current,avatarActions:druidCycleRef.current.avatarActions-1}; if(synced)druidGardenRef.current=growGarden(druidGardenRef.current); if(mode==='synced')druidCycleRef.current=markDruidAttunement(druidCycleRef.current); else if(mode==='dissonant' && hasSkill(chRef.current,'druida:equilibrio:6'))druidCycleRef.current=addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; const before=druidCycleRef.current.season; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); if(before==='winter'&&druidCycleRef.current.perfectYear){druidCycleRef.current={...druidCycleRef.current,renewals:1};druidGardenRef.current=growGarden(druidGardenRef.current);} druidSync();}
   void druidAdvance;
 
   function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
@@ -3237,27 +3238,36 @@ export function DungeonPanel({
       if (archerHasSkill('arqueiro:tiro-rapido:11') && a.cadence >= 4) archerDmgTakenBonus -= Math.min(0.05, 0.03 + attrTotal(ch, 'vit') * 0.0008);
     }
 
+    let druidMdef = 1, druidDmgTaken = 0, druidAccuracy = 0, druidSpeed = 0, druidCrit = 0, druidPen = 0;
+    if (isDruid()) {
+      const form = druidCycleRef.current.form;
+      if (form === 'cervo') druidMdef *= 1.04;
+      if (form === 'lobo') { druidSpeed += 0.05; druidAccuracy += 0.02; druidCrit += 0.02; }
+      if (form === 'urso') druidDmgTaken -= 0.05;
+      if (form === 'coruja') { druidAccuracy += 0.04; druidPen += 0.08; }
+      if (druidAvatarActionsRef.current > 0) { druidMdef *= 1.04; druidSpeed += 0.05; druidDmgTaken -= 0.05; druidAccuracy += 0.04; druidCrit += 0.02; druidPen += 0.08; }
+    }
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct) * necroMatkMult),
       def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult * paladinDefMult * archerDefMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult)),
-      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus + archerCritBonus)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult * druidMdef)),
+      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus + archerCritBonus + druidCrit)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus + archerCritDmgBonus,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
       evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus + rogueEvasionBonus + archerEvasionBonus),
-      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus,
-      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus,
-      defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
+      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus + druidAccuracy,
+      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus + druidDmgTaken,
+      defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct') + druidPen),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus),
       tenacityPct: base.tenacityPct + tenacityBonus,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
       // playerAct's damage pipeline.
-      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus + rogueSpeedBonus + archerSpeedBonus),
+      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus + rogueSpeedBonus + archerSpeedBonus + druidSpeed),
     };
   }
 
@@ -3403,6 +3413,20 @@ export function DungeonPanel({
     const supportMult = 1 + stats.supportPowerPct;
     const eff = ab.effect;
     const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
+    if (isDruid()) {
+      if (eff.druidAction === 'form') {
+        const form = ({ spring:'cervo', summer:'lobo', autumn:'urso', winter:'coruja' } as const)[eff.druidSeason === 'cycle' ? druidCycleRef.current.season : (eff.druidSeason ?? druidCycleRef.current.season)];
+        if (form && druidCycleRef.current.form !== form) druidCycleRef.current = { ...druidCycleRef.current, form, instinct: druidCycleRef.current.form && hasSkill(chRef.current, 'druida:furia-natureza:6') && druidCycleRef.current.avatarActions === 0 ? Math.min(3, druidCycleRef.current.instinct + 1) : druidCycleRef.current.instinct };
+      }
+      if (eff.druidAction === 'cycle') {
+        const renewedAvatar = druidCycleRef.current.renewals > 0;
+        if (renewedAvatar) druidCycleRef.current = consumeDruidRenewal(druidCycleRef.current);
+        if (druidCycleRef.current.dissonance === 3) druidCycleRef.current = consumeDruidReequilibrium(druidCycleRef.current);
+        if (ab.id.includes('furia-natureza:13') && druidCycleRef.current.instinct >= 3) druidCycleRef.current = activateAvatar({ ...druidCycleRef.current, instinct: 0 }, renewedAvatar);
+        druidGardenRef.current = matureGarden(druidGardenRef.current);
+      }
+      druidSync();
+    }
     if (eff.kind === 'aegis') {
       paladinMakeAegis(eff.aegisReductionPct ?? 0.35, eff.aegisMaxHpCapPct ?? 0.10, eff.aegisHits ?? 1, eff.aegisDuration ?? 3);
       pushAbilityCast('player', ab.name, icon, null, false);
@@ -4157,6 +4181,10 @@ export function DungeonPanel({
       enemyAbilityCooldownsRef.current = {};
       bossPhaseIndexRef.current = 0;
       setBossPhaseName(null);
+      if (isDruid()) {
+        for (const a of equippedAbilities()) if (a.effect.druidSeason === druidCycleRef.current.season) cooldownsRef.current[a.id] = 0;
+        druidSync();
+      }
       syncEnemyStatuses();
       syncEnemyCC();
       syncEnemyMods();
@@ -4832,11 +4860,23 @@ export function DungeonPanel({
             }
             let archerDefPen = archerActive ? (eff.archerDefPenPct ?? 0) : 0;
             if (archerActive && eff.archerHighTensionPenPct !== undefined && archerTensionAtActionStart >= 75) archerDefPen = eff.archerHighTensionPenPct;
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warriorConditionalDefPen - archerDefPen));
+            const druidDefPen = isDruid() && (druidCycleRef.current.form === 'coruja' || offenseAbility.id.endsWith(':12')) ? 0.08 : 0;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warriorConditionalDefPen - archerDefPen - druidDefPen));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (isDruid()) {
+              const sintonized = eff.druidSeason === druidCycleRef.current.season;
+              if (offenseAbility.id.endsWith('cura-natural:9')) dmgMult = sintonized ? 1.35 : 1.20;
+              if (offenseAbility.id.endsWith('cura-natural:10')) dmgMult = sintonized ? 1.25 : 1.10;
+              if (offenseAbility.id.endsWith('furia-natureza:10')) dmgMult = sintonized ? 1.90 : 1.70;
+              if (offenseAbility.id.endsWith('equilibrio:9')) dmgMult = sintonized ? 1.75 : 1.60;
+              if (druidCycleRef.current.form === 'urso') dmgMult *= 1.05;
+              if (druidCycleRef.current.form === 'lobo') dmgMult *= 1.00;
+              if (druidCycleRef.current.avatarActions > 0) dmgMult *= 1.05;
+              if (druidCycleRef.current.reequilibrated) dmgMult *= 1.03;
+            }
             if (archerActive) {
               if (eff.archerHighTensionDmgMult !== undefined && archerTensionAtActionStart >= 75) dmgMult = eff.archerHighTensionDmgMult;
               if (eff.archerDistanceZeroMult !== undefined && archerDistanceAtActionStart === 0) dmgMult = eff.archerDistanceZeroMult;
@@ -5409,6 +5449,13 @@ export function DungeonPanel({
           const heal = Math.min(Math.round(baseline * (castAbility.effect.directHealCapPct ?? 1)), Math.round(dmg * castAbility.effect.directHealFromDamagePct * efficiency));
           if (heal > 0) { updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) }); pushFloat('player', heal, false, undefined, undefined, true); }
           necroMetric('healing', heal);
+        }
+        if (isDruid() && castAbility?.effect.healFromDamagePct) {
+          const baseline = CLASSES[chRef.current.classId].baseHp + 6 * (chRef.current.level - 1);
+          const cap = effectiveMaxHp(chRef.current) * (castAbility.effect.healFromDamageCapPct ?? 1);
+          const heal = Math.min(cap, dmg * castAbility.effect.healFromDamagePct * (1 + stats.supportPowerPct));
+          if (heal > 0) { updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) }); pushFloat('player', Math.round(heal), false, undefined, undefined, true); }
+          void baseline;
         }
 
         if (isPaladin() && castAbility) {
@@ -6410,11 +6457,14 @@ export function DungeonPanel({
     'arqueiro:reflex': { value: archerState.reflexActionsLeft, maxValue: 2, duration: archerState.reflexActionsLeft, visible: ch.classId === 'arqueiro' },
     'arqueiro:flight': { value: archerState.arrows.length, maxValue: 4, detail: archerState.arrows.map((a) => `${a.sourceName}: ↓${a.actionsRemaining}`).join(' · '), visible: ch.classId === 'arqueiro' },
     'arqueiro:convergence': { value: 0, visible: ch.classId === 'arqueiro' },
-    'druida:season': { value: ['spring','summer','autumn','winter'].indexOf(druidCycleState.season), detail: druidCycleState.season.toUpperCase(), visible: ch.classId === 'druida' },
+    'druida:season': { value: ['spring','summer','autumn','winter'].indexOf(druidCycleState.season), detail: ({spring:'PRIMAVERA',summer:'VERÃO',autumn:'OUTONO',winter:'INVERNO'} as const)[druidCycleState.season], visible: ch.classId === 'druida' },
+    'druida:garden': { value: druidGardenRef.current.length, maxValue: ch.unlockedSkills.includes('druida:cura-natural:6') ? 3 : 2, detail: druidGardenRef.current.map((u) => u.stage.toUpperCase()).join(' · '), visible: ch.classId === 'druida' },
     'druida:attunement': { value: druidCycleState.attunement, maxValue: 3, visible: ch.classId === 'druida' },
     'druida:perfect_year': { value: druidCycleState.perfectYear ? 1 : 0, visible: ch.classId === 'druida' },
     'druida:renewal': { value: druidCycleState.renewals, maxValue: 1, visible: ch.classId === 'druida' },
     'druida:dissonance': { value: druidCycleState.dissonance, maxValue: 3, visible: ch.classId === 'druida' },
+    'druida:form': { value: druidCycleState.form ? 1 : 0, detail: druidCycleState.form?.toUpperCase(), visible: ch.classId === 'druida' },
+    'druida:avatar': { value: druidAvatarActionsRef.current, maxValue: 4, duration: druidAvatarActionsRef.current, visible: ch.classId === 'druida' },
     'mago:runes': { value: mageRunesState, maxValue: 2 },
     'mago:heat': { value: mageHeatState, maxValue: 100 },
     'mago:overheat': { value: 0 },
