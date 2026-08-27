@@ -39,6 +39,7 @@ import {
 } from '../lib/archer';
 import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium } from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, applyWarlockDebt, payWarlockDebt, setWarlockDebt, grantWarlockCredit, consumeTrueName, consumeTrueNameAndRefragment, bindWarlockEnemy, addNameFragment, consumeMandamento, resolveCollection, borrowedPowerPct, overcontractDamagePct, collectionAmount } from '../lib/warlock';
+import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState, beginActiveCast, resolvePulseGain, addResonance, consumeResonance, addControl, consumeControl, addFractures, consumeFractures, rupturePenetration } from '../lib/sorcerer';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -1045,6 +1046,25 @@ export function DungeonPanel({
   const [mageCircuitState, setMageCircuitState] = useState(0);
   const [mageResonanceState, setMageResonanceState] = useState(false);
 
+  // Feiticeiro — session-only Pulso/Ressonância/Controle and per-enemy
+  // Fraturas. Resources deliberately live in refs so the timer loop always
+  // sees the current value and carries only the resources specified by the
+  // class between enemies.
+  const sorcererStateRef = useRef<SorcererState>(createSorcererState());
+  const sorcererEnemyRef = useRef<SorcererEnemyState>(createSorcererEnemyState());
+  const [sorcererState, setSorcererState] = useState(sorcererStateRef.current);
+  const [sorcererEnemyState, setSorcererEnemyState] = useState(sorcererEnemyRef.current);
+  const sorcererAwakenedRef = useRef(false);
+  const sorcererResonanceConsumedRef = useRef(false);
+  const sorcererControlConsumedRef = useRef(0);
+  const sorcererEnemyReductionRef = useRef(0);
+  function isSorcerer(): boolean { return chRef.current.classId === 'feiticeiro'; }
+  function sorcererHasSkill(id: string): boolean { return isSorcerer() && hasSkill(chRef.current, id); }
+  function sorcererSync() { if (!silentRef.current) { setSorcererState({ ...sorcererStateRef.current }); setSorcererEnemyState({ ...sorcererEnemyRef.current }); } }
+  function sorcererPathFor(id?: string): 'rupture'|'reverberation'|'shaping'|null { if (!id || !isSorcerer()) return null; const p=id.split(':')[1]; return p==='explosao'?'rupture':p==='sobrecarga'?'reverberation':p==='dominio'?'shaping':null; }
+  function sorcererCdrBonusFor(id: string): number { const p=sorcererPathFor(id); if (!p) return 0; const node=p==='rupture'?'explosao':p==='reverberation'?'sobrecarga':'dominio'; return sorcererHasSkill(`feiticeiro:${node}:3`) ? 0.03 : 0; }
+  function sorcererResetEnemy() { if (!isSorcerer()) return; sorcererEnemyRef.current=createSorcererEnemyState(); sorcererSync(); }
+
   // Guerreiro: Postura lives on EnemyInstance; these are player-side,
   // encounter-only preparations and their display mirrors.
   const warriorPreparedGuardRef = useRef<PreparedGuardState | null>(null);
@@ -1399,6 +1419,9 @@ export function DungeonPanel({
         credit: warlockStateRef.current.credit,
         scars: warlockStateRef.current.scars,
         nameFragments: warlockEnemyRef.current.nameFragments,
+        pulse: sorcererStateRef.current.pulse,
+        resonance: sorcererStateRef.current.resonance,
+        control: sorcererStateRef.current.control,
       },
       states: {
         frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
@@ -1419,7 +1442,7 @@ export function DungeonPanel({
         forgery: warlockStateRef.current.forgeryReady,
         scarInsight: warlockStateRef.current.scarInsightReady,
       },
-      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0 },
+      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0, fracture: sorcererEnemyRef.current.fractures, control: sorcererStateRef.current.control },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
       enemyPosture: isWarrior() ? warriorEnemyState().current : undefined,
       enemyPostureBand: isWarrior() ? postureBand(warriorEnemyState().current) : undefined,
@@ -2872,7 +2895,7 @@ export function DungeonPanel({
   // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
   // (both scoped to the single-hit/plain-attack path only) — a scoped
   // simplification, called out in the final report.
-  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }, warlockBonuses?: { debtForPower: number; scars: number; overcontract: boolean; path: 'maldicao'|'pacto'|'corrupcao'; }) {
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }, warlockBonuses?: { debtForPower: number; scars: number; overcontract: boolean; path: 'maldicao'|'pacto'|'corrupcao'; }, sorcererBonuses?: { awakened: boolean; accuracy: number; crit: number; pen: number; dmgPct: number; echo: boolean; echoPotency: number }) {
     const eff = ab.effect;
     const archerCdr = isArcher() && eff.archerPath
       ? (archerHasSkill(eff.archerPath === 'precision' ? 'arqueiro:precisao:3' : eff.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
@@ -2883,7 +2906,8 @@ export function DungeonPanel({
     const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
     const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
     const warlockPen = warlockBonuses && isMagicalClass ? (eff.warlockMdefPenPct ?? 0) : 0;
-    const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen));
+    const sorcPen = sorcererBonuses?.pen ?? 0;
+    const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen - sorcPen));
     const marked = hunterMarkedPrey();
     const originalHitCount = eff.hitCount ?? 2;
     const hitCount = originalHitCount + (isArcher() && archerPerfectCastRef.current && eff.archerPerfectExtraRatio ? 1 : 0);
@@ -2894,7 +2918,7 @@ export function DungeonPanel({
     for (let i = 0; i < hitCount; i++) {
       if (enemyRef.current.hp <= 0) break;
       const guardBreakNow = isWarrior() && warriorEnemyState().guardBroken;
-      const perHitAccuracy = accuracyForRoll + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_ACCURACY_BONUS : 0);
+      const perHitAccuracy = accuracyForRoll + (sorcererBonuses?.accuracy ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_ACCURACY_BONUS : 0);
       const hitMissed = i === 0 && rogueBonuses?.loadedDieFirstHit !== undefined ? !rogueBonuses.loadedDieFirstHit : rollMiss(perHitAccuracy, enemyEvasion);
       if (hitMissed) {
         allLanded = false;
@@ -2921,7 +2945,8 @@ export function DungeonPanel({
       if (warriorBonuses) dmgMult += warriorBonuses.dmg / hitCount;
       const liveDefPen = (warriorBonuses?.defPen ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_DEF_PEN : 0);
       const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen - liveDefPen));
-      const { dmg, crit } = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll);
+      const { dmg: baseDmg, crit } = rollAbilityHit(power, effDef, dmgMult * (1 + (sorcererBonuses?.dmgPct ?? 0)), critChanceForRoll + (sorcererBonuses?.crit ?? 0), critDmgMultForRoll);
+      const dmg = baseDmg;
       landedHits += 1;
       if (crit) criticalHits += 1;
       const newHp = Math.max(0, enemyRef.current.hp - dmg);
@@ -2949,7 +2974,18 @@ export function DungeonPanel({
           pushFloat('player', healAmount, false, undefined, undefined, true);
         }
       }
-      if (newHp <= 0) { if (!warlockBonuses) { resolveEnemyDeath(); return; } }
+      if (newHp <= 0) { if (!warlockBonuses && !sorcererBonuses) { resolveEnemyDeath(); return; } }
+    }
+    // Feiticeiro: a Magia Refratada repeats only the primary direct payload,
+    // never the action itself or any secondary effects/resources.
+    if (sorcererBonuses?.echo && enemyRef.current.hp > 0) {
+      const potency = sorcererBonuses.echoPotency || 0.40;
+      for (let i = 0; i < hitCount && enemyRef.current.hp > 0; i++) {
+        if (rollMiss(accuracyForRoll + (sorcererBonuses.accuracy ?? 0), enemyEvasion)) { pushFloat('enemy', 0, false, false, true); continue; }
+        const echoMult = (eff.hitDmgMults?.[i] ?? eff.dmgMultPerHit ?? 0.8) * potency;
+        const er = rollAbilityHit(power, baseEffDef, echoMult * (1 + (sorcererBonuses.dmgPct ?? 0)), critChanceForRoll + (sorcererBonuses.crit ?? 0), critDmgMultForRoll);
+        applyEnemyHp(Math.max(0, enemyRef.current.hp - er.dmg)); pushFloat('enemy', er.dmg, er.crit);
+      }
     }
     // Arco Duplo amplified adds a third 0.30x impact, rather than replacing
     // either of its two normal impacts.
@@ -4296,6 +4332,8 @@ export function DungeonPanel({
       }
       if (isArcher()) archerResetEncounter();
       if (isWarlock()) warlockResetEnemy();
+      if (isSorcerer()) sorcererResetEnemy();
+      sorcererEnemyReductionRef.current = 0;
       if (isNecromancer()) {
         necroSoulsRef.current = soulsForNextEnemy(necroSoulsRef.current, necroDeathSetup && necroHasSkill('necromante:decomposicao:14'));
         necroMetric('soulsCarried', necroSoulsRef.current);
@@ -4498,6 +4536,11 @@ export function DungeonPanel({
     // clears it mid-resolution, and before this hit's own normal generation
     // (first-hit/next-hit) lands.
     const momentumAtActionStart = knightActive ? knightMomentumRef.current : 0;
+    const sorcererActive = isSorcerer();
+    const sorcererPulseAtActionStart = sorcererActive ? sorcererStateRef.current.pulse : 0;
+    const sorcererControlAtActionStart = sorcererActive ? sorcererStateRef.current.control : 0;
+    const sorcererFracturesAtActionStart = sorcererActive ? sorcererEnemyRef.current.fractures : 0;
+    const sorcererEnemyHpAtActionStart = sorcererActive ? enemyRef.current.hp : 0;
     const archerActive = isArcher();
     const archerFlightsAtActionStart = archerActive ? archerStateRef.current.arrows.map((a) => a.id) : [];
     const archerTensionAtActionStart = archerActive ? archerStateRef.current.tension : 0;
@@ -4536,6 +4579,29 @@ export function DungeonPanel({
       let warlockCreditFinanced = false;
       let warlockTrueNameConsumed = false;
       let warlockFinalized = false;
+      let sorcererCastAwakened = false;
+      let sorcererHit = false;
+      let sorcererCrit = false;
+      let sorcererNormalCast = false;
+      let sorcererFracturesConsumed = 0;
+      const finalizeSorcerer = () => {
+        if (!sorcererActive || !chosen) return;
+        const e = chosen.effect;
+        const directHit = sorcererHit || enemyRef.current.hp < sorcererEnemyHpAtActionStart;
+        const anyCrit = sorcererCrit;
+        if (sorcererCastAwakened) {
+          if (e.sorcererPath === 'rupture' && directHit && sorcererHasSkill('feiticeiro:explosao:6')) sorcererEnemyRef.current = addFractures(sorcererEnemyRef.current, 1);
+          if (e.sorcererPath === 'reverberation' && sorcererHasSkill('feiticeiro:sobrecarga:6')) sorcererStateRef.current = addResonance(sorcererStateRef.current, 1);
+          if (e.sorcererPath === 'shaping' && sorcererHasSkill('feiticeiro:dominio:6')) sorcererStateRef.current = addControl(sorcererStateRef.current, 1);
+        } else {
+          const gained = resolvePulseGain(sorcererStateRef.current, directHit, anyCrit, sorcererResonanceConsumedRef.current ? 2 : 0);
+          sorcererStateRef.current = gained.state;
+          if (sorcererHasSkill('feiticeiro:sobrecarga:14') && gained.overflow >= 2) sorcererStateRef.current = addResonance(sorcererStateRef.current, 1);
+        }
+        if (e.sorcererFractureConsume === 3 && sorcererFracturesConsumed === 3) sorcererEnemyRef.current = directHit ? { ...sorcererEnemyRef.current, fractures: 1 } : { ...sorcererEnemyRef.current, fractures: 0 };
+        if (directHit && e.sorcererEnemyDmgReductionPct) sorcererEnemyReductionRef.current = e.sorcererEnemyDmgReductionPct;
+        sorcererSync();
+      };
       const finalizeWarlock = (landed: boolean) => {
         if (!warlockActive || !chosen || warlockFinalized) return;
         warlockFinalized = true;
@@ -4722,6 +4788,31 @@ export function DungeonPanel({
           if ((e.heatCost || e.heatCostAll) && mageHeatAtCast >= 40 && chRef.current.unlockedSkills.includes('mago:piromante:2')) mageNextDamageReductionRef.current = Math.max(mageNextDamageReductionRef.current, 0.06);
           mageSync();
         }
+        if (sorcererActive && chosen) {
+          const start = beginActiveCast(sorcererStateRef.current);
+          sorcererCastAwakened = start.awakened;
+          sorcererAwakenedRef.current = sorcererCastAwakened;
+          sorcererNormalCast = !start.awakened;
+          sorcererStateRef.current = start.next;
+          const e = chosen.effect;
+          if (e.sorcererFractureConsume) {
+            sorcererFracturesConsumed = Math.min(sorcererEnemyRef.current.fractures, e.sorcererFractureConsume);
+            sorcererEnemyRef.current = consumeFractures(sorcererEnemyRef.current, sorcererFracturesConsumed);
+          }
+          if (e.sorcererControlConsume) {
+            const spend = Math.min(sorcererStateRef.current.control, e.sorcererControlConsume);
+            sorcererControlConsumedRef.current = spend;
+            sorcererStateRef.current = consumeControl(sorcererStateRef.current, spend);
+          } else sorcererControlConsumedRef.current = 0;
+          sorcererResonanceConsumedRef.current = false;
+          if (sorcererNormalCast && sorcererHasSkill('feiticeiro:sobrecarga:6') && sorcererStateRef.current.resonance > 0) {
+            sorcererStateRef.current = consumeResonance(sorcererStateRef.current);
+            sorcererResonanceConsumedRef.current = true;
+          }
+          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + sorcererCdrBonusFor(chosen.id));
+        sorcererSync();
+        sorcererAwakenedRef.current = false;
+        }
         if (isMage() && (!chosen || chosen.effect.element !== 'fire')) {
           const cooling = chRef.current.unlockedSkills.includes('mago:piromante:5') ? 15 : 10;
           mageHeatRef.current = Math.max(0, mageHeatRef.current - cooling);
@@ -4843,7 +4934,10 @@ export function DungeonPanel({
             ? (offenseAbility?.effect.paladinPath === 'verdict' && (paladinLiturgyRef.current.regent === 'justice' || paladinVerdictAtCast?.regent === 'justice') && paladinHasSkill('paladino:martelo:7') ? 0.05 : 0)
               + (paladinVerdictAtCast?.full && paladinHasSkill('paladino:martelo:11') ? 0.05 : 0)
             : 0;
-          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus + necroMissingHpCrit + (necroNextMagicBonusRef.current?.critDmgPct ?? 0) + paladinCritDmg;
+          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus + necroMissingHpCrit + (necroNextMagicBonusRef.current?.critDmgPct ?? 0) + paladinCritDmg
+            + (sorcererActive && sorcererHasSkill('feiticeiro:explosao:2') ? 0.03 : 0)
+            + (sorcererActive && sorcererHasSkill('feiticeiro:explosao:11') ? 0.04 : 0)
+            + (sorcererActive && sorcererHasSkill('feiticeiro:sobrecarga:7') ? 0.03 : 0);
           // Olhar Predador (barbaro:selvageria:0) — DES-scaled accuracy vs a
           // wounded enemy. Olfato Aguçado (barbaro:selvageria:7) — flat
           // +0.4% accuracy per current Ferida stack (mechanic, not attribute).
@@ -4859,6 +4953,14 @@ export function DungeonPanel({
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
           let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus + warriorCastAccuracyBonus;
+          if (sorcererActive && offenseAbility?.effect.sorcererPath) {
+            const se = offenseAbility.effect;
+            accuracyForRoll += (se.sorcererAccuracyBonusPct ?? 0) + sorcererControlAtActionStart * 0.02;
+            if (sorcererCastAwakened && se.sorcererPath === 'shaping') accuracyForRoll += 0.10;
+            if (se.sorcererPath === 'rupture' && sorcererPulseAtActionStart >= 4) accuracyForRoll += 0.015;
+            if (se.sorcererPath === 'shaping' && sorcererHasSkill('feiticeiro:dominio:5') && sorcererControlAtActionStart >= 1) accuracyForRoll += 0.015;
+            if (offenseAbility.id === 'feiticeiro:dominio:9' && sorcererControlConsumedRef.current > 0) accuracyForRoll += 0.04;
+          }
           if (archerActive) {
             if (archerReflexThisCast) accuracyForRoll += 0.08;
             if (offenseAbility?.effect.archerShotType === 'volley') accuracyForRoll += archerAccuracyBuffRef.current;
@@ -4930,7 +5032,8 @@ export function DungeonPanel({
             hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast,
               isWarrior() ? { dmg: warriorCastDmgBonus, posture: warriorCastPostureBonus, defPen: warriorCastDefPenBonus, breakActive: warriorBreakActiveAtStart } : undefined,
               isRogue() ? { images: rogueImagesAtCast, sharpened: rogueSharpenedAtCast, loadedDieFirstHit: rogueLoadedDieFirstHit, advantage: rogueAdvantageAtCast } : undefined,
-              warlockActive && offenseAbility.effect.warlockPath ? { debtForPower: warlockDebtForPower, scars: warlockScarsThisCast, overcontract: warlockOvercontractThisCast, path: offenseAbility.effect.warlockPath } : undefined);
+              warlockActive && offenseAbility.effect.warlockPath ? { debtForPower: warlockDebtForPower, scars: warlockScarsThisCast, overcontract: warlockOvercontractThisCast, path: offenseAbility.effect.warlockPath } : undefined,
+              sorcererActive && offenseAbility.effect.sorcererPath ? { awakened: sorcererCastAwakened, accuracy: (offenseAbility.effect.sorcererAccuracyBonusPct ?? 0) + (sorcererControlAtActionStart * 0.02) + (sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.10 : 0), crit: 0, pen: (offenseAbility.effect.sorcererMdefPenPct ?? 0) + sorcererControlAtActionStart * 0.02 + (offenseAbility.effect.sorcererPath === 'rupture' ? rupturePenetration(sorcererFracturesAtActionStart) : 0) + (sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.12 : 0), dmgPct: sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'rupture' ? 0.18 : sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.08 : 0, echo: sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'reverberation', echoPotency: offenseAbility.effect.sorcererEchoPotency ?? 0.40 } : undefined);
             if (warlockActive) {
               finalizeWarlock(enemyRef.current.hp < warlockEnemyHpAtActionStart);
               if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
@@ -4953,7 +5056,7 @@ export function DungeonPanel({
             }
           } else if (offenseAbility) {
             if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer() && !isRogue() && !isPaladin()) {
-              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id) + warlockCdrBonusFor(offenseAbility.id));
+              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id) + warlockCdrBonusFor(offenseAbility.id) + sorcererCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
             if (isRogue()) {
@@ -5010,6 +5113,11 @@ export function DungeonPanel({
               ? (mageAmplifiedThisCast ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0))
               : 0;
             let warriorConditionalDefPen = warriorCastDefPenBonus + (eff.defPenPct ?? 0);
+            if (sorcererActive && eff.sorcererPath) {
+              warriorConditionalDefPen += (eff.sorcererMdefPenPct ?? 0) + sorcererControlAtActionStart * 0.02;
+              if (eff.sorcererPath === 'rupture' && sorcererHasSkill('feiticeiro:explosao:6')) warriorConditionalDefPen += rupturePenetration(sorcererFracturesAtActionStart);
+              if (sorcererCastAwakened && eff.sorcererPath === 'shaping') warriorConditionalDefPen += 0.12;
+            }
             if (isPaladin() && paladinVerdictAtCast) {
               if (paladinHasSkill('paladino:martelo:6')) warriorConditionalDefPen += paladinVerdictAtCast.conviction * 0.03;
               if (paladinVerdictAtCast.full && paladinVerdictAtCast.regent === 'justice') warriorConditionalDefPen += 0.12;
@@ -5034,6 +5142,19 @@ export function DungeonPanel({
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (sorcererActive && eff.sorcererPath) {
+              const p = eff.sorcererPath;
+              if (p === 'rupture' && sorcererHasSkill('feiticeiro:explosao:0')) dmgMult *= 1.02 + (sorcererPulseAtActionStart >= 4 ? 0.02 : 0);
+              if (p === 'rupture' && sorcererHasSkill('feiticeiro:explosao:7') && sorcererFracturesAtActionStart >= 3) dmgMult *= 1.03;
+              if (p === 'reverberation' && sorcererHasSkill('feiticeiro:sobrecarga:0')) dmgMult *= 1.02;
+              if (p === 'reverberation' && sorcererHasSkill('feiticeiro:sobrecarga:11')) dmgMult *= 1.02;
+              if (p === 'shaping' && sorcererHasSkill('feiticeiro:dominio:1')) dmgMult *= 1.02;
+              if (p === 'shaping' && sorcererHasSkill('feiticeiro:dominio:11') && sorcererControlAtActionStart >= 2) dmgMult *= 1.03;
+              if (sorcererCastAwakened && p === 'rupture') dmgMult *= 1.18;
+              if (sorcererCastAwakened && p === 'shaping') dmgMult *= 1.08;
+              if (offenseAbility.id === 'feiticeiro:explosao:9') dmgMult += 0.08 * sorcererFracturesAtActionStart;
+              if (offenseAbility.id === 'feiticeiro:explosao:12') dmgMult = 1.55 + 0.25 * sorcererFracturesConsumed;
+            }
             if (warlockActive && eff.warlockPath) {
               dmgMult *= 1 + borrowedPowerPct(warlockDebtForPower, eff.warlockPath, warlockScarsAtActionStart >= 3);
               if (warlockOvercontractThisCast) dmgMult *= 1 + overcontractDamagePct(eff.warlockPath, warlockScarsAtActionStart >= 3);
@@ -5186,6 +5307,7 @@ export function DungeonPanel({
               : critDmgMultForRoll;
             const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, hunterCritDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
+            if (sorcererActive && offenseAbility.effect.sorcererPath) { sorcererHit = true; sorcererCrit = r.crit; }
             if (archerActive) archerLastActionHitsRef.current = 1;
             abilityTag = ` [${offenseAbility.name}]`;
             castAbility = necroSacrificed ? { ...offenseAbility, effect: { ...offenseAbility.effect, directHealFromDamagePct: 0.22, directHealCapPct: 0.08 } } : offenseAbility;
@@ -5537,6 +5659,8 @@ export function DungeonPanel({
         }
       }
 
+      finalizeSorcerer();
+
       // Fúria's per-action Frenesi drain — the LAST Fúria adjustment of the
       // round, after any cost/gain already applied above, whether this
       // action hit, missed, or was a self-ability. No-op for every other
@@ -5882,6 +6006,10 @@ export function DungeonPanel({
     const clerigoActiveEnemy = isClerigo();
     const clerigoWallReduction = clerigoActiveEnemy && clerigoWallBonusActive() ? MURALHA_DIVINA_DMG_TAKEN_PCT : 0;
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus) * (1 + clerigoWallReduction));
+    if (isSorcerer() && sorcererEnemyReductionRef.current > 0) {
+      edmg = Math.round(edmg * (1 - sorcererEnemyReductionRef.current));
+      sorcererEnemyReductionRef.current = 0;
+    }
     if (isWarlock() && warlockEnemyRef.current.mandamento) {
       edmg = Math.round(edmg * (1 - (warlockEnemyRef.current.deadlineDmgReduction || 0.10)));
       warlockEnemyRef.current = consumeMandamento(warlockEnemyRef.current);
@@ -6606,6 +6734,7 @@ export function DungeonPanel({
   const enemyMarkedPrey = enemyTrail >= MARKED_PREY_THRESHOLD;
   const enemyBreaches = enemy.hunterBreaches?.stacks ?? 0;
   const enemyJudgment = enemy.judgment;
+  const enemySorcerer = sorcererEnemyState;
   const warriorDisplay = enemy.warrior ?? createWarriorEnemyState();
   const warriorBandLabel = ({ firm: 'FIRME', unstable: 'INSTÁVEL', open: 'ABERTO', broken: 'GUARDA QUEBRADA' } as const)[postureBand(warriorDisplay.current)];
   const mechanicValues: Record<string, Omit<CombatMechanicState, 'mechanic'>> = {
@@ -6662,6 +6791,12 @@ export function DungeonPanel({
     'bruxo:credit': { value: warlockState.credit, maxValue: warlockHasSkill('bruxo:pacto:14') ? 3 : 2, detail: warlockState.credit > 0 ? 'Um Crédito cancela a próxima Dívida gerada' : undefined, visible: ch.classId === 'bruxo' },
     'bruxo:scars': { value: warlockState.scars, maxValue: 3, detail: warlockState.scars > 0 ? `+${warlockState.scars * 3}% dano Transgressão · -${warlockState.scars * 2}% MDEF` : undefined, visible: ch.classId === 'bruxo' },
     'bruxo:forgery': { value: warlockState.forgeryReady ? 1 : 0, detail: warlockState.forgeryReady ? 'ASSINATURA FALSA PRONTA' : undefined, visible: ch.classId === 'bruxo' },
+    'feiticeiro:pulse': { value: sorcererState.pulse, maxValue: 6, detail: sorcererState.pulse === 6 ? 'SURTO INATO — próxima habilidade ativa DESPERTA' : undefined, visible: ch.classId === 'feiticeiro' },
+    'feiticeiro:surge': { value: sorcererState.pulse === 6 ? 1 : 0, visible: ch.classId === 'feiticeiro' },
+    'feiticeiro:awakened': { value: sorcererAwakenedRef.current ? 1 : 0, visible: ch.classId === 'feiticeiro' },
+    'feiticeiro:fracture': { value: enemySorcerer.fractures, maxValue: 3, visible: ch.classId === 'feiticeiro' },
+    'feiticeiro:resonance': { value: sorcererState.resonance, maxValue: 2, visible: ch.classId === 'feiticeiro' },
+    'feiticeiro:control': { value: sorcererState.control, maxValue: 2, visible: ch.classId === 'feiticeiro' },
     'mago:runes': { value: mageRunesState, maxValue: 2 },
     'mago:heat': { value: mageHeatState, maxValue: 100 },
     'mago:overheat': { value: 0 },
