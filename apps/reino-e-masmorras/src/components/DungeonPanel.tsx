@@ -30,6 +30,14 @@ import {
   paladinRadiantBonusPct,
 } from '../lib/paladin';
 import {
+  ArcherCombatState, advanceArcherReflex, alignInFlightArrows,
+  archerDistanceLabel, archerDistanceShift,
+  consumeArcherReflex, consumeArcherSteps, consumePerfectRhythm, createArcherCombatState,
+  flightSnapshotFromAbility, gainArcherCadence, gainArcherSteps, gainArcherTension,
+  loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows,
+  tensionForPreciseHit, accelerateOldestArrow,
+} from '../lib/archer';
+import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
   GUARD_BREAK_TICKS, POSTURE_BASIC_DAMAGE, POSTURE_MAX, PreparedGuardState,
@@ -328,7 +336,7 @@ const SELF_ABILITY_KINDS = [
   // Caçador redesign (lib/hunter.ts) — all consume the whole action, no attack roll.
   'armTrap', 'buffEvasion', 'huntWithPrey',
   // Guerreiro — support actions; neither consumes Guarda Quebrada actions.
-  'preparedGuard', 'feint', 'aegis',
+  'preparedGuard', 'feint', 'aegis', 'archerMove',
   // Necromante — invocações/proteções consomem a ação inteira.
   'boneShield', 'deathVeil', 'boneFortress', 'mortalVoracity',
   // Ladino — suportes Rápidos resolvem dentro da Janela de Iniciativa.
@@ -890,6 +898,93 @@ export function DungeonPanel({
 
   const [hunterTrapsState, setHunterTrapsState] = useState<CombatTrap[]>([]);
 
+  // Arqueiro redesign — estado de combate efêmero, reiniciado por inimigo.
+  const archerStateRef = useRef<ArcherCombatState>(createArcherCombatState());
+  const archerDonoDoEspacoUsedRef = useRef(false);
+  const archerAccuracyBuffRef = useRef(0);
+  const archerEvasionBuffRef = useRef(0);
+  const archerSpeedBuffRef = useRef(0);
+  const archerPerfectCastRef = useRef(false);
+  const archerLastActionHitsRef = useRef(0);
+  const [archerState, setArcherState] = useState(archerStateRef.current);
+
+  function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
+  function isArcher(): boolean { return chRef.current.classId === 'arqueiro'; }
+  function archerHasSkill(id: string): boolean { return isArcher() && hasSkill(chRef.current, id); }
+  function archerResetEncounter() {
+    archerStateRef.current = createArcherCombatState();
+    archerDonoDoEspacoUsedRef.current = false;
+    archerAccuracyBuffRef.current = 0; archerEvasionBuffRef.current = 0; archerSpeedBuffRef.current = 0;
+    archerDmgTakenBonusRef.current = false;
+    archerPerfectCastRef.current = false;
+    archerLastActionHitsRef.current = 0;
+    archerSync();
+  }
+  function archerMoveDistance(amount: number, voluntary = true, consumeStepGeneration = true) {
+    if (!isArcher() || amount === 0) return false;
+    const before = archerStateRef.current.distance;
+    const next = archerDistanceShift(archerStateRef.current, amount);
+    if (next.distance === before) return false;
+    archerStateRef.current = next;
+    if (voluntary) {
+      const cost = archerHasSkill('arqueiro:instinto:11') ? 8 : 15;
+      archerStateRef.current = loseArcherTension(archerStateRef.current, cost);
+    }
+    if (consumeStepGeneration && archerHasSkill('arqueiro:instinto:6')) archerStateRef.current = gainArcherSteps(archerStateRef.current, 1);
+    if (archerHasSkill('arqueiro:instinto:0')) archerEvasionBuffRef.current = Math.min(0.02, attrTotal(chRef.current, 'agi') * 0.0008);
+    if (archerHasSkill('arqueiro:instinto:5')) archerDmgTakenBonusRef.current = true;
+    archerSync();
+    return true;
+  }
+  const archerDmgTakenBonusRef = useRef(false);
+  function archerOnEnemyMiss() {
+    if (!isArcher()) return;
+    if (archerHasSkill('arqueiro:instinto:6')) archerStateRef.current = gainArcherSteps(archerStateRef.current, 1);
+    if (archerHasSkill('arqueiro:instinto:8')) archerStateRef.current = prepareArcherReflex(archerStateRef.current);
+    if (archerHasSkill('arqueiro:instinto:2')) archerSpeedBuffRef.current = 0.02;
+    archerSync();
+  }
+  function archerOnEnemyHit() {
+    if (!isArcher()) return;
+    archerStateRef.current = loseArcherTension(archerStateRef.current, 18);
+    const dono = archerHasSkill('arqueiro:instinto:14') && !archerDonoDoEspacoUsedRef.current && archerStateRef.current.distance === 1;
+    if (dono) {
+      archerDonoDoEspacoUsedRef.current = true;
+      archerStateRef.current = gainArcherSteps(prepareArcherReflex(archerStateRef.current), 3);
+      archerStateRef.current = accelerateOldestArrow(archerStateRef.current);
+    } else if (archerStateRef.current.distance > 0) archerMoveDistance(-1, false, true);
+    archerSync();
+  }
+  function archerResolveFlightWindow(existingIds: number[], immediateReduction = 0) {
+    if (!isArcher() || existingIds.length === 0) return;
+    const ids = new Set(existingIds);
+    const landed = archerStateRef.current.arrows.filter((a) => ids.has(a.id) && a.actionsRemaining - 1 - immediateReduction <= 0)
+      .sort((a, b) => a.createdOrder - b.createdOrder);
+    archerStateRef.current = {
+      ...archerStateRef.current,
+      arrows: archerStateRef.current.arrows
+        .filter((a) => !ids.has(a.id) || a.actionsRemaining - 1 - immediateReduction > 0)
+        .map((a) => ids.has(a.id) ? { ...a, actionsRemaining: a.actionsRemaining - 1 - immediateReduction } : a),
+    };
+    if (!landed.length) { archerSync(); return; }
+    const convergence = landed.length >= 2 ? (1 + Math.min(3, landed.length) * 0.10) : 1;
+    for (const arrow of landed) {
+      if (enemyRef.current.hp <= 0) break;
+      const hit = rollMiss(arrow.accuracy, computeEnemyEvasion()) === false;
+      if (!hit) { pushFloat('enemy', 0, false, false, true); continue; }
+      const def = computeEnemyDef() * (1 - arrow.defPenPct);
+      const r = rollAbilityHit(arrow.atk, def, arrow.dmgMult * convergence, arrow.critChance, arrow.critDmgMult);
+      applyEnemyHp(Math.max(0, enemyRef.current.hp - r.dmg));
+      pushFloat('enemy', r.dmg, r.crit); flash('enemy');
+      if (enemyRef.current.hp <= 0) break;
+    }
+    if (landed.length >= 2 && archerHasSkill('arqueiro:tiro-rapido:14')) {
+      archerStateRef.current = gainArcherCadence(archerStateRef.current, landed.length >= 3 ? 2 : 1);
+    }
+    archerSync();
+    if (enemyRef.current.hp <= 0) resolveEnemyDeath();
+  }
+
   // ── Mago redesign — all session-only. The data is deliberately keyed by
   // mechanic, never ability name: any future spell can participate through
   // AbilityEffect metadata.
@@ -1260,6 +1355,11 @@ export function DungeonPanel({
         heat: mageHeatRef.current,
         souls: necroSoulsRef.current,
         conviction: paladinConviction(paladinLiturgyRef.current.virtues),
+        distance: archerStateRef.current.distance,
+        tension: archerStateRef.current.tension,
+        cadence: archerStateRef.current.cadence,
+        steps: archerStateRef.current.steps,
+        flightCount: archerStateRef.current.arrows.length,
       },
       states: {
         frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
@@ -1271,6 +1371,9 @@ export function DungeonPanel({
         mercy: paladinLiturgyRef.current.virtues.mercy,
         liturgy: paladinLiturgyRef.current.actionsLeft > 0,
         aegis: paladinAegisRef.current !== null,
+        fullDraw: archerStateRef.current.tension >= 100,
+        perfectRhythm: archerStateRef.current.perfectRhythm,
+        reflex: archerStateRef.current.reflexActionsLeft > 0,
       },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0 },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
@@ -2727,14 +2830,18 @@ export function DungeonPanel({
   // simplification, called out in the final report.
   function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }) {
     const eff = ab.effect;
-    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct + warriorCdrBonusFor(ab.id) + rogueCdrBonusFor(ab));
+    const archerCdr = isArcher() && eff.archerPath
+      ? (archerHasSkill(eff.archerPath === 'precision' ? 'arqueiro:precisao:3' : eff.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
+      : 0;
+    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct + warriorCdrBonusFor(ab.id) + rogueCdrBonusFor(ab) + archerCdr);
     const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
     const power = isMagicalClass ? stats.matk : stats.atk;
     const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
     const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
     const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen));
     const marked = hunterMarkedPrey();
-    const hitCount = eff.hitCount ?? 2;
+    const originalHitCount = eff.hitCount ?? 2;
+    const hitCount = originalHitCount + (isArcher() && archerPerfectCastRef.current && eff.archerPerfectExtraRatio ? 1 : 0);
     let allLanded = true, landedHits = 0, criticalHits = 0, totalWarriorPosture = 0;
     let warriorPostureBonusPending = warriorBonuses?.posture ?? 0;
     pushAbilityCast('player', ab.name, activeAbilityIconStyle(chRef.current.classId, ab.id), null, false);
@@ -2750,7 +2857,9 @@ export function DungeonPanel({
         hunterOnPlayerMiss();
         continue;
       }
-      let dmgMult = eff.dmgMultPerHit ?? 0.8;
+      let dmgMult = eff.hitDmgMults?.[i] ?? eff.dmgMultPerHit ?? 0.8;
+      if (isArcher() && i >= originalHitCount && eff.archerPerfectExtraRatio) dmgMult = (eff.hitDmgMults?.[originalHitCount - 1] ?? eff.dmgMultPerHit ?? 0.8) * eff.archerPerfectExtraRatio;
+      if (isArcher() && eff.archerFifthDistanceMult && i === 4 && (archerStateRef.current.distance === 1 || archerStateRef.current.distance === 2)) dmgMult = eff.archerFifthDistanceMult;
       if (isMage() && mageAmplified) {
         // Arco Duplo gains one extra small hit; Tempestade replaces each hit.
         if (ab.id === 'mago:eletromante:13') dmgMult = eff.amplifiedDmgMult ?? dmgMult;
@@ -2804,6 +2913,21 @@ export function DungeonPanel({
       } else allLanded = false;
     }
     if (isMage() && landedHits > 0) mageOnSpellHit(ab, stats, mageAmplified, landedHits);
+    if (isArcher()) {
+      const originalLanded = Math.min(landedHits, originalHitCount);
+      archerLastActionHitsRef.current = originalLanded;
+      if (eff.archerShotType === 'volley') {
+        let gain = originalLanded > 0 ? 1 : -2;
+        if (originalLanded === originalHitCount) gain += 1;
+        archerStateRef.current = gain >= 0 ? gainArcherCadence(archerStateRef.current, gain) : loseArcherCadence(archerStateRef.current, -gain);
+        if (originalLanded === originalHitCount && archerHasSkill('arqueiro:tiro-rapido:8')) archerAccuracyBuffRef.current = 0.04;
+        if (originalLanded === originalHitCount && archerHasSkill('arqueiro:tiro-rapido:5')) archerEvasionBuffRef.current = 0.03;
+        if (eff.archerCreatesFlightOnHits && originalLanded >= eff.archerCreatesFlightOnHits && archerStateRef.current.arrows.length < 4) {
+          archerStateRef.current = scheduleInFlightArrows(archerStateRef.current, [flightSnapshotFromAbility(ab, stats, archerStateRef.current.distance, eff.archerFlightDmgMult ?? 0.42, eff.archerFlightTimer ?? 1)]);
+        }
+      }
+      archerSync();
+    }
     if (isNecromancer() && ab.effect.soulCost && ab.id === 'necromante:ceifador:12' && criticalHits >= 2) necroGainSouls(1);
     if (isRogue() && rogueBonuses) {
       if (landedHits > 0 && rogueToxicBladeMainLeftRef.current > 0) {
@@ -3076,27 +3200,54 @@ export function DungeonPanel({
       if (paladinLiturgyRef.current.virtues.mercy && paladinHasSkill('paladino:luz:3')) paladinLifestealBonus += 0.01;
     }
 
+    // Arqueiro: bônus dinâmicos nunca são persistidos no personagem. A
+    // Distância é aplicada à Precisão base; os nós de cada caminho apenas
+    // acrescentam os escalamentos declarados pelo prompt.
+    let archerAccuracyBonus = 0, archerCritBonus = 0, archerCritDmgBonus = 0, archerEvasionBonus = 0;
+    let archerSpeedBonus = 0, archerDmgTakenBonus = 0, archerDefMult = 1;
+    if (isArcher()) {
+      const a = archerStateRef.current;
+      archerAccuracyBonus += a.distance === 0 ? (archerHasSkill('arqueiro:instinto:1') ? -0.03 : -0.06) : a.distance === 2 ? 0.02 : a.distance === 3 ? 0.04 : 0;
+      if (a.distance === 3) archerCritDmgBonus += 0.05;
+      if (archerHasSkill('arqueiro:precisao:0') && a.tension >= 50) archerAccuracyBonus += Math.min(0.02, attrTotal(ch, 'dex') * 0.0008);
+      if (archerHasSkill('arqueiro:precisao:1') && a.tension >= 75) archerCritBonus += Math.min(0.02, attrTotal(ch, 'luk') * 0.0008);
+      if (archerHasSkill('arqueiro:precisao:7') && a.distance >= 2) archerEvasionBonus += Math.min(0.02, attrTotal(ch, 'agi') * 0.0008);
+      if (archerHasSkill('arqueiro:tiro-rapido:0') && a.cadence >= 3) archerSpeedBonus += Math.min(0.02, attrTotal(ch, 'agi') * 0.0008);
+      if (archerHasSkill('arqueiro:tiro-rapido:1') && (a.distance === 1 || a.distance === 2)) archerAccuracyBonus += Math.min(0.02, attrTotal(ch, 'dex') * 0.0008);
+      if (archerHasSkill('arqueiro:tiro-rapido:2') && a.cadence >= 4) archerCritBonus += Math.min(0.02, attrTotal(ch, 'luk') * 0.0008);
+      if (archerHasSkill('arqueiro:tiro-rapido:6')) archerSpeedBonus += Math.max(0, Math.min(0.08, Math.max(0, a.cadence - 2) * 0.02));
+      if (archerHasSkill('arqueiro:instinto:0')) archerEvasionBonus += a.distance !== 3 ? Math.min(0.02, attrTotal(ch, 'agi') * 0.0008) : 0;
+      if (archerHasSkill('arqueiro:instinto:2')) archerSpeedBonus += archerSpeedBuffRef.current;
+      if (archerHasSkill('arqueiro:instinto:5') && archerDmgTakenBonusRef.current) archerDmgTakenBonus -= 0.03;
+      if (archerHasSkill('arqueiro:instinto:11')) { archerDefMult *= 1.02; if (a.steps >= 3) archerSpeedBonus += 0.02; }
+      if (a.steps >= 3 && archerHasSkill('arqueiro:instinto:6')) archerEvasionBonus += 0.04;
+      archerAccuracyBonus += archerAccuracyBuffRef.current;
+      archerEvasionBonus += archerEvasionBuffRef.current;
+      archerSpeedBonus += archerSpeedBuffRef.current;
+      if (archerHasSkill('arqueiro:tiro-rapido:11') && a.cadence >= 4) archerDmgTakenBonus -= Math.min(0.05, 0.03 + attrTotal(ch, 'vit') * 0.0008);
+    }
+
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct) * necroMatkMult),
-      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult * paladinDefMult)),
+      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult * paladinDefMult * archerDefMult)),
       mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult)),
-      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus)),
-      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus,
+      critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus + archerCritBonus)),
+      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus + archerCritDmgBonus,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
-      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus + rogueEvasionBonus),
-      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus,
-      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus,
+      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus + rogueEvasionBonus + archerEvasionBonus),
+      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus,
+      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus),
       tenacityPct: base.tenacityPct + tenacityBonus,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
       // playerAct's damage pipeline.
-      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus + rogueSpeedBonus),
+      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus + rogueSpeedBonus + archerSpeedBonus),
     };
   }
 
@@ -3245,6 +3396,16 @@ export function DungeonPanel({
       paladinMakeAegis(eff.aegisReductionPct ?? 0.35, eff.aegisMaxHpCapPct ?? 0.10, eff.aegisHits ?? 1, eff.aegisDuration ?? 3);
       pushAbilityCast('player', ab.name, icon, null, false);
       return `${ab.name}: a Égide protegerá o próximo golpe direto.`;
+    } else if (eff.kind === 'archerMove') {
+      const before = archerStateRef.current;
+      const consumed = consumeArcherSteps(before, eff.archerConsumesSteps ?? 0);
+      let next = archerDistanceShift(consumed.state, eff.archerDistanceShift ?? 0);
+      if (consumed.consumed > 0) enemyModsRef.current = enemyModsRef.current.filter((m) => m.sourceAbilityId !== `${ab.id}:step-penalty`);
+      if (consumed.consumed > 0) enemyModsRef.current.push({ stat: 'accuracy', pct: -0.08 * consumed.consumed, roundsLeft: 1, sourceAbilityId: `${ab.id}:step-penalty` });
+      archerStateRef.current = next;
+      archerSync(); syncEnemyMods();
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: distância ${archerDistanceLabel(next.distance)}${consumed.consumed ? `; ${consumed.consumed} Passo(s) consumido(s)` : ''}.`;
     } else if (eff.kind === 'boneShield') {
       necroSpendSouls(eff.soulCost ?? 1);
       const efficiency = necroHasSkill('necromante:drenar-vida:0') ? 1 + capped(0.0015, attrTotal(chRef.current, 'wis'), 0.05) : 1;
@@ -4026,6 +4187,7 @@ export function DungeonPanel({
         mageFrostBarrierAdvanceRef.current = 0; mageCurrentCastAmplifiedRef.current = false;
         mageSync();
       }
+      if (isArcher()) archerResetEncounter();
       if (isNecromancer()) {
         necroSoulsRef.current = soulsForNextEnemy(necroSoulsRef.current, necroDeathSetup && necroHasSkill('necromante:decomposicao:14'));
         necroMetric('soulsCarried', necroSoulsRef.current);
@@ -4228,6 +4390,10 @@ export function DungeonPanel({
     // clears it mid-resolution, and before this hit's own normal generation
     // (first-hit/next-hit) lands.
     const momentumAtActionStart = knightActive ? knightMomentumRef.current : 0;
+    const archerActive = isArcher();
+    const archerFlightsAtActionStart = archerActive ? archerStateRef.current.arrows.map((a) => a.id) : [];
+    const archerTensionAtActionStart = archerActive ? archerStateRef.current.tension : 0;
+    const archerDistanceAtActionStart = archerActive ? archerStateRef.current.distance : 0;
 
     {
       const stats = computePlayerStats();
@@ -4249,6 +4415,8 @@ export function DungeonPanel({
       let paladinMercyArmedThisCast = false;
       let paladinLawHammerThisCast = false;
       let paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
+      let archerReflexThisCast = false;
+      let archerBallisticLaunched = false;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -4258,6 +4426,7 @@ export function DungeonPanel({
         // the plain attack for the single pick, instead of firing for free
         // alongside whatever else happened. Using a heal costs you the
         // round's damage, exactly like choosing to use any other ability.
+        archerPerfectCastRef.current = false;
         chosen = pickAbility(isRogue() ? 'main' : undefined);
         if (isPaladin()) {
           paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
@@ -4357,8 +4526,29 @@ export function DungeonPanel({
           mageHeatRef.current = Math.max(0, mageHeatRef.current - cooling);
           mageSync();
         }
+        if (archerActive) {
+          const offensive = !chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
+          const ae = chosen?.effect;
+          if (chosen && ae?.archerTensionCost) archerStateRef.current = loseArcherTension(archerStateRef.current, ae.archerTensionCost);
+          if (chosen && ae?.archerCadenceCost) archerStateRef.current = loseArcherCadence(archerStateRef.current, ae.archerCadenceCost);
+          if (offensive && archerStateRef.current.reflexActionsLeft > 0) {
+            archerReflexThisCast = true;
+            archerStateRef.current = consumeArcherReflex(archerStateRef.current);
+          }
+          if (offensive && ae?.archerShotType === 'volley' && archerStateRef.current.perfectRhythm && ae.archerPerfectExtraRatio) {
+            archerPerfectCastRef.current = true;
+            archerStateRef.current = consumePerfectRhythm(archerStateRef.current);
+          }
+          if (chosen) cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + (chosen.effect.archerPath ? 0.03 * (archerHasSkill(chosen.effect.archerPath === 'precision' ? 'arqueiro:precisao:3' : chosen.effect.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 1 : 0) : 0));
+          archerSync();
+        }
         if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
-          if (!isPaladin()) cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id));
+          if (!isPaladin()) {
+            const archerCdr = archerActive && chosen.effect.archerPath
+              ? (archerHasSkill(chosen.effect.archerPath === 'precision' ? 'arqueiro:precisao:3' : chosen.effect.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
+              : 0;
+            cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id) + archerCdr);
+          }
           const line = resolveSelfAbility(chosen, stats, paladinVerdictAtCast);
           if (line) pushLog(line);
         } else {
@@ -4438,7 +4628,8 @@ export function DungeonPanel({
           }
           const paladinConvictionAtCast = paladinVerdictAtCast?.conviction ?? paladinConviction(paladinLiturgyRef.current.virtues);
           const paladinCritBonus = isPaladin() && paladinVerdictAtCast?.conviction === 3 && paladinHasSkill('paladino:martelo:8') ? 0.06 : 0;
-          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus + rogueCritBonus + paladinCritBonus);
+          const archerCastCritBonus = archerActive && offenseAbility?.effect.archerCritBonus ? offenseAbility.effect.archerCritBonus : 0;
+          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus + rogueCritBonus + paladinCritBonus + archerCastCritBonus);
           // Mão Pesada / Instinto Mortal (barbaro:selvageria:3 / :11) —
           // SOR-scaled critDmg vs a wounded enemy (any Ferida / exactly max).
           const maoPesadaBonus = barbActive && barbHasSkill('barbaro:selvageria:3') && woundsAtActionStart >= 1
@@ -4466,6 +4657,12 @@ export function DungeonPanel({
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
           let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus + warriorCastAccuracyBonus;
+          if (archerActive) {
+            if (archerReflexThisCast) accuracyForRoll += 0.08;
+            if (offenseAbility?.effect.archerShotType === 'volley') accuracyForRoll += archerAccuracyBuffRef.current;
+            if (archerActive && archerStateRef.current.distance === 3 && offenseAbility?.effect.archerShotType === 'precise') accuracyForRoll += 0.04;
+            if (offenseAbility?.id === 'arqueiro:instinto:13') accuracyForRoll += 0.10;
+          }
           if (isPaladin() && paladinConvictionAtCast >= 2 && paladinHasSkill('paladino:martelo:1')) accuracyForRoll += 0.015;
           if (isRogue()) {
             if (rogueAmbushThisCast) accuracyForRoll += ROGUE_AMBUSH_ACCURACY;
@@ -4496,7 +4693,20 @@ export function DungeonPanel({
           }
           // Disparo Preciso (cacador:precisao-caca:4) — bypasses the evasion
           // roll entirely (crit still rolls normally downstream).
-          missed = offenseAbility?.effect.guaranteedHit || offenseAbility?.effect.guaranteedAccuracy ? false : rollMiss(accuracyForRoll, enemyEvasion);
+          if (offenseAbility?.effect.kind === 'ballistic') {
+            const count = offenseAbility.effect.archerFlightCount ?? 1;
+            const snapshots = Array.from({ length: count }, (_, i) => flightSnapshotFromAbility(
+              offenseAbility!, stats, archerDistanceAtActionStart,
+              offenseAbility!.effect.archerFlightHitDmgMults?.[i] ?? (archerTensionAtActionStart >= 50 ? (offenseAbility!.effect.archerFlightHighTensionDmgMult ?? offenseAbility!.effect.archerFlightDmgMult ?? offenseAbility!.effect.dmgMult ?? 1) : (offenseAbility!.effect.archerFlightDmgMult ?? offenseAbility!.effect.dmgMult ?? 1)),
+              (offenseAbility!.effect.archerFlightTimer ?? 1) + i));
+            archerStateRef.current = scheduleInFlightArrows(archerStateRef.current, snapshots);
+            archerBallisticLaunched = true;
+            missed = false;
+            pushAbilityCast('player', offenseAbility.name, activeAbilityIconStyle(chRef.current.classId, offenseAbility.id), null, false);
+            pushLog(`Você lança ${offenseAbility.name}; as flechas ficam em voo.`);
+          } else {
+            missed = offenseAbility?.effect.guaranteedHit || offenseAbility?.effect.guaranteedAccuracy ? false : rollMiss(accuracyForRoll, enemyEvasion);
+          }
           if (isRogue() && roguePreparedTrickRef.current?.kind === 'loaded_die') {
             const trick = roguePreparedTrickRef.current;
             const result = loadedDieResult(!missed, !rollMiss(accuracyForRoll, enemyEvasion));
@@ -4508,7 +4718,10 @@ export function DungeonPanel({
             rogueSync();
           }
 
-          if (offenseAbility && offenseAbility.effect.kind === 'multiHit') {
+          if (archerBallisticLaunched) {
+            // criação balística não causa dano imediato nem dispara on-hit;
+            // os snapshots são resolvidos apenas em ações futuras.
+          } else if (offenseAbility && offenseAbility.effect.kind === 'multiHit') {
             // Tiro Duplo — two independent rolls, handled entirely by its
             // own self-contained resolver; `missed`/`dmg` stay at their
             // initial false/0 so the shared post-processing below is a no-op.
@@ -4605,11 +4818,17 @@ export function DungeonPanel({
               if (warriorHasSkill('guerreiro:furioso:11') && warriorEnemyState().current <= 50) warriorConditionalDefPen += 0.05;
               if (warriorHasSkill('guerreiro:duelista:11')) warriorConditionalDefPen += band === 'broken' ? 0.08 : band === 'open' ? 0.05 : 0;
             }
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warriorConditionalDefPen));
+            let archerDefPen = archerActive ? (eff.archerDefPenPct ?? 0) : 0;
+            if (archerActive && eff.archerHighTensionPenPct !== undefined && archerTensionAtActionStart >= 75) archerDefPen = eff.archerHighTensionPenPct;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warriorConditionalDefPen - archerDefPen));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (archerActive) {
+              if (eff.archerHighTensionDmgMult !== undefined && archerTensionAtActionStart >= 75) dmgMult = eff.archerHighTensionDmgMult;
+              if (eff.archerDistanceZeroMult !== undefined && archerDistanceAtActionStart === 0) dmgMult = eff.archerDistanceZeroMult;
+            }
             if (isNecromancer()) {
               if (eff.enemyHpExecuteBase !== undefined) dmgMult = reaperExecuteMultiplier(enemyRef.current.hp / enemyRef.current.maxHp, eff.enemyHpExecuteBase, eff.enemyHpExecuteThreshold ?? 0, eff.enemyHpExecutePer5Pct ?? 0, eff.enemyHpExecuteCap ?? eff.enemyHpExecuteBase);
               if (necroSacrificed) { dmgMult = 1.85 + Math.min(0.32, necroSacrificed.attacksRemaining * 0.08); eff.directHealFromDamagePct = 0.22; eff.directHealCapPct = 0.08; }
@@ -4734,6 +4953,7 @@ export function DungeonPanel({
               : critDmgMultForRoll;
             const r = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, hunterCritDmgMultForRoll, eff.kind === 'guaranteedCrit');
             dmg = r.dmg; crit = r.crit;
+            if (archerActive) archerLastActionHitsRef.current = 1;
             abilityTag = ` [${offenseAbility.name}]`;
             castAbility = necroSacrificed ? { ...offenseAbility, effect: { ...offenseAbility.effect, directHealFromDamagePct: 0.22, directHealCapPct: 0.08 } } : offenseAbility;
             // Caçador: generic Brecha gain/consume — only ever on a hit that
@@ -4923,6 +5143,7 @@ export function DungeonPanel({
             const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() : computeEnemyDef()) * (1 - stats.defPenPct - warriorPlainDefPen));
             const r = rollAttack(power, effDef, critChanceForRoll, critDmgMultForRoll);
             dmg = r.dmg; crit = r.crit;
+            if (archerActive) archerLastActionHitsRef.current = 1;
             if (isWarrior()) {
               const bonus = warriorNextBasicPostureBonusRef.current ? 2 : 0;
               warriorNextBasicPostureBonusRef.current = false;
@@ -5046,6 +5267,13 @@ export function DungeonPanel({
               if (paladinMercyArmedThisCast) dmg = Math.round(dmg * 1.06);
               if (paladinLawHammerThisCast) dmg = Math.round(dmg * 1.20);
               if (paladinVerdictAtCast && enemyRef.current.hp / enemyRef.current.maxHp < 0.35 && paladinHasSkill('paladino:martelo:2')) dmg = Math.round(dmg * 1.02);
+            }
+            if (archerActive) {
+              const precise = castAbility?.effect.archerShotType === 'precise' || !castAbility;
+              if (precise && archerHasSkill('arqueiro:precisao:6')) dmg = Math.round(dmg * (1 + (archerTensionAtActionStart >= 100 ? 0.08 : archerTensionAtActionStart >= 50 ? 0.04 : 0)));
+              if (precise && archerTensionAtActionStart >= 75 && archerHasSkill('arqueiro:precisao:2')) dmg = Math.round(dmg * (1 + Math.min(0.03, attrTotal(chRef.current, 'dex') * 0.00075)));
+              if (castAbility?.effect.archerShotType === 'volley' && (archerDistanceAtActionStart === 1 || archerDistanceAtActionStart === 2) && archerHasSkill('arqueiro:tiro-rapido:7')) dmg = Math.round(dmg * 1.02);
+              if ((archerDistanceAtActionStart === 0 || archerDistanceAtActionStart === 1) && archerHasSkill('arqueiro:instinto:7')) dmg = Math.round(dmg * (1 + Math.min(0.02, attrTotal(chRef.current, 'dex') * 0.0008)));
             }
             // Vulnerabilidade do inimigo — sempre por último, per Section 18.
             if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
@@ -5253,6 +5481,30 @@ export function DungeonPanel({
         rogueSync();
         if (rogueResolveInitiative()) return;
       }
+      if (archerActive && !playerStunned) {
+        const offensive = !chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
+        const effect = chosen?.effect;
+        if (offensive && !archerBallisticLaunched) {
+          if (archerLastActionHitsRef.current > 0) {
+            const gain = effect?.archerTensionOverrideOnHit
+              ? (archerDistanceAtActionStart === 3 ? (effect.archerTensionOverrideAtHorizon ?? effect.archerTensionOverrideOnHit) : effect.archerTensionOverrideOnHit)
+              : (effect?.archerShotType === 'precise' || !chosen ? tensionForPreciseHit(archerDistanceAtActionStart) : 0);
+            if (gain > 0) archerStateRef.current = gainArcherTension(archerStateRef.current, gain);
+          } else if (effect?.archerShotType === 'precise' || !chosen) archerStateRef.current = loseArcherTension(archerStateRef.current, 8);
+          if ((effect?.archerTensionCost ?? 0) >= 60 && archerLastActionHitsRef.current > 0 && archerHasSkill('arqueiro:precisao:14')) archerStateRef.current = gainArcherTension(archerStateRef.current, 15);
+        }
+        if (effect?.archerDistanceShift && effect.kind !== 'archerMove') archerMoveDistance(effect.archerDistanceShift, true, true);
+        if (effect?.archerAlignFlights) archerStateRef.current = archerStateRef.current.arrows.length === 1 ? accelerateOldestArrow(archerStateRef.current) : alignInFlightArrows(archerStateRef.current);
+        if (effect?.archerAccelerateOldest) archerStateRef.current = accelerateOldestArrow(archerStateRef.current);
+        archerResolveFlightWindow(archerFlightsAtActionStart, effect?.archerImmediateTimerReduction ?? 0);
+        archerStateRef.current = { ...archerStateRef.current, actionCount: archerStateRef.current.actionCount + 1 };
+        if (!archerReflexThisCast && archerStateRef.current.reflexActionsLeft > 0) archerStateRef.current = advanceArcherReflex(archerStateRef.current);
+        archerSpeedBuffRef.current = 0;
+        archerDmgTakenBonusRef.current = false;
+        if (effect?.archerShotType === 'volley') archerAccuracyBuffRef.current = 0;
+        archerSync();
+        if (enemyRef.current.hp <= 0) return;
+      }
     }
 
     schedulePlayer(nextPlayerDelay());
@@ -5332,6 +5584,8 @@ export function DungeonPanel({
       // (Instinto de Fuga/Passo Etéreo/Manto das Sombras).
       hunterOnEnemyRealAction();
       hunterOnEnemyMiss();
+      archerOnEnemyMiss();
+      archerEvasionBuffRef.current = 0;
       mageOnEnemyRealAction();
       warriorOnEnemyRealAction();
       scheduleEnemy();
@@ -5775,6 +6029,9 @@ export function DungeonPanel({
     }
 
     if (hp <= 0 && !resolvePlayerDeath()) return;
+    archerOnEnemyHit();
+    archerEvasionBuffRef.current = 0;
+    archerDmgTakenBonusRef.current = false;
     // Caçador: the enemy just completed a real (landed) action — Rastro gain
     // + oldest-trap trigger. Deliberately AFTER the death check above, so a
     // hit that finishes the Caçador off resolves death first and never lets
@@ -6132,6 +6389,15 @@ export function DungeonPanel({
     'cacador:trail': { value: enemyTrail, maxValue: TRAIL_MAX, visible: hunterHasRastreioChar },
     'cacador:markedPrey': { value: enemyMarkedPrey ? 1 : 0, visible: hunterHasRastreioChar },
     'cacador:breaches': { value: enemyBreaches, maxValue: BREACH_MAX, duration: enemy.hunterBreaches?.ticksLeft, visible: hunterHasPrecisaoChar },
+    'arqueiro:distance': { value: archerState.distance, maxValue: 3, detail: archerDistanceLabel(archerState.distance), visible: ch.classId === 'arqueiro' },
+    'arqueiro:tension': { value: archerState.tension, maxValue: 100, visible: ch.classId === 'arqueiro' },
+    'arqueiro:full_draw': { value: archerState.tension >= 100 ? 1 : 0, visible: ch.classId === 'arqueiro' },
+    'arqueiro:cadence': { value: archerState.cadence, maxValue: 6, visible: ch.classId === 'arqueiro' },
+    'arqueiro:perfect_rhythm': { value: archerState.perfectRhythm ? 1 : 0, visible: ch.classId === 'arqueiro' },
+    'arqueiro:steps': { value: archerState.steps, maxValue: 3, visible: ch.classId === 'arqueiro' },
+    'arqueiro:reflex': { value: archerState.reflexActionsLeft, maxValue: 2, duration: archerState.reflexActionsLeft, visible: ch.classId === 'arqueiro' },
+    'arqueiro:flight': { value: archerState.arrows.length, maxValue: 4, detail: archerState.arrows.map((a) => `${a.sourceName}: ↓${a.actionsRemaining}`).join(' · '), visible: ch.classId === 'arqueiro' },
+    'arqueiro:convergence': { value: 0, visible: ch.classId === 'arqueiro' },
     'mago:runes': { value: mageRunesState, maxValue: 2 },
     'mago:heat': { value: mageHeatState, maxValue: 100 },
     'mago:overheat': { value: 0 },
@@ -6174,8 +6440,10 @@ export function DungeonPanel({
           : condition.resource === 'momentum' ? knightMomentumState
           : condition.resource === 'orders' ? knightOrdersState
           : condition.resource === 'conviction' ? paladinConviction(paladinLiturgyState.virtues) : 0;
-        const resolvedCurrent = condition.resource === 'souls' ? necroSoulsState : current;
-        return [`${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource}: ${formatGameNumber(resolvedCurrent)}/${formatGameNumber(condition.value ?? 0)}`];
+        const archerCurrent = condition.resource === 'tension' ? archerState.tension : condition.resource === 'cadence' ? archerState.cadence : condition.resource === 'steps' ? archerState.steps : condition.resource === 'distance' ? archerState.distance : condition.resource === 'flightCount' ? archerState.arrows.length : undefined;
+        const resolvedCurrent = condition.resource === 'souls' ? necroSoulsState : archerCurrent ?? current;
+        const label = condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource === 'tension' ? 'Tensão' : condition.resource === 'cadence' ? 'Cadência' : condition.resource === 'steps' ? 'Passos' : condition.resource === 'distance' ? 'Distância' : condition.resource === 'flightCount' ? 'Flechas em Voo' : condition.resource;
+        return [`${label}: ${formatGameNumber(resolvedCurrent)}/${formatGameNumber(condition.value ?? 0)}`];
       }
       if (condition.type === 'enemyStacksAtLeast' || condition.type === 'enemyStacksEqual') {
         const current = condition.stackId === 'judgment' ? (enemyJudgment?.stacks ?? 0)
