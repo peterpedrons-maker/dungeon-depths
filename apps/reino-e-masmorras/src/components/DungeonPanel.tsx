@@ -81,6 +81,7 @@ import {
   SELVAGERIA_INSTINTO_MORTAL_RATE, SELVAGERIA_INSTINTO_MORTAL_CAP,
   capped, attrTotal,
   hasSkill, evalAbilityCondition, PainPacket, AbilityConditionContext,
+  createPainPacket, tickPainPackets, consumePainPackets, consumeWildPostureAction,
 } from '../lib/barbarian';
 import {
   FAITH_MAX, FAITH_MIN, FAITH_START_FIRST_ENEMY, nextFaithForNewEnemy,
@@ -107,10 +108,11 @@ import {
   SABEDORIA_COMPASSIVA_HP_THRESHOLD, SABEDORIA_COMPASSIVA_HEAL_EFFICIENCY_PCT,
   PRECE_SERENA_CDR_PCT, LITURGIA_CONTINUA_CDR_PCT, LITURGIA_CONTINUA_CDR_BOOSTED_PCT, LITURGIA_CONTINUA_FAITH_THRESHOLD,
   VEU_DA_ALMA_HEAL_EFFICIENCY_PCT, MISERICORDIA_ATIVA_DOT_REDUCTION_TICKS,
-  BarrierPortion, clericBaseHp, clericDirectHealAmount, clericPassiveHealAmount, significantHealAmount,
+  BarrierPortion, applyJudgmentState, consumeJudgmentState, tickJudgmentState,
+  clericBaseHp, clericDirectHealAmount, clericPassiveHealAmount, significantHealAmount,
 } from '../lib/clerigo';
 import {
-  DETERMINATION_MAX, DETERMINATION_GEN_BLOCK, DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA,
+  DETERMINATION_MAX, determinationForDirectHit, addDetermination,
   DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION,
   RETALIATION_MAX_CHARGES, RETALIATION_BLOCKS_PER_CHARGE, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR,
   MOMENTUM_MAX_BASE, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, MOMENTUM_GAIN_FIRST_HIT_PASSO_DE_GUERRA_BONUS,
@@ -180,7 +182,8 @@ import {
   PASSO_ETEREO_TRAIL_GAIN, PASSO_ETEREO_TRAIL_GAIN_ON_MISS,
   MANTO_SOMBRAS_MAX_BREACHES_PER_CAST,
   PREDADOR_PACIENTE_HITS_PER_CDR,
-  BREACH_MAX, BREACH_DURATION_TICKS,
+  BREACH_MAX,
+  applyBreach, consumeBreach, tickBreach,
   MIRA_CIRURGICA_ACCURACY_RATE, MIRA_CIRURGICA_ACCURACY_CAP,
   CONTROLE_RECUO_BREACH_CONSUME_DMG_RATE, CONTROLE_RECUO_BREACH_CONSUME_DMG_CAP,
   PULSO_FRIO_CRIT_RATE, PULSO_FRIO_CRIT_CAP,
@@ -799,7 +802,8 @@ export function DungeonPanel({
   const barbFuryRef = useRef(0);
   const barbFrenzyRef = useRef(false);
   const barbPainPacketsRef = useRef<PainPacket[]>([]);
-  // Postura Selvagem's temporary 35%-total redirect window.
+  // Postura Selvagem's temporary 35%-total redirect window. The value is
+  // action charges (three direct enemy hits), not an envTick countdown.
   const barbPostureRoundsLeftRef = useRef(0);
   // Muralha Selvagem's temporary dmgTakenPct-debuff-for-attacker window —
   // furyPerHitTaken is captured at cast time so the passive's own default
@@ -2117,24 +2121,15 @@ export function DungeonPanel({
     const amount = Math.min(rawAmount, room);
     if (amount <= 0) return;
     const ticks = barbHasSkill('barbaro:resistencia:14') ? PAIN_TICKS_INQUEBRAVEL : PAIN_TICKS;
-    barbPainPacketsRef.current = [...barbPainPacketsRef.current, { amountLeft: amount, perTick: amount / ticks, ticksLeft: ticks }];
+    barbPainPacketsRef.current = [...barbPainPacketsRef.current, createPainPacket(amount, ticks)];
     syncBarbPain();
   }
   // Consumes up to maxPct*effMaxHp of Dor, oldest packet first, and returns
   // the amount actually consumed (never more than what existed).
   function barbConsumePain(maxPct: number): number {
-    let remaining = maxPct * barbEffMaxHp();
-    let consumed = 0;
-    const kept: PainPacket[] = [];
-    for (const p of barbPainPacketsRef.current) {
-      if (remaining <= 0) { kept.push(p); continue; }
-      const take = Math.min(p.amountLeft, remaining);
-      remaining -= take;
-      consumed += take;
-      const left = p.amountLeft - take;
-      if (left > 0.01) kept.push({ amountLeft: left, perTick: left / p.ticksLeft, ticksLeft: p.ticksLeft });
-    }
-    barbPainPacketsRef.current = kept;
+    const result = consumePainPackets(barbPainPacketsRef.current, maxPct * barbEffMaxHp());
+    const consumed = result.consumed;
+    barbPainPacketsRef.current = result.packets;
     syncBarbPain();
     return consumed;
   }
@@ -2144,16 +2139,9 @@ export function DungeonPanel({
   function barbTickPain() {
     if (barbPainPacketsRef.current.length === 0) return;
     const lowHp = barbHasSkill('barbaro:resistencia:14') && chRef.current.hp / barbEffMaxHp() < PAIN_TICK_REDUCTION_LOW_HP_THRESHOLD;
-    let totalPay = 0;
-    const kept: PainPacket[] = [];
-    for (const p of barbPainPacketsRef.current) {
-      const pay = Math.min(p.perTick, p.amountLeft);
-      totalPay += pay;
-      const amountLeft = p.amountLeft - pay;
-      const ticksLeft = p.ticksLeft - 1;
-      if (amountLeft > 0.01 && ticksLeft > 0) kept.push({ amountLeft, perTick: p.perTick, ticksLeft });
-    }
-    barbPainPacketsRef.current = kept;
+    const tick = tickPainPackets(barbPainPacketsRef.current);
+    const totalPay = tick.paid;
+    barbPainPacketsRef.current = tick.packets;
     syncBarbPain();
     if (totalPay <= 0) return;
     // Ossos Fortes (barbaro:resistencia:5) — reduces Dor's own tick damage
@@ -2366,8 +2354,9 @@ export function DungeonPanel({
   function clerigoApplyJudgment(n: number) {
     if (n <= 0) return;
     const previous = clerigoEnemyJudgmentStacks();
-    const stacks = Math.min(JUDGMENT_MAX_STACKS, previous + n);
-    updateEnemy({ ...enemyRef.current, judgment: { stacks, ticksLeft: clerigoJudgmentDurationTicks() } });
+    const next = applyJudgmentState(enemyRef.current.judgment, n, clerigoJudgmentDurationTicks());
+    const stacks = next?.stacks ?? 0;
+    updateEnemy({ ...enemyRef.current, judgment: next });
     if (stacks > previous) pushLog([{ text: `Julgamento +${stacks - previous} (${stacks}/${JUDGMENT_MAX_STACKS}).`, color: '#f0c96a' }]);
     for (const milestone of JUDGMENT_FAITH_MILESTONES) {
       if (stacks >= milestone && !clerigoJudgmentFaithMilestonesRef.current.has(milestone)) {
@@ -2387,9 +2376,9 @@ export function DungeonPanel({
     const w = enemyRef.current.judgment;
     if (!w || w.stacks <= 0 || maxN <= 0) return 0;
     const consumed = Math.min(w.stacks, maxN);
-    const stacks = w.stacks - consumed;
-    updateEnemy({ ...enemyRef.current, judgment: stacks > 0 ? { stacks, ticksLeft: w.ticksLeft } : undefined });
-    pushLog([{ text: `Julgamento -${consumed} (${stacks}/${JUDGMENT_MAX_STACKS}).`, color: '#c995b5' }]);
+    const next = consumeJudgmentState(w, consumed);
+    updateEnemy({ ...enemyRef.current, judgment: next });
+    pushLog([{ text: `Julgamento -${consumed} (${next?.stacks ?? 0}/${JUDGMENT_MAX_STACKS}).`, color: '#c995b5' }]);
     return consumed;
   }
   function clerigoReduceJudgmentDuration(ticks: number) {
@@ -2400,8 +2389,7 @@ export function DungeonPanel({
   function clerigoTickJudgment() {
     const w = enemyRef.current.judgment;
     if (!w || w.stacks <= 0) return;
-    const ticksLeft = w.ticksLeft - 1;
-    updateEnemy({ ...enemyRef.current, judgment: ticksLeft > 0 ? { stacks: w.stacks, ticksLeft } : undefined });
+    updateEnemy({ ...enemyRef.current, judgment: tickJudgmentState(w) });
   }
 
   // ── RESSURREIÇÃO MENOR (prevenção de morte) ──
@@ -2470,7 +2458,7 @@ export function DungeonPanel({
   // ── DETERMINAÇÃO ──
   function knightGainDetermination(amount: number) {
     if (!knightBastiaoActive() || amount <= 0) return;
-    knightDeterminationRef.current = Math.min(DETERMINATION_MAX, knightDeterminationRef.current + amount);
+    knightDeterminationRef.current = addDetermination(knightDeterminationRef.current, amount);
     syncKnightDetermination();
   }
   function knightSpendDetermination(amount: number) {
@@ -2773,22 +2761,20 @@ export function DungeonPanel({
   // already present — same shape as Feridas/Julgamento.
   function hunterGainBreach(amount: number) {
     if (!hunterHasPrecisao() || amount <= 0) return;
-    const stacks = Math.min(BREACH_MAX, hunterBreachStacks() + amount);
-    updateEnemy({ ...enemyRef.current, hunterBreaches: { stacks, ticksLeft: BREACH_DURATION_TICKS } });
+    const next = applyBreach(enemyRef.current.hunterBreaches, amount);
+    updateEnemy({ ...enemyRef.current, hunterBreaches: next });
   }
   // Only ever called after a hit that actually landed — a miss must never
   // touch Brechas (see AbilityEffect.breachConsumeOnHit's own call-site).
   function hunterConsumeBreach(amount: number) {
     const current = enemyRef.current.hunterBreaches;
     if (!current || current.stacks <= 0 || amount <= 0) return;
-    const stacks = Math.max(0, current.stacks - amount);
-    updateEnemy({ ...enemyRef.current, hunterBreaches: stacks > 0 ? { ...current, stacks } : undefined });
+    updateEnemy({ ...enemyRef.current, hunterBreaches: consumeBreach(current, amount) });
   }
   function hunterTickBreaches() {
     const b = enemyRef.current.hunterBreaches;
     if (!b) return;
-    const ticksLeft = b.ticksLeft - 1;
-    updateEnemy({ ...enemyRef.current, hunterBreaches: ticksLeft > 0 ? { ...b, ticksLeft } : undefined });
+    updateEnemy({ ...enemyRef.current, hunterBreaches: tickBreach(b) });
   }
 
   // ── ARMADILHAS (traps) ──
@@ -4186,7 +4172,6 @@ export function DungeonPanel({
     syncPlayerStatuses();
     if (isBarbaro()) {
       barbTickPain();
-      if (barbPostureRoundsLeftRef.current > 0) barbPostureRoundsLeftRef.current -= 1;
       if (barbWallRoundsLeftRef.current > 0) barbWallRoundsLeftRef.current -= 1;
     }
     if (isClerigo()) {
@@ -6303,6 +6288,10 @@ export function DungeonPanel({
     const abEffect = chosenAbility?.effect;
 
     const barbActive = isBarbaro();
+    // A landed direct enemy action consumes at most one Postura Selvagem
+    // charge, regardless of block, barrier or multi-impact details.
+    const barbPostureHitWindow = barbActive && barbPostureRoundsLeftRef.current > 0;
+    if (barbPostureHitWindow) barbPostureRoundsLeftRef.current = consumeWildPostureAction(barbPostureRoundsLeftRef.current, true);
     const { dmg: rawDmg, crit: ecrit } = rollAbilityHit(enemyPower, enemyDefStat, abEffect?.dmgMult ?? 1, 0.06, BASE_CRIT_DMG_MULT);
     // Frenesi's own +10% dano recebido applies at the same point as the
     // dungeon's own dmgTakenMult/dmgTakenPct — before block/shield/Dor, same
@@ -6533,9 +6522,14 @@ export function DungeonPanel({
     // regen, evasão ou miss). Fortaleza Viva desliga essa geração por
     // completo enquanto ativa (ver Seção 24 do redesign).
     if (knightActiveEnemy && !knightFortressActive()) {
-      if (blocked) {
-        knightGainDetermination(knightHasSkill('cavaleiro:bastiao:2') ? DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA : DETERMINATION_GEN_BLOCK);
-      }
+      // A direct hit that reaches the defensive pipeline grants +3. A block
+      // replaces that base grant with its existing +10/+12 generation.
+      knightGainDetermination(determinationForDirectHit({
+        landed: true,
+        blocked,
+        fortressActive: false,
+        elevatedBlock: knightHasSkill('cavaleiro:bastiao:2'),
+      }));
       const knightBarrierAbsorbed = shieldAbsorbed + knightEscudoReduced;
       if (knightBarrierAbsorbed > 0) {
         knightGainDetermination(knightDeterminationFromPct(knightBarrierAbsorbed, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION));
@@ -6561,7 +6555,7 @@ export function DungeonPanel({
     // redesign spec's own worked example.
     if (barbActive && edmg > 0) {
       // Postura Selvagem — base 30%, VIT-scaled up to 35% total while active.
-      const redirectPct = barbPostureRoundsLeftRef.current > 0
+      const redirectPct = barbPostureHitWindow
         ? POSTURA_BASE_REDIRECT_PCT + capped(POSTURA_VIT_RATE, attrTotal(chRef.current, 'vit'), POSTURA_VIT_CAP)
         : (barbHasSkill('barbaro:resistencia:8') ? PAIN_PASSIVE_REDIRECT_PCT : 0);
       if (redirectPct > 0) {
