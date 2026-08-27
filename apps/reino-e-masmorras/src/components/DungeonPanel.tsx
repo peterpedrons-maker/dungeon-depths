@@ -38,6 +38,7 @@ import {
   tensionForPreciseHit, accelerateOldestArrow,
 } from '../lib/archer';
 import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium } from '../lib/druid';
+import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, applyWarlockDebt, payWarlockDebt, setWarlockDebt, grantWarlockCredit, consumeTrueName, consumeTrueNameAndRefragment, bindWarlockEnemy, addNameFragment, consumeMandamento, resolveCollection, borrowedPowerPct, overcontractDamagePct, collectionAmount } from '../lib/warlock';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -913,6 +914,29 @@ export function DungeonPanel({
   const druidGardenIdRef = useRef(1);
   const druidAvatarActionsRef = useRef(0);
   const [druidCycleState, setDruidCycleState] = useState(druidCycleRef.current);
+  // Bruxo redesign — resources persist across enemies in the same attempt;
+  // the enemy name state resets on each spawn.
+  const warlockStateRef = useRef<WarlockPlayerState>(createWarlockPlayerState());
+  const warlockEnemyRef = useRef<WarlockEnemyNameState>(createWarlockEnemyNameState());
+  const [warlockState, setWarlockState] = useState(warlockStateRef.current);
+  const [warlockEnemyState, setWarlockEnemyState] = useState(warlockEnemyRef.current);
+  function isWarlock(): boolean { return chRef.current.classId === 'bruxo'; }
+  function warlockHasSkill(id: string): boolean { return isWarlock() && hasSkill(chRef.current, id); }
+  function warlockSync() { if (!silentRef.current) { setWarlockState({ ...warlockStateRef.current }); setWarlockEnemyState({ ...warlockEnemyRef.current }); } }
+  function warlockResetEnemy() { if (!isWarlock()) return; warlockEnemyRef.current = createWarlockEnemyNameState(); warlockSync(); }
+  function warlockLawyer() { return warlockHasSkill('bruxo:pacto:14'); }
+  function warlockNode6(path: 'maldicao'|'pacto'|'corrupcao') { return warlockHasSkill(`bruxo:${path}:6`); }
+  function warlockCdrBonusFor(id: string): number {
+    if (!isWarlock()) return 0;
+    const path = id.split(':')[1] as 'maldicao'|'pacto'|'corrupcao';
+    return warlockHasSkill(`bruxo:${path}:3`) ? 0.03 : 0;
+  }
+  function warlockOnEnemyRealAction() {
+    if (!isWarlock() || !warlockNode6('maldicao') || !warlockEnemyRef.current.bound) return;
+    warlockEnemyRef.current = addNameFragment(warlockEnemyRef.current, 1);
+    pushLog('FRAGMENTO DO NOME +1');
+    warlockSync();
+  }
   function isDruid(){return chRef.current.classId==='druida';}
   function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
   function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
@@ -1371,6 +1395,10 @@ export function DungeonPanel({
         cadence: archerStateRef.current.cadence,
         steps: archerStateRef.current.steps,
         flightCount: archerStateRef.current.arrows.length,
+        debt: warlockStateRef.current.debt,
+        credit: warlockStateRef.current.credit,
+        scars: warlockStateRef.current.scars,
+        nameFragments: warlockEnemyRef.current.nameFragments,
       },
       states: {
         frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
@@ -1385,6 +1413,11 @@ export function DungeonPanel({
         fullDraw: archerStateRef.current.tension >= 100,
         perfectRhythm: archerStateRef.current.perfectRhythm,
         reflex: archerStateRef.current.reflexActionsLeft > 0,
+        deadline: warlockStateRef.current.debt >= 6,
+        bound: warlockEnemyRef.current.bound,
+        trueName: warlockEnemyRef.current.nameFragments >= 3,
+        forgery: warlockStateRef.current.forgeryReady,
+        scarInsight: warlockStateRef.current.scarInsightReady,
       },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0 },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
@@ -2839,7 +2872,7 @@ export function DungeonPanel({
   // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
   // (both scoped to the single-hit/plain-attack path only) — a scoped
   // simplification, called out in the final report.
-  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }) {
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }, warlockBonuses?: { debtForPower: number; scars: number; overcontract: boolean; path: 'maldicao'|'pacto'|'corrupcao'; }) {
     const eff = ab.effect;
     const archerCdr = isArcher() && eff.archerPath
       ? (archerHasSkill(eff.archerPath === 'precision' ? 'arqueiro:precisao:3' : eff.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
@@ -2849,7 +2882,8 @@ export function DungeonPanel({
     const power = isMagicalClass ? stats.matk : stats.atk;
     const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
     const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
-    const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen));
+    const warlockPen = warlockBonuses && isMagicalClass ? (eff.warlockMdefPenPct ?? 0) : 0;
+    const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen));
     const marked = hunterMarkedPrey();
     const originalHitCount = eff.hitCount ?? 2;
     const hitCount = originalHitCount + (isArcher() && archerPerfectCastRef.current && eff.archerPerfectExtraRatio ? 1 : 0);
@@ -2877,11 +2911,16 @@ export function DungeonPanel({
       }
       if (isMage() && eff.element) dmgMult *= 1 + mageElementDamageBonus(eff.element);
       if (isMage() && eff.element === 'fire') dmgMult *= 1 + fireDamageBonus(mageHeatAtCast);
+      if (warlockBonuses) {
+        dmgMult *= 1 + borrowedPowerPct(warlockBonuses.debtForPower, warlockBonuses.path, warlockBonuses.scars >= 3);
+        if (warlockBonuses.overcontract) dmgMult *= 1 + overcontractDamagePct(warlockBonuses.path, warlockBonuses.scars >= 3);
+        if (eff.warlockDmgMultPerScar) dmgMult += eff.warlockDmgMultPerScar * warlockBonuses.scars;
+      }
       // Tiro Duplo's own marked-prey bonus applies only to the SECOND shot.
       if (i === 1 && marked && ab.id === 'cacador:precisao-caca:9') dmgMult *= 1 + TIRO_DUPLO_SECOND_HIT_BONUS_PCT_MARKED;
       if (warriorBonuses) dmgMult += warriorBonuses.dmg / hitCount;
       const liveDefPen = (warriorBonuses?.defPen ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_DEF_PEN : 0);
-      const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - liveDefPen));
+      const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen - liveDefPen));
       const { dmg, crit } = rollAbilityHit(power, effDef, dmgMult, critChanceForRoll, critDmgMultForRoll);
       landedHits += 1;
       if (crit) criticalHits += 1;
@@ -2910,7 +2949,7 @@ export function DungeonPanel({
           pushFloat('player', healAmount, false, undefined, undefined, true);
         }
       }
-      if (newHp <= 0) { resolveEnemyDeath(); return; }
+      if (newHp <= 0) { if (!warlockBonuses) { resolveEnemyDeath(); return; } }
     }
     // Arco Duplo amplified adds a third 0.30x impact, rather than replacing
     // either of its two normal impacts.
@@ -3247,23 +3286,38 @@ export function DungeonPanel({
       if (form === 'coruja') { druidAccuracy += 0.04; druidPen += 0.08; }
       if (druidAvatarActionsRef.current > 0) { druidMdef *= 1.04; druidSpeed += 0.05; druidDmgTaken -= 0.05; druidAccuracy += 0.04; druidCrit += 0.02; druidPen += 0.08; }
     }
+    let warlockMdef = 1, warlockDmgTaken = 0, warlockAccuracy = 0, warlockTenacity = 0, warlockCritDmg = 0;
+    if (isWarlock()) {
+      if (warlockHasSkill('bruxo:maldicao:2')) { warlockMdef *= 1.02; if (warlockEnemyRef.current.bound) defMult *= 1.02; }
+      if (warlockHasSkill('bruxo:pacto:1')) { warlockMdef *= 1.02; if (warlockStateRef.current.debt >= 4) warlockMdef *= 1.02; }
+      if (warlockHasSkill('bruxo:pacto:5') && warlockStateRef.current.credit > 0) warlockMdef *= 1.02;
+      if (warlockHasSkill('bruxo:corrupcao:2')) warlockMdef *= 1.02;
+      if (warlockStateRef.current.scars > 0) warlockMdef *= Math.max(0, 1 - warlockStateRef.current.scars * 0.02);
+      if (warlockHasSkill('bruxo:maldicao:0')) warlockAccuracy += 0.015 + (warlockEnemyRef.current.bound ? 0.02 : 0);
+      if (warlockHasSkill('bruxo:corrupcao:1')) warlockAccuracy += 0.015 + (warlockStateRef.current.scars >= 2 ? 0.02 : 0);
+      if (warlockHasSkill('bruxo:pacto:2')) warlockTenacity += 0.02;
+      if (warlockHasSkill('bruxo:corrupcao:11')) warlockTenacity += 0.02;
+      if (warlockHasSkill('bruxo:maldicao:5')) warlockCritDmg += 0.03 + (warlockEnemyRef.current.nameFragments >= 3 ? 0.02 : 0);
+      if (warlockHasSkill('bruxo:corrupcao:7')) warlockCritDmg += 0.03 + (warlockStateRef.current.scars >= 3 ? 0.03 : 0);
+      if (warlockEnemyRef.current.mandamento) warlockDmgTaken -= 0.04;
+    }
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct) * necroMatkMult),
       def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult * paladinDefMult * archerDefMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult * druidMdef)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult * druidMdef * warlockMdef)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus + archerCritBonus + druidCrit)),
-      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus + archerCritDmgBonus,
+      critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus + archerCritDmgBonus + warlockCritDmg,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
       evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus + rogueEvasionBonus + archerEvasionBonus),
-      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus + druidAccuracy,
-      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus + druidDmgTaken,
+      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus + druidAccuracy + warlockAccuracy,
+      dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus + druidDmgTaken + warlockDmgTaken,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct') + druidPen),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus),
-      tenacityPct: base.tenacityPct + tenacityBonus,
+      tenacityPct: base.tenacityPct + tenacityBonus + warlockTenacity,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
       // playerAct's damage pipeline.
@@ -3383,6 +3437,21 @@ export function DungeonPanel({
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
       if (!conditionMet(ab)) continue;
       if (abilityAlreadyActive(ab)) continue;
+      if (isWarlock()) {
+        const e = ab.effect;
+        const projection = projectWarlockCast({
+          debt: warlockStateRef.current.debt,
+          debtGain: e.warlockDebtGain,
+          credit: warlockStateRef.current.credit,
+          forgeryReady: warlockStateRef.current.forgeryReady,
+          lawyer: warlockLawyer(),
+          maxHp: effectiveMaxHp(chRef.current),
+          currentHp: chRef.current.hp,
+          selfHpCostPct: e.warlockSelfHpCostPct,
+          collectionPct: e.warlockForcedCollectionPct ?? e.warlockEarlyCollectionPct,
+        });
+        if (!projection.safeToCast) continue;
+      }
       eligible.push(ab);
     }
     return isDruid() ? pickDruidSeasonalAbility(eligible, druidCycleRef.current.season) : (eligible[0] ?? null);
@@ -4227,6 +4296,7 @@ export function DungeonPanel({
         mageSync();
       }
       if (isArcher()) archerResetEncounter();
+      if (isWarlock()) warlockResetEnemy();
       if (isNecromancer()) {
         necroSoulsRef.current = soulsForNextEnemy(necroSoulsRef.current, necroDeathSetup && necroHasSkill('necromante:decomposicao:14'));
         necroMetric('soulsCarried', necroSoulsRef.current);
@@ -4433,6 +4503,10 @@ export function DungeonPanel({
     const archerFlightsAtActionStart = archerActive ? archerStateRef.current.arrows.map((a) => a.id) : [];
     const archerTensionAtActionStart = archerActive ? archerStateRef.current.tension : 0;
     const archerDistanceAtActionStart = archerActive ? archerStateRef.current.distance : 0;
+    const warlockActive = isWarlock();
+    const warlockDebtAtActionStart = warlockActive ? warlockStateRef.current.debt : 0;
+    const warlockScarsAtActionStart = warlockActive ? warlockStateRef.current.scars : 0;
+    const warlockEnemyHpAtActionStart = warlockActive ? enemyRef.current.hp : 0;
 
     {
       const stats = computePlayerStats();
@@ -4456,6 +4530,72 @@ export function DungeonPanel({
       let paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
       let archerReflexThisCast = false;
       let archerBallisticLaunched = false;
+      let warlockProjection = null as ReturnType<typeof projectWarlockCast> | null;
+      let warlockOvercontractThisCast = false;
+      let warlockDebtForPower = warlockDebtAtActionStart;
+      let warlockScarsThisCast = warlockScarsAtActionStart;
+      let warlockCreditFinanced = false;
+      let warlockTrueNameConsumed = false;
+      let warlockFinalized = false;
+      const finalizeWarlock = (landed: boolean) => {
+        if (!warlockActive || !chosen || warlockFinalized) return;
+        warlockFinalized = true;
+        const e = chosen.effect;
+        if (e.warlockBindOnHit && landed) {
+          warlockEnemyRef.current = bindWarlockEnemy(warlockEnemyRef.current);
+          pushLog('VÍNCULO');
+          if (e.warlockPath === 'maldicao' && warlockNode6('maldicao')) {
+            warlockEnemyRef.current = addNameFragment(warlockEnemyRef.current, 1);
+            pushLog('FRAGMENTO DO NOME +1');
+            if (warlockHasSkill('bruxo:maldicao:8') && !warlockEnemyRef.current.firstLetterUsed) {
+              warlockEnemyRef.current = addNameFragment(warlockEnemyRef.current, 1);
+              warlockEnemyRef.current = { ...warlockEnemyRef.current, firstLetterUsed: true };
+              pushLog('FRAGMENTO DO NOME +1');
+            }
+          }
+        }
+        if (warlockTrueNameConsumed && landed && e.warlockPath === 'maldicao' && warlockNode6('maldicao')) {
+          warlockEnemyRef.current = addNameFragment(warlockEnemyRef.current, 1);
+          pushLog('FRAGMENTO DO NOME +1');
+        }
+        const pay = e.warlockDebtPay ?? 0;
+        if (pay > 0) {
+          const before = warlockStateRef.current.debt;
+          warlockStateRef.current = payWarlockDebt(warlockStateRef.current, pay);
+          const actual = before - warlockStateRef.current.debt;
+          if (actual > 0 && e.warlockGrantCredits && warlockNode6('pacto')) warlockStateRef.current = grantWarlockCredit(warlockStateRef.current, e.warlockGrantCredits, warlockLawyer());
+          if (actual > 0) pushLog(`DÍVIDA -${actual}`);
+        }
+        if (e.warlockDebtSetAfter !== undefined) warlockStateRef.current = setWarlockDebt(warlockStateRef.current, e.warlockDebtSetAfter);
+        if (e.warlockNextEnemyDmgReductionPct && landed) {
+          warlockEnemyRef.current = { ...warlockEnemyRef.current, mandamento: true, deadlineDmgReduction: e.warlockNextEnemyDmgReductionPct };
+        }
+        if (e.warlockBarrierPct) {
+          let barrierMult = 1 + computePlayerStats().supportPowerPct;
+          if (warlockOvercontractThisCast) barrierMult *= 1.15;
+          if (warlockCreditFinanced && warlockHasSkill('bruxo:pacto:8')) barrierMult *= 1.05;
+          playerShieldRef.current += Math.max(1, Math.round(effectiveMaxHp(chRef.current) * e.warlockBarrierPct * barrierMult));
+          syncShield();
+        }
+        const collectionPct = warlockOvercontractThisCast ? 0.10 : (e.warlockForcedCollectionPct ?? e.warlockEarlyCollectionPct);
+        if (collectionPct) {
+          const kind = e.warlockForcedCollectionPct ? 'forced' : e.warlockEarlyCollectionPct ? 'early' : 'normal';
+          const paid = Math.ceil(effectiveMaxHp(chRef.current) * collectionPct);
+          const resolved = resolveCollection(warlockStateRef.current, effectiveMaxHp(chRef.current), kind, paid);
+          warlockStateRef.current = resolved.state;
+          updateCh({ ...chRef.current, hp: Math.max(0, chRef.current.hp - paid) });
+          pushLog(`COBRANÇA — ${paid} HP`);
+          if (resolved.scarCreated) pushLog('ESTIGMA +1');
+          if (e.warlockDebtSetAfter === undefined && warlockOvercontractThisCast) warlockStateRef.current = setWarlockDebt(warlockStateRef.current, 3);
+          if (e.warlockCollectionEchoPct && enemyRef.current.hp > 0) {
+            const echo = Math.max(1, Math.round(paid * e.warlockCollectionEchoPct));
+            applyEnemyHp(Math.max(0, enemyRef.current.hp - echo));
+            pushFloat('enemy', echo, false);
+            pushLog(`ECO DO PREÇO — ${echo}`);
+          }
+        }
+        warlockSync();
+      };
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -4467,6 +4607,28 @@ export function DungeonPanel({
         // round's damage, exactly like choosing to use any other ability.
         archerPerfectCastRef.current = false;
         chosen = pickAbility(isRogue() ? 'main' : undefined);
+        if (warlockActive && chosen) {
+          const e = chosen.effect;
+          warlockProjection = projectWarlockCast({ debt: warlockStateRef.current.debt, debtGain: e.warlockDebtGain, credit: warlockStateRef.current.credit, forgeryReady: warlockStateRef.current.forgeryReady, lawyer: warlockLawyer(), maxHp: effectiveMaxHp(chRef.current), currentHp: chRef.current.hp, selfHpCostPct: e.warlockSelfHpCostPct, collectionPct: e.warlockForcedCollectionPct ?? e.warlockEarlyCollectionPct });
+          if (!warlockProjection.safeToCast) chosen = null;
+          else {
+            warlockOvercontractThisCast = warlockProjection.willOvercontract;
+            warlockDebtForPower = warlockProjection.debtForPower;
+            warlockCreditFinanced = warlockProjection.usesCredit;
+            if (warlockProjection.selfHpCost > 0) {
+              updateCh({ ...chRef.current, hp: Math.max(1, chRef.current.hp - warlockProjection.selfHpCost) });
+              pushLog(`CLÁUSULA DE SANGUE — ${warlockProjection.selfHpCost} HP`);
+            }
+            warlockStateRef.current = applyWarlockDebt(warlockStateRef.current, warlockProjection);
+            if (e.warlockConsumeTrueName) { warlockTrueNameConsumed = true; warlockStateRef.current = consumeTrueName(warlockStateRef.current); warlockEnemyRef.current = consumeTrueNameAndRefragment(warlockEnemyRef.current, false); }
+            if (e.warlockConsumeScars) { const consumed = warlockStateRef.current.scars; warlockScarsThisCast = consumed; warlockStateRef.current = { ...warlockStateRef.current, scars: 0, scarInsightReady: false }; }
+            warlockSync();
+            cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + warlockCdrBonusFor(chosen.id));
+            if (warlockOvercontractThisCast) pushLog('SOBRECONTRATO — PRAZO FINAL');
+            if (warlockProjection.usesForgery) pushLog('ASSINATURA FALSA — DÍVIDA NEGADA');
+            else if (warlockProjection.usesCredit) pushLog('CRÉDITO CONSUMIDO');
+          }
+        }
         if (isDruid()) { const ds=chosen?.effect.druidSeason; const mode=ds==='cycle'?'neutral':ds===druidCycleRef.current.season?'synced':'dissonant'; druidAction(mode); if(chosen?.effect.druidAction==='seed')druidGardenRef.current=addGardenSeeds(druidGardenRef.current,druidGardenIdRef.current++,hasSkill(chRef.current,'druida:cura-natural:4')&&ds===druidCycleRef.current.season?2:1,hasSkill(chRef.current,'druida:cura-natural:6')?3:2); if(chosen?.effect.druidAction==='harvest'){const taken=consumeGardenFruit(druidGardenRef.current,3);druidGardenRef.current=taken.garden;} if(chosen?.effect.druidAction==='cycle')druidGardenRef.current=matureGarden(druidGardenRef.current); }
         if (isPaladin()) {
           paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
@@ -4587,12 +4749,13 @@ export function DungeonPanel({
             const archerCdr = archerActive && chosen.effect.archerPath
               ? (archerHasSkill(chosen.effect.archerPath === 'precision' ? 'arqueiro:precisao:3' : chosen.effect.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
               : 0;
-            cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id) + archerCdr);
+            cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id) + archerCdr + warlockCdrBonusFor(chosen.id));
           }
           const line = resolveSelfAbility(chosen, stats, paladinVerdictAtCast);
           if (line) pushLog(line);
         } else {
           const offenseAbility = chosen;
+          if (warlockActive && offenseAbility) castAbility = offenseAbility;
           let knightSupremeThisCast = false;
           if (offenseAbility && isNecromancer()) {
             necroSoulsAtCast = necroSoulsRef.current;
@@ -4767,7 +4930,12 @@ export function DungeonPanel({
             // initial false/0 so the shared post-processing below is a no-op.
             hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast,
               isWarrior() ? { dmg: warriorCastDmgBonus, posture: warriorCastPostureBonus, defPen: warriorCastDefPenBonus, breakActive: warriorBreakActiveAtStart } : undefined,
-              isRogue() ? { images: rogueImagesAtCast, sharpened: rogueSharpenedAtCast, loadedDieFirstHit: rogueLoadedDieFirstHit, advantage: rogueAdvantageAtCast } : undefined);
+              isRogue() ? { images: rogueImagesAtCast, sharpened: rogueSharpenedAtCast, loadedDieFirstHit: rogueLoadedDieFirstHit, advantage: rogueAdvantageAtCast } : undefined,
+              warlockActive && offenseAbility.effect.warlockPath ? { debtForPower: warlockDebtForPower, scars: warlockScarsThisCast, overcontract: warlockOvercontractThisCast, path: offenseAbility.effect.warlockPath } : undefined);
+            if (warlockActive) {
+              finalizeWarlock(enemyRef.current.hp < warlockEnemyHpAtActionStart);
+              if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+            }
           } else if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
@@ -4786,7 +4954,7 @@ export function DungeonPanel({
             }
           } else if (offenseAbility) {
             if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer() && !isRogue() && !isPaladin()) {
-              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id));
+              cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id) + warlockCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
             if (isRogue()) {
@@ -4861,11 +5029,25 @@ export function DungeonPanel({
             let archerDefPen = archerActive ? (eff.archerDefPenPct ?? 0) : 0;
             if (archerActive && eff.archerHighTensionPenPct !== undefined && archerTensionAtActionStart >= 75) archerDefPen = eff.archerHighTensionPenPct;
             const druidDefPen = isDruid() && (druidCycleRef.current.form === 'coruja' || offenseAbility.id.endsWith(':12')) ? 0.08 : 0;
-            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warriorConditionalDefPen - archerDefPen - druidDefPen));
+            const warlockMdefPen = warlockActive && dmgType === 'magical' ? (eff.warlockMdefPenPct ?? 0) + (warlockHasSkill('bruxo:maldicao:7') && warlockEnemyRef.current.bound ? Math.min(0.07, 0.04 + attrTotal(chRef.current, 'int') * 0.0008) : 0) : 0;
+            const effDef = Math.max(0, (dmgType === 'magical' ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - knightAbilityDefPen - hunterMarkedDefPenExtra - mageMdefPen - warlockMdefPen - warriorConditionalDefPen - archerDefPen - druidDefPen));
             // Bárbaro: Fúria Total/Aniquilação add dmgMult per current
             // Ferida stack; Resistência's Fúria Berserker trades consumed
             // Dor for extra dmgMult (up to +0.08x per 2% max HP consumed).
             let dmgMult = eff.dmgMult ?? 1;
+            if (warlockActive && eff.warlockPath) {
+              dmgMult *= 1 + borrowedPowerPct(warlockDebtForPower, eff.warlockPath, warlockScarsAtActionStart >= 3);
+              if (warlockOvercontractThisCast) dmgMult *= 1 + overcontractDamagePct(eff.warlockPath, warlockScarsAtActionStart >= 3);
+              if (eff.warlockDmgMultPerScar) dmgMult += eff.warlockDmgMultPerScar * warlockScarsThisCast;
+              if (eff.warlockPath === 'maldicao' && warlockHasSkill('bruxo:maldicao:1')) {
+                dmgMult *= 1.02;
+                if (warlockEnemyRef.current.nameFragments >= 3) dmgMult *= 1.02;
+              }
+              if (eff.warlockPath === 'corrupcao' && warlockHasSkill('bruxo:corrupcao:6')) dmgMult *= 1 + warlockStateRef.current.scars * 0.03;
+              if (eff.warlockPath === 'corrupcao' && warlockHasSkill('bruxo:corrupcao:0')) dmgMult *= 1.02;
+              if (eff.warlockPath === 'corrupcao' && warlockHasSkill('bruxo:corrupcao:8') && warlockStateRef.current.scarInsightReady) dmgMult *= 1.08;
+              if (eff.warlockPath === 'corrupcao' && warlockHasSkill('bruxo:corrupcao:4') && warlockDebtForPower >= 5) dmgMult *= 1.05;
+            }
             if (isDruid()) {
               const sintonized = eff.druidSeason === druidCycleRef.current.season;
               if (offenseAbility.id.endsWith('cura-natural:9')) dmgMult = sintonized ? 1.35 : 1.20;
@@ -5495,6 +5677,7 @@ export function DungeonPanel({
         }
 
         if (isMage() && chosen && !mageCastFinished) { mageFinishCast(chosen, mageAmplifiedThisCast); mageCastFinished = true; }
+        if (warlockActive && castAbility) finalizeWarlock(!missed && dmg > 0);
         if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
 
         if (knightActive) {
@@ -5647,6 +5830,7 @@ export function DungeonPanel({
       archerEvasionBuffRef.current = 0;
       mageOnEnemyRealAction();
       warriorOnEnemyRealAction();
+      warlockOnEnemyRealAction();
       scheduleEnemy();
       return;
     }
@@ -5699,6 +5883,11 @@ export function DungeonPanel({
     const clerigoActiveEnemy = isClerigo();
     const clerigoWallReduction = clerigoActiveEnemy && clerigoWallBonusActive() ? MURALHA_DIVINA_DMG_TAKEN_PCT : 0;
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus) * (1 + clerigoWallReduction));
+    if (isWarlock() && warlockEnemyRef.current.mandamento) {
+      edmg = Math.round(edmg * (1 - (warlockEnemyRef.current.deadlineDmgReduction || 0.10)));
+      warlockEnemyRef.current = consumeMandamento(warlockEnemyRef.current);
+      warlockSync();
+    }
     if (isRogue() && rogueEnemyDmgDebuffRef.current > 0) edmg = Math.round(edmg * 0.90);
     if (isRogue() && rogueFlowUntouchableRef.current) {
       edmg = Math.round(edmg * 0.94);
@@ -6098,6 +6287,7 @@ export function DungeonPanel({
     hunterOnEnemyRealAction();
     mageOnEnemyRealAction();
     warriorOnEnemyRealAction();
+    warlockOnEnemyRealAction();
     scheduleEnemy();
   }
 
@@ -6465,6 +6655,14 @@ export function DungeonPanel({
     'druida:dissonance': { value: druidCycleState.dissonance, maxValue: 3, visible: ch.classId === 'druida' },
     'druida:form': { value: druidCycleState.form ? 1 : 0, detail: druidCycleState.form?.toUpperCase(), visible: ch.classId === 'druida' },
     'druida:avatar': { value: druidAvatarActionsRef.current, maxValue: 4, duration: druidAvatarActionsRef.current, visible: ch.classId === 'druida' },
+    'bruxo:debt': { value: warlockState.debt, maxValue: 6, detail: warlockState.debt >= 6 ? 'PRAZO FINAL — próxima geração pode causar Sobrecontrato' : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:deadline': { value: warlockState.debt >= 6 ? 1 : 0, detail: warlockState.debt >= 6 ? `Cobrança: ${collectionAmount(effMaxHp, 'normal')} HP` : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:overcontract': { value: 0, detail: warlockState.debt >= 6 ? 'SOBRECONTRATO: +15% dano e cobrança de 10%' : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:binding': { value: warlockEnemyState.bound ? 1 : 0, detail: warlockEnemyState.bound ? 'VINCULADO' : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:true-name': { value: warlockEnemyState.nameFragments, maxValue: 3, detail: warlockEnemyState.nameFragments >= 3 ? 'NOME VERDADEIRO REVELADO' : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:credit': { value: warlockState.credit, maxValue: warlockHasSkill('bruxo:pacto:14') ? 3 : 2, detail: warlockState.credit > 0 ? 'Um Crédito cancela a próxima Dívida gerada' : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:scars': { value: warlockState.scars, maxValue: 3, detail: warlockState.scars > 0 ? `+${warlockState.scars * 3}% dano Transgressão · -${warlockState.scars * 2}% MDEF` : undefined, visible: ch.classId === 'bruxo' },
+    'bruxo:forgery': { value: warlockState.forgeryReady ? 1 : 0, detail: warlockState.forgeryReady ? 'ASSINATURA FALSA PRONTA' : undefined, visible: ch.classId === 'bruxo' },
     'mago:runes': { value: mageRunesState, maxValue: 2 },
     'mago:heat': { value: mageHeatState, maxValue: 100 },
     'mago:overheat': { value: 0 },
