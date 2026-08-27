@@ -587,6 +587,26 @@ export interface AbilityEffect {
   aegisHits?: number;
   aegisDuration?: number;
   renewAegisOnHit?: number;
+
+  // Bruxo — Dívida Profana / Nome Verdadeiro / Crédito / Estigmas.
+  warlockPath?: 'maldicao' | 'pacto' | 'corrupcao';
+  warlockDebtGain?: number;
+  warlockDebtPay?: number;
+  warlockDebtSetAfter?: number;
+  warlockSelfHpCostPct?: number;
+  warlockBindOnHit?: boolean;
+  warlockConsumeTrueName?: boolean;
+  warlockNextEnemyDmgReductionPct?: number;
+  warlockBarrierPct?: number;
+  warlockEarlyCollectionPct?: number;
+  warlockForcedCollectionPct?: number;
+  warlockCollectionEchoPct?: number;
+  warlockConsumeScars?: boolean;
+  warlockDmgMultPerScar?: number;
+  warlockGrantCredits?: number;
+  warlockCreditFinancedBonus?: boolean;
+  warlockMdefPenPct?: number;
+  warlockSilenceRounds?: number;
 }
 
 export interface AbilityDef {

@@ -9,6 +9,16 @@ import { ClassAttributeNote, ClassCombinationNote, ClassId, ClassMechanic, Class
 // by adding entries here — never by writing new UI.
 
 const MECHANICS: Partial<Record<ClassId, ClassMechanic[]>> = {
+  bruxo: [
+    { id:'bruxo:debt', classId:'bruxo', name:'Dívida Profana', category:'resource', combatDisplay:{owner:'player',displayType:'bar',maxValue:6,icon:'◆',hideWhenZero:false,priority:10,color:'purple'}, shortDescription:'Cada magia geradora toma poder emprestado e aumenta a Dívida até 6.', fullDescription:'A Dívida começa em zero por tentativa e persiste entre inimigos. Cada ponto concede 1,5% de dano mágico direto do Bruxo. Tentar passar de seis ativa Sobrecontrato e prepara a Cobrança.' },
+    { id:'bruxo:deadline', classId:'bruxo', name:'Prazo Final', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⌛',hideWhenZero:true,priority:11,color:'red'}, shortDescription:'Com 6 de Dívida, a próxima geração adicional pode entrar em Sobrecontrato.', fullDescription:'O Prazo Final não é um turno automático. Ele apenas sinaliza que a próxima magia que realmente gerar Dívida poderá cobrar o preço.' },
+    { id:'bruxo:overcontract', classId:'bruxo', name:'Sobrecontrato', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⚠',hideWhenZero:true,priority:12,color:'orange'}, shortDescription:'Magia além do limite: +15% de dano direto e Cobrança de 10% da Vida Máxima.', fullDescription:'Sobrecontrato é capturado no início do cast, mantém a Dívida em seis durante a magia e, após todos os efeitos, cobra diretamente HP ignorando escudos e mitigação.' },
+    { id:'bruxo:binding', classId:'bruxo', name:'Vínculo', category:'mark', combatDisplay:{owner:'enemy',displayType:'status',icon:'⛓',hideWhenZero:true,priority:13,color:'purple'}, shortDescription:'Nome Proibido marca o alvo sem causar dano periódico.', fullDescription:'Vínculo dura até a morte do inimigo. Habilidades de Nome Proibido que acertam renovam o vínculo e permitem gerar Fragmentos do Nome.' },
+    { id:'bruxo:true-name', classId:'bruxo', name:'Nome Verdadeiro', category:'resource', combatDisplay:{owner:'enemy',displayType:'charges',maxValue:3,icon:'◇',hideWhenZero:false,priority:14,color:'gold'}, shortDescription:'Três Fragmentos revelam o Nome Verdadeiro do inimigo.', fullDescription:'Fragmentos são específicos do alvo. Acertos de Nome Proibido e ações reais do inimigo Vinculado podem gerá-los. Consumir o Nome acontece no início do cast.' },
+    { id:'bruxo:credit', classId:'bruxo', name:'Crédito Sombrio', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'▣',hideWhenZero:true,priority:20,color:'sky'}, shortDescription:'Crédito cancela a próxima Dívida gerada e pode financiar uma magia.', fullDescription:'Habilidades de Negociação que pagam Dívida geram Crédito. Um Crédito cancela uma geração de +1 antes do Sobrecontrato; Advogado do Abismo preserva o poder como uma Dívida fantasma.' },
+    { id:'bruxo:scars', classId:'bruxo', name:'Estigmas', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'✥',hideWhenZero:true,priority:30,color:'red'}, shortDescription:'Cobranças reais deixam Estigmas: mais dano de Transgressão, menos MDEF.', fullDescription:'Cada Cobrança que retira ao menos 5% da Vida Máxima gera um Estigma, até três. Cada Estigma concede +3% de dano mágico direto de Transgressão e reduz 2% da MDEF do Bruxo.' },
+    { id:'bruxo:forgery', classId:'bruxo', name:'Assinatura Falsa', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'✎',hideWhenZero:true,priority:31,color:'gold'}, shortDescription:'Após consumir Nome Verdadeiro, cancela uma geração futura de Dívida.', fullDescription:'Assinatura Falsa é consumida antes do Crédito e persiste entre inimigos da mesma tentativa. Ela apenas nega a Dívida, sem conceder o bônus de Bom Pagador.' },
+  ],
   druida: [
     { id:'druida:garden', classId:'druida', name:'Jardim Vivo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🌱',hideWhenZero:false,priority:9,color:'emerald'}, shortDescription:'Sementes, Brotos e Frutos cultivados entre ações sintonizadas.', fullDescription:'Sementes crescem em Brotos e Frutos antes de cada magia sintonizada. Frutos são colhidos por Renascimento.' },
     { id:'druida:season', classId:'druida', name:'Estação', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'☘',hideWhenZero:false,priority:10,color:'emerald'}, shortDescription:'O ciclo alterna Primavera, Verão, Outono e Inverno.', fullDescription:'A Estação atual define a magia sintonizada e a Forma do Druida. Ela persiste entre inimigos da mesma tentativa e reinicia numa nova tentativa.' },
@@ -352,6 +362,12 @@ Brechas nunca funcionam como Feridas do Bárbaro: não causam dano por stack, re
 };
 
 const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
+  bruxo: [
+    { attribute:'int', label:'INT', role:'Principal', description:'Aumenta MATK e o dano das magias; Anatomia da Alma também converte INT em penetração limitada.' },
+    { attribute:'wis', label:'SAB', role:'Secundário', description:'Aumenta MDEF, Poder de Suporte e a eficiência das barreiras de Negociação.' },
+    { attribute:'vit', label:'VIT', role:'Defensivo', description:'Aumenta Vida Máxima e ajuda a sobreviver ao preço das Cobranças.' },
+    { attribute:'luk', label:'SOR', role:'Secundário ofensivo', description:'Aumenta chance e dano crítico pelo sistema universal.' },
+  ],
   barbaro: [
     { attribute: 'str', label: 'FOR', role: 'Principal', description: 'Aumenta ATK físico e, através dele, golpes e Feridas.' },
     { attribute: 'vit', label: 'VIT', role: 'Principal defensivo', description: 'Aumenta HP, DEF e fortalece as interações com Dor.' },
@@ -381,6 +397,11 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
 };
 
 const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
+  bruxo: [
+    { pathId:'maldicao', identity:'INT + Vínculo + Nome Verdadeiro.', style:'Identidade e transferência de Dívida.', loop:'Vincular → reunir Fragmentos → revelar Nome Verdadeiro → consumir no momento certo.' },
+    { pathId:'pacto', identity:'VIT/SAB + pagamento voluntário + Crédito.', style:'Negociação segura, ainda ofensiva.', loop:'Gerar Dívida → pagar voluntariamente → financiar a próxima magia → manter barreiras.' },
+    { pathId:'corrupcao', identity:'INT + Cobrança + Estigmas.', style:'Maior dano e maior risco.', loop:'Forçar Cobrança → acumular Estigmas → converter cicatrizes em dano → sobreviver ao próximo preço.' },
+  ],
   barbaro: [
     {
       pathId: 'furia',
@@ -464,6 +485,11 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
 };
 
 const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
+  bruxo: [
+    { pathIds:['maldicao','pacto'], name:'Nome + Negociação', description:'Paga através do inimigo e do contrato, a combinação mais segura.' },
+    { pathIds:['maldicao','corrupcao'], name:'Nome + Transgressão', description:'Alterna Nome Verdadeiro e Cobrança para burst e risco controlados.' },
+    { pathIds:['pacto','corrupcao'], name:'Negociação + Transgressão', description:'Crédito posterga o risco e permite escolher quando sofrer a Cobrança.' },
+  ],
   barbaro: [
     { pathIds: ['furia', 'selvageria'], name: 'Fúria + Selvageria', description: 'Maior dano, maior risco.' },
     { pathIds: ['furia', 'resistencia'], name: 'Fúria + Resistência', description: 'Berserker resistente.' },
