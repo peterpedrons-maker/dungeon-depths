@@ -249,7 +249,7 @@ export interface AbilityEffect {
     // generic playerModsRef 'evasion' StatModStat channel. huntWithPrey (Um
     // com a Caça) is the one bespoke simultaneous dmg+speed+evasion buff.
     | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey'
-    | 'preparedGuard' | 'feint'
+    | 'preparedGuard' | 'feint' | 'ballistic' | 'archerMove'
     | 'boneShield' | 'deathVeil' | 'boneFortress' | 'mortalVoracity'
     | 'rogueStealth' | 'rogueToxicBlade' | 'roguePrepareTrick'
     // Paladino — proteção de um golpe direto; não é barreira/Bloqueio/Aparo.
@@ -522,6 +522,47 @@ export interface AbilityEffect {
   timeSteal?: boolean;
   enemyDirectDmgDebuffPct?: number;
   enemyDirectDmgDebuffRounds?: number;
+
+  // Arqueiro: metadados declarativos de Distância, Tensão, Cadência e voo.
+  archerPath?: 'precision' | 'rapid' | 'instinct';
+  archerShotType?: 'precise' | 'volley' | 'flight' | 'ballistic' | 'maneuver';
+  hitDmgMults?: number[];
+  archerDistanceShift?: number;
+  archerDistanceMin?: number;
+  archerDistanceMax?: number;
+  archerTensionCost?: number;
+  archerTensionGain?: number;
+  archerTensionOverrideOnHit?: number;
+  archerTensionOverrideAtHorizon?: number;
+  archerCadenceCost?: number;
+  archerCadenceGain?: number;
+  archerFlightCount?: number;
+  archerFlightTimer?: number;
+  archerFlightDmgMult?: number;
+  archerFlightHitDmgMults?: number[];
+  archerFlightHighTensionDmgMult?: number;
+  archerHighTensionDmgMult?: number;
+  archerHighTensionPenPct?: number;
+  archerFlightPenPct?: number;
+  archerDefPenPct?: number;
+  archerPerfectExtraRatio?: number;
+  archerCritBonus?: number;
+  archerRequiresDistance?: number;
+  archerRequiresTension?: number;
+  archerRequiresCadence?: number;
+  archerRequiresSteps?: number;
+  archerRequiresFlightRoom?: number;
+  archerConsumesSteps?: number;
+  archerConsumesReflex?: boolean;
+  archerConsumesPerfectRhythm?: boolean;
+  archerImmediateTimerReduction?: number;
+  archerAccelerateOldest?: boolean;
+  archerAlignFlights?: boolean;
+  archerCreatesFlightOnHits?: number;
+  archerFifthDistanceMult?: number;
+  archerDistanceZeroMult?: number;
+  archerCanGenerateStep?: boolean;
+  archerDonoDoEspaco?: boolean;
 
   // Paladino: metadados declarativos de Virtudes, Liturgia e Veredito.
   // Convicção nunca é armazenada aqui: deriva do conjunto de Virtudes vivo.
