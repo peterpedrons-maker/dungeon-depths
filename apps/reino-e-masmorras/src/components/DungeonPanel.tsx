@@ -913,7 +913,7 @@ export function DungeonPanel({
   function isDruid(){return chRef.current.classId==='druida';}
   function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
   function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
-  function druidAction(synced=false){if(!isDruid())return; druidCycleRef.current=synced?markDruidAttunement(druidCycleRef.current):addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; druidSync();}
+  function druidAction(synced=false){if(!isDruid())return; druidCycleRef.current=synced?markDruidAttunement(druidCycleRef.current):addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); if(druidCycleRef.current.perfectYear)druidCycleRef.current={...druidCycleRef.current,renewals:1}; druidSync();}
   void druidAdvance;
 
   function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
