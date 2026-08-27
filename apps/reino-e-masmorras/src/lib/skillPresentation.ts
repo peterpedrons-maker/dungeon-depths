@@ -33,6 +33,13 @@ function conditions(condition: AbilityCondition): string[] {
     case 'periodicEffectActive': return [condition.effectId === 'necromante:plague' ? 'Praga Necrótica ativa' : `${condition.effectId} ativo`];
     case 'summonCountAtLeast': return [`Pelo menos ${condition.count ?? 1} invocação ativa`];
     case 'summonCountBelow': return ['Espaço para uma nova invocação'];
+    case 'isStealthed': return ['Estar Furtivo'];
+    case 'enemyExposed': return ['Inimigo Exposto'];
+    case 'imageCountAtLeast': return [`Pelo menos ${condition.count ?? 1} Imagens`];
+    case 'imageCountBelow': return [`Menos de ${condition.count ?? 2} Imagens`];
+    case 'advantageReady': return ['Vantagem pronta'];
+    case 'preparedTrick': return [condition.trick === 'feint' ? 'Finta preparada' : condition.trick === 'loaded_die' ? 'Dado Viciado preparado' : 'Truque preparado'];
+    case 'quickWindow': return ['Janela de Iniciativa aberta'];
     default: return [];
   }
 }
@@ -41,6 +48,7 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
   const rows: PresentationRow[] = [];
   const ability = node.ability;
   if (ability) {
+    if (ability.actionType) rows.push({ label: 'Ação', value: ability.actionType === 'quick' ? 'RÁPIDA — usada automaticamente na Janela de Iniciativa' : 'PRINCIPAL' });
     rows.push({ label: 'Recarga', value: `${ability.cooldown} ciclos` });
     const requirements = conditions(ability.condition);
     if (requirements.length) rows.push({ label: 'Requisito', value: requirements.join(' e ') });

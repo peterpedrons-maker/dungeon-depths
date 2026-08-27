@@ -70,7 +70,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   },
   ladino: {
     id: 'ladino', name: 'Ladino', color: '#4a5a48',
-    desc: 'Rápido e traiçoeiro, aposta tudo no crítico e no veneno.',
+    desc: 'Mestre da Iniciativa: transforma cada abertura em uma segunda jogada rápida.',
     weaponBase: 'Adaga', bodyBase: 'Colete de Couro', legsBase: 'Calças de Couro', handsBase: 'Luvas de Couro',
     baseHp: 30, baseAtk: 12, baseDef: 4, baseMatk: 0, baseMdef: 2, critChance: 0.16,
     baseAttrs: { str: 1, dex: 5, agi: 3, vit: 1, int: 1, wis: 1, luk: 2 },

@@ -49,6 +49,12 @@ export interface AbilityConditionContext {
   periodicEffects?: Record<string, boolean>;
   summonCount?: number;
   summonMax?: number;
+  isStealthed?: boolean;
+  enemyExposed?: boolean;
+  imageCount?: number;
+  advantageReady?: boolean;
+  preparedTrick?: 'feint' | 'loaded_die' | null;
+  quickWindow?: boolean;
 }
 
 export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditionContext): boolean {
@@ -79,6 +85,13 @@ export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditi
     case 'periodicEffectActive': return ctx.periodicEffects?.[cond.effectId ?? ''] === true;
     case 'summonCountAtLeast': return (ctx.summonCount ?? 0) >= (cond.count ?? 1);
     case 'summonCountBelow': return (ctx.summonCount ?? 0) < (cond.count ?? ctx.summonMax ?? 1);
+    case 'isStealthed': return ctx.isStealthed === true;
+    case 'enemyExposed': return ctx.enemyExposed === true;
+    case 'imageCountAtLeast': return (ctx.imageCount ?? 0) >= (cond.count ?? 1);
+    case 'imageCountBelow': return (ctx.imageCount ?? 0) < (cond.count ?? 2);
+    case 'advantageReady': return ctx.advantageReady === true;
+    case 'preparedTrick': return cond.trick ? ctx.preparedTrick === cond.trick : ctx.preparedTrick != null;
+    case 'quickWindow': return ctx.quickWindow === true;
     default: return false;
   }
 }

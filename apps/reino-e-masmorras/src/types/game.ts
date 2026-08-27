@@ -185,7 +185,9 @@ export interface AbilityCondition {
     | 'resourceAtLeast' | 'resourceBelow' | 'resourceAtMost' | 'stateActive' | 'stateInactive'
     | 'painAtLeastPct' | 'enemyStacksAtLeast' | 'enemyStacksEqual'
     | 'enemyPostureAtMost' | 'enemyPostureBand' | 'guardBroken' | 'riposteReady' | 'notGuardBroken'
-    | 'periodicEffectActive' | 'summonCountAtLeast' | 'summonCountBelow';
+    | 'periodicEffectActive' | 'summonCountAtLeast' | 'summonCountBelow'
+    | 'isStealthed' | 'enemyExposed' | 'imageCountAtLeast' | 'imageCountBelow'
+    | 'advantageReady' | 'preparedTrick' | 'quickWindow';
   status?: StatusEffectKind;
   pct?: number;
   n?: number;
@@ -198,6 +200,7 @@ export interface AbilityCondition {
   postureBand?: 'firm' | 'unstable' | 'open' | 'broken';
   effectId?: string;
   count?: number;
+  trick?: 'feint' | 'loaded_die';
 }
 
 export interface AbilityEffect {
@@ -247,7 +250,8 @@ export interface AbilityEffect {
     // com a Caça) is the one bespoke simultaneous dmg+speed+evasion buff.
     | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey'
     | 'preparedGuard' | 'feint'
-    | 'boneShield' | 'deathVeil' | 'boneFortress' | 'mortalVoracity';
+    | 'boneShield' | 'deathVeil' | 'boneFortress' | 'mortalVoracity'
+    | 'rogueStealth' | 'rogueToxicBlade' | 'roguePrepareTrick';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -493,6 +497,29 @@ export interface AbilityEffect {
   enemyHpExecuteThreshold?: number;
   enemyHpExecutePer5Pct?: number;
   enemyHpExecuteCap?: number;
+
+  // Ladino: metadados declarativos de Iniciativa, estados e payoffs.
+  roguePath?: 'assassin' | 'blade' | 'trickster';
+  offensive?: boolean;
+  canExpose?: boolean;
+  ambushDmgMult?: number;
+  consumeExposed?: boolean;
+  exposedDmgMult?: number;
+  lowHpDmgMult?: number;
+  combinedDmgMult?: number;
+  imageGain?: number;
+  imageEchoRatio?: number;
+  requiresImages?: number;
+  consumeImages?: boolean;
+  sharpenedEchoOnCap?: boolean;
+  toxicBlade?: boolean;
+  trickKind?: 'feint' | 'loaded_die';
+  advantageDmgMult?: number;
+  advantageCritPct?: number;
+  advantageDefPenPct?: number;
+  timeSteal?: boolean;
+  enemyDirectDmgDebuffPct?: number;
+  enemyDirectDmgDebuffRounds?: number;
 }
 
 export interface AbilityDef {
@@ -502,6 +529,7 @@ export interface AbilityDef {
   cooldown: number; // in combat rounds
   condition: AbilityCondition;
   effect: AbilityEffect;
+  actionType?: 'main' | 'quick';
   // General multi-effect support (see Bárbaro redesign, section 13 of its
   // spec) — resolved right after `effect` itself, in order, through the same
   // small per-kind branches. Lets an ability do more than one thing (e.g.
