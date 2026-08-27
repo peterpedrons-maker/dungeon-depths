@@ -251,7 +251,9 @@ export interface AbilityEffect {
     | 'armTrap' | 'multiHit' | 'buffEvasion' | 'huntWithPrey'
     | 'preparedGuard' | 'feint'
     | 'boneShield' | 'deathVeil' | 'boneFortress' | 'mortalVoracity'
-    | 'rogueStealth' | 'rogueToxicBlade' | 'roguePrepareTrick';
+    | 'rogueStealth' | 'rogueToxicBlade' | 'roguePrepareTrick'
+    // Paladino — proteção de um golpe direto; não é barreira/Bloqueio/Aparo.
+    | 'aegis';
   // Which power/defense channel this hit rolls against — physical uses
   // atk/def (weapon swings always do, regardless of class), magical uses
   // matk/mdef. Omitted = physical, UNLESS the caster's class is in
@@ -520,6 +522,27 @@ export interface AbilityEffect {
   timeSteal?: boolean;
   enemyDirectDmgDebuffPct?: number;
   enemyDirectDmgDebuffRounds?: number;
+
+  // Paladino: metadados declarativos de Virtudes, Liturgia e Veredito.
+  // Convicção nunca é armazenada aqui: deriva do conjunto de Virtudes vivo.
+  paladinPath?: 'aegis' | 'verdict' | 'redemption';
+  paladinVirtues?: Array<'justice' | 'courage' | 'mercy'>;
+  paladinExtraVirtueBelowHp?: { virtue: 'justice' | 'courage' | 'mercy'; pct: number };
+  paladinVerdict?: boolean;
+  paladinRadiant?: boolean;
+  verdictDmgMultByConviction?: Partial<Record<1 | 2 | 3, number>>;
+  fullJusticeDmgMult?: number;
+  verdictHealPctByConviction?: Partial<Record<1 | 2 | 3, number>>;
+  verdictAegisByConviction?: Partial<Record<1 | 2 | 3, { reductionPct: number; maxHpCapPct: number; hits?: number }>>;
+  activeHealMaxHpPct?: number;
+  healFromDamagePct?: number;
+  lowHpHealFromDamagePct?: number;
+  lowHpHealThreshold?: number;
+  aegisReductionPct?: number;
+  aegisMaxHpCapPct?: number;
+  aegisHits?: number;
+  aegisDuration?: number;
+  renewAegisOnHit?: number;
 }
 
 export interface AbilityDef {

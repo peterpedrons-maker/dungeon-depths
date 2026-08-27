@@ -91,7 +91,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   },
   paladino: {
     id: 'paladino', name: 'Paladino', color: '#e0c060',
-    desc: 'Guerreiro sagrado — defesa, cura e buffs num só pacote.',
+    desc: 'Guerreiro sagrado que reúne Virtudes em uma Liturgia e as consome em Vereditos.',
     weaponBase: 'Martelo Sagrado', bodyBase: 'Armadura Consagrada', legsBase: 'Grevas Sagradas', handsBase: 'Manoplas Sagradas',
     baseHp: 42, baseAtk: 8, baseDef: 6, baseMatk: 0, baseMdef: 4, critChance: 0.05,
     baseAttrs: { str: 5, dex: 1, agi: 1, vit: 2, int: 1, wis: 3, luk: 1 },
