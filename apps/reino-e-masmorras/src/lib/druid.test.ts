@@ -1,3 +1,5 @@
 import test from 'node:test'; import assert from 'node:assert/strict';
-import {createDruidCycle,advanceDruidSeason,markDruidAttunement,createDruidRenewal,addDruidDissonance} from './druid.ts';
+import {createDruidCycle,advanceDruidSeason,markDruidAttunement,createDruidRenewal,addDruidDissonance,growGarden,addGardenSeeds,consumeGardenFruit,pickDruidSeasonalAbility} from './druid.ts';
 test('druid advances seasons and caps resources',()=>{let c=createDruidCycle();c=markDruidAttunement(c,4);assert.equal(c.attunement,3);c=advanceDruidSeason(c);assert.equal(c.season,'summer');assert.equal(c.completed.has('spring'),true);c=createDruidRenewal(createDruidRenewal(c));assert.equal(c.renewals,1);assert.equal(addDruidDissonance(c,9).dissonance,3);});
+test('garden grows before cast and harvests oldest fruit',()=>{let g=addGardenSeeds([],1,2);g=growGarden(g);assert.equal(g[0].stage,'sprout');g=growGarden(g);assert.equal(g[0].stage,'fruit');const r=consumeGardenFruit(g,1);assert.equal(r.consumed.length,1);assert.equal(r.garden.length,1);});
+test('seasonal selector keeps priority inside the preferred pass',()=>{const a=[{effect:{druidSeason:'autumn'}},{effect:{druidSeason:'summer'}},{effect:{druidSeason:'cycle'}}];assert.equal(pickDruidSeasonalAbility(a,'summer'),a[1]);});
