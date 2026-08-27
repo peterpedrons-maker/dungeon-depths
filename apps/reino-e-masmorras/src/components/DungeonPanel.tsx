@@ -37,6 +37,7 @@ import {
   loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows,
   tensionForPreciseHit, accelerateOldestArrow,
 } from '../lib/archer';
+import { DruidCycleState, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance } from '../lib/druid';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -907,6 +908,13 @@ export function DungeonPanel({
   const archerPerfectCastRef = useRef(false);
   const archerLastActionHitsRef = useRef(0);
   const [archerState, setArcherState] = useState(archerStateRef.current);
+  const druidCycleRef = useRef<DruidCycleState>(createDruidCycle());
+  const [druidCycleState, setDruidCycleState] = useState(druidCycleRef.current);
+  function isDruid(){return chRef.current.classId==='druida';}
+  function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
+  function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
+  function druidAction(synced=false){if(!isDruid())return; druidCycleRef.current=synced?markDruidAttunement(druidCycleRef.current):addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; druidSync();}
+  void druidAdvance;
 
   function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
   function isArcher(): boolean { return chRef.current.classId === 'arqueiro'; }
@@ -4428,6 +4436,7 @@ export function DungeonPanel({
         // round's damage, exactly like choosing to use any other ability.
         archerPerfectCastRef.current = false;
         chosen = pickAbility(isRogue() ? 'main' : undefined);
+        if (isDruid()) druidAction(Boolean(chosen?.effect.druidSeason === druidCycleRef.current.season || chosen?.effect.druidSeason === 'cycle'));
         if (isPaladin()) {
           paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
           const offensiveAbility = chosen !== null && !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
@@ -6398,6 +6407,11 @@ export function DungeonPanel({
     'arqueiro:reflex': { value: archerState.reflexActionsLeft, maxValue: 2, duration: archerState.reflexActionsLeft, visible: ch.classId === 'arqueiro' },
     'arqueiro:flight': { value: archerState.arrows.length, maxValue: 4, detail: archerState.arrows.map((a) => `${a.sourceName}: ↓${a.actionsRemaining}`).join(' · '), visible: ch.classId === 'arqueiro' },
     'arqueiro:convergence': { value: 0, visible: ch.classId === 'arqueiro' },
+    'druida:season': { value: ['spring','summer','autumn','winter'].indexOf(druidCycleState.season), detail: druidCycleState.season.toUpperCase(), visible: ch.classId === 'druida' },
+    'druida:attunement': { value: druidCycleState.attunement, maxValue: 3, visible: ch.classId === 'druida' },
+    'druida:perfect_year': { value: druidCycleState.perfectYear ? 1 : 0, visible: ch.classId === 'druida' },
+    'druida:renewal': { value: druidCycleState.renewals, maxValue: 1, visible: ch.classId === 'druida' },
+    'druida:dissonance': { value: druidCycleState.dissonance, maxValue: 3, visible: ch.classId === 'druida' },
     'mago:runes': { value: mageRunesState, maxValue: 2 },
     'mago:heat': { value: mageHeatState, maxValue: 100 },
     'mago:overheat': { value: 0 },

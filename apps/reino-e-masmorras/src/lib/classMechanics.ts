@@ -9,6 +9,13 @@ import { ClassAttributeNote, ClassCombinationNote, ClassId, ClassMechanic, Class
 // by adding entries here — never by writing new UI.
 
 const MECHANICS: Partial<Record<ClassId, ClassMechanic[]>> = {
+  druida: [
+    { id:'druida:season', classId:'druida', name:'Estação', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'☘',hideWhenZero:false,priority:10,color:'emerald'}, shortDescription:'O ciclo alterna Primavera, Verão, Outono e Inverno.', fullDescription:'A Estação atual define a magia sintonizada e a Forma do Druida. Ela persiste entre inimigos da mesma tentativa e reinicia numa nova tentativa.' },
+    { id:'druida:attunement', classId:'druida', name:'Sintonia', category:'resource', combatDisplay:{owner:'player',displayType:'bar',maxValue:3,icon:'✦',hideWhenZero:false,priority:11,color:'lime'}, shortDescription:'Ações alinhadas cultivam Sintonia.', fullDescription:'Habilidades da Estação aumentam Sintonia e fortalecem o próximo efeito do Ciclo Vivo.' },
+    { id:'druida:perfect_year', classId:'druida', name:'Ano Perfeito', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'◉',hideWhenZero:true,priority:12,color:'gold'}, shortDescription:'Completar as quatro Estações prepara Renovo.', fullDescription:'Cada Estação pode ser concluída uma vez por Ano. Ao completar as quatro, o Druida gera um Renovo.' },
+    { id:'druida:renewal', classId:'druida', name:'Renovo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'❖',hideWhenZero:false,priority:13,color:'lime'}, shortDescription:'Uma reserva de renascimento que persiste entre inimigos.', fullDescription:'Renovo pode ser consumido por habilidades de Equilíbrio e persiste durante a tentativa.' },
+    { id:'druida:dissonance', classId:'druida', name:'Descompasso', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'◇',hideWhenZero:true,priority:14,color:'purple'}, shortDescription:'Ações fora do centro acumulam Descompasso.', fullDescription:'Ataques básicos e magias fora da Estação geram Descompasso. Equilíbrio converte esse excesso em poder.' },
+  ],
   barbaro: [
     {
       id: 'barbaro:fury', classId: 'barbaro', name: 'Fúria', category: 'resource',

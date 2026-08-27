@@ -1943,6 +1943,20 @@ export function computeSkillBonuses(classId: ClassId, unlocked: string[]): Requi
   return totals;
 }
 
+// Druida — O Ciclo Vivo.  Defined after the legacy table so the redesign is
+// the single source used by saves/loadouts while preserving every node id.
+const druidNode = (path: string, i: number, name: string, desc: string, active?: AbilityDef): SkillNode => ({
+  id: `druida:${path}:${i}`, prereqIds: i < 3 ? [] : [`druida:${path}:${i-3}`], type: active ? 'active' : (i === 6 || i === 8 || i === 14 ? 'passive' : 'attribute'), name, desc,
+  effect: active ? {} : { flatBonusMagicDmg: i % 3 === 0 ? 2 : undefined, maxHpFlat: i % 3 === 1 ? 5 : undefined, cooldownReductionPct: i % 3 === 2 ? 0.015 : undefined }, ability: active,
+});
+const druidAbility = (path:string,i:number,name:string,desc:string,effect:any):AbilityDef => ({ id:`druida:${path}:${i}`, name, desc, cooldown: i===4?4:i===9?5:i===10?6:i===12?7:8, condition:{type:'always'}, effect });
+const druidPath=(path:string,display:string,color:string,names:string[])=>buildPath('druida',path,display,color,names.map((n,i)=>{if(![4,9,10,12,13].includes(i))return druidNode(path,i,n,`Ação do Ciclo Vivo: ${n}.`);const e=i===4?{kind:'heal',healPct:0.18}:i===9?{kind:'bigHit',dmgMult:2.0}:i===10?{kind:'regen',regenPct:0.06,regenRounds:3}:i===12?{kind:'guaranteedCrit',dmgMult:2.4}:{kind:'bigHit',dmgMult:3.0};return druidNode(path,i,n,`Ação do Ciclo Vivo: ${n}.`,druidAbility(path,i,n,`Usa a Estação e a Sintonia atual.`,e));}));
+SKILL_TREES.druida=[
+  druidPath('cura-natural','Renascimento','#3f8a5a',['Raiz Vital','Seiva Sábia','Broto Resiliente','Cultivo Paciente','Semente da Vida','Vigor Verdejante','Jardim Vivo','Copa Protetora','Fruto Maduro','Colheita Restauradora','Casca Regenerativa','Vida Profunda','Renovo','Ano Perfeito','Nada se Perde']),
+  druidPath('furia-natureza','Metamorfose','#8a3a2a',['Instinto do Cervo','Garras Naturais','Pele Selvagem','Forma Adaptável','Investida do Cervo','Músculos de Lobo','Fúria da Forma','Caçada Incansável','Forma do Urso','Rugido Primordial','Forma da Coruja','Olhos Noturnos','Predador Sazonal','Avatar Bestial','Instinto Ancestral']),
+  druidPath('equilibrio','Equilíbrio','#4f7a3a',['Centro Interior','Sopro Equilibrado','Ritual Cíclico','Passo Sazonal','Pulso do Equinócio','Harmonia','Descompasso','Maré de Equilíbrio','Reequilíbrio','Balanço Natural','Convergência','Sintonia Profunda','Círculo Perfeito','Retorno ao Centro','Equilíbrio Vivo']),
+];
+
 // Primary-attribute totals = the class's level-1 head start (baseAttrs) plus
 // whatever the player has freely spent their attributePoints on
 // (allocatedAttrs) — the skill tree no longer grants primary attributes at
