@@ -525,6 +525,7 @@ export interface AbilityEffect {
 
   // Arqueiro: metadados declarativos de Distância, Tensão, Cadência e voo.
   archerPath?: 'precision' | 'rapid' | 'instinct';
+  druidSeason?: 'spring' | 'summer' | 'autumn' | 'winter' | 'cycle';
   archerShotType?: 'precise' | 'volley' | 'flight' | 'ballistic' | 'maneuver';
   hitDmgMults?: number[];
   archerDistanceShift?: number;
