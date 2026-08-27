@@ -66,7 +66,10 @@ export function projectWarlockCast(args: {
   const effectiveDebtGain = Math.min(afterCredit, WARLOCK_DEBT_MAX - debt);
   const willOvercontract = afterCredit > 0 && debt >= WARLOCK_DEBT_MAX;
   const debtForPower = Math.min(WARLOCK_DEBT_MAX, debt + afterCredit + (usesCredit && args.lawyer ? 1 : 0));
-  const collectionHpCost = willOvercontract ? Math.ceil(args.maxHp * WARLOCK_OVERCONTRACT_COLLECTION_PCT) : 0;
+  // Early/forced collection is a real cast cost too: projection must reject
+  // lethal casts before the action mutates the live combat state.
+  const collectionPct = args.collectionPct ?? (willOvercontract ? WARLOCK_OVERCONTRACT_COLLECTION_PCT : 0);
+  const collectionHpCost = collectionPct > 0 ? Math.ceil(args.maxHp * collectionPct) : 0;
   const selfHpCost = Math.ceil(args.maxHp * Math.max(0, args.selfHpCostPct ?? 0));
   return {
     effectiveDebtGain, usesForgery, usesCredit, willOvercontract,
