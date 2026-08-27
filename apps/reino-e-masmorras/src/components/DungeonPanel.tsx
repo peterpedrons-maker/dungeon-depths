@@ -3336,19 +3336,24 @@ export function DungeonPanel({
       if (warlockHasSkill('bruxo:maldicao:5')) warlockCritDmg += 0.03 + (warlockEnemyRef.current.nameFragments >= 3 ? 0.02 : 0);
       if (warlockHasSkill('bruxo:corrupcao:7')) warlockCritDmg += 0.03 + (warlockStateRef.current.scars >= 3 ? 0.03 : 0);
     }
+    let sorcererMdef = 1;
+    if (isSorcerer()) {
+      if (sorcererHasSkill('feiticeiro:dominio:2')) sorcererMdef *= 1.02 + (sorcererStateRef.current.control >= 2 ? 0.02 : 0);
+      if (sorcererHasSkill('feiticeiro:dominio:11')) sorcererMdef *= 1.02;
+    }
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct) * necroMatkMult),
       def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult * paladinDefMult * archerDefMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult * druidMdef * warlockMdef)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult * druidMdef * warlockMdef * sorcererMdef)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus + archerCritBonus + druidCrit)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus + archerCritDmgBonus + warlockCritDmg,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
       evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus + rogueEvasionBonus + archerEvasionBonus),
-      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus + druidAccuracy + warlockAccuracy,
+      accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus + druidAccuracy + warlockAccuracy + (isSorcerer() && sorcererHasSkill('feiticeiro:dominio:0') ? 0.015 : 0),
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus + druidDmgTaken + warlockDmgTaken,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct') + druidPen),
       lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus),
@@ -4584,8 +4589,10 @@ export function DungeonPanel({
       let sorcererCrit = false;
       let sorcererNormalCast = false;
       let sorcererFracturesConsumed = 0;
+      let sorcererFinalized = false;
       const finalizeSorcerer = () => {
-        if (!sorcererActive || !chosen) return;
+        if (!sorcererActive || !chosen || sorcererFinalized) return;
+        sorcererFinalized = true;
         const e = chosen.effect;
         const directHit = sorcererHit || enemyRef.current.hp < sorcererEnemyHpAtActionStart;
         const anyCrit = sorcererCrit;
@@ -4598,8 +4605,12 @@ export function DungeonPanel({
           sorcererStateRef.current = gained.state;
           if (sorcererHasSkill('feiticeiro:sobrecarga:14') && gained.overflow >= 2) sorcererStateRef.current = addResonance(sorcererStateRef.current, 1);
         }
+        if (directHit && anyCrit && e.sorcererPath === 'rupture' && sorcererHasSkill('feiticeiro:explosao:8') && !sorcererEnemyRef.current.spontaneousUsed) {
+          sorcererEnemyRef.current = addFractures(sorcererEnemyRef.current, 1);
+          sorcererEnemyRef.current = { ...sorcererEnemyRef.current, spontaneousUsed: true };
+        }
         if (e.sorcererFractureConsume === 3 && sorcererFracturesConsumed === 3) sorcererEnemyRef.current = directHit ? { ...sorcererEnemyRef.current, fractures: 1 } : { ...sorcererEnemyRef.current, fractures: 0 };
-        if (directHit && e.sorcererEnemyDmgReductionPct) sorcererEnemyReductionRef.current = e.sorcererEnemyDmgReductionPct;
+        if (directHit && e.sorcererEnemyDmgReductionPct) sorcererEnemyReductionRef.current = sorcererControlConsumedRef.current > 0 ? 0.12 : e.sorcererEnemyDmgReductionPct;
         sorcererSync();
       };
       const finalizeWarlock = (landed: boolean) => {
@@ -5036,6 +5047,7 @@ export function DungeonPanel({
               sorcererActive && offenseAbility.effect.sorcererPath ? { awakened: sorcererCastAwakened, accuracy: (offenseAbility.effect.sorcererAccuracyBonusPct ?? 0) + (sorcererControlAtActionStart * 0.02) + (sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.10 : 0), crit: 0, pen: (offenseAbility.effect.sorcererMdefPenPct ?? 0) + sorcererControlAtActionStart * 0.02 + (offenseAbility.effect.sorcererPath === 'rupture' ? rupturePenetration(sorcererFracturesAtActionStart) : 0) + (sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.12 : 0), dmgPct: sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'rupture' ? 0.18 : sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.08 : 0, echo: sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'reverberation', echoPotency: offenseAbility.effect.sorcererEchoPotency ?? 0.40 } : undefined);
             if (warlockActive) {
               finalizeWarlock(enemyRef.current.hp < warlockEnemyHpAtActionStart);
+              finalizeSorcerer();
               if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
             }
           } else if (missed) {
@@ -5801,6 +5813,7 @@ export function DungeonPanel({
 
         if (isMage() && chosen && !mageCastFinished) { mageFinishCast(chosen, mageAmplifiedThisCast); mageCastFinished = true; }
         if (warlockActive && castAbility) finalizeWarlock(!missed && dmg > 0);
+        finalizeSorcerer();
         if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
 
         if (knightActive) {
