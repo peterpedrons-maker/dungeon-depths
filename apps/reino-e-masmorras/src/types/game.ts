@@ -527,6 +527,8 @@ export interface AbilityEffect {
   archerPath?: 'precision' | 'rapid' | 'instinct';
   druidSeason?: 'spring' | 'summer' | 'autumn' | 'winter' | 'cycle';
   druidAction?: 'seed'|'harvest'|'form'|'cycle'|'winter'|'equilibrium';
+  healFromDamagePct?: number;
+  healFromDamageCapPct?: number;
   archerShotType?: 'precise' | 'volley' | 'flight' | 'ballistic' | 'maneuver';
   hitDmgMults?: number[];
   archerDistanceShift?: number;
@@ -578,7 +580,6 @@ export interface AbilityEffect {
   verdictHealPctByConviction?: Partial<Record<1 | 2 | 3, number>>;
   verdictAegisByConviction?: Partial<Record<1 | 2 | 3, { reductionPct: number; maxHpCapPct: number; hits?: number }>>;
   activeHealMaxHpPct?: number;
-  healFromDamagePct?: number;
   lowHpHealFromDamagePct?: number;
   lowHpHealThreshold?: number;
   aegisReductionPct?: number;
