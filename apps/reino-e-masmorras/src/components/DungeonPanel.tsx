@@ -23,6 +23,13 @@ import {
   loadedDieResult, prepareTrick,
 } from '../lib/rogue';
 import {
+  PaladinAegis, PaladinLiturgyState, PaladinVerdictSnapshot, PaladinVirtue,
+  advancePaladinLiturgy, consumePaladinVerdict, createPaladinAegis,
+  createPaladinLiturgyState, invokePaladinVirtue, paladinActiveHealAmount,
+  paladinAegisAttributeCapBonus, paladinAegisReduction, paladinConviction,
+  paladinRadiantBonusPct,
+} from '../lib/paladin';
+import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
   GUARD_BREAK_TICKS, POSTURE_BASIC_DAMAGE, POSTURE_MAX, PreparedGuardState,
@@ -321,7 +328,7 @@ const SELF_ABILITY_KINDS = [
   // Caçador redesign (lib/hunter.ts) — all consume the whole action, no attack roll.
   'armTrap', 'buffEvasion', 'huntWithPrey',
   // Guerreiro — support actions; neither consumes Guarda Quebrada actions.
-  'preparedGuard', 'feint',
+  'preparedGuard', 'feint', 'aegis',
   // Necromante — invocações/proteções consomem a ação inteira.
   'boneShield', 'deathVeil', 'boneFortress', 'mortalVoracity',
   // Ladino — suportes Rápidos resolvem dentro da Janela de Iniciativa.
@@ -969,6 +976,20 @@ export function DungeonPanel({
   const [rogueAdvantageState, setRogueAdvantageState] = useState(false);
   const [rogueTimeStolenState, setRogueTimeStolenState] = useState(false);
 
+  // Paladino: Virtudes/Convicção existem somente dentro da Liturgia atual.
+  // Vereditos tiram um snapshot e limpam o estado no início do cast; Égide
+  // é uma proteção própria, posterior à mitigação e anterior a barreiras.
+  const paladinLiturgyRef = useRef<PaladinLiturgyState>(createPaladinLiturgyState());
+  const paladinAegisRef = useRef<PaladinAegis | null>(null);
+  const paladinAegisBonusPendingRef = useRef(false);
+  const paladinVotoMantidoUsedRef = useRef(false);
+  const paladinMercyDutyUsedRef = useRef(false);
+  const paladinAegisPerfectUsedEnemyRef = useRef(false);
+  const paladinNextOffenseBuffTicksRef = useRef(0);
+  const paladinLawHammerTicksRef = useRef(0);
+  const [paladinLiturgyState, setPaladinLiturgyState] = useState(paladinLiturgyRef.current);
+  const [paladinAegisState, setPaladinAegisState] = useState<PaladinAegis | null>(null);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -1238,12 +1259,18 @@ export function DungeonPanel({
         determination: knightDeterminationRef.current, momentum: knightMomentumRef.current, orders: knightOrdersRef.current,
         heat: mageHeatRef.current,
         souls: necroSoulsRef.current,
+        conviction: paladinConviction(paladinLiturgyRef.current.virtues),
       },
       states: {
         frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
         thermal: mageThermalRef.current !== 'normal', stealth: rogueStealthRef.current,
         toxicBlade: rogueToxicBladeMainLeftRef.current > 0,
         reverseWasted: rogueImagesRef.current >= ROGUE_IMAGE_MAX && rogueSharpenedEchoRef.current,
+        justice: paladinLiturgyRef.current.virtues.justice,
+        courage: paladinLiturgyRef.current.virtues.courage,
+        mercy: paladinLiturgyRef.current.virtues.mercy,
+        liturgy: paladinLiturgyRef.current.actionsLeft > 0,
+        aegis: paladinAegisRef.current !== null,
       },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0 },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
@@ -1327,6 +1354,74 @@ export function DungeonPanel({
     rogueFirstQuickEvasionRef.current = false;
     rogueFlowUntouchableRef.current = false;
     rogueSync();
+  }
+  function isPaladin(): boolean { return chRef.current.classId === 'paladino'; }
+  function paladinHasSkill(id: string): boolean { return isPaladin() && hasSkill(chRef.current, id); }
+  function paladinSync() {
+    if (silentRef.current) return;
+    setPaladinLiturgyState({ ...paladinLiturgyRef.current, virtues: { ...paladinLiturgyRef.current.virtues } });
+    setPaladinAegisState(paladinAegisRef.current ? { ...paladinAegisRef.current } : null);
+  }
+  function paladinCdrBonusFor(ab: AbilityDef): number {
+    if (!isPaladin()) return 0;
+    const path = ab.effect.paladinPath;
+    if (path === 'aegis' && paladinHasSkill('paladino:voto:3')) return 0.03;
+    if (path === 'verdict' && paladinHasSkill('paladino:martelo:3')) return 0.03;
+    if (path === 'redemption' && paladinHasSkill('paladino:luz:2')) return 0.03;
+    return 0;
+  }
+  function paladinHeal(raw: number, active = false): number {
+    const maxHp = effectiveMaxHp(chRef.current);
+    const before = chRef.current.hp;
+    const next = Math.min(maxHp, before + Math.max(0, Math.round(raw)));
+    updateCh({ ...chRef.current, hp: next });
+    const actual = next - before;
+    if (actual > 0) pushFloat('player', actual, false, undefined, undefined, true);
+    if (active && actual >= maxHp * 0.08 && paladinHasSkill('paladino:luz:8')) paladinNextOffenseBuffTicksRef.current = 2;
+    return actual;
+  }
+  function paladinInvoke(virtue: PaladinVirtue) {
+    const wasEmpty = paladinConviction(paladinLiturgyRef.current.virtues) === 0;
+    if (wasEmpty) { paladinVotoMantidoUsedRef.current = false; paladinMercyDutyUsedRef.current = false; }
+    paladinLiturgyRef.current = invokePaladinVirtue(paladinLiturgyRef.current, virtue);
+    if (virtue === 'mercy' && paladinHasSkill('paladino:luz:6') && !paladinMercyDutyUsedRef.current
+      && chRef.current.hp / effectiveMaxHp(chRef.current) < 0.60) {
+      paladinMercyDutyUsedRef.current = true;
+      paladinHeal(effectiveMaxHp(chRef.current) * 0.03, false);
+    }
+    paladinSync();
+  }
+  function paladinInvokeAbility(ab: AbilityDef) {
+    for (const virtue of ab.effect.paladinVirtues ?? []) {
+      paladinInvoke(virtue);
+      if (virtue === 'courage' && ab.effect.paladinPath === 'aegis' && paladinHasSkill('paladino:voto:2')) paladinAegisBonusPendingRef.current = true;
+    }
+    const extra = ab.effect.paladinExtraVirtueBelowHp;
+    if (extra && chRef.current.hp / effectiveMaxHp(chRef.current) < extra.pct) {
+      paladinInvoke(extra.virtue);
+      if (extra.virtue === 'courage' && ab.effect.paladinPath === 'aegis' && paladinHasSkill('paladino:voto:2')) paladinAegisBonusPendingRef.current = true;
+    }
+  }
+  function paladinMakeAegis(reductionPct: number, maxHpCapPct: number, hits = 1, duration = 3) {
+    const hpPct = chRef.current.hp / effectiveMaxHp(chRef.current);
+    let reduction = reductionPct + (paladinAegisBonusPendingRef.current ? 0.03 : 0);
+    if (hpPct < 0.40 && paladinHasSkill('paladino:voto:7')) reduction += 0.05;
+    let cap = maxHpCapPct;
+    if (paladinHasSkill('paladino:voto:0')) cap += paladinAegisAttributeCapBonus(attrTotal(chRef.current, 'vit'));
+    if (paladinHasSkill('paladino:voto:5')) cap += paladinAegisAttributeCapBonus(attrTotal(chRef.current, 'wis'));
+    paladinAegisRef.current = createPaladinAegis('paladino:aegis', reduction, cap, hits, duration);
+    paladinAegisBonusPendingRef.current = false;
+    paladinSync();
+  }
+  function paladinReduceHighestRedemptionCooldown() {
+    const target = equippedAbilities().find((x) => x.effect.paladinPath === 'redemption' && (cooldownsRef.current[x.id] ?? 0) > 0);
+    if (target) cooldownsRef.current[target.id] = Math.max(0, (cooldownsRef.current[target.id] ?? 0) - 1);
+  }
+  function paladinFinishVerdict(snapshot: PaladinVerdictSnapshot, ab: AbilityDef) {
+    const entry = ab.effect.verdictAegisByConviction?.[snapshot.conviction as 1 | 2 | 3];
+    if (entry) paladinMakeAegis(entry.reductionPct, entry.maxHpCapPct, snapshot.full && snapshot.regent === 'courage' ? 2 : 1, 3);
+    else if (snapshot.full && snapshot.regent === 'courage') paladinMakeAegis(0.50, 0.16, 2, 3);
+    if (snapshot.full && snapshot.regent === 'mercy') paladinHeal((effectiveMaxHp(chRef.current) - chRef.current.hp) * 0.08, true);
   }
   function isMage(): boolean { return chRef.current.classId === 'mago'; }
   function isNecromancer(): boolean { return chRef.current.classId === 'necromante'; }
@@ -2971,13 +3066,22 @@ export function DungeonPanel({
       if (roguePreparedTrickRef.current && rogueHasSkill('ladino:laminas:1')) rogueEvasionBonus += 0.01;
       if (rogueFirstQuickEvasionRef.current) rogueEvasionBonus += 0.02;
     }
+    let paladinDefMult = 1, paladinMdefMult = 1, paladinLifestealBonus = 0;
+    if (isPaladin()) {
+      const conviction = paladinConviction(paladinLiturgyRef.current.virtues);
+      if (paladinLiturgyRef.current.regent === 'courage' && paladinHasSkill('paladino:voto:1')) paladinMdefMult *= 1.02;
+      if (conviction >= 2 && paladinHasSkill('paladino:voto:11')) paladinMdefMult *= 1.02;
+      if (conviction >= 2 && paladinHasSkill('paladino:luz:11')) paladinMdefMult *= 1.02;
+      if (ch.hp / effectiveMaxHp(ch) < 0.35 && paladinHasSkill('paladino:luz:7')) paladinDefMult *= 1.02;
+      if (paladinLiturgyRef.current.virtues.mercy && paladinHasSkill('paladino:luz:3')) paladinLifestealBonus += 0.01;
+    }
 
     return {
       ...base,
       atk: Math.round(base.atk * (1 + atkPct)),
       matk: Math.round(base.matk * (1 + atkPct) * necroMatkMult),
-      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult)),
-      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult)),
+      def: Math.max(0, Math.round(base.def * defMult * clerigoDefBonusMult * knightDefBonusMult * paladinDefMult)),
+      mdef: Math.max(0, Math.round(base.mdef * defMult * (1 + getModTotal(playerModsRef.current, 'mdef')) * clerigoMdefBonusMult * knightMdefBonusMult * warriorMdefMult * necroMdefMult * paladinMdefMult)),
       critChance: Math.min(0.9, Math.max(0, base.critChance + critAdd + hunterCritBonus + warriorCritBonus)),
       critDmgMult: base.critDmgMult + critDmgAdd + critDmgBonus + hunterCritDmgBonus,
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
@@ -2987,7 +3091,7 @@ export function DungeonPanel({
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus,
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
-      lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct')),
+      lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus),
       tenacityPct: base.tenacityPct + tenacityBonus,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
@@ -3133,11 +3237,15 @@ export function DungeonPanel({
   // — cooldown stays the one knob that actually balances how much a build
   // can out-heal incoming damage. Heal/buff magnitudes still scale with
   // supportPowerPct (WIS), same as before.
-  function resolveSelfAbility(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>): string | null {
+  function resolveSelfAbility(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, paladinVerdict?: PaladinVerdictSnapshot | null): string | null {
     const supportMult = 1 + stats.supportPowerPct;
     const eff = ab.effect;
     const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
-    if (eff.kind === 'boneShield') {
+    if (eff.kind === 'aegis') {
+      paladinMakeAegis(eff.aegisReductionPct ?? 0.35, eff.aegisMaxHpCapPct ?? 0.10, eff.aegisHits ?? 1, eff.aegisDuration ?? 3);
+      pushAbilityCast('player', ab.name, icon, null, false);
+      return `${ab.name}: a Égide protegerá o próximo golpe direto.`;
+    } else if (eff.kind === 'boneShield') {
       necroSpendSouls(eff.soulCost ?? 1);
       const efficiency = necroHasSkill('necromante:drenar-vida:0') ? 1 + capped(0.0015, attrTotal(chRef.current, 'wis'), 0.05) : 1;
       const amount = Math.round(effectiveMaxHp(chRef.current) * (eff.barrierBasePct ?? 0.05) * supportMult * efficiency);
@@ -3165,6 +3273,21 @@ export function DungeonPanel({
       playerModsRef.current.push({ stat: 'lifestealPct', pct: 0.12, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id }); syncPlayerMods(); necroSync();
       pushFloat('player', heal, false, undefined, undefined, true); pushAbilityCast('player', ab.name, icon, heal, true); return `${ab.name}: você devora ${servants} Servo(s) e ${souls} Alma(s), recuperando ${heal}.`;
     } else if (eff.kind === 'heal') {
+      if (isPaladin() && eff.paladinPath === 'redemption') {
+        const conviction = paladinVerdict?.conviction ?? paladinConviction(paladinLiturgyRef.current.virtues);
+        const pct = paladinVerdict ? (eff.verdictHealPctByConviction?.[conviction as 1 | 2 | 3] ?? 0) : (eff.activeHealMaxHpPct ?? eff.healPct ?? 0);
+        const maxHp = effectiveMaxHp(chRef.current);
+        const lowBonus = paladinHasSkill('paladino:luz:0') && chRef.current.hp / maxHp < 0.50 ? 0.04 : 0;
+        const raw = paladinActiveHealAmount(maxHp, pct, attrTotal(chRef.current, 'wis'),
+          paladinHasSkill('paladino:luz:1') ? attrTotal(chRef.current, 'vit') : 0, lowBonus);
+        const before = chRef.current.hp;
+        const healed = paladinHeal(raw, true);
+        if (paladinVerdict) paladinFinishVerdict(paladinVerdict, ab);
+        const total = chRef.current.hp - before;
+        if (paladinVerdict?.full && paladinVerdict.regent === 'mercy' && paladinHasSkill('paladino:luz:14') && total >= maxHp * 0.15) paladinReduceHighestRedemptionCooldown();
+        pushAbilityCast('player', ab.name, icon, healed, true);
+        return `${ab.name}: você recupera ${total} de vida.`;
+      }
       if (eff.faithCost) clerigoSpendFaith(eff.faithCost);
       const c = chRef.current;
       const baselineMaxHp = CLASSES[c.classId].baseHp + 6 * (c.level - 1);
@@ -3639,6 +3762,16 @@ export function DungeonPanel({
       }
     }
     if (isRogue() && rogueEnemyDmgDebuffRef.current > 0) rogueEnemyDmgDebuffRef.current -= 1;
+    if (isPaladin()) {
+      if (paladinNextOffenseBuffTicksRef.current > 0) paladinNextOffenseBuffTicksRef.current -= 1;
+      if (paladinLawHammerTicksRef.current > 0) paladinLawHammerTicksRef.current -= 1;
+      if (paladinAegisRef.current) {
+        const expiring = paladinAegisRef.current.ticksLeft <= 1;
+        paladinAegisRef.current = expiring ? null : { ...paladinAegisRef.current, ticksLeft: paladinAegisRef.current.ticksLeft - 1 };
+        if (expiring && paladinHasSkill('paladino:voto:8')) paladinHeal(effectiveMaxHp(chRef.current) * 0.03, false);
+      }
+      paladinSync();
+    }
 
     if (playerRegenRef.current.length > 0) {
       const maxHp = effectiveMaxHp(chRef.current);
@@ -3924,6 +4057,17 @@ export function DungeonPanel({
         rogueEnemyDmgDebuffRef.current = 0;
         rogueSync();
       }
+      if (isPaladin()) {
+        paladinLiturgyRef.current = createPaladinLiturgyState();
+        paladinAegisRef.current = null;
+        paladinAegisBonusPendingRef.current = false;
+        paladinVotoMantidoUsedRef.current = false;
+        paladinMercyDutyUsedRef.current = false;
+        paladinAegisPerfectUsedEnemyRef.current = false;
+        paladinNextOffenseBuffTicksRef.current = 0;
+        paladinLawHammerTicksRef.current = 0;
+        paladinSync();
+      }
       // Cavaleiro: everything resets per enemy EXCEPT Sede de Vitória's
       // capped Momentum carry and Liderança's capped Ordens carry, and
       // EXCEPT Bastião Inquebrável's once-per-ATTEMPT save (untouched here).
@@ -4101,6 +4245,10 @@ export function DungeonPanel({
       let rogueImagesAtCast = 0, rogueSharpenedAtCast = false, rogueLoadedDieSaved = false;
       let rogueToxicBladeAtCast = false, rogueTrickAtCast = false;
       let rogueLoadedDieFirstHit: boolean | undefined;
+      let paladinVerdictAtCast: PaladinVerdictSnapshot | null = null;
+      let paladinMercyArmedThisCast = false;
+      let paladinLawHammerThisCast = false;
+      let paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -4111,6 +4259,29 @@ export function DungeonPanel({
         // alongside whatever else happened. Using a heal costs you the
         // round's damage, exactly like choosing to use any other ability.
         chosen = pickAbility(isRogue() ? 'main' : undefined);
+        if (isPaladin()) {
+          paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
+          const offensiveAbility = chosen !== null && !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
+          if (offensiveAbility && paladinNextOffenseBuffTicksRef.current > 0) {
+            paladinMercyArmedThisCast = true;
+            paladinNextOffenseBuffTicksRef.current = 0;
+          }
+          if (!chosen && paladinLawHammerTicksRef.current > 0) {
+            paladinLawHammerThisCast = true;
+            paladinLawHammerTicksRef.current = 0;
+          }
+          if (chosen) {
+            if (chosen.effect.paladinVerdict) {
+              const consumed = consumePaladinVerdict(paladinLiturgyRef.current);
+              paladinVerdictAtCast = consumed.snapshot;
+              paladinLiturgyRef.current = consumed.state;
+              paladinVotoMantidoUsedRef.current = false;
+              paladinMercyDutyUsedRef.current = false;
+            } else paladinInvokeAbility(chosen);
+            cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + paladinCdrBonusFor(chosen));
+            paladinSync();
+          }
+        }
         if (isRogue()) {
           const mainOffensive = !chosen || chosen.effect.offensive === true;
           rogueExposedAtCast = rogueExposedMainLeftRef.current > 0;
@@ -4187,8 +4358,8 @@ export function DungeonPanel({
           mageSync();
         }
         if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
-          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id));
-          const line = resolveSelfAbility(chosen, stats);
+          if (!isPaladin()) cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id));
+          const line = resolveSelfAbility(chosen, stats, paladinVerdictAtCast);
           if (line) pushLog(line);
         } else {
           const offenseAbility = chosen;
@@ -4265,7 +4436,9 @@ export function DungeonPanel({
             if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:2')) rogueCritBonus += 0.02;
             if (rogueAdvantageAtCast && offenseAbility?.effect.advantageCritPct) rogueCritBonus += offenseAbility.effect.advantageCritPct;
           }
-          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus + rogueCritBonus);
+          const paladinConvictionAtCast = paladinVerdictAtCast?.conviction ?? paladinConviction(paladinLiturgyRef.current.virtues);
+          const paladinCritBonus = isPaladin() && paladinVerdictAtCast?.conviction === 3 && paladinHasSkill('paladino:martelo:8') ? 0.06 : 0;
+          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus + rogueCritBonus + paladinCritBonus);
           // Mão Pesada / Instinto Mortal (barbaro:selvageria:3 / :11) —
           // SOR-scaled critDmg vs a wounded enemy (any Ferida / exactly max).
           const maoPesadaBonus = barbActive && barbHasSkill('barbaro:selvageria:3') && woundsAtActionStart >= 1
@@ -4273,7 +4446,11 @@ export function DungeonPanel({
           const instintoMortalBonus = barbActive && barbHasSkill('barbaro:selvageria:11') && woundsAtActionStart === WOUND_MAX_STACKS
             ? capped(SELVAGERIA_INSTINTO_MORTAL_RATE, attrTotal(chRef.current, 'luk'), SELVAGERIA_INSTINTO_MORTAL_CAP) : 0;
           const necroMissingHpCrit = isNecromancer() && necroHasSkill('necromante:ceifador:3') ? Math.min(0.02, Math.floor((1 - enemyRef.current.hp / enemyRef.current.maxHp) / 0.20) * 0.005) : 0;
-          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus + necroMissingHpCrit + (necroNextMagicBonusRef.current?.critDmgPct ?? 0);
+          const paladinCritDmg = isPaladin()
+            ? (offenseAbility?.effect.paladinPath === 'verdict' && (paladinLiturgyRef.current.regent === 'justice' || paladinVerdictAtCast?.regent === 'justice') && paladinHasSkill('paladino:martelo:7') ? 0.05 : 0)
+              + (paladinVerdictAtCast?.full && paladinHasSkill('paladino:martelo:11') ? 0.05 : 0)
+            : 0;
+          const critDmgMultForRoll = stats.critDmgMult + maoPesadaBonus + instintoMortalBonus + necroMissingHpCrit + (necroNextMagicBonusRef.current?.critDmgPct ?? 0) + paladinCritDmg;
           // Olhar Predador (barbaro:selvageria:0) — DES-scaled accuracy vs a
           // wounded enemy. Olfato Aguçado (barbaro:selvageria:7) — flat
           // +0.4% accuracy per current Ferida stack (mechanic, not attribute).
@@ -4289,6 +4466,7 @@ export function DungeonPanel({
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
           let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus + warriorCastAccuracyBonus;
+          if (isPaladin() && paladinConvictionAtCast >= 2 && paladinHasSkill('paladino:martelo:1')) accuracyForRoll += 0.015;
           if (isRogue()) {
             if (rogueAmbushThisCast) accuracyForRoll += ROGUE_AMBUSH_ACCURACY;
             if (rogueAmbushThisCast && rogueHasSkill('ladino:veneno:3')) accuracyForRoll += 0.02;
@@ -4348,8 +4526,13 @@ export function DungeonPanel({
               knightConsecutiveHitsRef.current = 0;
             }
             hunterOnPlayerMiss();
+            if (isPaladin() && offenseAbility && paladinVerdictAtCast) {
+              paladinFinishVerdict(paladinVerdictAtCast, offenseAbility);
+              if (paladinVerdictAtCast.full && paladinVerdictAtCast.regent === 'justice' && paladinHasSkill('paladino:martelo:14')) paladinLawHammerTicksRef.current = 2;
+              paladinSync();
+            }
           } else if (offenseAbility) {
-            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer() && !isRogue()) {
+            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer() && !isRogue() && !isPaladin()) {
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
@@ -4368,6 +4551,15 @@ export function DungeonPanel({
               // as their explicit amplified multiplier.
               if (eff.kind === 'multiHit') eff.dmgMultPerHit = eff.amplifiedDmgMult;
               else eff.dmgMult = eff.amplifiedDmgMult < 1 && eff.heatDmgMultPerPoint ? (eff.dmgMult ?? 0) + eff.amplifiedDmgMult : eff.amplifiedDmgMult;
+            }
+            if (isPaladin()) {
+              if (eff.lowHpDmgMult !== undefined && enemyRef.current.hp / enemyRef.current.maxHp < 0.50) eff.dmgMult = eff.lowHpDmgMult;
+              if (paladinVerdictAtCast && eff.verdictDmgMultByConviction) {
+                eff.dmgMult = eff.verdictDmgMultByConviction[paladinVerdictAtCast.conviction as 1 | 2 | 3] ?? eff.dmgMult;
+                if (paladinVerdictAtCast.full && paladinVerdictAtCast.regent === 'justice') {
+                  eff.dmgMult = eff.fullJusticeDmgMult ?? ((eff.dmgMult ?? 1) + 0.25);
+                }
+              }
             }
             // Abilities from magical classes cast as spells by default (matk vs
             // mdef) — only an ability's own dmgType override or the caster's
@@ -4398,6 +4590,10 @@ export function DungeonPanel({
               ? (mageAmplifiedThisCast ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0))
               : 0;
             let warriorConditionalDefPen = warriorCastDefPenBonus + (eff.defPenPct ?? 0);
+            if (isPaladin() && paladinVerdictAtCast) {
+              if (paladinHasSkill('paladino:martelo:6')) warriorConditionalDefPen += paladinVerdictAtCast.conviction * 0.03;
+              if (paladinVerdictAtCast.full && paladinVerdictAtCast.regent === 'justice') warriorConditionalDefPen += 0.12;
+            }
             if (isRogue()) {
               if (rogueAmbushThisCast) warriorConditionalDefPen += ROGUE_AMBUSH_DEF_PEN;
               if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:6')) warriorConditionalDefPen += 0.05;
@@ -4444,6 +4640,11 @@ export function DungeonPanel({
             if (isMage() && eff.element === 'fire' && (eff.heatCost || eff.heatCostAll) && mageHeatAtCast >= 90 && chRef.current.unlockedSkills.includes('mago:piromante:11')) dmgMult *= 1.03;
             if (isMage() && eff.element === 'fire' && (eff.heatCost || eff.heatCostAll) && mageHeatAtCast >= 90 && chRef.current.unlockedSkills.includes('mago:piromante:6')) dmgMult += 0.15;
             if (isMage() && eff.shatter) dmgMult = thermalShatterMult(mageThermalRef.current) + (mageAmplifiedThisCast ? (eff.amplifiedDmgMult ?? 0) : 0);
+            if (isPaladin() && eff.paladinRadiant) {
+              const radiant = paladinRadiantBonusPct(attrTotal(chRef.current, 'wis'), paladinHasSkill('paladino:martelo:5') ? 1.2 : 1);
+              dmgMult *= 1 + radiant;
+              if ((paladinLiturgyRef.current.virtues.justice || paladinVerdictAtCast?.virtues.justice) && paladinHasSkill('paladino:martelo:0')) dmgMult *= 1.01;
+            }
             if (eff.dmgMultPerWoundStack) dmgMult += eff.dmgMultPerWoundStack * woundsAtActionStart;
             if (eff.painConsumeMaxPct && eff.painConsumeDmgMultPer2Pct) {
               const consumed = barbConsumePain(eff.painConsumeMaxPct);
@@ -4841,6 +5042,11 @@ export function DungeonPanel({
               if (rogueImagesAtCast === 2 && rogueHasSkill('ladino:sombras:11')) dmg = Math.round(dmg * 1.03);
               if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:7')) dmg = Math.round(dmg * 1.02);
             }
+            if (isPaladin()) {
+              if (paladinMercyArmedThisCast) dmg = Math.round(dmg * 1.06);
+              if (paladinLawHammerThisCast) dmg = Math.round(dmg * 1.20);
+              if (paladinVerdictAtCast && enemyRef.current.hp / enemyRef.current.maxHp < 0.35 && paladinHasSkill('paladino:martelo:2')) dmg = Math.round(dmg * 1.02);
+            }
             // Vulnerabilidade do inimigo — sempre por último, per Section 18.
             if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
             if (barbActive) {
@@ -4875,6 +5081,16 @@ export function DungeonPanel({
       // action hit, missed, or was a self-ability. No-op for every other
       // class and for a Bárbaro not currently in Frenesi.
       barbEndOfActionDrain();
+
+      if (isPaladin() && !playerStunned) {
+        const before = paladinConviction(paladinLiturgyRef.current.virtues);
+        paladinLiturgyRef.current = advancePaladinLiturgy(paladinLiturgyRef.current);
+        if (before > 0 && paladinConviction(paladinLiturgyRef.current.virtues) === 0) {
+          paladinVotoMantidoUsedRef.current = false;
+          paladinMercyDutyUsedRef.current = false;
+        }
+        paladinSync();
+      }
 
       if (isWarrior() && !playerStunned && (!chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind))) {
         if (chosen?.effect.finishGuardBreak) warriorEndGuardBreak();
@@ -4953,6 +5169,27 @@ export function DungeonPanel({
           const heal = Math.min(Math.round(baseline * (castAbility.effect.directHealCapPct ?? 1)), Math.round(dmg * castAbility.effect.directHealFromDamagePct * efficiency));
           if (heal > 0) { updateCh({ ...chRef.current, hp: Math.min(effectiveMaxHp(chRef.current), chRef.current.hp + heal) }); pushFloat('player', heal, false, undefined, undefined, true); }
           necroMetric('healing', heal);
+        }
+
+        if (isPaladin() && castAbility) {
+          const pe = castAbility.effect;
+          if (pe.renewAegisOnHit && paladinAegisRef.current) {
+            paladinAegisRef.current = { ...paladinAegisRef.current, ticksLeft: Math.min(3, paladinAegisRef.current.ticksLeft + pe.renewAegisOnHit) };
+          }
+          const paladinHealEfficiency = 1 + paladinRadiantBonusPct(attrTotal(chRef.current, 'wis'))
+            + (paladinHasSkill('paladino:luz:1') ? Math.min(0.03, attrTotal(chRef.current, 'vit') * 0.0008) : 0)
+            + (paladinHasSkill('paladino:luz:0') && paladinHpPctAtCast < 0.50 ? 0.04 : 0);
+          const beforePaladinHealing = chRef.current.hp;
+          const damageHealPct = paladinHpPctAtCast < (pe.lowHpHealThreshold ?? 0) ? (pe.lowHpHealFromDamagePct ?? pe.healFromDamagePct ?? 0) : (pe.healFromDamagePct ?? 0);
+          if (damageHealPct > 0) paladinHeal(dmg * damageHealPct * paladinHealEfficiency, true);
+          if (pe.activeHealMaxHpPct) paladinHeal(effectiveMaxHp(chRef.current) * pe.activeHealMaxHpPct * paladinHealEfficiency, true);
+          if (paladinVerdictAtCast) {
+            paladinFinishVerdict(paladinVerdictAtCast, castAbility);
+            if (paladinVerdictAtCast.full && paladinVerdictAtCast.regent === 'justice' && paladinHasSkill('paladino:martelo:14') && enemyRef.current.hp > 0) paladinLawHammerTicksRef.current = 2;
+            const totalVerdictHeal = chRef.current.hp - beforePaladinHealing;
+            if (paladinVerdictAtCast.full && paladinVerdictAtCast.regent === 'mercy' && paladinHasSkill('paladino:luz:14') && totalVerdictHeal >= effectiveMaxHp(chRef.current) * 0.15) paladinReduceHighestRedemptionCooldown();
+          }
+          paladinSync();
         }
 
         if (stats.lifestealPct > 0 || (crit && stats.onCritHealPct > 0)) {
@@ -5304,6 +5541,24 @@ export function DungeonPanel({
       knightEscudoReduced = Math.round(edmg * ESCUDO_DISCIPLINADO_REDUCTION_PCT);
       edmg -= knightEscudoReduced;
       knightNextHitReductionWindowRef.current = 0;
+    }
+
+    if (isPaladin() && paladinAegisRef.current && edmg > 0) {
+      const beforeAegis = edmg;
+      const result = paladinAegisReduction(paladinAegisRef.current, edmg, effectiveMaxHp(chRef.current), 'direct');
+      edmg = result.damage;
+      paladinAegisRef.current = result.aegis;
+      if (result.absorbed >= effectiveMaxHp(chRef.current) * 0.05 && paladinHasSkill('paladino:voto:6') && !paladinVotoMantidoUsedRef.current
+        && paladinConviction(paladinLiturgyRef.current.virtues) > 0) {
+        paladinVotoMantidoUsedRef.current = true;
+        paladinLiturgyRef.current = { ...paladinLiturgyRef.current, actionsLeft: Math.min(4, paladinLiturgyRef.current.actionsLeft + 1) };
+      }
+      if (beforeAegis >= effectiveMaxHp(chRef.current) * 0.12 && paladinHasSkill('paladino:voto:14') && !paladinAegisPerfectUsedEnemyRef.current) {
+        paladinAegisPerfectUsedEnemyRef.current = true;
+        edmg = Math.round(edmg * 0.95);
+      }
+      pushLog(`Égide absorve ${result.absorbed} de dano.`);
+      paladinSync();
     }
 
     let shieldAbsorbed = 0;
@@ -5898,6 +6153,11 @@ export function DungeonPanel({
     'ladino:prepared_trick': { value: roguePreparedTrickState ? 1 : 0, duration: roguePreparedTrickState?.actionsLeft, detail: roguePreparedTrickState?.kind === 'feint' ? 'FINTA' : roguePreparedTrickState?.kind === 'loaded_die' ? 'DADO VICIADO' : undefined, visible: ch.classId === 'ladino' },
     'ladino:advantage': { value: rogueAdvantageState ? 1 : 0, detail: rogueAdvantageState ? 'PRONTA' : undefined, visible: ch.classId === 'ladino' },
     'ladino:time_stolen': { value: rogueTimeStolenState ? 1 : 0, visible: ch.classId === 'ladino' },
+    'paladino:conviction': { value: paladinConviction(paladinLiturgyState.virtues), maxValue: 3, visible: ch.classId === 'paladino' },
+    'paladino:virtues': { value: paladinConviction(paladinLiturgyState.virtues), detail: `J ${paladinLiturgyState.virtues.justice ? '✓' : '—'} · C ${paladinLiturgyState.virtues.courage ? '✓' : '—'} · M ${paladinLiturgyState.virtues.mercy ? '✓' : '—'}`, visible: ch.classId === 'paladino' },
+    'paladino:liturgy': { value: paladinLiturgyState.actionsLeft, duration: paladinLiturgyState.actionsLeft, visible: ch.classId === 'paladino' },
+    'paladino:regent': { value: paladinLiturgyState.regent ? 1 : 0, detail: paladinLiturgyState.regent === 'justice' ? 'JUSTIÇA' : paladinLiturgyState.regent === 'courage' ? 'CORAGEM' : paladinLiturgyState.regent === 'mercy' ? 'MISERICÓRDIA' : undefined, visible: ch.classId === 'paladino' },
+    'paladino:aegis': { value: paladinAegisState ? 1 : 0, duration: paladinAegisState?.ticksLeft, detail: paladinAegisState ? `${paladinAegisState.hitsRemaining} golpe(s) · ${formatGamePercent(paladinAegisState.reductionPct)} / teto ${formatGamePercent(paladinAegisState.maxHpCapPct)}` : undefined, visible: ch.classId === 'paladino' },
   };
   const combatMechanicStates: CombatMechanicState[] = getClassMechanics(ch.classId)
     .filter((mechanic) => mechanic.combatDisplay)
@@ -5912,7 +6172,8 @@ export function DungeonPanel({
           : condition.resource === 'fury' ? barbFuryState
           : condition.resource === 'determination' ? knightDeterminationState
           : condition.resource === 'momentum' ? knightMomentumState
-          : condition.resource === 'orders' ? knightOrdersState : 0;
+          : condition.resource === 'orders' ? knightOrdersState
+          : condition.resource === 'conviction' ? paladinConviction(paladinLiturgyState.virtues) : 0;
         const resolvedCurrent = condition.resource === 'souls' ? necroSoulsState : current;
         return [`${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource}: ${formatGameNumber(resolvedCurrent)}/${formatGameNumber(condition.value ?? 0)}`];
       }

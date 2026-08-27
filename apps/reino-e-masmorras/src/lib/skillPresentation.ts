@@ -19,7 +19,7 @@ function conditions(condition: AbilityCondition): string[] {
     case 'not': return [`Não: ${(condition.conditions ?? []).flatMap(conditions).join('')}`];
     case 'hpBelow': return [`Sua Vida abaixo de ${formatGamePercent(condition.pct ?? 0)}`];
     case 'enemyHpBelow': return [`Vida do inimigo abaixo de ${formatGamePercent(condition.pct ?? 0)}`];
-    case 'resourceAtLeast': return [`Pelo menos ${condition.value ?? 0} de ${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource}`];
+    case 'resourceAtLeast': return [`Pelo menos ${condition.value ?? 0} de ${condition.resource === 'faith' ? 'Fé' : condition.resource === 'souls' ? 'Almas' : condition.resource === 'conviction' ? 'Convicção' : condition.resource}`];
     case 'resourceBelow': return [`Menos de ${condition.value ?? 0} de ${condition.resource}`];
     case 'resourceAtMost': return [`No máximo ${condition.value ?? 0} de ${condition.resource}`];
     case 'enemyStacksAtLeast': return [`Pelo menos ${condition.stacks ?? 0} ${condition.stackId === 'judgment' ? 'Julgamentos' : condition.stackId}`];
