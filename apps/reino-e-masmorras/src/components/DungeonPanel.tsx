@@ -37,7 +37,7 @@ import {
   loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows,
   tensionForPreciseHit, accelerateOldestArrow,
 } from '../lib/archer';
-import { DruidCycleState, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance } from '../lib/druid';
+import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit } from '../lib/druid';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -909,11 +909,13 @@ export function DungeonPanel({
   const archerLastActionHitsRef = useRef(0);
   const [archerState, setArcherState] = useState(archerStateRef.current);
   const druidCycleRef = useRef<DruidCycleState>(createDruidCycle());
+  const druidGardenRef = useRef<GardenUnit[]>([]);
+  const druidGardenIdRef = useRef(1);
   const [druidCycleState, setDruidCycleState] = useState(druidCycleRef.current);
   function isDruid(){return chRef.current.classId==='druida';}
   function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
   function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
-  function druidAction(synced=false){if(!isDruid())return; druidCycleRef.current=synced?markDruidAttunement(druidCycleRef.current):addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); if(druidCycleRef.current.perfectYear)druidCycleRef.current={...druidCycleRef.current,renewals:1}; druidSync();}
+  function druidAction(mode:'synced'|'neutral'|'dissonant'='dissonant'){if(!isDruid())return; const synced=mode==='synced'; if(synced)druidGardenRef.current=growGarden(druidGardenRef.current); if(mode==='synced')druidCycleRef.current=markDruidAttunement(druidCycleRef.current); else if(mode==='dissonant' && hasSkill(chRef.current,'druida:equilibrio:6'))druidCycleRef.current=addDruidDissonance(druidCycleRef.current); if(druidCycleRef.current.awakening)druidCycleRef.current={...druidCycleRef.current,awakening:false}; const before=druidCycleRef.current.season; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); if(before==='winter'&&druidCycleRef.current.perfectYear){druidCycleRef.current={...druidCycleRef.current,renewals:1};druidGardenRef.current=growGarden(druidGardenRef.current);} druidSync();}
   void druidAdvance;
 
   function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
@@ -3364,15 +3366,16 @@ export function DungeonPanel({
   // self-targeted support abilities still work while silenced.
   function pickAbility(actionType?: 'main' | 'quick'): AbilityDef | null {
     const silenced = hasCC(playerCCRef.current, 'silence');
+    const eligible: AbilityDef[] = [];
     for (const ab of equippedAbilities()) {
       if (actionType && (ab.actionType ?? 'main') !== actionType) continue;
       if (silenced && !SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
       if (!conditionMet(ab)) continue;
       if (abilityAlreadyActive(ab)) continue;
-      return ab;
+      eligible.push(ab);
     }
-    return null;
+    return isDruid() ? pickDruidSeasonalAbility(eligible, druidCycleRef.current.season) : (eligible[0] ?? null);
   }
 
   // Mirrors pickAbility() for the enemy side — a silenced enemy can't use
@@ -4436,7 +4439,7 @@ export function DungeonPanel({
         // round's damage, exactly like choosing to use any other ability.
         archerPerfectCastRef.current = false;
         chosen = pickAbility(isRogue() ? 'main' : undefined);
-        if (isDruid()) druidAction(Boolean(chosen?.effect.druidSeason === druidCycleRef.current.season || chosen?.effect.druidSeason === 'cycle'));
+        if (isDruid()) { const ds=chosen?.effect.druidSeason; const mode=ds==='cycle'?'neutral':ds===druidCycleRef.current.season?'synced':'dissonant'; druidAction(mode); if(chosen?.effect.druidAction==='seed')druidGardenRef.current=addGardenSeeds(druidGardenRef.current,druidGardenIdRef.current++,hasSkill(chRef.current,'druida:cura-natural:4')&&ds===druidCycleRef.current.season?2:1,hasSkill(chRef.current,'druida:cura-natural:6')?3:2); if(chosen?.effect.druidAction==='harvest'){const taken=consumeGardenFruit(druidGardenRef.current,3);druidGardenRef.current=taken.garden;} if(chosen?.effect.druidAction==='cycle')druidGardenRef.current=matureGarden(druidGardenRef.current); }
         if (isPaladin()) {
           paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
           const offensiveAbility = chosen !== null && !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
