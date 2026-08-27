@@ -35,8 +35,8 @@ test('estado inicial, ataque básico e resets usam os valores definitivos', () =
     vanguardFirstHitUsed: false, duelistFirmFirstHitUsed: false,
     perfectCounterAccuracyPending: false,
   });
-  assert.equal(applyPostureDamage(100, POSTURE_BASIC_DAMAGE), 94);
-  assert.equal(Math.min(POSTURE_MAX, 94 + recoverPosture(94)), 100);
+  assert.equal(applyPostureDamage(100, POSTURE_BASIC_DAMAGE), 90);
+  assert.equal(Math.min(POSTURE_MAX, 90 + recoverPosture(90)), 98);
   assert.equal(GUARD_BREAK_ACTIONS, 2);
   assert.equal(GUARD_BREAK_DEF_PEN, 0.20);
   assert.equal(GUARD_BREAK_RESET, 75);

@@ -141,7 +141,26 @@ export const PREDADOR_PACIENTE_HITS_PER_CDR = 3;
 
 // ── BRECHAS ──
 export const BREACH_MAX = 3;
-export const BREACH_DURATION_TICKS = 4;
+export const BREACH_DURATION_TICKS = 6;
+
+export interface BreachState {
+  stacks: number;
+  ticksLeft: number;
+}
+export function applyBreach(current: BreachState | undefined, amount: number): BreachState | undefined {
+  if (amount <= 0) return current;
+  return { stacks: Math.min(BREACH_MAX, (current?.stacks ?? 0) + amount), ticksLeft: BREACH_DURATION_TICKS };
+}
+export function consumeBreach(current: BreachState | undefined, amount: number): BreachState | undefined {
+  if (!current || amount <= 0) return current;
+  const stacks = Math.max(0, current.stacks - amount);
+  return stacks > 0 ? { ...current, stacks } : undefined;
+}
+export function tickBreach(current: BreachState | undefined): BreachState | undefined {
+  if (!current) return undefined;
+  const ticksLeft = current.ticksLeft - 1;
+  return ticksLeft > 0 ? { ...current, ticksLeft } : undefined;
+}
 
 // ── Precisão da Caça attribute-node interactions ──
 export const MIRA_CIRURGICA_ACCURACY_RATE = 0.0008; // per DES, target has >=1 breach

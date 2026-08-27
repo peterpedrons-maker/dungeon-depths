@@ -3,8 +3,8 @@
 // combatConditions.ts, shared with Clérigo's Fé/Graça/Consagração/Julgamento
 // kit — re-exported here so every existing `from '../lib/barbarian'` import
 // elsewhere in the codebase keeps working unchanged.
-export { capped, attrTotal, hasSkill, evalAbilityCondition } from './combatConditions';
-export type { AbilityConditionContext } from './combatConditions';
+export { capped, attrTotal, hasSkill, evalAbilityCondition } from './combatConditions.ts';
+export type { AbilityConditionContext } from './combatConditions.ts';
 
 // ── Bárbaro redesign — FÚRIA + FRENESI + FERIDAS + DOR ──
 // Shared constants/pure math for the mechanic, imported by both
@@ -59,8 +59,6 @@ export const WOUND_ACCURACY_PCT_PER_STACK = 0.004;
 export const PREDADOR_SUPREMO_DMG_BONUS = 0.08;
 
 export const PAIN_MAX_PCT = 0.35;
-export const PAIN_TICKS = 3;
-export const PAIN_TICKS_INQUEBRAVEL = 4;
 // Carne que Não Cede (barbaro:resistencia:8) — permanent, overridden (not
 // stacked) by Postura Selvagem's own active window while that's active.
 export const PAIN_PASSIVE_REDIRECT_PCT = 0.10;
@@ -170,8 +168,5 @@ export const SELVAGERIA_MAO_PESADA_CAP = 0.03;
 export const SELVAGERIA_INSTINTO_MORTAL_RATE = 0.0015; // SOR
 export const SELVAGERIA_INSTINTO_MORTAL_CAP = 0.03;
 
-export interface PainPacket {
-  amountLeft: number; // total HP still owed
-  perTick: number; // HP paid per remaining tick (amountLeft / ticksLeft, recomputed isn't needed — fixed at creation)
-  ticksLeft: number;
-}
+export { PAIN_TICKS, PAIN_TICKS_INQUEBRAVEL, createPainPacket, consumeWildPostureAction, tickPainPackets, consumePainPackets } from './barbarianStabilization.ts';
+export type { PainPacket } from './barbarianStabilization.ts';

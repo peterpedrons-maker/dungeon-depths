@@ -16,8 +16,22 @@ export const DETERMINATION_MAX = 100;
 export const DETERMINATION_MIN = 0;
 export const DETERMINATION_GEN_BLOCK = 10;
 export const DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA = 12; // clerigo-style talent bump, but Bastião's own (cavaleiro:bastiao:2)
+export const DETERMINATION_GEN_DIRECT_HIT = 3;
 export const DETERMINATION_GEN_BARRIER_PER_3PCT = 1; // +1 per 3% of EffectiveMaxHp a Cavaleiro-made barrier absorbs in one enemy action
 export const DETERMINATION_GEN_BARRIER_CAP_PER_ACTION = 4;
+
+/**
+ * Determinação gerada por um único ataque direto real do inimigo.
+ * Bloqueio substitui a geração base; Fortaleza Viva bloqueia ambas.
+ */
+export function determinationForDirectHit(options: { landed: boolean; blocked: boolean; fortressActive: boolean; elevatedBlock?: boolean }): number {
+  if (!options.landed || options.fortressActive) return 0;
+  if (options.blocked) return options.elevatedBlock ? DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA : DETERMINATION_GEN_BLOCK;
+  return DETERMINATION_GEN_DIRECT_HIT;
+}
+export function addDetermination(current: number, amount: number): number {
+  return Math.max(DETERMINATION_MIN, Math.min(DETERMINATION_MAX, current + Math.max(0, amount)));
+}
 
 // ── RETALIAÇÃO (cavaleiro:bastiao:6 Reação Defensiva) ──
 export const RETALIATION_MAX_CHARGES = 2;

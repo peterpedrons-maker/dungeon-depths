@@ -117,11 +117,30 @@ export const MURALHA_DIVINA_DMG_TAKEN_PCT = -0.10;
 
 // ── JULGAMENTO (Provação) ──
 export const JUDGMENT_MAX_STACKS = 5;
-export const JUDGMENT_BASE_DURATION_TICKS = 4;
-export const JUDGMENT_CONVICCAO_DURATION_TICKS = 5; // Convicção (clerigo:provacao:5)
+export const JUDGMENT_BASE_DURATION_TICKS = 5;
+export const JUDGMENT_CONVICCAO_DURATION_TICKS = 6; // Convicção (clerigo:provacao:5)
 // Peso do Veredito (clerigo:provacao:8) é a ÚNICA fonte do bônus de dano por
 // stack — Julgamento em si só guarda stacks (evita duplicar o bônus).
 export const JUDGMENT_DMG_PCT_PER_STACK = 0.015;
+
+export interface JudgmentState {
+  stacks: number;
+  ticksLeft: number;
+}
+export function applyJudgmentState(current: JudgmentState | undefined, amount: number, duration: number): JudgmentState | undefined {
+  if (amount <= 0) return current;
+  return { stacks: Math.min(JUDGMENT_MAX_STACKS, (current?.stacks ?? 0) + amount), ticksLeft: duration };
+}
+export function consumeJudgmentState(current: JudgmentState | undefined, amount: number): JudgmentState | undefined {
+  if (!current || amount <= 0) return current;
+  const stacks = Math.max(0, current.stacks - amount);
+  return stacks > 0 ? { ...current, stacks, ticksLeft: current.ticksLeft } : undefined;
+}
+export function tickJudgmentState(current: JudgmentState | undefined): JudgmentState | undefined {
+  if (!current) return undefined;
+  const ticksLeft = current.ticksLeft - 1;
+  return ticksLeft > 0 ? { ...current, ticksLeft } : undefined;
+}
 // Fogo da Fé (clerigo:provacao:0).
 export const FOGO_DA_FE_DMG_VS_JUDGMENT_PCT = 0.01;
 // Olhar do Juiz (clerigo:provacao:1).

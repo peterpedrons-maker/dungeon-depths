@@ -70,7 +70,7 @@ Habilidades que gastam Fúria podem encurtar a duração de Frenesi, portanto o 
       shortDescription: 'Dano adiado. Parte de um golpe pode virar Dor e ser sofrida gradualmente depois.',
       fullDescription: `Dor representa dano que o Bárbaro conseguiu adiar, mas ainda não eliminou.
 
-Quando uma habilidade redireciona parte de um ataque para Dor, essa quantidade deixa de atingir o HP imediatamente e passa a ser sofrida ao longo dos próximos ciclos.
+Quando uma habilidade redireciona parte de um ataque para Dor, essa quantidade deixa de atingir o HP imediatamente e passa a ser sofrida ao longo de 5 ciclos (6 com Inquebrável), cada pacote com seu próprio relógio.
 
 Dor não é uma barreira e não é cura. O dano continua sendo uma dívida real e pode matar o Bárbaro.
 
@@ -154,7 +154,7 @@ Aplicar um novo Julgamento renova a duração de TODOS os stacks já presentes n
 
 Por si só, Julgamento não causa nenhum dano periódico — ele é a base sobre a qual talentos de Provação constroem bônus de dano mágico direto e de precisão.
 
-Algumas habilidades consomem Julgamentos para golpes mais fortes; outras aproveitam os stacks atuais sem consumi-los, mas cortam sua duração restante como custo.
+Algumas habilidades consomem Julgamentos para golpes mais fortes; outras aproveitam os stacks atuais sem consumi-los, mas cortam sua duração restante como custo. A duração padrão é 5 ciclos (6 com Convicção).
 
 Atingir 3 e depois 5 stacks pela primeira vez em um inimigo gera Fé.`,
     },
@@ -348,7 +348,7 @@ Presa Marcada nunca amplia dano contínuo (Poison).`,
       shortDescription: 'Stacks de 0 a 3 no inimigo, com duração renovada a cada novo ganho. Não causam dano — abrem oportunidades de precisão, crítico e execuções que as consomem.',
       fullDescription: `Brechas são a mecânica central da especialização Precisão da Caça.
 
-Um inimigo pode possuir de 0 a 3 Brechas, com duração limitada — ganhar uma nova Brecha renova a duração de todas as já presentes.
+Um inimigo pode possuir de 0 a 3 Brechas, com duração de 6 ciclos — ganhar uma nova Brecha renova a duração de todas as já presentes.
 
 Brechas não causam nenhum dano por si só. Elas representam uma oportunidade tática: aberturas na guarda do inimigo.
 
