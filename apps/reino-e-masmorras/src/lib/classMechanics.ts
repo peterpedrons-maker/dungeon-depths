@@ -359,6 +359,14 @@ Habilidades de execução consomem Brechas — sempre apenas quando o golpe real
 Brechas nunca funcionam como Feridas do Bárbaro: não causam dano por stack, representam oportunidade tática, não acúmulo de sofrimento.`,
     },
   ],
+  feiticeiro: [
+    { id:'feiticeiro:pulse', classId:'feiticeiro', name:'Pulso Inato', category:'resource', combatDisplay:{owner:'player',displayType:'bar',maxValue:6,icon:'✦',hideWhenZero:false,priority:10,color:'purple'}, shortDescription:'Cada habilidade ativa normal gera Pulso; no 6º ponto a próxima habilidade desperta.', fullDescription:'Pulso vai de 0 a 6, persiste entre inimigos e reinicia numa nova tentativa. Cada cast normal gera 1, mais 1 se houver acerto direto e mais 1 se houver crítico.' },
+    { id:'feiticeiro:surge', classId:'feiticeiro', name:'Surto Inato', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⚡',hideWhenZero:true,priority:11,color:'gold'}, shortDescription:'Com Pulso 6, a próxima habilidade ativa será Desperta.', fullDescription:'Ao começar um cast com Pulso 6, o Pulso é consumido imediatamente e a magia recebe a transformação da sua especialização.' },
+    { id:'feiticeiro:awakened', classId:'feiticeiro', name:'Magia Desperta', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'✹',hideWhenZero:true,priority:12,color:'orange'}, shortDescription:'Ruptura é Intensificada, Reverberação é Refratada e Moldagem é Moldada.', fullDescription:'A transformação é aplicada uma vez à ação e não cria loops, Pulso ou recursos extras.' },
+    { id:'feiticeiro:fracture', classId:'feiticeiro', name:'Fraturas', category:'stack', combatDisplay:{owner:'enemy',displayType:'stack',maxValue:3,icon:'◇',hideWhenZero:true,priority:10,color:'red'}, shortDescription:'Até 3 Fraturas reduzem a MDEF efetiva contra Ruptura e alimentam os finalizadores.', fullDescription:'Fraturas são específicas do inimigo. Cada uma dá 3% de penetração de MDEF para Ruptura e são consumidas por Ponto de Colapso/Supernova.' },
+    { id:'feiticeiro:resonance', classId:'feiticeiro', name:'Ressonância', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:2,icon:'◌',hideWhenZero:false,priority:13,color:'sky'}, shortDescription:'Magias Despertas de Reverberação acumulam até 2 Ressonâncias para fortalecer o próximo cast normal.', fullDescription:'Ressonância persiste entre inimigos. A próxima habilidade normal consome uma carga após ser conjurada e adiciona 2 ao Pulso gerado.' },
+    { id:'feiticeiro:control', classId:'feiticeiro', name:'Controle Arcano', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:2,icon:'◎',hideWhenZero:false,priority:14,color:'lime'}, shortDescription:'Controle guardado dá precisão e penetração a toda magia direta; Moldagem Desperta gera carga.', fullDescription:'Controle persiste entre inimigos. Cada carga concede +2pp de precisão e +2% de penetração de MDEF a habilidades mágicas diretas.' },
+  ],
 };
 
 const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
@@ -393,6 +401,11 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute: 'wis', label: 'SAB', role: 'Secundário tático', description: 'Amplia o dano de Poison originado de armadilhas — nunca o dano direto do Caçador.' },
     { attribute: 'luk', label: 'SOR', role: 'Secundário ofensivo', description: 'Aumenta chance e dano crítico, com sinergia em Precisão da Caça (Brechas, Presa Marcada).' },
     { attribute: 'vit', label: 'VIT', role: 'Terciário', description: 'Aumenta vida máxima e reduz dano direto recebido enquanto uma armadilha está armada ou o Rastro está máximo.' },
+  ],
+  feiticeiro: [
+    { attribute:'int', label:'INT', role:'Principal', description:'Aumenta MATK e todo o dano mágico direto das três especializações.' },
+    { attribute:'luk', label:'SOR', role:'Secundário ofensivo', description:'Aumenta chance e dano crítico, especialmente em Pulso e Reverberação.' },
+    { attribute:'dex', label:'DES', role:'Secundário tático', description:'Melhora a precisão, reforçando a consistência da Moldagem.' },
   ],
 };
 
@@ -482,6 +495,11 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
       loop: 'Abrir Brechas com acertos/críticos/erros do inimigo → manter ou consumir as Brechas → executar com bônus de precisão/crítico/penetração.',
     },
   ],
+  feiticeiro: [
+    { pathId:'explosao', identity:'INT + Pulso + Fraturas.', style:'Explosão preparada e finalizadores.', loop:'Alcançar Pulso 6 → Despertar → Intensificar e consumir Fraturas.' },
+    { pathId:'sobrecarga', identity:'INT + Eco + Ressonância.', style:'Frequência e dano sustentado.', loop:'Despertar → gerar Ressonância → consumir no próximo cast normal.' },
+    { pathId:'dominio', identity:'INT + Precisão + Controle.', style:'Consistência, penetração e correção.', loop:'Guardar Controle → moldar a magia → corrigir uma falha decisiva.' },
+  ],
 };
 
 const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
@@ -509,6 +527,11 @@ const COMBINATIONS: Partial<Record<ClassId, ClassCombinationNote[]>> = {
     { pathIds: ['armadilhas', 'rastreio'], name: 'Armadilhas + Rastreio', description: 'Caçador de emboscada — a combinação mais segura e de menor DPS sustentado, mas a mais resistente das três.' },
     { pathIds: ['armadilhas', 'precisao-caca'], name: 'Armadilhas + Precisão da Caça', description: 'Explosão preparada — o maior burst do Caçador quando várias armadilhas primadas disparam em sequência, sem sustentação de longo prazo.' },
     { pathIds: ['rastreio', 'precisao-caca'], name: 'Rastreio + Precisão da Caça', description: 'Atirador puro — o maior DPS direto sustentado do Caçador, o mais próximo de um Arqueiro em jogo prolongado.' },
+  ],
+  feiticeiro: [
+    { pathIds:['explosao','sobrecarga'], name:'Ruptura + Reverberação', description:'Burst e ecos para alternar execução e frequência.' },
+    { pathIds:['explosao','dominio'], name:'Ruptura + Moldagem', description:'Finalizadores explosivos com precisão e penetração.' },
+    { pathIds:['sobrecarga','dominio'], name:'Reverberação + Moldagem', description:'Sustentação confiável, ecos e correção de erros.' },
   ],
 };
 
