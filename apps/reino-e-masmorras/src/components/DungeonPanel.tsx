@@ -16,6 +16,13 @@ import { computeSkillBonuses, getEquippedAbilities } from '../lib/skills';
 import { HEAT_AFTER_OVERHEAT, HEAT_OVERHEAT_AT, ThermalState, advanceThermal, circuitAfterCast, circuitPulseMult, fireDamageBonus, nextRunes, thermalAfterFrozenEnds, thermalAfterShatter, thermalShatterMult } from '../lib/mago';
 import { DECOMPOSITION_MAX, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, reaperExecuteMultiplier, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
 import {
+  ROGUE_AMBUSH_ACCURACY, ROGUE_AMBUSH_CRIT,
+  ROGUE_AMBUSH_DEF_PEN, ROGUE_EXPOSED_MAIN_LIMIT, ROGUE_IMAGE_MAX,
+  ROGUE_STEALTH_MAIN_LIMIT, ROGUE_TIME_STEAL_DELAY, RoguePreparedTrick,
+  advantageAccuracy, clampImages, firstEligibleQuick, imageEchoCoefficient,
+  loadedDieResult, prepareTrick,
+} from '../lib/rogue';
+import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
   GUARD_BREAK_TICKS, POSTURE_BASIC_DAMAGE, POSTURE_MAX, PreparedGuardState,
@@ -317,6 +324,8 @@ const SELF_ABILITY_KINDS = [
   'preparedGuard', 'feint',
   // Necromante — invocações/proteções consomem a ação inteira.
   'boneShield', 'deathVeil', 'boneFortress', 'mortalVoracity',
+  // Ladino — suportes Rápidos resolvem dentro da Janela de Iniciativa.
+  'rogueStealth', 'rogueToxicBlade', 'roguePrepareTrick',
 ];
 const MISS_CHANCE_CAP = 0.45;
 
@@ -932,6 +941,34 @@ export function DungeonPanel({
   const [necroPlagueState, setNecroPlagueState] = useState<PeriodicEffectInstance | undefined>();
   const [necroSummonsState, setNecroSummonsState] = useState<SummonInstance[]>([]);
 
+  // Ladino: todos os estados são da tentativa/inimigo e vivem fora do
+  // Character persistido. Quick resolve dentro da Main, sem envTick extra.
+  const rogueStealthRef = useRef(character.classId === 'ladino' && character.unlockedSkills.includes('ladino:veneno:14'));
+  const rogueStealthMainLeftRef = useRef(character.classId === 'ladino' && character.unlockedSkills.includes('ladino:veneno:14') ? ROGUE_STEALTH_MAIN_LIMIT : 0);
+  const rogueExposedMainLeftRef = useRef(0);
+  const rogueToxicBladeMainLeftRef = useRef(0);
+  const rogueToxinRef = useRef<PeriodicEffectInstance | undefined>();
+  const rogueImagesRef = useRef(0);
+  const rogueSharpenedEchoRef = useRef(false);
+  const roguePreparedTrickRef = useRef<RoguePreparedTrick | null>(null);
+  const rogueAdvantageRef = useRef(false);
+  const rogueNextMainAccuracyRef = useRef(false);
+  const rogueFlowUntouchableRef = useRef(false);
+  const rogueFirstQuickEvasionRef = useRef(false);
+  const rogueFirstAmbushRef = useRef(false);
+  const rogueFirstTrickRef = useRef(false);
+  const rogueQuickWindowRef = useRef(false);
+  const rogueTimeStolenRef = useRef(false);
+  const rogueEnemyDmgDebuffRef = useRef(0);
+  const [rogueStealthState, setRogueStealthState] = useState(rogueStealthRef.current);
+  const [rogueExposedState, setRogueExposedState] = useState(0);
+  const [rogueToxinState, setRogueToxinState] = useState<PeriodicEffectInstance | undefined>();
+  const [rogueImagesState, setRogueImagesState] = useState(0);
+  const [rogueSharpenedEchoState, setRogueSharpenedEchoState] = useState(false);
+  const [roguePreparedTrickState, setRoguePreparedTrickState] = useState<RoguePreparedTrick | null>(null);
+  const [rogueAdvantageState, setRogueAdvantageState] = useState(false);
+  const [rogueTimeStolenState, setRogueTimeStolenState] = useState(false);
+
   const heroSpr = heroSprites(ch.classId);
 
   // onLiveUpdate persists to storage/cloud — skipped mid-catch-up (which can
@@ -1202,7 +1239,12 @@ export function DungeonPanel({
         heat: mageHeatRef.current,
         souls: necroSoulsRef.current,
       },
-      states: { frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current, thermal: mageThermalRef.current !== 'normal' },
+      states: {
+        frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
+        thermal: mageThermalRef.current !== 'normal', stealth: rogueStealthRef.current,
+        toxicBlade: rogueToxicBladeMainLeftRef.current > 0,
+        reverseWasted: rogueImagesRef.current >= ROGUE_IMAGE_MAX && rogueSharpenedEchoRef.current,
+      },
       enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0 },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
       enemyPosture: isWarrior() ? warriorEnemyState().current : undefined,
@@ -1212,9 +1254,79 @@ export function DungeonPanel({
       periodicEffects: { [PLAGUE_EFFECT_ID]: necroPlagueRef.current !== undefined },
       summonCount: necroSummonsRef.current.length,
       summonMax: necroMaxSummons(),
+      isStealthed: rogueStealthRef.current,
+      enemyExposed: rogueExposedMainLeftRef.current > 0,
+      imageCount: rogueImagesRef.current,
+      advantageReady: rogueAdvantageRef.current,
+      preparedTrick: roguePreparedTrickRef.current?.kind ?? null,
+      quickWindow: rogueQuickWindowRef.current,
     };
     if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
     return evalAbilityCondition(cond, ctx);
+  }
+  function isRogue(): boolean { return chRef.current.classId === 'ladino'; }
+  function rogueHasSkill(id: string): boolean { return isRogue() && hasSkill(chRef.current, id); }
+  function rogueSync() {
+    if (silentRef.current) return;
+    setRogueStealthState(rogueStealthRef.current);
+    setRogueExposedState(rogueExposedMainLeftRef.current);
+    setRogueToxinState(rogueToxinRef.current ? { ...rogueToxinRef.current } : undefined);
+    setRogueImagesState(rogueImagesRef.current);
+    setRogueSharpenedEchoState(rogueSharpenedEchoRef.current);
+    setRoguePreparedTrickState(roguePreparedTrickRef.current ? { ...roguePreparedTrickRef.current } : null);
+    setRogueAdvantageState(rogueAdvantageRef.current);
+    setRogueTimeStolenState(rogueTimeStolenRef.current);
+  }
+  function rogueCdrBonusFor(ab: AbilityDef): number {
+    if (!isRogue()) return 0;
+    if (ab.effect.roguePath === 'assassin' && rogueHasSkill('ladino:veneno:3')) return 0.03;
+    if (ab.effect.roguePath === 'blade' && rogueHasSkill('ladino:sombras:3')) return 0.03;
+    if (ab.effect.roguePath === 'trickster' && rogueHasSkill('ladino:laminas:3')) return 0.03;
+    return 0;
+  }
+  function rogueEnterStealth() {
+    rogueStealthRef.current = true;
+    rogueStealthMainLeftRef.current = ROGUE_STEALTH_MAIN_LIMIT;
+    rogueSync();
+  }
+  function roguePrepareTrick(kind: 'feint' | 'loaded_die', sourceAbilityId: string) {
+    const bonus = (rogueHasSkill('ladino:laminas:3') ? 1 : 0) + (!rogueFirstTrickRef.current && rogueHasSkill('ladino:laminas:0') ? 1 : 0);
+    rogueFirstTrickRef.current = true;
+    roguePreparedTrickRef.current = prepareTrick(kind, sourceAbilityId, 3 + bonus);
+    rogueSync();
+  }
+  function roguePlanB(trick: RoguePreparedTrick) {
+    if (!rogueHasSkill('ladino:laminas:8')) return;
+    cooldownsRef.current[trick.sourceAbilityId] = Math.max(0, (cooldownsRef.current[trick.sourceAbilityId] ?? 0) - 1);
+  }
+  function rogueReduceHighestPriorityQuickCooldown() {
+    const quick = equippedAbilities().find((ab) => ab.actionType === 'quick' && (cooldownsRef.current[ab.id] ?? 0) > 0);
+    if (quick) cooldownsRef.current[quick.id] = Math.max(0, (cooldownsRef.current[quick.id] ?? 0) - 1);
+  }
+  function rogueStealTime() {
+    if (rogueTimeStolenRef.current) return;
+    rogueTimeStolenRef.current = true;
+    rogueReduceHighestPriorityQuickCooldown();
+    // Invalida o timer inimigo atual e o agenda novamente com o ticket de
+    // atraso. O ticket só é limpo quando essa ação efetivamente acontece.
+    enemyGenRef.current += 1;
+    scheduleEnemy(Math.round(nextEnemyDelay() * (1 + ROGUE_TIME_STEAL_DELAY)));
+    rogueSync();
+  }
+  function rogueAdvanceMainDurations(offensive: boolean, exposedAtStart: boolean, toxicAtStart: boolean, trickAtStart: boolean) {
+    if (exposedAtStart && rogueExposedMainLeftRef.current > 0) rogueExposedMainLeftRef.current -= 1;
+    if (toxicAtStart && rogueToxicBladeMainLeftRef.current > 0) rogueToxicBladeMainLeftRef.current -= 1;
+    if (trickAtStart && roguePreparedTrickRef.current?.kind === 'feint') {
+      roguePreparedTrickRef.current.actionsLeft -= 1;
+      if (roguePreparedTrickRef.current.actionsLeft <= 0) roguePreparedTrickRef.current = null;
+    }
+    if (rogueStealthRef.current && !offensive) {
+      rogueStealthMainLeftRef.current -= 1;
+      if (rogueStealthMainLeftRef.current <= 0) rogueStealthRef.current = false;
+    }
+    rogueFirstQuickEvasionRef.current = false;
+    rogueFlowUntouchableRef.current = false;
+    rogueSync();
   }
   function isMage(): boolean { return chRef.current.classId === 'mago'; }
   function isNecromancer(): boolean { return chRef.current.classId === 'necromante'; }
@@ -2518,9 +2630,9 @@ export function DungeonPanel({
   // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
   // (both scoped to the single-hit/plain-attack path only) — a scoped
   // simplification, called out in the final report.
-  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }) {
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }) {
     const eff = ab.effect;
-    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct + warriorCdrBonusFor(ab.id));
+    cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct + warriorCdrBonusFor(ab.id) + rogueCdrBonusFor(ab));
     const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
     const power = isMagicalClass ? stats.matk : stats.atk;
     const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
@@ -2536,7 +2648,8 @@ export function DungeonPanel({
       if (enemyRef.current.hp <= 0) break;
       const guardBreakNow = isWarrior() && warriorEnemyState().guardBroken;
       const perHitAccuracy = accuracyForRoll + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_ACCURACY_BONUS : 0);
-      if (rollMiss(perHitAccuracy, enemyEvasion)) {
+      const hitMissed = i === 0 && rogueBonuses?.loadedDieFirstHit !== undefined ? !rogueBonuses.loadedDieFirstHit : rollMiss(perHitAccuracy, enemyEvasion);
+      if (hitMissed) {
         allLanded = false;
         pushFloat('enemy', 0, false, false, true);
         hunterOnPlayerMiss();
@@ -2597,6 +2710,33 @@ export function DungeonPanel({
     }
     if (isMage() && landedHits > 0) mageOnSpellHit(ab, stats, mageAmplified, landedHits);
     if (isNecromancer() && ab.effect.soulCost && ab.id === 'necromante:ceifador:12' && criticalHits >= 2) necroGainSouls(1);
+    if (isRogue() && rogueBonuses) {
+      if (landedHits > 0 && rogueToxicBladeMainLeftRef.current > 0) {
+        const toxinMult = 0.12 * (rogueHasSkill('ladino:veneno:7') ? 1.10 : 1);
+        rogueToxinRef.current = {
+          id: 'ladino:toxin', sourceId: ab.id, snapshotPower: stats.atk,
+          dmgMultiplier: toxinMult, ticksRemaining: 3, tags: ['poison'], canCrit: false, bypassDefense: false,
+        };
+        rogueToxicBladeMainLeftRef.current = 0;
+      }
+      if (landedHits > 0 && rogueBonuses.images > 0) {
+        const authoredBase = hitCount * (eff.dmgMultPerHit ?? 0);
+        let ratio = eff.imageEchoRatio ?? 0;
+        if (eff.roguePath === 'blade' && rogueHasSkill('ladino:sombras:14')) ratio += 0.05;
+        if (rogueBonuses.sharpened) ratio += 0.05;
+        const coeff = imageEchoCoefficient(authoredBase, ratio) * (rogueHasSkill('ladino:sombras:5') ? 1.05 : 1);
+        const pen = (rogueHasSkill('ladino:sombras:6') ? 0.10 : 0) + (rogueHasSkill('ladino:sombras:11') ? 0.02 : 0);
+        for (let i = 0; i < rogueBonuses.images && enemyRef.current.hp > 0; i++) {
+          const echo = Math.max(1, Math.round(mitigatedBase(Math.round(stats.atk * coeff), computeEnemyDef() * (1 - stats.defPenPct - pen))));
+          applyEnemyHp(Math.max(0, enemyRef.current.hp - echo));
+          pushFloat('enemy', echo, false);
+        }
+      }
+      if (rogueBonuses.images === 2 && rogueHasSkill('ladino:sombras:14')) rogueImagesRef.current = 1;
+      if (landedHits === 0 && rogueBonuses.advantage && eff.roguePath === 'trickster' && rogueHasSkill('ladino:laminas:14')) rogueAdvantageRef.current = true;
+      rogueSync();
+      if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+    }
     if (allLanded && eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
     if (isWarrior() && landedHits > 0) {
       if (eff.vanguardAbility && warriorHasSkill('guerreiro:furioso:3')) warriorNextBasicPostureBonusRef.current = true;
@@ -2823,6 +2963,14 @@ export function DungeonPanel({
     }
     const necroMdefMult = isNecromancer() && necroHasSkill('necromante:ceifador:2') ? 1 + Math.min(0.03, necroSoulsRef.current * 0.005) : 1;
     const necroMatkMult = isNecromancer() ? 1 + computeSkillBonuses(ch.classId, ch.unlockedSkills).magicDmgPct : 1;
+    let rogueEvasionBonus = 0, rogueSpeedBonus = 0;
+    if (isRogue()) {
+      if (rogueHasSkill('ladino:sombras:0')) rogueSpeedBonus += 0.015;
+      if (rogueHasSkill('ladino:laminas:5')) rogueSpeedBonus += 0.02;
+      if (rogueImagesRef.current > 0 && rogueHasSkill('ladino:sombras:2')) rogueEvasionBonus += 0.01;
+      if (roguePreparedTrickRef.current && rogueHasSkill('ladino:laminas:1')) rogueEvasionBonus += 0.01;
+      if (rogueFirstQuickEvasionRef.current) rogueEvasionBonus += 0.02;
+    }
 
     return {
       ...base,
@@ -2835,7 +2983,7 @@ export function DungeonPanel({
       // Fortaleza Viva (cavaleiro:bastiao:13) guarantees a 45% Bloqueio floor
       // while active, still respecting the global 60% cap.
       blockChance: Math.min(0.6, Math.max(0, base.blockChance + blockAdd, (knightActiveStats && knightFortressActive()) ? LIVING_FORTRESS_MIN_BLOCK_CHANCE : 0)),
-      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus),
+      evasion: Math.max(0, base.evasion + getModTotal(playerModsRef.current, 'evasion') + hunterEvasionBonus + rogueEvasionBonus),
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus,
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct')),
@@ -2844,7 +2992,7 @@ export function DungeonPanel({
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
       // playerAct's damage pipeline.
-      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus),
+      speedPct: Math.max(-0.5, base.speedPct + getModTotal(playerModsRef.current, 'speedPct') + (knightActiveStats ? knightMomentumBonusSpeedPct() : 0) + hunterSpeedBonus + warriorSpeedBonus + rogueSpeedBonus),
     };
   }
 
@@ -2951,9 +3099,10 @@ export function DungeonPanel({
   // is met, and it isn't already active on the player — otherwise the round
   // falls back to a plain attack. Silence only blocks offense-kind picks;
   // self-targeted support abilities still work while silenced.
-  function pickAbility(): AbilityDef | null {
+  function pickAbility(actionType?: 'main' | 'quick'): AbilityDef | null {
     const silenced = hasCC(playerCCRef.current, 'silence');
     for (const ab of equippedAbilities()) {
+      if (actionType && (ab.actionType ?? 'main') !== actionType) continue;
       if (silenced && !SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
       if (!conditionMet(ab)) continue;
@@ -3439,6 +3588,16 @@ export function DungeonPanel({
 
     tickStatus(enemyStatusRef, enemyRef.current.hp, (hp) => applyEnemyHp(hp), 'enemy');
     syncEnemyStatuses();
+    if (isRogue() && rogueToxinRef.current && enemyRef.current.hp > 0) {
+      const toxin = rogueToxinRef.current;
+      const damage = Math.max(1, Math.round(toxin.snapshotPower * toxin.dmgMultiplier));
+      toxin.ticksRemaining -= 1;
+      if (toxin.ticksRemaining <= 0) rogueToxinRef.current = undefined;
+      applyEnemyHp(Math.max(0, enemyRef.current.hp - damage));
+      pushFloat('enemy', damage, false);
+      rogueSync();
+      if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+    }
     if (isBarbaro()) barbTickWounds();
     tickStatus(playerStatusRef, chRef.current.hp, (hp) => updateCh({ ...chRef.current, hp }), 'player');
     syncPlayerStatuses();
@@ -3479,6 +3638,7 @@ export function DungeonPanel({
         }
       }
     }
+    if (isRogue() && rogueEnemyDmgDebuffRef.current > 0) rogueEnemyDmgDebuffRef.current -= 1;
 
     if (playerRegenRef.current.length > 0) {
       const maxHp = effectiveMaxHp(chRef.current);
@@ -3744,6 +3904,26 @@ export function DungeonPanel({
         necroRetributionStacksRef.current = 0; necroDeathVeilTicksRef.current = 0; necroVigorTicksRef.current = 0;
         necroSync();
       }
+      if (isRogue()) {
+        rogueStealthRef.current = rogueHasSkill('ladino:veneno:14');
+        rogueStealthMainLeftRef.current = rogueStealthRef.current ? ROGUE_STEALTH_MAIN_LIMIT : 0;
+        rogueExposedMainLeftRef.current = 0;
+        rogueToxicBladeMainLeftRef.current = 0;
+        rogueToxinRef.current = undefined;
+        rogueImagesRef.current = 0;
+        rogueSharpenedEchoRef.current = false;
+        roguePreparedTrickRef.current = null;
+        rogueAdvantageRef.current = false;
+        rogueNextMainAccuracyRef.current = false;
+        rogueFlowUntouchableRef.current = false;
+        rogueFirstQuickEvasionRef.current = false;
+        rogueFirstAmbushRef.current = false;
+        rogueFirstTrickRef.current = false;
+        rogueQuickWindowRef.current = false;
+        rogueTimeStolenRef.current = false;
+        rogueEnemyDmgDebuffRef.current = 0;
+        rogueSync();
+      }
       // Cavaleiro: everything resets per enemy EXCEPT Sede de Vitória's
       // capped Momentum carry and Liderança's capped Ordens carry, and
       // EXCEPT Bastião Inquebrável's once-per-ATTEMPT save (untouched here).
@@ -3813,6 +3993,67 @@ export function DungeonPanel({
     if (silentRef.current) advanceToNextEnemy(); else setTimeout(advanceToNextEnemy, 900);
   }
 
+  function rogueResolveInitiative(): boolean {
+    if (!isRogue() || enemyRef.current.hp <= 0) return false;
+    rogueQuickWindowRef.current = true;
+    const quick = firstEligibleQuick(equippedAbilities(), cooldownsRef.current, conditionMet);
+    rogueQuickWindowRef.current = false;
+    if (!quick) return false;
+
+    const stats = computePlayerStats();
+    cooldownsRef.current[quick.id] = applyCd(quick.cooldown, stats.cooldownReductionPct + rogueCdrBonusFor(quick));
+    pushLog('INICIATIVA');
+    pushAbilityCast('player', quick.name, activeAbilityIconStyle(chRef.current.classId, quick.id), null, false);
+    const eff = quick.effect;
+    if (eff.kind === 'rogueStealth') {
+      rogueEnterStealth();
+      pushLog(`Você usa ${quick.name} e entra em Furtivo.`);
+      return false;
+    }
+    if (eff.kind === 'rogueToxicBlade') {
+      rogueToxicBladeMainLeftRef.current = 3;
+      rogueSync();
+      pushLog(`Você usa ${quick.name} e prepara Lâmina Tóxica.`);
+      return false;
+    }
+    if (eff.kind === 'roguePrepareTrick' && eff.trickKind) {
+      roguePrepareTrick(eff.trickKind, quick.id);
+      pushLog(`Você usa ${quick.name} e prepara ${eff.trickKind === 'feint' ? 'Finta' : 'Dado Viciado'}.`);
+      return false;
+    }
+
+    // Quick ofensiva: uma resolução direta pequena dentro da mesma janela;
+    // não chama envTick, não reduz outros cooldowns e não abre Iniciativa.
+    const accuracy = stats.accuracy + (eff.roguePath === 'blade' && rogueHasSkill('ladino:sombras:3') ? 0.02 : 0);
+    const missed = rollMiss(accuracy, computeEnemyEvasion());
+    let damage = 0;
+    let crit = false;
+    if (missed) {
+      pushFloat('enemy', 0, false, false, true);
+    } else {
+      const rolled = rollAbilityHit(stats.atk, computeEnemyDef(), eff.dmgMult ?? 1, stats.critChance, stats.critDmgMult);
+      damage = rolled.dmg;
+      crit = rolled.crit;
+      if (rogueHasSkill('ladino:sombras:5')) damage = Math.round(damage * 1.02);
+      if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) damage = Math.max(1, Math.round(damage * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
+      applyEnemyHp(Math.max(0, enemyRef.current.hp - damage));
+      pushFloat('enemy', damage, crit);
+      flash('enemy');
+      if (!silentRef.current) playPhysicalAttackSfx();
+    }
+    if (eff.roguePath === 'blade') {
+      if (eff.sharpenedEchoOnCap && rogueImagesRef.current >= ROGUE_IMAGE_MAX) rogueSharpenedEchoRef.current = true;
+      else rogueImagesRef.current = clampImages(rogueImagesRef.current + (eff.imageGain ?? 0));
+      rogueNextMainAccuracyRef.current = rogueHasSkill('ladino:sombras:7');
+      rogueFlowUntouchableRef.current = rogueHasSkill('ladino:sombras:8');
+      if (!rogueFirstQuickEvasionRef.current && rogueHasSkill('ladino:sombras:0')) rogueFirstQuickEvasionRef.current = true;
+      rogueSync();
+    }
+    pushLog(`Você usa ${quick.name}!`);
+    if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return true; }
+    return false;
+  }
+
   function playerAct() {
     if (!mountedRef.current || phaseRef.current !== 'fight') return;
 
@@ -3856,6 +4097,10 @@ export function DungeonPanel({
       let necroSacrificed: SummonInstance | undefined;
       let warriorCastDmgBonus = 0, warriorCastPostureBonus = 0, warriorCastAccuracyBonus = 0, warriorCastDefPenBonus = 0;
       let warriorBreakActiveAtStart = false, warriorPostureAtActionStart = POSTURE_MAX;
+      let rogueAmbushThisCast = false, rogueExposedAtCast = false, rogueAdvantageAtCast = false;
+      let rogueImagesAtCast = 0, rogueSharpenedAtCast = false, rogueLoadedDieSaved = false;
+      let rogueToxicBladeAtCast = false, rogueTrickAtCast = false;
+      let rogueLoadedDieFirstHit: boolean | undefined;
 
       if (playerStunned) {
         pushLog('Você está incapacitado e não consegue atacar!');
@@ -3865,7 +4110,28 @@ export function DungeonPanel({
         // the plain attack for the single pick, instead of firing for free
         // alongside whatever else happened. Using a heal costs you the
         // round's damage, exactly like choosing to use any other ability.
-        chosen = pickAbility();
+        chosen = pickAbility(isRogue() ? 'main' : undefined);
+        if (isRogue()) {
+          const mainOffensive = !chosen || chosen.effect.offensive === true;
+          rogueExposedAtCast = rogueExposedMainLeftRef.current > 0;
+          rogueToxicBladeAtCast = rogueToxicBladeMainLeftRef.current > 0;
+          rogueTrickAtCast = roguePreparedTrickRef.current !== null;
+          rogueAdvantageAtCast = mainOffensive && rogueAdvantageRef.current;
+          if (rogueAdvantageAtCast) rogueAdvantageRef.current = false;
+          if (mainOffensive && rogueStealthRef.current) {
+            rogueAmbushThisCast = true;
+            rogueStealthRef.current = false;
+            rogueStealthMainLeftRef.current = 0;
+          }
+          if (chosen?.effect.consumeExposed && rogueExposedAtCast) rogueExposedMainLeftRef.current = 0;
+          if (chosen?.effect.consumeImages) {
+            rogueImagesAtCast = rogueImagesRef.current;
+            rogueImagesRef.current = 0;
+            rogueSharpenedAtCast = rogueSharpenedEchoRef.current;
+            rogueSharpenedEchoRef.current = false;
+          }
+          rogueSync();
+        }
         if (isWarrior() && (!chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind))) {
           const ws = warriorEnemyState();
           warriorPostureAtActionStart = ws.current;
@@ -3937,6 +4203,9 @@ export function DungeonPanel({
             }
             cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + necroCdrBonusFor(offenseAbility));
           }
+          if (offenseAbility && isRogue()) {
+            cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + rogueCdrBonusFor(offenseAbility));
+          }
           // Bárbaro: a Fúria-costed ability spends its cost and locks its
           // cooldown the instant it's CHOSEN — before the hit roll — so
           // missing still pays the cost and starts the cooldown (redesign
@@ -3989,7 +4258,14 @@ export function DungeonPanel({
             ? (necroHasSkill('necromante:ceifador:0') && enemyRef.current.hp / enemyRef.current.maxHp < 0.5 ? capped(0.001, attrTotal(chRef.current, 'luk'), 0.02) : 0)
               + (necroHasSkill('necromante:ceifador:7') && necroSoulsRef.current >= 4 ? capped(0.001, attrTotal(chRef.current, 'luk'), 0.03) : 0)
             : 0;
-          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus);
+          let rogueCritBonus = 0;
+          if (isRogue()) {
+            if (rogueAmbushThisCast) rogueCritBonus += ROGUE_AMBUSH_CRIT + (!rogueFirstAmbushRef.current && rogueHasSkill('ladino:veneno:0') ? 0.03 : 0);
+            if (rogueExposedAtCast && rogueHasSkill('ladino:veneno:1')) rogueCritBonus += 0.01;
+            if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:2')) rogueCritBonus += 0.02;
+            if (rogueAdvantageAtCast && offenseAbility?.effect.advantageCritPct) rogueCritBonus += offenseAbility.effect.advantageCritPct;
+          }
+          const critChanceForRoll = Math.min(0.9, stats.critChance + woundCritBonus + olhoDeSangueBonus + necroCritBonus + rogueCritBonus);
           // Mão Pesada / Instinto Mortal (barbaro:selvageria:3 / :11) —
           // SOR-scaled critDmg vs a wounded enemy (any Ferida / exactly max).
           const maoPesadaBonus = barbActive && barbHasSkill('barbaro:selvageria:3') && woundsAtActionStart >= 1
@@ -4013,6 +4289,14 @@ export function DungeonPanel({
             ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0;
           const vereditoPrecisoBonus = clerigoActive && clerigoHasSkill('clerigo:provacao:7') ? judgmentAtActionStart * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0;
           let accuracyForRoll = stats.accuracy + olharPredadorBonus + olfatoBonus + olharDoJuizBonus + vereditoPrecisoBonus + warriorCastAccuracyBonus;
+          if (isRogue()) {
+            if (rogueAmbushThisCast) accuracyForRoll += ROGUE_AMBUSH_ACCURACY;
+            if (rogueAmbushThisCast && rogueHasSkill('ladino:veneno:3')) accuracyForRoll += 0.02;
+            if (rogueExposedAtCast && rogueHasSkill('ladino:veneno:5')) accuracyForRoll += 0.02;
+            if (enemyRef.current.hp / enemyRef.current.maxHp <= 0.35 && rogueHasSkill('ladino:veneno:11')) accuracyForRoll += 0.03;
+            if (rogueNextMainAccuracyRef.current) accuracyForRoll += 0.03;
+            if (rogueAdvantageAtCast) accuracyForRoll += advantageAccuracy(rogueHasSkill('ladino:laminas:14'));
+          }
           if (isWarrior() && warriorHasSkill('guerreiro:furioso:1') && warriorPostureAtActionStart <= 66) accuracyForRoll += 0.02;
           if (isWarrior() && offenseAbility) {
             const wsBand = postureBand(warriorEnemyState().current);
@@ -4035,13 +4319,24 @@ export function DungeonPanel({
           // Disparo Preciso (cacador:precisao-caca:4) — bypasses the evasion
           // roll entirely (crit still rolls normally downstream).
           missed = offenseAbility?.effect.guaranteedHit || offenseAbility?.effect.guaranteedAccuracy ? false : rollMiss(accuracyForRoll, enemyEvasion);
+          if (isRogue() && roguePreparedTrickRef.current?.kind === 'loaded_die') {
+            const trick = roguePreparedTrickRef.current;
+            const result = loadedDieResult(!missed, !rollMiss(accuracyForRoll, enemyEvasion));
+            missed = !result.hit;
+            rogueLoadedDieFirstHit = result.hit;
+            rogueLoadedDieSaved = result.saved;
+            if (result.failed) roguePlanB(trick);
+            roguePreparedTrickRef.current = null;
+            rogueSync();
+          }
 
           if (offenseAbility && offenseAbility.effect.kind === 'multiHit') {
             // Tiro Duplo — two independent rolls, handled entirely by its
             // own self-contained resolver; `missed`/`dmg` stay at their
             // initial false/0 so the shared post-processing below is a no-op.
             hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast,
-              isWarrior() ? { dmg: warriorCastDmgBonus, posture: warriorCastPostureBonus, defPen: warriorCastDefPenBonus, breakActive: warriorBreakActiveAtStart } : undefined);
+              isWarrior() ? { dmg: warriorCastDmgBonus, posture: warriorCastPostureBonus, defPen: warriorCastDefPenBonus, breakActive: warriorBreakActiveAtStart } : undefined,
+              isRogue() ? { images: rogueImagesAtCast, sharpened: rogueSharpenedAtCast, loadedDieFirstHit: rogueLoadedDieFirstHit, advantage: rogueAdvantageAtCast } : undefined);
           } else if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
@@ -4054,10 +4349,19 @@ export function DungeonPanel({
             }
             hunterOnPlayerMiss();
           } else if (offenseAbility) {
-            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer()) {
+            if (offenseAbility.effect.furyCost === undefined && offenseAbility.effect.faithCost === undefined && !isNecromancer() && !isRogue()) {
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
+            if (isRogue()) {
+              const hpPct = enemyRef.current.hp / enemyRef.current.maxHp;
+              if (rogueAmbushThisCast && eff.ambushDmgMult !== undefined) eff.dmgMult = eff.ambushDmgMult;
+              if (rogueExposedAtCast && hpPct <= 0.30 && eff.combinedDmgMult !== undefined) eff.dmgMult = eff.combinedDmgMult;
+              else if (rogueExposedAtCast && eff.exposedDmgMult !== undefined) eff.dmgMult = eff.exposedDmgMult;
+              else if (rogueAdvantageAtCast && hpPct <= 0.25 && eff.combinedDmgMult !== undefined) eff.dmgMult = eff.combinedDmgMult;
+              else if (rogueAdvantageAtCast && eff.advantageDmgMult !== undefined) eff.dmgMult = eff.advantageDmgMult;
+              if (rogueAdvantageAtCast && eff.roguePath === 'trickster' && rogueHasSkill('ladino:laminas:14')) eff.dmgMult = (eff.dmgMult ?? 1) + 0.10;
+            }
             if (isMage() && mageAmplifiedThisCast && eff.amplifiedDmgMult !== undefined) {
               // Multi-hit uses amplifiedDmgMult as a per-hit override when
               // its normal damage lives in dmgMultPerHit; single hits use it
@@ -4094,6 +4398,12 @@ export function DungeonPanel({
               ? (mageAmplifiedThisCast ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0))
               : 0;
             let warriorConditionalDefPen = warriorCastDefPenBonus + (eff.defPenPct ?? 0);
+            if (isRogue()) {
+              if (rogueAmbushThisCast) warriorConditionalDefPen += ROGUE_AMBUSH_DEF_PEN;
+              if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:6')) warriorConditionalDefPen += 0.05;
+              if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:11')) warriorConditionalDefPen += 0.03;
+              if (rogueAdvantageAtCast) warriorConditionalDefPen += eff.advantageDefPenPct ?? 0;
+            }
             if (isWarrior() && dmgType === 'physical') {
               const band = postureBand(warriorEnemyState().current);
               if (warriorHasSkill('guerreiro:furioso:11') && warriorEnemyState().current <= 50) warriorConditionalDefPen += 0.05;
@@ -4524,6 +4834,13 @@ export function DungeonPanel({
               const band = postureBand(warriorPostureAtActionStart);
               if (band === 'open' || band === 'broken') dmg = Math.round(dmg * 1.02);
             }
+            if (isRogue()) {
+              if (rogueAmbushThisCast && rogueHasSkill('ladino:veneno:6')) dmg = Math.round(dmg * 1.05);
+              if (rogueExposedAtCast && castAbility?.effect.roguePath === 'assassin' && rogueHasSkill('ladino:veneno:8')) dmg = Math.round(dmg * 1.04);
+              if (enemyRef.current.hp / enemyRef.current.maxHp <= 0.35 && rogueHasSkill('ladino:veneno:11')) dmg = Math.round(dmg * 1.03);
+              if (rogueImagesAtCast === 2 && rogueHasSkill('ladino:sombras:11')) dmg = Math.round(dmg * 1.03);
+              if (rogueAdvantageAtCast && rogueHasSkill('ladino:laminas:7')) dmg = Math.round(dmg * 1.02);
+            }
             // Vulnerabilidade do inimigo — sempre por último, per Section 18.
             if (getModTotal(enemyModsRef.current, 'dmgTakenPct') !== 0) dmg = Math.max(1, Math.round(dmg * (1 + getModTotal(enemyModsRef.current, 'dmgTakenPct'))));
             if (barbActive) {
@@ -4567,6 +4884,40 @@ export function DungeonPanel({
       if (!missed && dmg > 0) {
         const enemyHp = Math.max(0, enemyRef.current.hp - dmg);
         applyEnemyHp(enemyHp);
+        if (isRogue()) {
+          if (rogueAmbushThisCast && castAbility?.effect.canExpose) rogueExposedMainLeftRef.current = ROGUE_EXPOSED_MAIN_LIMIT;
+          if (rogueToxicBladeMainLeftRef.current > 0) {
+            const toxinMult = (rogueAmbushThisCast ? 0.15 : 0.12) * (rogueHasSkill('ladino:veneno:7') ? 1.10 : 1);
+            rogueToxinRef.current = {
+              id: 'ladino:toxin', sourceId: castAbility?.id ?? 'ladino:toxin', snapshotPower: stats.atk,
+              dmgMultiplier: toxinMult, ticksRemaining: 3, tags: ['poison'], canCrit: false, bypassDefense: false,
+            };
+            rogueToxicBladeMainLeftRef.current = 0;
+          }
+          if (rogueLoadedDieSaved) rogueAdvantageRef.current = true;
+          if (rogueAdvantageAtCast && castAbility?.effect.enemyDirectDmgDebuffPct) {
+            rogueEnemyDmgDebuffRef.current = castAbility.effect.enemyDirectDmgDebuffRounds ?? 2;
+          }
+          if (rogueAdvantageAtCast && castAbility?.effect.timeSteal && enemyRef.current.hp > 0) rogueStealTime();
+          if (castAbility?.id === 'ladino:veneno:13' && rogueHasSkill('ladino:veneno:14') && enemyRef.current.hp > 0) rogueEnterStealth();
+
+          if (castAbility?.effect.consumeImages && rogueImagesAtCast > 0) {
+            const authoredBase = castAbility.effect.kind === 'multiHit'
+              ? (castAbility.effect.hitCount ?? 1) * (castAbility.effect.dmgMultPerHit ?? 0)
+              : (castAbility.effect.dmgMult ?? 1);
+            let ratio = castAbility.effect.imageEchoRatio ?? 0;
+            if (castAbility.effect.roguePath === 'blade' && rogueHasSkill('ladino:sombras:14')) ratio += 0.05;
+            if (rogueSharpenedAtCast) ratio += 0.05;
+            const echoCoeff = imageEchoCoefficient(authoredBase, ratio) * (rogueHasSkill('ladino:sombras:5') ? 1.05 : 1);
+            const echoDefPen = (rogueHasSkill('ladino:sombras:6') ? 0.10 : 0) + (rogueHasSkill('ladino:sombras:11') ? 0.02 : 0);
+            for (let i = 0; i < rogueImagesAtCast && enemyRef.current.hp > 0; i++) {
+              const echo = Math.max(1, Math.round(mitigatedBase(Math.round(stats.atk * echoCoeff), computeEnemyDef() * (1 - stats.defPenPct - echoDefPen))));
+              applyEnemyHp(Math.max(0, enemyRef.current.hp - echo));
+              pushFloat('enemy', echo, false);
+            }
+          }
+          rogueSync();
+        }
         if (isNecromancer()) { necroMetric('directDamage', dmg); if (castAbility?.effect.necromancerTag === 'reaper') necroMetric('reaps', 1); }
         if (isMage() && castAbility) mageOnSpellHit(castAbility, stats, mageAmplifiedThisCast);
         pushFloat('enemy', dmg, crit);
@@ -4655,6 +5006,16 @@ export function DungeonPanel({
         }
       }
       if (isMage() && chosen && !mageCastFinished) mageFinishCast(chosen, mageAmplifiedThisCast);
+      if (isRogue() && !playerStunned) {
+        if (missed && rogueAdvantageAtCast && chosen?.effect.roguePath === 'trickster' && rogueHasSkill('ladino:laminas:14')) rogueAdvantageRef.current = true;
+        if (rogueLoadedDieSaved) rogueAdvantageRef.current = true;
+        if (chosen?.effect.consumeImages && rogueImagesAtCast === 2 && rogueHasSkill('ladino:sombras:14')) rogueImagesRef.current = 1;
+        if (rogueAmbushThisCast) rogueFirstAmbushRef.current = true;
+        rogueNextMainAccuracyRef.current = false;
+        rogueAdvanceMainDurations(!!chosen?.effect.offensive || !chosen, rogueExposedAtCast, rogueToxicBladeAtCast, rogueTrickAtCast);
+        rogueSync();
+        if (rogueResolveInitiative()) return;
+      }
     }
 
     schedulePlayer(nextPlayerDelay());
@@ -4701,6 +5062,10 @@ export function DungeonPanel({
     if (enemyRef.current.hp <= 0) { scheduleEnemy(); return; }
 
     maybeAutoHeal();
+    if (isRogue() && rogueTimeStolenRef.current) {
+      rogueTimeStolenRef.current = false;
+      rogueSync();
+    }
 
     const enemyStunned = hasCC(enemyCCRef.current, 'stun') || hasCC(enemyCCRef.current, 'sleep');
     if (enemyStunned) {
@@ -4710,10 +5075,19 @@ export function DungeonPanel({
     }
 
     const defStats = computePlayerStats();
-    const enemyAccuracy = computeEnemyAccuracy();
+    let enemyAccuracy = computeEnemyAccuracy();
+    const rogueFeint = isRogue() && roguePreparedTrickRef.current?.kind === 'feint' ? roguePreparedTrickRef.current : null;
+    if (isRogue() && rogueStealthRef.current) enemyAccuracy -= rogueHasSkill('ladino:veneno:2') ? 0.12 : 0.10;
+    if (rogueFeint) enemyAccuracy -= 0.15;
     const enemyMissed = rollMiss(enemyAccuracy, defStats.evasion);
 
     if (enemyMissed) {
+      if (rogueFeint) {
+        roguePreparedTrickRef.current = null;
+        rogueAdvantageRef.current = true;
+        if (rogueHasSkill('ladino:laminas:5')) rogueNextMainAccuracyRef.current = true;
+        rogueSync();
+      }
       // No log line — the floater's "erro!" already shows this on screen.
       pushFloat('player', 0, false, false, true);
       // Caçador: a miss is still a "real action" from the presa (Rastro
@@ -4725,6 +5099,19 @@ export function DungeonPanel({
       warriorOnEnemyRealAction();
       scheduleEnemy();
       return;
+    }
+
+    if (isRogue()) {
+      if (rogueFeint) {
+        roguePreparedTrickRef.current = null;
+        roguePlanB(rogueFeint);
+        if (rogueHasSkill('ladino:laminas:5')) rogueNextMainAccuracyRef.current = true;
+      }
+      if (rogueStealthRef.current) {
+        rogueStealthRef.current = false;
+        rogueStealthMainLeftRef.current = 0;
+      }
+      rogueSync();
     }
 
     // Only the shapes explicitly flagged atkType: 'magical' (Dragão,
@@ -4762,6 +5149,11 @@ export function DungeonPanel({
     const clerigoActiveEnemy = isClerigo();
     const clerigoWallReduction = clerigoActiveEnemy && clerigoWallBonusActive() ? MURALHA_DIVINA_DMG_TAKEN_PCT : 0;
     let edmg = Math.round(rawDmg * (dungeon.dmgTakenMult ?? 1) * (1 + defStats.dmgTakenPct) * (1 + frenzyTakenBonus) * (1 + clerigoWallReduction));
+    if (isRogue() && rogueEnemyDmgDebuffRef.current > 0) edmg = Math.round(edmg * 0.90);
+    if (isRogue() && rogueFlowUntouchableRef.current) {
+      edmg = Math.round(edmg * 0.94);
+      rogueFlowUntouchableRef.current = false;
+    }
     if (isMage() && mageThermalRef.current === 'frozen') edmg = Math.round(edmg * 0.90);
     if (isMage() && mageHeatRef.current >= 90) edmg = Math.round(edmg * 1.08);
     if (isMage() && mageNextDamageReductionRef.current > 0) {
@@ -5497,6 +5889,15 @@ export function DungeonPanel({
     'necromante:decomposition': { value: necroDecompositionState?.stacks ?? 0, maxValue: DECOMPOSITION_MAX, duration: necroDecompositionState?.ticksRemaining, visible: ch.classId === 'necromante' },
     'necromante:plague': { value: necroPlagueState ? 1 : 0, duration: necroPlagueState?.ticksRemaining, detail: necroPlagueState ? `${formatGameNumber(plagueTickDamage(necroPlagueState, necroDecompositionState?.stacks ?? 0))} por ciclo` : undefined, visible: ch.classId === 'necromante' },
     'necromante:servants': { value: necroSummonsState.length, maxValue: necroMaxSummons(), detail: necroSummonsState.map((s, i) => `Servo ${i + 1}: ${s.attacksRemaining} ataques`).join(' · '), visible: ch.classId === 'necromante' },
+    'ladino:initiative': { value: rogueQuickWindowRef.current ? 1 : 0, detail: 'PRINCIPAL → RÁPIDA', visible: ch.classId === 'ladino' },
+    'ladino:stealth': { value: rogueStealthState ? 1 : 0, duration: rogueStealthMainLeftRef.current, visible: ch.classId === 'ladino' },
+    'ladino:exposed': { value: rogueExposedState > 0 ? 1 : 0, duration: rogueExposedState, visible: ch.classId === 'ladino' },
+    'ladino:toxin': { value: rogueToxinState ? 1 : 0, duration: rogueToxinState?.ticksRemaining, detail: rogueToxinState ? `${formatGameNumber(Math.round(rogueToxinState.snapshotPower * rogueToxinState.dmgMultiplier))} por ciclo` : undefined, visible: ch.classId === 'ladino' },
+    'ladino:images': { value: rogueImagesState, maxValue: ROGUE_IMAGE_MAX, visible: ch.classId === 'ladino' },
+    'ladino:sharpened_echo': { value: rogueSharpenedEchoState ? 1 : 0, visible: ch.classId === 'ladino' },
+    'ladino:prepared_trick': { value: roguePreparedTrickState ? 1 : 0, duration: roguePreparedTrickState?.actionsLeft, detail: roguePreparedTrickState?.kind === 'feint' ? 'FINTA' : roguePreparedTrickState?.kind === 'loaded_die' ? 'DADO VICIADO' : undefined, visible: ch.classId === 'ladino' },
+    'ladino:advantage': { value: rogueAdvantageState ? 1 : 0, detail: rogueAdvantageState ? 'PRONTA' : undefined, visible: ch.classId === 'ladino' },
+    'ladino:time_stolen': { value: rogueTimeStolenState ? 1 : 0, visible: ch.classId === 'ladino' },
   };
   const combatMechanicStates: CombatMechanicState[] = getClassMechanics(ch.classId)
     .filter((mechanic) => mechanic.combatDisplay)
@@ -5532,6 +5933,11 @@ export function DungeonPanel({
       if (condition.type === 'periodicEffectActive') return [`Praga Necrótica: ${necroPlagueState ? 'ativa' : 'necessária'}`];
       if (condition.type === 'summonCountAtLeast') return [`Servos: ${necroSummonsState.length}/${condition.count ?? 1} necessários`];
       if (condition.type === 'summonCountBelow') return [`Servos: ${necroSummonsState.length}/${necroMaxSummons()} — requer espaço`];
+      if (condition.type === 'enemyExposed') return [`Exposto: ${rogueExposedState > 0 ? 'SIM' : 'NÃO'}`];
+      if (condition.type === 'imageCountAtLeast') return [`Imagens: ${rogueImagesState}/${condition.count ?? 1} necessárias`];
+      if (condition.type === 'imageCountBelow') return [`Imagens: ${rogueImagesState}/${condition.count ?? 2} — requer espaço`];
+      if (condition.type === 'advantageReady') return [`Vantagem: ${rogueAdvantageState ? 'PRONTA' : 'NECESSÁRIA'}`];
+      if (condition.type === 'isStealthed') return [`Furtivo: ${rogueStealthState ? 'SIM' : 'NÃO'}`];
       return [];
     };
     return walk(openCombatAbility.condition);
@@ -5883,6 +6289,7 @@ export function DungeonPanel({
                   } as CSSProperties}
                 />
                 <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+                {ch.classId === 'ladino' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/90 border border-gold/50 px-1 text-[7px] font-bold text-gold pointer-events-none">{ab.actionType === 'quick' ? 'RÁPIDA' : 'PRINCIPAL'}</span>}
               </button>
             );
           })}
@@ -5907,6 +6314,7 @@ export function DungeonPanel({
       {openCombatAbility && <Modal title={openCombatAbility.name} onClose={() => setOpenAbilityId(null)}>
         <p className="text-parchment/80"><MechanicText text={openCombatAbility.desc} character={ch} ability={openCombatAbility} /></p>
         <div className="rounded border border-panelborder/50 bg-panel2/50 p-2 text-xs space-y-1">
+          {ch.classId === 'ladino' && <p><span className="text-parchment/45">Ação: </span>{openCombatAbility.actionType === 'quick' ? 'RÁPIDA — usada na Janela de Iniciativa' : 'PRINCIPAL'}</p>}
           <p><span className="text-parchment/45">Recarga: </span>{openCombatAbility.cooldown} ciclos</p>
           {combatAbilityRequirements.map((requirement) => <p key={requirement}><span className="text-parchment/45">Estado atual: </span>{requirement}</p>)}
           {openCombatAbility.effect.faithCost && <p><span className="text-parchment/45">Custo: </span>{openCombatAbility.effect.faithCost} Fé, cobrada ao usar</p>}
