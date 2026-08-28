@@ -4,7 +4,7 @@ import { findCosmetic } from '../lib/cosmetics';
 import { DUNGEONS, highestAccessibleItemTier } from '../lib/dungeons';
 import { rollAffixForItem, sellValue } from '../lib/equipment';
 import {
-  applyAffixGrowth, enhanceCost, MAX_ENHANCE_LEVEL, resetItem, resetItemCost, successChanceForLevel,
+  applyAffixGrowth, enhanceCost, isForgeableAffixType, MAX_ENHANCE_LEVEL, resetItem, resetItemCost, successChanceForLevel,
 } from '../lib/enhancement';
 import { canUseRuneOn, removeRune } from '../lib/runes';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
@@ -343,7 +343,10 @@ export function GameShell({
             })()
           : applyAffixGrowth(item, runeChoice.affixIndex ?? 0);
       } else if (item.secondaryStats.length > 0) {
-        upgraded = applyAffixGrowth(item, Math.floor(Math.random() * item.secondaryStats.length));
+        const forgeableIndexes = item.secondaryStats.map((affix, index) => isForgeableAffixType(affix.type) ? index : -1).filter((index) => index >= 0);
+        if (forgeableIndexes.length > 0) {
+          upgraded = applyAffixGrowth(item, forgeableIndexes[Math.floor(Math.random() * forgeableIndexes.length)]);
+        }
       }
       upgraded = { ...upgraded, enhanceLevel: item.enhanceLevel + 1 };
     }

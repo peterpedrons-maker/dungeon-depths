@@ -10,7 +10,7 @@ test('Base de Cura preserva a curva universal por nível', () => {
   assert.equal(clericBaseHp(34, 10), 124);
 });
 
-test('cura direta usa Vida Base, Poder de Suporte e eficiência final', () => {
+test('cura direta usa Vida Base, Poder de Cura e eficiência final', () => {
   assert.equal(clericDirectHealAmount(100, 0.35, 0.20, 0.03), 43);
   assert.equal(clericPassiveHealAmount(100, 0.04, 0.20), 5);
 });

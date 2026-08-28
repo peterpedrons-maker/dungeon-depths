@@ -7,7 +7,7 @@ import {
 import {
   DETERMINATION_GEN_BLOCK, DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA,
   DETERMINATION_GEN_DIRECT_HIT, DETERMINATION_MAX, addDetermination,
-  determinationForDirectHit,
+  determinationForDirectHit, determinationForPreventedDamage,
 } from './knight.ts';
 import {
   BREACH_DURATION_TICKS, BREACH_MAX, applyBreach, consumeBreach, tickBreach,
@@ -16,7 +16,7 @@ import {
   JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_CONVICCAO_DURATION_TICKS,
   JUDGMENT_MAX_STACKS, applyJudgmentState, consumeJudgmentState, tickJudgmentState,
 } from './clerigo.ts';
-import { applyPostureDamage, POSTURE_BASIC_DAMAGE, POSTURE_MAX, recoverPosture } from './warrior.ts';
+import { applyPostureDamage, POSTURE_BASIC_DAMAGE, POSTURE_MAX, recoverablePosture, recoverPosture, createWarriorEnemyState } from './warrior.ts';
 import { applyEnemyStack, DECOMPOSITION_MAX, reaperExecuteMultiplier, soulsForCrossedThresholds } from './necromancer.ts';
 import { advanceThermal, circuitAfterCast, heatBand } from './mago.ts';
 import { latestAtOrBefore, reaches, simulateReachability } from './mechanicReachability.ts';
@@ -33,7 +33,8 @@ test('Guerreiro mantém pressão básica e todas as travas de recuperação', ()
   assert.equal(Math.min(POSTURE_MAX, 99 + recoverPosture(99)), 100);
   assert.equal(recoverPosture(40, { suppressed: true }), 4);
   assert.equal(recoverPosture(40, { zero: true }), 0);
-  assert.equal(applyPostureDamage(20, 30), 0); // Guarda Quebrada continua possível.
+  assert.equal(applyPostureDamage(20, 30), 0);
+  assert.equal(recoverablePosture({ ...createWarriorEnemyState(), current: 0, guardBroken: true }), 0);
 });
 
 test('Cavaleiro gera Determinação estável sem somar bloqueio com o +3', () => {
@@ -46,8 +47,14 @@ test('Cavaleiro gera Determinação estável sem somar bloqueio com o +3', () =>
   let determination = 0;
   for (let i = 0; i < 8; i++) determination = addDetermination(determination, determinationForDirectHit({ landed: true, blocked: false, fortressActive: false }));
   assert.equal(determination, 24);
+  assert.equal(determinationForPreventedDamage({ amountPrevented: 30, effectiveMaxHp: 1000, thresholdPct: 0.03, capPoints: 4 }), 1);
+  assert.equal(determinationForPreventedDamage({ amountPrevented: 100, effectiveMaxHp: 1000, thresholdPct: 0.02, capPoints: 8 }), 5);
+  assert.equal(determinationForPreventedDamage({ amountPrevented: 1000, effectiveMaxHp: 1000, thresholdPct: 0.03, capPoints: 4 }), 4);
+  assert.equal(determinationForPreventedDamage({ amountPrevented: 1000, effectiveMaxHp: 1000, thresholdPct: 0.03, capPoints: 4, fortressActive: true }), 0);
+  determination = addDetermination(determination, determinationForPreventedDamage({ amountPrevented: 30, effectiveMaxHp: 1000, thresholdPct: 0.03, capPoints: 4 }));
+  assert.equal(determination, 25);
   determination = addDetermination(determination, DETERMINATION_GEN_BLOCK);
-  assert.equal(determination, 34); // 25 é atingível sem RNG perfeito.
+  assert.equal(determination, 35); // 25 é atingível sem RNG perfeito.
   assert.equal(addDetermination(DETERMINATION_MAX - 1, 99), DETERMINATION_MAX);
 });
 
@@ -72,7 +79,8 @@ test('Bárbaro consome Postura Selvagem por ação e mantém Dor em pacotes inde
   const consumed = consumePainPackets([createPainPacket(40, 5)], 10);
   assert.equal(consumed.consumed, 10);
   assert.equal(consumed.packets[0].perTick, 30 / 5);
-  assert.ok(50 / 1000 >= 0.05); // limiar de 5% alcançável por cenário legítimo.
+  const redirectedFromTwoHits = [100, 100].reduce((total, hit) => total + hit * 0.30, 0);
+  assert.ok(redirectedFromTwoHits >= 1000 * 0.05); // Dor de 5% em cenário legítimo.
 });
 
 test('Caçador mantém três Brechas na árvore pura de Precisão', () => {

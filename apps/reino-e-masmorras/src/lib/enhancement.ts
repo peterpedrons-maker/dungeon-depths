@@ -1,4 +1,4 @@
-import { EquipmentItem, SecondaryStatType } from '../types/game';
+import type { EquipmentItem, SecondaryStatType } from '../types/game';
 
 // Forja upgrade system (v1 — deliberately simple, gets more complex later):
 // spend gold at the Forja to push an item's enhanceLevel up, which scales
@@ -54,8 +54,13 @@ const AFFIX_BOOST_INCREMENT_BY_LEVEL = AFFIX_PCT_BY_LEVEL.slice(1).map((v, i) =>
 // (rather than imported) since equipment.ts already imports FROM this file
 // and a cross-import back would be circular.
 const PCT_AFFIX_TYPE_SET = new Set<SecondaryStatType>([
-  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality',
+  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality', 'healingPower', 'barrierPower',
 ]);
+const ATTRIBUTE_AFFIX_TYPE_SET = new Set<SecondaryStatType>(['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk']);
+
+export function isForgeableAffixType(type: SecondaryStatType): boolean {
+  return !ATTRIBUTE_AFFIX_TYPE_SET.has(type);
+}
 
 // Applies one affix's growth for a successful push from `item.enhanceLevel`
 // to the next level. `affixIndex` is which secondaryStats entry improves —
@@ -66,6 +71,10 @@ const PCT_AFFIX_TYPE_SET = new Set<SecondaryStatType>([
 export function applyAffixGrowth(item: EquipmentItem, affixIndex: number): EquipmentItem {
   const affix = item.secondaryStats[affixIndex];
   if (!affix) return item;
+  // Primary attributes are a character-building channel, not a forge-growth
+  // channel. Runes may add the first valid attribute to a Common item, but
+  // Forja never increases an attribute affix's value.
+  if (ATTRIBUTE_AFFIX_TYPE_SET.has(affix.type)) return item;
   const incrementPct = AFFIX_BOOST_INCREMENT_BY_LEVEL[item.enhanceLevel] ?? 0;
   // Percentage affixes (crítico, evasão, velocidade...) keep the pure
   // percentage, unfloored — they're already strong per point and read
@@ -98,7 +107,7 @@ export function successChanceForLevel(level: number): number {
 
 // Gold cost to push `item` from its current enhanceLevel to the next one —
 // scales with the item's own tier (a tier-1 scrap sword is cheap to enhance,
-// a tier-10 legend isn't) and grows per level so +9→+10 costs far more than
+// a tier-11 legend isn't) and grows per level so +9→+10 costs far more than
 // +0→+1. 2026 rebalance, take three: base 15->20 and exponent 1.45->1.55,
 // specified directly — +1-+4 stay affordable, +5-+6 start to bite, +7 hurts,
 // +8-+9 are expensive, +10 is a deliberate long-term investment (its own
@@ -218,6 +227,15 @@ function affixLabel(type: SecondaryStatType, value: number): string {
     case 'cdr': return `+${fmtItemPct(value)}% redução de recarga`;
     case 'itemFind': return `+${fmtItemPct(value)}% chance de encontrar item`;
     case 'itemQuality': return `+${fmtItemPct(value)}% qualidade dos itens`;
+    case 'str': return `+${value} FOR`;
+    case 'dex': return `+${value} DES`;
+    case 'agi': return `+${value} AGI`;
+    case 'vit': return `+${value} VIT`;
+    case 'int': return `+${value} INT`;
+    case 'wis': return `+${value} SAB`;
+    case 'luk': return `+${value} SOR`;
+    case 'healingPower': return `+${fmtItemPct(value)}% poder de cura`;
+    case 'barrierPower': return `+${fmtItemPct(value)}% poder de barreira`;
   }
 }
 
@@ -234,7 +252,7 @@ export function secondaryStatLabels(item: EquipmentItem): string[] {
 // plus the 9 added alongside it — see SecondaryStatType) have no primary
 // *Bonus field of their own, so they key straight off their own affix type
 // name instead of an EquipmentItem field.
-type StatKey = typeof PRIMARY_KEYS[number] | 'block' | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'itemFind' | 'itemQuality';
+type StatKey = typeof PRIMARY_KEYS[number] | 'block' | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'itemFind' | 'itemQuality' | 'str' | 'dex' | 'agi' | 'vit' | 'int' | 'wis' | 'luk' | 'healingPower' | 'barrierPower';
 const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'dmgBonus', label: 'Ataque Físico', isPct: false },
   { key: 'defBonus', label: 'Defesa', isPct: false },
@@ -253,6 +271,15 @@ const STAT_META: { key: StatKey; label: string; isPct: boolean }[] = [
   { key: 'thorns', label: 'Espinhos', isPct: true },
   { key: 'itemFind', label: 'Chance de Encontrar Item', isPct: true },
   { key: 'itemQuality', label: 'Qualidade dos Itens', isPct: true },
+  { key: 'str', label: 'FOR', isPct: false },
+  { key: 'dex', label: 'DES', isPct: false },
+  { key: 'agi', label: 'AGI', isPct: false },
+  { key: 'vit', label: 'VIT', isPct: false },
+  { key: 'int', label: 'INT', isPct: false },
+  { key: 'wis', label: 'SAB', isPct: false },
+  { key: 'luk', label: 'SOR', isPct: false },
+  { key: 'healingPower', label: 'Poder de Cura', isPct: true },
+  { key: 'barrierPower', label: 'Poder de Barreira', isPct: true },
 ];
 // Which display label an affix type reads under — shares its name with a
 // primary field for 8 of the 17 types (crit/critDmg/cdr/def/mdef/atk/matk/
@@ -267,6 +294,8 @@ const SECONDARY_TO_STAT_KEY: Record<SecondaryStatType, StatKey> = {
   def: 'defBonus', mdef: 'mdefBonus', atk: 'dmgBonus', matk: 'matkBonus', hp: 'hpBonus',
   evasion: 'evasion', accuracy: 'accuracy', tenacity: 'tenacity', speed: 'speed',
   lifesteal: 'lifesteal', thorns: 'thorns', cdr: 'cdrBonus', itemFind: 'itemFind', itemQuality: 'itemQuality',
+  str: 'str', dex: 'dex', agi: 'agi', vit: 'vit', int: 'int', wis: 'wis', luk: 'luk',
+  healingPower: 'healingPower', barrierPower: 'barrierPower',
 };
 
 const PRIMARY_KEY_SET: ReadonlySet<string> = new Set(PRIMARY_KEYS);

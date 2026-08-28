@@ -1,5 +1,6 @@
-import { EquipmentItem, Rarity, RuneStack } from '../types/game';
-import { RARITIES, rarityIndex } from './equipment';
+import type { EquipmentItem, Rarity, RuneStack } from '../types/game';
+import { RARITIES, rarityIndex } from './equipment.ts';
+import { MAX_TIER } from './itemTiers.ts';
 
 // Drop chance for a Runa de Aprimoramento, rolled independently of the
 // normal equipment drop (see DungeonPanel.tsx's tryDropRune) — "não precisa
@@ -63,7 +64,7 @@ function pickRuneRarity(): Rarity {
 // RUNE_DROP_CHANCE_REGULAR, checked by the caller) — its rarity odds
 // (RUNE_RARITY_WEIGHTS above) are the same either way.
 export function rollRuneDrop(tier: number): RuneStack {
-  return { rarity: pickRuneRarity(), tier, count: 1 };
+  return { rarity: pickRuneRarity(), tier: Math.max(1, Math.min(MAX_TIER, Math.round(tier))), count: 1 };
 }
 
 // Adds one rune to `runes`, stacking onto an existing (rarity, tier) entry

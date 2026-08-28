@@ -4,6 +4,7 @@ import { RuneShelf } from './RuneShelf';
 import { rarityColor, rarityName, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import {
   enhanceCost, enhancedItem, itemDisplayName, MAX_ENHANCE_LEVEL, primaryStatLines, resetItemCost, secondaryStatLabels, successChanceForLevel,
+  isForgeableAffixType,
 } from '../lib/enhancement';
 import { pickBestRuneFor } from '../lib/runes';
 import { fmt } from '../lib/format';
@@ -102,6 +103,10 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
   // hiding every earlier successful push instead of building on top of it.
   const displayItem = enhancedItem(item);
   const affixLabels = secondaryStatLabels(displayItem);
+  const forgeableAffixes = displayItem.secondaryStats
+    .map((affix, index) => ({ index, label: affixLabels[index], forgeable: isForgeableAffixType(affix.type) }))
+    .filter((entry) => entry.forgeable);
+  const hasAttributeAffixes = displayItem.secondaryStats.some((affix) => !isForgeableAffixType(affix.type));
   const primaryLine = primaryStatLines(displayItem)[0];
   // The item as it actually came back from onEnhance (affix growth and all)
   // — NOT a locally-guessed `{...item, enhanceLevel: +1}`, which would only
@@ -169,7 +174,12 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
               Sem runa — melhora um afixo aleatório (não gasta runa)
             </button>
           )}
-          {affixLabels.length === 0 ? (
+          {forgeableAffixes.length === 0 ? (
+            hasAttributeAffixes ? (
+              <div className="text-xs text-parchment/50 rounded px-2.5 py-1.5 border border-panelborder/30 bg-black/20">
+                Atributos de equipamento não são aprimorados pela Forja.
+              </div>
+            ) : (
             <button
               disabled={!bestRune}
               onClick={() => setAffixIndex((i) => (i === 0 ? null : 0))}
@@ -177,13 +187,14 @@ function EnhanceFlow({ item, character, onEnhance, onDone }: {
             >
               Sem afixos — a runa concede um novo
             </button>
+            )
           ) : (
-            affixLabels.map((label, i) => (
+            forgeableAffixes.map(({ index, label }) => (
               <button
-                key={i}
+                key={index}
                 disabled={!bestRune}
-                onClick={() => setAffixIndex((cur) => (cur === i ? null : i))}
-                className={`text-left text-xs rounded px-2.5 py-1.5 border ${affixIndex === i ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70'} ${bestRune ? 'hover:border-gold/50' : 'opacity-40 cursor-not-allowed'}`}
+                onClick={() => setAffixIndex((cur) => (cur === index ? null : index))}
+                className={`text-left text-xs rounded px-2.5 py-1.5 border ${affixIndex === index ? 'bg-gold/25 border-gold text-gold' : 'border-panelborder/50 text-parchment/70'} ${bestRune ? 'hover:border-gold/50' : 'opacity-40 cursor-not-allowed'}`}
               >
                 {label}
               </button>

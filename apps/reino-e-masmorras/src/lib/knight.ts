@@ -19,6 +19,8 @@ export const DETERMINATION_GEN_BLOCK_GUARDA_ELEVADA = 12; // clerigo-style talen
 export const DETERMINATION_GEN_DIRECT_HIT = 3;
 export const DETERMINATION_GEN_BARRIER_PER_3PCT = 1; // +1 per 3% of EffectiveMaxHp a Cavaleiro-made barrier absorbs in one enemy action
 export const DETERMINATION_GEN_BARRIER_CAP_PER_ACTION = 4;
+export const DETERMINATION_GEN_BARRIER_THRESHOLD_PCT = 0.03;
+export const IRON_WALL_DETERMINATION_THRESHOLD_PCT = 0.02;
 
 /**
  * Determinação gerada por um único ataque direto real do inimigo.
@@ -31,6 +33,21 @@ export function determinationForDirectHit(options: { landed: boolean; blocked: b
 }
 export function addDetermination(current: number, amount: number): number {
   return Math.max(DETERMINATION_MIN, Math.min(DETERMINATION_MAX, current + Math.max(0, amount)));
+}
+
+/** Converte dano realmente impedido em Determinação, por instância e com
+ * teto. Fortaleza Viva desliga também esta fonte, assim como a geração por
+ * bloqueio/ataque direto. */
+export function determinationForPreventedDamage(options: {
+  amountPrevented: number;
+  effectiveMaxHp: number;
+  thresholdPct: number;
+  pointsPerThreshold?: number;
+  capPoints: number;
+  fortressActive?: boolean;
+}): number {
+  if (options.fortressActive || options.amountPrevented <= 0 || options.effectiveMaxHp <= 0 || options.thresholdPct <= 0) return 0;
+  return Math.min(options.capPoints, Math.floor(options.amountPrevented / options.effectiveMaxHp / options.thresholdPct) * (options.pointsPerThreshold ?? 1));
 }
 
 // ── RETALIAÇÃO (cavaleiro:bastiao:6 Reação Defensiva) ──
@@ -76,14 +93,13 @@ export const PRESSAO_CONSTANTE_MAX_STACKS = 5;
 
 // ── ORDENS (Comando) ──
 export const ORDERS_MAX = 3;
-// CommandPotency — a Comando buff's own base % is scaled by
-// min(CAP, SupportPowerPct * coefficient). Voz de Comando (cavaleiro:comando:0)
-// raises the coefficient; the cap never moves.
+// CommandPotency — a Comando buff's own base % is scaled directly from SAB.
+// Voz de Comando (cavaleiro:comando:0) raises the coefficient; the cap never moves.
 export const COMMAND_POTENCY_COEF_BASE = 0.50;
 export const COMMAND_POTENCY_COEF_VOZ_DE_COMANDO = 0.60;
 export const COMMAND_POTENCY_CAP = 0.30;
-export function commandPotency(supportPowerPct: number, coef: number): number {
-  return Math.min(COMMAND_POTENCY_CAP, supportPowerPct * coef);
+export function commandPotencyFromWis(totalWis: number, affinity: number, coef: number): number {
+  return Math.min(COMMAND_POTENCY_CAP, Math.max(0, totalWis) * 0.01 * affinity * coef);
 }
 // Presença de Líder / Estratégia de Campo (cavaleiro:comando:1 / :7) — extra
 // envTick(s) on a Comando ability's own temporary buff, combined cap 2.

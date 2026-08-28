@@ -1,7 +1,7 @@
-import { AccessoryType, ClassId, Rarity, SecondaryStatType } from '../types/game';
+import type { AccessoryType, ClassId, Rarity, SecondaryStatType } from '../types/game';
 
 // ── Base-type tier ladder ─────────────────────────────────────────────────
-// One shared 10-step material/power progression, reused across every slot by
+// One shared 11-step material/power progression, reused across every slot by
 // swapping in a different base noun ("Espada" vs "Peitoral" vs "Anel" ...).
 // This is what actually carries the item's power level now — Rarity (see
 // lib/equipment.ts) is a separate layer on top controlling affix count, not
@@ -10,9 +10,14 @@ import { AccessoryType, ClassId, Rarity, SecondaryStatType } from '../types/game
 // existing rarity prefixes, which are adjectives and don't bother with this).
 export const TIER_MATERIAL: string[] = [
   'de Sucata', 'de Ferro', 'de Aço', 'de Prata', 'de Ouro',
-  'de Mithril', 'de Adamantina', 'de Obsidiana', 'de Escamas de Dragão', 'das Lendas',
+  'de Mithril', 'de Adamantina', 'de Obsidiana', 'de Oricalco', 'de Escamas de Dragão', 'de Aço Estelar',
 ];
 export const MAX_TIER = TIER_MATERIAL.length;
+export const DUNGEONS_PER_ITEM_TIER = 3;
+
+export function tierForDungeonOrdinal(ordinal: number): number {
+  return Math.max(1, Math.min(MAX_TIER, Math.floor((Math.max(1, ordinal) - 1) / DUNGEONS_PER_ITEM_TIER) + 1));
+}
 
 export function tierName(baseNoun: string, tier: number): string {
   const clamped = Math.max(1, Math.min(MAX_TIER, Math.round(tier)));
@@ -75,8 +80,8 @@ export const ACCESSORY_TYPES: AccessoryType[] = ['anel', 'amuleto', 'bracelete']
 
 // ── Preço de Mercador ────────────────────────────────────────────────────
 // Rebalanceamento: um item precisa custar o equivalente a várias runs de
-// farm, não uma compra trivial de 10-15 minutos — Tier 1 gira em ~60-160
-// ouro, Tier 10 em ~4400-11800. Compartilhada pelo preço de COMPRA
+// farm, não uma compra trivial de 10-15 minutos — Tier 1 gira em ~180
+// ouro, Tier 11 em ~48k. Compartilhada pelo preço de COMPRA
 // (merchantStock.ts) e, como uma fração dela, pelo preço de VENDA
 // (equipment.ts's sellValue) — um item de Tier alto que vendesse barato
 // quebraria o loop "vendi um lixo, comprei algo melhor" assim que a compra
@@ -87,7 +92,7 @@ export const ACCESSORY_TYPES: AccessoryType[] = ['anel', 'amuleto', 'bracelete']
 // Take four: still too cheap per direct user feedback — base doubled again
 // (90 -> 180) and the growth exponent steepened (1.6 -> 1.75) so high-tier
 // gear costs noticeably more than a linear doubling alone would give
-// (Tier 10 goes from ~6.2k to ~24k gold), on top of the same pass halving
+// (Tier 11 goes from ~6.2k to ~24k gold), on top of the same pass halving
 // gold income yet again (see GOLD_YIELD_MULT in lib/enemies.ts) — the
 // Mercador needs to feel like a real long-term saving goal at every tier,
 // not just early game.

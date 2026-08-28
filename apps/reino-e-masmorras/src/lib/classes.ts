@@ -1,6 +1,6 @@
-import { AttributeKey, Attributes, ClassDef, ClassId, Character } from '../types/game';
-import { generateMerchantStock } from './merchantStock';
-import { generateItem } from './equipment';
+import type { AttributeKey, Attributes, ClassDef, ClassId, Character } from '../types/game';
+import { generateMerchantStock } from './merchantStock.ts';
+import { generateItem } from './equipment.ts';
 
 // Shared attribute display metadata (label + reference color from the Kit
 // de Arte) — used by both CharacterOverview and CharacterCreation so the

@@ -26,7 +26,7 @@ function currentGlossaryValue(id: string, context: GlossaryContext): string | nu
     evasion: formatGamePercent(stats.evasion), crit: formatGamePercent(stats.critChance),
     'crit-dmg': formatGameMultiplier(stats.critDmgMult), block: formatGamePercent(stats.blockChance),
     tenacity: formatGamePercent(stats.tenacityPct), speed: formatGamePercent(stats.speedPct),
-    support: formatGamePercent(stats.supportPowerPct), lifesteal: formatGamePercent(stats.lifestealPct),
+    healing: formatGamePercent(stats.healingPowerPct), barrier: formatGamePercent(stats.barrierPowerPct), lifesteal: formatGamePercent(stats.lifestealPct),
     cooldown: formatGamePercent(stats.cooldownReductionPct),
     str: formatGameNumber(attrTotal(ch, 'str')), dex: formatGameNumber(attrTotal(ch, 'dex')),
     agi: formatGameNumber(attrTotal(ch, 'agi')), vit: formatGameNumber(attrTotal(ch, 'vit')),

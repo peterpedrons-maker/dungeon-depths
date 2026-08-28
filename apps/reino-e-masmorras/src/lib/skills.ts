@@ -1,10 +1,10 @@
-import { AbilityDef, AbilityEffect, Attributes, AttributeKey, ClassId, ScalingEntry, SkillEffect, SkillNode, SkillNodeType, SkillPath } from '../types/game';
-import { CLASSES } from './classes';
+import type { AbilityDef, AbilityEffect, Attributes, AttributeKey, ClassId, ScalingEntry, SkillEffect, SkillNode, SkillNodeType, SkillPath } from '../types/game';
+import { totalAttributesFromParts } from './attributes.ts';
 
 // Each class has more equippable actives than this cap (5 per path × 3 paths)
 // — this caps how many of the ones you've unlocked can actually be slotted
 // into combat at once, forcing a real build choice.
-export const MAX_EQUIPPED_ABILITIES = 4;
+export const MAX_EQUIPPED_ABILITIES = 5;
 
 // Presets for the per-ability "vida abaixo de X%" trigger, editable on the
 // loadout screen independently for every equipped ability that uses a
@@ -176,7 +176,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Frio Penetrante', desc: 'Enquanto o inimigo está Frágil ou Congelado, -5% MDEF inimiga.', effect: {} },
       { name: 'Sabedoria do Inverno', desc: 'Barreiras Gélidas recebem até +10% de eficiência baseada em SAB total.', effect: {} },
       { name: 'Cristalização', desc: 'Ao entrar em Congelado, receba barreira de 4% da Vida Máxima por 3 ciclos.', effect: {} },
-      { name: 'Barreira de Gelo', desc: 'Com HP abaixo do limite: barreira de 10% da Vida Máxima por 4 ciclos. Amplificada: 13%; o primeiro golpe absorvido avança 2 Estados.', ability: { name: 'Barreira de Gelo', desc: 'Barreira Gélida que avança o Estado Térmico no primeiro golpe absorvido.', cooldown: 6, condition: { type: 'hpBelow', pct: 0.8 }, effect: { kind: 'shield', shieldPct: 0.10, amplifiedDmgMult: 0.13, element: 'frost' } } },
+      { name: 'Barreira de Gelo', desc: 'Com HP abaixo do limite: barreira de 10% da Vida Máxima por 4 ciclos. Amplificada: 13%; o primeiro golpe absorvido avança 2 Estados.', ability: { name: 'Barreira de Gelo', desc: 'Barreira Gélida que avança o Estado Térmico no primeiro golpe absorvido.', cooldown: 6, condition: { type: 'hpBelow', pct: 0.8 }, effect: { kind: 'shield', shieldPct: 0.10, amplifiedDmgMult: 0.13, element: 'frost', scalesWithBarrierPower: true } } },
       { name: 'Mordida Glacial', desc: '1,50x MATK e avança 1 Estado; se já estava Frágil ou Congelado, reduz dano inimigo por 2 ciclos. Amplificada: 1,70x e redução maior.', ability: { name: 'Mordida Glacial', desc: 'Dano de Gelo e avanço térmico.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'bigHit', dmgMult: 1.50, amplifiedDmgMult: 1.70, element: 'frost', thermalAdvanceOnHit: 1 } } },
       { name: 'Coração de Permafrost', desc: '+3% dano mágico direto de Gelo. Estilhaçar em Congelado recebe +0,15x MATK.', effect: { magicDmgPct: 0.03 } },
       { name: 'Estilhaçar', desc: 'Requer Estado diferente de Normal. Resfriado 1,55x; Frágil 2,15x; Congelado 2,75x. Amplificada: +0,25x; remove o Estado ao acertar.', ability: { name: 'Estilhaçar', desc: 'Converte Estado Térmico em dano direto.', cooldown: 6, condition: { type: 'stateActive', state: 'thermal' }, effect: { kind: 'bigHit', element: 'frost', shatter: true, amplifiedDmgMult: 0.25 } } },
@@ -286,10 +286,10 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Mãos Consagradas', desc: '+3% de eficiência da cura direta ativa. Reduz o limite de Cura Significativa para gerar Fé de 15% para 12% da Vida Base.', effect: {},
         mechanicRefs: ['clerigo:faith'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a eficiência da cura direta ativa (+3%).' }, { label: 'Fé', role: 'mecanica', description: 'Facilita gerar Fé por cura (limite cai de 15% para 12%).' }] },
-      { name: 'Cura Divina', desc: 'Habilidade ativa: recupera 35% da Vida Base, ampliado por Poder de Suporte e bônus de cura. Gera Fé quando a cura efetiva atinge o limite de Cura Significativa. Recarga de 4 ciclos.',
+      { name: 'Cura Divina', desc: 'Habilidade ativa: recupera 35% da Vida Base, ampliado por Poder de Cura e bônus de cura. Gera Fé quando a cura efetiva atinge o limite de Cura Significativa. Recarga de 4 ciclos.',
         mechanicRefs: ['clerigo:faith'],
-        ability: { name: 'Cura Divina', desc: 'Recupera 35% da Vida Base, com Poder de Suporte e bônus de cura; pode gerar Fé pela cura efetiva.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'heal', healPct: 0.35, faithGainOnHeal: true } },
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a quantidade curada através do Poder de Suporte.' }, { label: 'Fé', role: 'mecanica', description: 'Gera Fé se a cura efetiva atingir o limite de Cura Significativa.' }] },
+        ability: { name: 'Cura Divina', desc: 'Recupera 35% da Vida Base, com Poder de Cura e bônus de cura; pode gerar Fé pela cura efetiva.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'heal', healPct: 0.35, faithGainOnHeal: true } },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a quantidade curada através do Poder de Cura.' }, { label: 'Fé', role: 'mecanica', description: 'Gera Fé se a cura efetiva atingir o limite de Cura Significativa.' }] },
       { name: 'Véu da Alma', desc: '+2.5% de defesa mágica. Enquanto você tiver um DOT, debuff ou silêncio ativo, sua cura direta ativa ganha +5% de eficiência final.', effect: { mdefPct: 0.025 },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica e a eficiência da cura direta enquanto debuffado (+5%).' }] },
       { name: 'Graça Transbordante', desc: 'Desbloqueia Graça: 40% do overheal de curas diretas ativas vira Graça (cap de 8% da vida máxima efetiva, duração de 3 ciclos).', effect: {},
@@ -314,7 +314,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Escudo Sagrado', desc: 'Custa 1 Fé. Cria uma barreira de 8% da vida máxima efetiva; gera Fé se absorver o suficiente.',
           cooldown: 7, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.80 }, { type: 'resourceAtLeast', resource: 'faith', value: 1 }] },
-          effect: { kind: 'shield', shieldPct: 0.08, faithCost: 1, shieldFaithThresholdPct: 0.08 },
+          effect: { kind: 'shield', shieldPct: 0.08, faithCost: 1, shieldFaithThresholdPct: 0.08, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base da barreira.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé; pode gerar +1 Fé de volta se absorver o suficiente.' }] },
       { name: 'Coração Devoto', desc: '+12 de vida máxima. Enquanto sua vida estiver abaixo de 35%, a conversão de overheal em Graça aumenta em +10 pontos percentuais.', effect: { maxHpFlat: 12 },
@@ -329,7 +329,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           extraEffects: [{ kind: 'cleanseOne' }],
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 3 Fé; gera no máximo +1 Fé pelo cast, mesmo curando e purificando.' }, { label: 'Graça', role: 'mecanica', description: 'O overheal pode virar Graça.' }] },
-      { name: 'Ressurreição Menor', desc: 'Habilidade ativa: custa 4 Fé — só com vida abaixo de 30% — abre uma janela de 3 ciclos que impede sua morte uma vez por tentativa. Recupera 40% da Vida Base, ampliado por Poder de Suporte, limitado a 25% da Vida Máxima. Recarga de 15 ciclos.',
+      { name: 'Ressurreição Menor', desc: 'Habilidade ativa: custa 4 Fé — só com vida abaixo de 30% — abre uma janela de 3 ciclos que impede sua morte uma vez por tentativa. Recupera 40% da Vida Base, limitado a 25% da Vida Máxima. Recarga de 15 ciclos.',
         mechanicRefs: ['clerigo:faith'],
         ability: {
           name: 'Ressurreição Menor', desc: 'Custa 4 Fé. Por 3 ciclos, um dano fatal é evitado uma vez por tentativa, restaurando parte da vida.',
@@ -357,7 +357,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Escudo da Retidão', desc: 'Cria uma barreira de 7% da vida máxima efetiva e Consagração por 3 ciclos.',
           cooldown: 6, condition: { type: 'always' },
-          effect: { kind: 'shield', shieldPct: 0.07, shieldFaithThresholdPct: 0.08, consecrationRoundsOnCast: 3 },
+          effect: { kind: 'shield', shieldPct: 0.07, shieldFaithThresholdPct: 0.08, consecrationRoundsOnCast: 3, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria Consagração por 3 ciclos.' }, { label: 'Fé', role: 'mecanica', description: 'Pode gerar Fé se a barreira absorver o suficiente.' }] },
       { name: 'Guarda da Alma', desc: '+2% de defesa física. Enquanto tiver uma barreira normal ativa, +3% de defesa física adicional (não conta Graça).', effect: { defPct: 0.02 },
@@ -368,7 +368,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Vigília', desc: '+2.5% de defesa mágica. Enquanto Consagração estiver ativa, o primeiro tick de DOT que você sofrer nela causa -15% de dano.', effect: { mdefPct: 0.025 },
         mechanicRefs: ['clerigo:consecration'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica.' }, { label: 'Consagração', role: 'mecanica', description: 'Reduz o primeiro tick de DOT sofrido em cada Consagração (-15%).' }] },
-      { name: 'Intercessão', desc: 'Quando uma barreira normal criada por você é completamente destruída por dano durante Consagração, recupera 4% da Vida Base, ampliado por Poder de Suporte (uma vez por barreira).', effect: {},
+      { name: 'Intercessão', desc: 'Quando uma barreira normal criada por você é completamente destruída por dano durante Consagração, recupera 4% da Vida Base, ampliado por Poder de Cura (uma vez por barreira).', effect: {},
         mechanicRefs: ['clerigo:consecration'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura gerada.' }, { label: 'Consagração', role: 'mecanica', description: 'Só ativa enquanto Consagração está ativa.' }] },
       { name: 'Golpe Sagrado', desc: 'Habilidade mágica ativa: golpe com 1.45x de MATK (1.70x durante Consagração). Acertar durante Consagração estende sua duração em +1 ciclo. Recarga de 4 ciclos.',
@@ -379,7 +379,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'bigHit', dmgMult: 1.45, consecrationDmgMultBonus: 0.25, extendConsecrationOnHit: 1 },
         },
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano mágico do golpe.' }, { label: 'Consagração', role: 'mecanica', description: 'Golpe mais forte e estende a duração enquanto ativa.' }, { attribute: 'wis', label: 'SAB', role: 'terciario', description: 'Sinergia defensiva indireta com o resto da árvore.' }] },
-      { name: 'Voto de Proteção', desc: 'Habilidade ativa: custa 1 Fé — cria/renova Consagração por 4 ciclos e reduz o dano direto recebido em 8% (até 12% com Poder de Suporte) por 3 ciclos, além de +8 pontos percentuais de Tenacidade. Recarga de 7 ciclos.',
+      { name: 'Voto de Proteção', desc: 'Habilidade ativa: custa 1 Fé — cria/renova Consagração por 4 ciclos e reduz o dano direto recebido em 8% por 3 ciclos, além de +8 pontos percentuais de Tenacidade. Recarga de 7 ciclos.',
         mechanicRefs: ['clerigo:faith', 'clerigo:consecration'],
         ability: {
           name: 'Voto de Proteção', desc: 'Custa 1 Fé. Cria Consagração e reduz o dano recebido (8-12%) por 3 ciclos, com Tenacidade extra.',
@@ -394,7 +394,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Martelo da Fé', desc: 'Custa 1 Fé. Golpe de 1.80x de MATK que cria uma barreira baseada no dano causado.',
           cooldown: 5, condition: { type: 'all', conditions: [{ type: 'stateActive', state: 'consecration' }, { type: 'resourceAtLeast', resource: 'faith', value: 1 }] },
-          effect: { kind: 'bigHit', dmgMult: 1.80, faithCost: 1, shieldFromDamagePct: 0.20, shieldFromDamageCapPct: 0.06 },
+          effect: { kind: 'bigHit', dmgMult: 1.80, faithCost: 1, shieldFromDamagePct: 0.20, shieldFromDamageCapPct: 0.06, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano do golpe.' }, { attribute: 'wis', label: 'SAB', role: 'secundario', description: 'Aumenta a barreira criada a partir do dano.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé.' }, { label: 'Consagração', role: 'mecanica', description: 'Só pode ser usada durante Consagração.' }] },
       { name: 'Muralha Divina', desc: 'Habilidade ativa: custa 3 Fé — cria uma barreira de 12% da vida máxima efetiva (até 24%) e Consagração por 4 ciclos. Enquanto essa barreira tiver vida, -10% de dano direto recebido. Recarga de 12 ciclos.',
@@ -402,7 +402,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Muralha Divina', desc: 'Custa 3 Fé. Cria uma grande barreira e Consagração por 4 ciclos; enquanto a barreira durar, -10% de dano recebido.',
           cooldown: 12, condition: { type: 'resourceAtLeast', resource: 'faith', value: 3 },
-          effect: { kind: 'divineWall', faithCost: 3, shieldPct: 0.12, consecrationRoundsOnCast: 4 },
+          effect: { kind: 'divineWall', faithCost: 3, shieldPct: 0.12, consecrationRoundsOnCast: 4, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 3 Fé.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria Consagração por 4 ciclos.' }] },
       { name: 'Santuário Vivo', desc: 'Consagração ganha +1 ciclo de duração máxima. Uma vez por instância, se um golpe direto (após mitigação, antes de barreiras) causaria pelo menos 15% da vida máxima efetiva, ele é reduzido em mais 20% — e a Consagração termina imediatamente.', effect: {},
@@ -458,7 +458,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'bigHit', dmgMult: 1.75, dmgMultPerJudgmentStack: 0.20, judgmentConsumeMax: 3, faithCost: 1 },
         },
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano do golpe.' }, { label: 'Julgamento', role: 'mecanica', description: 'Consome até 3 stacks para dano extra; se errar, os stacks não são consumidos.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé, gasta mesmo se o golpe errar.' }] },
-      { name: 'Sabedoria do Julgamento', desc: '+2,5% de defesa mágica. Quando uma habilidade consumir 3 ou mais Julgamentos de uma vez, recupera 2% da Vida Base, ampliado por Poder de Suporte.', effect: { mdefPct: 0.025 },
+      { name: 'Sabedoria do Julgamento', desc: '+2,5% de defesa mágica. Quando uma habilidade consumir 3 ou mais Julgamentos de uma vez, recupera 2% da Vida Base, ampliado por Poder de Cura.', effect: { mdefPct: 0.025 },
         mechanicRefs: ['clerigo:judgment'],
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura ao consumir 3+ Julgamentos de uma vez.' }, { label: 'Julgamento', role: 'mecanica', description: 'Só ativa ao consumir 3 ou mais stacks na mesma ação.' }] },
       { name: 'Ira Consumidora', desc: 'Habilidade ativa: custa 1 Fé — só com 3+ Julgamentos — golpe de 1.55x +0.16x por Julgamento ATUAL (até 2.35x com 5), sem consumir stacks, mas reduz sua duração restante em 2 ciclos (mínimo 1). Recarga de 6 ciclos.',
@@ -516,7 +516,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Escudo Colossal', desc: 'Custa 25 Determinação. Barreira de 10% da vida máxima efetiva (até 14%) por 4 ciclos; nega o primeiro atordoamento/sono.',
           cooldown: 8, condition: { type: 'resourceAtLeast', resource: 'determination', value: 25 },
-          effect: { kind: 'colossalShield', determinationCost: 25, shieldPctBase: 0.10, shieldPctPerVit: 0.001, shieldPctCap: 0.04, shieldRounds: 4 },
+          effect: { kind: 'colossalShield', determinationCost: 25, shieldPctBase: 0.10, shieldPctPerVit: 0.001, shieldPctCap: 0.04, shieldRounds: 4, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta o tamanho da barreira (até +4pp).' }, { label: 'Determinação', role: 'mecanica', description: 'Custa 25 Determinação.' }, { label: 'Retaliação', role: 'mecanica', description: 'Se a barreira for destruída por dano, pode gerar uma carga.' }] },
       { name: 'Última Guarda', desc: 'Habilidade ativa: só com vida abaixo de 25% — por 2 ciclos, sua vida não pode cair abaixo de 1 (não cura). Ao terminar, se você sobreviveu, recebe uma pequena barreira (4%-6% da vida máxima, por VIT) por 2 ciclos. Uma vez por inimigo.',
@@ -524,7 +524,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Última Guarda', desc: 'Sua vida não pode cair abaixo de 1 por 2 ciclos; ao terminar, recebe uma pequena barreira. Uma vez por inimigo.',
           cooldown: 20, condition: { type: 'hpBelow', pct: 0.25 },
-          effect: { kind: 'lastGuard', lastGuardRounds: 2, shieldPctBase: 0.04, shieldPctPerVit: 0.0005, shieldPctCap: 0.02, shieldRounds: 2 },
+          effect: { kind: 'lastGuard', lastGuardRounds: 2, shieldPctBase: 0.04, shieldPctPerVit: 0.0005, shieldPctCap: 0.02, shieldRounds: 2, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a barreira recebida ao final do efeito (até +2pp).' }] },
       { name: 'Núcleo de Aço', desc: '+10 de vida máxima. +2% de defesa. Enquanto sua vida estiver abaixo de 35%, redução adicional de dano direto (por VIT, não afeta DOT).', effect: { maxHpFlat: 10, defPct: 0.02 },
@@ -620,8 +620,8 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         scaling: [{ label: 'Momentum', role: 'mecanica', description: 'Aumenta o teto de Momentum daquele combate e concede bônus perto do máximo atual.' }, { attribute: 'str', label: 'FOR', role: 'secundario', description: 'Contribui para o dano beneficiado.' }] },
     ]),
     buildPath('cavaleiro', 'comando', 'Comando', '#e0c060', [
-      { name: 'Voz de Comando', desc: '+1.5% de precisão. A eficiência das suas Ordens sobre Poder de Suporte sobe de 50% para 60% (teto continua 30%).', effect: { accuracyPct: 0.015 },
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o Poder de Suporte usado pelas Ordens.' }, { attribute: 'dex', label: 'DES', role: 'secundario', description: 'Aumenta a precisão.' }] },
+      { name: 'Voz de Comando', desc: '+1.5% de precisão. A eficiência da SAB nas suas Ordens sobe de 50% para 60% (teto continua 30%).', effect: { accuracyPct: 0.015 },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Alimenta diretamente as Ordens.' }, { attribute: 'dex', label: 'DES', role: 'secundario', description: 'Aumenta a precisão.' }] },
       { name: 'Presença de Líder', desc: '+8 de vida máxima. Se VIT total for 20 ou mais, buffs temporários de Comando aplicados a você duram +1 ciclo (não afeta recarga).', effect: { maxHpFlat: 8 },
         mechanicRefs: ['cavaleiro:orders'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima e, a partir de 20 de VIT, a duração dos buffs de Comando.' }] },
@@ -629,7 +629,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa e a Tenacidade (até +3%, respeitando o teto global).' }] },
       { name: 'Estratégia', desc: 'Redução de recarga SOMENTE para habilidades de Comando, por SAB total (até 7%). Não afeta Bastião, Investida ou outras classes.', effect: {},
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Reduz a recarga apenas das habilidades de Comando.' }] },
-      { name: 'Ordem: Ataque', desc: 'Habilidade ativa: golpe com 1.25x de ATK físico. Ao acertar, +10% de ATK por 3 ciclos (escalado por Poder de Suporte). Gera +1 Ordem mesmo se errar. Recarga de 5 ciclos.',
+      { name: 'Ordem: Ataque', desc: 'Habilidade ativa: golpe com 1.25x de ATK físico. Ao acertar, +10% de ATK por 3 ciclos (escalado diretamente por SAB). Gera +1 Ordem mesmo se errar. Recarga de 5 ciclos.',
         mechanicRefs: ['cavaleiro:orders'],
         ability: {
           name: 'Ordem: Ataque', desc: 'Golpe de 1.25x de ATK; ao acertar, +10% de ATK por 3 ciclos. Gera +1 Ordem mesmo se errar.',
@@ -649,7 +649,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Disciplina Inabalável', desc: 'Cada efeito negativo realmente aplicado a você soma um contador; ao chegar a 2, gera +1 Ordem e reinicia (no máximo uma vez por ciclo). Efeitos resistidos não contam.', effect: {},
         mechanicRefs: ['cavaleiro:orders'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Resistência indireta via Tenacidade.' }, { label: 'Ordens', role: 'mecanica', description: 'Transforma pressão inimiga em Ordens.' }] },
-      { name: 'Ordem: Avançar', desc: 'Habilidade ativa: custa 1 Ordem — golpe com 1.45x de ATK físico. Ao acertar, +8% de velocidade de ação e +5% de dano direto por 3 ciclos (escalados por Poder de Suporte). Recarga de 6 ciclos.',
+      { name: 'Ordem: Avançar', desc: 'Habilidade ativa: custa 1 Ordem — golpe com 1.45x de ATK físico. Ao acertar, +8% de velocidade de ação e +5% de dano direto por 3 ciclos (escalados diretamente por SAB). Recarga de 6 ciclos.',
         mechanicRefs: ['cavaleiro:orders'],
         ability: {
           name: 'Ordem: Avançar', desc: 'Custa 1 Ordem. Golpe de 1.45x de ATK; ao acertar, +8% de velocidade e +5% de dano por 3 ciclos.',
@@ -657,12 +657,12 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'bigHit', dmgMult: 1.45, orderCost: 1, selfBuffSpeedPctOnHit: 0.08, selfBuffAtkPctOnHit: 0.05, selfBuffRoundsOnHit: 3 },
         },
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o dano do golpe.' }, { attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta os buffs gerados.' }, { label: 'Ordens', role: 'mecanica', description: 'Custa 1 Ordem, gasta mesmo se o golpe errar.' }] },
-      { name: 'Ordem: Resistir', desc: 'Habilidade ativa: custa 1 Ordem — só com vida abaixo de 75% — cria uma barreira de 9% da vida máxima efetiva (até 12% por VIT) e reduz o dano direto recebido em 10% por 3 ciclos (escalado por Poder de Suporte). Recarga de 7 ciclos.',
+      { name: 'Ordem: Resistir', desc: 'Habilidade ativa: custa 1 Ordem — só com vida abaixo de 75% — cria uma barreira de 9% da vida máxima efetiva (até 12% por VIT) e reduz o dano direto recebido em 10% por 3 ciclos, sem usar Poder de Cura ou Poder de Barreira. Recarga de 7 ciclos.',
         mechanicRefs: ['cavaleiro:orders'],
         ability: {
           name: 'Ordem: Resistir', desc: 'Custa 1 Ordem. Barreira de 9% da vida máxima efetiva (até 12%) e -10% de dano recebido por 3 ciclos.',
           cooldown: 7, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.75 }, { type: 'resourceAtLeast', resource: 'orders', value: 1 }] },
-          effect: { kind: 'orderResist', orderCost: 1, shieldPctBase: 0.09, shieldPctPerVit: 0.0008, shieldPctCap: 0.03, bonusDmgTakenReductionPct: 0.10, buffRounds: 3 },
+          effect: { kind: 'orderResist', orderCost: 1, shieldPctBase: 0.09, shieldPctPerVit: 0.0008, shieldPctCap: 0.03, bonusDmgTakenReductionPct: 0.10, buffRounds: 3, scalesWithBarrierPower: true },
         },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a barreira criada (até +3pp).' }, { attribute: 'wis', label: 'SAB', role: 'secundario', description: 'Aumenta a redução de dano recebido.' }, { label: 'Ordens', role: 'mecanica', description: 'Custa 1 Ordem.' }] },
       { name: 'Contraordem', desc: '+2% de defesa mágica. Sempre que uma Ordem for consumida, reduz em 1 ciclo a recarga das OUTRAS habilidades de Comando (uma vez por ação; não afeta a própria habilidade nem Bastião/Investida).', effect: { mdefPct: 0.02 },
@@ -676,7 +676,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           effect: { kind: 'bigHit', dmgMult: 2.10, orderCost: 2, executeBaseMult: 2.10, executePerHpBelowPct: 0.015, executeMultCap: 0.45, executeSupremeExtraCap: 0.45 },
         },
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o dano-base do golpe.' }, { label: 'Ordens', role: 'mecanica', description: 'Custa 2 Ordens; quanto menor a vida do inimigo abaixo de 30%, maior o dano.' }] },
-      { name: 'Estandarte do Rei', desc: 'Habilidade ativa: por 4 ciclos, +10% de ATK, +12% de defesa e +10 pontos percentuais de Tenacidade (escalados por Poder de Suporte). Gera +1 Ordem ao ativar. A primeira outra habilidade de Comando usada durante o efeito reembolsa +1 Ordem (uma vez). Recarga de 15 ciclos.',
+      { name: 'Estandarte do Rei', desc: 'Habilidade ativa: por 4 ciclos, +10% de ATK, +12% de defesa e +10 pontos percentuais de Tenacidade (escalados diretamente por SAB). Gera +1 Ordem ao ativar. A primeira outra habilidade de Comando usada durante o efeito reembolsa +1 Ordem (uma vez). Recarga de 15 ciclos.',
         mechanicRefs: ['cavaleiro:orders'],
         ability: {
           name: 'Estandarte do Rei', desc: 'Por 4 ciclos: +10% ATK, +12% DEF, +10pp de Tenacidade. Gera +1 Ordem; a primeira outra habilidade de Comando usada reembolsa +1 Ordem.',
@@ -954,7 +954,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       // existir (base 35% + bônus de Pele Endurecida, até 44% total); novos
       // pacotes pagam em 4 envTicks (era 3); com vida abaixo de 35%, dano
       // dos ticks de Dor (só o de Dor) reduzido em 20%.
-      { name: 'Inquebrável', desc: 'A capacidade máxima de Dor sobe +5 pontos percentuais (até 44% com Pele Endurecida no máximo) e novos pacotes passam a pagar em 4 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {}, mechanicRefs: ['barbaro:pain'],
+      { name: 'Inquebrável', desc: 'A capacidade máxima de Dor sobe +5 pontos percentuais (até 44% com Pele Endurecida no máximo) e novos pacotes passam a pagar em 6 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {}, mechanicRefs: ['barbaro:pain'],
         scaling: [
           { attribute: 'vit', label: 'VIT', role: 'terciario', description: 'Indiretamente via vida máxima e a capacidade de Dor que Pele Endurecida já escalou.' },
           { label: 'Dor', role: 'mecanica', description: 'Aumenta o teto de Dor e sua janela de pagamento.' },
@@ -1564,7 +1564,9 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Ciclo da Natureza', desc: 'Cura 6% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.06 } },
     ]),
   ],
-  bardo: [
+  /* Legacy Bard table retained only as migration context; the live table is
+     assigned declaratively below after all redesigned class tables. */
+  /* bardo: [
     buildPath('bardo', 'cancao-guerra', 'Canção de Guerra', '#c9663c', [
       { name: 'Reflexo Assassino', desc: '+1% de chance de crítico.', effect: { critPct: 0.01 } },
       { name: 'Potência Crua', desc: '+2 de dano.', effect: { flatBonusDmg: 2 } },
@@ -1631,7 +1633,8 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: { name: 'Sinfonia da Vida', desc: 'Recupera 53% da vida máxima.', cooldown: 7, condition: { type: 'always' }, effect: { kind: 'heal', healPct: 0.53 } } },
       { name: 'Aplauso Vital', desc: 'Cura 8% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.08 } },
     ]),
-  ],
+  ], */
+  bardo: [],
   necromante: [
     buildPath('necromante', 'decomposicao', 'Decomposição', '#3a3a4a', [
       { name: 'Ímpeto Místico', desc: '+2 de dano mágico.', effect: { flatBonusMagicDmg: 2 } },
@@ -1724,14 +1727,14 @@ SKILL_TREES.necromante = [
     { name: 'Poder da Ruína', desc: '+3% de MATK. Técnica de Decomposição que gasta Alma contra 5 stacks recebe até +3% dano direto conforme INT.', effect: { magicDmgPct: 0.03 }, mechanicRefs: ['necromante:souls', 'necromante:decomposition'], scaling: necroInt('+0,075 ponto percentual por INT, máximo +3%.') },
     { name: 'Colheita das Almas', desc: 'Requer 2 Decomposições. 1,60x MATK e +0,16x por até 3 stacks consumidos; consumir 3 gera 1 Alma. Recarga: 5.', ability: { name: 'Colheita das Almas', desc: 'Consome até 3 Decomposições para dano e uma possível Alma.', cooldown: 5, condition: { type: 'enemyStacksAtLeast', stackId: 'decomposition', stacks: 2 }, effect: { kind: 'bigHit', dmgMult: 1.60, dmgType: 'magical', decompositionConsumeMax: 3, soulGainOnConsumeExact: 3, necromancerTag: 'decomposition' } }, mechanicRefs: ['necromante:decomposition', 'necromante:souls'], scaling: necroInt('+0,16x por stack consumido, máximo 2,08x.') },
     { name: 'Apocalipse Necrótico', desc: 'Custa 3 Almas. Requer 5 stacks e Praga. 1,85x MATK +70% do dano restante da Praga, limitado a 1,00x MATK; consome setup ao acertar. Recarga: 9.', ability: { name: 'Apocalipse Necrótico', desc: 'Detona a Praga e toda a Decomposição.', cooldown: 9, condition: { type: 'all', conditions: [{ type: 'resourceAtLeast', resource: 'souls', value: 3 }, { type: 'enemyStacksEqual', stackId: 'decomposition', stacks: 5 }, { type: 'periodicEffectActive', effectId: 'necromante:plague' }] }, effect: { kind: 'bigHit', dmgMult: 1.85, dmgType: 'magical', soulCost: 3, plagueDetonatePct: 0.70, plagueDetonateCapMult: 1, necromancerTag: 'decomposition' } }, mechanicRefs: ['necromante:souls', 'necromante:decomposition', 'necromante:plague'], scaling: necroInt('O bônus usa os ticks restantes e tem cap de 1,00x MATK atual.') },
-    { name: 'Sede dos Mortos', desc: 'Morte com Praga ou 3+ Decomposições cura 4% da Vida Base com Poder de Suporte e permite carregar até 3 Almas.', mechanicRefs: ['necromante:souls', 'necromante:decomposition', 'necromante:plague'], scaling: necroWis('SAB melhora a cura através de Poder de Suporte.') },
+    { name: 'Sede dos Mortos', desc: 'Morte com Praga ou 3+ Decomposições cura 4% da Vida Base com Poder de Cura e permite carregar até 3 Almas.', mechanicRefs: ['necromante:souls', 'necromante:decomposition', 'necromante:plague'], scaling: necroWis('SAB melhora a cura através de Poder de Cura.') },
   ]),
   buildPath('necromante', 'drenar-vida', 'Drenar Vida', '#4a2a5a', [
     { name: 'Resistência Íntima', desc: '+8 de Vida Máxima. Barreiras do Escudo de Ossos recebem até +5% de eficiência conforme SAB.', effect: { maxHpFlat: 8 }, mechanicRefs: ['necromante:servants'], scaling: necroWis('+0,15% por SAB, máximo +5% multiplicativo.') },
     { name: 'Vínculo Funerário', desc: '+2% de MDEF. Dano dos Servos recebe até +4% conforme INT.', effect: { mdefPct: 0.02 }, mechanicRefs: ['necromante:servants'], scaling: necroInt('+0,10 ponto percentual por INT, máximo +4%.') },
     { name: 'Ossos Duros', desc: '+2% de DEF. Com Servo ativo, recebe até 3% menos dano direto conforme SAB.', effect: { defPct: 0.02 }, mechanicRefs: ['necromante:servants'], scaling: necroWis('-0,10 ponto percentual por SAB, máximo -3%.') },
     { name: 'Sangue Preservado', desc: '+8 de Vida Máxima. Curas de Sangue Pelo Sangue e Voracidade recebem até +5% conforme SAB.', effect: { maxHpFlat: 8 }, scaling: necroWis('+0,15% por SAB, máximo +5% multiplicativo.') },
-    { name: 'Escudo de Ossos', desc: 'Custa 1 Alma e requer espaço. Cria barreira de 5% da Vida Máxima com Poder de Suporte e invoca um Servo. Recarga: 6.', ability: { name: 'Escudo de Ossos', desc: 'Barreira e um Servo Ósseo de 4 ataques.', cooldown: 6, condition: { type: 'all', conditions: [{ type: 'resourceAtLeast', resource: 'souls', value: 1 }, { type: 'summonCountBelow' }] }, effect: { kind: 'boneShield', soulCost: 1, summonCount: 1, summonAttacks: 4, barrierBasePct: 0.05 } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('SAB fortalece a barreira; INT fortalece o Servo.') },
+    { name: 'Escudo de Ossos', desc: 'Custa 1 Alma e requer espaço. Cria barreira de 5% da Vida Máxima com Poder de Barreira e invoca um Servo. Recarga: 6.', ability: { name: 'Escudo de Ossos', desc: 'Barreira e um Servo Ósseo de 4 ataques.', cooldown: 6, condition: { type: 'all', conditions: [{ type: 'resourceAtLeast', resource: 'souls', value: 1 }, { type: 'summonCountBelow' }] }, effect: { kind: 'boneShield', soulCost: 1, summonCount: 1, summonAttacks: 4, barrierBasePct: 0.05, scalesWithBarrierPower: true } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('SAB fortalece a barreira; INT fortalece o Servo.') },
     { name: 'Constituição Fúnebre', desc: '+10 de Vida Máxima. Com 20 SAB, o primeiro Servo de cada inimigo ganha +1 ataque.', effect: { maxHpFlat: 10 }, mechanicRefs: ['necromante:servants'], scaling: necroWis('Máximo uma vez por inimigo.') },
     { name: 'Armadura de Ossos', desc: 'Máximo de Servos passa a 2. Com ao menos um Servo, recebe 4% menos dano direto.', mechanicRefs: ['necromante:servants'], scaling: necroWis('A redução é fixa e não aumenta com dois Servos.') },
     { name: 'Comando Mortuário', desc: '+2,5% de MDEF. Intervalo dos ataques dos Servos cai em até 6% conforme SAB.', effect: { mdefPct: 0.025 }, mechanicRefs: ['necromante:servants'], scaling: necroWis('+0,30% de velocidade por SAB, máximo +6%.') },
@@ -1739,8 +1742,8 @@ SKILL_TREES.necromante = [
     { name: 'Sangue Pelo Sangue', desc: 'Sacrifica o Servo mais antigo para 1,85x MATK +0,08x por ataque restante e cura 22%; sem Servo custa 1 Alma, causa 1,60x e cura 15%. Recarga: 5.', ability: { name: 'Sangue Pelo Sangue', desc: 'Sacrifício ofensivo que drena vida.', cooldown: 5, condition: { type: 'any', conditions: [{ type: 'summonCountAtLeast', count: 1 }, { type: 'resourceAtLeast', resource: 'souls', value: 1 }] }, effect: { kind: 'bigHit', dmgMult: 1.60, dmgType: 'magical', soulCost: 1, sacrificeOldestSummon: true, directHealFromDamagePct: 0.15, directHealCapPct: 0.06, necromancerTag: 'soul' } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroInt('Com Servo, até 2,17x e cura 22%, cap 8% da Vida Base.') },
     { name: 'Véu da Morte', desc: 'Custa 1 Alma. Por 3 ciclos, reduz dano direto em 8%; um Servo pode perder um ataque para elevar um golpe a 15%. Recarga: 8.', ability: { name: 'Véu da Morte', desc: 'Sacrifica vida útil dos Servos por proteção.', cooldown: 8, condition: { type: 'resourceAtLeast', resource: 'souls', value: 1 }, effect: { kind: 'deathVeil', soulCost: 1, buffRounds: 3 } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('Proteção fixa, uma ativação por ação inimiga.') },
     { name: 'Vigor Interior', desc: '+12 de Vida Máxima. Sacrifício voluntário concede até 4% de redução direta conforme VIT por 2 ciclos.', effect: { maxHpFlat: 12 }, mechanicRefs: ['necromante:servants'], scaling: [{ attribute: 'vit', label: 'VIT', role: 'terciario', description: '0,10 ponto percentual por VIT, máximo 4%.' }] },
-    { name: 'Fortaleza de Ossos', desc: 'Custa 2 Almas. Completa o limite de Servos, renova existentes para ao menos 3 ataques e cria barreira de 8%. Recarga: 12.', ability: { name: 'Fortaleza de Ossos', desc: 'Ergue uma legião temporária e uma grande barreira.', cooldown: 12, condition: { type: 'resourceAtLeast', resource: 'souls', value: 2 }, effect: { kind: 'boneFortress', soulCost: 2, summonCount: 2, summonAttacks: 4, summonMaxRefresh: 3, barrierBasePct: 0.08 } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('SAB fortalece a barreira; INT fortalece os Servos.') },
-    { name: 'Voracidade Mortal', desc: 'Abaixo de 40% de Vida, devora todos os Servos e até 3 Almas para curar, até 18% da Vida Máxima, e ganha 12% Roubo de Vida por 3 ciclos. Recarga: 14.', ability: { name: 'Voracidade Mortal', desc: 'Consome sua estrutura para sobreviver.', cooldown: 14, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.40 }, { type: 'any', conditions: [{ type: 'summonCountAtLeast', count: 1 }, { type: 'resourceAtLeast', resource: 'souls', value: 1 }] }] }, effect: { kind: 'mortalVoracity', consumeAllSummons: true, consumeSoulsMax: 3, buffRounds: 3 } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('4% da Vida Base por Servo +3% por Alma, multiplicado por Poder de Suporte.') },
+    { name: 'Fortaleza de Ossos', desc: 'Custa 2 Almas. Completa o limite de Servos, renova existentes para ao menos 3 ataques e cria barreira de 8%. Recarga: 12.', ability: { name: 'Fortaleza de Ossos', desc: 'Ergue uma legião temporária e uma grande barreira.', cooldown: 12, condition: { type: 'resourceAtLeast', resource: 'souls', value: 2 }, effect: { kind: 'boneFortress', soulCost: 2, summonCount: 2, summonAttacks: 4, summonMaxRefresh: 3, barrierBasePct: 0.08, scalesWithBarrierPower: true } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('SAB fortalece a barreira; INT fortalece os Servos.') },
+    { name: 'Voracidade Mortal', desc: 'Abaixo de 40% de Vida, devora todos os Servos e até 3 Almas para curar, até 18% da Vida Máxima, e ganha 12% Roubo de Vida por 3 ciclos. Recarga: 14.', ability: { name: 'Voracidade Mortal', desc: 'Consome sua estrutura para sobreviver.', cooldown: 14, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.40 }, { type: 'any', conditions: [{ type: 'summonCountAtLeast', count: 1 }, { type: 'resourceAtLeast', resource: 'souls', value: 1 }] }] }, effect: { kind: 'mortalVoracity', consumeAllSummons: true, consumeSoulsMax: 3, buffRounds: 3 } }, mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroWis('4% da Vida Base por Servo +3% por Alma, multiplicado por Poder de Cura.') },
     { name: 'Vínculo Eterno com a Morte', desc: 'Servos passam a 5 ataques; preserva um com até 2 ataques entre inimigos. O primeiro Servo que expirar naturalmente gera 1 Alma.', mechanicRefs: ['necromante:souls', 'necromante:servants'], scaling: necroInt('A geração ocorre uma vez por inimigo e nunca por sacrifício.') },
   ]),
   buildPath('necromante', 'ceifador', 'Ceifador', '#c89a2e', [
@@ -1752,7 +1755,7 @@ SKILL_TREES.necromante = [
     { name: 'Essência Ceifada', desc: '+2,5% de MATK. Ganhar Alma prepara até +3% de dano na próxima magia direta por 2 ciclos.', effect: { magicDmgPct: 0.025 }, mechanicRefs: ['necromante:souls'], scaling: necroInt('+0,075 ponto percentual por INT, máximo +3%.') },
     { name: 'Ceifa Ampliada', desc: 'Quando um ataque cruza limite de Alma, próxima magia ganha +8% Dano Crítico por Alma gerada, até +16%, por 2 ciclos.', mechanicRefs: ['necromante:souls'], scaling: necroLuck('O bônus é preparado pelo evento de threshold.') },
     { name: 'Instinto Mortal', desc: '+1,5% de Crítico. Com 4+ Almas, recebe até +3% adicional conforme SOR.', effect: { critPct: 0.015 }, mechanicRefs: ['necromante:souls'], scaling: necroLuck('+0,10 ponto percentual por SOR, máximo +3%.') },
-    { name: 'Colheita de Vida', desc: 'Sempre que uma habilidade gasta Almas, cura 0,75% da Vida Base por Alma, com Poder de Suporte, até 2,25%.', mechanicRefs: ['necromante:souls'], scaling: necroWis('Não gera Alma nem aciona outras curas.') },
+    { name: 'Colheita de Vida', desc: 'Sempre que uma habilidade gasta Almas, cura 0,75% da Vida Base por Alma, com Poder de Cura, até 2,25%.', mechanicRefs: ['necromante:souls'], scaling: necroWis('Não gera Alma nem aciona outras curas.') },
     { name: 'Golpe do Terror', desc: 'Custa 1 Alma. 1,65x MATK e -15% Precisão inimiga por 2 ciclos; se tinha 4+ Almas, também -8% ATK. Recarga: 5.', ability: { name: 'Golpe do Terror', desc: 'Gasta Alma para enfraquecer a presa.', cooldown: 5, condition: { type: 'resourceAtLeast', resource: 'souls', value: 1 }, effect: { kind: 'bigHit', dmgMult: 1.65, dmgType: 'magical', soulCost: 1, necromancerTag: 'reaper' } }, mechanicRefs: ['necromante:souls'], scaling: necroInt('SOR continua governando críticos normais.') },
     { name: 'Toque Final', desc: 'Custa 1 Alma e requer presa abaixo de 40%. 2,10x MATK, +0,10x a cada 10% abaixo do limite, até 2,50x. Recarga: 5.', ability: { name: 'Toque Final', desc: 'Ataque de execução crescente contra Vida baixa.', cooldown: 5, condition: { type: 'all', conditions: [{ type: 'resourceAtLeast', resource: 'souls', value: 1 }, { type: 'enemyHpBelow', pct: 0.40 }] }, effect: { kind: 'bigHit', dmgMult: 2.10, dmgType: 'magical', soulCost: 1, enemyHpExecuteBase: 2.10, enemyHpExecuteThreshold: 0.40, enemyHpExecutePer5Pct: 0.05, enemyHpExecuteCap: 2.50, necromancerTag: 'reaper' } }, mechanicRefs: ['necromante:souls'], scaling: necroInt('A Vida perdida da presa aumenta o multiplicador.') },
     { name: 'Poder Terminal', desc: '+3% de MATK. Contra presa abaixo de 25%, dano mágico direto recebe até +3% conforme INT.', effect: { magicDmgPct: 0.03 }, scaling: necroInt('+0,075 ponto percentual por INT, máximo +3%.') },
@@ -1959,12 +1962,7 @@ SKILL_TREES.druida=[
 // (allocatedAttrs) — the skill tree no longer grants primary attributes at
 // all, only secondary stats (see the 'attribute'-type nodes above).
 export function computeAttributeTotals(classId: ClassId, allocatedAttrs: Attributes): Attributes {
-  const base = CLASSES[classId].baseAttrs;
-  const totals: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
-  for (const key of Object.keys(totals) as AttributeKey[]) {
-    totals[key] = (base[key] ?? 0) + allocatedAttrs[key];
-  }
-  return totals;
+  return totalAttributesFromParts(classId, allocatedAttrs);
 }
 
 // Active abilities the player has unlocked (i.e. "knows"), in tree order —
@@ -2107,7 +2105,7 @@ SKILL_TREES.feiticeiro = [
 // Bardo — COMPOSITOR DO COMBATE.  The legacy nodes above remain in source
 // history, but this declarative table is the live tree used by saves/loadouts.
 const bardScale = (mechanic: string, attribute: AttributeKey = 'wis'): ScalingEntry[] => [
-  { attribute, label: attribute.toUpperCase(), role: 'principal', description: attribute === 'wis' ? 'Aumenta o Poder de Suporte; não é aplicado novamente ao percentual.' : 'Aumenta o canal usado pela habilidade.' },
+  { attribute, label: attribute.toUpperCase(), role: 'principal', description: attribute === 'wis' ? 'Aumenta o canal de cura/barreira; não é aplicado novamente ao percentual.' : 'Aumenta o canal usado pela habilidade.' },
   { label: mechanic, role: 'mecanica', description: 'Estado da performance; respeita os limites da Partitura e é capturado no início do cast.' },
 ];
 const bNode = (name:string, desc:string, effect:SkillEffect = {}, mechanicRefs:string[] = [], scaling?:ScalingEntry[]): NodeSpec => ({ name, desc, effect, mechanicRefs, scaling: scaling ?? bardScale('Partitura') });
@@ -2125,10 +2123,10 @@ SKILL_TREES.bardo = [
     bNode('Cordas de Aço','+3% Dano Crítico; componente físico do Acento recebe DES, até +0,06x.',{critDmgPct:0.03},['bardo:accent'],bardScale('DES total','dex')),
     bNode('Sem Perder o Ritmo','Uma vez por inimigo, erro total de Marcato com Acento devolve Acento.',{},['bardo:accent'],bardScale('Reembolso')),
     bAct('Marcha Implacável','Dois impactos mágicos de 0,63x; Acento adiciona 0,40x ATK.',4,bVoice('marcato','march',{kind:'multiHit',hitCount:2,dmgMultPerHit:0.63,bardAccent:true,bardAccentAtkMult:0.40,bardEncoreEligible:true})),
-    bAct('Grito em Compasso','1,50x MATK; ao acertar, +5% Velocidade por 2 ciclos.',5,bVoice('marcato','march',{kind:'bigHit',dmgMult:1.50,bardEncoreEligible:true})),
+    bAct('Grito em Compasso','1,50x MATK; ao acertar, +5% Velocidade por 2 ciclos.',5,bVoice('marcato','march',{kind:'bigHit',dmgMult:1.50,bardSpeedBuffPct:0.05,bardSpeedBuffRounds:2,bardEncoreEligible:true})),
     bNode('Presença de Palco','+8 Vida Máxima; Fortíssimo reduz 3% do dano direto recebido.',{maxHpFlat:8},['bardo:fortissimo'],bardScale('Fortíssimo')),
     bAct('Solo de Batalha','2,00x MATK; Acento adiciona 0,50x ATK.',7,bVoice('marcato','march',{kind:'bigHit',dmgMult:2.00,bardAccent:true,bardAccentAtkMult:0.50,bardEncoreEligible:true})),
-    bAct('Concerto de Guerra','Finale: requer e consome Ovação; 1,55x MATK + 0,65x ATK.',9,bVoice('finale','march',{kind:'multiHit',hitCount:2,hitDmgMults:[1.55,0.65],bardFinale:true,bardOvationCost:1,bardMagicalHitMults:[1.55],bardPhysicalHitMults:[0.65]}),{ type:'resourceAtLeast',resource:'ovation',value:1 }),
+    bAct('Concerto de Guerra','Finale: requer e consome Ovação; 1,55x MATK + 0,65x ATK. Acento adiciona 0,20x ATK.',9,bVoice('finale','march',{kind:'multiHit',hitCount:2,hitDmgMults:[1.55,0.65],bardFinale:true,bardOvationCost:1,bardAccentAtkMult:0.20,bardMagicalHitMults:[1.55],bardPhysicalHitMults:[0.65]}),{ type:'resourceAtLeast',resource:'ovation',value:1 }),
     bNode('O Palco é Meu','Refrão Marcato prepara Entrada Triunfal: próximo básico acertado causa +30% físico e gera Acento.',{},['bardo:accent','bardo:fortissimo'],bardScale('Entrada Triunfal')),
   ]),
   buildPath('bardo','melodia-sombria','DISSONÂNCIA','#4a2a5a',[
@@ -2141,7 +2139,7 @@ SKILL_TREES.bardo = [
     bNode('Eco Roubado','Desbloqueia Eco 0–2 gerado por Contratempo.',{},['bardo:echo','bardo:countertempo'],bardScale('Eco')),
     bNode('Harmonia Áspera','+3% Dano Crítico; com 2 Ecos, +3% adicionais.',{critDmgPct:0.03},['bardo:echo'],bardScale('Crítico','luk')),
     bNode('Contratempo Perfeito','Contratempo durante Fora de Tom gera +1 Eco adicional (cap 2).',{},['bardo:countertempo','bardo:echo'],bardScale('Eco')),
-    bAct('Trítono','1,45x MATK; com Eco, consome 1 e sobe para 1,70x; ao acertar -6% MDEF por 2 ciclos.',4,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.45,bardEchoCost:1,bardEncoreEligible:true})),
+    bAct('Trítono','1,45x MATK; com Eco, consome 1 e sobe para 1,70x; ao acertar -6% MDEF por 2 ciclos.',4,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.45,bardEchoCost:1,bardMdefDebuffPct:0.06,bardMdefDebuffRounds:2,bardEncoreEligible:true})),
     bAct('Quebra de Compasso','1,15x MATK; aplica Contratempo e -8% dano da próxima ação (ou -14% com 2 Ecos).',5,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.15,bardAppliesCountertempo:true,bardEchoCost:2,bardNextEnemyDamageReductionPct:0.08,bardEncoreEligible:true})),
     bNode('Som que Fica','+2% MDEF; ao consumir Eco, +4pp Tenacidade até a próxima ação.',{mdefPct:0.02},['bardo:echo'],bardScale('Eco')),
     bAct('Ressonância Partida','Requer e consome 2 Ecos; 2,05x MATK, +12% pen; 2,25x contra Fora de Tom.',7,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:2.05,bardEchoCost:2,bardEncoreEligible:true}),{ type:'resourceAtLeast',resource:'echo',value:2 }),
@@ -2153,7 +2151,7 @@ SKILL_TREES.bardo = [
     bNode('Ouvido Absoluto','+1,5pp Precisão; Coringas ofensivas, +2pp.',{accuracyPct:0.015},['bardo:wildcard'],bardScale('Precisão','dex')),
     bNode('Fôlego de Artista','+8 Vida Máxima; após Harmonia, -3% dano direto até próxima ação.',{maxHpFlat:8},['bardo:score'],bardScale('Harmonia')),
     bNode('Respiração Musical','-3% Recarga somente para Improviso.',{cooldownReductionPct:0.03},['bardo:score'],bardScale('Recarga')),
-    bAct('Balada Restauradora','Cura 12% da Base de Cura × Poder de Suporte; escreve Lírica. HP abaixo de 75%.',4,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.12,bardSupportHealPct:0.12,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.75 }),
+  bAct('Balada Restauradora','Cura 12% da Base de Cura × Poder de Cura; escreve Lírica. HP abaixo de 75%.',4,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.12,bardSupportHealPct:0.12,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.75 }),
     bNode('Clareza de Voz','+2pp Tenacidade; após Refrão Lírico, +2pp até a próxima ação.',{},['bardo:score'],bardScale('Tenacidade')),
     bNode('Verso Livre','Desbloqueia Notas Coringa; Harmonia cura 7% em vez de 5%.',{},['bardo:wildcard'],bardScale('Coringa')),
     bNode('Respiração Profunda','+2% MDEF; curas de Improviso ganham até +4% adicionais por SAB.',{mdefPct:0.02},['bardo:wildcard'],bardScale('Cura','wis')),
@@ -2161,7 +2159,7 @@ SKILL_TREES.bardo = [
     bAct('Interlúdio','Cura 7% da Base; reduz 1 ciclo do debuff removível mais antigo. Coringa Harmony First.',4,bVoice('wildcard','improvisation',{kind:'heal',healPct:0.07,bardSupportHealPct:0.07,bardWildcardPolicy:'harmonyFirst',bardEncoreEligible:true}),{ type:'any',conditions:[{type:'hpBelow',pct:0.85},{type:'selfDebuffed'}] }),
     bAct('Verso de Improviso','1,20x MATK. Coringa Refrain First.',5,bVoice('wildcard','improvisation',{kind:'bigHit',dmgMult:1.20,bardWildcardPolicy:'refrainFirst',bardEncoreEligible:true})),
     bNode('Presença Inspiradora','+2% MDEF; enquanto Ovação estiver guardada, +3% DEF.',{mdefPct:0.02},['bardo:ovation'],bardScale('Ovação')),
-    bAct('Hino da Segunda Respiração','Cura 22% Base (25% com Ovação), HP abaixo de 45%; prepara -10% dano inimigo.',7,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.22,bardSupportHealPct:0.22,bardNextEnemyDamageReductionPct:0.10,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.45 }),
+    bAct('Hino da Segunda Respiração','Cura 22% Base (25% com Ovação), HP abaixo de 45%; prepara -10% dano inimigo.',7,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.22,bardSupportHealPct:0.22,bardOvationHealPct:0.25,bardNextEnemyDamageReductionPct:0.10,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.45 }),
     bAct('Bis!','Finale: requer Ovação e Encore Ready; repete payload primário a 55%, sem Nota nem efeitos colaterais.',9,bVoice('finale','improvisation',{kind:'bigHit',bardFinale:true,bardEncore:true,bardOvationCost:1}),{ type:'all',conditions:[{type:'resourceAtLeast',resource:'ovation',value:1},{type:'stateActive',state:'encoreReady'}] }),
     bNode('O Espetáculo Continua','Ao consumir Ovação, prepara Coro da Plateia: uma Nota Lírica fantasma sem cadeia recursiva.',{},['bardo:ovation','bardo:score'],bardScale('Coro da Plateia')),
   ]),

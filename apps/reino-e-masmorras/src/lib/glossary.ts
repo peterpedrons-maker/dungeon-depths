@@ -21,7 +21,8 @@ export const GLOSSARY: GlossaryEntry[] = [
   { id: 'block', title: 'Bloqueio', aliases: ['Bloqueio', 'bloqueio'], shortDescription: 'Chance de reduzir um golpe direto pela metade.', fullDescription: 'Bloqueio tem teto de 60% e reduz em 50% o dano direto de um golpe bloqueado.' },
   { id: 'tenacity', title: 'Tenacidade', aliases: ['Tenacidade', 'tenacidade'], shortDescription: 'Chance de resistir a efeitos negativos.', fullDescription: 'Tenacidade pode impedir a aplicação de dano contínuo, penalidades, silêncio, sono e atordoamento. Não reduz o dano do golpe.' },
   { id: 'speed', title: 'Velocidade', aliases: ['Velocidade', 'velocidade'], shortDescription: 'Reduz o intervalo entre suas ações.', fullDescription: 'Velocidade faz o personagem agir com maior frequência, respeitando o teto global.' },
-  { id: 'support', title: 'Poder de Suporte', aliases: ['Poder de Suporte'], shortDescription: 'Amplia curas, barreiras e certos bônus.', fullDescription: 'Poder de Suporte vem principalmente de SAB e multiplica a magnitude de habilidades de suporte. Ele não transforma INT em cura.' },
+  { id: 'healing', title: 'Poder de Cura', aliases: ['Poder de Cura', 'poder de cura'], shortDescription: 'Aumenta curas explicitamente escaláveis.', fullDescription: 'Poder de Cura vem de SAB e de afixos compatíveis. Ele afeta apenas curas marcadas para usar este canal; não altera Roubo de Vida, poções, regeneração de Vida Máxima ou prevenções de morte.' },
+  { id: 'barrier', title: 'Poder de Barreira', aliases: ['Poder de Barreira', 'poder de barreira'], shortDescription: 'Aumenta barreiras explicitamente escaláveis.', fullDescription: 'Poder de Barreira vem de SAB e de afixos compatíveis. A barreira é calculada após seus próprios escalamentos e respeita o teto da habilidade. Égide não é uma barreira e não usa este poder.' },
   { id: 'lifesteal', title: 'Roubo de Vida', aliases: ['Roubo de Vida', 'roubo de vida'], shortDescription: 'Recupera Vida a partir do dano direto causado.', fullDescription: 'Roubo de Vida recupera uma fração do dano direto efetivamente causado. Não é uma cura direta ativa.' },
   { id: 'cooldown', title: 'Recarga', aliases: ['Recarga', 'recarga'], shortDescription: 'Ciclos necessários para usar a habilidade novamente.', fullDescription: 'A Recarga começa quando a habilidade é usada e pode ser reduzida por efeitos de redução de recarga.' },
   { id: 'str', title: 'FOR', aliases: ['FOR'], shortDescription: 'Força.', fullDescription: 'FOR aumenta principalmente o poder físico.' },
@@ -29,7 +30,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   { id: 'agi', title: 'AGI', aliases: ['AGI'], shortDescription: 'Agilidade.', fullDescription: 'AGI aumenta principalmente Velocidade e Evasão.' },
   { id: 'vit', title: 'VIT', aliases: ['VIT'], shortDescription: 'Vitalidade.', fullDescription: 'VIT aumenta principalmente Vida Máxima e defesa física.' },
   { id: 'int', title: 'INT', aliases: ['INT'], shortDescription: 'Inteligência.', fullDescription: 'INT aumenta principalmente MATK. Não aumenta diretamente as curas do Clérigo.' },
-  { id: 'wis', title: 'SAB', aliases: ['SAB'], shortDescription: 'Sabedoria.', fullDescription: 'SAB aumenta principalmente MDEF, Poder de Suporte e Tenacidade.' },
+  { id: 'wis', title: 'SAB', aliases: ['SAB'], shortDescription: 'Sabedoria.', fullDescription: 'SAB aumenta principalmente MDEF, Poder de Cura, Poder de Barreira e Tenacidade.' },
   { id: 'luk', title: 'SOR', aliases: ['SOR'], shortDescription: 'Sorte.', fullDescription: 'SOR aumenta principalmente Crítico e bônus de descoberta de itens.' },
 ];
 

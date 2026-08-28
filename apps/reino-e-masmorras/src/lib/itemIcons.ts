@@ -1,6 +1,10 @@
 import type { CSSProperties } from 'react';
-import { AccessoryType, ClassId, EquipmentItem } from '../types/game';
-import { OFFHAND_KIND, OffhandKind, WEIGHT_GROUP, WeightGroup } from './itemTiers';
+import type { AccessoryType, ClassId, EquipmentItem } from '../types/game';
+import { OFFHAND_KIND, WEIGHT_GROUP } from './itemTiers.ts';
+import type { OffhandKind, WeightGroup } from './itemTiers.ts';
+import { visualTierForItem } from './itemVisuals.ts';
+export { VISUAL_MAX_TIER } from './itemVisuals.ts';
+export { visualTierForItem } from './itemVisuals.ts';
 
 import weaponGuerreiro from '../assets/items/weapon-guerreiro.webp';
 import weaponMago from '../assets/items/weapon-mago.webp';
@@ -40,7 +44,8 @@ interface Sheet {
   aspect: number;
 }
 
-// Each sheet is a 5-column x 2-row grid covering tiers 1-10 (see
+// Each sheet is a 5-column x 2-row grid covering tiers 1-10. Tier 11
+// deliberately reuses Tier 10 art until a third row is commissioned (see
 // KIT-DE-ARTE.md's "Ícones de Itens" section).
 const WEAPON_SHEET: Partial<Record<ClassId, Sheet>> = {
   guerreiro: { url: weaponGuerreiro, aspect: 0.3895 },
@@ -119,7 +124,7 @@ export interface ItemSheetStyle {
 export function itemSheetStyle(item: EquipmentItem): ItemSheetStyle | null {
   const sheet = sheetFor(item);
   if (!sheet) return null;
-  const tier = Math.max(1, Math.min(10, Math.round(item.tier)));
+  const tier = visualTierForItem(item.tier);
   const col = (tier - 1) % SHEET_COLS;
   const row = Math.floor((tier - 1) / SHEET_COLS);
   return {

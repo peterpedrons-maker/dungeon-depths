@@ -107,7 +107,7 @@ export const VOTO_PROTECAO_BUFF_ROUNDS = 3;
 export const MARTELO_DA_FE_MULT = 1.80;
 export const MARTELO_DA_FE_SHIELD_FROM_DMG_PCT = 0.20;
 export const MARTELO_DA_FE_SHIELD_CAP_PCT = 0.06; // fração do EffectiveMaxHp
-export const MARTELO_DA_FE_SUPPORT_FACTOR = 0.50;
+export const MARTELO_DA_FE_BARRIER_FACTOR = 0.50;
 // Muralha Divina (clerigo:retidao:13).
 export const MURALHA_DIVINA_SHIELD_PCT = 0.12;
 export const MURALHA_DIVINA_SHIELD_CAP_PCT = 0.24;
@@ -223,14 +223,14 @@ export function clericBaseHp(baseHp: number, level: number): number {
 export function clericDirectHealAmount(
   baseHp: number,
   healPct: number,
-  supportPowerPct: number,
+  healingPowerPct: number,
   healEfficiencyPct = 0,
 ): number {
-  return Math.round(baseHp * healPct * (1 + supportPowerPct) * (1 + healEfficiencyPct));
+  return Math.round(baseHp * healPct * (1 + healingPowerPct) * (1 + healEfficiencyPct));
 }
 
-export function clericPassiveHealAmount(baseHp: number, healPct: number, supportPowerPct: number): number {
-  return Math.round(baseHp * healPct * (1 + supportPowerPct));
+export function clericPassiveHealAmount(baseHp: number, healPct: number, healingPowerPct: number): number {
+  return Math.round(baseHp * healPct * (1 + healingPowerPct));
 }
 
 export function significantHealAmount(baseHp: number, lowered: boolean): number {

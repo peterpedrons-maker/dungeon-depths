@@ -369,7 +369,7 @@ Brechas nunca funcionam como Feridas do Bárbaro: não causam dano por stack, re
   ],
   bardo: [
     { id:'bardo:score', classId:'bardo', name:'Partitura', category:'resource', combatDisplay:{owner:'player',displayType:'status',icon:'♫',hideWhenZero:false,priority:10,color:'gold'}, shortDescription:'As três últimas habilidades normais escrevem Notas Marcato, Dissonante ou Lírica.', fullDescription:'Uma habilidade ativa normal escreve exatamente uma Nota após resolver. Ataques básicos, DOTs, procs, Finales e Bis não escrevem. Três Notas formam uma Frase.' },
-    { id:'bardo:phrase', classId:'bardo', name:'Frases Musicais', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'♪',hideWhenZero:true,priority:11,color:'amber'}, shortDescription:'Refrão, Contracanto e Harmonia Perfeita transformam a Partitura em efeitos.', fullDescription:'Três iguais formam Refrão e geram Ovação; duas iguais formam Contracanto e carregam a minoria; uma de cada forma Harmonia e gera cura/Ovação.' },
+    { id:'bardo:phrase', classId:'bardo', name:'Frases Musicais', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'♪',hideWhenZero:false,priority:11,color:'amber'}, shortDescription:'Refrão, Contracanto e Harmonia Perfeita transformam a Partitura em efeitos.', fullDescription:'Três iguais formam Refrão e geram Ovação; duas iguais formam Contracanto e carregam a minoria; uma de cada forma Harmonia e gera cura/Ovação.' },
     { id:'bardo:ovation', classId:'bardo', name:'Ovação', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'★',hideWhenZero:false,priority:12,color:'gold'}, shortDescription:'Recurso 0–1 gerado por Refrões e Harmonia e gasto por Finales/Bis.', fullDescription:'Ovação persiste entre inimigos da mesma tentativa e nunca passa de 1. Contracanto, ataques básicos, Finale e Bis não geram Ovação.' },
     { id:'bardo:accent', classId:'bardo', name:'Acento', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'!',hideWhenZero:true,priority:13,color:'orange'}, shortDescription:'O próximo golpe Marcato recebe um componente físico independente.', fullDescription:'Acento é preparado por básico Marcato acertado ou Frase Marcato. É consumido no início da primeira habilidade Marcato elegível, mesmo se errar.' },
     { id:'bardo:fortissimo', classId:'bardo', name:'Fortíssimo', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⚡',hideWhenZero:true,priority:14,color:'red'}, shortDescription:'A próxima ofensiva direta recebe +15% dano e +5pp Crítico.', fullDescription:'Fortíssimo é preparado por Refrão Marcato, consumido no início da próxima ofensiva direta e não afeta cura, DOTs ou procs.' },
@@ -383,7 +383,7 @@ Brechas nunca funcionam como Feridas do Bárbaro: não causam dano por stack, re
 const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
   bruxo: [
     { attribute:'int', label:'INT', role:'Principal', description:'Aumenta MATK e o dano das magias; Anatomia da Alma também converte INT em penetração limitada.' },
-    { attribute:'wis', label:'SAB', role:'Secundário', description:'Aumenta MDEF, Poder de Suporte e a eficiência das barreiras de Negociação.' },
+    { attribute:'wis', label:'SAB', role:'Secundário', description:'Aumenta MDEF, Poder de Barreira e a eficiência das barreiras de Negociação.' },
     { attribute:'vit', label:'VIT', role:'Defensivo', description:'Aumenta Vida Máxima e ajuda a sobreviver ao preço das Cobranças.' },
     { attribute:'luk', label:'SOR', role:'Secundário ofensivo', description:'Aumenta chance e dano crítico pelo sistema universal.' },
   ],
@@ -394,7 +394,7 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute: 'dex', label: 'DES', role: 'Terciário', description: 'Melhora precisão contra inimigos evasivos.' },
   ],
   clerigo: [
-    { attribute: 'wis', label: 'SAB', role: 'Principal', description: 'Poder de Suporte — amplia toda cura, escudo, regeneração e redução de dano recebido do Clérigo.' },
+    { attribute: 'wis', label: 'SAB', role: 'Principal', description: 'Poder de Cura e Poder de Barreira — ampliam os efeitos explicitamente marcados do Clérigo.' },
     { attribute: 'int', label: 'INT', role: 'Secundário ofensivo', description: 'Aumenta MATK, a base de todo o dano sagrado direto — Provação nunca usa um coeficiente próprio por cima disso.' },
     { attribute: 'vit', label: 'VIT', role: 'Secundário defensivo', description: 'Aumenta vida máxima, DEF, parte da defesa mágica e Tenacidade — também amplia o teto de Graça e o tamanho de barreiras.' },
     { attribute: 'luk', label: 'SOR', role: 'Situacional', description: 'Aumenta chance de crítico, útil em Provação — nunca obrigatório para nenhuma build.' },
@@ -402,7 +402,7 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
   cavaleiro: [
     { attribute: 'vit', label: 'VIT', role: 'Principal defensivo', description: 'Aumenta HP, DEF, barreiras e resistência — nunca concede Bloqueio diretamente.' },
     { attribute: 'str', label: 'FOR', role: 'Secundário ofensivo', description: 'Aumenta ATK físico e o teto de Retaliação/Contra-Ataque baseado nele.' },
-    { attribute: 'wis', label: 'SAB', role: 'Especializado em Comando', description: 'Amplia o Support Power usado pelo CommandPotency das Ordens.' },
+    { attribute: 'wis', label: 'SAB', role: 'Especializado em Comando', description: 'Alimenta diretamente o CommandPotency das Ordens.' },
     { attribute: 'dex', label: 'DES', role: 'Terciário', description: 'Melhora precisão, com sinergia em Pressão Constante.' },
     { attribute: 'agi', label: 'AGI', role: 'Terciário', description: 'Melhora a velocidade de ação, com sinergia em Passo de Guerra.' },
   ],
@@ -419,7 +419,7 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute:'dex', label:'DES', role:'Secundário tático', description:'Melhora a precisão, reforçando a consistência da Moldagem.' },
   ],
   bardo: [
-    { attribute:'wis', label:'SAB', role:'Principal', description:'Aumenta Poder de Suporte, MDEF e Tenacidade; melhora curas da composição.' },
+    { attribute:'wis', label:'SAB', role:'Principal', description:'Aumenta Poder de Cura, MDEF e Tenacidade; melhora as curas da composição.' },
     { attribute:'dex', label:'DES', role:'Secundário', description:'Aumenta ATK físico, Precisão e o componente independente do Acento.' },
     { attribute:'luk', label:'SOR', role:'Secundário', description:'Aumenta Crítico e Dano Crítico das performances ofensivas.' },
     { attribute:'int', label:'INT', role:'Base mágica', description:'Aumenta MATK do Alaúde Encantado; não é transformada em atributo principal.' },

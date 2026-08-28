@@ -1,5 +1,5 @@
 import { AbilityCondition, AttributeKey, Character } from '../types/game';
-import { CLASSES } from './classes';
+import { totalAttributes } from './attributes';
 
 // ── Generic combat-condition infrastructure ──
 // Extracted out of lib/barbarian.ts once a second class (Clérigo, Fé/Graça/
@@ -14,10 +14,9 @@ export function capped(rate: number, total: number, cap: number): number {
   return Math.max(0, Math.min(cap, rate * total));
 }
 
-// "FOR total"/"VIT total"/etc. means baseAttrs + allocatedAttrs — deliberately
-// NOT equipment, which doesn't grant the seven primary attributes directly.
+// Every class mechanic reads the same total: base + allocated + equipment.
 export function attrTotal(ch: Character, key: AttributeKey): number {
-  return (CLASSES[ch.classId].baseAttrs[key] ?? 0) + ch.allocatedAttrs[key];
+  return totalAttributes(ch)[key];
 }
 
 export function hasSkill(ch: Character, nodeId: string): boolean {
