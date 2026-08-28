@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react';
-import { AccessoryType, ClassId, EquipmentItem, ItemSlot, Rarity, SecondaryStatType } from '../types/game';
-import { CLASSES, MAGICAL_CLASSES } from './classes';
+import type { AccessoryType, ClassId, EquipmentItem, ItemSlot, Rarity, SecondaryStatType } from '../types/game';
+import { CLASSES, MAGICAL_CLASSES } from './classes.ts';
 import {
   ACCESSORY_NOUN, ACCESSORY_STAT_POOL, ACCESSORY_TYPES, ARMOR_NOUN, MAX_TIER, MERCHANT_RARITY_PRICE_MULT,
   OFFHAND_KIND, OFFHAND_NOUN, WEIGHT_GROUP, merchantBasePrice, tierName,
-} from './itemTiers';
+} from './itemTiers.ts';
+import { classAttributePriorities, classGearCapabilities, compatibleAttributeKeys, isAttributeStat } from './attributes.ts';
 
 // multMin/multMax roll its own quality within its rarity's band instead of
 // every item of a rarity hitting the exact same number. Bands deliberately
@@ -48,7 +49,7 @@ export const RARITIES: RarityDef[] = [
 // worst-case total (min rarity roll × min affix count) can never fall
 // below a Comum or Incomum's best-case total — see the RARITIES comment
 // above for the matching floor on the multiplier side of that guarantee.
-const AFFIX_COUNT_RANGE: Record<Rarity, [number, number]> = {
+export const AFFIX_COUNT_RANGE: Record<Rarity, [number, number]> = {
   comum: [0, 3], incomum: [1, 3], raro: [1, 4], epico: [2, 4], legendario: [3, 5],
 };
 
@@ -88,8 +89,8 @@ const FOCO_CDR_SCALE = 0.18;
 // Per-stat-type scale applied to an accessory's themed primary roll — keeps
 // chance-based stats (crit/critDmg, stored as 0-1 fractions) from rolling as
 // large raw numbers as flat stats like hp.
-const ACCESSORY_PRIMARY_SCALE: Partial<Record<SecondaryStatType, number>> = {
-  crit: 0.5, critDmg: 0.8, hp: 4, def: 1, mdef: 1, atk: 1.2, matk: 1.2,
+export const ACCESSORY_PRIMARY_SCALE: Partial<Record<SecondaryStatType, number>> = {
+  crit: 0.22, critDmg: 0.36, hp: 2.80, def: 0.75, mdef: 0.75, atk: 0.55, matk: 0.55,
 };
 
 // Which slot each item rolls its affixes from — themed so gear finally has
@@ -102,15 +103,16 @@ const ACCESSORY_PRIMARY_SCALE: Partial<Record<SecondaryStatType, number>> = {
 // finding more loot for you felt like too generous a gift for the rarity
 // that's supposed to still feel middling.
 const SLOT_AFFIX_POOL: Record<'weapon' | 'body' | 'legs' | 'hands' | 'shield' | 'foco' | 'accessory', SecondaryStatType[]> = {
-  weapon: ['crit', 'critDmg', 'atk', 'matk', 'accuracy', 'lifesteal'],
-  body: ['def', 'mdef', 'hp', 'tenacity', 'thorns'],
-  legs: ['def', 'hp', 'evasion', 'speed'],
-  hands: ['crit', 'critDmg', 'accuracy', 'cdr'],
-  shield: ['def', 'mdef', 'block', 'tenacity'],
-  foco: ['matk', 'mdef', 'cdr', 'tenacity'],
+  weapon: ['crit', 'critDmg', 'atk', 'matk', 'accuracy', 'lifesteal', 'str', 'dex', 'int', 'luk'],
+  body: ['def', 'mdef', 'hp', 'tenacity', 'thorns', 'vit', 'wis'],
+  legs: ['def', 'hp', 'evasion', 'speed', 'dex', 'agi', 'vit'],
+  hands: ['crit', 'critDmg', 'accuracy', 'cdr', 'dex', 'int', 'luk'],
+  shield: ['def', 'mdef', 'block', 'tenacity', 'str', 'vit', 'wis'],
+  foco: ['matk', 'mdef', 'cdr', 'tenacity', 'int', 'wis', 'luk'],
   accessory: [
     'crit', 'critDmg', 'def', 'mdef', 'hp', 'block', 'atk', 'matk',
     'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr',
+    'str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk',
   ],
 };
 const LUCK_AFFIXES: SecondaryStatType[] = ['itemFind', 'itemQuality'];
@@ -125,15 +127,15 @@ function affixPoolKeyFor(slot: ItemSlot, classId: ClassId): keyof typeof SLOT_AF
 // Percent-fraction affixes (stored 0-1, same convention as their equivalent
 // CombatStats field) vs. flat-number ones — mirrors the old crit/critDmg/
 // block special-case, just widened to every new affix-only stat type.
-const PCT_AFFIX_TYPES = new Set<SecondaryStatType>([
-  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality',
+export const PCT_AFFIX_TYPES = new Set<SecondaryStatType>([
+  'crit', 'critDmg', 'block', 'evasion', 'accuracy', 'tenacity', 'speed', 'lifesteal', 'thorns', 'cdr', 'itemFind', 'itemQuality', 'healingPower', 'barrierPower',
 ]);
 
 // Per-stat-type scale applied to an item's affix roll — smaller than a
 // primary stat's own scale (an affix is a bonus, not the main stat), but
 // reuses the exact same rollPrimaryValue growth curve so the same stat type
 // never reads the same twice across rarities/tiers: a comum tier-1 "+FOR"
-// affix and a legendário tier-10 one on the same stat type are worlds apart.
+// affix and a legendário tier-11 one on the same stat type are worlds apart.
 // Velocidade/Redução de Recarga/Roubo de Vida roll conservatively (0.12-0.15)
 // since they're strong per-point and already stack with attributes/talentos;
 // sorte de item stays modest too since it's pure loot-rate, not combat power.
@@ -144,13 +146,16 @@ const PCT_AFFIX_TYPES = new Set<SecondaryStatType>([
 // rarity roll — a weapon's own dmgBonus already carries the "this item hits
 // harder" job; the atk/matk/def/mdef/hp AFFIX shouldn't also dwarf every
 // other affix option just because it reuses the same big attribute weight.
-const AFFIX_SCALE: Record<SecondaryStatType, number> = {
-  crit: 0.3, critDmg: 0.4, block: 0.25, hp: 1.1, def: 0.3, mdef: 0.3, atk: 0.25, matk: 0.25,
-  evasion: 0.25, accuracy: 0.35, tenacity: 0.25, speed: 0.12, lifesteal: 0.15, thorns: 0.3, cdr: 0.12,
-  itemFind: 0.15, itemQuality: 0.15,
+export const AFFIX_SCALE: Record<SecondaryStatType, number> = {
+  atk: 0.25, matk: 0.25, def: 0.30, mdef: 0.30, hp: 1.10,
+  crit: 0.12, critDmg: 0.22, block: 0.12, evasion: 0.10, accuracy: 0.12, tenacity: 0.10,
+  speed: 0.06, lifesteal: 0.045, thorns: 0.16, cdr: 0.055, itemFind: 0.15, itemQuality: 0.15,
+  healingPower: 0.12, barrierPower: 0.10,
+  str: 0.30, int: 0.30, dex: 0.20, vit: 0.18, agi: 0.055, wis: 0.045, luk: 0.045,
 };
+export const ATTRIBUTE_AFFIX_SCALE: Record<SecondaryStatType, number> = AFFIX_SCALE;
 
-// 2026 rebalance, take two — replaces the old itemTier-based (1-10) curve.
+// 2026 rebalance, take two — replaces the old itemTier-based curve.
 // Two problems with keying this off itemTier: (1) only 10 buckets for 30+
 // dungeons meant every dungeon sharing a bucket (e.g. today, 7 different
 // dungeons all sit at itemTier 7) rolled identical odds, so the easiest
@@ -275,7 +280,7 @@ export function pickBossDropRarity(progress: number, qualityBonusPct = 0): Rarit
   return RARITIES[0].id;
 }
 
-// Keyed by the dungeon's own levelReq (1-60), not itemTier (1-10) — the
+// Keyed by the dungeon's own levelReq (1-60), not itemTier (1-11) — the
 // requested curve is specified in level buckets that run all the way to 60
 // (5 dungeons' worth of tiers wouldn't have enough resolution), and level is
 // also what "dungeon 1-5 / 6-15 / 16-30 / 31-45 / 46-60" naturally maps to
@@ -313,7 +318,7 @@ function baseNounFor(slot: ItemSlot, classId: ClassId, accessoryType?: Accessory
 
 // Same base roll for every slot, just scaled differently — a weapon's flat
 // damage and an accessory's flat HP need very different magnitudes to feel
-// meaningful next to the class's base stats. baseTier (1-10, from the
+// meaningful next to the class's base stats. baseTier (1-11, from the
 // dungeon it dropped in — see DungeonDef.itemTier) replaces the old in-run
 // depth counter as the power-progression driver. Cut from the original
 // 6.5/tier (which, stacked across rarity, up to 6 affixes, Forja and 6
@@ -389,8 +394,11 @@ function primaryFieldsFor(
   // accessory — rolls one stat from its themed pool as the primary
   const pool = ACCESSORY_STAT_POOL[accessoryType ?? 'anel'];
   const statType = pool[Math.floor(Math.random() * pool.length)];
-  const raw = rollPrimaryValue(baseTier, rarityMult, ACCESSORY_PRIMARY_SCALE[statType] ?? 1) * qualityMult;
-  switch (statType) {
+  const effectiveStatType = statType === 'atk' || statType === 'matk'
+    ? (MAGICAL_CLASSES.includes(classId) ? 'matk' : 'atk')
+    : statType;
+  const raw = rollPrimaryValue(baseTier, rarityMult, ACCESSORY_PRIMARY_SCALE[effectiveStatType] ?? 1) * qualityMult;
+  switch (effectiveStatType) {
     case 'crit': return { critChanceBonus: Math.round(raw) / 100 };
     case 'critDmg': return { critDmgBonus: Math.round(raw) / 100 };
     case 'hp': return { hpBonus: Math.round(raw) };
@@ -413,26 +421,79 @@ function primaryFieldsFor(
 // beating a Lendário stays astronomically unlikely, not just "rare").
 const AFFIX_VARIANCE_RANGE: [number, number] = [0.95, 1.05];
 
-// Every item gets 1+ affixes (see AFFIX_COUNT_RANGE) sampled without repeats
-// from `pool` — a Fisher-Yates-ish shuffle-and-slice, so a 6-affix legendário
-// can't roll the same stat type twice just because the pool is small.
-function rollSecondaryStats(baseTier: number, rarityMult: number, pool: SecondaryStatType[], count: number): EquipmentItem['secondaryStats'] {
-  const shuffled = [...pool];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+function filteredAffixPool(slot: ItemSlot, classId: ClassId, rarityTier: number): SecondaryStatType[] {
+  const poolKey = affixPoolKeyFor(slot, classId);
+  if (!poolKey) return [];
+  const capabilities = classGearCapabilities(classId);
+  const allowedAttributes = new Set(compatibleAttributeKeys(slot, classId));
+  const physical = !MAGICAL_CLASSES.includes(classId);
+  let pool = SLOT_AFFIX_POOL[poolKey].filter((type) => {
+    if (type === 'atk') return physical;
+    if (type === 'matk') return !physical;
+    if (isAttributeStat(type)) return allowedAttributes.has(type);
+    return true;
+  });
+  if (capabilities.usesHealingPower) pool.push('healingPower');
+  if (capabilities.usesBarrierPower) pool.push('barrierPower');
+  if (rarityTier >= LUCK_AFFIX_MIN_RARITY_INDEX) pool = [...pool, ...LUCK_AFFIXES];
+  return [...new Set(pool)];
+}
+
+function affixWeight(type: SecondaryStatType, classId: ClassId): number {
+  if (type === 'healingPower' || type === 'barrierPower') return 0.8;
+  if (isAttributeStat(type)) {
+    const index = classAttributePriorities(classId).indexOf(type);
+    if (index === 0) return 1.25;
+    if (index === 1) return 0.90;
+    if (index === 2) return 0.65;
   }
-  return shuffled.slice(0, Math.min(count, shuffled.length)).map((type) => {
+  return 1;
+}
+
+function roundedPctAffix(type: SecondaryStatType, raw: number): number {
+  const step = type === 'speed' || type === 'cdr' || type === 'lifesteal' ? 0.25 : 0.5;
+  const roundedPoints = Math.max(step, Math.round(raw / step) * step);
+  return roundedPoints / 100;
+}
+
+// Quality does not change the rarity band. It only skews the count toward the
+// upper end of that rarity's own band, so the declared min/max are immutable.
+export function affixCountForRarity(rarity: Rarity, qualityBonusPct = 0, random = Math.random): number {
+  const [min, max] = AFFIX_COUNT_RANGE[rarity];
+  const q = Math.max(0, Math.min(0.4, qualityBonusPct));
+  const upward = 1 - random() ** (1 + q * 4);
+  return Math.min(max, min + Math.floor(upward * (max - min + 1)));
+}
+
+export function rollSecondaryStats(baseTier: number, rarityMult: number, pool: SecondaryStatType[], count: number, classId: ClassId): EquipmentItem['secondaryStats'] {
+  const remaining = [...new Set(pool)].map((type) => ({ type, weight: affixWeight(type, classId) }));
+  const rolled: EquipmentItem['secondaryStats'] = [];
+  let attributeRolled = false;
+  for (let i = 0; i < count && remaining.length > 0; i++) {
+    const candidates = attributeRolled ? remaining.filter((candidate) => !isAttributeStat(candidate.type)) : remaining;
+    if (candidates.length === 0) break;
+    const totalWeight = candidates.reduce((sum, candidate) => sum + candidate.weight, 0);
+    let roll = Math.random() * totalWeight;
+    const selectedIndex = candidates.findIndex((candidate) => {
+      if (roll < candidate.weight) return true;
+      roll -= candidate.weight;
+      return false;
+    });
+    const candidate = candidates[selectedIndex < 0 ? candidates.length - 1 : selectedIndex];
+    remaining.splice(remaining.indexOf(candidate), 1);
+    const type = candidate.type;
+    if (isAttributeStat(type)) attributeRolled = true;
     const variance = AFFIX_VARIANCE_RANGE[0] + Math.random() * (AFFIX_VARIANCE_RANGE[1] - AFFIX_VARIANCE_RANGE[0]);
     const raw = rollPrimaryValue(baseTier, rarityMult * variance, AFFIX_SCALE[type]);
-    const value = PCT_AFFIX_TYPES.has(type) ? raw / 100 : raw;
-    return { type, value };
-  });
+    const value = PCT_AFFIX_TYPES.has(type) ? roundedPctAffix(type, raw) : Math.max(1, raw);
+    rolled.push({ type, value });
+  }
+  return rolled;
 }
 
 let _iid = 0;
 
-// baseTier (1-10) comes from the dungeon the item dropped in (or, for the
+// baseTier (1-11) comes from the dungeon the item dropped in (or, for the
 // Mercador, the toughest dungeon the player currently qualifies for — see
 // highestAccessibleItemTier in lib/dungeons.ts) and drives both the item's
 // base name (lib/itemTiers.ts) and the magnitude of its primary stat.
@@ -467,20 +528,19 @@ export function generateItem(
     ? `${base} ${prefix} ${SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)]}`
     : `${base} ${prefix}`;
 
-  const qualityMult = 1 + qualityBonusPct;
+  const quality = Math.max(0, Math.min(0.4, qualityBonusPct));
+  const qualityMult = 1 + quality;
   const primary = primaryFieldsFor(slot, classId, baseTier, rolledMult, qualityMult, accessoryType);
 
-  const poolKey = affixPoolKeyFor(slot, classId);
-  let pool = poolKey ? SLOT_AFFIX_POOL[poolKey] : [];
-  if (rarityTier >= LUCK_AFFIX_MIN_RARITY_INDEX) pool = [...pool, ...LUCK_AFFIXES];
-  const [minCount, maxCount] = AFFIX_COUNT_RANGE[rarity.id];
-  const count = minCount + Math.floor(Math.random() * (maxCount - minCount + 1));
+  const pool = filteredAffixPool(slot, classId, rarityTier);
+  const count = affixCountForRarity(rarity.id, quality);
 
   return {
     id: `i${++_iid}_${Date.now()}`, name, classId, slot, rarity: rarity.id, tier: baseTier,
     accessoryType,
     ...ZERO_PRIMARY, ...primary,
-    secondaryStats: rollSecondaryStats(baseTier, rolledMult, pool, count),
+    itemSchemaVersion: 2,
+    secondaryStats: rollSecondaryStats(baseTier, rolledMult, pool, count, classId),
     enhanceLevel: 0,
     originalAffixCount: count,
   };
@@ -495,20 +555,17 @@ export function generateItem(
 // midpoint (the item itself doesn't store its exact rolledMult) — the same
 // approximation merchantStock.ts's pricing already leans on.
 export function rollAffixForItem(item: EquipmentItem): { type: SecondaryStatType; value: number } | null {
-  const poolKey = affixPoolKeyFor(item.slot, item.classId);
-  if (!poolKey) return null;
-  let pool = SLOT_AFFIX_POOL[poolKey].filter((t) => !item.secondaryStats.some((s) => s.type === t));
   const rarityTier = rarityIndex(item.rarity);
-  if (rarityTier >= LUCK_AFFIX_MIN_RARITY_INDEX) pool = [...pool, ...LUCK_AFFIXES.filter((t) => !item.secondaryStats.some((s) => s.type === t))];
+  const pool = filteredAffixPool(item.slot, item.classId, rarityTier).filter((t) => !item.secondaryStats.some((s) => s.type === t));
   if (pool.length === 0) return null;
-  const rolled = rollSecondaryStats(item.tier, rarityMult(item.rarity), pool, 1);
+  const rolled = rollSecondaryStats(item.tier, rarityMult(item.rarity), pool, 1, item.classId);
   return rolled[0] ?? null;
 }
 
 // Priced as a fraction of the Mercador's own buy price for an equivalent
 // item (same tier + rarity — see merchantBasePrice/MERCHANT_RARITY_PRICE_MULT
 // in lib/itemTiers.ts) instead of a flat raridade-only formula. A Tier-1 and
-// a Tier-10 Lendário used to sell for the same handful of gold despite the
+// a Tier-11 Lendário used to sell for the same handful of gold despite the
 // Mercador charging wildly different prices for them — once buy prices
 // actually scale hard with Tier, sell price has to follow or vendoring a
 // high-tier item stops being worth doing at all in the late game.
