@@ -7,6 +7,7 @@ import {
   SABEDORIA_JULGAMENTO_HEAL_PCT, SIGNIFICANT_HEAL_PCT_LOWERED, clericBaseHp, clericDirectHealAmount,
   clericPassiveHealAmount, significantHealAmount,
 } from './clerigo';
+import { directHealAmount as bardDirectHealAmount, healingBaseHp as bardHealingBaseHp } from './bardo';
 import { formatGameNumber, formatGamePercent } from './format';
 
 export interface PresentationRow { label: string; value: string }
@@ -64,6 +65,25 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
     }
   }
 
+  if (ch.classId === 'bardo') {
+    const stats = computeCombatStats(ch);
+    const baseHp = bardHealingBaseHp(CLASSES.bardo.baseHp, ch.level);
+    const wis = ch.allocatedAttrs.wis ?? 0;
+    const efficiency = (ch.unlockedSkills.includes('bardo:inspiracao:0') ? Math.min(0.03, wis * 0.0008) : 0)
+      + (ch.unlockedSkills.includes('bardo:inspiracao:7') ? Math.min(0.04, wis * 0.001) : 0);
+    if (ability?.effect.kind === 'heal') {
+      const pct = ability.effect.healPct ?? 0;
+      const amount = bardDirectHealAmount(CLASSES.bardo.baseHp, ch.level, pct, stats.supportPowerPct, efficiency);
+      rows.push({ label: 'Base de Cura', value: `${formatGameNumber(baseHp)} (${CLASSES.bardo.baseHp} + 10 × nível após o 1º)` });
+      rows.push({ label: 'Cura atual', value: `Recupera até ${formatGameNumber(amount)}` });
+      rows.push({ label: 'Cálculo', value: `${formatGamePercent(pct)} da Base de Cura × Poder de Suporte × eficiência de cura` });
+      if (ability.effect.bardOvationHealPct !== undefined) {
+        const ovationAmount = bardDirectHealAmount(CLASSES.bardo.baseHp, ch.level, ability.effect.bardOvationHealPct, stats.supportPowerPct, efficiency);
+        rows.push({ label: 'Com Ovação', value: `${formatGamePercent(ability.effect.bardOvationHealPct)} — até ${formatGameNumber(ovationAmount)}; não consome Ovação` });
+      }
+    }
+    return rows;
+  }
   if (ch.classId !== 'clerigo') return rows;
   const stats = computeCombatStats(ch);
   const baseHp = clericBaseHp(CLASSES.clerigo.baseHp, ch.level);
