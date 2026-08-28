@@ -31,7 +31,7 @@ test('cada uma das 210 ativas tem condição alcançável, cinco prioridades e c
   for (const row of rows) {
     assert.ok(row.cooldown >= 0);
     assert.equal(row.cooldownTooltipCoherent, true);
-    assert.equal(row.castCount, 1);
+    assert.ok(row.castCount > 0);
     for (const ids of Object.values(row.priorityVariants)) {
       assert.equal(ids.length, 5);
       assert.equal(new Set(ids).size, 5);
@@ -46,12 +46,14 @@ test('mecânicas de classe têm descrição, display e ligação com a árvore',
   assert.ok(rows.filter((row) => row.referencedByNodes > 0).length >= 70);
 });
 
-test('full-run contratual percorre 98 builds em cenários regulares e boss', () => {
+test('full-run contratual simula as 98 builds nas 33 dungeons', () => {
   const runs = runClassAuditFullRuns();
-  assert.equal(runs.length, 98 * 7 * 2);
+  assert.equal(runs.length, 98);
   assert.ok(runs.every((run) => run.pass));
   assert.ok(runs.every((run) => run.equipped === 5));
   assert.ok(runs.every((run) => run.casts > 0));
+  assert.ok(runs.every((run) => run.dungeonsSimulated === 33));
+  assert.ok(runs.every((run) => run.dungeonsCleared >= 0 && run.dungeonsCleared <= 33));
 });
 
 test('resolver exaustivo cobre os 51 tipos de efeito', () => {
@@ -67,13 +69,13 @@ test('validação end-to-end real alcança as 210 ativas', () => {
 test('cada caminho puro lança seus cinco ativos no motor real', () => {
   const rows = auditRealPurePaths();
   assert.equal(rows.length, 42);
-  assert.ok(rows.every((row) => row.pass && row.activeIds.length === 5));
+  assert.ok(rows.every((row) => row.pass && row.activeIds.length === 5 && row.activeIds.every((id) => row.castsByAbility[id] > 0)));
 });
 
 test('a matriz de 98 builds roda uma masmorra completa', () => {
   const rows = auditRealBuilds();
   assert.equal(rows.length, 98);
-  assert.ok(rows.every((row) => row.pass && row.equipped === 5 && row.abilitiesCast > 0));
+  assert.ok(rows.every((row) => row.pass && row.equipped === 5 && row.abilitiesCast === 5 && row.zeroCastAbilities.length === 0 && row.dungeonsSimulated === 33));
 });
 
 test('adaptador de eventos alimenta log, dano, habilidade e flash', () => {

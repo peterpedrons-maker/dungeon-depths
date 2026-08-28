@@ -943,7 +943,8 @@ export function enemySpeedMult(shape: EnemyShape): number {
 // A checkpoint fight at one of the dungeon's miniBossDepths — same shape
 // roster, zero new art, just a heavier stat/reward multiplier than a
 // regular encounter and its own name so it reads as a step up mid-run.
-const ELITE_STAT_MULT = 1.6; // hp/atk/matk
+const ELITE_STAT_MULT = 1.2; // hp/matk; elite attack has its own lower burst multiplier
+const ELITE_ATK_MULT = 1.15;
 const ELITE_DEF_MULT = 1.25; // def/mdef — dangerous, but still killable, not a wall
 const ELITE_REWARD_MULT = 2.2; // xp/gold, so clearing the checkpoint feels worth it
 
@@ -1026,10 +1027,20 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // game-wide HP baseline by "1x" (i.e. +100%) on top of everything above —
 // ATK/DEF and the per-dungeon difficultyMult curve (lib/dungeons.ts) are
 // untouched by this, it only makes every fight last longer, not hit harder.
-const REGULAR_HP_MULT = 5.0;
+// Five times the old baseline made late-region regulars take 15–25 player
+// actions with real tier-matched gear, well outside the 5–8 action target and
+// leaving no HP economy for the rest of a persistent dungeon run. 2.5 keeps
+// the early trash above one-shot territory while keeping the late regular
+// encounters inside their intended band.
+const REGULAR_HP_MULT = 2.5;
 const REGULAR_ATK_MULT = 1.25;
 const REGULAR_DEF_MULT = 1.25;
-const BOSS_HP_MULT = 4.5;
+// Bosses need a longer health bar than regulars, but the old 4.5x multiplier
+// turned the level-50 normal boss into a 50+ action attrition test for a real
+// level-57/58 build. The rebalance target is 16–26 player actions in floors
+// 31–33, so keep the boss distinctive without making its HP the sole source
+// of difficulty; phases and signature attacks provide the remaining pressure.
+const BOSS_HP_MULT = 1.7;
 // User specified 1.15 here; simulation caught a severe compounding problem
 // (see the depth-growth comment below) where difficultyMult's new 1.0-1.96
 // floor stacked with this AND the boss's own already-high base stats made
@@ -1046,7 +1057,7 @@ const BOSS_HP_MULT = 4.5;
 // harness), while a same-level fresh arrival still loses, matching the
 // "não deve matar o boss sem equipamento, mas deve conseguir depois de
 // algumas melhorias" requirement instead of an impossible one.
-const BOSS_ATK_MULT = 1.00;
+const BOSS_ATK_MULT = 0.65;
 const BOSS_DEF_MULT = 1.30;
 
 // User-specified cut (~35-40%, using the midpoint) to gold earned per kill —
@@ -1089,7 +1100,7 @@ function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt
   // compounds non-linearly through rollAttack's mitigation cap and doubling
   // it in lockstep with attack would over-tighten fights at the high end.
   const hpGrowth = depthGrowthMultiplier(depth, 'hp') * hpMult * modeStatMult * hpDifficultyMultiplier(difficultyMult);
-  const atkGrowth = depthGrowthMultiplier(depth, 'atk') * atkMult * modeStatMult * atkDifficultyMultiplier(difficultyMult);
+  const atkGrowth = depthGrowthMultiplier(depth, 'atk') * atkMult * (mode === 'elite' ? ELITE_ATK_MULT : modeStatMult) * atkDifficultyMultiplier(difficultyMult);
   const defGrowth = depthGrowthMultiplier(depth, 'def') * baseDefMult * modeDefMult * defDifficultyMultiplier(difficultyMult);
   const hp = Math.round(tier.hp * hpGrowth);
   return {

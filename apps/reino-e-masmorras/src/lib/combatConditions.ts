@@ -57,6 +57,23 @@ export interface AbilityConditionContext {
   round?: number;
 }
 
+/**
+ * Canonical live snapshot used by both DungeonPanel and the deterministic
+ * combat harness. Keeping the defaults and defensive copies here prevents a
+ * caller from silently omitting a state/resource map or sharing mutable HUD
+ * arrays with the evaluator.
+ */
+export function buildAbilityConditionContext(input: AbilityConditionContext): AbilityConditionContext {
+  return {
+    ...input,
+    enemyStatuses: [...input.enemyStatuses],
+    resources: { ...input.resources },
+    states: { ...input.states },
+    enemyStacks: { ...input.enemyStacks },
+    periodicEffects: input.periodicEffects ? { ...input.periodicEffects } : undefined,
+  };
+}
+
 export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditionContext): boolean {
   switch (cond.type) {
     case 'always': return true;
