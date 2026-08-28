@@ -5,9 +5,9 @@ import { computeCombatPower, computeCombatStats, describeAttribute, effectiveMax
 import { fmt, formatGameMultiplier } from '../lib/format';
 import { rarityColor, sellValue, slotTintStyle, SLOT_NAMES } from '../lib/equipment';
 import { itemDisplayName, itemStatLines } from '../lib/enhancement';
+import { attributeBreakdown } from '../lib/attributes';
 import { OFFHAND_KIND } from '../lib/itemTiers';
 import { GRID_CELLS, GRID_COLS, GRID_ROWS, SLOT_FOOTPRINT, usedCells } from '../lib/inventoryGrid';
-import { computeAttributeTotals } from '../lib/skills';
 import { heroSprites } from '../game/sprites';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
@@ -54,7 +54,8 @@ const ZERO_ALLOC: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 
 
 export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs, onSellRunes }: Props) {
   const cls = CLASSES[ch.classId];
-  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
+  const attributeParts = attributeBreakdown(ch);
+  const attrs = attributeParts.total;
   const stats = computeCombatStats(ch);
   const equip = equipmentContribution(ch);
   const heroImg = heroSprites(ch.classId).idle.image.src;
@@ -270,7 +271,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                 const meta = ATTR_META[key];
                 const staged = pendingAlloc[key];
                 return (
-                  <div key={key} className="flex items-center justify-between text-xs gap-1.5">
+                  <div key={key} className="flex flex-wrap items-center justify-between text-xs gap-1.5">
                     <span className="text-parchment/60 truncate min-w-0 flex items-center gap-1">
                       {meta.label}:
                       <button
@@ -303,6 +304,9 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
                         </button>
                       )}
                     </span>
+                    <div className="w-full text-right text-[9px] text-parchment/40 tabular-nums">
+                      Base {attributeParts.base[key]} · Alocado {attributeParts.allocated[key]} · Equip. {Math.round(attributeParts.equipment[key])} · Total {attrs[key]}
+                    </div>
                   </div>
                 );
               })}
@@ -321,9 +325,10 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
               <PreviewStatRow label="Cura ao Crítico" from={stats.onCritHealPct * 100} to={previewStats.onCritHealPct * 100} suffix="%" onInfo={openStatInfo} info="Cura uma parte da sua vida máxima toda vez que você acerta um golpe crítico." />
               <PreviewStatRow label="Dano vs. Envenenado" from={stats.dmgPctVsPoison * 100} to={previewStats.dmgPctVsPoison * 100} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão sob efeito de veneno." />
               <PreviewStatRow label="Dano vs. Queimando" from={stats.dmgPctVsBurn * 100} to={previewStats.dmgPctVsBurn * 100} suffix="%" onInfo={openStatInfo} info="Aumenta o dano que você causa contra inimigos que estão queimando." />
-              <PreviewStatRow label="Poder de Suporte" from={stats.supportPowerPct * 100} to={previewStats.supportPowerPct * 100} suffix="%" onInfo={openStatInfo} info="Aumenta a força de curas e bônus concedidos pelas suas próprias habilidades de suporte." />
+              <PreviewStatRow label="Poder de Cura" from={stats.healingPowerPct * 100} to={previewStats.healingPowerPct * 100} suffix="%" onInfo={openStatInfo} info="Aumenta curas explicitamente marcadas como escaláveis." />
+              <PreviewStatRow label="Poder de Barreira" from={stats.barrierPowerPct * 100} to={previewStats.barrierPowerPct * 100} suffix="%" equip={equip.barrierPower * 100} onInfo={openStatInfo} info="Aumenta barreiras explicitamente marcadas como escaláveis; não afeta Égide." />
               <PreviewStatRow label="Chance de Encontrar Item" from={stats.dropChanceBonusPct * 100} to={previewStats.dropChanceBonusPct * 100} suffix="%" prefix="+" equip={equip.dropChance * 100} onInfo={openStatInfo} info="Aumenta a chance de um inimigo derrotado deixar cair um item de equipamento." />
-              <PreviewStatRow label="Qualidade dos Itens" from={stats.itemQualityBonusPct * 100} to={previewStats.itemQualityBonusPct * 100} suffix="%" prefix="+" equip={equip.itemQuality * 100} onInfo={openStatInfo} info="Aumenta o valor dos atributos que os itens encontrados vêm com (números maiores). Não muda a raridade do item, só a força dele." />
+              <PreviewStatRow label="Qualidade dos Itens" from={stats.itemQualityBonusPct * 100} to={previewStats.itemQualityBonusPct * 100} suffix="%" prefix="+" equip={equip.itemQuality * 100} onInfo={openStatInfo} info="Melhora o primário, favorece o limite alto de afixos dentro da raridade e influencia a chance de raridade. O bônus do primário é limitado a 40%." />
             </div>
           </div>
           <div className="space-y-3">
@@ -433,7 +438,7 @@ function AttrInfoModal({ ch, attrKey, onClose }: { ch: Character; attrKey: Attri
           </div>
           {/* Label gets its own line instead of sharing a row squeezed against
               two fixed-width number columns — "Qualidade de Item" and
-              "Poder de Suporte" were getting truncated mid-word in the old
+              "Poder de Cura" were getting truncated mid-word in the old
               single-row layout, especially on narrow phone screens. */}
           <div className="space-y-1.5">
             {contributions.map((c) => (
