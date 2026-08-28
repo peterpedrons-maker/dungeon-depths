@@ -1,4 +1,4 @@
-import { ClassAttributeNote, ClassCombinationNote, ClassId, ClassMechanic, ClassSpecializationNote } from '../types/game';
+import type { ClassAttributeNote, ClassCombinationNote, ClassId, ClassMechanic, ClassSpecializationNote } from '../types/game.ts';
 
 // ── Universal class-mechanic explainer system — data only ──
 // Every class's exclusive resources/states/stacks/marks/etc. live here, keyed
