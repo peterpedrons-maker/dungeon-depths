@@ -1,5 +1,6 @@
-import { Character, ClassId, Equipment, ProfileState, RankEntry } from '../types/game';
+import type { Character, ClassId, Equipment, ProfileState, RankEntry } from '../types/game';
 import { supabase } from './supabaseClient';
+import { migrateItem } from './storage';
 
 // Cloud counterpart of lib/storage.ts's local-only loadCharacter/
 // saveCharacter — up to MAX_CHARACTER_SLOTS (see lib/storage.ts) rows per
@@ -140,7 +141,7 @@ export async function fetchProfile(userId: string): Promise<ProfileState> {
     prestige: data.prestige as number,
     ownedCosmetics: (data.owned_cosmetics as string[]) ?? [],
     equippedCosmetic: (data.equipped_cosmetic as string | null) ?? null,
-    vaultItems: (data.vault_items as ProfileState['vaultItems']) ?? [],
+    vaultItems: ((data.vault_items as ProfileState['vaultItems']) ?? []).map(migrateItem),
   };
 }
 
