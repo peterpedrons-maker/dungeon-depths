@@ -5,7 +5,7 @@ import {
 } from '../types/game';
 import { spawnEnemy, enemySpeedMult } from '../lib/enemies';
 import { CLASS_SPEED_MULT, CLASSES, grantXp, MAGICAL_CLASSES } from '../lib/classes';
-import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT } from '../lib/combatStats';
+import { computeCombatStats, effectiveMaxHp, BASE_CRIT_DMG_MULT, LIFESTEAL_CAP } from '../lib/combatStats';
 import { baseDropChanceForLevel, generateItem, pickBossDropRarity, rarityColor, rarityName, sellValue } from '../lib/equipment';
 import { difficultyProgress } from '../lib/dungeons';
 import { RUNE_DROP_CHANCE_REGULAR, RUNE_DROP_CHANCE_BOSS, rollRuneDrop, addRune } from '../lib/runes';
@@ -3494,7 +3494,7 @@ export function DungeonPanel({
       accuracy: base.accuracy + getModTotal(playerModsRef.current, 'accuracy') + hunterAccuracyBonus + archerAccuracyBonus + druidAccuracy + warlockAccuracy + (isSorcerer() && sorcererHasSkill('feiticeiro:dominio:0') ? 0.015 : 0),
       dmgTakenPct: getModTotal(playerModsRef.current, 'dmgTakenPct') + hunterDmgTakenBonus + warriorDmgTakenBonus + archerDmgTakenBonus + druidDmgTaken + warlockDmgTaken + bardDmgTakenBonus,
       defPenPct: Math.max(0, getModTotal(playerModsRef.current, 'defPenPct') + druidPen),
-      lifestealPct: Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus),
+      lifestealPct: Math.min(LIFESTEAL_CAP, Math.max(0, base.lifestealPct + getModTotal(playerModsRef.current, 'lifestealPct') + paladinLifestealBonus)),
       tenacityPct: base.tenacityPct + tenacityBonus + warlockTenacity + bardTenacityBonus,
       // Momentum's own base speed bonus (per-20 tiers, upgraded by the
       // Momentum passive node) — mirrors the dmg-bonus half applied live in
@@ -5331,6 +5331,9 @@ export function DungeonPanel({
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id) + warlockCdrBonusFor(offenseAbility.id) + sorcererCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
+            if (eff.wildPostureActions) {
+              barbPostureRoundsLeftRef.current = eff.wildPostureActions;
+            }
             if (isRogue()) {
               const hpPct = enemyRef.current.hp / enemyRef.current.maxHp;
               if (rogueAmbushThisCast && eff.ambushDmgMult !== undefined) eff.dmgMult = eff.ambushDmgMult;
