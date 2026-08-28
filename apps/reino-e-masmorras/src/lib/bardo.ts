@@ -1,3 +1,5 @@
+import { HEALING_BASE_PER_LEVEL, healingBaseHp as sharedHealingBaseHp, directHealAmount as sharedDirectHealAmount, passiveHealAmount as sharedPassiveHealAmount } from './healing.ts';
+
 /** Compositor do Combate — regras puras do Bardo.
  * O motor de combate usa este módulo como fonte de verdade; a UI apenas
  * espelha o estado. Nenhuma função depende de nomes de habilidades.
@@ -44,7 +46,7 @@ export const BARD_COUNTERTEMPO_MAX = 1;
 export const BARD_FORTISSIMO_DAMAGE = 0.15;
 export const BARD_FORTISSIMO_CRIT = 0.05;
 export const BARD_ACCENT_PHYSICAL_BASE = 0.35;
-export const BARD_HEALING_BASE_PER_LEVEL = 10;
+export const BARD_HEALING_BASE_PER_LEVEL = HEALING_BASE_PER_LEVEL;
 
 export function createBardState(): BardScoreState {
   return { notes: [], ovation: 0, accent: false, fortissimo: false, impulse: false,
@@ -57,15 +59,15 @@ export function createBardState(): BardScoreState {
 export function resetBardEnemy(s: BardScoreState): BardScoreState {
   return { ...s, countertempo: false, echo: 0, outOfTune: false, encoreReady: false,
     encoreMemory: null, accentRefundedThisEnemy: false, bridgeActive: false,
-    nextEnemyDamageReductionPct: 0 };
+    nextEnemyDamageReductionPct: 0, nextBasicPhysicalBonusPct: 0, echoNotePending: false };
 }
 export function resetBardAttempt(): BardScoreState { return createBardState(); }
-export function healingBaseHp(baseHp: number, level: number): number { return baseHp + BARD_HEALING_BASE_PER_LEVEL * Math.max(0, level - 1); }
-export function directHealAmount(baseHp: number, level: number, healPct: number, supportPowerPct: number, efficiencyPct = 0): number {
-  return Math.round(healingBaseHp(baseHp, level) * healPct * (1 + supportPowerPct) * (1 + efficiencyPct));
+export function healingBaseHp(baseHp: number, level: number): number { return sharedHealingBaseHp(baseHp, level); }
+export function directHealAmount(baseHp: number, level: number, healPct: number, healingPowerPct: number, efficiencyPct = 0): number {
+  return sharedDirectHealAmount(baseHp, level, healPct, healingPowerPct, efficiencyPct);
 }
-export function passiveHealAmount(baseHp: number, level: number, healPct: number, supportPowerPct: number): number {
-  return Math.round(healingBaseHp(baseHp, level) * healPct * (1 + supportPowerPct));
+export function passiveHealAmount(baseHp: number, level: number, healPct: number, healingPowerPct: number): number {
+  return sharedPassiveHealAmount(baseHp, level, healPct, healingPowerPct);
 }
 export function appendBardNote(s: BardScoreState, note: BardNote): { state: BardScoreState; phrase: BardPhraseKind; dominant?: BardNote; carried?: BardNote; healPct?: number } {
   if (s.notes.length >= BARD_NOTE_MAX) return { state: s, phrase: null };
@@ -122,7 +124,13 @@ export function chooseWildcardNote(notes: BardNote[], policy: BardWildcardPolicy
   return 'lyrical';
 }
 export function setOvation(s: BardScoreState, value: number): BardScoreState { return { ...s, ovation: Math.max(0, Math.min(BARD_OVATION_MAX, value)) }; }
-export function consumeOvation(s: BardScoreState): BardScoreState { return { ...s, ovation: 0, pendingAudienceChorus: true, audienceChorusUsesLeft: 3 }; }
+export function consumeOvation(s: BardScoreState, audienceChorusUnlocked = false): BardScoreState {
+  const next = { ...s, ovation: 0, pendingAudienceChorus: audienceChorusUnlocked, audienceChorusUsesLeft: audienceChorusUnlocked ? 3 : 0 };
+  // With zero or one note, the phantom Lírica is inserted immediately after
+  // the Finale. A two-note score must wait for the next completed phrase so
+  // it cannot alter the phrase that is already being assembled.
+  return audienceChorusUnlocked && next.notes.length < 2 ? applyAudienceChorus(next) : next;
+}
 export function prepareAccent(s: BardScoreState): BardScoreState { return { ...s, accent: true }; }
 export function consumeAccent(s: BardScoreState): BardScoreState { return { ...s, accent: false }; }
 export function createCountertempo(s: BardScoreState): BardScoreState { return { ...s, countertempo: true }; }
@@ -138,14 +146,23 @@ export function chooseWildcardAndAppend(s: BardScoreState, policy: BardWildcardP
   const out = appendBardNote(s, note);
   return { ...out, note };
 }
-export function createEncorePayload(e: { dmgMult?: number; hitDmgMults?: number[]; dmgMultPerHit?: number; healPct?: number; bardMagicalHitMults?: number[] }): BardEncorePayload {
+export function createEncorePayload(e: { dmgMult?: number; hitDmgMults?: number[]; dmgMultPerHit?: number; healPct?: number; bardMagicalHitMults?: number[]; bardPhysicalHitMults?: number[] }): BardEncorePayload {
   if (e.healPct !== undefined) return { healPct: e.healPct * 0.55 };
-  if (e.bardMagicalHitMults?.length) return { magicalHitMults: e.bardMagicalHitMults.map((n) => n * 0.55) };
+  const physicalHitMults = e.bardPhysicalHitMults?.map((n) => Number((n * 0.55).toFixed(6)));
+  const magicalHitMults = e.bardMagicalHitMults?.map((n) => Number((n * 0.55).toFixed(6)));
+  if (physicalHitMults?.length || magicalHitMults?.length) return { physicalHitMults, magicalHitMults };
   if (e.hitDmgMults?.length) return { magicalHitMults: e.hitDmgMults.map((n) => n * 0.55) };
   if (e.dmgMultPerHit !== undefined) return { magicalHitMults: [e.dmgMultPerHit * 0.55] };
   return { magicalHitMults: [Number(((e.dmgMult ?? 1) * 0.55).toFixed(6))] };
 }
 export function canEncore(s: BardScoreState): boolean { return s.ovation > 0 && s.encoreReady && !!s.encoreMemory; }
+export type BardActionKind = 'normal' | 'basic' | 'dot' | 'proc' | 'passive' | 'enemy' | 'multiHitPerHit' | 'finale' | 'encore' | 'stunned' | 'silencedFallback';
+export function bardActionWritesNote(kind: BardActionKind): boolean { return kind === 'normal'; }
+export function advanceAudienceChorus(s: BardScoreState): BardScoreState {
+  if (!s.pendingAudienceChorus || s.audienceChorusUsesLeft <= 0) return { ...s, pendingAudienceChorus: false, audienceChorusUsesLeft: 0 };
+  const usesLeft = s.audienceChorusUsesLeft - 1;
+  return usesLeft > 0 ? { ...s, audienceChorusUsesLeft: usesLeft } : { ...s, pendingAudienceChorus: false, audienceChorusUsesLeft: 0 };
+}
 export function applyAudienceChorus(s: BardScoreState): BardScoreState {
   if (!s.pendingAudienceChorus || s.audienceChorusUsesLeft <= 0 || s.notes.length >= 2) return s;
   return { ...s, pendingAudienceChorus: false, audienceChorusUsesLeft: 0, notes: [...s.notes, 'lyrical'] };
