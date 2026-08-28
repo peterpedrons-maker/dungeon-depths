@@ -212,6 +212,7 @@ import { getClassMechanics } from '../lib/classMechanics';
 import { formatGameNumber, formatGamePercent } from '../lib/format';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
+import { consumeCombatEvents, type CombatEvent } from '../lib/combatEngine';
 import {
   playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx, playBuySellSfx,
 } from '../lib/audio';
@@ -584,6 +585,10 @@ interface Props {
   // or hit "Parar".
   repeatCurrent?: number;
   repeatTotal?: number;
+  // Optional events emitted by the shared combat engine. The legacy live
+  // scheduler remains compatible, while engine-backed callers can feed the
+  // exact same log/floater/flash presentation boundary.
+  engineEvents?: CombatEvent[];
 }
 
 type Phase = 'fight' | 'ended';
@@ -665,7 +670,7 @@ function EffectBadgeRow({ badges, align, activeKey, onToggle }: {
 }
 
 export function DungeonPanel({
-  character, dungeon, onLiveUpdate, onRunEnd, onRestart, autoSellRarities, noPotions, repeatCurrent, repeatTotal,
+  character, dungeon, onLiveUpdate, onRunEnd, onRestart, autoSellRarities, noPotions, repeatCurrent, repeatTotal, engineEvents,
 }: Props) {
   const [ch, setCh] = useState<Character>(character);
   const [depth, setDepth] = useState(dungeon.startDepth);
@@ -1348,6 +1353,17 @@ export function DungeonPanel({
     playBuySellSfx();
     setTimeout(() => setGoldSteals((g) => g.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
   }
+
+  useEffect(() => {
+    if (!engineEvents?.length) return;
+    consumeCombatEvents(engineEvents, {
+      onLog: (line) => pushLog(line),
+      onFloat: (side, amount, crit, miss, heal) => pushFloat(side, amount, !!crit, undefined, !!miss, !!heal),
+      onAbilityCast: (side, name, amount) => pushAbilityCast(side, name, side === 'player' ? activeAbilityIconStyle(chRef.current.classId, engineEvents.find((event) => event.type === 'abilityCast' && event.name === name)?.abilityId ?? '') : null, amount ?? null, false),
+      onFlash: (side) => flash(side),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineEvents]);
 
   // Three independent clocks instead of one shared round: envTick owns every
   // duration-based decay (cooldowns, DOT, buffs/debuffs, CC, regen) on the

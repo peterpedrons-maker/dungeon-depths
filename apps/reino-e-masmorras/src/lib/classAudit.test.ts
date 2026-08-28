@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, buildAuditMatrix, runClassAuditFullRuns } from './classAudit.ts';
+import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, auditRealAbilityReachability, auditRealBuilds, auditRealPurePaths, buildAuditMatrix, runClassAuditFullRuns } from './classAudit.ts';
+import { assertAllAbilityKindsResolved, consumeCombatEvents } from './combatEngine.ts';
 
 test('auditoria estrutural cobre as 14 classes, 42 paths e 630 nodes', () => {
   const report = auditAllClasses();
@@ -51,4 +52,42 @@ test('full-run contratual percorre 98 builds em cenários regulares e boss', () 
   assert.ok(runs.every((run) => run.pass));
   assert.ok(runs.every((run) => run.equipped === 5));
   assert.ok(runs.every((run) => run.casts > 0));
+});
+
+test('resolver exaustivo cobre os 51 tipos de efeito', () => {
+  assert.equal(assertAllAbilityKindsResolved(), true);
+});
+
+test('validação end-to-end real alcança as 210 ativas', () => {
+  const rows = auditRealAbilityReachability();
+  assert.equal(rows.length, 210);
+  assert.ok(rows.every((row) => row.pass && row.castCount > 0 && row.proofEventCount > 0));
+});
+
+test('cada caminho puro lança seus cinco ativos no motor real', () => {
+  const rows = auditRealPurePaths();
+  assert.equal(rows.length, 42);
+  assert.ok(rows.every((row) => row.pass && row.activeIds.length === 5));
+});
+
+test('a matriz de 98 builds roda uma masmorra completa', () => {
+  const rows = auditRealBuilds();
+  assert.equal(rows.length, 98);
+  assert.ok(rows.every((row) => row.pass && row.equipped === 5 && row.abilitiesCast > 0));
+});
+
+test('adaptador de eventos alimenta log, dano, habilidade e flash', () => {
+  const seen: string[] = [];
+  consumeCombatEvents([
+    { type: 'abilityCast', tick: 1, actor: 'player', abilityId: 'x', name: 'Teste' },
+    { type: 'damage', tick: 1, actor: 'player', amount: 12, crit: true },
+    { type: 'heal', tick: 1, actor: 'player', amount: 4 },
+    { type: 'enemyDeath', tick: 1 },
+  ], {
+    onAbilityCast: (_side, name) => seen.push(`cast:${name}`),
+    onFloat: (side, amount, crit, _miss, heal) => seen.push(`float:${side}:${amount}:${crit}:${heal}`),
+    onFlash: (side) => seen.push(`flash:${side}`),
+    onLog: (line) => seen.push(`log:${line}`),
+  });
+  assert.deepEqual(seen, ['cast:Teste', 'float:enemy:12:true:undefined', 'flash:enemy', 'float:player:4:false:true', 'log:Inimigo derrotado']);
 });

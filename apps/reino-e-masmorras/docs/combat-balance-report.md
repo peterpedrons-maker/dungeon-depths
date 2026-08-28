@@ -1,11 +1,10 @@
-# PATCH 2 — relatório de balanceamento de combate
+# PATCH 4 — relatório de balanceamento de combate
 
 ## Estado
 
-- Branch: `patch2-combat-rebalance`
-- Base: `origin/main` em `aed89cd432238ef3b03883b526b53f8c5c12e18e`
-- Harness: `src/lib/combatBalance.ts`
-- Semente: `42`; amostra: `300` sementes por cenário
+- Base: `origin/main` após Patch 3, com o motor real de combate do Patch 4
+- Harness: `src/lib/combatBalance.ts` + `src/lib/combatEngine.ts`
+- Sementes: `1..300`, amostra completa por cenário
 - Cobertura: 14 classes, 33 dungeons, regular e boss
 
 ## Curvas aplicadas
@@ -21,11 +20,13 @@
 | Roubo de Vida | sem cap central | cap global 30% |
 | Espinhos | sem cap central | cap global 60% |
 
-## Resultado do harness core
+## Resultado do motor completo
 
-O harness executou `277.200` lutas. Houve `27.215` vitórias, taxa agregada de `9,8%`, média de `4,18` ações, `191,1` dano do jogador e `251,2` dano inimigo por luta.
+O motor completo executou `277.200` lutas: 300 sementes × 14 classes × 33 dungeons × regular/boss. Houve `68.199` vitórias, taxa agregada de `24,60%`, média de `8,76` ações, `1.090,92` dano do jogador e `546,03` dano inimigo por luta.
 
-Esta primeira rodada é um diagnóstico do núcleo — ataques básicos, stats, spawn, curva e mitigação — e não uma aprovação das metas finais de clear. Ela deliberadamente não finge simular os efeitos específicos das 14 árvores de habilidades. A taxa agregada baixa confirma que o relatório final precisa incluir o resolvedor completo de habilidades, recursos, cura, barreiras, DOT, summons e persistência de HP antes de aceitar as metas de vitória do prompt.
+Cada combate usa as cinco habilidades de um loadout legal, prioridades, cooldowns, recursos, cura, barreiras, DOT/CC, summons, equipamento e o `CombatEvent[]` do resolvedor. As execuções de dungeon também preservam HP entre encontros; a tabela abaixo é uma amostra de lutas isoladas, enquanto `runDungeonCoverage()` cobre a sequência completa.
+
+Os perfis de equipamento disponíveis são `recem-chegado`, `farmado`, `bem-equipado`, `endgame-realista` e `stress`. O resultado de 300 sementes usa `bem-equipado`, com geração determinística por semente, tier/raridade/qualidade e Forja aplicados ao loadout.
 
 | Classe | Vitórias | Ações | Dano jogador | Dano inimigo |
 |---|---:|---:|---:|---:|
@@ -47,9 +48,10 @@ Esta primeira rodada é um diagnóstico do núcleo — ataques básicos, stats, 
 ## Reprodução
 
 ```bash
-node --experimental-strip-types --input-type=module -e "import {runCombatBalance} from './src/lib/combatBalance.ts'; console.log(runCombatBalance(300))"
+node --experimental-strip-types --input-type=module -e "import {runCombatBalance} from './src/lib/combatBalance.ts'; const s=runCombatBalance(300,1); console.log({fights:s.fights,wins:s.wins,winRate:s.wins/s.fights,averageActions:s.averageActions,averagePlayerDamage:s.averagePlayerDamage,averageEnemyDamage:s.averageEnemyDamage})"
+node --experimental-strip-types --input-type=module -e "import {runDungeonCoverage} from './src/lib/combatBalance.ts'; console.log(runDungeonCoverage(1).length)"
 ```
 
-## Próxima etapa obrigatória
+## Escopo e leitura dos números
 
-Expandir o harness para executar as cinco habilidades legais, prioridades de build, recursos, cura, barreira, DOT, controle, summons, equipamento e full-run com HP persistente. Os números acima não devem ser tratados como aprovação final de duração ou win rate.
+Esta amostra é uma validação automatizada de regressão e cobertura, não uma promessa de dificuldade final para jogadores. A taxa agregada mistura dungeons e perfis de progressão; decisões de balanceamento devem usar as linhas por classe/dungeon e o perfil de equipamento correspondente. O ponto principal do Patch 4 é que as métricas agora vêm de um resolvedor de habilidades executável e reproduzível, com os contratos end-to-end cobertos por testes.

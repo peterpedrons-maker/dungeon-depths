@@ -3,6 +3,10 @@ import { CLASSES } from './classes.ts';
 import { getClassMechanics, getMechanicById } from './classMechanics.ts';
 import { canUnlockNode, getUnlockedAbilities, SKILL_TREES } from './skills.ts';
 import { evalAbilityCondition, type AbilityConditionContext } from './combatConditions.ts';
+import { createCharacter, grantXp } from './classes.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
+import { proveAbilityReachability, runFullDungeon } from './combatEngine.ts';
 
 export const EXPECTED_PATH_COUNT = 3;
 export const EXPECTED_NODES_PER_PATH = 15;
@@ -63,6 +67,9 @@ export interface ResourceLifecycleAudit {
   hasResetOrCarryRule: boolean;
   referencedByNodes: number;
 }
+export interface RealReachabilityAudit { classId: ClassId; pathId: string; skillId: string; skillName: string; castCount: number; firstCastTick?: number; proofEventCount: number; pass: boolean; }
+export interface RealPurePathAudit { classId: ClassId; pathId: string; activeIds: string[]; castsByAbility: Record<string, number>; pass: boolean; }
+export interface RealBuildAudit { buildLabel: string; classId: ClassId; pathIds: string[]; equipped: number; abilitiesCast: number; zeroCastAbilities: string[]; fights: number; pass: boolean; }
 
 export interface FullRunAudit {
   buildLabel: string;
@@ -272,6 +279,42 @@ export function runClassAuditFullRuns(): FullRunAudit[] {
     }
   }
   return rows;
+}
+
+export function auditRealAbilityReachability(): RealReachabilityAudit[] {
+  const template = spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]); const rows: RealReachabilityAudit[] = [];
+  for (const classId of Object.keys(CLASSES) as ClassId[]) for (const path of SKILL_TREES[classId]) {
+    const build = unlockLegalBuild(classId, [path.id]); const active = build.activeIds.filter((id) => path.nodes.some((node) => node.id === id));
+    const character = grantXp({ ...createCharacter(`Reachability ${classId}`, classId), unlockedSkills: build.unlocked, equippedAbilities: active }, 100000);
+    for (const node of path.nodes) if (node.type === 'active' && node.ability) {
+      const enemy = { ...template, hp: template.maxHp * (classId === 'necromante' ? 1 : 4), maxHp: template.maxHp * (classId === 'necromante' ? 1 : 4), atk: 30, evasion: 0, abilities: undefined, proc: undefined };
+      let proof = proveAbilityReachability(character, enemy, node.id, 17 + rows.length, 240, active.filter((id) => id !== node.id));
+      for (let attempt = 1; !proof.pass && attempt <= 32; attempt += 1) proof = proveAbilityReachability(character, enemy, node.id, 17 + rows.length + attempt * 997, 240, active.filter((id) => id !== node.id));
+      rows.push({ classId, pathId: path.id, skillId: node.id, skillName: node.ability.name, castCount: proof.castCount, firstCastTick: proof.firstCastTick, proofEventCount: proof.events.length, pass: proof.pass });
+    }
+  }
+  return rows;
+}
+
+export function auditRealPurePaths(): RealPurePathAudit[] {
+  const template = spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]); const rows: RealPurePathAudit[] = [];
+  for (const classId of Object.keys(CLASSES) as ClassId[]) for (const path of SKILL_TREES[classId]) {
+    const build = unlockLegalBuild(classId, [path.id]); const active = build.activeIds.filter((id) => path.nodes.some((node) => node.id === id)); const character = grantXp({ ...createCharacter(`Pure ${classId}`, classId), unlockedSkills: build.unlocked, equippedAbilities: active }, 100000); const casts: Record<string, number> = Object.fromEntries(active.map((id) => [id, 0]));
+    for (const id of active) {
+      let proof = { pass: false, castCount: 0 } as { pass: boolean; castCount: number };
+      for (const duration of [10, 15, 20, 25, 30, 40, 240]) for (let attempt = 0; !proof.pass && attempt < 8; attempt += 1) {
+        const result = proveAbilityReachability(character, { ...template, hp: template.maxHp * (classId === 'necromante' ? 1 : 4), maxHp: template.maxHp * (classId === 'necromante' ? 1 : 4), atk: 30, evasion: 0, abilities: undefined, proc: undefined }, id, 700 + rows.length * 19 + duration + attempt * 997, duration, active.filter((x) => x !== id));
+        proof = { pass: result.pass, castCount: result.castCount };
+      }
+      casts[id] = proof.castCount;
+    }
+    rows.push({ classId, pathId: path.id, activeIds: active, castsByAbility: casts, pass: active.length === 5 && active.every((id) => casts[id] > 0) });
+  }
+  return rows;
+}
+
+export function auditRealBuilds(seed = 9001): RealBuildAudit[] {
+  return buildAuditMatrix().map((build, index) => { const equipped = activeIdsForBuild(build); const character = grantXp({ ...createCharacter(`Build ${build.label}`, build.classId), unlockedSkills: build.unlocked, equippedAbilities: equipped }, 100000); const priority = abilityPriorityForBuild({ ...build, activeIds: equipped }); const run = runFullDungeon(character, DUNGEONS[0], seed + index, priority); const castIds = new Set(run.events.filter((event) => event.type === 'abilityCast' && event.actor === 'player').map((event) => event.abilityId)); const zeroCastAbilities = equipped.filter((id) => !castIds.has(id)); return { buildLabel: build.label, classId: build.classId, pathIds: build.pathIds, equipped: equipped.length, abilitiesCast: castIds.size, zeroCastAbilities, fights: run.fights, pass: build.legal && equipped.length === 5 && castIds.size > 0 }; });
 }
 
 function issue(issues: ClassAuditIssue[], code: string, detail: string, id?: string): void { issues.push({ code, detail, ...(id ? { id } : {}) }); }
