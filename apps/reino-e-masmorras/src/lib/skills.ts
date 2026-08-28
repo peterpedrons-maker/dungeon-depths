@@ -954,7 +954,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       // existir (base 35% + bônus de Pele Endurecida, até 44% total); novos
       // pacotes pagam em 4 envTicks (era 3); com vida abaixo de 35%, dano
       // dos ticks de Dor (só o de Dor) reduzido em 20%.
-      { name: 'Inquebrável', desc: 'A capacidade máxima de Dor sobe +5 pontos percentuais (até 44% com Pele Endurecida no máximo) e novos pacotes passam a pagar em 4 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {}, mechanicRefs: ['barbaro:pain'],
+      { name: 'Inquebrável', desc: 'A capacidade máxima de Dor sobe +5 pontos percentuais (até 44% com Pele Endurecida no máximo) e novos pacotes passam a pagar em 6 ciclos. Com vida abaixo de 35%, o dano dos ciclos de Dor cai 20%.', effect: {}, mechanicRefs: ['barbaro:pain'],
         scaling: [
           { attribute: 'vit', label: 'VIT', role: 'terciario', description: 'Indiretamente via vida máxima e a capacidade de Dor que Pele Endurecida já escalou.' },
           { label: 'Dor', role: 'mecanica', description: 'Aumenta o teto de Dor e sua janela de pagamento.' },
@@ -1564,7 +1564,9 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Ciclo da Natureza', desc: 'Cura 6% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.06 } },
     ]),
   ],
-  bardo: [
+  /* Legacy Bard table retained only as migration context; the live table is
+     assigned declaratively below after all redesigned class tables. */
+  /* bardo: [
     buildPath('bardo', 'cancao-guerra', 'Canção de Guerra', '#c9663c', [
       { name: 'Reflexo Assassino', desc: '+1% de chance de crítico.', effect: { critPct: 0.01 } },
       { name: 'Potência Crua', desc: '+2 de dano.', effect: { flatBonusDmg: 2 } },
@@ -1631,7 +1633,8 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: { name: 'Sinfonia da Vida', desc: 'Recupera 53% da vida máxima.', cooldown: 7, condition: { type: 'always' }, effect: { kind: 'heal', healPct: 0.53 } } },
       { name: 'Aplauso Vital', desc: 'Cura 8% da vida máxima sempre que você acerta um crítico.', effect: { onCritHealPct: 0.08 } },
     ]),
-  ],
+  ], */
+  bardo: [],
   necromante: [
     buildPath('necromante', 'decomposicao', 'Decomposição', '#3a3a4a', [
       { name: 'Ímpeto Místico', desc: '+2 de dano mágico.', effect: { flatBonusMagicDmg: 2 } },
@@ -2125,10 +2128,10 @@ SKILL_TREES.bardo = [
     bNode('Cordas de Aço','+3% Dano Crítico; componente físico do Acento recebe DES, até +0,06x.',{critDmgPct:0.03},['bardo:accent'],bardScale('DES total','dex')),
     bNode('Sem Perder o Ritmo','Uma vez por inimigo, erro total de Marcato com Acento devolve Acento.',{},['bardo:accent'],bardScale('Reembolso')),
     bAct('Marcha Implacável','Dois impactos mágicos de 0,63x; Acento adiciona 0,40x ATK.',4,bVoice('marcato','march',{kind:'multiHit',hitCount:2,dmgMultPerHit:0.63,bardAccent:true,bardAccentAtkMult:0.40,bardEncoreEligible:true})),
-    bAct('Grito em Compasso','1,50x MATK; ao acertar, +5% Velocidade por 2 ciclos.',5,bVoice('marcato','march',{kind:'bigHit',dmgMult:1.50,bardEncoreEligible:true})),
+    bAct('Grito em Compasso','1,50x MATK; ao acertar, +5% Velocidade por 2 ciclos.',5,bVoice('marcato','march',{kind:'bigHit',dmgMult:1.50,bardSpeedBuffPct:0.05,bardSpeedBuffRounds:2,bardEncoreEligible:true})),
     bNode('Presença de Palco','+8 Vida Máxima; Fortíssimo reduz 3% do dano direto recebido.',{maxHpFlat:8},['bardo:fortissimo'],bardScale('Fortíssimo')),
     bAct('Solo de Batalha','2,00x MATK; Acento adiciona 0,50x ATK.',7,bVoice('marcato','march',{kind:'bigHit',dmgMult:2.00,bardAccent:true,bardAccentAtkMult:0.50,bardEncoreEligible:true})),
-    bAct('Concerto de Guerra','Finale: requer e consome Ovação; 1,55x MATK + 0,65x ATK.',9,bVoice('finale','march',{kind:'multiHit',hitCount:2,hitDmgMults:[1.55,0.65],bardFinale:true,bardOvationCost:1,bardMagicalHitMults:[1.55],bardPhysicalHitMults:[0.65]}),{ type:'resourceAtLeast',resource:'ovation',value:1 }),
+    bAct('Concerto de Guerra','Finale: requer e consome Ovação; 1,55x MATK + 0,65x ATK. Acento adiciona 0,20x ATK.',9,bVoice('finale','march',{kind:'multiHit',hitCount:2,hitDmgMults:[1.55,0.65],bardFinale:true,bardOvationCost:1,bardAccentAtkMult:0.20,bardMagicalHitMults:[1.55],bardPhysicalHitMults:[0.65]}),{ type:'resourceAtLeast',resource:'ovation',value:1 }),
     bNode('O Palco é Meu','Refrão Marcato prepara Entrada Triunfal: próximo básico acertado causa +30% físico e gera Acento.',{},['bardo:accent','bardo:fortissimo'],bardScale('Entrada Triunfal')),
   ]),
   buildPath('bardo','melodia-sombria','DISSONÂNCIA','#4a2a5a',[
@@ -2141,7 +2144,7 @@ SKILL_TREES.bardo = [
     bNode('Eco Roubado','Desbloqueia Eco 0–2 gerado por Contratempo.',{},['bardo:echo','bardo:countertempo'],bardScale('Eco')),
     bNode('Harmonia Áspera','+3% Dano Crítico; com 2 Ecos, +3% adicionais.',{critDmgPct:0.03},['bardo:echo'],bardScale('Crítico','luk')),
     bNode('Contratempo Perfeito','Contratempo durante Fora de Tom gera +1 Eco adicional (cap 2).',{},['bardo:countertempo','bardo:echo'],bardScale('Eco')),
-    bAct('Trítono','1,45x MATK; com Eco, consome 1 e sobe para 1,70x; ao acertar -6% MDEF por 2 ciclos.',4,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.45,bardEchoCost:1,bardEncoreEligible:true})),
+    bAct('Trítono','1,45x MATK; com Eco, consome 1 e sobe para 1,70x; ao acertar -6% MDEF por 2 ciclos.',4,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.45,bardEchoCost:1,bardMdefDebuffPct:0.06,bardMdefDebuffRounds:2,bardEncoreEligible:true})),
     bAct('Quebra de Compasso','1,15x MATK; aplica Contratempo e -8% dano da próxima ação (ou -14% com 2 Ecos).',5,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:1.15,bardAppliesCountertempo:true,bardEchoCost:2,bardNextEnemyDamageReductionPct:0.08,bardEncoreEligible:true})),
     bNode('Som que Fica','+2% MDEF; ao consumir Eco, +4pp Tenacidade até a próxima ação.',{mdefPct:0.02},['bardo:echo'],bardScale('Eco')),
     bAct('Ressonância Partida','Requer e consome 2 Ecos; 2,05x MATK, +12% pen; 2,25x contra Fora de Tom.',7,bVoice('dissonant','dissonance',{kind:'bigHit',dmgMult:2.05,bardEchoCost:2,bardEncoreEligible:true}),{ type:'resourceAtLeast',resource:'echo',value:2 }),
@@ -2161,7 +2164,7 @@ SKILL_TREES.bardo = [
     bAct('Interlúdio','Cura 7% da Base; reduz 1 ciclo do debuff removível mais antigo. Coringa Harmony First.',4,bVoice('wildcard','improvisation',{kind:'heal',healPct:0.07,bardSupportHealPct:0.07,bardWildcardPolicy:'harmonyFirst',bardEncoreEligible:true}),{ type:'any',conditions:[{type:'hpBelow',pct:0.85},{type:'selfDebuffed'}] }),
     bAct('Verso de Improviso','1,20x MATK. Coringa Refrain First.',5,bVoice('wildcard','improvisation',{kind:'bigHit',dmgMult:1.20,bardWildcardPolicy:'refrainFirst',bardEncoreEligible:true})),
     bNode('Presença Inspiradora','+2% MDEF; enquanto Ovação estiver guardada, +3% DEF.',{mdefPct:0.02},['bardo:ovation'],bardScale('Ovação')),
-    bAct('Hino da Segunda Respiração','Cura 22% Base (25% com Ovação), HP abaixo de 45%; prepara -10% dano inimigo.',7,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.22,bardSupportHealPct:0.22,bardNextEnemyDamageReductionPct:0.10,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.45 }),
+    bAct('Hino da Segunda Respiração','Cura 22% Base (25% com Ovação), HP abaixo de 45%; prepara -10% dano inimigo.',7,bVoice('lyrical','improvisation',{kind:'heal',healPct:0.22,bardSupportHealPct:0.22,bardOvationHealPct:0.25,bardNextEnemyDamageReductionPct:0.10,bardEncoreEligible:true}),{ type:'hpBelow',pct:0.45 }),
     bAct('Bis!','Finale: requer Ovação e Encore Ready; repete payload primário a 55%, sem Nota nem efeitos colaterais.',9,bVoice('finale','improvisation',{kind:'bigHit',bardFinale:true,bardEncore:true,bardOvationCost:1}),{ type:'all',conditions:[{type:'resourceAtLeast',resource:'ovation',value:1},{type:'stateActive',state:'encoreReady'}] }),
     bNode('O Espetáculo Continua','Ao consumir Ovação, prepara Coro da Plateia: uma Nota Lírica fantasma sem cadeia recursiva.',{},['bardo:ovation','bardo:score'],bardScale('Coro da Plateia')),
   ]),

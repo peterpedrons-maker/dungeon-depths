@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { appendBardNote, applyAudienceChorus, canEncore, chooseWildcardNote, classifyBardPhrase, consumeEcho, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, healingBaseHp, gainEcho, prepareAccent, resetBardEnemy, resolveBardPhrase } from './bardo.ts';
+import { advanceAudienceChorus, appendBardNote, applyAudienceChorus, bardActionWritesNote, canEncore, chooseWildcardNote, classifyBardPhrase, consumeEcho, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, healingBaseHp, gainEcho, prepareAccent, resetBardEnemy, resolveBardPhrase } from './bardo.ts';
 
 test('Bardo preserva 3 paths, 45 IDs e topologia 7/3/5', () => {
   const source = readFileSync(new URL('./skills.ts', import.meta.url), 'utf8');
@@ -39,16 +39,38 @@ test('Contratempo converte ação real em Eco, respeitando caps e reset por inim
 
 test('Ovação, Acento, Coro e Bis respeitam caps e payload sanitizado', () => {
   let s = createBardState(); s = prepareAccent(s); assert.equal(s.accent,true);
-  s = consumeOvation({ ...s, ovation:1 }); assert.equal(s.ovation,0); assert.equal(s.pendingAudienceChorus,true);
-  s = applyAudienceChorus(s); assert.deepEqual(s.notes,['lyrical']);
+  s = consumeOvation({ ...s, ovation:1 }, true); assert.equal(s.ovation,0); assert.equal(s.pendingAudienceChorus,false); assert.deepEqual(s.notes,['lyrical']);
+  assert.deepEqual(applyAudienceChorus(s).notes,['lyrical']);
   const payload = createEncorePayload({ dmgMult:1.3 }); assert.deepEqual(payload,{magicalHitMults:[0.715]});
   assert.deepEqual(createEncorePayload({ healPct:0.12 }), { healPct:0.066 });
   s = { ...s, encoreReady:true, encoreMemory:payload, ovation:1 }; assert.equal(canEncore(s),true);
+  assert.equal(consumeOvation({ ...s, pendingAudienceChorus:false }, false).pendingAudienceChorus, false);
+  assert.deepEqual(createEncorePayload({ bardMagicalHitMults:[1.2], bardPhysicalHitMults:[0.4] }), { magicalHitMults:[0.66], physicalHitMults:[0.22] });
+});
+
+test('Coro da Plateia dura três habilidades normais e entra após a próxima Frase', () => {
+  let s = consumeOvation({ ...createBardState(), notes:['marcato','dissonant'], ovation: 1 }, true);
+  assert.equal(s.pendingAudienceChorus, true);
+  s = advanceAudienceChorus(s); assert.equal(s.audienceChorusUsesLeft, 2);
+  s = advanceAudienceChorus(s); assert.equal(s.audienceChorusUsesLeft, 1);
+  s = advanceAudienceChorus(s); assert.equal(s.pendingAudienceChorus, false);
+  s = consumeOvation({ ...createBardState(), notes:['marcato','dissonant'], ovation: 1 }, true);
+  const phrase = appendBardNote(s, 'lyrical');
+  assert.equal(phrase.phrase, 'harmony');
+  assert.deepEqual(phrase.state.notes, ['lyrical']);
+});
+
+test('performance atravessa inimigos, mas alvo e memória do Bis não', () => {
+  const performance = { ...createBardState(), notes:['marcato' as const], ovation:1, accent:true, fortissimo:true, impulse:true, sustain:true, triumphalEntry:true, pendingAudienceChorus:true, audienceChorusUsesLeft:2, encoreReady:true, encoreMemory:{ magicalHitMults:[0.5] } };
+  const next = resetBardEnemy(performance);
+  assert.deepEqual(next.notes, ['marcato']); assert.equal(next.ovation, 1); assert.equal(next.accent, true); assert.equal(next.fortissimo, true); assert.equal(next.impulse, true); assert.equal(next.sustain, true); assert.equal(next.triumphalEntry, true); assert.equal(next.pendingAudienceChorus, true);
+  assert.equal(next.echo, 0); assert.equal(next.countertempo, false); assert.equal(next.encoreReady, false); assert.equal(next.encoreMemory, null);
 });
 
 test('ação normal escreve uma Nota; básicos, DOT, Finale, Bis e ação negada não escrevem', () => {
   let s=createBardState(); const normal=appendBardNote(s,'marcato'); assert.equal(normal.state.notes.length,1);
-  assert.equal(createBardState().notes.length,0); // non-note events use no append
+  for (const kind of ['basic','dot','proc','passive','enemy','multiHitPerHit','finale','encore','stunned','silencedFallback'] as const) assert.equal(bardActionWritesNote(kind), false);
+  assert.equal(bardActionWritesNote('normal'), true);
 });
 
 test('Base de Cura universal ignora equipamento/VIT e escala apenas suporte', () => {

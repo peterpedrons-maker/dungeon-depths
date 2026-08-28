@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 123438)
+Total output lines: 7705
+
 import { CSSProperties, useEffect, useRef, useState } from 'react';
 import {
   AbilityDef, Character, CrowdControlKind, EnemyAbility, EnemyInstance, DungeonDef, ItemSlot,
@@ -40,14 +43,14 @@ import {
 import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium } from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, applyWarlockDebt, payWarlockDebt, setWarlockDebt, grantWarlockCredit, consumeTrueName, consumeTrueNameAndRefragment, bindWarlockEnemy, addNameFragment, consumeMandamento, resolveCollection, borrowedPowerPct, overcontractDamagePct, collectionAmount } from '../lib/warlock';
 import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState, beginActiveCast, resolvePulseGain, addResonance, consumeResonance, addControl, consumeControl, addFractures, consumeFractures, rupturePenetration } from '../lib/sorcerer';
-import { BARD_FORTISSIMO_DAMAGE, BardScoreState, appendBardNote, applyAudienceChorus, canEncore, consumeAccent, consumeOvation, countertempoEcho, createBardState, createEncorePayload, resetBardEnemy, chooseWildcardNote, prepareAccent } from '../lib/bardo';
+import { BARD_FORTISSIMO_DAMAGE, BardScoreState, advanceAudienceChorus, appendBardNote, applyAudienceChorus, canEncore, consumeAccent, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, resetBardEnemy, chooseWildcardNote, prepareAccent } from '../lib/bardo';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
-  GUARD_BREAK_TICKS, POSTURE_BASIC_DAMAGE, POSTURE_MAX, PreparedGuardState,
+  GUARD_BREAK_TICKS, POSTURE_BASIC_DAMAGE, POSTURE_MAX, PreparedGuardState, recoverablePosture,
   ReadingKind, RiposteKind, WarriorEnemyState, applyPostureDamage, bandValue,
   createWarriorEnemyState, crossesLowerBand, duelPostureDamage, parryReduction,
-  postureBand, recoverPosture,
+  postureBand,
 } from '../lib/warrior';
 import {
   FURY_MAX, FURY_MIN, FURY_GAIN_BASIC_HIT, FURY_GAIN_BASIC_HIT_SANGUE_QUENTE, FURY_GAIN_ABILITY_HIT,
@@ -112,8 +115,8 @@ import {
   clericBaseHp, clericDirectHealAmount, clericPassiveHealAmount, significantHealAmount,
 } from '../lib/clerigo';
 import {
-  DETERMINATION_MAX, determinationForDirectHit, addDetermination,
-  DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION,
+  DETERMINATION_MAX, determinationForDirectHit, determinationForPreventedDamage, addDetermination,
+  DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, IRON_WALL_DETERMINATION_THRESHOLD_PCT,
   RETALIATION_MAX_CHARGES, RETALIATION_BLOCKS_PER_CHARGE, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR,
   MOMENTUM_MAX_BASE, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, MOMENTUM_GAIN_FIRST_HIT_PASSO_DE_GUERRA_BONUS,
   MOMENTUM_LOSS_HEAVY_HIT_PCT_BASE, MOMENTUM_LOSS_AMOUNT_BASE,
@@ -1099,6 +1102,9 @@ export function DungeonPanel({
       if (!bardHasSkill('bardo:cancao-guerra:6')) bardStateRef.current = { ...bardStateRef.current, accent: false };
       if (bardHasSkill('bardo:cancao-guerra:14')) bardStateRef.current = { ...bardStateRef.current, triumphalEntry: true };
     }
+    if (out.phrase === 'counterpoint' && out.dominant === 'marcato' && bardHasSkill('bardo:cancao-guerra:6')) {
+      bardStateRef.current = prepareAccent(bardStateRef.current);
+    }
     if (out.phrase === 'refrain' && out.dominant === 'lyrical' && !bardHasSkill('bardo:inspiracao:5')) {
       bardStateRef.current = { ...bardStateRef.current, lyricTenacity: false };
     }
@@ -1110,9 +1116,8 @@ export function DungeonPanel({
     }
     if (out.healPct) {
       const c = chRef.current;
-      const baseHealing = clericBaseHp(CLASSES[c.classId].baseHp, c.level);
       const harmonyBonus = out.phrase === 'harmony' && bardHasSkill('bardo:inspiracao:6') ? 0.02 : 0;
-      const amount = Math.round(baseHealing * (out.healPct + harmonyBonus) * (1 + computePlayerStats().supportPowerPct) * (1 + bardHealingEfficiency()));
+      const amount = directHealAmount(CLASSES[c.classId].baseHp, c.level, out.healPct + harmonyBonus, computePlayerStats().supportPowerPct, bardHealingEfficiency());
       const healed = Math.min(effectiveMaxHp(c), c.hp + amount) - c.hp;
       if (healed > 0) {
         updateCh({ ...c, hp: c.hp + healed });
@@ -1125,16 +1130,17 @@ export function DungeonPanel({
   function bardFinalizeCast(ab: AbilityDef, executed: boolean): void {
     if (!isBard() || !executed) return;
     const e = ab.effect;
-    if (e.bardFinale) { bardStateRef.current = consumeOvation(bardStateRef.current); bardSync(); return; }
+    if (e.bardFinale) { bardStateRef.current = consumeOvation(bardStateRef.current, bardHasSkill('bardo:inspiracao:14')); bardSync(); return; }
     if (e.bardEncore) return;
     let note: 'marcato'|'dissonant'|'lyrical' = e.bardVoice === 'dissonant' ? 'dissonant' : e.bardVoice === 'lyrical' ? 'lyrical' : 'marcato';
     if (e.bardVoice === 'wildcard') note = chooseWildcardNote(bardStateRef.current.notes, e.bardWildcardPolicy ?? 'harmonyFirst');
     bardAppend(note);
     if (e.bardPath === 'dissonance' && e.bardVoice === 'dissonant' && bardStateRef.current.echoNotePending) {
       bardStateRef.current = { ...bardStateRef.current, echoNotePending: false };
-      bardSync();
       bardAppend('dissonant');
     }
+    bardStateRef.current = advanceAudienceChorus(bardStateRef.current);
+    bardSync();
   }
   function bardOnEnemyAction(directHitsAttempted: number, directHitsLanded: number): void {
     if (!isBard()) return;
@@ -1848,13 +1854,13 @@ export function DungeonPanel({
       return;
     }
     const zero = state.zeroRecoveryPending;
-    const amount = recoverPosture(state.current, {
+    const recoveryOptions = {
       zero,
       pressure: state.pressureRecoveryPending,
       suppressed: state.suppressedActionsLeft > 0,
       breathless: warriorHasSkill('guerreiro:furioso:8'),
-    });
-    const recovered = zero ? 0 : Math.min(amount, state.max - state.current);
+    };
+    const recovered = zero ? 0 : recoverablePosture(state, recoveryOptions);
     warriorCommitEnemy({
       ...state,
       current: Math.min(state.max, state.current + recovered),
@@ -2466,15 +2472,6 @@ export function DungeonPanel({
     knightDeterminationRef.current = Math.max(0, knightDeterminationRef.current - amount);
     syncKnightDetermination();
   }
-  // Barreiras/Muralha de Ferro convertem dano impedido em Determinação — "a
-  // cada N% do HP máximo efetivo" com um teto por ação inimiga. Fortaleza
-  // Viva bloqueia toda geração de Determinação por bloqueio/barreira enquanto
-  // ativa (ver knightFortressActive), então os call-sites checam isso antes.
-  function knightDeterminationFromPct(amountPrevented: number, pctPerPoint: number, capPoints: number): number {
-    if (amountPrevented <= 0) return 0;
-    return Math.min(capPoints, Math.floor(amountPrevented / knightEffMaxHp() / pctPerPoint));
-  }
-
   // ── RETALIAÇÃO (cavaleiro:bastiao:6 Reação Defensiva) ──
   function knightOnBlockSuccess() {
     if (!isKnight() || !knightHasSkill('cavaleiro:bastiao:6')) return;
@@ -2975,7 +2972,7 @@ export function DungeonPanel({
   // consume Mão do Armeiro's next-shot bonus or Instinto de Fuga's window
   // (both scoped to the single-hit/plain-attack path only) — a scoped
   // simplification, called out in the final report.
-  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }, warlockBonuses?: { debtForPower: number; scars: number; overcontract: boolean; path: 'maldicao'|'pacto'|'corrupcao'; }, sorcererBonuses?: { awakened: boolean; accuracy: number; crit: number; pen: number; dmgPct: number; echo: boolean; echoPotency: number }, bardBonuses?: { fortissimo: boolean; accent: boolean; accentAtkMult?: number; echoAtCast: number; outOfTuneAtCast: boolean }) {
+  function hunterResolveMultiHit(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, accuracyForRoll: number, enemyEvasion: number, critChanceForRoll: number, critDmgMultForRoll: number, mageAmplified = false, mageHeatAtCast = 0, warriorBonuses?: { dmg: number; posture: number; defPen: number; breakActive: boolean }, rogueBonuses?: { images: number; sharpened: boolean; loadedDieFirstHit?: boolean; advantage: boolean }, warlockBonuses?: { debtForPower: number; scars: number; overcontract: boolean; path: 'maldicao'|'pacto'|'corrupcao'; }, sorcererBonuses?: { awakened: boolean; accuracy: number; crit: number; pen: number; dmgPct: number; echo: boolean; echoPotency: number }, bardBonuses?: { fortissimo: boolean; accent: boolean; accentAtkMult?: number; echoAtCast: number; outOfTuneAtCast: boolean; impulse?: boolean; bridge?: boolean }): boolean {
     const eff = ab.effect;
     const archerCdr = isArcher() && eff.archerPath
       ? (archerHasSkill(eff.archerPath === 'precision' ? 'arqueiro:precisao:3' : eff.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
@@ -2998,7 +2995,7 @@ export function DungeonPanel({
     for (let i = 0; i < hitCount; i++) {
       if (enemyRef.current.hp <= 0) break;
       const guardBreakNow = isWarrior() && warriorEnemyState().guardBroken;
-      const perHitAccuracy = accuracyForRoll + (sorcererBonuses?.accuracy ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_ACCURACY_BONUS : 0) + (bardBonuses?.accent ? 0.02 : 0);
+      const perHitAccuracy = accuracyForRoll + (sorcererBonuses?.accuracy ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_ACCURACY_BONUS : 0);
       const hitMissed = i === 0 && rogueBonuses?.loadedDieFirstHit !== undefined ? !rogueBonuses.loadedDieFirstHit : rollMiss(perHitAccuracy, enemyEvasion);
       if (hitMissed) {
         allLanded = false;
@@ -3026,13 +3023,20 @@ export function DungeonPanel({
         if (bardBonuses?.accent) dmgMult *= 1 + Math.min(0.03, attrTotal(chRef.current, 'dex') * 0.0008);
       }
       if (isBard() && eff.bardPath === 'dissonance' && bardStateRef.current.echo > 0) dmgMult *= 1 + Math.min(0.03, attrTotal(chRef.current, 'int') * 0.0008);
+      if (bardBonuses?.impulse && eff.bardPath === 'march') dmgMult *= 1.07;
+      if (bardBonuses?.bridge && eff.bardPath === 'improvisation' && eff.bardVoice !== 'finale') dmgMult *= 1.06;
       // Tiro Duplo's own marked-prey bonus applies only to the SECOND shot.
       if (i === 1 && marked && ab.id === 'cacador:precisao-caca:9') dmgMult *= 1 + TIRO_DUPLO_SECOND_HIT_BONUS_PCT_MARKED;
       if (warriorBonuses) dmgMult += warriorBonuses.dmg / hitCount;
       const liveDefPen = (warriorBonuses?.defPen ?? 0) + (guardBreakNow && !warriorBonuses?.breakActive ? GUARD_BREAK_DEF_PEN : 0);
       const bPen = isBard() && eff.bardPath === 'dissonance' && bardHasSkill('bardo:melodia-sombria:1') ? 0.04 : 0;
       const effDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen - liveDefPen - bPen));
-      const bardPhysical = isBard() && eff.bardPhysicalHitMults?.[i] !== undefined;
+      const magicalCount = eff.bardMagicalHitMults?.length ?? (eff.bardPhysicalHitMults?.length ? hitCount - eff.bardPhysicalHitMults.length : 0);
+      const bardPhysical = isBard() && !!eff.bardPhysicalHitMults?.length && i >= magicalCount;
+      if (bardPhysical && eff.bardPhysicalHitMults?.[i - magicalCount] !== undefined) {
+        dmgMult = eff.bardPhysicalHitMults[i - magicalCount];
+        if (eff.bardFinale && bardBonuses?.accent) dmgMult += bardBonuses.accentAtkMult ?? 0;
+      }
       const hitPower = bardPhysical ? stats.atk : power;
       const hitDef = bardPhysical ? computeEnemyDef() * (1 - stats.defPenPct - liveDefPen) : effDef;
       const { dmg: baseDmg, crit } = rollAbilityHit(hitPower, hitDef, dmgMult * (1 + (sorcererBonuses?.dmgPct ?? 0)), critChanceForRoll + (sorcererBonuses?.crit ?? 0), critDmgMultForRoll);
@@ -3065,7 +3069,7 @@ export function DungeonPanel({
           pushFloat('player', healAmount, false, undefined, undefined, true);
         }
       }
-      if (newHp <= 0) { if (!warlockBonuses && !sorcererBonuses) { resolveEnemyDeath(); return; } }
+      if (newHp <= 0) break;
     }
     if (isBard() && ab.id === 'bardo:melodia-sombria:13' && lastHitLanded && enemyRef.current.hp > 0) {
       enemyCCRef.current.push({ kind: 'silence', roundsLeft: 1 });
@@ -3083,8 +3087,8 @@ export function DungeonPanel({
     // Acento is one independent physical payload attached to the whole cast,
     // not one proc per impact. It is resolved after the authored impacts so a
     // miss on an early hit does not erase the mark from a later landed hit.
-    if (bardBonuses?.accent && bardBonuses.accentAtkMult && landedHits > 0 && enemyRef.current.hp > 0) {
-      const accentMissed = rollMiss(accuracyForRoll + (bardHasSkill('bardo:cancao-guerra:1') ? 0.02 : 0), computeEnemyEvasion());
+    if (bardBonuses?.accent && bardBonuses.accentAtkMult && !eff.bardFinale && enemyRef.current.hp > 0) {
+      const accentMissed = rollMiss(accuracyForRoll, computeEnemyEvasion());
       if (!accentMissed) {
       const accentMult = bardBonuses.accentAtkMult + (bardHasSkill('bardo:cancao-guerra:7') ? Math.min(0.06, attrTotal(chRef.current, 'dex') * 0.002) : 0);
       const accent = rollAbilityHit(stats.atk, computeEnemyDef(), accentMult, critChanceForRoll, critDmgMultForRoll);
@@ -3092,7 +3096,7 @@ export function DungeonPanel({
         applyEnemyHp(Math.max(0, enemyRef.current.hp - accentDmg));
         pushFloat('enemy', accentDmg, accent.crit);
         if (accent.crit) criticalHits += 1;
-        if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+        if (enemyRef.current.hp <= 0) return true;
       }
     }
     // Feiticeiro: a Magia Refratada repeats only the primary direct payload,
@@ -3114,7 +3118,7 @@ export function DungeonPanel({
         landedHits += 1;
         const newHp = Math.max(0, enemyRef.current.hp - dmg);
         applyEnemyHp(newHp); pushFloat('enemy', dmg, crit);
-        if (newHp <= 0) { resolveEnemyDeath(); return; }
+        if (newHp <= 0) return true;
       } else allLanded = false;
     }
     if (isMage() && landedHits > 0) mageOnSpellHit(ab, stats, mageAmplified, landedHits);
@@ -3159,7 +3163,7 @@ export function DungeonPanel({
       if (rogueBonuses.images === 2 && rogueHasSkill('ladino:sombras:14')) rogueImagesRef.current = 1;
       if (landedHits === 0 && rogueBonuses.advantage && eff.roguePath === 'trickster' && rogueHasSkill('ladino:laminas:14')) rogueAdvantageRef.current = true;
       rogueSync();
-      if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+      if (enemyRef.current.hp <= 0) return true;
     }
     if (allLanded && eff.breachGainOnHit) hunterGainBreach(eff.breachGainOnHit);
     if (isWarrior() && landedHits > 0) {
@@ -3171,6 +3175,7 @@ export function DungeonPanel({
         playerModsRef.current.push({ stat: 'def', pct: 0.03, roundsLeft: 2, sourceAbilityId: 'guerreiro:furioso:7' }); syncPlayerMods();
       }
     }
+    return enemyRef.current.hp <= 0;
   }
 
   function equippedAbilities(): AbilityDef[] {
@@ -3739,7 +3744,9 @@ export function DungeonPanel({
       // top of the shared BaselineMaxHp*healPct*supportMult formula — inert
       // (0) for every other class.
       const efficiencyBonus = clerigoHealEfficiencyBonus() + bardHealingEfficiency();
-      const bardHealPct = isBard() && ab.id === 'bardo:inspiracao:12' && bardStateRef.current.ovation > 0 ? 0.25 : (eff.healPct ?? 0.2);
+      const bardHealPct = isBard() && eff.bardOvationHealPct !== undefined && bardStateRef.current.ovation > 0
+        ? eff.bardOvationHealPct
+        : (eff.healPct ?? 0.2);
       const rawHeal = clericDirectHealAmount(baselineMaxHp, bardHealPct, stats.supportPowerPct, efficiencyBonus);
       const healed = Math.min(maxHp, c.hp + rawHeal);
       updateCh({ ...c, hp: healed });
@@ -3888,201 +3895,7 @@ export function DungeonPanel({
       clerigoReviveHealRef.current = { healPct: eff.reviveHealPct ?? 0.40, capPct: eff.reviveHealCapPct ?? 0.25 };
       clerigoOpenReviveWindow(eff.reviveWindowRounds ?? 3);
       pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: por alguns instantes, sua morte será evitada.`;
-    } else if (eff.kind === 'ironWall') {
-      // Muralha de Ferro (cavaleiro:bastiao:4) — postura mutuamente exclusiva
-      // com Fortaleza Viva; a redução de dano e a geração de Determinação
-      // pelo dano impedido são lidas ao vivo em enemyAct via
-      // knightIronWallActive()/knightIronWallDmgReductionPct().
-      knightStartIronWall(eff.postureRounds ?? 3);
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você se firma, reduzindo o dano recebido — mas abre mão de críticos.`;
-    } else if (eff.kind === 'livingFortress') {
-      // Fortaleza Viva (cavaleiro:bastiao:13) — custa Determinação; enquanto
-      // ativa, bloqueios/barreiras não geram mais Determinação (ver
-      // knightFortressActive() nos call-sites de geração).
-      if (eff.determinationCost) knightSpendDetermination(eff.determinationCost);
-      knightStartFortress(eff.postureRounds ?? 3);
-      playerModsRef.current.push({ stat: 'speedPct', pct: LIVING_FORTRESS_SPEED_PENALTY, roundsLeft: eff.postureRounds ?? 3, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: sua defesa se torna quase impenetrável, mas você fica mais lento.`;
-    } else if (eff.kind === 'colossalShield') {
-      // Escudo Colossal (cavaleiro:bastiao:9) — cria a barreira genérica E
-      // sua própria porção rastreada (nega CC uma vez, +1 Retaliação se
-      // destruída por dano).
-      if (eff.determinationCost) knightSpendDetermination(eff.determinationCost);
-      const amount = Math.round(Math.min((eff.shieldPctBase ?? 0.10) + (eff.shieldPctCap ?? 0), (eff.shieldPctBase ?? 0.10) + capped(eff.shieldPctPerVit ?? 0, attrTotal(chRef.current, 'vit'), eff.shieldPctCap ?? 0)) * knightEffMaxHp() * knightBarrierMult());
-      playerShieldRef.current += amount;
-      knightCreateColossalShield(amount);
-      syncShield();
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: uma barreira colossal surge, capaz de negar o próximo atordoamento ou sono.`;
-    } else if (eff.kind === 'lastGuard') {
-      // Última Guarda (cavaleiro:bastiao:10) — uma vez por inimigo; a barreira
-      // pós-efeito é concedida quando o efeito termina em envTick, não aqui.
-      knightLastGuardRoundsLeftRef.current = eff.lastGuardRounds ?? 2;
-      knightLastGuardUsedThisEnemyRef.current = true;
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: sua vida não pode cair abaixo de 1 por um momento.`;
-    } else if (eff.kind === 'counterStance') {
-      // Contra-Ataque Absoluto (cavaleiro:bastiao:12) — o dano armazenado é
-      // acumulado ao vivo em enemyAct via knightStoreCounterDamage(), e
-      // liberado no próximo acerto direto em playerAct.
-      if (eff.determinationCost) knightSpendDetermination(eff.determinationCost);
-      knightCounterStanceRoundsLeftRef.current = eff.postureRounds ?? 2;
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você se prepara para armazenar e devolver o dano recebido.`;
-    } else if (eff.kind === 'orderResist') {
-      // Ordem: Resistir (cavaleiro:comando:10) — barreira NÃO escalada por
-      // CommandPotency (per spec) + uma redução de dano recebido que É.
-      const isSupreme = ab.id.startsWith('cavaleiro:comando:') && knightConsumeCommandSupremeForCast();
-      if (eff.orderCost) knightSpendOrders(eff.orderCost);
-      const shieldBase = isSupreme ? ORDEM_RESISTIR_SHIELD_BASE_SUPREME : (eff.shieldPctBase ?? 0.09);
-      const shieldCap = isSupreme ? ORDEM_RESISTIR_SHIELD_CAP_SUPREME : (eff.shieldPctCap ?? 0.03);
-      const amount = Math.round((shieldBase + capped(eff.shieldPctPerVit ?? 0.0008, attrTotal(chRef.current, 'vit'), shieldCap)) * knightEffMaxHp() * knightBarrierMult());
-      playerShieldRef.current += amount;
-      syncShield();
-      const potency = knightCommandPotency(supportMult - 1);
-      const reductionPct = (isSupreme ? ORDEM_RESISTIR_DMG_RED_SUPREME : (eff.bonusDmgTakenReductionPct ?? 0.10)) * (1 + potency);
-      const rounds = (eff.buffRounds ?? 3) + knightCommandBuffDurationBonus();
-      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: -reductionPct, roundsLeft: rounds, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      if (knightHasSkill('cavaleiro:comando:11')) knightContraordemTick(ab.id);
-      return `${ab.name}: uma barreira surge e o dano recebido cai.`;
-    } else if (eff.kind === 'kingsBanner') {
-      // Estandarte do Rei (cavaleiro:comando:13) — os três buffs escalam por
-      // CommandPotency; a janela de reembolso é consumida pela PRÓXIMA outra
-      // habilidade de Comando usada (ver playerAct/resolveSelfAbility's
-      // shared post-resolution check).
-      const isSupreme = knightConsumeCommandSupremeForCast();
-      const potency = knightCommandPotency(supportMult - 1);
-      const rounds = (eff.buffRounds ?? ESTANDARTE_DURATION) + knightCommandBuffDurationBonus();
-      const atkPct = (isSupreme ? ESTANDARTE_ATK_SUPREME : (eff.atkBuffPctBase ?? 0.10)) * (1 + potency);
-      const defPct = (isSupreme ? ESTANDARTE_DEF_SUPREME : (eff.defBuffPctBase ?? 0.12)) * (1 + potency);
-      const tenacityPct = (isSupreme ? ESTANDARTE_TENACITY_SUPREME : (eff.tenacityBuffPctBase ?? 0.10)) * (1 + potency);
-      playerModsRef.current.push({ stat: 'atk', pct: atkPct, roundsLeft: rounds, sourceAbilityId: ab.id });
-      playerModsRef.current.push({ stat: 'def', pct: defPct, roundsLeft: rounds, sourceAbilityId: ab.id });
-      playerModsRef.current.push({ stat: 'tenacityPct', pct: tenacityPct, roundsLeft: rounds, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      if (!isSupreme && eff.orderGainOnCast) knightGainOrders(eff.orderGainOnCast);
-      if (isSupreme && knightHasSkill('cavaleiro:comando:11')) knightContraordemTick(ab.id);
-      if (eff.opensOrderRefundWindow) knightBannerRefundWindowRef.current = true;
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: o estandarte se ergue, fortalecendo você.`;
-    } else if (eff.kind === 'lifestealBuff') {
-      playerModsRef.current.push({ stat: 'lifestealPct', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você começa a roubar vida do inimigo.`;
-    } else if (eff.kind === 'atkBuff') {
-      playerModsRef.current.push({ stat: 'atk', pct: (eff.buffPct ?? 0.2) * supportMult, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: seu ataque aumenta.`;
-    } else if (eff.kind === 'furyBoost') {
-      // Bárbaro (Grito de Guerra) — flat Fúria grant, no supportMult (that
-      // scales heal/buff MAGNITUDE, not a resource grant); may itself push
-      // Fúria to 100 and trigger Frenesi, per barbApplyFuryDelta.
-      barbGainFuryDirect(eff.furyGainFlat ?? 0);
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você ganha ${eff.furyGainFlat ?? 0} de Fúria.`;
-    } else if (eff.kind === 'furyMaxFrenzy') {
-      // Bárbaro (Fúria Berserker, furia tree) — emergency Frenesi entry.
-      barbSetFury(FURY_MAX);
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: sua Fúria dispara ao máximo — Frenesi!`;
-    } else if (eff.kind === 'painGuard') {
-      // Bárbaro (Postura Selvagem) — opens the temporary 35%-total redirect
-      // window read by enemyAct; see barbPostureRoundsLeftRef.
-      barbPostureRoundsLeftRef.current = eff.buffRounds ?? 3;
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: parte do dano recebido agora vira Dor.`;
-    } else if (eff.kind === 'wallStance') {
-      // Bárbaro (Muralha Selvagem) — dmgTakenPct debuff via the existing
-      // generic StatModStat channel, plus a Fúria-per-hit-taken window
-      // tracked separately (no existing channel fits "gain a resource each
-      // time you're hit"). Base -15%, VIT-scaled up to -19% total.
-      const wallPct = MURALHA_BASE_DMG_TAKEN_PCT - capped(MURALHA_VIT_RATE, attrTotal(chRef.current, 'vit'), MURALHA_VIT_CAP);
-      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: wallPct, roundsLeft: eff.buffRounds ?? 4, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      barbWallRoundsLeftRef.current = eff.buffRounds ?? 4;
-      barbWallFuryPerHitRef.current = eff.furyPerHitTaken ?? FURY_GAIN_WALL_HIT_TAKEN;
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você se firma para o impacto.`;
-    } else if (eff.kind === 'lastStand') {
-      // Bárbaro (Resistência Absoluta) — cleanse (same filter dispel uses)
-      // + consume Dor + Fúria grant + temporary damage reduction, via
-      // AbilityDef.extraEffects-style composition kept inline here since
-      // it's a single bespoke bundle, not a combination other abilities
-      // reuse piecemeal.
-      playerStatusRef.current = [];
-      playerCCRef.current = [];
-      playerModsRef.current = playerModsRef.current.filter((m) => m.pct >= 0);
-      syncPlayerStatuses();
-      syncPlayerCC();
-      // Base 12% of max HP in Dor cleared, VIT-scaled up to 16% total.
-      const absolutaPct = RESISTENCIA_ABSOLUTA_BASE_PCT + capped(RESISTENCIA_ABSOLUTA_VIT_RATE, attrTotal(chRef.current, 'vit'), RESISTENCIA_ABSOLUTA_VIT_CAP);
-      const consumed = barbConsumePain(absolutaPct);
-      barbGainFuryDirect(eff.furyGainFlat ?? 0);
-      playerModsRef.current.push({ stat: 'dmgTakenPct', pct: eff.buffPct ?? -0.20, roundsLeft: eff.buffRounds ?? 2, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você se recompõe, apagando ${Math.round(consumed)} de Dor.`;
-    } else if (eff.kind === 'bloodFeast') {
-      // Bárbaro (Fome Sanguinária) — consume Dor + temporary lifesteal
-      // (reuses the existing lifestealPct StatModStat channel) + Fúria.
-      // Base 8% of max HP in Dor cleared, VIT-scaled up to 11% total.
-      const feastPct = FOME_SANGUINARIA_BASE_PCT + capped(FOME_SANGUINARIA_VIT_RATE, attrTotal(chRef.current, 'vit'), FOME_SANGUINARIA_VIT_CAP);
-      const consumed = barbConsumePain(feastPct);
-      playerModsRef.current.push({ stat: 'lifestealPct', pct: eff.buffPct ?? 0.15, roundsLeft: eff.buffRounds ?? 3, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      barbGainFuryDirect(eff.furyGainFlat ?? 0);
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você se alimenta da própria dor, apagando ${Math.round(consumed)} de Dor.`;
-    } else if (eff.kind === 'armTrap') {
-      // Caçador: arms a generic CombatTrap — no attack roll, no immediate
-      // damage. Its riders (direct dmg/Poison/debuff/Rastro) only resolve
-      // once the enemy completes a real action (see hunterTriggerOldestTrap).
-      hunterArmTrap(ab);
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: uma armadilha é armada.`;
-    } else if (eff.kind === 'buffEvasion') {
-      // Sumir na Mata / Passo Etéreo / Manto das Sombras — pure evasion
-      // buff via the generic playerModsRef 'evasion' channel; each ability's
-      // own extra Rastro/Brecha side effects are layered on right after.
-      playerModsRef.current.push({ stat: 'evasion', pct: (eff.buffPct ?? 0.15) * supportMult, roundsLeft: eff.buffRounds ?? 2, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      if (ab.id === 'cacador:rastreio:4') {
-        // Sumir na Mata — immediate +2 Rastro, no miss-tracking needed.
-        hunterGainTrail(SUMIR_NA_MATA_TRAIL_GAIN);
-      } else if (ab.id === 'cacador:rastreio:10') {
-        // Passo Etéreo — immediate +1 Rastro; the FIRST enemy miss during
-        // the effect grants +1 Rastro more (and +1 Brecha) via
-        // hunterOnEnemyMiss's hunterPassoEthereoMissPendingRef check.
-        hunterGainTrail(PASSO_ETEREO_TRAIL_GAIN);
-        hunterPassoEthereoMissPendingRef.current = true;
-      } else if (ab.id === 'cacador:rastreio:12') {
-        // Manto das Sombras — resets the per-cast Brecha counter; every
-        // enemy miss during the effect (tracked by this mod's own
-        // sourceAbilityId still being active) grants Rastro (+Brecha, up to
-        // MANTO_SOMBRAS_MAX_BREACHES_PER_CAST) via hunterOnEnemyMiss.
-        hunterMantoSombrasBreachesGrantedRef.current = 0;
-      }
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: sua evasão aumenta.`;
-    } else if (eff.kind === 'huntWithPrey') {
-      // Um com a Caça — the one bespoke simultaneous dmg+speed+evasion buff,
-      // scoped to the CURRENT enemy via normal roundsLeft decay (it never
-      // outlives a 4-tick window, so it can't meaningfully carry to a new
-      // enemy in practice).
-      const rounds = eff.buffRounds ?? 4;
-      playerModsRef.current.push({ stat: 'atk', pct: (eff.buffPct ?? 0.08) * supportMult, roundsLeft: rounds, sourceAbilityId: ab.id });
-      playerModsRef.current.push({ stat: 'speedPct', pct: (eff.speedBuffPct ?? 0.08) * supportMult, roundsLeft: rounds, sourceAbilityId: ab.id });
-      playerModsRef.current.push({ stat: 'evasion', pct: (eff.evasionBuffPct ?? 0.12) * supportMult, roundsLeft: rounds, sourceAbilityId: ab.id });
-      syncPlayerMods();
-      pushAbilityCast('player', ab.name, icon, null, false);
-      return `${ab.name}: você se torna um só com a caça.`;
+      retu…3438 tokens truncated…n `${ab.name}: você se torna um só com a caça.`;
     } else if (eff.kind === 'preparedGuard') {
       warriorPreparedGuardRef.current = {
         sourceAbilityId: ab.id,
@@ -4735,7 +4548,6 @@ export function DungeonPanel({
       let sorcererFracturesConsumed = 0;
       let sorcererFinalized = false;
       let bardFinalized = false;
-      let bardEncoreAtCast = false;
       let bardAccentAtCast = false;
       let bardFortissimoAtCast = false;
       const bardTriumphalAtCast = bardActive && bardStateAtActionStart.triumphalEntry && bardStateAtActionStart.fortissimo;
@@ -4855,43 +4667,65 @@ export function DungeonPanel({
         chosen = pickAbility(isRogue() ? 'main' : undefined);
         if (bardActive && chosen) {
           const be = chosen.effect;
-          bardEncoreAtCast = !!be.bardEncore;
-          if (be.bardFinale && bardStateRef.current.ovation > 0) {
-            bardStateRef.current = consumeOvation(bardStateRef.current);
-            bardSync();
-          }
+          // Bis is itself a Finale, but its payload is consumed first and
+          // exactly once. A stale/invalid pick falls back to the ordinary
+          // action picker instead of silently spending Ovação.
           if (be.bardEncore && canEncore(bardStateRef.current)) {
             const encorePayload = bardStateRef.current.encoreMemory;
-            bardStateRef.current = consumeOvation(bardStateRef.current);
+            bardStateRef.current = consumeOvation(bardStateRef.current, bardHasSkill('bardo:inspiracao:14'));
             bardStateRef.current = { ...bardStateRef.current, encoreReady: false, encoreMemory: null };
             // A stored healing payload turns Bis into a support action while
             // preserving the same cooldown/cost timing; the 55% coefficient
             // was sanitized when the payload was created.
             if (encorePayload?.healPct !== undefined) {
               chosen = { ...chosen, effect: { ...chosen.effect, kind: 'heal', healPct: encorePayload.healPct } };
+            } else if (encorePayload) {
+              const magical = encorePayload.magicalHitMults ?? [];
+              const physical = encorePayload.physicalHitMults ?? [];
+              const payload = [...magical, ...physical];
+              chosen = { ...chosen, effect: {
+                ...chosen.effect,
+                kind: payload.length > 1 ? 'multiHit' : 'bigHit',
+                hitCount: payload.length > 1 ? payload.length : undefined,
+                hitDmgMults: payload.length > 1 ? payload : undefined,
+                dmgMultPerHit: undefined,
+                dmgMult: payload.length === 1 ? payload[0] : undefined,
+                dmgType: payload.length === 1 && physical.length === 1 ? 'physical' : chosen.effect.dmgType,
+                bardMagicalHitMults: magical,
+                bardPhysicalHitMults: physical,
+                bardFinale: false,
+                bardOvationCost: undefined,
+                bardAccent: false,
+                bardAccentAtkMult: undefined,
+              } };
             }
             bardSync();
+          } else if (be.bardEncore) {
+            chosen = null;
+          } else if (be.bardFinale && bardStateRef.current.ovation > 0) {
+            bardStateRef.current = consumeOvation(bardStateRef.current, bardHasSkill('bardo:inspiracao:14'));
+            bardSync();
           }
-          if (be.bardVoice === 'marcato' && bardStateRef.current.accent) {
+          if (chosen && (be.bardVoice === 'marcato' || (be.bardFinale && be.bardPath === 'march')) && bardStateRef.current.accent) {
             bardAccentAtCast = true;
             bardStateRef.current = consumeAccent(bardStateRef.current);
             if (bardHasSkill('bardo:cancao-guerra:5')) bardStateRef.current = { ...bardStateRef.current, accentSpeed: true };
             bardSync();
           }
-          if (be.bardPath === 'march' && bardStateRef.current.impulse && !be.bardFinale) bardStateRef.current = { ...bardStateRef.current, impulse: false };
-          if (be.bardPath === 'improvisation' && bardStateRef.current.bridgeActive && !be.bardFinale) bardStateRef.current = { ...bardStateRef.current, bridgeActive: false };
-          if (!SELF_ABILITY_KINDS.includes(be.kind) && bardStateRef.current.fortissimo) {
+          if (chosen && be.bardPath === 'march' && bardStateRef.current.impulse && !be.bardFinale) bardStateRef.current = { ...bardStateRef.current, impulse: false };
+          if (chosen && be.bardPath === 'improvisation' && bardStateRef.current.bridgeActive && !be.bardFinale) bardStateRef.current = { ...bardStateRef.current, bridgeActive: false };
+          if (chosen && !SELF_ABILITY_KINDS.includes(be.kind) && bardStateRef.current.fortissimo) {
             bardFortissimoAtCast = true;
             bardStateRef.current = { ...bardStateRef.current, fortissimo: false };
             bardSync();
           }
-          if (be.bardEchoCost) {
+          if (chosen && be.bardEchoCost) {
             bardStateRef.current = { ...bardStateRef.current, echo: Math.max(0, bardStateRef.current.echo - be.bardEchoCost) };
             if (bardHasSkill('bardo:melodia-sombria:11')) bardStateRef.current = { ...bardStateRef.current, echoTenacity: true };
             if (be.bardEchoCost === 2 && bardHasSkill('bardo:melodia-sombria:14')) bardStateRef.current = { ...bardStateRef.current, echoNotePending: true };
             bardSync();
           }
-          cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + bardCdrBonusFor(chosen.id));
+          if (chosen) cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + bardCdrBonusFor(chosen.id));
         }
         if (warlockActive && chosen) {
           const e = chosen.effect;
@@ -5219,7 +5053,7 @@ export function DungeonPanel({
               if (chRef.current.unlockedSkills.includes('mago:eletromante:2')) accuracyForRoll += mageCircuitRef.current >= 2 ? 0.04 : 0.02;
             }
           }
-          if (bardActive && bardAccentAtCast) accuracyForRoll += 0.02;
+          if (bardActive && bardAccentAtCast && bardHasSkill('bardo:cancao-guerra:1')) accuracyForRoll += 0.02;
           // Disparo Preciso (cacador:precisao-caca:4) — bypasses the evasion
           // roll entirely (crit still rolls normally downstream).
           if (offenseAbility?.effect.kind === 'ballistic') {
@@ -5254,22 +5088,35 @@ export function DungeonPanel({
             // Tiro Duplo — two independent rolls, handled entirely by its
             // own self-contained resolver; `missed`/`dmg` stay at their
             // initial false/0 so the shared post-processing below is a no-op.
-              hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast,
+              const multiHitKilled = hunterResolveMultiHit(offenseAbility, stats, accuracyForRoll, enemyEvasion, critChanceForRoll, critDmgMultForRoll, mageAmplifiedThisCast, mageHeatAtCast,
               isWarrior() ? { dmg: warriorCastDmgBonus, posture: warriorCastPostureBonus, defPen: warriorCastDefPenBonus, breakActive: warriorBreakActiveAtStart } : undefined,
               isRogue() ? { images: rogueImagesAtCast, sharpened: rogueSharpenedAtCast, loadedDieFirstHit: rogueLoadedDieFirstHit, advantage: rogueAdvantageAtCast } : undefined,
               warlockActive && offenseAbility.effect.warlockPath ? { debtForPower: warlockDebtForPower, scars: warlockScarsThisCast, overcontract: warlockOvercontractThisCast, path: offenseAbility.effect.warlockPath } : undefined,
               sorcererActive && offenseAbility.effect.sorcererPath ? { awakened: sorcererCastAwakened, accuracy: (offenseAbility.effect.sorcererAccuracyBonusPct ?? 0) + (sorcererControlAtActionStart * 0.02) + (sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.10 : 0), crit: 0, pen: (offenseAbility.effect.sorcererMdefPenPct ?? 0) + sorcererControlAtActionStart * 0.02 + (offenseAbility.effect.sorcererPath === 'rupture' ? rupturePenetration(sorcererFracturesAtActionStart) : 0) + (sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.12 : 0), dmgPct: sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'rupture' ? 0.18 : sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'shaping' ? 0.08 : 0, echo: sorcererCastAwakened && offenseAbility.effect.sorcererPath === 'reverberation', echoPotency: offenseAbility.effect.sorcererEchoPotency ?? 0.40 } : undefined,
-              bardActive ? { fortissimo: bardFortissimoAtCast, accent: bardAccentAtCast, accentAtkMult: offenseAbility.effect.bardAccentAtkMult, echoAtCast: bardStateAtActionStart.echo, outOfTuneAtCast: bardStateAtActionStart.outOfTune } : undefined);
+              bardActive ? { fortissimo: bardFortissimoAtCast, accent: bardAccentAtCast, accentAtkMult: offenseAbility.effect.bardAccentAtkMult, echoAtCast: bardStateAtActionStart.echo, outOfTuneAtCast: bardStateAtActionStart.outOfTune, impulse: bardStateAtActionStart.impulse, bridge: bardStateAtActionStart.bridgeActive } : undefined);
             if (bardActive && offenseAbility.effect.bardAppliesCountertempo && offenseAbility.id !== 'bardo:melodia-sombria:13' && enemyRef.current.hp > 0) { bardStateRef.current = { ...bardStateRef.current, countertempo: true }; bardSync(); }
             if (warlockActive) {
               finalizeWarlock(enemyRef.current.hp < warlockEnemyHpAtActionStart);
-              finalizeSorcerer();
-              if (bardActive && chosen) finalizeBard(!playerStunned);
-              if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
             }
+            finalizeSorcerer();
+            if (bardActive && chosen) finalizeBard(!playerStunned);
+            if (multiHitKilled || enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
           } else if (missed) {
             // No log line — the floater's "erro!" already shows this on screen.
             pushFloat('enemy', 0, false, false, true);
+            // Acento is an independent component: the authored magical hit
+            // may miss while the physical instrument hit still connects.
+            // Resolve it here so an all-main-hit miss cannot erase the mark.
+            if (bardActive && offenseAbility?.effect.bardAccentAtkMult && bardAccentAtCast && enemyRef.current.hp > 0) {
+              const accentMissed = rollMiss(accuracyForRoll, computeEnemyEvasion());
+              if (!accentMissed) {
+                const accentMult = offenseAbility.effect.bardAccentAtkMult + (bardHasSkill('bardo:cancao-guerra:7') ? Math.min(0.06, attrTotal(chRef.current, 'dex') * 0.002) : 0);
+                const accentRoll = rollAbilityHit(stats.atk, computeEnemyDef(), accentMult, critChanceForRoll, critDmgMultForRoll);
+                const accentDmg = bardFortissimoAtCast ? Math.round(accentRoll.dmg * (1 + BARD_FORTISSIMO_DAMAGE)) : accentRoll.dmg;
+                applyEnemyHp(Math.max(0, enemyRef.current.hp - accentDmg));
+                pushFloat('enemy', accentDmg, accentRoll.crit);
+              }
+            }
             // A miss breaks Investida's hit-streak mechanics — Pressão
             // Constante's stacks and Cavaleiro Imparável's consecutive-hit
             // counter both require successive LANDED hits.
@@ -5288,13 +5135,6 @@ export function DungeonPanel({
               cooldownsRef.current[offenseAbility.id] = applyCd(offenseAbility.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(offenseAbility.id) + warriorCdrBonusFor(offenseAbility.id) + warlockCdrBonusFor(offenseAbility.id) + sorcererCdrBonusFor(offenseAbility.id));
             }
             const eff = { ...offenseAbility.effect };
-            if (bardActive && bardEncoreAtCast && bardStateAtActionStart.encoreMemory) {
-              const payload = bardStateAtActionStart.encoreMemory;
-              if (payload.magicalHitMults?.length) {
-                if (payload.magicalHitMults.length > 1) { eff.kind = 'multiHit'; eff.hitCount = payload.magicalHitMults.length; eff.hitDmgMults = payload.magicalHitMults; }
-                else eff.dmgMult = payload.magicalHitMults[0];
-              }
-            }
             if (isRogue()) {
               const hpPct = enemyRef.current.hp / enemyRef.current.maxHp;
               if (rogueAmbushThisCast && eff.ambushDmgMult !== undefined) eff.dmgMult = eff.ambushDmgMult;
@@ -5564,7 +5404,7 @@ export function DungeonPanel({
             dmg = r.dmg; crit = r.crit;
             if (bardActive && bardFortissimoAtCast) dmg = Math.round(dmg * 1.15);
             if (bardActive && bardAccentAtCast && eff.bardAccentAtkMult) {
-              const accentMissed = rollMiss(accuracyForRoll + (bardHasSkill('bardo:cancao-guerra:1') ? 0.02 : 0), computeEnemyEvasion());
+              const accentMissed = rollMiss(accuracyForRoll, computeEnemyEvasion());
               if (!accentMissed) {
                 const accentMult = eff.bardAccentAtkMult + (bardHasSkill('bardo:cancao-guerra:7') ? Math.min(0.06, attrTotal(chRef.current, 'dex') * 0.002) : 0);
                 dmg += rollAbilityHit(stats.atk, computeEnemyDef(), accentMult, critChanceForRoll, hunterCritDmgMultForRoll).dmg;
@@ -5574,6 +5414,17 @@ export function DungeonPanel({
             if (archerActive) archerLastActionHitsRef.current = 1;
             abilityTag = ` [${offenseAbility.name}]`;
             castAbility = necroSacrificed ? { ...offenseAbility, effect: { ...offenseAbility.effect, directHealFromDamagePct: 0.22, directHealCapPct: 0.08 } } : offenseAbility;
+            if (isBard() && eff.bardMdefDebuffPct) {
+              enemyModsRef.current = enemyModsRef.current.filter((m) => m.sourceAbilityId !== offenseAbility.id);
+              enemyModsRef.current.push({ stat: 'mdef', pct: -eff.bardMdefDebuffPct, roundsLeft: eff.bardMdefDebuffRounds ?? 2, sourceAbilityId: offenseAbility.id });
+              syncEnemyMods();
+            }
+            if (isBard() && eff.bardSpeedBuffPct) {
+              const speedPct = bardFortissimoAtCast ? Math.max(eff.bardSpeedBuffPct, 0.08) : eff.bardSpeedBuffPct;
+              playerModsRef.current = playerModsRef.current.filter((m) => m.sourceAbilityId !== offenseAbility.id);
+              playerModsRef.current.push({ stat: 'speedPct', pct: speedPct, roundsLeft: eff.bardSpeedBuffRounds ?? 2, sourceAbilityId: offenseAbility.id });
+              syncPlayerMods();
+            }
             // Caçador: generic Brecha gain/consume — only ever on a hit that
             // actually lands (this whole branch already sits inside "not
             // missed"), per spec section 15. Janela Perfeita's "+10%
@@ -6530,12 +6381,26 @@ export function DungeonPanel({
         fortressActive: false,
         elevatedBlock: knightHasSkill('cavaleiro:bastiao:2'),
       }));
-      const knightBarrierAbsorbed = shieldAbsorbed + knightEscudoReduced;
+      const knightBarrierAbsorbed = shieldAbsorbed;
       if (knightBarrierAbsorbed > 0) {
-        knightGainDetermination(knightDeterminationFromPct(knightBarrierAbsorbed, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION));
+        knightGainDetermination(determinationForPreventedDamage({
+          amountPrevented: knightBarrierAbsorbed,
+          effectiveMaxHp: knightEffMaxHp(),
+          thresholdPct: DETERMINATION_GEN_BARRIER_THRESHOLD_PCT,
+          pointsPerThreshold: DETERMINATION_GEN_BARRIER_PER_3PCT,
+          capPoints: DETERMINATION_GEN_BARRIER_CAP_PER_ACTION,
+          fortressActive: false,
+        }));
       }
       if (knightPostureReduced > 0 && knightIronWallActive()) {
-        knightGainDetermination(knightDeterminationFromPct(knightPostureReduced, IRON_WALL_DET_GEN_PER_2PCT, IRON_WALL_DET_GEN_CAP_PER_ACTION));
+        knightGainDetermination(determinationForPreventedDamage({
+          amountPrevented: knightPostureReduced,
+          effectiveMaxHp: knightEffMaxHp(),
+          thresholdPct: IRON_WALL_DETERMINATION_THRESHOLD_PCT,
+          pointsPerThreshold: IRON_WALL_DET_GEN_PER_2PCT,
+          capPoints: IRON_WALL_DET_GEN_CAP_PER_ACTION,
+          fortressActive: false,
+        }));
       }
     }
     // Clérigo absorption order per spec: mitigation → shield/barreira normal

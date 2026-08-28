@@ -463,6 +463,12 @@ export interface AbilityEffect {
   bardNextEnemyAccuracyPenaltyPct?: number;
   bardSustainPct?: number;
   bardSupportHealPct?: number;
+  bardOvationHealPct?: number;
+  bardMdefDebuffPct?: number;
+  bardMdefDebuffRounds?: number;
+  bardSpeedBuffPct?: number;
+  bardSpeedBuffRounds?: number;
+  bardNextBasicPhysicalBonusPct?: number;
 
   // ── Guerreiro redesign (lib/warrior.ts) ──
   // Posture is a separate enemy gauge; values never use DEF, crit, lifesteal
