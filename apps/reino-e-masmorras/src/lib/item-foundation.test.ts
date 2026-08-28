@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CLASSES, MAGICAL_CLASSES } from './classes.ts';
-import { ATTRIBUTE_KEYS } from './attributes.ts';
+import { ATTRIBUTE_KEYS, compatibleAttributeKeys } from './attributes.ts';
 import { DUNGEONS } from './dungeons.ts';
 import { AFFIX_COUNT_RANGE, AFFIX_SCALE, affixCountForRarity, generateItem } from './equipment.ts';
 import { applyAffixGrowth } from './enhancement.ts';
@@ -24,6 +24,13 @@ test('a escada de tiers cobre três masmorras por tier até Aço Estelar', () =>
   assert.deepEqual(DUNGEONS.slice(-3).map((d) => d.itemTier), [11, 11, 11]);
   assert.equal(Math.ceil(DUNGEONS.length / 3), MAX_TIER);
   assert.equal(visualTierForItem(11), 10);
+  assert.throws(() => tierForDungeonOrdinal(34), /unsupported item tier/);
+});
+
+test('offhands usam atributos compatíveis com o tipo real', () => {
+  assert.deepEqual(compatibleAttributeKeys('offhand', 'clerigo'), ['wis', 'int']);
+  assert.deepEqual(compatibleAttributeKeys('offhand', 'bruxo'), ['int', 'wis', 'luk']);
+  assert.deepEqual(compatibleAttributeKeys('offhand', 'guerreiro'), ['str', 'vit']);
 });
 
 test('qualidade enviesia a quantidade sem escapar da faixa da raridade', () => {
