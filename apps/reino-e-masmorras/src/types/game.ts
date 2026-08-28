@@ -42,7 +42,8 @@ export type ItemSlot = 'weapon' | 'body' | 'legs' | 'hands' | 'offhand' | 'acces
 // touch before.
 export type SecondaryStatType =
   | 'crit' | 'critDmg' | 'def' | 'mdef' | 'hp' | 'block' | 'atk' | 'matk'
-  | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'cdr' | 'itemFind' | 'itemQuality';
+  | 'evasion' | 'accuracy' | 'tenacity' | 'speed' | 'lifesteal' | 'thorns' | 'cdr' | 'itemFind' | 'itemQuality'
+  | 'str' | 'dex' | 'agi' | 'vit' | 'int' | 'wis' | 'luk' | 'healingPower' | 'barrierPower';
 
 // Only set on slot === 'accessory' items — the accessory base type is rolled
 // independently of class (unlike offhand, which is 100% determined by the
@@ -56,7 +57,8 @@ export interface EquipmentItem {
   classId: ClassId;
   slot: ItemSlot;
   rarity: Rarity;
-  tier: number; // base tier 1-10 — which rung of the slot's name/power ladder this is (see lib/itemTiers.ts), independent of rarity's affix-count layer
+  tier: number; // base tier 1-11 — which rung of the slot's name/power ladder this is (see lib/itemTiers.ts), independent of rarity's affix-count layer
+  itemSchemaVersion?: number; // versioned equipment migration marker; absent means pre-Patch-1 data
   accessoryType?: AccessoryType;
   dmgBonus: number; // weapon's primary stat, 0 on other slots
   defBonus: number; // body/legs/hands/shield primary stat, 0 on other slots
@@ -108,7 +110,7 @@ export interface EquipmentItem {
 // (see lib/runes.ts's canUseRuneOn).
 export interface RuneStack {
   rarity: Rarity;
-  tier: number; // 1-10
+  tier: number; // 1-11
   count: number;
 }
 
@@ -278,6 +280,9 @@ export interface AbilityEffect {
   statModTarget?: 'self' | 'enemy';
   // shield: absorbs incoming damage before HP, sized as % of caster's max HP
   shieldPct?: number;
+  // Explicit opt-in marker for the Barrier Power channel. Aegis and other
+  // protection effects that are not barriers deliberately leave this unset.
+  scalesWithBarrierPower?: boolean;
   // regen: heals a % of max HP at the start of each of the caster's rounds
   regenPct?: number;
   regenRounds?: number;
@@ -463,6 +468,12 @@ export interface AbilityEffect {
   bardNextEnemyAccuracyPenaltyPct?: number;
   bardSustainPct?: number;
   bardSupportHealPct?: number;
+  bardOvationHealPct?: number;
+  bardMdefDebuffPct?: number;
+  bardMdefDebuffRounds?: number;
+  bardSpeedBuffPct?: number;
+  bardSpeedBuffRounds?: number;
+  bardNextBasicPhysicalBonusPct?: number;
 
   // ── Guerreiro redesign (lib/warrior.ts) ──
   // Posture is a separate enemy gauge; values never use DEF, crit, lifesteal
@@ -779,6 +790,7 @@ export interface SkillPath {
 }
 
 export interface Character {
+  equipmentSchemaVersion?: number;
   name: string;
   classId: ClassId;
   level: number;
@@ -1063,7 +1075,7 @@ export interface DungeonDef {
   bossDepth: number; // fixed depth the boss spawns at — defeating it clears the dungeon and ends the run
   boss: EnemyShape;
   miniBossDepths?: number[]; // depths shown as milestone markers on the progress bar; no dungeon defines any yet
-  itemTier: number; // 1-10 — the base tier (lib/itemTiers.ts) every item found in this dungeon rolls at, hand-authored like bossDepth so item power tracks dungeon progression, not the in-run depth counter
+  itemTier: number; // 1-11 — the base tier (lib/itemTiers.ts) every item found in this dungeon rolls at, derived from the dungeon ordinal so item power tracks progression, not the in-run depth counter
   // Hand-authored per-dungeon knob (see lib/enemies.ts's instanceFromTier) —
   // scales every enemy in the dungeon on top of the normal depth/regular-vs-
   // boss curve, calibrated against an "anchor" player (roughly levelReq-2,
@@ -1158,7 +1170,8 @@ export interface CombatStats {
   onCritHealPct: number;
   dmgPctVsPoison: number; // conditional passive dmg bonus while the enemy is poisoned
   dmgPctVsBurn: number;   // conditional passive dmg bonus while the enemy is burning
-  supportPowerPct: number; // WIS-derived: scales heal/buff ability magnitudes
+  healingPowerPct: number; // WIS/gear-derived: scales explicitly marked healing
+  barrierPowerPct: number; // WIS/gear-derived: scales explicitly marked barriers
   dropChanceBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
   itemQualityBonusPct: number; // LUK-derived, stacks with the Kingdom's Forja bonus
   evasion: number; // permanent base dodge chance — AGI-derived, plus skill-tree secondary-attribute nodes
