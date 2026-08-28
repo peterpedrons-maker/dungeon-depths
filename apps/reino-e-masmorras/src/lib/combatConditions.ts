@@ -1,5 +1,5 @@
-import { AbilityCondition, AttributeKey, Character } from '../types/game';
-import { totalAttributes } from './attributes';
+import type { AbilityCondition, AttributeKey, Character } from '../types/game.ts';
+import { totalAttributes } from './attributes.ts';
 
 // ── Generic combat-condition infrastructure ──
 // Extracted out of lib/barbarian.ts once a second class (Clérigo, Fé/Graça/
