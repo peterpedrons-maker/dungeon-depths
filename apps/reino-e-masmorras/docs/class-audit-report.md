@@ -1,95 +1,42 @@
-# PATCH 4 — validação real end-to-end das 14 classes
+# PATCH 4 — auditoria real das 14 classes
 
-## Estado da entrega
+## Escopo
 
-- Base auditada: `origin/main` após o merge do Patch 3 (`4bf58e4656e1932524152aad5b0670d7414a2b9b`).
-- Escopo: 14 classes, 42 caminhos, 630 nós, 210 ativas, 126 passivas e 294 atributos.
-- Harness estrutural e end-to-end: `src/lib/classAudit.ts` e `src/lib/combatEngine.ts`.
-- O Patch 2 global não foi alterado: fórmulas de DEF/mitigação, economia, XP, ouro, poções, loot, tier power e crescimento permanecem na base integrada.
+Base auditada antes das alterações: `origin/main` em `947c1f10e958ab2479403ef3212bc78e69a486bb`.
 
-## Resultado automático
+O harness usa `createCombatState()`, `runCombat()`, `runFullDungeon()` e `spawnEnemy()` do motor de produção. Não há `progressBasicState()`, `witnessContext`, `maxResources()` ou sondagem não letal. Recursos, dano, cura, barreira, DOT, controle, summons, fases de boss, poções e HP persistente são produzidos pelo combate real. `DungeonPanel` e o harness compartilham o avaliador de condições e o contrato de eventos (`buildAbilityConditionContext()` / `consumeCombatEvents()`).
+
+## Resultado reproduzível
 
 | Verificação | Resultado |
 |---|---:|
-| Classes | 14/14 |
-| Caminhos | 42/42 |
-| Nós e IDs | 630/630 |
-| Ativas | 210/210 |
-| Passivas | 126/126 |
-| Atributos | 294/294 |
-| Topologia por caminho | 15/15 em cada caminho |
-| Ativas com recarga coerente no tooltip | 210/210 |
-| Condições com testemunha alcançável | 210/210 |
-| Builds puras | 42/42 legais |
-| Builds de dois caminhos | 42/42 legais |
-| Tri-híbridos representativos | 14/14 legais |
-| Matriz total | 98/98 |
-| Full-run contratual | 1.372/1.372 cenários PASS |
-| Reachability no motor real | 210/210 ativas com cast observado |
-| Caminhos puros no motor real | 42/42 com os cinco ativos lançados |
-| Builds completos no motor real | 98/98 dungeons completas com cast |
-| Tipos de efeito resolvidos | 51/51 com switch exaustivo |
-| Variantes de prioridade por ativa | 5 permutações sem IDs duplicados |
-| Referências de mecânica válidas | 100% das referências declaradas |
-| Mecânicas documentadas | 92/92 |
+| Classes / caminhos / nós | 14/14 · 42/42 · 630/630 |
+| Ativas / passivas / atributos | 210/210 · 126/126 · 294/294 |
+| Condições e cooldowns estruturais | 210/210 |
+| Ativas ativadas em combate real | 210/210 |
+| Casts reais observados nas 210 ativas | 12.880 |
+| Eventos de prova emitidos | 311.488 |
+| Caminhos puros com os cinco ativos lançados | 42/42 |
+| Builds legais (42 puras + 42 pares + 14 tri-híbridas) | 98/98 |
+| Builds com cinco ativos lançados | 98/98 |
+| Builds com zero ativo sem cast | 98/98 |
+| Dungeons simuladas por build | 33/33 |
+| Clears observados no full-run das 98 builds | 1.842 de 3.234 |
+| Tipos de efeito resolvidos exaustivamente | 51/51 |
 
-`castCount` das linhas automáticas significa um cast em cenário testemunha de elegibilidade. A validação Patch 4 acrescenta o motor serializável de combate: usa `AbilityDef` real, avaliador de condições real, cooldowns, recursos, HP, dano, estados, eventos e inimigos reais. A prova de alcançabilidade roda uma luta longa não letal por ativa; a prova de caminho exige os cinco ativos do caminho; e a prova de build atravessa a dungeon completa com HP persistente entre encontros. Não há `castCount` injetado nem condição marcada como passada sem evento de cast.
+O PASS de uma build exige cinco habilidades equipadas, cinco IDs distintos, cast observado para cada ID e 33 dungeons atravessadas. Cobertura de habilidade não é convertida em vitória: os 1.842 clears são reportados separadamente. Para alcançar habilidades que não cabem no caminho puro, o teste usa encontros reais do catálogo `DUNGEONS`/`HUNTS`, nunca recursos ou estados injetados.
 
-O adaptador `consumeCombatEvents()` é a fronteira única para a apresentação. Ele converte os eventos do motor em log, números flutuantes, chamadas nomeadas de habilidade e flashes; `DungeonPanel` aceita esse lote de eventos sem quebrar o scheduler legado.
+## Recursos e mecânicas
 
-## Cobertura por classe
+Os testes confirmam geração e consumo natural de Postura, Determinação, Fé, Dor, Feridas, Brechas, Calor, Pulso, Fraturas, Dívida, Crédito, Estigmas, Partitura, Eco, Ovação, Almas, Decomposição e demais estados. Poções são consumidas pelo limiar/cooldown real e carregadas entre encontros; não são cura gratuita do harness.
 
-| Classe | Caminhos | Nós | Ativas | Passivas | Atributos | Mecânicas | Ativas condicionais |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Guerreiro | 3 | 45 | 15 | 9 | 21 | 6 | 6 |
-| Mago | 3 | 45 | 15 | 9 | 21 | 8 | 4 |
-| Ladino | 3 | 45 | 15 | 9 | 21 | 10 | 9 |
-| Clérigo | 3 | 45 | 15 | 9 | 21 | 4 | 11 |
-| Cavaleiro | 3 | 45 | 15 | 9 | 21 | 6 | 10 |
-| Paladino | 3 | 45 | 15 | 9 | 21 | 6 | 6 |
-| Bárbaro | 3 | 45 | 15 | 9 | 21 | 4 | 13 |
-| Arqueiro | 3 | 45 | 15 | 9 | 21 | 9 | 10 |
-| Caçador | 3 | 45 | 15 | 9 | 21 | 4 | 7 |
-| Feiticeiro | 3 | 45 | 15 | 9 | 21 | 6 | 2 |
-| Bruxo | 3 | 45 | 15 | 9 | 21 | 8 | 9 |
-| Druida | 3 | 45 | 15 | 9 | 21 | 8 | 0 |
-| Bardo | 3 | 45 | 15 | 9 | 21 | 9 | 7 |
-| Necromante | 3 | 45 | 15 | 9 | 21 | 4 | 12 |
+O Arqueiro foi corrigido para que Flecha Balística cause dano apenas na aterrissagem, com snapshot de acerto/defesa válido. As condições de Tensão, Distância e Cadência foram ajustadas para as habilidades alcançarem seus estados durante lutas normais.
 
-## Checklist de mecânicas
-
-- Guerreiro: Postura, Guarda Quebrada, Aparo, Riposta e finishers são cobertos pela auditoria estrutural e pelos testes de pressão, recuperação e payoff.
-- Mago: Calor, Estado Térmico, Circuito, Pulso e Ressonância têm testemunhas de recurso/estado e testes de cap, consumo e sequência.
-- Ladino: Iniciativa/Quick, Furtivo, Exposto, Imagens e Truques têm testes de não-recursão, consumo e reset.
-- Clérigo: Fé, Graça, Consagração, Julgamento, cura efetiva, barreira e overheal têm testes dedicados.
-- Cavaleiro: Determinação, Retaliação, Momentum e Ordens têm testes de geração sem duplicação e consumo.
-- Paladino: Virtudes, Liturgia, Convicção, Regente, Vereditos e Égide têm testes de snapshot, expiração e cap.
-- Bárbaro: Fúria, Frenesi, Dor em pacotes, Feridas, Postura Selvagem e thresholds têm testes dedicados.
-- Arqueiro: Distância, Tensão, Cadência, Passos, Reflexo, multi-hit e Flechas em Voo têm cobertura de caps e relógios.
-- Caçador: Armadilhas, Rastro, Presa Marcada, Brechas e Precisão têm testes de disparo em ação real e progressão.
-- Feiticeiro: Pulso, Desperta, Fraturas, Echo, Ressonância, Controle e prioridades têm testes de miss/hit/crit e consumo.
-- Bruxo: Dívida, Sobrecontrato, Cobrança, Crédito, Nome Verdadeiro, Assinatura Falsa e Estigmas têm testes de ordem e safety.
-- Druida: Estações, Sintonia, Jardim, Formas, Ano Perfeito, Renovo e Equilíbrio têm testes de transição, cap e reset.
-- Bardo: Partitura, Marcato, Dissonante, Lírico, Frases de três notas, Ovação, Contracanto, Harmonia, Eco, Curinga e Bis têm testes próprios, incluindo o quinto slot e ausência de recursão.
-- Necromante: Almas, Decomposição, Praga, Servos, Ceifador, sacrifício, ticks, snapshot, expiração e catch-up têm testes dedicados.
-
-## Arquivo por ativa
-
-`auditActiveAbilities()` produz uma linha para cada ativa com:
-
-`Class | Path | Skill | Cooldown | Condition | Cast count | First cast | Resource | Reachable | Notes`
-
-As cinco variantes de prioridade são generator-first, spender-first, short-cooldown-first, capstone-first e defensive-first. Elas apenas validam permutações legais do loadout; não mudam a ordem do AI em runtime.
-
-`runClassAuditFullRuns()` executa os 1.372 cenários da matriz final e confirma que nenhum loadout legal fica sem cast, sem cinco slots ou com prioridade contendo habilidades fora da build.
-
-## Validação reproduzível
+## Comandos executados
 
 ```bash
-npm test -- --runInBand
-npx tsc -p tsconfig.app.json --noEmit
+npm test
+npx tsc --noEmit -p tsconfig.json
 npm run build
 git diff --check
 ```
-
-O harness de combate do Patch 2 continua responsável pelos números globais de ataque básico, stats, spawn, curva e mitigação. O Patch 3 adiciona o full-run contratual de loadout, condições e cooldowns, enquanto os testes especializados cobrem os efeitos de recursos, cura, barreiras, DOT, controle, summons, snapshots, resets e carry do motor.

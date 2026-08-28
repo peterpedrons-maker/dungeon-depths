@@ -1,4 +1,4 @@
-import { DungeonDef } from '../types/game';
+import type { DungeonDef } from '../types/game.ts';
 
 // Caçadas — masmorras especiais separadas do Mapa de Masmorras (ver
 // components/HuntHall.tsx): nenhum piso, nenhum encontro regular, o jogador

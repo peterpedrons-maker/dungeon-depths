@@ -213,6 +213,7 @@ import { formatGameNumber, formatGamePercent } from '../lib/format';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import { consumeCombatEvents, type CombatEvent } from '../lib/combatEngine';
+import { buildAbilityConditionContext } from '../lib/combatConditions';
 import {
   playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx, playBuySellSfx,
 } from '../lib/audio';
@@ -1507,7 +1508,7 @@ export function DungeonPanel({
     // lib/barbarian.ts so Bárbaro's resource/state-gated kit and any future
     // class's composed conditions share one evaluator.
     const threshold = chRef.current.abilityThresholds[ability.id] ?? cond.pct ?? 0.5;
-    const ctx: AbilityConditionContext = {
+    const ctx: AbilityConditionContext = buildAbilityConditionContext({
       hp: chRef.current.hp,
       maxHp: effectiveMaxHp(chRef.current),
       enemyHp: enemyRef.current.hp,
@@ -1575,7 +1576,7 @@ export function DungeonPanel({
       advantageReady: rogueAdvantageRef.current,
       preparedTrick: roguePreparedTrickRef.current?.kind ?? null,
       quickWindow: rogueQuickWindowRef.current,
-    };
+    });
     if (cond.type === 'hpBelow') return ctx.hp / ctx.maxHp < threshold;
     return evalAbilityCondition(cond, ctx);
   }
