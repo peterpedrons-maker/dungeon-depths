@@ -54,6 +54,7 @@ export interface AbilityConditionContext {
   advantageReady?: boolean;
   preparedTrick?: 'feint' | 'loaded_die' | null;
   quickWindow?: boolean;
+  round?: number;
 }
 
 export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditionContext): boolean {
@@ -66,6 +67,7 @@ export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditi
     case 'hpBelow': return ctx.hp / ctx.maxHp < (cond.pct ?? 0.5);
     case 'enemyHpBelow': return ctx.enemyHp / ctx.enemyMaxHp < (cond.pct ?? 0.5);
     case 'selfDebuffed': return ctx.selfDebuffed;
+    case 'everyNRounds': return (ctx.round ?? 0) % Math.max(1, cond.n ?? 1) === 0;
     case 'resourceAtLeast': return (ctx.resources[cond.resource ?? 'fury'] ?? 0) >= (cond.value ?? 0);
     case 'resourceBelow': return (ctx.resources[cond.resource ?? 'fury'] ?? 0) < (cond.value ?? 0);
     case 'resourceAtMost': return (ctx.resources[cond.resource ?? 'fury'] ?? 0) <= (cond.value ?? 0);
