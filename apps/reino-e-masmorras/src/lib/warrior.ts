@@ -71,6 +71,14 @@ export function recoverPosture(current: number, options: { pressure?: boolean; s
   return Math.max(2, recovery);
 }
 
+/** Recuperação natural aplicada ao estado vivo do inimigo. Guarda Quebrada
+ * nunca recupera Postura normalmente; o limite também fica centralizado aqui
+ * para o catch-up e o combate visível usarem a mesma regra. */
+export function recoverablePosture(state: WarriorEnemyState, options: Parameters<typeof recoverPosture>[1] = {}): number {
+  if (state.guardBroken) return 0;
+  return Math.max(0, Math.min(state.max - state.current, recoverPosture(state.current, options)));
+}
+
 export function parryReduction(base: number, vit: number, technique: boolean, master: boolean): number {
   const vitBonus = technique ? Math.min(0.08, Math.max(0, vit) * 0.0015) : 0;
   return Math.min(PARRY_REDUCTION_CAP, base + (master ? 0.05 : 0) + vitBonus);
