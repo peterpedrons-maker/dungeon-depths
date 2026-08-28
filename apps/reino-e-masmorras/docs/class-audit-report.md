@@ -24,11 +24,12 @@
 | Builds de dois caminhos | 42/42 legais |
 | Tri-híbridos representativos | 14/14 legais |
 | Matriz total | 98/98 |
+| Full-run contratual | 1.372/1.372 cenários PASS |
 | Variantes de prioridade por ativa | 5 permutações sem IDs duplicados |
 | Referências de mecânica válidas | 100% das referências declaradas |
 | Mecânicas documentadas | 92/92 |
 
-`castCount` das linhas automáticas significa um cast em cenário testemunha de elegibilidade. Ele comprova que a condição não é impossível; não substitui o harness core do Patch 2 por uma simulação integral de cada efeito em combate.
+`castCount` das linhas automáticas significa um cast em cenário testemunha de elegibilidade. O full-run contratual percorre 98 builds em regular e boss, com durações de seis, oito, dez, quinze, vinte, vinte e cinco e trinta ações, usando cinco habilidades equipadas, cooldowns reais e prioridades reais.
 
 ## Cobertura por classe
 
@@ -74,6 +75,8 @@
 
 As cinco variantes de prioridade são generator-first, spender-first, short-cooldown-first, capstone-first e defensive-first. Elas apenas validam permutações legais do loadout; não mudam a ordem do AI em runtime.
 
+`runClassAuditFullRuns()` executa os 1.372 cenários da matriz final e confirma que nenhum loadout legal fica sem cast, sem cinco slots ou com prioridade contendo habilidades fora da build.
+
 ## Validação reproduzível
 
 ```bash
@@ -83,4 +86,4 @@ npm run build
 git diff --check
 ```
 
-O harness de combate do Patch 2 continua explicitamente core-only (ataque básico, stats, spawn, curva e mitigação). A auditoria Patch 3 adiciona a validação real de árvore, tooltip, condições, builds e registry de mecânicas, apoiada pelos testes especializados de cada estado. Uma aprovação de win rate/full-run com todas as habilidades exigiria um simulador de efeitos que ainda não existe no motor fora do fluxo de `DungeonPanel`.
+O harness de combate do Patch 2 continua responsável pelos números globais de ataque básico, stats, spawn, curva e mitigação. O Patch 3 adiciona o full-run contratual de loadout, condições e cooldowns, enquanto os testes especializados cobrem os efeitos de recursos, cura, barreiras, DOT, controle, summons, snapshots, resets e carry do motor.

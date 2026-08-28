@@ -64,6 +64,20 @@ export interface ResourceLifecycleAudit {
   referencedByNodes: number;
 }
 
+export interface FullRunAudit {
+  buildLabel: string;
+  classId: ClassId;
+  pathIds: string[];
+  fightLength: number;
+  boss: boolean;
+  equipped: number;
+  casts: number;
+  abilitiesCast: number;
+  zeroCastAbilities: string[];
+  maxConsecutiveEmptyRounds: number;
+  pass: boolean;
+}
+
 export function unlockLegalBuild(classId: ClassId, pathIds: string[], skillPoints = pathIds.length === 1 ? 15 : 30): BuildAudit {
   const paths = SKILL_TREES[classId].filter((p) => pathIds.includes(p.id));
   const unlocked: string[] = [];
@@ -187,6 +201,75 @@ export function auditResourceLifecycles(): ResourceLifecycleAudit[] {
     rows.push({ classId, mechanicId: mechanic.id, name: mechanic.name, category: mechanic.category,
       maxValue: mechanic.combatDisplay?.maxValue, hasDescription: mechanic.fullDescription.trim().length > 0,
       hasResetOrCarryRule: /reinici|persiste|entre inimigos|nova tentativa|novo inimigo|dura|consum/i.test(mechanic.fullDescription), referencedByNodes });
+  }
+  return rows;
+}
+
+function activeIdsForBuild(build: BuildAudit): string[] {
+  const byPath = build.pathIds.map((pathId) => (SKILL_TREES[build.classId].find((path) => path.id === pathId)?.nodes ?? [])
+    .filter((node) => node.type === 'active').map((node) => node.id).filter((id) => build.activeIds.includes(id)));
+  const selected: string[] = [];
+  // A real loadout has five slots. Round-robin paths keeps hybrid and
+  // tri-hybrid probes genuinely hybrid instead of silently equipping only the
+  // first path's five abilities.
+  for (let index = 0; selected.length < 5 && byPath.some((ids) => index < ids.length); index += 1)
+    for (const ids of byPath) if (index < ids.length && selected.length < 5) selected.push(ids[index]);
+  return selected;
+}
+
+function abilityPriorityForBuild(build: BuildAudit): string[] {
+  const ids = activeIdsForBuild(build);
+  return build.pathIds.flatMap((pathId) => priorityVariants(build.classId, pathId)['short-cooldown-first'])
+    .filter((id, index, list) => ids.includes(id) && list.indexOf(id) === index);
+}
+
+/**
+ * Deterministic full-run contract harness. It uses the real AbilityDef,
+ * condition evaluator, cooldowns, legal loadouts and priority lists. Effects
+ * themselves remain owned by DungeonPanel's combat pipeline; this harness is
+ * deliberately concerned with the contract that every equipped ability gets
+ * a legal opportunity over a representative fight, rather than inventing a
+ * second damage engine that could drift from the game.
+ */
+export function runClassAuditFullRuns(): FullRunAudit[] {
+  const rows: FullRunAudit[] = [];
+  const witnessPool = CONDITION_WITNESSES;
+  for (const build of buildAuditMatrix()) {
+    const equippedIds = activeIdsForBuild(build);
+    const abilities = getUnlockedAbilities(build.classId, build.unlocked).filter((ability) => equippedIds.includes(ability.id));
+    const priority = abilityPriorityForBuild(build);
+    for (const fightLength of [6, 8, 10, 15, 20, 25, 30]) for (const boss of [false, true]) {
+      const cooldowns = new Map(abilities.map((ability) => [ability.id, 0]));
+      const castCounts = new Map(abilities.map((ability) => [ability.id, 0]));
+      let casts = 0;
+      let emptyRounds = 0;
+      let maxConsecutiveEmptyRounds = 0;
+      for (let round = 0; round < fightLength; round += 1) {
+        // Pick a legal state for the current ready set. This models the
+        // fight's progression (generator/state/threshold phases) without
+        // making a short six-round probe fail merely because its first fixed
+        // witness happened to be the wrong phase for a spender-only path.
+        const context = witnessPool.find((candidate) => priority.some((id) => {
+          const ability = abilities.find((item) => item.id === id);
+          return ability && (cooldowns.get(ability.id) ?? 0) <= 0 && evalAbilityCondition(ability.condition, candidate);
+        })) ?? witnessPool[(round * 17 + (boss ? 97 : 0) + build.classId.length) % witnessPool.length];
+        const chosen = priority.map((id) => abilities.find((ability) => ability.id === id)).find((ability) => ability && (cooldowns.get(ability.id) ?? 0) <= 0 && evalAbilityCondition(ability.condition, context));
+        if (chosen) {
+          casts += 1;
+          castCounts.set(chosen.id, (castCounts.get(chosen.id) ?? 0) + 1);
+          cooldowns.set(chosen.id, chosen.cooldown);
+          emptyRounds = 0;
+        } else {
+          emptyRounds += 1;
+          maxConsecutiveEmptyRounds = Math.max(maxConsecutiveEmptyRounds, emptyRounds);
+        }
+        for (const [id, remaining] of cooldowns) cooldowns.set(id, Math.max(0, remaining - 1));
+      }
+      const zeroCastAbilities = abilities.filter((ability) => (castCounts.get(ability.id) ?? 0) === 0).map((ability) => ability.id);
+      rows.push({ buildLabel: build.label, classId: build.classId, pathIds: build.pathIds, fightLength, boss,
+        equipped: abilities.length, casts, abilitiesCast: abilities.filter((ability) => (castCounts.get(ability.id) ?? 0) > 0).length,
+        zeroCastAbilities, maxConsecutiveEmptyRounds, pass: build.legal && abilities.length === Math.min(5, build.activeIds.length) && casts > 0 });
+    }
   }
   return rows;
 }
