@@ -1,8 +1,8 @@
-import { Character, EquipmentItem, ItemSlot } from '../types/game';
-import { generateItem } from './equipment';
-import { highestAccessibleItemTier } from './dungeons';
-import { merchantBasePrice, MERCHANT_RARITY_PRICE_MULT, OFFHAND_KIND } from './itemTiers';
-import { findFreeSlot, SLOT_FOOTPRINT } from './inventoryGrid';
+import type { Character, EquipmentItem, ItemSlot } from '../types/game';
+import { generateItem } from './equipment.ts';
+import { highestAccessibleItemTier } from './dungeons.ts';
+import { merchantBasePrice, MERCHANT_RARITY_PRICE_MULT, OFFHAND_KIND } from './itemTiers.ts';
+import { findFreeSlot, SLOT_FOOTPRINT } from './inventoryGrid.ts';
 
 // Smaller than the player's own 50-cell bag (10×5) — big enough to browse,
 // but "quase igual ao inventário" per the design call, not identical to it.
