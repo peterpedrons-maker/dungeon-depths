@@ -1,10 +1,10 @@
-# PATCH 3 — auditoria final das 14 classes
+# PATCH 4 — validação real end-to-end das 14 classes
 
 ## Estado da entrega
 
-- Base auditada: `origin/main` após o merge do Patch 2 (`92a0b705de0557ef72d23e49a1c95b9c19266f07`).
+- Base auditada: `origin/main` após o merge do Patch 3 (`4bf58e4656e1932524152aad5b0670d7414a2b9b`).
 - Escopo: 14 classes, 42 caminhos, 630 nós, 210 ativas, 126 passivas e 294 atributos.
-- Harness estrutural: `src/lib/classAudit.ts`.
+- Harness estrutural e end-to-end: `src/lib/classAudit.ts` e `src/lib/combatEngine.ts`.
 - O Patch 2 global não foi alterado: fórmulas de DEF/mitigação, economia, XP, ouro, poções, loot, tier power e crescimento permanecem na base integrada.
 
 ## Resultado automático
@@ -25,11 +25,17 @@
 | Tri-híbridos representativos | 14/14 legais |
 | Matriz total | 98/98 |
 | Full-run contratual | 1.372/1.372 cenários PASS |
+| Reachability no motor real | 210/210 ativas com cast observado |
+| Caminhos puros no motor real | 42/42 com os cinco ativos lançados |
+| Builds completos no motor real | 98/98 dungeons completas com cast |
+| Tipos de efeito resolvidos | 51/51 com switch exaustivo |
 | Variantes de prioridade por ativa | 5 permutações sem IDs duplicados |
 | Referências de mecânica válidas | 100% das referências declaradas |
 | Mecânicas documentadas | 92/92 |
 
-`castCount` das linhas automáticas significa um cast em cenário testemunha de elegibilidade. O full-run contratual percorre 98 builds em regular e boss, com durações de seis, oito, dez, quinze, vinte, vinte e cinco e trinta ações, usando cinco habilidades equipadas, cooldowns reais e prioridades reais.
+`castCount` das linhas automáticas significa um cast em cenário testemunha de elegibilidade. A validação Patch 4 acrescenta o motor serializável de combate: usa `AbilityDef` real, avaliador de condições real, cooldowns, recursos, HP, dano, estados, eventos e inimigos reais. A prova de alcançabilidade roda uma luta longa não letal por ativa; a prova de caminho exige os cinco ativos do caminho; e a prova de build atravessa a dungeon completa com HP persistente entre encontros. Não há `castCount` injetado nem condição marcada como passada sem evento de cast.
+
+O adaptador `consumeCombatEvents()` é a fronteira única para a apresentação. Ele converte os eventos do motor em log, números flutuantes, chamadas nomeadas de habilidade e flashes; `DungeonPanel` aceita esse lote de eventos sem quebrar o scheduler legado.
 
 ## Cobertura por classe
 
