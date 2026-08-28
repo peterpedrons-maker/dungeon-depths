@@ -7,6 +7,7 @@ import {
   SABEDORIA_JULGAMENTO_HEAL_PCT, SIGNIFICANT_HEAL_PCT_LOWERED, clericBaseHp, clericDirectHealAmount,
   clericPassiveHealAmount, significantHealAmount,
 } from './clerigo';
+import { directHealAmount as bardDirectHealAmount, healingBaseHp as bardHealingBaseHp } from './bardo';
 import { formatGameNumber, formatGamePercent } from './format';
 
 export interface PresentationRow { label: string; value: string }
@@ -64,6 +65,25 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
     }
   }
 
+  if (ch.classId === 'bardo') {
+    const stats = computeCombatStats(ch);
+    const baseHp = bardHealingBaseHp(CLASSES.bardo.baseHp, ch.level);
+    const wis = ch.allocatedAttrs.wis ?? 0;
+    const efficiency = (ch.unlockedSkills.includes('bardo:inspiracao:0') ? Math.min(0.03, wis * 0.0008) : 0)
+      + (ch.unlockedSkills.includes('bardo:inspiracao:7') ? Math.min(0.04, wis * 0.001) : 0);
+    if (ability?.effect.kind === 'heal') {
+      const pct = ability.effect.healPct ?? 0;
+      const amount = bardDirectHealAmount(CLASSES.bardo.baseHp, ch.level, pct, stats.healingPowerPct, efficiency);
+      rows.push({ label: 'Base de Cura', value: `${formatGameNumber(baseHp)} (${CLASSES.bardo.baseHp} + 10 × nível após o 1º)` });
+      rows.push({ label: 'Cura atual', value: `Recupera até ${formatGameNumber(amount)}` });
+      rows.push({ label: 'Cálculo', value: `${formatGamePercent(pct)} da Base de Cura × Poder de Cura × eficiência de cura` });
+      if (ability.effect.bardOvationHealPct !== undefined) {
+        const ovationAmount = bardDirectHealAmount(CLASSES.bardo.baseHp, ch.level, ability.effect.bardOvationHealPct, stats.healingPowerPct, efficiency);
+        rows.push({ label: 'Com Ovação', value: `${formatGamePercent(ability.effect.bardOvationHealPct)} — até ${formatGameNumber(ovationAmount)}; não consome Ovação` });
+      }
+    }
+    return rows;
+  }
   if (ch.classId !== 'clerigo') return rows;
   const stats = computeCombatStats(ch);
   const baseHp = clericBaseHp(CLASSES.clerigo.baseHp, ch.level);
@@ -74,10 +94,10 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
   }
 
   if (ability?.effect.kind === 'heal') {
-    const amount = clericDirectHealAmount(baseHp, ability.effect.healPct ?? 0, stats.supportPowerPct, efficiency);
+    const amount = clericDirectHealAmount(baseHp, ability.effect.healPct ?? 0, stats.healingPowerPct, efficiency);
     rows.push({ label: 'Cura atual', value: `Recupera até ${formatGameNumber(amount)}` });
-    rows.push({ label: 'Cálculo', value: `${formatGamePercent(ability.effect.healPct ?? 0)} da Base de Cura × Poder de Suporte × bônus de cura` });
-    rows.push({ label: 'Atributos', value: 'SAB amplia pelo Poder de Suporte; INT não altera a cura' });
+    rows.push({ label: 'Cálculo', value: `${formatGamePercent(ability.effect.healPct ?? 0)} da Base de Cura × Poder de Cura × bônus de cura` });
+    rows.push({ label: 'Atributos', value: 'SAB amplia pelo Poder de Cura; INT não altera a cura' });
     if (ability.effect.faithGainOnHeal) {
       rows.push({ label: 'Cura Significativa', value: `${formatGameNumber(significantHealAmount(baseHp, hasHands))} de cura efetiva para gerar 1 Fé` });
     }
@@ -86,20 +106,20 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
     rows.push({ label: 'Limite atual', value: `${formatGameNumber(significantHealAmount(baseHp, true))} de cura efetiva (${formatGamePercent(SIGNIFICANT_HEAL_PCT_LOWERED)} da Base de Cura)` });
   }
   if (ability?.effect.kind === 'regen') {
-    const perTick = Math.round(effectiveMaxHp(ch) * (ability.effect.regenPct ?? 0) * (1 + stats.supportPowerPct));
+    const perTick = Math.round(effectiveMaxHp(ch) * (ability.effect.regenPct ?? 0));
     const rounds = ability.effect.regenRounds ?? 1;
     rows.push({ label: 'Regeneração atual', value: `${formatGameNumber(perTick)} por ciclo; até ${formatGameNumber(perTick * rounds)} em ${rounds} ciclos` });
     rows.push({ label: 'Gatilhos', value: 'Não gera Fé, Graça nem Cura Significativa' });
   }
   if (ability?.effect.kind === 'reviveWindow') {
-    const raw = clericPassiveHealAmount(baseHp, ability.effect.reviveHealPct ?? 0, stats.supportPowerPct);
+    const raw = clericPassiveHealAmount(baseHp, ability.effect.reviveHealPct ?? 0, 0);
     const cap = Math.round(effectiveMaxHp(ch) * (ability.effect.reviveHealCapPct ?? 1));
     rows.push({ label: 'Restauração atual', value: `Até ${formatGameNumber(Math.min(raw, cap))}; teto de ${formatGameNumber(cap)}` });
     rows.push({ label: 'Gatilhos', value: 'Não gera Fé, Graça nem Cura Significativa' });
   }
   if (node.id === 'clerigo:retidao:8' || node.id === 'clerigo:provacao:11') {
     const pct = node.id === 'clerigo:retidao:8' ? INTERCESSAO_HEAL_PCT : SABEDORIA_JULGAMENTO_HEAL_PCT;
-    const amount = clericPassiveHealAmount(baseHp, pct, stats.supportPowerPct);
+    const amount = clericPassiveHealAmount(baseHp, pct, stats.healingPowerPct);
     rows.push({ label: 'Cura atual', value: `Recupera até ${formatGameNumber(amount)}` });
     rows.push({ label: 'Gatilhos', value: 'Cura passiva: não gera Fé, Graça nem Cura Significativa' });
   }
