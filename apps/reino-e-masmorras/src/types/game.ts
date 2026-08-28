@@ -312,6 +312,7 @@ export interface AbilityEffect {
   consumeWoundsOnHit?: boolean; // offense: clears all Ferida stacks after a successful hit
   dmgMultPerWoundStack?: number; // offense: extra dmgMult per CURRENT Ferida stack, read before consumption
   painRedirectPct?: number; // painGuard: % of direct dmg-to-HP redirected to Dor while active
+  wildPostureActions?: number; // hybrid offense: opens this many enemy actions
   painConsumeMaxPct?: number; // max % of effective max HP of Dor this ability cancels/spends
   painConsumeDmgMultPer2Pct?: number; // offense: +dmgMult per 2% max HP of Dor actually consumed
   furyPerHitTaken?: number; // wallStance: Fúria gained each enemy hit that lands while active

@@ -1,6 +1,7 @@
 import type { AttributeKey, Attributes, Character, ClassId, ItemSlot, SecondaryStatType } from '../types/game';
 import { CLASSES } from './classes.ts';
 import { enhancedItem } from './enhancement.ts';
+import { OFFHAND_KIND } from './itemTiers.ts';
 
 export const ATTRIBUTE_KEYS: AttributeKey[] = ['str', 'dex', 'agi', 'vit', 'int', 'wis', 'luk'];
 export const ATTRIBUTE_AFFIX_TYPES = new Set<SecondaryStatType>(ATTRIBUTE_KEYS);
@@ -43,7 +44,7 @@ export const CLASS_GEAR_CAPABILITIES: Record<ClassId, ClassGearCapabilities> = {
   arqueiro: { usesHealingPower: false, usesBarrierPower: false },
   cacador: { usesHealingPower: false, usesBarrierPower: false },
   feiticeiro: { usesHealingPower: false, usesBarrierPower: false },
-  bruxo: { usesHealingPower: false, usesBarrierPower: false },
+  bruxo: { usesHealingPower: false, usesBarrierPower: true },
   druida: { usesHealingPower: true, usesBarrierPower: false },
   bardo: { usesHealingPower: true, usesBarrierPower: false },
   necromante: { usesHealingPower: true, usesBarrierPower: true },
@@ -58,7 +59,10 @@ export function classGearCapabilities(classId: ClassId): ClassGearCapabilities {
 }
 
 export function compatibleAttributeKeys(slot: ItemSlot, classId: ClassId): AttributeKey[] {
-  const allowed = new Set(ATTRIBUTE_SLOT_POOL[slot]);
+  const pool = slot === 'offhand'
+    ? (OFFHAND_KIND[classId] === 'foco' ? ['int', 'wis', 'luk'] : ['str', 'vit', 'wis'])
+    : ATTRIBUTE_SLOT_POOL[slot];
+  const allowed = new Set(pool);
   return CLASS_ATTRIBUTE_PRIORITIES[classId].filter((key) => allowed.has(key));
 }
 

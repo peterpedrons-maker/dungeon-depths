@@ -1,4 +1,5 @@
-import { DungeonDef, EnemyInstance, EnemyShape, EnemyTier } from '../types/game';
+import type { DungeonDef, EnemyInstance, EnemyShape, EnemyTier } from '../types/game.ts';
+import { atkDifficultyMultiplier, defDifficultyMultiplier, depthGrowthMultiplier, hpDifficultyMultiplier } from './combatCurves.ts';
 
 // Every enemy shape in the game — regular mobs AND dungeon bosses — lives in
 // one flat table now. A dungeon's regular encounters are picked uniformly at
@@ -1087,10 +1088,9 @@ function instanceFromTier(tier: EnemyTier, depth: number, mode?: 'elite' | 'hunt
   // softer) but def/mdef only at its square root, since defense already
   // compounds non-linearly through rollAttack's mitigation cap and doubling
   // it in lockstep with attack would over-tighten fights at the high end.
-  const defDifficultyMult = Math.sqrt(difficultyMult);
-  const hpGrowth = (1 + depth * 0.06) * hpMult * modeStatMult * difficultyMult;
-  const atkGrowth = (1 + depth * 0.06) * atkMult * modeStatMult * difficultyMult;
-  const defGrowth = (1 + depth * 0.035) * baseDefMult * modeDefMult * defDifficultyMult;
+  const hpGrowth = depthGrowthMultiplier(depth, 'hp') * hpMult * modeStatMult * hpDifficultyMultiplier(difficultyMult);
+  const atkGrowth = depthGrowthMultiplier(depth, 'atk') * atkMult * modeStatMult * atkDifficultyMultiplier(difficultyMult);
+  const defGrowth = depthGrowthMultiplier(depth, 'def') * baseDefMult * modeDefMult * defDifficultyMultiplier(difficultyMult);
   const hp = Math.round(tier.hp * hpGrowth);
   return {
     name: mode === 'elite' ? `${tier.name} Veterano` : tier.name,

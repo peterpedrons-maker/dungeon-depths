@@ -16,7 +16,9 @@ export const MAX_TIER = TIER_MATERIAL.length;
 export const DUNGEONS_PER_ITEM_TIER = 3;
 
 export function tierForDungeonOrdinal(ordinal: number): number {
-  return Math.max(1, Math.min(MAX_TIER, Math.floor((Math.max(1, ordinal) - 1) / DUNGEONS_PER_ITEM_TIER) + 1));
+  const tier = Math.floor((Math.max(1, ordinal) - 1) / DUNGEONS_PER_ITEM_TIER) + 1;
+  if (tier > MAX_TIER) throw new RangeError(`Dungeon ordinal ${ordinal} requires unsupported item tier ${tier}; increase MAX_TIER first.`);
+  return tier;
 }
 
 export function tierName(baseNoun: string, tier: number): string {
