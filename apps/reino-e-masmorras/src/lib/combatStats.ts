@@ -5,6 +5,8 @@ import { enhancedItem } from './enhancement.ts';
 import { computeSkillBonuses } from './skills.ts';
 
 export const BASE_CRIT_DMG_MULT = 1.6;
+export const LIFESTEAL_CAP = 0.30;
+export const THORNS_CAP = 0.60;
 
 // Fixed per-point coefficients converting the 7 primary attributes (class
 // baseAttrs + the player's freely-spent attributePoints, see classes.ts)
@@ -187,8 +189,8 @@ export function computeCombatStats(ch: Character): CombatStats {
     // comment above — so this is purely skill-tree + item affix now.
     blockChance: Math.min(0.6, bonuses.blockChance + item.block),
     maxHpBonus: item.hp + bonuses.maxHpFlat + hpFromAttr,
-    lifestealPct: bonuses.lifestealPct + item.lifesteal,
-    thornsPct: bonuses.thornsPct + item.thorns,
+    lifestealPct: Math.min(LIFESTEAL_CAP, Math.max(0, bonuses.lifestealPct + item.lifesteal)),
+    thornsPct: Math.min(THORNS_CAP, Math.max(0, bonuses.thornsPct + item.thorns)),
     onCritHealPct: bonuses.onCritHealPct,
     dmgPctVsPoison: bonuses.dmgPctVsPoison,
     dmgPctVsBurn: bonuses.dmgPctVsBurn,
