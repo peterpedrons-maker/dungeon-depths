@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, buildAuditMatrix } from './classAudit.ts';
+import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, buildAuditMatrix, runClassAuditFullRuns } from './classAudit.ts';
 
 test('auditoria estrutural cobre as 14 classes, 42 paths e 630 nodes', () => {
   const report = auditAllClasses();
@@ -43,4 +43,12 @@ test('mecânicas de classe têm descrição, display e ligação com a árvore',
   assert.ok(rows.length >= 80);
   assert.ok(rows.every((row) => row.hasDescription));
   assert.ok(rows.filter((row) => row.referencedByNodes > 0).length >= 70);
+});
+
+test('full-run contratual percorre 98 builds em cenários regulares e boss', () => {
+  const runs = runClassAuditFullRuns();
+  assert.equal(runs.length, 98 * 7 * 2);
+  assert.ok(runs.every((run) => run.pass));
+  assert.ok(runs.every((run) => run.equipped === 5));
+  assert.ok(runs.every((run) => run.casts > 0));
 });
