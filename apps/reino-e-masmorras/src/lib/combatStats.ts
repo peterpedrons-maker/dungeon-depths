@@ -1,7 +1,8 @@
-import { AttributeKey, Character, ClassId, CombatStats, EquipmentItem } from '../types/game';
-import { CLASSES } from './classes';
-import { enhancedItem } from './enhancement';
-import { computeAttributeTotals, computeSkillBonuses } from './skills';
+import type { AttributeKey, Character, ClassId, CombatStats, EquipmentItem } from '../types/game';
+import { CLASSES } from './classes.ts';
+import { attributeKeyForStat, totalAttributes } from './attributes.ts';
+import { enhancedItem } from './enhancement.ts';
+import { computeSkillBonuses } from './skills.ts';
 
 export const BASE_CRIT_DMG_MULT = 1.6;
 
@@ -14,7 +15,7 @@ export const BASE_CRIT_DMG_MULT = 1.6;
 // attribute actually do" a genuinely confusing question. Rebalanced so:
 // STR = ataque físico puro; DEX = ataque físico secundário + Precisão;
 // AGI = Evasão + velocidade; VIT = defesa + vida (+ resistência, small);
-// INT = ataque mágico puro; WIS = defesa mágica + poder de suporte (+
+// INT = ataque mágico puro; WIS = defesa mágica + cura/barreira (+
 // resistência, primary); LUK = crítico (now its sole source) + sorte de
 // item. Bloqueio has no attribute source at all anymore — it reads as an
 // equipment/shield thing (see lib/equipment.ts's SHIELD_SCALE) and a
@@ -30,7 +31,8 @@ const ATTR_COEF = {
   defPerVit: 0.6,
   mdefPerWis: 0.5, mdefPerVit: 0.15,
   hpPerVit: 3,
-  supportPctPerWis: 0.01,
+  healingPctPerWis: 0.01,
+  barrierPctPerWis: 0.0075,
   dropChancePctPerLuk: 0.004,
   itemQualityPctPerLuk: 0.005,
   // New "tenacidade" channel (see CombatStats.tenacityPct) — mirrors mdef's
@@ -80,7 +82,8 @@ function equippedItems(ch: Character): EquipmentItem[] {
 export interface EquipmentContribution {
   dmg: number; def: number; hp: number; matk: number; mdef: number; crit: number; critDmg: number; block: number;
   evasion: number; accuracy: number; tenacity: number; speed: number; lifesteal: number; thorns: number; cdr: number;
-  dropChance: number; itemQuality: number;
+  dropChance: number; itemQuality: number; healingPower: number; barrierPower: number;
+  attributes: Record<AttributeKey, number>;
 }
 
 // Sums every equipped item's *Bonus fields and secondaryStats rolls into one
@@ -93,7 +96,8 @@ export interface EquipmentContribution {
 export function equipmentContribution(ch: Character): EquipmentContribution {
   let dmg = 0, def = 0, hp = 0, matk = 0, mdef = 0, crit = 0, critDmg = 0, block = 0,
     evasion = 0, accuracy = 0, tenacity = 0, speed = 0, lifesteal = 0, thorns = 0, cdr = 0,
-    dropChance = 0, itemQuality = 0;
+    dropChance = 0, itemQuality = 0, healingPower = 0, barrierPower = 0;
+  const attributes: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
   for (const raw of equippedItems(ch)) {
     const item = enhancedItem(raw);
     dmg += item.dmgBonus;
@@ -122,9 +126,15 @@ export function equipmentContribution(ch: Character): EquipmentContribution {
       else if (sec.type === 'cdr') cdr += sec.value;
       else if (sec.type === 'itemFind') dropChance += sec.value;
       else if (sec.type === 'itemQuality') itemQuality += sec.value;
+      else if (sec.type === 'healingPower') healingPower += sec.value;
+      else if (sec.type === 'barrierPower') barrierPower += sec.value;
+      else {
+        const attr = attributeKeyForStat(sec.type);
+        if (attr) attributes[attr] += sec.value;
+      }
     }
   }
-  return { dmg, def, hp, matk, mdef, crit, critDmg, block, evasion, accuracy, tenacity, speed, lifesteal, thorns, cdr, dropChance, itemQuality };
+  return { dmg, def, hp, matk, mdef, crit, critDmg, block, evasion, accuracy, tenacity, speed, lifesteal, thorns, cdr, dropChance, itemQuality, healingPower, barrierPower, attributes };
 }
 
 // Combines class base + level growth (already baked into ch.atk/ch.def/
@@ -136,7 +146,7 @@ export function equipmentContribution(ch: Character): EquipmentContribution {
 // can feed mdef — so equipment can push every one of atk/def/matk/mdef now.
 export function computeCombatStats(ch: Character): CombatStats {
   const bonuses = computeSkillBonuses(ch.classId, ch.unlockedSkills);
-  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
+  const attrs = totalAttributes(ch);
   const item = equipmentContribution(ch);
 
   const mult = (key: AttributeKey) => classAttrMult(ch.classId, key);
@@ -182,7 +192,8 @@ export function computeCombatStats(ch: Character): CombatStats {
     onCritHealPct: bonuses.onCritHealPct,
     dmgPctVsPoison: bonuses.dmgPctVsPoison,
     dmgPctVsBurn: bonuses.dmgPctVsBurn,
-    supportPowerPct: attrs.wis * ATTR_COEF.supportPctPerWis * mult('wis'),
+    healingPowerPct: Math.min(1.5, attrs.wis * ATTR_COEF.healingPctPerWis * mult('wis') + item.healingPower),
+    barrierPowerPct: Math.min(1.0, attrs.wis * ATTR_COEF.barrierPctPerWis * mult('wis') + item.barrierPower),
     dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk + item.dropChance,
     itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk + item.itemQuality,
     evasion: Math.min(0.4, bonuses.evasionPct + evasionFromAttr + item.evasion),
@@ -254,7 +265,8 @@ function rawAttrContributions(key: AttributeKey, points: number, mult: number): 
     case 'wis':
       return [
         { label: 'Defesa Mágica', raw: curved(points) * ATTR_COEF.mdefPerWis * mult, isPct: false },
-        { label: 'Poder de Suporte', raw: points * ATTR_COEF.supportPctPerWis * mult, isPct: true },
+        { label: 'Poder de Cura', raw: points * ATTR_COEF.healingPctPerWis * mult, isPct: true },
+        { label: 'Poder de Barreira', raw: points * ATTR_COEF.barrierPctPerWis * mult, isPct: true },
         { label: 'Tenacidade', raw: points * ATTR_COEF.tenacityPerWis * mult, isPct: true },
       ];
     case 'luk':
@@ -284,7 +296,7 @@ function fmtContribution(raw: number, isPct: boolean): string {
 // "+1" moves the stat by exactly the nextPoint number shown here, not by
 // the total.
 export function describeAttribute(ch: Character, key: AttributeKey): AttrDescription {
-  const attrs = computeAttributeTotals(ch.classId, ch.allocatedAttrs);
+  const attrs = totalAttributes(ch);
   const mult = classAttrMult(ch.classId, key);
   const points = attrs[key];
   const current = rawAttrContributions(key, points, mult);
