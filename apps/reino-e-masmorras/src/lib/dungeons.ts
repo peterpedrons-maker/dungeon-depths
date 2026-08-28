@@ -1,4 +1,5 @@
-import { Character, DungeonDef } from '../types/game';
+import type { Character, DungeonDef } from '../types/game';
+import { DUNGEONS_PER_ITEM_TIER, MAX_TIER, tierForDungeonOrdinal } from './itemTiers.ts';
 
 // The full roster is planned across 7 level-bracket "regions" shown on the
 // Dungeon Map (see lib/dungeonMap.ts) — only Região 1 (Iniciante, nível
@@ -16,10 +17,9 @@ import { Character, DungeonDef } from '../types/game';
 // nowhere else — full-grown/ancient/legendary dragon bosses are saved for
 // dungeons in regions 3-7, so this theme has somewhere stronger to escalate
 // to later instead of being spent this early. itemTier
-// (1-10, see lib/itemTiers.ts) is hand-authored per dungeon exactly like
-// bossDepth/boss — every item found inside always rolls at that tier,
-// regardless of in-run depth, so item power tracks dungeon progression
-// rather than the floor counter. Tiers 6-10 are reserved for regions 3-7.
+// (1-11, see lib/itemTiers.ts) is derived from the dungeon's ordinal: every
+// group of three dungeons shares one item tier. This keeps the tier ladder
+// and the dungeon list synchronized as new regions are added.
 // difficultyMult below is the CP-anchor knob (see DungeonDef in
 // types/game.ts). 2026 rebalance, take three: the first two passes both
 // tried to DERIVE this curve from simulation against an anchor character —
@@ -45,7 +45,7 @@ import { Character, DungeonDef } from '../types/game';
 // Arena) are the stated exception — bonus/side content, not the path a
 // player has to walk in order, so they keep the old levelReq gate instead
 // (see isDungeonUnlocked below).
-export const DUNGEONS: DungeonDef[] = [
+const DUNGEON_DEFS: DungeonDef[] = [
   // ── Região 1 — Iniciante (nível 1-10) — o "aprendizado do mercador":
   // frouxo de propósito, sobrevivível mesmo com equipamento fraco/incompleto ──
   {
@@ -166,8 +166,8 @@ export const DUNGEONS: DungeonDef[] = [
   // nenhum trash mob "puro" entre eles) culminando num chefe final
   // desproporcionalmente mais forte que o de qualquer masmorra regular da
   // região. difficultyMult continua a progressão linear de +0.15 por
-  // masmorra herdada de Região 1-2 (arena=2.65); itemTier 6-7, já que Tiers
-  // 6-10 são reservados para as regiões 3-7 (ver lib/itemTiers.ts).
+  // masmorra herdada de Região 1-2; o itemTier final é derivado do ordinal
+  // comum, portanto também cobre o Tier 11 no fim da lista.
   {
     id: 'fortalezaOrc', name: 'Fortaleza Orc',
     desc: 'Um acampamento de guerra orc fortificado nas montanhas nevadas.',
@@ -346,6 +346,19 @@ export const DUNGEONS: DungeonDef[] = [
   },
 ];
 
+export const DUNGEONS: DungeonDef[] = DUNGEON_DEFS.map((dungeon, index) => ({
+  ...dungeon,
+  itemTier: tierForDungeonOrdinal(index + 1),
+}));
+
+export function assertDungeonTierCapacity(): void {
+  if (Math.ceil(DUNGEONS.length / DUNGEONS_PER_ITEM_TIER) !== MAX_TIER) {
+    throw new Error(`Dungeons (${DUNGEONS.length}) do not fill the ${MAX_TIER}-tier ladder`);
+  }
+}
+
+assertDungeonTierCapacity();
+
 // Single source of truth for whether `character` can walk into `dungeon` —
 // used both by the map (DungeonMap.tsx) and by the Mercador's stock scaling
 // below, so the two can never drift apart on what's actually reachable.
@@ -366,7 +379,7 @@ export function highestAccessibleItemTier(character: Pick<Character, 'level' | '
 
 // A dungeon's position (0-1) on the rarity-roll curve (see lib/equipment.ts's
 // pickRarityForTier/pickBossDropRarity) — derived from difficultyMult
-// instead of itemTier. itemTier only has 10 rungs for 30+ dungeons (several
+// instead of itemTier. itemTier has shared rungs for the dungeon list (several
 // dungeons share the same one today), which meant every dungeon in a shared
 // rung rolled identical rarity odds and the easiest of them was always the
 // optimal farm. difficultyMult is unique per dungeon and strictly
