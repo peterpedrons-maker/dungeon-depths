@@ -1,4 +1,4 @@
-import { BASE_CRIT_DMG_MULT } from '../lib/combatStats';
+import { BASE_CRIT_DMG_MULT } from '../lib/combatStats.ts';
 
 export interface AttackResult {
   dmg: number;
@@ -14,10 +14,10 @@ export interface AttackResult {
 // keeps a heavy investment in defense meaningful (it still cuts a large
 // share of every hit) without letting it flatten incoming damage to
 // nothing — some of a hit always gets through, on both sides of the fight.
-const MAX_MITIGATION_PCT = 0.65;
+import { DEF_EFFECTIVENESS, MAX_MITIGATION_PCT } from '../lib/combatCurves.ts';
 
 export function mitigatedBase(atk: number, def: number): number {
-  const mitigation = Math.min(def * 0.5, atk * MAX_MITIGATION_PCT);
+  const mitigation = Math.min(def * DEF_EFFECTIVENESS, atk * MAX_MITIGATION_PCT);
   return Math.max(1, atk - mitigation);
 }
 
