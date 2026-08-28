@@ -24,10 +24,10 @@ export function mitigatedBase(atk: number, def: number): number {
 // Shared damage formula for both the player and enemies: defense blunts a
 // share of it (capped, see mitigatedBase), then a little randomness and a
 // (possibly talent-boosted) crit multiplier.
-export function rollAttack(atk: number, def: number, critChance: number, critDmgMult = BASE_CRIT_DMG_MULT): AttackResult {
+export function rollAttack(atk: number, def: number, critChance: number, critDmgMult = BASE_CRIT_DMG_MULT, random: () => number = Math.random): AttackResult {
   const base = mitigatedBase(atk, def);
-  const variance = base * (0.85 + Math.random() * 0.3);
-  const crit = Math.random() < critChance;
+  const variance = base * (0.85 + random() * 0.3);
+  const crit = random() < critChance;
   const dmg = Math.round(variance * (crit ? critDmgMult : 1));
   return { dmg: Math.max(1, dmg), crit };
 }
@@ -36,11 +36,11 @@ export function rollAttack(atk: number, def: number, critChance: number, critDmg
 // through the same roll — it's just a damage multiplier layered on, with an
 // optional forced crit (guaranteedCrit) instead of the normal crit roll.
 export function rollAbilityHit(
-  atk: number, def: number, dmgMult: number, critChance: number, critDmgMult: number, forceCrit = false,
+  atk: number, def: number, dmgMult: number, critChance: number, critDmgMult: number, forceCrit = false, random: () => number = Math.random,
 ): AttackResult {
   const base = mitigatedBase(atk, def) * dmgMult;
-  const variance = base * (0.85 + Math.random() * 0.3);
-  const crit = forceCrit || Math.random() < critChance;
+  const variance = base * (0.85 + random() * 0.3);
+  const crit = forceCrit || random() < critChance;
   const dmg = Math.round(variance * (crit ? critDmgMult : 1));
   return { dmg: Math.max(1, dmg), crit };
 }
