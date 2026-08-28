@@ -69,7 +69,7 @@ function presentationText(text: string, ability?: Omit<AbilityDef, 'id'>): strin
   // Every active card exposes the same cycle unit as the engine. Some of the
   // older redesign entries intentionally kept the cooldown only in the
   // AbilityDef; append it here so the player-facing tooltip cannot drift.
-  if (!/Recarga\s*(?:de)?\s*\\d+(?:[,.]\\d+)?\s*(?:s|segundos?|ciclos?)/i.test(result)) {
+  if (!/Recarga\s*(?:de)?\s*\d+(?:[,.]\d+)?\s*(?:s|segundos?|ciclos?)/i.test(result)) {
     result = `${result.replace(/[.!]?$/, '')}. Recarga: ${ability.cooldown} ciclos.`;
   }
   return result;
