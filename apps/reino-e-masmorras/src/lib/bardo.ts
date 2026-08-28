@@ -1,4 +1,5 @@
 import { HEALING_BASE_PER_LEVEL, healingBaseHp as sharedHealingBaseHp, directHealAmount as sharedDirectHealAmount, passiveHealAmount as sharedPassiveHealAmount } from './healing.ts';
+import type { AbilityEffect } from '../types/game.ts';
 
 /** Compositor do Combate — regras puras do Bardo.
  * O motor de combate usa este módulo como fonte de verdade; a UI apenas
@@ -154,6 +155,32 @@ export function createEncorePayload(e: { dmgMult?: number; hitDmgMults?: number[
   if (e.hitDmgMults?.length) return { magicalHitMults: e.hitDmgMults.map((n) => n * 0.55) };
   if (e.dmgMultPerHit !== undefined) return { magicalHitMults: [e.dmgMultPerHit * 0.55] };
   return { magicalHitMults: [Number(((e.dmgMult ?? 1) * 0.55).toFixed(6))] };
+}
+/** Materializes Bis! into the exact payload remembered from the preceding
+ * successful bard cast.  Both the live panel and the deterministic engine
+ * call this function, so the encore multiplier and its physical/magical
+ * channels cannot drift between them. */
+export function materializeEncoreEffect(effect: AbilityEffect, payload: BardEncorePayload): AbilityEffect {
+  if (payload.healPct !== undefined) return { ...effect, kind: 'heal', healPct: payload.healPct, bardEncore: false, bardFinale: false, bardOvationCost: undefined };
+  const magical = payload.magicalHitMults ?? [];
+  const physical = payload.physicalHitMults ?? [];
+  const all = [...magical, ...physical];
+  return {
+    ...effect,
+    kind: all.length > 1 ? 'multiHit' : 'bigHit',
+    hitCount: all.length > 1 ? all.length : undefined,
+    hitDmgMults: all.length > 1 ? all : undefined,
+    dmgMultPerHit: undefined,
+    dmgMult: all.length === 1 ? all[0] : undefined,
+    dmgType: all.length === 1 && physical.length === 1 ? 'physical' : effect.dmgType,
+    bardMagicalHitMults: magical,
+    bardPhysicalHitMults: physical,
+    bardFinale: false,
+    bardEncore: false,
+    bardOvationCost: undefined,
+    bardAccent: false,
+    bardAccentAtkMult: undefined,
+  };
 }
 export function canEncore(s: BardScoreState): boolean { return s.ovation > 0 && s.encoreReady && !!s.encoreMemory; }
 export type BardActionKind = 'normal' | 'basic' | 'dot' | 'proc' | 'passive' | 'enemy' | 'multiHitPerHit' | 'finale' | 'encore' | 'stunned' | 'silencedFallback';

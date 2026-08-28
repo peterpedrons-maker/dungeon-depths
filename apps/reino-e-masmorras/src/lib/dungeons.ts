@@ -81,7 +81,7 @@ const DUNGEON_DEFS: DungeonDef[] = [
     desc: 'Água estagnada e árvores mortas escondem predadores famintos.',
     startDepth: 7, levelReq: 7,
     enemyPool: ['poisonToad', 'swampViper', 'crawlingBog', 'cursedWisp', 'rottingGator'],
-    bossDepth: 18, boss: 'mudMother', itemTier: 1, miniBossDepths: [11, 15], difficultyMult: 1.45,
+    bossDepth: 18, boss: 'mudMother', itemTier: 1, miniBossDepths: [11, 15], difficultyMult: 2.18,
     unlockAfter: ['goblins'],
   },
   {
@@ -89,7 +89,7 @@ const DUNGEON_DEFS: DungeonDef[] = [
     desc: 'Uma fenda rochosa coberta de teias — algo grande tece lá dentro.',
     startDepth: 10, levelReq: 10,
     enemyPool: ['huntingSpider', 'venomSpider', 'giantSpider', 'spiderlingSwarm', 'darkWeaver'],
-    bossDepth: 21, boss: 'blackMatriarch', itemTier: 2, miniBossDepths: [14, 18], difficultyMult: 1.6,
+    bossDepth: 21, boss: 'blackMatriarch', itemTier: 2, difficultyMult: 2.33,
     unlockAfter: ['pantano'],
   },
 

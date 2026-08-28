@@ -63,7 +63,7 @@ test('resolver exaustivo cobre os 51 tipos de efeito', () => {
 test('validação end-to-end real alcança as 210 ativas', () => {
   const rows = auditRealAbilityReachability();
   assert.equal(rows.length, 210);
-  assert.ok(rows.every((row) => row.pass && row.castCount > 0 && row.proofEventCount > 0));
+  assert.ok(rows.every((row) => row.pass && row.castCount > 0 && row.proofEventCount > 0 && row.unappliedEffectFields.length === 0));
 });
 
 test('cada caminho puro lança seus cinco ativos no motor real', () => {

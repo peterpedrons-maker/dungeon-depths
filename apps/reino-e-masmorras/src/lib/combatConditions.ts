@@ -110,6 +110,6 @@ export function evalAbilityCondition(cond: AbilityCondition, ctx: AbilityConditi
     case 'advantageReady': return ctx.advantageReady === true;
     case 'preparedTrick': return cond.trick ? ctx.preparedTrick === cond.trick : ctx.preparedTrick != null;
     case 'quickWindow': return ctx.quickWindow === true;
-    default: return false;
+    default: throw new Error(`Condição de habilidade sem resolver: ${String(cond.type)}`);
   }
 }

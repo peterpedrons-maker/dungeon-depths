@@ -18,7 +18,9 @@ export interface BalanceFightResult {
 export type GearProfile = 'recem-chegado' | 'farmado' | 'bem-equipado' | 'endgame-realista' | 'stress';
 export const GEAR_PROFILES: Record<GearProfile, { levelOffset: number; tierOffset: number; rarity: Rarity; quality: number; forge: number }> = {
   'recem-chegado': { levelOffset: 0, tierOffset: -1, rarity: 'incomum', quality: 0, forge: 1 },
-  farmado: { levelOffset: 0, tierOffset: 0, rarity: 'raro', quality: .05, forge: 3 },
+  // Farmado is an actual two-level progression profile, not a same-level
+  // witness profile. Its gear and attributes remain ordinary for that level.
+  farmado: { levelOffset: 2, tierOffset: 0, rarity: 'raro', quality: .05, forge: 3 },
   'bem-equipado': { levelOffset: 4, tierOffset: 0, rarity: 'raro', quality: .12, forge: 5 },
   'endgame-realista': { levelOffset: 8, tierOffset: 0, rarity: 'epico', quality: .18, forge: 7 },
   stress: { levelOffset: 10, tierOffset: 0, rarity: 'legendario', quality: .25, forge: 10 },
@@ -33,7 +35,7 @@ const MAGICAL_PRIMARY: Partial<Record<ClassId, 'int' | 'wis'>> = {
 
 function buildCombatAttributes(ch: ReturnType<typeof createCharacter>, profile: GearProfile) {
   const points = ch.attributePoints;
-  if (points <= 0 || profile === 'recem-chegado') return ch;
+  if (points <= 0) return ch;
   const primary = PHYSICAL_PRIMARY[ch.classId] ?? MAGICAL_PRIMARY[ch.classId] ?? 'str';
   const primaryShare = profile === 'stress' ? 0.7 : 0.65;
   const primaryPoints = Math.floor(points * primaryShare);

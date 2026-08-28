@@ -1,42 +1,37 @@
-# PATCH 4 — auditoria real das 14 classes
+# Auditoria real de combate — Patch 4
 
-## Escopo
+Relatório regenerado em 2026-08-28 a partir do `main` atual. A validação usa `createCombatState()`, `runCombat()`, `runFullDungeon()` e `spawnEnemy()` do engine de produção. O painel e o harness compartilham as regras de condição, plano de resolução, payload de Bis e contrato dos efeitos.
 
-Base auditada antes das alterações: `origin/main` em `947c1f10e958ab2479403ef3212bc78e69a486bb`.
-
-O harness usa `createCombatState()`, `runCombat()`, `runFullDungeon()` e `spawnEnemy()` do motor de produção. Não há `progressBasicState()`, `witnessContext`, `maxResources()` ou sondagem não letal. Recursos, dano, cura, barreira, DOT, controle, summons, fases de boss, poções e HP persistente são produzidos pelo combate real. `DungeonPanel` e o harness compartilham o avaliador de condições e o contrato de eventos (`buildAbilityConditionContext()` / `consumeCombatEvents()`).
-
-## Resultado reproduzível
+## Resultado
 
 | Verificação | Resultado |
 |---|---:|
 | Classes / caminhos / nós | 14/14 · 42/42 · 630/630 |
 | Ativas / passivas / atributos | 210/210 · 126/126 · 294/294 |
 | Condições e cooldowns estruturais | 210/210 |
-| Ativas ativadas em combate real | 210/210 |
-| Casts reais observados nas 210 ativas | 12.880 |
-| Eventos de prova emitidos | 311.488 |
-| Caminhos puros com os cinco ativos lançados | 42/42 |
-| Builds legais (42 puras + 42 pares + 14 tri-híbridas) | 98/98 |
-| Builds com cinco ativos lançados | 98/98 |
-| Builds com zero ativo sem cast | 98/98 |
-| Dungeons simuladas por build | 33/33 |
-| Clears observados no full-run das 98 builds | 1.842 de 3.234 |
-| Tipos de efeito resolvidos exaustivamente | 51/51 |
+| Ativas executadas em combate real | 210/210 |
+| Casts observados nas 210 ativas | 11.508 |
+| Eventos de prova do engine | 367.299 |
+| Árvores puras com os cinco ativos lançados | 42/42 |
+| Builds legais com cinco ativos lançados | 98/98 |
+| Builds com ativo sem cast | 0/98 |
+| Dungeons percorridas por build | 33/33 |
+| Clears nos full-runs das 98 builds | 1.972 de 3.234 |
+| Tipos de efeito resolvidos | 51/51 |
 
-O PASS de uma build exige cinco habilidades equipadas, cinco IDs distintos, cast observado para cada ID e 33 dungeons atravessadas. Cobertura de habilidade não é convertida em vitória: os 1.842 clears são reportados separadamente. Para alcançar habilidades que não cabem no caminho puro, o teste usa encontros reais do catálogo `DUNGEONS`/`HUNTS`, nunca recursos ou estados injetados.
+Uma build só passa com cinco IDs equipados, cast real dos cinco e a simulação dos 33 encontros. A cobertura não é convertida em vitória: os clears são medidos separadamente. Não há geração artificial de recursos, estado-testemunha ou progressão básica fabricada.
 
-## Recursos e mecânicas
+## Mecânicas verificadas
 
-Os testes confirmam geração e consumo natural de Postura, Determinação, Fé, Dor, Feridas, Brechas, Calor, Pulso, Fraturas, Dívida, Crédito, Estigmas, Partitura, Eco, Ovação, Almas, Decomposição e demais estados. Poções são consumidas pelo limiar/cooldown real e carregadas entre encontros; não são cura gratuita do harness.
+O engine produz e consome naturalmente Postura, Determinação, Fé, Dor, Feridas, Brechas, Calor, Pulso, Fraturas, Dívida, Crédito, Estigmas, Partitura, Eco, Ovação, Almas e Decomposição. Também são exercitados HP persistente, gear, poções, cura, barreira, DOT, summons, fases de boss e cooldowns.
 
-O Arqueiro foi corrigido para que Flecha Balística cause dano apenas na aterrissagem, com snapshot de acerto/defesa válido. As condições de Tensão, Distância e Cadência foram ajustadas para as habilidades alcançarem seus estados durante lutas normais.
+Foram cobertos explicitamente os riders de Bárbaro, Bardo, Feiticeiro, Druida, Paladino, Ladino, Guerreiro, Cavaleiro, Arqueiro, Caçador, Clérigo, Mago, Bruxo e Necromante. Campos compostos de `AbilityEffect` passam pelo contrato de runtime; um kind ou campo desconhecido falha a auditoria.
 
-## Comandos executados
+## Validação
 
 ```bash
 npm test
-npx tsc --noEmit -p tsconfig.json
+npx tsc -p tsconfig.app.json --noEmit
 npm run build
 git diff --check
 ```

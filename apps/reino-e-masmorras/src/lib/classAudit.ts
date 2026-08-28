@@ -10,6 +10,7 @@ import { generateItem } from './equipment.ts';
 import { enhancedItem } from './enhancement.ts';
 import { OFFHAND_KIND } from './itemTiers.ts';
 import { naturalAbilityPriorities, proveAbilityReachability, runFullDungeon } from './combatEngine.ts';
+import { abilityEffectFields, assertAbilityEffectContract } from './abilityResolver.ts';
 import type { EquipmentItem, Rarity } from '../types/game.ts';
 
 export const EXPECTED_PATH_COUNT = 3;
@@ -71,7 +72,7 @@ export interface ResourceLifecycleAudit {
   hasResetOrCarryRule: boolean;
   referencedByNodes: number;
 }
-export interface RealReachabilityAudit { classId: ClassId; pathId: string; skillId: string; skillName: string; castCount: number; firstCastTick?: number; proofEventCount: number; pass: boolean; }
+export interface RealReachabilityAudit { classId: ClassId; pathId: string; skillId: string; skillName: string; castCount: number; firstCastTick?: number; proofEventCount: number; effectFields: string[]; unappliedEffectFields: string[]; pass: boolean; }
 export interface RealPurePathAudit { classId: ClassId; pathId: string; activeIds: string[]; castsByAbility: Record<string, number>; pass: boolean; }
 export interface RealBuildAudit { buildLabel: string; classId: ClassId; pathIds: string[]; equipped: number; abilitiesCast: number; zeroCastAbilities: string[]; fights: number; dungeonsSimulated: number; dungeonsCleared: number; pass: boolean; }
 
@@ -308,7 +309,9 @@ export function auditRealAbilityReachability(): RealReachabilityAudit[] {
     const character = equippedAuditCharacter(`Reachability ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[DUNGEONS.length - 1], classId === 'arqueiro' ? 453 : classId === 'paladino' ? 1 : 17 + rows.length, { quality: .95, rarity: 'legendario', enhanceLevel: 10 });
     for (const node of path.nodes) if (node.type === 'active' && node.ability) {
       const proof = proveWithNaturalSeeds(character, node.ability, active, 17 + rows.length);
-      rows.push({ classId, pathId: path.id, skillId: node.id, skillName: node.ability.name, castCount: proof.castCount, firstCastTick: proof.firstCastTick, proofEventCount: proof.events.length, pass: proof.pass });
+      const effectFields = [...new Set([node.ability.effect, ...(node.ability.extraEffects ?? [])].flatMap(abilityEffectFields))];
+      assertAbilityEffectContract([node.ability.effect, ...(node.ability.extraEffects ?? [])]);
+      rows.push({ classId, pathId: path.id, skillId: node.id, skillName: node.ability.name, castCount: proof.castCount, firstCastTick: proof.firstCastTick, proofEventCount: proof.events.length, effectFields, unappliedEffectFields: proof.unappliedEffectFields, pass: proof.pass });
     }
   }
   return rows;

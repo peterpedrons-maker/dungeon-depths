@@ -41,7 +41,7 @@ import {
 import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium } from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, applyWarlockDebt, payWarlockDebt, setWarlockDebt, grantWarlockCredit, consumeTrueName, consumeTrueNameAndRefragment, bindWarlockEnemy, addNameFragment, consumeMandamento, resolveCollection, borrowedPowerPct, overcontractDamagePct, collectionAmount } from '../lib/warlock';
 import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState, beginActiveCast, resolvePulseGain, addResonance, consumeResonance, addControl, consumeControl, addFractures, consumeFractures, rupturePenetration } from '../lib/sorcerer';
-import { BARD_FORTISSIMO_DAMAGE, BardScoreState, advanceAudienceChorus, appendBardNote, applyAudienceChorus, canEncore, consumeAccent, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, resetBardEnemy, chooseWildcardNote, prepareAccent } from '../lib/bardo';
+import { BARD_FORTISSIMO_DAMAGE, BardScoreState, advanceAudienceChorus, appendBardNote, applyAudienceChorus, canEncore, consumeAccent, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, materializeEncoreEffect, resetBardEnemy, chooseWildcardNote, prepareAccent } from '../lib/bardo';
 import {
   GUARD_BREAK_ACCURACY_BONUS, GUARD_BREAK_ACTIONS, GUARD_BREAK_DEF_PEN,
   GUARD_BREAK_MAX_ACTIONS, GUARD_BREAK_RESET, GUARD_BREAK_RESET_VANGUARD,
@@ -214,6 +214,7 @@ import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import { consumeCombatEvents, type CombatEvent } from '../lib/combatEngine';
 import { buildAbilityConditionContext } from '../lib/combatConditions';
+import { abilityResolutionPlan, isSelfAbilityKind } from '../lib/abilityResolver';
 import {
   playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx, playBuySellSfx,
 } from '../lib/audio';
@@ -335,23 +336,6 @@ function pickHuntDropRarity(): Rarity {
 // the one action exactly like everything else in the priority list; a
 // self-targeted 'statMod' is the one exception, since it's a hybrid hit+buff
 // that already rolls damage in the offense branch below.
-const SELF_ABILITY_KINDS = [
-  'heal', 'buffDef', 'buffBlock', 'shield', 'regen', 'immunity', 'haste', 'berserk', 'dispel', 'taunt', 'lifestealBuff', 'atkBuff',
-  // Bárbaro redesign (lib/barbarian.ts) — all consume the whole action, no attack roll.
-  'furyBoost', 'furyMaxFrenzy', 'painGuard', 'wallStance', 'lastStand', 'bloodFeast',
-  // Clérigo redesign (lib/clerigo.ts) — all consume the whole action, no attack roll.
-  'cleanseOne', 'consecrationGuard', 'divineWall', 'reviveWindow',
-  // Cavaleiro redesign (lib/knight.ts) — all consume the whole action, no attack roll.
-  'ironWall', 'livingFortress', 'colossalShield', 'lastGuard', 'counterStance', 'orderResist', 'kingsBanner',
-  // Caçador redesign (lib/hunter.ts) — all consume the whole action, no attack roll.
-  'armTrap', 'buffEvasion', 'huntWithPrey',
-  // Guerreiro — support actions; neither consumes Guarda Quebrada actions.
-  'preparedGuard', 'feint', 'aegis', 'archerMove',
-  // Necromante — invocações/proteções consomem a ação inteira.
-  'boneShield', 'deathVeil', 'boneFortress', 'mortalVoracity',
-  // Ladino — suportes Rápidos resolvem dentro da Janela de Iniciativa.
-  'rogueStealth', 'rogueToxicBlade', 'roguePrepareTrick',
-];
 const MISS_CHANCE_CAP = 0.45;
 
 const STATUS_LABEL: Record<StatusEffectKind, string> = { poison: 'Envenenado', burn: 'Em Chamas', bleed: 'Sangrando', curse: 'Amaldiçoado' };
@@ -2992,7 +2976,8 @@ export function DungeonPanel({
       ? (archerHasSkill(eff.archerPath === 'precision' ? 'arqueiro:precisao:3' : eff.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
       : 0;
     cooldownsRef.current[ab.id] = applyCd(ab.cooldown, stats.cooldownReductionPct + warriorCdrBonusFor(ab.id) + rogueCdrBonusFor(ab) + archerCdr + bardCdrBonusFor(ab.id));
-    const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
+    const resolution = abilityResolutionPlan(eff, chRef.current.classId);
+    const isMagicalClass = resolution.damageType === 'magical';
     const power = isMagicalClass ? stats.matk : stats.atk;
     const mageMdefPen = isMage() && eff.element === 'lightning' ? (mageAmplified ? (eff.amplifiedMdefPenPct ?? eff.mdefPenPct ?? 0) : (eff.mdefPenPct ?? 0)) : 0;
     const frostMdefReduction = isMage() && (mageThermalRef.current === 'fragile' || mageThermalRef.current === 'frozen') && chRef.current.unlockedSkills.includes('mago:gelido:6') ? 0.05 : 0;
@@ -3000,7 +2985,7 @@ export function DungeonPanel({
     const sorcPen = sorcererBonuses?.pen ?? 0;
     const baseEffDef = Math.max(0, (isMagicalClass ? computeEnemyMdef() * (1 - frostMdefReduction) : computeEnemyDef()) * (1 - stats.defPenPct - mageMdefPen - warlockPen - sorcPen));
     const marked = hunterMarkedPrey();
-    const originalHitCount = eff.hitCount ?? 2;
+    const originalHitCount = resolution.attackCount;
     const hitCount = originalHitCount + (isArcher() && archerPerfectCastRef.current && eff.archerPerfectExtraRatio ? 1 : 0);
     let allLanded = true, landedHits = 0, criticalHits = 0, totalWarriorPosture = 0, lastHitLanded = false;
     let warriorPostureBonusPending = warriorBonuses?.posture ?? 0;
@@ -3018,7 +3003,7 @@ export function DungeonPanel({
         hunterOnPlayerMiss();
         continue;
       }
-      let dmgMult = eff.hitDmgMults?.[i] ?? eff.dmgMultPerHit ?? 0.8;
+      let dmgMult = resolution.multipliers[i] ?? eff.dmgMultPerHit ?? 0.8;
       if (isArcher() && i >= originalHitCount && eff.archerPerfectExtraRatio) dmgMult = (eff.hitDmgMults?.[originalHitCount - 1] ?? eff.dmgMultPerHit ?? 0.8) * eff.archerPerfectExtraRatio;
       if (isArcher() && eff.archerFifthDistanceMult && i === 4 && (archerStateRef.current.distance === 1 || archerStateRef.current.distance === 2)) dmgMult = eff.archerFifthDistanceMult;
       if (isMage() && mageAmplified) {
@@ -3628,7 +3613,7 @@ export function DungeonPanel({
     const eligible: AbilityDef[] = [];
     for (const ab of equippedAbilities()) {
       if (actionType && (ab.actionType ?? 'main') !== actionType) continue;
-      if (silenced && !SELF_ABILITY_KINDS.includes(ab.effect.kind)) continue;
+      if (silenced && !isSelfAbilityKind(ab.effect.kind)) continue;
       if ((cooldownsRef.current[ab.id] ?? 0) > 0) continue;
       if (!conditionMet(ab)) continue;
       if (abilityAlreadyActive(ab)) continue;
@@ -3675,6 +3660,8 @@ export function DungeonPanel({
   // healingPowerPct (SAB), with barriers using their own channel.
   function resolveSelfAbility(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, paladinVerdict?: PaladinVerdictSnapshot | null): string | null {
     const eff = ab.effect;
+    const resolution = abilityResolutionPlan(eff, chRef.current.classId);
+    if (!resolution.selfTargeted) throw new Error(`AbilityEffect ${eff.kind} was routed to the self resolver without a self-target plan`);
     const healingMult = 1 + stats.healingPowerPct;
     const barrierMult = eff.scalesWithBarrierPower === true ? 1 + stats.barrierPowerPct : 1;
     const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
@@ -4887,31 +4874,7 @@ export function DungeonPanel({
             const encorePayload = bardStateRef.current.encoreMemory;
             bardStateRef.current = consumeOvation(bardStateRef.current, bardHasSkill('bardo:inspiracao:14'));
             bardStateRef.current = { ...bardStateRef.current, encoreReady: false, encoreMemory: null };
-            // A stored healing payload turns Bis into a support action while
-            // preserving the same cooldown/cost timing; the 55% coefficient
-            // was sanitized when the payload was created.
-            if (encorePayload?.healPct !== undefined) {
-              chosen = { ...chosen, effect: { ...chosen.effect, kind: 'heal', healPct: encorePayload.healPct } };
-            } else if (encorePayload) {
-              const magical = encorePayload.magicalHitMults ?? [];
-              const physical = encorePayload.physicalHitMults ?? [];
-              const payload = [...magical, ...physical];
-              chosen = { ...chosen, effect: {
-                ...chosen.effect,
-                kind: payload.length > 1 ? 'multiHit' : 'bigHit',
-                hitCount: payload.length > 1 ? payload.length : undefined,
-                hitDmgMults: payload.length > 1 ? payload : undefined,
-                dmgMultPerHit: undefined,
-                dmgMult: payload.length === 1 ? payload[0] : undefined,
-                dmgType: payload.length === 1 && physical.length === 1 ? 'physical' : chosen.effect.dmgType,
-                bardMagicalHitMults: magical,
-                bardPhysicalHitMults: physical,
-                bardFinale: false,
-                bardOvationCost: undefined,
-                bardAccent: false,
-                bardAccentAtkMult: undefined,
-              } };
-            }
+            if (encorePayload) chosen = { ...chosen, effect: materializeEncoreEffect(chosen.effect, encorePayload) };
             bardSync();
           } else if (be.bardEncore) {
             chosen = null;
@@ -4927,7 +4890,7 @@ export function DungeonPanel({
           }
           if (chosen && be.bardPath === 'march' && bardStateRef.current.impulse && !be.bardFinale) bardStateRef.current = { ...bardStateRef.current, impulse: false };
           if (chosen && be.bardPath === 'improvisation' && bardStateRef.current.bridgeActive && !be.bardFinale) bardStateRef.current = { ...bardStateRef.current, bridgeActive: false };
-          if (chosen && !SELF_ABILITY_KINDS.includes(be.kind) && bardStateRef.current.fortissimo) {
+          if (chosen && !isSelfAbilityKind(be.kind) && bardStateRef.current.fortissimo) {
             bardFortissimoAtCast = true;
             bardStateRef.current = { ...bardStateRef.current, fortissimo: false };
             bardSync();
@@ -4965,7 +4928,7 @@ export function DungeonPanel({
         if (isDruid()) { const ds=chosen?.effect.druidSeason; const mode=ds==='cycle'?'neutral':ds===druidCycleRef.current.season?'synced':'dissonant'; druidAction(mode); if(chosen?.effect.druidAction==='seed')druidGardenRef.current=addGardenSeeds(druidGardenRef.current,druidGardenIdRef.current++,hasSkill(chRef.current,'druida:cura-natural:4')&&ds===druidCycleRef.current.season?2:1,hasSkill(chRef.current,'druida:cura-natural:6')?3:2); if(chosen?.effect.druidAction==='harvest'){const taken=consumeGardenFruit(druidGardenRef.current,3);druidGardenRef.current=taken.garden;} if(chosen?.effect.druidAction==='cycle')druidGardenRef.current=matureGarden(druidGardenRef.current); }
         if (isPaladin()) {
           paladinHpPctAtCast = chRef.current.hp / effectiveMaxHp(chRef.current);
-          const offensiveAbility = chosen !== null && !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
+          const offensiveAbility = chosen !== null && !isSelfAbilityKind(chosen.effect.kind);
           if (offensiveAbility && paladinNextOffenseBuffTicksRef.current > 0) {
             paladinMercyArmedThisCast = true;
             paladinNextOffenseBuffTicksRef.current = 0;
@@ -5007,7 +4970,7 @@ export function DungeonPanel({
           }
           rogueSync();
         }
-        if (isWarrior() && (!chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind))) {
+        if (isWarrior() && (!chosen || !isSelfAbilityKind(chosen.effect.kind))) {
           const ws = warriorEnemyState();
           warriorPostureAtActionStart = ws.current;
           warriorBreakActiveAtStart = ws.guardBroken;
@@ -5087,7 +5050,7 @@ export function DungeonPanel({
           mageSync();
         }
         if (archerActive) {
-          const offensive = !chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
+          const offensive = !chosen || !isSelfAbilityKind(chosen.effect.kind);
           const ae = chosen?.effect;
           if (chosen && ae?.archerTensionCost) archerStateRef.current = loseArcherTension(archerStateRef.current, ae.archerTensionCost);
           if (chosen && ae?.archerCadenceCost) archerStateRef.current = loseArcherCadence(archerStateRef.current, ae.archerCadenceCost);
@@ -5102,7 +5065,7 @@ export function DungeonPanel({
           if (chosen) cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + (chosen.effect.archerPath ? 0.03 * (archerHasSkill(chosen.effect.archerPath === 'precision' ? 'arqueiro:precisao:3' : chosen.effect.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 1 : 0) : 0));
           archerSync();
         }
-        if (chosen && SELF_ABILITY_KINDS.includes(chosen.effect.kind)) {
+          if (chosen && isSelfAbilityKind(chosen.effect.kind)) {
           if (!isPaladin()) {
             const archerCdr = archerActive && chosen.effect.archerPath
               ? (archerHasSkill(chosen.effect.archerPath === 'precision' ? 'arqueiro:precisao:3' : chosen.effect.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 0.03 : 0)
@@ -5817,7 +5780,8 @@ export function DungeonPanel({
             // atk/def, same class split as an ability's default dmgType
             // above, so their INT investment isn't dead weight before they
             // have an ability equipped.
-            const isMagicalClass = MAGICAL_CLASSES.includes(chRef.current.classId);
+            const resolution = abilityResolutionPlan({ kind: 'bigHit' }, chRef.current.classId);
+            const isMagicalClass = resolution.damageType === 'magical';
             playerHitMagical = isMagicalClass;
             const power = isMagicalClass ? stats.matk : stats.atk;
             const warriorPlainDefPen = isWarrior()
@@ -6018,7 +5982,7 @@ export function DungeonPanel({
         paladinSync();
       }
 
-      if (isWarrior() && !playerStunned && (!chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind))) {
+      if (isWarrior() && !playerStunned && (!chosen || !isSelfAbilityKind(chosen.effect.kind))) {
         if (chosen?.effect.finishGuardBreak) warriorEndGuardBreak();
         else warriorConsumeGuardBreakAction(warriorBreakActiveAtStart);
       }
@@ -6208,7 +6172,7 @@ export function DungeonPanel({
         if (rogueResolveInitiative()) return;
       }
       if (archerActive && !playerStunned) {
-        const offensive = !chosen || !SELF_ABILITY_KINDS.includes(chosen.effect.kind);
+      const offensive = !chosen || !isSelfAbilityKind(chosen.effect.kind);
         const effect = chosen?.effect;
         if (offensive && !archerBallisticLaunched) {
           if (archerLastActionHitsRef.current > 0) {
