@@ -1,9 +1,11 @@
-import { Attributes, Character, ClassId, EquipmentItem, ProfileState } from '../types/game';
-import { CLASSES, MAX_LEVEL } from './classes';
-import { SKILL_TREES } from './skills';
-import { MAX_POTIONS } from './consumables';
-import { repackInventory } from './inventoryGrid';
-import { generateMerchantStock, STOCK_COLS } from './merchantStock';
+import type { Attributes, Character, ClassId, EquipmentItem, ProfileState } from '../types/game';
+import { CLASSES, MAX_LEVEL } from './classes.ts';
+import { SKILL_TREES } from './skills.ts';
+import { MAX_POTIONS } from './consumables.ts';
+import { repackInventory } from './inventoryGrid.ts';
+import { generateMerchantStock, STOCK_COLS } from './merchantStock.ts';
+
+export const EQUIPMENT_SCHEMA_VERSION = 2;
 
 const ZERO_ATTRS: Attributes = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
@@ -27,19 +29,44 @@ function migrateClassId(id: string): string {
 // the ladder) rather than let NaN leak into every stat sum downstream.
 // Input is raw parsed JSON, hence `any`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function migrateItem(item: any): EquipmentItem {
-  return {
-    id: item.id, name: item.name, classId: migrateClassId(item.classId) as ClassId, rarity: item.rarity, slot: item.slot ?? 'weapon',
-    tier: item.tier ?? 1, accessoryType: item.accessoryType,
+export function migrateItem(item: any): EquipmentItem {
+  const oldVersion = item.itemSchemaVersion ?? 1;
+  const secondaryStats = (Array.isArray(item.secondaryStats)
+    ? item.secondaryStats
+    : item.secondaryStat ? [item.secondaryStat] : []).map((stat: any) => {
+    const ratios: Record<string, number> = {
+      crit: 0.40, critDmg: 0.55, block: 0.48, evasion: 0.40, accuracy: 0.342857,
+      tenacity: 0.40, speed: 0.50, lifesteal: 0.30, thorns: 0.533333, cdr: 0.458333,
+    };
+    const ratio = oldVersion < EQUIPMENT_SCHEMA_VERSION ? ratios[stat.type] : undefined;
+    return { ...stat, value: ratio === undefined ? stat.value : stat.value * ratio };
+  });
+  const primary = {
     dmgBonus: item.dmgBonus ?? 0, defBonus: item.defBonus ?? 0, hpBonus: item.hpBonus ?? 0,
     matkBonus: item.matkBonus ?? 0, mdefBonus: item.mdefBonus ?? 0,
     critChanceBonus: item.critChanceBonus ?? 0, critDmgBonus: item.critDmgBonus ?? 0, cdrBonus: item.cdrBonus ?? 0,
+  };
+  if (oldVersion < EQUIPMENT_SCHEMA_VERSION && item.slot === 'accessory') {
+    if (item.accessoryType === 'anel') {
+      primary.critChanceBonus *= 0.44;
+      primary.critDmgBonus *= 0.45;
+    } else if (item.accessoryType === 'amuleto') {
+      primary.hpBonus *= 0.70;
+      primary.defBonus *= 0.75;
+      primary.mdefBonus *= 0.75;
+    } else if (item.accessoryType === 'bracelete') {
+      primary.dmgBonus *= 0.458333;
+      primary.matkBonus *= 0.458333;
+    }
+  }
+  return {
+    id: item.id, name: item.name, classId: migrateClassId(item.classId) as ClassId, rarity: item.rarity, slot: item.slot ?? 'weapon',
+    tier: Math.max(1, Math.min(11, item.tier ?? 1)), itemSchemaVersion: EQUIPMENT_SCHEMA_VERSION, accessoryType: item.accessoryType,
+    ...primary,
     // Pre-multi-affix saves had a single optional `secondaryStat` object
     // instead of an array — wrap it into a 1-element array rather than lose
     // that item's one rolled affix on load.
-    secondaryStats: Array.isArray(item.secondaryStats)
-      ? item.secondaryStats
-      : item.secondaryStat ? [item.secondaryStat] : [],
+    secondaryStats,
     enhanceLevel: item.enhanceLevel ?? 0,
     // These three were missing from this whitelist entirely — every reload
     // (localStorage OR the Supabase cloud round-trip, both go through this
@@ -121,6 +148,7 @@ export function migrateCharacter(raw: any): Character | null {
 
     return {
       ...c,
+      equipmentSchemaVersion: EQUIPMENT_SCHEMA_VERSION,
       classId,
       level,
       matk,
@@ -181,7 +209,7 @@ export function loadProfile(): ProfileState {
     const p = JSON.parse(raw) as Partial<ProfileState>;
     return {
       prestige: p.prestige ?? 0, ownedCosmetics: p.ownedCosmetics ?? [], equippedCosmetic: p.equippedCosmetic ?? null,
-      vaultItems: p.vaultItems ?? [],
+      vaultItems: (p.vaultItems ?? []).map(migrateItem),
     };
   } catch { return { prestige: 0, ownedCosmetics: [], equippedCosmetic: null, vaultItems: [] }; }
 }
