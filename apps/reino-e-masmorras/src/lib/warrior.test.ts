@@ -5,6 +5,10 @@ import {
   POSTURE_BASIC_DAMAGE, POSTURE_MAX, applyPostureDamage, bandValue, createWarriorEnemyState,
   crossesLowerBand, duelPostureDamage, parryReduction, postureBand, recoverPosture,
 } from './warrior.ts';
+import { createCharacter } from './classes.ts';
+import { createCombatState, resolveEnvironmentTick, resolvePlayerAction } from './combatEngine.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
 
 test('Postura has exact bands and clamps', () => {
   assert.equal(postureBand(100), 'firm'); assert.equal(postureBand(67), 'firm');
@@ -35,12 +39,35 @@ test('estado inicial, ataque básico e resets usam os valores definitivos', () =
     vanguardFirstHitUsed: false, duelistFirmFirstHitUsed: false,
     perfectCounterAccuracyPending: false,
   });
-  assert.equal(applyPostureDamage(100, POSTURE_BASIC_DAMAGE), 90);
-  assert.equal(Math.min(POSTURE_MAX, 90 + recoverPosture(90)), 98);
+  assert.equal(applyPostureDamage(100, POSTURE_BASIC_DAMAGE), 88);
+  assert.equal(Math.min(POSTURE_MAX, 88 + recoverPosture(88)), 96);
   assert.equal(GUARD_BREAK_ACTIONS, 2);
   assert.equal(GUARD_BREAK_DEF_PEN, 0.20);
   assert.equal(GUARD_BREAK_RESET, 75);
   assert.equal(GUARD_BREAK_RESET_VANGUARD, 65);
+});
+
+test('ataque básico real causa 12 ao acertar, 0 ao errar e recupera 8', () => {
+  const character = createCharacter('Guerreiro real', 'guerreiro');
+  const enemy = { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 };
+  const hitState = createCombatState(character, enemy, 1, [], []);
+  resolvePlayerAction(hitState);
+  assert.ok(hitState.events.some((event) => event.type === 'hit' && event.actor === 'player'));
+  assert.equal(hitState.enemy.warrior?.current, 88);
+  resolveEnvironmentTick(hitState);
+  assert.equal(hitState.enemy.warrior?.current, 96);
+
+  let missVerified = false;
+  for (let seed = 1; seed <= 20 && !missVerified; seed += 1) {
+    const missState = createCombatState(character, { ...enemy, evasion: 1 }, seed, [], []);
+    missState.playerMods.push({ stat: 'accuracy', pct: -1, roundsLeft: 1 });
+    resolvePlayerAction(missState);
+    if (missState.events.some((event) => event.type === 'miss' && event.actor === 'player')) {
+      assert.equal(missState.enemy.warrior?.current, 100);
+      missVerified = true;
+    }
+  }
+  assert.equal(missVerified, true);
 });
 
 test('Finta mantém piso 1 e nunca cria Guarda Quebrada', () => {

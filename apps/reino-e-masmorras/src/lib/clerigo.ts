@@ -119,6 +119,10 @@ export const MURALHA_DIVINA_DMG_TAKEN_PCT = -0.10;
 export const JUDGMENT_MAX_STACKS = 5;
 export const JUDGMENT_BASE_DURATION_TICKS = 5;
 export const JUDGMENT_CONVICCAO_DURATION_TICKS = 6; // Convicção (clerigo:provacao:5)
+export const CLERIC_CONVICTION_SKILL_ID = 'clerigo:provacao:5';
+export const CLERIC_SENTENCA_FINAL_ABILITY_ID = 'clerigo:provacao:10';
+export const CLERIC_IRA_CONSUMIDORA_ABILITY_ID = 'clerigo:provacao:12';
+export const CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID = 'clerigo:provacao:13';
 // Peso do Veredito (clerigo:provacao:8) é a ÚNICA fonte do bônus de dano por
 // stack — Julgamento em si só guarda stacks (evita duplicar o bônus).
 export const JUDGMENT_DMG_PCT_PER_STACK = 0.015;
@@ -126,6 +130,37 @@ export const JUDGMENT_DMG_PCT_PER_STACK = 0.015;
 export interface JudgmentState {
   stacks: number;
   ticksLeft: number;
+}
+export function judgmentDurationForSkills(unlockedSkills: readonly string[]): number {
+  return unlockedSkills.includes(CLERIC_CONVICTION_SKILL_ID)
+    ? JUDGMENT_CONVICCAO_DURATION_TICKS
+    : JUDGMENT_BASE_DURATION_TICKS;
+}
+
+export interface ClericTrialRotationState {
+  apocalypseEquipped: boolean;
+  apocalypseCooldown: number;
+  judgmentStacks: number;
+  faith: number;
+}
+
+/**
+ * Keeps the player's normal priority order, except for Provação's capstone:
+ * an eligible Apocalipse always fires first and its two setup consumers are
+ * held while an off-cooldown Apocalipse is still waiting for stacks/Fé.
+ */
+export function prioritizeClericTrialRotation<T extends { id: string }>(
+  eligible: readonly T[],
+  state: ClericTrialRotationState,
+): T[] {
+  if (!state.apocalypseEquipped) return [...eligible];
+  const apocalypse = eligible.find((ability) => ability.id === CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID);
+  if (apocalypse) return [apocalypse, ...eligible.filter((ability) => ability !== apocalypse)];
+  const preparingApocalypse = state.apocalypseCooldown <= 0
+    && (state.judgmentStacks < APOCALIPSE_SAGRADO_REQUIRED_JUDGMENT || state.faith < 3);
+  if (!preparingApocalypse) return [...eligible];
+  return eligible.filter((ability) => ability.id !== CLERIC_SENTENCA_FINAL_ABILITY_ID
+    && ability.id !== CLERIC_IRA_CONSUMIDORA_ABILITY_ID);
 }
 export function applyJudgmentState(current: JudgmentState | undefined, amount: number, duration: number): JudgmentState | undefined {
   if (amount <= 0) return current;
