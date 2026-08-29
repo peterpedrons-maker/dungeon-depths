@@ -107,6 +107,13 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Arena do Campeão (especial) — inimigos](#inimigos-xxxv-arena-do-campeao-gladiador-campeao-fera-campea-da-arena-duelista-veterano-senhor-de-guerra-da-arena-e-campeao-ensanguentado)
 - 🕓 [Arena do Campeão (especial) — chefe final (Campeão Eterno)](#chefe-arena-do-campeao-campeao-eterno)
 
+### Mapa Mundo (Endgame — nível 51-60) — tudo pendente
+- 🕓 [Mapa Mundo — cenário principal (landscape/horizontal)](#mapa-mundo-cenario-principal)
+- 🕓 [Inimigos Tier 1 — Comuns (24)](#mapa-mundo-inimigos-tier-1-comuns)
+- 🕓 [Inimigos Tier 2 — Raros (17)](#mapa-mundo-inimigos-tier-2-raros)
+- 🕓 [Inimigos Tier 3 — Épicos (11)](#mapa-mundo-inimigos-tier-3-epicos)
+- 🕓 [8 Bosses Únicos (Tier 4 — Lendários)](#mapa-mundo-bosses-tier-4-lendarios) — incluindo Rainha Sombra (boss final)
+
 ### Alvos de Caçada (Hunts — 3 superchefes opcionais)
 - ⛔ Tirano Ossudo, Leviatã do Pântano, Wyrm Infernal — ainda nem tem prompt escrito — avise se quiser que eu escreva
 
@@ -2651,3 +2658,86 @@ Composition: keep the center-bottom area (roughly from 15% to 85% of the width, 
 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```
+
+---
+
+<a id="mapa-mundo-cenario-principal"></a>
+### Mapa Mundo — Cenário Principal
+**Tamanho:** 1920×1440 px · **Uso:** tela de mapa mundo (endgame, após completar as 5 regiões). Esta é uma exceção ao formato vertical de combate — é uma imagem landscape/horizontal mostrando o MAPA INTEIRO de uma só vez, com múltiplas áreas/biomas visíveis simultaneamente.
+
+```
+2D pixel art game MAP SCENE, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, rich but limited color palette with flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and battle backgrounds (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT anime, NOT 3D.
+
+LANDSCAPE/HORIZONTAL FORMAT — this is an ATLAS or WORLD MAP, not a vertical combat background. It should show multiple distinct biomes/regions visible in one wide view, as if a player is zooming into a fantasy world map to see various dangerous lands at once.
+
+COMPOSITION — 8 major distinct areas arranged across the map:
+
+TOP-LEFT (Pico da Perdição): Snow-capped mountain peaks with jagged crystalline formations, icy wind, blue-white aura, several isolated plateaus connected by narrow bridges.
+
+CENTER-LEFT (Fosso Infinito): A massive dark chasm/void with purple-green otherworldly mist, strange geometric tentacle-like structures emerging from the abyss, non-Euclidean alien geometry, unsettling glow.
+
+CENTER-TOP (Forja do Caos): An active volcano with flowing lava, molten magma streams, red-orange-purple fire, massive metal structures glowing with heat, industrial/forged aesthetic mixed with natural disaster.
+
+TOP-RIGHT (Jardim Corrompido): Dense twisted overgrown forest with mutant flora — vines with unnatural colors (purple, neon-green, electric blue), carnivorous plants, alien vegetation, a sickly beautiful corrupted nature.
+
+UPPER-RIGHT (Cemitério Cósmico): Ruins of an ancient civilization under starry sky, massive bone-like megastructures, glowing arcane symbols, cosmic purple and gold light, sense of deep age and power.
+
+RIGHT (Palácio da Rainha Sombra): A massive floating/ethereal dark castle, Gothic architecture, swirling dark magic, purple-black-gold color scheme, radiating an aura of power and malice — should dominate visually as the most impressive/ominous landmark.
+
+BOTTOM-LEFT (Tundra Venenosa): Desolate frozen plains with toxic crystalline formations, radioactive green-yellow mist, poisonous acidic pools, an utterly hostile wasteland aesthetic.
+
+BOTTOM-CENTER (Ruínas do Mundo Antigo): Massive broken megastructures from a lost ancient civilization, chunks of impossible technology, colossal toppled statues, a sense of apocalyptic grandeur.
+
+Overall mood: EPIC, MYSTERIOUS, DANGEROUS. This is the end-game final region — it should feel like a culmination of the journey, a convergence of multiple terrible powers and forgotten worlds colliding in one place. Sense of scale should be overwhelming. A player should look at this map and feel both wonder and dread.
+
+Landscape canvas, 1920×1440 px. Soft diffuse top-light. No characters, no UI frame, no text, no watermark. This is a complete, self-contained WORLD MAP illustration — players will look at it while in the game's World Map navigation screen.
+```
+
+---
+
+<a id="mapa-mundo-inimigos-tier-1-comuns"></a>
+### Mapa Mundo — Inimigos Tier 1 (Comuns — 24)
+**Tamanho:** 1536×768 px (6 folhas de 256×256 cada, lado a lado) · **Uso:** mobbing regular do mapa mundo, drops baixos
+
+Vinte e quatro inimigos distribuídos em 6 spritesheet rows de 4 creatures cada. Veja especificação completa em `MAPA-MUNDO-ESPECIFICACAO.md` — nomes específicos e descrições visuais para cada bioma. Exemplos:
+
+- Espectro Gelado, Sereia das Neves, Aranha de Gelo, Sentinela Névoa (Pico da Perdição)
+- Parasita Void, Olho Vivo, Nódoa Dimensional, Tentáculo Suspenso (Fosso Infinito)
+- Golem de Magma Pequeno, Morcego de Brasas, Escorpião Infernal, Elemental de Fumaça (Forja do Caos)
+- ... (12 mais, confira o documento para detalhes completos)
+
+Cada um facing LEFT em side profile, crisp pixel art, mesma qualidade dos inimigos das regiões anteriores.
+
+---
+
+<a id="mapa-mundo-inimigos-tier-2-raros"></a>
+### Mapa Mundo — Inimigos Tier 2 (Raros — 17)
+**Tamanho:** 1536×768 px (formato: múltiplas rows conforme necessário) · **Uso:** pack encounters, drops médios
+
+Dezessete inimigos raros — versões mais fortes de conceitos (Cavaleiro de Gelo, Dragão de Gelo Jovem, Abominação Void, Fênix Noir, etc.). Veja `MAPA-MUNDO-ESPECIFICACAO.md` para lista completa.
+
+---
+
+<a id="mapa-mundo-inimigos-tier-3-epicos"></a>
+### Mapa Mundo — Inimigos Tier 3 (Épicos — 11)
+**Tamanho:** 768×768 px cada (11 sprites individuais, entreregues separadamente) · **Uso:** encontros especiais, drops altos
+
+Onze inimigos épicos — campeões menores antes dos 8 bosses principais (Titã de Gelo, Mestre Tempestade, Rainha da Floresta Negra, Archlich, etc.). Veja `MAPA-MUNDO-ESPECIFICACAO.md`.
+
+---
+
+<a id="mapa-mundo-bosses-tier-4-lendarios"></a>
+### Mapa Mundo — 8 Bosses Únicos (Tier 4 — Lendários)
+**Tamanho:** 768×768 px cada · **Uso:** 8 encontros de boss unicamente no mapa mundo (nível 51-60)
+
+1. **Titã Gelado da Perdição** (Pico da Perdição) — humanoid gigante de gelo com coroa de icicles
+2. **Abominação Viva do Vazio** (Fosso Infinito) — criatura cósmica com múltiplos olhos/apêndices
+3. **Fogueira Eterna** (Forja do Caos) — fênix gigante em chamas eternas
+4. **Rainha Umbra da Floresta** (Jardim Corrompido) — dríade humanoid gigante com flora viva
+5. **Pharaó Esquecido** (Cemitério Cósmico) — esqueleto humanoid com coroa ancestral + auréola mágica
+6. **Imperatriz da Perdição** (Tundra Venenosa) — inseto humanoid gigante rainha com exoesqueleto tóxico
+7. **Colosso da Ruína** (Ruínas do Mundo Antigo) — golem feito de megaestruturas ruins + tecnologia ancestral
+8. **Rainha Sombra** ⭐ (Palácio da Rainha Sombra) — BOSS FINAL — humanoid feminina etérea, corpo semi-translúcido púrpura/preto, asas de magia, coroa de poder absoluto, aura de magia negra — deve ser o inimigo mais impressionante e épico de todo o jogo
+
+Cada um facing LEFT, crisp pixel art, mesma qualidade dos bosses das regiões anteriores. Veja `MAPA-MUNDO-ESPECIFICACAO.md` para descrições visuais detalhadas de cada um.
+

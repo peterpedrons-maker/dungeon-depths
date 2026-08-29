@@ -474,6 +474,7 @@ export function GameShell({
       <TopBar character={character} accentColor={findCosmetic(profile.equippedCosmetic)?.color} onMenuClick={() => setMenuOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar
+          character={character}
           section={section}
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
