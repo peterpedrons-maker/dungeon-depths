@@ -24,12 +24,12 @@ import { latestAtOrBefore, reaches, simulateReachability } from './mechanicReach
 test('Guerreiro mantém pressão básica e todas as travas de recuperação', () => {
   let posture = POSTURE_MAX;
   posture = applyPostureDamage(posture, POSTURE_BASIC_DAMAGE);
-  assert.equal(posture, 90);
-  posture = Math.min(POSTURE_MAX, posture + recoverPosture(posture));
-  assert.equal(posture, 98);
-  posture = applyPostureDamage(posture, POSTURE_BASIC_DAMAGE);
+  assert.equal(posture, 88);
   posture = Math.min(POSTURE_MAX, posture + recoverPosture(posture));
   assert.equal(posture, 96);
+  posture = applyPostureDamage(posture, POSTURE_BASIC_DAMAGE);
+  posture = Math.min(POSTURE_MAX, posture + recoverPosture(posture));
+  assert.equal(posture, 92);
   assert.equal(Math.min(POSTURE_MAX, 99 + recoverPosture(99)), 100);
   assert.equal(recoverPosture(40, { suppressed: true }), 4);
   assert.equal(recoverPosture(40, { zero: true }), 0);
