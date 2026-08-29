@@ -1027,20 +1027,15 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // game-wide HP baseline by "1x" (i.e. +100%) on top of everything above —
 // ATK/DEF and the per-dungeon difficultyMult curve (lib/dungeons.ts) are
 // untouched by this, it only makes every fight last longer, not hit harder.
-// Five times the old baseline made late-region regulars take 15–25 player
-// actions with real tier-matched gear, well outside the 5–8 action target and
-// leaving no HP economy for the rest of a persistent dungeon run. 2.5 keeps
-// the early trash above one-shot territory while keeping the late regular
-// encounters inside their intended band.
-const REGULAR_HP_MULT = 2.5;
+// Long combat is intentional: the higher HP baseline is deliberate so class
+// rotations, cooldowns, resources, defensive loops and boss phases have time
+// to matter instead of collapsing into one- or two-hit encounters.
+const REGULAR_HP_MULT = 5.0;
 const REGULAR_ATK_MULT = 1.25;
 const REGULAR_DEF_MULT = 1.25;
-// Bosses need a longer health bar than regulars, but the old 4.5x multiplier
-// turned the level-50 normal boss into a 50+ action attrition test for a real
-// level-57/58 build. The rebalance target is 16–26 player actions in floors
-// 31–33, so keep the boss distinctive without making its HP the sole source
-// of difficulty; phases and signature attacks provide the remaining pressure.
-const BOSS_HP_MULT = 1.7;
+// Bosses are deliberately long attrition fights; HP remains high so their
+// phases and signature mechanics can actually play out over a full battle.
+const BOSS_HP_MULT = 4.5;
 // User specified 1.15 here; simulation caught a severe compounding problem
 // (see the depth-growth comment below) where difficultyMult's new 1.0-1.96
 // floor stacked with this AND the boss's own already-high base stats made
