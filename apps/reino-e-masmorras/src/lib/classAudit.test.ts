@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, auditRealAbilityReachability, auditRealBuilds, auditRealPurePaths, buildAuditMatrix, runClassAuditFullRuns } from './classAudit.ts';
 import { assertAllAbilityKindsResolved, consumeCombatEvents } from './combatEngine.ts';
+import { resolveAbilityEffect } from './abilityResolver.ts';
+import type { AbilityEffect } from '../types/game.ts';
 
 test('auditoria estrutural cobre as 14 classes, 42 paths e 630 nodes', () => {
   const report = auditAllClasses();
@@ -58,6 +60,14 @@ test('full-run contratual simula as 98 builds nas 33 dungeons', () => {
 
 test('resolver exaustivo cobre os 51 tipos de efeito', () => {
   assert.equal(assertAllAbilityKindsResolved(), true);
+});
+
+test('o contrato de campos registra somente leituras mecânicas reais', () => {
+  const effect = { kind: 'heal', healPct: 0.2 } as AbilityEffect;
+  const untouched = resolveAbilityEffect(effect, 'bardo', () => true);
+  assert.deepEqual(untouched.appliedFields, []);
+  const consumed = resolveAbilityEffect(effect, 'bardo', (resolved) => Number((resolved as Record<string, unknown>).healPct));
+  assert.deepEqual(consumed.appliedFields, ['healPct']);
 });
 
 test('validação end-to-end real alcança as 210 ativas', () => {

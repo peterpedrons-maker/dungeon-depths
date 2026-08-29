@@ -34,6 +34,49 @@ export interface AbilityResolutionPlan {
   delayed: boolean;
 }
 
+export interface AbilityResolution<T> {
+  value: T;
+  plan: AbilityResolutionPlan;
+  appliedFields: string[];
+}
+
+/**
+ * The only mechanical entry point for an AbilityEffect.
+ *
+ * The stateful adapters (the live panel and the simulation engine) provide
+ * the state mutation callback, but both receive the same discriminated plan
+ * and the same traced effect. A field is therefore observable only when the
+ * resolver/adaptor actually reads it while applying the effect; merely
+ * declaring a property in the data can never produce an `effectApplied`
+ * observation.
+ */
+export function resolveAbilityEffect<T>(
+  effect: AbilityEffect,
+  classId: ClassId,
+  execute: (effect: AbilityEffect, plan: AbilityResolutionPlan) => T,
+  fieldTrace = new Set<string>(),
+): AbilityResolution<T> {
+  const traced = traceAbilityEffect(effect, fieldTrace);
+  const plan = abilityResolutionPlan(traced, classId);
+  return { value: execute(traced, plan), plan, appliedFields: [...fieldTrace] };
+}
+
+/** Track actual reads without treating object presence as implementation. */
+export function traceAbilityEffect(effect: AbilityEffect, fieldTrace = new Set<string>()): AbilityEffect {
+  const existing = tracedEffects.get(effect as object);
+  if (existing) return effect;
+  const traced = new Proxy(effect, {
+    get(target, property, receiver) {
+      if (typeof property === 'string' && property !== 'kind' && property in target) fieldTrace.add(property);
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  tracedEffects.set(traced, fieldTrace);
+  return traced;
+}
+
+const tracedEffects = new WeakMap<object, Set<string>>();
+
 export function abilityResolutionPlan(effect: AbilityEffect, classId: ClassId): AbilityResolutionPlan {
   const raw = effect as unknown as Record<string, unknown>;
   const selfTargeted = SELF_ABILITY_KINDS.has(effect.kind);

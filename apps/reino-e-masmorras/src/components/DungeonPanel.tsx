@@ -214,7 +214,7 @@ import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import { consumeCombatEvents, type CombatEvent } from '../lib/combatEngine';
 import { buildAbilityConditionContext } from '../lib/combatConditions';
-import { abilityResolutionPlan, isSelfAbilityKind } from '../lib/abilityResolver';
+import { abilityResolutionPlan, isSelfAbilityKind, resolveAbilityEffect, type AbilityResolutionPlan } from '../lib/abilityResolver';
 import {
   playBattleMusic, playBossMusic, stopCombatMusic, playMagicAttackSfx, playPhysicalAttackSfx, playHurtSfx, playBuySellSfx,
 } from '../lib/audio';
@@ -2170,7 +2170,7 @@ export function DungeonPanel({
   function syncClerigoFaith() { if (!silentRef.current) setClerigoFaithState(clerigoFaithRef.current); }
   function syncClerigoGrace() { if (!silentRef.current) setClerigoGraceState(clerigoGraceRef.current.amount); }
   function syncClerigoConsecration() { if (!silentRef.current) setClerigoConsecrationState(clerigoConsecrationRoundsLeftRef.current); }
-  // Same baseline used by every class's heal formula (see resolveSelfAbility's
+  // Same baseline used by every class's heal formula (see the shared
   // 'heal' branch) — class/level curve, deliberately not the gear-inflated
   // EffectiveMaxHp, so VIT+gear+heal% can't compound into near-immortality.
   function clerigoBaselineMaxHp(): number { return clericBaseHp(CLASSES[chRef.current.classId].baseHp, chRef.current.level); }
@@ -3658,10 +3658,9 @@ export function DungeonPanel({
   // — cooldown stays the one knob that actually balances how much a build
   // can out-heal incoming damage. Heal/buff magnitudes still scale with
   // healingPowerPct (SAB), with barriers using their own channel.
-  function resolveSelfAbility(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, paladinVerdict?: PaladinVerdictSnapshot | null): string | null {
+  function applyPanelAbilityEffect(ab: AbilityDef, stats: ReturnType<typeof computePlayerStats>, paladinVerdict: PaladinVerdictSnapshot | null | undefined, resolution: AbilityResolutionPlan): string | null {
     const eff = ab.effect;
-    const resolution = abilityResolutionPlan(eff, chRef.current.classId);
-    if (!resolution.selfTargeted) throw new Error(`AbilityEffect ${eff.kind} was routed to the self resolver without a self-target plan`);
+    if (!resolution.selfTargeted) throw new Error(`AbilityEffect ${eff.kind} was routed to the panel self-action adapter without a self-target plan`);
     const healingMult = 1 + stats.healingPowerPct;
     const barrierMult = eff.scalesWithBarrierPower === true ? 1 + stats.barrierPowerPct : 1;
     const icon = activeAbilityIconStyle(chRef.current.classId, ab.id);
@@ -3965,7 +3964,7 @@ export function DungeonPanel({
     } else if (eff.kind === 'kingsBanner') {
       // Estandarte do Rei (cavaleiro:comando:13) — os três buffs escalam por
       // CommandPotency; a janela de reembolso é consumida pela PRÓXIMA outra
-      // habilidade de Comando usada (ver playerAct/resolveSelfAbility's
+      // habilidade de Comando usada (ver playerAct/shared resolver's
       // shared post-resolution check).
       const isSupreme = knightConsumeCommandSupremeForCast();
       const potency = knightCommandPotency();
@@ -5072,7 +5071,11 @@ export function DungeonPanel({
               : 0;
             cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id) + archerCdr + warlockCdrBonusFor(chosen.id));
           }
-          const line = resolveSelfAbility(chosen, stats, paladinVerdictAtCast);
+          const line = resolveAbilityEffect(
+            chosen.effect,
+            chRef.current.classId,
+            (effect, resolution) => applyPanelAbilityEffect({ ...chosen, effect } as AbilityDef, stats, paladinVerdictAtCast, resolution),
+          ).value;
           if (line) pushLog(line);
         } else {
           const offenseAbility = chosen;

@@ -258,7 +258,11 @@ function conditionContains(condition: AbilityCondition, types: Set<AbilityCondit
   return types.has(condition.type) || (condition.conditions ?? []).some((child) => conditionContains(child, types));
 }
 
+const realProofEnemyCache = new Map<string, EnemyInstance[]>();
+
 function realProofEnemies(ability: AbilityDef): EnemyInstance[] {
+  const cached = realProofEnemyCache.get(ability.id);
+  if (cached) return cached;
   // Every candidate is a normal start/boss spawn from the live dungeon table.
   // Selecting a catalog encounter is not state injection: the resulting fight
   // still applies its real HP, damage, phases and RNG from tick zero.
@@ -274,20 +278,31 @@ function realProofEnemies(ability: AbilityDef): EnemyInstance[] {
   } finally { Math.random = previousRandom; }
   const unique = [...new Map(catalog.map((item) => [`${item.name}:${item.maxHp}:${item.atk}`, item])).values()];
   const preferred = ['Alto Sacerdote Submerso', 'Necromante Real'];
-  return unique.sort((left, right) => {
+  const result = unique.sort((left, right) => {
     if (longArcherSetup) return right.maxHp / Math.max(1, right.atk) - left.maxHp / Math.max(1, left.atk) || right.maxHp - left.maxHp;
     if (lowHp) return right.atk - left.atk || right.maxHp - left.maxHp;
     const leftPreference = preferred.indexOf(left.name); const rightPreference = preferred.indexOf(right.name);
     if (leftPreference >= 0 || rightPreference >= 0) return (leftPreference < 0 ? preferred.length : leftPreference) - (rightPreference < 0 ? preferred.length : rightPreference);
     return right.maxHp - left.maxHp || left.atk - right.atk;
   });
+  // Keep a deterministic, diverse real catalog without replaying every
+  // randomized duplicate for every seed. The candidates are still ordinary
+  // dungeon/hunt spawns; this is a search optimization, never a witness state.
+  const bounded = result.slice(0, 16);
+  realProofEnemyCache.set(ability.id, bounded);
+  return bounded;
 }
 
 function proveWithNaturalSeeds(character: ReturnType<typeof equippedAuditCharacter>, ability: AbilityDef, active: string[], seed: number): ReturnType<typeof proveAbilityReachability> {
-  let best = proveAbilityReachability(character, realProofEnemies(ability)[0], ability.id, seed, 2400, active.filter((id) => id !== ability.id));
+  // A real proof normally reaches its condition in the opening encounters.
+  // Keep the budget bounded so a missing implementation cannot multiply into
+  // thousands of identical full-length simulations; every attempt still uses
+  // the production engine and real catalog spawns.
+  const proofBudget = 900;
+  let best = proveAbilityReachability(character, realProofEnemies(ability)[0], ability.id, seed, proofBudget, active.filter((id) => id !== ability.id));
   for (const [enemyIndex, enemy] of realProofEnemies(ability).entries()) {
-    for (let attempt = 0; !best.pass && attempt < 30; attempt += 1) {
-      const candidate = proveAbilityReachability(character, enemy, ability.id, seed + enemyIndex * 101 + attempt * 7919, 2400, active.filter((id) => id !== ability.id));
+    for (let attempt = 0; !best.pass && attempt < 8; attempt += 1) {
+      const candidate = proveAbilityReachability(character, enemy, ability.id, seed + enemyIndex * 101 + attempt * 7919, proofBudget, active.filter((id) => id !== ability.id));
       if (candidate.castCount > best.castCount || (candidate.pass && !best.pass)) best = candidate;
     }
     if (best.pass) break;
