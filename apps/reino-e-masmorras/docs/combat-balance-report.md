@@ -28,10 +28,10 @@ Mediana de ações nas vitórias; `wins/samples` permanece visível para uma med
 
 | Faixa / perfil | Regular | Elite | Boss |
 |---|---:|---:|---:|
-| D1–D6 / Farmado | 4 (1.400/1.400), alvo 3–5 | 5 (1.390/1.400), alvo 5–8 | 8 (1.369/1.400), alvo 8–14 |
-| D7–D18 / Bem Equipado | 5 (1.400/1.400), alvo 4–6 | 7 (1.400/1.400), alvo 6–10 | 13 (1.384/1.400), alvo 12–18 |
-| D19–D30 / Bem Equipado | 6 (1.400/1.400), alvo 4–7 | 9 (1.390/1.400), alvo 7–11 | 19 (1.349/1.400), alvo 14–22 |
-| D31–D33 / Endgame | 6 (1.397/1.400), alvo 5–8 | 9 (1.376/1.400), alvo 8–13 | 17 (1.363/1.400), alvo 16–26 |
+| D1–D6 / Farmado | 4 (1.400/1.400), alvo 3–5 | 5 (1.387/1.400), alvo 5–8 | 8 (1.384/1.400), alvo 8–14 |
+| D7–D18 / Bem Equipado | 5 (1.400/1.400), alvo 4–6 | 7 (1.400/1.400), alvo 6–10 | 13 (1.375/1.400), alvo 12–18 |
+| D19–D30 / Bem Equipado | 6 (1.400/1.400), alvo 4–7 | 9 (1.385/1.400), alvo 7–11 | 19 (1.354/1.400), alvo 14–22 |
+| D31–D33 / Endgame | 6 (1.399/1.400), alvo 5–8 | 9 (1.375/1.400), alvo 8–13 | 17 (1.363/1.400), alvo 16–26 |
 
 Resultado: 12/12 medianas dentro do target. O boss isolado da D32 superou o mínimo de 70% nas 14 classes (100/100 por classe); a dungeon completa D32 permaneceu em 54,86%, pois conserva HP, recursos e poções ao longo de toda a run.
 

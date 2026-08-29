@@ -1,6 +1,6 @@
 # Auditoria real de combate — motor final
 
-Relatório regenerado em 2026-08-29 a partir do `main` atual. `DungeonPanel` e harness executam o mesmo `executeAbilityEffect()` stateful para habilidades self-target e ofensivas; o painel apenas traduz refs para `CombatState`, sincroniza o resultado e apresenta os eventos.
+Relatório regenerado em 2026-08-29 a partir do `main` atual. `DungeonPanel` e harness executam o mesmo `resolvePlayerAction()` stateful, que seleciona a ação e chama o mesmo `executeAbilityEffect()` para habilidades self-target e ofensivas; o painel apenas traduz refs para `CombatState`, sincroniza o resultado e apresenta os eventos.
 
 ## Resultado
 
@@ -25,7 +25,7 @@ Uma árvore/build só passa se cada um dos cinco IDs equipados produzir cast rea
 
 - `resolveAbilityEffect()` não recebe callback de execução; ele materializa e rastreia o efeito.
 - `executeAbilityEffect()` aplica self, dano físico/mágico, multi-hit, payload misto do Bardo, cura, barreira, status, DOT, summons e riders de classe.
-- O harness e o painel chamam essa mesma função. Um teste arquitetural impede a volta do callback e compara estado/resultado das 210 ativas com seed idêntica.
+- O harness e o painel chamam `resolvePlayerAction()`; não existe mais resolver self/ofensivo nem multi-hit no painel. Um teste arquitetural impede a volta dessas rotas e compara o estado das 210 ativas com seed idêntica.
 - `effectApplied` nasce quando o trecho mecânico lê/aplica o campo. O flush que preenchia automaticamente campos presentes foi removido.
 - Kinds e campos desconhecidos falham o contrato; o switch dos 51 kinds não possui `default: break` silencioso.
 

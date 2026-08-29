@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, auditRealAbilityReachability, auditRealBuilds, auditRealPurePaths, buildAuditMatrix, runClassAuditFullRuns } from './classAudit.ts';
-import { assertAllAbilityKindsResolved, consumeCombatEvents, createCombatState, executeAbilityEffect } from './combatEngine.ts';
-import { resolveAbilityEffect } from './abilityResolver.ts';
+import { assertAllAbilityKindsResolved, consumeCombatEvents, createCombatState, resolvePlayerAction } from './combatEngine.ts';
+import { abilityResolutionPlan, resolveAbilityEffect } from './abilityResolver.ts';
 import type { AbilityEffect } from '../types/game.ts';
 import { CLASSES, createCharacter } from './classes.ts';
 import { SKILL_TREES } from './skills.ts';
@@ -79,7 +79,8 @@ test('o contrato de campos registra somente leituras mecânicas reais', () => {
 
 test('DungeonPanel e harness têm paridade no mesmo executor self e ofensivo', () => {
   const panelSource = readFileSync(new URL('../components/DungeonPanel.tsx', import.meta.url), 'utf8');
-  assert.match(panelSource, /executeAbilityEffect\(core, coreChosen\.effect, coreChosen\.id\)/);
+  assert.match(panelSource, /resolvePlayerAction\(core\)/);
+  assert.doesNotMatch(panelSource, /applyPanelAbilityEffect|hunterResolveMultiHit|resolveSelfAbility/);
   assert.doesNotMatch(panelSource, /resolveAbilityEffect\([^;]+=>/s);
   let self = 0; let offensive = 0; let abilities = 0;
   for (const classId of Object.keys(CLASSES) as Array<keyof typeof CLASSES>) {
@@ -90,12 +91,8 @@ test('DungeonPanel e harness têm paridade no mesmo executor self e ofensivo', (
       const enemy = spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]);
       const panelState = createCombatState(character, { ...enemy }, 9000 + abilities, [ability.id], [ability.id]);
       const harnessState = createCombatState(character, { ...enemy }, 9000 + abilities, [ability.id], [ability.id]);
-      const panelResult = executeAbilityEffect(panelState, ability.effect, ability.id);
-      const harnessResult = executeAbilityEffect(harnessState, ability.effect, ability.id);
-      for (const extra of ability.extraEffects ?? []) {
-        executeAbilityEffect(panelState, extra, ability.id);
-        executeAbilityEffect(harnessState, extra, ability.id);
-      }
+      resolvePlayerAction(panelState);
+      resolvePlayerAction(harnessState);
       const snapshot = (state: typeof panelState) => ({
         playerHp: state.playerHp, enemyHp: state.enemyHp, playerBarrier: state.playerBarrier, enemyBarrier: state.enemyBarrier,
         classState: state.classState, bardState: state.bardState, warlockPlayer: state.warlockPlayer, warlockEnemy: state.warlockEnemy,
@@ -103,9 +100,8 @@ test('DungeonPanel e harness têm paridade no mesmo executor self e ofensivo', (
         enemyStatuses: state.enemyStatuses, playerMods: state.playerMods, enemyMods: state.enemyMods, playerCC: state.playerCC,
         enemyCC: state.enemyCC, traps: state.traps, hots: state.hots, events: state.events,
       });
-      assert.deepEqual(panelResult, harnessResult, ability.id);
       assert.deepEqual(snapshot(panelState), snapshot(harnessState), ability.id);
-      if (panelResult.plan.selfTargeted) self += 1; else offensive += 1;
+      if (abilityResolutionPlan(ability.effect, classId).selfTargeted) self += 1; else offensive += 1;
       abilities += 1;
     }
   }
