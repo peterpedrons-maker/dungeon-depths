@@ -1,7 +1,7 @@
 // Guerreiro — regras puras de Postura, Guarda Quebrada, Aparo e leitura.
 // O painel de combate e os testes usam estas mesmas funções.
 export const POSTURE_MAX = 100;
-export const POSTURE_BASIC_DAMAGE = 10;
+export const POSTURE_BASIC_DAMAGE = 12;
 export const POSTURE_NATURAL_RECOVERY = 8;
 export const GUARD_BREAK_ACTIONS = 2;
 export const GUARD_BREAK_MAX_ACTIONS = 3;
