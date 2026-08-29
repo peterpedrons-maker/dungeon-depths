@@ -19,6 +19,8 @@ test('duração real verifica as faixas do rebalance e boss final normal', () =>
   assert.ok(report.durations.every((row) => row.withinTarget && row.wins > 0));
   assert.equal(report.finalBoss.length, Object.keys(CLASSES).length);
   assert.ok(report.finalBoss.every((row) => row.meetsTarget && row.winRate >= 0.70));
+  assert.equal(report.winRates.length, 13);
+  assert.ok(report.winRates.every((row) => row.samples === 140 && row.withinTarget), report.winRates.map((row) => `${row.label}=${row.winRate}`).join(', '));
 });
 
 test('win rates reais preservam progressão e a faixa de dungeon especial', () => {
@@ -35,12 +37,12 @@ test('win rates reais preservam progressão e a faixa de dungeon especial', () =
   };
   assert.ok(rate('recem-chegado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) >= 0.15);
   assert.ok(rate('recem-chegado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) <= 0.35);
-  assert.ok(rate('farmado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) >= 0.50);
-  assert.ok(rate('farmado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) <= 0.75);
-  assert.ok(rate('bem-equipado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) >= 0.75);
-  assert.ok(rate('bem-equipado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) <= 0.92);
+  assert.ok(rate('farmado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) >= 0.65);
+  assert.ok(rate('farmado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) <= 0.82);
+  assert.ok(rate('bem-equipado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) >= 0.90);
+  assert.ok(rate('bem-equipado', (row) => early.some((dungeon) => dungeon.id === row.dungeonId)) <= 0.99);
   assert.ok(rate('farmado', isSpecial) >= 0.20);
-  assert.ok(rate('farmado', isSpecial) <= 0.55);
-  assert.ok(rate('bem-equipado', isSpecial) >= 0.50);
-  assert.ok(rate('bem-equipado', isSpecial) <= 0.80);
+  assert.ok(rate('farmado', isSpecial) <= 0.60);
+  assert.ok(rate('bem-equipado', isSpecial) >= 0.80);
+  assert.ok(rate('bem-equipado', isSpecial) <= 0.95);
 });

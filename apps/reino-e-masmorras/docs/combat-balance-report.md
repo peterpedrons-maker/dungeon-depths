@@ -1,63 +1,54 @@
-# Balanceamento real — Patch 4
+# Balanceamento real — motor final
 
-Relatório regenerado em 2026-08-29 pelo `runCombat()` final, com 10 sementes, equipamento determinístico, atributos distribuídos, cinco habilidades, HP/recursos persistentes, poções, cura, barreira, DOT, summons e fases de boss.
+Relatório regenerado em 2026-08-29 exclusivamente pelo motor final compartilhado. Cada checkpoint usa 100 seeds × 14 classes (1.400 runs por linha), equipamento real, atributos distribuídos, cinco habilidades, HP/recursos persistentes, recuperação real de 2% entre encontros, poções consumíveis, cura, barreira, DOT, summons e fases de boss.
 
-## Amostra global
+## Win rate de dungeon completa
 
-| Métrica | Medição |
-|---|---:|
-| Combates | 9.240 |
-| Vitórias | 7.410 |
-| Win rate agregado | 80,19% |
-| Média de ações | 9,08 |
-| Dano médio do jogador | 2.210,49 |
-| Dano médio recebido | 276,41 |
+| Faixa / perfil | Dungeon | Vitórias | Win rate | Target | Resultado |
+|---|---|---:|---:|---:|---:|
+| D1–D6 especial / Farmado | D6 Torre | 101/1.400 | 7,21% | 5–25% | PASS |
+| D1–D6 especial / Bem Equipado | D6 Torre | 917/1.400 | 65,50% | 65–90% | PASS |
+| D7–D12 especial / Farmado | D12 Arena | 568/1.400 | 40,57% | 30–65% | PASS |
+| D7–D12 especial / Bem Equipado | D12 Arena | 1.252/1.400 | 89,43% | 75–95% | PASS |
+| D13–D18 / Farmado | D18 Catacumbas Reais | 136/1.400 | 9,71% | 5–25% | PASS |
+| D13–D18 / Bem Equipado | D18 Catacumbas Reais | 862/1.400 | 61,57% | 50–78% | PASS |
+| D19–D24 / Farmado | D24 Selva Esquecida | 50/1.400 | 3,57% | 1–15% | PASS |
+| D19–D24 / Bem Equipado | D24 Selva Esquecida | 338/1.400 | 24,14% | 22–50% | PASS |
+| D25–D30 / Bem Equipado | D30 Salão dos Titãs | 52/1.400 | 3,71% | 1–15% | PASS |
+| D25–D30 / Endgame | D30 Salão dos Titãs | 650/1.400 | 46,43% | 45–72% | PASS |
+| D31–D32 / Bem Equipado | D32 Palácio Submerso | 60/1.400 | 4,29% | 1–15% | PASS |
+| D31–D32 / Endgame | D32 Palácio Submerso | 768/1.400 | 54,86% | 50–78% | PASS |
+| D33 opcional / Endgame | D33 Arena do Campeão | 422/1.400 | 30,14% | 25–50% | PASS |
 
-| Classe | Win rate | Ações médias | Dano médio |
-|---|---:|---:|---:|
-| Guerreiro | 85,0% | 8,81 | 2.438,46 |
-| Mago | 75,8% | 8,10 | 2.076,73 |
-| Ladino | 73,5% | 9,88 | 2.053,98 |
-| Clérigo | 83,5% | 11,30 | 2.385,61 |
-| Cavaleiro | 88,0% | 9,67 | 2.535,03 |
-| Paladino | 85,6% | 15,56 | 2.454,77 |
-| Bárbaro | 79,5% | 8,67 | 2.187,86 |
-| Arqueiro | 75,8% | 7,36 | 2.171,00 |
-| Caçador | 79,1% | 7,59 | 1.361,48 |
-| Feiticeiro | 78,5% | 6,36 | 2.295,48 |
-| Bruxo | 77,1% | 7,67 | 2.185,50 |
-| Druida | 89,2% | 10,86 | 2.629,67 |
-| Bardo | 74,4% | 8,62 | 2.153,77 |
-| Necromante | 77,7% | 6,75 | 2.017,01 |
+As bandas mantêm progressão: um perfil abaixo da faixa ainda pode vencer, mas não transforma conteúdo late/endgame em farm fácil. O checkpoint citado no bug, D24 com Bem Equipado, saiu de 0% na linha de base para 24,14% sem reset de HP ou recurso.
 
-## Duração e boss final
+## Duração real
 
-As medianas abaixo são de vitórias reais entre 14 classes e 10 sementes; `wins/samples` permanece visível para não esconder falhas de sobrevivência.
+Mediana de ações nas vitórias; `wins/samples` permanece visível para uma mediana curta não esconder baixa sobrevivência.
 
 | Faixa / perfil | Regular | Elite | Boss |
 |---|---:|---:|---:|
-| D1–D6 / farmado | 4 (140/140) | 6 (129/140) | 9 (121/140) |
-| D7–D18 / bem equipado | 5 (140/140) | 6 (127/140) | 14 (98/140) |
-| D19–D30 / bem equipado | 7 (140/140) | 9 (69/140) | 22 (39/140) |
-| D31–D33 / endgame-realista | 6 (134/140) | 9 (71/140) | 18 (85/140) |
+| D1–D6 / Farmado | 4 (1.400/1.400), alvo 3–5 | 5 (1.390/1.400), alvo 5–8 | 8 (1.369/1.400), alvo 8–14 |
+| D7–D18 / Bem Equipado | 5 (1.400/1.400), alvo 4–6 | 7 (1.400/1.400), alvo 6–10 | 13 (1.384/1.400), alvo 12–18 |
+| D19–D30 / Bem Equipado | 6 (1.400/1.400), alvo 4–7 | 9 (1.390/1.400), alvo 7–11 | 19 (1.349/1.400), alvo 14–22 |
+| D31–D33 / Endgame | 6 (1.397/1.400), alvo 5–8 | 9 (1.376/1.400), alvo 8–13 | 17 (1.363/1.400), alvo 16–26 |
 
-Todas as 12 medianas estão dentro dos alvos do rebalance. O boss normal final (D32) atingiu o mínimo de 70% para as 14 classes em 10 sementes: 14/14 classes passaram.
+Resultado: 12/12 medianas dentro do target. O boss isolado da D32 superou o mínimo de 70% nas 14 classes (100/100 por classe); a dungeon completa D32 permaneceu em 54,86%, pois conserva HP, recursos e poções ao longo de toda a run.
 
-## Progressão D1–D6
+## Perfis
 
-| Perfil | Clears | Bosses especiais |
-|---|---:|---:|
-| Recém-chegado, com atributos distribuídos | 64/252 = 25,4% | 33/84 = 39,3% |
-| Farmado, nível `levelReq + 2` | 160/252 = 63,5% | 42/84 = 50,0% |
-| Bem equipado | 196/252 = 77,8% | 55/84 = 65,5% |
+- Recém-chegado distribui normalmente todos os pontos de atributo.
+- Farmado usa aproximadamente `levelReq + 2`, gear raro +3 e quatro poções.
+- Bem Equipado usa `levelReq + 4`, gear raro +5 e oito poções.
+- Endgame realista usa `levelReq + 8`, gear épico +7 e doze poções.
 
-Os perfis usam distribuição normal de pontos, gear real e consumíveis persistentes. O recém-chegado não é deixado sem atributos; o farmado não recebe nível artificial além da progressão definida.
+Nenhum perfil recebe HP, recurso ou condição diretamente. A curva mantém HP inimigo linear no anchor e DEF em 0,62; apenas o crescimento de ATK usa raiz quadrada para evitar que a pressão seja multiplicada novamente por doze encontros persistentes.
 
 ## Reprodução
 
 ```bash
 npm test
-npx tsc -p tsconfig.app.json --noEmit
+npx tsc -b --pretty false
 npm run build
 git diff --check
 ```

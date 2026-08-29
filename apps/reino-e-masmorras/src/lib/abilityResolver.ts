@@ -34,8 +34,8 @@ export interface AbilityResolutionPlan {
   delayed: boolean;
 }
 
-export interface AbilityResolution<T> {
-  value: T;
+export interface AbilityResolution {
+  effect: AbilityEffect;
   plan: AbilityResolutionPlan;
   appliedFields: string[];
 }
@@ -43,39 +43,46 @@ export interface AbilityResolution<T> {
 /**
  * The only mechanical entry point for an AbilityEffect.
  *
- * The stateful adapters (the live panel and the simulation engine) provide
- * the state mutation callback, but both receive the same discriminated plan
- * and the same traced effect. A field is therefore observable only when the
- * resolver/adaptor actually reads it while applying the effect; merely
- * declaring a property in the data can never produce an `effectApplied`
- * observation.
+ * This function deliberately has no execution callback. It materializes the
+ * mechanical program consumed by the shared combat executor, so the panel
+ * and simulations cannot swap in different implementations behind the same
+ * plan. A field is observable only at the exact point where the executor
+ * reads it; merely declaring a property in the data never marks it applied.
  */
-export function resolveAbilityEffect<T>(
+export function resolveAbilityEffect(
   effect: AbilityEffect,
   classId: ClassId,
-  execute: (effect: AbilityEffect, plan: AbilityResolutionPlan) => T,
   fieldTrace = new Set<string>(),
-): AbilityResolution<T> {
-  const traced = traceAbilityEffect(effect, fieldTrace);
+  onFieldApplied?: (field: string) => void,
+): AbilityResolution {
+  const traced = traceAbilityEffect(effect, fieldTrace, onFieldApplied);
   const plan = abilityResolutionPlan(traced, classId);
-  return { value: execute(traced, plan), plan, appliedFields: [...fieldTrace] };
+  return { effect: traced, plan, appliedFields: [...fieldTrace] };
 }
 
 /** Track actual reads without treating object presence as implementation. */
-export function traceAbilityEffect(effect: AbilityEffect, fieldTrace = new Set<string>()): AbilityEffect {
+export function traceAbilityEffect(effect: AbilityEffect, fieldTrace = new Set<string>(), onFieldApplied?: (field: string) => void): AbilityEffect {
   const existing = tracedEffects.get(effect as object);
-  if (existing) return effect;
+  if (existing) {
+    if (onFieldApplied) existing.observers.add(onFieldApplied);
+    return effect;
+  }
+  const observers = new Set<(field: string) => void>();
+  if (onFieldApplied) observers.add(onFieldApplied);
   const traced = new Proxy(effect, {
     get(target, property, receiver) {
-      if (typeof property === 'string' && property !== 'kind' && property in target) fieldTrace.add(property);
+      if (typeof property === 'string' && property !== 'kind' && property in target) {
+        fieldTrace.add(property);
+        for (const observer of observers) observer(property);
+      }
       return Reflect.get(target, property, receiver);
     },
   });
-  tracedEffects.set(traced, fieldTrace);
+  tracedEffects.set(traced, { fields: fieldTrace, observers });
   return traced;
 }
 
-const tracedEffects = new WeakMap<object, Set<string>>();
+const tracedEffects = new WeakMap<object, { fields: Set<string>; observers: Set<(field: string) => void> }>();
 
 export function abilityResolutionPlan(effect: AbilityEffect, classId: ClassId): AbilityResolutionPlan {
   const raw = effect as unknown as Record<string, unknown>;

@@ -58,7 +58,6 @@ export interface CombatState {
   preparedGuard?: PreparedGuardState;
   barrierPortions: Array<{ remaining: number; absorbedTotal: number; faithThresholdAmount: number; faithGranted: boolean; isWallBonus?: boolean }>;
   soulThresholds: Set<number>;
-  pendingEffectTraces: Array<{ abilityId: string; fields: Set<string> }>;
   events: CombatEvent[]; logs: string[];
 }
 export interface CombatRunResult { state: CombatState; won: boolean; actions: number; playerDamage: number; enemyDamage: number; casts: number; abilityCasts: string[] }
@@ -90,6 +89,16 @@ export function consumeCombatEvents(events: CombatEvent[], consumer: CombatEvent
     if (item.type === 'enemyDeath') consumer.onLog?.('Inimigo derrotado');
     if (item.type === 'playerDeath') consumer.onLog?.('Você foi derrotado');
   }
+}
+
+/**
+ * Real between-encounter recovery. HP remains persistent: only two percent
+ * of effective maximum HP is restored after a non-boss victory, and the
+ * result is clamped to the current cap. Both the panel and full-run harness
+ * call this rule.
+ */
+export function recoverAfterEncounter(character: Character, hp: number): number {
+  return Math.min(effectiveMaxHp(character), hp + Math.round(effectiveMaxHp(character) * 0.02));
 }
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
@@ -138,7 +147,7 @@ export function createCombatState(character: Character, enemy: EnemyInstance, se
   const liveEnemy = { ...enemy };
   if (character.classId === 'guerreiro' && !liveEnemy.warrior) liveEnemy.warrior = { current: 100, max: 100, guardBroken: false, offensiveActionsLeft: 0, ticksLeft: 999, pressureRecoveryPending: false, suppressedActionsLeft: 0, zeroRecoveryPending: false, vanguardFirstHitUsed: false, duelistFirmFirstHitUsed: false, perfectCounterAccuracyPending: false };
   for (const key of ['fury','faith','determination','momentum','orders','heat','souls','debt','credit','scars','pulse','resonance','fractures','control','tension','cadence','distance','steps','flightCount','trail','breach','ovation','echo','conviction']) classState.resources[key] = stateResource({ classState } as CombatState, key);
-  return { character: { ...character, hp: effectiveMaxHp(character) }, classState, playerHp: effectiveMaxHp(character), enemy: liveEnemy, enemyHp: liveEnemy.maxHp, playerBarrier: 0, enemyBarrier: 0, playerStatuses: [], enemyStatuses: [], playerCC: [], enemyCC: [], playerMods: [], enemyMods: [], cooldowns: Object.fromEntries(abilities.map((a) => [a.id, 0])), equippedAbilityIds: abilities.map((a) => a.id), priorities: priorities.filter((id) => abilities.some((a) => a.id === id)), hots: [], bossPhaseIndex: 0, envTick: 0, actions: 0, enemyActions: 0, potionCooldown: 0, dead: false, won: false, rngState: seed >>> 0, bardState: createBardState(), warlockPlayer: createWarlockPlayerState(), warlockEnemy: createWarlockEnemyNameState(), sorcererEnemy: { fractures: 0, spontaneousUsed: false, correctionUsed: false }, archerState: createArcherCombatState(), traps: [], reviveWindow: 0, deathVeil: 0, aegis: undefined, preparedGuard: undefined, barrierPortions: [], soulThresholds: new Set(), pendingEffectTraces: [], events: [], logs: [] };
+  return { character: { ...character, hp: effectiveMaxHp(character) }, classState, playerHp: effectiveMaxHp(character), enemy: liveEnemy, enemyHp: liveEnemy.maxHp, playerBarrier: 0, enemyBarrier: 0, playerStatuses: [], enemyStatuses: [], playerCC: [], enemyCC: [], playerMods: [], enemyMods: [], cooldowns: Object.fromEntries(abilities.map((a) => [a.id, 0])), equippedAbilityIds: abilities.map((a) => a.id), priorities: priorities.filter((id) => abilities.some((a) => a.id === id)), hots: [], bossPhaseIndex: 0, envTick: 0, actions: 0, enemyActions: 0, potionCooldown: 0, dead: false, won: false, rngState: seed >>> 0, bardState: createBardState(), warlockPlayer: createWarlockPlayerState(), warlockEnemy: createWarlockEnemyNameState(), sorcererEnemy: { fractures: 0, spontaneousUsed: false, correctionUsed: false }, archerState: createArcherCombatState(), traps: [], reviveWindow: 0, deathVeil: 0, aegis: undefined, preparedGuard: undefined, barrierPortions: [], soulThresholds: new Set(), events: [], logs: [] };
 }
 function playerStats(s: CombatState) { return computeCombatStats({ ...s.character, hp: s.playerHp }); }
 function enemyAttack(s: CombatState, magical: boolean): number {
@@ -541,6 +550,38 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
   if (x.druidAction === 'cycle') classRecord(s).season = x.druidSeason ?? classRecord(s).season;
   return { damage, healed, hits, landed, crits };
 }
+
+export interface ExecutedAbilityEffect {
+  damage: number; healed: number; hits: number; landed: number; crits: number;
+  plan: ReturnType<typeof abilityResolutionPlan>;
+  appliedFields: string[];
+}
+
+/**
+ * Shared stateful AbilityEffect executor used by the harness and live panel.
+ * It owns both self-targeted and offensive resolution; callers only provide
+ * a normalized CombatState and synchronize presentation afterwards.
+ */
+export function executeAbilityEffect(s: CombatState, effect: AbilityEffect, abilityId: string): ExecutedAbilityEffect {
+  const raw = classRecord(s);
+  if (raw.playerHpPctAtCast === undefined) raw.playerHpPctAtCast = s.playerHp / effectiveMaxHp(s.character);
+  const fields = new Set<string>();
+  const emitted = new Set<string>();
+  const resolved = resolveAbilityEffect(effect, s.character.classId, fields, (field) => {
+    if (emitted.has(field)) return;
+    emitted.add(field);
+    event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId, field });
+  });
+  const result = executeCombatAbilityEffect(s, resolved.effect, abilityId, resolved.plan);
+  const x = resolved.effect as AbilityEffect & Record<string, any>;
+  if (result.landed > 0 && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter);
+  if (result.landed > 0 && s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(raw.playerHpPctAtCast) <= x.paladinExtraVirtueBelowHp.pct) {
+    const paladin = s.classState as Extract<CombatClassState, { classId: 'paladino' }>;
+    paladin.virtues[x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet] = true;
+    setClassNumber(s, 'conviction', Object.values(paladin.virtues).filter(Boolean).length, 3);
+  }
+  return { ...result, plan: resolved.plan, appliedFields: [...fields] };
+}
 function abilities(s: CombatState): AbilityDef[] { return getEquippedAbilities(s.character.classId, s.character.unlockedSkills, s.equippedAbilityIds); }
 function actionUseful(s: CombatState, ability: AbilityDef): boolean {
   if (ability.effect.kind === 'heal') return s.playerHp < effectiveMaxHp(s.character) - 1;
@@ -680,7 +721,13 @@ function advanceArcherFlights(s: CombatState, existingIds: number[]): void {
 }
 export function resolvePlayerAction(s: CombatState): CombatState { if (s.dead || s.won || s.enemyHp <= 0) return s; s.actions += 1; const incapacitated = s.playerCC.some((x) => x.kind === 'stun' || x.kind === 'sleep'); if (incapacitated) return s; const archerDistanceAtActionStart = s.archerState.distance; let a = selected(s); if (!a) { const r = attack(s, null); if (r.landed && s.classState.classId === 'barbaro') addClassNumber(s, 'fury', FURY_GAIN_BASIC_HIT, 100); if (r.landed && s.classState.classId === 'feiticeiro') addClassNumber(s, 'pulse', 2, 6); if (r.landed && s.classState.classId === 'cavaleiro') { addClassNumber(s, 'momentum', 10, 100); addClassNumber(s, 'determination', 3, 100); } if (s.classState.classId === 'arqueiro') s.archerState = r.landed ? gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)) : loseArcherTension(s.archerState, 8); if (s.enemyHp <= 0) finishEnemy(s); return s; }
   const fieldTrace = new Set<string>();
-  a = { ...a, effect: traceAbilityEffect(a.effect, fieldTrace), extraEffects: a.extraEffects?.map((extra) => traceAbilityEffect(extra, fieldTrace)) };
+  const emittedFields = new Set<string>();
+  const markFieldApplied = (field: string) => {
+    if (emittedFields.has(field)) return;
+    emittedFields.add(field);
+    event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: a!.id, field });
+  };
+  a = { ...a, effect: traceAbilityEffect(a.effect, fieldTrace, markFieldApplied), extraEffects: a.extraEffects?.map((extra) => traceAbilityEffect(extra, fieldTrace, markFieldApplied)) };
   if (!pay(s, a.effect)) return s;
   const bardOvationAtCast = s.classState.classId === 'bardo' ? s.bardState.ovation : 0;
   classRecord(s).bardOvationAtCast = bardOvationAtCast;
@@ -689,8 +736,8 @@ export function resolvePlayerAction(s: CombatState): CombatState { if (s.dead ||
     if (!canEncore(s.bardState) || !s.bardState.encoreMemory) return s;
     effectToResolve = materializeEncoreEffect(a.effect, s.bardState.encoreMemory);
   }
-  effectToResolve = traceAbilityEffect(effectToResolve, fieldTrace);
-  const x = effectToResolve as Record<string, any>; classRecord(s).momentumAtCast = stateResource(s, 'momentum'); classRecord(s).heatAtCast = stateResource(s, 'heat'); classRecord(s).sorcererFracturesAtCast = s.sorcererEnemy.fractures;
+  effectToResolve = traceAbilityEffect(effectToResolve, fieldTrace, markFieldApplied);
+  const x = effectToResolve as Record<string, any>; classRecord(s).momentumAtCast = stateResource(s, 'momentum'); classRecord(s).heatAtCast = stateResource(s, 'heat'); classRecord(s).sorcererFracturesAtCast = s.sorcererEnemy.fractures; classRecord(s).playerHpPctAtCast = s.playerHp / effectiveMaxHp(s.character);
   if (x.selfDebuffOnCastAlways) {
     if (x.selfDebuffDefPct) s.playerMods.push({ stat: 'def', pct: x.selfDebuffDefPct, roundsLeft: x.selfDebuffRounds ?? 2 });
     if (x.selfDebuffSpeedPct) s.playerMods.push({ stat: 'speedPct', pct: x.selfDebuffSpeedPct, roundsLeft: x.selfDebuffRounds ?? 2 });
@@ -732,8 +779,8 @@ export function resolvePlayerAction(s: CombatState): CombatState { if (s.dead ||
   }
   if (s.classState.classId === 'arqueiro') { if (x.archerTensionCost) s.archerState = loseArcherTension(s.archerState, x.archerTensionCost); if (x.archerCadenceCost) s.archerState = loseArcherCadence(s.archerState, x.archerCadenceCost); if (x.archerConsumesSteps) s.archerState = consumeArcherSteps(s.archerState, x.archerConsumesSteps).state; if (x.archerConsumesPerfectRhythm) s.archerState = consumePerfectRhythm(s.archerState); if (x.archerDistanceShift) s.archerState = archerDistanceShift(s.archerState, x.archerDistanceShift); }
   if (x.sacrificeOldestSummon && s.classState.classId === 'necromante') { const raw = classRecord(s); const attacks = Array.isArray(raw.servantAttacks) ? raw.servantAttacks as number[] : []; attacks.shift(); raw.servantAttacks = attacks; raw.servants = attacks.length; }
-  if (x.orderGainOnCast) addClassNumber(s, 'orders', x.orderGainOnCast, 3); s.cooldowns[a.id] = Math.max(1, a.cooldown); event(s, { type: 'abilityCast', tick: s.envTick, actor: 'player', abilityId: a.id, name: a.name }); const resolved = resolveAbilityEffect(effectToResolve, s.character.classId, (effect, plan) => executeCombatAbilityEffect(s, effect, a!.id, plan), fieldTrace); const result = resolved.value; for (const field of resolved.appliedFields) event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: a.id, field }); for (const extra of a.extraEffects ?? []) { const extraResolved = resolveAbilityEffect(extra, s.character.classId, (effect, plan) => executeCombatAbilityEffect(s, effect, a!.id, plan), fieldTrace); for (const field of extraResolved.appliedFields) event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: a.id, field }); } if (s.classState.classId === 'arqueiro') { if (result.landed && x.archerTensionOverrideOnHit !== undefined) s.archerState = gainArcherTension(s.archerState, archerDistanceAtActionStart === 3 ? (x.archerTensionOverrideAtHorizon ?? x.archerTensionOverrideOnHit) : x.archerTensionOverrideOnHit); else if (result.landed && (x.archerShotType === 'precise')) s.archerState = gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)); else if (!result.landed && x.archerShotType === 'precise') s.archerState = loseArcherTension(s.archerState, 8); if (result.landed && x.archerShotType === 'volley') s.archerState = gainArcherCadence(s.archerState, 1); if (x.archerFlightCount || (x.archerCreatesFlightOnHits && result.landed >= x.archerCreatesFlightOnHits)) { const stats = playerStats(s); const authoredFlightDmgMult = Number(x.archerFlightDmgMult ?? x.dmgMult ?? 0.5); const flightCount = x.archerFlightCount ?? 1; const room = Math.max(0, 3 - s.archerState.arrows.length); s.archerState = scheduleInFlightArrows(s.archerState, Array.from({ length: Math.min(flightCount, room) }, (_, i) => flightSnapshotFromAbility(a, { ...stats, defPenPct: 0 }, s.archerState.distance, x.archerFlightHitDmgMults?.[i] ?? (stateResource(s, 'tension') >= 50 ? (x.archerFlightHighTensionDmgMult ?? x.archerFlightDmgMult ?? 0.5) : authoredFlightDmgMult), x.archerFlightTimer ?? 1))); } }
-  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao') s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (result.landed && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter); if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && s.playerHp / effectiveMaxHp(s.character) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } const emitted = new Set(s.events.filter((item) => item.type === 'effectApplied' && item.abilityId === a.id && item.field).map((item) => item.field)); for (const field of fieldTrace) if (!emitted.has(field)) event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: a.id, field }); s.pendingEffectTraces.push({ abilityId: a.id, fields: fieldTrace }); if (s.enemyHp <= 0) finishEnemy(s); return s; }
+  if (x.orderGainOnCast) addClassNumber(s, 'orders', x.orderGainOnCast, 3); s.cooldowns[a.id] = Math.max(1, a.cooldown); event(s, { type: 'abilityCast', tick: s.envTick, actor: 'player', abilityId: a.id, name: a.name }); const result = executeAbilityEffect(s, effectToResolve, a.id); for (const extra of a.extraEffects ?? []) executeAbilityEffect(s, extra, a.id); if (s.classState.classId === 'arqueiro') { if (result.landed && x.archerTensionOverrideOnHit !== undefined) s.archerState = gainArcherTension(s.archerState, archerDistanceAtActionStart === 3 ? (x.archerTensionOverrideAtHorizon ?? x.archerTensionOverrideOnHit) : x.archerTensionOverrideOnHit); else if (result.landed && (x.archerShotType === 'precise')) s.archerState = gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)); else if (!result.landed && x.archerShotType === 'precise') s.archerState = loseArcherTension(s.archerState, 8); if (result.landed && x.archerShotType === 'volley') s.archerState = gainArcherCadence(s.archerState, 1); if (x.archerFlightCount || (x.archerCreatesFlightOnHits && result.landed >= x.archerCreatesFlightOnHits)) { const stats = playerStats(s); const authoredFlightDmgMult = Number(x.archerFlightDmgMult ?? x.dmgMult ?? 0.5); const flightCount = x.archerFlightCount ?? 1; const room = Math.max(0, 3 - s.archerState.arrows.length); s.archerState = scheduleInFlightArrows(s.archerState, Array.from({ length: Math.min(flightCount, room) }, (_, i) => flightSnapshotFromAbility(a, { ...stats, defPenPct: 0 }, s.archerState.distance, x.archerFlightHitDmgMults?.[i] ?? (stateResource(s, 'tension') >= 50 ? (x.archerFlightHighTensionDmgMult ?? x.archerFlightDmgMult ?? 0.5) : authoredFlightDmgMult), x.archerFlightTimer ?? 1))); } }
+  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao') s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (result.landed && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter); if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
 function finishEnemy(s: CombatState): void { if (s.classState.classId === 'necromante') addClassNumber(s, 'souls', 1, 10); s.won = true; event(s, { type: 'enemyDeath', tick: s.envTick }); }
 function triggerArmedTrap(s: CombatState): void {
   if (s.classState.classId !== 'cacador' || s.traps.length === 0 || s.enemyHp <= 0) return;
@@ -938,8 +985,7 @@ export function resolveEnvironmentTick(s: CombatState): CombatState {
   if (s.playerHp <= 0 && !s.dead) { s.dead = true; event(s, { type: 'playerDeath', tick: s.envTick }); }
   return s;
 }
-function flushEffectTraces(s: CombatState): void { for (const pending of s.pendingEffectTraces.splice(0)) { const emitted = new Set(s.events.filter((item) => item.type === 'effectApplied' && item.abilityId === pending.abilityId && item.field).map((item) => item.field)); for (const field of pending.fields) if (!emitted.has(field)) event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: pending.abilityId, field }); } }
-export function runCombat(s: CombatState, maxActions = 300): CombatRunResult { let pd = 0; let ed = 0; const casts: string[] = []; while (!s.dead && !s.won && s.actions < maxActions) { const beforeEvents = s.events.length; const before = s.enemyHp; const existingFlightIds = s.archerState.arrows.map((arrow) => arrow.id); advanceArcherFlights(s, existingFlightIds); if (s.won) break; resolvePlayerAction(s); const playerCast = s.events.slice(beforeEvents).find((item) => item.type === 'abilityCast' && item.actor === 'player' && item.abilityId); if (s.classState.classId === 'arqueiro' && playerCast?.abilityId) { const ab = abilities(s).find((item) => item.id === playerCast.abilityId); const pending = s.pendingEffectTraces.find((item) => item.abilityId === playerCast.abilityId); const x = ab ? traceAbilityEffect(ab.effect, pending?.fields ?? new Set()) as Record<string, any> : undefined; if (x?.archerImmediateTimerReduction) s.archerState = { ...s.archerState, arrows: s.archerState.arrows.map((arrow) => existingFlightIds.includes(arrow.id) ? { ...arrow, actionsRemaining: arrow.actionsRemaining - x.archerImmediateTimerReduction } : arrow) }; if (x?.archerAccelerateOldest) s.archerState = accelerateOldestArrow(s.archerState); if (x?.archerAlignFlights) s.archerState = alignInFlightArrows(s.archerState); if (x?.archerConsumesReflex) s.archerState = consumeArcherReflex(s.archerState); } pd += before - s.enemyHp; const beforePlayer = s.playerHp; if (!s.won) resolveEnemyAction(s); ed += beforePlayer - s.playerHp; if (s.classState.classId === 'arqueiro') { s.archerState = { ...s.archerState, actionCount: s.archerState.actionCount + 1, preciseActionsSinceReposition: s.archerState.preciseActionsSinceReposition + 1 }; s.archerState = advanceArcherReflex(s.archerState); } resolveEnvironmentTick(s); flushEffectTraces(s); for (const cast of s.events.slice(beforeEvents)) if (cast.type === 'abilityCast' && cast.abilityId) casts.push(cast.abilityId); } return { state: s, won: s.won, actions: s.actions, playerDamage: pd, enemyDamage: ed, casts: casts.length, abilityCasts: casts }; }
+export function runCombat(s: CombatState, maxActions = 300): CombatRunResult { let pd = 0; let ed = 0; const casts: string[] = []; while (!s.dead && !s.won && s.actions < maxActions) { const beforeEvents = s.events.length; const before = s.enemyHp; const existingFlightIds = s.archerState.arrows.map((arrow) => arrow.id); advanceArcherFlights(s, existingFlightIds); if (s.won) break; resolvePlayerAction(s); const playerCast = s.events.slice(beforeEvents).find((item) => item.type === 'abilityCast' && item.actor === 'player' && item.abilityId); if (s.classState.classId === 'arqueiro' && playerCast?.abilityId) { const ab = abilities(s).find((item) => item.id === playerCast.abilityId); const x = ab ? traceAbilityEffect(ab.effect, new Set(), (field) => event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: playerCast.abilityId, field })) as Record<string, any> : undefined; if (x?.archerImmediateTimerReduction) s.archerState = { ...s.archerState, arrows: s.archerState.arrows.map((arrow) => existingFlightIds.includes(arrow.id) ? { ...arrow, actionsRemaining: arrow.actionsRemaining - x.archerImmediateTimerReduction } : arrow) }; if (x?.archerAccelerateOldest) s.archerState = accelerateOldestArrow(s.archerState); if (x?.archerAlignFlights) s.archerState = alignInFlightArrows(s.archerState); if (x?.archerConsumesReflex) s.archerState = consumeArcherReflex(s.archerState); } pd += before - s.enemyHp; const beforePlayer = s.playerHp; if (!s.won) resolveEnemyAction(s); ed += beforePlayer - s.playerHp; if (s.classState.classId === 'arqueiro') { s.archerState = { ...s.archerState, actionCount: s.archerState.actionCount + 1, preciseActionsSinceReposition: s.archerState.preciseActionsSinceReposition + 1 }; s.archerState = advanceArcherReflex(s.archerState); } resolveEnvironmentTick(s); for (const cast of s.events.slice(beforeEvents)) if (cast.type === 'abilityCast' && cast.abilityId) casts.push(cast.abilityId); } return { state: s, won: s.won, actions: s.actions, playerDamage: pd, enemyDamage: ed, casts: casts.length, abilityCasts: casts }; }
 export function proveAbilityReachability(character: Character, enemy: EnemyInstance, abilityId: string, seed = 1, maxActions = 240, supportingAbilityIds: string[] = []): { abilityId: string; castCount: number; firstCastTick?: number; events: CombatEvent[]; effectFields: string[]; unappliedEffectFields: string[]; pass: boolean } {
   const ids = [...new Set([abilityId, ...supportingAbilityIds])].slice(0, 5); const ability = getEquippedAbilities(character.classId, character.unlockedSkills, [abilityId])[0]; if (!ability) return { abilityId, castCount: 0, events: [], effectFields: [], unappliedEffectFields: [], pass: false };
   // The first encounter is supplied by the caller and is always a real
@@ -1003,7 +1049,7 @@ function carryEncounterState(next: CombatState, previous: CombatState, hp: numbe
   next.archerState = createArcherCombatState();
   next.soulThresholds = new Set();
   next.character = { ...next.character, potions: previous.character.potions };
-  next.playerHp = Math.min(Math.max(1, hp), effectiveMaxHp(next.character));
+  next.playerHp = Math.min(Math.max(1, recoverAfterEncounter(next.character, hp)), effectiveMaxHp(next.character));
 }
 export function runFullDungeon(character: Character, dungeon: DungeonDef, seed = 1, priorities = character.equippedAbilities): FullDungeonRunResult { let s = createCombatState(character, spawnEnemy(dungeon.startDepth, dungeon), seed, character.equippedAbilities, priorities); const checkpoints: FullDungeonRunResult['checkpoints'] = []; const events: CombatEvent[] = []; let actions = 0; for (let depth = dungeon.startDepth; depth <= dungeon.bossDepth && !s.dead; depth += 1) { if (depth !== dungeon.startDepth) { const hp = s.playerHp; const previous = s; s = createCombatState({ ...character, hp }, spawnEnemy(depth, dungeon), seed + depth, previous.equippedAbilityIds, previous.priorities); carryEncounterState(s, previous, hp); } const r = runCombat(s); s = r.state; actions += r.actions; events.push(...s.events); checkpoints.push({ depth, won: r.won, playerHp: s.playerHp }); if (!r.won) break; s.won = false; } return { dungeonId: dungeon.id, won: checkpoints.length === dungeon.bossDepth - dungeon.startDepth + 1 && checkpoints[checkpoints.length - 1]?.won === true, fights: checkpoints.length, actions, checkpoints, events, state: s }; }
 export { ABILITY_EFFECT_KINDS } from './abilityResolver.ts';

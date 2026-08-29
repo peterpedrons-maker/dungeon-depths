@@ -121,7 +121,32 @@ export interface RebalanceDurationMeasurement {
   samples: number; wins: number; medianActions: number; target: [number, number]; withinTarget: boolean;
 }
 export interface RebalanceBossWinRate { classId: ClassId; wins: number; samples: number; winRate: number; targetMinimum: number; meetsTarget: boolean; }
-export interface RebalanceMeasurement { durations: RebalanceDurationMeasurement[]; finalBoss: RebalanceBossWinRate[]; }
+export interface RebalanceWinRateTarget { label: string; dungeonIndex: number; profile: GearProfile; target: [number, number]; }
+export interface RebalanceWinRateMeasurement extends RebalanceWinRateTarget { dungeonId: string; samples: number; wins: number; winRate: number; withinTarget: boolean; }
+export interface RebalanceMeasurement { durations: RebalanceDurationMeasurement[]; finalBoss: RebalanceBossWinRate[]; winRates: RebalanceWinRateMeasurement[]; }
+
+/**
+ * Full-run checkpoints for every progression band. Lower profiles remain
+ * deliberately poor deep into a later band; their non-zero target is useful
+ * as a regression guard without pretending that under-geared characters
+ * should farm endgame. Special dungeons are measured separately because
+ * they are intended to be harder than the adjacent mainline.
+ */
+export const REBALANCE_WIN_RATE_TARGETS: RebalanceWinRateTarget[] = [
+  { label: 'D1-D6 especial / Farmado', dungeonIndex: 5, profile: 'farmado', target: [0.05, 0.25] },
+  { label: 'D1-D6 especial / Bem Equipado', dungeonIndex: 5, profile: 'bem-equipado', target: [0.65, 0.90] },
+  { label: 'D7-D12 especial / Farmado', dungeonIndex: 11, profile: 'farmado', target: [0.30, 0.65] },
+  { label: 'D7-D12 especial / Bem Equipado', dungeonIndex: 11, profile: 'bem-equipado', target: [0.75, 0.95] },
+  { label: 'D13-D18 / Farmado', dungeonIndex: 17, profile: 'farmado', target: [0.05, 0.25] },
+  { label: 'D13-D18 / Bem Equipado', dungeonIndex: 17, profile: 'bem-equipado', target: [0.50, 0.78] },
+  { label: 'D19-D24 / Farmado', dungeonIndex: 23, profile: 'farmado', target: [0.01, 0.15] },
+  { label: 'D19-D24 / Bem Equipado', dungeonIndex: 23, profile: 'bem-equipado', target: [0.22, 0.50] },
+  { label: 'D25-D30 / Bem Equipado', dungeonIndex: 29, profile: 'bem-equipado', target: [0.01, 0.15] },
+  { label: 'D25-D30 / Endgame', dungeonIndex: 29, profile: 'endgame-realista', target: [0.45, 0.72] },
+  { label: 'D31-D32 / Bem Equipado', dungeonIndex: 31, profile: 'bem-equipado', target: [0.01, 0.15] },
+  { label: 'D31-D32 / Endgame', dungeonIndex: 31, profile: 'endgame-realista', target: [0.50, 0.78] },
+  { label: 'D33 opcional / Endgame', dungeonIndex: 32, profile: 'endgame-realista', target: [0.25, 0.50] },
+];
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -163,7 +188,18 @@ export function measureRebalanceTargets(seeds = 10): RebalanceMeasurement {
     const winRate = wins / seeds;
     return { classId, wins, samples: seeds, winRate, targetMinimum: 0.70, meetsTarget: winRate >= 0.70 };
   });
-  return { durations, finalBoss };
+  const winRates = REBALANCE_WIN_RATE_TARGETS.map((target) => {
+    const dungeon = DUNGEONS[target.dungeonIndex];
+    let wins = 0;
+    const classIds = Object.keys(CLASSES) as ClassId[];
+    for (const classId of classIds) for (let seed = 1; seed <= seeds; seed += 1) {
+      if (simulateDungeonRun(classId, dungeon, seed, target.profile).won) wins += 1;
+    }
+    const samples = classIds.length * seeds;
+    const winRate = wins / samples;
+    return { ...target, dungeonId: dungeon.id, samples, wins, winRate, withinTarget: winRate >= target.target[0] && winRate <= target.target[1] };
+  });
+  return { durations, finalBoss, winRates };
 }
 
 export function runCombatBalance(seeds = 300, startSeed = 1): BalanceSummary {

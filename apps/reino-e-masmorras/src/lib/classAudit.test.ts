@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { auditActiveAbilities, auditAllClasses, auditResourceLifecycles, auditRealAbilityReachability, auditRealBuilds, auditRealPurePaths, buildAuditMatrix, runClassAuditFullRuns } from './classAudit.ts';
-import { assertAllAbilityKindsResolved, consumeCombatEvents } from './combatEngine.ts';
+import { assertAllAbilityKindsResolved, consumeCombatEvents, createCombatState, executeAbilityEffect } from './combatEngine.ts';
 import { resolveAbilityEffect } from './abilityResolver.ts';
 import type { AbilityEffect } from '../types/game.ts';
+import { CLASSES, createCharacter } from './classes.ts';
+import { SKILL_TREES } from './skills.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
 
 test('auditoria estrutural cobre as 14 classes, 42 paths e 630 nodes', () => {
   const report = auditAllClasses();
@@ -64,10 +69,48 @@ test('resolver exaustivo cobre os 51 tipos de efeito', () => {
 
 test('o contrato de campos registra somente leituras mecânicas reais', () => {
   const effect = { kind: 'heal', healPct: 0.2 } as AbilityEffect;
-  const untouched = resolveAbilityEffect(effect, 'bardo', () => true);
+  const untouched = resolveAbilityEffect(effect, 'bardo');
   assert.deepEqual(untouched.appliedFields, []);
-  const consumed = resolveAbilityEffect(effect, 'bardo', (resolved) => Number((resolved as Record<string, unknown>).healPct));
-  assert.deepEqual(consumed.appliedFields, ['healPct']);
+  const applied: string[] = [];
+  const consumed = resolveAbilityEffect(effect, 'bardo', new Set(), (field) => applied.push(field));
+  Number((consumed.effect as Record<string, unknown>).healPct);
+  assert.deepEqual(applied, ['healPct']);
+});
+
+test('DungeonPanel e harness têm paridade no mesmo executor self e ofensivo', () => {
+  const panelSource = readFileSync(new URL('../components/DungeonPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panelSource, /executeAbilityEffect\(core, coreChosen\.effect, coreChosen\.id\)/);
+  assert.doesNotMatch(panelSource, /resolveAbilityEffect\([^;]+=>/s);
+  let self = 0; let offensive = 0; let abilities = 0;
+  for (const classId of Object.keys(CLASSES) as Array<keyof typeof CLASSES>) {
+    const paths = SKILL_TREES[classId];
+    const unlockedSkills = paths.flatMap((path) => path.nodes.map((node) => node.id));
+    const character = { ...createCharacter(`Paridade ${classId}`, classId), unlockedSkills };
+    for (const ability of paths.flatMap((path) => path.nodes.flatMap((node) => node.ability ? [node.ability] : []))) {
+      const enemy = spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]);
+      const panelState = createCombatState(character, { ...enemy }, 9000 + abilities, [ability.id], [ability.id]);
+      const harnessState = createCombatState(character, { ...enemy }, 9000 + abilities, [ability.id], [ability.id]);
+      const panelResult = executeAbilityEffect(panelState, ability.effect, ability.id);
+      const harnessResult = executeAbilityEffect(harnessState, ability.effect, ability.id);
+      for (const extra of ability.extraEffects ?? []) {
+        executeAbilityEffect(panelState, extra, ability.id);
+        executeAbilityEffect(harnessState, extra, ability.id);
+      }
+      const snapshot = (state: typeof panelState) => ({
+        playerHp: state.playerHp, enemyHp: state.enemyHp, playerBarrier: state.playerBarrier, enemyBarrier: state.enemyBarrier,
+        classState: state.classState, bardState: state.bardState, warlockPlayer: state.warlockPlayer, warlockEnemy: state.warlockEnemy,
+        sorcererEnemy: state.sorcererEnemy, archerState: state.archerState, playerStatuses: state.playerStatuses,
+        enemyStatuses: state.enemyStatuses, playerMods: state.playerMods, enemyMods: state.enemyMods, playerCC: state.playerCC,
+        enemyCC: state.enemyCC, traps: state.traps, hots: state.hots, events: state.events,
+      });
+      assert.deepEqual(panelResult, harnessResult, ability.id);
+      assert.deepEqual(snapshot(panelState), snapshot(harnessState), ability.id);
+      if (panelResult.plan.selfTargeted) self += 1; else offensive += 1;
+      abilities += 1;
+    }
+  }
+  assert.equal(abilities, 210);
+  assert.ok(self > 0 && offensive > 0);
 });
 
 test('validação end-to-end real alcança as 210 ativas', () => {

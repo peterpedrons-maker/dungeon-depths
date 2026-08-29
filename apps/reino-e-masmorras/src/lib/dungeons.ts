@@ -101,14 +101,14 @@ const DUNGEON_DEFS: DungeonDef[] = [
     startDepth: 12, levelReq: 12, special: true,
     enemyPool: ['gargoyle', 'spectralMage', 'cursedKnight', 'watchingEye', 'crawlingShadow'],
     xpMult: 1.6, dmgTakenMult: 1.25, dropMult: 1.5,
-    bossDepth: 23, boss: 'fallenArchmage', itemTier: 2, miniBossDepths: [16, 20], difficultyMult: 1.75,
+    bossDepth: 23, boss: 'fallenArchmage', itemTier: 2, miniBossDepths: [16, 20], difficultyMult: 1.68,
   },
   {
     id: 'minas', name: 'Minas Abandonadas',
     desc: 'Trilhos enferrujados descem além do que os mineiros ousaram explorar.',
     startDepth: 13, levelReq: 13,
     enemyPool: ['cursedMiner', 'oreGolem', 'koboldRaider', 'batSwarm', 'gasWisp'],
-    bossDepth: 24, boss: 'oreTitan', itemTier: 2, miniBossDepths: [17, 21], difficultyMult: 1.9,
+    bossDepth: 24, boss: 'oreTitan', itemTier: 2, miniBossDepths: [17, 21], difficultyMult: 1.90,
     unlockAfter: ['aranhas'],
   },
   {
@@ -124,7 +124,7 @@ const DUNGEON_DEFS: DungeonDef[] = [
     desc: 'Filhotes e criaturas ligadas a dragões guardam o ninho — dragões realmente antigos ainda dormem em masmorras mais distantes.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent'],
-    bossDepth: 29, boss: 'dragon', itemTier: 2, miniBossDepths: [22, 26], difficultyMult: 2.2,
+    bossDepth: 29, boss: 'dragon', itemTier: 2, miniBossDepths: [22, 26], difficultyMult: 2.20,
     unlockAfter: ['floresta'],
   },
   {
@@ -140,7 +140,7 @@ const DUNGEON_DEFS: DungeonDef[] = [
     desc: 'Colunas élficas cobertas de vinhas, tomadas por criaturas selvagens.',
     startDepth: 20, levelReq: 20,
     enemyPool: ['corruptedGuardian', 'whisperingVine', 'ruinBeast', 'elvenWraith', 'crystalGolem'],
-    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 3, miniBossDepths: [24, 28], difficultyMult: 2.5,
+    bossDepth: 31, boss: 'ancestralGuardian', itemTier: 3, miniBossDepths: [24, 28], difficultyMult: 2.50,
     unlockAfter: ['covil', 'necropole'],
   },
   {
@@ -265,7 +265,7 @@ const DUNGEON_DEFS: DungeonDef[] = [
     desc: 'Estátuas de pedra engolidas por raízes gigantes — ninguém vem aqui há eras.',
     startDepth: 37, levelReq: 37,
     enemyPool: ['forgottenGuardian', 'junglePredator', 'ancientVine', 'feralJaguar', 'sporeling'],
-    bossDepth: 48, boss: 'forgottenColossus', itemTier: 4, miniBossDepths: [41, 45], difficultyMult: 4.45,
+    bossDepth: 48, boss: 'forgottenColossus', itemTier: 4, miniBossDepths: [41, 45], difficultyMult: 4.20,
     unlockAfter: ['santuarioProfanado', 'minaObsidiana'],
   },
   {
@@ -317,7 +317,7 @@ const DUNGEON_DEFS: DungeonDef[] = [
     desc: 'Um portal de pedra colossal guarda um salão além da compreensão humana.',
     startDepth: 45, levelReq: 45,
     enemyPool: ['titanGuardian', 'stoneColossus', 'ancientSentinel', 'runicGolem', 'titanWarden'],
-    bossDepth: 56, boss: 'fallenTitan', itemTier: 5, miniBossDepths: [49, 53], difficultyMult: 5.35,
+    bossDepth: 56, boss: 'fallenTitan', itemTier: 5, miniBossDepths: [49, 53], difficultyMult: 5.05,
     unlockAfter: ['ruinasVulcanicas'],
   },
   {

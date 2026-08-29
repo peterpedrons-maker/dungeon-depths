@@ -109,8 +109,15 @@ export function equippedAuditCharacter(label: string, classId: ClassId, build: B
   const previous = Math.random; let state = seed >>> 0;
   Math.random = () => { state = (state + 0x6D2B79F5) >>> 0; let t = state; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   try {
-    const character = grantXp({ ...createCharacter(label, classId), unlockedSkills: build.unlocked, equippedAbilities: build.activeIds }, 10000000);
-    const make = (slot: 'weapon'|'body'|'legs'|'hands'|'accessory'|'offhand'): EquipmentItem => enhancedItem({ ...generateItem(slot, classId, Math.max(1, dungeon.itemTier), gear.quality ?? .95, gear.rarity ?? 'legendario'), enhanceLevel: gear.enhanceLevel ?? 10 });
+    let character = { ...createCharacter(label, classId), unlockedSkills: build.unlocked, equippedAbilities: build.activeIds };
+    const targetLevel = Math.min(60, dungeon.levelReq + 8);
+    while (character.level < targetLevel) character = grantXp(character, character.xpToNext);
+    const physical: Partial<Record<ClassId, 'str' | 'dex'>> = { guerreiro: 'str', ladino: 'dex', cavaleiro: 'str', paladino: 'str', barbaro: 'str', arqueiro: 'dex', cacador: 'dex' };
+    const magical: Partial<Record<ClassId, 'int' | 'wis'>> = { mago: 'int', clerigo: 'int', feiticeiro: 'int', bruxo: 'int', druida: 'int', bardo: 'int', necromante: 'int' };
+    const primary = physical[classId] ?? magical[classId] ?? 'str';
+    const primaryPoints = Math.floor(character.attributePoints * 0.65);
+    character = { ...character, allocatedAttrs: { ...character.allocatedAttrs, [primary]: character.allocatedAttrs[primary] + primaryPoints, vit: character.allocatedAttrs.vit + character.attributePoints - primaryPoints }, attributePoints: 0 };
+    const make = (slot: 'weapon'|'body'|'legs'|'hands'|'accessory'|'offhand'): EquipmentItem => enhancedItem({ ...generateItem(slot, classId, Math.max(1, dungeon.itemTier), gear.quality ?? .18, gear.rarity ?? 'epico'), enhanceLevel: gear.enhanceLevel ?? 7 });
     // The audit loadout includes the consumables a real expedition can carry;
     // they are consumed by the same threshold/cooldown path as DungeonPanel
     // and are carried between encounters, never injected into CombatState.
@@ -321,7 +328,7 @@ export function auditRealAbilityReachability(): RealReachabilityAudit[] {
   const rows: RealReachabilityAudit[] = [];
   for (const classId of Object.keys(CLASSES) as ClassId[]) for (const path of SKILL_TREES[classId]) {
     const build = unlockLegalBuild(classId, [path.id]); const active = build.activeIds.filter((id) => path.nodes.some((node) => node.id === id));
-    const character = equippedAuditCharacter(`Reachability ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[DUNGEONS.length - 1], classId === 'arqueiro' ? 453 : classId === 'paladino' ? 1 : 17 + rows.length, { quality: .95, rarity: 'legendario', enhanceLevel: 10 });
+    const character = equippedAuditCharacter(`Reachability ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[DUNGEONS.length - 1], classId === 'arqueiro' ? 453 : classId === 'paladino' ? 1 : 17 + rows.length);
     for (const node of path.nodes) if (node.type === 'active' && node.ability) {
       const proof = proveWithNaturalSeeds(character, node.ability, active, 17 + rows.length);
       const effectFields = [...new Set([node.ability.effect, ...(node.ability.extraEffects ?? [])].flatMap(abilityEffectFields))];
@@ -335,13 +342,13 @@ export function auditRealAbilityReachability(): RealReachabilityAudit[] {
 export function auditRealPurePaths(): RealPurePathAudit[] {
   const rows: RealPurePathAudit[] = [];
   for (const classId of Object.keys(CLASSES) as ClassId[]) for (const path of SKILL_TREES[classId]) {
-    const build = unlockLegalBuild(classId, [path.id]); const active = build.activeIds.filter((id) => path.nodes.some((node) => node.id === id)); const character = equippedAuditCharacter(`Pure ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[DUNGEONS.length - 1], classId === 'arqueiro' ? 453 : 700 + rows.length * 19, { quality: .95, rarity: 'legendario', enhanceLevel: 10 }); const casts: Record<string, number> = Object.fromEntries(active.map((id) => [id, 0]));
+    const build = unlockLegalBuild(classId, [path.id]); const active = build.activeIds.filter((id) => path.nodes.some((node) => node.id === id)); const character = equippedAuditCharacter(`Pure ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[DUNGEONS.length - 1], classId === 'arqueiro' ? 453 : 700 + rows.length * 19); const casts: Record<string, number> = Object.fromEntries(active.map((id) => [id, 0]));
     // One real five-skill rotation per dungeon. The focus changes only the
     // priority order; all five abilities stay equipped in the same combat
     // state and resources are produced by the engine itself.
     for (let dungeonIndex = 0; dungeonIndex < DUNGEONS.length; dungeonIndex += 1) {
       const focusId = active[dungeonIndex % active.length]; const focus = getEquippedAbilities(classId, build.unlocked, [focusId])[0]; if (!focus) continue;
-      const runCharacter = equippedAuditCharacter(`Pure ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[dungeonIndex], classId === 'arqueiro' ? 453 : 700 + rows.length * 19 + dungeonIndex, { quality: .95, rarity: 'legendario', enhanceLevel: 10 });
+      const runCharacter = equippedAuditCharacter(`Pure ${classId}`, classId, { ...build, activeIds: active }, DUNGEONS[dungeonIndex], classId === 'arqueiro' ? 453 : 700 + rows.length * 19 + dungeonIndex);
       const priority = naturalAbilityPriorities(focus, active.filter((id) => id !== focusId), { classId, unlockedSkills: build.unlocked });
       const result = runFullDungeon(runCharacter, DUNGEONS[dungeonIndex], 700 + rows.length * 19 + dungeonIndex, priority);
       for (const event of result.events) if (event.type === 'abilityCast' && event.actor === 'player' && event.abilityId && event.abilityId in casts) casts[event.abilityId] += 1;

@@ -1,6 +1,6 @@
-# Auditoria real de combate — Patch 4
+# Auditoria real de combate — motor final
 
-Relatório regenerado em 2026-08-29 a partir do `main` atual. A validação usa `createCombatState()`, `runCombat()`, `runFullDungeon()` e `spawnEnemy()` do engine de produção. O painel e o harness compartilham o mesmo `resolveAbilityEffect`, plano de resolução, payload de Bis e contrato dos efeitos.
+Relatório regenerado em 2026-08-29 a partir do `main` atual. `DungeonPanel` e harness executam o mesmo `executeAbilityEffect()` stateful para habilidades self-target e ofensivas; o painel apenas traduz refs para `CombatState`, sincroniza o resultado e apresenta os eventos.
 
 ## Resultado
 
@@ -8,30 +8,40 @@ Relatório regenerado em 2026-08-29 a partir do `main` atual. A validação usa 
 |---|---:|
 | Classes / caminhos / nós | 14/14 · 42/42 · 630/630 |
 | Ativas / passivas / atributos | 210/210 · 126/126 · 294/294 |
-| Condições e cooldowns estruturais | 210/210 |
-| Ativas executadas em combate real | 210/210 |
-| Casts observados nas 210 ativas | 11.494 |
-| Eventos de prova do engine | 362.035 |
-| Árvores puras com os cinco ativos lançados | 42/42 |
-| Builds legais com cinco ativos lançados | 98/98 |
-| Builds com ativo sem cast | 0/98 |
-| Dungeons percorridas por build | 33/33 |
-| Clears nos full-runs das 98 builds | 1.975 de 3.234 |
-| Tipos de efeito resolvidos | 51/51 |
+| Ativas executadas com todos os campos aplicados | 210/210 |
+| Casts observados nas provas individuais | 14.873 |
+| Eventos reais de prova | 669.723 |
+| Árvores puras usando os cinco ativos | 42/42 |
+| Builds legais usando os cinco ativos | 98/98 |
+| Builds com habilidade sem cast | 0/98 |
+| Dungeons simuladas por build | 33/33 |
+| Clears nas 3.234 runs das 98 builds | 2.589 |
+| Tipos de efeito resolvidos exaustivamente | 51/51 |
+| Paridade painel/engine | 210/210 |
 
-Uma build só passa com cinco IDs equipados, cast real dos cinco e a simulação dos 33 encontros. A cobertura não é convertida em vitória: os clears são medidos separadamente. Não há geração artificial de recursos, estado-testemunha ou progressão básica fabricada. Campos de `AbilityEffect` só aparecem como aplicados quando o resolver os lê durante a mecânica que os usa.
+Uma árvore/build só passa se cada um dos cinco IDs equipados produzir cast real. A prova percorre encontros reais e deixa o próprio combate produzir Pulso, Brecha, Fé, Dor, Dívida, Almas, Ovação, Convicção e demais condições; não existem `progressBasicState()`, estados-testemunha ou injeções de recursos.
 
-## Mecânicas verificadas
+## Fonte única de verdade
 
-O engine produz e consome naturalmente Postura, Determinação, Fé, Dor, Feridas, Brechas, Calor, Pulso, Fraturas, Dívida, Crédito, Estigmas, Partitura, Eco, Ovação, Almas e Decomposição. Também são exercitados HP persistente, gear, poções, cura, barreira, DOT, summons, fases de boss e cooldowns.
+- `resolveAbilityEffect()` não recebe callback de execução; ele materializa e rastreia o efeito.
+- `executeAbilityEffect()` aplica self, dano físico/mágico, multi-hit, payload misto do Bardo, cura, barreira, status, DOT, summons e riders de classe.
+- O harness e o painel chamam essa mesma função. Um teste arquitetural impede a volta do callback e compara estado/resultado das 210 ativas com seed idêntica.
+- `effectApplied` nasce quando o trecho mecânico lê/aplica o campo. O flush que preenchia automaticamente campos presentes foi removido.
+- Kinds e campos desconhecidos falham o contrato; o switch dos 51 kinds não possui `default: break` silencioso.
 
-Foram cobertos explicitamente os riders de Bárbaro, Bardo, Feiticeiro, Druida, Paladino, Ladino, Guerreiro, Cavaleiro, Arqueiro, Caçador, Clérigo, Mago, Bruxo e Necromante. Campos compostos de `AbilityEffect` passam pelo contrato de runtime; um kind ou campo desconhecido falha a auditoria.
+## Correções encontradas pela auditoria
 
-## Validação
+O perfil antigo da prova era um nível 60 lendário +10 até contra encontros iniciais e impedia condições naturais de HP baixo. A prova final usa perfil realista por dungeon (`levelReq + 8`, épico +7) com atributos distribuídos. Isso revelou e corrigiu três ativas: Milagre, Ressurreição Menor e Veredito da Redenção.
+
+No Paladino, a Virtude extra de Luz que Não Cede passou a usar o snapshot de HP no início do cast, antes da cura da própria habilidade. A árvore pura de Redenção agora gera Misericórdia + Coragem naturalmente e alcança Convicção 2 antes do Veredito.
+
+Também são exercitados HP e recursos persistentes, gear real, poções, cura, barreira, DOT, summons, fases de boss e a recuperação real de 2% entre encontros, compartilhada pelo painel e pelo full-run.
+
+## Reprodução
 
 ```bash
 npm test
-npx tsc -p tsconfig.app.json --noEmit
+npx tsc -b --pretty false
 npm run build
 git diff --check
 ```

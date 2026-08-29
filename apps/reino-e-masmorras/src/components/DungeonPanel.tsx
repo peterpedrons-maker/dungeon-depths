@@ -38,7 +38,7 @@ import {
   loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows,
   tensionForPreciseHit, accelerateOldestArrow,
 } from '../lib/archer';
-import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium } from '../lib/druid';
+import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, markDruidAttunement, addDruidDissonance, pickDruidSeasonalAbility, growGarden, addGardenSeeds, matureGarden, consumeGardenFruit, activateAvatar, consumeDruidRenewal, consumeDruidReequilibrium, type DruidSeason, type DruidForm } from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, applyWarlockDebt, payWarlockDebt, setWarlockDebt, grantWarlockCredit, consumeTrueName, consumeTrueNameAndRefragment, bindWarlockEnemy, addNameFragment, consumeMandamento, resolveCollection, borrowedPowerPct, overcontractDamagePct, collectionAmount } from '../lib/warlock';
 import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState, beginActiveCast, resolvePulseGain, addResonance, consumeResonance, addControl, consumeControl, addFractures, consumeFractures, rupturePenetration } from '../lib/sorcerer';
 import { BARD_FORTISSIMO_DAMAGE, BardScoreState, advanceAudienceChorus, appendBardNote, applyAudienceChorus, canEncore, consumeAccent, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, materializeEncoreEffect, resetBardEnemy, chooseWildcardNote, prepareAccent } from '../lib/bardo';
@@ -212,7 +212,7 @@ import { getClassMechanics } from '../lib/classMechanics';
 import { formatGameNumber, formatGamePercent } from '../lib/format';
 import { IconActive, IconSkull, IconSword } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
-import { consumeCombatEvents, type CombatEvent } from '../lib/combatEngine';
+import { consumeCombatEvents, createCombatState, executeAbilityEffect, recoverAfterEncounter, type CombatEvent } from '../lib/combatEngine';
 import { buildAbilityConditionContext } from '../lib/combatConditions';
 import { abilityResolutionPlan, isSelfAbilityKind, resolveAbilityEffect, type AbilityResolutionPlan } from '../lib/abilityResolver';
 import {
@@ -4394,6 +4394,7 @@ export function DungeonPanel({
       finalChar = { ...finalChar, hp: Math.min(effectiveMaxHp(finalChar), finalChar.hp + healAmt) };
       pushFloat('player', healAmt, false, undefined, undefined, true);
     }
+    if (!isBossKill) finalChar = { ...finalChar, hp: recoverAfterEncounter(finalChar, finalChar.hp) };
     updateCh(finalChar);
     runStatsRef.current.kills += 1;
     runStatsRef.current.goldFromKills += goldGain;
@@ -5064,6 +5065,94 @@ export function DungeonPanel({
           if (chosen) cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + (chosen.effect.archerPath ? 0.03 * (archerHasSkill(chosen.effect.archerPath === 'precision' ? 'arqueiro:precisao:3' : chosen.effect.archerPath === 'rapid' ? 'arqueiro:tiro-rapido:3' : 'arqueiro:instinto:3') ? 1 : 0) : 0));
           archerSync();
         }
+        const coreChosen = chosen;
+        if (coreChosen) {
+          // Active skills (self-targeted and offensive) resolve in the exact
+          // same stateful core as the harness. The panel only translates its
+          // live refs to/from CombatState and renders the emitted events.
+          const core = createCombatState(chRef.current, { ...enemyRef.current }, Math.floor(Math.random() * 0xFFFFFFFF), [coreChosen.id], [coreChosen.id]);
+          const panelBarrierAtCast = playerShieldRef.current;
+          core.playerHp = chRef.current.hp;
+          core.enemyHp = enemyRef.current.hp;
+          core.playerBarrier = playerShieldRef.current;
+          core.playerMods = playerModsRef.current.map((mod) => ({ stat: mod.stat, pct: mod.pct, roundsLeft: mod.roundsLeft }));
+          core.enemyMods = enemyModsRef.current.map((mod) => ({ stat: mod.stat, pct: mod.pct, roundsLeft: mod.roundsLeft }));
+          core.playerStatuses = playerStatusRef.current.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, damagePct: status.dmgPerTick / Math.max(1, stats.matk || stats.atk) }));
+          core.enemyStatuses = enemyStatusRef.current.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, damagePct: status.dmgPerTick / Math.max(1, stats.matk || stats.atk) }));
+          core.playerCC = playerCCRef.current.map((cc) => ({ kind: cc.kind, roundsLeft: cc.roundsLeft }));
+          core.enemyCC = enemyCCRef.current.map((cc) => ({ kind: cc.kind, roundsLeft: cc.roundsLeft }));
+          const raw = core.classState as unknown as Record<string, unknown>;
+          raw.playerHpPctAtCast = core.playerHp / effectiveMaxHp(core.character);
+          const resource = (key: string, value: number) => { core.classState.resources[key] = value; raw[key] = value; };
+          switch (chRef.current.classId) {
+            case 'barbaro': resource('fury', barbFuryRef.current); raw.pain = barbPainTotal(); raw.frenzy = barbFrenzyRef.current; break;
+            case 'clerigo': resource('faith', clerigoFaithRef.current); raw.consecration = clerigoConsecrationRoundsLeftRef.current; break;
+            case 'cavaleiro': resource('determination', knightDeterminationRef.current); resource('momentum', knightMomentumRef.current); resource('orders', knightOrdersRef.current); break;
+            case 'mago': resource('heat', mageHeatRef.current); raw.thermal = mageThermalRef.current; raw.thermalTicks = mageThermalTicksRef.current; raw.mageCircuit = mageCircuitRef.current; raw.magePolarity = mageLastPolarityRef.current; break;
+            case 'ladino': raw.images = rogueImagesRef.current; raw.stealthed = rogueStealthRef.current; raw.exposed = rogueExposedMainLeftRef.current > 0; raw.advantageReady = rogueAdvantageRef.current; break;
+            case 'feiticeiro': resource('pulse', sorcererStateRef.current.pulse); resource('resonance', sorcererStateRef.current.resonance); resource('control', sorcererStateRef.current.control); core.sorcererEnemy = { ...sorcererEnemyRef.current }; break;
+            case 'bruxo': core.warlockPlayer = { ...warlockStateRef.current }; core.warlockEnemy = { ...warlockEnemyRef.current }; break;
+            case 'arqueiro': core.archerState = { ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }; break;
+            case 'bardo': core.bardState = { ...bardStateRef.current, notes: [...bardStateRef.current.notes] }; break;
+            case 'necromante': resource('souls', necroSoulsRef.current); raw.decomposition = necroDecompositionRef.current?.stacks ?? 0; raw.plague = necroPlagueRef.current?.ticksRemaining ?? 0; raw.servantAttacks = necroSummonsRef.current.map((summon) => summon.attacksRemaining); raw.servants = necroSummonsRef.current.length; break;
+            case 'druida': raw.season = druidCycleRef.current.season; raw.attunement = druidCycleRef.current.attunement; raw.form = druidCycleRef.current.form; break;
+            case 'paladino': raw.virtues = { ...paladinLiturgyRef.current.virtues }; raw.liturgy = paladinLiturgyRef.current.actionsLeft; resource('conviction', paladinConviction(paladinLiturgyRef.current.virtues)); break;
+            case 'cacador': raw.trapsTriggered = hunterTrapsTriggeredThisEnemyRef.current; break;
+            case 'guerreiro': break;
+          }
+          core.events.push({ type: 'abilityCast', tick: core.envTick, actor: 'player', abilityId: coreChosen.id, name: coreChosen.name });
+          executeAbilityEffect(core, coreChosen.effect, coreChosen.id);
+          for (const extra of coreChosen.extraEffects ?? []) executeAbilityEffect(core, extra, coreChosen.id);
+          updateCh({ ...chRef.current, hp: core.playerHp });
+          updateEnemy({ ...core.enemy, hp: core.enemyHp });
+          playerShieldRef.current = core.playerBarrier;
+          if (chRef.current.classId === 'clerigo' && core.playerBarrier > panelBarrierAtCast) clerigoAddBarrierPortion(core.playerBarrier - panelBarrierAtCast);
+          syncShield();
+          playerModsRef.current = core.playerMods.map((mod) => ({ stat: mod.stat as StatModStat, pct: mod.pct, roundsLeft: mod.roundsLeft, sourceAbilityId: coreChosen.id }));
+          enemyModsRef.current = core.enemyMods.map((mod) => ({ stat: mod.stat as StatModStat, pct: mod.pct, roundsLeft: mod.roundsLeft, sourceAbilityId: coreChosen.id }));
+          const statusPower = Math.max(1, stats.matk || stats.atk);
+          playerStatusRef.current = core.playerStatuses.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, dmgPerTick: Math.max(1, Math.round(status.damagePct * statusPower)) }));
+          enemyStatusRef.current = core.enemyStatuses.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, dmgPerTick: Math.max(1, Math.round(status.damagePct * statusPower)) }));
+          playerCCRef.current = core.playerCC.map((cc) => ({ ...cc })); enemyCCRef.current = core.enemyCC.map((cc) => ({ ...cc }));
+          playerRegenRef.current = core.hots.map((hot) => ({ pct: hot.pct, roundsLeft: hot.roundsLeft, sourceAbilityId: coreChosen.id }));
+          if (coreChosen.effect.kind === 'armTrap' && !hunterTrapsRef.current.some((trap) => trap.sourceAbilityId === coreChosen.id)) hunterArmTrap(coreChosen);
+          syncPlayerMods(); syncEnemyMods(); syncPlayerStatuses(); syncEnemyStatuses(); syncPlayerCC(); syncEnemyCC();
+          if (chRef.current.classId === 'barbaro') { barbFuryRef.current = Number(raw.fury ?? core.classState.resources.fury ?? 0); barbFrenzyRef.current = Boolean(raw.frenzy); setBarbFuryState(barbFuryRef.current); setBarbFrenzyState(barbFrenzyRef.current); }
+          if (chRef.current.classId === 'clerigo') { clerigoFaithRef.current = Number(raw.faith ?? core.classState.resources.faith ?? 0); clerigoConsecrationRoundsLeftRef.current = Number(raw.consecration ?? 0); setClerigoFaithState(clerigoFaithRef.current); setClerigoConsecrationState(clerigoConsecrationRoundsLeftRef.current); }
+          if (chRef.current.classId === 'cavaleiro') { knightDeterminationRef.current = Number(raw.determination ?? 0); knightMomentumRef.current = Number(raw.momentum ?? 0); knightOrdersRef.current = Number(raw.orders ?? 0); setKnightDeterminationState(knightDeterminationRef.current); setKnightMomentumState(knightMomentumRef.current); setKnightOrdersState(knightOrdersRef.current); }
+          if (chRef.current.classId === 'mago') { mageHeatRef.current = Number(raw.heat ?? 0); mageThermalRef.current = String(raw.thermal ?? 'normal') as ThermalState; mageCircuitRef.current = Number(raw.mageCircuit ?? 0); mageSync(); }
+          if (chRef.current.classId === 'ladino') { rogueImagesRef.current = Number(raw.images ?? 0); rogueStealthRef.current = Boolean(raw.stealthed); rogueAdvantageRef.current = Boolean(raw.advantageReady); rogueSync(); }
+          if (chRef.current.classId === 'feiticeiro') { sorcererStateRef.current = { pulse: Number(raw.pulse ?? 0), resonance: Number(raw.resonance ?? 0), control: Number(raw.control ?? 0) }; sorcererEnemyRef.current = { ...core.sorcererEnemy }; sorcererSync(); }
+          if (chRef.current.classId === 'bruxo') { warlockStateRef.current = { ...core.warlockPlayer }; warlockEnemyRef.current = { ...core.warlockEnemy }; warlockSync(); }
+          if (chRef.current.classId === 'arqueiro') { archerStateRef.current = { ...core.archerState, arrows: [...core.archerState.arrows] }; archerSync(); }
+          if (chRef.current.classId === 'bardo') { bardStateRef.current = { ...core.bardState, notes: [...core.bardState.notes] }; bardSync(); }
+          if (chRef.current.classId === 'necromante') {
+            necroSoulsRef.current = Number(raw.souls ?? 0);
+            const attacks = Array.isArray(raw.servantAttacks) ? raw.servantAttacks.map(Number).slice(0, necroMaxSummons()) : [];
+            necroSummonsRef.current = necroSummonsRef.current.slice(0, attacks.length);
+            while (necroSummonsRef.current.length < attacks.length) necroSummonOne(coreChosen.id, attacks[necroSummonsRef.current.length]);
+            necroSummonsRef.current = necroSummonsRef.current.map((summon, index) => ({ ...summon, attacksRemaining: attacks[index] ?? summon.attacksRemaining }));
+            necroSync();
+          }
+          if (chRef.current.classId === 'druida') { druidCycleRef.current = { ...druidCycleRef.current, season: String(raw.season ?? druidCycleRef.current.season) as DruidSeason, attunement: Number(raw.attunement ?? druidCycleRef.current.attunement), form: raw.form ? String(raw.form) as DruidForm : null }; druidSync(); }
+          if (chRef.current.classId === 'paladino') {
+            const paladinCore = core.classState as Extract<typeof core.classState, { classId: 'paladino' }>;
+            paladinLiturgyRef.current = { ...paladinLiturgyRef.current, virtues: { ...paladinCore.virtues }, actionsLeft: paladinCore.liturgy, regent: (raw.verdictRegent as PaladinVirtue | null | undefined) ?? paladinLiturgyRef.current.regent };
+            paladinAegisRef.current = core.aegis ? { sourceAbilityId: coreChosen.id, reductionPct: core.aegis.reductionPct, maxHpCapPct: core.aegis.capPct, ticksLeft: core.aegis.roundsLeft, hitsRemaining: core.aegis.hits, maxHits: core.aegis.hits, secondHitEfficiency: 0.5 } : paladinAegisRef.current;
+            paladinSync();
+          }
+          if (chRef.current.classId === 'clerigo' && core.reviveWindow > 0) { clerigoReviveWindowRoundsLeftRef.current = core.reviveWindow; clerigoReviveHealRef.current = { healPct: Number(raw.reviveHealPct ?? 0.4), capPct: Number(raw.reviveHealCapPct ?? 0.25) }; }
+          if ((cooldownsRef.current[coreChosen.id] ?? 0) <= 0) cooldownsRef.current[coreChosen.id] = applyCd(coreChosen.cooldown, stats.cooldownReductionPct);
+          consumeCombatEvents(core.events, {
+            onLog: (line) => pushLog(line),
+            onFloat: (side, amount, wasCrit, miss, healEvent) => pushFloat(side, amount, !!wasCrit, undefined, !!miss, !!healEvent),
+            onAbilityCast: (side, name) => pushAbilityCast(side, name, side === 'player' ? activeAbilityIconStyle(chRef.current.classId, coreChosen.id) : null, null, false),
+            onFlash: (side) => flash(side),
+          });
+          if (enemyRef.current.hp <= 0) { resolveEnemyDeath(); return; }
+          schedulePlayer(nextPlayerDelay());
+          return;
+        }
           if (chosen && isSelfAbilityKind(chosen.effect.kind)) {
           if (!isPaladin()) {
             const archerCdr = archerActive && chosen.effect.archerPath
@@ -5071,11 +5160,8 @@ export function DungeonPanel({
               : 0;
             cooldownsRef.current[chosen.id] = applyCd(chosen.cooldown, stats.cooldownReductionPct + clerigoCdrBonusFor(chosen.id) + warriorCdrBonusFor(chosen.id) + archerCdr + warlockCdrBonusFor(chosen.id));
           }
-          const line = resolveAbilityEffect(
-            chosen.effect,
-            chRef.current.classId,
-            (effect, resolution) => applyPanelAbilityEffect({ ...chosen, effect } as AbilityDef, stats, paladinVerdictAtCast, resolution),
-          ).value;
+          const resolved = resolveAbilityEffect(chosen.effect, chRef.current.classId);
+          const line = applyPanelAbilityEffect({ ...chosen, effect: resolved.effect } as AbilityDef, stats, paladinVerdictAtCast, resolved.plan);
           if (line) pushLog(line);
         } else {
           const offenseAbility = chosen;
