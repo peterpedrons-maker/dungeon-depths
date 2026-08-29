@@ -11,7 +11,7 @@ import { addFractures, beginActiveCast, consumeFractures, consumeResonance, reso
 import { addNameFragment, addWarlockScar, applyWarlockDebt, bindWarlockEnemy, consumeScars, consumeTrueName, consumeTrueNameAndRefragment, createWarlockEnemyNameState, createWarlockPlayerState, grantWarlockCredit, projectWarlockCast, setWarlockDebt } from './warlock.ts';
 import { accelerateOldestArrow, advanceArcherReflex, advanceInFlightArrows, alignInFlightArrows, archerDistanceShift, consumeArcherReflex, consumeArcherSteps, consumePerfectRhythm, createArcherCombatState, gainArcherCadence, gainArcherSteps, gainArcherTension, loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows, flightSnapshotFromAbility, tensionForPreciseHit } from './archer.ts';
 import { FRENZY_DRAIN_PER_ACTION, FURY_GAIN_BASIC_HIT, FURY_GAIN_TAKE_DAMAGE, WOUND_DMG_PCT_PER_STACK, WOUND_MAX_STACKS, WOUND_TICK_DURATION } from './barbarian.ts';
-import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES } from './clerigo.ts';
+import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES, judgmentDurationForSkills, prioritizeClericTrialRotation, CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS } from './clerigo.ts';
 import { POSTURE_BASIC_DAMAGE, parryReduction, recoverablePosture, type PreparedGuardState } from './warrior.ts';
 import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT } from './knight.ts';
 import { invokePaladinVirtue, type PaladinVirtueSet } from './paladin.ts';
@@ -240,6 +240,7 @@ function setClassNumber(s: CombatState, key: string, value: number, cap = 100): 
 function addClassNumber(s: CombatState, key: string, delta: number, cap = 100): void { setClassNumber(s, key, stateResource(s, key) + delta, cap); }
 function modTotal(list: Array<{ stat: string; pct: number }>, stat: string): number { return list.filter((m) => m.stat === stat).reduce((sum, m) => sum + m.pct, 0); }
 function enemyPostureBand(s: CombatState): 'firm'|'unstable'|'open'|'broken' { const n = s.enemy.warrior?.current ?? 100; return n <= 0 ? 'broken' : n <= 33 ? 'open' : n <= 66 ? 'unstable' : 'firm'; }
+function judgmentDuration(s: CombatState): number { return judgmentDurationForSkills(s.character.unlockedSkills); }
 function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, forcedMultiplier?: number, hitIndex = 0): { damage: number; landed: boolean; crit: boolean } {
   const stats = playerStats(s); const x = e as (Record<string, any> | null); const magical = e ? abilityResolutionPlan(e, s.character.classId).damageType === 'magical' : MAGICAL_CLASSES.includes(s.character.classId);
   const accuracy = stats.accuracy + modTotal(s.playerMods, 'accuracy') + Number(x?.sorcererAccuracyBonusPct ?? 0); const evasion = Math.max(0, (s.enemy.evasion ?? 0) + modTotal(s.enemyMods, 'evasion'));
@@ -424,7 +425,7 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
       break;
     }
     case 'regen': s.hots.push({ pct: x.regenPct ?? 0.05, roundsLeft: x.regenRounds ?? 3 }); break;
-    case 'dispel': case 'cleanseOne': { const removed = s.playerStatuses.length + s.playerCC.length; s.playerStatuses = []; s.playerCC = []; if (removed && x.cleanseFaithGain) addClassNumber(s, 'faith', 1, 5); if (removed && x.cleanseJudgmentPer2) s.enemy.judgment = applyJudgmentState(s.enemy.judgment, Math.min(2, Math.floor(removed / 2)), JUDGMENT_BASE_DURATION_TICKS); break; }
+    case 'dispel': case 'cleanseOne': { const removed = s.playerStatuses.length + s.playerCC.length; s.playerStatuses = []; s.playerCC = []; if (removed && x.cleanseFaithGain) addClassNumber(s, 'faith', 1, 5); if (removed && x.cleanseJudgmentPer2) s.enemy.judgment = applyJudgmentState(s.enemy.judgment, Math.min(2, Math.floor(removed / 2)), judgmentDuration(s)); break; }
     case 'buffDef': case 'buffBlock': case 'immunity': case 'haste': case 'berserk': case 'taunt': case 'lifestealBuff': case 'atkBuff': case 'buffEvasion': case 'huntWithPrey': case 'consecrationGuard': case 'ironWall': case 'livingFortress': case 'orderResist': case 'kingsBanner': case 'counterStance': case 'painGuard': case 'wallStance': case 'lastStand': case 'bloodFeast': case 'reviveWindow': case 'deathVeil': { const stat = e.kind === 'buffEvasion' ? 'evasion' : e.kind === 'buffBlock' ? 'block' : e.kind === 'buffDef' ? 'def' : e.kind === 'atkBuff' || e.kind === 'berserk' ? 'atk' : e.kind === 'taunt' || e.kind === 'painGuard' || e.kind === 'wallStance' || e.kind === 'lastStand' || e.kind === 'consecrationGuard' || e.kind === 'ironWall' || e.kind === 'livingFortress' || e.kind === 'orderResist' ? 'dmgTakenPct' : ''; const vit = totalAttributes(s.character).vit; const mitigation = e.kind === 'ironWall' || e.kind === 'livingFortress' ? -(Number(x.dmgReductionPctBase ?? 0.2) + Math.min(Number(x.dmgReductionPctCap ?? 1), vit * Number(x.dmgReductionPctPerVit ?? 0))) : e.kind === 'orderResist' ? -Number(x.bonusDmgTakenReductionPct ?? 0.1) : e.kind === 'buffDef' ? Number(x.defBuffPctBase ?? x.buffPct ?? 0.1) : (x.buffPct ?? (stat === 'dmgTakenPct' ? -0.1 : 0.1)); if (e.kind === 'orderResist' && (x.shieldPct || x.shieldPctBase || x.barrierBasePct)) barrier(s, effectiveMaxHp(s.character) * (Number(x.shieldPct ?? x.shieldPctBase ?? x.barrierBasePct ?? 0.1) + Math.min(Number(x.shieldPctCap ?? 0), vit * Number(x.shieldPctPerVit ?? 0))) * (x.scalesWithBarrierPower ? 1 + playerStats(s).barrierPowerPct : 1)); if (stat) s.playerMods.push({ stat, pct: mitigation, roundsLeft: x.buffRounds ?? x.postureRounds ?? 3 }); if (e.kind === 'huntWithPrey') { s.playerMods.push({ stat: 'speedPct', pct: x.speedBuffPct ?? 0, roundsLeft: x.buffRounds ?? 3 }); s.playerMods.push({ stat: 'evasion', pct: x.evasionBuffPct ?? 0, roundsLeft: x.buffRounds ?? 3 }); } if (e.kind === 'berserk' && x.berserkDefPct) s.playerMods.push({ stat: 'def', pct: -Math.abs(x.berserkDefPct), roundsLeft: x.berserkRounds ?? 3 }); if (e.kind === 'kingsBanner') { s.playerMods.push({ stat: 'atk', pct: x.atkBuffPctBase ?? 0.1, roundsLeft: x.buffRounds ?? 4 }); s.playerMods.push({ stat: 'def', pct: x.defBuffPctBase ?? 0.12, roundsLeft: x.buffRounds ?? 4 }); s.playerMods.push({ stat: 'tenacity', pct: x.tenacityBuffPctBase ?? 0.1, roundsLeft: x.buffRounds ?? 4 }); } if (e.kind === 'wallStance') classRecord(s).wallStance = true; if (e.kind === 'counterStance') { classRecord(s).counterStanceActive = true; classRecord(s).counterStanceRounds = x.postureRounds ?? 2; classRecord(s).counterCapPctBase = x.counterCapPctBase; classRecord(s).counterCapPctPerVit = x.counterCapPctPerVit; classRecord(s).counterCapPctCap = x.counterCapPctCap; classRecord(s).counterStoragePct = x.counterStoragePct; } if (e.kind === 'kingsBanner') classRecord(s).kingsBannerActive = true; if (e.kind === 'painGuard') { classRecord(s).painRedirectPct = x.painRedirectPct ?? 0.3; classRecord(s).painGuardRounds = x.buffRounds ?? 3; } if (e.kind === 'reviveWindow') { s.reviveWindow = x.reviveWindowRounds ?? 3; classRecord(s).reviveHealPct = x.reviveHealPct ?? 0.4; classRecord(s).reviveHealCapPct = x.reviveHealCapPct ?? 1; } if (e.kind === 'deathVeil') s.deathVeil = x.buffRounds ?? 3; if (e.kind === 'immunity') classRecord(s).immunityRounds = x.immunityRounds ?? 3; if (e.kind === 'haste') classRecord(s).hasteRounds = x.hasteRounds ?? 2; break; }
     case 'rogueStealth': classRecord(s).stealthed = true; break;
     case 'rogueToxicBlade': classRecord(s).toxicBlade = true; break;
@@ -455,6 +456,7 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
   if (e.kind === 'bloodFeast') s.playerMods.push({ stat: 'lifestealPct', pct: Number(x.buffPct ?? 0.15), roundsLeft: Number(x.buffRounds ?? 3) });
   if (e.kind === 'lastStand') s.playerMods = s.playerMods.filter((mod) => mod.stat !== 'dmgTakenPct' || mod.pct >= 0);
   if (landed > 0) {
+    const judgmentBeforeResolution = s.enemy.judgment?.stacks ?? 0;
     if (s.classState.classId === 'guerreiro' && s.enemy.warrior && (x.postureDamage || x.postureDamagePerHit || x.postureDamageFirm || x.postureDamageByBand)) { const band = enemyPostureBand(s); const posture = Number(x.postureDamageByBand?.[band] ?? (band === 'firm' ? (x.postureDamageFirm ?? x.postureDamage ?? x.postureDamagePerHit ?? 0) : (x.postureDamage ?? x.postureDamagePerHit ?? 0))); s.enemy.warrior.current = Math.max(0, s.enemy.warrior.current - posture * landed); s.enemy.warrior.pressureRecoveryPending = true; if (x.suppressPostureRecoveryActions) s.enemy.warrior.suppressedActionsLeft = Math.max(s.enemy.warrior.suppressedActionsLeft, x.suppressPostureRecoveryActions); if (x.zeroNextPostureRecoveryIfAllHits && landed === hits) s.enemy.warrior.zeroRecoveryPending = true; if (s.enemy.warrior.current <= 0) s.enemy.warrior.guardBroken = true; }
     if (s.classState.classId === 'guerreiro' && s.enemy.warrior) {
       if (x.vanguardAbility && !s.enemy.warrior.vanguardFirstHitUsed) { s.enemy.warrior.current = Math.max(0, s.enemy.warrior.current - 6); s.enemy.warrior.vanguardFirstHitUsed = true; }
@@ -471,6 +473,18 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
     if (s.classState.classId === 'mago' && x.shatter) classRecord(s).thermal = thermalAfterShatter(String(classRecord(s).thermal ?? 'normal') as 'normal' | 'chilled' | 'fragile' | 'frozen', false);
     if (s.classState.classId === 'clerigo' && x.consecrationRoundsOnCast) classRecord(s).consecration = x.consecrationRoundsOnCast;
     if (x.furyGainOnHit) addClassNumber(s, 'fury', x.furyGainOnHit, 100); if (crits && x.furyGainOnCrit) addClassNumber(s, 'fury', x.furyGainOnCrit * crits, 100); if (x.woundStacksOnHit) applyWounds(s, x.woundStacksOnHit); if (crits && s.classState.classId === 'barbaro' && s.character.unlockedSkills.includes('barbaro:selvageria:6')) applyWounds(s, 1); if (x.renewWoundsOnHit && s.enemy.barbarianWounds) applyWounds(s, 0, true); if (x.consumeWoundsOnHit) s.enemy.barbarianWounds = undefined; if (x.breachGainOnHit || x.breachConsumeOnHit) applyBreaches(s, x.breachGainOnHit ?? 0, x.breachConsumeOnHit ?? 0); if (x.judgmentStacksOnHit) { const beforeJudgment = s.enemy.judgment?.stacks ?? 0; s.enemy.judgment = applyJudgmentState(s.enemy.judgment, x.judgmentStacksOnHit, JUDGMENT_BASE_DURATION_TICKS); if (s.classState.classId === 'clerigo') for (const milestone of JUDGMENT_FAITH_MILESTONES) if (beforeJudgment < milestone && (s.enemy.judgment?.stacks ?? 0) >= milestone) addClassNumber(s, 'faith', 1, 5); } if (x.judgmentReadOnly) classRecord(s).judgmentReadOnly = true; if (x.judgmentConsumeMax && !x.judgmentReadOnly) s.enemy.judgment = consumeJudgmentState(s.enemy.judgment, x.judgmentConsumeMax); if (x.judgmentDurationCutOnHit && s.enemy.judgment) s.enemy.judgment.ticksLeft = Math.max(1, s.enemy.judgment.ticksLeft - x.judgmentDurationCutOnHit); if (x.extendConsecrationOnHit && Number(classRecord(s).consecration ?? 0) > 0) classRecord(s).consecration = Number(classRecord(s).consecration) + x.extendConsecrationOnHit; if (x.decompositionOnHit) classRecord(s).decomposition = Math.min(5, Number(classRecord(s).decomposition ?? 0) + x.decompositionOnHit); if (x.decompositionConsumeMax) { const consumed = Math.min(Number(classRecord(s).decomposition ?? 0), x.decompositionConsumeMax); classRecord(s).decomposition = Number(classRecord(s).decomposition ?? 0) - consumed; if (x.soulGainOnConsumeExact && consumed === x.decompositionConsumeMax) addClassNumber(s, 'souls', x.soulGainOnConsumeExact, 10); } if (x.plagueApply) { classRecord(s).plague = x.plagueDuration ?? 4; classRecord(s).plagueMultiplier = x.plagueMultiplier ?? 0.16; } if (x.plagueDetonatePct && Number(classRecord(s).plague ?? 0) > 0) { const detonation = Math.min(s.enemy.maxHp * (x.plagueDetonatePct ?? 0), playerStats(s).matk * (x.plagueDetonateCapMult ?? 1)); const beforePlagueDamage = s.enemyHp; s.enemyHp = Math.max(0, s.enemyHp - detonation); recordEnemyHpDamage(s, beforePlagueDamage); classRecord(s).plague = 0; event(s, { type: 'damage', tick: s.envTick, actor: 'player', amount: detonation, damageType: 'magical' }); } if (x.sorcererFractureGain) s.sorcererEnemy = addFractures(s.sorcererEnemy, x.sorcererFractureGain); if (x.sorcererResonanceGain) addClassNumber(s, 'resonance', x.sorcererResonanceGain, 2); if (x.sorcererControlGain) addClassNumber(s, 'control', x.sorcererControlGain, 2); if (x.warlockBindOnHit) s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockGrantCredits) s.warlockPlayer = grantWarlockCredit(s.warlockPlayer, x.warlockGrantCredits); if (x.directHealFromDamagePct) healed += heal(s, Math.min(effectiveMaxHp(s.character) * (x.directHealCapPct ?? 0.06), damage * x.directHealFromDamagePct)); if (x.healFromDamagePct || x.lowHpHealFromDamagePct) { const lowHpThreshold = Number(x.lowHpHealThreshold ?? 0); const normalHealPct = Number(x.healFromDamagePct ?? 0); const lowHpHealPct = Number(x.lowHpHealFromDamagePct ?? normalHealPct); const selectedHealPct = s.playerHp / effectiveMaxHp(s.character) <= lowHpThreshold ? lowHpHealPct : normalHealPct; healed += heal(s, Math.min(effectiveMaxHp(s.character) * Number(x.healFromDamageCapPct ?? 1), damage * selectedHealPct)); } if (x.healPct) healed += heal(s, effectiveMaxHp(s.character) * x.healPct); if (x.regenPct) s.hots.push({ pct: x.regenPct, roundsLeft: x.regenRounds ?? 3 }); if (x.shieldFromDamagePct) { const barrierScale = x.scalesWithBarrierPower ? 1 + playerStats(s).barrierPowerPct : 1; barrier(s, Math.min(effectiveMaxHp(s.character) * (x.shieldFromDamageCapPct ?? 1), damage * x.shieldFromDamagePct * barrierScale)); }
+    if (s.classState.classId === 'clerigo' && x.judgmentStacksOnHit && s.enemy.judgment) {
+      s.enemy.judgment.ticksLeft = judgmentDuration(s);
+    }
+    const judgmentConsumed = Math.max(0, judgmentBeforeResolution - (s.enemy.judgment?.stacks ?? 0));
+    if (s.classState.classId === 'clerigo'
+      && judgmentConsumed === 5
+      && s.character.unlockedSkills.includes('clerigo:provacao:14')
+      && Number(classRecord(s).juizoFinalRounds ?? 0) <= 0) {
+      addClassNumber(s, 'faith', 1, 5);
+      s.playerMods.push({ stat: 'matk', pct: JUIZO_FINAL_MATK_BUFF_PCT, roundsLeft: JUIZO_FINAL_MATK_BUFF_ROUNDS });
+      classRecord(s).juizoFinalRounds = JUIZO_FINAL_MATK_BUFF_ROUNDS;
+    }
     if (x.heatGain) addClassNumber(s, 'heat', x.heatGain, 100);
     if (x.amplifiedHeatGain && (classRecord(s).awakenedCast || classRecord(s).mageAmplified)) addClassNumber(s, 'heat', x.amplifiedHeatGain, 100);
     if (s.classState.classId === 'feiticeiro') {
@@ -597,7 +611,24 @@ function actionUseful(s: CombatState, ability: AbilityDef): boolean {
   if (ability.effect.kind === 'preparedGuard') return !s.preparedGuard;
   return true;
 }
-function selected(s: CombatState): AbilityDef | undefined { const c = ctx(s); return s.priorities.map((id) => abilities(s).find((a) => a.id === id)).find((a) => a && actionUseful(s, a) && (s.cooldowns[a.id] ?? 0) <= 0 && payCheck(s, a.effect) && evalAbilityCondition(a.condition, c)); }
+function selected(s: CombatState): AbilityDef | undefined {
+  const c = ctx(s);
+  const equipped = abilities(s);
+  const eligible = s.priorities
+    .map((id) => equipped.find((ability) => ability.id === id))
+    .filter((ability): ability is AbilityDef => !!ability
+      && actionUseful(s, ability)
+      && (s.cooldowns[ability.id] ?? 0) <= 0
+      && payCheck(s, ability.effect)
+      && evalAbilityCondition(ability.condition, c));
+  if (s.classState.classId !== 'clerigo') return eligible[0];
+  return prioritizeClericTrialRotation(eligible, {
+    apocalypseEquipped: equipped.some((ability) => ability.id === CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID),
+    apocalypseCooldown: s.cooldowns[CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID] ?? 0,
+    judgmentStacks: s.enemy.judgment?.stacks ?? 0,
+    faith: stateResource(s, 'faith'),
+  })[0];
+}
 function payCheck(s: CombatState, e: AbilityEffect): boolean { return pay(s, e); }
 function conditionResources(condition: AbilityDef['condition'], out = new Set<string>()): Set<string> {
   if (condition.type === 'resourceAtLeast' || condition.type === 'resourceAtMost' || condition.type === 'resourceBelow') if (condition.resource) out.add(condition.resource);
@@ -719,7 +750,33 @@ function advanceArcherFlights(s: CombatState, existingIds: number[]): void {
   }
   if (s.enemyHp <= 0) finishEnemy(s);
 }
-export function resolvePlayerAction(s: CombatState): CombatState { if (s.dead || s.won || s.enemyHp <= 0) return s; s.actions += 1; const incapacitated = s.playerCC.some((x) => x.kind === 'stun' || x.kind === 'sleep'); if (incapacitated) return s; const archerDistanceAtActionStart = s.archerState.distance; let a = selected(s); if (!a) { const r = attack(s, null); if (r.landed && s.classState.classId === 'guerreiro' && s.enemy.warrior && !s.enemy.warrior.guardBroken) { s.enemy.warrior.current = Math.max(0, s.enemy.warrior.current - POSTURE_BASIC_DAMAGE); s.enemy.warrior.pressureRecoveryPending = true; if (s.enemy.warrior.current <= 0) s.enemy.warrior.guardBroken = true; } if (r.landed && s.classState.classId === 'barbaro') addClassNumber(s, 'fury', FURY_GAIN_BASIC_HIT, 100); if (r.landed && s.classState.classId === 'feiticeiro') addClassNumber(s, 'pulse', 2, 6); if (r.landed && s.classState.classId === 'cavaleiro') { addClassNumber(s, 'momentum', 10, 100); addClassNumber(s, 'determination', 3, 100); } if (s.classState.classId === 'arqueiro') s.archerState = r.landed ? gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)) : loseArcherTension(s.archerState, 8); if (s.enemyHp <= 0) finishEnemy(s); return s; }
+export function resolvePlayerAction(s: CombatState): CombatState {
+  if (s.dead || s.won || s.enemyHp <= 0) return s;
+  s.actions += 1;
+  const incapacitated = s.playerCC.some((x) => x.kind === 'stun' || x.kind === 'sleep');
+  if (incapacitated) return s;
+  const archerDistanceAtActionStart = s.archerState.distance;
+  let a = selected(s);
+  if (!a) {
+    const r = attack(s, null);
+    if (r.landed && s.classState.classId === 'guerreiro' && s.enemy.warrior && !s.enemy.warrior.guardBroken) {
+      s.enemy.warrior.current = Math.max(0, s.enemy.warrior.current - POSTURE_BASIC_DAMAGE);
+      if (s.enemy.warrior.current <= 0) s.enemy.warrior.guardBroken = true;
+    }
+    if (r.landed && s.classState.classId === 'barbaro') addClassNumber(s, 'fury', FURY_GAIN_BASIC_HIT, 100);
+    if (r.landed && s.classState.classId === 'feiticeiro') addClassNumber(s, 'pulse', 2, 6);
+    if (r.landed && s.classState.classId === 'cavaleiro') {
+      addClassNumber(s, 'momentum', 10, 100);
+      addClassNumber(s, 'determination', 3, 100);
+    }
+    if (s.classState.classId === 'arqueiro') {
+      s.archerState = r.landed
+        ? gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart))
+        : loseArcherTension(s.archerState, 8);
+    }
+    if (s.enemyHp <= 0) finishEnemy(s);
+    return s;
+  }
   const fieldTrace = new Set<string>();
   const emittedFields = new Set<string>();
   const markFieldApplied = (field: string) => {
@@ -971,7 +1028,7 @@ export function resolveEnvironmentTick(s: CombatState): CombatState {
   if (s.enemy.judgment) s.enemy.judgment = tickJudgmentState(s.enemy.judgment);
   if (s.enemy.hunterBreaches) { s.enemy.hunterBreaches.ticksLeft -= 1; if (s.enemy.hunterBreaches.ticksLeft <= 0) s.enemy.hunterBreaches = undefined; }
   if (s.classState.classId === 'barbaro' && classRecord(s).frenzy) { addClassNumber(s, 'fury', -FRENZY_DRAIN_PER_ACTION, 100); if (stateResource(s, 'fury') <= 0) classRecord(s).frenzy = false; }
-  for (const key of ['immunityRounds','hasteRounds','painGuardRounds','lastGuardRounds','counterStanceRounds']) if (Number(classRecord(s)[key] ?? 0) > 0) classRecord(s)[key] = Number(classRecord(s)[key]) - 1;
+  for (const key of ['immunityRounds','hasteRounds','painGuardRounds','lastGuardRounds','counterStanceRounds','juizoFinalRounds']) if (Number(classRecord(s)[key] ?? 0) > 0) classRecord(s)[key] = Number(classRecord(s)[key]) - 1;
   if (Number(classRecord(s).painGuardRounds ?? 0) <= 0) classRecord(s).painRedirectPct = 0;
   if (Number(classRecord(s).counterStanceRounds ?? 0) <= 0) classRecord(s).counterStanceActive = false;
   if (s.deathVeil > 0) s.deathVeil -= 1;
