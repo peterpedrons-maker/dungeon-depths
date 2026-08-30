@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addNameFragment, addWarlockScar, applyWarlockDebt, borrowedPowerPct, clampWarlockDebt, collectionAmount, consumeTrueNameAndRefragment, createWarlockEnemyNameState, createWarlockPlayerState, projectWarlockCast, resolveCollection } from './warlock.ts';
-import { createCombatState, naturalAbilityPriorities, resolveEnvironmentTick, resolvePlayerAction } from './combatEngine.ts';
+import { createCombatState, naturalAbilityPriorities, resolveEnemyAction, resolveEnvironmentTick, resolvePlayerAction } from './combatEngine.ts';
 import { createCharacter } from './classes.ts';
 import { DUNGEONS } from './dungeons.ts';
 import { spawnEnemy } from './enemies.ts';
@@ -109,7 +109,7 @@ test('Fragmentos de Nome Verdadeiro são gerados a partir de ações reais do in
 
   // Agora testa que ações reais do inimigo geram fragmentos quando vinculado
   const fragmentsBeforeEnemyAction = state.warlockEnemy.nameFragments;
-  resolveEnvironmentTick(state); // Uma ação ambiente do inimigo
+  resolveEnemyAction(state); // Uma ação real do inimigo
   const fragmentsAfterEnemyAction = state.warlockEnemy.nameFragments;
 
   // Cada ação real do inimigo deve gerar 1 fragmento (até o teto de 3)
