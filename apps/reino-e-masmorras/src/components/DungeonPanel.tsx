@@ -4037,15 +4037,8 @@ export function DungeonPanel({
         }
         // Arrow lands: roll damage with its snapshot stats
         const result = rollAbilityHit(arrow.atk, enemyRef.current.def * (1 - Math.max(0, Math.min(0.9, arrow.defPenPct))), arrow.dmgMult, arrow.critChance, arrow.critDmgMult);
-        let dmg = result.dmg;
-        if (enemyShieldRef.current > 0) {
-          const absorbed = Math.min(enemyShieldRef.current, dmg);
-          enemyShieldRef.current -= absorbed;
-          dmg -= absorbed;
-        }
-        const beforeHp = enemyRef.current.hp;
-        enemyRef.current.hp = Math.max(0, enemyRef.current.hp - dmg);
-        pushFloat('enemy', dmg, result.crit);
+        enemyRef.current.hp = Math.max(0, enemyRef.current.hp - result.dmg);
+        pushFloat('enemy', result.dmg, result.crit);
       }
     }
 
