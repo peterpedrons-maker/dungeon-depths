@@ -110,10 +110,10 @@ export function runDungeonCoverage(seeds = 1, gearProfile: GearProfile = 'bem-eq
 
 export interface RebalanceDurationTarget { label: string; dungeonIndex: number; profile: GearProfile; regular: [number, number]; elite: [number, number]; boss: [number, number]; }
 export const REBALANCE_DURATION_TARGETS: RebalanceDurationTarget[] = [
-  { label: 'D1-D6', dungeonIndex: 5, profile: 'farmado', regular: [3, 5], elite: [5, 8], boss: [8, 14] },
-  { label: 'D7-D18', dungeonIndex: 17, profile: 'bem-equipado', regular: [4, 6], elite: [6, 10], boss: [12, 18] },
-  { label: 'D19-D30', dungeonIndex: 23, profile: 'bem-equipado', regular: [4, 7], elite: [7, 11], boss: [14, 22] },
-  { label: 'D31-D33', dungeonIndex: 30, profile: 'endgame-realista', regular: [5, 8], elite: [8, 13], boss: [16, 26] },
+  { label: 'D1-D6', dungeonIndex: 5, profile: 'farmado', regular: [5, 8], elite: [9, 14], boss: [19, 25] },
+  { label: 'D7-D18', dungeonIndex: 17, profile: 'bem-equipado', regular: [8, 11], elite: [11, 15], boss: [32, 40] },
+  { label: 'D19-D30', dungeonIndex: 23, profile: 'bem-equipado', regular: [10, 14], elite: [16, 21], boss: [45, 55] },
+  { label: 'D31-D33', dungeonIndex: 30, profile: 'endgame-realista', regular: [11, 15], elite: [16, 22], boss: [40, 50] },
 ];
 
 export interface RebalanceDurationMeasurement {
@@ -133,19 +133,19 @@ export interface RebalanceMeasurement { durations: RebalanceDurationMeasurement[
  * they are intended to be harder than the adjacent mainline.
  */
 export const REBALANCE_WIN_RATE_TARGETS: RebalanceWinRateTarget[] = [
-  { label: 'D1-D6 especial / Farmado', dungeonIndex: 5, profile: 'farmado', target: [0.05, 0.25] },
-  { label: 'D1-D6 especial / Bem Equipado', dungeonIndex: 5, profile: 'bem-equipado', target: [0.65, 0.90] },
-  { label: 'D7-D12 especial / Farmado', dungeonIndex: 11, profile: 'farmado', target: [0.30, 0.65] },
-  { label: 'D7-D12 especial / Bem Equipado', dungeonIndex: 11, profile: 'bem-equipado', target: [0.75, 0.95] },
-  { label: 'D13-D18 / Farmado', dungeonIndex: 17, profile: 'farmado', target: [0.05, 0.25] },
-  { label: 'D13-D18 / Bem Equipado', dungeonIndex: 17, profile: 'bem-equipado', target: [0.50, 0.78] },
-  { label: 'D19-D24 / Farmado', dungeonIndex: 23, profile: 'farmado', target: [0.01, 0.15] },
-  { label: 'D19-D24 / Bem Equipado', dungeonIndex: 23, profile: 'bem-equipado', target: [0.22, 0.50] },
+  { label: 'D1-D6 especial / Farmado', dungeonIndex: 5, profile: 'farmado', target: [0.00, 0.15] },
+  { label: 'D1-D6 especial / Bem Equipado', dungeonIndex: 5, profile: 'bem-equipado', target: [0.10, 0.30] },
+  { label: 'D7-D12 especial / Farmado', dungeonIndex: 11, profile: 'farmado', target: [0.05, 0.25] },
+  { label: 'D7-D12 especial / Bem Equipado', dungeonIndex: 11, profile: 'bem-equipado', target: [0.45, 0.70] },
+  { label: 'D13-D18 / Farmado', dungeonIndex: 17, profile: 'farmado', target: [0.01, 0.15] },
+  { label: 'D13-D18 / Bem Equipado', dungeonIndex: 17, profile: 'bem-equipado', target: [0.08, 0.30] },
+  { label: 'D19-D24 / Farmado', dungeonIndex: 23, profile: 'farmado', target: [0.00, 0.10] },
+  { label: 'D19-D24 / Bem Equipado', dungeonIndex: 23, profile: 'bem-equipado', target: [0.04, 0.15] },
   { label: 'D25-D30 / Bem Equipado', dungeonIndex: 29, profile: 'bem-equipado', target: [0.01, 0.15] },
-  { label: 'D25-D30 / Endgame', dungeonIndex: 29, profile: 'endgame-realista', target: [0.45, 0.72] },
+  { label: 'D25-D30 / Endgame', dungeonIndex: 29, profile: 'endgame-realista', target: [0.08, 0.20] },
   { label: 'D31-D32 / Bem Equipado', dungeonIndex: 31, profile: 'bem-equipado', target: [0.01, 0.15] },
-  { label: 'D31-D32 / Endgame', dungeonIndex: 31, profile: 'endgame-realista', target: [0.50, 0.78] },
-  { label: 'D33 opcional / Endgame', dungeonIndex: 32, profile: 'endgame-realista', target: [0.25, 0.50] },
+  { label: 'D31-D32 / Endgame', dungeonIndex: 31, profile: 'endgame-realista', target: [0.08, 0.20] },
+  { label: 'D33 opcional / Endgame', dungeonIndex: 32, profile: 'endgame-realista', target: [0.03, 0.12] },
 ];
 
 function median(values: number[]): number {
