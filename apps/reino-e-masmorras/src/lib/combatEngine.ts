@@ -909,7 +909,7 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     const pulse = resolvePulseGain({ pulse: pulseBefore, resonance: stateResource(s, 'resonance'), control: stateResource(s, 'control') }, result.landed > 0, result.crits > 0);
     addClassNumber(s, 'pulse', pulse.state.pulse - pulseBefore, 6);
   }
-  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao' && !x.warlockConsumeTrueName) s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (result.landed && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter); if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
+  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao' && !x.warlockConsumeTrueName) s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
 // Liturgia é uma janela de QUATRO AÇÕES REAIS DO PALADINO — "cada ação real
 // seguinte reduz uma" (classMechanics.ts). Uma ação que invoca uma Virtude
 // (ou consome um Veredito) já resolve seu próprio efeito em actionsLeft
@@ -948,6 +948,12 @@ export function resolveEnemyAction(s: CombatState): CombatState {
   // real (chamado tanto no acerto quanto no erro do inimigo).
   if (s.classState.classId === 'cacador' && s.character.unlockedSkills.some((id) => id.startsWith('cacador:rastreio:'))) {
     s.enemy.hunterTrail = Math.min(5, (s.enemy.hunterTrail ?? 0) + 1);
+  }
+  // Fragmentos de Nome Verdadeiro são gerados quando o INIMIGO Vinculado
+  // completa uma ação real (acerto OU erro), representando a oportunidade de
+  // desvendar mais sobre seu nome autêntico através da interação.
+  if (s.classState.classId === 'bruxo' && s.warlockEnemy.bound && s.character.unlockedSkills.some((id) => id.startsWith('bruxo:maldicao:'))) {
+    s.warlockEnemy = addNameFragment(s.warlockEnemy, 1);
   }
   if (s.classState.classId === 'barbaro' && Number(classRecord(s).wildPostureRounds ?? 0) > 0) {
     classRecord(s).wildPostureRounds = Number(classRecord(s).wildPostureRounds) - 1;

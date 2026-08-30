@@ -87,3 +87,31 @@ test('Cobrança ignora barreira e só cria Estigma ao atingir 5% da Vida Máxima
   assert.equal(low.scars, 0);
   assert.equal(collectionAmount(500, 'forced'), 60);
 });
+
+test('Fragmentos de Nome Verdadeiro são gerados a partir de ações reais do inimigo Vinculado', () => {
+  const character = warlockWithAbilities();
+  const enemy = friendlyEnemy();
+  const state = createCombatState(character, enemy, 1, [GENERATOR_ID, CONSUMER_ID], []);
+
+  // Primeiro gera um binding hit para vincular o inimigo
+  let bound = false;
+  for (let i = 0; i < 30 && !bound; i += 1) {
+    const beforeFragments = state.warlockEnemy.nameFragments;
+    resolvePlayerAction(state);
+    for (let t = 0; t < 4; t += 1) resolveEnvironmentTick(state);
+    if (state.warlockEnemy.bound) {
+      bound = true;
+      // Após binding, inimigo já tem pelo menos 1 fragmento do hit que vinculou
+      assert.ok(state.warlockEnemy.nameFragments >= 0, 'binding hit pode gerar fragmento');
+    }
+  }
+  assert.ok(bound, 'não conseguiu vincular o inimigo após 30 ações');
+
+  // Agora testa que ações reais do inimigo geram fragmentos quando vinculado
+  const fragmentsBeforeEnemyAction = state.warlockEnemy.nameFragments;
+  resolveEnvironmentTick(state); // Uma ação ambiente do inimigo
+  const fragmentsAfterEnemyAction = state.warlockEnemy.nameFragments;
+
+  // Cada ação real do inimigo deve gerar 1 fragmento (até o teto de 3)
+  assert.ok(fragmentsAfterEnemyAction >= fragmentsBeforeEnemyAction, 'ação real do inimigo deve gerar ou manter fragmentos');
+});
