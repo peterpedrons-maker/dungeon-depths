@@ -18,7 +18,7 @@ import { ThermalState, advanceThermal, thermalAfterFrozenEnds } from '../lib/mag
 import { DECOMPOSITION_DURATION, DECOMPOSITION_MAX, DECOMPOSITION_STACK_ID, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_BASE_MULT, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
 import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
 import { PaladinAegis, PaladinLiturgyState, PaladinVirtue, createPaladinLiturgyState, paladinAegisReduction, paladinConviction } from '../lib/paladin';
-import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow } from '../lib/archer';
+import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow, advanceInFlightArrows } from '../lib/archer';
 import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, pickDruidSeasonalAbility, addGardenSeeds, type DruidSeason, type DruidForm } from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, addNameFragment, consumeMandamento, collectionAmount } from '../lib/warlock';
 import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState } from '../lib/sorcerer';
@@ -4018,6 +4018,37 @@ export function DungeonPanel({
     warriorOnEnemyRealAction();
     warlockOnEnemyRealAction();
     bardOnEnemyAction(1, 1);
+
+    // Flechas em Voo avançam após ações reais. Ao chegar a actionsRemaining = 0,
+    // uma flecha pousa e causa dano usando seu snapshot de ataque/precisão/etc.
+    if (chRef.current.classId === 'arqueiro' && archerStateRef.current.arrows.length > 0) {
+      const existingFlightIds = archerStateRef.current.arrows.map((arrow) => arrow.id);
+      const advanced = advanceInFlightArrows(archerStateRef.current, existingFlightIds);
+      archerStateRef.current = advanced.state;
+      for (const arrow of advanced.landed) {
+        if (enemyRef.current.hp <= 0) break;
+        // Check hit/miss: evasion vs accuracy+precision bonus
+        const enemyEvasion = enemyRef.current.evasion ?? 0;
+        const missChance = Math.max(0, Math.min(0.75, enemyEvasion - arrow.accuracy));
+        const missed = Math.random() < missChance;
+        if (missed) {
+          pushFloat('player', 0, false, true);
+          continue;
+        }
+        // Arrow lands: roll damage with its snapshot stats
+        const result = rollAbilityHit(arrow.atk, enemyRef.current.def * (1 - Math.max(0, Math.min(0.9, arrow.defPenPct))), arrow.dmgMult, arrow.critChance, arrow.critDmgMult);
+        let dmg = result.dmg;
+        if (enemyShieldRef.current > 0) {
+          const absorbed = Math.min(enemyShieldRef.current, dmg);
+          enemyShieldRef.current -= absorbed;
+          dmg -= absorbed;
+        }
+        const beforeHp = enemyRef.current.hp;
+        enemyRef.current.hp = Math.max(0, enemyRef.current.hp - dmg);
+        pushFloat('enemy', dmg, result.crit);
+      }
+    }
+
     scheduleEnemy();
   }
 
