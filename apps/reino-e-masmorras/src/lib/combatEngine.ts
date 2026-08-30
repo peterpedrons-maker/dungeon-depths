@@ -849,7 +849,7 @@ export function resolvePlayerAction(s: CombatState): CombatState {
       classRecord(s).mageInverterPending = false;
     }
   }
-  if (s.classState.classId === 'bruxo') { const projection = projectWarlockCast({ debt: s.warlockPlayer.debt, debtGain: x.warlockDebtGain, credit: s.warlockPlayer.credit, forgeryReady: s.warlockPlayer.forgeryReady, maxHp: effectiveMaxHp(s.character), currentHp: s.playerHp, selfHpCostPct: x.warlockSelfHpCostPct, collectionPct: x.warlockForcedCollectionPct ?? x.warlockEarlyCollectionPct }); if (!projection.safeToCast) return s; s.warlockPlayer = applyWarlockDebt(s.warlockPlayer, projection); if (projection.selfHpCost + projection.collectionHpCost) { s.playerHp = Math.max(1, s.playerHp - projection.selfHpCost - projection.collectionHpCost); s.warlockPlayer = addWarlockScar(s.warlockPlayer, projection.collectionHpCost, effectiveMaxHp(s.character)); } if (x.warlockConsumeTrueName) { s.warlockPlayer = consumeTrueName(s.warlockPlayer); s.warlockEnemy = consumeTrueNameAndRefragment(s.warlockEnemy, false); } }
+  if (s.classState.classId === 'bruxo') { const projection = projectWarlockCast({ debt: s.warlockPlayer.debt, debtGain: x.warlockDebtGain, credit: s.warlockPlayer.credit, forgeryReady: s.warlockPlayer.forgeryReady, maxHp: effectiveMaxHp(s.character), currentHp: s.playerHp, selfHpCostPct: x.warlockSelfHpCostPct, collectionPct: x.warlockForcedCollectionPct ?? x.warlockEarlyCollectionPct }); if (!projection.safeToCast) return s; s.warlockPlayer = applyWarlockDebt(s.warlockPlayer, projection); if (projection.selfHpCost + projection.collectionHpCost) { s.playerHp = Math.max(1, s.playerHp - projection.selfHpCost - projection.collectionHpCost); s.warlockPlayer = addWarlockScar(s.warlockPlayer, projection.collectionHpCost, effectiveMaxHp(s.character)); } if (x.warlockConsumeTrueName) { s.warlockPlayer = consumeTrueName(s.warlockPlayer); classRecord(s).warlockConsumeTrueNameThisCast = true; } }
   if (s.classState.classId === 'paladino') {
     const paladin = s.classState as Extract<CombatClassState, { classId: 'paladino' }>;
     if (x.paladinVerdict) {
@@ -888,6 +888,15 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     classRecord(s).verdictRegent = null;
     delete classRecord(s).verdictConsumedThisCast;
   }
+  // Nome Verdadeiro é consumido no início do cast, mas se o golpe acertar
+  // deixa 1 Fragmento de volta ("refragment") — consumeTrueNameAndRefragment
+  // precisa do resultado REAL do acerto (result.landed), só disponível depois
+  // de executeAbilityEffect rodar acima; chamar com `false` sempre no início
+  // do cast (como antes) descartava esse Fragmento até em casts que acertam.
+  if (s.classState.classId === 'bruxo' && classRecord(s).warlockConsumeTrueNameThisCast) {
+    s.warlockEnemy = consumeTrueNameAndRefragment(s.warlockEnemy, result.landed > 0);
+    delete classRecord(s).warlockConsumeTrueNameThisCast;
+  }
   // Pulso é por CAST, não por hit dentro do cast: +1 só por conjurar, +1 se
   // pelo menos um golpe acertou, +1 se houve crítico — mesmo um cast que
   // ERRA totalmente ainda soma o +1 de conjurar. Fica fora de
@@ -900,7 +909,7 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     const pulse = resolvePulseGain({ pulse: pulseBefore, resonance: stateResource(s, 'resonance'), control: stateResource(s, 'control') }, result.landed > 0, result.crits > 0);
     addClassNumber(s, 'pulse', pulse.state.pulse - pulseBefore, 6);
   }
-  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao') s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (result.landed && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter); if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
+  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao' && !x.warlockConsumeTrueName) s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (result.landed && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter); if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
 // Liturgia é uma janela de QUATRO AÇÕES REAIS DO PALADINO — "cada ação real
 // seguinte reduz uma" (classMechanics.ts). Uma ação que invoca uma Virtude
 // (ou consome um Veredito) já resolve seu próprio efeito em actionsLeft

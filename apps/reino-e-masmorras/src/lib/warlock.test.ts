@@ -1,6 +1,48 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { addNameFragment, addWarlockScar, applyWarlockDebt, borrowedPowerPct, clampWarlockDebt, collectionAmount, consumeTrueNameAndRefragment, createWarlockEnemyNameState, createWarlockPlayerState, projectWarlockCast, resolveCollection } from './warlock.ts';
+import { createCombatState, naturalAbilityPriorities, resolveEnvironmentTick, resolvePlayerAction } from './combatEngine.ts';
+import { createCharacter } from './classes.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
+import { getEquippedAbilities } from './skills.ts';
+
+// Real end-to-end coverage for the exact bug reported: consuming Nome
+// Verdadeiro always called consumeTrueNameAndRefragment(enemy, false) at
+// cast-payment time, before the attack even rolled — so a LANDED
+// Exigir Tributo/Palavra Proibida/Apagar o Nome always discarded the
+// "refragment" (1 Fragmento kept on a hit, per warlock.ts's own tested
+// consumeTrueNameAndRefragment) instead of ever keeping it.
+const GENERATOR_ID = 'bruxo:maldicao:4'; // "Selo do Nome" — sempre disponível, gera Dívida e Fragmento ao acertar.
+const CONSUMER_ID = 'bruxo:maldicao:9'; // "Exigir Tributo" — exige Dívida 1 e Nome Verdadeiro (3 Fragmentos).
+function warlockWithAbilities() {
+  const character = createCharacter('Bruxo real', 'bruxo');
+  character.unlockedSkills = [GENERATOR_ID, CONSUMER_ID];
+  return character;
+}
+function friendlyEnemy() {
+  return { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 };
+}
+
+test('Exigir Tributo real que acerta mantém 1 Fragmento (refragment), não descarta tudo', () => {
+  const character = warlockWithAbilities();
+  const consumer = getEquippedAbilities('bruxo', character.unlockedSkills, [CONSUMER_ID])[0];
+  const priority = naturalAbilityPriorities(consumer, [GENERATOR_ID], { classId: 'bruxo', unlockedSkills: character.unlockedSkills });
+  let consumedState: ReturnType<typeof createCombatState> | undefined;
+  for (let seed = 1; seed <= 100 && !consumedState; seed += 1) {
+    const state = createCombatState(character, friendlyEnemy(), seed, [GENERATOR_ID, CONSUMER_ID], priority);
+    for (let i = 0; i < 30 && !consumedState; i += 1) {
+      const beforeEvents = state.events.length;
+      resolvePlayerAction(state);
+      for (let t = 0; t < 4; t += 1) resolveEnvironmentTick(state);
+      const cast = state.events.slice(beforeEvents).find((e) => e.type === 'abilityCast' && e.abilityId === CONSUMER_ID);
+      if (cast) consumedState = state;
+    }
+  }
+  assert.ok(consumedState, 'não foi possível lançar Exigir Tributo real em 100 sementes');
+  assert.ok(consumedState!.events.some((e) => e.type === 'hit' && e.actor === 'player' && e.abilityId === CONSUMER_ID), 'o cast usado no teste precisa ter acertado, senão o refragment não se aplica');
+  assert.equal(consumedState!.warlockEnemy.nameFragments, 1, 'um Exigir Tributo real que acerta deve manter exatamente 1 Fragmento (refragment)');
+});
 
 test('Bruxo preserva as três árvores, 45 IDs e topologia 7/3/5', () => {
   const paths = ['maldicao', 'pacto', 'corrupcao'];
