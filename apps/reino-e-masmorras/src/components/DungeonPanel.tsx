@@ -15,7 +15,7 @@ import { thornsDamageForAction } from '../lib/thorns';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { computeSkillBonuses, getEquippedAbilities } from '../lib/skills';
 import { ThermalState, advanceThermal, thermalAfterFrozenEnds } from '../lib/mago';
-import { DECOMPOSITION_MAX, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
+import { DECOMPOSITION_DURATION, DECOMPOSITION_MAX, DECOMPOSITION_STACK_ID, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_BASE_MULT, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
 import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
 import { PaladinAegis, PaladinLiturgyState, PaladinVirtue, createPaladinLiturgyState, paladinAegisReduction, paladinConviction } from '../lib/paladin';
 import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow } from '../lib/archer';
@@ -3268,6 +3268,23 @@ export function DungeonPanel({
       necroSummonsRef.current = necroSummonsRef.current.slice(0, attacks.length);
       while (necroSummonsRef.current.length < attacks.length) necroSummonOne(chosen?.id ?? 'necromante:core', attacks[necroSummonsRef.current.length]);
       necroSummonsRef.current = necroSummonsRef.current.map((summon, index) => ({ ...summon, attacksRemaining: attacks[index] ?? summon.attacksRemaining }));
+      // Decomposição/Praga: resolvePlayerAction (Praga Necrótica etc.) grava o
+      // resultado só em raw.decomposition/raw.plague — sem isto, o próprio
+      // acerto que aplica a Praga nunca chegava aos refs que a UI e o tick
+      // real (envTick) de fato leem, então o DoT e o stack nunca existiam
+      // fora do combatEngine.
+      const decompositionStacksAfter = Number(raw.decomposition ?? 0);
+      const decompositionStacksBefore = necroDecompositionRef.current?.stacks ?? 0;
+      if (decompositionStacksAfter <= 0) necroDecompositionRef.current = undefined;
+      else if (decompositionStacksAfter > decompositionStacksBefore) necroDecompositionRef.current = applyEnemyStack(necroDecompositionRef.current, decompositionStacksAfter - decompositionStacksBefore);
+      else necroDecompositionRef.current = { id: DECOMPOSITION_STACK_ID, maxStacks: DECOMPOSITION_MAX, ticksRemaining: DECOMPOSITION_DURATION, ...necroDecompositionRef.current, stacks: decompositionStacksAfter };
+      const plagueTicksAfter = Number(raw.plague ?? 0);
+      if (plagueTicksAfter <= 0) necroPlagueRef.current = undefined;
+      else if ((chosen?.effect as Record<string, unknown> | undefined)?.plagueApply) {
+        necroPlagueRef.current = { id: PLAGUE_EFFECT_ID, sourceId: chosen!.id, snapshotPower: computePlayerStats().matk, dmgMultiplier: Number(raw.plagueMultiplier ?? PLAGUE_BASE_MULT), ticksRemaining: plagueTicksAfter, tags: [], canCrit: false, bypassDefense: false };
+      } else if (necroPlagueRef.current) {
+        necroPlagueRef.current = { ...necroPlagueRef.current, ticksRemaining: plagueTicksAfter };
+      }
       necroSync();
     }
     if (chRef.current.classId === 'druida') {
