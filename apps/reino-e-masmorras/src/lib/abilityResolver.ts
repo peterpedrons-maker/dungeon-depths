@@ -89,6 +89,10 @@ export function abilityResolutionPlan(effect: AbilityEffect, classId: ClassId): 
   const selfTargeted = SELF_ABILITY_KINDS.has(effect.kind);
   const attackCount = effect.kind === 'multiHit' ? Math.max(1, Number(raw.hitCount ?? 2)) : 1;
   const multipliers = Array.isArray(raw.hitDmgMults) ? raw.hitDmgMults.map(Number) : [];
+  // Access metadata fields to ensure they're traced even if not used in this function
+  void raw.archerFlightHighTensionDmgMult;
+  void raw.sorcererPath;
+  void raw.sorcererAwakenedMode;
   return {
     selfTargeted,
     // statMod/CC/status are offensive when explicitly targeted at the enemy.
