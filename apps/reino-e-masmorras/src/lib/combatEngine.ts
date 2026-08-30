@@ -10,10 +10,10 @@ import { appendBardNote, canEncore, chooseWildcardNote, consumeEcho, consumeOvat
 import { addFractures, beginActiveCast, consumeFractures, consumeResonance, resolvePulseGain } from './sorcerer.ts';
 import { addNameFragment, addWarlockScar, applyWarlockDebt, bindWarlockEnemy, consumeScars, consumeTrueName, consumeTrueNameAndRefragment, createWarlockEnemyNameState, createWarlockPlayerState, grantWarlockCredit, projectWarlockCast, setWarlockDebt } from './warlock.ts';
 import { accelerateOldestArrow, advanceArcherReflex, advanceInFlightArrows, alignInFlightArrows, archerDistanceShift, consumeArcherReflex, consumeArcherSteps, consumePerfectRhythm, createArcherCombatState, gainArcherCadence, gainArcherSteps, gainArcherTension, loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows, flightSnapshotFromAbility, tensionForPreciseHit } from './archer.ts';
-import { FRENZY_DRAIN_PER_ACTION, FURY_GAIN_BASIC_HIT, FURY_GAIN_TAKE_DAMAGE, WOUND_DMG_PCT_PER_STACK, WOUND_MAX_STACKS, WOUND_TICK_DURATION } from './barbarian.ts';
+import { FRENZY_DRAIN_PER_ACTION, FURY_GAIN_BASIC_HIT, FURY_GAIN_TAKE_DAMAGE, PAIN_PASSIVE_REDIRECT_PCT, WOUND_DMG_PCT_PER_STACK, WOUND_MAX_STACKS, WOUND_TICK_DURATION } from './barbarian.ts';
 import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES, judgmentDurationForSkills, prioritizeClericTrialRotation, CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS } from './clerigo.ts';
 import { POSTURE_BASIC_DAMAGE, parryReduction, recoverablePosture, type PreparedGuardState } from './warrior.ts';
-import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT } from './knight.ts';
+import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT } from './knight.ts';
 import { invokePaladinVirtue, type PaladinVirtueSet } from './paladin.ts';
 import { soulsForCrossedThresholds, soulsForNextEnemy } from './necromancer.ts';
 import { SELF_ABILITY_KINDS, abilityEffectFields, abilityResolutionPlan, assertAbilityEffectContract, resolveAbilityEffect, traceAbilityEffect } from './abilityResolver.ts';
@@ -234,6 +234,11 @@ function setClassNumber(s: CombatState, key: string, value: number, cap = 100): 
   if (key === 'tension' && s.archerState) s.archerState = { ...s.archerState, tension: next };
   if (key === 'cadence' && s.archerState) s.archerState = { ...s.archerState, cadence: next };
   if (key === 'steps' && s.archerState) s.archerState = { ...s.archerState, steps: next };
+  // Único ponto de verdade para Fúria: QUALQUER fonte que a leve a 100 ativa
+  // Frenesi automaticamente — ataque básico, habilidade, crítico, dano
+  // recebido, talento, o que for. Nunca deixar uma fonte específica (como a
+  // antiga furyMaxFrenzy) ser a única a lembrar de ativar a flag.
+  if (key === 'fury' && s.classState.classId === 'barbaro' && next >= 100) classRecord(s).frenzy = true;
   if (next > before) event(s, { type: 'resourceGain', tick: s.envTick, actor: 'player', resource: key, amount: next - before });
   if (next < before) event(s, { type: 'resourceSpend', tick: s.envTick, actor: 'player', resource: key, amount: before - next });
 }
@@ -487,10 +492,6 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
     }
     if (x.heatGain) addClassNumber(s, 'heat', x.heatGain, 100);
     if (x.amplifiedHeatGain && (classRecord(s).awakenedCast || classRecord(s).mageAmplified)) addClassNumber(s, 'heat', x.amplifiedHeatGain, 100);
-    if (s.classState.classId === 'feiticeiro') {
-      const pulse = resolvePulseGain({ pulse: stateResource(s, 'pulse'), resonance: stateResource(s, 'resonance'), control: stateResource(s, 'control') }, true, crits > 0);
-      addClassNumber(s, 'pulse', pulse.state.pulse - stateResource(s, 'pulse'), 6);
-    }
     if (s.classState.classId === 'cavaleiro') {
       const highHp = s.enemyHp / s.enemy.maxHp >= 0.9;
       const momentumGain = highHp && x.momentumGainOnHitExtraVsHighHp !== undefined ? x.momentumGainOnHitExtraVsHighHp : (x.momentumGainOnHitExtra ?? 0);
@@ -764,10 +765,18 @@ export function resolvePlayerAction(s: CombatState): CombatState {
       if (s.enemy.warrior.current <= 0) s.enemy.warrior.guardBroken = true;
     }
     if (r.landed && s.classState.classId === 'barbaro') addClassNumber(s, 'fury', FURY_GAIN_BASIC_HIT, 100);
-    if (r.landed && s.classState.classId === 'feiticeiro') addClassNumber(s, 'pulse', 2, 6);
+    // Ataque básico do Feiticeiro NÃO gera Pulso — só habilidades ativas o
+    // fazem (ver o cast normal abaixo, guardado por !awakenedCast).
     if (r.landed && s.classState.classId === 'cavaleiro') {
-      addClassNumber(s, 'momentum', 10, 100);
-      addClassNumber(s, 'determination', 3, 100);
+      // Momentum: primeiro golpe do Cavaleiro contra ESTE inimigo vale 15,
+      // os seguintes valem 8 — nunca um +10 genérico. Determinação NUNCA
+      // vem do próprio ataque do Cavaleiro acertando; ela só nasce de
+      // sofrer um ataque direto, bloquear, ou absorver dano em barreira
+      // (ver resolveEnemyAction / DungeonPanel.enemyAct), então não é
+      // concedida aqui.
+      const firstHit = !s.enemy.knightMomentumFirstHitUsed;
+      addClassNumber(s, 'momentum', firstHit ? MOMENTUM_GAIN_FIRST_HIT : MOMENTUM_GAIN_NEXT_HIT, 100);
+      s.enemy.knightMomentumFirstHitUsed = true;
     }
     if (s.classState.classId === 'arqueiro') {
       s.archerState = r.landed
@@ -837,6 +846,18 @@ export function resolvePlayerAction(s: CombatState): CombatState {
   if (s.classState.classId === 'arqueiro') { if (x.archerTensionCost) s.archerState = loseArcherTension(s.archerState, x.archerTensionCost); if (x.archerCadenceCost) s.archerState = loseArcherCadence(s.archerState, x.archerCadenceCost); if (x.archerConsumesSteps) s.archerState = consumeArcherSteps(s.archerState, x.archerConsumesSteps).state; if (x.archerConsumesPerfectRhythm) s.archerState = consumePerfectRhythm(s.archerState); if (x.archerDistanceShift) s.archerState = archerDistanceShift(s.archerState, x.archerDistanceShift); }
   if (x.sacrificeOldestSummon && s.classState.classId === 'necromante') { const raw = classRecord(s); const attacks = Array.isArray(raw.servantAttacks) ? raw.servantAttacks as number[] : []; attacks.shift(); raw.servantAttacks = attacks; raw.servants = attacks.length; }
   if (x.orderGainOnCast) addClassNumber(s, 'orders', x.orderGainOnCast, 3); s.cooldowns[a.id] = Math.max(1, a.cooldown); event(s, { type: 'abilityCast', tick: s.envTick, actor: 'player', abilityId: a.id, name: a.name }); const result = executeAbilityEffect(s, effectToResolve, a.id); for (const extra of a.extraEffects ?? []) executeAbilityEffect(s, extra, a.id); if (s.classState.classId === 'arqueiro') { if (result.landed && x.archerTensionOverrideOnHit !== undefined) s.archerState = gainArcherTension(s.archerState, archerDistanceAtActionStart === 3 ? (x.archerTensionOverrideAtHorizon ?? x.archerTensionOverrideOnHit) : x.archerTensionOverrideOnHit); else if (result.landed && (x.archerShotType === 'precise')) s.archerState = gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)); else if (!result.landed && x.archerShotType === 'precise') s.archerState = loseArcherTension(s.archerState, 8); if (result.landed && x.archerShotType === 'volley') s.archerState = gainArcherCadence(s.archerState, 1); if (x.archerFlightCount || (x.archerCreatesFlightOnHits && result.landed >= x.archerCreatesFlightOnHits)) { const stats = playerStats(s); const authoredFlightDmgMult = Number(x.archerFlightDmgMult ?? x.dmgMult ?? 0.5); const flightCount = x.archerFlightCount ?? 1; const room = Math.max(0, 3 - s.archerState.arrows.length); s.archerState = scheduleInFlightArrows(s.archerState, Array.from({ length: Math.min(flightCount, room) }, (_, i) => flightSnapshotFromAbility(a, { ...stats, defPenPct: 0 }, s.archerState.distance, x.archerFlightHitDmgMults?.[i] ?? (stateResource(s, 'tension') >= 50 ? (x.archerFlightHighTensionDmgMult ?? x.archerFlightDmgMult ?? 0.5) : authoredFlightDmgMult), x.archerFlightTimer ?? 1))); } }
+  // Pulso é por CAST, não por hit dentro do cast: +1 só por conjurar, +1 se
+  // pelo menos um golpe acertou, +1 se houve crítico — mesmo um cast que
+  // ERRA totalmente ainda soma o +1 de conjurar. Fica fora de
+  // executeCombatAbilityEffect (que roda de novo por extraEffect) para nunca
+  // contar duas vezes o mesmo cast. Uma Magia Desperta (que acabou de zerar
+  // o Pulso em beginActiveCast) não realimenta Pulso do próprio golpe, senão
+  // o recurso nunca seria de fato gasto.
+  if (s.classState.classId === 'feiticeiro' && !classRecord(s).awakenedCast) {
+    const pulseBefore = stateResource(s, 'pulse');
+    const pulse = resolvePulseGain({ pulse: pulseBefore, resonance: stateResource(s, 'resonance'), control: stateResource(s, 'control') }, result.landed > 0, result.crits > 0);
+    addClassNumber(s, 'pulse', pulse.state.pulse - pulseBefore, 6);
+  }
   if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao') s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (result.landed && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter); if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
 function finishEnemy(s: CombatState): void { if (s.classState.classId === 'necromante') addClassNumber(s, 'souls', 1, 10); s.won = true; event(s, { type: 'enemyDeath', tick: s.envTick }); }
 function triggerArmedTrap(s: CombatState): void {
@@ -912,7 +933,12 @@ export function resolveEnemyAction(s: CombatState): CombatState {
     }
   }
   const rawDamageAfterBarrier = damage;
-  const painRedirectPct = s.classState.classId === 'barbaro' ? Number(classRecord(s).painRedirectPct ?? 0) : 0;
+  // Carne que Não Cede (barbaro:resistencia:8) é um redirecionamento
+  // PERMANENTE de 10% que "não soma com Postura Selvagem — usa o maior dos
+  // dois" (skills.ts) — precisa entrar no máximo com o painRedirectPct
+  // temporário do painGuard (Postura Selvagem), nunca somado a ele.
+  const barbPassivePainPct = s.classState.classId === 'barbaro' && s.character.unlockedSkills.includes('barbaro:resistencia:8') ? PAIN_PASSIVE_REDIRECT_PCT : 0;
+  const painRedirectPct = s.classState.classId === 'barbaro' ? Math.max(Number(classRecord(s).painRedirectPct ?? 0), barbPassivePainPct) : 0;
   const currentPain = s.classState.classId === 'barbaro' ? Number(classRecord(s).pain ?? 0) : 0;
   const painCap = effectiveMaxHp(s.character) * 0.35;
   const redirected = Math.min(rawDamageAfterBarrier * painRedirectPct, Math.max(0, painCap - currentPain));
@@ -923,7 +949,11 @@ export function resolveEnemyAction(s: CombatState): CombatState {
   event(s, { type: 'damage', tick: s.envTick, actor: 'enemy', amount: damage, damageType: magical ? 'magical' : 'physical', crit: r.crit });
   if (s.classState.classId === 'barbaro') {
     addClassNumber(s, 'fury', FURY_GAIN_TAKE_DAMAGE, 100);
-    classRecord(s).pain = Math.min(painCap, currentPain + redirected + rawDamageAfterBarrier * 0.3);
+    // Dor só recebe o dano de fato REDIRECIONADO por uma mecânica com
+    // painRedirectPct ativo (ex.: Postura Selvagem). Sem redirecionamento
+    // ativo, painRedirectPct é 0 e `redirected` já é 0 — nunca somar um
+    // 30% adicional "de graça" aqui, senão todo hit cria Dor artificial.
+    classRecord(s).pain = Math.min(painCap, currentPain + redirected);
   }
   if (s.classState.classId === 'cavaleiro') {
     const gained = determinationForDirectHit({ landed: true, blocked, fortressActive: false });

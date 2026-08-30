@@ -16,7 +16,7 @@ import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { computeSkillBonuses, getEquippedAbilities } from '../lib/skills';
 import { ThermalState, advanceThermal, thermalAfterFrozenEnds } from '../lib/mago';
 import { DECOMPOSITION_MAX, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
-import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick } from '../lib/rogue';
+import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
 import { PaladinAegis, PaladinLiturgyState, PaladinVirtue, createPaladinLiturgyState, paladinAegisReduction, paladinConviction } from '../lib/paladin';
 import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow } from '../lib/archer';
 import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, pickDruidSeasonalAbility, addGardenSeeds, type DruidSeason, type DruidForm } from '../lib/druid';
@@ -3338,7 +3338,85 @@ export function DungeonPanel({
       onFlash: (side) => flash(side),
     });
     if (core.enemyHp <= 0) { resolveEnemyDeath(); return; }
+    if (isRogue()) rogueQuickAct();
     schedulePlayer(nextPlayerDelay());
+  }
+
+  // Ladino's "Janela de Iniciativa": right after a Principal resolves, one
+  // eligible Ação Rápida (actionType: 'quick') fires immediately in the same
+  // turn — it never competes with the Principal for the ATB cycle itself.
+  // This was previously entirely unreachable: pickAbility() was only ever
+  // called with 'main', so every quick node (Passo Sombrio, Lâmina
+  // Envenenada, Passo Cortante, Lâmina Reversa, Finta Baixa, Dado Viciado)
+  // could never be selected, and rogueQuickWindowRef never left its initial
+  // `false` — so even Finta Baixa/Dado Viciado's own `quickWindow` condition
+  // could never pass. The window here is real but narrow: true only for the
+  // single eligibility check below, closed again immediately after.
+  function rogueQuickAct() {
+    if (enemyRef.current.hp <= 0 || chRef.current.hp <= 0) return;
+    rogueQuickWindowRef.current = true;
+    const quick = firstEligibleQuick(
+      equippedAbilities(),
+      cooldownsRef.current,
+      (ability) => (!hasCC(playerCCRef.current, 'silence') || isSelfAbilityKind(ability.effect.kind)) && conditionMet(ability) && !abilityAlreadyActive(ability),
+    );
+    rogueQuickWindowRef.current = false;
+    if (!quick) return;
+
+    const stats = computePlayerStats();
+    const core = createCombatState(chRef.current, { ...enemyRef.current }, Math.floor(Math.random() * 0xFFFFFFFF), [quick.id], [quick.id]);
+    const panelBarrierAtCast = playerShieldRef.current;
+    core.playerHp = chRef.current.hp;
+    core.enemyHp = enemyRef.current.hp;
+    core.playerBarrier = playerShieldRef.current;
+    core.playerMods = playerModsRef.current.map((mod) => ({ stat: mod.stat, pct: mod.pct, roundsLeft: mod.roundsLeft }));
+    core.enemyMods = enemyModsRef.current.map((mod) => ({ stat: mod.stat, pct: mod.pct, roundsLeft: mod.roundsLeft }));
+    core.playerStatuses = playerStatusRef.current.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, damagePct: status.dmgPerTick / Math.max(1, stats.matk || stats.atk) }));
+    core.enemyStatuses = enemyStatusRef.current.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, damagePct: status.dmgPerTick / Math.max(1, stats.matk || stats.atk) }));
+    core.playerCC = playerCCRef.current.map((cc) => ({ kind: cc.kind, roundsLeft: cc.roundsLeft }));
+    core.enemyCC = enemyCCRef.current.map((cc) => ({ kind: cc.kind, roundsLeft: cc.roundsLeft }));
+    core.hots = playerRegenRef.current.map((hot) => ({ pct: hot.pct, roundsLeft: hot.roundsLeft }));
+
+    const raw = core.classState as unknown as Record<string, unknown>;
+    raw.images = rogueImagesRef.current;
+    raw.stealthed = rogueStealthRef.current;
+    raw.exposed = rogueExposedMainLeftRef.current > 0;
+    raw.advantageReady = rogueAdvantageRef.current;
+    raw.preparedTrick = roguePreparedTrickRef.current?.kind ?? null;
+
+    resolvePlayerAction(core);
+
+    updateCh({ ...chRef.current, hp: core.playerHp });
+    updateEnemy({ ...core.enemy, hp: core.enemyHp });
+    playerShieldRef.current = core.playerBarrier;
+    if (chRef.current.classId === 'clerigo' && core.playerBarrier > panelBarrierAtCast) clerigoAddBarrierPortion(core.playerBarrier - panelBarrierAtCast);
+    syncShield();
+    playerModsRef.current = core.playerMods.map((mod) => ({ stat: mod.stat as StatModStat, pct: mod.pct, roundsLeft: mod.roundsLeft, sourceAbilityId: quick.id }));
+    enemyModsRef.current = core.enemyMods.map((mod) => ({ stat: mod.stat as StatModStat, pct: mod.pct, roundsLeft: mod.roundsLeft, sourceAbilityId: quick.id }));
+    const statusPower = Math.max(1, stats.matk || stats.atk);
+    playerStatusRef.current = core.playerStatuses.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, dmgPerTick: Math.max(1, Math.round(status.damagePct * statusPower)) }));
+    enemyStatusRef.current = core.enemyStatuses.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, dmgPerTick: Math.max(1, Math.round(status.damagePct * statusPower)) }));
+    playerCCRef.current = core.playerCC.map((cc) => ({ ...cc }));
+    enemyCCRef.current = core.enemyCC.map((cc) => ({ ...cc }));
+    playerRegenRef.current = core.hots.map((hot) => ({ pct: hot.pct, roundsLeft: hot.roundsLeft, sourceAbilityId: quick.id }));
+    syncPlayerMods(); syncEnemyMods(); syncPlayerStatuses(); syncEnemyStatuses(); syncPlayerCC(); syncEnemyCC();
+
+    rogueImagesRef.current = Number(raw.images ?? 0);
+    rogueStealthRef.current = Boolean(raw.stealthed);
+    rogueAdvantageRef.current = Boolean(raw.advantageReady);
+    const preparedKind = raw.preparedTrick as RogueTrickKind | null;
+    roguePreparedTrickRef.current = preparedKind ? prepareTrick(preparedKind, quick.id) : null;
+    rogueSync();
+
+    const castEvent = core.events.find((event) => event.type === 'abilityCast' && event.abilityId === quick.id);
+    if (castEvent) cooldownsRef.current[quick.id] = Math.max(1, core.cooldowns[quick.id] ?? quick.cooldown);
+    consumeCombatEvents(core.events, {
+      onLog: (line) => pushLog(line),
+      onFloat: (side, amount, wasCrit, miss, healEvent) => pushFloat(side, amount, !!wasCrit, undefined, !!miss, !!healEvent),
+      onAbilityCast: (side, name) => pushAbilityCast(side, name, side === 'player' ? activeAbilityIconStyle(chRef.current.classId, quick.id) : null, null, false),
+      onFlash: (side) => flash(side),
+    });
+    if (core.enemyHp <= 0) resolveEnemyDeath();
   }
 
   // Centralized "the player's HP just reached 0" closure — mirrors

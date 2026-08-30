@@ -1033,6 +1033,12 @@ export interface EnemyInstance {
   // stacking to 3, each application renews ALL stacks' duration (same shape
   // as Feridas/Julgamento). Absent = no Brechas active.
   hunterBreaches?: { stacks: number; ticksLeft: number };
+  // Cavaleiro-only "already granted the first-hit Momentum bonus against
+  // this enemy" flag (lib/knight.ts's MOMENTUM_GAIN_FIRST_HIT vs
+  // MOMENTUM_GAIN_NEXT_HIT) — owned by the enemy so it naturally resets
+  // whenever spawnEnemy produces the next target, same as warrior's own
+  // per-enemy first-hit flags above.
+  knightMomentumFirstHitUsed?: boolean;
   // Guerreiro-only encounter state. It is owned by the current enemy and is
   // recreated at 100 whenever spawnEnemy produces the next target.
   warrior?: {
