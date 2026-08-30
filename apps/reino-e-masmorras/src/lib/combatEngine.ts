@@ -473,7 +473,10 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
       if ((x.finishGuardBreak || guardBreakActionsBonus > 0) && s.enemy.warrior.guardBroken) s.enemy.warrior.offensiveActionsLeft = Math.max(s.enemy.warrior.offensiveActionsLeft, guardBreakActionsBonus || 1);
     }
     if (s.classState.classId === 'guerreiro' && x.atkDebuffOnHitPct) s.enemyMods.push({ stat: 'atk', pct: -Number(x.atkDebuffOnHitPct), roundsLeft: x.atkDebuffRounds ?? 2 });
-    if (s.classState.classId === 'cacador') s.enemy.hunterTrail = Math.min(5, (s.enemy.hunterTrail ?? 0) + 1);
+    // Rastro NUNCA vem do próprio acerto do Caçador — só de uma ação real do
+    // inimigo (ver resolveEnemyAction) ou de armadilhas disparadas. Um golpe
+    // do Caçador aqui não deve alimentar Rastro, senão duplica o ganho já
+    // concedido pela ação do inimigo no mesmo round.
     if (s.classState.classId === 'mago' && x.element === 'frost' && (x.thermalAdvanceOnHit || x.amplifiedThermalAdvanceOnHit)) { const advance = classRecord(s).mageAmplified ? (x.amplifiedThermalAdvanceOnHit ?? x.thermalAdvanceOnHit ?? 0) : (x.thermalAdvanceOnHit ?? 0); classRecord(s).thermalTicks = Number(classRecord(s).thermalTicks ?? 0) + advance; classRecord(s).thermal = Number(classRecord(s).thermalTicks) >= 3 ? 'frozen' : 'fragile'; }
     if (s.classState.classId === 'mago' && x.shatter) classRecord(s).thermal = thermalAfterShatter(String(classRecord(s).thermal ?? 'normal') as 'normal' | 'chilled' | 'fragile' | 'frozen', false);
     if (s.classState.classId === 'clerigo' && x.consecrationRoundsOnCast) classRecord(s).consecration = x.consecrationRoundsOnCast;
@@ -879,6 +882,14 @@ export function resolveEnemyAction(s: CombatState): CombatState {
   s.enemyActions += 1;
   event(s, { type: 'enemyAction', tick: s.envTick, name: 'Ataque' });
   if (s.enemyCC.some((x) => x.kind === 'stun' || x.kind === 'sleep')) return s;
+  // Rastro é ganho quando o INIMIGO completa uma ação real (acerto OU erro),
+  // nunca quando o Caçador o atinge — representa estudar os padrões da presa,
+  // não golpeá-la (ver classMechanics.ts: 'cacador:trail'). Este é o
+  // equivalente, no motor de simulação, do DungeonPanel.hunterOnEnemyRealAction
+  // real (chamado tanto no acerto quanto no erro do inimigo).
+  if (s.classState.classId === 'cacador' && s.character.unlockedSkills.some((id) => id.startsWith('cacador:rastreio:'))) {
+    s.enemy.hunterTrail = Math.min(5, (s.enemy.hunterTrail ?? 0) + 1);
+  }
   if (s.classState.classId === 'barbaro' && Number(classRecord(s).wildPostureRounds ?? 0) > 0) {
     classRecord(s).wildPostureRounds = Number(classRecord(s).wildPostureRounds) - 1;
   }
