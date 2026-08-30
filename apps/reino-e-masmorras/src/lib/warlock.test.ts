@@ -91,7 +91,9 @@ test('Cobrança ignora barreira e só cria Estigma ao atingir 5% da Vida Máxima
 test('Fragmentos de Nome Verdadeiro são gerados a partir de ações reais do inimigo Vinculado', () => {
   const character = warlockWithAbilities();
   const enemy = friendlyEnemy();
-  const state = createCombatState(character, enemy, 1, [GENERATOR_ID, CONSUMER_ID], []);
+  const generator = getEquippedAbilities('bruxo', character.unlockedSkills, [GENERATOR_ID])[0];
+  const priority = naturalAbilityPriorities(generator, [], { classId: 'bruxo', unlockedSkills: character.unlockedSkills });
+  const state = createCombatState(character, enemy, 1, [GENERATOR_ID, CONSUMER_ID], priority);
 
   // Primeiro gera um binding hit para vincular o inimigo
   let bound = false;
