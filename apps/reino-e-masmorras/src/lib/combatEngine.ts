@@ -1056,6 +1056,11 @@ export function resolveEnvironmentTick(s: CombatState): CombatState {
   const cooldownStep = Number(classRecord(s).hasteRounds ?? 0) > 0 ? 2 : 1;
   for (const id of Object.keys(s.cooldowns)) s.cooldowns[id] = Math.max(0, s.cooldowns[id] - cooldownStep);
 
+  if (s.classState.classId === 'arqueiro' && s.archerState.arrows.length > 0) {
+    const existingFlightIds = s.archerState.arrows.map((arrow) => arrow.id);
+    advanceArcherFlights(s, existingFlightIds);
+  }
+
   const tickStatuses = (statuses: CombatStatus[], actor: 'player' | 'enemy') => {
     for (const status of statuses) {
       if (status.damagePct > 0) {
