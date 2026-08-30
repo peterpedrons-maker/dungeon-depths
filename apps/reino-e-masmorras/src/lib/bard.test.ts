@@ -2,6 +2,40 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { advanceAudienceChorus, appendBardNote, applyAudienceChorus, bardActionWritesNote, canEncore, chooseWildcardNote, classifyBardPhrase, consumeEcho, consumeOvation, countertempoEcho, createBardState, createEncorePayload, directHealAmount, healingBaseHp, gainEcho, prepareAccent, resetBardEnemy, resolveBardPhrase } from './bardo.ts';
+import { createCombatState, resolveEnvironmentTick, resolvePlayerAction } from './combatEngine.ts';
+import { createCharacter } from './classes.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
+
+// Real end-to-end coverage for the exact bug reported: Fortíssimo (a one-shot
+// +5% crítico "consumido no início de uma ofensiva direta seguinte") was set
+// on a Marcato Refrão but never cleared anywhere in the shared engine, making
+// it a PERMANENT crit-chance/crit-damage buff for the rest of the run instead
+// of a one-shot bonus.
+const MARCATO_ABILITY_ID = 'bardo:cancao-guerra:4'; // "Acorde de Impacto" — sempre disponível, escreve uma Nota Marcato.
+function bardWithAbility() {
+  const character = createCharacter('Bardo real', 'bardo');
+  character.unlockedSkills = [MARCATO_ABILITY_ID];
+  return character;
+}
+function friendlyEnemy() {
+  return { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 };
+}
+
+test('Fortíssimo real é preparado pelo Refrão Marcato e consumido na próxima ofensiva real, não fica permanente', () => {
+  const character = bardWithAbility();
+  const state = createCombatState(character, friendlyEnemy(), 1, [MARCATO_ABILITY_ID], [MARCATO_ABILITY_ID]);
+  // Três casts reais da mesma nota Marcato completam o Refrão (com ticks de
+  // ambiente reais entre eles para liberar o cooldown de 3).
+  for (let i = 0; i < 3; i += 1) {
+    resolvePlayerAction(state);
+    for (let t = 0; t < 3; t += 1) resolveEnvironmentTick(state);
+  }
+  assert.equal(state.bardState.fortissimo, true, 'Refrão Marcato deveria ter preparado Fortíssimo');
+  resolvePlayerAction(state); // Próxima ofensiva real consome Fortíssimo.
+  assert.ok(state.events.some((e) => e.type === 'hit' && e.actor === 'player'));
+  assert.equal(state.bardState.fortissimo, false, 'Fortíssimo não pode sobreviver à ofensiva real seguinte');
+});
 
 test('Bardo preserva 3 paths, 45 IDs e topologia 7/3/5', () => {
   const source = readFileSync(new URL('./skills.ts', import.meta.url), 'utf8');
