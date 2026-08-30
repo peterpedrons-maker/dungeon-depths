@@ -64,6 +64,6 @@ test('Rastro real acumula até o teto de 5 ao longo de várias ações reais do 
   const character = trackingHunter();
   const state = createCombatState(character, { ...friendlyEnemy(), accuracy: 1 }, 1, [], []);
   state.playerMods.push({ stat: 'evasion', pct: -1, roundsLeft: 99 });
-  for (let i = 0; i < 8; i += 1) resolveEnemyAction(state);
+  for (let i = 0; i < 8; i += 1) { state.playerHp = 999_999; resolveEnemyAction(state); }
   assert.equal(state.enemy.hunterTrail, 5);
 });
