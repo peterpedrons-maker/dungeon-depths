@@ -11,14 +11,14 @@ import { addFractures, beginActiveCast, consumeFractures, consumeResonance, reso
 import { addNameFragment, addWarlockScar, applyWarlockDebt, bindWarlockEnemy, consumeScars, consumeTrueName, consumeTrueNameAndRefragment, createWarlockEnemyNameState, createWarlockPlayerState, grantWarlockCredit, projectWarlockCast, setWarlockDebt } from './warlock.ts';
 import { accelerateOldestArrow, advanceArcherReflex, advanceInFlightArrows, alignInFlightArrows, archerDistanceShift, consumeArcherReflex, consumeArcherSteps, consumePerfectRhythm, createArcherCombatState, gainArcherCadence, gainArcherSteps, gainArcherTension, loseArcherCadence, loseArcherTension, prepareArcherReflex, scheduleInFlightArrows, flightSnapshotFromAbility, tensionForPreciseHit } from './archer.ts';
 import { FRENZY_DRAIN_PER_ACTION, FURY_GAIN_BASIC_HIT, FURY_GAIN_TAKE_DAMAGE, PAIN_PASSIVE_REDIRECT_PCT, WOUND_DMG_PCT_PER_STACK, WOUND_MAX_STACKS, WOUND_TICK_DURATION } from './barbarian.ts';
-import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES, judgmentDurationForSkills, prioritizeClericTrialRotation, CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS } from './clerigo.ts';
+import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES, judgmentDurationForSkills, prioritizeClericTrialRotation, CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS, FOGO_DA_FE_DMG_VS_JUDGMENT_PCT, OLHAR_DO_JUIZ_HIGH_JUDGMENT_THRESHOLD, OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT, PALAVRA_ARDENTE_DMG_PCT, ZELO_INFLEXIVEL_EXTEND_ROUNDS, ACUSACAO_JUDGMENT_ON_CRIT, VEREDITO_PRECISO_ACCURACY_PER_STACK, JUDGMENT_DMG_PCT_PER_STACK } from './clerigo.ts';
 import { POSTURE_BASIC_DAMAGE, parryReduction, recoverablePosture, type PreparedGuardState } from './warrior.ts';
 import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR, SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP } from './knight.ts';
 import { consumePaladinVerdict, invokePaladinVirtue, type PaladinVirtueSet } from './paladin.ts';
 import { SOUL_MAX, soulsForCrossedThresholds, soulsForNextEnemy } from './necromancer.ts';
 import { SELF_ABILITY_KINDS, abilityEffectFields, abilityResolutionPlan, assertAbilityEffectContract, resolveAbilityEffect, traceAbilityEffect } from './abilityResolver.ts';
 import { SKILL_TREES } from './skills.ts';
-import { circuitAfterCast, nextRunes, thermalAfterShatter, thermalShatterMult } from './mago.ts';
+import { circuitAfterCast, nextRunes, thermalAfterShatter, thermalShatterMult, HEAT_NON_FIRE_COOLING, HEAT_DISSIPATION_COOLING, HEAT_OVERHEAT_AT, HEAT_AFTER_OVERHEAT, HEAT_OVERHEAT_SELF_DMG_PCT, HEAT_OVERHEAT_FIRST_SELF_DMG_PCT } from './mago.ts';
 import { totalAttributes } from './attributes.ts';
 import { directHealAmount as universalDirectHealAmount } from './healing.ts';
 import {
@@ -267,11 +267,29 @@ function judgmentDuration(s: CombatState): number { return judgmentDurationForSk
 function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, forcedMultiplier?: number, hitIndex = 0): { damage: number; landed: boolean; crit: boolean } {
   const stats = playerStats(s); const x = e as (Record<string, any> | null); const magical = e ? abilityResolutionPlan(e, s.character.classId).damageType === 'magical' : MAGICAL_CLASSES.includes(s.character.classId);
   const druidOwlAccuracy = s.classState.classId === 'druida' && druidActiveForms(s).includes('owl') ? druidFormBonuses('owl').accuracyPct : 0;
-  const accuracy = stats.accuracy + modTotal(s.playerMods, 'accuracy') + Number(x?.sorcererAccuracyBonusPct ?? 0) + Number(x?.druidAccuracyBonus ?? 0) + druidOwlAccuracy; const evasion = Math.max(0, (s.enemy.evasion ?? 0) + modTotal(s.enemyMods, 'evasion'));
+  const judgment = s.enemy.judgment?.stacks ?? 0;
+  const isCleric = s.classState.classId === 'clerigo';
+  // Olhar do Juiz (provacao:1) e Veredito Preciso (provacao:7) — bônus de
+  // precisão contra Julgamento, além do dmgPct/accuracyPct incondicional já
+  // agregado pelo sistema genérico de stats.
+  const clericJudgmentAccuracy = isCleric
+    ? (s.character.unlockedSkills.includes('clerigo:provacao:1') && judgment >= OLHAR_DO_JUIZ_HIGH_JUDGMENT_THRESHOLD ? OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT : 0)
+      + (s.character.unlockedSkills.includes('clerigo:provacao:7') ? judgment * VEREDITO_PRECISO_ACCURACY_PER_STACK : 0)
+    : 0;
+  const accuracy = stats.accuracy + modTotal(s.playerMods, 'accuracy') + Number(x?.sorcererAccuracyBonusPct ?? 0) + Number(x?.druidAccuracyBonus ?? 0) + druidOwlAccuracy + clericJudgmentAccuracy; const evasion = Math.max(0, (s.enemy.evasion ?? 0) + modTotal(s.enemyMods, 'evasion'));
   if (!x?.guaranteedHit && !x?.guaranteedAccuracy && step(s) < clamp(evasion - accuracy, 0, 0.75)) { event(s, { type: 'miss', tick: s.envTick, actor: 'player', abilityId }); return { damage: 0, landed: false, crit: false }; }
   const power = magical ? stats.matk : stats.atk; const baseDefense = enemyDefense(s, magical); let pen = Number(x?.defPenPct ?? x?.defPenPctBase ?? 0) + Number(x?.mdefPenPct ?? 0) + (magical && s.classState.classId === 'feiticeiro' ? Number(x?.sorcererMdefPenPct ?? 0) : 0) + (magical && s.classState.classId === 'bruxo' ? Number(x?.warlockMdefPenPct ?? 0) : 0) + (magical && s.classState.classId === 'feiticeiro' && hitIndex === 2 ? Number(x?.sorcererThirdHitPenPct ?? 0) : 0);
   const authoredMultiplier = Number(x?.dmgMult ?? 1);
-  let mult = forcedMultiplier ?? authoredMultiplier; const cs = classRecord(s); const wounds = s.enemy.barbarianWounds?.stacks ?? 0; const judgment = s.enemy.judgment?.stacks ?? 0;
+  let mult = forcedMultiplier ?? authoredMultiplier; const cs = classRecord(s); const wounds = s.enemy.barbarianWounds?.stacks ?? 0;
+  // Peso do Veredito (provacao:8), Fogo da Fé (provacao:0) e Palavra Ardente
+  // (provacao:2) — bônus de dano mágico direto ligados a Julgamento; só se
+  // aplicam a golpes diretos (attack() nunca resolve DOTs), nunca dobrando o
+  // dmgPct incondicional já contado pelo agregador genérico de stats.
+  if (isCleric && magical) {
+    if (s.character.unlockedSkills.includes('clerigo:provacao:8')) mult += judgment * JUDGMENT_DMG_PCT_PER_STACK;
+    if (s.character.unlockedSkills.includes('clerigo:provacao:0') && judgment >= 1) mult += FOGO_DA_FE_DMG_VS_JUDGMENT_PCT;
+    if (s.character.unlockedSkills.includes('clerigo:provacao:2') && x?.judgmentStacksOnHit) mult += PALAVRA_ARDENTE_DMG_PCT;
+  }
   if (s.classState.classId === 'druida' && magical && druidActiveForms(s).includes('owl')) pen += druidFormBonuses('owl').mdefPenPct;
   if (x?.dmgMultByBand) mult = Number(x.dmgMultByBand[enemyPostureBand(s)] ?? mult); if (x?.dmgMultPerWoundStack) mult += wounds * Number(x.dmgMultPerWoundStack); if (x?.dmgMultPerJudgmentStack) mult += judgment * Number(x.dmgMultPerJudgmentStack); if (x?.dmgMultPerMomentumConsumed) mult += Number(cs.momentumSpentThisCast ?? 0) * Number(x.dmgMultPerMomentumConsumed); if (x?.warlockDmgMultPerScar) mult += Number(cs.scarsThisCast ?? 0) * Number(x.warlockDmgMultPerScar); if (x?.lowHpDmgMult && s.playerHp / effectiveMaxHp(s.character) <= 0.35) mult = Number(x.lowHpDmgMult); if (x?.exposedDmgMult && cs.exposed) mult = Number(x.exposedDmgMult); if (x?.combinedDmgMult && cs.exposed && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Number(x.combinedDmgMult); if (x?.advantageDmgMult && cs.advantageReady) mult = Number(x.advantageDmgMult); if (x?.dmgMultVsHighEnemyHp && s.enemyHp / s.enemy.maxHp >= 0.9) mult = Number(x.dmgMultVsHighEnemyHp); if (x?.enemyHpExecuteBase && s.enemyHp / s.enemy.maxHp <= Number(x.enemyHpExecuteThreshold ?? 0)) mult = Math.min(Number(x.enemyHpExecuteCap ?? mult), Number(x.enemyHpExecuteBase) + Math.floor((1 - s.enemyHp / s.enemy.maxHp) / 0.05) * Number(x.enemyHpExecutePer5Pct ?? 0)); if (x?.executeBaseMult && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Math.min(Number(x.executeBaseMult) + Number(x.executeMultCap ?? 0), Number(x.executeBaseMult) + (1 - s.enemyHp / s.enemy.maxHp) * Number(x.executePerHpBelowPct ?? 0));
   const ambushDmgMult = Number(x?.ambushDmgMult ?? mult);
@@ -314,6 +332,17 @@ function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, for
   if (druidBearMagicDmg) mult += druidBearMagicDmg;
   const critChance = Math.min(0.9, stats.critChance + Number(x?.archerCritBonus ?? 0) + Number(x?.advantageCritPct ?? 0) + (s.bardState.fortissimo ? 0.05 : 0) + druidWolfCrit); const r = rollAbilityHit(power, baseDefense * (1 - clamp(pen, 0, 0.9)), mult, critChance, stats.critDmgMult, x?.kind === 'guaranteedCrit', () => step(s));
   let amount = r.dmg;
+  // Zelo Inflexível (provacao:3) e Acusação (provacao:6) — um crítico mágico
+  // direto reage ao Julgamento já presente antes deste golpe; "uma vez por
+  // ação" vira "só no primeiro hit" já que attack() roda por hit resolvido.
+  if (isCleric && magical && r.crit && hitIndex === 0) {
+    if (s.enemy.judgment && s.character.unlockedSkills.includes('clerigo:provacao:3')) s.enemy.judgment.ticksLeft += ZELO_INFLEXIVEL_EXTEND_ROUNDS;
+    if (s.character.unlockedSkills.includes('clerigo:provacao:6')) {
+      const beforeAcusacao = s.enemy.judgment?.stacks ?? 0;
+      s.enemy.judgment = applyJudgmentState(s.enemy.judgment, ACUSACAO_JUDGMENT_ON_CRIT, judgmentDuration(s));
+      for (const milestone of JUDGMENT_FAITH_MILESTONES) if (beforeAcusacao < milestone && (s.enemy.judgment?.stacks ?? 0) >= milestone) addClassNumber(s, 'faith', 1, 5);
+    }
+  }
   if (s.classState.classId === 'cavaleiro' && Number(cs.counterStored ?? 0) > 0) { amount += Number(cs.counterStored); cs.counterStored = 0; }
   // Retaliação (cavaleiro:bastiao:6): a próxima ação ofensiva direta que
   // acerta consome uma carga e soma dano físico bônus baseado na DEF,
@@ -529,6 +558,16 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
     }
     if (x.heatGain) addClassNumber(s, 'heat', x.heatGain, 100);
     if (x.amplifiedHeatGain && (classRecord(s).awakenedCast || classRecord(s).mageAmplified)) addClassNumber(s, 'heat', x.amplifiedHeatGain, 100);
+    // Superaquecimento (mago:overheat) — depois de a magia resolver e gerar
+    // Calor, 100 (o teto de addClassNumber) causa dano verdadeiro e reseta
+    // para 50. Válvula de Emergência reduz só o primeiro por inimigo.
+    if ((x.heatGain || x.amplifiedHeatGain) && s.classState.classId === 'mago' && stateResource(s, 'heat') >= HEAT_OVERHEAT_AT) {
+      const firstOverheat = !classRecord(s).mageOverheatUsedThisEnemy;
+      const dmgPct = firstOverheat && s.character.unlockedSkills.includes('mago:piromante:8') ? HEAT_OVERHEAT_FIRST_SELF_DMG_PCT : HEAT_OVERHEAT_SELF_DMG_PCT;
+      s.playerHp = Math.max(1, s.playerHp - Math.max(1, Math.round(effectiveMaxHp(s.character) * dmgPct)));
+      classRecord(s).mageOverheatUsedThisEnemy = true;
+      setClassNumber(s, 'heat', HEAT_AFTER_OVERHEAT, 100);
+    }
     if (s.classState.classId === 'cavaleiro') {
       const highHp = s.enemyHp / s.enemy.maxHp >= 0.9;
       const momentumGain = highHp && x.momentumGainOnHitExtraVsHighHp !== undefined ? x.momentumGainOnHitExtraVsHighHp : (x.momentumGainOnHitExtra ?? 0);
@@ -1035,6 +1074,9 @@ export function resolvePlayerAction(s: CombatState): CombatState {
       if (s.enemy.warrior.current <= 0) s.enemy.warrior.guardBroken = true;
     }
     if (r.landed && s.classState.classId === 'barbaro') addClassNumber(s, 'fury', FURY_GAIN_BASIC_HIT, 100);
+    // Ataque básico do Mago nunca tem elemento — conta como "ação sem Fogo"
+    // e resfria Calor, igual a qualquer outra ação não ígnea.
+    if (s.classState.classId === 'mago') addClassNumber(s, 'heat', -(s.character.unlockedSkills.includes('mago:piromante:5') ? HEAT_DISSIPATION_COOLING : HEAT_NON_FIRE_COOLING), 100);
     // Ataque básico do Feiticeiro NÃO gera Pulso — só habilidades ativas o
     // fazem (ver o cast normal abaixo, guardado por !awakenedCast).
     if (r.landed && s.classState.classId === 'cavaleiro') {
@@ -1096,6 +1138,13 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     const runes = nextRunes(Number(classRecord(s).runes ?? 0));
     classRecord(s).runes = runes.next;
     classRecord(s).mageAmplified = runes.amplified;
+    // Calor "resfria após qualquer ação sem Fogo" (classMechanics.ts) —
+    // roda por cast, antes do heatGain deste mesmo cast (que só existe em
+    // magias de Fogo, então nunca conflita com este resfriamento).
+    if (x.element !== 'fire') {
+      const cooling = s.character.unlockedSkills.includes('mago:piromante:5') ? HEAT_DISSIPATION_COOLING : HEAT_NON_FIRE_COOLING;
+      addClassNumber(s, 'heat', -cooling, 100);
+    }
     if (x.polarity) {
       const circuit = circuitAfterCast((classRecord(s).magePolarity ?? 'none') as 'none' | 'positive' | 'negative', x.polarity, Number(classRecord(s).mageCircuit ?? 0), x.circuitPerfectWithInverter === true && classRecord(s).mageInverterPending === true);
       classRecord(s).magePolarity = circuit.last; classRecord(s).mageCircuit = circuit.circuit;

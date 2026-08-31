@@ -7,6 +7,11 @@ export const HEAT_AFTER_OVERHEAT = 50;
 export const HEAT_NEW_ENEMY_CAP = 40;
 export const HEAT_NON_FIRE_COOLING = 10;
 export const HEAT_DISSIPATION_COOLING = 15;
+// Superaquecimento (mago:overheat) — dano verdadeiro ao Calor chegar a 100.
+export const HEAT_OVERHEAT_SELF_DMG_PCT = 0.05;
+// Válvula de Emergência (mago:piromante:8) — primeiro Superaquecimento de
+// cada inimigo causa 3% em vez de 5%.
+export const HEAT_OVERHEAT_FIRST_SELF_DMG_PCT = 0.03;
 
 export type ThermalState = 'normal' | 'chilled' | 'fragile' | 'frozen';
 export type MagePolarity = 'none' | 'positive' | 'negative';

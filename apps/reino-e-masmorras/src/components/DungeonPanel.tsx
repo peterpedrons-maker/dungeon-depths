@@ -3169,6 +3169,7 @@ export function DungeonPanel({
         raw.thermalTicks = mageThermalTicksRef.current;
         raw.mageCircuit = mageCircuitRef.current;
         raw.magePolarity = mageLastPolarityRef.current;
+        raw.mageOverheatUsedThisEnemy = mageOverheatUsedThisEnemyRef.current;
         break;
       case 'ladino':
         raw.images = rogueImagesRef.current;
@@ -3278,6 +3279,8 @@ export function DungeonPanel({
       mageHeatRef.current = Number(raw.heat ?? 0);
       mageThermalRef.current = String(raw.thermal ?? 'normal') as ThermalState;
       mageCircuitRef.current = Number(raw.mageCircuit ?? 0);
+      mageLastPolarityRef.current = String(raw.magePolarity ?? 'none') as 'none' | 'positive' | 'negative';
+      mageOverheatUsedThisEnemyRef.current = Boolean(raw.mageOverheatUsedThisEnemy);
       mageSync();
     }
     if (chRef.current.classId === 'ladino') {

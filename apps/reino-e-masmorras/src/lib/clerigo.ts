@@ -186,6 +186,8 @@ export const OLHAR_DO_JUIZ_HIGH_JUDGMENT_ACCURACY_PCT = 0.02;
 export const PALAVRA_ARDENTE_DMG_PCT = 0.03;
 // Zelo Inflexível (clerigo:provacao:3).
 export const ZELO_INFLEXIVEL_EXTEND_ROUNDS = 1;
+// Acusação (clerigo:provacao:6) — crítico mágico direto aplica Julgamento.
+export const ACUSACAO_JUDGMENT_ON_CRIT = 1;
 // Chama Purificadora (clerigo:provacao:4).
 export const CHAMA_PURIFICADORA_MULT = 1.35;
 export const CHAMA_PURIFICADORA_JUDGMENT_STACKS = 2;
