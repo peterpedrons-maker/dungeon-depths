@@ -10,8 +10,8 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 ### Interface (molduras, botões, ícones, barras)
 - ✅ [Moldura Principal — janelas e painéis](#moldura-principal-janelas-e-paineis)
 - ✅ [Pergaminho — fundo dos painéis](#pergaminho-fundo-dos-paineis)
-- 🕓 [Painel de Ferro — fundo do menu lateral](#painel-de-ferro-fundo-do-menu-lateral) — jogo hoje usa um degradê CSS no lugar
-- 🕓 [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral) — jogo hoje desenha a placa só em CSS no lugar
+- ✅ [Painel de Ferro — fundo do menu lateral](#painel-de-ferro-fundo-do-menu-lateral)
+- ✅ [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral)
 - ✅ [Slot de Equipamento — paperdoll](#slot-de-equipamento-paperdoll-de-arma-armadura-acessorio)
 - ✅ [Ícones de Slot Vazio](#icones-de-slot-vazio-paperdoll-de-equipamentos-slot-sem-item)
 - ✅ [Slot de Habilidade](#slot-de-habilidade-nos-da-arvore-e-barra-de-habilidades-equipadas)
