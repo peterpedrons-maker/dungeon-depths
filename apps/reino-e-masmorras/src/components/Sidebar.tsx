@@ -36,7 +36,15 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
           transform transition-transform duration-200 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:static md:translate-x-0 md:z-auto md:w-56 md:shrink-0`}
-        style={{ backgroundImage: `url(${pergaminho})`, backgroundSize: '340px', backgroundBlendMode: 'multiply' }}
+        style={{
+          // A flat multiply blend against the very dark panel color crushed
+          // the parchment grain down to near-black, which is what read as a
+          // plain muddy overlay. Layering a translucent dark-brown scrim OVER
+          // the untinted texture instead keeps its mottling/fiber visible
+          // while still landing in the same moody palette as every other panel.
+          backgroundImage: `linear-gradient(rgba(43,32,19,0.80), rgba(43,32,19,0.88)), url(${pergaminho})`,
+          backgroundSize: 'auto, 300px',
+        }}
       >
         <div className="p-2.5 border-b-2 border-gold/20">
           <HeroNavItem

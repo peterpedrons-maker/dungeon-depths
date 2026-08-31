@@ -10,6 +10,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 ### Interface (molduras, botões, ícones, barras)
 - ✅ [Moldura Principal — janelas e painéis](#moldura-principal-janelas-e-paineis)
 - ✅ [Pergaminho — fundo dos painéis](#pergaminho-fundo-dos-paineis)
+- 🕓 [Painel de Carvalho — fundo do menu lateral](#painel-de-carvalho-fundo-do-menu-lateral) — jogo hoje reaproveita o Pergaminho, escurecido, no lugar
 - ✅ [Slot de Equipamento — paperdoll](#slot-de-equipamento-paperdoll-de-arma-armadura-acessorio)
 - ✅ [Ícones de Slot Vazio](#icones-de-slot-vazio-paperdoll-de-equipamentos-slot-sem-item)
 - ✅ [Slot de Habilidade](#slot-de-habilidade-nos-da-arvore-e-barra-de-habilidades-equipadas)
@@ -319,6 +320,18 @@ Square canvas, 1024×1024 px, viewed perfectly flat-on (no perspective, no rotat
 Hand-painted medieval fantasy game UI asset, rich digital painting style. A seamless, tileable texture of aged parchment paper. Warm cream-beige base color with subtle brown mottling and a faint fibrous paper grain. A few small stains, foxing spots, and slightly darkened edges — but kept light and only near the corners, so the middle of the tile still reads as clean and seamless when repeated.
 
 No border, no frame, no vignette, no writing, no illustrations — flat texture fills the entire canvas edge-to-edge. Square canvas, 512×512 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling.
+```
+
+<a id="painel-de-carvalho-fundo-do-menu-lateral"></a>
+### Painel de Carvalho — Fundo do menu lateral
+**Tamanho:** 512×1024 px (retrato) · **Uso:** preenchimento do menu de navegação lateral (Sidebar), tileável verticalmente
+
+O menu lateral hoje reaproveita o Pergaminho genérico dos painéis, só que escurecido por baixo de um degradê — funciona, mas é a mesma textura clara usada em toda janela do jogo, só que empurrada pro escuro. Esta peça é dedicada: um painel de madeira mais escuro e denso que já nasce no tom certo, pra dar ao menu uma identidade própria (a "estante do castelo") em vez de parecer um pergaminho apagado.
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style (think Diablo, Baldur's Gate, Divinity: Original Sin inventory screens). A seamless, tileable texture of dark aged oak wood planks, viewed flat-on like a cabinet door or the backing board of a hanging tavern menu. Vertical wood grain running top to bottom, with subtle plank seams every 20-25% of the height. Warm candlelit color palette: deep near-black browns, muted bronze, a faint warm amber glow catching the grain highlights — no purple, no blue, no futuristic elements. A little worn/weathered character (small scuffs, faint water staining near one edge) but overall dark and low-contrast, since UI text and gold icons will sit on top of this the whole time.
+
+No border, no frame, no vignette, no metal fittings, no writing, no illustrations, no strong directional light source — flat, evenly-lit texture fills the entire canvas edge-to-edge so it reads calmly behind foreground UI. Portrait canvas, 512×1024 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling in both directions.
 ```
 
 ---
