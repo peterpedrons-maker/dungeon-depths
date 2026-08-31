@@ -83,8 +83,6 @@ export const REGIONS: RegionDef[] = [
       { dungeonId: 'arenaCampeao', xPct: 50, yPct: 15 },
     ],
   },
-  { region: 6, name: 'Nyxheim', image: null, markers: [] },
-  { region: 7, name: 'Aetherion', image: null, markers: [] },
 ];
 
 // A region unlocks once the character reaches the lowest level requirement

@@ -109,12 +109,10 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Arena do Campeão (especial) — inimigos](#inimigos-xxxv-arena-do-campeao-gladiador-campeao-fera-campea-da-arena-duelista-veterano-senhor-de-guerra-da-arena-e-campeao-ensanguentado)
 - 🕓 [Arena do Campeão (especial) — chefe final (Campeão Eterno)](#chefe-arena-do-campeao-campeao-eterno)
 
-### Mapa Mundo (Endgame — nível 51-60) — tudo pendente
-- 🕓 [Mapa Mundo — cenário principal (landscape/horizontal)](#mapa-mundo-cenario-principal)
-- 🕓 [Inimigos Tier 1 — Comuns (24)](#mapa-mundo-inimigos-tier-1-comuns)
-- 🕓 [Inimigos Tier 2 — Raros (17)](#mapa-mundo-inimigos-tier-2-raros)
-- 🕓 [Inimigos Tier 3 — Épicos (11)](#mapa-mundo-inimigos-tier-3-epicos)
-- 🕓 [8 Bosses Únicos (Tier 4 — Lendários)](#mapa-mundo-bosses-tier-4-lendarios) — incluindo Rainha Sombra (boss final)
+### Mapa Mundo (Endgame — após as 5 regiões) — tudo pendente
+Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões verticais empilhadas — o jogador passa a navegar por **um único mapa mundi aberto**, com dezenas de localidades (masmorras) já clicáveis diretamente, sem precisar avançar região por região. O mapa pode agrupar visualmente algumas localidades próximas sob o nome de uma área/paragem (ex.: "Terras Geladas do Norte"), mas isso é só rótulo — não existe mais a divisão em regiões separadas tipo Região 6/7 que o kit chegou a ter antes.
+- 🕓 [Mapa Mundo — cenário principal (landscape/horizontal, dezenas de localidades)](#mapa-mundo-cenario-principal)
+- Inimigos/chefes de cada localidade do mapa mundo: ainda não desenhados — reaproveitar o sistema de tiers já existente (`lib/enemies.ts`) quando as masmorras forem definidas, em vez de criar um elenco de criaturas exclusivo por área.
 
 ### Alvos de Caçada (Hunts — 3 superchefes opcionais)
 - ⛔ Tirano Ossudo, Leviatã do Pântano, Wyrm Infernal — ainda nem tem prompt escrito — avise se quiser que eu escreva
@@ -126,14 +124,12 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ [Cena do Mercador](#cena-do-mercador-tela-do-mercador-aberta-pela-construcao-mercador)
 - ✅ [Cena de Título](#cena-de-titulo-tela-inicial-logo-menu)
 
-### Mapa de Masmorras (fundo de cada região, 7 no total)
+### Mapa de Masmorras (fundo de cada região, 5 no total — última fase antes do Mapa Mundo)
 - ✅ [Região 1 — Valdren (nível 1-10)](#regiao-1-valdren-nivel-1-10)
 - ✅ [Região 2 — Umbrália (nível 11-20)](#regiao-2-umbralia-nivel-11-20)
 - 🕓 [Região 3 — Thurgard (nível 21-30)](#regiao-3-thurgard-nivel-21-30)
 - 🕓 [Região 4 — Xilvana (nível 31-40)](#regiao-4-xilvana-nivel-31-40)
-- 🕓 [Região 5 — Ignares (nível 41-50)](#regiao-5-ignares-nivel-41-50)
-- 🕓 [Região 6 — Nyxheim (nível 51-58)](#regiao-6-nyxheim-nivel-51-58) — fora de escopo por enquanto — masmorras dessa região ainda não existem nos dados do jogo
-- 🕓 [Região 7 — Aetherion (nível 60)](#regiao-7-aetherion-nivel-60) — fora de escopo por enquanto — masmorras dessa região ainda não existem nos dados do jogo
+- 🕓 [Região 5 — Ignares (nível 41-50) — última região; depois dela o jogo passa para o Mapa Mundo](#regiao-5-ignares-nivel-41-50)
 
 ### Fundos de Batalha (imagem atrás do combate, por masmorra)
 - ✅ Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada, Minas Abandonadas — 7 masmorras — prompts já usados, removidos do kit
@@ -2307,39 +2303,11 @@ Scatter 2 extra fog-shrouded silhouette markers with no legible name near the ed
 ```
 Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and Kingdom scene (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
 
-A tall vertical dungeon-selection map segment — this is the FIFTH of 7 stacked regions forming one long exploration path, so the path enters from the bottom edge of the canvas and exits off the top edge, continuing both directions. A winding path connects distinct location markers from bottom to top, through an arid volcanic landscape meeting a drowned coastline, dramatic red-and-teal sky, distant lava rivers, dark water reclaiming ruins.
+A tall vertical dungeon-selection map segment — this is the FIFTH and FINAL of 5 stacked regions forming one long exploration path, so the path enters from the bottom edge of the canvas as usual, but near the top it does NOT exit into another region — instead it climbs toward a tall mountain pass and visibly trails off into distant misty peaks and unmapped horizon, hinting that the world continues far beyond into unknown lands (this is where the game later transitions the player into the open Mapa Mundo screen, a different kind of map entirely). A winding path connects distinct location markers from bottom to top, through an arid volcanic landscape meeting a drowned coastline, dramatic red-and-teal sky, distant lava rivers, dark water reclaiming ruins.
 
 Location markers along the path, bottom to top, each a small distinct landmark with a wooden/parchment sign bearing its Portuguese name (small spelling mistakes in the text are acceptable): 1) "Abismo de Gelo" — a deep glacial crevasse with cold mist rising from it. 2) "Ruínas Vulcânicas" — stone pillars cracked by lava. 3) the path visibly FORKS here into two side-by-side markers before rejoining: "Covil do Dragão Ancião" — a cave with giant claw marks gouged into the rock, AND "Salão dos Titãs" — a colossal stone portal. 4) "Necrópole Real" — a golden mausoleum half-buried in ash. 5) "Palácio Submerso" — a stone dome sinking into dark water. 6) "Arena do Campeão" — a raised arena with torn banners, marked with a distinct glowing runic aura (this one is special).
 
-Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
-```
-
-<a id="regiao-6-nyxheim-nivel-51-58"></a>
-### Região 6 — Nyxheim (nível 51-58)
-**Tamanho:** 1024×2560 px · **Uso:** sexto trecho do Mapa de Masmorras
-
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and Kingdom scene (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A tall vertical dungeon-selection map segment — this is the SIXTH of 7 stacked regions forming one long exploration path, so the path enters from the bottom edge of the canvas and exits off the top edge, continuing both directions. A winding path connects distinct location markers from bottom to top, across a fractured highland plateau touched by the void, a constant storm brewing in the background, jagged cracks of purple-black energy splitting the stone ground — the last stretch before the top of the world.
-
-Location markers along the path, bottom to top, each a small distinct landmark with a wooden/parchment sign bearing its Portuguese name (small spelling mistakes in the text are acceptable): 1) "Fortaleza do Caos" — a black fortress with twisted spikes. 2) "Torre do Vazio" — a slender tower dissolving into dark smoke at its peak. 3) the path visibly FORKS here into two side-by-side markers before rejoining: "Domínio Sombrio" — a pulsing gate of shadow, AND "Colosso de Pedra" — a fallen colossal statue, half-buried. 4) "Trono Esquecido" — a cracked stone throne in an empty courtyard.
-
-Scatter 2 extra fog-shrouded silhouette markers with no legible name near the edges of the image — reserved space for future content. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
-```
-
-<a id="regiao-7-aetherion-nivel-60"></a>
-### Região 7 — Aetherion (nível 60)
-**Tamanho:** 1024×2560 px · **Uso:** sétimo e último trecho (mais alto) do Mapa de Masmorras
-
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and Kingdom scene (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A tall vertical dungeon-selection map segment — this is the SEVENTH and FINAL of 7 stacked regions forming one long exploration path, so the path enters from the bottom edge of the canvas but does NOT exit the top (this is the end of the map). The top of the world: a shattered citadel floating above the clouds, a rupturing sky with suspended rock fragments, dramatic apocalyptic lighting.
-
-Location markers along the path, bottom to top, arranged in four ascending tiers of increasing magical intensity: TIER 1 (bronze glow) — four small structures side by side at the same height: "Abismo Final", "Necrópole dos Reis Caídos", "Covil do Titã Adormecido", "Portal do Vazio" (plain ruined structures with a warm bronze magical glow). TIER 2, directly above tier 1 (silver glow) — the SAME four structures reopened, visually similar but with a brighter silver-white magical glow and small silver runic markings added. TIER 3, directly above tier 2 (gold glow) — the same four structures again, now with an intense golden magical glow and glowing gold runic markings. TIER 4, at the very top (violet-black glow) — a single massive cracked monumental gate pulsing with dark violet-black energy, labeled "Trono do Fim dos Tempos"; beside it, separated by a visible bottomless drop into the clouds below, a circular black hole with a spiral staircase vanishing into darkness, labeled "Abismo Sem Fim" — this is the true end of the map, nothing continues past it.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name labels described above. Vertical canvas, 1024×2560 px.
+Near the top, past the last marker, add a distant signpost pointing further up the mountain pass reading "Terras Desconhecidas" (Unknown Lands) — a visual hint that this is the edge of the mapped kingdom, not a dead end. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
 ```
 
 ---
@@ -2689,81 +2657,23 @@ This is a complete, self-contained background illustration — no magenta backgr
 
 <a id="mapa-mundo-cenario-principal"></a>
 ### Mapa Mundo — Cenário Principal
-**Tamanho:** 1920×1440 px · **Uso:** tela de mapa mundo (endgame, após completar as 5 regiões). Esta é uma exceção ao formato vertical de combate — é uma imagem landscape/horizontal mostrando o MAPA INTEIRO de uma só vez, com múltiplas áreas/biomas visíveis simultaneamente.
+**Tamanho:** 1920×1440 px · **Uso:** tela de Mapa Mundo, aberta depois que o jogador termina a Região 5 (Ignares). Diferente das 5 regiões anteriores (uma trilha vertical linear, uma masmorra de cada vez), esta é **uma única imagem landscape/horizontal mostrando dezenas de localidades ao mesmo tempo**, todas com uma estrada visível ligando-as em rede (não uma fila única) — o jogador pode clicar em qualquer localidade já desbloqueada diretamente a partir desse mapa, sem precisar "avançar" por regiões antes. Algumas localidades próximas ficam visualmente agrupadas sob o nome de uma sub-área da paisagem (ex.: "Terras Geladas do Norte"), mas isso é só ambientação — todas continuam sendo pontos únicos, individualmente clicáveis, no mesmo mapa.
 
 ```
-2D pixel art game MAP SCENE, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, rich but limited color palette with flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and battle backgrounds (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT anime, NOT 3D.
+2D pixel art game MAP SCENE, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, rich but limited color palette with flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites, battle backgrounds and the 5 previous region maps (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT anime, NOT 3D.
 
-LANDSCAPE/HORIZONTAL FORMAT — this is an ATLAS or WORLD MAP, not a vertical combat background. It should show multiple distinct biomes/regions visible in one wide view, as if a player is zooming into a fantasy world map to see various dangerous lands at once.
+LANDSCAPE/HORIZONTAL FORMAT — this is an ATLAS or WORLD MAP, not a vertical dungeon-selection path like the previous 5 regions. Show the whole known world in one wide view from a slight top-down angle, as an illustrated fantasy atlas page, with a network of roads/paths connecting many small distinct location markers scattered across varied terrain — NOT one single line, but branching roads that let the eye travel between locations in any order.
 
-COMPOSITION — 8 major distinct areas arranged across the map:
+Terrain flows across the map in a handful of loosely bordered natural clusters (no hard walls or grid lines between them, just the terrain itself changing gradually): a snowy mountain range in the upper-left, a dark misty swamp and chasm in the center-left, a scorched volcanic badland across the top-center, a corrupted overgrown jungle in the upper-right, ancient starlit ruins along the right edge, and a frozen wasteland meeting a drowned coastline along the bottom — each area distinct in palette and mood but all part of one continuous, walkable landscape.
 
-TOP-LEFT (Pico da Perdição): Snow-capped mountain peaks with jagged crystalline formations, icy wind, blue-white aura, several isolated plateaus connected by narrow bridges.
+Populate the map with roughly 28 small individual location markers along the roads — each a tiny distinct landmark (a ruined tower, a cave mouth, a cracked obelisk, a sunken temple, a war-camp, a frozen cavern, etc.) with a small wooden/parchment signpost bearing a short Portuguese place name (a few can be left with illegible/scribbled names, small spelling mistakes are fine). Cluster them naturally — roughly 4 to 6 markers per terrain area described above — connected by the road network, not evenly gridded.
 
-CENTER-LEFT (Fosso Infinito): A massive dark chasm/void with purple-green otherworldly mist, strange geometric tentacle-like structures emerging from the abyss, non-Euclidean alien geometry, unsettling glow.
+At the far right edge, dominating the skyline, place ONE unmistakably larger and more ominous landmark than all the others: a massive floating dark castle wreathed in swirling purple-black magic — this is the final destination of the whole map, clearly meant to be reached last, visually pulling the eye across the entire composition toward it.
 
-CENTER-TOP (Forja do Caos): An active volcano with flowing lava, molten magma streams, red-orange-purple fire, massive metal structures glowing with heat, industrial/forged aesthetic mixed with natural disaster.
+Overall mood: EPIC, MYSTERIOUS, DANGEROUS, but readable as a MAP first — every marker must stay small and clear enough to work as a tappable icon, not overwhelmed by background detail. A player should be able to look at this image and immediately understand "this is an open map with many places I can go," not a single painted vista.
 
-TOP-RIGHT (Jardim Corrompido): Dense twisted overgrown forest with mutant flora — vines with unnatural colors (purple, neon-green, electric blue), carnivorous plants, alien vegetation, a sickly beautiful corrupted nature.
-
-UPPER-RIGHT (Cemitério Cósmico): Ruins of an ancient civilization under starry sky, massive bone-like megastructures, glowing arcane symbols, cosmic purple and gold light, sense of deep age and power.
-
-RIGHT (Palácio da Rainha Sombra): A massive floating/ethereal dark castle, Gothic architecture, swirling dark magic, purple-black-gold color scheme, radiating an aura of power and malice — should dominate visually as the most impressive/ominous landmark.
-
-BOTTOM-LEFT (Tundra Venenosa): Desolate frozen plains with toxic crystalline formations, radioactive green-yellow mist, poisonous acidic pools, an utterly hostile wasteland aesthetic.
-
-BOTTOM-CENTER (Ruínas do Mundo Antigo): Massive broken megastructures from a lost ancient civilization, chunks of impossible technology, colossal toppled statues, a sense of apocalyptic grandeur.
-
-Overall mood: EPIC, MYSTERIOUS, DANGEROUS. This is the end-game final region — it should feel like a culmination of the journey, a convergence of multiple terrible powers and forgotten worlds colliding in one place. Sense of scale should be overwhelming. A player should look at this map and feel both wonder and dread.
-
-Landscape canvas, 1920×1440 px. Soft diffuse top-light. No characters, no UI frame, no text, no watermark. This is a complete, self-contained WORLD MAP illustration — players will look at it while in the game's World Map navigation screen.
+Landscape canvas, 1920×1440 px. Soft diffuse top-light. No characters, no UI frame, no extra text beyond the small signpost names described above, no watermark. This is a complete, self-contained WORLD MAP illustration for the game's Mapa Mundo navigation screen.
 ```
 
----
-
-<a id="mapa-mundo-inimigos-tier-1-comuns"></a>
-### Mapa Mundo — Inimigos Tier 1 (Comuns — 24)
-**Tamanho:** 1536×768 px (6 folhas de 256×256 cada, lado a lado) · **Uso:** mobbing regular do mapa mundo, drops baixos
-
-Vinte e quatro inimigos distribuídos em 6 spritesheet rows de 4 creatures cada. Veja especificação completa em `MAPA-MUNDO-ESPECIFICACAO.md` — nomes específicos e descrições visuais para cada bioma. Exemplos:
-
-- Espectro Gelado, Sereia das Neves, Aranha de Gelo, Sentinela Névoa (Pico da Perdição)
-- Parasita Void, Olho Vivo, Nódoa Dimensional, Tentáculo Suspenso (Fosso Infinito)
-- Golem de Magma Pequeno, Morcego de Brasas, Escorpião Infernal, Elemental de Fumaça (Forja do Caos)
-- ... (12 mais, confira o documento para detalhes completos)
-
-Cada um facing LEFT em side profile, crisp pixel art, mesma qualidade dos inimigos das regiões anteriores.
-
----
-
-<a id="mapa-mundo-inimigos-tier-2-raros"></a>
-### Mapa Mundo — Inimigos Tier 2 (Raros — 17)
-**Tamanho:** 1536×768 px (formato: múltiplas rows conforme necessário) · **Uso:** pack encounters, drops médios
-
-Dezessete inimigos raros — versões mais fortes de conceitos (Cavaleiro de Gelo, Dragão de Gelo Jovem, Abominação Void, Fênix Noir, etc.). Veja `MAPA-MUNDO-ESPECIFICACAO.md` para lista completa.
-
----
-
-<a id="mapa-mundo-inimigos-tier-3-epicos"></a>
-### Mapa Mundo — Inimigos Tier 3 (Épicos — 11)
-**Tamanho:** 768×768 px cada (11 sprites individuais, entreregues separadamente) · **Uso:** encontros especiais, drops altos
-
-Onze inimigos épicos — campeões menores antes dos 8 bosses principais (Titã de Gelo, Mestre Tempestade, Rainha da Floresta Negra, Archlich, etc.). Veja `MAPA-MUNDO-ESPECIFICACAO.md`.
-
----
-
-<a id="mapa-mundo-bosses-tier-4-lendarios"></a>
-### Mapa Mundo — 8 Bosses Únicos (Tier 4 — Lendários)
-**Tamanho:** 768×768 px cada · **Uso:** 8 encontros de boss unicamente no mapa mundo (nível 51-60)
-
-1. **Titã Gelado da Perdição** (Pico da Perdição) — humanoid gigante de gelo com coroa de icicles
-2. **Abominação Viva do Vazio** (Fosso Infinito) — criatura cósmica com múltiplos olhos/apêndices
-3. **Fogueira Eterna** (Forja do Caos) — fênix gigante em chamas eternas
-4. **Rainha Umbra da Floresta** (Jardim Corrompido) — dríade humanoid gigante com flora viva
-5. **Pharaó Esquecido** (Cemitério Cósmico) — esqueleto humanoid com coroa ancestral + auréola mágica
-6. **Imperatriz da Perdição** (Tundra Venenosa) — inseto humanoid gigante rainha com exoesqueleto tóxico
-7. **Colosso da Ruína** (Ruínas do Mundo Antigo) — golem feito de megaestruturas ruins + tecnologia ancestral
-8. **Rainha Sombra** ⭐ (Palácio da Rainha Sombra) — BOSS FINAL — humanoid feminina etérea, corpo semi-translúcido púrpura/preto, asas de magia, coroa de poder absoluto, aura de magia negra — deve ser o inimigo mais impressionante e épico de todo o jogo
-
-Cada um facing LEFT, crisp pixel art, mesma qualidade dos bosses das regiões anteriores. Veja `MAPA-MUNDO-ESPECIFICACAO.md` para descrições visuais detalhadas de cada um.
+Sobre inimigos/chefes dessas dezenas de localidades: ainda não foram definidos (nem os dados das masmorras em `lib/dungeons.ts` existem ainda — isso é conteúdo futuro, fora do escopo desta arte). Quando essas masmorras forem desenhadas, o padrão recomendado é o mesmo já usado nas Regiões 1-5: reaproveitar o elenco de inimigos por tier já existente em `lib/enemies.ts` para a maioria das localidades, e reservar um chefe exclusivo desenhado à mão só para as poucas masmorras "especiais" de cada leva (igual Poço sem Fundo, Torre dos Ecos e Arena do Campeão hoje) — evita ter que desenhar uma criatura nova para cada uma das dezenas de localidades.
 
