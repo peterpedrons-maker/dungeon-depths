@@ -11,6 +11,10 @@ import {
   activateDruidAvatarActions, tickDruidAvatar,
   gainDruidDissonance, reduceDruidDissonanceOnAligned, isDruidReequilibriumReady,
 } from './druid.ts';
+import { createCombatState, resolvePlayerAction } from './combatEngine.ts';
+import { createCharacter } from './classes.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
 
 test('seasons cycle spring -> summer -> autumn -> winter -> spring', () => {
   assert.equal(nextDruidSeason('spring'), 'summer');
@@ -196,4 +200,24 @@ test('dissonance: gained only when misaligned, capped at max, reduces by 1 when 
 
 test('structural: universal season list has exactly 4 entries in calendar order', () => {
   assert.deepEqual(DRUID_SEASONS, ['spring', 'summer', 'autumn', 'winter']);
+});
+
+test('motor real: cast Sintonizado planta 2 Sementes, marca o Ano e avança a Estação', () => {
+  // Real end-to-end coverage: pure function tests above only verify the math
+  // (markDruidYear, nextDruidSeason, plantDruidSeeds in isolation) — not that
+  // resolvePlayerAction actually drives them together for a real cast.
+  const SEMEADURA_VITAL_ID = 'druida:cura-natural:4'; // sempre disponível, druidSeason: 'spring'.
+  const character = { ...createCharacter('Druida real', 'druida'), unlockedSkills: [SEMEADURA_VITAL_ID] };
+  const enemy = { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 };
+  const state = createCombatState(character, enemy, 3, [SEMEADURA_VITAL_ID], [SEMEADURA_VITAL_ID]);
+
+  assert.equal(state.classState.classId === 'druida' ? state.classState.season : undefined, 'spring', 'personagem novo começa na Primavera');
+  state.playerHp = Math.round(state.playerHp * 0.5); // heal-kind abilities só são "úteis" (e escolhidas) com vida incompleta.
+  const hpBefore = state.playerHp;
+  resolvePlayerAction(state);
+  assert.ok(state.events.some((e) => e.type === 'abilityCast' && e.abilityId === SEMEADURA_VITAL_ID), 'primeiro cast deveria acontecer');
+  assert.ok(state.playerHp > hpBefore, 'Semeadura Vital deveria curar');
+  assert.ok(state.classState.classId === 'druida' && state.classState.garden.length === 2, 'cast Sintonizado (Primavera==Primavera) deveria plantar 2 Sementes, não 1');
+  assert.equal(state.classState.classId === 'druida' ? state.classState.season : undefined, 'summer', 'a Estação avança a cada ação, alinhada ou não');
+  assert.equal(state.classState.classId === 'druida' && state.classState.yearLedger.spring, true, 'cast Sintonizado deveria marcar a Primavera no Ano');
 });
