@@ -10,7 +10,8 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 ### Interface (molduras, botões, ícones, barras)
 - ✅ [Moldura Principal — janelas e painéis](#moldura-principal-janelas-e-paineis)
 - ✅ [Pergaminho — fundo dos painéis](#pergaminho-fundo-dos-paineis)
-- 🕓 [Painel de Carvalho — fundo do menu lateral](#painel-de-carvalho-fundo-do-menu-lateral) — jogo hoje reaproveita o Pergaminho, escurecido, no lugar
+- 🕓 [Painel de Ferro — fundo do menu lateral](#painel-de-ferro-fundo-do-menu-lateral) — jogo hoje usa um degradê CSS no lugar
+- 🕓 [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral) — jogo hoje desenha a placa só em CSS no lugar
 - ✅ [Slot de Equipamento — paperdoll](#slot-de-equipamento-paperdoll-de-arma-armadura-acessorio)
 - ✅ [Ícones de Slot Vazio](#icones-de-slot-vazio-paperdoll-de-equipamentos-slot-sem-item)
 - ✅ [Slot de Habilidade](#slot-de-habilidade-nos-da-arvore-e-barra-de-habilidades-equipadas)
@@ -322,16 +323,28 @@ Hand-painted medieval fantasy game UI asset, rich digital painting style. A seam
 No border, no frame, no vignette, no writing, no illustrations — flat texture fills the entire canvas edge-to-edge. Square canvas, 512×512 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling.
 ```
 
-<a id="painel-de-carvalho-fundo-do-menu-lateral"></a>
-### Painel de Carvalho — Fundo do menu lateral
+<a id="painel-de-ferro-fundo-do-menu-lateral"></a>
+### Painel de Ferro — Fundo do menu lateral
 **Tamanho:** 512×1024 px (retrato) · **Uso:** preenchimento do menu de navegação lateral (Sidebar), tileável verticalmente
 
-O menu lateral hoje reaproveita o Pergaminho genérico dos painéis, só que escurecido por baixo de um degradê — funciona, mas é a mesma textura clara usada em toda janela do jogo, só que empurrada pro escuro. Esta peça é dedicada: um painel de madeira mais escuro e denso que já nasce no tom certo, pra dar ao menu uma identidade própria (a "estante do castelo") em vez de parecer um pergaminho apagado.
+O menu lateral foi redesenhado no estilo do menu de Divinity: Original Sin 2 — um painel de metal escuro com botões individuais em placa, em vez do pergaminho genérico dos outros painéis. Hoje esse fundo é só um degradê CSS com linhas verticais sutis simulando emendas de placa; esta peça troca isso por uma textura pintada de verdade, mantendo a mesma leitura escura e discreta (o texto e os ícones dourados ficam por cima o tempo todo).
 
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style (think Diablo, Baldur's Gate, Divinity: Original Sin inventory screens). A seamless, tileable texture of dark aged oak wood planks, viewed flat-on like a cabinet door or the backing board of a hanging tavern menu. Vertical wood grain running top to bottom, with subtle plank seams every 20-25% of the height. Warm candlelit color palette: deep near-black browns, muted bronze, a faint warm amber glow catching the grain highlights — no purple, no blue, no futuristic elements. A little worn/weathered character (small scuffs, faint water staining near one edge) but overall dark and low-contrast, since UI text and gold icons will sit on top of this the whole time.
+Hand-painted medieval fantasy game UI asset, rich digital painting style (think Diablo, Baldur's Gate, and especially Divinity: Original Sin 2's dark riveted-metal menu panel). A seamless, tileable texture of dark blackened iron/steel plating, viewed flat-on. Very subtle vertical seams every 15-20% of the width suggesting individual plates bolted together, with a faint warm amber sheen catching the metal along those seams. Warm-dark color palette: near-black iron, deep charcoal, a hint of muted bronze in the highlights — no purple, no blue, no futuristic/sci-fi sheen. Overall dark and low-contrast, since UI text, gold icons, and a row of button plates will sit on top of this the whole time.
 
-No border, no frame, no vignette, no metal fittings, no writing, no illustrations, no strong directional light source — flat, evenly-lit texture fills the entire canvas edge-to-edge so it reads calmly behind foreground UI. Portrait canvas, 512×1024 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling in both directions.
+No border, no frame, no vignette, no rivets, no writing, no illustrations, no strong directional light source — flat, evenly-lit texture fills the entire canvas edge-to-edge so it reads calmly behind foreground UI. Portrait canvas, 512×1024 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling in both directions.
+```
+
+<a id="placa-de-menu-botao-de-navegacao-lateral"></a>
+### Placa de Menu — Botão de navegação lateral
+**Tamanho:** 1024×192 px · **Uso:** cada item clicável do menu lateral (Personagem, Habilidades, Visão Geral, etc.) e o botão maior de "Campanha" no topo, esticado
+
+Par da peça acima: hoje cada botão do menu é uma placa desenhada só em CSS (gradiente + sombra interna + um losango "◆" digitado como texto no canto). Esta peça substitui isso por uma placa de metal pintada de verdade — o próprio jogo continua desenhando o ícone, o texto e o brilho dourado de "selecionado" por cima, então a arte não precisa deles.
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style (think Divinity: Original Sin 2's main menu buttons). A wide, short rectangular plate forged from dark blackened iron, gently rounded corners, with a raised beveled edge — a bright warm highlight along the top edge and a dark shadow along the bottom edge, giving it a raised, pressable, riveted metal look. One small diamond-shaped bronze rivet sits inset near the far left end of the plate, and a matching one near the far right end — these two rivets are the only ornamentation, no border or filigree running along the rest of the edge.
+
+The entire flat center of the plate (where the game places an icon and a text label) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area. Front-on view, no perspective. Canvas 1024×192 px, plate filling the frame edge-to-edge left and right with a small margin top and bottom. No text, no watermark, no drop shadow floating outside the plate.
 ```
 
 ---

@@ -4,6 +4,16 @@ import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, 
 import { playClickSfx, isMuted, toggleMuted } from '../lib/audio';
 import { MERCHANT_REFRESH_MS } from '../lib/merchantStock';
 
+// The dark riveted-metal look below (nav background + each button "plate")
+// is CSS-only for now — KIT-DE-ARTE.md has matching art prompts ready
+// ("Painel de Ferro — fundo do menu lateral" and "Placa de Menu — botão de
+// navegação lateral"). Once those two images exist, swap the `nav`
+// backgroundImage for the panel art and give HeroNavItem/NavItem a
+// backgroundImage of the button-plate art (stretched to each button's own
+// width/height) instead of the linear-gradient() fills used here — keep the
+// icon/text/dot/active-glow layering exactly as-is, since the art is drawn
+// to sit behind them, not replace them.
+
 interface Props {
   character: Character;
   section: Section;
