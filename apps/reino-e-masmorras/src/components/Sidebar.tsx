@@ -36,12 +36,12 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:static md:translate-x-0 md:z-auto md:w-56 md:shrink-0`}
         style={{
-          // Dark riveted-metal panel, inspired by Divinity: Original Sin 2's
-          // menu — a subtle repeating hairline suggests plate seams without
-          // needing an actual metal texture asset, and the near-black
-          // gradient is what every nav "button" below sits on top of.
-          backgroundImage:
-            'repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 46px), linear-gradient(180deg, #211a13 0%, #17110c 55%, #100c08 100%)',
+          // Dark, flat panel behind every nav "button" below. An earlier
+          // version added a repeating hairline pattern to suggest riveted
+          // metal seams, but on real phone screens that pattern rendered as
+          // visible vertical stripes instead of a subtle texture — a plain
+          // two-stop gradient reads as intended everywhere.
+          backgroundImage: 'linear-gradient(180deg, #1c150e 0%, #0f0a06 100%)',
           boxShadow: 'inset 6px 0 14px -10px rgba(0,0,0,0.9)',
         }}
       >
