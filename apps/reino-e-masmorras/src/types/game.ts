@@ -571,8 +571,44 @@ export interface AbilityEffect {
 
   // Arqueiro: metadados declarativos de Distância, Tensão, Cadência e voo.
   archerPath?: 'precision' | 'rapid' | 'instinct';
+  // Druida — O Ciclo Vivo. druidSeason identifica a Estação da habilidade
+  // ('cycle' = neutra, nunca Sintonizada nem Descompassada). druidPath
+  // identifica a que árvore ela pertence, para o Reequilíbrio (só
+  // 'balance') e para CDR escopado por caminho. Os sufixos "Aligned"
+  // (Sintonizada) e "Rebalanced" (Reequilibrada, só caminho balance)
+  // trocam o campo base correspondente — ver applyCommandSupremeIfActive
+  // em combatEngine.ts para o mesmo padrão já usado pelo Cavaleiro.
   druidSeason?: 'spring' | 'summer' | 'autumn' | 'winter' | 'cycle';
-  druidAction?: 'seed'|'harvest'|'form'|'cycle'|'winter'|'equilibrium';
+  druidPath?: 'rebirth' | 'metamorphosis' | 'balance';
+  dmgMultAligned?: number;
+  dmgMultRebalanced?: number;
+  healPctAligned?: number;
+  healPctRebalanced?: number;
+  hitCountAligned?: number;
+  hitCountRebalanced?: number;
+  hitDmgMultsAligned?: number[];
+  hitDmgMultsRebalanced?: number[];
+  druidFormOnCast?: 'stag' | 'wolf' | 'bear' | 'owl';
+  druidFormOnCastAll?: boolean; // Avatar Primordial: assume as quatro Formas
+  druidAvatar?: boolean;
+  dmgMultRenewed?: number; // Avatar com Renovo consumido
+  druidEternalReturn?: boolean;
+  hitDmgMultsAbsolute?: number[]; // Eterno Retorno: Renovo + Descompasso 3
+  healPctAbsolute?: number;
+  druidTreeOfLife?: boolean; // Árvore Ancestral: consome Renovo, Jardim -> Fruto, abre Copa Ancestral
+  druidPlantSeeds?: number;
+  druidPlantSeedsAligned?: number;
+  druidHarvest?: boolean; // Colheita Ancestral: consome Frutos enquanto houver HP faltando
+  druidHarvestHealPctPerFruit?: number;
+  druidHarvestHealPctPerFruitAligned?: number;
+  druidImmediateHealPct?: number; // Dormência Profunda: cura imediata só se Sintonizada
+  druidImmediateHealPctAligned?: number;
+  druidPostCastDmgReductionPct?: number; // Raízes do Inverno: -dano na próxima ação direta inimiga
+  druidPostCastDmgReductionPctAligned?: number;
+  druidPostCastDmgReductionPctRebalanced?: number;
+  druidBearWindowBonusPct?: number; // Queda do Urso: janela extra de redução de dano
+  druidAccuracyBonus?: number; // Olhos da Coruja: +precisão só para este cast
+  druidAccuracyBonusAligned?: number;
   healFromDamagePct?: number;
   healFromDamageCapPct?: number;
   archerShotType?: 'precise' | 'volley' | 'flight' | 'ballistic' | 'maneuver';

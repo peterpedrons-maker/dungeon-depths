@@ -20,6 +20,18 @@ import { SELF_ABILITY_KINDS, abilityEffectFields, abilityResolutionPlan, assertA
 import { SKILL_TREES } from './skills.ts';
 import { circuitAfterCast, nextRunes, thermalAfterShatter, thermalShatterMult } from './mago.ts';
 import { totalAttributes } from './attributes.ts';
+import { directHealAmount as universalDirectHealAmount } from './healing.ts';
+import {
+  type DruidSeason, type DruidForm, type DruidGardenUnit, type DruidYearLedger,
+  emptyDruidYear, markDruidYear, evaluateDruidYearEnd, nextDruidSeason,
+  isDruidSeasonAligned, isDruidCycleAbility, isDruidActionMisaligned,
+  growDruidGarden, plantDruidSeeds, maturateDruidGardenOneStage, forceDruidGardenToFruit,
+  consumeOldestDruidFruit, druidFruitCount, druidGardenMax,
+  druidFormBonuses, gainDruidInstinctOnFormChange,
+  activateDruidAvatarActions, tickDruidAvatar, gainDruidDissonance, reduceDruidDissonanceOnAligned,
+  isDruidReequilibriumReady, druidAbilityIdsToAwaken, oldestUnsyncedDruidSeason, pickDruidSeasonalAbility,
+  DRUID_FRUIT_RESERVE_HP_THRESHOLD, DRUID_COPA_ANCESTRAL_ACTIONS, DRUID_COPA_ANCESTRAL_HEAL_BONUS_PCT,
+} from './druid.ts';
 
 export type CombatClassState =
   | { classId: 'guerreiro'; posture: number; guardBroken: boolean; riposteReady: boolean; resources: Record<string, number> }
@@ -33,7 +45,7 @@ export type CombatClassState =
   | { classId: 'cacador'; trail: number; breach: number; traps: number; marked: boolean; resources: Record<string, number> }
   | { classId: 'feiticeiro'; pulse: number; resonance: number; fractures: number; control: number; resources: Record<string, number> }
   | { classId: 'bruxo'; debt: number; credit: number; scars: number; nameFragments: number; resources: Record<string, number> }
-  | { classId: 'druida'; season: string; attunement: number; form: string; resources: Record<string, number> }
+  | { classId: 'druida'; season: DruidSeason; yearLedger: DruidYearLedger; renewal: number; garden: DruidGardenUnit[]; gardenNextId: number; form: DruidForm; instinct: number; avatarActionsLeft: number; dissonance: number; fruitReserveUsed: boolean; nothingLostUsed: boolean; muCompleteUsed: boolean; copaActionsLeft: number; copaPreservedUsed: boolean; resources: Record<string, number> }
   | { classId: 'bardo'; score: number; phrases: number; ovation: number; echo: number; resources: Record<string, number> }
   | { classId: 'necromante'; souls: number; decomposition: number; plague: number; servants: number; resources: Record<string, number> };
 
@@ -134,7 +146,7 @@ function initialClassState(id: ClassId): CombatClassState {
     case 'cacador': return { classId: id, trail: 0, breach: 0, traps: 0, marked: false, resources };
     case 'feiticeiro': return { classId: id, pulse: 0, resonance: 0, fractures: 0, control: 0, resources };
     case 'bruxo': return { classId: id, debt: 0, credit: 0, scars: 0, nameFragments: 0, resources };
-    case 'druida': return { classId: id, season: 'spring', attunement: 0, form: 'none', resources };
+    case 'druida': return { classId: id, season: 'spring', yearLedger: emptyDruidYear(), renewal: 0, garden: [], gardenNextId: 1, form: 'none', instinct: 0, avatarActionsLeft: 0, dissonance: 0, fruitReserveUsed: false, nothingLostUsed: false, muCompleteUsed: false, copaActionsLeft: 0, copaPreservedUsed: false, resources };
     case 'bardo': return { classId: id, score: 0, phrases: 0, ovation: 0, echo: 0, resources };
     case 'necromante': return { classId: id, souls: 1, decomposition: 0, plague: 0, servants: 0, resources };
     default: return assertNever(id);
@@ -146,7 +158,7 @@ export function createCombatState(character: Character, enemy: EnemyInstance, se
   if (character.classId === 'necromante') (classState as unknown as Record<string, unknown>).servantAttacks = [];
   const liveEnemy = { ...enemy };
   if (character.classId === 'guerreiro' && !liveEnemy.warrior) liveEnemy.warrior = { current: 100, max: 100, guardBroken: false, offensiveActionsLeft: 0, ticksLeft: 999, pressureRecoveryPending: false, suppressedActionsLeft: 0, zeroRecoveryPending: false, vanguardFirstHitUsed: false, duelistFirmFirstHitUsed: false, perfectCounterAccuracyPending: false };
-  for (const key of ['fury','faith','determination','momentum','orders','heat','souls','debt','credit','scars','pulse','resonance','fractures','control','tension','cadence','distance','steps','flightCount','trail','breach','ovation','echo','conviction']) classState.resources[key] = stateResource({ classState } as CombatState, key);
+  for (const key of ['fury','faith','determination','momentum','orders','heat','souls','debt','credit','scars','pulse','resonance','fractures','control','tension','cadence','distance','steps','flightCount','trail','breach','ovation','echo','conviction','renewal','instinct','dissonance']) classState.resources[key] = stateResource({ classState } as CombatState, key);
   return { character: { ...character, hp: effectiveMaxHp(character) }, classState, playerHp: effectiveMaxHp(character), enemy: liveEnemy, enemyHp: liveEnemy.maxHp, playerBarrier: 0, enemyBarrier: 0, playerStatuses: [], enemyStatuses: [], playerCC: [], enemyCC: [], playerMods: [], enemyMods: [], cooldowns: Object.fromEntries(abilities.map((a) => [a.id, 0])), equippedAbilityIds: abilities.map((a) => a.id), priorities: priorities.filter((id) => abilities.some((a) => a.id === id)), hots: [], bossPhaseIndex: 0, envTick: 0, actions: 0, enemyActions: 0, potionCooldown: 0, dead: false, won: false, rngState: seed >>> 0, bardState: createBardState(), warlockPlayer: createWarlockPlayerState(), warlockEnemy: createWarlockEnemyNameState(), sorcererEnemy: { fractures: 0, spontaneousUsed: false, correctionUsed: false }, archerState: createArcherCombatState(), traps: [], reviveWindow: 0, deathVeil: 0, aegis: undefined, preparedGuard: undefined, barrierPortions: [], soulThresholds: new Set(), events: [], logs: [] };
 }
 function playerStats(s: CombatState) { return computeCombatStats({ ...s.character, hp: s.playerHp }); }
@@ -170,7 +182,7 @@ function autoPotion(s: CombatState): void {
   if (healed > before) event(s, { type: 'heal', tick: s.envTick, actor: 'player', amount: healed - before });
 }
 function ctx(s: CombatState): AbilityConditionContext {
-  const cs = s.classState as unknown as Record<string, unknown>; const resources: Record<string, number> = { ...s.classState.resources }; for (const k of ['fury','faith','determination','momentum','orders','heat','souls','debt','credit','scars','pulse','resonance','fractures','control','tension','cadence','distance','steps','flightCount','trail','breach','ovation','echo','conviction']) resources[k] = stateResource(s, k);
+  const cs = s.classState as unknown as Record<string, unknown>; const resources: Record<string, number> = { ...s.classState.resources }; for (const k of ['fury','faith','determination','momentum','orders','heat','souls','debt','credit','scars','pulse','resonance','fractures','control','tension','cadence','distance','steps','flightCount','trail','breach','ovation','echo','conviction','renewal','instinct','dissonance']) resources[k] = stateResource(s, k);
   resources.distance = s.archerState.distance; resources.flightCount = s.archerState.arrows.length; resources.ovation = s.bardState.ovation; resources.echo = s.bardState.echo; resources.pulse = Number(cs.pulse ?? resources.pulse); resources.fractures = s.sorcererEnemy.fractures; resources.debt = s.warlockPlayer.debt; resources.credit = s.warlockPlayer.credit; resources.scars = s.warlockPlayer.scars;
   const states: Record<string, boolean> = { frenzy: !!cs.frenzy, thermal: cs.thermal !== 'normal', consecration: Number(cs.consecration ?? 0) > 0, stealth: !!cs.stealthed, trueName: s.warlockEnemy.nameFragments >= 3, bound: s.warlockEnemy.bound, encoreReady: canEncore(s.bardState), trapTriggeredRecently: Number(cs.trapsTriggered ?? 0) > 0, perfectRhythm: s.archerState.perfectRhythm, reflex: s.archerState.reflexActionsLeft > 0, reverseWasted: !!cs.reverseWasted, quickWindow: s.classState.classId === 'ladino' };
   const wounds = s.enemy.barbarianWounds?.stacks ?? 0; const breach = s.enemy.hunterBreaches?.stacks ?? 0;
@@ -248,12 +260,13 @@ function enemyPostureBand(s: CombatState): 'firm'|'unstable'|'open'|'broken' { c
 function judgmentDuration(s: CombatState): number { return judgmentDurationForSkills(s.character.unlockedSkills); }
 function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, forcedMultiplier?: number, hitIndex = 0): { damage: number; landed: boolean; crit: boolean } {
   const stats = playerStats(s); const x = e as (Record<string, any> | null); const magical = e ? abilityResolutionPlan(e, s.character.classId).damageType === 'magical' : MAGICAL_CLASSES.includes(s.character.classId);
-  const accuracy = stats.accuracy + modTotal(s.playerMods, 'accuracy') + Number(x?.sorcererAccuracyBonusPct ?? 0); const evasion = Math.max(0, (s.enemy.evasion ?? 0) + modTotal(s.enemyMods, 'evasion'));
+  const druidOwlAccuracy = s.classState.classId === 'druida' && druidActiveForms(s).includes('owl') ? druidFormBonuses('owl').accuracyPct : 0;
+  const accuracy = stats.accuracy + modTotal(s.playerMods, 'accuracy') + Number(x?.sorcererAccuracyBonusPct ?? 0) + Number(x?.druidAccuracyBonus ?? 0) + druidOwlAccuracy; const evasion = Math.max(0, (s.enemy.evasion ?? 0) + modTotal(s.enemyMods, 'evasion'));
   if (!x?.guaranteedHit && !x?.guaranteedAccuracy && step(s) < clamp(evasion - accuracy, 0, 0.75)) { event(s, { type: 'miss', tick: s.envTick, actor: 'player', abilityId }); return { damage: 0, landed: false, crit: false }; }
   const power = magical ? stats.matk : stats.atk; const baseDefense = enemyDefense(s, magical); let pen = Number(x?.defPenPct ?? x?.defPenPctBase ?? 0) + Number(x?.mdefPenPct ?? 0) + (magical && s.classState.classId === 'feiticeiro' ? Number(x?.sorcererMdefPenPct ?? 0) : 0) + (magical && s.classState.classId === 'bruxo' ? Number(x?.warlockMdefPenPct ?? 0) : 0) + (magical && s.classState.classId === 'feiticeiro' && hitIndex === 2 ? Number(x?.sorcererThirdHitPenPct ?? 0) : 0);
   const authoredMultiplier = Number(x?.dmgMult ?? 1);
   let mult = forcedMultiplier ?? authoredMultiplier; const cs = classRecord(s); const wounds = s.enemy.barbarianWounds?.stacks ?? 0; const judgment = s.enemy.judgment?.stacks ?? 0;
-  if (!e && s.classState.classId === 'druida' && Number(cs.druidDamageMult ?? 0) > 0) { mult *= Number(cs.druidDamageMult); delete cs.druidDamageMult; }
+  if (s.classState.classId === 'druida' && magical && druidActiveForms(s).includes('owl')) pen += druidFormBonuses('owl').mdefPenPct;
   if (x?.dmgMultByBand) mult = Number(x.dmgMultByBand[enemyPostureBand(s)] ?? mult); if (x?.dmgMultPerWoundStack) mult += wounds * Number(x.dmgMultPerWoundStack); if (x?.dmgMultPerJudgmentStack) mult += judgment * Number(x.dmgMultPerJudgmentStack); if (x?.dmgMultPerMomentumConsumed) mult += Number(cs.momentumSpentThisCast ?? 0) * Number(x.dmgMultPerMomentumConsumed); if (x?.warlockDmgMultPerScar) mult += Number(cs.scarsThisCast ?? 0) * Number(x.warlockDmgMultPerScar); if (x?.lowHpDmgMult && s.playerHp / effectiveMaxHp(s.character) <= 0.35) mult = Number(x.lowHpDmgMult); if (x?.exposedDmgMult && cs.exposed) mult = Number(x.exposedDmgMult); if (x?.combinedDmgMult && cs.exposed && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Number(x.combinedDmgMult); if (x?.advantageDmgMult && cs.advantageReady) mult = Number(x.advantageDmgMult); if (x?.dmgMultVsHighEnemyHp && s.enemyHp / s.enemy.maxHp >= 0.9) mult = Number(x.dmgMultVsHighEnemyHp); if (x?.enemyHpExecuteBase && s.enemyHp / s.enemy.maxHp <= Number(x.enemyHpExecuteThreshold ?? 0)) mult = Math.min(Number(x.enemyHpExecuteCap ?? mult), Number(x.enemyHpExecuteBase) + Math.floor((1 - s.enemyHp / s.enemy.maxHp) / 0.05) * Number(x.enemyHpExecutePer5Pct ?? 0)); if (x?.executeBaseMult && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Math.min(Number(x.executeBaseMult) + Number(x.executeMultCap ?? 0), Number(x.executeBaseMult) + (1 - s.enemyHp / s.enemy.maxHp) * Number(x.executePerHpBelowPct ?? 0));
   const ambushDmgMult = Number(x?.ambushDmgMult ?? mult);
   if (s.classState.classId === 'ladino' && cs.stealthed && x?.ambushDmgMult !== undefined) mult = ambushDmgMult;
@@ -290,7 +303,10 @@ function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, for
     if (shatterMultiplier > 0) mult *= shatterMultiplier;
   }
   if (s.classState.classId === 'mago' && Number(cs.heatAtCast ?? 0) > 0 && x?.heatDmgMultPerPoint) mult += Math.min(Number(x.heatDmgMultCap ?? 1), Number(cs.heatAtCast) * Number(x.heatDmgMultPerPoint));
-  const critChance = Math.min(0.9, stats.critChance + Number(x?.archerCritBonus ?? 0) + Number(x?.advantageCritPct ?? 0) + (s.bardState.fortissimo ? 0.05 : 0)); const r = rollAbilityHit(power, baseDefense * (1 - clamp(pen, 0, 0.9)), mult, critChance, stats.critDmgMult, x?.kind === 'guaranteedCrit', () => step(s));
+  const druidWolfCrit = s.classState.classId === 'druida' && druidActiveForms(s).includes('wolf') ? druidFormBonuses('wolf').critChancePct : 0;
+  const druidBearMagicDmg = s.classState.classId === 'druida' && magical && druidActiveForms(s).includes('bear') ? druidFormBonuses('bear').magicDmgPct : 0;
+  if (druidBearMagicDmg) mult += druidBearMagicDmg;
+  const critChance = Math.min(0.9, stats.critChance + Number(x?.archerCritBonus ?? 0) + Number(x?.advantageCritPct ?? 0) + (s.bardState.fortissimo ? 0.05 : 0) + druidWolfCrit); const r = rollAbilityHit(power, baseDefense * (1 - clamp(pen, 0, 0.9)), mult, critChance, stats.critDmgMult, x?.kind === 'guaranteedCrit', () => step(s));
   let amount = r.dmg;
   if (s.classState.classId === 'cavaleiro' && Number(cs.counterStored ?? 0) > 0) { amount += Number(cs.counterStored); cs.counterStored = 0; }
   // Retaliação (cavaleiro:bastiao:6): a próxima ação ofensiva direta que
@@ -326,9 +342,6 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
   if (x.warlockPath !== undefined) raw.warlockPath = x.warlockPath;
   if (x.necromancerTag !== undefined) raw.necromancerTag = x.necromancerTag;
   if (x.bardPath !== undefined) raw.bardPath = x.bardPath;
-  if (x.druidSeason !== undefined) raw.season = x.druidSeason;
-  if (x.druidAction !== undefined) raw.druidAction = x.druidAction;
-  if (x.dmgMult !== undefined && s.classState.classId === 'druida') raw.druidDamageMult = Number(x.dmgMult);
   if (x.abaladoThreshold !== undefined) {
     raw.abaladoDmgTakenPct = Number(x.abaladoDmgTakenPct ?? 0);
     raw.abaladoRounds = Number(x.abaladoRounds ?? 0);
@@ -400,7 +413,10 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
       const ovationHealPct = Number(x.bardOvationHealPct ?? supportHealPct);
       const pct = x.verdictHealPctByConviction?.[paladinConviction] ?? (Number(classRecord(s).bardOvationAtCast ?? 0) > 0 ? ovationHealPct : supportHealPct);
       const baseline = clericBaseHp(CLASSES[s.character.classId].baseHp, s.character.level);
-      const efficiency = s.classState.classId === 'clerigo' && s.character.unlockedSkills.includes('clerigo:devocao:3') ? 0.03 : 0;
+      const druidStagHealEff = s.classState.classId === 'druida' && druidActiveForms(s).includes('stag') ? druidFormBonuses('stag').healEffPct : 0;
+      const druidSeivaSerenaEff = s.classState.classId === 'druida' && s.character.unlockedSkills.includes('druida:cura-natural:1')
+        ? Math.min(0.03, totalAttributes(s.character).wis * 0.0008) : 0;
+      const efficiency = (s.classState.classId === 'clerigo' && s.character.unlockedSkills.includes('clerigo:devocao:3') ? 0.03 : 0) + druidStagHealEff + druidSeivaSerenaEff;
       const amount = s.classState.classId === 'paladino' && x.verdictHealPctByConviction?.[paladinConviction]
         ? effectiveMaxHp(s.character) * pct * (1 + playerStats(s).healingPowerPct)
         : s.classState.classId === 'paladino' && x.activeHealMaxHpPct
@@ -520,17 +536,6 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
       if (x.abaladoThreshold !== undefined && Number(classRecord(s).momentumSpentThisCast ?? 0) >= x.abaladoThreshold) s.enemyMods.push({ stat: 'dmgTakenPct', pct: x.abaladoDmgTakenPct ?? 0.1, roundsLeft: x.abaladoRounds ?? 2 });
     }
     if (s.classState.classId === 'ladino' && x.imageGain) classRecord(s).images = Math.min(3, Number(classRecord(s).images ?? 0) + x.imageGain);
-    if (s.classState.classId === 'druida') {
-      classRecord(s).attunement = Math.min(5, Number(classRecord(s).attunement ?? 0) + 1);
-      if (x.druidAction === 'seed') classRecord(s).gardenSeeds = Number(classRecord(s).gardenSeeds ?? 0) + 1;
-      if (x.druidAction === 'harvest') {
-        const seeds = Number(classRecord(s).gardenSeeds ?? 0);
-        classRecord(s).gardenSeeds = 0;
-        if (seeds > 0) healed += heal(s, effectiveMaxHp(s.character) * Math.min(0.12, seeds * 0.04));
-      }
-      if (x.druidAction === 'cycle') classRecord(s).season = x.druidSeason ?? classRecord(s).season;
-      if (x.druidAction === 'form' || x.druidAction === 'equilibrium') classRecord(s).form = x.druidSeason ?? 'cycle';
-    }
   }
   if (s.classState.classId === 'bardo' && x.bardAppliesCountertempo) s.bardState = createCountertempo(s.bardState);
   if (s.classState.classId === 'bardo' && x.bardEncoreEligible) s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) };
@@ -576,8 +581,6 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
   }
   if (x.renewAegisOnHit && landed > 0 && s.aegis) s.aegis.roundsLeft = Math.max(s.aegis.roundsLeft, x.renewAegisOnHit);
   if (s.classState.classId === 'paladino' && landed > 0 && x.activeHealMaxHpPct) healed += heal(s, effectiveMaxHp(s.character) * Number(x.activeHealMaxHpPct) * (1 + playerStats(s).healingPowerPct));
-  if (x.druidAction === 'form') classRecord(s).form = x.druidSeason ?? 'cycle';
-  if (x.druidAction === 'cycle') classRecord(s).season = x.druidSeason ?? classRecord(s).season;
   consumeBardFortissimo(s, hits, hadFortissimoBeforeCast);
   return { damage, healed, hits, landed, crits };
 }
@@ -598,6 +601,152 @@ export interface ExecutedAbilityEffect {
   appliedFields: string[];
 }
 
+// ── Druida — O Ciclo Vivo ──
+// A habilidade pode declarar uma variante "Aligned" (Sintonizada — cast na
+// própria Estação) e/ou "Rebalanced" (Reequilibrada — caminho Equilíbrio,
+// Sintonizada, com Descompasso=3). Os dois sufixos são lidos SEMPRE (mesmo
+// quando não se aplicam) para que o harness de auditoria observe todo campo
+// autorado numa luta real — ver applyCommandSupremeIfActive, mesmo padrão.
+const DRUID_VARIANT_FIELDS = [
+  'dmgMult', 'healPct', 'hitCount', 'hitDmgMults',
+  'druidPlantSeeds', 'druidHarvestHealPctPerFruit', 'druidImmediateHealPct',
+  'druidPostCastDmgReductionPct', 'druidBearWindowBonusPct', 'druidAccuracyBonus',
+] as const;
+const druidClassState = (s: CombatState) => s.classState as Extract<CombatClassState, { classId: 'druida' }>;
+// Formas ativas no momento: normalmente só a Forma-base, mas o Avatar
+// Primordial soma as quatro simultaneamente.
+function druidActiveForms(s: CombatState): readonly DruidForm[] {
+  const cs = druidClassState(s);
+  return cs.avatarActionsLeft > 0 ? (['stag', 'wolf', 'bear', 'owl'] as const) : [cs.form];
+}
+
+// Chamado uma vez, ANTES de qualquer resolução de dano/cura, para toda
+// habilidade real do Druida (nunca para o ataque básico, tratado à parte em
+// resolvePlayerAction). Decide Sintonia/Reequilíbrio, cresce o Jardim
+// existente, troca de Forma e consome Renovo/Instinto/Descompasso das
+// habilidades cycle especiais — tudo antes de devolver o efeito já com as
+// variantes aplicadas.
+function prepareDruidCast(s: CombatState, effect: AbilityEffect, fields: Set<string>, onFieldApplied: (field: string) => void): AbilityEffect {
+  const cs = druidClassState(s);
+  const x = effect as Record<string, any>;
+  const touch = (field: string) => { if (field in x) { fields.add(field); onFieldApplied(field); } };
+  const abilitySeason = x.druidSeason as string | undefined;
+  const aligned = isDruidSeasonAligned(abilitySeason, cs.season);
+  const cycle = isDruidCycleAbility(abilitySeason);
+  const rebalanced = aligned && x.druidPath === 'balance' && isDruidReequilibriumReady(cs.dissonance);
+  // Lei do Retorno (druida:equilibrio:14): toda vez que uma habilidade
+  // Reequilibrada resolve, repara a Estação mais antiga que já passou neste
+  // Ano e ainda não foi sintonizada (nunca uma Estação futura).
+  if (rebalanced && s.character.unlockedSkills.includes('druida:equilibrio:14')) {
+    const repaired = oldestUnsyncedDruidSeason(cs.yearLedger, cs.season);
+    if (repaired) cs.yearLedger = markDruidYear(cs.yearLedger, repaired);
+  }
+  const swapped: Record<string, any> = { ...x };
+  for (const field of DRUID_VARIANT_FIELDS) {
+    const alignedKey = `${field}Aligned`; const rebalancedKey = `${field}Rebalanced`;
+    touch(alignedKey); touch(rebalancedKey);
+    if (rebalanced && x[rebalancedKey] !== undefined) swapped[field] = x[rebalancedKey];
+    else if (aligned && x[alignedKey] !== undefined) swapped[field] = x[alignedKey];
+  }
+  classRecord(s).druidCastAligned = aligned;
+  classRecord(s).druidCastRebalanced = rebalanced;
+  classRecord(s).druidCastCycle = cycle;
+  classRecord(s).druidCastFormChanged = false;
+  if (rebalanced) cs.dissonance = 0;
+  if (aligned) cs.garden = growDruidGarden(cs.garden);
+  // Troca de Forma — Metamorfose ativa e Avatar Primordial.
+  touch('druidFormOnCast'); touch('druidFormOnCastAll'); touch('druidAvatar'); touch('druidEternalReturn');
+  if (x.druidFormOnCastAll) {
+    // Avatar assume as quatro Formas simultaneamente — a Forma-base
+    // continua existindo por baixo, mas não é mais lida isoladamente
+    // enquanto o Avatar estiver ativo (ver computePlayerStats no painel).
+  } else if (x.druidFormOnCast) {
+    const previousForm = cs.form; const newForm = x.druidFormOnCast as DruidForm;
+    if (previousForm !== newForm) {
+      classRecord(s).druidCastFormChanged = true;
+      if (cs.avatarActionsLeft <= 0) cs.instinct = gainDruidInstinctOnFormChange(previousForm, newForm, cs.instinct);
+      // Muda Completa (druida:furia-natureza:8): uma vez por Ano, uma
+      // transformação Sintonizada real reduz -1 ciclo do efeito negativo
+      // removível mais grave (DOT > debuff de stat > silêncio).
+      if (aligned && !cs.muCompleteUsed && s.character.unlockedSkills.includes('druida:furia-natureza:8')) {
+        if (s.playerStatuses.length > 0) { s.playerStatuses[0].roundsLeft = Math.max(0, s.playerStatuses[0].roundsLeft - 1); cs.muCompleteUsed = true; }
+        else { const negativeMod = s.playerMods.find((m) => m.pct < 0); if (negativeMod) { negativeMod.roundsLeft = Math.max(0, negativeMod.roundsLeft - 1); cs.muCompleteUsed = true; }
+        else { const silence = s.playerCC.find((c) => c.kind === 'silence'); if (silence) { silence.roundsLeft = Math.max(0, silence.roundsLeft - 1); cs.muCompleteUsed = true; } } }
+      }
+    }
+    cs.form = newForm;
+  }
+  touch('druidTreeOfLife');
+  if (x.druidTreeOfLife) {
+    cs.renewal = 0;
+    cs.garden = forceDruidGardenToFruit(cs.garden);
+    cs.copaActionsLeft = DRUID_COPA_ANCESTRAL_ACTIONS;
+    cs.copaPreservedUsed = false;
+  }
+  if (x.druidAvatar) {
+    const renewed = cs.renewal >= 1;
+    cs.instinct = 0;
+    if (renewed) cs.renewal = 0;
+    cs.avatarActionsLeft = activateDruidAvatarActions(renewed);
+    touch('dmgMultRenewed');
+    if (renewed && x.dmgMultRenewed !== undefined) swapped.dmgMult = x.dmgMultRenewed;
+  }
+  if (x.druidEternalReturn) {
+    const hasRenewal = cs.renewal >= 1;
+    const hasDissonance = isDruidReequilibriumReady(cs.dissonance);
+    const absolute = hasRenewal && hasDissonance;
+    if (hasRenewal) cs.renewal = 0;
+    if (hasDissonance) cs.dissonance = 0;
+    touch('hitDmgMultsAbsolute'); touch('healPctAbsolute');
+    if (absolute) {
+      if (x.hitDmgMultsAbsolute !== undefined) swapped.hitDmgMults = x.hitDmgMultsAbsolute;
+      if (x.healPctAbsolute !== undefined) swapped.healPct = x.healPctAbsolute;
+    }
+    classRecord(s).druidEternalReturnAbsolute = absolute;
+  }
+  return swapped as AbilityEffect;
+}
+
+// Colheita Ancestral (druidHarvest): consome Frutos um por um, do mais
+// antigo, enquanto houver HP faltando — nunca desperdiça um Fruto se o
+// Druida já estiver em Vida Máxima. Chamado depois do dano da própria
+// habilidade ser aplicado.
+function resolveDruidHarvest(s: CombatState, x: Record<string, any>): number {
+  const cs = druidClassState(s);
+  const healPctPerFruit = Number(x.druidHarvestHealPctPerFruit ?? 0);
+  if (healPctPerFruit <= 0) return 0;
+  const support = playerStats(s).healingPowerPct ?? 0;
+  const seivaSerenaEff = s.character.unlockedSkills.includes('druida:cura-natural:1')
+    ? Math.min(0.03, totalAttributes(s.character).wis * 0.0008) : 0;
+  const sabedoriaEff = s.character.unlockedSkills.includes('druida:cura-natural:11') ? 0.02 : 0;
+  let healed = 0;
+  let consumedCount = 0;
+  const maxHp = effectiveMaxHp(s.character);
+  const copaActive = cs.copaActionsLeft > 0;
+  const copaBonus = copaActive ? DRUID_COPA_ANCESTRAL_HEAL_BONUS_PCT : 0;
+  while (s.playerHp + healed < maxHp && druidFruitCount(cs.garden) > 0) {
+    // Copa Ancestral: o PRIMEIRO Fruto consumido durante a janela cura
+    // normalmente mas não é removido do Jardim (uma preservação por Copa).
+    const preserveThis = copaActive && !cs.copaPreservedUsed;
+    if (!preserveThis) {
+      const { garden, consumed } = consumeOldestDruidFruit(cs.garden);
+      if (!consumed) break;
+      cs.garden = garden;
+    } else cs.copaPreservedUsed = true;
+    consumedCount += 1;
+    const amount = universalDirectHealAmount(CLASSES.druida.baseHp, s.character.level, healPctPerFruit, support, seivaSerenaEff + sabedoriaEff + copaBonus);
+    healed += heal(s, amount);
+  }
+  // Nada se Perde (druida:cura-natural:14): uma vez por Ano, se a mesma
+  // ação consumir 2+ Frutos, planta 1 nova Semente (não cresce nesta ação).
+  if (consumedCount >= 2 && !cs.nothingLostUsed && s.character.unlockedSkills.includes('druida:cura-natural:14')) {
+    const max = druidGardenMax(s.character.unlockedSkills.includes('druida:cura-natural:6'));
+    const planted = plantDruidSeeds(cs.garden, cs.gardenNextId, 1, max);
+    cs.garden = planted.garden; cs.gardenNextId = planted.nextId; cs.nothingLostUsed = true;
+  }
+  return healed;
+}
+
 /**
  * Shared stateful AbilityEffect executor used by the harness and live panel.
  * It owns both self-targeted and offensive resolution; callers only provide
@@ -608,11 +757,16 @@ export function executeAbilityEffect(s: CombatState, effect: AbilityEffect, abil
   if (raw.playerHpPctAtCast === undefined) raw.playerHpPctAtCast = s.playerHp / effectiveMaxHp(s.character);
   const fields = new Set<string>();
   const emitted = new Set<string>();
-  const resolved = resolveAbilityEffect(effect, s.character.classId, fields, (field) => {
+  const onFieldApplied = (field: string) => {
     if (emitted.has(field)) return;
     emitted.add(field);
     event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId, field });
-  });
+  };
+  // O pré-processamento do Druida precisa acontecer ANTES de resolveAbilityEffect
+  // computar o plano de multi-hit (attackCount/multipliers), pois ele pode
+  // trocar hitCount/hitDmgMults pela variante Sintonizada/Reequilibrada.
+  const preparedEffect = s.classState.classId === 'druida' ? prepareDruidCast(s, effect, fields, onFieldApplied) : effect;
+  const resolved = resolveAbilityEffect(preparedEffect, s.character.classId, fields, onFieldApplied);
   const result = executeCombatAbilityEffect(s, resolved.effect, abilityId, resolved.plan);
   const x = resolved.effect as AbilityEffect & Record<string, any>;
   if (result.landed > 0 && x.warlockDebtSetAfter !== undefined) s.warlockPlayer = setWarlockDebt(s.warlockPlayer, x.warlockDebtSetAfter);
@@ -621,9 +775,58 @@ export function executeAbilityEffect(s: CombatState, effect: AbilityEffect, abil
     paladin.virtues[x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet] = true;
     setClassNumber(s, 'conviction', Object.values(paladin.virtues).filter(Boolean).length, 3);
   }
-  return { ...result, plan: resolved.plan, appliedFields: [...fields] };
+  let extraHealed = 0;
+  if (s.classState.classId === 'druida') {
+    const cs = druidClassState(s);
+    // Colheita Ancestral: consome Frutos após o dano da própria habilidade.
+    if (x.druidHarvest) extraHealed += resolveDruidHarvest(s, x);
+    // Semeadura Vital: planta sementes depois de a habilidade resolver.
+    if (x.druidPlantSeeds) {
+      const max = druidGardenMax(s.character.unlockedSkills.includes('druida:cura-natural:6'));
+      const planted = plantDruidSeeds(cs.garden, cs.gardenNextId, Number(x.druidPlantSeeds), max);
+      cs.garden = planted.garden; cs.gardenNextId = planted.nextId;
+    }
+    // Raízes do Inverno: reduz o próximo golpe direto do inimigo.
+    if (x.druidPostCastDmgReductionPct) s.playerMods.push({ stat: 'dmgTakenPct', pct: -Number(x.druidPostCastDmgReductionPct), roundsLeft: 1 });
+    // Eterno Retorno: -MDEF inimiga por 2 ciclos e -dano no próximo golpe direto.
+    if (x.druidEternalReturn) {
+      const absolute = !!classRecord(s).druidEternalReturnAbsolute;
+      s.enemyMods.push({ stat: 'mdef', pct: absolute ? -0.10 : -0.06, roundsLeft: 2 });
+      s.playerMods.push({ stat: 'dmgTakenPct', pct: absolute ? -0.10 : -0.06, roundsLeft: 1 });
+    }
+    // Queda do Urso: janela de redução de dano até a próxima ação inimiga.
+    if (result.landed > 0 && x.druidBearWindowBonusPct) s.playerMods.push({ stat: 'dmgTakenPct', pct: -Number(x.druidBearWindowBonusPct), roundsLeft: 1 });
+  }
+  return { ...result, healed: result.healed + extraHealed, plan: resolved.plan, appliedFields: [...fields] };
 }
 function abilities(s: CombatState): AbilityDef[] { return getEquippedAbilities(s.character.classId, s.character.unlockedSkills, s.equippedAbilityIds); }
+
+// Fecha exatamente UMA ação real do Druida (básica ou de habilidade — nunca
+// um sub-hit/DOT/proc): atualiza Descompasso, registra Sintonia do Ano,
+// avança a Estação e, se Inverno virou Primavera, avalia o Ano Perfeito e
+// desperta a nova Estação (zera cooldown de toda habilidade equipada cuja
+// druidSeason bata com ela). Chamado nos dois pontos de saída reais de
+// resolvePlayerAction, nunca de dentro da resolução de um efeito.
+function finalizeDruidAction(s: CombatState, abilitySeason: string | undefined): void {
+  const cs = druidClassState(s);
+  const misaligned = isDruidActionMisaligned(abilitySeason, cs.season);
+  const aligned = isDruidSeasonAligned(abilitySeason, cs.season);
+  cs.dissonance = misaligned ? gainDruidDissonance(cs.dissonance, true) : reduceDruidDissonanceOnAligned(cs.dissonance);
+  if (aligned) cs.yearLedger = markDruidYear(cs.yearLedger, cs.season);
+  if (cs.avatarActionsLeft > 0) cs.avatarActionsLeft = tickDruidAvatar(cs.avatarActionsLeft);
+  if (cs.copaActionsLeft > 0) cs.copaActionsLeft -= 1;
+  const previousSeason = cs.season;
+  const newSeason = nextDruidSeason(previousSeason);
+  cs.season = newSeason;
+  if (previousSeason === 'winter') {
+    const result = evaluateDruidYearEnd(cs.yearLedger, cs.renewal);
+    cs.yearLedger = result.ledger;
+    cs.renewal = result.renewal;
+    if (result.perfectYear && s.character.unlockedSkills.includes('druida:cura-natural:6')) cs.garden = maturateDruidGardenOneStage(cs.garden);
+    cs.fruitReserveUsed = false; cs.nothingLostUsed = false; cs.muCompleteUsed = false;
+  }
+  for (const id of druidAbilityIdsToAwaken(abilities(s), newSeason)) s.cooldowns[id] = 0;
+}
 function actionUseful(s: CombatState, ability: AbilityDef): boolean {
   if (ability.effect.kind === 'heal') return s.playerHp < effectiveMaxHp(s.character) - 1;
   if (ability.effect.kind === 'regen') return s.hots.length === 0;
@@ -648,6 +851,7 @@ function selected(s: CombatState): AbilityDef | undefined {
       && (s.cooldowns[ability.id] ?? 0) <= 0
       && payCheck(s, ability.effect)
       && evalAbilityCondition(ability.condition, c));
+  if (s.classState.classId === 'druida') return pickDruidSeasonalAbility(eligible, druidClassState(s).season) ?? undefined;
   if (s.classState.classId !== 'clerigo') return eligible[0];
   return prioritizeClericTrialRotation(eligible, {
     apocalypseEquipped: equipped.some((ability) => ability.id === CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID),
@@ -835,6 +1039,7 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     // 'precise') acertando ou errando — nunca do ataque básico, que não é
     // um Disparo Preciso (classMechanics.ts:194).
     if (s.classState.classId === 'paladino') advancePaladinLiturgyState(s, s.classState as Extract<CombatClassState, { classId: 'paladino' }>);
+    if (s.classState.classId === 'druida') finalizeDruidAction(s, undefined);
     if (s.enemyHp <= 0) finishEnemy(s);
     return s;
   }
@@ -912,7 +1117,13 @@ export function resolvePlayerAction(s: CombatState): CombatState {
   }
   if (s.classState.classId === 'arqueiro') { if (x.archerTensionCost) s.archerState = loseArcherTension(s.archerState, x.archerTensionCost); if (x.archerCadenceCost) s.archerState = loseArcherCadence(s.archerState, x.archerCadenceCost); if (x.archerConsumesSteps) s.archerState = consumeArcherSteps(s.archerState, x.archerConsumesSteps).state; if (x.archerConsumesPerfectRhythm || (x.archerPerfectExtraRatio && s.archerState.perfectRhythm)) s.archerState = consumePerfectRhythm(s.archerState); if (x.archerDistanceShift) s.archerState = archerDistanceShift(s.archerState, x.archerDistanceShift); }
   if (x.sacrificeOldestSummon && s.classState.classId === 'necromante') { const raw = classRecord(s); const attacks = Array.isArray(raw.servantAttacks) ? raw.servantAttacks as number[] : []; attacks.shift(); raw.servantAttacks = attacks; raw.servants = attacks.length; }
-  if (x.orderGainOnCast) addClassNumber(s, 'orders', x.orderGainOnCast, 3); s.cooldowns[a.id] = Math.max(1, a.cooldown); event(s, { type: 'abilityCast', tick: s.envTick, actor: 'player', abilityId: a.id, name: a.name }); const result = executeAbilityEffect(s, effectToResolve, a.id); for (const extra of a.extraEffects ?? []) executeAbilityEffect(s, extra, a.id); if (s.classState.classId === 'arqueiro') { if (result.landed && x.archerTensionOverrideOnHit !== undefined) s.archerState = gainArcherTension(s.archerState, archerDistanceAtActionStart === 3 ? (x.archerTensionOverrideAtHorizon ?? x.archerTensionOverrideOnHit) : x.archerTensionOverrideOnHit); else if (result.landed && (x.archerShotType === 'precise')) s.archerState = gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)); else if (!result.landed && x.archerShotType === 'precise') s.archerState = loseArcherTension(s.archerState, 8); if (result.landed && x.archerShotType === 'volley') s.archerState = gainArcherCadence(s.archerState, 1); else if (!result.landed && x.archerShotType === 'volley') s.archerState = loseArcherCadence(s.archerState, 2); if (x.archerFlightCount || (x.archerCreatesFlightOnHits && result.landed >= x.archerCreatesFlightOnHits)) { const stats = playerStats(s); const authoredFlightDmgMult = Number(x.archerFlightDmgMult ?? x.dmgMult ?? 0.5); const flightCount = x.archerFlightCount ?? 1; const room = Math.max(0, 3 - s.archerState.arrows.length); s.archerState = scheduleInFlightArrows(s.archerState, Array.from({ length: Math.min(flightCount, room) }, (_, i) => flightSnapshotFromAbility(a, { ...stats, defPenPct: 0 }, s.archerState.distance, x.archerFlightHitDmgMults?.[i] ?? (stateResource(s, 'tension') >= 50 ? (x.archerFlightHighTensionDmgMult ?? x.archerFlightDmgMult ?? 0.5) : authoredFlightDmgMult), x.archerFlightTimer ?? 1))); } }
+  if (x.orderGainOnCast) addClassNumber(s, 'orders', x.orderGainOnCast, 3);
+  // Ritmo da Seiva / Ritmo Mutável / Compasso Natural (-3% recarga SOMENTE
+  // dentro do próprio caminho do Druida — nunca global, nunca outra classe).
+  const druidPathCdr = s.classState.classId === 'druida' && x.druidPath
+    ? (s.character.unlockedSkills.includes(`druida:${x.druidPath === 'rebirth' ? 'cura-natural' : x.druidPath === 'metamorphosis' ? 'furia-natureza' : 'equilibrio'}:3`) ? 0.03 : 0)
+    : 0;
+  s.cooldowns[a.id] = Math.max(1, Math.round(a.cooldown * (1 - druidPathCdr))); event(s, { type: 'abilityCast', tick: s.envTick, actor: 'player', abilityId: a.id, name: a.name }); const result = executeAbilityEffect(s, effectToResolve, a.id); for (const extra of a.extraEffects ?? []) executeAbilityEffect(s, extra, a.id); if (s.classState.classId === 'arqueiro') { if (result.landed && x.archerTensionOverrideOnHit !== undefined) s.archerState = gainArcherTension(s.archerState, archerDistanceAtActionStart === 3 ? (x.archerTensionOverrideAtHorizon ?? x.archerTensionOverrideOnHit) : x.archerTensionOverrideOnHit); else if (result.landed && (x.archerShotType === 'precise')) s.archerState = gainArcherTension(s.archerState, tensionForPreciseHit(archerDistanceAtActionStart)); else if (!result.landed && x.archerShotType === 'precise') s.archerState = loseArcherTension(s.archerState, 8); if (result.landed && x.archerShotType === 'volley') s.archerState = gainArcherCadence(s.archerState, 1); else if (!result.landed && x.archerShotType === 'volley') s.archerState = loseArcherCadence(s.archerState, 2); if (x.archerFlightCount || (x.archerCreatesFlightOnHits && result.landed >= x.archerCreatesFlightOnHits)) { const stats = playerStats(s); const authoredFlightDmgMult = Number(x.archerFlightDmgMult ?? x.dmgMult ?? 0.5); const flightCount = x.archerFlightCount ?? 1; const room = Math.max(0, 3 - s.archerState.arrows.length); s.archerState = scheduleInFlightArrows(s.archerState, Array.from({ length: Math.min(flightCount, room) }, (_, i) => flightSnapshotFromAbility(a, { ...stats, defPenPct: 0 }, s.archerState.distance, x.archerFlightHitDmgMults?.[i] ?? (stateResource(s, 'tension') >= 50 ? (x.archerFlightHighTensionDmgMult ?? x.archerFlightDmgMult ?? 0.5) : authoredFlightDmgMult), x.archerFlightTimer ?? 1))); } }
   // Convicção do Veredito só pode zerar DEPOIS que o dano/cura acima leu o
   // snapshot pré-consumo (verdictDmgMultByConviction/verdictHealPctByConviction/
   // verdictAegisByConviction todos leem stateResource(s,'conviction') dentro
@@ -944,7 +1155,7 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     const pulse = resolvePulseGain({ pulse: pulseBefore, resonance: stateResource(s, 'resonance'), control: stateResource(s, 'control') }, result.landed > 0, result.crits > 0);
     addClassNumber(s, 'pulse', pulse.state.pulse - pulseBefore, 6);
   }
-  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao' && !x.warlockConsumeTrueName) s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.enemyHp <= 0) finishEnemy(s); return s; }
+  if (result.landed && x.warlockBindOnHit) { s.warlockEnemy = bindWarlockEnemy(s.warlockEnemy); if (x.warlockPath === 'maldicao' && !x.warlockConsumeTrueName) s.warlockEnemy = addNameFragment(s.warlockEnemy, 1); } if (s.classState.classId === 'paladino' && x.paladinExtraVirtueBelowHp && Number(classRecord(s).playerHpPctAtCast ?? (s.playerHp / effectiveMaxHp(s.character))) <= x.paladinExtraVirtueBelowHp.pct) { const p = x.paladinExtraVirtueBelowHp.virtue as keyof PaladinVirtueSet; (s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues[p] = true; setClassNumber(s, 'conviction', Object.values((s.classState as Extract<CombatClassState, { classId: 'paladino' }>).virtues).filter(Boolean).length, 3); } if (result.landed && s.classState.classId === 'bardo' && x.bardEncoreEligible) { s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) }; } if (s.classState.classId === 'druida') finalizeDruidAction(s, (a.effect as Record<string, any>).druidSeason); if (s.enemyHp <= 0) finishEnemy(s); return s; }
 // Liturgia é uma janela de QUATRO AÇÕES REAIS DO PALADINO — "cada ação real
 // seguinte reduz uma" (classMechanics.ts). Uma ação que invoca uma Virtude
 // (ou consome um Veredito) já resolve seu próprio efeito em actionsLeft
@@ -1006,8 +1217,10 @@ export function resolveEnemyAction(s: CombatState): CombatState {
     return s;
   }
   const magical = s.enemy.atkType === 'magical';
-  const r = rollAttack(enemyAttack(s, magical), magical ? stats.mdef : stats.def, .06, 1.6, () => step(s));
-  const preParryDamage = r.dmg * Math.max(0, 1 + modTotal(s.playerMods, 'dmgTakenPct'));
+  const druidStagMdef = s.classState.classId === 'druida' && druidActiveForms(s).includes('stag') ? stats.mdef * druidFormBonuses('stag').mdefPct : 0;
+  const r = rollAttack(enemyAttack(s, magical), magical ? stats.mdef + druidStagMdef : stats.def, .06, 1.6, () => step(s));
+  const druidBearDmgTaken = s.classState.classId === 'druida' && druidActiveForms(s).includes('bear') ? druidFormBonuses('bear').dmgTakenPct : 0;
+  const preParryDamage = r.dmg * Math.max(0, 1 + modTotal(s.playerMods, 'dmgTakenPct') + druidBearDmgTaken);
   let damage = preParryDamage;
   const blockChance = Math.max(Number(classRecord(s).minBlockChancePct ?? 0), stats.blockChance + modTotal(s.playerMods, 'block'));
   const blocked = step(s) < clamp(blockChance, 0, 0.75);
@@ -1058,6 +1271,20 @@ export function resolveEnemyAction(s: CombatState): CombatState {
   event(s, { type: 'hit', tick: s.envTick, actor: 'enemy' });
   if (r.crit) event(s, { type: 'crit', tick: s.envTick, actor: 'enemy' });
   event(s, { type: 'damage', tick: s.envTick, actor: 'enemy', amount: damage, damageType: magical ? 'magical' : 'physical', crit: r.crit });
+  // Fruto de Reserva (druida:cura-natural:8): uma vez por Ano, se uma ação
+  // DIRETA inimiga deixar o Druida abaixo de 35% da Vida Máxima, consome
+  // automaticamente o Fruto mais antigo. Não é ação, não avança Estação.
+  if (s.classState.classId === 'druida' && !s.dead) {
+    const cs = druidClassState(s);
+    if (!cs.fruitReserveUsed && s.playerHp < effectiveMaxHp(s.character) * DRUID_FRUIT_RESERVE_HP_THRESHOLD
+      && druidFruitCount(cs.garden) > 0 && s.character.unlockedSkills.includes('druida:cura-natural:8')) {
+      const { garden, consumed } = consumeOldestDruidFruit(cs.garden);
+      if (consumed) {
+        cs.garden = garden; cs.fruitReserveUsed = true;
+        heal(s, universalDirectHealAmount(CLASSES.druida.baseHp, s.character.level, 0.07, playerStats(s).healingPowerPct ?? 0, 0));
+      }
+    }
+  }
   if (s.classState.classId === 'barbaro') {
     addClassNumber(s, 'fury', FURY_GAIN_TAKE_DAMAGE, 100);
     // Dor só recebe o dano de fato REDIRECIONADO por uma mecânica com

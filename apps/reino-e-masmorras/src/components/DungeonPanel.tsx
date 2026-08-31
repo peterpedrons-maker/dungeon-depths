@@ -19,7 +19,12 @@ import { DECOMPOSITION_DURATION, DECOMPOSITION_MAX, DECOMPOSITION_STACK_ID, Enem
 import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
 import { PaladinAegis, PaladinLiturgyState, PaladinVirtue, createPaladinLiturgyState, paladinAegisReduction, paladinConviction } from '../lib/paladin';
 import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow, advanceInFlightArrows } from '../lib/archer';
-import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, pickDruidSeasonalAbility, addGardenSeeds, type DruidSeason, type DruidForm } from '../lib/druid';
+import {
+  type DruidSeason, type DruidForm, type DruidGardenUnit, type DruidYearLedger,
+  DRUID_SEASONS, DRUID_SEASON_LABELS, DRUID_SEASON_SHORT_LABELS, DRUID_FORM_LABELS,
+  DRUID_INSTINCT_MAX, DRUID_DISSONANCE_MAX, DRUID_AVATAR_ACTIONS_RENEWED,
+  emptyDruidYear, pickDruidSeasonalAbility, druidGardenMax, druidFormBonuses, druidAvatarCombinedBonuses,
+} from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, addNameFragment, consumeMandamento, collectionAmount } from '../lib/warlock';
 import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState } from '../lib/sorcerer';
 import { BardScoreState, countertempoEcho, createBardState, resetBardEnemy } from '../lib/bardo';
@@ -729,11 +734,29 @@ export function DungeonPanel({
   const archerPerfectCastRef = useRef(false);
   const archerLastActionHitsRef = useRef(0);
   const [archerState, setArcherState] = useState(archerStateRef.current);
-  const druidCycleRef = useRef<DruidCycleState>(createDruidCycle());
-  const druidGardenRef = useRef<GardenUnit[]>([]);
-  const druidGardenIdRef = useRef(1);
+  const druidSeasonRef = useRef<DruidSeason>('spring');
+  const druidYearLedgerRef = useRef<DruidYearLedger>(emptyDruidYear());
+  const druidRenewalRef = useRef(0);
+  const druidGardenRef = useRef<DruidGardenUnit[]>([]);
+  const druidGardenNextIdRef = useRef(1);
+  const druidFormRef = useRef<DruidForm>('none');
+  const druidInstinctRef = useRef(0);
   const druidAvatarActionsRef = useRef(0);
-  const [druidCycleState, setDruidCycleState] = useState(druidCycleRef.current);
+  const druidDissonanceRef = useRef(0);
+  const druidFruitReserveUsedRef = useRef(false);
+  const druidNothingLostUsedRef = useRef(false);
+  const druidMuCompleteUsedRef = useRef(false);
+  const druidCopaActionsRef = useRef(0);
+  const druidCopaPreservedUsedRef = useRef(false);
+  const [druidSeasonState, setDruidSeasonState] = useState<DruidSeason>('spring');
+  const [druidYearLedgerState, setDruidYearLedgerState] = useState<DruidYearLedger>(emptyDruidYear());
+  const [druidRenewalState, setDruidRenewalState] = useState(0);
+  const [druidFormState, setDruidFormState] = useState<DruidForm>('none');
+  const [druidInstinctState, setDruidInstinctState] = useState(0);
+  const [druidAvatarState, setDruidAvatarState] = useState(0);
+  const [druidDissonanceState, setDruidDissonanceState] = useState(0);
+  function druidGardenSnapshot() { return [...druidGardenRef.current]; }
+  const [druidGardenState, setDruidGardenState] = useState<DruidGardenUnit[]>([]);
   // Bruxo redesign — resources persist across enemies in the same attempt;
   // the enemy name state resets on each spawn.
   const warlockStateRef = useRef<WarlockPlayerState>(createWarlockPlayerState());
@@ -753,9 +776,17 @@ export function DungeonPanel({
     warlockSync();
   }
   function isDruid(){return chRef.current.classId==='druida';}
-  function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
-  function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
-  void druidAdvance;
+  function druidSync(){
+    if (silentRef.current) return;
+    setDruidSeasonState(druidSeasonRef.current);
+    setDruidYearLedgerState({ ...druidYearLedgerRef.current });
+    setDruidRenewalState(druidRenewalRef.current);
+    setDruidFormState(druidFormRef.current);
+    setDruidInstinctState(druidInstinctRef.current);
+    setDruidAvatarState(druidAvatarActionsRef.current);
+    setDruidDissonanceState(druidDissonanceRef.current);
+    setDruidGardenState(druidGardenSnapshot());
+  }
 
   function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
   function isArcher(): boolean { return chRef.current.classId === 'arqueiro'; }
@@ -2387,12 +2418,13 @@ export function DungeonPanel({
 
     let druidMdef = 1, druidDmgTaken = 0, druidAccuracy = 0, druidSpeed = 0, druidCrit = 0, druidPen = 0;
     if (isDruid()) {
-      const form = druidCycleRef.current.form;
-      if (form === 'cervo') druidMdef *= 1.04;
-      if (form === 'lobo') { druidSpeed += 0.05; druidAccuracy += 0.02; druidCrit += 0.02; }
-      if (form === 'urso') druidDmgTaken -= 0.05;
-      if (form === 'coruja') { druidAccuracy += 0.04; druidPen += 0.08; }
-      if (druidAvatarActionsRef.current > 0) { druidMdef *= 1.04; druidSpeed += 0.05; druidDmgTaken -= 0.05; druidAccuracy += 0.04; druidCrit += 0.02; druidPen += 0.08; }
+      const formBonus = druidAvatarActionsRef.current > 0 ? druidAvatarCombinedBonuses() : druidFormBonuses(druidFormRef.current);
+      druidMdef *= 1 + formBonus.mdefPct;
+      druidDmgTaken += formBonus.dmgTakenPct;
+      druidAccuracy += formBonus.accuracyPct;
+      druidSpeed += formBonus.speedPct;
+      druidCrit += formBonus.critChancePct;
+      druidPen += formBonus.mdefPenPct;
     }
     let warlockMdef = 1, warlockDmgTaken = 0, warlockAccuracy = 0, warlockTenacity = 0, warlockCritDmg = 0;
     if (isWarlock()) {
@@ -2572,7 +2604,7 @@ export function DungeonPanel({
         faith: clerigoFaithRef.current,
       })[0] ?? null;
     }
-    return isDruid() ? pickDruidSeasonalAbility(eligible, druidCycleRef.current.season) : (eligible[0] ?? null);
+    return isDruid() ? pickDruidSeasonalAbility(eligible, druidSeasonRef.current) : (eligible[0] ?? null);
   }
 
   // Mirrors pickAbility() for the enemy side — a silenced enemy can't use
@@ -2913,10 +2945,6 @@ export function DungeonPanel({
       enemyAbilityCooldownsRef.current = {};
       bossPhaseIndexRef.current = 0;
       setBossPhaseName(null);
-      if (isDruid()) {
-        for (const a of equippedAbilities()) if (a.effect.druidSeason === druidCycleRef.current.season) cooldownsRef.current[a.id] = 0;
-        druidSync();
-      }
       syncEnemyStatuses();
       syncEnemyCC();
       syncEnemyMods();
@@ -3172,12 +3200,24 @@ export function DungeonPanel({
         raw.servantAttacks = necroSummonsRef.current.map((summon) => summon.attacksRemaining);
         raw.servants = necroSummonsRef.current.length;
         break;
-      case 'druida':
-        raw.season = druidCycleRef.current.season;
-        raw.attunement = druidCycleRef.current.attunement;
-        raw.form = druidCycleRef.current.form;
-        raw.gardenSeeds = druidGardenRef.current.length;
+      case 'druida': {
+        const druidCore = core.classState as Extract<typeof core.classState, { classId: 'druida' }>;
+        druidCore.season = druidSeasonRef.current;
+        druidCore.yearLedger = { ...druidYearLedgerRef.current };
+        druidCore.renewal = druidRenewalRef.current;
+        druidCore.garden = druidGardenRef.current.map((u) => ({ ...u }));
+        druidCore.gardenNextId = druidGardenNextIdRef.current;
+        druidCore.form = druidFormRef.current;
+        druidCore.instinct = druidInstinctRef.current;
+        druidCore.avatarActionsLeft = druidAvatarActionsRef.current;
+        druidCore.dissonance = druidDissonanceRef.current;
+        druidCore.fruitReserveUsed = druidFruitReserveUsedRef.current;
+        druidCore.nothingLostUsed = druidNothingLostUsedRef.current;
+        druidCore.muCompleteUsed = druidMuCompleteUsedRef.current;
+        druidCore.copaActionsLeft = druidCopaActionsRef.current;
+        druidCore.copaPreservedUsed = druidCopaPreservedUsedRef.current;
         break;
+      }
       case 'paladino':
         raw.virtues = { ...paladinLiturgyRef.current.virtues };
         raw.liturgy = paladinLiturgyRef.current.actionsLeft;
@@ -3294,24 +3334,21 @@ export function DungeonPanel({
       necroSync();
     }
     if (chRef.current.classId === 'druida') {
-      druidCycleRef.current = {
-        ...druidCycleRef.current,
-        season: String(raw.season ?? druidCycleRef.current.season) as DruidSeason,
-        attunement: Number(raw.attunement ?? druidCycleRef.current.attunement),
-        form: raw.form && raw.form !== 'none' ? String(raw.form) as DruidForm : null,
-      };
-      const targetSeeds = Math.max(0, Number(raw.gardenSeeds ?? druidGardenRef.current.length));
-      if (targetSeeds < druidGardenRef.current.length) druidGardenRef.current = druidGardenRef.current.slice(0, targetSeeds);
-      else if (targetSeeds > druidGardenRef.current.length) {
-        const seedsToAdd = targetSeeds - druidGardenRef.current.length;
-        druidGardenRef.current = addGardenSeeds(
-          druidGardenRef.current,
-          druidGardenIdRef.current,
-          seedsToAdd,
-          hasSkill(chRef.current, 'druida:cura-natural:6') ? 3 : 2,
-        );
-        druidGardenIdRef.current += seedsToAdd;
-      }
+      const druidResult = core.classState as Extract<typeof core.classState, { classId: 'druida' }>;
+      druidSeasonRef.current = druidResult.season;
+      druidYearLedgerRef.current = { ...druidResult.yearLedger };
+      druidRenewalRef.current = druidResult.renewal;
+      druidGardenRef.current = druidResult.garden.map((u) => ({ ...u }));
+      druidGardenNextIdRef.current = druidResult.gardenNextId;
+      druidFormRef.current = druidResult.form;
+      druidInstinctRef.current = druidResult.instinct;
+      druidAvatarActionsRef.current = druidResult.avatarActionsLeft;
+      druidDissonanceRef.current = druidResult.dissonance;
+      druidFruitReserveUsedRef.current = druidResult.fruitReserveUsed;
+      druidNothingLostUsedRef.current = druidResult.nothingLostUsed;
+      druidMuCompleteUsedRef.current = druidResult.muCompleteUsed;
+      druidCopaActionsRef.current = druidResult.copaActionsLeft;
+      druidCopaPreservedUsedRef.current = druidResult.copaPreservedUsed;
       druidSync();
     }
     if (chRef.current.classId === 'paladino') {
@@ -4370,6 +4407,10 @@ export function DungeonPanel({
   const enemySorcerer = sorcererEnemyState;
   const warriorDisplay = enemy.warrior ?? createWarriorEnemyState();
   const warriorBandLabel = ({ firm: 'FIRME', unstable: 'INSTÁVEL', open: 'ABERTO', broken: 'GUARDA QUEBRADA' } as const)[postureBand(warriorDisplay.current)];
+  const druidHasRebirth = ch.unlockedSkills.some((s) => s.startsWith('druida:cura-natural:'));
+  const druidHasMetamorphosis = ch.unlockedSkills.some((s) => s.startsWith('druida:furia-natureza:'));
+  const druidHasBalance = ch.unlockedSkills.some((s) => s.startsWith('druida:equilibrio:'));
+  const druidAttunedSeasons = DRUID_SEASONS.filter((s) => druidYearLedgerState[s]);
   const mechanicValues: Record<string, Omit<CombatMechanicState, 'mechanic'>> = {
     'guerreiro:posture': { value: warriorDisplay.current, maxValue: POSTURE_MAX, detail: warriorBandLabel, visible: ch.classId === 'guerreiro' },
     'guerreiro:guardbreak': { value: warriorDisplay.guardBroken ? 1 : 0, duration: warriorDisplay.offensiveActionsLeft, detail: warriorDisplay.guardBroken ? `${warriorDisplay.offensiveActionsLeft} ações ofensivas` : undefined, visible: ch.classId === 'guerreiro' },
@@ -4408,14 +4449,15 @@ export function DungeonPanel({
     'arqueiro:reflex': { value: archerState.reflexActionsLeft, maxValue: 2, duration: archerState.reflexActionsLeft, visible: ch.classId === 'arqueiro' },
     'arqueiro:flight': { value: archerState.arrows.length, maxValue: 4, detail: archerState.arrows.map((a) => `${a.sourceName}: ↓${a.actionsRemaining}`).join(' · '), visible: ch.classId === 'arqueiro' },
     'arqueiro:convergence': { value: 0, visible: ch.classId === 'arqueiro' },
-    'druida:season': { value: ['spring','summer','autumn','winter'].indexOf(druidCycleState.season), detail: ({spring:'PRIMAVERA',summer:'VERÃO',autumn:'OUTONO',winter:'INVERNO'} as const)[druidCycleState.season], visible: ch.classId === 'druida' },
-    'druida:garden': { value: druidGardenRef.current.length, maxValue: ch.unlockedSkills.includes('druida:cura-natural:6') ? 3 : 2, detail: druidGardenRef.current.map((u) => u.stage.toUpperCase()).join(' · '), visible: ch.classId === 'druida' },
-    'druida:attunement': { value: druidCycleState.attunement, maxValue: 3, visible: ch.classId === 'druida' },
-    'druida:perfect_year': { value: druidCycleState.perfectYear ? 1 : 0, visible: ch.classId === 'druida' },
-    'druida:renewal': { value: druidCycleState.renewals, maxValue: 1, visible: ch.classId === 'druida' },
-    'druida:dissonance': { value: druidCycleState.dissonance, maxValue: 3, visible: ch.classId === 'druida' },
-    'druida:form': { value: druidCycleState.form ? 1 : 0, detail: druidCycleState.form?.toUpperCase(), visible: ch.classId === 'druida' },
-    'druida:avatar': { value: druidAvatarActionsRef.current, maxValue: 4, duration: druidAvatarActionsRef.current, visible: ch.classId === 'druida' },
+    'druida:season': { value: DRUID_SEASONS.indexOf(druidSeasonState), maxValue: DRUID_SEASONS.length - 1, detail: DRUID_SEASON_LABELS[druidSeasonState].toUpperCase(), visible: ch.classId === 'druida' },
+    'druida:attunement': { value: druidAttunedSeasons.length, maxValue: DRUID_SEASONS.length, detail: druidAttunedSeasons.map((s) => DRUID_SEASON_SHORT_LABELS[s]).join(' · ') || undefined, visible: ch.classId === 'druida' },
+    'druida:renewal': { value: druidRenewalState, maxValue: 1, visible: ch.classId === 'druida' },
+    'druida:garden': { value: druidGardenState.length, maxValue: druidGardenMax(ch.unlockedSkills.includes('druida:cura-natural:6')), detail: druidGardenState.map((u) => u.stage.toUpperCase()).join(' · ') || undefined, visible: druidHasRebirth },
+    'druida:form': { value: druidFormState === 'none' ? 0 : 1, detail: druidFormState !== 'none' ? DRUID_FORM_LABELS[druidFormState].toUpperCase() : undefined, visible: druidHasMetamorphosis },
+    'druida:instinct': { value: druidInstinctState, maxValue: DRUID_INSTINCT_MAX, visible: druidHasMetamorphosis },
+    'druida:avatar': { value: druidAvatarState, maxValue: DRUID_AVATAR_ACTIONS_RENEWED, duration: druidAvatarState, visible: druidHasMetamorphosis && druidAvatarState > 0 },
+    'druida:dissonance': { value: druidDissonanceState, maxValue: DRUID_DISSONANCE_MAX, visible: druidHasBalance },
+    'druida:reequilibrium': { value: druidDissonanceState >= DRUID_DISSONANCE_MAX ? 1 : 0, visible: druidHasBalance && druidDissonanceState >= DRUID_DISSONANCE_MAX },
     'bruxo:debt': { value: warlockState.debt, maxValue: 6, detail: warlockState.debt >= 6 ? 'PRAZO FINAL — próxima geração pode causar Sobrecontrato' : undefined, visible: ch.classId === 'bruxo' },
     'bruxo:deadline': { value: warlockState.debt >= 6 ? 1 : 0, detail: warlockState.debt >= 6 ? `Cobrança: ${collectionAmount(effMaxHp, 'normal')} HP` : undefined, visible: ch.classId === 'bruxo' },
     'bruxo:overcontract': { value: 0, detail: warlockState.debt >= 6 ? 'SOBRECONTRATO: +15% dano e cobrança de 10%' : undefined, visible: ch.classId === 'bruxo' },

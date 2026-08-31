@@ -20,14 +20,15 @@ const MECHANICS: Partial<Record<ClassId, ClassMechanic[]>> = {
     { id:'bruxo:forgery', classId:'bruxo', name:'Assinatura Falsa', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'✎',hideWhenZero:true,priority:31,color:'gold'}, shortDescription:'Após consumir Nome Verdadeiro, cancela uma geração futura de Dívida.', fullDescription:'Assinatura Falsa é consumida antes do Crédito e persiste entre inimigos da mesma tentativa. Ela apenas nega a Dívida, sem conceder o bônus de Bom Pagador.' },
   ],
   druida: [
-    { id:'druida:garden', classId:'druida', name:'Jardim Vivo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🌱',hideWhenZero:false,priority:9,color:'emerald'}, shortDescription:'Sementes, Brotos e Frutos cultivados entre ações sintonizadas.', fullDescription:'Sementes crescem em Brotos e Frutos antes de cada magia sintonizada. Frutos são colhidos por Renascimento.' },
-    { id:'druida:season', classId:'druida', name:'Estação', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'☘',hideWhenZero:false,priority:10,color:'emerald'}, shortDescription:'O ciclo alterna Primavera, Verão, Outono e Inverno.', fullDescription:'A Estação atual define a magia sintonizada e a Forma do Druida. Ela persiste entre inimigos da mesma tentativa e reinicia numa nova tentativa.' },
-    { id:'druida:attunement', classId:'druida', name:'Sintonia', category:'resource', combatDisplay:{owner:'player',displayType:'bar',maxValue:3,icon:'✦',hideWhenZero:false,priority:11,color:'lime'}, shortDescription:'Ações alinhadas cultivam Sintonia.', fullDescription:'Habilidades da Estação aumentam Sintonia e fortalecem o próximo efeito do Ciclo Vivo.' },
-    { id:'druida:perfect_year', classId:'druida', name:'Ano Perfeito', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'◉',hideWhenZero:true,priority:12,color:'gold'}, shortDescription:'Completar as quatro Estações prepara Renovo.', fullDescription:'Cada Estação pode ser concluída uma vez por Ano. Ao completar as quatro, o Druida gera um Renovo.' },
-    { id:'druida:renewal', classId:'druida', name:'Renovo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'❖',hideWhenZero:false,priority:13,color:'lime'}, shortDescription:'Uma reserva de renascimento que persiste entre inimigos.', fullDescription:'Renovo pode ser consumido por habilidades de Equilíbrio e persiste durante a tentativa.' },
-    { id:'druida:dissonance', classId:'druida', name:'Descompasso', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'◇',hideWhenZero:true,priority:14,color:'purple'}, shortDescription:'Ações fora do centro acumulam Descompasso.', fullDescription:'Ataques básicos e magias fora da Estação geram Descompasso. Equilíbrio converte esse excesso em poder.' },
-    { id:'druida:form', classId:'druida', name:'Forma', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'🐾',hideWhenZero:true,priority:15,color:'lime'}, shortDescription:'Cervo, Lobo, Urso ou Coruja.', fullDescription:'A Forma atual concede um conjunto diferente de bônus e persiste entre inimigos da tentativa.' },
-    { id:'druida:avatar', classId:'druida', name:'Avatar Primordial', category:'state', combatDisplay:{owner:'player',displayType:'counter',icon:'✧',hideWhenZero:true,priority:16,color:'gold'}, shortDescription:'As quatro Formas atuam simultaneamente por ações limitadas.', fullDescription:'Avatar é um estado do próprio Druida, não uma invocação.' },
+    { id:'druida:season', classId:'druida', name:'Estação', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'☘',hideWhenZero:false,priority:10,color:'emerald'}, shortDescription:'O Ciclo Vivo alterna Primavera, Verão, Outono e Inverno a cada ação real.', fullDescription:'Cada ação real do Druida (ataque básico ou habilidade) avança a Estação para a próxima do ciclo. Habilidades marcadas com a Estação atual (ou marcadas Cíclicas) estão alinhadas; as demais estão descompassadas. Quando uma nova Estação começa, toda habilidade equipada alinhada a ela tem seu cooldown zerado (Despertar Sazonal) — isso garante que o Ano Perfeito seja alcançável independente da velocidade do personagem. A Estação persiste entre inimigos da mesma tentativa e só reinicia numa tentativa nova.' },
+    { id:'druida:attunement', classId:'druida', name:'Sintonia', category:'state', combatDisplay:{owner:'player',displayType:'bar',maxValue:4,icon:'✦',hideWhenZero:false,priority:11,color:'lime'}, shortDescription:'Marca quais das quatro Estações já foram cumpridas neste Ano.', fullDescription:'Toda vez que uma ação real é lançada alinhada à Estação atual (ou é Cíclica), aquela Estação fica Sintonizada pelo restante do Ano. Sintonizar as quatro Estações no mesmo Ano — Primavera, Verão, Outono e Inverno, sem pular nenhuma — completa um Ano Perfeito na transição de Inverno para Primavera, concedendo um Renovo.' },
+    { id:'druida:renewal', classId:'druida', name:'Renovo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'❖',hideWhenZero:false,priority:13,color:'lime'}, shortDescription:'Reserva rara concedida por um Ano Perfeito; fortalece a próxima habilidade capstone.', fullDescription:'Só existe um Renovo por vez (0 ou 1). Ele é concedido automaticamente ao completar um Ano Perfeito e é consumido no início do cast de uma habilidade capstone de qualquer especialização (Árvore Ancestral, Avatar Primordial ou Eterno Retorno), tornando seu efeito ainda mais forte. Nunca é gasto sozinho — apenas por essas habilidades. Persiste entre inimigos da mesma tentativa.' },
+    { id:'druida:garden', classId:'druida', name:'Jardim Vivo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🌱',hideWhenZero:false,priority:9,color:'emerald'}, shortDescription:'Sementes que crescem em Brotos e depois em Frutos a cada ação sintonizada.', fullDescription:'Toda unidade do Jardim avança um estágio (Semente → Broto → Fruto) sempre que o Druida lança uma habilidade sintonizada, antes mesmo dela resolver. Frutos maduros são colhidos por Colheita Ancestral para curar, e Fruto de Reserva consome um Fruto automaticamente para salvar o Druida quando a vida cai abaixo de 35%, uma vez por Ano. O Jardim Vivo (nó de Renascimento) aumenta a capacidade máxima de 2 para 3 unidades.' },
+    { id:'druida:form', classId:'druida', name:'Forma', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'🐾',hideWhenZero:true,priority:15,color:'lime'}, shortDescription:'Cervo, Lobo, Urso ou Coruja — cada uma concede um bônus de combate diferente.', fullDescription:'Cada Estação corresponde a uma Forma (Primavera→Cervo, Verão→Lobo, Outono→Urso, Inverno→Coruja). Cervo fortalece MDEF e cura; Lobo acelera e critica mais; Urso reduz dano recebido e amplifica dano mágico; Coruja aumenta precisão e penetra MDEF. A Forma persiste entre inimigos da mesma tentativa.' },
+    { id:'druida:instinct', classId:'druida', name:'Instinto Ancestral', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🐺',hideWhenZero:true,priority:16,color:'orange'}, shortDescription:'Cresce ao trocar de Forma para uma diferente da anterior.', fullDescription:'Transformar-se pela primeira vez (de Nenhuma para uma Forma) não gera Instinto; trocar para uma Forma diferente da atual gera +1, até o máximo de 3; repetir a mesma Forma não gera nada. Durante o Avatar Primordial as transformações não geram Instinto. Instinto alimenta habilidades de Metamorfose que recompensam trocar de Forma com frequência.' },
+    { id:'druida:avatar', classId:'druida', name:'Avatar Primordial', category:'state', combatDisplay:{owner:'player',displayType:'counter',duration:true,icon:'✧',hideWhenZero:true,priority:17,color:'gold'}, shortDescription:'As quatro Formas agem simultaneamente por um número limitado de ações.', fullDescription:'Avatar Primordial é um estado do próprio Druida — não uma invocação — que soma os bônus de Cervo, Lobo, Urso e Coruja ao mesmo tempo por 3 ações (4 se ativado com um Renovo consumido). Cada ação real gasta uma carga; ao esgotar, a Forma volta ao normal.' },
+    { id:'druida:dissonance', classId:'druida', name:'Descompasso', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'◇',hideWhenZero:true,priority:14,color:'purple'}, shortDescription:'Ataques básicos e habilidades fora da Estação acumulam Descompasso.', fullDescription:'Toda ação descompassada (ataque básico, ou habilidade sazonal fora de sua própria Estação) soma +1 Descompasso, até 3. Uma ação alinhada reduz Descompasso em 1 enquanto ele estiver em 1 ou 2 — mas ao atingir 3 ele trava até ser consumido por Reequilíbrio.' },
+    { id:'druida:reequilibrium', classId:'druida', name:'Reequilíbrio', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⚖',hideWhenZero:true,priority:18,color:'purple'}, shortDescription:'Fica pronto quando o Descompasso atinge o máximo, convertendo o excesso em poder.', fullDescription:'Quando o Descompasso chega a 3, a especialização Equilíbrio pode consumi-lo com a habilidade Reequilíbrio, convertendo a instabilidade acumulada em um efeito poderoso e zerando o Descompasso.' },
   ],
   barbaro: [
     {
@@ -424,6 +425,11 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute:'luk', label:'SOR', role:'Secundário', description:'Aumenta Crítico e Dano Crítico das performances ofensivas.' },
     { attribute:'int', label:'INT', role:'Base mágica', description:'Aumenta MATK do Alaúde Encantado; não é transformada em atributo principal.' },
   ],
+  druida: [
+    { attribute:'wis', label:'SAB', role:'Principal', description:'Aumenta MDEF e o Poder de Cura das três especializações — Colheita Ancestral, Instinto Ancestral e efeitos de Equilíbrio escalam com ela.' },
+    { attribute:'int', label:'INT', role:'Secundário ofensivo', description:'Aumenta MATK, a base de todo o dano do Druida.' },
+    { attribute:'vit', label:'VIT', role:'Terciário defensivo', description:'Aumenta vida máxima e DEF — sustenta o Druida entre os picos de Descompasso.' },
+  ],
 };
 
 const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
@@ -521,6 +527,26 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
     { pathId:'cancao-guerra', identity:'DES + MATK/ATK + Acento/Fortíssimo.', style:'Marcha de Guerra — híbrido ofensivo.', loop:'Escrever Marcato → fechar Refrão/Contracanto → preparar Acento e Fortíssimo → gastar no pico.' },
     { pathId:'melodia-sombria', identity:'Dissonância + Contratempo/Eco.', style:'Interferência e controle.', loop:'Escrever Dissonantes → observar a ação inimiga → converter erros em Eco → consumir no Trítono/Ressonância.' },
     { pathId:'inspiracao', identity:'Lírica + Coringas/Bis.', style:'Improviso, cura moderada e adaptação.', loop:'Completar Harmonia/Refrão → curar e guardar Ovação → escolher a Nota pedida → repetir payload seguro com Bis.' },
+  ],
+  druida: [
+    {
+      pathId: 'cura-natural',
+      identity: 'SAB + Jardim Vivo + Renovo.',
+      style: 'Renascimento — sustento cíclico que planta, cresce e colhe ao longo de todo o Ano.',
+      loop: 'Lançar magias sazonais → o Jardim cresce um estágio a cada uma → colher os Frutos maduros para curar → completar o Ano para gerar Renovo e fortalecer a próxima Árvore Ancestral.',
+    },
+    {
+      pathId: 'furia-natureza',
+      identity: 'INT/SAB + Formas + Instinto Ancestral.',
+      style: 'Metamorfose — cada Estação veste uma Forma diferente, recompensando quem troca com frequência.',
+      loop: 'Estação muda → Forma muda com ela → trocar para uma Forma diferente da anterior gera Instinto → gastar Instinto ou ativar o Avatar Primordial para somar as quatro Formas de uma vez.',
+    },
+    {
+      pathId: 'equilibrio',
+      identity: 'SAB + Descompasso + Reequilíbrio.',
+      style: 'Equilíbrio — abraça o descompasso como recurso em vez de evitá-lo, convertendo o caos acumulado em poder.',
+      loop: 'Agir fora da Estação atual → acumular Descompasso → ao atingir o máximo, disparar Reequilíbrio → converter a instabilidade em um golpe de Eterno Retorno.',
+    },
   ],
 };
 
