@@ -28,7 +28,7 @@ function MechanicItem({ state, onOpen }: { state: CombatMechanicState; onOpen: (
   const max = state.maxValue ?? display.maxValue;
   const color = COLOR[display.color];
   const valueText = display.displayType === 'status' ? 'Ativo' : max ? `${formatGameNumber(state.value)}/${formatGameNumber(max)}` : formatGameNumber(state.value);
-  const duration = state.duration && state.duration > 0 ? ` · ${state.duration} ${state.duration === 1 ? 'ciclo' : 'ciclos'}` : '';
+  const duration = state.duration && state.duration > 0 ? ` · ${state.duration} ${state.duration === 1 ? 'segundo' : 'segundos'}` : '';
   return (
     <button key={`${state.mechanic.id}:${state.value}:${state.duration ?? 0}`} type="button" onClick={() => onOpen(state)} className={`w-full min-w-0 animate-[fadeIn_.18s_ease-out] ${color.text}`}>
       <div className={`flex items-baseline justify-between gap-2 text-[10px] uppercase tracking-wide underline decoration-dotted ${color.dot} underline-offset-2`}>

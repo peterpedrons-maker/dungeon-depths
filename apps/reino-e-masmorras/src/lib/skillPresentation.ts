@@ -30,7 +30,7 @@ function conditions(condition: AbilityCondition): string[] {
     case 'enemyHasStatus': return [`Inimigo sob ${condition.status}`];
     case 'stateInactive': return [`${condition.state} inativo(a)`];
     case 'painAtLeastPct': return [`Dor de pelo menos ${formatGamePercent(condition.pct ?? 0)}`];
-    case 'everyNRounds': return [`A cada ${condition.n ?? 1} ciclos`];
+    case 'everyNRounds': return [`A cada ${condition.n ?? 1} segundos`];
     case 'periodicEffectActive': return [condition.effectId === 'necromante:plague' ? 'Praga Necrótica ativa' : `${condition.effectId} ativo`];
     case 'summonCountAtLeast': return [`Pelo menos ${condition.count ?? 1} invocação ativa`];
     case 'summonCountBelow': return ['Espaço para uma nova invocação'];
@@ -50,7 +50,7 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
   const ability = node.ability;
   if (ability) {
     if (ability.actionType) rows.push({ label: 'Ação', value: ability.actionType === 'quick' ? 'RÁPIDA — usada automaticamente na Janela de Iniciativa' : 'PRINCIPAL' });
-    rows.push({ label: 'Recarga', value: `${ability.cooldown} ciclos` });
+    rows.push({ label: 'Recarga', value: `${ability.cooldown} segundos` });
     const requirements = conditions(ability.condition);
     if (requirements.length) rows.push({ label: 'Requisito', value: requirements.join(' e ') });
     if (ability.effect.faithCost) rows.push({ label: 'Custo', value: `${ability.effect.faithCost} Fé, cobrada ao usar` });
@@ -108,7 +108,7 @@ export function skillPresentationRows(ch: Character, node: SkillNode): Presentat
   if (ability?.effect.kind === 'regen') {
     const perTick = Math.round(effectiveMaxHp(ch) * (ability.effect.regenPct ?? 0));
     const rounds = ability.effect.regenRounds ?? 1;
-    rows.push({ label: 'Regeneração atual', value: `${formatGameNumber(perTick)} por ciclo; até ${formatGameNumber(perTick * rounds)} em ${rounds} ciclos` });
+    rows.push({ label: 'Regeneração atual', value: `${formatGameNumber(perTick)} por segundo; até ${formatGameNumber(perTick * rounds)} em ${rounds} segundos` });
     rows.push({ label: 'Gatilhos', value: 'Não gera Fé, Graça nem Cura Significativa' });
   }
   if (ability?.effect.kind === 'reviveWindow') {

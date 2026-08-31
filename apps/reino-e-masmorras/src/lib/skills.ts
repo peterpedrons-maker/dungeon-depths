@@ -56,22 +56,28 @@ function presentationText(text: string, ability?: Omit<AbilityDef, 'id'>): strin
     .replace(/EffectiveMaxHp/g, 'Vida Máxima')
     .replace(/overheal/g, 'excesso de cura')
     .replace(/(\d+)\.(\d+)(?=x|%)/g, '$1,$2')
-    .replace(/\brodadas?\b/gi, (word: string) => word.toLowerCase().endsWith('s') ? 'ciclos' : 'ciclo');
+    .replace(/\b(?:rodadas?|ciclos?)\b/gi, (word: string) => word.toLowerCase().endsWith('s') ? 'segundos' : 'segundo');
   if (!ability) return result;
 
-  result = result.replace(/Recarga de \d+(?:[,.]\d+)?\s*(?:s|segundos?|ciclos?)/gi, `Recarga de ${ability.cooldown} ciclos`);
   const effect = ability.effect;
   const duration = effect.statusRounds ?? effect.ccRounds ?? effect.statModRounds ?? effect.buffRounds
     ?? effect.regenRounds ?? effect.immunityRounds ?? effect.hasteRounds ?? effect.berserkRounds;
   if (duration) {
-    result = result.replace(/\bpor \d+(?:[,.]\d+)?s\b/gi, `por ${duration} ${duration === 1 ? 'ciclo' : 'ciclos'}`);
-    result = result.replace(/\bdurante \d+(?:[,.]\d+)?s\b/gi, `durante ${duration} ${duration === 1 ? 'ciclo' : 'ciclos'}`);
+    result = result.replace(/\bpor \d+(?:[,.]\d+)?s\b/gi, `por ${duration} ${duration === 1 ? 'segundo' : 'segundos'}`);
+    result = result.replace(/\bdurante \d+(?:[,.]\d+)?s\b/gi, `durante ${duration} ${duration === 1 ? 'segundo' : 'segundos'}`);
   }
-  // Every active card exposes the same cycle unit as the engine. Some of the
-  // older redesign entries intentionally kept the cooldown only in the
-  // AbilityDef; append it here so the player-facing tooltip cannot drift.
-  if (!/Recarga\s*(?:de)?\s*\d+(?:[,.]\d+)?\s*(?:s|segundos?|ciclos?)/i.test(result)) {
-    result = `${result.replace(/[.!]?$/, '')}. Recarga: ${ability.cooldown} ciclos.`;
+  // Some node/ability text is hand-written with its own "Recarga" mention
+  // (with a colon, with "de", with no separator at all — every style shows
+  // up somewhere in this file). Whatever the phrasing, replace it in place
+  // with one single canonical sentence instead of trusting it matches the
+  // real ability.cooldown; nodes without any such mention get one appended.
+  // This is the only way to guarantee exactly one, always-correct "Recarga"
+  // sentence no matter how the source text was originally phrased.
+  const recargaMention = /Recarga\s*:?\s*(?:de)?\s*\d+(?:[,.]\d+)?\s*(?:s\b|segundos?|ciclos?)\.?/i;
+  if (recargaMention.test(result)) {
+    result = result.replace(new RegExp(recargaMention.source, 'gi'), `Recarga: ${ability.cooldown} segundos.`);
+  } else {
+    result = `${result.replace(/[.!]?$/, '')}. Recarga: ${ability.cooldown} segundos.`;
   }
   return result;
 }
@@ -201,7 +207,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
       { name: 'Ressonância em Série', desc: '+2% dano elétrico. Multi-hit com 2+ acertos que fecha Circuito dá Pulso +0,05x.', effect: { magicDmgPct: 0.02 } },
       { name: 'Corrente Residual', desc: 'Ao repetir polaridade com Circuito acima de zero, causa Pulso Residual de 0,10x MATK.', effect: {} },
       { name: 'Arco Duplo', desc: '[- NEGATIVA] 2 impactos de 0,70x MATK. Amplificada: terceiro impacto de 0,30x.', ability: { name: 'Arco Duplo', desc: '[- NEGATIVA] Cada impacto rola Precisão e Crítico próprios.', cooldown: 4, condition: { type: 'always' }, effect: { kind: 'multiHit', hitCount: 2, dmgMultPerHit: 0.70, amplifiedDmgMult: 0.30, element: 'lightning', polarity: 'negative' } } },
-      { name: 'Inversor de Fase', desc: 'Suporte: +8% velocidade por 3 ciclos e a próxima elétrica fecha Circuito como oposta. Amplificada: 12% por 4 e +5 pontos percentuais de Precisão.', ability: { name: 'Inversor de Fase', desc: 'Conta para Runas; não altera Polaridade sozinho.', cooldown: 7, condition: { type: 'always' }, effect: { kind: 'haste', hasteRounds: 3, element: 'lightning', circuitPerfectWithInverter: true } } },
+      { name: 'Inversor de Fase', desc: 'Suporte: +8% velocidade por 3 ciclos e a próxima elétrica fecha Circuito como oposta. Amplificada: 12% por 4 ciclos e +5 pontos percentuais de Precisão.', ability: { name: 'Inversor de Fase', desc: 'Conta para Runas; não altera Polaridade sozinho.', cooldown: 7, condition: { type: 'always' }, effect: { kind: 'haste', hasteRounds: 3, element: 'lightning', circuitPerfectWithInverter: true } } },
       { name: 'Núcleo de Trovão', desc: '+3% dano elétrico. Enquanto Ressonância está pronta, a habilidade que a consome recebe +4% dano direto.', effect: { magicDmgPct: 0.03 } },
       { name: 'Raio Perfurante', desc: '[+ POSITIVA] 1,65x MATK com 12% penetração MDEF; fechando Circuito, 18%. Amplificada: 1,85x e 20%.', ability: { name: 'Raio Perfurante', desc: '[+ POSITIVA] Penetração é calculada por cast.', cooldown: 5, condition: { type: 'always' }, effect: { kind: 'bigHit', dmgMult: 1.65, amplifiedDmgMult: 1.85, element: 'lightning', polarity: 'positive', mdefPenPct: 0.12, amplifiedMdefPenPct: 0.20 } } },
       { name: 'Tempestade Devastadora', desc: '[- NEGATIVA] 4 impactos de 0,45x MATK. Amplificada: 0,52x cada. Fecha no máximo um Circuito.', ability: { name: 'Tempestade Devastadora', desc: '[- NEGATIVA] Multi-hit com rolagens independentes.', cooldown: 8, condition: { type: 'always' }, effect: { kind: 'multiHit', hitCount: 4, dmgMultPerHit: 0.45, amplifiedDmgMult: 0.52, element: 'lightning', polarity: 'negative' } } },
@@ -251,7 +257,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           cooldown: 6, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.70 }, { type: 'resourceAtLeast', resource: 'faith', value: 1 }] },
           effect: { kind: 'regen', regenPct: 0.03, regenRounds: 3, faithCost: 1 },
         },
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura de cada ciclo de regeneração.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé; os ciclos NÃO geram Fé nem Graça.' }] },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a cura de cada segundo de regeneração.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé; os segundos de regeneração NÃO geram Fé nem Graça.' }] },
       { name: 'Escudo Sagrado', desc: 'Habilidade ativa: custa 1 Fé — só com vida abaixo de 80% — cria uma barreira de 8% da vida máxima efetiva por até 4 ciclos. Gera Fé se absorver o bastante. Recarga de 7 ciclos.',
         mechanicRefs: ['clerigo:faith'],
         ability: {
@@ -292,7 +298,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima e a Tenacidade (respeitando o teto global).' }] },
       { name: 'Fé Vigilante', desc: '+2% de defesa mágica. Quando um efeito negativo é completamente resistido durante Consagração, ela é estendida em +1 ciclo (uma vez por instância).', effect: { mdefPct: 0.02 },
         mechanicRefs: ['clerigo:consecration'],
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica e a chance de resistir efeitos negativos.' }, { label: 'Consagração', role: 'mecanica', description: 'Resistir um efeito durante Consagração estende sua duração (+1 ciclo, uma vez por instância).' }] },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica e a chance de resistir efeitos negativos.' }, { label: 'Consagração', role: 'mecanica', description: 'Resistir um efeito durante Consagração estende sua duração (+1 segundo, uma vez por instância).' }] },
       { name: 'Barreira Ritual', desc: '+2.5% de defesa mágica. Barreiras normais criadas por você ganham +4% de eficiência multiplicativa (não afeta Graça).', effect: { mdefPct: 0.025 },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a defesa mágica e o tamanho das barreiras normais (+4%, não afeta Graça).' }] },
       { name: 'Escudo da Retidão', desc: 'Habilidade ativa: cria uma barreira de 7% da vida máxima efetiva por 3 ciclos e Consagração por 3 ciclos. Pode gerar Fé se absorver o bastante. Recarga de 6 ciclos.',
@@ -302,7 +308,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           cooldown: 6, condition: { type: 'always' },
           effect: { kind: 'shield', shieldPct: 0.07, shieldFaithThresholdPct: 0.08, consecrationRoundsOnCast: 3, scalesWithBarrierPower: true },
         },
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria Consagração por 3 ciclos.' }, { label: 'Fé', role: 'mecanica', description: 'Pode gerar Fé se a barreira absorver o suficiente.' }] },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria Consagração por 3 segundos.' }, { label: 'Fé', role: 'mecanica', description: 'Pode gerar Fé se a barreira absorver o suficiente.' }] },
       { name: 'Guarda da Alma', desc: '+2% de defesa física. Enquanto tiver uma barreira normal ativa, +3% de defesa física adicional (não conta Graça).', effect: { defPct: 0.02 },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa física; mais ainda com uma barreira normal ativa (+3%).' }] },
       { name: 'Solo Consagrado', desc: 'Enquanto Consagração estiver ativa: +8% de defesa mágica e +6 pontos percentuais de Tenacidade. O primeiro efeito negativo aplicado em cada Consagração tem sua duração reduzida em 1 ciclo (e gera +1 Fé, uma vez por instância).', effect: {},
@@ -329,7 +335,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           cooldown: 7, condition: { type: 'resourceAtLeast', resource: 'faith', value: 1 },
           effect: { kind: 'consecrationGuard', faithCost: 1, consecrationRoundsOnCast: 4, buffRounds: 3 },
         },
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a redução de dano recebido (8% base, até 12%).' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria/renova Consagração por 4 ciclos.' }] },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta a redução de dano recebido (8% base, até 12%).' }, { label: 'Fé', role: 'mecanica', description: 'Custa 1 Fé.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria/renova Consagração por 4 segundos.' }] },
       { name: 'Ancora Sagrada', desc: '+10 de vida máxima. Quando uma barreira normal é completamente destruída, o próximo golpe direto recebido em até 2 ciclos tem -8% de dano (não acumula).', effect: { maxHpFlat: 10 },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a vida máxima.' }, { label: 'Consagração', role: 'mecanica', description: 'Reage à destruição de barreiras normais.' }] },
       { name: 'Martelo da Fé', desc: 'Habilidade ativa: custa 1 Fé — só durante Consagração — golpe mágico de 1.80x de MATK que cria uma pequena barreira baseada no dano causado. Recarga de 5 ciclos.',
@@ -347,7 +353,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           cooldown: 12, condition: { type: 'resourceAtLeast', resource: 'faith', value: 3 },
           effect: { kind: 'divineWall', faithCost: 3, shieldPct: 0.12, consecrationRoundsOnCast: 4, scalesWithBarrierPower: true },
         },
-        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 3 Fé.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria Consagração por 4 ciclos.' }] },
+        scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o tamanho da barreira.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Aumenta a vida máxima efetiva usada como base.' }, { label: 'Fé', role: 'mecanica', description: 'Custa 3 Fé.' }, { label: 'Consagração', role: 'mecanica', description: 'Cria Consagração por 4 segundos.' }] },
       { name: 'Santuário Vivo', desc: 'Consagração ganha +1 ciclo de duração máxima. Uma vez por instância, se um golpe direto (após mitigação, antes de barreiras) causaria pelo menos 15% da vida máxima efetiva, ele é reduzido em mais 20% — e a Consagração termina imediatamente.', effect: {},
         mechanicRefs: ['clerigo:consecration'],
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Vida máxima maior facilita atingir o teto que ativa a proteção.' }, { label: 'Consagração', role: 'mecanica', description: 'Sacrifica a Consagração ativa para negar um golpe grande.' }] },
@@ -375,7 +381,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o dano do golpe.' }, { label: 'Julgamento', role: 'mecanica', description: 'Aplica 2 Julgamentos; atingir 3 ou 5 pela primeira vez gera Fé.' }] },
       { name: 'Convicção', desc: '+2.5% de MATK. Duração de Julgamento de 5 para 6 ciclos (não aumenta o máximo de stacks).', effect: { dmgPct: 0.025 },
         mechanicRefs: ['clerigo:judgment'],
-        scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o MATK.' }, { label: 'Julgamento', role: 'mecanica', description: 'Aumenta a duração do Julgamento (5→6 ciclos).' }] },
+        scaling: [{ attribute: 'int', label: 'INT', role: 'principal', description: 'Aumenta o MATK.' }, { label: 'Julgamento', role: 'mecanica', description: 'Aumenta a duração do Julgamento (5→6 segundos).' }] },
       { name: 'Acusação', desc: 'Quando um ataque mágico direto seu critica, aplica +1 Julgamento (uma vez por ação).', effect: {},
         mechanicRefs: ['clerigo:judgment'],
         scaling: [{ attribute: 'luk', label: 'SOR', role: 'secundario', description: 'Mais crítico gera mais Julgamento.' }, { label: 'Julgamento', role: 'mecanica', description: 'Só ativa em crítico direto, nunca DOT/reflexão.' }] },
@@ -763,7 +769,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
           { label: 'Dor', role: 'mecanica', description: 'A janela consome uma carga por ação direta real acertada; não reduz o dano, apenas adia parte dele.' },
         ] },
       { name: 'Ossos Fortes', desc: '+2.5% de defesa mágica. Reduz o dano dos próprios ciclos de Dor por VIT total (até 4%).', effect: { mdefPct: 0.025 }, mechanicRefs: ['barbaro:pain'],
-        scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa mágica e reduz o dano dos ciclos de Dor (até -4%).' }] },
+        scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a defesa mágica e reduz o dano de cada segundo de Dor (até -4%).' }] },
       // PASSIVA — sempre que um envTick realmente causar dano de Dor, +3 de
       // Fúria (no máximo uma vez por envTick). Não funciona durante Frenesi
       // (Frenesi bloqueia toda geração normal de Fúria).
@@ -1593,7 +1599,7 @@ SKILL_TREES.druida = [
     { name: 'Jardim Vivo', desc: 'Aumenta o limite do Jardim de 2 para 3 unidades. Ao completar um Ano Perfeito, toda unidade imatura do Jardim avança +1 estágio.', effect: {},
       mechanicRefs: ['druida:garden', 'druida:attunement', 'druida:renewal'] },
     { name: 'Fôlego Perene', desc: '+8 Vida Máxima. Regenerações de Renascimento recebem bônus adicional por VIT total (até +2 pontos percentuais por ciclo).', effect: { maxHpFlat: 8 },
-      scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a regeneração das habilidades de Renascimento (até +2pp por ciclo).' }] },
+      scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a regeneração das habilidades de Renascimento (até +2pp por segundo).' }] },
     { name: 'Fruto de Reserva', desc: 'Uma vez por Ano: se uma ação direta inimiga deixar você abaixo de 35% da Vida Máxima e houver ao menos 1 Fruto, consome automaticamente o mais antigo e cura o mesmo valor.', effect: {},
       mechanicRefs: ['druida:garden', 'druida:attunement'] },
     { name: 'Seiva Ascendente', desc: 'Habilidade ativa: 1,20x de MATK (1,35x se Sintonizada). Cura 18% do dano causado (7% se Sintonizada, sempre limitada a 5%/7% da Vida Máxima). Recarga de 4 ciclos.',
