@@ -10,8 +10,8 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 ### Interface (molduras, botões, ícones, barras)
 - ✅ [Moldura Principal — janelas e painéis](#moldura-principal-janelas-e-paineis)
 - ✅ [Pergaminho — fundo dos painéis](#pergaminho-fundo-dos-paineis)
-- ✅ [Painel de Ferro — fundo do menu lateral](#painel-de-ferro-fundo-do-menu-lateral)
-- ✅ [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral)
+- 🕓 [Painel de Ferro — fundo do menu lateral](#painel-de-ferro-fundo-do-menu-lateral) — a primeira tentativa saiu com cantos claros/esbranquiçados que ficavam visíveis repetidos ao ladrilhar; jogo hoje usa um degradê CSS no lugar
+- 🕓 [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral) — jogo hoje desenha a placa só em CSS no lugar
 - ✅ [Slot de Equipamento — paperdoll](#slot-de-equipamento-paperdoll-de-arma-armadura-acessorio)
 - ✅ [Ícones de Slot Vazio](#icones-de-slot-vazio-paperdoll-de-equipamentos-slot-sem-item)
 - ✅ [Slot de Habilidade](#slot-de-habilidade-nos-da-arvore-e-barra-de-habilidades-equipadas)
@@ -332,7 +332,7 @@ O menu lateral foi redesenhado no estilo do menu de Divinity: Original Sin 2 —
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style (think Diablo, Baldur's Gate, and especially Divinity: Original Sin 2's dark riveted-metal menu panel). A seamless, tileable texture of dark blackened iron/steel plating, viewed flat-on. Very subtle vertical seams every 15-20% of the width suggesting individual plates bolted together, with a faint warm amber sheen catching the metal along those seams. Warm-dark color palette: near-black iron, deep charcoal, a hint of muted bronze in the highlights — no purple, no blue, no futuristic/sci-fi sheen. Overall dark and low-contrast, since UI text, gold icons, and a row of button plates will sit on top of this the whole time.
 
-No border, no frame, no vignette, no rivets, no writing, no illustrations, no strong directional light source — flat, evenly-lit texture fills the entire canvas edge-to-edge so it reads calmly behind foreground UI. Portrait canvas, 512×1024 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling in both directions.
+The four CORNERS and all four EDGES of the canvas must be exactly as dark as the center — no vignette, no lightening, no brightening, no white or pale corners of any kind, since this tile repeats edge-to-edge and any corner that's lighter than the middle will show up as a visible grid of light blotches once tiled. No border, no frame, no rivets, no writing, no illustrations, no strong directional light source — flat, evenly-lit texture fills the entire canvas edge-to-edge so it reads calmly behind foreground UI. Portrait canvas, 512×1024 px, designed so the left edge matches the right edge and the top edge matches the bottom edge for seamless tiling in both directions.
 ```
 
 <a id="placa-de-menu-botao-de-navegacao-lateral"></a>

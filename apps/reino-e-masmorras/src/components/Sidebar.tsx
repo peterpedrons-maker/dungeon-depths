@@ -3,19 +3,6 @@ import { Character, Section } from '../types/game';
 import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon, IconSpeaker, IconSpeakerMuted, IconRestart, IconDoorExit } from './icons';
 import { playClickSfx, isMuted, toggleMuted } from '../lib/audio';
 import { MERCHANT_REFRESH_MS } from '../lib/merchantStock';
-import menuPainel from '../assets/menu-painel.webp';
-import menuPlaca from '../assets/menu-placa.webp';
-
-// Both pieces from KIT-DE-ARTE.md ("Painel de Ferro" + "Placa de Menu") are
-// in. menuPainel tiles behind the whole nav; menuPlaca is a single plate
-// asset applied as a border-image on every button — border-image only ever
-// draws the 4 edge strips + 4 corners it slices out of the source, never the
-// middle, so the plate's magenta placeholder square in the center is simply
-// discarded automatically and never needs chroma-keying. PLATE_SLICE below
-// is measured directly off the actual asset (where its magenta hole starts/
-// ends, in source pixels) — if the art is ever regenerated at a different
-// border thickness, re-measure and update this rather than eyeballing it.
-const PLATE_SLICE = '97 194 83 205'; // top right bottom left
 
 interface Props {
   character: Character;
@@ -49,9 +36,12 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:static md:translate-x-0 md:z-auto md:w-56 md:shrink-0`}
         style={{
-          backgroundImage: `url(${menuPainel})`,
-          backgroundSize: '260px auto',
-          backgroundRepeat: 'repeat',
+          // Dark riveted-metal panel, inspired by Divinity: Original Sin 2's
+          // menu — a subtle repeating hairline suggests plate seams without
+          // needing an actual metal texture asset, and the near-black
+          // gradient is what every nav "button" below sits on top of.
+          backgroundImage:
+            'repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 46px), linear-gradient(180deg, #211a13 0%, #17110c 55%, #100c08 100%)',
           boxShadow: 'inset 6px 0 14px -10px rgba(0,0,0,0.9)',
         }}
       >
@@ -126,19 +116,12 @@ function HeroNavItem({ active, onClick, children, icon }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-center gap-2 py-3 font-display font-bold uppercase tracking-wider text-sm transition-transform hover:scale-[1.02] active:scale-[0.98] ${
-        active ? 'text-gold' : 'text-gold/90'
+      className={`w-full flex items-center justify-center gap-2 rounded py-2.5 font-display font-bold uppercase tracking-wider text-sm border transition-transform hover:scale-[1.02] active:scale-[0.98] ${
+        active ? 'border-gold text-gold' : 'border-gold/70 text-gold/90'
       }`}
       style={{
-        borderStyle: 'solid',
-        borderWidth: '14px 22px',
-        borderImageSource: `url(${menuPlaca})`,
-        borderImageSlice: PLATE_SLICE,
-        borderImageWidth: '14px 22px',
-        background: active
-          ? 'linear-gradient(180deg, rgba(200,154,46,0.16), rgba(200,154,46,0.03))'
-          : 'transparent',
-        boxShadow: active ? '0 0 12px rgba(200,154,46,0.3)' : undefined,
+        background: 'linear-gradient(180deg, rgba(200,154,46,0.16), rgba(20,16,12,0.85) 70%)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -2px 4px rgba(0,0,0,0.6)',
         animation: 'sidebarHeroGlow 2.4s ease-in-out infinite',
       }}
     >
@@ -148,10 +131,12 @@ function HeroNavItem({ active, onClick, children, icon }: {
   );
 }
 
-// Riveted-metal plate button, one per nav row, instead of the old flat list
-// with a left-border highlight — the plate art itself carries the bevel and
-// the corner rivets now, so this only needs to add the icon/text/dot and a
-// gold tint + glow for whichever row is active.
+// Riveted-metal pill buttons, one per nav row, instead of the old flat list
+// with a left-border highlight — each button is its own beveled plate (light
+// hairline on top, dark inset shadow on bottom) with a small diamond stud
+// marking its far end, echoing the ornate-but-restrained hardware look of
+// Divinity: Original Sin 2's menu rather than the parchment/scroll look used
+// inside the panels this nav opens onto.
 function NavItem({ active, onClick, children, title, icon, dot }: {
   active: boolean; onClick: () => void; children: React.ReactNode; title?: string; icon: React.ReactNode; dot?: boolean;
 }) {
@@ -159,18 +144,17 @@ function NavItem({ active, onClick, children, title, icon, dot }: {
     <button
       onClick={onClick}
       title={title}
-      className={`w-full flex items-center gap-2.5 text-left mx-2 mb-1.5 px-2 py-1.5 md:py-1 text-xs font-display uppercase tracking-wider transition-colors ${
-        active ? 'text-gold' : 'text-parchment/55 hover:text-parchment/85'
+      className={`w-full flex items-center gap-2.5 text-left mx-2 mb-1.5 px-3 py-2 md:py-1.5 rounded text-xs font-display uppercase tracking-wider border transition-all ${
+        active ? 'border-gold/60 text-gold' : 'border-black/50 text-parchment/55 hover:border-gold/35 hover:text-parchment/85'
       }`}
       style={{
         width: 'calc(100% - 1rem)',
-        borderStyle: 'solid',
-        borderWidth: '9px 14px',
-        borderImageSource: `url(${menuPlaca})`,
-        borderImageSlice: PLATE_SLICE,
-        borderImageWidth: '9px 14px',
-        background: active ? 'linear-gradient(180deg, rgba(200,154,46,0.16), rgba(200,154,46,0.03))' : 'transparent',
-        boxShadow: active ? '0 0 8px rgba(200,154,46,0.22)' : undefined,
+        background: active
+          ? 'linear-gradient(180deg, rgba(200,154,46,0.16), rgba(20,16,12,0.85) 60%)'
+          : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.45))',
+        boxShadow: active
+          ? 'inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 2px rgba(0,0,0,0.5), 0 0 8px rgba(200,154,46,0.18)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 2px rgba(0,0,0,0.65)',
       }}
     >
       <span className={`relative shrink-0 ${active ? 'text-gold drop-shadow-[0_0_4px_rgba(212,175,55,0.6)]' : 'text-parchment/40'}`}>
@@ -183,6 +167,7 @@ function NavItem({ active, onClick, children, title, icon, dot }: {
         )}
       </span>
       <span className="truncate flex-1">{children}</span>
+      <span aria-hidden className={`text-[7px] shrink-0 ${active ? 'text-gold/70' : 'text-gold/15'}`}>◆</span>
     </button>
   );
 }
