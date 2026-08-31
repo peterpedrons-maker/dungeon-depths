@@ -93,3 +93,38 @@ test('Circuito só sobe com polaridades opostas ou Condutor Perfeito', () => {
   assert.equal(circuitPulseMult(3, false), 0.32);
   assert.equal(circuitPulseMult(3, true), 0.40);
 });
+
+test('Mago real fecha Circuito ao alternar polaridades em casts reais', () => {
+  // Real end-to-end coverage: the pure circuitAfterCast() test above only
+  // verifies the math — not that resolvePlayerAction() actually threads the
+  // last-cast polarity from one real cast into the next one.
+  const FAISCA_ARCANA_ID = 'mago:eletromante:4'; // [+ POSITIVA], sempre disponível, recarga 3.
+  const ARCO_DUPLO_ID = 'mago:eletromante:9'; // [- NEGATIVA], sempre disponível, recarga 4.
+  const character = createCharacter('Maga elétrica', 'mago');
+  character.unlockedSkills = [FAISCA_ARCANA_ID, ARCO_DUPLO_ID];
+  // Arco Duplo primeiro na prioridade: como sua recarga (4) é mais longa que a
+  // de Faísca Arcana (3), sempre que ambos estiverem prontos ao mesmo tempo
+  // Arco Duplo vence — isso mantém a alternação de polaridade determinística
+  // sem precisar contar ticks entre CADA cast.
+  const priority = [ARCO_DUPLO_ID, FAISCA_ARCANA_ID];
+  const state = createCombatState(character, friendlyEnemy(), 13, priority, priority);
+
+  // Cast #1: ambos prontos (recargas 0) — Arco Duplo (negativa) vence por prioridade.
+  resolvePlayerAction(state);
+  assert.equal(state.classState.classId === 'mago' ? state.classState.magePolarity : undefined, 'negative');
+  assert.equal(state.classState.classId === 'mago' ? state.classState.mageCircuit : undefined, 0);
+
+  // Cast #2, sem esperar ticks: só Faísca Arcana está pronta (Arco entrou em
+  // recarga de 4). Oposta à última polaridade — fecha o Circuito.
+  resolvePlayerAction(state);
+  assert.equal(state.classState.classId === 'mago' ? state.classState.magePolarity : undefined, 'positive');
+  assert.equal(state.classState.classId === 'mago' ? state.classState.mageCircuit : undefined, 1, 'polaridade oposta em um cast real deveria fechar o Circuito');
+
+  for (let t = 0; t < 4; t += 1) resolveEnvironmentTick(state); // libera a recarga de Arco Duplo de novo
+
+  // Cast #3: ambos prontos de novo — Arco Duplo (negativa) vence por
+  // prioridade; oposta à última (positiva), fecha outro Circuito.
+  resolvePlayerAction(state);
+  assert.equal(state.classState.classId === 'mago' ? state.classState.magePolarity : undefined, 'negative');
+  assert.equal(state.classState.classId === 'mago' ? state.classState.mageCircuit : undefined, 2, 'alternar de volta deveria fechar um segundo Circuito');
+});
