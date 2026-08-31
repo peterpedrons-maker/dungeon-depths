@@ -1,5 +1,6 @@
 import type { AbilityDef, AbilityEffect, Attributes, AttributeKey, ClassId, ScalingEntry, SkillEffect, SkillNode, SkillNodeType, SkillPath } from '../types/game';
 import { totalAttributesFromParts } from './attributes.ts';
+import { ORDEM_ATAQUE_DMG_MULT_SUPREME, ORDEM_ATAQUE_ATK_BUFF_SUPREME, ORDEM_AVANCAR_DMG_MULT_SUPREME, ORDEM_AVANCAR_SPEED_BUFF_SUPREME, ORDEM_AVANCAR_DMG_BUFF_SUPREME, ORDEM_RESISTIR_SHIELD_BASE_SUPREME, ORDEM_RESISTIR_SHIELD_CAP_SUPREME, ORDEM_RESISTIR_DMG_RED_SUPREME, ORDEM_EXECUTAR_SUPREME_EXTRA_CAP, ESTANDARTE_ATK_SUPREME, ESTANDARTE_DEF_SUPREME, ESTANDARTE_TENACITY_SUPREME } from './knight.ts';
 
 // Each class has more equippable actives than this cap (5 per path × 3 paths)
 // — this caps how many of the ones you've unlocked can actually be slotted
@@ -640,7 +641,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Ordem: Ataque', desc: 'Golpe de 1.25x de ATK; ao acertar, +10% de ATK por 3 ciclos. Gera +1 Ordem mesmo se errar.',
           cooldown: 5, condition: { type: 'always' },
-          effect: { kind: 'bigHit', dmgMult: 1.25, orderGainOnCast: 1, selfBuffAtkPctOnHit: 0.10, selfBuffRoundsOnHit: 3 },
+          effect: { kind: 'bigHit', dmgMult: 1.25, orderGainOnCast: 1, selfBuffAtkPctOnHit: 0.10, selfBuffRoundsOnHit: 3, dmgMultSupreme: ORDEM_ATAQUE_DMG_MULT_SUPREME, selfBuffAtkPctOnHitSupreme: ORDEM_ATAQUE_ATK_BUFF_SUPREME },
         },
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o dano do golpe.' }, { attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta o buff de ATK gerado.' }, { label: 'Ordens', role: 'mecanica', description: 'Gera +1 Ordem, mesmo se o golpe errar.' }] },
       { name: 'Formação', desc: '+2.5% de defesa. Enquanto pelo menos um buff de Comando estiver ativo, DEF adicional por VIT total (não aumenta com múltiplos buffs).', effect: { defPct: 0.025 },
@@ -660,7 +661,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Ordem: Avançar', desc: 'Custa 1 Ordem. Golpe de 1.45x de ATK; ao acertar, +8% de velocidade e +5% de dano por 3 ciclos.',
           cooldown: 6, condition: { type: 'resourceAtLeast', resource: 'orders', value: 1 },
-          effect: { kind: 'bigHit', dmgMult: 1.45, orderCost: 1, selfBuffSpeedPctOnHit: 0.08, selfBuffAtkPctOnHit: 0.05, selfBuffRoundsOnHit: 3 },
+          effect: { kind: 'bigHit', dmgMult: 1.45, orderCost: 1, selfBuffSpeedPctOnHit: 0.08, selfBuffAtkPctOnHit: 0.05, selfBuffRoundsOnHit: 3, dmgMultSupreme: ORDEM_AVANCAR_DMG_MULT_SUPREME, selfBuffSpeedPctOnHitSupreme: ORDEM_AVANCAR_SPEED_BUFF_SUPREME, selfBuffAtkPctOnHitSupreme: ORDEM_AVANCAR_DMG_BUFF_SUPREME },
         },
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o dano do golpe.' }, { attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta os buffs gerados.' }, { label: 'Ordens', role: 'mecanica', description: 'Custa 1 Ordem, gasta mesmo se o golpe errar.' }] },
       { name: 'Ordem: Resistir', desc: 'Habilidade ativa: custa 1 Ordem — só com vida abaixo de 75% — cria uma barreira de 9% da vida máxima efetiva (até 12% por VIT) e reduz o dano direto recebido em 10% por 3 ciclos, sem usar Poder de Cura ou Poder de Barreira. Recarga de 7 ciclos.',
@@ -668,7 +669,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Ordem: Resistir', desc: 'Custa 1 Ordem. Barreira de 9% da vida máxima efetiva (até 12%) e -10% de dano recebido por 3 ciclos.',
           cooldown: 7, condition: { type: 'all', conditions: [{ type: 'hpBelow', pct: 0.75 }, { type: 'resourceAtLeast', resource: 'orders', value: 1 }] },
-          effect: { kind: 'orderResist', orderCost: 1, shieldPctBase: 0.09, shieldPctPerVit: 0.0008, shieldPctCap: 0.03, bonusDmgTakenReductionPct: 0.10, buffRounds: 3, scalesWithBarrierPower: true },
+          effect: { kind: 'orderResist', orderCost: 1, shieldPctBase: 0.09, shieldPctPerVit: 0.0008, shieldPctCap: 0.03, bonusDmgTakenReductionPct: 0.10, buffRounds: 3, scalesWithBarrierPower: true, shieldPctBaseSupreme: ORDEM_RESISTIR_SHIELD_BASE_SUPREME, shieldPctCapSupreme: ORDEM_RESISTIR_SHIELD_CAP_SUPREME, bonusDmgTakenReductionPctSupreme: ORDEM_RESISTIR_DMG_RED_SUPREME },
         },
         scaling: [{ attribute: 'vit', label: 'VIT', role: 'principal', description: 'Aumenta a barreira criada (até +3pp).' }, { attribute: 'wis', label: 'SAB', role: 'secundario', description: 'Aumenta a redução de dano recebido.' }, { label: 'Ordens', role: 'mecanica', description: 'Custa 1 Ordem.' }] },
       { name: 'Contraordem', desc: '+2% de defesa mágica. Sempre que uma Ordem for consumida, reduz em 1 ciclo a recarga das OUTRAS habilidades de Comando (uma vez por ação; não afeta a própria habilidade nem Bastião/Investida).', effect: { mdefPct: 0.02 },
@@ -679,7 +680,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Ordem: Executar', desc: 'Custa 2 Ordens. Golpe de 2.10x de ATK que escala conforme a vida do inimigo cai abaixo de 30% (até 2.55x).',
           cooldown: 8, condition: { type: 'all', conditions: [{ type: 'enemyHpBelow', pct: 0.30 }, { type: 'resourceAtLeast', resource: 'orders', value: 2 }] },
-          effect: { kind: 'bigHit', dmgMult: 2.10, orderCost: 2, executeBaseMult: 2.10, executePerHpBelowPct: 0.015, executeMultCap: 0.45, executeSupremeExtraCap: 0.45 },
+          effect: { kind: 'bigHit', dmgMult: 2.10, orderCost: 2, executeBaseMult: 2.10, executePerHpBelowPct: 0.015, executeMultCap: 0.45, executeSupremeExtraCap: ORDEM_EXECUTAR_SUPREME_EXTRA_CAP },
         },
         scaling: [{ attribute: 'str', label: 'FOR', role: 'principal', description: 'Aumenta o dano-base do golpe.' }, { label: 'Ordens', role: 'mecanica', description: 'Custa 2 Ordens; quanto menor a vida do inimigo abaixo de 30%, maior o dano.' }] },
       { name: 'Estandarte do Rei', desc: 'Habilidade ativa: por 4 ciclos, +10% de ATK, +12% de defesa e +10 pontos percentuais de Tenacidade (escalados diretamente por SAB). Gera +1 Ordem ao ativar. A primeira outra habilidade de Comando usada durante o efeito reembolsa +1 Ordem (uma vez). Recarga de 15 ciclos.',
@@ -687,7 +688,7 @@ export const SKILL_TREES: Record<ClassId, SkillPath[]> = {
         ability: {
           name: 'Estandarte do Rei', desc: 'Por 4 ciclos: +10% ATK, +12% DEF, +10pp de Tenacidade. Gera +1 Ordem; a primeira outra habilidade de Comando usada reembolsa +1 Ordem.',
           cooldown: 15, condition: { type: 'always' },
-          effect: { kind: 'kingsBanner', atkBuffPctBase: 0.10, defBuffPctBase: 0.12, tenacityBuffPctBase: 0.10, buffRounds: 4, orderGainOnCast: 1, opensOrderRefundWindow: true },
+          effect: { kind: 'kingsBanner', atkBuffPctBase: 0.10, defBuffPctBase: 0.12, tenacityBuffPctBase: 0.10, buffRounds: 4, orderGainOnCast: 1, opensOrderRefundWindow: true, atkBuffPctBaseSupreme: ESTANDARTE_ATK_SUPREME, defBuffPctBaseSupreme: ESTANDARTE_DEF_SUPREME, tenacityBuffPctBaseSupreme: ESTANDARTE_TENACITY_SUPREME },
         },
         scaling: [{ attribute: 'wis', label: 'SAB', role: 'principal', description: 'Aumenta os três buffs gerados.' }, { attribute: 'vit', label: 'VIT', role: 'secundario', description: 'Contribui para sobrevivência durante o efeito.' }, { label: 'Ordens', role: 'mecanica', description: 'Gera e pode reembolsar Ordens.' }] },
       { name: 'Grande Comandante', desc: 'Ao alcançar 3 Ordens, entra automaticamente em Comando Supremo: a próxima habilidade de Comando usada recebe sua versão suprema, consumindo as 3 Ordens no início do cast (mesmo se errar).', effect: {},

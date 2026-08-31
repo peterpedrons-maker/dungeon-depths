@@ -394,6 +394,18 @@ export interface AbilityEffect {
   atkBuffPctBase?: number; // kingsBanner
   defBuffPctBase?: number;
   tenacityBuffPctBase?: number;
+  // Comando Supremo (cavaleiro:comando:14): swapped in for their base
+  // counterparts when the ability is cast while Comando Supremo is active —
+  // see applyCommandSupremeIfActive in combatEngine.ts.
+  dmgMultSupreme?: number;
+  selfBuffAtkPctOnHitSupreme?: number;
+  selfBuffSpeedPctOnHitSupreme?: number;
+  shieldPctBaseSupreme?: number;
+  shieldPctCapSupreme?: number;
+  bonusDmgTakenReductionPctSupreme?: number;
+  atkBuffPctBaseSupreme?: number;
+  defBuffPctBaseSupreme?: number;
+  tenacityBuffPctBaseSupreme?: number;
   opensOrderRefundWindow?: boolean; // kingsBanner: the first other Comando ability used during its duration refunds +1 Ordem
 
   // ── Caçador redesign fields (lib/hunter.ts) — same composition discipline

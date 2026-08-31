@@ -5,6 +5,7 @@ import { createCharacter } from './classes.ts';
 import { DUNGEONS } from './dungeons.ts';
 import { spawnEnemy } from './enemies.ts';
 import { MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT } from './knight.ts';
+import { SKILL_TREES } from './skills.ts';
 
 // Real end-to-end coverage for the exact bug reported: the live engine used
 // to grant a flat +10 Momentum on every landed basic attack (never the real
@@ -52,4 +53,59 @@ test('o marcador de primeiro golpe reseta para um inimigo novo (novo createComba
   const stateVsSecondEnemy = createCombatState(character, friendlyEnemy(), 2, [], []);
   resolvePlayerAction(stateVsSecondEnemy);
   assert.equal(stateVsSecondEnemy.classState.resources.momentum, MOMENTUM_GAIN_FIRST_HIT);
+});
+
+// Real end-to-end coverage for the bug reported by audit: Retaliação charges
+// accumulated and displayed in the UI but were never consumed anywhere —
+// the bonus DEF-based damage promised by Reação Defensiva (cavaleiro:bastiao:6)
+// never actually landed. Fixed in combatEngine.ts's attack().
+test('Retaliação real consome 1 carga e soma dano bônus de DEF/ATK no próximo golpe direto', () => {
+  const character = createCharacter('Cavaleiro real', 'cavaleiro');
+  const seed = 7;
+  const withCharge = createCombatState(character, friendlyEnemy(), seed, [], []);
+  (withCharge.classState as unknown as Record<string, unknown>).retaliationCharges = 1;
+  resolvePlayerAction(withCharge);
+  const dmgWithCharge = withCharge.enemy.maxHp - withCharge.enemyHp;
+  assert.equal((withCharge.classState as unknown as Record<string, unknown>).retaliationCharges, 0, 'a carga deveria ser consumida');
+
+  const withoutCharge = createCombatState(character, friendlyEnemy(), seed, [], []);
+  resolvePlayerAction(withoutCharge);
+  const dmgWithoutCharge = withoutCharge.enemy.maxHp - withoutCharge.enemyHp;
+  assert.ok(dmgWithCharge > dmgWithoutCharge, `dano com Retaliação (${dmgWithCharge}) deveria ser maior que sem (${dmgWithoutCharge})`);
+});
+
+test('Retaliação não é consumida quando não há cargas disponíveis', () => {
+  const character = createCharacter('Cavaleiro real', 'cavaleiro');
+  const state = createCombatState(character, friendlyEnemy(), 3, [], []);
+  resolvePlayerAction(state);
+  assert.equal((state.classState as unknown as Record<string, unknown>).retaliationCharges ?? 0, 0);
+});
+
+// Real end-to-end coverage for the bug reported by audit: Comando Supremo's
+// flag was set and displayed in the UI but never threaded into the combat
+// engine's CombatState — Ordem abilities never received their "supreme"
+// multipliers. Fixed via applyCommandSupremeIfActive in combatEngine.ts.
+test('Comando Supremo real troca Ordem: Ataque pela versão suprema e consome as 3 Ordens de uma vez', () => {
+  const comando = SKILL_TREES.cavaleiro.find((path) => path.id === 'comando')!;
+  const ordemAtaque = comando.nodes.find((node) => node.name === 'Ordem: Ataque')!.ability!;
+  const character = {
+    ...createCharacter('Cavaleiro real', 'cavaleiro'),
+    unlockedSkills: [comando.nodes.find((node) => node.name === 'Ordem: Ataque')!.id],
+    equippedAbilities: [ordemAtaque.id],
+    priorities: [ordemAtaque.id],
+  };
+  const seed = 11;
+
+  const supremeState = createCombatState(character, friendlyEnemy(), seed, [ordemAtaque.id], [ordemAtaque.id]);
+  (supremeState.classState as unknown as Record<string, unknown>).commandSupreme = true;
+  supremeState.classState.resources.orders = 3;
+  resolvePlayerAction(supremeState);
+  const dmgSupreme = supremeState.enemy.maxHp - supremeState.enemyHp;
+  assert.equal(supremeState.classState.resources.orders, 0, 'as 3 Ordens deveriam ser consumidas de uma vez');
+  assert.equal((supremeState.classState as unknown as Record<string, unknown>).commandSupreme, false, 'Comando Supremo é consumido no cast, uma aplicação só');
+
+  const baseState = createCombatState(character, friendlyEnemy(), seed, [ordemAtaque.id], [ordemAtaque.id]);
+  resolvePlayerAction(baseState);
+  const dmgBase = baseState.enemy.maxHp - baseState.enemyHp;
+  assert.ok(dmgSupreme > dmgBase, `dano supremo (${dmgSupreme}) deveria ser maior que o base (${dmgBase})`);
 });

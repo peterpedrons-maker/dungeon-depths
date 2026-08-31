@@ -3132,6 +3132,8 @@ export function DungeonPanel({
         resource('determination', knightDeterminationRef.current);
         resource('momentum', knightMomentumRef.current);
         resource('orders', knightOrdersRef.current);
+        raw.retaliationCharges = knightRetaliationChargesRef.current;
+        raw.commandSupreme = knightCommandSupremeRef.current;
         break;
       case 'mago':
         resource('heat', mageHeatRef.current);
@@ -3224,9 +3226,13 @@ export function DungeonPanel({
       knightDeterminationRef.current = Number(raw.determination ?? 0);
       knightMomentumRef.current = Number(raw.momentum ?? 0);
       knightOrdersRef.current = Number(raw.orders ?? 0);
+      knightRetaliationChargesRef.current = Number(raw.retaliationCharges ?? knightRetaliationChargesRef.current);
+      knightCommandSupremeRef.current = Boolean(raw.commandSupreme);
       setKnightDeterminationState(knightDeterminationRef.current);
       setKnightMomentumState(knightMomentumRef.current);
       setKnightOrdersState(knightOrdersRef.current);
+      setKnightRetaliationState(knightRetaliationChargesRef.current);
+      setKnightCommandSupremeState(knightCommandSupremeRef.current);
     }
     if (chRef.current.classId === 'mago') {
       mageHeatRef.current = Number(raw.heat ?? 0);

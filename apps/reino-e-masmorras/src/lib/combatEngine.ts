@@ -13,7 +13,7 @@ import { accelerateOldestArrow, advanceArcherReflex, advanceInFlightArrows, alig
 import { FRENZY_DRAIN_PER_ACTION, FURY_GAIN_BASIC_HIT, FURY_GAIN_TAKE_DAMAGE, PAIN_PASSIVE_REDIRECT_PCT, WOUND_DMG_PCT_PER_STACK, WOUND_MAX_STACKS, WOUND_TICK_DURATION } from './barbarian.ts';
 import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES, judgmentDurationForSkills, prioritizeClericTrialRotation, CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS } from './clerigo.ts';
 import { POSTURE_BASIC_DAMAGE, parryReduction, recoverablePosture, type PreparedGuardState } from './warrior.ts';
-import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT } from './knight.ts';
+import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR } from './knight.ts';
 import { consumePaladinVerdict, invokePaladinVirtue, type PaladinVirtueSet } from './paladin.ts';
 import { SOUL_MAX, soulsForCrossedThresholds, soulsForNextEnemy } from './necromancer.ts';
 import { SELF_ABILITY_KINDS, abilityEffectFields, abilityResolutionPlan, assertAbilityEffectContract, resolveAbilityEffect, traceAbilityEffect } from './abilityResolver.ts';
@@ -254,7 +254,7 @@ function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, for
   const authoredMultiplier = Number(x?.dmgMult ?? 1);
   let mult = forcedMultiplier ?? authoredMultiplier; const cs = classRecord(s); const wounds = s.enemy.barbarianWounds?.stacks ?? 0; const judgment = s.enemy.judgment?.stacks ?? 0;
   if (!e && s.classState.classId === 'druida' && Number(cs.druidDamageMult ?? 0) > 0) { mult *= Number(cs.druidDamageMult); delete cs.druidDamageMult; }
-  if (x?.dmgMultByBand) mult = Number(x.dmgMultByBand[enemyPostureBand(s)] ?? mult); if (x?.dmgMultPerWoundStack) mult += wounds * Number(x.dmgMultPerWoundStack); if (x?.dmgMultPerJudgmentStack) mult += judgment * Number(x.dmgMultPerJudgmentStack); if (x?.dmgMultPerMomentumConsumed) mult += Number(cs.momentumSpentThisCast ?? 0) * Number(x.dmgMultPerMomentumConsumed); if (x?.warlockDmgMultPerScar) mult += Number(cs.scarsThisCast ?? 0) * Number(x.warlockDmgMultPerScar); if (x?.lowHpDmgMult && s.playerHp / effectiveMaxHp(s.character) <= 0.35) mult = Number(x.lowHpDmgMult); if (x?.exposedDmgMult && cs.exposed) mult = Number(x.exposedDmgMult); if (x?.combinedDmgMult && cs.exposed && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Number(x.combinedDmgMult); if (x?.advantageDmgMult && cs.advantageReady) mult = Number(x.advantageDmgMult); if (x?.dmgMultVsHighEnemyHp && s.enemyHp / s.enemy.maxHp >= 0.9) mult = Number(x.dmgMultVsHighEnemyHp); if (x?.enemyHpExecuteBase && s.enemyHp / s.enemy.maxHp <= Number(x.enemyHpExecuteThreshold ?? 0)) mult = Math.min(Number(x.enemyHpExecuteCap ?? mult), Number(x.enemyHpExecuteBase) + Math.floor((1 - s.enemyHp / s.enemy.maxHp) / 0.05) * Number(x.enemyHpExecutePer5Pct ?? 0)); if (x?.executeBaseMult && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Math.min(Number(x.executeBaseMult) + Number(x.executeMultCap ?? 0) + Number(x.executeSupremeExtraCap ?? 0), Number(x.executeBaseMult) + (1 - s.enemyHp / s.enemy.maxHp) * Number(x.executePerHpBelowPct ?? 0));
+  if (x?.dmgMultByBand) mult = Number(x.dmgMultByBand[enemyPostureBand(s)] ?? mult); if (x?.dmgMultPerWoundStack) mult += wounds * Number(x.dmgMultPerWoundStack); if (x?.dmgMultPerJudgmentStack) mult += judgment * Number(x.dmgMultPerJudgmentStack); if (x?.dmgMultPerMomentumConsumed) mult += Number(cs.momentumSpentThisCast ?? 0) * Number(x.dmgMultPerMomentumConsumed); if (x?.warlockDmgMultPerScar) mult += Number(cs.scarsThisCast ?? 0) * Number(x.warlockDmgMultPerScar); if (x?.lowHpDmgMult && s.playerHp / effectiveMaxHp(s.character) <= 0.35) mult = Number(x.lowHpDmgMult); if (x?.exposedDmgMult && cs.exposed) mult = Number(x.exposedDmgMult); if (x?.combinedDmgMult && cs.exposed && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Number(x.combinedDmgMult); if (x?.advantageDmgMult && cs.advantageReady) mult = Number(x.advantageDmgMult); if (x?.dmgMultVsHighEnemyHp && s.enemyHp / s.enemy.maxHp >= 0.9) mult = Number(x.dmgMultVsHighEnemyHp); if (x?.enemyHpExecuteBase && s.enemyHp / s.enemy.maxHp <= Number(x.enemyHpExecuteThreshold ?? 0)) mult = Math.min(Number(x.enemyHpExecuteCap ?? mult), Number(x.enemyHpExecuteBase) + Math.floor((1 - s.enemyHp / s.enemy.maxHp) / 0.05) * Number(x.enemyHpExecutePer5Pct ?? 0)); if (x?.executeBaseMult && s.enemyHp / s.enemy.maxHp <= 0.3) mult = Math.min(Number(x.executeBaseMult) + Number(x.executeMultCap ?? 0), Number(x.executeBaseMult) + (1 - s.enemyHp / s.enemy.maxHp) * Number(x.executePerHpBelowPct ?? 0));
   const ambushDmgMult = Number(x?.ambushDmgMult ?? mult);
   if (s.classState.classId === 'ladino' && cs.stealthed && x?.ambushDmgMult !== undefined) mult = ambushDmgMult;
   const advantageDefPenPct = Number(x?.advantageDefPenPct ?? 0);
@@ -293,6 +293,13 @@ function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, for
   const critChance = Math.min(0.9, stats.critChance + Number(x?.archerCritBonus ?? 0) + Number(x?.advantageCritPct ?? 0) + (s.bardState.fortissimo ? 0.05 : 0)); const r = rollAbilityHit(power, baseDefense * (1 - clamp(pen, 0, 0.9)), mult, critChance, stats.critDmgMult, x?.kind === 'guaranteedCrit', () => step(s));
   let amount = r.dmg;
   if (s.classState.classId === 'cavaleiro' && Number(cs.counterStored ?? 0) > 0) { amount += Number(cs.counterStored); cs.counterStored = 0; }
+  // Retaliação (cavaleiro:bastiao:6): a próxima ação ofensiva direta que
+  // acerta consome uma carga e soma dano físico bônus baseado na DEF,
+  // limitado pelo ATK — ver descrição em skills.ts.
+  if (s.classState.classId === 'cavaleiro' && Number(cs.retaliationCharges ?? 0) > 0) {
+    amount += Math.min(stats.def * RETALIATION_DEF_FACTOR, stats.atk * RETALIATION_ATK_FACTOR);
+    cs.retaliationCharges = Number(cs.retaliationCharges) - 1;
+  }
   if (s.enemyBarrier > 0) { const absorbed = Math.min(s.enemyBarrier, amount); s.enemyBarrier -= absorbed; amount -= absorbed; event(s, { type: 'barrierAbsorb', tick: s.envTick, actor: 'enemy', amount: absorbed }); }
   event(s, { type: 'hit', tick: s.envTick, actor: 'player', abilityId }); if (r.crit) event(s, { type: 'crit', tick: s.envTick, actor: 'player', abilityId }); const beforeHp = s.enemyHp; s.enemyHp = Math.max(0, s.enemyHp - amount); recordEnemyHpDamage(s, beforeHp); event(s, { type: 'damage', tick: s.envTick, actor: 'player', amount, damageType: magical ? 'magical' : 'physical', crit: r.crit }); return { damage: amount, landed: true, crit: r.crit };
 }
@@ -770,6 +777,33 @@ function advanceArcherFlights(s: CombatState, existingIds: number[]): void {
   }
   if (s.enemyHp <= 0) finishEnemy(s);
 }
+// Grande Comandante (cavaleiro:comando:14): ao chegar em 3 Ordens, a
+// próxima habilidade de Comando usada (identificada por mexer no recurso de
+// Ordens) recebe sua versão suprema — troca os campos base pelos "Supreme"
+// autorados na própria habilidade — e consome as 3 Ordens de uma vez no
+// início do cast, mesmo se errar. Uma única aplicação por trigger.
+const COMMAND_SUPREME_SWAP_FIELDS = ['dmgMult', 'selfBuffAtkPctOnHit', 'selfBuffSpeedPctOnHit', 'shieldPctBase', 'shieldPctCap', 'bonusDmgTakenReductionPct', 'atkBuffPctBase', 'defBuffPctBase', 'tenacityBuffPctBase'] as const;
+// Fields are read unconditionally (even when Comando Supremo is not active)
+// so a real simulated cast always observes every authored "Supreme" field —
+// the shared audit harness requires every declared AbilityEffect field to be
+// provably read during a real fight, not just when a rare state triggers.
+function applyCommandSupremeIfActive(s: CombatState, effect: AbilityEffect): AbilityEffect {
+  if (s.classState.classId !== 'cavaleiro') return effect;
+  const x = effect as Record<string, any>;
+  if (x.orderCost === undefined && x.orderGainOnCast === undefined) return effect;
+  const supremeOverrides: Record<string, any> = {};
+  for (const field of COMMAND_SUPREME_SWAP_FIELDS) {
+    const supremeValue = x[`${field}Supreme`];
+    if (supremeValue !== undefined) supremeOverrides[field] = supremeValue;
+  }
+  const executeSupremeExtra = Number(x.executeSupremeExtraCap ?? 0);
+  const cs = classRecord(s);
+  if (!cs.commandSupreme) return effect;
+  cs.commandSupreme = false;
+  const supreme: Record<string, any> = { ...x, orderCost: 3, orderGainOnCast: undefined, ...supremeOverrides };
+  if (x.executeBaseMult !== undefined) supreme.executeMultCap = Number(x.executeMultCap ?? 0) + executeSupremeExtra;
+  return supreme as AbilityEffect;
+}
 export function resolvePlayerAction(s: CombatState): CombatState {
   if (s.dead || s.won || s.enemyHp <= 0) return s;
   s.actions += 1;
@@ -812,6 +846,7 @@ export function resolvePlayerAction(s: CombatState): CombatState {
     event(s, { type: 'effectApplied', tick: s.envTick, actor: 'player', abilityId: a!.id, field });
   };
   a = { ...a, effect: traceAbilityEffect(a.effect, fieldTrace, markFieldApplied), extraEffects: a.extraEffects?.map((extra) => traceAbilityEffect(extra, fieldTrace, markFieldApplied)) };
+  a = { ...a, effect: applyCommandSupremeIfActive(s, a.effect) };
   if (!pay(s, a.effect)) return s;
   const bardOvationAtCast = s.classState.classId === 'bardo' ? s.bardState.ovation : 0;
   classRecord(s).bardOvationAtCast = bardOvationAtCast;
