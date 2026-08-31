@@ -13,7 +13,7 @@ import { accelerateOldestArrow, advanceArcherReflex, advanceInFlightArrows, alig
 import { FRENZY_DRAIN_PER_ACTION, FURY_GAIN_BASIC_HIT, FURY_GAIN_TAKE_DAMAGE, PAIN_PASSIVE_REDIRECT_PCT, WOUND_DMG_PCT_PER_STACK, WOUND_MAX_STACKS, WOUND_TICK_DURATION } from './barbarian.ts';
 import { applyJudgmentState, consumeJudgmentState, tickJudgmentState, clericBaseHp, clericDirectHealAmount, significantHealAmount, nextFaithForNewEnemy, FAITH_START_FIRST_ENEMY, JUDGMENT_BASE_DURATION_TICKS, JUDGMENT_FAITH_MILESTONES, judgmentDurationForSkills, prioritizeClericTrialRotation, CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, JUIZO_FINAL_MATK_BUFF_PCT, JUIZO_FINAL_MATK_BUFF_ROUNDS } from './clerigo.ts';
 import { POSTURE_BASIC_DAMAGE, parryReduction, recoverablePosture, type PreparedGuardState } from './warrior.ts';
-import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR } from './knight.ts';
+import { determinationForDirectHit, determinationForPreventedDamage, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, MOMENTUM_GAIN_FIRST_HIT, MOMENTUM_GAIN_NEXT_HIT, RETALIATION_DEF_FACTOR, RETALIATION_ATK_FACTOR, SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP } from './knight.ts';
 import { consumePaladinVerdict, invokePaladinVirtue, type PaladinVirtueSet } from './paladin.ts';
 import { SOUL_MAX, soulsForCrossedThresholds, soulsForNextEnemy } from './necromancer.ts';
 import { SELF_ABILITY_KINDS, abilityEffectFields, abilityResolutionPlan, assertAbilityEffectContract, resolveAbilityEffect, traceAbilityEffect } from './abilityResolver.ts';
@@ -1462,10 +1462,16 @@ function carryEncounterState(next: CombatState, previous: CombatState, hp: numbe
   const set = (key: string, value: number) => { next.classState.resources[key] = value; if (key in nextRaw) nextRaw[key] = value; };
   switch (next.classState.classId) {
     case 'clerigo': set('faith', nextFaithForNewEnemy(stateResource(previous, 'faith'))); break;
-    case 'mago': set('heat', Math.min(40, stateResource(previous, 'heat'))); break;
+    case 'mago':
+      set('heat', Math.min(40, stateResource(previous, 'heat')));
+      // Runas levam no máximo 1 ponto de progresso para o próximo inimigo
+      // (classMechanics.ts: 'mago:runes') — sem isto, o motor sempre zerava
+      // Runas a cada troca de inimigo, diferente do DungeonPanel real.
+      nextRaw.runes = Math.min(1, Number(previousRaw.runes ?? 0));
+      break;
     case 'cavaleiro': {
       set('determination', 0);
-      set('momentum', next.character.unlockedSkills.includes('cavaleiro:investida:8') ? Math.min(20, stateResource(previous, 'momentum')) : 0);
+      set('momentum', next.character.unlockedSkills.includes('cavaleiro:investida:8') ? Math.min(SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP, stateResource(previous, 'momentum')) : 0);
       set('orders', next.character.unlockedSkills.includes('cavaleiro:comando:6') && stateResource(previous, 'orders') >= 1 ? 1 : 0);
       break;
     }
@@ -1473,9 +1479,17 @@ function carryEncounterState(next: CombatState, previous: CombatState, hp: numbe
     case 'feiticeiro': set('pulse', stateResource(previous, 'pulse')); set('resonance', stateResource(previous, 'resonance')); set('control', stateResource(previous, 'control')); break;
     case 'bruxo': set('debt', stateResource(previous, 'debt')); set('credit', stateResource(previous, 'credit')); set('scars', stateResource(previous, 'scars')); break;
     case 'necromante': {
-      const carryThree = next.character.unlockedSkills.includes('necromante:decomposicao:14');
-      set('souls', soulsForNextEnemy(stateResource(previous, 'souls'), carryThree));
-      nextRaw.servantAttacks = carryThree && Array.isArray(previousRaw.servantAttacks) ? (previousRaw.servantAttacks as number[]).slice(0, 1) : [];
+      // Sede dos Mortos (decomposicao:14): carregar até 3 Almas exige morte
+      // com Praga ativa OU 3+ Decomposições — não basta ter o talento.
+      const deathSetup = Number(previousRaw.plague ?? 0) > 0 || Number(previousRaw.decomposition ?? 0) >= 3;
+      const carryThreeSouls = deathSetup && next.character.unlockedSkills.includes('necromante:decomposicao:14');
+      set('souls', soulsForNextEnemy(stateResource(previous, 'souls'), carryThreeSouls));
+      // Vínculo Eterno com a Morte (drenar-vida:14) é quem preserva um Servo
+      // entre inimigos (com até 2 ataques) — um talento diferente de
+      // decomposicao:14, que só afeta Almas.
+      const preserveServant = next.character.unlockedSkills.includes('necromante:drenar-vida:14')
+        && Array.isArray(previousRaw.servantAttacks) && (previousRaw.servantAttacks as number[]).length > 0;
+      nextRaw.servantAttacks = preserveServant ? [Math.min(2, (previousRaw.servantAttacks as number[])[0])] : [];
       nextRaw.servants = Array.isArray(nextRaw.servantAttacks) ? nextRaw.servantAttacks.length : 0;
       break;
     }
