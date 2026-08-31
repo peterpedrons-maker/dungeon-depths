@@ -126,6 +126,12 @@ function stateResource(s: CombatState, key: string): number {
   if (key === 'distance' && s.archerState) return s.archerState.distance;
   if (key === 'steps' && s.archerState) return s.archerState.steps;
   if (key === 'flightCount' && s.archerState) return s.archerState.arrows.length;
+  // Renovo/Instinto/Descompasso vivem em campos tipados dedicados de
+  // CombatClassState (não em classState.resources) — o fallback genérico
+  // abaixo usa `??`, que nunca dispara quando resources[key] já foi
+  // inicializado como 0 (0 não é nullish), então esses três precisam do
+  // mesmo tipo de leitura direta que archerState/warlockPlayer recebem acima.
+  if ((key === 'renewal' || key === 'instinct' || key === 'dissonance') && s.classState.classId === 'druida') return (s.classState as unknown as Record<string, number>)[key] ?? 0;
   return s.classState.resources[key] ?? (s.classState as unknown as Record<string, number>)[key] ?? 0;
 }
 function changeResource(s: CombatState, key: string, delta: number): void {
@@ -952,7 +958,14 @@ export function naturalAbilityPriorities(target: AbilityDef, supportingAbilityId
     const imageGenerator = conditionHas(target.condition, 'imageCountAtLeast') && !!x.imageGain;
     const virtueGenerator = required.has('conviction') && generatesResource(a.effect, 'conviction');
     const safeDefense = required.size > 0 && SELF_KINDS.has(a.effect.kind) && !Object.keys(x).some((key) => key.endsWith('Cost'));
-    return resourceGenerator || distanceGenerator || stackGenerator || postureGenerator || stateGenerator || conditionStateGenerator || imageGenerator || virtueGenerator || safeDefense;
+    // Renovo (Ano Perfeito) e Instinto Ancestral nascem do uso normal das
+    // quatro habilidades sazonais de um caminho — não de um único "gerador"
+    // com um campo de efeito dedicado. Sem isto, uma rotação natural nunca
+    // sintoniza todas as Estações (Renovo) nem troca de Forma o suficiente
+    // (Instinto), e a capstone cycle nunca fica alcançável.
+    const druidCycleGenerator = character.classId === 'druida' && (required.has('renewal') || required.has('instinct'))
+      && typeof x.druidSeason === 'string' && x.druidSeason !== 'cycle';
+    return resourceGenerator || distanceGenerator || stackGenerator || postureGenerator || stateGenerator || conditionStateGenerator || imageGenerator || virtueGenerator || safeDefense || druidCycleGenerator;
   });
   return [target.id, ...preparatory.map((a) => a.id)];
 }
@@ -1466,8 +1479,30 @@ function carryEncounterState(next: CombatState, previous: CombatState, hp: numbe
       nextRaw.servants = Array.isArray(nextRaw.servantAttacks) ? nextRaw.servantAttacks.length : 0;
       break;
     }
+    case 'druida': {
+      // O Ciclo Vivo persiste através de toda a tentativa (múltiplos
+      // inimigos), só reiniciando numa tentativa nova — createCombatState
+      // já zera classState a cada inimigo, então isto precisa ser copiado
+      // explicitamente, ou Estação/Jardim/Instinto/Descompasso/Renovo
+      // voltariam ao zero a cada troca de inimigo.
+      nextRaw.season = previousRaw.season;
+      nextRaw.yearLedger = { ...(previousRaw.yearLedger as Record<string, boolean>) };
+      nextRaw.renewal = previousRaw.renewal;
+      nextRaw.garden = Array.isArray(previousRaw.garden) ? (previousRaw.garden as Array<Record<string, unknown>>).map((unit) => ({ ...unit })) : [];
+      nextRaw.gardenNextId = previousRaw.gardenNextId;
+      nextRaw.form = previousRaw.form;
+      nextRaw.instinct = previousRaw.instinct;
+      nextRaw.avatarActionsLeft = previousRaw.avatarActionsLeft;
+      nextRaw.dissonance = previousRaw.dissonance;
+      nextRaw.fruitReserveUsed = previousRaw.fruitReserveUsed;
+      nextRaw.nothingLostUsed = previousRaw.nothingLostUsed;
+      nextRaw.muCompleteUsed = previousRaw.muCompleteUsed;
+      nextRaw.copaActionsLeft = previousRaw.copaActionsLeft;
+      nextRaw.copaPreservedUsed = previousRaw.copaPreservedUsed;
+      break;
+    }
     case 'guerreiro': case 'ladino': case 'paladino': case 'arqueiro':
-    case 'cacador': case 'druida': case 'bardo':
+    case 'cacador': case 'bardo':
       break;
   }
   next.bardState = resetBardEnemy(previous.bardState);

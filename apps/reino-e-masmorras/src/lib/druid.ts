@@ -133,7 +133,7 @@ export function druidFruitCount(garden: readonly DruidGardenUnit[]): number {
 export function consumeDruidFruits(
   garden: readonly DruidGardenUnit[], maxCount: number,
 ): { garden: DruidGardenUnit[]; consumedCount: number } {
-  const fruitIds = garden.filter((unit) => unit.stage === 'fruit').sort((a, b) => a.age - b.age).slice(0, maxCount).map((unit) => unit.id);
+  const fruitIds = garden.filter((unit) => unit.stage === 'fruit').sort((a, b) => b.age - a.age).slice(0, maxCount).map((unit) => unit.id);
   return { garden: garden.filter((unit) => !fruitIds.includes(unit.id)), consumedCount: fruitIds.length };
 }
 export function consumeOldestDruidFruit(garden: readonly DruidGardenUnit[]): { garden: DruidGardenUnit[]; consumed: boolean } {
