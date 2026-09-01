@@ -1,6 +1,6 @@
 import type { AbilityDef, AbilityEffect, Character, ClassId, CrowdControlKind, DungeonDef, EnemyInstance, StatusEffectKind } from '../types/game.ts';
 import { CLASSES, MAGICAL_CLASSES } from './classes.ts';
-import { computeCombatStats, effectiveMaxHp } from './combatStats.ts';
+import { computeCombatStats, effectiveMaxHp, LIFESTEAL_CAP } from './combatStats.ts';
 import { buildAbilityConditionContext, evalAbilityCondition, type AbilityConditionContext } from './combatConditions.ts';
 import { getEquippedAbilities } from './skills.ts';
 import { spawnEnemy } from './enemies.ts';
@@ -352,7 +352,14 @@ function attack(s: CombatState, e: AbilityEffect | null, abilityId?: string, for
     cs.retaliationCharges = Number(cs.retaliationCharges) - 1;
   }
   if (s.enemyBarrier > 0) { const absorbed = Math.min(s.enemyBarrier, amount); s.enemyBarrier -= absorbed; amount -= absorbed; event(s, { type: 'barrierAbsorb', tick: s.envTick, actor: 'enemy', amount: absorbed }); }
-  event(s, { type: 'hit', tick: s.envTick, actor: 'player', abilityId }); if (r.crit) event(s, { type: 'crit', tick: s.envTick, actor: 'player', abilityId }); const beforeHp = s.enemyHp; s.enemyHp = Math.max(0, s.enemyHp - amount); recordEnemyHpDamage(s, beforeHp); event(s, { type: 'damage', tick: s.envTick, actor: 'player', amount, damageType: magical ? 'magical' : 'physical', crit: r.crit }); return { damage: amount, landed: true, crit: r.crit };
+  event(s, { type: 'hit', tick: s.envTick, actor: 'player', abilityId }); if (r.crit) event(s, { type: 'crit', tick: s.envTick, actor: 'player', abilityId }); const beforeHp = s.enemyHp; s.enemyHp = Math.max(0, s.enemyHp - amount); recordEnemyHpDamage(s, beforeHp); event(s, { type: 'damage', tick: s.envTick, actor: 'player', amount, damageType: magical ? 'magical' : 'physical', crit: r.crit });
+  // Roubo de Vida: cura o jogador com base em todo golpe direto que
+  // realmente acerta (básico + cada hit de habilidade) — DOTs, Praga e
+  // Servos não passam por attack(), então já ficam de fora naturalmente,
+  // como documentado em classMechanics.ts.
+  const lifestealPct = Math.min(LIFESTEAL_CAP, Math.max(0, stats.lifestealPct + modTotal(s.playerMods, 'lifestealPct')));
+  if (lifestealPct > 0 && amount > 0) heal(s, amount * lifestealPct);
+  return { damage: amount, landed: true, crit: r.crit };
 }
 function applyWounds(s: CombatState, amount: number, renew = true): void { const old = s.enemy.barbarianWounds?.stacks ?? 0; if (!amount && !old) return; s.enemy.barbarianWounds = { stacks: Math.min(WOUND_MAX_STACKS, old + amount), ticksLeft: renew ? WOUND_TICK_DURATION : (s.enemy.barbarianWounds?.ticksLeft ?? WOUND_TICK_DURATION) }; }
 function applyBreaches(s: CombatState, amount: number, consume = 0): void { const current = s.enemy.hunterBreaches?.stacks ?? 0; const next = Math.max(0, Math.min(3, current - consume + amount)); s.enemy.hunterBreaches = next ? { stacks: next, ticksLeft: 6 } : undefined; }
