@@ -151,20 +151,25 @@ const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
   // Região 1 — Covil de Aranhas
   huntingSpider: 113, venomSpider: 106, giantSpider: 138, spiderlingSwarm: 81, darkWeaver: 132, blackMatriarch: 184,
 
-  // Região 2 — Torre Amaldiçoada
-  gargoyle: 140, spectralMage: 118, cursedKnight: 150, watchingEye: 85, crawlingShadow: 120, fallenArchmage: 175,
-  // Região 2 — Minas Abandonadas
-  cursedMiner: 120, oreGolem: 148, koboldRaider: 100, batSwarm: 82, gasWisp: 90, oreTitan: 178,
+  // Região 2 — Torre Amaldiçoada. spectralMage bumped up (118->148) — it's a
+  // human-sized robed figure, not a small creature, so it read as shrunken
+  // next to the 165px hero; cursedKnight nudged too for the same reason.
+  gargoyle: 140, spectralMage: 148, cursedKnight: 156, watchingEye: 85, crawlingShadow: 120, fallenArchmage: 175,
+  // Região 2 — Minas Abandonadas. cursedMiner bumped (120->148) — same
+  // human-sized-enemy-reads-shrunken issue as spectralMage above.
+  cursedMiner: 148, oreGolem: 148, koboldRaider: 100, batSwarm: 82, gasWisp: 90, oreTitan: 178,
   // Região 2 — Floresta Amaldiçoada
   corruptedEnt: 155, ghostWolf: 100, darkFairy: 85, cursedBear: 145, stranglingVine: 110, forestHeart: 182,
-  // Região 2 — Covil dos Dragões (dragon acima é o chefe)
-  dragonHatchling: 110, wildWyvern: 130, scaledGuardian: 140, draconicCultist: 118, fireSerpent: 100,
+  // Região 2 — Covil dos Dragões (dragon acima é o chefe). draconicCultist
+  // bumped (118->145) — same human-sized fix.
+  dragonHatchling: 110, wildWyvern: 130, scaledGuardian: 140, draconicCultist: 145, fireSerpent: 100,
   // Região 2 — Necrópole Esquecida (skeletonLord já existia)
   darkReaper: 135, deathCrow: 90, boneExecutioner: 150, wailingGhost: 120, graveWorm: 95, skeletonLord: 152,
-  // Região 2 — Ruínas Élficas
-  corruptedGuardian: 150, whisperingVine: 115, ruinBeast: 130, elvenWraith: 118, crystalGolem: 148, ancestralGuardian: 184,
-  // Região 2 — Arena de Sangue
-  cursedGladiator: 122, arenaBeast: 140, maskedExecutioner: 125, beastTamer: 118, fallenChampion: 130, grandChampion: 186,
+  // Região 2 — Ruínas Élficas. elvenWraith bumped (118->146) — same fix.
+  corruptedGuardian: 150, whisperingVine: 115, ruinBeast: 130, elvenWraith: 146, crystalGolem: 148, ancestralGuardian: 184,
+  // Região 2 — Arena de Sangue — every regular here is a human duelist, so
+  // all 4 got the same human-sized-enemy bump (previously 118-130).
+  cursedGladiator: 150, arenaBeast: 140, maskedExecutioner: 152, beastTamer: 148, fallenChampion: 155, grandChampion: 186,
 
   // Alvos de Caçada (lib/hunts.ts) — maiores ainda, para reforçar visualmente
   // que são o desafio mais duro disponível.
