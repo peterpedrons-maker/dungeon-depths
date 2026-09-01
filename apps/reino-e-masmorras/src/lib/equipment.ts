@@ -136,9 +136,15 @@ export const PCT_AFFIX_TYPES = new Set<SecondaryStatType>([
 // reuses the exact same rollPrimaryValue growth curve so the same stat type
 // never reads the same twice across rarities/tiers: a comum tier-1 "+FOR"
 // affix and a legendário tier-11 one on the same stat type are worlds apart.
-// Velocidade/Redução de Recarga/Roubo de Vida roll conservatively (0.12-0.15)
-// since they're strong per-point and already stack with attributes/talentos;
+// Redução de Recarga/Velocidade roll conservatively (0.055-0.06) since
+// they're strong per-point and already stack with attributes/talentos;
 // sorte de item stays modest too since it's pure loot-rate, not combat power.
+// Roubo de Vida was caught in that same conservative cut (0.15 -> 0.045) as
+// an unintended side effect of an unrelated rebalance pass — restored to its
+// original 0.15 per direct user request, since Lifesteal was found (and
+// fixed, see combatEngine.ts's attack()) to have been fully non-functional
+// this whole time; now that it actually heals, items should roll the values
+// players remember (up to ~5% on a high-tier Lendário).
 // atk/matk/def/mdef/hp were cut (0.5->0.25/0.3, 2->1.1) and accuracy raised
 // slightly (0.25->0.35) after simulation showed these "mirror the primary
 // attribute" affixes contributing 2-7x the Combat Power of the other
@@ -149,7 +155,7 @@ export const PCT_AFFIX_TYPES = new Set<SecondaryStatType>([
 export const AFFIX_SCALE: Record<SecondaryStatType, number> = {
   atk: 0.25, matk: 0.25, def: 0.30, mdef: 0.30, hp: 1.10,
   crit: 0.12, critDmg: 0.22, block: 0.12, evasion: 0.10, accuracy: 0.12, tenacity: 0.10,
-  speed: 0.06, lifesteal: 0.045, thorns: 0.16, cdr: 0.055, itemFind: 0.15, itemQuality: 0.15,
+  speed: 0.06, lifesteal: 0.15, thorns: 0.16, cdr: 0.055, itemFind: 0.15, itemQuality: 0.15,
   healingPower: 0.12, barrierPower: 0.10,
   str: 0.30, int: 0.30, dex: 0.20, vit: 0.18, agi: 0.055, wis: 0.045, luk: 0.045,
 };
