@@ -3,7 +3,7 @@ import type { AccessoryType, ClassId, EquipmentItem, ItemSlot, Rarity, Secondary
 import { CLASSES, MAGICAL_CLASSES } from './classes.ts';
 import {
   ACCESSORY_NOUN, ACCESSORY_STAT_POOL, ACCESSORY_TYPES, ARMOR_NOUN, MAX_TIER, MERCHANT_RARITY_PRICE_MULT,
-  OFFHAND_KIND, OFFHAND_NOUN, WEIGHT_GROUP, merchantBasePrice, tierName,
+  OFFHAND_KIND, OFFHAND_NOUN, TWO_HANDED_WEAPON_MULT, WEIGHT_GROUP, hasOffhandSlot, merchantBasePrice, tierName,
 } from './itemTiers.ts';
 import { classAttributePriorities, classGearCapabilities, compatibleAttributeKeys, isAttributeStat } from './attributes.ts';
 
@@ -376,7 +376,12 @@ function primaryFieldsFor(
     // resource, or a Mago's Cajado would roll a physical-attack number their
     // basic swing never actually uses.
     const isMagicWeapon = MAGICAL_CLASSES.includes(classId);
-    const raw = Math.round(rollPrimaryValue(baseTier, rarityMult, 1) * qualityMult);
+    // Classes without a mão secundária get no separate offhand item (no
+    // extra primary roll, no extra affixes) — see TWO_HANDED_WEAPON_MULT's
+    // own comment in itemTiers.ts for why this compensates on the weapon's
+    // own rolls instead of granting an extra affix slot.
+    const twoHandedMult = hasOffhandSlot(classId) ? 1 : TWO_HANDED_WEAPON_MULT;
+    const raw = Math.round(rollPrimaryValue(baseTier, rarityMult * twoHandedMult, 1) * qualityMult);
     return isMagicWeapon ? { matkBonus: raw } : { dmgBonus: raw };
   }
   if (slot === 'body' || slot === 'legs' || slot === 'hands') {
@@ -540,13 +545,16 @@ export function generateItem(
 
   const pool = filteredAffixPool(slot, classId, rarityTier);
   const count = affixCountForRarity(rarity.id, quality);
+  // Same weapon-only compensation as the primary roll above, applied to the
+  // affix roll's magnitude — see TWO_HANDED_WEAPON_MULT in itemTiers.ts.
+  const affixMult = slot === 'weapon' && !hasOffhandSlot(classId) ? rolledMult * TWO_HANDED_WEAPON_MULT : rolledMult;
 
   return {
     id: `i${++_iid}_${Date.now()}`, name, classId, slot, rarity: rarity.id, tier: baseTier,
     accessoryType,
     ...ZERO_PRIMARY, ...primary,
     itemSchemaVersion: 2,
-    secondaryStats: rollSecondaryStats(baseTier, rolledMult, pool, count, classId),
+    secondaryStats: rollSecondaryStats(baseTier, affixMult, pool, count, classId),
     enhanceLevel: 0,
     originalAffixCount: count,
   };
@@ -564,7 +572,9 @@ export function rollAffixForItem(item: EquipmentItem): { type: SecondaryStatType
   const rarityTier = rarityIndex(item.rarity);
   const pool = filteredAffixPool(item.slot, item.classId, rarityTier).filter((t) => !item.secondaryStats.some((s) => s.type === t));
   if (pool.length === 0) return null;
-  const rolled = rollSecondaryStats(item.tier, rarityMult(item.rarity), pool, 1, item.classId);
+  const base = rarityMult(item.rarity);
+  const affixMult = item.slot === 'weapon' && !hasOffhandSlot(item.classId) ? base * TWO_HANDED_WEAPON_MULT : base;
+  const rolled = rollSecondaryStats(item.tier, affixMult, pool, 1, item.classId);
   return rolled[0] ?? null;
 }
 
