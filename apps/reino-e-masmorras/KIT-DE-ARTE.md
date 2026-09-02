@@ -14,6 +14,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral) — jogo hoje desenha a placa só em CSS no lugar
 - ✅ Slot de Equipamento — paperdoll — prompt já usado, removido do kit
 - ✅ Ícones de Slot Vazio — prompt já usado, removido do kit
+- 🕓 [Ícones de Atalho — Navegação Rápida (EM TESTE)](#icones-de-atalho-navegacao-rapida-em-teste) — Personagem/Habilidades/Bestiário/Títulos/Caçadas/Colocação/Loja de Prestígio, pensados pra ficar sobre a nova Cena Única do Reino (ver seção "Reino — Cena Única"), usando a moldura circular de habilidade que já existe em vez de uma moldura nova
 - ✅ Slot de Habilidade — prompt já usado, removido do kit
 - ✅ Botão Dourado — prompt já usado, removido do kit
 - 🕓 [Botão Carmesim](#carmesim-combate-acoes-perigosas) — jogo hoje usa cor lisa (CSS) no lugar
@@ -1770,4 +1771,31 @@ Scatter 1 extra fog-shrouded silhouette marker with no legible name near an edge
 ```
 
 Se a arte agradar, o próximo passo (só depois de aprovar) é medir as coordenadas dos marcadores como já foi feito nas Regiões, e decidir código: reaproveitar `DungeonMap.tsx`/`KingdomBuildings.tsx` como base, trocar o clique do "Portal da Masmorra" para abrir o mesmo modal de seleção de região que hoje é aberto pelo botão "Campanha" da barra lateral, e manter Personagem/Habilidades/Bestiário/Títulos/Ranking/Loja de Prestígio de fora, exatamente como decidido acima.
+
+---
+
+<a id="icones-de-atalho-navegacao-rapida-em-teste"></a>
+### Ícones de Atalho — Navegação Rápida (EM TESTE)
+**Status: em avaliação, junto com a Cena Única do Reino acima.** Personagem, Habilidades, Bestiário, Títulos e Caçadas não têm um "prédio" próprio na cena única (são telas de lista/grade, não lugares — ver decisão na seção anterior), então continuam acessíveis por ícones de atalho, só que agora pensados pra ficar sobrepostos na própria Cena Única (ou numa barra fixa, se na prática ficar mais legível — decisão de layout só depois de ver a cena pronta) em vez de dentro do menu lateral de texto. Ranking (Colocação) e Loja de Prestígio entram na mesma leva, já que também não têm prédio próprio.
+
+**Convenção:** mesmo estilo pintado dos outros ícones deste kit (moeda, poção, coração, runa, ícones de habilidade — pintura digital rica, NÃO vetor liso, NÃO pixel art), sem moldura desenhada — cada ícone entra sozinho na moldura circular de habilidade que **já existe** no jogo (mesmo componente usado nos slots da barra de combate), então não precisa desenhar aro/borda nova.
+
+**Tamanho:** 1024×512 px (grade 4×2, 256×256 px por célula, a última célula fica vazia/magenta) · **Uso:** 7 ícones de atalho — Personagem, Habilidades, Bestiário, Títulos, Caçadas, Colocação e Loja de Prestígio
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a game's quick-navigation shortcuts — same painted style as the game's other UI icons (gold coin, health potion, ruby heart, ability icons), NOT flat vector, NOT pixel art. Each icon is a single small object or symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. No border or frame baked into any icon — each will be placed inside an existing circular UI frame separately.
+
+One single wide image containing SEVEN separate icons arranged in an even 4-column × 2-row grid (the eighth, bottom-right cell left empty/solid magenta), generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all seven.
+
+1) "Personagem" — an ornate steel breastplate with a small engraved crest, standing upright as if worn by an unseen hero.
+2) "Habilidades" — a small open spellbook/grimoire, pages glowing faintly with a rising arcane spark.
+3) "Bestiário" — a closed leather-bound bestiary tome with a clawed monster-eye sigil embossed on its cover.
+4) "Títulos" — a small gold laurel wreath wrapped around a ribboned medal.
+5) "Caçadas" — a curved hunting horn crossed with a single arrow.
+6) "Colocação" (ranking) — a small gold trophy cup resting on a stone pedestal.
+7) "Loja de Prestígio" — a faceted glowing purple gem set in an ornate small vault-like clasp.
+
+Solid magenta background (#FF00FF) everywhere outside the seven icons. No text, no numbers, no labels on any icon. Canvas 1024×512 px.
+```
+
 
