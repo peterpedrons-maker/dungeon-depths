@@ -14,8 +14,7 @@ import { MAX_POTIONS, potionBasePrice } from '../lib/consumables';
 import { playBuySellSfx } from '../lib/audio';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
-import { KingdomOverview } from './KingdomOverview';
-import { KingdomBuildings } from './KingdomBuildings';
+import { KingdomHub } from './KingdomHub';
 import { CharacterOverview } from './CharacterOverview';
 import { SkillTree } from './SkillTree';
 import { Mercador } from './Mercador';
@@ -484,9 +483,9 @@ export function GameShell({
         />
         <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
           <EmblemWatermark />
-          {section === 'kingdom' && <KingdomOverview character={character} />}
-          {section === 'buildings' && (
-            <KingdomBuildings
+          {section === 'kingdom' && (
+            <KingdomHub
+              onNavigate={attemptNavigate}
               onOpenFerreiro={() => setFerreiroOpen(true)}
               onOpenMercador={handleOpenMercador}
               onOpenBau={() => setBauOpen(true)}

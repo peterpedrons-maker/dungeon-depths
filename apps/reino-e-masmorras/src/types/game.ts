@@ -1175,7 +1175,7 @@ export interface RankEntry {
 
 export type Screen = 'title' | 'select' | 'create' | 'game';
 export type Section =
-  | 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts'
+  | 'kingdom' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts'
   | 'prestige-shop' | 'bestiary' | 'titles';
 
 // ── Títulos (lib/titles.ts) — purely computed from Character state, see the

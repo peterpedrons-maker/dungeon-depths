@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Character, Section } from '../types/game';
-import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon, IconSpeaker, IconSpeakerMuted, IconRestart, IconDoorExit } from './icons';
+import { IconScroll, IconActive, IconSkull, IconCastle, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon, IconSpeaker, IconSpeakerMuted, IconRestart, IconDoorExit } from './icons';
 import { playClickSfx, isMuted, toggleMuted } from '../lib/audio';
 
 interface Props {
@@ -67,8 +67,11 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
         </Group>
 
         <Group title="Reino">
-          <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
-          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Mercadores</NavItem>
+          {/* Forja/Mercador/Baú (formerly a separate "Mercadores" screen)
+              are now clickable buildings painted right into the Reino hub
+              scene itself — see KingdomHub.tsx — so this is the only entry
+              point left for the whole Reino group. */}
+          <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Reino</NavItem>
         </Group>
 
         <Group title="Ranking">
