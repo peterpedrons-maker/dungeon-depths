@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Character, Section } from '../types/game';
 import { IconScroll, IconActive, IconSkull, IconCastle, IconHammer, IconTrophy, IconTarget, IconGem, IconBook, IconRibbon, IconSpeaker, IconSpeakerMuted, IconRestart, IconDoorExit } from './icons';
 import { playClickSfx, isMuted, toggleMuted } from '../lib/audio';
-import { MERCHANT_REFRESH_MS } from '../lib/merchantStock';
 
 interface Props {
   character: Character;
@@ -25,7 +24,6 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
   // enough to pull the eye without spelling out a count at nav-item scale.
   const hasAttrPoints = ch.attributePoints > 0;
   const hasSkillPoints = ch.skillPoints > 0;
-  const merchantHasFreshStock = Date.now() - (ch.merchantRefreshedAt ?? 0) >= MERCHANT_REFRESH_MS;
 
   return (
     <>
@@ -70,7 +68,7 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
 
         <Group title="Reino">
           <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
-          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')} attention={merchantHasFreshStock ? 'gold' : undefined}>Mercadores</NavItem>
+          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')}>Mercadores</NavItem>
         </Group>
 
         <Group title="Ranking">
