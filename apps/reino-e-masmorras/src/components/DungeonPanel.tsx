@@ -35,6 +35,7 @@ import { CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, prioritizeClericTrialRotation } f
 import { DETERMINATION_MAX, determinationForDirectHit, determinationForPreventedDamage, addDetermination, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, IRON_WALL_DETERMINATION_THRESHOLD_PCT, RETALIATION_MAX_CHARGES, RETALIATION_BLOCKS_PER_CHARGE, MOMENTUM_MAX_BASE, MOMENTUM_LOSS_HEAVY_HIT_PCT_BASE, MOMENTUM_LOSS_AMOUNT_BASE, SANGUE_DE_COMBATE_THRESHOLD_RATE, SANGUE_DE_COMBATE_THRESHOLD_CAP, INSTINTO_SOBREVIVENCIA_VIT_DIVISOR, INSTINTO_SOBREVIVENCIA_LOSS_REDUCTION_CAP, MOMENTUM_LOSS_MIN, MOMENTUM_BONUS_SPEED_PER_20_BASE, MOMENTUM_BONUS_SPEED_PER_20_UPGRADED, MOMENTUM_MAX_VETERANO_BONUS, SEDE_DE_VITORIA_HEAL_PCT, SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP, IMPARAVEL_HIGH_MOMENTUM_PCT_THRESHOLD, IMPARAVEL_HIGH_MOMENTUM_TENACITY_BONUS, ORDERS_MAX, DISCIPLINA_MILITAR_TENACITY_RATE, DISCIPLINA_MILITAR_TENACITY_CAP, FORMACAO_DEF_RATE, FORMACAO_DEF_CAP, DISCIPLINA_INABALAVEL_THRESHOLD, ARMADURA_ACO_HEAVY_HIT_PCT, ARMADURA_ACO_RATE, ARMADURA_ACO_CAP, PULSO_VITAL_BARRIER_EFF_RATE, PULSO_VITAL_BARRIER_EFF_CAP, PESO_ARMADURA_RATE, PESO_ARMADURA_CAP, ESCUDO_DISCIPLINADO_WINDOW_TICKS, ESCUDO_DISCIPLINADO_REDUCTION_PCT, CORPO_BLINDADO_DEF_TO_MDEF_PCT, CORPO_BLINDADO_CAP_PCT_OF_MDEF, JURAMENTO_RESISTENCIA_THRESHOLD, JURAMENTO_RESISTENCIA_DURATION_CUT, NUCLEO_ACO_HP_THRESHOLD, NUCLEO_ACO_RATE, NUCLEO_ACO_CAP, IRON_WALL_DMG_RED_BASE, IRON_WALL_DMG_RED_CAP, IRON_WALL_DET_GEN_PER_2PCT, IRON_WALL_DET_GEN_CAP_PER_ACTION, LIVING_FORTRESS_DMG_RED_BASE, LIVING_FORTRESS_DMG_RED_CAP, LIVING_FORTRESS_MIN_BLOCK_CHANCE, COLOSSAL_SHIELD_CC_NEGATE_CONSUME_PCT, LAST_GUARD_POST_BARRIER_BASE, LAST_GUARD_POST_BARRIER_PER_VIT, LAST_GUARD_POST_BARRIER_CAP, COUNTER_STANCE_CAP_BASE, COUNTER_STANCE_CAP_PER_VIT, COUNTER_STANCE_CAP_CAP, COUNTER_STANCE_STORE_PCT, BASTIAO_INQUEBRAVEL_BARRIER_PCT, BASTIAO_INQUEBRAVEL_DETERMINATION_GAIN, BASTIAO_INQUEBRAVEL_DMG_REDUCTION_PCT, BASTIAO_INQUEBRAVEL_DMG_REDUCTION_ROUNDS, isGolpePesado } from '../lib/knight';
 import { TRAP_MAX_ARMED_BASE, TRAP_MAX_ARMED_MESTRE_ARMADILHEIRO, PRIMED_TRAP_BONUS_PCT, MESTRE_ARMADILHEIRO_NEXT_TRAP_BONUS_PCT, RECENT_TRAP_TRIGGER_WINDOW_TICKS, ENGENHARIA_PRECISA_TRAP_DMG_RATE, ENGENHARIA_PRECISA_TRAP_DMG_CAP, CONHECIMENTO_VENENOS_POISON_RATE, CONHECIMENTO_VENENOS_POISON_CAP, PASSOS_ARMADILHEIRO_SPEED_UNCONDITIONAL_PCT, PASSOS_ARMADILHEIRO_SPEED_RATE, PASSOS_ARMADILHEIRO_SPEED_CAP, SOBREVIVENCIA_CAMPO_DMG_REDUCTION_RATE, SOBREVIVENCIA_CAMPO_DMG_REDUCTION_CAP, MECANICA_REFINADA_TRAP_DMG_RATE, MECANICA_REFINADA_TRAP_DMG_CAP, DESORIENTADO_ACCURACY_PCT, DESORIENTADO_ACCURACY_PCT_MARKED, DESORIENTADO_ROUNDS, PACIENCIA_DA_CACA_EVASION_RATE, PACIENCIA_DA_CACA_EVASION_CAP, TRAIL_MAX, TRAIL_GAIN_PER_ACTION, MEMORIA_DA_TRILHA_FIRST_ACTION_BONUS, MARKED_PREY_THRESHOLD, OLHOS_RASTREADOR_ACCURACY_RATE, OLHOS_RASTREADOR_ACCURACY_CAP, PASSOS_SILENCIOSOS_EVASION_RATE, PASSOS_SILENCIOSOS_EVASION_CAP, LEITURA_MOVIMENTO_DMG_REDUCTION_RATE, LEITURA_MOVIMENTO_DMG_REDUCTION_CAP, MIRA_PERSEGUICAO_ACCURACY_RATE, MIRA_PERSEGUICAO_ACCURACY_CAP, PRESA_MARCADA_ACCURACY_BONUS_PCT, PRESA_MARCADA_TRAP_DMG_BONUS_PCT, FOLEGO_PERSEGUICAO_SPEED_BASE, FOLEGO_PERSEGUICAO_SPEED_RATE, FOLEGO_PERSEGUICAO_SPEED_CAP, INSTINTO_FUGA_WINDOW_TICKS, LEITURA_COMPLETA_CRIT_RATE, LEITURA_COMPLETA_CRIT_CAP, PASSO_ETEREO_TRAIL_GAIN_ON_MISS, MANTO_SOMBRAS_MAX_BREACHES_PER_CAST, BREACH_MAX, applyBreach, tickBreach, MIRA_CIRURGICA_ACCURACY_RATE, MIRA_CIRURGICA_ACCURACY_CAP, PULSO_FRIO_CRIT_RATE, PULSO_FRIO_CRIT_CAP, LEITURA_BALISTICA_CRIT_DMG_BONUS_AT_3_BREACHES, MUNICAO_SELECIONADA_CRIT_DMG_RATE, MUNICAO_SELECIONADA_CRIT_DMG_CAP, RITMO_ABATE_SPEED_UNCONDITIONAL_PCT, RITMO_ABATE_SPEED_RATE, RITMO_ABATE_SPEED_CAP, PONTO_FRACO_ACCURACY_PER_BREACH, PONTO_FRACO_CRIT_DMG_PER_BREACH, FOCO_CARRASCO_HP_THRESHOLD, FOCO_CARRASCO_CRIT_RATE, FOCO_CARRASCO_CRIT_CAP } from '../lib/hunter';
 import { rollAbilityHit, mitigatedBase } from '../game/combat';
+import { poisonDmgPerTick, bleedDmgPerTick } from '../lib/statusEffects';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
@@ -2514,6 +2515,15 @@ export function DungeonPanel({
     return resisted;
   }
 
+  // Tenacidade's second layer: an effect that got past the resist roll above
+  // still gets its duration shortened proportionally to tenacityPct (same
+  // stat, same roll's worth of investment — not a second independent
+  // defense). Never shortens below 1 round; a full negation is still only
+  // ever the resist roll's job.
+  function tenacityShortenedDuration(rounds: number, tenacityPct: number): number {
+    return Math.max(1, rounds - Math.floor(rounds * tenacityPct));
+  }
+
   // Solo Consagrado (clerigo:retidao:6) — the FIRST negative effect (status/
   // CC) that lands on you during a Consagração instance has its duration cut
   // by 1 tick and grants +1 Fé, once per instance. Returns the (possibly
@@ -3971,10 +3981,13 @@ export function DungeonPanel({
         if (playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
-            playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+            const statusDmgPerTick = abEffect.status === 'poison' ? poisonDmgPerTick(effectiveMaxHp(chRef.current))
+              : abEffect.status === 'bleed' ? bleedDmgPerTick(enemyPower, defStats.def)
+              : Math.max(1, Math.round(enemyPower * 0.35));
+            playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: rounds, dmgPerTick: statusDmgPerTick });
             syncPlayerStatuses();
           }
           pushLog(`Você foi ${STATUS_VERB[abEffect.status]}!`);
@@ -3988,7 +4001,7 @@ export function DungeonPanel({
           // left of it. Silence is never negated (per spec).
           pushLog('Seu Escudo Colossal absorve o golpe atordoante!');
         } else {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: rounds });
@@ -4023,17 +4036,20 @@ export function DungeonPanel({
         if ((proc.status || proc.cc) && playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else if (proc.status) {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
-            playerStatusRef.current.push({ kind: proc.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+            const statusDmgPerTick = proc.status === 'poison' ? poisonDmgPerTick(effectiveMaxHp(chRef.current))
+              : proc.status === 'bleed' ? bleedDmgPerTick(enemyPower, defStats.def)
+              : Math.max(1, Math.round(enemyPower * 0.35));
+            playerStatusRef.current.push({ kind: proc.status, roundsLeft: rounds, dmgPerTick: statusDmgPerTick });
             syncPlayerStatuses();
           }
           pushLog(proc.label);
         } else if (proc.cc && isKnight() && (proc.cc === 'stun' || proc.cc === 'sleep') && knightColossalShieldNegateCC()) {
           pushLog('Seu Escudo Colossal absorve o golpe atordoante!');
         } else if (proc.cc) {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerCCRef.current.push({ kind: proc.cc, roundsLeft: rounds });

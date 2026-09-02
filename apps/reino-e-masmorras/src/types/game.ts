@@ -149,6 +149,7 @@ export interface SkillEffect {
   accuracyPct?: number;   // permanent base hit chance, offsets enemy evasion
   cooldownReductionPct?: number; // shortens every ability's cooldown, capped in combatStats.ts
   dmgPctVsStatus?: { status: StatusEffectKind; pct: number }; // conditional passive, e.g. "+15% dmg vs poisoned enemy"
+  healingPowerPct?: number; // adds to CombatStats.healingPowerPct (otherwise purely WIS/item-derived)
 }
 
 // Damage-over-time family (poison/burn/bleed all tick identically; curse is

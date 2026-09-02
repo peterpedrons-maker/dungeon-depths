@@ -218,7 +218,10 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
     name, classId, level: 1, xp: 0, xpToNext: xpToNextLevel(1),
     hp: c.baseHp, maxHp: c.baseHp, atk: c.baseAtk, def: c.baseDef, matk: c.baseMatk, mdef: c.baseMdef,
     gold: 0, potions: 1, potionThreshold: 0.3, bestDepth: 0, ironMode,
-    skillPoints: 0, attributePoints: 0, allocatedAttrs: initialAllocatedAttrs ?? { ...ZERO_ATTRS },
+    // Starts with 1 skill point already available (see grantXp below for
+    // the rest of the front-loaded curve) — a brand-new level-1 character
+    // used to have zero and couldn't unlock a single node until level 2.
+    skillPoints: 1, attributePoints: 0, allocatedAttrs: initialAllocatedAttrs ?? { ...ZERO_ATTRS },
     unlockedSkills: [], equippedAbilities: [], abilityThresholds: {},
     equipment: {
       // Every hero starts geared, not empty-handed — a guaranteed comum
@@ -245,9 +248,13 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
 
 // Levels up as many times as the accumulated XP allows (capped at MAX_LEVEL,
 // discarding leftover XP once reached), fully healing each time. Skill
-// points only land on even levels (1 every 2 levels — 30 by the level cap,
-// enough to fully commit to at most 2 of a class's 3 talent trees, never
-// all 3). Attribute points land every level, spent freely via allocatedAttrs.
+// points front-load the early game (1 per level from 2 through 10 — on top
+// of the 1 the character already starts with, see createCharacter — for 10
+// total by level 10), then settle into 1 every 2 levels same as before (12,
+// 14, ... 60), for 35 total by the level cap. Still not enough to fully
+// commit to all 3 of a class's talent trees (15 nodes each) — the point is
+// giving an early taste of the tree sooner, not raising the ceiling.
+// Attribute points land every level, spent freely via allocatedAttrs.
 export function grantXp(ch: Character, amount: number): Character {
   if (ch.level >= MAX_LEVEL) return ch;
   const next = { ...ch, xp: ch.xp + amount };
@@ -260,7 +267,7 @@ export function grantXp(ch: Character, amount: number): Character {
     next.matk += 2;
     next.mdef += 1;
     next.hp = next.maxHp;
-    if (next.level % 2 === 0) next.skillPoints += 1;
+    if (next.level <= 10 || next.level % 2 === 0) next.skillPoints += 1;
     next.attributePoints += 1;
     next.xpToNext = xpToNextLevel(next.level);
   }
