@@ -297,7 +297,7 @@ O Cavaleiro não muda essa regra, mas constrói em cima dela: Guarda Elevada e E
   cacador: [
     {
       id: 'cacador:traps', classId: 'cacador', name: 'Armadilhas', category: 'other',
-      combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 3, icon: '◇', hideWhenZero: true, priority: 10, color: 'lime' },
+      combatDisplay: { owner: 'enemy', displayType: 'charges', maxValue: 3, icon: '◇', hideWhenZero: true, priority: 9, color: 'lime' },
       shortDescription: 'Armadilhas de Armadilhas ficam armadas em silêncio e só disparam quando a presa completa uma ação real (acerto ou erro) — nunca no instante em que são preparadas.',
       fullDescription: `Armadilhas são a mecânica central da especialização Armadilhas.
 

@@ -144,6 +144,11 @@ const DUNGEON_DEFS: DungeonDraft[] = [
     desc: 'Filhotes e criaturas ligadas a dragões guardam o ninho — dragões realmente antigos ainda dormem em masmorras mais distantes.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['dragonHatchling', 'wildWyvern', 'scaledGuardian', 'draconicCultist', 'fireSerpent'],
+    // Bumped a tier above its ordinal slot (Tier 3 -> 4) per direct user
+    // call, inverted with Necrópole below: the Covil reads as tougher than
+    // the Necrópole, so it shouldn't drop weaker loot than a dungeon it
+    // outclasses.
+    itemTierOverride: 4,
     bossDepth: 29, boss: 'dragon', miniBossDepths: [22, 26], difficultyMult: 2.20,
     unlockAfter: ['floresta'],
   },
@@ -152,6 +157,9 @@ const DUNGEON_DEFS: DungeonDraft[] = [
     desc: 'Um cemitério em ruínas onde os mortos não descansam.',
     startDepth: 18, levelReq: 18,
     enemyPool: ['darkReaper', 'deathCrow', 'boneExecutioner', 'wailingGhost', 'graveWorm'],
+    // Dropped a tier below its ordinal slot (Tier 4 -> 3) as the other half
+    // of the Covil/Necrópole swap above — same reasoning, opposite direction.
+    itemTierOverride: 3,
     bossDepth: 29, boss: 'skeletonLord', miniBossDepths: [22, 26], difficultyMult: 2.35,
     unlockAfter: ['floresta'],
   },
