@@ -102,12 +102,31 @@ body {
   50%      { box-shadow: 0 0 20px 5px rgba(212,175,55,0.65), inset 0 0 18px rgba(212,175,55,0.16); }
 }
 
-/* Small attention dot on a sidebar item with something pending (unspent
-   attribute/skill points, fresh Mercador stock) — pulses to catch the eye
-   without a badge count, since these are binary "there's something here"
-   signals rather than a quantity worth spelling out at nav-item scale. */
-@keyframes attentionDotPulse {
-  0%, 100% { transform: scale(1);    opacity: 1;   }
-  50%      { transform: scale(1.4);  opacity: 0.55; }
+/* Whole-button version of the "something's waiting for you" signal on a
+   sidebar item with something pending (unspent attribute/skill points,
+   fresh Mercador stock) — replaces a small icon-corner dot, which proved
+   too easy to miss, with a pulsing glow across the entire button. */
+@keyframes navAttentionGlow {
+  0%, 100% { box-shadow: 0 0 6px 0px rgba(212,175,55,0.25), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(212,175,55,0.45); }
+  50%      { box-shadow: 0 0 16px 3px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(212,175,55,0.9); }
+}
+/* Same, in the sky-blue already used for attribute points (vs skill
+   points' gold), so the nav glow's color matches the badge it points to. */
+@keyframes navAttentionGlowSky {
+  0%, 100% { box-shadow: 0 0 6px 0px rgba(56,189,248,0.25), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(56,189,248,0.5); }
+  50%      { box-shadow: 0 0 16px 3px rgba(56,189,248,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(56,189,248,0.95); }
+}
+
+/* Same attention language applied to an in-panel tab/pill (e.g. the
+   Atributos sub-tab, or a "N pontos" badge) once the player has actually
+   navigated to where the sidebar glow pointed them — gold for skill
+   points, sky for attribute points, matching each one's existing pill. */
+@keyframes tabAttentionGlowGold {
+  0%, 100% { box-shadow: 0 0 5px 0px rgba(212,175,55,0.35); }
+  50%      { box-shadow: 0 0 14px 3px rgba(212,175,55,0.75); }
+}
+@keyframes tabAttentionGlowSky {
+  0%, 100% { box-shadow: 0 0 5px 0px rgba(56,189,248,0.35); }
+  50%      { box-shadow: 0 0 14px 3px rgba(56,189,248,0.75); }
 }
 

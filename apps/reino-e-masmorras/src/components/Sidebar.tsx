@@ -56,8 +56,8 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
         </div>
 
         <Group title="Personagem">
-          <NavItem icon={<IconScroll className="w-4 h-4" />} active={section === 'character'} onClick={() => nav('character')} dot={hasAttrPoints}>Personagem</NavItem>
-          <NavItem icon={<IconActive className="w-4 h-4" />} active={section === 'skills'} onClick={() => nav('skills')} dot={hasSkillPoints}>Habilidades</NavItem>
+          <NavItem icon={<IconScroll className="w-4 h-4" />} active={section === 'character'} onClick={() => nav('character')} attention={hasAttrPoints ? 'sky' : undefined}>Personagem</NavItem>
+          <NavItem icon={<IconActive className="w-4 h-4" />} active={section === 'skills'} onClick={() => nav('skills')} attention={hasSkillPoints ? 'gold' : undefined}>Habilidades</NavItem>
           <NavItem icon={<IconBook className="w-4 h-4" />} active={section === 'bestiary'} onClick={() => nav('bestiary')}>Bestiário</NavItem>
           <NavItem icon={<IconRibbon className="w-4 h-4" />} active={section === 'titles'} onClick={() => nav('titles')}>Títulos</NavItem>
         </Group>
@@ -70,7 +70,7 @@ export function Sidebar({ character: ch, section, open, onClose, onNavigate, onA
 
         <Group title="Reino">
           <NavItem icon={<IconCastle className="w-4 h-4" />} active={section === 'kingdom'} onClick={() => nav('kingdom')}>Visão Geral</NavItem>
-          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')} dot={merchantHasFreshStock}>Mercadores</NavItem>
+          <NavItem icon={<IconHammer className="w-4 h-4" />} active={section === 'buildings'} onClick={() => nav('buildings')} attention={merchantHasFreshStock ? 'gold' : undefined}>Mercadores</NavItem>
         </Group>
 
         <Group title="Ranking">
@@ -137,16 +137,22 @@ function HeroNavItem({ active, onClick, children, icon }: {
 // marking its far end, echoing the ornate-but-restrained hardware look of
 // Divinity: Original Sin 2's menu rather than the parchment/scroll look used
 // inside the panels this nav opens onto.
-function NavItem({ active, onClick, children, title, icon, dot }: {
-  active: boolean; onClick: () => void; children: React.ReactNode; title?: string; icon: React.ReactNode; dot?: boolean;
+// `attention` replaces the old small icon-corner dot with a pulsing glow on
+// the WHOLE button — per direct user feedback, a 2px dot on a phone screen
+// was too easy to miss entirely. Color matches the badge/pill the player
+// will see once they get where this points them (gold = skill points/
+// Mercador stock, sky = attribute points), so the nav glow and the panel
+// notification it leads to read as the same signal.
+function NavItem({ active, onClick, children, title, icon, attention }: {
+  active: boolean; onClick: () => void; children: React.ReactNode; title?: string; icon: React.ReactNode; attention?: 'gold' | 'sky';
 }) {
   return (
     <button
       onClick={onClick}
       title={title}
       className={`w-full flex items-center gap-2.5 text-left mx-2 mb-1.5 px-3 py-2 md:py-1.5 rounded text-xs font-display uppercase tracking-wider border transition-all ${
-        active ? 'border-gold/60 text-gold' : 'border-black/50 text-parchment/55 hover:border-gold/35 hover:text-parchment/85'
-      }`}
+        active ? 'border-gold/60 text-gold' : attention ? '' : 'border-black/50 text-parchment/55 hover:border-gold/35 hover:text-parchment/85'
+      } ${attention && !active ? (attention === 'sky' ? 'text-sky-200' : 'text-gold/90') : ''}`}
       style={{
         width: 'calc(100% - 1rem)',
         background: active
@@ -154,17 +160,13 @@ function NavItem({ active, onClick, children, title, icon, dot }: {
           : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.30) 55%, rgba(0,0,0,0.45))',
         boxShadow: active
           ? 'inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 2px rgba(0,0,0,0.5), 0 0 8px rgba(200,154,46,0.18)'
+          : attention ? undefined
           : 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 2px rgba(0,0,0,0.65)',
+        animation: !active && attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined,
       }}
     >
-      <span className={`relative shrink-0 ${active ? 'text-gold drop-shadow-[0_0_4px_rgba(212,175,55,0.6)]' : 'text-parchment/40'}`}>
+      <span className={`relative shrink-0 ${active ? 'text-gold drop-shadow-[0_0_4px_rgba(212,175,55,0.6)]' : attention ? (attention === 'sky' ? 'text-sky-300' : 'text-gold') : 'text-parchment/40'}`}>
         {icon}
-        {dot && (
-          <span
-            className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-gold shadow-[0_0_4px_rgba(212,175,55,0.9)]"
-            style={{ animation: 'attentionDotPulse 1.4s ease-in-out infinite' }}
-          />
-        )}
       </span>
       <span className="truncate flex-1">{children}</span>
       <span aria-hidden className={`text-[7px] shrink-0 ${active ? 'text-gold/70' : 'text-gold/15'}`}>◆</span>
