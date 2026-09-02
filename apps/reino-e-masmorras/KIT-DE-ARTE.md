@@ -121,6 +121,7 @@ Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões vertic
 - ✅ Cena do Ferreiro — prompt já usado, removido do kit
 - ✅ Cena do Mercador — prompt já usado, removido do kit
 - ✅ Cena de Título — prompt já usado, removido do kit
+- 🕓 [Reino — Cena Única (Hub Unificado, EM TESTE)](#reino-cena-unica-hub-unificado-em-teste) — ideia em avaliação: substituir a Cena do Reino + o Mapa de Construções por uma imagem só, com Forja/Baú/Mercador/Taverna e a entrada da Campanha todos como marcadores clicáveis na mesma cena, no estilo "cidade única" de RPGs mobile. Só a arte foi encomendada até agora — nenhum código do jogo foi alterado, nada foi integrado
 
 ### Mapa de Masmorras (fundo de cada região, 5 no total — última fase antes do Mapa Mundo)
 - ✅ Região 1 — Valdren (nível 1-10) — prompt já usado, removido do kit
@@ -1742,4 +1743,31 @@ Landscape canvas, 1920×1440 px. Soft diffuse top-light. No characters, no UI fr
 ```
 
 Sobre inimigos/chefes dessas dezenas de localidades: ainda não foram definidos (nem os dados das masmorras em `lib/dungeons.ts` existem ainda — isso é conteúdo futuro, fora do escopo desta arte). Quando essas masmorras forem desenhadas, o padrão recomendado é o mesmo já usado nas Regiões 1-5: reaproveitar o elenco de inimigos por tier já existente em `lib/enemies.ts` para a maioria das localidades, e reservar um chefe exclusivo desenhado à mão só para as poucas masmorras "especiais" de cada leva (igual Poço sem Fundo, Torre dos Ecos e Arena do Campeão hoje) — evita ter que desenhar uma criatura nova para cada uma das dezenas de localidades.
+
+---
+
+<a id="reino-cena-unica-hub-unificado-em-teste"></a>
+### Reino — Cena Única (Hub Unificado, EM TESTE)
+**Status: em avaliação, só a arte foi pedida — nenhum código foi alterado.** Ideia: em vez do jogador ver primeiro a Cena do Reino (decorativa) e depois abrir Construções à parte pra achar Forja/Baú/Mercador, tudo vira **uma única imagem** com cada prédio já clicável na própria cena — incluindo, dessa vez, um portal que abre direto o modal de seleção de região/masmorra (hoje esse botão de entrar em campanha fica fora da tela do Reino, na barra lateral). Personagem, Habilidades, Bestiário, Títulos, Ranking e Loja de Prestígio **continuam fora dessa imagem** — são telas de lista/grade densa, não "lugares", e ficam melhor como estão hoje (menu ou barra de ícones) do que forçadas a virar um prédio na cena.
+
+Mesmo formato vertical de trilha das Regiões 1-5 (em vez do formato horizontal `2/1` que o Mapa de Construções usa hoje) — resolve o espaço vazio embaixo da imagem em celular e reaproveita o mesmo componente de marcadores por coordenada. Ambientação de fim de tarde/entardecer, o "lar" do jogador — deliberadamente mais quente e acolhedor que o clima sombrio das masmorras.
+
+**Tamanho:** 1024×2560 px · **Uso:** teste — telas de Reino/Construções, entrada de Campanha
+
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and the Região dungeon-selection maps (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A tall vertical location-selection map segment — a cobblestone plaza and path winding from the bottom edge of the canvas to the top, through the grounds of a warm, lived-in castle bailey at dusk, golden-orange sky fading to dusky blue, long soft shadows, warm torchlight and lantern glow spilling from windows and doorways, stone castle walls and towers framing both sides — this should feel like a cozy home base, noticeably warmer and safer in mood than the dungeon-region maps.
+
+Location markers, bottom to top, each a small distinct building with a wooden/parchment sign bearing its Portuguese name (small spelling mistakes in the text are acceptable):
+1) "Portal da Masmorra" — near the bottom, the single most prominent and eye-catching structure in the whole scene: an ancient stone archway wreathed in swirling blue-gold magical energy, runes glowing faintly along its frame, clearly the "main action" of this place — larger and more elaborately lit than every other building here.
+2) "Forja" — a squat stone smithy with a smoking chimney, a glowing forge visible through its open front and an anvil outside.
+3) "Baú de Armazém" — a sturdy stone vault-house with a heavy iron-banded door and small barred window, a few travel chests stacked outside.
+4) "Mercador" — a market stall/shop front with awnings, hanging goods, and crates of wares out front.
+5) "Taverna" — a cheerful two-story timber-and-plaster building, warm yellow light in every window, a hanging wooden sign creaking on a post, barrels and benches outside, faint chimney smoke — visibly a bit quieter/less finished than the other buildings, as if not fully open for business yet.
+
+Scatter 1 extra fog-shrouded silhouette marker with no legible name near an edge of the image — reserved space for a future building. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
+```
+
+Se a arte agradar, o próximo passo (só depois de aprovar) é medir as coordenadas dos marcadores como já foi feito nas Regiões, e decidir código: reaproveitar `DungeonMap.tsx`/`KingdomBuildings.tsx` como base, trocar o clique do "Portal da Masmorra" para abrir o mesmo modal de seleção de região que hoje é aberto pelo botão "Campanha" da barra lateral, e manter Personagem/Habilidades/Bestiário/Títulos/Ranking/Loja de Prestígio de fora, exatamente como decidido acima.
 
