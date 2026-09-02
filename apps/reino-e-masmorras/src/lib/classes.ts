@@ -246,6 +246,18 @@ export function createCharacter(name: string, classId: ClassId, initialAllocated
   };
 }
 
+// Closed-form total skill points a character should have EARNED by `level`
+// under the front-loaded schedule below (1 at level 1, +1 per level through
+// 10, then +1 every 2 levels) — the exact same math grantXp applies
+// incrementally, just solved directly. storage.ts uses this to recompute an
+// existing character's skillPoints balance against the current schedule
+// every time a save loads, instead of leaving it stuck at whatever an
+// earlier schedule (or a since-removed skill node's refund) produced.
+export function totalSkillPointsForLevel(level: number): number {
+  const lv = Math.max(1, Math.min(MAX_LEVEL, level));
+  return lv <= 10 ? lv : 5 + Math.floor(lv / 2);
+}
+
 // Levels up as many times as the accumulated XP allows (capped at MAX_LEVEL,
 // discarding leftover XP once reached), fully healing each time. Skill
 // points front-load the early game (1 per level from 2 through 10 — on top

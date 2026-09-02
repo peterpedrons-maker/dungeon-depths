@@ -1,5 +1,5 @@
 import type { Attributes, Character, ClassId, EquipmentItem, ProfileState } from '../types/game';
-import { CLASSES, MAX_LEVEL } from './classes.ts';
+import { CLASSES, MAX_LEVEL, totalSkillPointsForLevel } from './classes.ts';
 import { SKILL_TREES } from './skills.ts';
 import { MAX_POTIONS } from './consumables.ts';
 import { repackInventory } from './inventoryGrid.ts';
@@ -101,12 +101,13 @@ export function migrateCharacter(raw: any): Character | null {
 
     // Every rebalance of SKILL_TREES (denser trees, renamed class, reordered
     // nodes) can leave old unlockedSkills pointing at node ids that no
-    // longer exist — drop those and refund the skill point instead of
-    // crashing or silently keeping a bonus tied to nothing.
+    // longer exist — drop those instead of crashing or silently keeping a
+    // bonus tied to nothing (the skill point they cost is recovered below,
+    // as part of the full skillPoints recompute rather than a one-off
+    // refund).
     const validIds = new Set(SKILL_TREES[classId].flatMap((p) => p.nodes.map((n) => n.id)));
     const rawUnlocked = c.unlockedSkills ?? [];
     const unlockedSkills = rawUnlocked.filter((id) => validIds.has(id));
-    const refundedPoints = rawUnlocked.length - unlockedSkills.length;
     const equippedAbilities = (c.equippedAbilities ?? []).filter((id) => unlockedSkills.includes(id));
 
     // Saves from before the physical/magical split have no matk/mdef at all —
@@ -155,7 +156,16 @@ export function migrateCharacter(raw: any): Character | null {
       mdef,
       potions,
       potionThreshold,
-      skillPoints: (c.skillPoints ?? 0) + refundedPoints,
+      // Fully recomputed from level every load (not just backfilled when
+      // missing) — per direct user call, when the skill-point schedule
+      // itself changes (front-loaded curve, 30 -> 35 total by the level
+      // cap), an already-leveled character's balance needs to be corrected
+      // to match, not left stuck at whatever the old schedule produced.
+      // totalSkillPointsForLevel is the exact closed-form of grantXp's own
+      // incremental math, so this is always consistent with normal play —
+      // it also naturally recovers the point for any unlockedSkills entry
+      // just dropped above, superseding the old one-off refundedPoints.
+      skillPoints: Math.max(0, totalSkillPointsForLevel(level) - unlockedSkills.length),
       attributePoints,
       allocatedAttrs,
       unlockedSkills,

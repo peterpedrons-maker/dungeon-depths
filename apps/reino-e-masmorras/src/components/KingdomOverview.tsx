@@ -4,7 +4,7 @@ import { effectiveMaxHp } from '../lib/combatStats';
 import { Panel } from './Panel';
 import { KingdomScene } from './KingdomScene';
 import { StatChip } from './StatChip';
-import { IconHeart, IconCoin, IconStairs, IconActive } from './icons';
+import { IconHeart, IconCoin, IconActive } from './icons';
 import pocaoIcon from '../assets/pocao.webp';
 
 export function KingdomOverview({ character: ch }: { character: Character }) {
@@ -19,11 +19,10 @@ export function KingdomOverview({ character: ch }: { character: Character }) {
         à esquerda e prove seu valor.
       </p>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <StatChip icon={<IconActive className="w-full h-full" />} color="#c89a2e" label="Nível" value={fmt(ch.level)} />
         <StatChip icon={<IconHeart className="w-full h-full" />} color="#e0574a" label="Vida" value={`${fmt(ch.hp)}/${fmt(maxHp)}`} />
         <StatChip icon={<IconCoin className="w-full h-full" />} color="#e0b93c" label="Ouro" value={fmt(ch.gold)} />
-        <StatChip icon={<IconStairs className="w-full h-full" />} color="#9b6fc9" label="Recorde" value={fmt(ch.bestDepth)} />
       </div>
 
       {ch.potions > 0 && (
