@@ -85,7 +85,7 @@ export function DungeonMap({ character, onEnterDungeon, onBack }: Props) {
                         )}
                       </div>
                     )}
-                    {!locked && <div className="absolute inset-0 rounded-full hover:bg-gold/15 hover:ring-2 hover:ring-gold/50 transition" />}
+                    {!locked && <div className="absolute inset-0 rounded-full transition dungeon-marker-hover-target" />}
                   </button>
                 );
               })}

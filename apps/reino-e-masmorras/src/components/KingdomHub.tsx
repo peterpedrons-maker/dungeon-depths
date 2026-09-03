@@ -58,20 +58,15 @@ const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: n
   { id: 'mercador', xPct: 78, yPct: 77, wPct: 44, hPct: 30 },
 ];
 
-// Warm flickering glow dots dropped over the scene's own light sources
-// (torches, the forge's mouth, the courtyard brazier, the portal's swirl) —
-// pure CSS (see index.css's emberFlicker keyframe), no new art. Each gets
-// its own animation-delay so they don't pulse in lockstep, which is what
-// would give the trick away immediately.
+// Warm flickering glow dots dropped over the scene's own light sources —
+// pure CSS (see index.css's emberFlicker keyframe), no new art. Trimmed
+// down to just the two that matter most: the portal's blue swirl and the
+// courtyard fountain's fire — the torches/forge/lantern glows from the
+// earlier art version read as too busy once there were this many going at
+// once, per user feedback.
 const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: number }[] = [
   { xPct: 50.5, yPct: 27, size: 70, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
-  { xPct: 34, yPct: 30, size: 30, color: 'rgba(255,160,60,0.9)', delay: 0 },
-  { xPct: 67, yPct: 29, size: 30, color: 'rgba(255,160,60,0.9)', delay: 0.5 },
-  { xPct: 15, yPct: 44, size: 32, color: 'rgba(255,160,60,0.9)', delay: 1.1 },
-  { xPct: 72, yPct: 42, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.6 },
   { xPct: 50.5, yPct: 58, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
-  { xPct: 14, yPct: 79, size: 42, color: 'rgba(255,110,40,0.95)', delay: 0.7 },
-  { xPct: 93, yPct: 77, size: 28, color: 'rgba(255,170,70,0.9)', delay: 1.3 },
 ];
 
 export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
@@ -141,7 +136,7 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
               key={b.id}
               onClick={openActions[b.id]}
               title={titles[b.id]}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition hover:bg-gold/10 hover:ring-2 hover:ring-gold/40"
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition building-hover-target"
               style={{ left: `${b.xPct}%`, top: `${b.yPct}%`, width: `${b.wPct}%`, height: `${b.hPct}%` }}
             />
           ))}
@@ -194,11 +189,7 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
                 <img
                   src={s.icon}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-contain transition group-hover:brightness-125 group-active:scale-95"
-                  style={{
-                    filter:
-                      'drop-shadow(0 2px 1px rgba(0,0,0,0.9)) drop-shadow(0 3px 4px rgba(0,0,0,0.55)) drop-shadow(-1px -1px 0px rgba(255,235,180,0.35))',
-                  }}
+                  className="absolute inset-0 w-full h-full object-contain transition icon-hover-target group-active:scale-95"
                   draggable={false}
                 />
               </span>
