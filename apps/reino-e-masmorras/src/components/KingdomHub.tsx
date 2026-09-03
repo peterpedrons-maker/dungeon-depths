@@ -45,16 +45,18 @@ const SHORTCUTS: { id: Section; label: string; icon: string }[] = [
 // building and its baked-in name plaque, since (unlike the old horizontal
 // Construções art) this scene already labels every building — no need to
 // render a redundant name tag on the button itself.
-// v2 (compact courtyard, 1122×1402) — measured fresh after the composition
-// changed from a tall winding trail to a plaza viewed from above: Portal
-// dead-center-back, Baú/Forja down the left side, Taverna/Mercador down the
-// right side.
+// v3 (9:16 portrait, 941×1672) — measured fresh after regenerating the art
+// taller (see KIT-DE-ARTE.md's "Reino — Cena Única (v3)") to match a
+// typical phone's aspect ratio and close the empty-space-above-the-icons
+// gap the v2 (more square, 1122×1402) art left on most devices. Same
+// composition as v2, just stretched vertically: Portal up top, Baú/Taverna
+// flanking the middle, Forja/Mercador down at the bottom.
 const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: number }[] = [
-  { id: 'portal', xPct: 49.5, yPct: 30.0, wPct: 27, hPct: 33 },
-  { id: 'bau', xPct: 14.7, yPct: 33.5, wPct: 29, hPct: 26 },
-  { id: 'taverna', xPct: 85.6, yPct: 34.2, wPct: 29, hPct: 25 },
-  { id: 'forja', xPct: 15.2, yPct: 72.8, wPct: 34, hPct: 35 },
-  { id: 'mercador', xPct: 82.9, yPct: 74.9, wPct: 34, hPct: 29 },
+  { id: 'portal', xPct: 50.5, yPct: 26, wPct: 26, hPct: 27 },
+  { id: 'bau', xPct: 15, yPct: 32, wPct: 30, hPct: 37 },
+  { id: 'taverna', xPct: 84, yPct: 35, wPct: 32, hPct: 31 },
+  { id: 'forja', xPct: 17, yPct: 75, wPct: 34, hPct: 32 },
+  { id: 'mercador', xPct: 78, yPct: 77, wPct: 44, hPct: 30 },
 ];
 
 // Warm flickering glow dots dropped over the scene's own light sources
@@ -63,14 +65,14 @@ const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: n
 // its own animation-delay so they don't pulse in lockstep, which is what
 // would give the trick away immediately.
 const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: number }[] = [
-  { xPct: 49.5, yPct: 28.5, size: 60, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
-  { xPct: 37.4, yPct: 30.7, size: 28, color: 'rgba(255,160,60,0.9)', delay: 0 },
-  { xPct: 63.7, yPct: 30.7, size: 28, color: 'rgba(255,160,60,0.9)', delay: 0.5 },
-  { xPct: 16.9, yPct: 42.4, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.1 },
-  { xPct: 83.3, yPct: 42.4, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.6 },
-  { xPct: 49.5, yPct: 57.1, size: 42, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
-  { xPct: 20.1, yPct: 74.5, size: 40, color: 'rgba(255,110,40,0.95)', delay: 0.7 },
-  { xPct: 92.3, yPct: 74.5, size: 26, color: 'rgba(255,170,70,0.9)', delay: 1.3 },
+  { xPct: 50.5, yPct: 27, size: 70, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
+  { xPct: 34, yPct: 30, size: 30, color: 'rgba(255,160,60,0.9)', delay: 0 },
+  { xPct: 67, yPct: 29, size: 30, color: 'rgba(255,160,60,0.9)', delay: 0.5 },
+  { xPct: 15, yPct: 44, size: 32, color: 'rgba(255,160,60,0.9)', delay: 1.1 },
+  { xPct: 72, yPct: 42, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.6 },
+  { xPct: 50.5, yPct: 58, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
+  { xPct: 14, yPct: 79, size: 42, color: 'rgba(255,110,40,0.95)', delay: 0.7 },
+  { xPct: 93, yPct: 77, size: 28, color: 'rgba(255,170,70,0.9)', delay: 1.3 },
 ];
 
 export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
