@@ -63,10 +63,12 @@ const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: n
 // down to just the two that matter most: the portal's blue swirl and the
 // courtyard fountain's fire — the torches/forge/lantern glows from the
 // earlier art version read as too busy once there were this many going at
-// once, per user feedback.
+// once, per user feedback. Coordinates re-measured by centroid-averaging
+// the actual blue/orange pixels in the art (not eyeballed off a grid like
+// the rest of this file) after the first pass landed visibly off-center.
 const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: number }[] = [
-  { xPct: 50.5, yPct: 27, size: 70, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
-  { xPct: 50.5, yPct: 58, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
+  { xPct: 49.7, yPct: 25, size: 70, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
+  { xPct: 50, yPct: 56, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
 ];
 
 export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
