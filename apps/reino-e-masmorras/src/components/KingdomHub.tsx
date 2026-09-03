@@ -124,10 +124,18 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
                 title={s.label}
                 className="flex flex-col items-center w-12 group"
               >
-                <span
-                  className="relative block w-10 h-10 shrink-0"
-                  style={{ animation: attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined }}
-                >
+                <span className="relative block w-10 h-10 shrink-0">
+                  {attention && (
+                    <span
+                      aria-hidden
+                      className="absolute -inset-2 rounded-full pointer-events-none"
+                      style={{
+                        background: `radial-gradient(circle, ${attention === 'sky' ? 'rgba(56,189,248,0.65)' : 'rgba(212,175,55,0.65)'} 0%, transparent 72%)`,
+                        filter: 'blur(4px)',
+                        animation: 'navAttentionPulse 1.8s ease-in-out infinite',
+                      }}
+                    />
+                  )}
                   <img
                     src={s.icon}
                     alt=""

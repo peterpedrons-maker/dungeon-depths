@@ -94,19 +94,14 @@ body {
   100% { transform: scale(1); opacity: 0; }
 }
 
-/* Whole-button version of the "something's waiting for you" signal on a
-   sidebar item with something pending (unspent attribute/skill points,
-   fresh Mercador stock) — replaces a small icon-corner dot, which proved
-   too easy to miss, with a pulsing glow across the entire button. */
-@keyframes navAttentionGlow {
-  0%, 100% { box-shadow: 0 0 6px 0px rgba(212,175,55,0.25), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(212,175,55,0.45); }
-  50%      { box-shadow: 0 0 16px 3px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(212,175,55,0.9); }
-}
-/* Same, in the sky-blue already used for attribute points (vs skill
-   points' gold), so the nav glow's color matches the badge it points to. */
-@keyframes navAttentionGlowSky {
-  0%, 100% { box-shadow: 0 0 6px 0px rgba(56,189,248,0.25), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(56,189,248,0.5); }
-  50%      { box-shadow: 0 0 16px 3px rgba(56,189,248,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 2px rgba(0,0,0,0.5); border-color: rgba(56,189,248,0.95); }
+/* "Something's waiting for you" signal on a Reino hub shortcut icon with
+   something pending (unspent attribute/skill points) — a soft blurred
+   radial-gradient glow sitting behind the icon (see KingdomHub.tsx), same
+   technique as the hub's own torch/portal embers, so it reads as a natural
+   light pulse instead of a hard-edged bordered box around the icon. */
+@keyframes navAttentionPulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50%      { opacity: 1;    transform: scale(1.15); }
 }
 
 /* Cheap "it's alive" trick for the static Reino hub painting — a blurred
