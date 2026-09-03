@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Character, Section } from '../types/game';
 import townImg from '../assets/reino-hub.webp';
 import iconPersonagem from '../assets/shortcuts/personagem.webp';
@@ -71,8 +71,69 @@ const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: 
   { xPct: 50, yPct: 63, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
 ];
 
+// reino-hub.webp's own intrinsic size (see KIT-DE-ARTE.md's "Reino — Cena
+// Única (v4)") — needed to figure out how much of the image object-fit:
+// cover below crops off on a given screen, so the building/ember/label
+// percentages (all measured against the FULL original image) can be
+// remapped onto the actually-visible slice of it.
+const IMAGE_ASPECT = 768 / 1376;
+
+// Cover fills the stage completely (no gap below the art, no scrolling) by
+// scaling the image up until it overflows one axis, then cropping that
+// axis — width on a typical tall phone, height on a short/wide viewport.
+// Every %-coordinate in BUILDINGS/EMBERS assumes the FULL image is
+// visible, so once cover crops off a slice we have to remap: a point at
+// the crop boundary should render at 0%/100% of the stage, not at its
+// original (now off-screen) percentage.
+function useCoverRange(stageRef: RefObject<HTMLDivElement | null>) {
+  const [range, setRange] = useState({ x0: 0, x1: 100, y0: 0, y1: 100 });
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      const boxAspect = w / h;
+      if (boxAspect < IMAGE_ASPECT) {
+        // Stage is taller (relative to its width) than the art — width
+        // overflows and gets cropped evenly off both sides (object-position
+        // centers horizontally).
+        const visibleWidthPct = (boxAspect / IMAGE_ASPECT) * 100;
+        const half = visibleWidthPct / 2;
+        setRange({ x0: 50 - half, x1: 50 + half, y0: 0, y1: 100 });
+      } else {
+        // Stage is wider (relative to its height) than the art — height
+        // overflows; cropped off the bottom only (object-position anchors
+        // to the top, so the portal/sky stay in frame).
+        const visibleHeightPct = (IMAGE_ASPECT / boxAspect) * 100;
+        setRange({ x0: 0, x1: 100, y0: 0, y1: visibleHeightPct });
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stageRef]);
+  return range;
+}
+function mapPct(value: number, r0: number, r1: number): number {
+  return ((value - r0) / (r1 - r0)) * 100;
+}
+function mapSize(size: number, r0: number, r1: number): number {
+  return (size / (r1 - r0)) * 100;
+}
+
 export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
   const [tavernaHint, setTavernaHint] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const range = useCoverRange(stageRef);
+  const left = (pct: number) => mapPct(pct, range.x0, range.x1);
+  const top = (pct: number) => mapPct(pct, range.y0, range.y1);
+  const width = (pct: number) => mapSize(pct, range.x0, range.x1);
+  const height = (pct: number) => mapSize(pct, range.y0, range.y1);
+  const portal = BUILDINGS.find((b) => b.id === 'portal')!;
+  const taverna = BUILDINGS.find((b) => b.id === 'taverna')!;
   const attentionBySection: Partial<Record<Section, 'gold' | 'sky'>> = {
     character: character.attributePoints > 0 ? 'sky' : undefined,
     skills: character.skillPoints > 0 ? 'gold' : undefined,
@@ -101,9 +162,7 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
       {/* No Panel chrome here on purpose — this is the home screen, so the
           art fills edge-to-edge up to the app's own wooden ScreenFrame
           border instead of sitting inside another parchment panel with its
-          own title bar and padding.
-          Top-aligned (not centered) so the art sits flush against TopBar's
-          bottom edge with no gap. */}
+          own title bar and padding. */}
       <div className="relative h-full overflow-hidden">
         {/* Shortcut row lives up here, right under TopBar, instead of docked
             to the bottom of the viewport — the bottom of the art is where
@@ -151,12 +210,24 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
           })}
         </div>
 
-        <div className="relative w-full">
+        {/* The stage fills the full available height (h-full's own
+            container, edge to edge) instead of sizing to the image's own
+            h-auto height — the previous version left a black gap below the
+            art (and below that, an oversized wooden ScreenFrame border)
+            whenever a device's aspect ratio was taller than the art's own
+            9:16, since the image never grew past its natural height. object-
+            cover fills the stage completely (cropping the sides evenly on a
+            typical tall phone, or the bottom on a short/wide viewport) —
+            useCoverRange (above) works out exactly how much gets cropped so
+            every %-positioned element below can be remapped from "percent of
+            the full original art" to "percent of the actually-visible
+            slice", instead of drifting off past the crop boundary. */}
+        <div ref={stageRef} className="absolute inset-0 overflow-hidden">
           <img
             src={townImg}
             alt="Reino"
-            className="w-full h-auto block"
-            style={{ imageRendering: 'pixelated' }}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ imageRendering: 'pixelated', objectPosition: 'center top' }}
             draggable={false}
           />
 
@@ -166,8 +237,8 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
               aria-hidden
               className="absolute rounded-full pointer-events-none"
               style={{
-                left: `${e.xPct}%`,
-                top: `${e.yPct}%`,
+                left: `${left(e.xPct)}%`,
+                top: `${top(e.yPct)}%`,
                 width: e.size,
                 height: e.size,
                 transform: 'translate(-50%, -50%)',
@@ -185,14 +256,25 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
               onClick={openActions[b.id]}
               title={titles[b.id]}
               className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition building-hover-target"
-              style={{ left: `${b.xPct}%`, top: `${b.yPct}%`, width: `${b.wPct}%`, height: `${b.hPct}%` }}
+              style={{ left: `${left(b.xPct)}%`, top: `${top(b.yPct)}%`, width: `${width(b.wPct)}%`, height: `${height(b.hPct)}%` }}
             />
           ))}
+
+          {/* Only the portal lacks a name baked into the art the way every
+              building's own signpost already has one — plain gold text, no
+              box/container around it, matching the look every other label in
+              this scene already uses. */}
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none font-display font-bold text-gold text-lg sm:text-xl tracking-wide [text-shadow:0_0_8px_rgba(0,0,0,0.95),0_0_16px_rgba(0,0,0,0.8),0_2px_0_rgba(0,0,0,0.95)]"
+            style={{ left: `${left(portal.xPct)}%`, top: `${top(portal.yPct - 11)}%` }}
+          >
+            Portal
+          </div>
 
           {tavernaHint && (
             <div
               className="absolute -translate-x-1/2 -translate-y-full rounded border border-gold/50 bg-black/85 px-3 py-1.5 text-xs font-bold text-gold whitespace-nowrap pointer-events-none [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]"
-              style={{ left: `${BUILDINGS.find((b) => b.id === 'taverna')!.xPct}%`, top: `${BUILDINGS.find((b) => b.id === 'taverna')!.yPct - 8}%` }}
+              style={{ left: `${left(taverna.xPct)}%`, top: `${top(taverna.yPct - 8)}%` }}
             >
               Em construção — chega em breve
             </div>

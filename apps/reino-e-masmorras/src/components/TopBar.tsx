@@ -85,10 +85,11 @@ export function TopBar({ character: ch, accentColor, onAbandon, onSignOut }: Pro
           <Stat icon={<img src={pocaoIcon} alt="" className="w-5 h-6 shrink-0" />} value={fmt(ch.potions)} color="text-emerald-400" />
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-parchment/50 hover:text-gold hover:bg-black/25 transition shrink-0"
+            className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded text-parchment/50 hover:text-gold hover:bg-black/25 transition shrink-0"
             aria-label="Configurações"
           >
             <IconGear className="w-5 h-5" />
+            <span className="text-[8px] font-bold uppercase tracking-wide leading-none">Opções</span>
           </button>
         </div>
       </div>
