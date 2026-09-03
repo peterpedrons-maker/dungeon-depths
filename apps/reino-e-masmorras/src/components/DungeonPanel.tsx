@@ -4978,30 +4978,31 @@ export function DungeonPanel({
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>
           <div className="flex justify-between items-baseline gap-2">
-            <span className="truncate flex items-baseline gap-1.5">
-              {ch.name}
+            <span className="truncate">{ch.name}</span>
+            <span className="shrink-0">
+              {formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}
               {playerShieldState > 0 && (
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-950/70 ring-1 ring-sky-400/50 px-1.5 py-0.5 text-sky-300 text-[11px] font-bold leading-none shadow-[0_0_6px_rgba(56,189,248,0.5)]">
-                  <IconShield className="w-3 h-3" />
-                  {formatGameNumber(playerShieldState)}
-                </span>
+                <span className="text-slate-300 font-bold"> +{formatGameNumber(playerShieldState)}</span>
               )}
             </span>
-            <span className="shrink-0">{formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}</span>
           </div>
           <div className="relative h-2 bg-black/50 rounded overflow-hidden">
-            <div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} />
-            {/* A shield reads as protection, not health, so it caps onto the
-                HP fill as its own segment (classic WoW-style absorb shield)
-                instead of padding the red bar itself — clamped so it never
-                overflows past the bar's own right edge even when the shield
-                is bigger than the remaining missing HP. */}
+            {/* With a shield up, the bar's total span grows to fit it (hp +
+                shield instead of just maxHp) — the red fill shrinks back to
+                make room and a grey segment picks up right where it ends,
+                so the bar visibly gets bigger rather than the shield
+                squeezing into whatever missing-HP space happened to be
+                left, which used to make it invisible at high HP. */}
+            <div
+              className="h-2 bg-red-500 rounded"
+              style={{ width: `${playerShieldState > 0 ? hpPct(ch.hp, effMaxHp + playerShieldState) : hpPct(ch.hp, effMaxHp)}%` }}
+            />
             {playerShieldState > 0 && (
               <div
-                className="absolute inset-y-0 bg-sky-400/90"
+                className="absolute inset-y-0 bg-slate-400/90"
                 style={{
-                  left: `${hpPct(ch.hp, effMaxHp)}%`,
-                  width: `${Math.max(0, Math.min(100 - hpPct(ch.hp, effMaxHp), (playerShieldState / effMaxHp) * 100))}%`,
+                  left: `${hpPct(ch.hp, effMaxHp + playerShieldState)}%`,
+                  width: `${hpPct(playerShieldState, effMaxHp + playerShieldState)}%`,
                 }}
               />
             )}
