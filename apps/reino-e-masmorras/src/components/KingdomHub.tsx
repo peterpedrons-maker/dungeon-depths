@@ -103,61 +103,76 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
       {/* No Panel chrome here on purpose — this is the home screen, so the
           art fills edge-to-edge up to the app's own wooden ScreenFrame
           border instead of sitting inside another parchment panel with its
-          own title bar and padding. */}
-      <div className="relative">
-        <img
-          src={townImg}
-          alt="Reino"
-          className="w-full h-auto block"
-          style={{ imageRendering: 'pixelated' }}
-          draggable={false}
-        />
-
-        {EMBERS.map((e, i) => (
-          <div
-            key={i}
-            aria-hidden
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              left: `${e.xPct}%`,
-              top: `${e.yPct}%`,
-              width: e.size,
-              height: e.size,
-              transform: 'translate(-50%, -50%)',
-              background: `radial-gradient(circle, ${e.color} 0%, transparent 70%)`,
-              filter: 'blur(3px)',
-              animation: 'emberFlicker 2.4s ease-in-out infinite',
-              animationDelay: `${e.delay}s`,
-            }}
+          own title bar and padding.
+          Outer wrapper fills `main`'s exact height (the space between the
+          TopBar and the viewport bottom) and vertically CENTERS the art —
+          the current art's aspect ratio doesn't perfectly match every phone's
+          available space, so on a device where it renders shorter than that
+          space, the leftover splits evenly above/below instead of dumping
+          entirely below the art as a single gap in front of the icon bar
+          (see KIT-DE-ARTE.md's "Reino — Cena Única (v3)" for the follow-up
+          art request that shrinks this leftover further). */}
+      <div className="relative h-full flex flex-col items-center justify-center overflow-hidden">
+        <div className="relative w-full shrink-0">
+          <img
+            src={townImg}
+            alt="Reino"
+            className="w-full h-auto block"
+            style={{ imageRendering: 'pixelated' }}
+            draggable={false}
           />
-        ))}
 
-        {BUILDINGS.map((b) => (
-          <button
-            key={b.id}
-            onClick={openActions[b.id]}
-            title={titles[b.id]}
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition hover:bg-gold/10 hover:ring-2 hover:ring-gold/40"
-            style={{ left: `${b.xPct}%`, top: `${b.yPct}%`, width: `${b.wPct}%`, height: `${b.hPct}%` }}
-          />
-        ))}
+          {EMBERS.map((e, i) => (
+            <div
+              key={i}
+              aria-hidden
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                left: `${e.xPct}%`,
+                top: `${e.yPct}%`,
+                width: e.size,
+                height: e.size,
+                transform: 'translate(-50%, -50%)',
+                background: `radial-gradient(circle, ${e.color} 0%, transparent 70%)`,
+                filter: 'blur(3px)',
+                animation: 'emberFlicker 2.4s ease-in-out infinite',
+                animationDelay: `${e.delay}s`,
+              }}
+            />
+          ))}
 
-        {tavernaHint && (
-          <div
-            className="absolute -translate-x-1/2 -translate-y-full rounded border border-gold/50 bg-black/85 px-3 py-1.5 text-xs font-bold text-gold whitespace-nowrap pointer-events-none [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]"
-            style={{ left: `${BUILDINGS.find((b) => b.id === 'taverna')!.xPct}%`, top: `${BUILDINGS.find((b) => b.id === 'taverna')!.yPct - 8}%` }}
-          >
-            Em construção — chega em breve
-          </div>
-        )}
+          {BUILDINGS.map((b) => (
+            <button
+              key={b.id}
+              onClick={openActions[b.id]}
+              title={titles[b.id]}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition hover:bg-gold/10 hover:ring-2 hover:ring-gold/40"
+              style={{ left: `${b.xPct}%`, top: `${b.yPct}%`, width: `${b.wPct}%`, height: `${b.hPct}%` }}
+            />
+          ))}
+
+          {tavernaHint && (
+            <div
+              className="absolute -translate-x-1/2 -translate-y-full rounded border border-gold/50 bg-black/85 px-3 py-1.5 text-xs font-bold text-gold whitespace-nowrap pointer-events-none [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]"
+              style={{ left: `${BUILDINGS.find((b) => b.id === 'taverna')!.xPct}%`, top: `${BUILDINGS.find((b) => b.id === 'taverna')!.yPct - 8}%` }}
+            >
+              Em construção — chega em breve
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Fixed to the VIEWPORT, docked along the bottom edge and centered —
           a row instead of the earlier left-side column, sitting right where
           a thumb naturally rests. Fixed positioning (not part of the hub
-          image's own flow) means this stays put regardless of image size. */}
+          image's own flow) means this stays put regardless of image size.
+          items-start (not items-end): "Loja de Prestígio" is the only label
+          that wraps to 2 lines, which makes its button taller overall — with
+          items-end that extra height pushed its icon circle up relative to
+          the other 6 buttons' single-line siblings. items-start pins every
+          icon circle to the same top edge regardless of label height. */}
       <div
-        className="fixed bottom-0 inset-x-0 z-20 flex flex-row justify-center items-end gap-1 pt-3"
+        className="fixed bottom-0 inset-x-0 z-20 flex flex-row justify-center items-start gap-1 pt-3"
         style={{
           paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
           background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.35) 60%, transparent)',

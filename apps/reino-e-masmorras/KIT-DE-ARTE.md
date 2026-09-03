@@ -123,6 +123,7 @@ Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões vertic
 - ✅ Cena do Mercador — prompt já usado, removido do kit
 - ✅ Cena de Título — prompt já usado, removido do kit
 - ✅ Reino — Cena Única (Hub Unificado) — v2 (pátio/praça compacto, 1122×1402) gerada e integrada no jogo, substituindo a v1 (trilha vertical, ficava alta demais e escondia o Portal). Prompt removido do kit
+- 🕓 [Reino — Cena Única (v3, proporção mais alta)](#reino-cena-unica-v3-proporcao-mais-alta) — v2 está em uso, mas em celulares mais altos sobra um espaço vazio embaixo da arte, antes da fileira de ícones — pedido opcional, só se quiser fechar esse espaço de vez
 
 ### Mapa de Masmorras (fundo de cada região, 5 no total — última fase antes do Mapa Mundo)
 - ✅ Região 1 — Valdren (nível 1-10) — prompt já usado, removido do kit
@@ -1354,6 +1355,22 @@ Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta o
 ## Cenas
 
 Ilustração completa, preenchendo a tela inteira — sem fundo magenta, não é para recortar.
+
+<a id="reino-cena-unica-v3-proporcao-mais-alta"></a>
+### Reino — Cena Única (v3, proporção mais alta)
+**Tamanho:** 1080×1920 px (proporção 9:16, a mesma da tela de um celular) · **Uso:** substitui a v2 atual (`reino-hub.webp`) como fundo da tela principal do Reino
+
+A v2 (1122×1402, proporção mais "quadrada") já está no jogo e funciona, mas em celulares mais altos (a maioria dos modelos atuais) sobra um espaço vazio embaixo da arte, entre o fim da imagem e a fileira de ícones de atalho colada na borda de baixo — o código já centraliza esse espaço sobrando (metade em cima, metade embaixo) em vez de deixar tudo embaixo, mas o ideal mesmo é uma arte mais alta que preencha a tela quase inteira sozinha. Esta v3 é o mesmo cenário, só que redesenhado numa proporção mais próxima da tela vertical de um celular (9:16) — assim, no code, ela some encostada tanto no cabeçalho quanto na fileira de ícones, sem sobra nem necessidade de rolar a tela. Mesma composição/conteúdo da v2 (mesmos 5 prédios: Portal ao fundo-centro, Baú e Taverna dos lados no meio, Forja e Mercador dos lados embaixo), só "esticada" verticalmente — pátio visto de cima, portal ao fundo.
+
+```
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and dungeon-selection maps (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+
+A TALL VERTICAL courtyard hub scene, portrait orientation, seen from a slightly elevated angle looking down into a cozy castle courtyard at dusk — warm torchlight, golden-orange sky fading to dusky blue near the top of the image, long soft shadows, this is the player's "home base" and should feel warm and safe.
+
+Composition, bottom to top (this needs to read clearly as a tall vertical scene, not a wide one cropped): a cobblestone courtyard fills the lower half, with two buildings flanking the bottom-left and bottom-right corners — a squat stone smithy with a glowing forge visible through its open front and a smoking chimney on the bottom-left, and a market stall with awnings and hanging goods on the bottom-right. A little further up and inward, two more buildings flank the middle — a sturdy stone vault-house with a heavy iron-banded door on the left, and a cheerful two-story timber-and-plaster tavern with warm lit windows on the right (the tavern has no visible sign or name lettering — it is not open yet). A lit stone brazier/fountain sits at the very center of the courtyard between all four buildings. In the upper third of the image, a glowing magical stone archway (a portal) stands centered, wreathed in a soft blue swirling light, flanked by two tall lit torches — this is the visual focal point crowning the top of the composition. Castle walls and towers frame the background above and behind the portal, receding into the dusky sky at the very top edge.
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no text, no name signs on any building. Portrait canvas, 1080×1920 px, composition using the FULL height of the frame from bottom to top as described above (not centered in a squarer crop).
+```
 
 <a id="mapa-de-masmorras-tela-de-selecao-de-masmorra-5-imagens-uma-por-regiao"></a>
 ### Mapa de Masmorras — Tela de seleção de masmorra (5 imagens, uma por região)
