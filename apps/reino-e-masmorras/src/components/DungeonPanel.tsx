@@ -4761,8 +4761,8 @@ export function DungeonPanel({
                     from having no effect at all. */}
                 {!!f.shielded && f.shielded > 0 && (
                   <div className="flex items-center justify-center gap-1 text-sky-300 leading-tight drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
-                    <IconShield className="w-3.5 h-3.5" />
-                    <span className="text-sm font-bold">-{formatGameNumber(f.shielded)}</span>
+                    <IconShield className="w-5 h-5" />
+                    <span className="text-xl font-bold">-{formatGameNumber(f.shielded)}</span>
                   </div>
                 )}
               </>
