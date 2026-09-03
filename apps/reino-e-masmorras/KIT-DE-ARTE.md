@@ -122,7 +122,7 @@ Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões vertic
 - ✅ Cena do Ferreiro — prompt já usado, removido do kit
 - ✅ Cena do Mercador — prompt já usado, removido do kit
 - ✅ Cena de Título — prompt já usado, removido do kit
-- 🕓 [Reino — Cena Única (Hub Unificado, EM TESTE)](#reino-cena-unica-hub-unificado-em-teste) — ideia em avaliação: substituir a Cena do Reino + o Mapa de Construções por uma imagem só, com Forja/Baú/Mercador/Taverna e a entrada da Campanha todos como marcadores clicáveis na mesma cena, no estilo "cidade única" de RPGs mobile. Só a arte foi encomendada até agora — nenhum código do jogo foi alterado, nada foi integrado
+- 🕓 [Reino — Cena Única (Hub Unificado, EM TESTE)](#reino-cena-unica-hub-unificado-em-teste) — v2: pátio/praça compacto (1024×1280), substitui a v1 (trilha vertical 1024×2560) que já foi integrada no jogo mas ficou alta demais pra caber numa tela sem rolar, escondendo o Portal da Masmorra. Já integrada e testada no jogo (Forja/Baú/Mercador/Taverna/Portal clicáveis, ícones de atalho fixos) — só falta trocar pela arte da v2 quando ela for gerada
 
 ### Mapa de Masmorras (fundo de cada região, 5 no total — última fase antes do Mapa Mundo)
 - ✅ Região 1 — Valdren (nível 1-10) — prompt já usado, removido do kit
@@ -1749,28 +1749,30 @@ Sobre inimigos/chefes dessas dezenas de localidades: ainda não foram definidos 
 
 <a id="reino-cena-unica-hub-unificado-em-teste"></a>
 ### Reino — Cena Única (Hub Unificado, EM TESTE)
-**Status: em avaliação, só a arte foi pedida — nenhum código foi alterado.** Ideia: em vez do jogador ver primeiro a Cena do Reino (decorativa) e depois abrir Construções à parte pra achar Forja/Baú/Mercador, tudo vira **uma única imagem** com cada prédio já clicável na própria cena — incluindo, dessa vez, um portal que abre direto o modal de seleção de região/masmorra (hoje esse botão de entrar em campanha fica fora da tela do Reino, na barra lateral). Personagem, Habilidades, Bestiário, Títulos, Ranking e Loja de Prestígio **continuam fora dessa imagem** — são telas de lista/grade densa, não "lugares", e ficam melhor como estão hoje (menu ou barra de ícones) do que forçadas a virar um prédio na cena.
+**Status: v2 — a v1 (formato de trilha vertical, 1024×2560) já foi gerada, integrada no jogo e testada de verdade, mas ficou alta demais: numa tela de celular normal ela só cabe rolando, e isso escondia o Portal da Masmorra (o marcador mais importante) lá embaixo, fora da vista inicial.** Esta v2 pede a mesma cena, só que **compacta o suficiente pra caber inteira numa tela só**, junto com o cabeçalho de dados do personagem que já existe no topo do jogo — sem precisar rolar pra ver qualquer construção. Personagem, Habilidades, Bestiário, Títulos, Ranking e Loja de Prestígio continuam fora dessa imagem (ver ícones de atalho fixos, seção seguinte) — só os 5 lugares físicos (Portal, Forja, Baú, Mercador, Taverna) entram aqui.
 
-Mesmo formato vertical de trilha das Regiões 1-5 (em vez do formato horizontal `2/1` que o Mapa de Construções usa hoje) — resolve o espaço vazio embaixo da imagem em celular e reaproveita o mesmo componente de marcadores por coordenada. Ambientação de fim de tarde/entardecer, o "lar" do jogador — deliberadamente mais quente e acolhedor que o clima sombrio das masmorras.
+Pra caber compacta, a composição muda de "trilha vertical subindo" pra **um pátio/praça visto de um ângulo elevado**, com as construções voltadas pro centro em vez de espalhadas ao longo de um caminho longo. Mesma ambientação de entardecer, quente e acolhedora.
 
-**Tamanho:** 1024×2560 px · **Uso:** teste — telas de Reino/Construções, entrada de Campanha
+**Tamanho:** 1024×1280 px (proporção 4:5 — bem mais baixa que a v1) · **Uso:** substitui a v1 nas telas de Reino/Construções, entrada de Campanha
 
 ```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and the Região dungeon-selection maps (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
+Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
 
-A tall vertical location-selection map segment — a cobblestone plaza and path winding from the bottom edge of the canvas to the top, through the grounds of a warm, lived-in castle bailey at dusk, golden-orange sky fading to dusky blue, long soft shadows, warm torchlight and lantern glow spilling from windows and doorways, stone castle walls and towers framing both sides — this should feel like a cozy home base, noticeably warmer and safer in mood than the dungeon-region maps.
+A single cozy castle courtyard/plaza, viewed from a slightly elevated three-quarter angle — NOT a long vertical winding trail this time. The composition must be compact and wide rather than tall, so every building reads in one glance with no scrolling needed. Warm dusk lighting, golden-orange sky along the top edge fading to dusky blue, stone castle walls curving around the back and sides of the plaza, a cobblestone courtyard floor filling the middle-to-bottom of the frame, long soft shadows, warm torchlight and lantern glow.
 
-Location markers, bottom to top, each a small distinct building with a wooden/parchment sign bearing its Portuguese name (small spelling mistakes in the text are acceptable):
-1) "Portal da Masmorra" — near the bottom, the single most prominent and eye-catching structure in the whole scene: an ancient stone archway wreathed in swirling blue-gold magical energy, runes glowing faintly along its frame, clearly the "main action" of this place — larger and more elaborately lit than every other building here.
-2) "Forja" — a squat stone smithy with a smoking chimney, a glowing forge visible through its open front and an anvil outside.
-3) "Baú de Armazém" — a sturdy stone vault-house with a heavy iron-banded door and small barred window, a few travel chests stacked outside.
-4) "Mercador" — a market stall/shop front with awnings, hanging goods, and crates of wares out front.
-5) "Taverna" — a cheerful two-story timber-and-plaster building, warm yellow light in every window, a hanging wooden sign creaking on a post, barrels and benches outside, faint chimney smoke — visibly a bit quieter/less finished than the other buildings, as if not fully open for business yet.
+Buildings face inward toward the shared central courtyard, each with a small wooden/parchment sign bearing its Portuguese name near its base (small spelling mistakes in the text are acceptable):
+1) Center-back, built into the far castle wall itself and raised on a few stone steps — the single most prominent and eye-catching structure in the whole scene: "Portal da Masmorra", an ancient stone archway wreathed in swirling blue-gold magical energy with glowing runes along its frame.
+2) Left side of the courtyard, closer to the foreground: "Forja" — a squat stone smithy with a smoking chimney, a glowing forge visible through its open front, an anvil outside.
+3) Left side of the courtyard, a little further back than the Forja: "Baú de Armazém" — a sturdy stone vault-house with a heavy iron-banded door, a small barred window, a few travel chests stacked outside.
+4) Right side of the courtyard, closer to the foreground (mirroring the Forja): "Mercador" — an awninged market stall front with hanging goods and crates of wares out front.
+5) Right side of the courtyard, a little further back than the Mercador (mirroring the Baú): "Taverna" — a cheerful two-story timber-and-plaster building, warm yellow light in every window, a hanging wooden sign, barrels and benches outside, faint chimney smoke — visibly a touch quieter/less finished than the other buildings, as if not fully open for business yet.
 
-Scatter 1 extra fog-shrouded silhouette marker with no legible name near an edge of the image — reserved space for a future building. This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small location name signs described above. Vertical canvas, 1024×2560 px.
+Tuck one small fog-shrouded silhouette marker with no legible name into a back corner of the courtyard — reserved space for a future building. A small lit brazier, well, or fountain in the middle of the courtyard is welcome purely for atmosphere (not a marker, no sign).
+
+This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small building name signs described above. Portrait canvas, 1024×1280 px, noticeably shorter and more compact than a typical dungeon-region map.
 ```
 
-Se a arte agradar, o próximo passo (só depois de aprovar) é medir as coordenadas dos marcadores como já foi feito nas Regiões, e decidir código: reaproveitar `DungeonMap.tsx`/`KingdomBuildings.tsx` como base, trocar o clique do "Portal da Masmorra" para abrir o mesmo modal de seleção de região que hoje é aberto pelo botão "Campanha" da barra lateral, e manter Personagem/Habilidades/Bestiário/Títulos/Ranking/Loja de Prestígio de fora, exatamente como decidido acima.
+Depois de gerada e aprovada, o próximo passo é remedir as coordenadas dos 5 marcadores em cima da imagem nova (as coordenadas da v1 não servem — a composição mudou de trilha pra pátio) e trocar o arquivo `reino-hub.webp` no jogo — o resto do código (clique do Portal abrindo o mapa de masmorras, Forja/Mercador/Baú abrindo suas telas, ícones de atalho fixos) já está pronto e não muda.
 
 ---
 
