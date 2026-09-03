@@ -45,7 +45,7 @@ import { MechanicQuickModal, MechanicText } from './ClassMechanics';
 import { CombatMechanicDisplay, CombatMechanicState } from './CombatMechanics';
 import { getClassMechanics } from '../lib/classMechanics';
 import { formatGameNumber, formatGamePercent } from '../lib/format';
-import { IconActive, IconSkull, IconSword } from './icons';
+import { IconActive, IconSkull, IconSword, IconShield } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import { consumeCombatEvents, createCombatState, recoverAfterEncounter, resolvePlayerAction, type CombatEvent } from '../lib/combatEngine';
 import { buildAbilityConditionContext } from '../lib/combatConditions';
@@ -318,7 +318,7 @@ interface CombatTrap {
 // tick, the hit that follows it, a heal, a block tag — all in the same
 // round) each in their own fixed spot near the character, never overlapping
 // and never relocating mid-flight.
-interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean; slot: number }
+interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean; shielded?: number; slot: number }
 // A coin-icon + down-arrow burst over the player whenever an enemy's
 // stealGold effect actually takes gold — separate from FloatingNumber
 // since it isn't a damage number at all, just a distinct "you were
@@ -1056,7 +1056,7 @@ export function DungeonPanel({
     const segments = typeof line === 'string' ? [{ text: line }] : line;
     setLog((l) => [...l.slice(-4), segments]);
   }
-  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean, heal?: boolean) {
+  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean, heal?: boolean, shielded?: number) {
     if (silentRef.current) return;
     if (heal && value <= 0) return;
     const id = floaterId.current++;
@@ -1066,7 +1066,7 @@ export function DungeonPanel({
       const used = new Set(f.filter((x) => x.side === side).map((x) => x.slot));
       let slot = 0;
       while (used.has(slot)) slot++;
-      return [...f, { id, side, value, crit, blocked, miss, heal, slot }];
+      return [...f, { id, side, value, crit, blocked, miss, heal, shielded, slot }];
     });
     setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
   }
@@ -3920,7 +3920,7 @@ export function DungeonPanel({
 
     const hp = Math.max(0, chRef.current.hp - edmg);
     updateCh({ ...chRef.current, hp });
-    pushFloat('player', edmg, ecrit, blocked);
+    pushFloat('player', edmg, ecrit, blocked, undefined, undefined, shieldAbsorbed);
     // Momentum loss — a single direct hit dealing >= the Golpe Pesado
     // threshold (base 15% of effective max HP, raised by Sangue de Combate)
     // costs Momentum, at most once per enemy action.
@@ -4754,6 +4754,17 @@ export function DungeonPanel({
                     Bloqueado!
                   </div>
                 )}
+                {/* Confirms the shield actually did something on THIS hit —
+                    previously the only proof was a log line gated behind the
+                    enemy using a named ability, so a barrier silently eating
+                    plain-attack damage (the common case) looked indistinguishable
+                    from having no effect at all. */}
+                {!!f.shielded && f.shielded > 0 && (
+                  <div className="flex items-center justify-center gap-1 text-sky-300 leading-tight drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
+                    <IconShield className="w-3.5 h-3.5" />
+                    <span className="text-sm font-bold">-{formatGameNumber(f.shielded)}</span>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -4967,10 +4978,34 @@ export function DungeonPanel({
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>
           <div className="flex justify-between items-baseline gap-2">
-            <span className="truncate">{ch.name}{playerShieldState > 0 && <span className="text-sky-300 text-xs"> (+{playerShieldState} escudo)</span>}</span>
+            <span className="truncate flex items-baseline gap-1.5">
+              {ch.name}
+              {playerShieldState > 0 && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-950/70 ring-1 ring-sky-400/50 px-1.5 py-0.5 text-sky-300 text-[11px] font-bold leading-none shadow-[0_0_6px_rgba(56,189,248,0.5)]">
+                  <IconShield className="w-3 h-3" />
+                  {formatGameNumber(playerShieldState)}
+                </span>
+              )}
+            </span>
             <span className="shrink-0">{formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}</span>
           </div>
-          <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} /></div>
+          <div className="relative h-2 bg-black/50 rounded overflow-hidden">
+            <div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} />
+            {/* A shield reads as protection, not health, so it caps onto the
+                HP fill as its own segment (classic WoW-style absorb shield)
+                instead of padding the red bar itself — clamped so it never
+                overflows past the bar's own right edge even when the shield
+                is bigger than the remaining missing HP. */}
+            {playerShieldState > 0 && (
+              <div
+                className="absolute inset-y-0 bg-sky-400/90"
+                style={{
+                  left: `${hpPct(ch.hp, effMaxHp)}%`,
+                  width: `${Math.max(0, Math.min(100 - hpPct(ch.hp, effMaxHp), (playerShieldState / effMaxHp) * 100))}%`,
+                }}
+              />
+            )}
+          </div>
           {phase === 'fight' && <AtbBar roundKey={playerRoundKey} roundMs={playerRoundMs} paused={paused} colorClass="bg-sky-400" />}
           {playerTags.length > 0 && <div className="text-[11px] text-amber-300/90 mt-0.5 truncate">{playerTags.join(', ')}</div>}
         </div>
