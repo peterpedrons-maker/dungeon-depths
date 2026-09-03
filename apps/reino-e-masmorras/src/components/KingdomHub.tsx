@@ -106,16 +106,13 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
           art fills edge-to-edge up to the app's own wooden ScreenFrame
           border instead of sitting inside another parchment panel with its
           own title bar and padding.
-          Outer wrapper fills `main`'s exact height (the space between the
-          TopBar and the viewport bottom) and vertically CENTERS the art —
-          the current art's aspect ratio doesn't perfectly match every phone's
-          available space, so on a device where it renders shorter than that
-          space, the leftover splits evenly above/below instead of dumping
-          entirely below the art as a single gap in front of the icon bar
-          (see KIT-DE-ARTE.md's "Reino — Cena Única (v3)" for the follow-up
-          art request that shrinks this leftover further). */}
-      <div className="relative h-full flex flex-col items-center justify-center overflow-hidden">
-        <div className="relative w-full shrink-0">
+          Top-aligned (not centered) so the art sits flush against TopBar's
+          bottom edge with no gap — the v3 art's aspect ratio now leaves only
+          a small amount of leftover space, and butting that entirely below
+          (in front of the icon bar's own dark gradient) reads better than
+          splitting it and leaving a sliver visible right under the header. */}
+      <div className="relative h-full overflow-hidden">
+        <div className="relative w-full">
           <img
             src={townImg}
             alt="Reino"

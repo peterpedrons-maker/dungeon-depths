@@ -4375,7 +4375,7 @@ export function DungeonPanel({
             g.beginPath(); g.arc(sx, sy, 10, 0, Math.PI * 2); g.fill();
             g.fillStyle = '#10251f'; g.beginPath(); g.arc(sx - 3, sy - 2, 2, 0, Math.PI * 2); g.arc(sx + 3, sy - 2, 2, 0, Math.PI * 2); g.fill();
             g.fillRect(sx - 4, sy + 5, 8, 3); g.restore();
-            g.fillStyle = '#d1fae5'; g.font = '9px sans-serif'; g.textAlign = 'center'; g.fillText(`${summon.attacksRemaining}`, sx, sy - 15);
+            g.fillStyle = '#d1fae5'; g.font = '9px Alagard, Georgia, serif'; g.textAlign = 'center'; g.fillText(`${summon.attacksRemaining}`, sx, sy - 15);
           });
         }
         drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint);
