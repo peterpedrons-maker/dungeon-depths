@@ -122,7 +122,7 @@ Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões vertic
 - ✅ Cena do Ferreiro — prompt já usado, removido do kit
 - ✅ Cena do Mercador — prompt já usado, removido do kit
 - ✅ Cena de Título — prompt já usado, removido do kit
-- ✅ Reino — Cena Única (Hub Unificado) — v3 (proporção 9:16, 941×1672) gerada e integrada no jogo, substituindo a v2 (mais quadrada, 1122×1402, deixava um espaço vazio embaixo da arte na maioria dos celulares) e a v1 (trilha vertical, ficava alta demais e escondia o Portal). Prompt removido do kit
+- ✅ Reino — Cena Única (Hub Unificado) — v4 (proporção 9:16, 768×1376) gerada e integrada no jogo, substituindo a v3 (941×1672, mesma composição mas prédios/portal em posições ligeiramente diferentes). Marcadores de toque dos 4 prédios e os dois brilhos (portal/fonte) remedidos contra a arte nova. Prompt removido do kit
 
 ### Mapa de Masmorras (fundo de cada região, 5 no total — última fase antes do Mapa Mundo)
 - ✅ Região 1 — Valdren (nível 1-10) — prompt já usado, removido do kit

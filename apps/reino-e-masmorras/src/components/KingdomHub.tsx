@@ -51,11 +51,11 @@ const SHORTCUTS: { id: Section; label: string; icon: string }[] = [
 // composition as v2, just stretched vertically: Portal up top, Baú/Taverna
 // flanking the middle, Forja/Mercador down at the bottom.
 const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: number }[] = [
-  { id: 'portal', xPct: 50.5, yPct: 26, wPct: 26, hPct: 27 },
-  { id: 'bau', xPct: 15, yPct: 32, wPct: 30, hPct: 37 },
-  { id: 'taverna', xPct: 84, yPct: 35, wPct: 32, hPct: 31 },
-  { id: 'forja', xPct: 17, yPct: 75, wPct: 34, hPct: 32 },
-  { id: 'mercador', xPct: 78, yPct: 77, wPct: 44, hPct: 30 },
+  { id: 'portal', xPct: 50, yPct: 27, wPct: 30, hPct: 26 },
+  { id: 'bau', xPct: 18, yPct: 47, wPct: 36, hPct: 38 },
+  { id: 'taverna', xPct: 82, yPct: 46, wPct: 36, hPct: 36 },
+  { id: 'forja', xPct: 16, yPct: 84, wPct: 32, hPct: 32 },
+  { id: 'mercador', xPct: 82, yPct: 87, wPct: 36, hPct: 26 },
 ];
 
 // Warm flickering glow dots dropped over the scene's own light sources —
@@ -67,8 +67,8 @@ const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: n
 // the actual blue/orange pixels in the art (not eyeballed off a grid like
 // the rest of this file) after the first pass landed visibly off-center.
 const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: number }[] = [
-  { xPct: 49.7, yPct: 25, size: 70, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
-  { xPct: 50, yPct: 56, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
+  { xPct: 49.8, yPct: 25, size: 70, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
+  { xPct: 50, yPct: 63, size: 46, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
 ];
 
 export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
