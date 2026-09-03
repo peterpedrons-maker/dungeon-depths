@@ -105,6 +105,44 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
           Top-aligned (not centered) so the art sits flush against TopBar's
           bottom edge with no gap. */}
       <div className="relative h-full overflow-hidden">
+        {/* Shortcut row lives up here, right under TopBar, instead of docked
+            to the bottom of the viewport — the bottom of the art is where
+            Forja/Mercador's own tap zones sit, and the two kept fighting for
+            the same thumb space. Absolute (not fixed) because this sits
+            inside the hub's own container, which already starts right below
+            TopBar in the page's normal flow — no viewport-offset math needed. */}
+        <div
+          className="absolute top-0 inset-x-0 z-20 flex flex-row justify-center items-start gap-1 pt-2 pb-3"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.75), rgba(0,0,0,0.35) 60%, transparent)' }}
+        >
+          {SHORTCUTS.map((s) => {
+            const attention = attentionBySection[s.id];
+            return (
+              <button
+                key={s.id}
+                onClick={() => onNavigate(s.id)}
+                title={s.label}
+                className="flex flex-col items-center w-12 group"
+              >
+                <span
+                  className="relative block w-10 h-10 shrink-0"
+                  style={{ animation: attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined }}
+                >
+                  <img
+                    src={s.icon}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-contain transition icon-hover-target group-active:scale-95"
+                    draggable={false}
+                  />
+                </span>
+                <span className="mt-0.5 text-[8px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
+                  {s.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="relative w-full">
           <img
             src={townImg}
@@ -152,55 +190,6 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
             </div>
           )}
         </div>
-      </div>
-
-      {/* Fixed to the VIEWPORT, docked along the bottom edge and centered —
-          a row instead of the earlier left-side column, sitting right where
-          a thumb naturally rests. Fixed positioning (not part of the hub
-          image's own flow) means this stays put regardless of image size.
-          items-start (not items-end): "Loja de Prestígio" is the only label
-          that wraps to 2 lines, which makes its button taller overall — with
-          items-end that extra height pushed its icon up relative to the
-          other 6 buttons' single-line siblings. items-start pins every icon
-          to the same top edge regardless of label height.
-          No circular slot-frame here anymore — bare icons read as more
-          prominent than the small frame let them, with an embossed look
-          (dark drop-shadow + a thin light highlight, both hugging the
-          icon's own silhouette) standing in for the raised-metal edge the
-          frame used to provide. */}
-      <div
-        className="fixed bottom-0 inset-x-0 z-20 flex flex-row justify-center items-start gap-1 pt-3"
-        style={{
-          paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
-          background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.35) 60%, transparent)',
-        }}
-      >
-        {SHORTCUTS.map((s) => {
-          const attention = attentionBySection[s.id];
-          return (
-            <button
-              key={s.id}
-              onClick={() => onNavigate(s.id)}
-              title={s.label}
-              className="flex flex-col items-center w-12 group"
-            >
-              <span
-                className="relative block w-10 h-10 shrink-0"
-                style={{ animation: attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined }}
-              >
-                <img
-                  src={s.icon}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-contain transition icon-hover-target group-active:scale-95"
-                  draggable={false}
-                />
-              </span>
-              <span className="mt-0.5 text-[8px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
-                {s.label}
-              </span>
-            </button>
-          );
-        })}
       </div>
     </>
   );
