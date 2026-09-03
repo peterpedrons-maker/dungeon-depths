@@ -34,13 +34,18 @@ test('alignment/misalignment/cycle classification', () => {
   assert.equal(isDruidActionMisaligned('summer', 'summer'), false);
 });
 
-test('seasonal selector: pass 1 prefers season/cycle match in priority order, pass 2 falls back to first eligible', () => {
+test('seasonal selector: pass 1 always prefers a cycle ability, pass 2 falls back to season match, pass 3 to first eligible', () => {
+  // Regressão: Avatar Primordial/Árvore Ancestral/Eterno Retorno são cycle
+  // e presas a um recurso raro (Instinto/Renovo/Descompasso) — se uma
+  // habilidade sazonal "sempre disponível" da Estação atual vier antes na
+  // prioridade do jogador, ela não pode roubar a vez da cycle mesmo com o
+  // recurso pronto, senão a habilidade nunca dispara na prática.
   const eligible = [
     { effect: { druidSeason: 'autumn' } },
     { effect: { druidSeason: 'summer' } },
     { effect: { druidSeason: 'cycle' } },
   ];
-  assert.equal(pickDruidSeasonalAbility(eligible, 'summer'), eligible[1]);
+  assert.equal(pickDruidSeasonalAbility(eligible, 'summer'), eligible[2], 'cycle deve vencer mesmo com uma habilidade da Estação atual antes na prioridade');
   const cycleOnly = [{ effect: { druidSeason: 'autumn' } }, { effect: { druidSeason: 'cycle' } }];
   assert.equal(pickDruidSeasonalAbility(cycleOnly, 'winter'), cycleOnly[1]);
   const noMatch = [{ effect: { druidSeason: 'autumn' } }, { effect: { druidSeason: 'winter' } }];
@@ -220,4 +225,25 @@ test('motor real: cast Sintonizado planta 2 Sementes, marca o Ano e avança a Es
   assert.ok(state.classState.classId === 'druida' && state.classState.garden.length === 2, 'cast Sintonizado (Primavera==Primavera) deveria plantar 2 Sementes, não 1');
   assert.equal(state.classState.classId === 'druida' ? state.classState.season : undefined, 'summer', 'a Estação avança a cada ação, alinhada ou não');
   assert.equal(state.classState.classId === 'druida' && state.classState.yearLedger.spring, true, 'cast Sintonizado deveria marcar a Primavera no Ano');
+});
+
+test('motor real: Avatar Primordial dispara com Instinto 3 mesmo atrás de uma Forma sazonal sempre disponível na prioridade', () => {
+  // Regressão: antes da correção em pickDruidSeasonalAbility, uma habilidade
+  // de Forma com condition:'always' da Estação atual (ex.: Investida do
+  // Cervo) sempre vencia o empate contra uma cycle (Avatar Primordial) que
+  // aparecesse depois na prioridade do jogador — mesmo com o recurso raro
+  // (Instinto 3) pronto, a cycle nunca disparava.
+  const CERVO_ID = 'druida:furia-natureza:4'; // sempre disponível, druidSeason: 'spring'.
+  const AVATAR_ID = 'druida:furia-natureza:13';
+  const character = { ...createCharacter('Druida real', 'druida'), unlockedSkills: [CERVO_ID, AVATAR_ID] };
+  const enemy = { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 };
+  // Avatar Primordial por último na prioridade, de propósito.
+  const state = createCombatState(character, enemy, 1, [CERVO_ID, AVATAR_ID], [CERVO_ID, AVATAR_ID]);
+  state.classState.season = 'spring';
+  state.classState.instinct = 3;
+
+  resolvePlayerAction(state);
+
+  assert.ok(state.events.some((e) => e.type === 'abilityCast' && e.abilityId === AVATAR_ID), 'Avatar Primordial deveria disparar, não a Forma sazonal sempre disponível');
+  assert.equal(state.classState.instinct, 0, 'Avatar Primordial consome os 3 Instintos ao disparar');
 });

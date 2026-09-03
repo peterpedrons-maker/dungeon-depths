@@ -20,6 +20,7 @@ import { SELF_ABILITY_KINDS, abilityEffectFields, abilityResolutionPlan, assertA
 import { SKILL_TREES } from './skills.ts';
 import { circuitAfterCast, nextRunes, thermalAfterShatter, thermalShatterMult, HEAT_NON_FIRE_COOLING, HEAT_DISSIPATION_COOLING, HEAT_OVERHEAT_AT, HEAT_AFTER_OVERHEAT, HEAT_OVERHEAT_SELF_DMG_PCT, HEAT_OVERHEAT_FIRST_SELF_DMG_PCT } from './mago.ts';
 import { totalAttributes } from './attributes.ts';
+import { ROGUE_IMAGE_MAX } from './rogue.ts';
 import { directHealAmount as universalDirectHealAmount } from './healing.ts';
 import {
   type DruidSeason, type DruidForm, type DruidGardenUnit, type DruidYearLedger,
@@ -593,7 +594,6 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
       if (x.selfBuffSpeedPctOnHit) s.playerMods.push({ stat: 'speedPct', pct: x.selfBuffSpeedPctOnHit, roundsLeft: x.selfBuffRoundsOnHit ?? 2 });
       if (x.abaladoThreshold !== undefined && Number(classRecord(s).momentumSpentThisCast ?? 0) >= x.abaladoThreshold) s.enemyMods.push({ stat: 'dmgTakenPct', pct: x.abaladoDmgTakenPct ?? 0.1, roundsLeft: x.abaladoRounds ?? 2 });
     }
-    if (s.classState.classId === 'ladino' && x.imageGain) classRecord(s).images = Math.min(3, Number(classRecord(s).images ?? 0) + x.imageGain);
   }
   if (s.classState.classId === 'bardo' && x.bardAppliesCountertempo) s.bardState = createCountertempo(s.bardState);
   if (s.classState.classId === 'bardo' && x.bardEncoreEligible) s.bardState = { ...s.bardState, encoreReady: true, encoreMemory: createEncorePayload(x) };
@@ -608,18 +608,30 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
   // se errar" — a miss still has to burn the window, or the ability would
   // be a free re-roll against Exposto instead of a real bet on landing it.
   if (s.classState.classId === 'ladino' && x.consumeExposed) classRecord(s).exposed = false;
+  // Imagens: geradas pelas Rápidas do Dançarino (imageGain) e consumidas
+  // pelas Principais sincronizáveis (consumeImages) no início do cast,
+  // mesmo se errar — só a criação real dos Ecos abaixo depende de acerto.
+  // Eco Afiado é uma carga única concedida por Lâmina Reversa quando as
+  // Imagens já estão no teto; ela é gasta junto das Imagens na próxima
+  // sincronização e soma +0,05 absoluto ao ratio de Eco daquele cast.
+  const ladinoImagesAtCastStart = s.classState.classId === 'ladino' ? Number(classRecord(s).images ?? 0) : 0;
+  let ladinoSharpenedEchoBonus = 0;
+  if (s.classState.classId === 'ladino' && x.imageGain) {
+    if (ladinoImagesAtCastStart < ROGUE_IMAGE_MAX) classRecord(s).images = Math.min(ROGUE_IMAGE_MAX, ladinoImagesAtCastStart + x.imageGain);
+    else if (x.sharpenedEchoOnCap) classRecord(s).sharpenedEchoReady = true;
+  }
+  if (s.classState.classId === 'ladino' && x.consumeImages) {
+    if (classRecord(s).sharpenedEchoReady) { ladinoSharpenedEchoBonus = 0.05; classRecord(s).sharpenedEchoReady = false; }
+    classRecord(s).images = 0;
+  }
   if (s.classState.classId === 'ladino' && landed > 0) {
     if (x.canExpose) classRecord(s).exposed = true;
-    if (x.requiresImages && Number(classRecord(s).images ?? 0) < x.requiresImages) { consumeBardFortissimo(s, hits, hadFortissimoBeforeCast); return { damage, healed, hits, landed, crits }; }
-    const images = Number(classRecord(s).images ?? 0);
     const imageEchoRatio = Number(x.imageEchoRatio ?? 0);
-    const sharpenedEchoOnCap = Boolean(x.sharpenedEchoOnCap && images >= 3);
-    if (images > 0 && imageEchoRatio > 0 && damage > 0) {
-      const echoDamage = Math.max(1, Math.round(damage * imageEchoRatio * images * (sharpenedEchoOnCap ? 1.15 : 1)));
+    if (ladinoImagesAtCastStart > 0 && imageEchoRatio > 0 && damage > 0) {
+      const echoDamage = Math.max(1, Math.round(damage * (imageEchoRatio + ladinoSharpenedEchoBonus) * ladinoImagesAtCastStart));
       const beforeHp = s.enemyHp; s.enemyHp = Math.max(0, s.enemyHp - echoDamage); recordEnemyHpDamage(s, beforeHp);
       event(s, { type: 'damage', tick: s.envTick, actor: 'player', abilityId: id, amount: echoDamage, damageType: 'physical' });
     }
-    if (x.consumeImages) classRecord(s).images = 0;
     if (x.enemyDirectDmgDebuffPct) s.enemyMods.push({ stat: 'atk', pct: -x.enemyDirectDmgDebuffPct, roundsLeft: x.enemyDirectDmgDebuffRounds ?? 2 });
     if (classRecord(s).stealthed) classRecord(s).stealthed = false;
     if (x.timeSteal) classRecord(s).timeStolen = true;

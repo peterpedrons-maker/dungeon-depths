@@ -47,17 +47,23 @@ export function isDruidActionMisaligned(abilitySeason: string | undefined, curre
 }
 
 // ── Seletor sazonal (usado por pickAbility, sem alterar outras classes) ──
-// Passagem 1: primeira habilidade elegível, na ordem de prioridade do
-// jogador, cuja druidSeason bata com a Estação atual OU seja 'cycle'.
-// Passagem 2: se nenhuma bater, primeira elegível na ordem tradicional.
+// Passagem 1: primeira habilidade 'cycle' elegível, na ordem de prioridade
+// do jogador. Toda habilidade cycle (Árvore Ancestral, Avatar Primordial,
+// Eterno Retorno) já é presa a um recurso raro e caro (Renovo/Instinto/
+// Descompasso) — sem essa passagem dedicada, ela nunca vence o empate contra
+// uma habilidade sazonal "sempre disponível" da Estação atual quando esta
+// aparece antes na lista de prioridade, o que a torna praticamente
+// inutilizável mesmo com o recurso no máximo.
+// Passagem 2: primeira habilidade cuja druidSeason bata com a Estação atual.
+// Passagem 3: se nenhuma bater, primeira elegível na ordem tradicional.
 export function pickDruidSeasonalAbility<T extends { effect?: { druidSeason?: string } }>(
   eligibleInPriorityOrder: T[],
   currentSeason: DruidSeason,
 ): T | null {
-  const preferred = eligibleInPriorityOrder.find(
-    (ability) => ability.effect?.druidSeason === currentSeason || ability.effect?.druidSeason === 'cycle',
-  );
-  return preferred ?? eligibleInPriorityOrder[0] ?? null;
+  const cycle = eligibleInPriorityOrder.find((ability) => ability.effect?.druidSeason === 'cycle');
+  if (cycle) return cycle;
+  const aligned = eligibleInPriorityOrder.find((ability) => ability.effect?.druidSeason === currentSeason);
+  return aligned ?? eligibleInPriorityOrder[0] ?? null;
 }
 
 // ── Despertar Sazonal ──

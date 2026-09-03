@@ -3188,6 +3188,7 @@ export function DungeonPanel({
         raw.exposed = rogueExposedMainLeftRef.current > 0;
         raw.advantageReady = rogueAdvantageRef.current;
         raw.preparedTrick = roguePreparedTrickRef.current?.kind ?? null;
+        raw.sharpenedEchoReady = rogueSharpenedEchoRef.current;
         break;
       case 'feiticeiro':
         resource('pulse', sorcererStateRef.current.pulse);
@@ -3299,6 +3300,7 @@ export function DungeonPanel({
       rogueStealthRef.current = Boolean(raw.stealthed);
       rogueExposedMainLeftRef.current = raw.exposed ? ROGUE_EXPOSED_MAIN_LIMIT : 0;
       rogueAdvantageRef.current = Boolean(raw.advantageReady);
+      rogueSharpenedEchoRef.current = Boolean(raw.sharpenedEchoReady);
       rogueSync();
     }
     if (chRef.current.classId === 'feiticeiro') {
@@ -3458,6 +3460,7 @@ export function DungeonPanel({
     raw.exposed = rogueExposedMainLeftRef.current > 0;
     raw.advantageReady = rogueAdvantageRef.current;
     raw.preparedTrick = roguePreparedTrickRef.current?.kind ?? null;
+    raw.sharpenedEchoReady = rogueSharpenedEchoRef.current;
 
     resolvePlayerAction(core);
 
@@ -3480,6 +3483,7 @@ export function DungeonPanel({
     rogueStealthRef.current = Boolean(raw.stealthed);
     rogueExposedMainLeftRef.current = raw.exposed ? ROGUE_EXPOSED_MAIN_LIMIT : 0;
     rogueAdvantageRef.current = Boolean(raw.advantageReady);
+    rogueSharpenedEchoRef.current = Boolean(raw.sharpenedEchoReady);
     const preparedKind = raw.preparedTrick as RogueTrickKind | null;
     roguePreparedTrickRef.current = preparedKind ? prepareTrick(preparedKind, quick.id) : null;
     rogueSync();
