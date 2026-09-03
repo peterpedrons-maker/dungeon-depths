@@ -4981,30 +4981,51 @@ export function DungeonPanel({
             <span className="truncate">{ch.name}</span>
             <span className="shrink-0">
               {formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}
+              {/* A bare "+3" read as bonus HP — the icon makes clear it's a
+                  separate, temporary resource with the same visual grammar
+                  as the shield tag on the damage floater. */}
               {playerShieldState > 0 && (
-                <span className="text-slate-300 font-bold"> +{formatGameNumber(playerShieldState)}</span>
+                <span className="inline-flex items-center gap-0.5 text-sky-300 font-bold ml-1">
+                  <IconShield className="w-3 h-3" />
+                  {formatGameNumber(playerShieldState)}
+                </span>
               )}
             </span>
           </div>
           <div className="relative h-2 bg-black/50 rounded overflow-hidden">
             {/* With a shield up, the bar's total span grows to fit it (hp +
                 shield instead of just maxHp) — the red fill shrinks back to
-                make room and a grey segment picks up right where it ends,
+                make room and a shield segment picks up right where it ends,
                 so the bar visibly gets bigger rather than the shield
                 squeezing into whatever missing-HP space happened to be
                 left, which used to make it invisible at high HP. */}
             <div
-              className="h-2 bg-red-500 rounded"
+              className="h-2 bg-red-500"
               style={{ width: `${playerShieldState > 0 ? hpPct(ch.hp, effMaxHp + playerShieldState) : hpPct(ch.hp, effMaxHp)}%` }}
             />
             {playerShieldState > 0 && (
               <div
-                className="absolute inset-y-0 bg-slate-400/90"
+                className="absolute inset-y-0 rounded-r overflow-hidden ring-1 ring-inset ring-white/40"
                 style={{
                   left: `${hpPct(ch.hp, effMaxHp + playerShieldState)}%`,
                   width: `${hpPct(playerShieldState, effMaxHp + playerShieldState)}%`,
+                  boxShadow: '0 0 4px rgba(186,230,253,0.8)',
                 }}
-              />
+              >
+                {/* Diagonal hazard-stripe texture + a bright seam on the
+                    left edge reads as "temporary barrier", not more HP —
+                    distinct from the flat red fill instead of just being a
+                    differently-colored copy of it. */}
+                <div className="absolute inset-0 bg-gradient-to-b from-sky-200 via-sky-300 to-sky-400" />
+                <div
+                  className="absolute inset-0 opacity-40"
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(45deg, rgba(255,255,255,0.9) 0px, rgba(255,255,255,0.9) 1.5px, transparent 1.5px, transparent 5px)',
+                  }}
+                />
+                <div className="absolute inset-y-0 left-0 w-px bg-white/90" />
+              </div>
             )}
           </div>
           {phase === 'fight' && <AtbBar roundKey={playerRoundKey} roundMs={playerRoundMs} paused={paused} colorClass="bg-sky-400" />}
