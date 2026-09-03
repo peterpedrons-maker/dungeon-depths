@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   DRUID_SEASONS, DRUID_INSTINCT_MAX, DRUID_DISSONANCE_MAX,
   nextDruidSeason, isDruidSeasonAligned, isDruidCycleAbility, isDruidActionMisaligned,
@@ -246,4 +247,20 @@ test('motor real: Avatar Primordial dispara com Instinto 3 mesmo atrás de uma F
 
   assert.ok(state.events.some((e) => e.type === 'abilityCast' && e.abilityId === AVATAR_ID), 'Avatar Primordial deveria disparar, não a Forma sazonal sempre disponível');
   assert.equal(state.classState.instinct, 0, 'Avatar Primordial consome os 3 Instintos ao disparar');
+});
+
+test('regressão: DungeonPanel.conditionMet expõe Instinto/Renovo/Descompasso pro checador de condição', () => {
+  // Bug real reportado pelo usuário: mesmo com Instinto no 3 (visível na UI)
+  // e Avatar Primordial em primeiro na prioridade, a habilidade nunca
+  // disparava. Causa raiz: conditionMet() em DungeonPanel.tsx (o gate real
+  // usado por pickAbility() em jogo, separado do ctx() interno do
+  // combatEngine) nunca incluía instinct/renewal/dissonance no objeto
+  // `resources` — então resourceAtLeast sempre lia 0, travando Avatar
+  // Primordial, Árvore Ancestral e Eterno Retorno pra sempre, independente
+  // de prioridade ou do valor real do recurso.
+  const source = readFileSync(new URL('../components/DungeonPanel.tsx', import.meta.url), 'utf8');
+  const conditionMetBody = source.slice(source.indexOf('function conditionMet'), source.indexOf('function isRogue()'));
+  for (const resource of ['instinct: druidInstinctRef.current', 'renewal: druidRenewalRef.current', 'dissonance: druidDissonanceRef.current']) {
+    assert.ok(conditionMetBody.includes(resource), `conditionMet deveria expor "${resource}" no objeto resources`);
+  }
 });

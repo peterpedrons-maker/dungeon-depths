@@ -1275,6 +1275,9 @@ export function DungeonPanel({
         control: sorcererStateRef.current.control,
         ovation: bardStateRef.current.ovation,
         echo: bardStateRef.current.echo,
+        instinct: druidInstinctRef.current,
+        renewal: druidRenewalRef.current,
+        dissonance: druidDissonanceRef.current,
       },
       states: {
         frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
