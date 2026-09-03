@@ -603,6 +603,11 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
   if (x.warlockBarrierPct && landed > 0) barrier(s, effectiveMaxHp(s.character) * x.warlockBarrierPct * (x.scalesWithBarrierPower ? 1 + playerStats(s).barrierPowerPct : 1));
   if (x.warlockNextEnemyDmgReductionPct && landed > 0) s.playerMods.push({ stat: 'dmgTakenPct', pct: -x.warlockNextEnemyDmgReductionPct, roundsLeft: 1 });
   if (x.warlockCollectionEchoPct && landed > 0) barrier(s, effectiveMaxHp(s.character) * Math.min(0.15, x.warlockCollectionEchoPct * 0.01));
+  // consumeExposed fires here, unconditional on landed: Corte da Sombra's
+  // own text is explicit that it "consome Exposto no início do cast, mesmo
+  // se errar" — a miss still has to burn the window, or the ability would
+  // be a free re-roll against Exposto instead of a real bet on landing it.
+  if (s.classState.classId === 'ladino' && x.consumeExposed) classRecord(s).exposed = false;
   if (s.classState.classId === 'ladino' && landed > 0) {
     if (x.canExpose) classRecord(s).exposed = true;
     if (x.requiresImages && Number(classRecord(s).images ?? 0) < x.requiresImages) { consumeBardFortissimo(s, hits, hadFortissimoBeforeCast); return { damage, healed, hits, landed, crits }; }
@@ -615,7 +620,6 @@ function executeCombatAbilityEffect(s: CombatState, e: AbilityEffect, id: string
       event(s, { type: 'damage', tick: s.envTick, actor: 'player', abilityId: id, amount: echoDamage, damageType: 'physical' });
     }
     if (x.consumeImages) classRecord(s).images = 0;
-    if (x.consumeExposed) classRecord(s).exposed = false;
     if (x.enemyDirectDmgDebuffPct) s.enemyMods.push({ stat: 'atk', pct: -x.enemyDirectDmgDebuffPct, roundsLeft: x.enemyDirectDmgDebuffRounds ?? 2 });
     if (classRecord(s).stealthed) classRecord(s).stealthed = false;
     if (x.timeSteal) classRecord(s).timeStolen = true;

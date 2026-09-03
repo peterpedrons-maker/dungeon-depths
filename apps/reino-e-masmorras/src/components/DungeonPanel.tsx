@@ -16,7 +16,7 @@ import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { computeSkillBonuses, getEquippedAbilities } from '../lib/skills';
 import { ThermalState, advanceThermal, thermalAfterFrozenEnds } from '../lib/mago';
 import { DECOMPOSITION_DURATION, DECOMPOSITION_MAX, DECOMPOSITION_STACK_ID, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_BASE_MULT, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
-import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
+import { ROGUE_EXPOSED_MAIN_LIMIT, ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
 import { PaladinAegis, PaladinLiturgyState, PaladinVirtue, createPaladinLiturgyState, paladinAegisReduction, paladinConviction } from '../lib/paladin';
 import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow, advanceInFlightArrows } from '../lib/archer';
 import {
@@ -3297,6 +3297,7 @@ export function DungeonPanel({
     if (chRef.current.classId === 'ladino') {
       rogueImagesRef.current = Number(raw.images ?? 0);
       rogueStealthRef.current = Boolean(raw.stealthed);
+      rogueExposedMainLeftRef.current = raw.exposed ? ROGUE_EXPOSED_MAIN_LIMIT : 0;
       rogueAdvantageRef.current = Boolean(raw.advantageReady);
       rogueSync();
     }
@@ -3477,6 +3478,7 @@ export function DungeonPanel({
 
     rogueImagesRef.current = Number(raw.images ?? 0);
     rogueStealthRef.current = Boolean(raw.stealthed);
+    rogueExposedMainLeftRef.current = raw.exposed ? ROGUE_EXPOSED_MAIN_LIMIT : 0;
     rogueAdvantageRef.current = Boolean(raw.advantageReady);
     const preparedKind = raw.preparedTrick as RogueTrickKind | null;
     roguePreparedTrickRef.current = preparedKind ? prepareTrick(preparedKind, quick.id) : null;
