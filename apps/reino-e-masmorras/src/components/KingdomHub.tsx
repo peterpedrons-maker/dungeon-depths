@@ -107,11 +107,21 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
           border instead of sitting inside another parchment panel with its
           own title bar and padding.
           Top-aligned (not centered) so the art sits flush against TopBar's
-          bottom edge with no gap — the v3 art's aspect ratio now leaves only
-          a small amount of leftover space, and butting that entirely below
-          (in front of the icon bar's own dark gradient) reads better than
-          splitting it and leaving a sliver visible right under the header. */}
-      <div className="relative h-full overflow-hidden">
+          bottom edge with no gap. The v3 art's aspect ratio still leaves a
+          little leftover space on some devices, now entirely below the art
+          — instead of leaving that as flat black (which read as a stray
+          "tarja" behind the icon row), the wrapper's own background is the
+          same warm stone gradient TopBar uses, flipped so it reads as a
+          matching (empty) footer band rather than a bug. */}
+      <div
+        className="relative h-full overflow-hidden"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 100% at 15% 100%, rgba(255,200,140,0.06) 0%, transparent 60%), ' +
+            'radial-gradient(ellipse 60% 100% at 85% 100%, rgba(255,200,140,0.05) 0%, transparent 60%), ' +
+            'linear-gradient(0deg, #443a33 0%, #362c22 55%, #2b2013 100%)',
+        }}
+      >
         <div className="relative w-full">
           <img
             src={townImg}
