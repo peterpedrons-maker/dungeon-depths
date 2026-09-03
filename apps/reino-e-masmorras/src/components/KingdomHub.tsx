@@ -22,7 +22,7 @@ interface Props {
 // Prestígio aren't "places" — they're list/grid screens, not buildings — so
 // they don't get a spot painted into the hub scene like Forja/Mercador/Baú
 // do. Instead they're quick-access icons pinned to the VIEWPORT (not the
-// scrolled image — see the fixed column below), reusing the same circular
+// scrolled image — see the fixed bottom-docked row below), reusing the same circular
 // ability-slot frame the combat bar uses so they read as part of this
 // game's UI instead of a sticker glued onto the artwork.
 // `attention` mirrors the old Sidebar nav-item glow (gold = skill points,
@@ -45,26 +45,32 @@ const SHORTCUTS: { id: Section; label: string; icon: string }[] = [
 // building and its baked-in name plaque, since (unlike the old horizontal
 // Construções art) this scene already labels every building — no need to
 // render a redundant name tag on the button itself.
+// v2 (compact courtyard, 1122×1402) — measured fresh after the composition
+// changed from a tall winding trail to a plaza viewed from above: Portal
+// dead-center-back, Baú/Forja down the left side, Taverna/Mercador down the
+// right side.
 const BUILDINGS: { id: string; xPct: number; yPct: number; wPct: number; hPct: number }[] = [
-  { id: 'portal', xPct: 45.7, yPct: 85.5, wPct: 34, hPct: 13 },
-  { id: 'forja', xPct: 29.0, yPct: 67.0, wPct: 32, hPct: 12 },
-  { id: 'bau', xPct: 33.5, yPct: 49.5, wPct: 32, hPct: 12 },
-  { id: 'mercador', xPct: 69.0, yPct: 34.5, wPct: 32, hPct: 12 },
-  { id: 'taverna', xPct: 60.5, yPct: 16.5, wPct: 36, hPct: 14 },
+  { id: 'portal', xPct: 49.5, yPct: 30.0, wPct: 27, hPct: 33 },
+  { id: 'bau', xPct: 14.7, yPct: 33.5, wPct: 29, hPct: 26 },
+  { id: 'taverna', xPct: 85.6, yPct: 34.2, wPct: 29, hPct: 25 },
+  { id: 'forja', xPct: 15.2, yPct: 72.8, wPct: 34, hPct: 35 },
+  { id: 'mercador', xPct: 82.9, yPct: 74.9, wPct: 34, hPct: 29 },
 ];
 
 // Warm flickering glow dots dropped over the scene's own light sources
-// (torches, the forge's mouth, the portal's swirl) — pure CSS (see
-// index.css's emberFlicker keyframe), no new art. Each gets its own
-// animation-delay so they don't pulse in lockstep, which is what would give
-// the trick away immediately.
+// (torches, the forge's mouth, the courtyard brazier, the portal's swirl) —
+// pure CSS (see index.css's emberFlicker keyframe), no new art. Each gets
+// its own animation-delay so they don't pulse in lockstep, which is what
+// would give the trick away immediately.
 const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: number }[] = [
-  { xPct: 22.9, yPct: 34.3, size: 34, color: 'rgba(255,160,60,0.9)', delay: 0 },
-  { xPct: 85.4, yPct: 50.9, size: 34, color: 'rgba(255,160,60,0.9)', delay: 0.6 },
-  { xPct: 17.5, yPct: 89.5, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.1 },
-  { xPct: 76.2, yPct: 89.5, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.7 },
-  { xPct: 29.7, yPct: 70.5, size: 40, color: 'rgba(255,110,40,0.95)', delay: 0.3 },
-  { xPct: 45.7, yPct: 87.6, size: 60, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
+  { xPct: 49.5, yPct: 28.5, size: 60, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
+  { xPct: 37.4, yPct: 30.7, size: 28, color: 'rgba(255,160,60,0.9)', delay: 0 },
+  { xPct: 63.7, yPct: 30.7, size: 28, color: 'rgba(255,160,60,0.9)', delay: 0.5 },
+  { xPct: 16.9, yPct: 42.4, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.1 },
+  { xPct: 83.3, yPct: 42.4, size: 30, color: 'rgba(255,160,60,0.9)', delay: 1.6 },
+  { xPct: 49.5, yPct: 57.1, size: 42, color: 'rgba(255,140,40,0.95)', delay: 0.3 },
+  { xPct: 20.1, yPct: 74.5, size: 40, color: 'rgba(255,110,40,0.95)', delay: 0.7 },
+  { xPct: 92.3, yPct: 74.5, size: 26, color: 'rgba(255,170,70,0.9)', delay: 1.3 },
 ];
 
 export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
@@ -146,12 +152,17 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
         )}
       </div>
 
-      {/* Fixed to the VIEWPORT, not the (very tall, scrollable) hub image
-          above — so these stay reachable no matter how far the player has
-          scrolled toward the Portal at the bottom. There's no sidebar to
-          offset past anymore (navigation is entirely through this hub now),
-          so the same left offset applies at every width. */}
-      <div className="fixed left-2 top-24 z-20 flex flex-col gap-1">
+      {/* Fixed to the VIEWPORT, docked along the bottom edge and centered —
+          a row instead of the earlier left-side column, sitting right where
+          a thumb naturally rests. Fixed positioning (not part of the hub
+          image's own flow) means this stays put regardless of image size. */}
+      <div
+        className="fixed bottom-0 inset-x-0 z-20 flex flex-row justify-center items-end gap-1 pt-3"
+        style={{
+          paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.35) 60%, transparent)',
+        }}
+      >
         {SHORTCUTS.map((s) => {
           const attention = attentionBySection[s.id];
           return (
@@ -159,17 +170,17 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
               key={s.id}
               onClick={() => onNavigate(s.id)}
               title={s.label}
-              className="flex flex-col items-center w-14 group"
+              className="flex flex-col items-center w-12 group"
             >
               <span
-                className="relative block w-11 h-11 shrink-0 rounded-full"
+                className="relative block w-10 h-10 shrink-0 rounded-full"
                 style={{ animation: attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined }}
               >
-                <span className="absolute inset-[7px] rounded-full bg-[#19120c] shadow-[inset_0_0_6px_rgba(0,0,0,0.8)]" />
-                <img src={s.icon} alt="" className="absolute inset-[9px] w-[calc(100%-18px)] h-[calc(100%-18px)] object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" draggable={false} />
+                <span className="absolute inset-[6px] rounded-full bg-[#19120c] shadow-[inset_0_0_6px_rgba(0,0,0,0.8)]" />
+                <img src={s.icon} alt="" className="absolute inset-[8px] w-[calc(100%-16px)] h-[calc(100%-16px)] object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" draggable={false} />
                 <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full transition group-hover:brightness-125" draggable={false} />
               </span>
-              <span className="mt-0.5 text-[9px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
+              <span className="mt-0.5 text-[8px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
                 {s.label}
               </span>
             </button>

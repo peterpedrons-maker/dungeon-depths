@@ -14,7 +14,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral) — jogo hoje desenha a placa só em CSS no lugar
 - ✅ Slot de Equipamento — paperdoll — prompt já usado, removido do kit
 - ✅ Ícones de Slot Vazio — prompt já usado, removido do kit
-- 🕓 [Ícones de Atalho — Navegação Rápida (EM TESTE)](#icones-de-atalho-navegacao-rapida-em-teste) — Personagem/Habilidades/Bestiário/Títulos/Caçadas/Colocação/Loja de Prestígio, pensados pra ficar sobre a nova Cena Única do Reino (ver seção "Reino — Cena Única"), usando a moldura circular de habilidade que já existe em vez de uma moldura nova
+- ✅ Ícones de Atalho — Navegação Rápida — Personagem/Habilidades/Bestiário/Títulos/Caçadas/Colocação/Loja de Prestígio, fixos numa fileira colada na borda de baixo da tela do Reino. Prompt já usado, removido do kit
 - ✅ Slot de Habilidade — prompt já usado, removido do kit
 - ✅ Botão Dourado — prompt já usado, removido do kit
 - 🕓 [Botão Carmesim](#carmesim-combate-acoes-perigosas) — jogo hoje usa cor lisa (CSS) no lugar
@@ -122,7 +122,7 @@ Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões vertic
 - ✅ Cena do Ferreiro — prompt já usado, removido do kit
 - ✅ Cena do Mercador — prompt já usado, removido do kit
 - ✅ Cena de Título — prompt já usado, removido do kit
-- 🕓 [Reino — Cena Única (Hub Unificado, EM TESTE)](#reino-cena-unica-hub-unificado-em-teste) — v2: pátio/praça compacto (1024×1280), substitui a v1 (trilha vertical 1024×2560) que já foi integrada no jogo mas ficou alta demais pra caber numa tela sem rolar, escondendo o Portal da Masmorra. Já integrada e testada no jogo (Forja/Baú/Mercador/Taverna/Portal clicáveis, ícones de atalho fixos) — só falta trocar pela arte da v2 quando ela for gerada
+- ✅ Reino — Cena Única (Hub Unificado) — v2 (pátio/praça compacto, 1122×1402) gerada e integrada no jogo, substituindo a v1 (trilha vertical, ficava alta demais e escondia o Portal). Prompt removido do kit
 
 ### Mapa de Masmorras (fundo de cada região, 5 no total — última fase antes do Mapa Mundo)
 - ✅ Região 1 — Valdren (nível 1-10) — prompt já usado, removido do kit
@@ -1744,60 +1744,4 @@ Landscape canvas, 1920×1440 px. Soft diffuse top-light. No characters, no UI fr
 ```
 
 Sobre inimigos/chefes dessas dezenas de localidades: ainda não foram definidos (nem os dados das masmorras em `lib/dungeons.ts` existem ainda — isso é conteúdo futuro, fora do escopo desta arte). Quando essas masmorras forem desenhadas, o padrão recomendado é o mesmo já usado nas Regiões 1-5: reaproveitar o elenco de inimigos por tier já existente em `lib/enemies.ts` para a maioria das localidades, e reservar um chefe exclusivo desenhado à mão só para as poucas masmorras "especiais" de cada leva (igual Poço sem Fundo, Torre dos Ecos e Arena do Campeão hoje) — evita ter que desenhar uma criatura nova para cada uma das dezenas de localidades.
-
----
-
-<a id="reino-cena-unica-hub-unificado-em-teste"></a>
-### Reino — Cena Única (Hub Unificado, EM TESTE)
-**Status: v2 — a v1 (formato de trilha vertical, 1024×2560) já foi gerada, integrada no jogo e testada de verdade, mas ficou alta demais: numa tela de celular normal ela só cabe rolando, e isso escondia o Portal da Masmorra (o marcador mais importante) lá embaixo, fora da vista inicial.** Esta v2 pede a mesma cena, só que **compacta o suficiente pra caber inteira numa tela só**, junto com o cabeçalho de dados do personagem que já existe no topo do jogo — sem precisar rolar pra ver qualquer construção. Personagem, Habilidades, Bestiário, Títulos, Ranking e Loja de Prestígio continuam fora dessa imagem (ver ícones de atalho fixos, seção seguinte) — só os 5 lugares físicos (Portal, Forja, Baú, Mercador, Taverna) entram aqui.
-
-Pra caber compacta, a composição muda de "trilha vertical subindo" pra **um pátio/praça visto de um ângulo elevado**, com as construções voltadas pro centro em vez de espalhadas ao longo de um caminho longo. Mesma ambientação de entardecer, quente e acolhedora.
-
-**Tamanho:** 1024×1280 px (proporção 4:5 — bem mais baixa que a v1) · **Uso:** substitui a v1 nas telas de Reino/Construções, entrada de Campanha
-
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A single cozy castle courtyard/plaza, viewed from a slightly elevated three-quarter angle — NOT a long vertical winding trail this time. The composition must be compact and wide rather than tall, so every building reads in one glance with no scrolling needed. Warm dusk lighting, golden-orange sky along the top edge fading to dusky blue, stone castle walls curving around the back and sides of the plaza, a cobblestone courtyard floor filling the middle-to-bottom of the frame, long soft shadows, warm torchlight and lantern glow.
-
-Buildings face inward toward the shared central courtyard, each with a small wooden/parchment sign bearing its Portuguese name near its base (small spelling mistakes in the text are acceptable):
-1) Center-back, built into the far castle wall itself and raised on a few stone steps — the single most prominent and eye-catching structure in the whole scene: "Portal da Masmorra", an ancient stone archway wreathed in swirling blue-gold magical energy with glowing runes along its frame.
-2) Left side of the courtyard, closer to the foreground: "Forja" — a squat stone smithy with a smoking chimney, a glowing forge visible through its open front, an anvil outside.
-3) Left side of the courtyard, a little further back than the Forja: "Baú de Armazém" — a sturdy stone vault-house with a heavy iron-banded door, a small barred window, a few travel chests stacked outside.
-4) Right side of the courtyard, closer to the foreground (mirroring the Forja): "Mercador" — an awninged market stall front with hanging goods and crates of wares out front.
-5) Right side of the courtyard, a little further back than the Mercador (mirroring the Baú): "Taverna" — a cheerful two-story timber-and-plaster building, warm yellow light in every window, a hanging wooden sign, barrels and benches outside, faint chimney smoke — visibly a touch quieter/less finished than the other buildings, as if not fully open for business yet.
-
-Tuck one small fog-shrouded silhouette marker with no legible name into a back corner of the courtyard — reserved space for a future building. A small lit brazier, well, or fountain in the middle of the courtyard is welcome purely for atmosphere (not a marker, no sign).
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No UI elements, no frame, no extra text beyond the small building name signs described above. Portrait canvas, 1024×1280 px, noticeably shorter and more compact than a typical dungeon-region map.
-```
-
-Depois de gerada e aprovada, o próximo passo é remedir as coordenadas dos 5 marcadores em cima da imagem nova (as coordenadas da v1 não servem — a composição mudou de trilha pra pátio) e trocar o arquivo `reino-hub.webp` no jogo — o resto do código (clique do Portal abrindo o mapa de masmorras, Forja/Mercador/Baú abrindo suas telas, ícones de atalho fixos) já está pronto e não muda.
-
----
-
-<a id="icones-de-atalho-navegacao-rapida-em-teste"></a>
-### Ícones de Atalho — Navegação Rápida (EM TESTE)
-**Status: em avaliação, junto com a Cena Única do Reino acima.** Personagem, Habilidades, Bestiário, Títulos e Caçadas não têm um "prédio" próprio na cena única (são telas de lista/grade, não lugares — ver decisão na seção anterior), então continuam acessíveis por ícones de atalho, só que agora pensados pra ficar sobrepostos na própria Cena Única (ou numa barra fixa, se na prática ficar mais legível — decisão de layout só depois de ver a cena pronta) em vez de dentro do menu lateral de texto. Ranking (Colocação) e Loja de Prestígio entram na mesma leva, já que também não têm prédio próprio.
-
-**Convenção:** mesmo estilo pintado dos outros ícones deste kit (moeda, poção, coração, runa, ícones de habilidade — pintura digital rica, NÃO vetor liso, NÃO pixel art), sem moldura desenhada — cada ícone entra sozinho na moldura circular de habilidade que **já existe** no jogo (mesmo componente usado nos slots da barra de combate), então não precisa desenhar aro/borda nova.
-
-**Tamanho:** 1024×512 px (grade 4×2, 256×256 px por célula, a última célula fica vazia/magenta) · **Uso:** 7 ícones de atalho — Personagem, Habilidades, Bestiário, Títulos, Caçadas, Colocação e Loja de Prestígio
-
-```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a game's quick-navigation shortcuts — same painted style as the game's other UI icons (gold coin, health potion, ruby heart, ability icons), NOT flat vector, NOT pixel art. Each icon is a single small object or symbol, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. No border or frame baked into any icon — each will be placed inside an existing circular UI frame separately.
-
-One single wide image containing SEVEN separate icons arranged in an even 4-column × 2-row grid (the eighth, bottom-right cell left empty/solid magenta), generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all seven.
-
-1) "Personagem" — an ornate steel breastplate with a small engraved crest, standing upright as if worn by an unseen hero.
-2) "Habilidades" — a small open spellbook/grimoire, pages glowing faintly with a rising arcane spark.
-3) "Bestiário" — a closed leather-bound bestiary tome with a clawed monster-eye sigil embossed on its cover.
-4) "Títulos" — a small gold laurel wreath wrapped around a ribboned medal.
-5) "Caçadas" — a curved hunting horn crossed with a single arrow.
-6) "Colocação" (ranking) — a small gold trophy cup resting on a stone pedestal.
-7) "Loja de Prestígio" — a faceted glowing purple gem set in an ornate small vault-like clasp.
-
-Solid magenta background (#FF00FF) everywhere outside the seven icons. No text, no numbers, no labels on any icon. Canvas 1024×512 px.
-```
-
 
