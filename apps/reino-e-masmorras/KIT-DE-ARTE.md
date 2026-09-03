@@ -12,6 +12,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Pergaminho — fundo dos painéis — prompt já usado, removido do kit
 - 🕓 [Painel de Ferro — fundo do menu lateral](#painel-de-ferro-fundo-do-menu-lateral) — a primeira tentativa saiu com cantos claros/esbranquiçados que ficavam visíveis repetidos ao ladrilhar; jogo hoje usa um degradê CSS no lugar
 - 🕓 [Placa de Menu — botão de navegação lateral](#placa-de-menu-botao-de-navegacao-lateral) — jogo hoje desenha a placa só em CSS no lugar
+- 🕓 [Cabeçalho — Barra Superior (TopBar)](#cabecalho-barra-superior-topbar) — jogo hoje usa um degradê CSS no lugar
 - ✅ Slot de Equipamento — paperdoll — prompt já usado, removido do kit
 - ✅ Ícones de Slot Vazio — prompt já usado, removido do kit
 - ✅ Ícones de Atalho — Navegação Rápida — Personagem/Habilidades/Bestiário/Títulos/Caçadas/Colocação/Loja de Prestígio, fixos numa fileira colada na borda de baixo da tela do Reino. Prompt já usado, removido do kit
@@ -317,6 +318,22 @@ Par da peça acima: hoje cada botão do menu é uma placa desenhada só em CSS (
 Hand-painted medieval fantasy game UI asset, rich digital painting style (think Divinity: Original Sin 2's main menu buttons). A wide, short rectangular plate forged from dark blackened iron, gently rounded corners, with a raised beveled edge — a bright warm highlight along the top edge and a dark shadow along the bottom edge, giving it a raised, pressable, riveted metal look. One small diamond-shaped bronze rivet sits inset near the far left end of the plate, and a matching one near the far right end — these two rivets are the only ornamentation, no border or filigree running along the rest of the edge.
 
 The entire flat center of the plate (where the game places an icon and a text label) is a solid magenta color (#FF00FF) — no texture, no gradient, no shadow inside that area. Front-on view, no perspective. Canvas 1024×192 px, plate filling the frame edge-to-edge left and right with a small margin top and bottom. No text, no watermark, no drop shadow floating outside the plate.
+```
+
+<a id="cabecalho-barra-superior-topbar"></a>
+### Cabeçalho — Barra Superior (TopBar)
+**Tamanho:** 2048×384 px · **Uso:** fundo esticado da barra fixa no topo de toda tela do jogo (avatar/nome do herói, nível, título equipado, ouro, poções, engrenagem de configurações, barra de Vida e barra de XP) — hoje é só um degradê CSS em tom de pedra quente
+
+Esse cabeçalho aparece em toda tela do jogo, sempre fixo no topo, então a peça precisa funcionar atrás de qualquer conteúdo dinâmico (o nome pode ser curto ou longo, o título equipado às vezes nem aparece) sem depender de espaços reservados numa posição fixa — por isso é uma textura de fundo esticada por completo (igual à Placa de Menu acima), não uma composição com "buracos" para cada elemento. Mantém a mesma paleta de pedra quente/dourada que o degradê CSS atual já usa, só trocando o gradiente liso por uma peça de verdade — pedra entalhada, metal batido, um estandarte de pano — com relevo e textura reais em vez de um degradê chapado.
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style (think Diablo, Baldur's Gate, and especially Divinity: Original Sin 2's ornate top status bar). A wide horizontal banner/plaque spanning the full canvas width, front-on view, no perspective — a solid carved dark stone base (warm charcoal-brown palette: near #443a33 at the top fading to near #2b2013 at the bottom) with a raised beveled top edge and a darker recessed bottom edge, giving it a real sculpted, load-bearing look instead of a flat painted stripe. A weathered dark-red-and-gold heraldic banner cloth drapes down slightly from the top edge at the far left end and the far right end only, each with a small hanging scalloped tip and a tarnished bronze medallion/rivet pinning it to the stone — these two banner ends are the only strong ornamental focal points, positioned close to the left and right edges of the canvas so they land near the screen's corners once stretched.
+
+The broad middle two-thirds of the banner (where the game overlays the hero's name, level, gold/potion counts, a settings gear, and two horizontal status bars) stays a calm, fairly uniform stone texture with subtle fine cracks and a soft warm amber glow easing in from both sides toward the center — keep local contrast low there so light-colored text and icons stay legible on top of it no matter where they land. A thin inset groove line runs horizontally roughly 60% of the way down the banner's height, like a carved ledge separating an upper and a lower register — a subtle hint of two stacked rows, echoing the name/resources row above and the two status bars below, without being a hard sharp line.
+
+The very bottom edge of the whole canvas is trimmed with a thin continuous strip of tarnished gold/brass, slightly raised, running the full width — this is the banner's lower boundary against the rest of the screen below it.
+
+No text, no numbers, no icons, no character art, no watermark. Flat evenly-lit front view, landscape canvas 2048×384 px, filling the frame edge-to-edge with no vignette or empty margin — the whole canvas gets stretched to exactly fit the bar's real width and height in-game, so nothing along any edge should look cropped or incomplete.
 ```
 
 ---
