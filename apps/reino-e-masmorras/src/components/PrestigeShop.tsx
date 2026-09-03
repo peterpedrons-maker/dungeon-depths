@@ -8,6 +8,7 @@ interface Props {
   profile: ProfileState;
   onBuy: (id: string) => void;
   onEquip: (id: string | null) => void;
+  onBack: () => void;
 }
 
 // Loja de Prestígio — puramente cosmético (recolore o avatar/nome na
@@ -15,9 +16,9 @@ interface Props {
 // masmorra/Caçada, e triplicada no Modo Ferro). Prestígio e cosméticos
 // comprados são da conta inteira, não do personagem — sobrevivem à troca
 // ou perda de herói.
-export function PrestigeShop({ profile, onBuy, onEquip }: Props) {
+export function PrestigeShop({ profile, onBuy, onEquip, onBack }: Props) {
   return (
-    <Panel title="Loja de Prestígio">
+    <Panel title="Loja de Prestígio" onBack={onBack}>
       <div className="flex items-center justify-between mb-4">
         <p className="text-parchment/60 text-sm">
           Cosméticos puramente visuais — recolorem seu avatar e nome. Ganhe prestígio derrotando chefes de masmorra

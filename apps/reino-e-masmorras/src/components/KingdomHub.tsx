@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Section } from '../types/game';
-import { Panel } from './Panel';
+import { Character, Section } from '../types/game';
 import townImg from '../assets/reino-hub.webp';
 import slotFrame from '../assets/slot-habilidade.webp';
 import iconPersonagem from '../assets/shortcuts/personagem.webp';
@@ -12,6 +11,7 @@ import iconColocacao from '../assets/shortcuts/colocacao.webp';
 import iconPrestigio from '../assets/shortcuts/prestigio.webp';
 
 interface Props {
+  character: Character;
   onNavigate: (s: Section) => void;
   onOpenFerreiro: () => void;
   onOpenMercador: () => void;
@@ -25,6 +25,9 @@ interface Props {
 // scrolled image — see the fixed column below), reusing the same circular
 // ability-slot frame the combat bar uses so they read as part of this
 // game's UI instead of a sticker glued onto the artwork.
+// `attention` mirrors the old Sidebar nav-item glow (gold = skill points,
+// sky = attribute points waiting to be spent) — computed per-render below
+// since it depends on live character state, not part of this static list.
 const SHORTCUTS: { id: Section; label: string; icon: string }[] = [
   { id: 'character', label: 'Personagem', icon: iconPersonagem },
   { id: 'skills', label: 'Habilidades', icon: iconHabilidades },
@@ -64,8 +67,12 @@ const EMBERS: { xPct: number; yPct: number; size: number; color: string; delay: 
   { xPct: 45.7, yPct: 87.6, size: 60, color: 'rgba(90,190,255,0.85)', delay: 0.9 },
 ];
 
-export function KingdomHub({ onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
+export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercador, onOpenBau }: Props) {
   const [tavernaHint, setTavernaHint] = useState(false);
+  const attentionBySection: Partial<Record<Section, 'gold' | 'sky'>> = {
+    character: character.attributePoints > 0 ? 'sky' : undefined,
+    skills: character.skillPoints > 0 ? 'gold' : undefined,
+  };
 
   const openActions: Record<string, () => void> = {
     portal: () => onNavigate('dungeon-select'),
@@ -87,83 +94,87 @@ export function KingdomHub({ onNavigate, onOpenFerreiro, onOpenMercador, onOpenB
 
   return (
     <>
-      <Panel title="Reino">
-        <p className="text-parchment/70 mb-4 text-sm">
-          Toque numa construção pra visitá-la, ou no portal pra partir em expedição.
-        </p>
+      {/* No Panel chrome here on purpose — this is the home screen, so the
+          art fills edge-to-edge up to the app's own wooden ScreenFrame
+          border instead of sitting inside another parchment panel with its
+          own title bar and padding. */}
+      <div className="relative">
+        <img
+          src={townImg}
+          alt="Reino"
+          className="w-full h-auto block"
+          style={{ imageRendering: 'pixelated' }}
+          draggable={false}
+        />
 
-        <div className="relative rounded overflow-hidden border border-black/50 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-          <img
-            src={townImg}
-            alt="Reino"
-            className="w-full h-auto block"
-            style={{ imageRendering: 'pixelated' }}
-            draggable={false}
+        {EMBERS.map((e, i) => (
+          <div
+            key={i}
+            aria-hidden
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              left: `${e.xPct}%`,
+              top: `${e.yPct}%`,
+              width: e.size,
+              height: e.size,
+              transform: 'translate(-50%, -50%)',
+              background: `radial-gradient(circle, ${e.color} 0%, transparent 70%)`,
+              filter: 'blur(3px)',
+              animation: 'emberFlicker 2.4s ease-in-out infinite',
+              animationDelay: `${e.delay}s`,
+            }}
           />
+        ))}
 
-          {EMBERS.map((e, i) => (
-            <div
-              key={i}
-              aria-hidden
-              className="absolute rounded-full pointer-events-none"
-              style={{
-                left: `${e.xPct}%`,
-                top: `${e.yPct}%`,
-                width: e.size,
-                height: e.size,
-                transform: 'translate(-50%, -50%)',
-                background: `radial-gradient(circle, ${e.color} 0%, transparent 70%)`,
-                filter: 'blur(3px)',
-                animation: 'emberFlicker 2.4s ease-in-out infinite',
-                animationDelay: `${e.delay}s`,
-              }}
-            />
-          ))}
+        {BUILDINGS.map((b) => (
+          <button
+            key={b.id}
+            onClick={openActions[b.id]}
+            title={titles[b.id]}
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition hover:bg-gold/10 hover:ring-2 hover:ring-gold/40"
+            style={{ left: `${b.xPct}%`, top: `${b.yPct}%`, width: `${b.wPct}%`, height: `${b.hPct}%` }}
+          />
+        ))}
 
-          {BUILDINGS.map((b) => (
-            <button
-              key={b.id}
-              onClick={openActions[b.id]}
-              title={titles[b.id]}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded transition hover:bg-gold/10 hover:ring-2 hover:ring-gold/40"
-              style={{ left: `${b.xPct}%`, top: `${b.yPct}%`, width: `${b.wPct}%`, height: `${b.hPct}%` }}
-            />
-          ))}
-
-          {tavernaHint && (
-            <div
-              className="absolute -translate-x-1/2 -translate-y-full rounded border border-gold/50 bg-black/85 px-3 py-1.5 text-xs font-bold text-gold whitespace-nowrap pointer-events-none [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]"
-              style={{ left: `${BUILDINGS.find((b) => b.id === 'taverna')!.xPct}%`, top: `${BUILDINGS.find((b) => b.id === 'taverna')!.yPct - 8}%` }}
-            >
-              Em construção — chega em breve
-            </div>
-          )}
-        </div>
-      </Panel>
+        {tavernaHint && (
+          <div
+            className="absolute -translate-x-1/2 -translate-y-full rounded border border-gold/50 bg-black/85 px-3 py-1.5 text-xs font-bold text-gold whitespace-nowrap pointer-events-none [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]"
+            style={{ left: `${BUILDINGS.find((b) => b.id === 'taverna')!.xPct}%`, top: `${BUILDINGS.find((b) => b.id === 'taverna')!.yPct - 8}%` }}
+          >
+            Em construção — chega em breve
+          </div>
+        )}
+      </div>
 
       {/* Fixed to the VIEWPORT, not the (very tall, scrollable) hub image
           above — so these stay reachable no matter how far the player has
-          scrolled toward the Portal at the bottom. Offset past the desktop
-          sidebar's own width (md:w-56 in Sidebar.tsx); on mobile the
-          sidebar is an off-canvas drawer, so left-2 alone is enough there. */}
-      <div className="fixed left-2 md:left-60 top-20 z-20 flex flex-col gap-1">
-        {SHORTCUTS.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => onNavigate(s.id)}
-            title={s.label}
-            className="flex flex-col items-center w-14 group"
-          >
-            <span className="relative block w-11 h-11 shrink-0">
-              <span className="absolute inset-[7px] rounded-full bg-[#19120c] shadow-[inset_0_0_6px_rgba(0,0,0,0.8)]" />
-              <img src={s.icon} alt="" className="absolute inset-[9px] w-[calc(100%-18px)] h-[calc(100%-18px)] object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" draggable={false} />
-              <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full transition group-hover:brightness-125" draggable={false} />
-            </span>
-            <span className="mt-0.5 text-[9px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
-              {s.label}
-            </span>
-          </button>
-        ))}
+          scrolled toward the Portal at the bottom. There's no sidebar to
+          offset past anymore (navigation is entirely through this hub now),
+          so the same left offset applies at every width. */}
+      <div className="fixed left-2 top-24 z-20 flex flex-col gap-1">
+        {SHORTCUTS.map((s) => {
+          const attention = attentionBySection[s.id];
+          return (
+            <button
+              key={s.id}
+              onClick={() => onNavigate(s.id)}
+              title={s.label}
+              className="flex flex-col items-center w-14 group"
+            >
+              <span
+                className="relative block w-11 h-11 shrink-0 rounded-full"
+                style={{ animation: attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined }}
+              >
+                <span className="absolute inset-[7px] rounded-full bg-[#19120c] shadow-[inset_0_0_6px_rgba(0,0,0,0.8)]" />
+                <img src={s.icon} alt="" className="absolute inset-[9px] w-[calc(100%-18px)] h-[calc(100%-18px)] object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" draggable={false} />
+                <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full transition group-hover:brightness-125" draggable={false} />
+              </span>
+              <span className="mt-0.5 text-[9px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
+                {s.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </>
   );

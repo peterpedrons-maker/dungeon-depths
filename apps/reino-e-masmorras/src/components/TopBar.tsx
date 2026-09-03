@@ -1,13 +1,30 @@
+import { useState } from 'react';
 import { Character } from '../types/game';
 import { CLASSES, MAX_LEVEL } from '../lib/classes';
 import { effectiveMaxHp } from '../lib/combatStats';
 import { TITLES } from '../lib/titles';
 import { fmt } from '../lib/format';
 import { CLASS_ICON } from '../lib/classIcons';
+import { playClickSfx, isMuted, toggleMuted } from '../lib/audio';
+import { IconGear, IconSpeaker, IconSpeakerMuted, IconRestart, IconDoorExit } from './icons';
 import moedaIcon from '../assets/moeda.webp';
 import pocaoIcon from '../assets/pocao.webp';
 
-export function TopBar({ character: ch, accentColor, onMenuClick }: { character: Character; accentColor?: string; onMenuClick: () => void }) {
+interface Props {
+  character: Character;
+  accentColor?: string;
+  onAbandon: () => void;
+  onSignOut: () => void;
+}
+
+// With the Sidebar gone, this is the one place left for the handful of
+// account-level actions (sound, abandon hero, sign out) that used to live
+// in its footer — tucked behind a gear icon instead of laid out permanently,
+// since none of them are things a player reaches for during normal play.
+export function TopBar({ character: ch, accentColor, onAbandon, onSignOut }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [muted, setMutedState] = useState(isMuted());
+  const toggleSound = () => setMutedState(toggleMuted());
   const cls = CLASSES[ch.classId];
   const avatarColor = accentColor ?? cls.color;
   const maxHp = effectiveMaxHp(ch);
@@ -22,14 +39,8 @@ export function TopBar({ character: ch, accentColor, onMenuClick }: { character:
   const equippedTitle = ch.equippedTitle ? TITLES.find((t) => t.id === ch.equippedTitle && t.condition(ch)) : undefined;
 
   return (
-    <header className="bg-panel border-b-2 border-gold/40 px-3 sm:px-4 py-2.5">
+    <header className="relative bg-panel border-b-2 border-gold/40 px-3 sm:px-4 py-2.5">
       <div className="flex items-center gap-2.5">
-        <button onClick={onMenuClick} className="md:hidden flex flex-col justify-center gap-1 w-7 h-7 shrink-0" aria-label="Abrir menu">
-          <span className="block w-5 h-0.5 bg-parchment" />
-          <span className="block w-5 h-0.5 bg-parchment" />
-          <span className="block w-5 h-0.5 bg-parchment" />
-        </button>
-
         <span
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full shrink-0 ring-2 ring-gold/60 overflow-hidden flex items-center justify-center"
           style={{ background: avatarColor, boxShadow: `0 0 10px 2px ${avatarColor}80` }}
@@ -58,8 +69,41 @@ export function TopBar({ character: ch, accentColor, onMenuClick }: { character:
         <div className="ml-auto flex items-center gap-3 shrink-0">
           <Stat icon={<img src={moedaIcon} alt="" className="w-5 h-5 shrink-0" />} value={fmt(ch.gold)} color="text-gold" />
           <Stat icon={<img src={pocaoIcon} alt="" className="w-4 h-5 shrink-0" />} value={fmt(ch.potions)} color="text-emerald-400" />
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-parchment/50 hover:text-gold hover:bg-black/25 transition shrink-0"
+            aria-label="Configurações"
+          >
+            <IconGear className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden />
+          <div className="absolute right-2 sm:right-3 top-full mt-1.5 z-50 w-52 rounded-sm border border-gold/40 bg-panel shadow-[0_10px_30px_rgba(0,0,0,0.6)] overflow-hidden">
+            <MenuAction
+              icon={muted ? <IconSpeakerMuted className="w-4 h-4" /> : <IconSpeaker className="w-4 h-4" />}
+              onClick={() => { playClickSfx(); toggleSound(); }}
+            >
+              {muted ? 'Som Desativado' : 'Som Ativado'}
+            </MenuAction>
+            <MenuAction
+              icon={<IconRestart className="w-4 h-4" />}
+              onClick={() => { playClickSfx(); setMenuOpen(false); onAbandon(); }}
+            >
+              Abandonar Herói / Novo Jogo
+            </MenuAction>
+            <MenuAction
+              icon={<IconDoorExit className="w-4 h-4" />}
+              onClick={() => { playClickSfx(); setMenuOpen(false); onSignOut(); }}
+            >
+              Sair da Conta
+            </MenuAction>
+          </div>
+        </>
+      )}
 
       <div className="flex items-center gap-4 mt-2">
         <Bar icon={<HeartIcon />} cur={ch.hp} max={maxHp} pct={hpPct} barColor="bg-red-600" />
@@ -73,6 +117,18 @@ export function TopBar({ character: ch, accentColor, onMenuClick }: { character:
         )}
       </div>
     </header>
+  );
+}
+
+function MenuAction({ icon, onClick, children }: { icon: React.ReactNode; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-xs font-display uppercase tracking-wide text-parchment/70 hover:bg-black/25 hover:text-parchment transition border-b border-black/30 last:border-b-0"
+    >
+      <span className="text-gold/70 shrink-0">{icon}</span>
+      {children}
+    </button>
   );
 }
 

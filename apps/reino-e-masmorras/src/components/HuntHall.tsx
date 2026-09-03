@@ -7,6 +7,7 @@ import { IconLock, IconTarget } from './icons';
 interface Props {
   character: Character;
   onEnterHunt: (dungeon: DungeonDef) => void;
+  onBack: () => void;
 }
 
 // Salão da Caçada — lista os Alvos de Caçada (lib/hunts.ts): superchefes
@@ -14,9 +15,9 @@ interface Props {
 // chefe de uma masmorra do mesmo nível. Mesma lógica de bloqueio por nível
 // do Mapa de Masmorras (DungeonMap.tsx), só que em grade de cartas em vez de
 // marcadores sobre uma imagem de região — Caçadas não têm mapa próprio.
-export function HuntHall({ character, onEnterHunt }: Props) {
+export function HuntHall({ character, onEnterHunt, onBack }: Props) {
   return (
-    <Panel title="Salão da Caçada">
+    <Panel title="Salão da Caçada" onBack={onBack}>
       <p className="text-parchment/60 text-sm mb-4">
         Alvos de caçada são desafios opcionais — muito mais fortes que o chefe de uma masmorra comum do mesmo nível.
         Vença um e ele continua ali, pronto para ser caçado de novo.

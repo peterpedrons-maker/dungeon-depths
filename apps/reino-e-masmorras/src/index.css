@@ -94,14 +94,6 @@ body {
   100% { transform: scale(1); opacity: 0; }
 }
 
-/* Sidebar "Campanha" CTA — a slow permanent breathing glow (not a one-time
-   event flash like buildingGlow) marking it as the game's primary action,
-   distinct from every other nav item's plain hover/active state. */
-@keyframes sidebarHeroGlow {
-  0%, 100% { box-shadow: 0 0 10px 1px rgba(212,175,55,0.35), inset 0 0 12px rgba(212,175,55,0.08); }
-  50%      { box-shadow: 0 0 20px 5px rgba(212,175,55,0.65), inset 0 0 18px rgba(212,175,55,0.16); }
-}
-
 /* Whole-button version of the "something's waiting for you" signal on a
    sidebar item with something pending (unspent attribute/skill points,
    fresh Mercador stock) — replaces a small icon-corner dot, which proved

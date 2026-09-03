@@ -245,8 +245,8 @@ export default function App() {
     }
   }
 
-  // Drops back to the character-select hub — used by the Sidebar's
-  // "Abandonar Herói / Novo Jogo". Just navigation: the hero is untouched
+  // Drops back to the character-select hub — used by the TopBar's settings
+  // menu "Abandonar Herói / Novo Jogo". Just navigation: the hero is untouched
   // and still sitting in their slot when the player comes back. Deleting a
   // character for real is a separate, explicit action already offered from
   // the select screen itself (onDelete below), not something this button

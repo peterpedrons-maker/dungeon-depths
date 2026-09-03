@@ -13,7 +13,6 @@ import { MAX_EQUIPPED_ABILITIES } from '../lib/skills';
 import { MAX_POTIONS, potionBasePrice } from '../lib/consumables';
 import { playBuySellSfx } from '../lib/audio';
 import { TopBar } from './TopBar';
-import { Sidebar } from './Sidebar';
 import { KingdomHub } from './KingdomHub';
 import { CharacterOverview } from './CharacterOverview';
 import { SkillTree } from './SkillTree';
@@ -117,7 +116,6 @@ export function GameShell({
   // (any other path back into a dungeon already unmounts/remounts it via
   // the normal section-switch, so this is the one case that needs a key).
   const [dungeonRunKey, setDungeonRunKey] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [pendingDungeon, setPendingDungeon] = useState<DungeonDef | null>(null);
   const [runInProgress, setRunInProgress] = useState(false);
   const [navConfirmTarget, setNavConfirmTarget] = useState<Section | 'abandon' | null>(null);
@@ -236,10 +234,11 @@ export function GameShell({
     }
   }
 
-  // Sidebar navigation and "Abandonar" get routed through these while a run
-  // is in progress, so leaving any way other than the DungeonPanel's own
-  // retreat flow (which heals + records the run via handleRunEnd above)
-  // requires an explicit confirmation — and forfeits that safety net.
+  // Every screen's Panel back-button, the Reino hub's buildings/shortcuts,
+  // and the TopBar's "Abandonar" all route through these while a run is in
+  // progress, so leaving any way other than the DungeonPanel's own retreat
+  // flow (which heals + records the run via handleRunEnd above) requires an
+  // explicit confirmation — and forfeits that safety net.
   function attemptNavigate(next: Section) {
     if (runInProgress && section === 'dungeon') { setNavConfirmTarget(next); return; }
     setSection(next);
@@ -470,21 +469,13 @@ export function GameShell({
           'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(120,90,50,0.10) 0%, transparent 60%), radial-gradient(ellipse 90% 60% at 50% 100%, rgba(0,0,0,0.4) 0%, transparent 70%)',
       }}
     >
-      <TopBar character={character} accentColor={findCosmetic(profile.equippedCosmetic)?.color} onMenuClick={() => setMenuOpen((o) => !o)} />
-      <div className="flex flex-1">
-        <Sidebar
-          character={character}
-          section={section}
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          onNavigate={attemptNavigate}
-          onAbandon={attemptAbandon}
-          onSignOut={onSignOut}
-        />
-        <main className="relative flex-1 p-3 sm:p-5 max-w-3xl min-w-0 overflow-hidden">
+      <TopBar character={character} accentColor={findCosmetic(profile.equippedCosmetic)?.color} onAbandon={attemptAbandon} onSignOut={onSignOut} />
+      <div className="flex flex-1 justify-center">
+        <main className={`relative flex-1 max-w-3xl min-w-0 overflow-hidden ${section === 'kingdom' ? '' : 'p-3 sm:p-5'}`}>
           <EmblemWatermark />
           {section === 'kingdom' && (
             <KingdomHub
+              character={character}
               onNavigate={attemptNavigate}
               onOpenFerreiro={() => setFerreiroOpen(true)}
               onOpenMercador={handleOpenMercador}
@@ -499,6 +490,7 @@ export function GameShell({
               onSell={handleSellItem}
               onAllocateAttrs={handleAllocateAttrs}
               onSellRunes={handleSellRunes}
+              onBack={() => attemptNavigate('kingdom')}
             />
           )}
           {section === 'skills' && (
@@ -510,17 +502,28 @@ export function GameShell({
               onReorderAbility={handleReorderAbility}
               onResetSkills={handleResetSkills}
               resetCost={skillResetCost}
+              onBack={() => attemptNavigate('kingdom')}
             />
           )}
-          {section === 'highscore' && <RankingScreen ranking={ranking} debugError={rankingError} />}
-          {section === 'dungeon-select' && <DungeonMap character={character} onEnterDungeon={selectDungeon} />}
-          {section === 'hunts' && <HuntHall character={character} onEnterHunt={selectDungeon} />}
-          {section === 'prestige-shop' && (
-            <PrestigeShop profile={profile} onBuy={onBuyCosmetic} onEquip={onEquipCosmetic} />
+          {section === 'highscore' && (
+            <RankingScreen ranking={ranking} debugError={rankingError} onBack={() => attemptNavigate('kingdom')} />
           )}
-          {section === 'bestiary' && <Bestiario character={character} />}
+          {section === 'dungeon-select' && (
+            <DungeonMap character={character} onEnterDungeon={selectDungeon} onBack={() => attemptNavigate('kingdom')} />
+          )}
+          {section === 'hunts' && (
+            <HuntHall character={character} onEnterHunt={selectDungeon} onBack={() => attemptNavigate('kingdom')} />
+          )}
+          {section === 'prestige-shop' && (
+            <PrestigeShop profile={profile} onBuy={onBuyCosmetic} onEquip={onEquipCosmetic} onBack={() => attemptNavigate('kingdom')} />
+          )}
+          {section === 'bestiary' && <Bestiario character={character} onBack={() => attemptNavigate('kingdom')} />}
           {section === 'titles' && (
-            <Titulos character={character} onEquip={(id) => onCharacterChange({ ...character, equippedTitle: id })} />
+            <Titulos
+              character={character}
+              onEquip={(id) => onCharacterChange({ ...character, equippedTitle: id })}
+              onBack={() => attemptNavigate('kingdom')}
+            />
           )}
           {section === 'dungeon' && (
             <DungeonPanel

@@ -19,6 +19,7 @@ interface Props {
   onReorderAbility: (index: number, dir: -1 | 1) => void;
   onResetSkills: () => void;
   resetCost: number;
+  onBack: () => void;
 }
 
 const TYPE_LABEL: Record<SkillNodeType, string> = { attribute: 'Atributo', passive: 'Passiva', active: 'Ativa' };
@@ -59,7 +60,7 @@ function posOf(index: number): { x: number; y: number } {
   return { x: COL_X[index % 3], y: ROW_Y[Math.floor(index / 3)] };
 }
 
-export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost }: Props) {
+export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost, onBack }: Props) {
   const paths = SKILL_TREES[ch.classId];
   const [activePath, setActivePath] = useState(0);
   const [selected, setSelected] = useState<{ node: SkillNode; state: NodeState } | null>(null);
@@ -73,7 +74,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
   while (equippedNodes.length < MAX_EQUIPPED_ABILITIES) equippedNodes.push(null);
 
   return (
-    <Panel title="Árvore de Habilidades">
+    <Panel title="Árvore de Habilidades" onBack={onBack}>
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <p className="text-parchment/60 text-sm">Toque num nó pra ver detalhes, desbloquear ou equipar.</p>
         <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">

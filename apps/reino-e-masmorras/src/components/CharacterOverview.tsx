@@ -46,13 +46,14 @@ interface Props {
   onSell: (item: EquipmentItem) => void;
   onAllocateAttrs: (deltas: Partial<Record<AttributeKey, number>>) => void;
   onSellRunes: (rarity: Rarity, tier: number, count: number) => void;
+  onBack: () => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
 const ZERO_ALLOC: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs, onSellRunes }: Props) {
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs, onSellRunes, onBack }: Props) {
   const cls = CLASSES[ch.classId];
   const attributeParts = attributeBreakdown(ch);
   const attrs = attributeParts.total;
@@ -131,7 +132,7 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   };
 
   return (
-    <Panel title="Personagem">
+    <Panel title="Personagem" onBack={onBack}>
       {/* Sub-tabs replace the old static "Visão Geral" title — the avatar,
           name, level and XP bar already live in the TopBar above, so this
           screen no longer repeats them. */}

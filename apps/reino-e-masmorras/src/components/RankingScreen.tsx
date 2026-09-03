@@ -16,14 +16,14 @@ const EQUIPMENT_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand
 // if any — shown inline instead of only logged to console, since a phone
 // has no devtools to read that console from. Temporary diagnostic surface,
 // not a permanent UI feature.
-export function RankingScreen({ ranking, debugError }: { ranking: RankEntry[]; debugError?: string | null }) {
+export function RankingScreen({ ranking, debugError, onBack }: { ranking: RankEntry[]; debugError?: string | null; onBack: () => void }) {
   const [selected, setSelected] = useState<RankEntry | null>(null);
   // Server already orders by level desc / cp desc, but sort again client-side
   // so the screen is correct even if `ranking` ever arrives unsorted (e.g. a
   // future local/offline source).
   const sorted = [...ranking].sort((a, b) => b.level - a.level || b.cp - a.cp);
   return (
-    <Panel title="Ranking do Reino">
+    <Panel title="Ranking do Reino" onBack={onBack}>
       {debugError && (
         <p className="text-crimson text-xs bg-crimson/10 border border-crimson/40 rounded px-3 py-2 mb-3">
           O ranking não carregou direito: {debugError}
