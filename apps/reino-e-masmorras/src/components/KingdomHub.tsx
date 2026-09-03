@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Character, Section } from '../types/game';
 import townImg from '../assets/reino-hub.webp';
-import slotFrame from '../assets/slot-habilidade.webp';
 import iconPersonagem from '../assets/shortcuts/personagem.webp';
 import iconHabilidades from '../assets/shortcuts/habilidades.webp';
 import iconBestiario from '../assets/shortcuts/bestiario.webp';
@@ -164,9 +163,14 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
           image's own flow) means this stays put regardless of image size.
           items-start (not items-end): "Loja de Prestígio" is the only label
           that wraps to 2 lines, which makes its button taller overall — with
-          items-end that extra height pushed its icon circle up relative to
-          the other 6 buttons' single-line siblings. items-start pins every
-          icon circle to the same top edge regardless of label height. */}
+          items-end that extra height pushed its icon up relative to the
+          other 6 buttons' single-line siblings. items-start pins every icon
+          to the same top edge regardless of label height.
+          No circular slot-frame here anymore — bare icons read as more
+          prominent than the small frame let them, with an embossed look
+          (dark drop-shadow + a thin light highlight, both hugging the
+          icon's own silhouette) standing in for the raised-metal edge the
+          frame used to provide. */}
       <div
         className="fixed bottom-0 inset-x-0 z-20 flex flex-row justify-center items-start gap-1 pt-3"
         style={{
@@ -184,12 +188,19 @@ export function KingdomHub({ character, onNavigate, onOpenFerreiro, onOpenMercad
               className="flex flex-col items-center w-12 group"
             >
               <span
-                className="relative block w-10 h-10 shrink-0 rounded-full"
+                className="relative block w-10 h-10 shrink-0"
                 style={{ animation: attention ? `${attention === 'sky' ? 'navAttentionGlowSky' : 'navAttentionGlow'} 1.8s ease-in-out infinite` : undefined }}
               >
-                <span className="absolute inset-[6px] rounded-full bg-[#19120c] shadow-[inset_0_0_6px_rgba(0,0,0,0.8)]" />
-                <img src={s.icon} alt="" className="absolute inset-[8px] w-[calc(100%-16px)] h-[calc(100%-16px)] object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" draggable={false} />
-                <img src={slotFrame} alt="" className="absolute inset-0 w-full h-full transition group-hover:brightness-125" draggable={false} />
+                <img
+                  src={s.icon}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-contain transition group-hover:brightness-125 group-active:scale-95"
+                  style={{
+                    filter:
+                      'drop-shadow(0 2px 1px rgba(0,0,0,0.9)) drop-shadow(0 3px 4px rgba(0,0,0,0.55)) drop-shadow(-1px -1px 0px rgba(255,235,180,0.35))',
+                  }}
+                  draggable={false}
+                />
               </span>
               <span className="mt-0.5 text-[8px] leading-tight font-bold text-center text-gold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
                 {s.label}
