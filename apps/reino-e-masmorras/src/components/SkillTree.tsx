@@ -301,24 +301,18 @@ function PathGraph({ path, ch, onSelect }: {
               className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]}`}
             >
               {/* No container drawn behind the art at all — just the icon,
-                  centered, at its native size. Dimming/pulsing/desaturating
-                  is applied as a CSS filter directly on this same icon
-                  layer (never a separately-sized overlay box) — a filter
-                  only alters pixels the icon actually painted and leaves
-                  its transparent margin untouched, so a locked node never
+                  centered, at its native size. Dimming is applied as a CSS
+                  filter directly on this same icon layer (never a
+                  separately-sized overlay box) — a filter only alters
+                  pixels the icon actually painted and leaves its
+                  transparent margin untouched, so a locked node never
                   shows a dark patch bigger than its own art. Whole-element
                   opacity would also composite this button into one
                   translucent group and let the connector line drawn behind
                   it bleed through, which a filter avoids too. */}
               <div
                 className="absolute inset-0 rounded-full overflow-hidden"
-                style={
-                  state === 'available'
-                    ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' }
-                    : state === 'locked'
-                      ? { filter: 'grayscale(1) brightness(0.45)' }
-                      : undefined
-                }
+                style={state === 'locked' ? { filter: 'grayscale(1) brightness(0.45)' } : undefined}
               >
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
               </div>

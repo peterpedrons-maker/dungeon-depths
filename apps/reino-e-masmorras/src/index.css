@@ -114,17 +114,6 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* "Available to unlock" pulse on a skill-tree node (SkillTree.tsx) — pulses
-   box-shadow intensity on a dedicated layer instead of the node button's own
-   opacity (Tailwind's animate-pulse toggles element opacity, which turns
-   the whole button into one translucent compositing group and lets the
-   connector line drawn behind it bleed straight through the icon on top).
-   Uses currentColor so one keyframe works for every trilha's own color. */
-@keyframes skillNodeAvailablePulse {
-  0%, 100% { box-shadow: 0 0 6px 1px currentColor; }
-  50%      { box-shadow: 0 0 14px 5px currentColor; }
-}
-
 /* "Something's waiting for you" signal on a Reino hub shortcut icon with
    something pending (unspent attribute/skill points) — a soft blurred
    radial-gradient glow sitting behind the icon (see KingdomHub.tsx), same
