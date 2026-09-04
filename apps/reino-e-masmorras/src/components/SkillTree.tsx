@@ -106,17 +106,6 @@ function computeLayout(path: SkillPath): { rowY: number[]; totalHeight: number }
   return { rowY, totalHeight };
 }
 
-// A soft dark vignette behind every node icon instead of a flat solid color
-// — the different art sheets fill their circular cell by very different
-// amounts (a well-fit ability icon vs. a shared generic-stat icon painted
-// under an older, less edge-to-edge convention), so a flat backing color
-// showed as a hard-edged "ring" of inconsistent size depending on which
-// sheet a given node happened to use. A gradient that's fully transparent
-// at the center and only darkens near the rim blends any leftover gap into
-// a soft "socket" look instead, regardless of how much of the cell the
-// underlying art actually fills.
-const SOCKET_VIGNETTE = 'radial-gradient(circle, rgba(42,32,24,0) 38%, rgba(42,32,24,0.55) 70%, rgba(42,32,24,0.96) 100%)';
-
 export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost, onBack }: Props) {
   const paths = SKILL_TREES[ch.classId];
   const [activePath, setActivePath] = useState(0);
@@ -162,7 +151,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
               className="relative w-20 h-20 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
-              <div className="absolute inset-0 rounded-full overflow-hidden" style={{ background: SOCKET_VIGNETTE }}>
+              <div className="absolute inset-0 rounded-full overflow-hidden">
                 <NodeIconView node={node} classId={ch.classId} color="#c89a2e" />
               </div>
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
@@ -313,24 +302,15 @@ function PathGraph({ path, ch, onSelect }: {
                 state === 'locked' ? 'grayscale' : ''
               }`}
             >
-              {/* This wrapper IS the icon's own circle (no separate larger
-                  ring drawn around it) and carries the opaque backing — the
-                  connector lines behind this node must never show through
-                  it. A plain CSS opacity on the whole button (the old
-                  approach for the locked/pulsing look) composites the
-                  button as one translucent group and lets the line
-                  underneath bleed through the icon; dimming/pulsing is done
-                  on this same element's own box-shadow instead, so nothing
-                  ever extends past the icon's actual edge. The backing is a
-                  soft vignette (see SOCKET_VIGNETTE) rather than a flat
-                  color, so it blends any leftover un-painted margin around
-                  an icon into a "socket" look instead of a hard ring. */}
+              {/* No container drawn behind the art at all — just the icon,
+                  centered, at its native size. Dimming/pulsing is done via
+                  a top-layer scrim / this wrapper's own box-shadow rather
+                  than whole-element opacity, so nothing composites the
+                  button into one translucent group (which would let the
+                  connector line drawn behind it bleed through the icon). */}
               <div
                 className="absolute inset-0 rounded-full overflow-hidden"
-                style={{
-                  background: SOCKET_VIGNETTE,
-                  ...(state === 'available' ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' } : {}),
-                }}
+                style={state === 'available' ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' } : undefined}
               >
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
                 {state === 'locked' && <div className="absolute inset-0 bg-ink/55 pointer-events-none" />}
