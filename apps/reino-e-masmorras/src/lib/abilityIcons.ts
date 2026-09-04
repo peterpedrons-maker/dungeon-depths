@@ -120,20 +120,16 @@ const PASSIVE_CELL: Partial<Record<keyof SkillEffect, number>> = {
 
 // This shared library was painted under the old "cover the margin with a
 // metal frame" convention (now removed) and its 18 icons fill their cell
-// very unevenly and non-uniformly between axes — anywhere from 37.9%/63.3%
-// (cell 4) up to 76.1%/77.1% (cell 10). A single sheet-wide zoom can only
-// ever match the least-filled icon, so instead each cell gets its own
-// [cropX, cropY] pair sized to its own measured alpha-channel content
-// bounding box (fraction of cell width/height actually painted, +2% safety
-// margin so anti-aliased edges never get clipped) — this is what actually
-// makes every icon fill its `bg-ink` backing the same way, without having
-// to repaint the sheet.
-const PASSIVE_CROP: [number, number][] = [
-  [0.725, 0.735], [0.743, 0.727], [0.743, 0.675], [0.653, 0.671], [0.387, 0.646],
-  [0.676, 0.650], [0.682, 0.693], [0.592, 0.706], [0.730, 0.702], [0.682, 0.667],
-  [0.776, 0.786], [0.659, 0.722], [0.696, 0.604], [0.579, 0.667], [0.714, 0.671],
-  [0.696, 0.735], [0.571, 0.646], [0.500, 0.659],
-];
+// very unevenly — anywhere from 37.9% up to 76.1%/77.1% (cell 10) of the
+// cell's width/height. A per-cell crop that zoomed each icon to fill nearly
+// 100% was tried and looked worse, not better: forcing the least-filled
+// icons up to full size meant a ~2.6x zoom, which visibly distorted them.
+// One shared, modest crop — just tight enough to clear the best-filled icon
+// (cell 10) with a small margin — tightens every icon a bit with zero
+// clipping and zero distortion; NodeIconView's socket vignette (see
+// SkillTree.tsx) handles the leftover gap on the smaller icons gracefully
+// instead of a hard-edged ring.
+const PASSIVE_CROP = 0.8;
 
 export function passiveIconStyle(effect: SkillEffect): CSSProperties {
   let cell = GENERIC_CELL;
@@ -146,6 +142,5 @@ export function passiveIconStyle(effect: SkillEffect): CSSProperties {
   }
   const col = cell % PASSIVE_COLS;
   const row = Math.floor(cell / PASSIVE_COLS);
-  const [cropX, cropY] = PASSIVE_CROP[cell];
-  return sheetBackgroundStyle(passivasSheet, PASSIVE_COLS, PASSIVE_ROWS, col, row, cropX, cropY);
+  return sheetBackgroundStyle(passivasSheet, PASSIVE_COLS, PASSIVE_ROWS, col, row, PASSIVE_CROP, PASSIVE_CROP);
 }

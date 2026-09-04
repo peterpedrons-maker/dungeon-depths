@@ -63,6 +63,10 @@ const NODE_SIZE_CLASS: Record<SkillNodeType, string> = {
   passive: 'w-12 h-12',
   attribute: 'w-9 h-9',
 };
+// Pixel sizes matching NODE_SIZE_CLASS above (Tailwind w-20/w-12/w-9 at the
+// default 16px root), used for the row-height math below — the two must be
+// kept in sync by hand since one is a Tailwind class and the other a number.
+const NODE_PX: Record<SkillNodeType, number> = { active: 80, passive: 48, attribute: 36 };
 
 // 15-node layout: 5 tiers (rows) × 3 columns (Left/Mid/Right), reading the
 // path's node array in tier-major order (index 0-14 → row = i/3, col = i%3).
@@ -71,10 +75,47 @@ const NODE_SIZE_CLASS: Record<SkillNodeType, string> = {
 // the cross-links (a tier-3 node reachable from two different tier-2
 // columns) render correctly without special-casing them here.
 const COL_X = [16, 50, 84]; // percent
-const ROW_Y = [9, 28, 50, 72, 91]; // percent
-function posOf(index: number): { x: number; y: number } {
-  return { x: COL_X[index % 3], y: ROW_Y[Math.floor(index / 3)] };
+
+// Row Y positions used to be fixed percentages of a fixed-height box, which
+// assumed every row was roughly the same visual weight. It wasn't: some
+// rows hold two 80px active nodes side by side while others hold three 36px
+// attribute nodes, so a fixed row pitch let two stacked active rows overlap
+// each other. Instead, each row's height is however tall its biggest node
+// actually is, plus a fixed breathing-room gap — so rows with big nodes get
+// more room automatically and nothing ever collides, at the cost of a
+// taller (sometimes scrollable) tree, which is the trade the art needs.
+const ROW_GAP = 32; // px of clear space between the edges of two stacked nodes
+const SIDE_PAD = 40; // px from the graph's top/bottom edge to the first/last row's center
+
+function computeLayout(path: SkillPath): { rowY: number[]; totalHeight: number } {
+  const rowCount = Math.ceil(path.nodes.length / 3);
+  const rowSize: number[] = [];
+  for (let r = 0; r < rowCount; r++) {
+    let max = 0;
+    for (let c = 0; c < 3; c++) {
+      const node = path.nodes[r * 3 + c];
+      if (node) max = Math.max(max, NODE_PX[node.type]);
+    }
+    rowSize.push(max);
+  }
+  const rowY: number[] = [SIDE_PAD + rowSize[0] / 2];
+  for (let r = 1; r < rowCount; r++) {
+    rowY.push(rowY[r - 1] + rowSize[r - 1] / 2 + ROW_GAP + rowSize[r] / 2);
+  }
+  const totalHeight = rowY[rowCount - 1] + rowSize[rowCount - 1] / 2 + SIDE_PAD;
+  return { rowY, totalHeight };
 }
+
+// A soft dark vignette behind every node icon instead of a flat solid color
+// — the different art sheets fill their circular cell by very different
+// amounts (a well-fit ability icon vs. a shared generic-stat icon painted
+// under an older, less edge-to-edge convention), so a flat backing color
+// showed as a hard-edged "ring" of inconsistent size depending on which
+// sheet a given node happened to use. A gradient that's fully transparent
+// at the center and only darkens near the rim blends any leftover gap into
+// a soft "socket" look instead, regardless of how much of the cell the
+// underlying art actually fills.
+const SOCKET_VIGNETTE = 'radial-gradient(circle, rgba(42,32,24,0) 38%, rgba(42,32,24,0.55) 70%, rgba(42,32,24,0.96) 100%)';
 
 export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost, onBack }: Props) {
   const paths = SKILL_TREES[ch.classId];
@@ -121,7 +162,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
               className="relative w-20 h-20 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
-              <div className="absolute inset-0 rounded-full overflow-hidden">
+              <div className="absolute inset-0 rounded-full overflow-hidden" style={{ background: SOCKET_VIGNETTE }}>
                 <NodeIconView node={node} classId={ch.classId} color="#c89a2e" />
               </div>
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
@@ -199,11 +240,13 @@ function PathGraph({ path, ch, onSelect }: {
   path: SkillPath; ch: Character; onSelect: (s: { node: SkillNode; state: NodeState }) => void;
 }) {
   const idToIndex = new Map(path.nodes.map((n, i) => [n.id, i]));
+  const { rowY, totalHeight } = computeLayout(path);
+  const posOf = (index: number): { x: number; y: number } => ({ x: COL_X[index % 3], y: rowY[Math.floor(index / 3)] });
 
   return (
     <div className="rounded border border-panelborder/60 bg-panel2/40 p-3">
-      <div className="relative mx-auto w-full max-w-[300px]" style={{ height: 400 }}>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+      <div className="relative mx-auto w-full max-w-[300px] overflow-x-hidden" style={{ height: totalHeight }}>
+        <svg viewBox={`0 0 100 ${totalHeight}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
           <defs>
             <filter id="skillLineGlow" x="-80%" y="-80%" width="260%" height="260%">
               <feGaussianBlur stdDeviation="1.6" result="blur" />
@@ -265,7 +308,7 @@ function PathGraph({ path, ch, onSelect }: {
               key={node.id}
               onClick={() => onSelect({ node, state })}
               title={node.name}
-              style={{ left: `${x}%`, top: `${y}%` }}
+              style={{ left: `${x}%`, top: `${y}px` }}
               className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]} ${
                 state === 'locked' ? 'grayscale' : ''
               }`}
@@ -278,10 +321,16 @@ function PathGraph({ path, ch, onSelect }: {
                   button as one translucent group and lets the line
                   underneath bleed through the icon; dimming/pulsing is done
                   on this same element's own box-shadow instead, so nothing
-                  ever extends past the icon's actual edge. */}
+                  ever extends past the icon's actual edge. The backing is a
+                  soft vignette (see SOCKET_VIGNETTE) rather than a flat
+                  color, so it blends any leftover un-painted margin around
+                  an icon into a "socket" look instead of a hard ring. */}
               <div
-                className="absolute inset-0 rounded-full overflow-hidden bg-ink"
-                style={state === 'available' ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' } : undefined}
+                className="absolute inset-0 rounded-full overflow-hidden"
+                style={{
+                  background: SOCKET_VIGNETTE,
+                  ...(state === 'available' ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' } : {}),
+                }}
               >
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
                 {state === 'locked' && <div className="absolute inset-0 bg-ink/55 pointer-events-none" />}
