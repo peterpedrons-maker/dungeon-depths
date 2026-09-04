@@ -7,7 +7,6 @@ import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconActive } from './icons';
 import { ClassMechanicsButton, MechanicRefsRow, MechanicText } from './ClassMechanics';
-import skillFrame from '../assets/slot-habilidade.webp';
 import { skillPresentationRows } from '../lib/skillPresentation';
 import { GlossaryText } from './Glossary';
 
@@ -51,6 +50,19 @@ function NodeIconView({ node, classId, color }: { node: SkillNode; classId: Clas
 }
 
 type NodeState = 'unlocked' | 'available' | 'locked';
+
+// Three-tier sizing by node type — actives are the ones the player actually
+// casts in combat, so they read as the "important" nodes on the tree;
+// passives sit in between; attribute nodes (the plain +X% stat bumps) are
+// the smallest since there are far more of them and each matters less on
+// its own. Now that node art carries its own painted rim (see NodeIconView
+// above), there's no separate frame image fighting the icon for space, so
+// each tier can fill its own button almost edge-to-edge.
+const NODE_SIZE_CLASS: Record<SkillNodeType, string> = {
+  active: 'w-16 h-16',
+  passive: 'w-12 h-12',
+  attribute: 'w-9 h-9',
+};
 
 // 15-node layout: 5 tiers (rows) × 3 columns (Left/Mid/Right), reading the
 // path's node array in tier-major order (index 0-14 → row = i/3, col = i%3).
@@ -109,17 +121,14 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
               className="relative w-16 h-16 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
-              <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
-              <div className="absolute inset-[18%] flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
+              <div className="absolute inset-[4%] flex items-center justify-center">
                 <NodeIconView node={node} classId={ch.classId} color="#c89a2e" />
               </div>
-              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
             </button>
           ) : (
-            <div key={i} className="relative w-16 h-16 opacity-30 shrink-0">
-              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none grayscale" draggable={false} />
-            </div>
+            <div key={i} className="relative w-16 h-16 rounded-full border border-panelborder/50 bg-black/20 opacity-30 shrink-0" />
           ),
         )}
       </div>
@@ -227,17 +236,17 @@ function PathGraph({ path, ch, onSelect }: {
               onClick={() => onSelect({ node, state })}
               title={node.name}
               style={{ left: `${x}%`, top: `${y}%` }}
-              className={`absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]} ${
                 state === 'locked' ? 'opacity-35 grayscale' : ''
               } ${state === 'available' ? 'animate-pulse' : ''}`}
             >
               {state !== 'locked' && (
-                <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
+                <div className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
               )}
-              <div className="absolute inset-[18%] flex items-center justify-center">
+              <div className="absolute inset-[4%] flex items-center justify-center">
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
               </div>
-              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
+              {state === 'locked' && <div className="absolute inset-0 rounded-full border border-panelborder/50" />}
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
             </button>
           );
