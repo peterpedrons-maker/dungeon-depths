@@ -61,7 +61,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Floresta Amaldiçoada — inimigos + chefe (Coração da Floresta) — prompt já usado, removido do kit
 - ✅ Covil dos Dragões — inimigos + chefe (Dragão Jovem, reaproveitado) — prompt já usado, removido do kit
 - ✅ Necrópole Esquecida — inimigos + chefe (Lorde Esqueleto) — prompt já usado, removido do kit
-- 🕓 [Ruínas Élficas — inimigos (falta só o Golem de Cristal)](#inimigos-xiii-ruinas-elficas-golem-de-cristal) — Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas e Espectro Élfico já integrados
+- ✅ Ruínas Élficas — inimigos (todos os 5, incl. Golem de Cristal) — prompt já usado, removido do kit
 - ✅ Ruínas Élficas — chefe (Guardiã Ancestral) — prompt já usado, removido do kit
 - ✅ Arena de Sangue — inimigos + chefe (Grão-Campeão da Arena) — prompt já usado, removido do kit
 
@@ -133,12 +133,8 @@ Depois da Região 5 (Ignares), o jogo deixa de usar o formato de regiões vertic
 - 🕓 [Região 5 — Ignares (nível 41-50) — última região; depois dela o jogo passa para o Mapa Mundo](#regiao-5-ignares-nivel-41-50)
 
 ### Fundos de Batalha (imagem atrás do combate, por masmorra)
-- ✅ Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada, Minas Abandonadas — 7 masmorras — prompts já usados, removidos do kit
-- 🕓 [Floresta Amaldiçoada](#floresta-amaldicoada)
-- 🕓 [Covil dos Dragões](#covil-dos-dragoes)
+- ✅ Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Ruínas Élficas, Arena de Sangue — 11 masmorras — prompts já usados, removidos do kit
 - 🕓 [Necrópole Esquecida](#necropole-esquecida)
-- 🕓 [Ruínas Élficas](#ruinas-elficas)
-- 🕓 [Arena de Sangue](#arena-de-sangue)
 - 🕓 [Fortaleza Orc](#fortaleza-orc)
 - 🕓 [Labirinto de Gelo](#labirinto-de-gelo)
 - 🕓 [Templo Afundado](#templo-afundado)
@@ -743,25 +739,9 @@ Pixel art nítida (não estilo pintado/realista) — uma pose estática por pers
 <a id="regiao-2-cada-masmorra-tem-seu-proprio-roster-igual-a-regiao-1"></a>
 ### Região 2 — cada masmorra tem seu próprio roster, igual à Região 1
 
-As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Todas já têm arte própria integrada, exceto o Golem de Cristal de Ruínas Élficas (prompt abaixo).
+As 7 masmorras da Região 2 (Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Necrópole Esquecida, Ruínas Élficas, Arena de Sangue) deixaram de sortear entre os shapes genéricos Goblin/Lobo/Esqueleto/Orc/Troll/Aberração/Dragão — cada uma agora tem seu próprio roster de 5 inimigos + 1 chefe, combinando com o tema do nome da masmorra, no mesmo padrão da Região 1. Todas já têm arte própria integrada, incluindo o Golem de Cristal de Ruínas Élficas.
 
 **Covil dos Dragões é a única exceção do lado do chefe**: o chefe dela é "Dragão Jovem" — o mesmo dragão já coberto no prompt "Inimigos II" mais acima, cujo sprite já está integrado ao jogo (`dragao.webp`). Não precisa de prompt novo — dragões mais fortes (adultos, anciões, lendários) ficam guardados para masmorras de regiões futuras.
-
-<a id="inimigos-xiii-ruinas-elficas-golem-de-cristal"></a>
-### Inimigos XIII — Ruínas Élficas: Golem de Cristal
-**Tamanho:** 768×768 px · **Uso:** último inimigo regular pendente da masmorra Ruínas Élficas — Guardião Élfico Corrompido, Vinha Sussurrante, Fera das Ruínas e Espectro Élfico já foram integrados
-
-```
-IMPORTANT — the single most critical rule in this prompt, more important than any other detail: this creature must be drawn in strict side profile facing LEFT and only LEFT. Head, face, eyes, mouth/snout, and front legs point toward the LEFT edge of the canvas; back, tail, and hind legs point toward the RIGHT edge. It must not face right, face the viewer, or face away — this is a hard requirement, since a wrongly-facing sprite is unusable in the game.
-
-2D pixel art game sprite. Crisp hard-edged pixels, no anti-aliasing, no blur. Thin dark outline. Flat shading, 2-3 tones per surface. Sharp, readable style like Octopath Traveler or Eastward — real pixel art made of visible pixel blocks, not a painting, not anime, not 3D.
-
-One creature filling most of the frame, calm static pose.
-
-Golem de Cristal, facing left: a humanoid golem built from glowing pale-blue elven crystal shards, faint inner light, heavy crystalline fists.
-
-Flat magenta background (#FF00FF), no scenery, no shadow, no gradient. Magenta only on the creature. Canvas 768×768 px, soft light from upper-left. No text, no watermark.
-```
 
 <a id="inimigos-xvii-templo-afundado-acolito-afogado-sacerdote-congelado-espectro-do-lago-guardiao-submerso-e-enguia-de-gelo"></a>
 ### Inimigos XVII — Templo Afundado: Acólito Afogado, Sacerdote Congelado, Espectro do Lago, Guardião Submerso e Enguia de Gelo
@@ -1434,31 +1414,7 @@ Near the top, past the last marker, add a distant signpost pointing further up t
 <a id="fundos-de-batalha"></a>
 ## Fundos de Batalha
 
-Uma imagem por masmorra, substituindo o fundo genérico desenhado por código na tela de combate. Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada e Minas Abandonadas já têm arte própria integrada — os prompts abaixo cobrem as 26 masmorras restantes (5 da Região 2 + as 21 das Regiões 3, 4 e 5 — Thurgard/Xilvana/Ignares). Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
-
-<a id="floresta-amaldicoada"></a>
-### Floresta Amaldiçoada
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: a dark cursed forest clearing at night, gnarled twisted tree trunks framing the left and right edges, faint pale moonlight from above, a few small glowing eyes barely visible in the shadows between distant trees. A dark forest-floor strip of dirt and dead leaves runs along the bottom ~15% of the image, spanning the full width, slightly lighter than the surrounding darkness so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-<a id="covil-dos-dragoes"></a>
-### Covil dos Dragões
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: a volcanic cave interior, dark scorched rock walls with glowing orange lava veins running through the stone along the left and right edges, warm orange ambient glow, scattered bones on the ground near the edges only. A scorched rocky floor strip runs along the bottom ~15% of the image, spanning the full width, with a faint warm glow reflecting off it.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (no lava pools in the center) — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
+Uma imagem por masmorra, substituindo o fundo genérico desenhado por código na tela de combate. Ruínas Superficiais, Caverna dos Goblins, Cripta do Tesouro, Pântano Podre, Covil de Aranhas, Torre Amaldiçoada, Minas Abandonadas, Floresta Amaldiçoada, Covil dos Dragões, Ruínas Élficas e Arena de Sangue já têm arte própria integrada — os prompts abaixo cobrem as 22 masmorras restantes (1 da Região 2 + as 21 das Regiões 3, 4 e 5 — Thurgard/Xilvana/Ignares). Cada prompt já está completo e pronto pra colar. Todas usam **1536×672 px**, a mesma proporção da tela de combate real (640×280) — o personagem fica parado perto de 27% da largura e o inimigo perto de 73%, os dois sobre uma faixa de chão perto da base da imagem, então a composição deixa esse trecho central-baixo livre de objetos grandes.
 
 <a id="necropole-esquecida"></a>
 ### Necrópole Esquecida
@@ -1468,30 +1424,6 @@ Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO ant
 A combat arena background for a turn-based RPG: an old graveyard within crumbling crypt walls, weathered tombstones and a rusted iron fence along the left and right edges, cold pale blue moonlight, thin ground fog drifting low. A stone-and-dirt floor strip runs along the bottom ~15% of the image, spanning the full width, slightly lighter than the surrounding dark so a character standing on it reads clearly.
 
 Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects (no tombstones in the center) — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-<a id="ruinas-elficas"></a>
-### Ruínas Élficas
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: the interior of a reclaimed elven ruin, tall carved stone columns wrapped in vines and small pale flowers along the left and right edges, soft blue-green magical glow drifting like fireflies in the upper-middle area. A mossy stone floor strip runs along the bottom ~15% of the image, spanning the full width, slightly lighter than the back wall so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
-
-This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
-```
-
-<a id="arena-de-sangue"></a>
-### Arena de Sangue
-```
-Detailed 2D pixel art game background scene, crisp hard-edged pixels with NO anti-aliasing and NO blur, clean dark outlines, limited but rich color palette with simple flat-shaded highlights and shadows — the same sharp pixel-art style as this game's character sprites and other scenes (Octopath Traveler / Eastward / Stardew Valley style), NOT a painted illustration, NOT a realistic render.
-
-A combat arena background for a turn-based RPG: a stone gladiator arena pit, tiered stone seating and rusted hanging chains framing the left and right edges, dramatic warm torchlight glow, a couple of torn banners hanging from the upper corners. A blood-stained sand-and-stone floor strip runs along the bottom ~15% of the image, spanning the full width, slightly darker reddish tone so a character standing on it reads clearly.
-
-Composition: keep the center-bottom area (roughly from 15% to 85% of the width, near the floor line) clear of large objects — this is where two combat sprites will stand, one near the left third and one near the right third.
 
 This is a complete, self-contained background illustration — no magenta background, not meant to be cut out or keyed. No characters, no UI elements, no frame, no text. Wide canvas, 1536×672 px.
 ```

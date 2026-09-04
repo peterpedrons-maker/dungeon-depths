@@ -90,6 +90,7 @@ import corruptedGuardianUrl from '../assets/sprites/corruptedGuardian.webp';
 import whisperingVineUrl from '../assets/sprites/whisperingVine.webp';
 import ruinBeastUrl from '../assets/sprites/ruinBeast.webp';
 import elvenWraithUrl from '../assets/sprites/elvenWraith.webp';
+import crystalGolemUrl from '../assets/sprites/crystalGolem.webp';
 import ancestralGuardianUrl from '../assets/sprites/ancestralGuardian.webp';
 import cursedGladiatorUrl from '../assets/sprites/cursedGladiator.webp';
 import arenaBeastUrl from '../assets/sprites/arenaBeast.webp';
@@ -273,8 +274,8 @@ const ENEMY_SOURCES: Record<EnemyShape, string> = {
   dragonHatchling: dragonHatchlingUrl, wildWyvern: wildWyvernUrl, scaledGuardian: scaledGuardianUrl, draconicCultist: draconicCultistUrl, fireSerpent: fireSerpentUrl,
   // Região 2 — Necrópole Esquecida
   darkReaper: darkReaperUrl, deathCrow: deathCrowUrl, boneExecutioner: boneExecutionerUrl, wailingGhost: wailingGhostUrl, graveWorm: graveWormUrl, skeletonLord: skeletonLordUrl,
-  // Região 2 — Ruínas Élficas (crystalGolem ainda placeholder — sem arte própria)
-  corruptedGuardian: corruptedGuardianUrl, whisperingVine: whisperingVineUrl, ruinBeast: ruinBeastUrl, elvenWraith: elvenWraithUrl, crystalGolem: trollUrl, ancestralGuardian: ancestralGuardianUrl,
+  // Região 2 — Ruínas Élficas
+  corruptedGuardian: corruptedGuardianUrl, whisperingVine: whisperingVineUrl, ruinBeast: ruinBeastUrl, elvenWraith: elvenWraithUrl, crystalGolem: crystalGolemUrl, ancestralGuardian: ancestralGuardianUrl,
   // Região 2 — Arena de Sangue
   cursedGladiator: cursedGladiatorUrl, arenaBeast: arenaBeastUrl, maskedExecutioner: maskedExecutionerUrl, beastTamer: beastTamerUrl, fallenChampion: fallenChampionUrl, grandChampion: grandChampionUrl,
 
@@ -345,8 +346,6 @@ export function heroSprites(classId: ClassId): { idle: Sprite; attack: Sprite } 
 // picture that would otherwise look like some unrelated creature's, or
 // worse, an exact duplicate of a different entry's sprite.
 export const PLACEHOLDER_ENEMY_SHAPES = new Set<EnemyShape>([
-  // Região 2 — Ruínas Élficas (crystalGolem ainda sem arte própria)
-  'crystalGolem',
   // Alvos de Caçada (lib/hunts.ts)
   'boneTyrant', 'swampLeviathan', 'infernalWyrm',
   // Região 3 — Templo Afundado
