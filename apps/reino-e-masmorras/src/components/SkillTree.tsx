@@ -271,15 +271,6 @@ function PathGraph({ path, ch, onSelect }: {
                 state === 'locked' ? 'grayscale' : ''
               }`}
             >
-              {/* Opaque backing disc, painted before the icon — the connector
-                  lines behind this node must never be able to show through
-                  it. A plain CSS opacity on the whole button (the old
-                  approach for the locked/pulsing look) composites the button
-                  as one translucent group, letting the line underneath
-                  bleed through the icon itself; dimming/pulsing is done via
-                  layers on top of this disc instead, so the disc itself
-                  always stays fully opaque. */}
-              <div className="absolute inset-[2%] rounded-full bg-ink" />
               {state !== 'locked' && (
                 <div className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
               )}
@@ -289,10 +280,19 @@ function PathGraph({ path, ch, onSelect }: {
                   style={{ color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' }}
                 />
               )}
-              <div className="absolute inset-[4%] flex items-center justify-center">
+              {/* The icon wrapper itself carries the opaque backing (exactly
+                  matching the icon's own circle, not a separate larger
+                  disc) — the connector lines behind this node must never
+                  show through it. A plain CSS opacity on the whole button
+                  (the old approach for the locked/pulsing look) composites
+                  the button as one translucent group and lets the line
+                  underneath bleed through the icon; dimming/pulsing is done
+                  via the layers above instead, so this wrapper always stays
+                  fully opaque. */}
+              <div className="absolute inset-[4%] rounded-full overflow-hidden bg-ink flex items-center justify-center">
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
+                {state === 'locked' && <div className="absolute inset-0 bg-ink/55 pointer-events-none" />}
               </div>
-              {state === 'locked' && <div className="absolute inset-0 rounded-full bg-ink/55 pointer-events-none" />}
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
             </button>
           );
