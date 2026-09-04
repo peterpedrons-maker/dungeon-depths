@@ -121,8 +121,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
               className="relative w-20 h-20 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
-              <div className="absolute inset-0 rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
-              <div className="absolute inset-[4%] flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full overflow-hidden">
                 <NodeIconView node={node} classId={ch.classId} color="#c89a2e" />
               </div>
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
@@ -271,25 +270,19 @@ function PathGraph({ path, ch, onSelect }: {
                 state === 'locked' ? 'grayscale' : ''
               }`}
             >
-              {state !== 'locked' && (
-                <div className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
-              )}
-              {state === 'available' && (
-                <div
-                  className="absolute inset-0 rounded-full pointer-events-none"
-                  style={{ color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' }}
-                />
-              )}
-              {/* The icon wrapper itself carries the opaque backing (exactly
-                  matching the icon's own circle, not a separate larger
-                  disc) — the connector lines behind this node must never
-                  show through it. A plain CSS opacity on the whole button
-                  (the old approach for the locked/pulsing look) composites
-                  the button as one translucent group and lets the line
+              {/* This wrapper IS the icon's own circle (no separate larger
+                  ring drawn around it) and carries the opaque backing — the
+                  connector lines behind this node must never show through
+                  it. A plain CSS opacity on the whole button (the old
+                  approach for the locked/pulsing look) composites the
+                  button as one translucent group and lets the line
                   underneath bleed through the icon; dimming/pulsing is done
-                  via the layers above instead, so this wrapper always stays
-                  fully opaque. */}
-              <div className="absolute inset-[4%] rounded-full overflow-hidden bg-ink flex items-center justify-center">
+                  on this same element's own box-shadow instead, so nothing
+                  ever extends past the icon's actual edge. */}
+              <div
+                className="absolute inset-0 rounded-full overflow-hidden bg-ink"
+                style={state === 'available' ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' } : undefined}
+              >
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
                 {state === 'locked' && <div className="absolute inset-0 bg-ink/55 pointer-events-none" />}
               </div>
