@@ -16,6 +16,7 @@ import druidaSheet from '../assets/abilities/druida.webp';
 import bardoSheet from '../assets/abilities/bardo.webp';
 import necromanteSheet from '../assets/abilities/necromante.webp';
 import passivasSheet from '../assets/abilities/passivas.webp';
+import guerreiroPassivasSheet from '../assets/abilities/guerreiro-passivas.webp';
 
 // Each class's 15 active abilities (5 per path × 3 paths) live on one sheet,
 // one row per path in SKILL_TREES[classId] order. cacador has no sheet yet
@@ -55,6 +56,33 @@ export function activeAbilityIconStyle(classId: ClassId, abilityId: string): CSS
   const row = SKILL_TREES[classId].findIndex((p) => p.id === pathId);
   if (col === undefined || row < 0) return null;
   return sheetBackgroundStyle(url, ACTIVE_COLS, ACTIVE_ROWS, col, row);
+}
+
+// A class's 9 EXCLUSIVE passive nodes (3 per path, always at node-index
+// 6/8/14 within each path — verified fixed across every class's topology)
+// get their own painted icon here, same one-sheet-per-class pattern as
+// actives, kept fully separate from the shared generic-stat library below.
+// Classes without a sheet yet fall through to that shared library instead
+// (see NodeIconView in SkillTree.tsx), same fallback pattern as actives.
+const EXCLUSIVE_PASSIVE_SHEET: Partial<Record<ClassId, string>> = {
+  guerreiro: guerreiroPassivasSheet,
+};
+
+const EXCLUSIVE_PASSIVE_COLS = 3;
+const EXCLUSIVE_PASSIVE_ROWS = 3;
+const EXCLUSIVE_PASSIVE_NODE_INDEX_COL: Record<number, number> = { 6: 0, 8: 1, 14: 2 };
+
+// Returns the background-image style for a class's own exclusive passive
+// icon, or null if this class has no bespoke passive sheet yet (caller
+// falls back to the shared generic-stat library keyed by effect kind).
+export function exclusivePassiveIconStyle(classId: ClassId, nodeId: string): CSSProperties | null {
+  const url = EXCLUSIVE_PASSIVE_SHEET[classId];
+  if (!url) return null;
+  const [, pathId, indexStr] = nodeId.split(':');
+  const col = EXCLUSIVE_PASSIVE_NODE_INDEX_COL[Number(indexStr)];
+  const row = SKILL_TREES[classId].findIndex((p) => p.id === pathId);
+  if (col === undefined || row < 0) return null;
+  return sheetBackgroundStyle(url, EXCLUSIVE_PASSIVE_COLS, EXCLUSIVE_PASSIVE_ROWS, col, row);
 }
 
 const PASSIVE_COLS = 6;

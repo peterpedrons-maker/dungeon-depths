@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ClassId, Character, ScalingRole, SkillNode, SkillNodeType, SkillPath } from '../types/game';
 import { SKILL_TREES, canUnlockNode, unlockedCountInPath, MAX_EQUIPPED_ABILITIES } from '../lib/skills';
-import { activeAbilityIconStyle, passiveIconStyle } from '../lib/abilityIcons';
+import { activeAbilityIconStyle, exclusivePassiveIconStyle, passiveIconStyle } from '../lib/abilityIcons';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
@@ -42,6 +42,10 @@ function NodeIconView({ node, classId, color }: { node: SkillNode; classId: Clas
     const bg = activeAbilityIconStyle(classId, node.id);
     if (bg) return <div className="w-full h-full rounded-full overflow-hidden" style={bg} />;
     return <IconActive className="w-full h-full" style={{ color }} />;
+  }
+  if (node.type === 'passive') {
+    const bg = exclusivePassiveIconStyle(classId, node.id);
+    if (bg) return <div className="w-full h-full rounded-full overflow-hidden" style={bg} />;
   }
   return <div className="w-full h-full rounded-full overflow-hidden" style={passiveIconStyle(node.effect)} />;
 }
