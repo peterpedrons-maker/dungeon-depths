@@ -298,22 +298,29 @@ function PathGraph({ path, ch, onSelect }: {
               onClick={() => onSelect({ node, state })}
               title={node.name}
               style={{ left: `${x}%`, top: `${y}px` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]} ${
-                state === 'locked' ? 'grayscale' : ''
-              }`}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]}`}
             >
               {/* No container drawn behind the art at all — just the icon,
-                  centered, at its native size. Dimming/pulsing is done via
-                  a top-layer scrim / this wrapper's own box-shadow rather
-                  than whole-element opacity, so nothing composites the
-                  button into one translucent group (which would let the
-                  connector line drawn behind it bleed through the icon). */}
+                  centered, at its native size. Dimming/pulsing/desaturating
+                  is applied as a CSS filter directly on this same icon
+                  layer (never a separately-sized overlay box) — a filter
+                  only alters pixels the icon actually painted and leaves
+                  its transparent margin untouched, so a locked node never
+                  shows a dark patch bigger than its own art. Whole-element
+                  opacity would also composite this button into one
+                  translucent group and let the connector line drawn behind
+                  it bleed through, which a filter avoids too. */}
               <div
                 className="absolute inset-0 rounded-full overflow-hidden"
-                style={state === 'available' ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' } : undefined}
+                style={
+                  state === 'available'
+                    ? { color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' }
+                    : state === 'locked'
+                      ? { filter: 'grayscale(1) brightness(0.45)' }
+                      : undefined
+                }
               >
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
-                {state === 'locked' && <div className="absolute inset-0 bg-ink/55 pointer-events-none" />}
               </div>
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
             </button>
