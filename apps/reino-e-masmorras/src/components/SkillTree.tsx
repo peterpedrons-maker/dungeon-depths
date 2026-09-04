@@ -206,12 +206,8 @@ function PathGraph({ path, ch, onSelect }: {
       <div className="relative mx-auto w-full max-w-[300px]" style={{ height: 400 }}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
           <defs>
-            <filter id="skillLineGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="1.4" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
+            <filter id="skillLineGlow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="1.6" result="blur" />
             </filter>
           </defs>
           {path.nodes.map((node, i) =>
@@ -221,18 +217,40 @@ function PathGraph({ path, ch, onSelect }: {
               const from = posOf(p);
               const to = posOf(i);
               const lit = ch.unlockedSkills.includes(prereqId) && ch.unlockedSkills.includes(node.id);
+              const key = `${prereqId}->${node.id}`;
+              if (!lit) {
+                return (
+                  <line
+                    key={key}
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke="#5a4d3a"
+                    strokeWidth={1.1}
+                    strokeLinecap="round"
+                    strokeDasharray="0.2 3"
+                    opacity={0.6}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              }
+              // Lit connections get a soft blurred halo underneath a crisp
+              // core line — two separate <line> passes read as a glowing
+              // energy conduit far better than one filtered line, and avoid
+              // the filter region interacting oddly with the node buttons
+              // painted on top of it.
               return (
-                <line
-                  key={`${prereqId}->${node.id}`}
-                  x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                  stroke={lit ? path.color : '#5a4d3a'}
-                  strokeWidth={lit ? 1.8 : 1.1}
-                  strokeLinecap="round"
-                  strokeDasharray={lit ? undefined : '0.2 3'}
-                  opacity={lit ? 0.95 : 0.6}
-                  filter={lit ? 'url(#skillLineGlow)' : undefined}
-                  vectorEffect="non-scaling-stroke"
-                />
+                <g key={key}>
+                  <line
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke={path.color} strokeWidth={4} strokeLinecap="round"
+                    opacity={0.5} filter="url(#skillLineGlow)"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <line
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke={path.color} strokeWidth={1.6} strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </g>
               );
             }),
           )}
@@ -250,15 +268,31 @@ function PathGraph({ path, ch, onSelect }: {
               title={node.name}
               style={{ left: `${x}%`, top: `${y}%` }}
               className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]} ${
-                state === 'locked' ? 'opacity-35 grayscale' : ''
-              } ${state === 'available' ? 'animate-pulse' : ''}`}
+                state === 'locked' ? 'grayscale' : ''
+              }`}
             >
+              {/* Opaque backing disc, painted before the icon — the connector
+                  lines behind this node must never be able to show through
+                  it. A plain CSS opacity on the whole button (the old
+                  approach for the locked/pulsing look) composites the button
+                  as one translucent group, letting the line underneath
+                  bleed through the icon itself; dimming/pulsing is done via
+                  layers on top of this disc instead, so the disc itself
+                  always stays fully opaque. */}
+              <div className="absolute inset-[2%] rounded-full bg-ink" />
               {state !== 'locked' && (
                 <div className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
+              )}
+              {state === 'available' && (
+                <div
+                  className="absolute inset-0 rounded-full pointer-events-none"
+                  style={{ color: path.color, animation: 'skillNodeAvailablePulse 1.6s ease-in-out infinite' }}
+                />
               )}
               <div className="absolute inset-[4%] flex items-center justify-center">
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
               </div>
+              {state === 'locked' && <div className="absolute inset-0 rounded-full bg-ink/55 pointer-events-none" />}
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
             </button>
           );
