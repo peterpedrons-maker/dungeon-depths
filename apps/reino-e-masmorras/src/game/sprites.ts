@@ -419,17 +419,28 @@ function tint(spr: Sprite, color: string): HTMLCanvasElement | null {
   return c;
 }
 
+// Optional entrance/death transform — lets the caller fade a freshly
+// spawned sprite in (rising slightly into place) or fade a just-killed one
+// out (with a slight grow, selling a "poof") without a second draw path.
+export interface SpriteTransform { alpha?: number; scale?: number; riseOffset?: number }
+
 export function drawSprite(
   ctx: CanvasRenderingContext2D, spr: Sprite, cx: number, cy: number,
   flip: boolean, flashAlpha = 0, lean = 0, statusTint?: { color: string; alpha: number },
+  transform?: SpriteTransform,
 ): void {
   const { image } = spr;
   if (!image.complete || image.naturalWidth === 0) return;
+  const alpha = transform?.alpha ?? 1;
+  if (alpha <= 0) return;
+  const scaleMul = transform?.scale ?? 1;
+  const rise = transform?.riseOffset ?? 0;
   const h = spr.scale;
   const w = (image.naturalWidth / image.naturalHeight) * h;
   ctx.save();
-  ctx.translate(Math.round(cx), Math.round(cy));
-  ctx.scale(flip ? -1 : 1, 1);
+  ctx.globalAlpha = alpha;
+  ctx.translate(Math.round(cx), Math.round(cy + rise));
+  ctx.scale((flip ? -1 : 1) * scaleMul, scaleMul);
   if (lean) ctx.rotate(lean * (flip ? -0.12 : 0.12));
   ctx.drawImage(image, Math.round(-w / 2), Math.round(-h), w, h);
   // A persistent, low-alpha color wash over the sprite's own silhouette
@@ -440,17 +451,17 @@ export function drawSprite(
   if (statusTint) {
     const tinted = tint(spr, statusTint.color);
     if (tinted) {
-      ctx.globalAlpha = statusTint.alpha;
+      ctx.globalAlpha = statusTint.alpha * alpha;
       ctx.drawImage(tinted, Math.round(-w / 2), Math.round(-h), w, h);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = alpha;
     }
   }
   if (flashAlpha > 0) {
     const tinted = tint(spr, '#ffffff');
     if (tinted) {
-      ctx.globalAlpha = flashAlpha;
+      ctx.globalAlpha = flashAlpha * alpha;
       ctx.drawImage(tinted, Math.round(-w / 2), Math.round(-h), w, h);
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = alpha;
     }
   }
   ctx.restore();

@@ -135,6 +135,14 @@ const ABILITY_CAST_DURATION_MS = 1800;
 // small lead each run, so first strike is fair over time instead of always
 // going to the player.
 const LEAN_MS = 90;
+// Canvas sprite entrance ("materializing" fade+rise into place) and death
+// (fade+grow "poof") timings — see heroSpawnAtRef/enemySpawnAtRef/
+// enemyDeathAtRef and the render loop below. BOSS_INTRO_MS is the full
+// "PERIGO! CHEFE" curtain shown before a boss reveals itself (see
+// maybeShowBossIntro) — long enough to read, short enough not to drag.
+const ENTRANCE_MS = 450;
+const DEATH_FADE_MS = 550;
+const BOSS_INTRO_MS = 2200;
 const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
@@ -505,6 +513,13 @@ export function DungeonPanel({
   // silentRef) same as every other on-screen effect, and never set on a
   // retreat, which isn't a win or a loss.
   const [resultBanner, setResultBanner] = useState<'victory' | 'defeat' | null>(null);
+  // Full-screen "curtain" shown right before a boss reveals itself — see
+  // maybeShowBossIntro. Non-null only for its own fixed duration, skipped
+  // entirely during a silent catch-up pass same as every other on-screen
+  // effect, and it also holds combat's own clocks (schedulePlayer/
+  // scheduleEnemy) from starting until it clears, so the fight can't begin
+  // mid-reveal.
+  const [bossIntro, setBossIntro] = useState<{ name: string } | null>(null);
   // Non-null only right after a runCatchUp pass (see the visibilitychange
   // effect below) — shows the "enquanto você estava fora" summary modal
   // once, then goes back to null on dismiss.
@@ -535,6 +550,19 @@ export function DungeonPanel({
   const [enemyRoundMs, setEnemyRoundMs] = useState(ATTACK_INTERVAL);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const floaterId = useRef(0);
+  // Entrance/death timing for the canvas sprites (see the render loop below)
+  // — plain refs, not state, since they only ever feed a per-frame transform
+  // computation and never need to trigger a re-render themselves.
+  const heroSpawnAtRef = useRef(0);
+  const enemySpawnAtRef = useRef(0);
+  // Set the instant a kill is detected (resolveEnemyDeath), well before the
+  // ~900ms delay that used to just make the corpse vanish and the next
+  // enemy pop in with nothing in between — cleared the moment the next
+  // enemy is actually assigned. While non-null the render loop keeps
+  // drawing the dead enemy's own sprite fading out through a small burst
+  // instead of the old hard cut.
+  const enemyDeathAtRef = useRef<number | null>(null);
+  const enemyDeathParticlesRef = useRef<Array<{ angle: number; speed: number; size: number }>>([]);
 
   // Refs mirror the latest state so the timer-driven combat loop always acts
   // on fresh values, even though each step was scheduled several closures ago.
@@ -1128,6 +1156,27 @@ export function DungeonPanel({
       if (cGen !== catchUpGenRef.current) return; // stale timer from before a catch-up pass
       if (!pausedRef.current && phaseRef.current === 'fight') envTick();
     }, delay);
+  }
+
+  // Shown right before a boss's own first action clock starts — a plain
+  // "PERIGO! CHEFE" curtain over the canvas, held for BOSS_INTRO_MS, then
+  // onDone (always schedulePlayer/scheduleEnemy for that boss) runs. Skipped
+  // outright during a silent catch-up pass (see runCatchUp/silentRef), same
+  // as every other on-screen-only effect — onDone still has to run there,
+  // just with nothing to watch.
+  function maybeShowBossIntro(bossName: string, onDone: () => void) {
+    if (silentRef.current) { onDone(); return; }
+    setBossIntro({ name: bossName });
+    setTimeout(() => {
+      if (!mountedRef.current) return;
+      setBossIntro(null);
+      // The reveal moment — this is when the boss's own materialize
+      // animation (see enemySpawnAtRef in the render loop) should start,
+      // not whenever spawnEnemy() actually happened back before the curtain
+      // went up.
+      enemySpawnAtRef.current = performance.now();
+      onDone();
+    }, BOSS_INTRO_MS);
   }
 
   function schedulePlayer(delay: number) {
@@ -2862,6 +2911,20 @@ export function DungeonPanel({
   // depending on which source landed the killing blow (see the redesign
   // spec's "morte por efeito indireto").
   function resolveEnemyDeath() {
+    // Kick off the death fade/burst on the enemy's own sprite the instant
+    // the kill lands, not 900ms later when the corpse used to just vanish
+    // and the next enemy popped in with no transition at all — see
+    // enemyDeathAtRef and the render loop below. Particle angles/speeds are
+    // rolled once here rather than every frame, so the burst reads as one
+    // coherent explosion instead of jittering.
+    if (!silentRef.current) {
+      enemyDeathAtRef.current = performance.now();
+      enemyDeathParticlesRef.current = Array.from({ length: 14 }, (_, i) => ({
+        angle: (i / 14) * Math.PI * 2 + Math.random() * 0.4,
+        speed: 110 + Math.random() * 90,
+        size: 3.5 + Math.random() * 3,
+      }));
+    }
     const prevLevel = chRef.current.level;
     const isBossKill = enemyRef.current.isBoss === true;
     const isEliteKill = enemyRef.current.isElite === true;
@@ -2950,7 +3013,14 @@ export function DungeonPanel({
       const nextDepth = depthRef.current + 1;
       updateDepth(nextDepth);
       const next = spawnEnemy(nextDepth, dungeon);
-      updateEnemy(isWarrior() ? { ...next, warrior: createWarriorEnemyState() } : next);
+      const finalNext = isWarrior() ? { ...next, warrior: createWarriorEnemyState() } : next;
+      updateEnemy(finalNext);
+      // The old corpse's death burst (if still mid-fade) is done being shown
+      // the moment its replacement exists — a boss delays its own
+      // materialize animation until after the intro curtain instead (see
+      // maybeShowBossIntro), so this only pre-empts it for a non-boss.
+      enemyDeathAtRef.current = null;
+      if (!finalNext.isBoss) enemySpawnAtRef.current = performance.now();
       enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
       if (next.isElite) pushLog([{ text: `${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`, color: '#f59e0b' }]);
       enemyStatusRef.current = [];
@@ -3110,8 +3180,9 @@ export function DungeonPanel({
       // only the player's got a fresh schedulePlayer() call here, so
       // the enemy inherited whatever was left on the OLD enemy's timer
       // (its ATB bar would visibly pick up mid-fill instead of empty).
-      schedulePlayer(nextPlayerDelay());
-      scheduleEnemy();
+      const startClocks = () => { schedulePlayer(nextPlayerDelay()); scheduleEnemy(); };
+      if (finalNext.isBoss) maybeShowBossIntro(finalNext.name, startClocks);
+      else startClocks();
     };
     if (silentRef.current) advanceToNextEnemy(); else setTimeout(advanceToNextEnemy, 900);
   }
@@ -4266,18 +4337,26 @@ export function DungeonPanel({
   // touches state after this panel is unmounted (leaving for another section).
   useEffect(() => {
     mountedRef.current = true;
+    heroSpawnAtRef.current = performance.now();
     scheduleEnv(700);
     // Who gets the opening strike is a coin flip, not a guarantee — this used
     // to always hand the player's timer the shorter delay (see LEAN_MS above),
     // so every single dungeon start had the player land a free hit before the
     // enemy's clock had even fired once. Now either side can win the flip.
-    if (Math.random() < 0.5) {
-      schedulePlayer(700);
-      scheduleEnemy(700 + LEAN_MS);
-    } else {
-      schedulePlayer(700 + LEAN_MS);
-      scheduleEnemy(700);
-    }
+    const startClocks = () => {
+      if (Math.random() < 0.5) {
+        schedulePlayer(700);
+        scheduleEnemy(700 + LEAN_MS);
+      } else {
+        schedulePlayer(700 + LEAN_MS);
+        scheduleEnemy(700);
+      }
+    };
+    // A Caçada (Hunt) dungeon's own startDepth === bossDepth, so the very
+    // first enemy this panel ever mounts with can already be the boss —
+    // same intro treatment as reaching one mid-run (see advanceToNextEnemy).
+    if (enemyRef.current.isBoss) maybeShowBossIntro(enemyRef.current.name, startClocks);
+    else { enemySpawnAtRef.current = performance.now(); startClocks(); }
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -4376,7 +4455,12 @@ export function DungeonPanel({
         const px1 = w * 0.27, ex = w * 0.73;
         const playerTint = statusTintFor(playerStatuses, playerCCState, playerModsState);
         const enemyTint = statusTintFor(enemyStatuses, enemyCCState, enemyModsState);
-        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0, 0, playerTint);
+        // Hero only ever "materializes" once, right after this panel mounts
+        // — heroSpawnAtRef never resets again after that, so heroT is 1
+        // (no-op transform) for the entire rest of the fight.
+        const heroT = Math.min(1, Math.max(0, (t - heroSpawnAtRef.current) / ENTRANCE_MS));
+        const heroTransform = heroT < 1 ? { alpha: heroT, riseOffset: (1 - heroT) * 22 } : undefined;
+        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0, 0, playerTint, heroTransform);
         if (ch.classId === 'necromante') {
           necroSummonsState.forEach((summon, i) => {
             const sx = px1 - 34 + i * 68, sy = groundY - 24 - Math.sin(t / 280 + i) * 3;
@@ -4387,14 +4471,53 @@ export function DungeonPanel({
             g.fillStyle = '#d1fae5'; g.font = '9px Alagard, Georgia, serif'; g.textAlign = 'center'; g.fillText(`${summon.attacksRemaining}`, sx, sy - 15);
           });
         }
-        drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint);
+        // A boss stays hidden behind its own intro curtain (see bossIntro
+        // JSX below) rather than popping in mid-reveal underneath it.
+        if (!bossIntro) {
+          const enemySpr = enemySprite(enemy.shape);
+          let enemyTransform: { alpha?: number; scale?: number; riseOffset?: number } | undefined;
+          let deathBurst: { burstY: number; elapsedSec: number; deathT: number } | undefined;
+          if (enemyDeathAtRef.current != null) {
+            // Dying: fade out while growing slightly, plus a small burst of
+            // particles flying outward from roughly chest height — replaces
+            // the old hard cut where the corpse just vanished the instant
+            // the next enemy was assigned.
+            const deathT = Math.min(1, (t - enemyDeathAtRef.current) / DEATH_FADE_MS);
+            enemyTransform = { alpha: 1 - deathT, scale: 1 + deathT * 0.25 };
+            deathBurst = {
+              burstY: groundY - enemySpr.scale * 0.55,
+              elapsedSec: Math.min(DEATH_FADE_MS, t - enemyDeathAtRef.current) / 1000,
+              deathT,
+            };
+          } else {
+            const enemyT = Math.min(1, Math.max(0, (t - enemySpawnAtRef.current) / ENTRANCE_MS));
+            if (enemyT < 1) enemyTransform = { alpha: enemyT, scale: 0.85 + enemyT * 0.15, riseOffset: (1 - enemyT) * 22 };
+          }
+          drawSprite(g, enemySpr, ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint, enemyTransform);
+          // Particles are drawn AFTER the sprite so the burst reads on top of
+          // the fading corpse instead of being hidden underneath it while
+          // still close to the body (early in the burst, dist is small).
+          if (deathBurst) {
+            const { burstY, elapsedSec, deathT } = deathBurst;
+            g.save();
+            for (const p of enemyDeathParticlesRef.current) {
+              const dist = p.speed * elapsedSec;
+              g.globalAlpha = Math.max(0, 1 - deathT);
+              g.fillStyle = '#ffe6a8';
+              g.shadowColor = '#ffb347';
+              g.shadowBlur = 6;
+              g.fillRect(ex + Math.cos(p.angle) * dist - p.size / 2, burstY + Math.sin(p.angle) * dist - p.size / 2, p.size, p.size);
+            }
+            g.restore();
+          }
+        }
       }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, [
-    ch.classId, enemy.shape, phase, flashSide, heroSpr,
+    ch.classId, enemy.shape, phase, flashSide, heroSpr, bossIntro,
     playerStatuses, playerCCState, playerModsState, enemyStatuses, enemyCCState, enemyModsState, necroSummonsState,
   ]);
 
@@ -4641,7 +4764,7 @@ export function DungeonPanel({
         </div>
       )}
 
-      {phase === 'fight' && enemy.isBoss && (
+      {phase === 'fight' && enemy.isBoss && !bossIntro && (
         <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
           <div className="flex justify-between items-baseline gap-2">
             <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate flex items-center">
@@ -4660,6 +4783,31 @@ export function DungeonPanel({
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="w-full block" style={{ imageRendering: 'pixelated' }} />
+        {bossIntro && (
+          <div
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 pointer-events-none"
+            style={{ background: 'rgba(4,2,2,0.85)', animation: `bossIntroCurtain ${BOSS_INTRO_MS}ms ease-in-out forwards` }}
+          >
+            <span
+              className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-[0.2em] text-crimson"
+              style={{
+                animation: 'bossWarningFlash 500ms ease-in-out infinite',
+                textShadow: '0 0 18px rgba(220,40,40,0.9), 0 3px 0 rgba(0,0,0,0.9)',
+              }}
+            >
+              ⚠ Chefe ⚠
+            </span>
+            <span
+              className="font-display text-lg sm:text-xl text-amber-300 tracking-wide text-center px-4"
+              style={{
+                textShadow: '0 0 14px rgba(255,200,60,0.8), 0 2px 0 rgba(0,0,0,0.9)',
+                animation: 'bossNameReveal 700ms ease-out 250ms both',
+              }}
+            >
+              {bossIntro.name}
+            </span>
+          </div>
+        )}
         {resultBanner && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <span

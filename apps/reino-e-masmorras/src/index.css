@@ -94,6 +94,26 @@ body {
   100% { transform: scale(1); opacity: 0; }
 }
 
+/* Boss-reveal "curtain" (DungeonPanel's bossIntro) — a dark overlay that
+   holds long enough to read the warning + name, then lifts right as the
+   boss's own sprite starts materializing underneath (see enemySpawnAtRef,
+   reset the instant this curtain clears). Duration is driven by the same
+   BOSS_INTRO_MS the setTimeout uses, so the two never drift apart. */
+@keyframes bossIntroCurtain {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes bossWarningFlash {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(1.08); }
+}
+@keyframes bossNameReveal {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* "Something's waiting for you" signal on a Reino hub shortcut icon with
    something pending (unspent attribute/skill points) — a soft blurred
    radial-gradient glow sitting behind the icon (see KingdomHub.tsx), same
