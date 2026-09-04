@@ -131,95 +131,94 @@ export interface Sprite {
 }
 
 // Target on-screen height (px) for each character, roughly matching their
-// relative size in the fiction (a goblin is small, a troll looms large).
-// Common (non-boss) enemies got a bigger relative bump than bosses here —
-// bosses already read as large, so the fiction's size gap stays intact.
+// relative size in the fiction. Rebalanced after feedback that everything
+// read too close to the hero's own 165px: bosses now sit well above hero
+// height across the board (210-290, climbing with region tier) so every
+// boss actually reads as a real threat, not just a reskinned regular; any
+// human-scale or bigger humanoid (knights, orcs, cultists, guardians,
+// executioners...) sits at or above hero height instead of shrunken next
+// to it; and only genuinely small-in-the-fiction creatures (goblins, bats,
+// snakes, insects, wisps, swarms) stay meaningfully smaller.
 const HERO_DISPLAY_H = 165;
 const ENEMY_DISPLAY_H: Record<EnemyShape, number> = {
-  goblin: 120, wolf: 95, skeleton: 132,
-  // Dragão Jovem is now Covil dos Dragões' own boss (see lib/enemies.ts) —
-  // bumped up from its old regular-enemy height accordingly.
-  dragon: 180,
+  goblin: 115, wolf: 110, skeleton: 150,
+  // Dragão Jovem is now Covil dos Dragões' own boss (see lib/enemies.ts).
+  dragon: 225,
 
   // Região 1 — Ruínas Superficiais
-  ruinBat: 88, acidSlime: 90, ruinBandit: 121, carrionCrow: 88, boneKing: 173,
+  ruinBat: 85, acidSlime: 85, ruinBandit: 172, carrionCrow: 85, boneKing: 212,
   // Região 1 — Caverna dos Goblins
-  goblinShaman: 117, goblinThrower: 119, goblinFanatic: 119, goblinWolfRider: 124, grash: 168,
+  goblinShaman: 108, goblinThrower: 108, goblinFanatic: 108, goblinWolfRider: 132, grash: 216,
   // Região 1 — Cripta do Tesouro
-  zombieLooter: 121, stoneGuardian: 150, greedyWraith: 115, wrappedMummy: 121, mimicChest: 100, cursedCustodian: 173,
+  zombieLooter: 172, stoneGuardian: 198, greedyWraith: 160, wrappedMummy: 172, mimicChest: 100, cursedCustodian: 212,
   // Região 1 — Pântano Podre
-  poisonToad: 94, swampViper: 88, crawlingBog: 113, cursedWisp: 81, rottingGator: 115, mudMother: 179,
+  poisonToad: 85, swampViper: 80, crawlingBog: 100, cursedWisp: 75, rottingGator: 142, mudMother: 222,
   // Região 1 — Covil de Aranhas
-  huntingSpider: 113, venomSpider: 106, giantSpider: 138, spiderlingSwarm: 81, darkWeaver: 132, blackMatriarch: 184,
+  huntingSpider: 115, venomSpider: 112, giantSpider: 168, spiderlingSwarm: 80, darkWeaver: 158, blackMatriarch: 226,
 
-  // Região 2 — Torre Amaldiçoada. spectralMage bumped up (118->148) — it's a
-  // human-sized robed figure, not a small creature, so it read as shrunken
-  // next to the 165px hero; cursedKnight nudged too for the same reason.
-  gargoyle: 140, spectralMage: 148, cursedKnight: 156, watchingEye: 85, crawlingShadow: 120, fallenArchmage: 175,
-  // Região 2 — Minas Abandonadas. cursedMiner bumped (120->148) — same
-  // human-sized-enemy-reads-shrunken issue as spectralMage above.
-  cursedMiner: 148, oreGolem: 148, koboldRaider: 100, batSwarm: 82, gasWisp: 90, oreTitan: 178,
+  // Região 2 — Torre Amaldiçoada
+  gargoyle: 168, spectralMage: 170, cursedKnight: 180, watchingEye: 85, crawlingShadow: 112, fallenArchmage: 226,
+  // Região 2 — Minas Abandonadas
+  cursedMiner: 172, oreGolem: 198, koboldRaider: 100, batSwarm: 80, gasWisp: 80, oreTitan: 222,
   // Região 2 — Floresta Amaldiçoada
-  corruptedEnt: 155, ghostWolf: 100, darkFairy: 85, cursedBear: 145, stranglingVine: 110, forestHeart: 182,
-  // Região 2 — Covil dos Dragões (dragon acima é o chefe). draconicCultist
-  // bumped (118->145) — same human-sized fix.
-  dragonHatchling: 110, wildWyvern: 130, scaledGuardian: 140, draconicCultist: 145, fireSerpent: 100,
-  // Região 2 — Necrópole Esquecida (skeletonLord já existia)
-  darkReaper: 135, deathCrow: 90, boneExecutioner: 150, wailingGhost: 120, graveWorm: 95, skeletonLord: 152,
-  // Região 2 — Ruínas Élficas. elvenWraith bumped (118->146) — same fix.
-  corruptedGuardian: 150, whisperingVine: 115, ruinBeast: 130, elvenWraith: 146, crystalGolem: 148, ancestralGuardian: 184,
-  // Região 2 — Arena de Sangue — every regular here is a human duelist, so
-  // all 4 got the same human-sized-enemy bump (previously 118-130).
-  cursedGladiator: 150, arenaBeast: 140, maskedExecutioner: 152, beastTamer: 148, fallenChampion: 155, grandChampion: 186,
+  corruptedEnt: 212, ghostWolf: 112, darkFairy: 75, cursedBear: 168, stranglingVine: 122, forestHeart: 228,
+  // Região 2 — Covil dos Dragões (dragon acima é o chefe)
+  dragonHatchling: 142, wildWyvern: 178, scaledGuardian: 178, draconicCultist: 172, fireSerpent: 112,
+  // Região 2 — Necrópole Esquecida
+  darkReaper: 178, deathCrow: 85, boneExecutioner: 182, wailingGhost: 162, graveWorm: 85, skeletonLord: 216,
+  // Região 2 — Ruínas Élficas
+  corruptedGuardian: 178, whisperingVine: 122, ruinBeast: 152, elvenWraith: 168, crystalGolem: 202, ancestralGuardian: 230,
+  // Região 2 — Arena de Sangue
+  cursedGladiator: 178, arenaBeast: 158, maskedExecutioner: 180, beastTamer: 172, fallenChampion: 184, grandChampion: 234,
 
   // Alvos de Caçada (lib/hunts.ts) — maiores ainda, para reforçar visualmente
-  // que são o desafio mais duro disponível.
-  boneTyrant: 190, swampLeviathan: 196, infernalWyrm: 184,
+  // que são o desafio mais duro disponível fora das regiões.
+  boneTyrant: 236, swampLeviathan: 246, infernalWyrm: 242,
 
   // Região 3 — Fortaleza Orc
-  orcWarrior: 122, orcArcher: 118, orcShaman: 116, orcBerserker: 124, orcStandardBearer: 128, orcWarchief: 176,
+  orcWarrior: 182, orcArcher: 178, orcShaman: 176, orcBerserker: 186, orcStandardBearer: 188, orcWarchief: 238,
   // Região 3 — Labirinto de Gelo
-  iceElemental: 128, frostWolf: 100, glacialBat: 84, iceWraith: 120, frozenSentinel: 148, iceMonarch: 182,
+  iceElemental: 178, frostWolf: 112, glacialBat: 80, iceWraith: 162, frozenSentinel: 198, iceMonarch: 244,
   // Região 3 — Templo Afundado
-  drownedAcolyte: 118, frozenPriest: 120, lakeWraith: 116, submergedGuardian: 150, iceEel: 96, sunkenHighPriest: 184,
+  drownedAcolyte: 170, frozenPriest: 170, lakeWraith: 162, submergedGuardian: 198, iceEel: 95, sunkenHighPriest: 246,
   // Região 3 — Cavernas de Cristal
-  crystalBat: 84, crystalSpider: 118, prismGolem: 150, crystalWisp: 82, glimmeringStalker: 122, crystalSovereign: 184,
+  crystalBat: 80, crystalSpider: 122, prismGolem: 202, crystalWisp: 75, glimmeringStalker: 132, crystalSovereign: 246,
   // Região 3 — Covil do Lobo Alfa
-  alphaWolfPup: 92, direWolf: 108, snowStalker: 104, packHunter: 106, frostFangWolf: 112, alphaDireWolf: 190,
+  alphaWolfPup: 95, direWolf: 132, snowStalker: 118, packHunter: 122, frostFangWolf: 128, alphaDireWolf: 242,
   // Região 3 — Catacumbas Reais
-  royalSkeleton: 130, cryptSentinel: 150, boneNoble: 126, spectralChamberlain: 118, entombedKnight: 152, royalLich: 186,
+  royalSkeleton: 170, cryptSentinel: 198, boneNoble: 166, spectralChamberlain: 162, entombedKnight: 182, royalLich: 252,
   // Região 3 — Poço sem Fundo (especial)
-  wellCrawler: 120, voidTendril: 122, drowningWraith: 118, abyssalStalker: 126, hollowDweller: 128, pitDweller: 200,
+  wellCrawler: 132, voidTendril: 112, drowningWraith: 162, abyssalStalker: 136, hollowDweller: 162, pitDweller: 258,
 
   // Região 4 — Covil da Aranha-Rainha
-  jungleSpider: 118, silkStalker: 122, spiderBrood: 90, webWeaverJungle: 134, venomousBroodling: 100, spiderQueen: 192,
+  jungleSpider: 122, silkStalker: 132, spiderBrood: 85, webWeaverJungle: 158, venomousBroodling: 95, spiderQueen: 252,
   // Região 4 — Cidadela em Ruínas
-  ruinedSentinel: 150, vineWarrior: 126, crumblingGolem: 152, junglePhantom: 122, overgrownGuardian: 155, citadelGuardian: 194,
+  ruinedSentinel: 198, vineWarrior: 172, crumblingGolem: 202, junglePhantom: 162, overgrownGuardian: 202, citadelGuardian: 260,
   // Região 4 — Santuário Profanado
-  defiledPriest: 122, profaneIdol: 148, corruptedAcolyte: 124, hexedStatue: 150, ritualCultist: 120, profaneHighPriest: 196,
+  defiledPriest: 170, profaneIdol: 188, corruptedAcolyte: 170, hexedStatue: 188, ritualCultist: 170, profaneHighPriest: 260,
   // Região 4 — Mina de Obsidiana
-  obsidianGolem: 152, magmaBat: 86, obsidianMiner: 122, emberWraith: 120, obsidianBeetle: 110, obsidianColossus: 198,
+  obsidianGolem: 202, magmaBat: 80, obsidianMiner: 170, emberWraith: 162, obsidianBeetle: 100, obsidianColossus: 264,
   // Região 4 — Selva Esquecida
-  forgottenGuardian: 152, junglePredator: 112, ancientVine: 118, feralJaguar: 108, sporeling: 96, forgottenColossus: 196,
+  forgottenGuardian: 198, junglePredator: 128, ancientVine: 128, feralJaguar: 132, sporeling: 85, forgottenColossus: 264,
   // Região 4 — Fortaleza dos Ossos
-  boneSoldier: 128, boneArcher: 124, marrowGolem: 154, boneCatapultBeast: 140, ossuaryWraith: 122, boneWarlord: 198,
+  boneSoldier: 166, boneArcher: 166, marrowGolem: 202, boneCatapultBeast: 198, ossuaryWraith: 162, boneWarlord: 264,
   // Região 4 — Torre dos Ecos (especial)
-  echoWraith: 124, resonantSpecter: 122, mirroredHorror: 130, echoSentinel: 150, hollowChant: 120, echoSovereign: 202,
+  echoWraith: 162, resonantSpecter: 162, mirroredHorror: 168, echoSentinel: 198, hollowChant: 132, echoSovereign: 268,
 
   // Região 5 — Abismo de Gelo
-  glacialWraith: 126, abyssalIceElemental: 132, frostcrawler: 120, iceBehemoth: 158, hollowFrost: 118, glacialAbyssLord: 206,
+  glacialWraith: 162, abyssalIceElemental: 182, frostcrawler: 132, iceBehemoth: 218, hollowFrost: 162, glacialAbyssLord: 272,
   // Região 5 — Ruínas Vulcânicas
-  magmaGolem: 154, ashWraith: 124, emberBat: 88, volcanicStalker: 122, cinderHound: 110, infernoColossus: 208,
+  magmaGolem: 202, ashWraith: 162, emberBat: 80, volcanicStalker: 128, cinderHound: 116, infernoColossus: 274,
   // Região 5 — Covil do Dragão Ancião
-  ancientDrakeling: 118, dragonCultistElder: 122, scaleWyrmling: 128, drakeGuardian: 148, emberDrake: 126, elderDragon: 210,
+  ancientDrakeling: 142, dragonCultistElder: 170, scaleWyrmling: 148, drakeGuardian: 192, emberDrake: 178, elderDragon: 278,
   // Região 5 — Salão dos Titãs
-  titanGuardian: 156, stoneColossus: 160, ancientSentinel: 132, runicGolem: 150, titanWarden: 154, fallenTitan: 210,
+  titanGuardian: 218, stoneColossus: 218, ancientSentinel: 198, runicGolem: 202, titanWarden: 218, fallenTitan: 280,
   // Região 5 — Necrópole Real
-  royalWraith: 126, ashenGuard: 150, cursedEmbalmer: 122, royalMummy: 128, deathHerald: 130, royalNecromancer: 208,
+  royalWraith: 162, ashenGuard: 178, cursedEmbalmer: 170, royalMummy: 172, deathHerald: 182, royalNecromancer: 278,
   // Região 5 — Palácio Submerso
-  drownedCourtier: 122, submergedGuard: 150, tidalWraith: 124, coralHorror: 116, deepOneAcolyte: 120, drownedMonarch: 208,
+  drownedCourtier: 170, submergedGuard: 178, tidalWraith: 162, coralHorror: 152, deepOneAcolyte: 170, drownedMonarch: 280,
   // Região 5 — Arena do Campeão (especial)
-  championGladiator: 128, arenaChampionBeast: 148, veteranDuelist: 126, arenaWarlord: 130, bloodiedChampion: 128, eternalChampion: 212,
+  championGladiator: 180, arenaChampionBeast: 178, veteranDuelist: 180, arenaWarlord: 180, bloodiedChampion: 184, eternalChampion: 292,
 };
 
 function loadImage(url: string, displayH: number): Sprite {
