@@ -59,7 +59,7 @@ type NodeState = 'unlocked' | 'available' | 'locked';
 // above), there's no separate frame image fighting the icon for space, so
 // each tier can fill its own button almost edge-to-edge.
 const NODE_SIZE_CLASS: Record<SkillNodeType, string> = {
-  active: 'w-16 h-16',
+  active: 'w-20 h-20',
   passive: 'w-12 h-12',
   attribute: 'w-9 h-9',
 };
@@ -118,7 +118,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
             <button
               key={node.id}
               onClick={() => setSelected({ node, state: 'unlocked' })}
-              className="relative w-16 h-16 transition-transform duration-150 hover:scale-110 shrink-0"
+              className="relative w-20 h-20 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
               <div className="absolute inset-0 rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
@@ -128,7 +128,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
             </button>
           ) : (
-            <div key={i} className="relative w-16 h-16 rounded-full border border-panelborder/50 bg-black/20 opacity-30 shrink-0" />
+            <div key={i} className="relative w-20 h-20 rounded-full border border-panelborder/50 bg-black/20 opacity-30 shrink-0" />
           ),
         )}
       </div>
