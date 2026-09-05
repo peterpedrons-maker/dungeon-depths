@@ -27,6 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro pronto (integrado), Mago com prompt escrito — faltam as outras 12
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -662,6 +663,36 @@ Row 2 ("Drenar Vida" path, bone-violet theme): 6) "Escudo de Ossos" — a shield
 Row 3 ("Ceifador" path, gold-violet crit theme): 11) "Golpe da Foice" — a curved scythe blade with a golden-violet crit-starburst along its edge. 12) "Golpe do Terror" — a scythe swing leaving a ring of small dark terror-stars circling above the impact. 13) "Toque Final" — a scythe blade poised over a cracked skull for a finishing strike. 14) "Dança da Ceifa" — a whirling scythe blur around a bright gold-violet crit-starburst. 15) "Ceifa da Morte" — a massive scythe strike shattering a skull silhouette entirely.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+```
+
+<a id="passivas-exclusivas-por-classe"></a>
+### Passivas Exclusivas por Classe
+
+Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índice 6, 8 e 14 de cada trilha (3 por trilha × 3 trilhas = 9 por classe) são passivas EXCLUSIVAS daquela classe — não fazem parte da Biblioteca de Passivas compartilhada, cada uma ganha seu próprio ícone único, um por nó, sem reaproveitar entre classes.
+
+**Mesma convenção de medalhão circular da folha de ativas** (aro de metal ornamentado + brilho interno na cor da trilha daquela linha, sem texto em lugar nenhum) — só muda a grade: 3 colunas × 3 linhas (uma linha por trilha, uma coluna por posição do nó — 6/8/14), canvas quadrado 1024×1024 px, mesmo fundo magenta (#FF00FF) pra recorte.
+
+- ✅ **Guerreiro** — arte já entregue e integrada (`guerreiro-passivas.webp`); prompt original não documentado aqui porque foi gerado antes desta convenção existir por escrito.
+- 🕓 **Mago** — prompt abaixo, pronto pra gerar.
+- ⛔ Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+
+#### Passivas Exclusivas — Mago
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Piromante" path — every medallion's rim and inner glow painted in a burnt fire-orange/red, #c1502e): 1) "Pressão Arcana" — a small stone rune-tablet etched with a fire glyph, glowing white-hot right at the edge of overloading, faint heat-shimmer waves rising off its surface. 2) "Válvula de Emergência" — an ornate brass pressure-release valve venting a controlled, contained jet of fire and steam sideways. 3) "Mestre do Limite" — an hourglass filled with glowing embers instead of sand, the ember-stream flowing down and looping back up into the top chamber.
+
+Row 2 ("Gélido" path — every medallion's rim and inner glow painted in a cold steel-blue, #3f7ab8): 4) "Frio Penetrante" — a jagged icicle shard piercing straight through a cracking translucent blue magical ward. 5) "Cristalização" — a crystalline ice shell forming protectively around a small glowing pale-blue orb. 6) "Inverno Perpétuo" — a looping ring of frost and snowflakes curling endlessly back on itself, like a frozen ouroboros.
+
+Row 3 ("Eletromante" path — every medallion's rim and inner glow painted in a warm electric gold, #c89a2e, with faint white spark accents): 7) "Condutor Perfeito" — a closed golden circuit-ring crackling with electricity, a bright speed-streak bursting outward from one side of it. 8) "Corrente Residual" — a bright lightning bolt with a fainter, translucent echo-bolt trailing just behind and beside it. 9) "Mestre da Ressonância" — two overlapping electric shockwave rings resonating outward from a shared center point, like a sound echo made of crackling arcs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 <a id="icones-de-atributo-combate-tela-de-personagem"></a>
