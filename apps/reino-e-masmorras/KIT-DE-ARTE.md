@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro pronto (integrado), Mago com prompt escrito — faltam as outras 12
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro e Mago prontos (integrados) — faltam as outras 12
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -673,7 +673,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 **Mesma convenção de medalhão circular da folha de ativas** (aro de metal ornamentado + brilho interno na cor da trilha daquela linha, sem texto em lugar nenhum) — só muda a grade: 3 colunas × 3 linhas (uma linha por trilha, uma coluna por posição do nó — 6/8/14), canvas quadrado 1024×1024 px, mesmo fundo magenta (#FF00FF) pra recorte.
 
 - ✅ **Guerreiro** — arte já entregue e integrada (`guerreiro-passivas.webp`); prompt original não documentado aqui porque foi gerado antes desta convenção existir por escrito.
-- 🕓 **Mago** — prompt abaixo, pronto pra gerar.
+- ✅ **Mago** — arte já entregue e integrada (`mago-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
