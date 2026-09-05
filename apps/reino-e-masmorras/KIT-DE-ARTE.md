@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro e Mago prontos (integrados) — faltam as outras 12
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro e Mago prontos (integrados), Ladino com prompt escrito — faltam as outras 11
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -469,11 +469,11 @@ Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon ba
 
 One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 1 ("Veneno" path — every medallion's rim and inner glow painted in a toxic olive-green, #4f7a3a): 1) "Golpe Peçonhento" — a curved dagger dripping sickly green venom onto a small skull. 2) "Corte Tóxico" — a quick green-tinged dagger slash arc. 3) "Veneno Mortal" — a vial of toxic green liquid shattering over a skull. 4) "Golpe Fatal" — a dagger stabbing into a green-glowing poisoned wound mark. 5) "Execução Venenosa" — a dagger plunging through a skull wreathed in thick green venom mist.
+Row 1 ("Assassino" path — every medallion's rim and inner glow painted in a toxic olive-green, #4f7a3a): 1) "Passo Sombrio" — a rogue silhouette dissolving into wisps mid-step as it slips into concealing shadow. 2) "Punhalada Velada" — a curved dagger stabbing out from concealment straight into a small glowing crack (an exposed weak point) on an enemy silhouette. 3) "Lâmina Envenenada" — a dagger blade being coated in dripping green venom, faint toxic mist curling off the edge. 4) "Corte da Sombra" — a dagger slash tearing straight through a shattering dark silhouette. 5) "Execução Silenciosa" — a dagger poised for one silent finishing strike over a skull, no sound, no motion blur.
 
-Row 2 ("Sombras" path — every medallion's rim and inner glow painted in a cold slate-grey, #5b5f6a): 6) "Passo nas Sombras" — a shadowy silhouette splitting into a wispy dark after-image mid-step. 7) "Golpe Cegante" — a dagger slash trailing a burst of dark sparkles across a small eye symbol. 8) "Salto para as Sombras" — a figure dissolving into a swirl of dark smoke, leaving only an outline. 9) "Véu das Sombras" — a cloak of swirling black shadow-wisps wrapping around a silhouette. 10) "Um com a Escuridão" — a fully shadow-merged silhouette, barely visible, faint violet glowing eyes.
+Row 2 ("Dançarino de Lâminas" path — every medallion's rim and inner glow painted in a cold slate-grey, #5b5f6a): 6) "Passo Cortante" — a rogue silhouette splitting into one translucent duplicate afterimage mid-slash. 7) "Corte Cruzado" — two translucent afterimage duplicates converging their slashes into a single crossing point. 8) "Lâmina Reversa" — a dagger reversed in a backhand grip, trailing a single faint duplicate blade behind it. 9) "Dança das Lâminas" — three overlapping slash-arcs radiating outward from a spinning silhouette, a blur of simultaneous strikes. 10) "Ataque Sincronizado" — two translucent afterimage duplicates striking in perfect unison alongside the real silhouette, all three blades meeting at once.
 
-Row 3 ("Lâminas Gêmeas" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 11) "Investida Precisa" — twin curved daggers crossed with a golden crit-starburst behind them. 12) "Golpe Perfurante" — a dagger punching straight through a cracking armor plate. 13) "Golpe de Misericórdia" — twin daggers poised for a downward finishing strike over a cracked skull. 14) "Fúria das Lâminas" — a whirlwind blur of twin daggers spinning around a bright gold starburst. 15) "Execução Perfeita" — twin daggers piercing through a shattering skull silhouette.
+Row 3 ("Trapaceiro" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 11) "Finta Baixa" — a dagger feinting low, a small illusory decoy blade-flash flickering beside the real one. 12) "Golpe Sujo" — a dagger strike aimed low, a burst of thrown dust/sand kicked up at the point of impact. 13) "Dado Viciado" — a pair of weighted gambler's dice glowing faintly, one showing a favorable high number. 14) "Mão Leve" — a dagger paired with a stolen pocket-watch caught mid-pickpocket, faint golden time-motes swirling off its hands. 15) "Ás na Manga" — a golden ace playing card sliding out from a sleeve beside a dagger, both catching the light.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
@@ -674,7 +674,8 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 
 - ✅ **Guerreiro** — arte já entregue e integrada (`guerreiro-passivas.webp`); prompt original não documentado aqui porque foi gerado antes desta convenção existir por escrito.
 - ✅ **Mago** — arte já entregue e integrada (`mago-passivas.webp`); prompt mantido abaixo como referência.
-- ⛔ Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- 🕓 **Ladino** — prompt abaixo, pronto pra gerar.
+- ⛔ Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -691,6 +692,25 @@ Row 1 ("Piromante" path — every medallion's rim and inner glow painted in a bu
 Row 2 ("Gélido" path — every medallion's rim and inner glow painted in a cold steel-blue, #3f7ab8): 4) "Frio Penetrante" — a jagged icicle shard piercing straight through a cracking translucent blue magical ward. 5) "Cristalização" — a crystalline ice shell forming protectively around a small glowing pale-blue orb. 6) "Inverno Perpétuo" — a looping ring of frost and snowflakes curling endlessly back on itself, like a frozen ouroboros.
 
 Row 3 ("Eletromante" path — every medallion's rim and inner glow painted in a warm electric gold, #c89a2e, with faint white spark accents): 7) "Condutor Perfeito" — a closed golden circuit-ring crackling with electricity, a bright speed-streak bursting outward from one side of it. 8) "Corrente Residual" — a bright lightning bolt with a fainter, translucent echo-bolt trailing just behind and beside it. 9) "Mestre da Ressonância" — two overlapping electric shockwave rings resonating outward from a shared center point, like a sound echo made of crackling arcs.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Ladino
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Ladino (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Assassino" path — every medallion's rim and inner glow painted in a toxic olive-green, #4f7a3a): 1) "Emboscador" — a dagger thrusting forward from a low crouched shadow-lunge, a small sharp "+" impact-burst at its tip. 2) "Janela Mortal" — a small glowing crack opening on a weak point, like a fracture in armor about to give way. 3) "Mestre do Véu" — a hooded, veiled silhouette fading in and out of visibility like a living shadow-veil.
+
+Row 2 ("Dançarino de Lâminas" path — every medallion's rim and inner glow painted in a cold slate-grey, #5b5f6a): 4) "Réplica Precisa" — a translucent duplicate blade piercing straight through a cracking armor plate. 5) "Fluxo Intocável" — a rippling heat-haze-like distortion field deflecting an incoming blade just before it lands. 6) "Mestre das Imagens" — three overlapping translucent silhouettes arranged in a perfect closed loop, one fading back into solid form.
+
+Row 3 ("Trapaceiro" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 7) "Explorar Erro" — a jeweler's loupe/magnifying glass revealing a glowing crack in an armor plate. 8) "Plano B" — a hidden backup card tucked up a sleeve beside a small clock-gear ticking backward. 9) "Mestre do Improviso" — a gambler's hand casually catching a playing card in midair with a confident flourish, a faint spark of luck around it.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
