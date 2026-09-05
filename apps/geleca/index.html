@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>🟩 GELECA — sacrifique-se para subir</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== MENU / SELEÇÃO DE FASES ===================== -->
+  <section id="screen-menu" class="screen active">
+    <div id="menu-fireflies" class="fireflies" aria-hidden="true"></div>
+    <div class="menu-inner">
+      <div class="menu-head">
+        <div class="logo-blob" id="logo-blob"><span class="eye"></span><span class="eye"></span></div>
+        <h1 class="title">GELECA</h1>
+        <p class="subtitle">sacrifique-se para subir</p>
+      </div>
+      <div class="world-card">
+        <div class="world-top">
+          <span class="world-name"><span class="world-dot"></span>MUNDO 1 · Vale Verdejante</span>
+          <span class="world-pct" id="world-pct">0%</span>
+        </div>
+        <div class="world-bar"><i id="world-bar"></i></div>
+        <div id="menu-stats" class="menu-stats"></div>
+      </div>
+      <div id="level-grid" class="level-map"></div>
+      <button id="btn-open-custom" class="menu-btn">🛠️ Criar / Minhas Fases</button>
+      <button id="btn-water-proto" class="menu-btn">🌊 Protótipo: Água</button>
+      <p class="menu-hint">Cada pulo custa massa. Empilhe pedaços, reabsorva, escale paredes.</p>
+    </div>
+  </section>
+
+  <!-- ===================== MINHAS FASES ===================== -->
+  <section id="screen-custom" class="screen">
+    <div class="menu-inner">
+      <div class="custom-head">
+        <button id="btn-custom-back" class="hud-btn" title="Menu">☰</button>
+        <h2 class="custom-title">🛠️ Minhas Fases</h2>
+        <button id="btn-new-level" class="menu-btn small">➕ Nova</button>
+      </div>
+      <div class="io-row">
+        <button id="btn-export-all" class="ed-btn">📤 Exportar tudo</button>
+        <button id="btn-import" class="ed-btn">📥 Importar</button>
+      </div>
+      <div id="custom-list" class="custom-list"></div>
+      <p class="menu-hint">Crie suas fases e defina o número (Fase 1, 2, 3…). Ficam salvas neste aparelho.</p>
+    </div>
+  </section>
+
+  <!-- ===================== EDITOR (estilo Mario Maker) ===================== -->
+  <section id="screen-editor" class="screen">
+    <div id="ed-top">
+      <button id="ed-back" class="hud-btn" title="Sair">✕</button>
+      <input id="ed-name" class="ed-name" placeholder="Nome da fase" maxlength="22" />
+      <label class="ed-field">Fase <select id="ed-slot"></select></label>
+      <label class="ed-field">Massa <input id="ed-mass" type="number" min="1" max="20" value="8" /></label>
+      <button id="ed-test" class="ed-btn">▶ Testar</button>
+      <button id="ed-save" class="ed-btn primary">💾 Salvar</button>
+      <button id="ed-export" class="ed-btn" title="Exportar código pra tornar permanente">📤</button>
+    </div>
+    <div id="ed-stage">
+      <canvas id="ed-canvas"></canvas>
+      <button id="ed-left" class="ed-pan">◀</button>
+      <button id="ed-right" class="ed-pan right">▶</button>
+    </div>
+    <div id="ed-palette"></div>
+    <div id="ed-hint" class="ed-hintbar">Pinte e arraste. 1 início 🟩 + 1 saída 🏁. Dica: 🧱 Falsa é uma CAMADA — ponha uma recompensa (💎/⭐/🟢) e cubra com ela.</div>
+  </section>
+
+  <!-- ===================== JOGO ===================== -->
+  <section id="screen-game" class="screen">
+    <div id="hud">
+      <button id="btn-menu" class="hud-btn" title="Menu">☰</button>
+      <div class="hud-mid">
+        <span id="level-name">Fase 1</span>
+        <span id="mass-pips" class="pips"></span>
+      </div>
+      <button id="btn-bot" class="hud-btn" title="Autopilot (B)">🤖</button>
+      <button id="btn-mute" class="hud-btn" title="Som (M)">🔊</button>
+      <button id="btn-reset" class="hud-btn" title="Reiniciar (R)">↺</button>
+    </div>
+
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <div id="bot-badge" class="bot-badge">🤖 AUTOPILOT</div>
+      <div id="hint" class="hint-banner"></div>
+      <!-- controles sobrepostos (mais área de jogo): joystick esq., ações dir. -->
+      <div id="touch">
+        <div id="stick" class="stick"><div id="knob" class="knob"></div></div>
+        <div id="actions">
+          <button id="btn-grab" class="act act-grab" aria-label="Reabsorver massa">
+            <svg class="ic ic-grab" viewBox="0 0 40 40" aria-hidden="true">
+              <!-- setas apontando pra dentro = juntar/coletar -->
+              <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 8 L20 13 L25 8"/>
+                <path d="M15 32 L20 27 L25 32"/>
+                <path d="M8 15 L13 20 L8 25"/>
+                <path d="M32 15 L27 20 L32 25"/>
+              </g>
+              <circle class="grab-dot" cx="20" cy="20" r="3.4"/>
+            </svg>
+          </button>
+          <button id="btn-jump" class="act act-jump" aria-label="Pular">
+            <svg class="ic ic-jump" viewBox="0 0 48 48" aria-hidden="true">
+              <path class="jump-arrow" d="M24 39 L24 12 M13 23 L24 11 L35 23"
+                    fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="overlay" class="overlay hidden"></div>
+    </div>
+
+    <div id="controls">
+      <span><b>← →</b> mover</span><span><b>↑ / Espaço</b> pular</span>
+      <span><b>E</b> reabsorver</span><span><b>R</b> reiniciar</span>
+    </div>
+  </section>
+
+  <!-- ===================== MODAL EXPORTAR / IMPORTAR ===================== -->
+  <div id="io-modal" class="io-modal hidden">
+    <div class="io-box">
+      <h3 id="io-title">Exportar</h3>
+      <p id="io-note" class="io-note"></p>
+      <textarea id="io-text" spellcheck="false"></textarea>
+      <div class="io-actions">
+        <button id="io-copy" class="ed-btn primary">📋 Copiar</button>
+        <button id="io-do" class="ed-btn">Importar</button>
+        <button id="io-close" class="ed-btn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="game.js"></script>
+</body>
+</html>
