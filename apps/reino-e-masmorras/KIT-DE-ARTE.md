@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino e Clérigo prontos (integrados) — faltam as outras 10
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino e Clérigo prontos (integrados), Cavaleiro com prompt escrito — faltam as outras 9
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -500,18 +500,22 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Cavaleiro
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Cavaleiro, uma linha por trilha
 
+> Substitui o prompt antigo (pré-reformulação da classe) — os nomes de antes (Postura de Bastião, Investida Montada, Rugido de Comando etc.) não existem mais na árvore real e a arte já entregue (`cavaleiro.webp`) ainda reflete essas habilidades antigas; este prompt novo usa as habilidades reais de hoje (Bastião: Determinação/Retaliação · Investida: Momentum · Comando: Ordens/Comando Supremo) e precisa gerar arte nova pra substituir a atual.
+
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
 
-One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the ability's silhouette/symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
 
-Row 1 ("Bastião" path, steel-blue defense theme): 1) "Postura de Bastião" — a heater-shield planted into the ground, steel-blue aura ring. 2) "Guarda Total" — a steel-blue shield absorbing a heavy impact with sparks. 3) "Bastião Pessoal" — a shield wrapped in a shimmering warding-rune dome. 4) "Provocar" — a roaring warhorn with small red arrows converging on it. 5) "Bastião Absoluto" — a massive fortress-shaped steel shield radiating a powerful blue-white aura.
+One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 2 ("Investida" path, charge-red theme): 6) "Investida Montada" — a lance striking forward, a sharp horizontal motion-streak. 7) "Golpe de Lança" — a lance-tip thrust with a small impact-burst. 8) "Fúria da Cavalaria" — a lance crossed with a golden crit-starburst, a small dust-cloud beneath. 9) "Carga Devastadora" — a charging lance leaving a long red motion-streak with a cracked-ground impact. 10) "Última Carga" — a lance strike wreathed in a desperate red battle-aura.
+Row 1 ("Bastião" path — every medallion's rim and inner glow painted in a steel blue-grey, #7a8a9a): 1) "Muralha de Ferro" — a heater shield locked into a defensive stance, a heavy incoming blow shattering into sparks against its steel-blue surface. 2) "Escudo Colossal" — an oversized ornate shield radiating a warding barrier-dome of steel-blue light around itself. 3) "Última Guarda" — a kneeling armored knight silhouette, shield raised, one single thin ember of light glowing at his chest. 4) "Contra-Ataque Absoluto" — a shield with crackling stored energy building across its face, about to release it back outward in a burst. 5) "Fortaleza Viva" — an armored knight silhouette merging with a rampart of stone and steel, becoming an immovable fortress.
 
-Row 3 ("Comando" path, command-gold theme): 11) "Rugido de Comando" — a warhorn with golden sound-wave rings radiating outward. 12) "Escudo Inabalável" — a golden banner-emblem shield wrapped in a warding-rune glow. 13) "Cadência de Comando" — a golden hourglass spinning fast, a small lightning-swirl around it. 14) "Comando Defensivo" — a golden war-banner planted beside overlapping shields. 15) "Estandarte Inabalável" — a tall golden war-banner radiating a wide protective aura.
+Row 2 ("Investida" path — every medallion's rim and inner glow painted in a charge-red, #a5432f): 6) "Investida" — a lance striking forward on horseback, a sharp horizontal motion-streak trailing behind it. 7) "Romper Formação" — a lance-tip punching clean through a shattering shield-wall. 8) "Carga Implacável" — a lance wreathed in a chaotic overload of red energy, unleashed in one unstoppable overcharged strike. 9) "Golpe de Ruptura" — a lance strike cracking straight through a breastplate, fracture-lines spreading across the armor. 10) "Última Carga" — a reckless full-force lance strike engulfed in a wild crimson battle-aura, the rider visibly overextended and off-balance.
 
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+Row 3 ("Comando" path — every medallion's rim and inner glow painted in a command-gold, #e0c060): 11) "Ordem: Ataque" — a golden warhorn blaring beside a sword thrust, a small burst of command-light marking the signal. 12) "Ordem: Avançar" — a golden warhorn with forward-streaking light-trails, signaling a swift advance. 13) "Ordem: Resistir" — a golden-trimmed shield raised behind a glowing defensive ward, holding the line. 14) "Ordem: Executar" — a golden-edged sword strike descending on a nearly-defeated silhouette, a finishing blow. 15) "Estandarte do Rei" — a tall golden royal standard planted firm, radiating a wide protective aura around it.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 #### Habilidades Ativas — Paladino
@@ -678,7 +682,8 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Mago** — arte já entregue e integrada (`mago-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Ladino** — arte já entregue e integrada (`ladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Clérigo** — arte já entregue e integrada (`clerigo-passivas.webp`); prompt mantido abaixo como referência.
-- ⛔ Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- 🕓 **Cavaleiro** — prompt abaixo, pronto pra gerar.
+- ⛔ Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -733,6 +738,25 @@ Row 1 ("Devoção" path — every medallion's rim and inner glow painted in a pa
 Row 2 ("Retidão" path — every medallion's rim and inner glow painted in a deeper bronze-gold, #b8862e): 4) "Guarda da Alma" — a bronze-gold shield with a faint spectral second shield-outline layered protectively behind it. 5) "Intercessão" — a shattering bronze-gold shield with soft healing light glowing from within its cracks. 6) "Santuário Vivo" — a bronze-gold shield cracking open to release one massive absorbing flash, shielding a kneeling figure at the last moment.
 
 Row 3 ("Provação" path — every medallion's rim and inner glow painted in a dusty holy violet, #8a4a6b): 7) "Acusação" — a jagged crack of violet holy light striking a small skull, marking it with a glowing judgment sigil. 8) "Peso do Veredito" — a skull weighed down beneath several stacked glowing violet judgment rings. 9) "Juízo Final" — five glowing violet judgment rings collapsing together into one brilliant violet-white burst.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Cavaleiro
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Cavaleiro (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Bastião" path — every medallion's rim and inner glow painted in a steel blue-grey, #7a8a9a): 1) "Reação Defensiva" — a shield deflecting a blow that sparks into a small coiled counter-strike energy building up behind it, ready to snap forward. 2) "Juramento de Resistência" — a gauntleted fist clenched in an oath, thin chain-links shattering and dissolving around it. 3) "Bastião Inquebrável" — a heavily cracked shield still holding together, one last steady ember of light glowing at its center against the spreading fractures.
+
+Row 2 ("Investida" path — every medallion's rim and inner glow painted in a charge-red, #a5432f): 4) "Momentum" — a galloping horse's hoof leaving a trail of intensifying red speed-streaks building into a bright aura. 5) "Sede de Vitória" — a lance-tip glowing with absorbed crimson light, drawing life-essence up from a fading fallen silhouette below. 6) "Cavaleiro Imparável" — a lance leaving multiple overlapping afterimage streaks converging into one blur at maximum intensity.
+
+Row 3 ("Comando" path — every medallion's rim and inner glow painted in a command-gold, #e0c060): 7) "Liderança" — a golden banner with small orbiting light-motes circling back and returning to it. 8) "Disciplina Inabalável" — a golden warhorn standing firm as incoming pressure-arrows dissolve into golden light-motes around it. 9) "Grande Comandante" — a golden crown-emblem with three converging beams of light locking together into one radiant burst.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
