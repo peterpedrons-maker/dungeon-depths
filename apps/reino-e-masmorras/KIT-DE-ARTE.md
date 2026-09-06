@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro e Mago prontos (integrados), Ladino com prompt escrito — faltam as outras 11
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago e Ladino prontos (integrados), Clérigo com prompt escrito — faltam as outras 10
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -482,17 +482,19 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Clérigo, uma linha por trilha
 
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small holy effect, weapon, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
 
-One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the ability's holy effect/symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
 
-Row 1 ("Devoção" path, holy-gold healing theme): 1) "Cura Divina" — a golden holy chalice overflowing with radiant light, small healing sparkles rising. 2) "Renovação" — a glowing golden cross with soft healing rays fanning outward. 3) "Escudo Sagrado" — a translucent golden holy-barrier dome. 4) "Milagre" — descending beams of golden holy light converging on a kneeling silhouette. 5) "Ressurreição Menor" — a bright golden phoenix-feather-like light burst rising upward.
+One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 2 ("Retidão" path, holy-bronze defense theme): 6) "Escudo da Retidão" — a golden holy shield absorbing an impact with a bright flash. 7) "Golpe Sagrado" — a mace strike wreathed in golden holy light with a small impact burst. 8) "Voto de Proteção" — a golden shield emblazoned with a glowing cross-sigil. 9) "Martelo da Fé" — a warhammer strike wreathed in radiant golden light, a ground-crack impact. 10) "Muralha Divina" — a towering wall of golden holy light-pillars.
+Row 1 ("Devoção" path — every medallion's rim and inner glow painted in a pale warm gold, #d8c27a): 1) "Cura Divina" — a golden holy chalice overflowing with radiant light, small healing sparkles rising. 2) "Renovação" — a glowing golden cross with soft healing rays fanning outward. 3) "Escudo Sagrado" — a translucent golden holy-barrier dome shielding a small kneeling figure. 4) "Milagre" — descending beams of golden holy light converging on a kneeling silhouette. 5) "Ressurreição Menor" — a bright golden phoenix-feather-like light burst rising upward.
 
-Row 3 ("Provação" path, holy-purple fire theme): 11) "Chama Purificadora" — a golden-white holy flame igniting a small enemy silhouette. 12) "Purificação Divina" — a burst of cleansing golden light dissolving small dark chain-link debuff icons. 13) "Sentença Final" — a golden holy hammer descending onto a cracked skull marked with a judgment sigil. 14) "Ira Consumidora" — golden holy fire engulfing a burning enemy silhouette in a bright flash. 15) "Apocalipse Sagrado" — a massive golden-white holy fire eruption with radiant judgment beams.
+Row 2 ("Retidão" path — every medallion's rim and inner glow painted in a deeper bronze-gold, #b8862e): 6) "Escudo da Retidão" — a bronze-gold holy shield absorbing an impact with a bright flash. 7) "Golpe Sagrado" — a mace strike wreathed in radiant bronze-gold holy light with a small impact burst. 8) "Voto de Proteção" — a bronze-gold shield emblazoned with a glowing cross-sigil. 9) "Martelo da Fé" — a warhammer strike wreathed in radiant bronze-gold light, a ground-crack impact. 10) "Muralha Divina" — a towering wall of glowing bronze-gold holy light-pillars.
 
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+Row 3 ("Provação" path — every medallion's rim and inner glow painted in a dusty holy violet, #8a4a6b): 11) "Chama Purificadora" — a violet-white holy flame igniting a small enemy silhouette. 12) "Purificação Divina" — a burst of cleansing violet-white light dissolving small dark chain-link debuff icons. 13) "Sentença Final" — a violet holy hammer descending onto a cracked skull marked with a glowing judgment sigil. 14) "Ira Consumidora" — violet holy fire engulfing a burning enemy silhouette in a bright flash. 15) "Apocalipse Sagrado" — a massive violet-white holy fire eruption with radiant judgment beams.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 #### Habilidades Ativas — Cavaleiro
@@ -674,8 +676,9 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 
 - ✅ **Guerreiro** — arte já entregue e integrada (`guerreiro-passivas.webp`); prompt original não documentado aqui porque foi gerado antes desta convenção existir por escrito.
 - ✅ **Mago** — arte já entregue e integrada (`mago-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Ladino** — prompt abaixo, pronto pra gerar.
-- ⛔ Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- ✅ **Ladino** — arte já entregue e integrada (`ladino-passivas.webp`); prompt mantido abaixo como referência.
+- 🕓 **Clérigo** — prompt abaixo, pronto pra gerar.
+- ⛔ Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -711,6 +714,25 @@ Row 1 ("Assassino" path — every medallion's rim and inner glow painted in a to
 Row 2 ("Dançarino de Lâminas" path — every medallion's rim and inner glow painted in a cold slate-grey, #5b5f6a): 4) "Réplica Precisa" — a translucent duplicate blade piercing straight through a cracking armor plate. 5) "Fluxo Intocável" — a rippling heat-haze-like distortion field deflecting an incoming blade just before it lands. 6) "Mestre das Imagens" — three overlapping translucent silhouettes arranged in a perfect closed loop, one fading back into solid form.
 
 Row 3 ("Trapaceiro" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 7) "Explorar Erro" — a dagger's tip slipping straight into a glowing crack/seam in a cracked armor plate, exploiting the opening. 8) "Plano B" — a second hidden dagger concealed up a cloak sleeve, half-drawn and ready as a backup, a faint golden spark along its edge. 9) "Mestre do Improviso" — a gloved hand smoothly catching a thrown dagger out of midair by the hilt, a faint lucky golden spark trailing behind it.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Clérigo
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Clérigo (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Devoção" path — every medallion's rim and inner glow painted in a pale warm gold, #d8c27a): 1) "Graça Transbordante" — a golden chalice overflowing past its rim, the spilling light crystallizing into a small glowing shield-shard. 2) "Misericórdia Ativa" — a small golden hand gently lifting a wilting dark thorn/vine away from a wound, the vine dissolving into light. 3) "Graça Divina" — a radiant golden chalice with a brilliant double halo-ring around it, overflowing generously.
+
+Row 2 ("Retidão" path — every medallion's rim and inner glow painted in a deeper bronze-gold, #b8862e): 4) "Guarda da Alma" — a bronze-gold shield with a faint spectral second shield-outline layered protectively behind it. 5) "Intercessão" — a shattering bronze-gold shield with soft healing light glowing from within its cracks. 6) "Santuário Vivo" — a bronze-gold shield cracking open to release one massive absorbing flash, shielding a kneeling figure at the last moment.
+
+Row 3 ("Provação" path — every medallion's rim and inner glow painted in a dusty holy violet, #8a4a6b): 7) "Acusação" — a jagged crack of violet holy light striking a small skull, marking it with a glowing judgment sigil. 8) "Peso do Veredito" — a skull weighed down beneath several stacked glowing violet judgment rings. 9) "Juízo Final" — five glowing violet judgment rings collapsing together into one brilliant violet-white burst.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
