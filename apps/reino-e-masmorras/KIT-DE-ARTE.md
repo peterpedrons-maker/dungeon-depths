@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo e Cavaleiro prontos (integrados), Paladino com prompt escrito — faltam as outras 8
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro e Paladino prontos (integrados) — faltam as outras 8
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -521,7 +521,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Paladino
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Paladino, uma linha por trilha
 
-> Substitui o prompt antigo (pré-reformulação da classe) — os nomes de antes (Escudo do Voto, Martelo Consagrado, Toque de Luz etc.) não existem mais na árvore real; este prompt novo usa as habilidades e trilhas reais de hoje (Égide, Veredito e Redenção, movidas por Virtudes/Convicção/Liturgia).
+> Substituiu o prompt antigo (pré-reformulação da classe) — os nomes de antes (Escudo do Voto, Martelo Consagrado, Toque de Luz etc.) não existiam mais na árvore real. Arte já gerada e integrada (`paladino.webp`), usando as habilidades e trilhas reais de hoje (Égide, Veredito e Redenção, movidas por Virtudes/Convicção/Liturgia).
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
@@ -687,7 +687,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Ladino** — arte já entregue e integrada (`ladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Clérigo** — arte já entregue e integrada (`clerigo-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Paladino** — prompt abaixo, pronto pra gerar.
+- ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
