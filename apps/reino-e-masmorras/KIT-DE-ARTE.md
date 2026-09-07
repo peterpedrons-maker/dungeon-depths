@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro e Paladino prontos (integrados) — faltam as outras 8
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro e Paladino prontos (integrados), Bárbaro com prompt escrito — faltam as outras 7
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -542,18 +542,22 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Bárbaro
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Bárbaro, uma linha por trilha
 
+> Corrige o prompt antigo — a trilha "Resistência" estava com as habilidades deslocadas uma posição pra frente (faltava "Resistência Absoluta" inteiramente, e "Couro Curtido" nem existe na árvore real) e a trilha "Fúria" tinha "Fúria Berserker" na última posição quando na verdade essa habilidade pertence à trilha Resistência — o nó real ali é "Despertar Berserker". Cor da trilha Resistência também corrigida de marrom para cinza-aço (#6b7280, a cor real no código). Arma do Bárbaro conferida contra `weapon-barbaro.webp`: é machado em todos os 15 ícones, nunca espada/martelo.
+
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
 
-One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the ability's silhouette/symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
 
-Row 1 ("Fúria" path, rage-red theme): 1) "Golpe Selvagem" — a massive two-handed axe strike with a cracked-ground impact. 2) "Corte Sangrento" — an axe slash leaving a trail of dripping blood-red streaks. 3) "Grito de Guerra" — a roaring barbarian silhouette with a golden crit-starburst bursting from an open mouth. 4) "Massacre" — a wide brutal axe-cleave arc with a heavy impact-burst. 5) "Fúria Berserker" — a berserker's clenched fist wreathed in a raging red battle-aura, glowing veins.
+One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 2 ("Resistência" path, rugged-brown defense theme): 6) "Postura Selvagem" — a crude iron shield planted into the ground, rugged brown-red aura. 7) "Couro Curtido" — a thick leather-and-hide shield with a small impact spark. 8) "Fúria Berserker" — a clenched fist wreathed in swirling red-and-black rage-aura, cracked ground beneath. 9) "Fome Sanguinária" — a red vampiric siphon-swirl being drawn into a clenched fist. 10) "Muralha Selvagem" — a jagged wall of crude wooden-and-iron shields lashed together.
+Row 1 ("Fúria" path — every medallion's rim and inner glow painted in a rage-red, #a5432f): 1) "Golpe Selvagem" — a battle-axe strike wreathed in a burst of raw red fury, sparks flying off the impact. 2) "Corte Sangrento" — an axe slash leaving two parallel bleeding gashes trailing crimson mist. 3) "Grito de Guerra" — a roaring barbarian silhouette with an axe raised overhead, red rage-waves radiating outward from the shout. 4) "Massacre" — a two-handed axe cleave with a heavy cracked-ground impact burst. 5) "Despertar Berserker" — a barbarian silhouette erupting into a full-body inferno of red battle-fury, axe raised high, veins glowing.
 
-Row 3 ("Selvageria" path, gold-crit theme): 11) "Fúria Explosiva" — a roaring barbarian face wreathed in a golden crit-starburst explosion. 12) "Investida Selvagem" — a charging barbarian silhouette leaving a rugged brown motion-streak. 13) "Golpe de Caça" — an axe poised for a downward finishing strike over a cracked skull. 14) "Fúria Total" — a double-bladed axe whirling around a bright gold crit-starburst. 15) "Aniquilação" — a massive axe strike shattering a skull silhouette entirely.
+Row 2 ("Resistência Selvagem" path — every medallion's rim and inner glow painted in a steel grey, #6b7280): 6) "Postura Selvagem" — a barbarian bracing with crossed forearms as an incoming blow deflects into a dull grey glow spreading across the chest. 7) "Fúria Berserker" — an axe strike wreathed in a smoldering grey-red inferno erupting from an old battle-scar on the wielder. 8) "Fome Sanguinária" — a barbarian's hand gripping a bleeding wound, dark grey pain-motes being drawn in and converted into a crimson healing glow. 9) "Muralha Selvagem" — a barbarian standing immovable, incoming blows deflecting harmlessly off a rugged grey scarred hide. 10) "Resistência Absoluta" — a barbarian shattering free of dark binding shackles in a burst of grey-white unbroken resolve.
 
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+Row 3 ("Selvageria" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 11) "Fúria Explosiva" — an axe strike with a guaranteed golden crit-starburst opening a fresh bleeding gash. 12) "Investida Selvagem" — a charging barbarian silhouette, axe swinging wide, leaving twin bleeding gashes trailing behind. 13) "Golpe de Caça" — an axe strike refreshing a glowing golden gash-mark on an enemy silhouette, renewing it. 14) "Fúria Total" — an axe engulfed in a swirling storm of golden bleeding gash-marks converging into the blade. 15) "Aniquilação" — a massive axe strike shattering an enemy silhouette marked with five golden gash-scars.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 #### Habilidades Ativas — Arqueiro
@@ -688,7 +692,8 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Clérigo** — arte já entregue e integrada (`clerigo-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
-- ⛔ Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- 🕓 **Bárbaro** — prompt abaixo, pronto pra gerar.
+- ⛔ Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -781,6 +786,25 @@ Row 1 ("Égide" path — every medallion's rim and inner glow painted in a pale 
 Row 2 ("Veredito" path — every medallion's rim and inner glow painted in a charge-red, #a5432f): 4) "Peso da Justiça" — a warhammer cracking clean through several layers of armor plating, each layer breaking away in sequence. 5) "Sentença Certeira" — a warhammer strike locking onto a glowing red-gold targeting sigil with pinpoint precision. 6) "Lei do Martelo" — a warhammer trailing a lingering ember-streak that flares back to life for one more strike.
 
 Row 3 ("Redenção" path — every medallion's rim and inner glow painted in a pale warm gold, #d8c27a): 7) "Cura pelo Dever" — a kneeling knight silhouette bathed in a single warm golden-white pulse of restorative light. 8) "Misericórdia Armada" — a warhammer catching a warm golden-white glow from a closing wound, the light sharpening along its head. 9) "Misericórdia Perfeita" — a golden-white beam of light looping back and re-igniting a dimmed holy emblem, quickening it.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Bárbaro
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Bárbaro (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Fúria" path — every medallion's rim and inner glow painted in a rage-red, #a5432f): 1) "Sangue Quente" — a clenched fist over a warm crimson heartbeat-pulse, alternating between an outgoing strike-glow and an incoming hit-spark. 2) "Sem Freios" — a barbarian's restraint chain snapping apart around a fist wreathed in intensifying red fire. 3) "Frenesi Imparável" — a raging red aura around a barbarian silhouette, burning steady and unbroken without flickering.
+
+Row 2 ("Resistência Selvagem" path — every medallion's rim and inner glow painted in a steel grey, #6b7280): 4) "Dor Alimenta a Raiva" — a grey wound-mark on skin cracking open to release a burst of red fury-light. 5) "Carne que Não Cede" — a barbarian's hide turning to scarred grey stone-like armor as a blow lands and is absorbed. 6) "Inquebrável" — a heavily scarred grey barbarian silhouette standing immovable as cracks spread across it without breaking.
+
+Row 3 ("Selvageria" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 7) "Cortes Abertos" — a golden crit-starburst tearing open a fresh bleeding gash on an enemy silhouette. 8) "Cheiro de Sangue" — a barbarian silhouette's head tilted, sensing a trail of golden blood-motes rising from a wounded enemy in the distance. 9) "Predador Supremo" — a golden-eyed barbarian silhouette locked onto an enemy marked with five golden gash-scars, poised to strike.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
