@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo e Cavaleiro prontos (integrados) — faltam as outras 9
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo e Cavaleiro prontos (integrados), Paladino com prompt escrito — faltam as outras 8
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -521,18 +521,22 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Paladino
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Paladino, uma linha por trilha
 
+> Substitui o prompt antigo (pré-reformulação da classe) — os nomes de antes (Escudo do Voto, Martelo Consagrado, Toque de Luz etc.) não existem mais na árvore real; este prompt novo usa as habilidades e trilhas reais de hoje (Égide, Veredito e Redenção, movidas por Virtudes/Convicção/Liturgia).
+
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small holy weapon, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
 
-One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the ability's silhouette/symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
 
-Row 1 ("Voto Sagrado" path, holy-gold defense theme): 1) "Escudo do Voto" — a golden holy heater-shield with a small cross-sigil and a protective aura ring. 2) "Toque Restaurador" — a gauntleted hand glowing gold, small healing sparkles rising from it. 3) "Aegis Sagrado" — a golden aegis-shield emblazoned with radiant light rays. 4) "Muralha da Fé" — a towering wall of golden light-pillars marked with holy sigils. 5) "Milagre do Voto" — descending golden holy light beams converging on a kneeling knight silhouette.
+One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 2 ("Martelo da Fé" path, holy-red hammer theme): 6) "Martelo Consagrado" — a warhammer strike wreathed in golden holy light with a small impact burst. 7) "Martelo Flamejante" — a warhammer wreathed in golden-orange holy fire, mid-swing. 8) "Silêncio Sagrado" — a warhammer strike with a small golden "mute" rune shattering above the impact. 9) "Martelo do Juízo" — a massive warhammer strike with a radiant golden judgment-burst. 10) "Sentença Divina" — a warhammer descending onto a cracked skull marked with a glowing judgment sigil.
+Row 1 ("Égide" path — every medallion's rim and inner glow painted in a pale holy tan-gold, #c9a86a): 1) "Égide Sagrada" — a golden heater shield manifesting a glowing barrier-disc in front of it, ready to absorb one blow. 2) "Martelo do Guardião" — a warhammer strike beside a shield whose golden glow is visibly renewing and brightening. 3) "Provação do Escudo" — a shield strike radiating two intertwined lights, one bright gold and one soft white. 4) "Égide Suprema" — an oversized golden shield radiating an intense, wide barrier-dome. 5) "Veredito da Fortaleza" — a golden shield fused with a radiant judgment-sigil burst, unleashing a consuming strike.
 
-Row 3 ("Luz Purificadora" path, holy-white heal theme): 11) "Toque de Luz" — an open palm glowing with soft golden-white healing light, small sparkles rising. 12) "Barreira de Luz" — a radiant golden-white light-barrier dome with a small impact spark. 13) "Renascimento" — a golden-white phoenix-like light burst rising from a kneeling silhouette. 14) "Explosão de Luz" — a bright golden-white radiant light explosion, healing sparkles scattering outward. 15) "Radiância" — a golden holy cross wreathed in a crit-starburst.
+Row 2 ("Veredito" path — every medallion's rim and inner glow painted in a charge-red, #a5432f): 6) "Golpe do Veredito" — a warhammer strike wreathed in crimson-gold radiant light, a judgment sigil flashing at the point of impact. 7) "Martelo da Justiça" — a warhammer strike wreathed in intensified red-gold radiant fire, striking down hard. 8) "Luz Condenatória" — a warhammer strike leaving a searing crack of red-gold light spreading across a weakening breastplate. 9) "Veredito" — a massive radiant warhammer strike unleashing a converging judgment-burst. 10) "Última Sentença" — a warhammer strike descending on a nearly-defeated silhouette in one final radiant judgment flash.
 
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+Row 3 ("Redenção" path — every medallion's rim and inner glow painted in a pale warm gold, #d8c27a): 11) "Golpe da Misericórdia" — a sword strike wreathed in soft golden-white light, some of the light visibly flowing back toward the wielder. 12) "Imposição das Mãos" — a glowing golden-white hand laid upon one's own chest, warm healing light spreading outward. 13) "Luz Vingadora" — a sword strike wreathed in golden-white light, healing motes flowing back from the point of impact. 14) "Veredito da Redenção" — a radiant golden-white burst of pure restorative light, no weapon at all, converging on a kneeling knight silhouette. 15) "Luz que Não Cede" — a sword strike wreathed in soft golden-white light, with a second, fainter golden aura just beginning to kindle beside it.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 #### Habilidades Ativas — Bárbaro
@@ -683,7 +687,8 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Ladino** — arte já entregue e integrada (`ladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Clérigo** — arte já entregue e integrada (`clerigo-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
-- ⛔ Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- 🕓 **Paladino** — prompt abaixo, pronto pra gerar.
+- ⛔ Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -757,6 +762,25 @@ Row 1 ("Bastião" path — every medallion's rim and inner glow painted in a ste
 Row 2 ("Investida" path — every medallion's rim and inner glow painted in a charge-red, #a5432f): 4) "Momentum" — a knight's sprinting armored boot striking the ground, leaving a trail of intensifying red speed-streaks building into a bright aura. 5) "Sede de Vitória" — a sword-tip glowing with absorbed crimson light, drawing life-essence up from a fading fallen silhouette below. 6) "Cavaleiro Imparável" — a sword leaving multiple overlapping afterimage streaks converging into one blur at maximum intensity.
 
 Row 3 ("Comando" path — every medallion's rim and inner glow painted in a command-gold, #e0c060): 7) "Liderança" — a golden banner with small orbiting light-motes circling back and returning to it. 8) "Disciplina Inabalável" — an armored knight silhouette standing firm, sword planted point-down before him, incoming pressure-arrows dissolving into golden light-motes around him. 9) "Grande Comandante" — a golden crown-emblem with three converging beams of light locking together into one radiant burst.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Paladino
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Paladino (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Égide" path — every medallion's rim and inner glow painted in a pale holy tan-gold, #c9a86a): 1) "Voto Mantido" — a golden shield that has just blocked a heavy blow, radiating an extra pulse of holy light back into the wielder. 2) "Escudo Vivo" — a fading golden shield outline dissolving into healing light that flows back into the knight. 3) "Égide Perfeita" — a golden shield left perfectly intact after a massive strike, the impact shattering harmlessly around its edges.
+
+Row 2 ("Veredito" path — every medallion's rim and inner glow painted in a charge-red, #a5432f): 4) "Peso da Justiça" — a warhammer cracking clean through several layers of armor plating, each layer breaking away in sequence. 5) "Sentença Certeira" — a warhammer strike locking onto a glowing red-gold targeting sigil with pinpoint precision. 6) "Lei do Martelo" — a warhammer trailing a lingering ember-streak that flares back to life for one more strike.
+
+Row 3 ("Redenção" path — every medallion's rim and inner glow painted in a pale warm gold, #d8c27a): 7) "Cura pelo Dever" — a kneeling knight silhouette bathed in a single warm golden-white pulse of restorative light. 8) "Misericórdia Armada" — a sword catching a warm golden-white glow from a closing wound, the light sharpening along the blade's edge. 9) "Misericórdia Perfeita" — a golden-white beam of light looping back and re-igniting a dimmed holy emblem, quickening it.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
