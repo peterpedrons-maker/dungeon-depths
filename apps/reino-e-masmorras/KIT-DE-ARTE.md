@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino e Clérigo prontos (integrados), Cavaleiro com prompt escrito — faltam as outras 9
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo e Cavaleiro prontos (integrados) — faltam as outras 9
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -500,7 +500,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Cavaleiro
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Cavaleiro, uma linha por trilha
 
-> Substitui o prompt antigo (pré-reformulação da classe) — os nomes de antes (Postura de Bastião, Investida Montada, Rugido de Comando etc.) não existem mais na árvore real e a arte já entregue (`cavaleiro.webp`) ainda reflete essas habilidades antigas; este prompt novo usa as habilidades reais de hoje (Bastião: Determinação/Retaliação · Investida: Momentum · Comando: Ordens/Comando Supremo) e precisa gerar arte nova pra substituir a atual.
+> Substituiu o prompt antigo (pré-reformulação da classe) — os nomes de antes (Postura de Bastião, Investida Montada, Rugido de Comando etc.) não existiam mais na árvore real. Arte já gerada e integrada (`cavaleiro.webp`), usando as habilidades reais de hoje (Bastião: Determinação/Retaliação · Investida: Momentum · Comando: Ordens/Comando Supremo).
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
@@ -682,7 +682,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Mago** — arte já entregue e integrada (`mago-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Ladino** — arte já entregue e integrada (`ladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Clérigo** — arte já entregue e integrada (`clerigo-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Cavaleiro** — prompt abaixo, pronto pra gerar.
+- ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
