@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino e Bárbaro prontos (integrados), Arqueiro com prompt escrito — faltam as outras 6
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro e Arqueiro prontos (integrados) — faltam as outras 6
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -563,7 +563,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Arqueiro
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Arqueiro, uma linha por trilha
 
-> Substitui o prompt antigo (pré-reformulação da classe) — os nomes de antes (Tiro Certeiro, Rajada de Flechas, Esquiva do Caçador etc.) e as próprias trilhas (Precisão/Tiro Rápido/Instinto de Caça) não existem mais na árvore real; este prompt novo usa as trilhas e habilidades reais de hoje (Arco Pleno: Tensão/Horizonte · Tempestade: Cadência/Ritmo Perfeito · Vento Cortante: Distância/Passos/Reflexo). Arma do Arqueiro conferida contra `weapon-arqueiro.webp`: é arco em todos os 15 ícones, nunca outra arma.
+> Substituiu o prompt antigo (pré-reformulação da classe) — os nomes de antes (Tiro Certeiro, Rajada de Flechas, Esquiva do Caçador etc.) e as próprias trilhas (Precisão/Tiro Rápido/Instinto de Caça) não existiam mais na árvore real. Arte já gerada e integrada (`arqueiro.webp`), usando as trilhas e habilidades reais de hoje (Arco Pleno: Tensão/Horizonte · Tempestade: Cadência/Ritmo Perfeito · Vento Cortante: Distância/Passos/Reflexo). Arma do Arqueiro conferida contra `weapon-arqueiro.webp`: é arco em todos os 15 ícones, nunca outra arma.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
@@ -697,7 +697,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bárbaro** — arte já entregue e integrada (`barbaro-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Arqueiro** — prompt abaixo, pronto pra gerar.
+- ✅ **Arqueiro** — arte já entregue e integrada (`arqueiro-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
