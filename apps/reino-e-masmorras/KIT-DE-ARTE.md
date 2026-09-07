@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro e Paladino prontos (integrados), Bárbaro com prompt escrito — faltam as outras 7
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino e Bárbaro prontos (integrados) — faltam as outras 7
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -542,7 +542,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Bárbaro
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Bárbaro, uma linha por trilha
 
-> Corrige o prompt antigo — a trilha "Resistência" estava com as habilidades deslocadas uma posição pra frente (faltava "Resistência Absoluta" inteiramente, e "Couro Curtido" nem existe na árvore real) e a trilha "Fúria" tinha "Fúria Berserker" na última posição quando na verdade essa habilidade pertence à trilha Resistência — o nó real ali é "Despertar Berserker". Cor da trilha Resistência também corrigida de marrom para cinza-aço (#6b7280, a cor real no código). Arma do Bárbaro conferida contra `weapon-barbaro.webp`: é machado em todos os 15 ícones, nunca espada/martelo.
+> Corrigiu o prompt antigo — a trilha "Resistência" estava com as habilidades deslocadas uma posição pra frente (faltava "Resistência Absoluta" inteiramente, e "Couro Curtido" nem existia na árvore real) e a trilha "Fúria" tinha "Fúria Berserker" na última posição quando na verdade essa habilidade pertence à trilha Resistência — o nó real ali é "Despertar Berserker". Cor da trilha Resistência também corrigida de marrom para cinza-aço (#6b7280, a cor real no código). Arma do Bárbaro conferida contra `weapon-barbaro.webp`: é machado em todos os 15 ícones, nunca espada/martelo. Arte já gerada e integrada (`barbaro.webp`).
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
@@ -692,7 +692,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Clérigo** — arte já entregue e integrada (`clerigo-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Bárbaro** — prompt abaixo, pronto pra gerar.
+- ✅ **Bárbaro** — arte já entregue e integrada (`barbaro-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
