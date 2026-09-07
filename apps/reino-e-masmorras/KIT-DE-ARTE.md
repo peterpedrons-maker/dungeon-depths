@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino e Bárbaro prontos (integrados) — faltam as outras 7
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino e Bárbaro prontos (integrados), Arqueiro com prompt escrito — faltam as outras 6
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -563,18 +563,22 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Arqueiro
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Arqueiro, uma linha por trilha
 
+> Substitui o prompt antigo (pré-reformulação da classe) — os nomes de antes (Tiro Certeiro, Rajada de Flechas, Esquiva do Caçador etc.) e as próprias trilhas (Precisão/Tiro Rápido/Instinto de Caça) não existem mais na árvore real; este prompt novo usa as trilhas e habilidades reais de hoje (Arco Pleno: Tensão/Horizonte · Tempestade: Cadência/Ritmo Perfeito · Vento Cortante: Distância/Passos/Reflexo). Arma do Arqueiro conferida contra `weapon-arqueiro.webp`: é arco em todos os 15 ícones, nunca outra arma.
+
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small arrow, effect, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
 
-One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the ability's silhouette/symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
 
-Row 1 ("Precisão" path, gold-crit theme): 1) "Tiro Certeiro" — an arrow striking dead-center of a target with a golden crit-starburst. 2) "Flecha na Perna" — an arrow lodged in a leg silhouette with a small chain-link "slowed" mark. 3) "Tiro Fatal" — an arrow piercing a cracked skull silhouette. 4) "Disparo Perfeito" — two crossed arrows around a bright gold crit-starburst. 5) "Flecha da Morte" — a black-fletched arrow piercing straight through a shattering skull.
+One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 2 ("Tiro Rápido" path, forest-green damage theme): 6) "Rajada de Flechas" — three arrows loosed in rapid succession, motion-streaked. 7) "Chuva de Flechas" — a shower of arrows raining down onto a small target zone. 8) "Tiro Instintivo" — a single arrow mid-flight with a golden crit-starburst trailing behind. 9) "Rajada Mortal" — a dense volley of arrows striking one point with a heavy impact-burst. 10) "Última Flecha" — a single glowing arrow drawn taut on a bow, a desperate red-tinged aura.
+Row 1 ("Arco Pleno" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 1) "Tiro de Medição" — a fully drawn bow, the taut string glowing with measured golden light, the archer's stance steady and precise. 2) "Flecha Perfurante" — an arrow punching clean through a glowing golden armor plate. 3) "Flecha Balística" — a golden-trailed arrow still arcing high overhead, mid-flight, not yet landed. 4) "Disparo Pleno" — a fully drawn bow releasing with a bright golden crit-starburst at the string's peak tension. 5) "Flecha Impossível" — a blazing golden arrow at maximum draw, the bowstring nearly overcharged with light.
 
-Row 3 ("Instinto de Caça" path, teal evasion theme): 11) "Esquiva do Caçador" — a swift teal wind-swirl trailing behind a leaping figure silhouette. 12) "Tiro de Retirada" — an arrow loosed backward while leaping away, motion-blurred. 13) "Corrida Silenciosa" — a silhouette dissolving into a fast teal wind-streak. 14) "Sombra da Mata" — a figure blending into leafy teal-green foliage silhouette. 15) "Um com a Trilha" — a nearly invisible figure outlined only by a faint teal wind-swirl.
+Row 2 ("Tempestade" path — every medallion's rim and inner glow painted in a forest green, #4f9d4f): 6) "Tiro Duplo" — two arrows loosed simultaneously from one bow, green motion-streaks trailing both. 7) "Rajada Crescente" — three arrows fired in rapid rhythmic succession, growing green motion-trails. 8) "Chuva de Flechas" — several arrows still arcing overhead, airborne, raining down in a green-tinted volley. 9) "Salva Implacável" — five arrows loosed together in one relentless green-streaked volley. 10) "Tempestade de Penas" — a swirling storm of arrows and loose feathers caught together in a green vortex.
 
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+Row 3 ("Vento Cortante" path — every medallion's rim and inner glow painted in a teal, #4fb8b0): 11) "Tiro de Recuo" — an archer's silhouette loosing an arrow mid-step backward, a teal motion-streak trailing behind. 12) "Passo Fantasma" — an archer silhouette blurring sideways into a teal wind-streak, nearly vanishing. 13) "Tiro à Queima-Roupa" — an arrow fired at point-blank range with a sharp teal impact-burst. 14) "Flecha de Vento" — an arrow wrapped in a swirling teal wind-vortex as it flies. 15) "Contra-Flecha" — an arrow loosed in a sharp counter-shot, a teal precision-ring flashing around its tip.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 #### Habilidades Ativas — Caçador
@@ -693,7 +697,8 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Cavaleiro** — arte já entregue e integrada (`cavaleiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bárbaro** — arte já entregue e integrada (`barbaro-passivas.webp`); prompt mantido abaixo como referência.
-- ⛔ Arqueiro, Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- 🕓 **Arqueiro** — prompt abaixo, pronto pra gerar.
+- ⛔ Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -805,6 +810,25 @@ Row 1 ("Fúria" path — every medallion's rim and inner glow painted in a rage-
 Row 2 ("Resistência Selvagem" path — every medallion's rim and inner glow painted in a steel grey, #6b7280): 4) "Dor Alimenta a Raiva" — a grey wound-mark on skin cracking open to release a burst of red fury-light. 5) "Carne que Não Cede" — a barbarian's hide turning to scarred grey stone-like armor as a blow lands and is absorbed. 6) "Inquebrável" — a heavily scarred grey barbarian silhouette standing immovable as cracks spread across it without breaking.
 
 Row 3 ("Selvageria" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 7) "Cortes Abertos" — a golden crit-starburst tearing open a fresh bleeding gash on an enemy silhouette. 8) "Cheiro de Sangue" — a barbarian silhouette's head tilted, sensing a trail of golden blood-motes rising from a wounded enemy in the distance. 9) "Predador Supremo" — a golden-eyed barbarian silhouette locked onto an enemy marked with five golden gash-scars, poised to strike.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Arqueiro
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Arqueiro (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Arco Pleno" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 1) "Firmeza do Arco" — a fully drawn bow held rock-steady, golden light building evenly along the taut string. 2) "Recuo Calculado" — an archer's boot stepping back onto a glowing golden marked spot, precise and measured. 3) "Memória Muscular" — a golden afterimage of a hand repeating a perfect, practiced bow-draw motion.
+
+Row 2 ("Tempestade" path — every medallion's rim and inner glow painted in a forest green, #4f9d4f): 4) "Embalo Perfeito" — a bowstring vibrating in a steady, perfect green rhythm-wave. 5) "Ritmo Limpo" — a green targeting-ring locking cleanly onto several points in smooth sequence. 6) "Corda Incansável" — a bowstring glowing green, endlessly taut, never slackening.
+
+Row 3 ("Vento Cortante" path — every medallion's rim and inner glow painted in a teal, #4fb8b0): 7) "Passos" — three glowing teal footprint-marks trailing lightly behind an archer's silhouette. 8) "Reflexo Preparado" — a sharp teal eye-glint narrowing, primed and ready to counter. 9) "Dono do Espaço" — an archer silhouette standing at the center of a teal territorial ring, commanding the ground around them.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
