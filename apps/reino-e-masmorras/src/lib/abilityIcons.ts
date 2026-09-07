@@ -20,6 +20,7 @@ import guerreiroPassivasSheet from '../assets/abilities/guerreiro-passivas.webp'
 import magoPassivasSheet from '../assets/abilities/mago-passivas.webp';
 import ladinoPassivasSheet from '../assets/abilities/ladino-passivas.webp';
 import clerigoPassivasSheet from '../assets/abilities/clerigo-passivas.webp';
+import cavaleiroPassivasSheet from '../assets/abilities/cavaleiro-passivas.webp';
 
 // Each class's 15 active abilities (5 per path × 3 paths) live on one sheet,
 // one row per path in SKILL_TREES[classId] order. cacador has no sheet yet
@@ -90,6 +91,7 @@ const EXCLUSIVE_PASSIVE_SHEET: Partial<Record<ClassId, string>> = {
   mago: magoPassivasSheet,
   ladino: ladinoPassivasSheet,
   clerigo: clerigoPassivasSheet,
+  cavaleiro: cavaleiroPassivasSheet,
 };
 
 const EXCLUSIVE_PASSIVE_COLS = 3;
