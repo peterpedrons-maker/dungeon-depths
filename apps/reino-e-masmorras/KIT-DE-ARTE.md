@@ -25,9 +25,9 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Coração de Rubi — barra de vida](#coracao-de-rubi-barra-de-vida) — jogo hoje usa barra lisa (CSS) no lugar
 - 🕓 [Runa Arcana — barra de XP](#runa-arcana-barra-de-experiencia) — jogo hoje usa barra lisa (CSS) no lugar
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
-- 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
+- ✅ [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 14/14 classes prontas
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro e Arqueiro prontos (integrados), Caçador com prompt escrito — faltam as outras 5
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro e Caçador prontos (integrados) — faltam Feiticeiro, Bruxo, Druida, Bardo, Necromante
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -586,7 +586,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Caçador
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Caçador, uma linha por trilha
 
-> Corrige o prompt antigo em duas frentes — (1) 2 ícones ("Golpe de Misericórdia", "Abate") usavam uma faca de caça que não existe no jogo (a classe usa somente besta, conferido contra `weapon-cacador.webp`, todas as 10 variações são bestas, nunca facas/adagas); (2) as descrições eram ambíguas sobre QUAL PARTE do dardo/besta deveria ter cada efeito, o que gerou arte errada — veneno "pingando" saiu cobrindo a besta inteira em vez de só a ponta de metal do dardo, e "besta disparada contra um crânio" saiu como a arma inteira encravada em vez de só o dardo. Reescrito com a peça exata + limite exato do efeito em cada ícone que envolve o dardo, e com o que excluir explícito (nunca desenhar a arma besta inteira, só o dardo solto). Também upgradado pra convenção de medalhão circular e cores exatas do código.
+> Arte já gerada e integrada (`cacador.webp`). Corrigiu o prompt antigo em duas frentes — (1) 2 ícones ("Golpe de Misericórdia", "Abate") usavam uma faca de caça que não existe no jogo (a classe usa somente besta, conferido contra `weapon-cacador.webp`, todas as 10 variações são bestas, nunca facas/adagas); (2) as descrições eram ambíguas sobre QUAL PARTE do dardo/besta deveria ter cada efeito, o que gerou arte errada — veneno "pingando" saiu cobrindo a besta inteira em vez de só a ponta de metal do dardo, e "besta disparada contra um crânio" saiu como a arma inteira encravada em vez de só o dardo. Reescrito com a peça exata + limite exato do efeito em cada ícone que envolve o dardo, e com o que excluir explícito (nunca desenhar a arma besta inteira, só o dardo solto). Também upgradado pra convenção de medalhão circular e cores exatas do código.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
@@ -706,7 +706,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bárbaro** — arte já entregue e integrada (`barbaro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Arqueiro** — arte já entregue e integrada (`arqueiro-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Caçador** — prompt abaixo, pronto pra gerar.
+- ✅ **Caçador** — arte já entregue e integrada (`cacador-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
