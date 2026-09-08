@@ -10,6 +10,7 @@ import cavaleiroSheet from '../assets/abilities/cavaleiro.webp';
 import paladinoSheet from '../assets/abilities/paladino.webp';
 import barbaroSheet from '../assets/abilities/barbaro.webp';
 import arqueiroSheet from '../assets/abilities/arqueiro.webp';
+import cacadorSheet from '../assets/abilities/cacador.webp';
 import feiticeiroSheet from '../assets/abilities/feiticeiro.webp';
 import bruxoSheet from '../assets/abilities/bruxo.webp';
 import druidaSheet from '../assets/abilities/druida.webp';
@@ -24,16 +25,15 @@ import cavaleiroPassivasSheet from '../assets/abilities/cavaleiro-passivas.webp'
 import paladinoPassivasSheet from '../assets/abilities/paladino-passivas.webp';
 import barbaroPassivasSheet from '../assets/abilities/barbaro-passivas.webp';
 import arqueiroPassivasSheet from '../assets/abilities/arqueiro-passivas.webp';
+import cacadorPassivasSheet from '../assets/abilities/cacador-passivas.webp';
 
 // Each class's 15 active abilities (5 per path × 3 paths) live on one sheet,
-// one row per path in SKILL_TREES[classId] order. cacador has no sheet yet
-// (still waiting on art) — activeAbilityIconStyle returns null for it and
-// callers fall back to the generic star glyph, same as before this existed.
+// one row per path in SKILL_TREES[classId] order.
 const ACTIVE_SHEET: Partial<Record<ClassId, string>> = {
   guerreiro: guerreiroSheet, mago: magoSheet, ladino: ladinoSheet, clerigo: clerigoSheet,
   cavaleiro: cavaleiroSheet, paladino: paladinoSheet, barbaro: barbaroSheet, arqueiro: arqueiroSheet,
-  feiticeiro: feiticeiroSheet, bruxo: bruxoSheet, druida: druidaSheet, bardo: bardoSheet,
-  necromante: necromanteSheet,
+  cacador: cacadorSheet, feiticeiro: feiticeiroSheet, bruxo: bruxoSheet, druida: druidaSheet,
+  bardo: bardoSheet, necromante: necromanteSheet,
 };
 
 const ACTIVE_COLS = 5;
@@ -98,6 +98,7 @@ const EXCLUSIVE_PASSIVE_SHEET: Partial<Record<ClassId, string>> = {
   paladino: paladinoPassivasSheet,
   barbaro: barbaroPassivasSheet,
   arqueiro: arqueiroPassivasSheet,
+  cacador: cacadorPassivasSheet,
 };
 
 const EXCLUSIVE_PASSIVE_COLS = 3;
