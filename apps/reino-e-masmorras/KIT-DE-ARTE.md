@@ -25,9 +25,9 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Coração de Rubi — barra de vida](#coracao-de-rubi-barra-de-vida) — jogo hoje usa barra lisa (CSS) no lugar
 - 🕓 [Runa Arcana — barra de XP](#runa-arcana-barra-de-experiencia) — jogo hoje usa barra lisa (CSS) no lugar
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
-- 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 prontas, Feiticeiro precisa reger arte (prompt antigo tava obsoleto, veja nota na seção)
+- ✅ [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 14/14 classes prontas
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro e Caçador prontos (integrados), Feiticeiro com prompt escrito — faltam Bruxo, Druida, Bardo, Necromante
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador e Feiticeiro prontos (integrados) — faltam Bruxo, Druida, Bardo, Necromante
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -617,7 +617,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 >
 > **v4:** forçou o grimório a aparecer fisicamente nos 24 ícones (uma parte diferente do livro em cada um) — usuário corrigiu: não precisa ser o grimório em tela toda hora, isso é que tava deixando repetitivo. Pode ser o feiticeiro empunhando o livro fazendo um poder, OU só o efeito visual do próprio poder — o que ficar mais bonito e mais claro pra aquela habilidade específica.
 >
-> **v5 (esta versão):** grimório aparece só numa MINORIA deliberada dos ícones — nos dois "abridores" de trilha (a primeira ativa de cada linha) e nos dois "finalizadores" (a última ativa de cada linha), sempre nas mãos do feiticeiro em pose de conjuração dramática, cada pose diferente. As outras 9 ativas e as 9 passivas são o efeito mágico puro em si (cristal, explosão, runa, lâmina), sem o livro — o que dá liberdade pra cada ícone ter a composição mais forte e específica possível pra aquele nó exato, sem repetir nada.
+> **v5 — arte já gerada e integrada (`feiticeiro.webp`):** grimório aparece só numa MINORIA deliberada dos ícones — nos dois "abridores" de trilha (a primeira ativa de cada linha) e nos dois "finalizadores" (a última ativa de cada linha), sempre nas mãos do feiticeiro em pose de conjuração dramática, cada pose diferente. As outras 9 ativas e as 9 passivas são o efeito mágico puro em si (cristal, explosão, runa, lâmina), sem o livro — o que dá liberdade pra cada ícone ter a composição mais forte e específica possível pra aquele nó exato, sem repetir nada. Aprovado pelo usuário.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG/MOBA ability icon reads: a bold, dramatic, high-impact action caught at its single most striking instant, with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram, NEVER a calm static symbol or glyph just floating alone with no visual weight — always a scene of raw power happening right now, rendered with dramatic directional lighting, deep shadow, and a bright glowing core light source.
@@ -640,7 +640,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Passivas Exclusivas — Feiticeiro
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Feiticeiro (nós de índice 6, 8 e 14), uma linha por trilha
 
-> **v5** (mesma revisão da folha de Ativas acima, ver nota lá): removido o grimório forçado em cada ícone — ficava repetitivo. Registro desta folha continua deliberadamente diferente das Ativas pra não colidir com elas: **nenhum ícone de Passivas mostra o feiticeiro nem o grimório** — só o efeito mágico puro, sempre num estado mais **contido/latente/permanente** (uma brasa acesa, um par de faíscas em sincronia, um símbolo gravado) em vez do momento explosivo de auge que as Ativas mostram — reforçando que passiva é um bônus constante, não uma ação.
+> **v5 — arte já gerada e integrada (`feiticeiro-passivas.webp`)** (mesma revisão da folha de Ativas acima, ver nota lá): removido o grimório forçado em cada ícone — ficava repetitivo. Registro desta folha continua deliberadamente diferente das Ativas pra não colidir com elas: **nenhum ícone de Passivas mostra o feiticeiro nem o grimório** — só o efeito mágico puro, sempre num estado mais **contido/latente/permanente** (uma brasa acesa, um par de faíscas em sincronia, um símbolo gravado) em vez do momento explosivo de auge que as Ativas mostram — reforçando que passiva é um bônus constante, não uma ação. Aprovado pelo usuário.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG item/ability icon reads: a richly rendered magical phenomenon with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram with arrows or callouts, NEVER a symbol floating with no visual weight or context.
@@ -744,7 +744,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Bárbaro** — arte já entregue e integrada (`barbaro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Arqueiro** — arte já entregue e integrada (`arqueiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Caçador** — arte já entregue e integrada (`cacador-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Feiticeiro** — prompt abaixo, pronto pra gerar.
+- ✅ **Feiticeiro** — arte já entregue e integrada (`feiticeiro-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
