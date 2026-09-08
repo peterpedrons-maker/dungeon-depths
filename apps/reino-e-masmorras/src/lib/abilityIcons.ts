@@ -26,6 +26,7 @@ import paladinoPassivasSheet from '../assets/abilities/paladino-passivas.webp';
 import barbaroPassivasSheet from '../assets/abilities/barbaro-passivas.webp';
 import arqueiroPassivasSheet from '../assets/abilities/arqueiro-passivas.webp';
 import cacadorPassivasSheet from '../assets/abilities/cacador-passivas.webp';
+import feiticeiroPassivasSheet from '../assets/abilities/feiticeiro-passivas.webp';
 
 // Each class's 15 active abilities (5 per path × 3 paths) live on one sheet,
 // one row per path in SKILL_TREES[classId] order.
@@ -99,6 +100,7 @@ const EXCLUSIVE_PASSIVE_SHEET: Partial<Record<ClassId, string>> = {
   barbaro: barbaroPassivasSheet,
   arqueiro: arqueiroPassivasSheet,
   cacador: cacadorPassivasSheet,
+  feiticeiro: feiticeiroPassivasSheet,
 };
 
 const EXCLUSIVE_PASSIVE_COLS = 3;
