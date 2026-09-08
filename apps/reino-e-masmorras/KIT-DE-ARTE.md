@@ -27,7 +27,7 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
 - 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 classes prontas — só falta Caçador
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro e Arqueiro prontos (integrados) — faltam as outras 6
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro e Arqueiro prontos (integrados), Caçador com prompt escrito — faltam as outras 5
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -584,18 +584,22 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Caçador
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Caçador, uma linha por trilha
 
+> Corrige o prompt antigo — os 15 nomes já batiam com a árvore real (Armadilhas/Rastreio/Precisão da Caça), mas 2 ícones ("Golpe de Misericórdia", "Abate") usavam uma faca de caça que não existe no jogo — a classe usa somente besta (conferido contra `weapon-cacador.webp`, todas as 10 variações são bestas, nunca facas/adagas). Trocados por tiros de besta à queima-roupa. Também upgradado pra convenção de medalhão circular e cores exatas do código.
+
 ```
-Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Each icon is a single small trap, weapon, or symbol illustrating one specific combat ability, richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size.
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
 
-One single image containing FIFTEEN separate icons arranged in an even 5-column × 3-row grid, generous magenta gaps between every icon so each can be cropped out individually later. Every icon centered in its own cell, filling about 75% of that cell, same painted lighting style and rendering quality across all fifteen.
+Each of the fifteen icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the ability's silhouette/symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
 
-Row 1 ("Armadilhas Venenosas" path, toxic-green theme): 1) "Armadilha de Veneno" — a small iron bear-trap dripping sickly green venom. 2) "Tiro Envenenado" — a crossbow bolt tipped with dripping green venom. 3) "Armadilha Mortal" — a spiked iron trap glowing with thick green venom mist. 4) "Golpe de Misericórdia" — a hunting knife stabbing into a green-glowing poisoned wound. 5) "Execução da Presa" — a crossbow bolt piercing a skull wreathed in green venom mist.
+One single image containing FIFTEEN separate medallions arranged in an even 5-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all fifteen — each row's medallions share the exact same rim/glow color, and no two rows share a color.
 
-Row 2 ("Rastreio" path, grey-green evasion theme): 6) "Sumir na Mata" — a hunter's silhouette blending into dense gray-green foliage. 7) "Armadilha de Ferro" — a spiked iron snare trap clamping onto a leg silhouette. 8) "Passo Etéreo" — a silhouette fading into a swirl of pale gray mist. 9) "Manto das Sombras" — a hooded cloak silhouette merging with shadow. 10) "Um com a Caça" — a nearly invisible tracker silhouette, only sharp eyes visible in shadow.
+Row 1 ("Armadilhas" path — every medallion's rim and inner glow painted in a toxic green, #4f7a3a): 1) "Armadilha de Veneno" — a small spiked iron trap dripping sickly green venom. 2) "Tiro Envenenado" — a crossbow bolt tipped with dripping green venom. 3) "Armadilha Mortal" — a spiked iron trap glowing with thick green venom mist. 4) "Golpe de Misericórdia" — a crossbow fired point-blank into a green-glowing poisoned wound. 5) "Execução da Presa" — a crossbow bolt piercing a skull wreathed in green venom mist.
 
-Row 3 ("Precisão da Caça" path, gold-crit theme): 11) "Disparo Preciso" — a crossbow bolt striking dead-center with a golden crit-starburst. 12) "Tiro Duplo" — two crossbow bolts loosed together, crossed motion-streaks. 13) "Abate" — a hunting knife poised over a cracked skull, a downward finishing strike. 14) "Disparo Mortal" — a crossbow bolt with a bright gold crit-starburst trailing behind. 15) "Caça Perfeita" — a crossbow bolt piercing straight through a shattering skull.
+Row 2 ("Rastreio" path — every medallion's rim and inner glow painted in a slate grey, #5b5f6a): 6) "Sumir na Mata" — a hunter's silhouette blending into dense grey-green foliage. 7) "Armadilha de Ferro" — a spiked iron snare trap clamping onto a leg silhouette. 8) "Passo Etéreo" — a silhouette fading into a swirl of pale grey mist. 9) "Manto das Sombras" — a hooded cloak silhouette merging with shadow. 10) "Um com a Caça" — a nearly invisible tracker silhouette, only sharp eyes visible in shadow.
 
-Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between icons — no texture, no gradient, no vignette. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the icons themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark, no border, no frame around any icon (the game already has its own frame it composites on top).
+Row 3 ("Precisão da Caça" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 11) "Disparo Preciso" — a crossbow bolt striking dead-center with a golden crit-starburst. 12) "Tiro Duplo" — two crossbow bolts loosed together, crossed motion-streaks. 13) "Abate" — a crossbow bolt driven point-blank into a cracked skull, a downward finishing shot. 14) "Disparo Mortal" — a crossbow bolt with a bright gold crit-starburst trailing behind. 15) "Caça Perfeita" — a crossbow bolt piercing straight through a shattering skull.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1280×768 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
 
 #### Habilidades Ativas — Feiticeiro
@@ -698,7 +702,8 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Paladino** — arte já entregue e integrada (`paladino-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bárbaro** — arte já entregue e integrada (`barbaro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Arqueiro** — arte já entregue e integrada (`arqueiro-passivas.webp`); prompt mantido abaixo como referência.
-- ⛔ Caçador, Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
+- 🕓 **Caçador** — prompt abaixo, pronto pra gerar.
+- ⛔ Feiticeiro, Bruxo, Druida, Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
@@ -829,6 +834,25 @@ Row 1 ("Arco Pleno" path — every medallion's rim and inner glow painted in a w
 Row 2 ("Tempestade" path — every medallion's rim and inner glow painted in a forest green, #4f9d4f): 4) "Embalo Perfeito" — a bowstring vibrating in a steady, perfect green rhythm-wave. 5) "Ritmo Limpo" — a green targeting-ring locking cleanly onto several points in smooth sequence. 6) "Corda Incansável" — a bowstring glowing green, endlessly taut, never slackening.
 
 Row 3 ("Vento Cortante" path — every medallion's rim and inner glow painted in a teal, #4fb8b0): 7) "Passos" — three glowing teal footprint-marks trailing lightly behind an archer's silhouette. 8) "Reflexo Preparado" — a sharp teal eye-glint narrowing, primed and ready to counter. 9) "Dono do Espaço" — an archer silhouette standing at the center of a teal territorial ring, commanding the ground around them.
+
+Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
+```
+
+#### Passivas Exclusivas — Caçador
+**Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Caçador (nós de índice 6, 8 e 14), uma linha por trilha
+
+```
+Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art.
+
+Each of the nine icons is a CIRCULAR MEDALLION (a coin-like RPG skill-icon badge, not a loose picture floating on the background): a dark, almost-black disc with a soft glow radiating from its center in that row's theme color, ringed by a thick ornamented metal border with small triangular points/teeth jutting outward around the rim, painted in that same row's theme color. Inside the disc, only the symbol, centered, filling about 65-70% of the disc's inner area — richly rendered with warm directional lighting from the upper-left and a bright specular highlight, readable and bold even at small size. NO text, name, number, or label anywhere on or under any medallion.
+
+One single image containing NINE separate medallions arranged in an even 3-column × 3-row grid, generous magenta gaps between every medallion so each can be cropped out individually later. Every medallion the same size, centered in its own cell, same painted lighting style and rendering quality across all nine — each row's medallions share the exact same rim/glow color, and no two rows share a color.
+
+Row 1 ("Armadilhas" path — every medallion's rim and inner glow painted in a toxic green, #4f7a3a): 1) "Preparação em Cadeia" — a spiked iron trap resetting itself, a faint green mechanical spring-glow readying again. 2) "Armadilheiro Adaptável" — a spiked iron trap snapping shut in a burst of disorienting green mist. 3) "Mestre Armadilheiro" — three spiked iron traps arranged together, all primed and glowing green in sequence.
+
+Row 2 ("Rastreio" path — every medallion's rim and inner glow painted in a slate grey, #5b5f6a): 4) "Presa Marcada" — a pale grey tracking-rune glowing over a distant silhouette, locked onto its target. 5) "Instinto de Fuga" — a hunter's silhouette sidestepping an incoming strike in a blur of grey motion. 6) "Predador Paciente" — a patient hunter's eye narrowing steadily in grey shadow, utterly still.
+
+Row 3 ("Precisão da Caça" path — every medallion's rim and inner glow painted in a warm gold, #c89a2e): 7) "Abrir a Guarda" — a golden crit-starburst cracking open a glowing weak point on an enemy silhouette. 8) "Ponto Fraco" — three small golden target-rings converging on one glowing weak point. 9) "Janela Perfeita" — three golden target-rings collapsing together into one bright golden burst.
 
 Solid flat magenta background (#FF00FF) filling the entire canvas and every gap between medallions — no texture, no gradient, no vignette; magenta appears ONLY in those gaps, never inside a medallion's disc/rim/glow. IMPORTANT: do not use magenta, pink, or bright fuchsia anywhere on the medallions themselves — that color is reserved only for the background and will be removed later. Canvas 1024×1024 px. No text, no labels, no numbers, no watermark anywhere in the image.
 ```
