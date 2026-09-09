@@ -25,9 +25,9 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Coração de Rubi — barra de vida](#coracao-de-rubi-barra-de-vida) — jogo hoje usa barra lisa (CSS) no lugar
 - 🕓 [Runa Arcana — barra de XP](#runa-arcana-barra-de-experiencia) — jogo hoje usa barra lisa (CSS) no lugar
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
-- 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 prontas, Druida precisa reger arte (prompt antigo tava obsoleto, veja nota na seção)
+- ✅ [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 14/14 classes prontas
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro e Bruxo prontos (integrados), Druida com prompt escrito — faltam Bardo, Necromante
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo e Druida prontos (integrados) — faltam Bardo, Necromante
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -713,7 +713,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Habilidades Ativas — Druida
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Druida, uma linha por trilha
 
-> Substitui o prompt antigo — a classe foi redesenhada depois que esse prompt foi escrito: nem as trilhas ("Cura Natural"/"Fúria da Natureza"/"Equilíbrio" genérico) nem nenhum dos 15 nomes de habilidade batem com a árvore real de hoje (Renascimento `#3f8a5a` / Metamorfose `#8a3a2a` / Equilíbrio `#4f7a3a`). Reescrito do zero contra `skills.ts`, seguindo o método v5 aprovado (Feiticeiro/Bruxo): medalhão circular, arma só nos 2 ícones de abertura e 2 de finalização de cada trilha (6 no total, nunca na mesma pose), o resto é efeito de natureza puro, nenhuma composição repetida. Arma conferida contra `weapon-druida.webp`: é cajado de madeira com gema/orbe no topo em todas as 10 variações — bem diferente dos grimórios do Feiticeiro/Bruxo, então os 6 ícones "com cajado" abaixo usam essa arma, não um livro.
+> Arte já gerada e integrada (`druida.webp`). Substitui o prompt antigo — a classe foi redesenhada depois que esse prompt foi escrito: nem as trilhas ("Cura Natural"/"Fúria da Natureza"/"Equilíbrio" genérico) nem nenhum dos 15 nomes de habilidade batem com a árvore real de hoje (Renascimento `#3f8a5a` / Metamorfose `#8a3a2a` / Equilíbrio `#4f7a3a`). Reescrito do zero contra `skills.ts`, seguindo o método v5 aprovado (Feiticeiro/Bruxo): medalhão circular, arma só nos 2 ícones de abertura e 2 de finalização de cada trilha (6 no total, nunca na mesma pose), o resto é efeito de natureza puro, nenhuma composição repetida. Arma conferida contra `weapon-druida.webp`: é cajado de madeira com gema/orbe no topo em todas as 10 variações — bem diferente dos grimórios do Feiticeiro/Bruxo, então os 6 ícones "com cajado" abaixo usam essa arma, não um livro.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG/MOBA ability icon reads: a bold, dramatic, high-impact action caught at its single most striking instant, with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram, NEVER a calm static symbol or glyph just floating alone with no visual weight — always a scene of raw power happening right now, rendered with dramatic directional lighting, deep shadow, and a bright glowing core light source.
@@ -736,7 +736,7 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 #### Passivas Exclusivas — Druida
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Druida (nós de índice 6, 8 e 14), uma linha por trilha
 
-> Arte já gerada e integrada assim que o usuário mandar de volta. Mesmo método v5/v2 da folha de Ativas acima: **nenhum ícone mostra o druida nem o cajado** — só o fenômeno de natureza puro, num estado mais contido/latente/permanente do que o auge das Ativas. Cada um dos 9 ícones usa um objeto central inteiramente diferente (regra fixa do kit, ver convenção no topo) — nenhum reciclado nem dentro da mesma trilha.
+> Arte já gerada e integrada (`druida-passivas.webp`). Mesmo método v5/v2 da folha de Ativas acima: **nenhum ícone mostra o druida nem o cajado** — só o fenômeno de natureza puro, num estado mais contido/latente/permanente do que o auge das Ativas. Cada um dos 9 ícones usa um objeto central inteiramente diferente (regra fixa do kit, ver convenção no topo) — nenhum reciclado nem dentro da mesma trilha.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG item/ability icon reads: a richly rendered natural phenomenon with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram with arrows or callouts, NEVER a symbol floating with no visual weight or context.
@@ -808,7 +808,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Caçador** — arte já entregue e integrada (`cacador-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Feiticeiro** — arte já entregue e integrada (`feiticeiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bruxo** — arte já entregue e integrada (`bruxo-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Druida** — prompt abaixo, pronto pra gerar.
+- ✅ **Druida** — arte já entregue e integrada (`druida-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Bardo, Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
