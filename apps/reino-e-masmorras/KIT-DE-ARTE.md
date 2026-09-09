@@ -25,9 +25,9 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Coração de Rubi — barra de vida](#coracao-de-rubi-barra-de-vida) — jogo hoje usa barra lisa (CSS) no lugar
 - 🕓 [Runa Arcana — barra de XP](#runa-arcana-barra-de-experiencia) — jogo hoje usa barra lisa (CSS) no lugar
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
-- 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 prontas (integradas), Necromante reescrito (arma errada + repetição corrigidas) — falta gerar/integrar
+- ✅ [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 14/14 prontas e integradas
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida e Bardo prontos (integrados), Necromante com prompt escrito — falta gerar/integrar
+- ✅ [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — 14/14 prontas e integradas
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -814,6 +814,8 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 **Tamanho:** 1280×768 px · **Uso:** 15 ícones (grade 5×3) — as 15 habilidades ativas do Necromante, uma linha por trilha
 
 > Auditoria contra `skills.ts`: os 15 NOMES do prompt antigo já batiam certinho com a árvore real (Decomposição `#3a3a4a` / Drenar Vida `#4a2a5a` / Ceifador `#c89a2e`) — não precisava de reescrita de nomes. Mas o prompt tinha dois problemas graves: (1) **arma errada** — a trilha "Ceifador" usava uma "foice" (scythe) inventada nos 5 ícones, mas `weapon-necromante.webp` mostra que a arma real do Necromante é um **cajado rematado por uma caveira** (10 variações, todas caveira-no-topo-de-um-cajado, nunca uma foice); (2) **repetição pesada** — "crânio" aparecia em 3 dos 5 ícones da trilha 1, "mão esquelética" em 2 da trilha 1 e 3 da trilha 2, e "foice" nos 5 ícones da trilha 3 (violando a regra de objeto único E não seguindo o método v5 de limitar a arma a 6 dos 15 ícones). Reescrito do zero seguindo o método v5 (Feiticeiro/Bruxo/Druida/Bardo): o cajado-caveira aparece só nos 6 ícones abridores/finalizadores (2 close-up extremo sem silhueta, 4 poses de corpo inteiro radicalmente diferentes entre si), os outros 9 mostram só o fenômeno necrótico puro, e nenhum objeto central se repete entre os 15.
+>
+> ✅ **v2 aprovado e integrado** (`necromante.webp`).
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG/MOBA ability icon reads: a bold, dramatic, high-impact action caught at its single most striking instant, with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram, NEVER a calm static symbol or glyph just floating alone with no visual weight — always a scene of raw necrotic power happening right now, rendered with dramatic directional lighting, deep shadow, and a bright glowing core light source.
@@ -837,6 +839,8 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Necromante (nós de índice 6, 8 e 14), uma linha por trilha
 
 > Primeiro prompt desta folha (não existia antes). Mesma regra do Bardo: como a classe tem uma arma-assinatura bem definida (o cajado-caveira), todos os 9 objetos são peças reais e distintas desse mesmo cajado (ver `weapon-necromante.webp`) — nunca um osso ou crânio solto genérico sem ligação com a arma. Estado contido/latente em todos, nunca a intensidade de pico das Ativas.
+>
+> ✅ **v1 aprovado e integrado** (`necromante-passivas.webp`). Com isso, as 14 classes do jogo têm Ativas e Passivas Exclusivas completas.
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG item/ability icon reads: a richly rendered, detailed close-up of a piece of the necromancer's own skull-topped staff, with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram with arrows or callouts, NEVER a symbol floating with no visual weight or context.
@@ -876,7 +880,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Bruxo** — arte já entregue e integrada (`bruxo-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Druida** — arte já entregue e integrada (`druida-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bardo** — arte já entregue e integrada (`bardo-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Necromante** — prompt abaixo, pronto pra gerar.
+- ✅ **Necromante** — arte já entregue e integrada (`necromante-passivas.webp`); prompt mantido abaixo como referência.
 
 #### Passivas Exclusivas — Mago
 **Tamanho:** 1024×1024 px · **Uso:** 9 ícones (recortar em grade 3×3) — as 3 passivas exclusivas de cada trilha do Mago (nós de índice 6, 8 e 14), uma linha por trilha
