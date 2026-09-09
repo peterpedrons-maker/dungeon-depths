@@ -25,9 +25,9 @@ Legenda: ✅ arte já gerada e integrada no jogo · 🕓 prompt já escrito, esp
 - 🕓 [Coração de Rubi — barra de vida](#coracao-de-rubi-barra-de-vida) — jogo hoje usa barra lisa (CSS) no lugar
 - 🕓 [Runa Arcana — barra de XP](#runa-arcana-barra-de-experiencia) — jogo hoje usa barra lisa (CSS) no lugar
 - ✅ Ícones de Efeito (Buffs & Debuffs) — prompt já usado, removido do kit
-- 🕓 [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 13/14 prontas, Bardo precisa reger arte (prompt antigo tava obsoleto, veja nota na seção)
+- ✅ [Ícones de Habilidades — Ativas por Classe](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas) — 14/14 prontas (Bardo regenerado e integrado)
 - ✅ [Biblioteca de Passivas](#icones-de-habilidades-ativas-por-classe-biblioteca-de-passivas)
-- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo e Druida prontos (integrados), Bardo com prompt escrito — falta Necromante
+- 🕓 [Passivas Exclusivas por Classe](#passivas-exclusivas-por-classe) — Guerreiro, Mago, Ladino, Clérigo, Cavaleiro, Paladino, Bárbaro, Arqueiro, Caçador, Feiticeiro, Bruxo, Druida e Bardo prontos (integrados) — falta só Necromante
 - 🕓 [Ícones de Atributo & Combate](#icones-de-atributo-combate-tela-de-personagem) — jogo hoje usa texto no lugar
 - ✅ Emblemas de Classe — 14/14 classes — prompt já usado, removido do kit
 - 🎨 [Banner de Título](#banner-de-titulo-cabecalho-dos-paineis)
@@ -762,6 +762,8 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 > Substitui o prompt antigo — a classe foi redesenhada depois que esse prompt foi escrito: nem as trilhas ("Canção de Guerra"/"Melodia Sombria"/"Inspiração" genéricas) nem nenhum dos 15 nomes de habilidade batem com a árvore real de hoje (Marcha de Guerra `#c9663c` / Dissonância `#4a2a5a` / Improviso `#e0c060`). Reescrito do zero contra `skills.ts`, seguindo o método v5 aprovado (Feiticeiro/Bruxo/Druida). Arma conferida contra `weapon-bardo.webp`: é alaúde (lute) em todas as 10 variações.
 >
 > **v2 (feedback do usuário):** mesmo com texto diferente, os 6 ícones "com alaúde" saíram parecidos entre si — a mesma silhueta de bardo tocando, na mesma posição, só variando pequenos detalhes. E na trilha Improviso, 3 ícones (12/13/14) usavam o mesmo objeto-base ("uma nota musical") só mudando o que acontecia nela — a mesma falha das moedas do Bruxo v1. Corrigido: (1) os 6 ícones "com alaúde" agora têm enquadramento radicalmente diferente entre si — 2 são close-up extremo só na mão/dedos (sem silhueta nenhuma), e os outros 4 são poses de corpo inteiro tão diferentes quanto possível (ângulo baixo triunfante, visto de costas curvado, sentado de pernas cruzadas, meio-passo de reverência) — nunca mais "silhueta em pé segurando o alaúde" repetido; (2) nenhum ícone de efeito puro usa mais "nota musical" como objeto — cada um dos 15 ícones tem um objeto central próprio, checado um a um pra não repetir.
+>
+> ✅ **v2 aprovado e integrado** (`bardo.webp`).
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG/MOBA ability icon reads: a bold, dramatic, high-impact action caught at its single most striking instant, with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram, NEVER a calm static symbol or glyph just floating alone with no visual weight — always a scene of raw power happening right now, rendered with dramatic directional lighting, deep shadow, and a bright glowing core light source.
@@ -787,6 +789,8 @@ Solid flat magenta background (#FF00FF) filling the entire canvas and every gap 
 > Mesmo método v5/v2 da folha de Ativas acima: **nenhum ícone mostra o bardo** — só o fenômeno musical puro, num estado mais contido/latente/permanente do que o auge das Ativas.
 >
 > **v2:** a v1 usava "nota musical" como objeto-base em 6 dos 9 ícones — mesma falha das moedas do Bruxo. **v3 (feedback do usuário):** a correção da v2 trocou por objetos genéricos de músico que essa classe NUNCA usa — sino, baqueta de bateria, máscara de teatro — o bardo só toca alaúde, então nada disso faz sentido pra ele. Corrigido de vez: **os 9 objetos agora são todos peças e acessórios reais do próprio alaúde** (a mesma arma de `weapon-bardo.webp`) — cravelha, capotraste, corda, boca/caixa de ressonância, traste, tampo harmônico, ponte do instrumento, estojo — nunca um objeto de outro instrumento ou de teatro. Continuam sem repetir peça entre si.
+>
+> ✅ **v3 aprovado e integrado** (`bardo-passivas.webp`).
 
 ```
 Hand-painted medieval fantasy game UI asset, rich digital painting style, icon set for a talent/ability tree — same painted style as the game's other UI icons (gold coin, health potion, ruby heart), NOT flat vector, NOT pixel art. Every icon must read the way a real, professionally-painted RPG item/ability icon reads: a richly rendered, detailed close-up of a piece of a musical instrument, with a strong, instantly-readable silhouette that stays legible even shrunk down very small. NEVER a flat technical diagram with arrows or callouts, NEVER a symbol floating with no visual weight or context.
@@ -842,7 +846,7 @@ Segunda folha por classe, irmã da "Habilidades Ativas" acima: os nós de índic
 - ✅ **Feiticeiro** — arte já entregue e integrada (`feiticeiro-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Bruxo** — arte já entregue e integrada (`bruxo-passivas.webp`); prompt mantido abaixo como referência.
 - ✅ **Druida** — arte já entregue e integrada (`druida-passivas.webp`); prompt mantido abaixo como referência.
-- 🕓 **Bardo** — prompt abaixo, pronto pra gerar.
+- ✅ **Bardo** — arte já entregue e integrada (`bardo-passivas.webp`); prompt mantido abaixo como referência.
 - ⛔ Necromante — ainda sem prompt escrito.
 
 #### Passivas Exclusivas — Mago
