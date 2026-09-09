@@ -1031,7 +1031,9 @@ function applyNightmare(inst: EnemyInstance): EnemyInstance {
 // rotations, cooldowns, resources, defensive loops and boss phases have time
 // to matter instead of collapsing into one- or two-hit encounters.
 const REGULAR_HP_MULT = 5.0;
-const REGULAR_ATK_MULT = 1.25;
+// Doubled per user request ("aumente o ataque dos inimigos... pode dobrar")
+// — regulars were landing for too little relative to player HP/mitigation.
+const REGULAR_ATK_MULT = 2.5;
 const REGULAR_DEF_MULT = 1.25;
 // Bosses are deliberately long attrition fights; HP remains high so their
 // phases and signature mechanics can actually play out over a full battle.
@@ -1052,7 +1054,10 @@ const BOSS_HP_MULT = 4.5;
 // harness), while a same-level fresh arrival still loses, matching the
 // "não deve matar o boss sem equipamento, mas deve conseguir depois de
 // algumas melhorias" requirement instead of an impossible one.
-const BOSS_ATK_MULT = 0.65;
+// Raised (0.65 -> 1.0) per a later user request to hit harder across the
+// board — kept below a full double to avoid reintroducing the "boss needs
+// 20+ hits, player dies in 2-3" compounding problem documented above.
+const BOSS_ATK_MULT = 1.0;
 const BOSS_DEF_MULT = 1.30;
 
 // User-specified cut (~35-40%, using the midpoint) to gold earned per kill —

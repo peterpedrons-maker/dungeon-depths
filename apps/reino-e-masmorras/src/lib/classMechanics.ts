@@ -20,14 +20,15 @@ const MECHANICS: Partial<Record<ClassId, ClassMechanic[]>> = {
     { id:'bruxo:forgery', classId:'bruxo', name:'Assinatura Falsa', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'✎',hideWhenZero:true,priority:31,color:'gold'}, shortDescription:'Após consumir Nome Verdadeiro, cancela uma geração futura de Dívida.', fullDescription:'Assinatura Falsa é consumida antes do Crédito e persiste entre inimigos da mesma tentativa. Ela apenas nega a Dívida, sem conceder o bônus de Bom Pagador.' },
   ],
   druida: [
-    { id:'druida:garden', classId:'druida', name:'Jardim Vivo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🌱',hideWhenZero:false,priority:9,color:'emerald'}, shortDescription:'Sementes, Brotos e Frutos cultivados entre ações sintonizadas.', fullDescription:'Sementes crescem em Brotos e Frutos antes de cada magia sintonizada. Frutos são colhidos por Renascimento.' },
-    { id:'druida:season', classId:'druida', name:'Estação', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'☘',hideWhenZero:false,priority:10,color:'emerald'}, shortDescription:'O ciclo alterna Primavera, Verão, Outono e Inverno.', fullDescription:'A Estação atual define a magia sintonizada e a Forma do Druida. Ela persiste entre inimigos da mesma tentativa e reinicia numa nova tentativa.' },
-    { id:'druida:attunement', classId:'druida', name:'Sintonia', category:'resource', combatDisplay:{owner:'player',displayType:'bar',maxValue:3,icon:'✦',hideWhenZero:false,priority:11,color:'lime'}, shortDescription:'Ações alinhadas cultivam Sintonia.', fullDescription:'Habilidades da Estação aumentam Sintonia e fortalecem o próximo efeito do Ciclo Vivo.' },
-    { id:'druida:perfect_year', classId:'druida', name:'Ano Perfeito', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'◉',hideWhenZero:true,priority:12,color:'gold'}, shortDescription:'Completar as quatro Estações prepara Renovo.', fullDescription:'Cada Estação pode ser concluída uma vez por Ano. Ao completar as quatro, o Druida gera um Renovo.' },
-    { id:'druida:renewal', classId:'druida', name:'Renovo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'❖',hideWhenZero:false,priority:13,color:'lime'}, shortDescription:'Uma reserva de renascimento que persiste entre inimigos.', fullDescription:'Renovo pode ser consumido por habilidades de Equilíbrio e persiste durante a tentativa.' },
-    { id:'druida:dissonance', classId:'druida', name:'Descompasso', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'◇',hideWhenZero:true,priority:14,color:'purple'}, shortDescription:'Ações fora do centro acumulam Descompasso.', fullDescription:'Ataques básicos e magias fora da Estação geram Descompasso. Equilíbrio converte esse excesso em poder.' },
-    { id:'druida:form', classId:'druida', name:'Forma', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'🐾',hideWhenZero:true,priority:15,color:'lime'}, shortDescription:'Cervo, Lobo, Urso ou Coruja.', fullDescription:'A Forma atual concede um conjunto diferente de bônus e persiste entre inimigos da tentativa.' },
-    { id:'druida:avatar', classId:'druida', name:'Avatar Primordial', category:'state', combatDisplay:{owner:'player',displayType:'counter',icon:'✧',hideWhenZero:true,priority:16,color:'gold'}, shortDescription:'As quatro Formas atuam simultaneamente por ações limitadas.', fullDescription:'Avatar é um estado do próprio Druida, não uma invocação.' },
+    { id:'druida:season', classId:'druida', name:'Estação', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'☘',hideWhenZero:false,priority:10,color:'emerald'}, shortDescription:'O Ciclo Vivo alterna Primavera, Verão, Outono e Inverno a cada ação real.', fullDescription:'Cada ação real do Druida (ataque básico ou habilidade) avança a Estação para a próxima do ciclo. Habilidades marcadas com a Estação atual (ou marcadas Cíclicas) estão alinhadas; as demais estão descompassadas. Quando uma nova Estação começa, toda habilidade equipada alinhada a ela tem seu cooldown zerado (Despertar Sazonal) — isso garante que o Ano Perfeito seja alcançável independente da velocidade do personagem. A Estação persiste entre inimigos da mesma tentativa e só reinicia numa tentativa nova.' },
+    { id:'druida:attunement', classId:'druida', name:'Sintonia', category:'state', combatDisplay:{owner:'player',displayType:'bar',maxValue:4,icon:'✦',hideWhenZero:false,priority:11,color:'lime'}, shortDescription:'Marca quais das quatro Estações já foram cumpridas neste Ano.', fullDescription:'Toda vez que uma ação real é lançada alinhada à Estação atual (ou é Cíclica), aquela Estação fica Sintonizada pelo restante do Ano. Sintonizar as quatro Estações no mesmo Ano — Primavera, Verão, Outono e Inverno, sem pular nenhuma — completa um Ano Perfeito na transição de Inverno para Primavera, concedendo um Renovo.' },
+    { id:'druida:renewal', classId:'druida', name:'Renovo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:1,icon:'❖',hideWhenZero:false,priority:13,color:'lime'}, shortDescription:'Reserva rara concedida por um Ano Perfeito; fortalece a próxima habilidade capstone.', fullDescription:'Só existe um Renovo por vez (0 ou 1). Ele é concedido automaticamente ao completar um Ano Perfeito e é consumido no início do cast de uma habilidade capstone de qualquer especialização (Árvore Ancestral, Avatar Primordial ou Eterno Retorno), tornando seu efeito ainda mais forte. Nunca é gasto sozinho — apenas por essas habilidades. Persiste entre inimigos da mesma tentativa.' },
+    { id:'druida:garden', classId:'druida', name:'Jardim Vivo', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🌱',hideWhenZero:false,priority:9,color:'emerald'}, shortDescription:'Sementes que crescem em Brotos e depois em Frutos a cada ação sintonizada.', fullDescription:'Toda unidade do Jardim avança um estágio (Semente → Broto → Fruto) sempre que o Druida lança uma habilidade sintonizada, antes mesmo dela resolver. Frutos maduros são colhidos por Colheita Ancestral para curar, e Fruto de Reserva consome um Fruto automaticamente para salvar o Druida quando a vida cai abaixo de 35%, uma vez por Ano. O Jardim Vivo (nó de Renascimento) aumenta a capacidade máxima de 2 para 3 unidades.' },
+    { id:'druida:form', classId:'druida', name:'Forma', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'🐾',hideWhenZero:true,priority:15,color:'lime'}, shortDescription:'Cervo, Lobo, Urso ou Coruja — cada uma concede um bônus de combate diferente.', fullDescription:'Cada Estação corresponde a uma Forma (Primavera→Cervo, Verão→Lobo, Outono→Urso, Inverno→Coruja). Cervo fortalece MDEF e cura; Lobo acelera e critica mais; Urso reduz dano recebido e amplifica dano mágico; Coruja aumenta precisão e penetra MDEF. A Forma persiste entre inimigos da mesma tentativa.' },
+    { id:'druida:instinct', classId:'druida', name:'Instinto Ancestral', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'🐺',hideWhenZero:true,priority:16,color:'orange'}, shortDescription:'Cresce ao trocar de Forma para uma diferente da anterior.', fullDescription:'Transformar-se pela primeira vez (de Nenhuma para uma Forma) não gera Instinto; trocar para uma Forma diferente da atual gera +1, até o máximo de 3; repetir a mesma Forma não gera nada. Durante o Avatar Primordial as transformações não geram Instinto. Instinto alimenta habilidades de Metamorfose que recompensam trocar de Forma com frequência.' },
+    { id:'druida:avatar', classId:'druida', name:'Avatar Primordial', category:'state', combatDisplay:{owner:'player',displayType:'counter',duration:true,icon:'✧',hideWhenZero:true,priority:17,color:'gold'}, shortDescription:'As quatro Formas agem simultaneamente por um número limitado de ações.', fullDescription:'Avatar Primordial é um estado do próprio Druida — não uma invocação — que soma os bônus de Cervo, Lobo, Urso e Coruja ao mesmo tempo por 3 ações (4 se ativado com um Renovo consumido). Cada ação real gasta uma carga; ao esgotar, a Forma volta ao normal.' },
+    { id:'druida:dissonance', classId:'druida', name:'Descompasso', category:'resource', combatDisplay:{owner:'player',displayType:'charges',maxValue:3,icon:'◇',hideWhenZero:true,priority:14,color:'purple'}, shortDescription:'Ataques básicos e habilidades fora da Estação acumulam Descompasso.', fullDescription:'Toda ação descompassada (ataque básico, ou habilidade sazonal fora de sua própria Estação) soma +1 Descompasso, até 3. Uma ação alinhada reduz Descompasso em 1 enquanto ele estiver em 1 ou 2 — mas ao atingir 3 ele trava até ser consumido por Reequilíbrio.' },
+    { id:'druida:reequilibrium', classId:'druida', name:'Reequilíbrio', category:'state', combatDisplay:{owner:'player',displayType:'status',icon:'⚖',hideWhenZero:true,priority:18,color:'purple'}, shortDescription:'Fica pronto quando o Descompasso atinge o máximo, convertendo o excesso em poder.', fullDescription:'Quando o Descompasso chega a 3, a especialização Equilíbrio pode consumi-lo com a habilidade Reequilíbrio, convertendo a instabilidade acumulada em um efeito poderoso e zerando o Descompasso.' },
   ],
   barbaro: [
     {
@@ -70,7 +71,7 @@ Habilidades que gastam Fúria podem encurtar a duração de Frenesi, portanto o 
       shortDescription: 'Dano adiado. Parte de um golpe pode virar Dor e ser sofrida gradualmente depois.',
       fullDescription: `Dor representa dano que o Bárbaro conseguiu adiar, mas ainda não eliminou.
 
-Quando uma habilidade redireciona parte de um ataque para Dor, essa quantidade deixa de atingir o HP imediatamente e passa a ser sofrida ao longo de 5 ciclos (6 com Inquebrável), cada pacote com seu próprio relógio.
+Quando uma habilidade redireciona parte de um ataque para Dor, essa quantidade deixa de atingir o HP imediatamente e passa a ser sofrida ao longo de 5 segundos (6 com Inquebrável), cada pacote com seu próprio relógio.
 
 Dor não é uma barreira e não é cura. O dano continua sendo uma dívida real e pode matar o Bárbaro.
 
@@ -134,7 +135,7 @@ Graça nunca gera Fé, nunca conta como cura para outros efeitos, nunca aciona o
       id: 'clerigo:consecration', classId: 'clerigo', name: 'Consagração', category: 'state',
       combatDisplay: { owner: 'player', displayType: 'counter', duration: true, icon: '✦', hideWhenZero: true, priority: 12, color: 'gold' },
       shortDescription: 'Estado defensivo do Clérigo, criado ou renovado por várias habilidades de Retidão. Só pode existir uma instância por vez; talentos de Retidão dão a ela seus efeitos reais.',
-      fullDescription: `Consagração é um estado que várias habilidades de Retidão criam ou renovam por alguns ciclos.
+      fullDescription: `Consagração é um estado que várias habilidades de Retidão criam ou renovam por alguns segundos.
 
 Só pode existir uma instância de cada vez — lançar uma nova substitui a anterior em vez de empilhar.
 
@@ -154,14 +155,14 @@ Aplicar um novo Julgamento renova a duração de TODOS os stacks já presentes n
 
 Por si só, Julgamento não causa nenhum dano periódico — ele é a base sobre a qual talentos de Provação constroem bônus de dano mágico direto e de precisão.
 
-Algumas habilidades consomem Julgamentos para golpes mais fortes; outras aproveitam os stacks atuais sem consumi-los, mas cortam sua duração restante como custo. A duração padrão é 5 ciclos (6 com Convicção).
+Algumas habilidades consomem Julgamentos para golpes mais fortes; outras aproveitam os stacks atuais sem consumi-los, mas cortam sua duração restante como custo. A duração padrão é 5 segundos (6 com Convicção).
 
 Atingir 3 e depois 5 stacks pela primeira vez em um inimigo gera Fé.`,
     },
   ],
   guerreiro: [
     { id: 'guerreiro:posture', classId: 'guerreiro', name: 'Postura', category: 'resource', combatDisplay: { owner: 'enemy', displayType: 'bar', maxValue: 100, icon: '⚔', hideWhenZero: false, priority: 10, color: 'amber' }, shortDescription: 'Equilíbrio marcial do inimigo: Firme, Instável ou Aberto.', fullDescription: 'Todo inimigo começa com 100 de Postura. Dano de Postura é separado da Vida e ignora DEF, crítico e efeitos de dano. Após uma ação real, o inimigo recupera Postura.' },
-    { id: 'guerreiro:guardbreak', classId: 'guerreiro', name: 'Guarda Quebrada', category: 'state', combatDisplay: { owner: 'enemy', displayType: 'status', icon: '✹', hideWhenZero: true, priority: 11, color: 'red' }, shortDescription: 'Janela curta: ataques físicos diretos recebem Precisão e ignoram DEF.', fullDescription: 'Ao chegar a zero de Postura, o inimigo fica com Guarda Quebrada por duas ações ofensivas do Guerreiro ou quatro ciclos.' },
+    { id: 'guerreiro:guardbreak', classId: 'guerreiro', name: 'Guarda Quebrada', category: 'state', combatDisplay: { owner: 'enemy', displayType: 'status', icon: '✹', hideWhenZero: true, priority: 11, color: 'red' }, shortDescription: 'Janela curta: ataques físicos diretos recebem Precisão e ignoram DEF.', fullDescription: 'Ao chegar a zero de Postura, o inimigo fica com Guarda Quebrada por duas ações ofensivas do Guerreiro ou quatro segundos.' },
     { id: 'guerreiro:parry', classId: 'guerreiro', name: 'Guarda Preparada', category: 'state', combatDisplay: { owner: 'player', displayType: 'status', icon: '🛡', hideWhenZero: true, priority: 10, color: 'slate' }, shortDescription: 'O próximo ataque direto que acertar é Aparado.', fullDescription: 'Aparo acontece depois da mitigação normal e antes de barreira e Vida. Ele não é Bloqueio.' },
     { id: 'guerreiro:riposte', classId: 'guerreiro', name: 'Riposta', category: 'resource', combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 1, icon: '↩', hideWhenZero: true, priority: 11, color: 'amber' }, shortDescription: 'A próxima habilidade ofensiva recebe dano e Postura extras.', fullDescription: 'Aparo bem-sucedido prepara uma única Riposta; Aparo Pesado a transforma em Riposta Pesada.' },
     { id: 'guerreiro:reading', classId: 'guerreiro', name: 'Leitura', category: 'resource', combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 1, icon: '◈', hideWhenZero: true, priority: 12, color: 'gold' }, shortDescription: 'Cruzar faixas de Postura prepara a próxima técnica Duelista.', fullDescription: 'Leitura é consumida no início da próxima habilidade Duelista ofensiva, inclusive se ela errar.' },
@@ -182,7 +183,7 @@ Atingir 3 e depois 5 stacks pela primeira vez em um inimigo gera Fé.`,
     { id: 'ladino:stealth', classId: 'ladino', name: 'Furtivo', category: 'state', combatDisplay: { owner: 'player', displayType: 'status', icon: '◐', hideWhenZero: true, priority: 10, color: 'slate' }, shortDescription: 'Reduz a Precisão dos ataques diretos inimigos e prepara uma Emboscada.', fullDescription: 'Furtivo termina ao iniciar uma Principal ofensiva, ao sofrer um ataque direto que acerte ou depois de três Ações Principais. Um ataque inimigo que erre não remove o estado.' },
     { id: 'ladino:ambush', classId: 'ladino', name: 'Emboscada', category: 'other', shortDescription: 'Principal ofensiva iniciada em Furtivo ganha Precisão, Crítico e penetração de DEF.', fullDescription: 'Emboscada concede +8 pontos percentuais de Precisão, +8 pontos percentuais de Crítico e 10% de penetração de DEF naquele cast. Técnicas Assassinas marcadas aplicam Exposto ao acertar.' },
     { id: 'ladino:exposed', classId: 'ladino', name: 'Exposto', category: 'state', combatDisplay: { owner: 'enemy', displayType: 'status', duration: true, icon: '✹', hideWhenZero: true, priority: 10, color: 'red' }, shortDescription: 'Janela de execução criada por uma Emboscada Assassina.', fullDescription: 'Exposto é binário, não acumula, dura até três Ações Principais e só é consumido por habilidades que declaram isso. O consumo acontece no início do cast, mesmo se o golpe errar.' },
-    { id: 'ladino:toxin', classId: 'ladino', name: 'Toxina', category: 'state', combatDisplay: { owner: 'enemy', displayType: 'counter', duration: true, icon: '☣', hideWhenZero: true, priority: 11, color: 'lime' }, shortDescription: 'Dano periódico com snapshot do ATK, preparado por Lâmina Envenenada.', fullDescription: 'O próximo golpe Principal físico direto que acertar aplica Toxina por três ciclos: 0,12x ATK por ciclo, ou 0,15x se foi Emboscada. Não critica, não ativa Roubo de Vida, on-hit ou Iniciativa; pode matar pela pipeline central.' },
+    { id: 'ladino:toxin', classId: 'ladino', name: 'Toxina', category: 'state', combatDisplay: { owner: 'enemy', displayType: 'counter', duration: true, icon: '☣', hideWhenZero: true, priority: 11, color: 'lime' }, shortDescription: 'Dano periódico com snapshot do ATK, preparado por Lâmina Envenenada.', fullDescription: 'O próximo golpe Principal físico direto que acertar aplica Toxina por três segundos: 0,12x ATK por segundo, ou 0,15x se foi Emboscada. Não critica, não ativa Roubo de Vida, on-hit ou Iniciativa; pode matar pela pipeline central.' },
     { id: 'ladino:images', classId: 'ladino', name: 'Imagens Residuais', category: 'resource', combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 2, icon: '◇', hideWhenZero: true, priority: 20, color: 'sky' }, shortDescription: 'Ecos visuais preparados por Rápidas do Dançarino e consumidos por Principais sincronizáveis.', fullDescription: 'Imagens não são invocações. Uma Principal sincronizável consome as Imagens no início e, se ao menos um golpe original acertar, cria um Eco por Imagem depois da técnica. Ecos não rolam Precisão, não criticam e não ativam outros procs.' },
     { id: 'ladino:sharpened_echo', classId: 'ladino', name: 'Eco Afiado', category: 'state', combatDisplay: { owner: 'player', displayType: 'status', icon: '✧', hideWhenZero: true, priority: 21, color: 'sky' }, shortDescription: 'A próxima habilidade que consumir Imagens recebe +0,05 absoluto no ratio de Eco.', fullDescription: 'Eco Afiado possui uma única carga e não acumula. A carga é consumida junto das Imagens no início da próxima sincronização.' },
     { id: 'ladino:prepared_trick', classId: 'ladino', name: 'Truque Preparado', category: 'state', combatDisplay: { owner: 'player', displayType: 'status', duration: true, icon: '♠', hideWhenZero: true, priority: 30, color: 'gold' }, shortDescription: 'Uma Finta ou um Dado Viciado aguardando o momento certo.', fullDescription: 'Somente um Truque pode existir. Preparar outro substitui o anterior. Finta reage ao próximo ataque direto inimigo; Dado Viciado altera somente a primeira verificação de acerto da próxima Principal ofensiva.' },
@@ -210,7 +211,7 @@ Atingir 3 e depois 5 stacks pela primeira vez em um inimigo gera Fé.`,
   ],
   necromante: [
     { id: 'necromante:souls', classId: 'necromante', name: 'Fragmentos de Alma', category: 'resource', combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 6, icon: '◆', hideWhenZero: false, priority: 10, color: 'purple' }, shortDescription: 'Recurso central do Necromante. A essência da presa se fragmenta conforme sua vida atravessa certos limites, permitindo invocações, sacrifícios e técnicas de Ceifa.', fullDescription: 'Fragmentos de Alma são arrancados quando a presa cruza 75%, 50% e 25% de Vida pela primeira vez, e também na morte. O Necromante armazena até 6 e gasta esse recurso em Pragas, Servos, proteção e Ceifa. Apenas uma pequena quantidade passa ao próximo inimigo.' },
-    { id: 'necromante:decomposition', classId: 'necromante', name: 'Decomposição', category: 'stack', combatDisplay: { owner: 'enemy', displayType: 'stack', maxValue: 5, duration: true, icon: '☣', hideWhenZero: true, priority: 10, color: 'emerald' }, shortDescription: 'Stack exclusivo que deteriora a presa e aumenta a intensidade da Praga Necrótica.', fullDescription: 'Decomposição acumula até 5 vezes, não causa dano sozinha e dura 4 ciclos. Cada stack fortalece em 4% os ticks da Praga Necrótica. Nova aplicação adiciona stack e renova toda a duração.' },
+    { id: 'necromante:decomposition', classId: 'necromante', name: 'Decomposição', category: 'stack', combatDisplay: { owner: 'enemy', displayType: 'stack', maxValue: 5, duration: true, icon: '☣', hideWhenZero: true, priority: 10, color: 'emerald' }, shortDescription: 'Stack exclusivo que deteriora a presa e aumenta a intensidade da Praga Necrótica.', fullDescription: 'Decomposição acumula até 5 vezes, não causa dano sozinha e dura 4 segundos. Cada stack fortalece em 4% os ticks da Praga Necrótica. Nova aplicação adiciona stack e renova toda a duração.' },
     { id: 'necromante:plague', classId: 'necromante', name: 'Praga Necrótica', category: 'state', combatDisplay: { owner: 'enemy', displayType: 'counter', duration: true, icon: '☠', hideWhenZero: true, priority: 11, color: 'lime' }, shortDescription: 'Doença sobrenatural exclusiva do Necromante que causa dano periódico e fica mais poderosa conforme a presa se Decompõe.', fullDescription: 'A Praga guarda um snapshot do MATK no momento da aplicação, não critica, não ativa Roubo de Vida nem on-hit, ignora MDEF após seu dano-base e pode matar ou atravessar limites de Alma. Somente uma Praga pode existir na presa.' },
     { id: 'necromante:servants', classId: 'necromante', name: 'Servos Ósseos', category: 'other', combatDisplay: { owner: 'player', displayType: 'counter', maxValue: 2, icon: '♙', hideWhenZero: true, priority: 11, color: 'slate' }, shortDescription: 'Mortos-vivos temporários que atacam independentemente e podem ser sacrificados.', fullDescription: 'Cada Servo possui um relógio próprio e uma quantidade limitada de ataques mágicos necróticos. Eles não criticam, não ativam Roubo de Vida ou on-hit, mas podem matar, atravessar limites de Alma e disparar fases de chefe. Certas técnicas sacrificam ataques ou o Servo inteiro.' },
   ],
@@ -296,7 +297,7 @@ O Cavaleiro não muda essa regra, mas constrói em cima dela: Guarda Elevada e E
   cacador: [
     {
       id: 'cacador:traps', classId: 'cacador', name: 'Armadilhas', category: 'other',
-      combatDisplay: { owner: 'player', displayType: 'charges', maxValue: 3, icon: '◇', hideWhenZero: true, priority: 10, color: 'lime' },
+      combatDisplay: { owner: 'enemy', displayType: 'charges', maxValue: 3, icon: '◇', hideWhenZero: true, priority: 9, color: 'lime' },
       shortDescription: 'Armadilhas de Armadilhas ficam armadas em silêncio e só disparam quando a presa completa uma ação real (acerto ou erro) — nunca no instante em que são preparadas.',
       fullDescription: `Armadilhas são a mecânica central da especialização Armadilhas.
 
@@ -348,7 +349,7 @@ Presa Marcada nunca amplia dano contínuo (Poison).`,
       shortDescription: 'Stacks de 0 a 3 no inimigo, com duração renovada a cada novo ganho. Não causam dano — abrem oportunidades de precisão, crítico e execuções que as consomem.',
       fullDescription: `Brechas são a mecânica central da especialização Precisão da Caça.
 
-Um inimigo pode possuir de 0 a 3 Brechas, com duração de 6 ciclos — ganhar uma nova Brecha renova a duração de todas as já presentes.
+Um inimigo pode possuir de 0 a 3 Brechas, com duração de 6 segundos — ganhar uma nova Brecha renova a duração de todas as já presentes.
 
 Brechas não causam nenhum dano por si só. Elas representam uma oportunidade tática: aberturas na guarda do inimigo.
 
@@ -423,6 +424,11 @@ const ATTRIBUTE_NOTES: Partial<Record<ClassId, ClassAttributeNote[]>> = {
     { attribute:'dex', label:'DES', role:'Secundário', description:'Aumenta ATK físico, Precisão e o componente independente do Acento.' },
     { attribute:'luk', label:'SOR', role:'Secundário', description:'Aumenta Crítico e Dano Crítico das performances ofensivas.' },
     { attribute:'int', label:'INT', role:'Base mágica', description:'Aumenta MATK do Alaúde Encantado; não é transformada em atributo principal.' },
+  ],
+  druida: [
+    { attribute:'wis', label:'SAB', role:'Principal', description:'Aumenta MDEF e o Poder de Cura das três especializações — Colheita Ancestral, Instinto Ancestral e efeitos de Equilíbrio escalam com ela.' },
+    { attribute:'int', label:'INT', role:'Secundário ofensivo', description:'Aumenta MATK, a base de todo o dano do Druida.' },
+    { attribute:'vit', label:'VIT', role:'Terciário defensivo', description:'Aumenta vida máxima e DEF — sustenta o Druida entre os picos de Descompasso.' },
   ],
 };
 
@@ -521,6 +527,26 @@ const SPECIALIZATIONS: Partial<Record<ClassId, ClassSpecializationNote[]>> = {
     { pathId:'cancao-guerra', identity:'DES + MATK/ATK + Acento/Fortíssimo.', style:'Marcha de Guerra — híbrido ofensivo.', loop:'Escrever Marcato → fechar Refrão/Contracanto → preparar Acento e Fortíssimo → gastar no pico.' },
     { pathId:'melodia-sombria', identity:'Dissonância + Contratempo/Eco.', style:'Interferência e controle.', loop:'Escrever Dissonantes → observar a ação inimiga → converter erros em Eco → consumir no Trítono/Ressonância.' },
     { pathId:'inspiracao', identity:'Lírica + Coringas/Bis.', style:'Improviso, cura moderada e adaptação.', loop:'Completar Harmonia/Refrão → curar e guardar Ovação → escolher a Nota pedida → repetir payload seguro com Bis.' },
+  ],
+  druida: [
+    {
+      pathId: 'cura-natural',
+      identity: 'SAB + Jardim Vivo + Renovo.',
+      style: 'Renascimento — sustento cíclico que planta, cresce e colhe ao longo de todo o Ano.',
+      loop: 'Lançar magias sazonais → o Jardim cresce um estágio a cada uma → colher os Frutos maduros para curar → completar o Ano para gerar Renovo e fortalecer a próxima Árvore Ancestral.',
+    },
+    {
+      pathId: 'furia-natureza',
+      identity: 'INT/SAB + Formas + Instinto Ancestral.',
+      style: 'Metamorfose — cada Estação veste uma Forma diferente, recompensando quem troca com frequência.',
+      loop: 'Estação muda → Forma muda com ela → trocar para uma Forma diferente da anterior gera Instinto → gastar Instinto ou ativar o Avatar Primordial para somar as quatro Formas de uma vez.',
+    },
+    {
+      pathId: 'equilibrio',
+      identity: 'SAB + Descompasso + Reequilíbrio.',
+      style: 'Equilíbrio — abraça o descompasso como recurso em vez de evitá-lo, convertendo o caos acumulado em poder.',
+      loop: 'Agir fora da Estação atual → acumular Descompasso → ao atingir o máximo, disparar Reequilíbrio → converter a instabilidade em um golpe de Eterno Retorno.',
+    },
   ],
 };
 

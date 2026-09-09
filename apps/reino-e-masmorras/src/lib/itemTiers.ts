@@ -65,6 +65,20 @@ export const OFFHAND_NOUN: Record<OffhandKind, string> = {
   shield: 'Escudo', foco: 'Relicário',
 };
 
+export function hasOffhandSlot(classId: ClassId): boolean {
+  return OFFHAND_KIND[classId] !== undefined;
+}
+
+// A class without a mão secundária generates one fewer item per drop/Forja
+// upgrade than a shield/foco class — no separate primary roll, no separate
+// affix roll on that missing slot. Compensated by rolling its one weapon's
+// own primary AND affixes a bit hotter (not an extra affix slot — user
+// call: keep the "só uma arma" identity, which already carries its own
+// upside of needing to farm/aprimorar only one item). Modest since a
+// foco's own primary already matches a weapon's full scale (see FOCO_SCALE
+// in equipment.ts) — this only needs to close the gap, not overshoot it.
+export const TWO_HANDED_WEAPON_MULT = 1.2;
+
 // ── Acessórios ────────────────────────────────────────────────────────────
 // The 3 base names now each have their own stat identity — a build choice,
 // since only one accessory slot exists (see equipment.ts's generateItem).

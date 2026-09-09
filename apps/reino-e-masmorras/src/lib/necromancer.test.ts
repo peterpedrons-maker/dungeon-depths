@@ -1,7 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DECOMPOSITION_MAX, PLAGUE_EFFECT_ID, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, reaperExecuteMultiplier, soulsForCrossedThresholds, soulsForNextEnemy } from './necromancer.ts';
+import { DECOMPOSITION_MAX, PLAGUE_EFFECT_ID, SOUL_MAX, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, reaperExecuteMultiplier, soulsForCrossedThresholds, soulsForNextEnemy } from './necromancer.ts';
+import { createCombatState, resolvePlayerAction } from './combatEngine.ts';
+import { createCharacter } from './classes.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
+
+// Real end-to-end coverage for the exact bug reported: Almas real cap was
+// hardcoded to 10 in several combatEngine.ts call sites instead of the
+// documented/UI cap of 6 (SOUL_MAX, classMechanics.ts: 'necromante:souls'
+// combatDisplay.maxValue). A Necromante who banked souls across several
+// kills without spending them could hold up to 10, not 6.
+const PLAGUE_ABILITY_ID = 'necromante:decomposicao:4'; // "Praga Necrótica" — sempre disponível.
+function necromancerWithAbility() {
+  const character = createCharacter('Necromante real', 'necromante');
+  character.unlockedSkills = [PLAGUE_ABILITY_ID];
+  return character;
+}
+function killableEnemy() {
+  return { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1, evasion: 0 };
+}
+
+test('Almas reais nunca ultrapassam o teto real de 6 mesmo matando vários inimigos seguidos', () => {
+  const character = createCharacter('Necromante real', 'necromante');
+  let state = createCombatState(character, killableEnemy(), 1, [], []);
+  for (let i = 0; i < 8 && state.classState.resources.souls < SOUL_MAX; i += 1) {
+    resolvePlayerAction(state);
+    if (state.won) state = createCombatState(character, killableEnemy(), i + 2, [], []);
+  }
+  assert.ok(state.classState.resources.souls <= SOUL_MAX, `Almas (${state.classState.resources.souls}) nunca podem passar de ${SOUL_MAX}`);
+});
+
+test('Praga Necrótica real grava Decomposição e Praga no classState para o DungeonPanel sincronizar de volta', () => {
+  const character = necromancerWithAbility();
+  const state = createCombatState(character, { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 }, 1, [PLAGUE_ABILITY_ID], [PLAGUE_ABILITY_ID]);
+  resolvePlayerAction(state);
+  assert.ok(state.events.some((e) => e.type === 'hit' && e.actor === 'player'));
+  assert.equal(state.classState.decomposition, 2);
+  assert.equal(state.classState.plague, 4);
+  assert.equal(state.classState.plagueMultiplier, 0.16);
+});
 
 test('Almas cruzam todos os thresholds uma única vez e respeitam cap', () => {
   const first = soulsForCrossedThresholds(80, 45, 100, new Set());

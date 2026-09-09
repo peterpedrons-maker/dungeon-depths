@@ -21,9 +21,10 @@ function unlockHint(dungeon: DungeonDef): string {
 interface Props {
   character: Character;
   onEnterDungeon: (dungeon: DungeonDef) => void;
+  onBack: () => void;
 }
 
-export function DungeonMap({ character, onEnterDungeon }: Props) {
+export function DungeonMap({ character, onEnterDungeon, onBack }: Props) {
   const visibleRegions = REGIONS.slice(0, firstHiddenIndex(character.level));
   const nextRegion = REGIONS[visibleRegions.length];
   // Default to the most recently unlocked region — the one the player is
@@ -38,7 +39,7 @@ export function DungeonMap({ character, onEnterDungeon }: Props) {
   const region = visibleRegions[activeIndex];
 
   return (
-    <Panel title="Mapa de Masmorras">
+    <Panel title="Mapa de Masmorras" onBack={onBack}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap gap-2">
           {visibleRegions.map((r, i) => (
@@ -84,7 +85,7 @@ export function DungeonMap({ character, onEnterDungeon }: Props) {
                         )}
                       </div>
                     )}
-                    {!locked && <div className="absolute inset-0 rounded-full hover:bg-gold/15 hover:ring-2 hover:ring-gold/50 transition" />}
+                    {!locked && <div className="absolute inset-0 rounded-full transition dungeon-marker-hover-target" />}
                   </button>
                 );
               })}

@@ -7,13 +7,14 @@ import { IconRibbon, IconLock } from './icons';
 interface Props {
   character: Character;
   onEquip: (id: string | null) => void;
+  onBack: () => void;
 }
 
-export function Titulos({ character, onEquip }: Props) {
+export function Titulos({ character, onEquip, onBack }: Props) {
   const earnedIds = new Set(unlockedTitles(character).map((t) => t.id));
 
   return (
-    <Panel title="Títulos">
+    <Panel title="Títulos" onBack={onBack}>
       <p className="text-parchment/60 text-sm mb-1">
         Conquistas do seu herói — equipe uma para exibir ao lado do nome.
       </p>

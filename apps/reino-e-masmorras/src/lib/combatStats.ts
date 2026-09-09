@@ -194,7 +194,7 @@ export function computeCombatStats(ch: Character): CombatStats {
     onCritHealPct: bonuses.onCritHealPct,
     dmgPctVsPoison: bonuses.dmgPctVsPoison,
     dmgPctVsBurn: bonuses.dmgPctVsBurn,
-    healingPowerPct: Math.min(1.5, attrs.wis * ATTR_COEF.healingPctPerWis * mult('wis') + item.healingPower),
+    healingPowerPct: Math.min(1.5, attrs.wis * ATTR_COEF.healingPctPerWis * mult('wis') + item.healingPower + bonuses.healingPowerPct),
     barrierPowerPct: Math.min(1.0, attrs.wis * ATTR_COEF.barrierPctPerWis * mult('wis') + item.barrierPower),
     dropChanceBonusPct: attrs.luk * ATTR_COEF.dropChancePctPerLuk + item.dropChance,
     itemQualityBonusPct: attrs.luk * ATTR_COEF.itemQualityPctPerLuk + item.itemQuality,

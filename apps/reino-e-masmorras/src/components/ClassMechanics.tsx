@@ -35,7 +35,7 @@ export function MechanicQuickModal({ mechanicId, currentValue, maxValue, duratio
         <p className="rounded border border-gold/25 bg-panel2/60 p-2">
           <span className="text-parchment/50">Estado atual: </span>
           <strong className="text-gold">{formatGameNumber(currentValue)}{maxValue !== undefined ? ` / ${formatGameNumber(maxValue)}` : ''}</strong>
-          {duration !== undefined && duration > 0 && <span className="text-parchment/50"> · {duration} {duration === 1 ? 'ciclo restante' : 'ciclos restantes'}</span>}
+          {duration !== undefined && duration > 0 && <span className="text-parchment/50"> · {duration} {duration === 1 ? 'segundo restante' : 'segundos restantes'}</span>}
           {detail && <span className="block text-xs text-parchment/60 mt-1">{detail}</span>}
         </p>
       )}
