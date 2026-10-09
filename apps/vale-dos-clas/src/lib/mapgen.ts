@@ -80,14 +80,15 @@ export function generateValley(): Record<string, Tile> {
     }
   }
 
-  // --- FLORESTAS: vários bolsões ---
-  for (let i = 0; i < 7; i++) {
+  // --- FLORESTAS: poucos bolsões pequenos — o vale é pra ser lido rápido, não virar uma
+  // mata fechada escondendo os hexágonos e as construções ---
+  for (let i = 0; i < 4; i++) {
     const seed = pick(hexes, rnd);
     if (hexDistance(seed, CENTER) <= 1) continue;
-    for (const h of hexRegion(seed, 1 + (rnd() < 0.4 ? 1 : 0))) {
+    for (const h of hexRegion(seed, 1 + (rnd() < 0.15 ? 1 : 0))) {
       const t = tiles[hexKey(h)];
       if (!t || t.terrain !== "planicie") continue;
-      if (rnd() < 0.75) t.terrain = "floresta";
+      if (rnd() < 0.55) t.terrain = "floresta";
     }
   }
 

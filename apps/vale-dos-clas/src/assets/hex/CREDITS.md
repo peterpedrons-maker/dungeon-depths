@@ -23,4 +23,3 @@ obrigatória, mas é bem-vinda). Baixados via o espelho público
 | `building-torre.png` | building_tower |
 | `water-rocks.png` | water_rocks |
 | `water-island.png` | water_island |
-| `decor-tree.png` | unit_tree |

@@ -10,7 +10,6 @@ import {
   ART_VERTICAL_SQUASH,
   ART_VISUAL_SCALE,
   BUILDING_ART,
-  DECOR_TREE,
   TERRAIN_ART,
   WATER_VARIANTS,
   artImage,
@@ -71,7 +70,6 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
     Object.values(TERRAIN_ART).forEach((p) => artImage(p.src));
     Object.values(BUILDING_ART).forEach((p) => artImage(p.src));
     WATER_VARIANTS.forEach((p) => artImage(p.src));
-    artImage(DECOR_TREE.src);
     iconImage("acampamento", CAMP_ICON_COLOR);
     iconImage("deposito-ouro", DEPOSIT_OURO_COLOR);
     iconImage("deposito-caca", DEPOSIT_CACA_COLOR);
@@ -188,14 +186,6 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
         const seed = hashSeed(tile.hex.q, tile.hex.r);
         const piece = tile.terrain === "agua" ? WATER_VARIANTS[seed % WATER_VARIANTS.length] : TERRAIN_ART[tile.terrain];
         const topY = drawGroundArt(piece, cx, cy, r, 1);
-
-        // acento decorativo: uma arvorezinha extra em ~1 a cada 3 planícies, pra dar mais
-        // densidade sem virar floresta de verdade (não mexe no território nem na jogabilidade)
-        if (tile.terrain === "planicie" && !tile.deposit && seed % 3 === 0) {
-          const ox = (((seed >> 3) % 100) / 100 - 0.5) * r * 0.7;
-          const oy = (((seed >> 9) % 100) / 100 - 0.5) * r * 0.3;
-          drawGroundArt(DECOR_TREE, cx + ox, cy + oy, r, 1);
-        }
 
         if (dim || frontier) {
           hexPath(cx, cy);

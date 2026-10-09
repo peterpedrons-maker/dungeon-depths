@@ -18,7 +18,6 @@ import buildingMuralha from "@/assets/hex/building-muralha.png";
 import buildingTorre from "@/assets/hex/building-torre.png";
 import waterRocks from "@/assets/hex/water-rocks.png";
 import waterIsland from "@/assets/hex/water-island.png";
-import decorTree from "@/assets/hex/decor-tree.png";
 import type { BuildingId, Terrain } from "./types";
 
 // tamanho do quadro-fonte e onde a base do hexágono cai nele (medido 1x, vale pra todas as peças)
@@ -60,10 +59,6 @@ export const WATER_VARIANTS: ArtPiece[] = [
   { src: waterRocks, topPx: 304 },
   { src: waterIsland, topPx: 306 },
 ];
-
-// acento decorativo pequeno (não é um hexágono completo, não tem base própria) — espalhado
-// ocasionalmente sobre planícies pra dar mais densidade/vida sem virar floresta.
-export const DECOR_TREE: ArtPiece = { src: decorTree, topPx: 312 };
 
 export const BUILDING_ART: Record<BuildingId, ArtPiece> = {
   paco: { src: buildingPaco, topPx: 232 },
