@@ -24,6 +24,11 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 - `apps/reino-e-masmorras/` — RPG single-player de masmorras em fantasia medieval, com
   menus/texto e um painel visual simples de combate estilo plataforma 2D. Publicado em
   `/reino-e-masmorras/`.
+- `apps/vale-dos-clas/` — estratégia medieval num vale hexagonal: construa sobre um
+  grid de hexágonos (Canvas 2D, renderização própria com sombreado/brilhos/partículas),
+  colete madeira/pedra/comida/ouro, recrute tropas e ataque acampamentos neutros pra
+  expandir o território. Sem backend, save em `localStorage`. Publicado em
+  `/vale-dos-clas/`.
 
 ## reino-e-masmorras: KIT-DE-ARTE.md
 

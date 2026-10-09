@@ -1,0 +1,585 @@
+/* =========================================================================
+   VALE DOS CLÃS — estilos. Estratégia medieval em hexágonos. Mobile-first.
+   ========================================================================= */
+:root {
+  --bg-0: #0a120d;
+  --bg-1: #0d1a13;
+  --panel: #182a20;
+  --panel-2: #122019;
+  --line: #2c4535;
+  --gold: #e8b85b;
+  --gold-l: #ffd98a;
+  --parchment: #ecdfc2;
+  --text: #ecdfc2;
+  --text-dim: #9db3a3;
+  --ink: #0b1510;
+  --good: #7ac47a;
+  --danger: #d0665a;
+  --danger-d: #8a3a30;
+}
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  color: var(--text);
+  background: radial-gradient(1200px 700px at 50% -10%, rgba(232, 184, 91, 0.08), transparent 60%), linear-gradient(180deg, var(--bg-0), var(--bg-1));
+  height: 100dvh;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+}
+button {
+  font-family: inherit;
+}
+
+#app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ===================== HUD ===================== */
+.hud {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 6px;
+  background: linear-gradient(180deg, rgba(10, 18, 13, 0.96), rgba(10, 18, 13, 0.82));
+  border-bottom: 1px solid var(--line);
+  z-index: 5;
+}
+.hud-resources {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.res-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--line);
+  font-weight: 800;
+  font-size: 0.82rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.res-icon {
+  font-size: 0.95rem;
+}
+.res-val {
+  color: var(--gold-l);
+  font-variant-numeric: tabular-nums;
+}
+.hud-stats {
+  display: flex;
+  gap: 8px;
+}
+.stat-chip {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.hud-troops-mini {
+  display: flex;
+  gap: 10px;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.troop-mini {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================== STAGE (mapa) ===================== */
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.hex-canvas-wrap {
+  position: absolute;
+  inset: 0;
+}
+.hex-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* ===================== PAINEL DO HEX SELECIONADO ===================== */
+.hex-panel {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  max-width: 340px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, rgba(24, 42, 32, 0.96), rgba(18, 32, 25, 0.96));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 6;
+  animation: panelIn 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hex-panel-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  cursor: pointer;
+}
+.hex-panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 6px;
+  padding-right: 24px;
+}
+.hex-panel-title strong {
+  font-size: 1.02rem;
+  color: var(--gold-l);
+}
+.hex-panel-sub {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.hex-panel-line {
+  font-size: 0.82rem;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+.hex-panel-line.good {
+  color: var(--good);
+}
+.hex-panel-line.danger {
+  color: #ff9a8a;
+  font-weight: 800;
+}
+.hex-panel-building {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.hpb-icon {
+  font-size: 1.5rem;
+}
+.hex-panel-progress {
+  margin-top: 6px;
+}
+.hex-panel-upgrade {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.hex-panel-camp {
+  margin-top: 6px;
+}
+
+.progress-track {
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-l));
+  box-shadow: 0 0 8px rgba(232, 184, 91, 0.6);
+  transition: width 0.2s;
+}
+
+/* ===================== BOTÕES ===================== */
+.primary-btn {
+  font-weight: 800;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--gold-l), var(--gold));
+  border: 1px solid #a9772c;
+  border-radius: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #8a5f22, 0 6px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.primary-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #8a5f22;
+}
+.primary-btn.small {
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  border-radius: 10px;
+}
+.primary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.ghost-btn {
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.danger-btn {
+  font-weight: 800;
+  color: #fff0ec;
+  background: linear-gradient(180deg, #e2766a, var(--danger-d));
+  border: 1px solid #6e291f;
+  border-radius: 12px;
+  padding: 9px 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #5e2219, 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+.danger-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===================== TOASTS DE COMBATE ===================== */
+.combat-toasts {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 7;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(10, 16, 12, 0.92);
+  border: 1px solid var(--line);
+  animation: toastIn 0.25s ease both;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+.toast.good {
+  border-color: #3a6b3a;
+  color: var(--good);
+}
+.toast.danger {
+  border-color: #6e3a30;
+  color: #ff9a8a;
+}
+.toast button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ===================== TABS + BOTTOM SHEET ===================== */
+.tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--panel-2);
+  border-top: 1px solid var(--line);
+  z-index: 5;
+}
+.tabs button {
+  flex: 1;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text-dim);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.tabs button.active {
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--gold-l), var(--gold));
+  border-color: #a9772c;
+}
+.tabs .reset-btn {
+  flex: 0 0 auto;
+  width: 40px;
+  color: var(--text-dim);
+}
+
+.bottom-sheet {
+  flex: 0 0 auto;
+  max-height: 34dvh;
+  overflow-y: auto;
+  background: var(--panel-2);
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+}
+
+/* ===================== BUILD PANEL ===================== */
+.build-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.build-panel-head h3,
+.barracks h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--gold-l);
+}
+.build-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+.build-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+}
+.build-card:active {
+  transform: translateY(2px);
+}
+.build-card.active {
+  border-color: var(--good);
+  box-shadow: 0 0 14px rgba(122, 196, 122, 0.45);
+}
+.build-card.cant-afford {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bc-icon {
+  font-size: 1.4rem;
+}
+.bc-name {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-align: center;
+}
+.bc-cost {
+  display: flex;
+  gap: 5px;
+  font-size: 0.66rem;
+  color: var(--text-dim);
+}
+.bc-cost-item {
+  white-space: nowrap;
+}
+.bc-time {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+.build-hint {
+  margin: 8px 2px 0;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ===================== BARRACKS ===================== */
+.troop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.troop-card {
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+}
+.troop-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tc-icon {
+  font-size: 1.3rem;
+}
+.tc-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.tc-stats {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.tc-owned {
+  font-weight: 800;
+  color: var(--gold-l);
+  font-variant-numeric: tabular-nums;
+}
+.troop-card-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+.tc-cost {
+  display: flex;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  flex: 1;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px 4px;
+}
+.stepper button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 800;
+}
+.stepper span {
+  min-width: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.queue {
+  margin-top: 10px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+.queue h4 {
+  margin: 0 0 4px;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.queue-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  padding: 3px 0;
+}
+.queue-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-l);
+}
+
+/* ===================== MODAL DE COMBATE ===================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 20;
+}
+.modal {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.modal h3 {
+  margin: 0 0 4px;
+  color: var(--gold-l);
+}
+.combat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.84rem;
+}
+.combat-odds {
+  margin: 10px 0;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
