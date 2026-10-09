@@ -1,5 +1,5 @@
 import { hexDistance, hexKey, hexRegion, hexRing, mulberry32, type Axial } from "./hex";
-import type { Deposit, Tile } from "./types";
+import type { CampKind, Deposit, Tile } from "./types";
 
 export const REGION_RADIUS = 6;
 export const CENTER: Axial = { q: 0, r: 0 };
@@ -130,19 +130,33 @@ export function generateValley(): Record<string, Tile> {
     if (tooClose) continue;
     chosen.add(key);
     const dist = hexDistance(cand.hex, CENTER);
-    const defense = Math.round(8 + dist * 3.2 + rnd() * 6);
-    cand.camp = {
-      defense,
-      loot: {
-        madeira: Math.round(20 + dist * 6 + rnd() * 20),
-        pedra: Math.round(15 + dist * 5 + rnd() * 15),
-        comida: Math.round(18 + dist * 5 + rnd() * 18),
-        ouro: Math.round(5 + dist * 3 + rnd() * 10),
-      },
+    const kind = pickCampKind(dist, rnd);
+    let defense = 8 + dist * 3.2 + rnd() * 6;
+    if (kind === "guarda") defense *= 1.15;
+    const loot = {
+      madeira: Math.round(20 + dist * 6 + rnd() * 20),
+      pedra: Math.round(15 + dist * 5 + rnd() * 15),
+      comida: Math.round(18 + dist * 5 + rnd() * 18),
+      ouro: Math.round(5 + dist * 3 + rnd() * 10),
     };
+    // lobos são bichos, não guardam tesouro; guarda fronteiriça é mais rica (paga pra enfrentar)
+    if (kind === "lobos") {
+      loot.comida = Math.round(loot.comida * 1.4);
+      loot.ouro = 0;
+    }
+    if (kind === "guarda") loot.ouro = Math.round(loot.ouro * 1.3);
+    cand.camp = { kind, defense: Math.round(defense), loot };
   }
 
   return tiles;
+}
+
+// variedade/flavor dos acampamentos: mais perto do vale, bandidos comuns; mais longe,
+// alcateias e guardas mais perigosos (não muda o mecanismo de combate, só o tom/loot).
+function pickCampKind(dist: number, rnd: () => number): CampKind {
+  if (dist <= 3) return "bandidos";
+  if (dist <= 4) return rnd() < 0.5 ? "lobos" : "saqueadores";
+  return rnd() < 0.55 ? "guarda" : "saqueadores";
 }
 
 function keyHex(key: string): Axial {

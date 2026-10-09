@@ -6,11 +6,14 @@ import BuildPanel from "@/components/BuildPanel";
 import Barracks from "@/components/Barracks";
 import HexPanel from "@/components/HexPanel";
 import CombatModal from "@/components/CombatModal";
-import type { BuildingId, TroopId } from "@/lib/types";
+import Onboarding from "@/components/Onboarding";
+import { getPacoLevel, popCapFor, queuedTroopCount, totalTroopCount, type BuildingId, type TroopId } from "@/lib/types";
 import Icon from "@/components/Icon";
 import { ensureMusic, isMuted, playSfx, setMuted } from "@/lib/audio";
 
 type Tab = "build" | "barracks";
+
+const INTRO_SEEN_KEY = "vale_dos_clas_intro_seen";
 
 export default function App() {
   const [state, dispatch] = useGame();
@@ -19,11 +22,43 @@ export default function App() {
   const [attackTarget, setAttackTarget] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [muted, setMutedState] = useState(() => isMuted());
+  const [showIntro, setShowIntro] = useState(() => {
+    try {
+      return localStorage.getItem(INTRO_SEEN_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  });
+  const [raidBanner, setRaidBanner] = useState(false);
 
   const hasQuartel = useMemo(
     () => Object.values(state.tiles).some((t) => t.owner === "jogador" && t.building?.id === "quartel" && !t.building.upgrading),
     [state.tiles],
   );
+  const pacoLevel = useMemo(() => getPacoLevel(state.tiles), [state.tiles]);
+  const popCap = popCapFor(pacoLevel);
+  const popUsed = totalTroopCount(state.troops) + queuedTroopCount(state.trainQueue);
+
+  // aviso de invasão: mostra um banner por alguns segundos quando o reducer sinaliza raidWarned
+  const prevRaidWarned = useRef(false);
+  useEffect(() => {
+    if (state.raidWarned && !prevRaidWarned.current) {
+      setRaidBanner(true);
+      const id = window.setTimeout(() => setRaidBanner(false), 7000);
+      prevRaidWarned.current = true;
+      return () => window.clearTimeout(id);
+    }
+    if (!state.raidWarned) prevRaidWarned.current = false;
+  }, [state.raidWarned]);
+
+  function dismissIntro() {
+    setShowIntro(false);
+    try {
+      localStorage.setItem(INTRO_SEEN_KEY, "1");
+    } catch {
+      /* ok ignorar */
+    }
+  }
 
   // navegadores só deixam tocar áudio depois do primeiro gesto do usuário — liga a trilha nesse momento
   useEffect(() => {
@@ -97,6 +132,12 @@ export default function App() {
         )}
 
         <div className="combat-toasts">
+          {raidBanner && (
+            <div className="toast warning">
+              <span>⚠️ Exploradores inimigos foram avistados nas bordas do vale! Reforce as defesas.</span>
+              <button onClick={() => setRaidBanner(false)}>✕</button>
+            </div>
+          )}
           {state.combatLog.map((l) => (
             <div key={l.id} className={`toast ${l.victory ? "good" : "danger"}`}>
               <span>{l.message}</span>
@@ -148,6 +189,7 @@ export default function App() {
         {tab === "build" && (
           <BuildPanel
             resources={state.resources}
+            pacoLevel={pacoLevel}
             buildMode={buildMode}
             onPick={(id) => {
               setBuildMode((cur) => (cur === id ? null : id));
@@ -160,6 +202,8 @@ export default function App() {
           <Barracks
             state={state}
             hasQuartel={hasQuartel}
+            popCap={popCap}
+            popUsed={popUsed}
             onTrain={(troop, count) => {
               dispatch({ type: "TRAIN", troop, count });
               playSfx("confirm");
@@ -169,6 +213,7 @@ export default function App() {
       </div>
 
       {attackTarget && <CombatModal state={state} tileKey={attackTarget} onConfirm={handleAttackConfirm} onClose={() => setAttackTarget(null)} />}
+      {showIntro && <Onboarding onDismiss={dismissIntro} />}
     </div>
   );
 }

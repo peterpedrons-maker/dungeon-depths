@@ -3,6 +3,12 @@ import { generateValley, CENTER } from "./mapgen";
 import {
   BUILDINGS,
   TROOPS,
+  getPacoLevel,
+  popCapFor,
+  queuedTroopCount,
+  storageCap,
+  totalDefense,
+  totalTroopCount,
   type BuildingId,
   type CombatLogEntry,
   type GameState,
@@ -12,6 +18,17 @@ import {
 } from "./types";
 
 export const SAVE_KEY = "vale_dos_clas_save_v1";
+
+// primeira invasão só depois que o jogador teve um tempo pra se estabelecer
+const FIRST_RAID_DELAY_MS = [90_000, 150_000] as const;
+// intervalo entre invasões seguintes
+const RAID_INTERVAL_MS = [100_000, 170_000] as const;
+// aviso "invasores avistados" chega com essa antecedência da invasão de verdade
+const RAID_WARNING_LEAD_MS = 15_000;
+
+function randBetween(rnd: readonly [number, number]): number {
+  return rnd[0] + Math.random() * (rnd[1] - rnd[0]);
+}
 
 export function freshGame(): GameState {
   const now = Date.now();
@@ -24,6 +41,8 @@ export function freshGame(): GameState {
     lastTick: now,
     combatLog: [],
     foundedAt: now,
+    nextRaidAt: now + randBetween(FIRST_RAID_DELAY_MS),
+    raidWarned: false,
   };
 }
 
@@ -33,6 +52,13 @@ export function loadGame(): GameState {
     if (!raw) return freshGame();
     const saved = JSON.parse(raw) as GameState;
     if (!saved.tiles || !saved.resources) return freshGame();
+    // compatibilidade com saves antigos de antes do sistema de invasões
+    if (typeof saved.nextRaidAt !== "number") saved.nextRaidAt = Date.now() + randBetween(FIRST_RAID_DELAY_MS);
+    if (typeof saved.raidWarned !== "boolean") saved.raidWarned = false;
+    for (const t of Object.values(saved.tiles)) {
+      if (t.camp && !t.camp.kind) t.camp.kind = "bandidos";
+    }
+    for (const entry of saved.combatLog) if (!entry.kind) entry.kind = "camp";
     return saved;
   } catch {
     return freshGame();
@@ -70,6 +96,14 @@ export type Action =
   | { type: "DISMISS_LOG"; id: string }
   | { type: "RESET" };
 
+// soma delta a current respeitando o teto de armazenamento — nunca DESTRÓI um estoque que já
+// esteja acima do teto (ex.: save antigo, ou teto que acabou de cair), só para de crescer.
+function addCapped(current: number, delta: number, cap: number): number {
+  if (delta <= 0) return Math.max(0, current + delta);
+  const proposed = current + delta;
+  return proposed > cap ? Math.max(current, cap) : proposed;
+}
+
 function buildingOutput(tile: Tile) {
   if (!tile.building) return null;
   const def = BUILDINGS[tile.building.id];
@@ -97,9 +131,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const dt = Math.max(0, Math.min(5, (action.now - state.lastTick) / 1000));
       if (dt <= 0) return { ...state, lastTick: action.now };
 
-      const resources = { ...state.resources };
       let tilesChanged = false;
       const tiles = { ...state.tiles };
+      const deltas: Record<ResourceKind, number> = { madeira: 0, pedra: 0, comida: 0, ouro: 0 };
 
       for (const key of Object.keys(tiles)) {
         const tile = tiles[key];
@@ -112,8 +146,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
         }
 
         const out = buildingOutput(tile);
-        if (out) for (const [res, amount] of Object.entries(out) as [ResourceKind, number][]) resources[res] += amount * dt;
+        if (out) for (const [res, amount] of Object.entries(out) as [ResourceKind, number][]) deltas[res] += amount * dt;
       }
+
+      const pacoLevel = getPacoLevel(tiles);
+      const cap = storageCap(pacoLevel);
+      const resources = { ...state.resources };
+      for (const k of Object.keys(resources) as ResourceKind[]) resources[k] = addCapped(resources[k], deltas[k], cap);
 
       // upkeep de comida das tropas
       const totalUpkeep = (Object.entries(state.troops) as [TroopId, number][]).reduce(
@@ -134,12 +173,55 @@ export function gameReducer(state: GameState, action: Action): GameState {
         trainQueue = state.trainQueue.filter((o) => action.now < o.finishesAt);
       }
 
+      // --- INVASÕES: de tempos em tempos, o vale é testado. A defesa total (Paço, Muralha,
+      // Torre...) decide o resultado — ver totalDefense() em types.ts. ---
+      let nextRaidAt = state.nextRaidAt;
+      let raidWarned = state.raidWarned;
+      let combatLog = state.combatLog;
+      if (!raidWarned && action.now >= nextRaidAt - RAID_WARNING_LEAD_MS) {
+        raidWarned = true;
+      }
+      if (action.now >= nextRaidAt) {
+        const elapsedMin = (action.now - state.foundedAt) / 60000;
+        const tilesOwned = Object.values(tiles).filter((t) => t.owner === "jogador").length;
+        const raidPower = Math.max(5, (4 + elapsedMin * 1.4 + tilesOwned * 0.7) * (0.75 + Math.random() * 0.55));
+        const defense = totalDefense(tiles);
+        const victory = defense >= raidPower;
+        let message: string;
+        if (victory) {
+          const reward = Math.round(raidPower * 0.5);
+          resources.ouro = addCapped(resources.ouro, reward, cap);
+          message = `As muralhas seguraram! Invasores foram repelidos e deixaram ${reward} de ouro saqueado deles.`;
+        } else {
+          const shortfall = Math.max(0, raidPower - defense);
+          const lossFrac = Math.min(0.32, 0.08 + (shortfall / Math.max(1, raidPower)) * 0.28);
+          for (const k of Object.keys(resources) as ResourceKind[]) resources[k] = Math.max(0, resources[k] - Math.floor(resources[k] * lossFrac));
+          if (troops === state.troops) troops = { ...state.troops };
+          for (const id of Object.keys(troops) as TroopId[]) troops[id] = Math.max(0, troops[id] - Math.round(troops[id] * lossFrac * 0.5));
+          message = "Invasores saquearam o vale! Reforce suas defesas (Muralha, Torre, Paço) pra evitar novos prejuízos.";
+        }
+        const log: CombatLogEntry = {
+          id: `raid-${action.now}`,
+          at: action.now,
+          tileKey: "",
+          victory,
+          kind: victory ? "raid-success" : "raid-fail",
+          message,
+        };
+        combatLog = [log, ...state.combatLog].slice(0, 12);
+        nextRaidAt = action.now + randBetween(RAID_INTERVAL_MS);
+        raidWarned = false;
+      }
+
       return {
         ...state,
         resources,
         tiles: tilesChanged ? tiles : state.tiles,
         troops,
         trainQueue,
+        combatLog,
+        nextRaidAt,
+        raidWarned,
         lastTick: action.now,
       };
     }
@@ -151,6 +233,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (tile.owner !== "jogador" && !isAdjacentToOwned(state.tiles, action.key)) return state;
       if (def.terrains && !def.terrains.includes(tile.terrain)) return state;
       if (!def.terrains && (tile.terrain === "agua" || tile.terrain === "montanha")) return state;
+      if (def.requiresPacoLevel && getPacoLevel(state.tiles) < def.requiresPacoLevel) return state;
       if (!canAfford(state.resources, def.cost)) return state;
 
       const resources = { ...state.resources };
@@ -190,9 +273,15 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (action.count <= 0) return state;
       const hasQuartel = Object.values(state.tiles).some((t) => t.owner === "jogador" && t.building?.id === "quartel" && !t.building.upgrading);
       if (!hasQuartel) return state;
+
+      const pacoLevel = getPacoLevel(state.tiles);
+      const room = popCapFor(pacoLevel) - totalTroopCount(state.troops) - queuedTroopCount(state.trainQueue);
+      if (room <= 0) return state;
+      const count = Math.min(action.count, room);
+
       const def = TROOPS[action.troop];
       const totalCost: Partial<Record<ResourceKind, number>> = {};
-      for (const [k, v] of Object.entries(def.cost) as [ResourceKind, number][]) totalCost[k] = v * action.count;
+      for (const [k, v] of Object.entries(def.cost) as [ResourceKind, number][]) totalCost[k] = v * count;
       if (!canAfford(state.resources, totalCost)) return state;
 
       const resources = { ...state.resources };
@@ -201,9 +290,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const order = {
         id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
         troop: action.troop,
-        count: action.count,
+        count,
         secondsEach: def.trainSeconds,
-        finishesAt: now + def.trainSeconds * action.count * 1000,
+        finishesAt: now + def.trainSeconds * count * 1000,
       };
       return { ...state, resources, trainQueue: [...state.trainQueue, order] };
     }
@@ -229,7 +318,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const resources = { ...state.resources };
       let message: string;
       if (victory) {
-        for (const [res, amount] of Object.entries(tile.camp.loot) as [ResourceKind, number][]) resources[res] += amount;
+        const cap = storageCap(getPacoLevel(state.tiles));
+        for (const [res, amount] of Object.entries(tile.camp.loot) as [ResourceKind, number][]) resources[res] = addCapped(resources[res], amount, cap);
         tiles[action.key] = { ...tile, owner: "jogador", camp: null };
         message = `Vitória! O acampamento caiu e as terras se juntam ao vale.`;
       } else {
@@ -237,7 +327,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         message = `Derrota. As tropas recuaram feridas — o acampamento está enfraquecido.`;
       }
 
-      const log: CombatLogEntry = { id: `${Date.now()}`, at: Date.now(), tileKey: action.key, victory, message };
+      const log: CombatLogEntry = { id: `${Date.now()}`, at: Date.now(), tileKey: action.key, victory, kind: "camp", message };
       return { ...state, troops, tiles, resources, combatLog: [log, ...state.combatLog].slice(0, 12) };
     }
 

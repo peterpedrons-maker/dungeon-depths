@@ -54,19 +54,21 @@ export interface BuildingDef {
   maxLevel: number;
   // produção por segundo NO NÍVEL 1 (escala com o nível)
   produces?: Partial<Record<ResourceKind, number>>;
-  // defesa que soma ao vale quando construído
+  // defesa que soma ao vale quando construído (nível 1+, não escala com nível — ver totalDefense)
   defense?: number;
   // capacidade de população (só o Paço usa isso diretamente)
   popCap?: number;
+  // nível mínimo do Paço pra desbloquear essa construção (undefined = liberado desde o início)
+  requiresPacoLevel?: number;
 }
 
 export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   paco: {
     id: "paco",
     name: "Paço do Vale",
-    desc: "Coração do seu domínio. Abriga o conselho e teto populacional.",
-    cost: {},
-    buildSeconds: 0,
+    desc: "Coração do seu domínio. Cada melhoria abre novas construções, mais espaço pra recursos e mais tropas.",
+    cost: { madeira: 60, pedra: 50, comida: 40, ouro: 20 },
+    buildSeconds: 40,
     maxLevel: 5,
     produces: { madeira: 0.2, pedra: 0.2, comida: 0.3, ouro: 0.1 },
     defense: 10,
@@ -111,6 +113,7 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     buildSeconds: 40,
     maxLevel: 3,
     produces: { ouro: 0.6 },
+    requiresPacoLevel: 2,
   },
   quartel: {
     id: "quartel",
@@ -120,25 +123,28 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
     cost: { madeira: 70, pedra: 40 },
     buildSeconds: 45,
     maxLevel: 3,
+    requiresPacoLevel: 2,
   },
   muralha: {
     id: "muralha",
     name: "Muralha",
-    desc: "Pedra empilhada nas bordas do vale — difículta ataques.",
+    desc: "Pedra empilhada nas bordas do vale — reforça muito a defesa contra invasões.",
     cost: { pedra: 60 },
     buildSeconds: 35,
     maxLevel: 3,
     defense: 14,
+    requiresPacoLevel: 3,
   },
   torre: {
     id: "torre",
     name: "Torre de Vigia",
-    desc: "Avista acampamentos inimigos e reforça a defesa.",
+    desc: "Avista invasores se aproximando e reforça a defesa do vale.",
     terrains: ["colina", "planicie"],
     cost: { madeira: 45, pedra: 35 },
     buildSeconds: 30,
     maxLevel: 3,
     defense: 8,
+    requiresPacoLevel: 2,
   },
 };
 
@@ -191,7 +197,18 @@ export interface Building {
   upgrading?: { untilLevel: number; finishesAt: number };
 }
 
+// tipo de acampamento neutro — pura variedade/flavor, com pequenos ajustes de loot/defesa
+export type CampKind = "bandidos" | "lobos" | "saqueadores" | "guarda";
+
+export const CAMP_KIND_META: Record<CampKind, { label: string; desc: string }> = {
+  bandidos: { label: "Bando de Bandidos", desc: "Assaltantes oportunistas que se instalaram nas bordas do vale." },
+  lobos: { label: "Alcateia Selvagem", desc: "Lobos gigantes que rondam a fronteira — ferozes, mas sem tesouro pra saquear." },
+  saqueadores: { label: "Saqueadores", desc: "Guerreiros errantes em busca de pilhagem fácil." },
+  guarda: { label: "Guarda Fronteiriça", desc: "Uma milícia rival bem equipada, entrincheirada nos limites do vale." },
+};
+
 export interface Camp {
+  kind: CampKind;
   defense: number;
   loot: Partial<Record<ResourceKind, number>>;
 }
@@ -219,6 +236,8 @@ export interface CombatLogEntry {
   tileKey: string;
   victory: boolean;
   message: string;
+  // "camp" = ataque do jogador a um acampamento; "raid-*" = invasão inimiga contra o vale
+  kind: "camp" | "raid-success" | "raid-fail";
 }
 
 export interface GameState {
@@ -230,6 +249,51 @@ export interface GameState {
   lastTick: number;
   combatLog: CombatLogEntry[];
   foundedAt: number;
+  // quando a próxima invasão inimiga ao vale deve acontecer (timestamp) — ver gameReducer TICK
+  nextRaidAt: number;
+  // já mostramos o aviso "invasores avistados" pra essa invasão? evita repetir o aviso
+  raidWarned: boolean;
+}
+
+// =============================================================================
+// Helpers derivados do estado — Paço é o coração da progressão: seu nível desbloqueia
+// construções, aumenta o limite de armazenamento e o teto populacional de tropas.
+// =============================================================================
+
+export function getPacoLevel(tiles: Record<string, Tile>): number {
+  for (const t of Object.values(tiles)) {
+    if (t.building?.id === "paco") return t.building.level || 1;
+  }
+  return 1;
+}
+
+const STORAGE_BASE = 300;
+const STORAGE_PER_PACO_LEVEL = 220;
+export function storageCap(pacoLevel: number): number {
+  return STORAGE_BASE + (pacoLevel - 1) * STORAGE_PER_PACO_LEVEL;
+}
+
+export function popCapFor(pacoLevel: number): number {
+  return 20 + (pacoLevel - 1) * 15;
+}
+
+export function totalTroopCount(troops: Record<TroopId, number>): number {
+  return Object.values(troops).reduce((a, b) => a + b, 0);
+}
+
+export function queuedTroopCount(queue: TrainOrder[]): number {
+  return queue.reduce((a, o) => a + o.count, 0);
+}
+
+// soma a defesa de toda construção nível 1+ do jogador (continua de pé — e defendendo —
+// mesmo enquanto está sendo melhorada) — usada pelas invasões
+export function totalDefense(tiles: Record<string, Tile>): number {
+  let sum = 0;
+  for (const t of Object.values(tiles)) {
+    if (t.owner !== "jogador" || !t.building || t.building.level < 1) continue;
+    sum += BUILDINGS[t.building.id].defense ?? 0;
+  }
+  return sum;
 }
 
 // Fração 0..1 de progresso de uma construção/melhoria em andamento (pro anel no canvas).

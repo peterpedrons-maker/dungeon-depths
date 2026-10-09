@@ -5,13 +5,18 @@ import Icon from "@/components/Icon";
 export default function Barracks({
   state,
   hasQuartel,
+  popCap,
+  popUsed,
   onTrain,
 }: {
   state: GameState;
   hasQuartel: boolean;
+  popCap: number;
+  popUsed: number;
   onTrain: (troop: TroopId, count: number) => void;
 }) {
   const [counts, setCounts] = useState<Record<TroopId, number>>({ milicia: 1, arqueiros: 1, cavalaria: 1 });
+  const room = popCap - popUsed;
 
   if (!hasQuartel) {
     return (
@@ -19,7 +24,7 @@ export default function Barracks({
         <h3>
           <Icon id="quartel" size={18} /> Quartel
         </h3>
-        <p className="build-hint">Construa um Quartel pra poder recrutar tropas.</p>
+        <p className="build-hint">Construa um Quartel pra poder recrutar tropas (precisa do Paço nível 2).</p>
       </div>
     );
   }
@@ -28,13 +33,17 @@ export default function Barracks({
     <div className="barracks">
       <h3>
         <Icon id="quartel" size={18} /> Recrutar tropas
+        <span className="barracks-pop">
+          👥 {popUsed}/{popCap}
+        </span>
       </h3>
+      {room <= 0 && <p className="build-hint warn">População no limite — melhore o Paço pra abrir mais espaço.</p>}
       <div className="troop-list">
         {(Object.keys(TROOPS) as TroopId[]).map((id) => {
           const def = TROOPS[id];
-          const count = counts[id];
+          const count = Math.min(counts[id], Math.max(1, room));
           const totalCost = (Object.entries(def.cost) as [ResourceKind, number][]).map(([k, v]) => [k, v * count] as const);
-          const afford = totalCost.every(([k, v]) => state.resources[k] >= v);
+          const afford = totalCost.every(([k, v]) => state.resources[k] >= v) && room > 0;
           return (
             <div className="troop-card" key={id}>
               <div className="troop-card-top">
@@ -51,7 +60,7 @@ export default function Barracks({
                 <div className="stepper">
                   <button onClick={() => setCounts((c) => ({ ...c, [id]: Math.max(1, c[id] - 1) }))}>−</button>
                   <span>{count}</span>
-                  <button onClick={() => setCounts((c) => ({ ...c, [id]: Math.min(99, c[id] + 1) }))}>+</button>
+                  <button onClick={() => setCounts((c) => ({ ...c, [id]: Math.min(99, Math.max(1, room), c[id] + 1) }))}>+</button>
                 </div>
                 <span className="tc-cost">
                   {totalCost.map(([k, v]) => (

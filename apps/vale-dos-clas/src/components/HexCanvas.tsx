@@ -21,6 +21,13 @@ const HEX_SIZE = 34;
 const CAMP_ICON_COLOR = "#ffb49c";
 const DEPOSIT_OURO_COLOR = "#ffe9b0";
 const DEPOSIT_CACA_COLOR = "#d8b27a";
+// cor do ícone/brilho de acampamento varia por tipo — dá leitura rápida de "o que é isso" no mapa
+const CAMP_KIND_COLOR: Record<string, string> = {
+  bandidos: "#ffb49c",
+  lobos: "#b9c7dc",
+  saqueadores: "#ffcf8a",
+  guarda: "#ff8a8a",
+};
 
 interface Particle {
   x: number;
@@ -70,7 +77,7 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
     Object.values(TERRAIN_ART).forEach((p) => artImage(p.src));
     Object.values(BUILDING_ART).forEach((p) => artImage(p.src));
     WATER_VARIANTS.forEach((p) => artImage(p.src));
-    iconImage("acampamento", CAMP_ICON_COLOR);
+    Object.values(CAMP_KIND_COLOR).forEach((c) => iconImage("acampamento", c));
     iconImage("deposito-ouro", DEPOSIT_OURO_COLOR);
     iconImage("deposito-caca", DEPOSIT_CACA_COLOR);
 
@@ -201,6 +208,7 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
         }
 
         if (tile.camp) {
+          const campColor = CAMP_KIND_COLOR[tile.camp.kind ?? "bandidos"] ?? CAMP_ICON_COLOR;
           const ember = (Math.sin(now / 340 + hashSeed(tile.hex.q, tile.hex.r)) + 1) / 2;
           const glow = ctx.createRadialGradient(cx, topY, 0, cx, topY, r * 0.9);
           glow.addColorStop(0, `rgba(255,110,70,${0.3 + ember * 0.22})`);
@@ -211,7 +219,7 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
           ctx.fill();
           if (Math.random() < 0.03) particles.current.push({ x: cx + (Math.random() * 10 - 5), y: topY, vx: (Math.random() - 0.5) * 6, vy: -16 - Math.random() * 10, life: 1, max: 1, size: 2, color: "#ff8a5a" });
 
-          drawIcon("acampamento", CAMP_ICON_COLOR, cx, topY + 10 * scale, 26 * scale);
+          drawIcon("acampamento", campColor, cx, topY + 10 * scale, 26 * scale);
           ctx.font = `bold ${12 * scale}px system-ui`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";

@@ -1,6 +1,6 @@
 import { hexDistance, keyToHex } from "@/lib/hex";
 import { CENTER } from "@/lib/mapgen";
-import { BUILDINGS, TERRAINS, buildProgress, type GameState, type ResourceKind } from "@/lib/types";
+import { BUILDINGS, CAMP_KIND_META, TERRAINS, buildProgress, type GameState, type ResourceKind } from "@/lib/types";
 import Icon from "@/components/Icon";
 import BuildingThumb from "@/components/BuildingThumb";
 
@@ -66,8 +66,9 @@ export default function HexPanel({
       {tile.camp && (
         <div className="hex-panel-camp">
           <p className="hex-panel-line danger">
-            <Icon id="acampamento" size={15} /> Acampamento inimigo — defesa {tile.camp.defense}
+            <Icon id="acampamento" size={15} /> {CAMP_KIND_META[tile.camp.kind ?? "bandidos"].label} — defesa {tile.camp.defense}
           </p>
+          <p className="hex-panel-sub">{CAMP_KIND_META[tile.camp.kind ?? "bandidos"].desc}</p>
           <p className="hex-panel-sub loot-row">
             Saque:
             {(Object.entries(tile.camp.loot) as [ResourceKind, number][]).map(([k, v]) => (
