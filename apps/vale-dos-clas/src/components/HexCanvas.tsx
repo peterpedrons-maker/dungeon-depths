@@ -350,10 +350,10 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
 
         if (tile.deposit && !tile.building) {
           const bob = Math.sin(now / 500 + hashSeed(tile.hex.q, tile.hex.r)) * 2 * scale;
-          ctx.font = `${13 * scale}px serif`;
+          ctx.font = `${21 * scale}px serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(tile.deposit === "ouro" ? "✨" : "🐾", cx, topCy - 10 * scale + bob);
+          ctx.fillText(tile.deposit === "ouro" ? "✨" : "🐾", cx, topCy - 9 * scale + bob);
         }
 
         if (tile.camp) {
@@ -367,15 +367,15 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
           ctx.fill();
           if (Math.random() < 0.03) particles.current.push({ x: cx + (Math.random() * 10 - 5), y: topCy, vx: (Math.random() - 0.5) * 6, vy: -16 - Math.random() * 10, life: 1, max: 1, size: 2, color: "#ff8a5a" });
 
-          ctx.font = `${16 * scale}px serif`;
+          ctx.font = `${30 * scale}px serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("🏕️", cx, topCy - 2 * scale);
-          ctx.font = `bold ${9 * scale}px system-ui`;
+          ctx.fillText("🏕️", cx, topCy - 4 * scale);
+          ctx.font = `bold ${12 * scale}px system-ui`;
           ctx.fillStyle = "#2a0d0d";
-          ctx.fillRect(cx - 12 * scale, topCy + 8 * scale, 24 * scale, 11 * scale);
+          ctx.fillRect(cx - 17 * scale, topCy + 11 * scale, 34 * scale, 16 * scale);
           ctx.fillStyle = "#ff8a7a";
-          ctx.fillText(String(tile.camp.defense), cx, topCy + 13.5 * scale);
+          ctx.fillText(String(tile.camp.defense), cx, topCy + 19.5 * scale);
         }
 
         if (tile.building) {
@@ -385,7 +385,7 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
 
           // sombra no chão — ancora o ícone no topo do hex
           ctx.beginPath();
-          ctx.ellipse(cx, topCy + 11 * scale, 11 * scale, 4 * scale, 0, 0, Math.PI * 2);
+          ctx.ellipse(cx, topCy + 15 * scale, 15 * scale, 5.5 * scale, 0, 0, Math.PI * 2);
           ctx.fillStyle = "rgba(0,0,0,0.32)";
           ctx.fill();
 
@@ -399,17 +399,20 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
             ctx.fill();
           }
 
-          ctx.font = `${17 * scale}px serif`;
+          ctx.font = `${31 * scale}px serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.globalAlpha = tile.building.level === 0 ? 0.45 : 1;
-          ctx.fillText(bdef.icon, cx, topCy - 2 * scale + bob);
+          ctx.fillText(bdef.icon, cx, topCy - 3 * scale + bob);
           ctx.globalAlpha = 1;
 
           if (tile.building.level > 0) {
-            ctx.font = `bold ${8.5 * scale}px system-ui`;
+            ctx.font = `bold ${11 * scale}px system-ui`;
             ctx.fillStyle = "rgba(255,255,255,0.88)";
-            ctx.fillText("Lv" + tile.building.level, cx, topCy + 12 * scale);
+            ctx.strokeStyle = "rgba(0,0,0,0.55)";
+            ctx.lineWidth = 2.5;
+            ctx.strokeText("Lv" + tile.building.level, cx, topCy + 16 * scale);
+            ctx.fillText("Lv" + tile.building.level, cx, topCy + 16 * scale);
           }
 
           const prog = buildProgress(tile, now);
