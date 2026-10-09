@@ -157,16 +157,18 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
         ctx.closePath();
       }
 
+      // --- PASSE 1: todo o TERRENO primeiro (tiles sem construção) ---
+      // Isso garante que nenhum chão de vizinho (desenhado "por cima" por causa do overlap
+      // que fecha os vãos entre hexágonos — ver ART_HEX_RADIUS) acabe tampando a base de uma
+      // construção do passe 2: construção sempre fica por cima de QUALQUER terreno.
       for (const p of placed) {
-        if (!p.onscreen) continue;
+        if (!p.onscreen || p.tile.building) continue;
         const { tile, cx, cy } = p;
         const frontier = tile.owner !== "jogador" && !tile.camp;
         const reachable = tile.owner === "jogador" || canClaimForBuild(ts, hexKey(tile.hex));
         const dim = frontier && !reachable;
 
-        const piece = tile.building ? BUILDING_ART[tile.building.id] : TERRAIN_ART[tile.terrain];
-        const alpha = tile.building && tile.building.level === 0 ? 0.6 : 1;
-        const topY = drawGroundArt(piece, cx, cy, r, alpha);
+        const topY = drawGroundArt(TERRAIN_ART[tile.terrain], cx, cy, r, 1);
 
         if (dim || frontier) {
           hexPath(cx, cy);
@@ -174,7 +176,7 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
           ctx.fill();
         }
 
-        if (tile.deposit && !tile.building) {
+        if (tile.deposit) {
           const bob = Math.sin(now / 500 + hashSeed(tile.hex.q, tile.hex.r)) * 2 * scale;
           const depIcon = tile.deposit === "ouro" ? "deposito-ouro" : "deposito-caca";
           const depColor = tile.deposit === "ouro" ? DEPOSIT_OURO_COLOR : DEPOSIT_CACA_COLOR;
@@ -201,42 +203,47 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
           ctx.fillStyle = "#ff8a7a";
           ctx.fillText(String(tile.camp.defense), cx, topY + 32.5 * scale);
         }
+      }
 
-        if (tile.building) {
-          const bdef = BUILDINGS[tile.building.id];
+      // --- PASSE 2: construções, sempre por cima de todo o terreno do passe 1 ---
+      for (const p of placed) {
+        if (!p.onscreen || !p.tile.building) continue;
+        const { tile, cx, cy } = p;
+        const building = tile.building!;
+        const bdef = BUILDINGS[building.id];
+        const alpha = building.level === 0 ? 0.6 : 1;
+        const topY = drawGroundArt(BUILDING_ART[building.id], cx, cy, r, alpha);
 
-          if (tile.building.level > 0) {
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.font = `bold ${11 * scale}px system-ui`;
-            ctx.fillStyle = "rgba(255,255,255,0.92)";
-            ctx.strokeStyle = "rgba(0,0,0,0.6)";
-            ctx.lineWidth = 2.5;
-            ctx.strokeText("Lv" + tile.building.level, cx, cy + 10 * scale);
-            ctx.fillText("Lv" + tile.building.level, cx, cy + 10 * scale);
-          }
-
-          const prog = buildProgress(tile, now);
-          if (prog !== null) {
-            const rr = r * 0.85;
-            const midY = (topY + cy) / 2;
-            ctx.beginPath();
-            ctx.arc(cx, midY, rr, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
-            ctx.strokeStyle = "#ffd45e";
-            ctx.lineWidth = 3;
-            ctx.lineCap = "round";
-            ctx.shadowColor = "rgba(255,212,94,0.8)";
-            ctx.shadowBlur = 6;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            if (Math.random() < 0.25) particles.current.push({ x: cx + (Math.random() * 14 - 7), y: topY + 8 * scale, vx: (Math.random() - 0.5) * 8, vy: -6 - Math.random() * 6, life: 0.8, max: 0.8, size: 1.8, color: "#c9a06a" });
-          }
-
-          if (tile.owner === "jogador" && tile.building.level > 0 && !tile.building.upgrading && bdef.produces && Math.random() < 0.045) {
-            particles.current.push({ x: cx + (Math.random() * 16 - 8), y: topY, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 8, life: 1, max: 1, size: 2.2, color: tile.deposit === "ouro" ? "#ffe18a" : "#bdf2a0" });
-          }
+        if (building.level > 0) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = `bold ${11 * scale}px system-ui`;
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          ctx.strokeStyle = "rgba(0,0,0,0.6)";
+          ctx.lineWidth = 2.5;
+          ctx.strokeText("Lv" + building.level, cx, cy + 10 * scale);
+          ctx.fillText("Lv" + building.level, cx, cy + 10 * scale);
         }
 
+        const prog = buildProgress(tile, now);
+        if (prog !== null) {
+          const rr = r * 0.85;
+          const midY = (topY + cy) / 2;
+          ctx.beginPath();
+          ctx.arc(cx, midY, rr, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
+          ctx.strokeStyle = "#ffd45e";
+          ctx.lineWidth = 3;
+          ctx.lineCap = "round";
+          ctx.shadowColor = "rgba(255,212,94,0.8)";
+          ctx.shadowBlur = 6;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          if (Math.random() < 0.25) particles.current.push({ x: cx + (Math.random() * 14 - 7), y: topY + 8 * scale, vx: (Math.random() - 0.5) * 8, vy: -6 - Math.random() * 6, life: 0.8, max: 0.8, size: 1.8, color: "#c9a06a" });
+        }
+
+        if (tile.owner === "jogador" && building.level > 0 && !building.upgrading && bdef.produces && Math.random() < 0.045) {
+          particles.current.push({ x: cx + (Math.random() * 16 - 8), y: topY, vx: (Math.random() - 0.5) * 4, vy: -16 - Math.random() * 8, life: 1, max: 1, size: 2.2, color: tile.deposit === "ouro" ? "#ffe18a" : "#bdf2a0" });
+        }
       }
 
       // --- realces (modo-construção + seleção): num passe à parte, por cima de tudo — senão
