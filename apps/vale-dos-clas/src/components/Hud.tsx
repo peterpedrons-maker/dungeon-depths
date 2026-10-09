@@ -7,12 +7,18 @@ export default function Hud({ state }: { state: GameState }) {
   return (
     <div className="hud">
       <div className="hud-resources">
-        {(Object.keys(RESOURCE_META) as (keyof typeof RESOURCE_META)[]).map((k) => (
-          <div className="res-chip" key={k} title={RESOURCE_META[k].name}>
-            <span className="res-icon">{RESOURCE_META[k].icon}</span>
-            <span className="res-val">{Math.floor(state.resources[k]).toLocaleString("pt-BR")}</span>
-          </div>
-        ))}
+        {(Object.keys(RESOURCE_META) as (keyof typeof RESOURCE_META)[]).map((k) => {
+          const floor = Math.floor(state.resources[k]);
+          return (
+            <div className="res-chip" key={k} title={RESOURCE_META[k].name}>
+              <span className="res-icon">{RESOURCE_META[k].icon}</span>
+              {/* a key muda a cada inteiro ganho — o React remonta o span e a animação de entrada roda de novo, dando o "pulso" de ganho sem precisar de estado extra */}
+              <span className="res-val" key={floor}>
+                {floor.toLocaleString("pt-BR")}
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className="hud-stats">
         <span className="stat-chip" title="Tropas totais">

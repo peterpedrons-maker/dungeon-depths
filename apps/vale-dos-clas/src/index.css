@@ -85,6 +85,25 @@ button {
 .res-val {
   color: var(--gold-l);
   font-variant-numeric: tabular-nums;
+  display: inline-block;
+  animation: resPulse 0.38s ease-out;
+}
+@keyframes resPulse {
+  0% {
+    transform: scale(1.32);
+    color: #fff3d0;
+    text-shadow: 0 0 10px rgba(255, 224, 140, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    color: var(--gold-l);
+    text-shadow: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .res-val {
+    animation: none;
+  }
 }
 .hud-stats {
   display: flex;
