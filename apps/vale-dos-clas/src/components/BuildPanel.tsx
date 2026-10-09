@@ -1,5 +1,6 @@
 import { BUILDINGS, type BuildingId, type ResourceKind } from "@/lib/types";
 import Icon from "@/components/Icon";
+import BuildingThumb from "@/components/BuildingThumb";
 
 const ORDER: BuildingId[] = ["fazenda", "serraria", "pedreira", "mercado", "quartel", "torre", "muralha"];
 
@@ -36,7 +37,7 @@ export default function BuildPanel({
               onClick={() => onPick(id)}
               disabled={!afford}
             >
-              <Icon id={id} size={30} className="bc-icon" />
+              <BuildingThumb id={id} size={52} className="bc-icon" />
               <span className="bc-name">{def.name}</span>
               <span className="bc-cost">
                 {(Object.entries(def.cost) as [ResourceKind, number][]).map(([k, v]) => (

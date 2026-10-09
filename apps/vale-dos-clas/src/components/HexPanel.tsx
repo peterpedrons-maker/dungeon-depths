@@ -2,6 +2,7 @@ import { hexDistance, keyToHex } from "@/lib/hex";
 import { CENTER } from "@/lib/mapgen";
 import { BUILDINGS, TERRAINS, buildProgress, type GameState, type ResourceKind } from "@/lib/types";
 import Icon from "@/components/Icon";
+import BuildingThumb from "@/components/BuildingThumb";
 
 export default function HexPanel({
   state,
@@ -42,7 +43,7 @@ export default function HexPanel({
 
       {tile.building && (
         <div className="hex-panel-building">
-          <Icon id={tile.building.id} size={34} className="hpb-icon" />
+          <BuildingThumb id={tile.building.id} size={52} className="hpb-icon" />
           <div>
             <strong>{BUILDINGS[tile.building.id].name}</strong>
             <div className="hex-panel-sub">Nível {tile.building.level} / {BUILDINGS[tile.building.id].maxLevel}</div>

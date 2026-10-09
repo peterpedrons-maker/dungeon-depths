@@ -58,6 +58,18 @@ button {
   display: block;
 }
 
+/* miniatura de construção — recorta/amplia a arte isométrica do Kenney (512×512) pro tamanho do ícone */
+.building-thumb {
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+.building-thumb img {
+  position: absolute;
+  max-width: none;
+}
+
 #app-root {
   display: flex;
   flex-direction: column;
