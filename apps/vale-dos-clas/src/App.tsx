@@ -7,6 +7,7 @@ import Barracks from "@/components/Barracks";
 import HexPanel from "@/components/HexPanel";
 import CombatModal from "@/components/CombatModal";
 import type { BuildingId, TroopId } from "@/lib/types";
+import Icon from "@/components/Icon";
 
 type Tab = "build" | "barracks";
 
@@ -70,7 +71,7 @@ export default function App() {
           🏗️ Construir
         </button>
         <button className={tab === "barracks" ? "active" : ""} onClick={() => setTab("barracks")}>
-          ⚔️ Quartel
+          <Icon id="quartel" size={15} /> Quartel
         </button>
         <button
           className="reset-btn"

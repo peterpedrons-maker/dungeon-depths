@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { RESOURCE_META, TROOPS, type GameState, type ResourceKind, type TroopId } from "@/lib/types";
+import { TROOPS, type GameState, type ResourceKind, type TroopId } from "@/lib/types";
+import Icon from "@/components/Icon";
 
 export default function Barracks({
   state,
@@ -15,7 +16,9 @@ export default function Barracks({
   if (!hasQuartel) {
     return (
       <div className="barracks">
-        <h3>⚔️ Quartel</h3>
+        <h3>
+          <Icon id="quartel" size={18} /> Quartel
+        </h3>
         <p className="build-hint">Construa um Quartel pra poder recrutar tropas.</p>
       </div>
     );
@@ -23,7 +26,9 @@ export default function Barracks({
 
   return (
     <div className="barracks">
-      <h3>⚔️ Recrutar tropas</h3>
+      <h3>
+        <Icon id="quartel" size={18} /> Recrutar tropas
+      </h3>
       <div className="troop-list">
         {(Object.keys(TROOPS) as TroopId[]).map((id) => {
           const def = TROOPS[id];
@@ -33,7 +38,7 @@ export default function Barracks({
           return (
             <div className="troop-card" key={id}>
               <div className="troop-card-top">
-                <span className="tc-icon">{def.icon}</span>
+                <Icon id={id} size={28} className="tc-icon" />
                 <div className="tc-info">
                   <strong>{def.name}</strong>
                   <span className="tc-stats">
@@ -51,7 +56,7 @@ export default function Barracks({
                 <span className="tc-cost">
                   {totalCost.map(([k, v]) => (
                     <span key={k} className="bc-cost-item">
-                      {RESOURCE_META[k].icon}
+                      <Icon id={k} size={12} />
                       {v}
                     </span>
                   ))}
@@ -81,7 +86,7 @@ function QueueRow({ troop, count, finishesAt }: { troop: TroopId; count: number;
   return (
     <div className="queue-row">
       <span>
-        {TROOPS[troop].icon} {count}× {TROOPS[troop].name}
+        <Icon id={troop} size={13} /> {count}× {TROOPS[troop].name}
       </span>
       <span className="queue-time">{remaining}s</span>
     </div>

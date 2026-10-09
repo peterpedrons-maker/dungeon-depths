@@ -1,9 +1,15 @@
 import { useEffect, useRef } from "react";
 import { hexCorners, hexKey, hexToPixel, mulberry32, pixelToHex, type Axial } from "@/lib/hex";
 import { canClaimForBuild } from "@/lib/gameReducer";
+import { iconImage } from "@/lib/icons";
 import { BUILDINGS, TERRAINS, buildProgress, type BuildingId, type Terrain, type Tile } from "@/lib/types";
 
 const HEX_SIZE = 34;
+
+const BUILDING_ICON_COLOR = "#f4ead0";
+const CAMP_ICON_COLOR = "#ffb49c";
+const DEPOSIT_OURO_COLOR = "#ffe9b0";
+const DEPOSIT_CACA_COLOR = "#d8b27a";
 
 // altura visual (prisma) de cada terreno, em unidades de hex-size — dá o relevo 3D.
 const TERRAIN_HEIGHT: Record<Terrain, number> = {
@@ -120,6 +126,11 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
     // decoração procedural: calculada uma única vez (o terreno nunca muda depois do mapa gerado)
     for (const tile of Object.values(latest.current.tiles)) decorRef.current.set(hexKey(tile.hex), buildDecor(tile));
     for (let i = 0; i < 70; i++) starsRef.current.push({ x: Math.random(), y: Math.random(), r: 0.4 + Math.random() * 1.1, phase: Math.random() * Math.PI * 2 });
+    // pré-carrega os ícones SVG (game-icons.net) usados no mapa, já com as cores gravadas
+    (Object.keys(BUILDINGS) as BuildingId[]).forEach((id) => iconImage(id, BUILDING_ICON_COLOR));
+    iconImage("acampamento", CAMP_ICON_COLOR);
+    iconImage("deposito-ouro", DEPOSIT_OURO_COLOR);
+    iconImage("deposito-caca", DEPOSIT_CACA_COLOR);
 
     function resize() {
       const rect = wrap.getBoundingClientRect();
@@ -140,6 +151,20 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
     function screenToWorld(sx: number, sy: number) {
       const rect = wrap.getBoundingClientRect();
       return { x: (sx - rect.width / 2) / camera.current.scale - camera.current.x, y: (sy - rect.height / 2) / camera.current.scale - camera.current.y };
+    }
+
+    function drawIcon(id: Parameters<typeof iconImage>[0], color: string, cx: number, cy: number, size: number, alpha = 1, dropShadow = true) {
+      const img = iconImage(id, color);
+      if (!img.complete || img.naturalWidth === 0) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      if (dropShadow) {
+        ctx.shadowColor = "rgba(0,0,0,0.6)";
+        ctx.shadowBlur = size * 0.1;
+        ctx.shadowOffsetY = size * 0.04;
+      }
+      ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+      ctx.restore();
     }
 
     function drawTree(cx: number, cy: number, size: number, hue: number, sway: number) {
@@ -350,10 +375,9 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
 
         if (tile.deposit && !tile.building) {
           const bob = Math.sin(now / 500 + hashSeed(tile.hex.q, tile.hex.r)) * 2 * scale;
-          ctx.font = `${21 * scale}px serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(tile.deposit === "ouro" ? "✨" : "🐾", cx, topCy - 9 * scale + bob);
+          const depIcon = tile.deposit === "ouro" ? "deposito-ouro" : "deposito-caca";
+          const depColor = tile.deposit === "ouro" ? DEPOSIT_OURO_COLOR : DEPOSIT_CACA_COLOR;
+          drawIcon(depIcon, depColor, cx, topCy - 9 * scale + bob, 22 * scale);
         }
 
         if (tile.camp) {
@@ -367,10 +391,7 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
           ctx.fill();
           if (Math.random() < 0.03) particles.current.push({ x: cx + (Math.random() * 10 - 5), y: topCy, vx: (Math.random() - 0.5) * 6, vy: -16 - Math.random() * 10, life: 1, max: 1, size: 2, color: "#ff8a5a" });
 
-          ctx.font = `${30 * scale}px serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("🏕️", cx, topCy - 4 * scale);
+          drawIcon("acampamento", CAMP_ICON_COLOR, cx, topCy - 4 * scale, 32 * scale);
           ctx.font = `bold ${12 * scale}px system-ui`;
           ctx.fillStyle = "#2a0d0d";
           ctx.fillRect(cx - 17 * scale, topCy + 11 * scale, 34 * scale, 16 * scale);
@@ -399,14 +420,11 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
             ctx.fill();
           }
 
-          ctx.font = `${31 * scale}px serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.globalAlpha = tile.building.level === 0 ? 0.45 : 1;
-          ctx.fillText(bdef.icon, cx, topCy - 3 * scale + bob);
-          ctx.globalAlpha = 1;
+          drawIcon(tile.building.id, BUILDING_ICON_COLOR, cx, topCy - 3 * scale + bob, 32 * scale, tile.building.level === 0 ? 0.45 : 1);
 
           if (tile.building.level > 0) {
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
             ctx.font = `bold ${11 * scale}px system-ui`;
             ctx.fillStyle = "rgba(255,255,255,0.88)";
             ctx.strokeStyle = "rgba(0,0,0,0.55)";

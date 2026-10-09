@@ -46,7 +46,6 @@ export const TERRAINS: Record<Terrain, TerrainDef> = {
 export interface BuildingDef {
   id: BuildingId;
   name: string;
-  icon: string;
   desc: string;
   // terrenos onde pode ser construído (vazio = qualquer terreno "buildable")
   terrains?: Terrain[];
@@ -65,7 +64,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   paco: {
     id: "paco",
     name: "Paço do Vale",
-    icon: "🏰",
     desc: "Coração do seu domínio. Abriga o conselho e teto populacional.",
     cost: {},
     buildSeconds: 0,
@@ -77,7 +75,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   serraria: {
     id: "serraria",
     name: "Serraria",
-    icon: "🪵",
     desc: "Corta e empilha madeira da floresta ao redor.",
     terrains: ["floresta"],
     cost: { madeira: 40, pedra: 10 },
@@ -88,7 +85,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   pedreira: {
     id: "pedreira",
     name: "Pedreira",
-    icon: "⛏️",
     desc: "Extrai pedra bruta das colinas.",
     terrains: ["colina"],
     cost: { madeira: 50, pedra: 10 },
@@ -99,7 +95,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   fazenda: {
     id: "fazenda",
     name: "Fazenda",
-    icon: "🌾",
     desc: "Planta e colhe nas terras férteis da planície.",
     terrains: ["planicie"],
     cost: { madeira: 35, pedra: 5 },
@@ -110,7 +105,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   mercado: {
     id: "mercado",
     name: "Mercado",
-    icon: "💰",
     desc: "Caravanas trocam excedentes por ouro.",
     terrains: ["planicie", "colina"],
     cost: { madeira: 60, pedra: 30 },
@@ -121,7 +115,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   quartel: {
     id: "quartel",
     name: "Quartel",
-    icon: "⚔️",
     desc: "Recruta e treina as tropas do clã.",
     terrains: ["planicie", "colina"],
     cost: { madeira: 70, pedra: 40 },
@@ -131,7 +124,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   muralha: {
     id: "muralha",
     name: "Muralha",
-    icon: "🧱",
     desc: "Pedra empilhada nas bordas do vale — difículta ataques.",
     cost: { pedra: 60 },
     buildSeconds: 35,
@@ -141,7 +133,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
   torre: {
     id: "torre",
     name: "Torre de Vigia",
-    icon: "🗼",
     desc: "Avista acampamentos inimigos e reforça a defesa.",
     terrains: ["colina", "planicie"],
     cost: { madeira: 45, pedra: 35 },
@@ -154,7 +145,6 @@ export const BUILDINGS: Record<BuildingId, BuildingDef> = {
 export interface TroopDef {
   id: TroopId;
   name: string;
-  icon: string;
   cost: Partial<Record<ResourceKind, number>>;
   trainSeconds: number;
   attack: number;
@@ -166,7 +156,6 @@ export const TROOPS: Record<TroopId, TroopDef> = {
   milicia: {
     id: "milicia",
     name: "Milícia",
-    icon: "🗡️",
     cost: { comida: 12, madeira: 6 },
     trainSeconds: 12,
     attack: 3,
@@ -176,7 +165,6 @@ export const TROOPS: Record<TroopId, TroopDef> = {
   arqueiros: {
     id: "arqueiros",
     name: "Arqueiros",
-    icon: "🏹",
     cost: { comida: 16, madeira: 14 },
     trainSeconds: 18,
     attack: 5,
@@ -186,7 +174,6 @@ export const TROOPS: Record<TroopId, TroopDef> = {
   cavalaria: {
     id: "cavalaria",
     name: "Cavalaria",
-    icon: "🐎",
     cost: { comida: 30, ouro: 15 },
     trainSeconds: 30,
     attack: 8,
@@ -255,9 +242,9 @@ export function buildProgress(tile: Tile, now: number): number | null {
   return Math.min(1, Math.max(0, 1 - remaining / total));
 }
 
-export const RESOURCE_META: Record<ResourceKind, { name: string; icon: string }> = {
-  madeira: { name: "Madeira", icon: "🪵" },
-  pedra: { name: "Pedra", icon: "🪨" },
-  comida: { name: "Comida", icon: "🌾" },
-  ouro: { name: "Ouro", icon: "🪙" },
+export const RESOURCE_META: Record<ResourceKind, { name: string }> = {
+  madeira: { name: "Madeira" },
+  pedra: { name: "Pedra" },
+  comida: { name: "Comida" },
+  ouro: { name: "Ouro" },
 };

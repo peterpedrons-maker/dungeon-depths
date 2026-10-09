@@ -1,6 +1,7 @@
 import { hexDistance, keyToHex } from "@/lib/hex";
 import { CENTER } from "@/lib/mapgen";
-import { BUILDINGS, RESOURCE_META, TERRAINS, buildProgress, type GameState, type ResourceKind } from "@/lib/types";
+import { BUILDINGS, TERRAINS, buildProgress, type GameState, type ResourceKind } from "@/lib/types";
+import Icon from "@/components/Icon";
 
 export default function HexPanel({
   state,
@@ -34,13 +35,14 @@ export default function HexPanel({
 
       {tile.deposit && !tile.building && (
         <p className="hex-panel-line">
-          {tile.deposit === "ouro" ? "✨ Veio de ouro — ótimo pra um Mercado." : "🐾 Terreno de caça farta — ótimo pra uma Fazenda."}
+          <Icon id={tile.deposit === "ouro" ? "deposito-ouro" : "deposito-caca"} size={14} />{" "}
+          {tile.deposit === "ouro" ? "Veio de ouro — ótimo pra um Mercado." : "Terreno de caça farta — ótimo pra uma Fazenda."}
         </p>
       )}
 
       {tile.building && (
         <div className="hex-panel-building">
-          <span className="hpb-icon">{BUILDINGS[tile.building.id].icon}</span>
+          <Icon id={tile.building.id} size={34} className="hpb-icon" />
           <div>
             <strong>{BUILDINGS[tile.building.id].name}</strong>
             <div className="hex-panel-sub">Nível {tile.building.level} / {BUILDINGS[tile.building.id].maxLevel}</div>
@@ -62,12 +64,20 @@ export default function HexPanel({
 
       {tile.camp && (
         <div className="hex-panel-camp">
-          <p className="hex-panel-line danger">🏕️ Acampamento inimigo — defesa {tile.camp.defense}</p>
-          <p className="hex-panel-sub">
-            Saque: {(Object.entries(tile.camp.loot) as [ResourceKind, number][]).map(([k, v]) => `${RESOURCE_META[k].icon}${v}`).join("  ")}
+          <p className="hex-panel-line danger">
+            <Icon id="acampamento" size={15} /> Acampamento inimigo — defesa {tile.camp.defense}
+          </p>
+          <p className="hex-panel-sub loot-row">
+            Saque:
+            {(Object.entries(tile.camp.loot) as [ResourceKind, number][]).map(([k, v]) => (
+              <span className="bc-cost-item" key={k}>
+                <Icon id={k} size={12} />
+                {v}
+              </span>
+            ))}
           </p>
           <button className="danger-btn" onClick={() => onAttack(key)}>
-            ⚔️ Organizar ataque
+            <Icon id="milicia" size={15} /> Organizar ataque
           </button>
         </div>
       )}
@@ -121,7 +131,7 @@ function UpgradeButton({
       <span className="tc-cost">
         {(Object.entries(cost) as [ResourceKind, number][]).map(([k, v]) => (
           <span key={k} className="bc-cost-item">
-            {RESOURCE_META[k].icon}
+            <Icon id={k} size={12} />
             {v}
           </span>
         ))}

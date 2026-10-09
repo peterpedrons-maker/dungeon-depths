@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TROOPS, type GameState, type TroopId } from "@/lib/types";
+import Icon from "@/components/Icon";
 
 export default function CombatModal({
   state,
@@ -23,7 +24,9 @@ export default function CombatModal({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal combat-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>⚔️ Atacar acampamento</h3>
+        <h3>
+          <Icon id="milicia" size={18} /> Atacar acampamento
+        </h3>
         <p className="hex-panel-sub">Defesa inimiga: {tile.camp.defense}</p>
         {(Object.keys(TROOPS) as TroopId[]).map((id) => {
           const def = TROOPS[id];
@@ -31,7 +34,7 @@ export default function CombatModal({
           return (
             <div className="combat-row" key={id}>
               <span>
-                {def.icon} {def.name} <span className="hex-panel-sub">(têm {owned})</span>
+                <Icon id={id} size={20} /> {def.name} <span className="hex-panel-sub">(têm {owned})</span>
               </span>
               <div className="stepper">
                 <button onClick={() => setSent((s) => ({ ...s, [id]: Math.max(0, s[id] - 1) }))}>−</button>

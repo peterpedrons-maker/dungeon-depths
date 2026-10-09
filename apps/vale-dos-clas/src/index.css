@@ -42,6 +42,22 @@ button {
   font-family: inherit;
 }
 
+/* ícones vetoriais (game-icons.net) injetados inline — ver src/components/Icon.tsx */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: inherit;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+  vertical-align: -0.15em;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 #app-root {
   display: flex;
   flex-direction: column;
@@ -80,7 +96,7 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .res-icon {
-  font-size: 1.18rem;
+  color: var(--gold-l);
 }
 .res-val {
   color: var(--gold-l);
@@ -218,7 +234,7 @@ button {
   border: 1px solid var(--line);
 }
 .hpb-icon {
-  font-size: 2.1rem;
+  color: var(--gold-l);
 }
 .hex-panel-progress {
   margin-top: 6px;
@@ -437,7 +453,7 @@ button {
   cursor: not-allowed;
 }
 .bc-icon {
-  font-size: 1.9rem;
+  color: var(--gold-l);
 }
 .bc-name {
   font-size: 0.74rem;
@@ -451,7 +467,16 @@ button {
   color: var(--text-dim);
 }
 .bc-cost-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   white-space: nowrap;
+}
+.loot-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
 }
 .bc-time {
   font-size: 0.62rem;
@@ -482,7 +507,7 @@ button {
   gap: 8px;
 }
 .tc-icon {
-  font-size: 1.75rem;
+  color: var(--gold-l);
 }
 .tc-info {
   display: flex;

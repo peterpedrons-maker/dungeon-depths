@@ -1,4 +1,5 @@
-import { BUILDINGS, RESOURCE_META, type BuildingId, type ResourceKind } from "@/lib/types";
+import { BUILDINGS, type BuildingId, type ResourceKind } from "@/lib/types";
+import Icon from "@/components/Icon";
 
 const ORDER: BuildingId[] = ["fazenda", "serraria", "pedreira", "mercado", "quartel", "torre", "muralha"];
 
@@ -35,12 +36,12 @@ export default function BuildPanel({
               onClick={() => onPick(id)}
               disabled={!afford}
             >
-              <span className="bc-icon">{def.icon}</span>
+              <Icon id={id} size={30} className="bc-icon" />
               <span className="bc-name">{def.name}</span>
               <span className="bc-cost">
                 {(Object.entries(def.cost) as [ResourceKind, number][]).map(([k, v]) => (
                   <span key={k} className="bc-cost-item">
-                    {RESOURCE_META[k].icon}
+                    <Icon id={k} size={12} />
                     {v}
                   </span>
                 ))}
