@@ -58,12 +58,20 @@ button {
   display: block;
 }
 
-/* miniatura de construção — recorta/amplia a arte isométrica do Kenney (512×512) pro tamanho do ícone */
+/* miniatura de construção — recorta/amplia a arte isométrica do Kenney (512×512) pro tamanho do
+   ícone, numa moldura de medalhão redonda (como retrato de unidade em RTS clássico) */
 .building-thumb {
   position: relative;
   overflow: hidden;
   flex: 0 0 auto;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  box-shadow:
+    0 0 0 3px var(--panel-2),
+    0 0 0 4.5px rgba(232, 184, 91, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.55),
+    inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 50% 42%, #2a4433, #16261c);
 }
 .building-thumb img {
   position: absolute;
@@ -108,7 +116,13 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .res-icon {
+  box-sizing: border-box;
   color: var(--gold-l);
+  padding: 3px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  background: radial-gradient(circle at 50% 40%, #2a4433, #16261c);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 .res-val {
   color: var(--gold-l);
@@ -519,7 +533,13 @@ button {
   gap: 8px;
 }
 .tc-icon {
+  box-sizing: border-box;
   color: var(--gold-l);
+  padding: 5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  background: radial-gradient(circle at 50% 40%, #2a4433, #16261c);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 .tc-info {
   display: flex;

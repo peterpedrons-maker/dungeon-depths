@@ -10,7 +10,7 @@ obrigatória, mas é bem-vinda). Baixados via o espelho público
 | --- | --- |
 | `terrain-planicie.png` | grass |
 | `terrain-floresta.png` | grass_forest |
-| `terrain-colina.png` | stone_hill |
+| `terrain-colina.png` | grass_hill |
 | `terrain-montanha.png` | stone_mountain |
 | `terrain-agua.png` | water |
 | `building-paco.png` | building_castle |
@@ -21,3 +21,6 @@ obrigatória, mas é bem-vinda). Baixados via o espelho público
 | `building-quartel.png` | building_village |
 | `building-muralha.png` | building_wall |
 | `building-torre.png` | building_tower |
+| `water-rocks.png` | water_rocks |
+| `water-island.png` | water_island |
+| `decor-tree.png` | unit_tree |

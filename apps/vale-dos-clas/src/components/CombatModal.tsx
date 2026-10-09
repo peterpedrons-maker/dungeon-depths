@@ -34,7 +34,7 @@ export default function CombatModal({
           return (
             <div className="combat-row" key={id}>
               <span>
-                <Icon id={id} size={20} /> {def.name} <span className="hex-panel-sub">(têm {owned})</span>
+                <Icon id={id} size={24} className="tc-icon" /> {def.name} <span className="hex-panel-sub">(têm {owned})</span>
               </span>
               <div className="stepper">
                 <button onClick={() => setSent((s) => ({ ...s, [id]: Math.max(0, s[id] - 1) }))}>−</button>
