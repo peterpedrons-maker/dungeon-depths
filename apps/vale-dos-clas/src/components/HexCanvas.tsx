@@ -7,6 +7,7 @@ import {
   ART_ANCHOR_Y,
   ART_HEX_RADIUS,
   ART_SIZE,
+  ART_VERTICAL_SQUASH,
   ART_VISUAL_SCALE,
   BUILDING_ART,
   DECOR_TREE,
@@ -116,7 +117,9 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
       if (!img.complete || img.naturalWidth === 0) return baseCy - hexR * 0.6;
       const imgScale = hexR / ART_HEX_RADIUS;
       const dispW = ART_SIZE * imgScale;
-      const dispH = dispW;
+      // achata só a altura (a partir da base, que não se mexe) — a largura/espaçamento do
+      // grid fica igual, então o encaixe entre hexágonos não muda, só a "altura" da peça.
+      const dispH = dispW * ART_VERTICAL_SQUASH;
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.drawImage(img, cx - ART_ANCHOR_X * dispW, baseCy - ART_ANCHOR_Y * dispH, dispW, dispH);
@@ -146,8 +149,9 @@ export default function HexCanvas({ tiles, selected, buildMode, onSelect, onPlac
       const scale = camera.current.scale;
       const r = HEX_SIZE * scale;
       // os anéis/realces acompanham o tamanho VISUAL do hexágono (maior que o espaçamento do
-      // grid — ver ART_VISUAL_SCALE), senão ficam pequenos demais perto da arte desenhada.
-      const corners = hexCorners(r * ART_VISUAL_SCALE);
+      // grid — ver ART_VISUAL_SCALE) e também o achatamento vertical da arte (ART_VERTICAL_SQUASH),
+      // senão ficam desencontrados — redondos/altos demais perto da peça achatada embaixo.
+      const corners = hexCorners(r * ART_VISUAL_SCALE).map((c) => ({ x: c.x, y: c.y * ART_VERTICAL_SQUASH }));
       const pulse = (Math.sin(now / 420) + 1) / 2;
 
       type Placed = { tile: Tile; cx: number; cy: number; onscreen: boolean };

@@ -34,6 +34,10 @@ export const ART_HEX_RADIUS = 60;
 // quanto maior que o espaçamento do grid cada peça é desenhada (ver ART_HEX_RADIUS acima) —
 // usado pra dimensionar anéis/realces que precisam acompanhar o tamanho VISUAL do hexágono.
 export const ART_VISUAL_SCALE = 91.5 / ART_HEX_RADIUS;
+// achata a arte verticalmente (a partir da base, que fica parada) — reduz o "prédio alto
+// entortando tudo" do ângulo isométrico original e deixa a leitura do mapa mais de cima,
+// mais tabuleiro. 1 = arte original; quanto menor, mais achatado.
+export const ART_VERTICAL_SQUASH = 0.72;
 
 interface ArtPiece {
   src: string;
