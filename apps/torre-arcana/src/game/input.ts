@@ -1,14 +1,17 @@
-// ─── Manual aim input ───────────────────────────────────────────────────────
-// The camera is fixed and the player never moves — the only control is where
-// the shots go. A single reticle tracks the pointer's absolute position on
-// the canvas (not a joystick offset): it follows touch/mouse 1:1, and the
-// equipped runes fire continuously toward it for as long as the pointer is
-// held down (`firing`). Releasing stops the barrage but leaves the reticle
-// where it was, same as a real crosshair.
+// ─── Manual aim input — horizontal only ────────────────────────────────────
+// The camera is fixed and the player never moves. On a phone the touch point
+// sits right on top of whatever it's aiming at — this used to put the
+// reticle under the player's own thumb. Instead, aim is reduced to a single
+// axis: `aimLane` (-1 left .. 0 center .. 1 right), read only from the
+// pointer's horizontal position. The player can hold their thumb low on the
+// screen (out of the way of the action) and just sweep it left/right; the
+// vertical position of the touch is ignored entirely — shots always fly the
+// full length of the field toward the horizon, never "aimed short."
 
 export class Input {
   x = 0;
   y = 0;
+  aimLane = 0; // -1..1
   firing = false;
   private pid = -1;
   private el: HTMLElement | null = null;
@@ -16,7 +19,7 @@ export class Input {
   attach(el: HTMLElement): void {
     this.el = el;
     this.x = el.clientWidth / 2;
-    this.y = el.clientHeight * 0.55;
+    this.y = el.clientHeight * 0.85;
     el.addEventListener('pointerdown', this.onDown, { passive: false });
     el.addEventListener('pointermove', this.onMove, { passive: false });
     window.addEventListener('pointerup', this.onUp);
@@ -37,6 +40,8 @@ export class Input {
     const r = this.el!.getBoundingClientRect();
     this.x = e.clientX - r.left;
     this.y = e.clientY - r.top;
+    const half = r.width / 2;
+    this.aimLane = Math.max(-1, Math.min(1, (this.x - half) / half));
   }
 
   private onDown = (e: PointerEvent) => {

@@ -6,9 +6,12 @@ import { runeDef } from './runes';
 import { Input } from './input';
 
 const SKY_TOP = '#0a0714';
-const SKY_HORIZON = '#241a3a';
-const GROUND_FAR = '#1d1530';
-const GROUND_NEAR = '#140f20';
+const SKY_HORIZON = '#2c2050';
+const GROUND_FAR = '#211a3e';
+const GROUND_NEAR = '#120c1f';
+const PATH_LIGHT = 'rgba(124,92,255,0.07)';
+
+let staffAngle = -Math.PI / 2; // eased so the staff doesn't snap between frames
 
 export function render(ctx: CanvasRenderingContext2D, state: GameState, view: View, input: Input): void {
   const w = view.w, h = view.h;
@@ -19,12 +22,23 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
     ctx.translate((Math.random() - 0.5) * state.shake, (Math.random() - 0.5) * state.shake);
   }
 
-  // ── Sky ──
+  // ── Sky, with a faint glow behind the horizon toward the aim lane ──
   const sky = ctx.createLinearGradient(0, 0, 0, horizonY);
   sky.addColorStop(0, SKY_TOP);
   sky.addColorStop(1, SKY_HORIZON);
   ctx.fillStyle = sky;
   ctx.fillRect(-20, -20, w + 40, horizonY + 20);
+
+  // A couple of distant silhouette trees along the edges, for atmosphere.
+  ctx.fillStyle = 'rgba(10,7,20,0.8)';
+  for (const [fx, fy, s] of [[0.06, 0.26, 1], [0.14, 0.24, 0.7], [0.94, 0.26, 1], [0.86, 0.24, 0.7]] as const) {
+    const tx = w * fx, ty = h * fy, sc = s * h * 0.05;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty - sc * 2.2);
+    ctx.lineTo(tx - sc * 0.8, ty);
+    ctx.lineTo(tx + sc * 0.8, ty);
+    ctx.closePath(); ctx.fill();
+  }
 
   // ── Ground (trapezoid, narrow at the horizon, wide at the camera) ──
   const ground = ctx.createLinearGradient(0, horizonY, 0, h);
@@ -39,14 +53,35 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
   ctx.closePath();
   ctx.fill();
 
+  // Center path, a lighter band so the ground doesn't read as flat void.
+  ctx.fillStyle = PATH_LIGHT;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.5 - w * 0.012, horizonY);
+  ctx.lineTo(w * 0.5 + w * 0.012, horizonY);
+  ctx.lineTo(w * 0.72, h + 20);
+  ctx.lineTo(w * 0.28, h + 20);
+  ctx.closePath();
+  ctx.fill();
+
   // Depth guide lines — a cheap but legible cue for how far enemies are.
-  ctx.strokeStyle = 'rgba(124,92,255,0.12)';
+  ctx.strokeStyle = 'rgba(124,92,255,0.10)';
   ctx.lineWidth = 1;
   for (let d = 0.15; d < 1; d += 0.15) {
     const left = depthToScreen(d, -1, view);
     const right = depthToScreen(d, 1, view);
     ctx.beginPath(); ctx.moveTo(left.x, left.y); ctx.lineTo(right.x, right.y); ctx.stroke();
   }
+
+  // ── Lane guide — a soft column from the horizon down, showing exactly
+  // where shots are headed, independent of where the thumb physically is. ──
+  const laneTop = depthToScreen(0, input.aimLane, view);
+  const laneBottom = depthToScreen(1, input.aimLane, view);
+  const laneGlow = ctx.createLinearGradient(0, laneTop.y, 0, laneBottom.y);
+  laneGlow.addColorStop(0, input.firing ? 'rgba(232,200,104,0.22)' : 'rgba(124,92,255,0.14)');
+  laneGlow.addColorStop(1, 'rgba(124,92,255,0)');
+  ctx.strokeStyle = laneGlow;
+  ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(laneTop.x, laneTop.y); ctx.lineTo(laneBottom.x, laneBottom.y); ctx.stroke();
 
   // ── Enemies, far to near so closer ones overlap correctly ──
   const sorted = [...state.enemies].sort((a, b) => a.depth - b.depth);
@@ -56,7 +91,11 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
     const spr = e.isBoss ? bossSprite(e.flash) : enemySprite(e.kind, e.flash);
     const baseR = e.isBoss ? 34 : ENEMY_DEFS[e.kind].radius;
     const size = baseR * 2 * pos.scale;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4 * pos.scale;
     ctx.drawImage(spr.canvas, Math.round(pos.x - size / 2), Math.round(pos.y - size / 2), size, size);
+    ctx.restore();
 
     if (e.isBoss) {
       const bw = 140, bh = 9;
@@ -67,20 +106,28 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
     }
   }
 
-  // ── Projectiles ──
+  // ── Projectiles — travel through depth/lane space like enemies do, so
+  // their screen position (and the short trail behind them) comes from the
+  // same projection, shrinking into the distance as they near the horizon. ──
   for (const p of state.projectiles) {
     const def = runeDef(p.style);
-    const m = Math.hypot(p.vx, p.vy) || 1;
-    ctx.strokeStyle = def.color + 'aa';
+    const pos = depthToScreen(p.depth, p.lane, view);
+    const trail = depthToScreen(Math.min(1, p.depth + 0.05), p.lane, view);
+    ctx.save();
+    ctx.shadowColor = def.color;
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = def.color + '70';
     ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    ctx.lineTo(p.x - (p.vx / m) * 14, p.y - (p.vy / m) * 14);
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(trail.x, trail.y);
     ctx.stroke();
     ctx.fillStyle = def.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.radius * 0.7, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, p.radius * 0.6 * pos.scale, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 
   // ── Particles ──
@@ -91,26 +138,53 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
   }
   ctx.globalAlpha = 1;
 
-  // ── Tower / mage — fixed at the bottom, staff rotates toward the reticle ──
+  // ── Tower / mage — fixed at the bottom, staff eases toward the lane ──
   const towerX = w * 0.5, towerY = h * 0.92;
-  const aimAng = Math.atan2(input.y - towerY, input.x - towerX);
+  const targetAng = Math.atan2(laneTop.y - towerY, laneTop.x - towerX);
+  let delta = targetAng - staffAngle;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  staffAngle += delta * 0.25;
+
   ctx.save();
   ctx.translate(towerX, towerY);
+
+  // Soft ground glow beneath the mage.
+  const glow = ctx.createRadialGradient(0, 10, 4, 0, 10, 70);
+  glow.addColorStop(0, 'rgba(124,92,255,0.25)');
+  glow.addColorStop(1, 'rgba(124,92,255,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.ellipse(0, 14, 70, 20, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Robe, with a lighter front panel for a touch of volume.
   ctx.fillStyle = '#1b1430';
   ctx.beginPath();
   ctx.moveTo(-58, 60); ctx.lineTo(-30, -36); ctx.lineTo(30, -36); ctx.lineTo(58, 60);
   ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(124,92,255,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(-14, 58); ctx.lineTo(-7, -30); ctx.lineTo(7, -30); ctx.lineTo(14, 58);
+  ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#4a3a7a'; ctx.lineWidth = 3; ctx.stroke();
+
+  // Hood + glowing eyes.
   ctx.fillStyle = '#241a3a';
   ctx.beginPath(); ctx.arc(0, -44, 22, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#7c5cff';
-  ctx.beginPath(); ctx.ellipse(0, -42, 9, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = input.firing ? '#ffd257' : '#7c5cff';
+  ctx.beginPath(); ctx.ellipse(-6, -42, 2.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(6, -42, 2.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Staff, eased toward the current lane.
   ctx.save();
-  ctx.rotate(aimAng + Math.PI / 2);
+  ctx.rotate(staffAngle + Math.PI / 2);
   ctx.strokeStyle = '#5a4a2a'; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(0, -95); ctx.stroke();
-  ctx.fillStyle = input.firing ? '#e8c868' : '#7c5cff';
+  ctx.save();
+  ctx.shadowColor = input.firing ? '#ffd257' : '#7c5cff';
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = input.firing ? '#ffd257' : '#7c5cff';
   ctx.beginPath(); ctx.arc(0, -98, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
   ctx.restore();
   ctx.restore();
 
@@ -124,15 +198,16 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
   }
   ctx.globalAlpha = 1;
 
-  // ── Reticle ──
+  // ── Aim marker — sits near the horizon at the chosen lane, never under
+  // the player's thumb (which can stay low on the screen). ──
   ctx.strokeStyle = input.firing ? '#ffd257' : '#e8dcff';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(input.x, input.y, 14, 0, Math.PI * 2);
-  ctx.moveTo(input.x - 20, input.y); ctx.lineTo(input.x - 8, input.y);
-  ctx.moveTo(input.x + 8, input.y); ctx.lineTo(input.x + 20, input.y);
-  ctx.moveTo(input.x, input.y - 20); ctx.lineTo(input.x, input.y - 8);
-  ctx.moveTo(input.x, input.y + 8); ctx.lineTo(input.x, input.y + 20);
+  ctx.arc(laneTop.x, laneTop.y + 14, 12, 0, Math.PI * 2);
+  ctx.moveTo(laneTop.x - 18, laneTop.y + 14); ctx.lineTo(laneTop.x - 7, laneTop.y + 14);
+  ctx.moveTo(laneTop.x + 7, laneTop.y + 14); ctx.lineTo(laneTop.x + 18, laneTop.y + 14);
+  ctx.moveTo(laneTop.x, laneTop.y + 2); ctx.lineTo(laneTop.x, laneTop.y + 9);
+  ctx.moveTo(laneTop.x, laneTop.y + 19); ctx.lineTo(laneTop.x, laneTop.y + 26);
   ctx.stroke();
 
   ctx.restore();

@@ -50,29 +50,44 @@ function make(key: string, w: number, h: number, draw: (g: CanvasRenderingContex
   return cache[key];
 }
 
+// Shared palette helper: a `tint` override (hit-flash white) replaces every
+// color, otherwise each shape gets a dark base + a lighter top-left highlight
+// so flat rectangles read with a bit of volume instead of being pure silhouettes.
 export function enemySprite(kind: EnemyKind, flash: number): Sprite {
   const hit = flash > 0;
   const key = `${kind}:${hit ? 'hit' : 'base'}`;
-  return make(key, 16, 16, (g) => {
-    const tint = hit ? '#ffffff' : undefined;
+  return make(key, 20, 20, (g) => {
+    const w = hit ? '#ffffff' : undefined;
     switch (kind) {
       case 'husk':
-        px(g, 4, 3, 8, 6, tint ?? '#6a7a4a');
-        px(g, 5, 9, 6, 5, tint ?? '#566339');
-        px(g, 6, 5, 2, 2, '#1a1410');
-        px(g, 9, 5, 2, 2, '#1a1410');
+        // Hunched corrupted creature: dark moss body, paler hunched back, glowing eyes.
+        px(g, 5, 7, 10, 9, w ?? '#3f4a2a');
+        px(g, 6, 5, 8, 3, w ?? '#566339');
+        px(g, 5, 15, 10, 3, w ?? '#2c3420');
+        px(g, 4, 9, 2, 5, w ?? '#2c3420');
+        px(g, 14, 9, 2, 5, w ?? '#2c3420');
+        px(g, 7, 9, 2, 2, hit ? '#ffffff' : '#9fe85a');
+        px(g, 11, 9, 2, 2, hit ? '#ffffff' : '#9fe85a');
         break;
       case 'wisp':
-        px(g, 5, 2, 6, 6, tint ?? '#a87cf0');
-        px(g, 4, 8, 8, 6, tint ?? '#8a5ac0');
-        px(g, 6, 5, 1, 1, '#1a1410');
-        px(g, 9, 5, 1, 1, '#1a1410');
+        // Floating spectral orb, lighter crown fading to a trailing wisp tail.
+        px(g, 6, 2, 8, 7, w ?? '#b996f5');
+        px(g, 5, 9, 10, 5, w ?? '#8a5ac0');
+        px(g, 7, 14, 6, 3, w ?? '#5e3a8c');
+        px(g, 9, 17, 2, 2, w ?? '#3a2460');
+        px(g, 8, 6, 1, 2, hit ? '#ffffff' : '#2a1538');
+        px(g, 11, 6, 1, 2, hit ? '#ffffff' : '#2a1538');
         break;
       case 'brute':
-        px(g, 2, 2, 12, 8, tint ?? '#9a3a2a');
-        px(g, 1, 10, 14, 5, tint ?? '#7a2e20');
-        px(g, 5, 5, 2, 2, '#1a1410');
-        px(g, 9, 5, 2, 2, '#1a1410');
+        // Bulky armored silhouette, broad shoulders, dim ember eyes.
+        px(g, 2, 3, 16, 7, w ?? '#7a2e20');
+        px(g, 1, 10, 18, 7, w ?? '#5c2318');
+        px(g, 0, 11, 2, 5, w ?? '#431a12');
+        px(g, 18, 11, 2, 5, w ?? '#431a12');
+        px(g, 3, 1, 5, 3, w ?? '#5c2318');
+        px(g, 12, 1, 5, 3, w ?? '#5c2318');
+        px(g, 6, 6, 2, 2, hit ? '#ffffff' : '#ffb020');
+        px(g, 12, 6, 2, 2, hit ? '#ffffff' : '#ffb020');
         break;
     }
   });
@@ -81,13 +96,17 @@ export function enemySprite(kind: EnemyKind, flash: number): Sprite {
 export function bossSprite(flash: number): Sprite {
   const hit = flash > 0;
   const key = `boss:${hit ? 'hit' : 'base'}`;
-  return make(key, 24, 24, (g) => {
-    const tint = hit ? '#ffffff' : undefined;
-    px(g, 4, 2, 16, 10, tint ?? '#3a1f4a');
-    px(g, 2, 12, 20, 9, tint ?? '#2a1538');
-    px(g, 6, 0, 4, 3, tint ?? '#2a1538');
-    px(g, 14, 0, 4, 3, tint ?? '#2a1538');
-    px(g, 8, 6, 2, 3, '#ffb020');
-    px(g, 14, 6, 2, 3, '#ffb020');
+  return make(key, 30, 30, (g) => {
+    const w = hit ? '#ffffff' : undefined;
+    // Hooded, horned silhouette wrapped in a tattered cloak, two glowing eyes.
+    px(g, 5, 6, 20, 12, w ?? '#3a1f4a');
+    px(g, 3, 17, 24, 10, w ?? '#2a1538');
+    px(g, 1, 19, 3, 7, w ?? '#1c0e28');
+    px(g, 26, 19, 3, 7, w ?? '#1c0e28');
+    px(g, 7, 1, 4, 6, w ?? '#2a1538');
+    px(g, 19, 1, 4, 6, w ?? '#2a1538');
+    px(g, 10, 10, 3, 4, hit ? '#ffffff' : '#ffb020');
+    px(g, 17, 10, 3, 4, hit ? '#ffffff' : '#ffb020');
+    px(g, 11, 16, 8, 2, w ?? '#1c0e28');
   });
 }

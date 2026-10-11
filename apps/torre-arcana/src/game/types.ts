@@ -47,15 +47,22 @@ export interface Enemy {
   phase2?: boolean;
 }
 
+// Projectiles travel through the same depth/lane space as enemies (not a
+// straight 2D screen-space line) — depth starts at 1 (the tower) and counts
+// down to 0 (the horizon), at a fixed lane. This is what makes a shot
+// actually able to reach an enemy at any distance: the perspective widens
+// the on-screen lateral spread a lot between the horizon and the tower, so a
+// straight line toward a horizon point would never cross paths with an
+// enemy closer in — moving through lane/depth space instead guarantees it
+// always travels along the same "lane" an enemy in it is standing in.
 export interface Projectile {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
+  lane: number;
+  depth: number; // 1 (tower) -> 0 (horizon)
+  speed: number; // depth units per second
   damage: number;
-  life: number;
   style: RuneId;
-  radius: number;
+  radius: number; // visual size
+  hitWidth: number; // lane-distance tolerance for a hit
   slowOnHit?: { mult: number; duration: number };
   chainOnHit?: { pct: number; radius: number };
   splashRadius?: number;

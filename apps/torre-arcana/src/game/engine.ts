@@ -1,5 +1,5 @@
 import {
-  GameState, Enemy, RuneDef, RuneId, Projectile,
+  GameState, Enemy, EnemyKind, RuneDef, RuneId, Projectile,
 } from './types';
 import { Input } from './input';
 import { depthToScreen, View } from './projection';
@@ -8,8 +8,10 @@ import { ENEMY_DEFS } from './enemies';
 import { WAVES } from './wave';
 
 const TOWER_MAX_HP = 100;
-const TOWER_X_FRAC = 0.5;
-const TOWER_Y_FRAC = 0.92; // where shots originate on screen
+const MAX_ALIVE_ENEMIES = 16; // soft cap so a rough patch never snowballs into an unreadable swarm
+// How forgiving the lane hit-test is per enemy kind — bigger silhouettes are
+// easier to land a shot on, on top of each rune's own hitWidth.
+const ENEMY_LANE_RADIUS: Record<EnemyKind, number> = { husk: 0.05, wisp: 0.04, brute: 0.08 };
 
 export function createState(): GameState {
   return {
@@ -116,15 +118,20 @@ function updateEffects(state: GameState, dt: number): void {
   }
 }
 
+function clampLane(v: number): number {
+  return Math.max(-1, Math.min(1, v));
+}
+
 // ─── Weapons — manual aim, each rune its own projectile behavior ──────────
-function fireRune(state: GameState, def: RuneDef, stars: number, x: number, y: number, dirX: number, dirY: number): void {
+// Fired straight at the player's chosen lane — see the note on Projectile in
+// types.ts for why it travels through depth/lane space instead of a 2D line.
+function fireRune(state: GameState, def: RuneDef, stars: number, lane: number): void {
   const dmg = runeDamage(def, stars);
-  const base = { x, y, life: 1.4, style: def.id, radius: 7 };
+  const base = { depth: 1, speed: def.projectileSpeed, style: def.id, radius: 7, hitWidth: 0.07 };
   if (def.id === 'frost') {
-    for (const off of [-0.16, 0, 0.16]) {
-      const a = Math.atan2(dirY, dirX) + off;
+    for (const off of [-0.09, 0, 0.09]) {
       state.projectiles.push({
-        ...base, vx: Math.cos(a) * def.projectileSpeed, vy: Math.sin(a) * def.projectileSpeed,
+        ...base, lane: clampLane(lane + off),
         damage: dmg * 0.75, slowOnHit: { mult: 0.55, duration: 1.4 },
       });
     }
@@ -132,9 +139,9 @@ function fireRune(state: GameState, def: RuneDef, stars: number, x: number, y: n
   }
   const extra: Partial<Projectile> =
     def.id === 'chain' ? { chainOnHit: { pct: 0.6, radius: 90 } }
-    : def.id === 'firecore' ? { splashRadius: 50, splashPct: 0.45, radius: 10 }
+    : def.id === 'firecore' ? { splashRadius: 50, splashPct: 0.45, radius: 10, hitWidth: 0.09 }
     : {};
-  state.projectiles.push({ ...base, vx: dirX * def.projectileSpeed, vy: dirY * def.projectileSpeed, damage: dmg, ...extra });
+  state.projectiles.push({ ...base, lane, damage: dmg, ...extra });
 }
 
 function hitEnemy(state: GameState, e: Enemy, p: Projectile, view: View): void {
@@ -222,47 +229,49 @@ export function update(state: GameState, dt: number, view: View, input: Input): 
   const wave = WAVES[state.waveIndex];
   state.waveTime += dt;
   if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 60);
-  state.aimX = input.x; state.aimY = input.y;
+  const aimTarget = depthToScreen(0, input.aimLane, view); // horizon point at the chosen lane
+  state.aimX = aimTarget.x; state.aimY = aimTarget.y;
 
   // ── Spawning: escalating waves, then the boss ──
   if (!state.bossActive) {
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0) {
-      spawnEnemy(state);
+      if (state.enemies.length < MAX_ALIVE_ENEMIES) spawnEnemy(state);
       state.spawnTimer = spawnInterval(state.waveTime);
     }
     if (state.waveTime >= wave.duration) spawnBoss(state);
   }
 
-  // ── Rune firing (manual aim — toward the reticle while held) ──
-  const towerX = view.w * TOWER_X_FRAC;
-  const towerY = view.h * TOWER_Y_FRAC;
+  // ── Rune firing — horizontal-only aim: the player just picks a lane
+  // (ignoring where their thumb sits vertically) and shots travel the full
+  // length of the field along it, same as the enemies walking it. ──
   for (const slot of state.runes) {
     if (!slot.unlocked || slot.stars <= 0) continue;
     if (slot.cooldownTimer > 0) slot.cooldownTimer -= dt;
     if (slot.cooldownTimer > 0) continue;
     if (!input.firing) continue;
     const def = runeDef(slot.id);
-    const dx = input.x - towerX;
-    const dy = input.y - towerY;
-    const d = Math.hypot(dx, dy) || 1;
-    fireRune(state, def, slot.stars, towerX, towerY, dx / d, dy / d);
+    fireRune(state, def, slot.stars, input.aimLane);
     slot.cooldownTimer = runeCooldown(def, slot.stars);
   }
 
-  // ── Projectiles ──
+  // ── Projectiles — move through the same depth/lane space as enemies, so
+  // a hit is "same lane, crossed depths" rather than a 2D screen-space
+  // circle. A projectile travels fast enough (and dt can be large enough
+  // under load) that comparing depths at a single instant lets it tunnel
+  // straight past an enemy between two frames — instead this checks whether
+  // the projectile's depth crossed the enemy's depth DURING the step. ──
   for (let i = state.projectiles.length - 1; i >= 0; i--) {
     const p = state.projectiles[i];
-    p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-    let remove = p.life <= 0;
+    const prevDepth = p.depth;
+    p.depth -= p.speed * dt;
+    let remove = p.depth <= 0;
     if (!remove) {
       for (const e of state.enemies) {
         if (e.hp <= 0) continue;
-        const pos = depthToScreen(e.depth, e.lane, view);
-        const baseR = e.isBoss ? 34 : ENEMY_DEFS[e.kind].radius;
-        const er = baseR * pos.scale * 0.5;
-        const rr = er + p.radius;
-        if ((p.x - pos.x) ** 2 + (p.y - pos.y) ** 2 < rr * rr) {
+        const laneTol = p.hitWidth + (e.isBoss ? 0.12 : ENEMY_LANE_RADIUS[e.kind]);
+        if (Math.abs(e.lane - p.lane) >= laneTol) continue;
+        if (prevDepth >= e.depth && p.depth <= e.depth) {
           hitEnemy(state, e, p, view);
           remove = true;
           break;
