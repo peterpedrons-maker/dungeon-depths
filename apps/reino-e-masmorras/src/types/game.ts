@@ -149,6 +149,7 @@ export interface SkillEffect {
   accuracyPct?: number;   // permanent base hit chance, offsets enemy evasion
   cooldownReductionPct?: number; // shortens every ability's cooldown, capped in combatStats.ts
   dmgPctVsStatus?: { status: StatusEffectKind; pct: number }; // conditional passive, e.g. "+15% dmg vs poisoned enemy"
+  healingPowerPct?: number; // adds to CombatStats.healingPowerPct (otherwise purely WIS/item-derived)
 }
 
 // Damage-over-time family (poison/burn/bleed all tick identically; curse is
@@ -394,6 +395,18 @@ export interface AbilityEffect {
   atkBuffPctBase?: number; // kingsBanner
   defBuffPctBase?: number;
   tenacityBuffPctBase?: number;
+  // Comando Supremo (cavaleiro:comando:14): swapped in for their base
+  // counterparts when the ability is cast while Comando Supremo is active —
+  // see applyCommandSupremeIfActive in combatEngine.ts.
+  dmgMultSupreme?: number;
+  selfBuffAtkPctOnHitSupreme?: number;
+  selfBuffSpeedPctOnHitSupreme?: number;
+  shieldPctBaseSupreme?: number;
+  shieldPctCapSupreme?: number;
+  bonusDmgTakenReductionPctSupreme?: number;
+  atkBuffPctBaseSupreme?: number;
+  defBuffPctBaseSupreme?: number;
+  tenacityBuffPctBaseSupreme?: number;
   opensOrderRefundWindow?: boolean; // kingsBanner: the first other Comando ability used during its duration refunds +1 Ordem
 
   // ── Caçador redesign fields (lib/hunter.ts) — same composition discipline
@@ -559,8 +572,44 @@ export interface AbilityEffect {
 
   // Arqueiro: metadados declarativos de Distância, Tensão, Cadência e voo.
   archerPath?: 'precision' | 'rapid' | 'instinct';
+  // Druida — O Ciclo Vivo. druidSeason identifica a Estação da habilidade
+  // ('cycle' = neutra, nunca Sintonizada nem Descompassada). druidPath
+  // identifica a que árvore ela pertence, para o Reequilíbrio (só
+  // 'balance') e para CDR escopado por caminho. Os sufixos "Aligned"
+  // (Sintonizada) e "Rebalanced" (Reequilibrada, só caminho balance)
+  // trocam o campo base correspondente — ver applyCommandSupremeIfActive
+  // em combatEngine.ts para o mesmo padrão já usado pelo Cavaleiro.
   druidSeason?: 'spring' | 'summer' | 'autumn' | 'winter' | 'cycle';
-  druidAction?: 'seed'|'harvest'|'form'|'cycle'|'winter'|'equilibrium';
+  druidPath?: 'rebirth' | 'metamorphosis' | 'balance';
+  dmgMultAligned?: number;
+  dmgMultRebalanced?: number;
+  healPctAligned?: number;
+  healPctRebalanced?: number;
+  hitCountAligned?: number;
+  hitCountRebalanced?: number;
+  hitDmgMultsAligned?: number[];
+  hitDmgMultsRebalanced?: number[];
+  druidFormOnCast?: 'stag' | 'wolf' | 'bear' | 'owl';
+  druidFormOnCastAll?: boolean; // Avatar Primordial: assume as quatro Formas
+  druidAvatar?: boolean;
+  dmgMultRenewed?: number; // Avatar com Renovo consumido
+  druidEternalReturn?: boolean;
+  hitDmgMultsAbsolute?: number[]; // Eterno Retorno: Renovo + Descompasso 3
+  healPctAbsolute?: number;
+  druidTreeOfLife?: boolean; // Árvore Ancestral: consome Renovo, Jardim -> Fruto, abre Copa Ancestral
+  druidPlantSeeds?: number;
+  druidPlantSeedsAligned?: number;
+  druidHarvest?: boolean; // Colheita Ancestral: consome Frutos enquanto houver HP faltando
+  druidHarvestHealPctPerFruit?: number;
+  druidHarvestHealPctPerFruitAligned?: number;
+  druidImmediateHealPct?: number; // Dormência Profunda: cura imediata só se Sintonizada
+  druidImmediateHealPctAligned?: number;
+  druidPostCastDmgReductionPct?: number; // Raízes do Inverno: -dano na próxima ação direta inimiga
+  druidPostCastDmgReductionPctAligned?: number;
+  druidPostCastDmgReductionPctRebalanced?: number;
+  druidBearWindowBonusPct?: number; // Queda do Urso: janela extra de redução de dano
+  druidAccuracyBonus?: number; // Olhos da Coruja: +precisão só para este cast
+  druidAccuracyBonusAligned?: number;
   healFromDamagePct?: number;
   healFromDamageCapPct?: number;
   archerShotType?: 'precise' | 'volley' | 'flight' | 'ballistic' | 'maneuver';
@@ -1033,6 +1082,12 @@ export interface EnemyInstance {
   // stacking to 3, each application renews ALL stacks' duration (same shape
   // as Feridas/Julgamento). Absent = no Brechas active.
   hunterBreaches?: { stacks: number; ticksLeft: number };
+  // Cavaleiro-only "already granted the first-hit Momentum bonus against
+  // this enemy" flag (lib/knight.ts's MOMENTUM_GAIN_FIRST_HIT vs
+  // MOMENTUM_GAIN_NEXT_HIT) — owned by the enemy so it naturally resets
+  // whenever spawnEnemy produces the next target, same as warrior's own
+  // per-enemy first-hit flags above.
+  knightMomentumFirstHitUsed?: boolean;
   // Guerreiro-only encounter state. It is owned by the current enemy and is
   // recreated at 100 whenever spawnEnemy produces the next target.
   warrior?: {
@@ -1120,7 +1175,7 @@ export interface RankEntry {
 
 export type Screen = 'title' | 'select' | 'create' | 'game';
 export type Section =
-  | 'kingdom' | 'buildings' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts'
+  | 'kingdom' | 'character' | 'skills' | 'highscore' | 'dungeon-select' | 'dungeon' | 'hunts'
   | 'prestige-shop' | 'bestiary' | 'titles';
 
 // ── Títulos (lib/titles.ts) — purely computed from Character state, see the

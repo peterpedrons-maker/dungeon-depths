@@ -6,6 +6,58 @@ import {
   invokePaladinVirtue, invokePaladinVirtues, paladinAegisAttributeCapBonus, paladinAegisReduction,
   paladinActiveHealAmount, paladinConviction, paladinRadiantBonusPct, paladinRedemptionVitBonusPct,
 } from './paladin.ts';
+import { createCombatState, resolvePlayerAction } from './combatEngine.ts';
+import { createCharacter } from './classes.ts';
+import { DUNGEONS } from './dungeons.ts';
+import { spawnEnemy } from './enemies.ts';
+
+// Real end-to-end coverage for the exact bug reported: the live/simulation
+// engine invoked Liturgia state only from combatEngine.ts's own cast-payment
+// block, which never decayed it on subsequent real actions (DungeonPanel
+// never calls resolveEnvironmentTick, the only place that decay existed) —
+// and Veredito finishers fell through the same generic virtue-invocation
+// fallback, invoking Justiça instead of consuming the Liturgia.
+const INVOKE_JUSTICE_ID = 'paladino:martelo:4'; // "Golpe do Veredito" — invokes Justiça, always available.
+const VERDICT_ID = 'paladino:martelo:12'; // "Veredito" — paladinVerdict, requires conviction >= 1.
+function paladinWithAbilities(ids: string[]) {
+  const character = createCharacter('Paladino real', 'paladino');
+  character.unlockedSkills = ids;
+  return character;
+}
+function friendlyEnemy() {
+  return { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000, evasion: 0 };
+}
+
+test('Liturgia real decai uma vez por ação real do Paladino (ataques básicos incluídos)', () => {
+  const character = paladinWithAbilities([INVOKE_JUSTICE_ID]);
+  const state = createCombatState(character, friendlyEnemy(), 1, [INVOKE_JUSTICE_ID], [INVOKE_JUSTICE_ID]);
+  resolvePlayerAction(state); // Invoca Justiça: Liturgia = 4, esta mesma ação não reduz.
+  assert.equal(state.classState.liturgy, 4);
+  assert.equal(state.classState.virtues.justice, true);
+  state.priorities = []; // Força ataques básicos reais nas próximas ações (sem repetir a invocação).
+  for (let i = 0; i < 3; i += 1) resolvePlayerAction(state); // 3 ataques básicos reais.
+  assert.equal(state.classState.liturgy, 1);
+  assert.equal(state.classState.virtues.justice, true, 'Virtude some só quando a Liturgia chega a 0');
+  resolvePlayerAction(state); // Quarto ataque básico real: Liturgia expira.
+  assert.equal(state.classState.liturgy, 0);
+  assert.equal(state.classState.virtues.justice, false);
+  assert.equal(state.classState.resources.conviction, 0);
+});
+
+test('Veredito real consome a Liturgia no início e usa o snapshot de Convicção pré-consumo no dano', () => {
+  const character = paladinWithAbilities([INVOKE_JUSTICE_ID, VERDICT_ID]);
+  const state = createCombatState(character, friendlyEnemy(), 1, [INVOKE_JUSTICE_ID, VERDICT_ID], [INVOKE_JUSTICE_ID, VERDICT_ID]);
+  resolvePlayerAction(state); // Invoca Justiça: conviction = 1.
+  assert.equal(state.classState.resources.conviction, 1);
+  const enemyHpBefore = state.enemyHp;
+  resolvePlayerAction(state); // Veredito (conviction >= 1 satisfeito) — não deve invocar outra Virtude.
+  const castEvent = state.events.find((e) => e.type === 'abilityCast' && e.abilityId === VERDICT_ID);
+  assert.ok(castEvent, 'Veredito deveria ter sido lançado');
+  assert.ok(state.enemyHp < enemyHpBefore, 'Veredito deveria ter causado dano usando o multiplicador de 1 Convicção (1.90x), não 0');
+  assert.equal(state.classState.virtues.justice, false, 'Veredito consome todas as Virtudes no início do cast');
+  assert.equal(state.classState.liturgy, 0);
+  assert.equal(state.classState.resources.conviction, 0);
+});
 
 test('primeira Virtude inicia Liturgia em 4 e a própria ação não reduz', () => {
   const invoked = invokePaladinVirtue(createPaladinLiturgyState(), 'justice');

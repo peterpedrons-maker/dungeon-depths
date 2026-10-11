@@ -66,8 +66,7 @@ function AttributeRadar({ totals }: { totals: Attributes }) {
             <text
               x={lx} y={ly}
               textAnchor="middle" dominantBaseline="middle"
-              className="fill-current text-parchment/60 text-[9.5px] font-bold"
-              fontFamily="Georgia, serif"
+              className="fill-current text-parchment/60 text-[9.5px] font-bold font-display"
             >
               {ATTR_META[key].abbr}
             </text>

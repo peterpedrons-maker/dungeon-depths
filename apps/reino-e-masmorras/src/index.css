@@ -94,20 +94,96 @@ body {
   100% { transform: scale(1); opacity: 0; }
 }
 
-/* Sidebar "Campanha" CTA — a slow permanent breathing glow (not a one-time
-   event flash like buildingGlow) marking it as the game's primary action,
-   distinct from every other nav item's plain hover/active state. */
-@keyframes sidebarHeroGlow {
-  0%, 100% { box-shadow: 0 0 10px 1px rgba(212,175,55,0.35), inset 0 0 12px rgba(212,175,55,0.08); }
-  50%      { box-shadow: 0 0 20px 5px rgba(212,175,55,0.65), inset 0 0 18px rgba(212,175,55,0.16); }
+/* Boss-reveal "curtain" (DungeonPanel's bossIntro) — a dark overlay that
+   holds long enough to read the warning + name, then lifts right as the
+   boss's own sprite starts materializing underneath (see enemySpawnAtRef,
+   reset the instant this curtain clears). Duration is driven by the same
+   BOSS_INTRO_MS the setTimeout uses, so the two never drift apart. */
+@keyframes bossIntroCurtain {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes bossWarningFlash {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(1.08); }
+}
+@keyframes bossNameReveal {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-/* Small attention dot on a sidebar item with something pending (unspent
-   attribute/skill points, fresh Mercador stock) — pulses to catch the eye
-   without a badge count, since these are binary "there's something here"
-   signals rather than a quantity worth spelling out at nav-item scale. */
-@keyframes attentionDotPulse {
-  0%, 100% { transform: scale(1);    opacity: 1;   }
-  50%      { transform: scale(1.4);  opacity: 0.55; }
+/* "Something's waiting for you" signal on a Reino hub shortcut icon with
+   something pending (unspent attribute/skill points) — a soft blurred
+   radial-gradient glow sitting behind the icon (see KingdomHub.tsx), same
+   technique as the hub's own torch/portal embers, so it reads as a natural
+   light pulse instead of a hard-edged bordered box around the icon. */
+@keyframes navAttentionPulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+
+/* Cheap "it's alive" trick for the static Reino hub painting — a blurred
+   radial-gradient dot laid over each torch/forge/portal light source, just
+   pulsing opacity+scale on an irregular 4-beat cycle so it reads as a real
+   flicker rather than a uniform pulse. Each instance gets its own
+   animation-delay (see KingdomHub.tsx) so torches don't flicker in unison,
+   which is what gives away the trick immediately. */
+@keyframes emberFlicker {
+  0%   { opacity: 0.55; transform: scale(0.92); }
+  30%  { opacity: 0.9;  transform: scale(1.08); }
+  55%  { opacity: 0.65; transform: scale(0.96); }
+  80%  { opacity: 0.95; transform: scale(1.1); }
+  100% { opacity: 0.55; transform: scale(0.92); }
+}
+
+/* Same attention language applied to an in-panel tab/pill (e.g. the
+   Atributos sub-tab, or a "N pontos" badge) once the player has actually
+   navigated to where the sidebar glow pointed them — gold for skill
+   points, sky for attribute points, matching each one's existing pill. */
+@keyframes tabAttentionGlowGold {
+  0%, 100% { box-shadow: 0 0 5px 0px rgba(212,175,55,0.35); }
+  50%      { box-shadow: 0 0 14px 3px rgba(212,175,55,0.75); }
+}
+@keyframes tabAttentionGlowSky {
+  0%, 100% { box-shadow: 0 0 5px 0px rgba(56,189,248,0.35); }
+  50%      { box-shadow: 0 0 14px 3px rgba(56,189,248,0.75); }
+}
+
+/* Reino hub's building hit-areas and shortcut icons (KingdomHub.tsx) used
+   Tailwind's hover:/group-hover: utilities, which compile to plain :hover
+   with no media-feature gate — on a touchscreen, tapping sets :hover and it
+   then sticks (there's no pointer to "leave" the element), showing the gold
+   ring/tint permanently around whatever building was last tapped until the
+   player taps elsewhere. Gating the same styles behind
+   (hover: hover) — true only on devices with a real pointer — keeps the
+   effect for mouse/trackpad users and drops it entirely on touch, which is
+   the standard fix for this exact class of bug. */
+.icon-hover-target {
+  filter:
+    drop-shadow(0 2px 1px rgba(0,0,0,0.9))
+    drop-shadow(0 3px 4px rgba(0,0,0,0.55))
+    drop-shadow(-1px -1px 0px rgba(255,235,180,0.35));
+}
+@media (hover: hover) {
+  .building-hover-target:hover {
+    background-color: rgba(200,154,46,0.1);
+    box-shadow: inset 0 0 0 2px rgba(200,154,46,0.4);
+  }
+  .group:hover .icon-hover-target {
+    filter:
+      drop-shadow(0 2px 1px rgba(0,0,0,0.9))
+      drop-shadow(0 3px 4px rgba(0,0,0,0.55))
+      drop-shadow(-1px -1px 0px rgba(255,235,180,0.35))
+      brightness(1.25);
+  }
+  /* Same fix, same reason, for DungeonMap.tsx's unlocked dungeon markers —
+     an identical circular hover ring that had the identical sticky-on-tap
+     bug. */
+  .dungeon-marker-hover-target:hover {
+    background-color: rgba(200,154,46,0.15);
+    box-shadow: inset 0 0 0 2px rgba(200,154,46,0.5);
+  }
 }
 

@@ -8,6 +8,10 @@ import pantanoUrl from '../assets/battle-bg/pantano.webp';
 import aranhasUrl from '../assets/battle-bg/aranhas.webp';
 import torreUrl from '../assets/battle-bg/torre.webp';
 import minasUrl from '../assets/battle-bg/minas.webp';
+import florestaUrl from '../assets/battle-bg/floresta.webp';
+import covilUrl from '../assets/battle-bg/covil.webp';
+import elficasUrl from '../assets/battle-bg/elficas.webp';
+import arenaUrl from '../assets/battle-bg/arena.webp';
 
 const SOURCES: Partial<Record<string, string>> = {
   ruinas: ruinasUrl,
@@ -17,6 +21,10 @@ const SOURCES: Partial<Record<string, string>> = {
   aranhas: aranhasUrl,
   torre: torreUrl,
   minas: minasUrl,
+  floresta: florestaUrl,
+  covil: covilUrl,
+  elficas: elficasUrl,
+  arena: arenaUrl,
 };
 
 const cache: Partial<Record<string, HTMLImageElement>> = {};

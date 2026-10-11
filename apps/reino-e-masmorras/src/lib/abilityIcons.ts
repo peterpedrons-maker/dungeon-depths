@@ -10,22 +10,35 @@ import cavaleiroSheet from '../assets/abilities/cavaleiro.webp';
 import paladinoSheet from '../assets/abilities/paladino.webp';
 import barbaroSheet from '../assets/abilities/barbaro.webp';
 import arqueiroSheet from '../assets/abilities/arqueiro.webp';
+import cacadorSheet from '../assets/abilities/cacador.webp';
 import feiticeiroSheet from '../assets/abilities/feiticeiro.webp';
 import bruxoSheet from '../assets/abilities/bruxo.webp';
 import druidaSheet from '../assets/abilities/druida.webp';
 import bardoSheet from '../assets/abilities/bardo.webp';
 import necromanteSheet from '../assets/abilities/necromante.webp';
 import passivasSheet from '../assets/abilities/passivas.webp';
+import guerreiroPassivasSheet from '../assets/abilities/guerreiro-passivas.webp';
+import magoPassivasSheet from '../assets/abilities/mago-passivas.webp';
+import ladinoPassivasSheet from '../assets/abilities/ladino-passivas.webp';
+import clerigoPassivasSheet from '../assets/abilities/clerigo-passivas.webp';
+import cavaleiroPassivasSheet from '../assets/abilities/cavaleiro-passivas.webp';
+import paladinoPassivasSheet from '../assets/abilities/paladino-passivas.webp';
+import barbaroPassivasSheet from '../assets/abilities/barbaro-passivas.webp';
+import arqueiroPassivasSheet from '../assets/abilities/arqueiro-passivas.webp';
+import cacadorPassivasSheet from '../assets/abilities/cacador-passivas.webp';
+import feiticeiroPassivasSheet from '../assets/abilities/feiticeiro-passivas.webp';
+import bruxoPassivasSheet from '../assets/abilities/bruxo-passivas.webp';
+import druidaPassivasSheet from '../assets/abilities/druida-passivas.webp';
+import bardoPassivasSheet from '../assets/abilities/bardo-passivas.webp';
+import necromantePassivasSheet from '../assets/abilities/necromante-passivas.webp';
 
 // Each class's 15 active abilities (5 per path × 3 paths) live on one sheet,
-// one row per path in SKILL_TREES[classId] order. cacador has no sheet yet
-// (still waiting on art) — activeAbilityIconStyle returns null for it and
-// callers fall back to the generic star glyph, same as before this existed.
+// one row per path in SKILL_TREES[classId] order.
 const ACTIVE_SHEET: Partial<Record<ClassId, string>> = {
   guerreiro: guerreiroSheet, mago: magoSheet, ladino: ladinoSheet, clerigo: clerigoSheet,
   cavaleiro: cavaleiroSheet, paladino: paladinoSheet, barbaro: barbaroSheet, arqueiro: arqueiroSheet,
-  feiticeiro: feiticeiroSheet, bruxo: bruxoSheet, druida: druidaSheet, bardo: bardoSheet,
-  necromante: necromanteSheet,
+  cacador: cacadorSheet, feiticeiro: feiticeiroSheet, bruxo: bruxoSheet, druida: druidaSheet,
+  bardo: bardoSheet, necromante: necromanteSheet,
 };
 
 const ACTIVE_COLS = 5;
@@ -35,11 +48,26 @@ const ACTIVE_ROWS = 3;
 // tier slots, in the order the art sheets lay them out left-to-right.
 const ACTIVE_NODE_INDEX_COL: Record<number, number> = { 4: 0, 9: 1, 10: 2, 12: 3, 13: 4 };
 
-function sheetBackgroundStyle(url: string, cols: number, rows: number, col: number, row: number): CSSProperties {
+// `cropX`/`cropY` (0-1, default 1 = no change) zoom into the center of each
+// cell on each axis independently, cutting away a `1-crop` fraction of
+// margin — needed because the painted medallions don't all reach the edge
+// of their nominal grid cell by the same amount, and not always by the same
+// amount on both axes (varies per sheet/icon), which otherwise shows as a
+// mismatched gap between the art and its equally-sized `bg-ink` backing
+// disc in SkillTree.
+function sheetBackgroundStyle(
+  url: string,
+  cols: number,
+  rows: number,
+  col: number,
+  row: number,
+  cropX = 1,
+  cropY = 1,
+): CSSProperties {
   return {
     backgroundImage: `url(${url})`,
-    backgroundSize: `${cols * 100}% ${rows * 100}%`,
-    backgroundPosition: `${(col / (cols - 1)) * 100}% ${(row / (rows - 1)) * 100}%`,
+    backgroundSize: `${(cols / cropX) * 100}% ${(rows / cropY) * 100}%`,
+    backgroundPosition: `${(100 * (2 * col + 1 - cropX)) / (2 * (cols - cropX))}% ${(100 * (2 * row + 1 - cropY)) / (2 * (rows - cropY))}%`,
     backgroundRepeat: 'no-repeat',
   };
 }
@@ -54,7 +82,51 @@ export function activeAbilityIconStyle(classId: ClassId, abilityId: string): CSS
   const col = ACTIVE_NODE_INDEX_COL[Number(indexStr)];
   const row = SKILL_TREES[classId].findIndex((p) => p.id === pathId);
   if (col === undefined || row < 0) return null;
-  return sheetBackgroundStyle(url, ACTIVE_COLS, ACTIVE_ROWS, col, row);
+  // Guerreiro's active sheet leaves a small (~8-9%) margin inside each cell —
+  // measured worst case 91.5%/91.1% fill — so a mild zoom closes the gap
+  // with zero clipping risk.
+  return sheetBackgroundStyle(url, ACTIVE_COLS, ACTIVE_ROWS, col, row, 0.93, 0.93);
+}
+
+// A class's 9 EXCLUSIVE passive nodes (3 per path, always at node-index
+// 6/8/14 within each path — verified fixed across every class's topology)
+// get their own painted icon here, same one-sheet-per-class pattern as
+// actives, kept fully separate from the shared generic-stat library below.
+// Classes without a sheet yet fall through to that shared library instead
+// (see NodeIconView in SkillTree.tsx), same fallback pattern as actives.
+const EXCLUSIVE_PASSIVE_SHEET: Partial<Record<ClassId, string>> = {
+  guerreiro: guerreiroPassivasSheet,
+  mago: magoPassivasSheet,
+  ladino: ladinoPassivasSheet,
+  clerigo: clerigoPassivasSheet,
+  cavaleiro: cavaleiroPassivasSheet,
+  paladino: paladinoPassivasSheet,
+  barbaro: barbaroPassivasSheet,
+  arqueiro: arqueiroPassivasSheet,
+  cacador: cacadorPassivasSheet,
+  feiticeiro: feiticeiroPassivasSheet,
+  bruxo: bruxoPassivasSheet,
+  druida: druidaPassivasSheet,
+  bardo: bardoPassivasSheet,
+  necromante: necromantePassivasSheet,
+};
+
+const EXCLUSIVE_PASSIVE_COLS = 3;
+const EXCLUSIVE_PASSIVE_ROWS = 3;
+const EXCLUSIVE_PASSIVE_NODE_INDEX_COL: Record<number, number> = { 6: 0, 8: 1, 14: 2 };
+
+// Returns the background-image style for a class's own exclusive passive
+// icon, or null if this class has no bespoke passive sheet yet (caller
+// falls back to the shared generic-stat library keyed by effect kind).
+export function exclusivePassiveIconStyle(classId: ClassId, nodeId: string): CSSProperties | null {
+  const url = EXCLUSIVE_PASSIVE_SHEET[classId];
+  if (!url) return null;
+  const [, pathId, indexStr] = nodeId.split(':');
+  const col = EXCLUSIVE_PASSIVE_NODE_INDEX_COL[Number(indexStr)];
+  const row = SKILL_TREES[classId].findIndex((p) => p.id === pathId);
+  if (col === undefined || row < 0) return null;
+  // Already fills ~98% of its cell — a negligible zoom is enough.
+  return sheetBackgroundStyle(url, EXCLUSIVE_PASSIVE_COLS, EXCLUSIVE_PASSIVE_ROWS, col, row, 0.98, 0.98);
 }
 
 const PASSIVE_COLS = 6;
@@ -71,6 +143,19 @@ const PASSIVE_CELL: Partial<Record<keyof SkillEffect, number>> = {
   maxHpFlat: 12, lifestealPct: 13, onCritHealPct: 14, lowHpDmgScale: 15, cooldownReductionPct: 16,
 };
 
+// This shared library was painted under the old "cover the margin with a
+// metal frame" convention (now removed) and its 18 icons fill their cell
+// very unevenly — anywhere from 37.9% up to 76.1%/77.1% (cell 10) of the
+// cell's width/height. A per-cell crop that zoomed each icon to fill nearly
+// 100% was tried and looked worse, not better: forcing the least-filled
+// icons up to full size meant a ~2.6x zoom, which visibly distorted them.
+// One shared, modest crop — just tight enough to clear the best-filled icon
+// (cell 10) with a small margin — tightens every icon a bit with zero
+// clipping and zero distortion; NodeIconView's socket vignette (see
+// SkillTree.tsx) handles the leftover gap on the smaller icons gracefully
+// instead of a hard-edged ring.
+const PASSIVE_CROP = 0.8;
+
 export function passiveIconStyle(effect: SkillEffect): CSSProperties {
   let cell = GENERIC_CELL;
   if (effect.dmgPctVsStatus) {
@@ -82,5 +167,5 @@ export function passiveIconStyle(effect: SkillEffect): CSSProperties {
   }
   const col = cell % PASSIVE_COLS;
   const row = Math.floor(cell / PASSIVE_COLS);
-  return sheetBackgroundStyle(passivasSheet, PASSIVE_COLS, PASSIVE_ROWS, col, row);
+  return sheetBackgroundStyle(passivasSheet, PASSIVE_COLS, PASSIVE_ROWS, col, row, PASSIVE_CROP, PASSIVE_CROP);
 }

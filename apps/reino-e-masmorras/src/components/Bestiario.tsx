@@ -161,7 +161,7 @@ function EntryCard({ tier, kills, onSelect }: { tier: EnemyTier; kills: number; 
   );
 }
 
-export function Bestiario({ character }: { character: Character }) {
+export function Bestiario({ character, onBack }: { character: Character; onBack: () => void }) {
   const [selected, setSelected] = useState<EnemyTier | null>(null);
   const kills = character.kills ?? {};
   const regulars = TIERS.filter((t) => !t.isBoss);
@@ -170,7 +170,7 @@ export function Bestiario({ character }: { character: Character }) {
   const discoveredCount = TIERS.filter((t) => (kills[t.shape] ?? 0) > 0).length;
 
   return (
-    <Panel title="Bestiário">
+    <Panel title="Bestiário" onBack={onBack}>
       <p className="text-parchment/60 text-sm mb-1">
         Registro de todas as criaturas já enfrentadas. Continue abatendo para descobrir seus nomes e avançar de patamar.
       </p>

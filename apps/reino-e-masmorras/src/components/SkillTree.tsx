@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { ClassId, Character, ScalingRole, SkillNode, SkillNodeType, SkillPath } from '../types/game';
 import { SKILL_TREES, canUnlockNode, unlockedCountInPath, MAX_EQUIPPED_ABILITIES } from '../lib/skills';
-import { activeAbilityIconStyle, passiveIconStyle } from '../lib/abilityIcons';
+import { activeAbilityIconStyle, exclusivePassiveIconStyle, passiveIconStyle } from '../lib/abilityIcons';
 import { Panel } from './Panel';
 import { SmallButton } from './Button';
 import { Modal } from './Modal';
 import { IconActive } from './icons';
 import { ClassMechanicsButton, MechanicRefsRow, MechanicText } from './ClassMechanics';
-import skillFrame from '../assets/slot-habilidade.webp';
 import { skillPresentationRows } from '../lib/skillPresentation';
 import { GlossaryText } from './Glossary';
 
@@ -19,6 +18,7 @@ interface Props {
   onReorderAbility: (index: number, dir: -1 | 1) => void;
   onResetSkills: () => void;
   resetCost: number;
+  onBack: () => void;
 }
 
 const TYPE_LABEL: Record<SkillNodeType, string> = { attribute: 'Atributo', passive: 'Passiva', active: 'Ativa' };
@@ -42,10 +42,31 @@ function NodeIconView({ node, classId, color }: { node: SkillNode; classId: Clas
     if (bg) return <div className="w-full h-full rounded-full overflow-hidden" style={bg} />;
     return <IconActive className="w-full h-full" style={{ color }} />;
   }
+  if (node.type === 'passive') {
+    const bg = exclusivePassiveIconStyle(classId, node.id);
+    if (bg) return <div className="w-full h-full rounded-full overflow-hidden" style={bg} />;
+  }
   return <div className="w-full h-full rounded-full overflow-hidden" style={passiveIconStyle(node.effect)} />;
 }
 
 type NodeState = 'unlocked' | 'available' | 'locked';
+
+// Three-tier sizing by node type — actives are the ones the player actually
+// casts in combat, so they read as the "important" nodes on the tree;
+// passives sit in between; attribute nodes (the plain +X% stat bumps) are
+// the smallest since there are far more of them and each matters less on
+// its own. Now that node art carries its own painted rim (see NodeIconView
+// above), there's no separate frame image fighting the icon for space, so
+// each tier can fill its own button almost edge-to-edge.
+const NODE_SIZE_CLASS: Record<SkillNodeType, string> = {
+  active: 'w-20 h-20',
+  passive: 'w-12 h-12',
+  attribute: 'w-9 h-9',
+};
+// Pixel sizes matching NODE_SIZE_CLASS above (Tailwind w-20/w-12/w-9 at the
+// default 16px root), used for the row-height math below — the two must be
+// kept in sync by hand since one is a Tailwind class and the other a number.
+const NODE_PX: Record<SkillNodeType, number> = { active: 80, passive: 48, attribute: 36 };
 
 // 15-node layout: 5 tiers (rows) × 3 columns (Left/Mid/Right), reading the
 // path's node array in tier-major order (index 0-14 → row = i/3, col = i%3).
@@ -54,12 +75,38 @@ type NodeState = 'unlocked' | 'available' | 'locked';
 // the cross-links (a tier-3 node reachable from two different tier-2
 // columns) render correctly without special-casing them here.
 const COL_X = [16, 50, 84]; // percent
-const ROW_Y = [9, 28, 50, 72, 91]; // percent
-function posOf(index: number): { x: number; y: number } {
-  return { x: COL_X[index % 3], y: ROW_Y[Math.floor(index / 3)] };
+
+// Row Y positions used to be fixed percentages of a fixed-height box, which
+// assumed every row was roughly the same visual weight. It wasn't: some
+// rows hold two 80px active nodes side by side while others hold three 36px
+// attribute nodes, so a fixed row pitch let two stacked active rows overlap
+// each other. Instead, each row's height is however tall its biggest node
+// actually is, plus a fixed breathing-room gap — so rows with big nodes get
+// more room automatically and nothing ever collides, at the cost of a
+// taller (sometimes scrollable) tree, which is the trade the art needs.
+const ROW_GAP = 32; // px of clear space between the edges of two stacked nodes
+const SIDE_PAD = 40; // px from the graph's top/bottom edge to the first/last row's center
+
+function computeLayout(path: SkillPath): { rowY: number[]; totalHeight: number } {
+  const rowCount = Math.ceil(path.nodes.length / 3);
+  const rowSize: number[] = [];
+  for (let r = 0; r < rowCount; r++) {
+    let max = 0;
+    for (let c = 0; c < 3; c++) {
+      const node = path.nodes[r * 3 + c];
+      if (node) max = Math.max(max, NODE_PX[node.type]);
+    }
+    rowSize.push(max);
+  }
+  const rowY: number[] = [SIDE_PAD + rowSize[0] / 2];
+  for (let r = 1; r < rowCount; r++) {
+    rowY.push(rowY[r - 1] + rowSize[r - 1] / 2 + ROW_GAP + rowSize[r] / 2);
+  }
+  const totalHeight = rowY[rowCount - 1] + rowSize[rowCount - 1] / 2 + SIDE_PAD;
+  return { rowY, totalHeight };
 }
 
-export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost }: Props) {
+export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAbility, onReorderAbility, onResetSkills, resetCost, onBack }: Props) {
   const paths = SKILL_TREES[ch.classId];
   const [activePath, setActivePath] = useState(0);
   const [selected, setSelected] = useState<{ node: SkillNode; state: NodeState } | null>(null);
@@ -73,7 +120,7 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
   while (equippedNodes.length < MAX_EQUIPPED_ABILITIES) equippedNodes.push(null);
 
   return (
-    <Panel title="Árvore de Habilidades">
+    <Panel title="Árvore de Habilidades" onBack={onBack}>
       <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
         <p className="text-parchment/60 text-sm">Toque num nó pra ver detalhes, desbloquear ou equipar.</p>
         <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto">
@@ -101,20 +148,16 @@ export function SkillTree({ character: ch, onUnlock, onEquipAbility, onUnequipAb
             <button
               key={node.id}
               onClick={() => setSelected({ node, state: 'unlocked' })}
-              className="relative w-16 h-16 transition-transform duration-150 hover:scale-110 shrink-0"
+              className="relative w-20 h-20 transition-transform duration-150 hover:scale-110 shrink-0"
               title={node.name}
             >
-              <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: '0 0 10px 3px #c89a2e99', background: '#c89a2e26' }} />
-              <div className="absolute inset-[18%] flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full overflow-hidden">
                 <NodeIconView node={node} classId={ch.classId} color="#c89a2e" />
               </div>
-              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-gold text-ink text-[9px] font-bold flex items-center justify-center z-10">{i + 1}</span>
             </button>
           ) : (
-            <div key={i} className="relative w-16 h-16 opacity-30 shrink-0">
-              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none grayscale" draggable={false} />
-            </div>
+            <div key={i} className="relative w-20 h-20 rounded-full border border-panelborder/50 bg-black/20 opacity-30 shrink-0" />
           ),
         )}
       </div>
@@ -186,11 +229,18 @@ function PathGraph({ path, ch, onSelect }: {
   path: SkillPath; ch: Character; onSelect: (s: { node: SkillNode; state: NodeState }) => void;
 }) {
   const idToIndex = new Map(path.nodes.map((n, i) => [n.id, i]));
+  const { rowY, totalHeight } = computeLayout(path);
+  const posOf = (index: number): { x: number; y: number } => ({ x: COL_X[index % 3], y: rowY[Math.floor(index / 3)] });
 
   return (
     <div className="rounded border border-panelborder/60 bg-panel2/40 p-3">
-      <div className="relative mx-auto w-full max-w-[300px]" style={{ height: 400 }}>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+      <div className="relative mx-auto w-full max-w-[300px] overflow-x-hidden" style={{ height: totalHeight }}>
+        <svg viewBox={`0 0 100 ${totalHeight}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+          <defs>
+            <filter id="skillLineGlow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="1.6" result="blur" />
+            </filter>
+          </defs>
           {path.nodes.map((node, i) =>
             node.prereqIds.map((prereqId) => {
               const p = idToIndex.get(prereqId);
@@ -198,14 +248,40 @@ function PathGraph({ path, ch, onSelect }: {
               const from = posOf(p);
               const to = posOf(i);
               const lit = ch.unlockedSkills.includes(prereqId) && ch.unlockedSkills.includes(node.id);
+              const key = `${prereqId}->${node.id}`;
+              if (!lit) {
+                return (
+                  <line
+                    key={key}
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke="#5a4d3a"
+                    strokeWidth={1.1}
+                    strokeLinecap="round"
+                    strokeDasharray="0.2 3"
+                    opacity={0.6}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              }
+              // Lit connections get a soft blurred halo underneath a crisp
+              // core line — two separate <line> passes read as a glowing
+              // energy conduit far better than one filtered line, and avoid
+              // the filter region interacting oddly with the node buttons
+              // painted on top of it.
               return (
-                <line
-                  key={`${prereqId}->${node.id}`}
-                  x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                  stroke={lit ? path.color : '#4a3f30'}
-                  strokeWidth={lit ? 1.4 : 1}
-                  vectorEffect="non-scaling-stroke"
-                />
+                <g key={key}>
+                  <line
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke={path.color} strokeWidth={4} strokeLinecap="round"
+                    opacity={0.5} filter="url(#skillLineGlow)"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <line
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke={path.color} strokeWidth={1.6} strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </g>
               );
             }),
           )}
@@ -221,18 +297,25 @@ function PathGraph({ path, ch, onSelect }: {
               key={node.id}
               onClick={() => onSelect({ node, state })}
               title={node.name}
-              style={{ left: `${x}%`, top: `${y}%` }}
-              className={`absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 ${
-                state === 'locked' ? 'opacity-35 grayscale' : ''
-              } ${state === 'available' ? 'animate-pulse' : ''}`}
+              style={{ left: `${x}%`, top: `${y}px` }}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 hover:scale-110 rounded-full ${NODE_SIZE_CLASS[node.type]}`}
             >
-              {state !== 'locked' && (
-                <div className="absolute inset-[14%] rounded-full" style={{ boxShadow: `0 0 8px 2px ${path.color}99`, background: `${path.color}26` }} />
-              )}
-              <div className="absolute inset-[18%] flex items-center justify-center">
+              {/* No container drawn behind the art at all — just the icon,
+                  centered, at its native size. Dimming is applied as a CSS
+                  filter directly on this same icon layer (never a
+                  separately-sized overlay box) — a filter only alters
+                  pixels the icon actually painted and leaves its
+                  transparent margin untouched, so a locked node never
+                  shows a dark patch bigger than its own art. Whole-element
+                  opacity would also composite this button into one
+                  translucent group and let the connector line drawn behind
+                  it bleed through, which a filter avoids too. */}
+              <div
+                className="absolute inset-0 rounded-full overflow-hidden"
+                style={state === 'locked' ? { filter: 'grayscale(1) brightness(0.45)' } : undefined}
+              >
                 <NodeIconView node={node} classId={ch.classId} color={state === 'locked' ? '#6b6355' : path.color} />
               </div>
-              <img src={skillFrame} alt="" className="absolute inset-0 w-full h-full pointer-events-none select-none" draggable={false} />
               {isEquipped && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold border border-black/40 z-10" />}
             </button>
           );

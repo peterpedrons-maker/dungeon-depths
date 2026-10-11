@@ -15,11 +15,16 @@ import { thornsDamageForAction } from '../lib/thorns';
 import { canFitInInventory, placeInInventory } from '../lib/inventoryGrid';
 import { computeSkillBonuses, getEquippedAbilities } from '../lib/skills';
 import { ThermalState, advanceThermal, thermalAfterFrozenEnds } from '../lib/mago';
-import { DECOMPOSITION_MAX, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
-import { ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick } from '../lib/rogue';
+import { DECOMPOSITION_DURATION, DECOMPOSITION_MAX, DECOMPOSITION_STACK_ID, EnemyStackInstance, PeriodicEffectInstance, PLAGUE_BASE_MULT, PLAGUE_EFFECT_ID, SOUL_MAX, SummonInstance, advanceSummonClock, applyEnemyStack, clampResource, makeBoneServant, plagueTickDamage, soulsForCrossedThresholds, soulsForNextEnemy } from '../lib/necromancer';
+import { ROGUE_EXPOSED_MAIN_LIMIT, ROGUE_IMAGE_MAX, ROGUE_STEALTH_MAIN_LIMIT, RoguePreparedTrick, RogueTrickKind, firstEligibleQuick, prepareTrick } from '../lib/rogue';
 import { PaladinAegis, PaladinLiturgyState, PaladinVirtue, createPaladinLiturgyState, paladinAegisReduction, paladinConviction } from '../lib/paladin';
-import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow } from '../lib/archer';
-import { DruidCycleState, GardenUnit, createDruidCycle, advanceDruidSeason, pickDruidSeasonalAbility, addGardenSeeds, type DruidSeason, type DruidForm } from '../lib/druid';
+import { ArcherCombatState, archerDistanceLabel, archerDistanceShift, createArcherCombatState, gainArcherSteps, loseArcherTension, prepareArcherReflex, accelerateOldestArrow, advanceInFlightArrows } from '../lib/archer';
+import {
+  type DruidSeason, type DruidForm, type DruidGardenUnit, type DruidYearLedger,
+  DRUID_SEASONS, DRUID_SEASON_LABELS, DRUID_SEASON_SHORT_LABELS, DRUID_FORM_LABELS,
+  DRUID_INSTINCT_MAX, DRUID_DISSONANCE_MAX, DRUID_AVATAR_ACTIONS_RENEWED,
+  emptyDruidYear, pickDruidSeasonalAbility, druidGardenMax, druidFormBonuses, druidAvatarCombinedBonuses,
+} from '../lib/druid';
 import { WarlockPlayerState, WarlockEnemyNameState, createWarlockPlayerState, createWarlockEnemyNameState, projectWarlockCast, addNameFragment, consumeMandamento, collectionAmount } from '../lib/warlock';
 import { SorcererState, SorcererEnemyState, createSorcererState, createSorcererEnemyState } from '../lib/sorcerer';
 import { BardScoreState, countertempoEcho, createBardState, resetBardEnemy } from '../lib/bardo';
@@ -30,6 +35,7 @@ import { CLERIC_APOCALIPSE_SAGRADO_ABILITY_ID, prioritizeClericTrialRotation } f
 import { DETERMINATION_MAX, determinationForDirectHit, determinationForPreventedDamage, addDetermination, DETERMINATION_GEN_BARRIER_PER_3PCT, DETERMINATION_GEN_BARRIER_CAP_PER_ACTION, DETERMINATION_GEN_BARRIER_THRESHOLD_PCT, IRON_WALL_DETERMINATION_THRESHOLD_PCT, RETALIATION_MAX_CHARGES, RETALIATION_BLOCKS_PER_CHARGE, MOMENTUM_MAX_BASE, MOMENTUM_LOSS_HEAVY_HIT_PCT_BASE, MOMENTUM_LOSS_AMOUNT_BASE, SANGUE_DE_COMBATE_THRESHOLD_RATE, SANGUE_DE_COMBATE_THRESHOLD_CAP, INSTINTO_SOBREVIVENCIA_VIT_DIVISOR, INSTINTO_SOBREVIVENCIA_LOSS_REDUCTION_CAP, MOMENTUM_LOSS_MIN, MOMENTUM_BONUS_SPEED_PER_20_BASE, MOMENTUM_BONUS_SPEED_PER_20_UPGRADED, MOMENTUM_MAX_VETERANO_BONUS, SEDE_DE_VITORIA_HEAL_PCT, SEDE_DE_VITORIA_MOMENTUM_CARRY_CAP, IMPARAVEL_HIGH_MOMENTUM_PCT_THRESHOLD, IMPARAVEL_HIGH_MOMENTUM_TENACITY_BONUS, ORDERS_MAX, DISCIPLINA_MILITAR_TENACITY_RATE, DISCIPLINA_MILITAR_TENACITY_CAP, FORMACAO_DEF_RATE, FORMACAO_DEF_CAP, DISCIPLINA_INABALAVEL_THRESHOLD, ARMADURA_ACO_HEAVY_HIT_PCT, ARMADURA_ACO_RATE, ARMADURA_ACO_CAP, PULSO_VITAL_BARRIER_EFF_RATE, PULSO_VITAL_BARRIER_EFF_CAP, PESO_ARMADURA_RATE, PESO_ARMADURA_CAP, ESCUDO_DISCIPLINADO_WINDOW_TICKS, ESCUDO_DISCIPLINADO_REDUCTION_PCT, CORPO_BLINDADO_DEF_TO_MDEF_PCT, CORPO_BLINDADO_CAP_PCT_OF_MDEF, JURAMENTO_RESISTENCIA_THRESHOLD, JURAMENTO_RESISTENCIA_DURATION_CUT, NUCLEO_ACO_HP_THRESHOLD, NUCLEO_ACO_RATE, NUCLEO_ACO_CAP, IRON_WALL_DMG_RED_BASE, IRON_WALL_DMG_RED_CAP, IRON_WALL_DET_GEN_PER_2PCT, IRON_WALL_DET_GEN_CAP_PER_ACTION, LIVING_FORTRESS_DMG_RED_BASE, LIVING_FORTRESS_DMG_RED_CAP, LIVING_FORTRESS_MIN_BLOCK_CHANCE, COLOSSAL_SHIELD_CC_NEGATE_CONSUME_PCT, LAST_GUARD_POST_BARRIER_BASE, LAST_GUARD_POST_BARRIER_PER_VIT, LAST_GUARD_POST_BARRIER_CAP, COUNTER_STANCE_CAP_BASE, COUNTER_STANCE_CAP_PER_VIT, COUNTER_STANCE_CAP_CAP, COUNTER_STANCE_STORE_PCT, BASTIAO_INQUEBRAVEL_BARRIER_PCT, BASTIAO_INQUEBRAVEL_DETERMINATION_GAIN, BASTIAO_INQUEBRAVEL_DMG_REDUCTION_PCT, BASTIAO_INQUEBRAVEL_DMG_REDUCTION_ROUNDS, isGolpePesado } from '../lib/knight';
 import { TRAP_MAX_ARMED_BASE, TRAP_MAX_ARMED_MESTRE_ARMADILHEIRO, PRIMED_TRAP_BONUS_PCT, MESTRE_ARMADILHEIRO_NEXT_TRAP_BONUS_PCT, RECENT_TRAP_TRIGGER_WINDOW_TICKS, ENGENHARIA_PRECISA_TRAP_DMG_RATE, ENGENHARIA_PRECISA_TRAP_DMG_CAP, CONHECIMENTO_VENENOS_POISON_RATE, CONHECIMENTO_VENENOS_POISON_CAP, PASSOS_ARMADILHEIRO_SPEED_UNCONDITIONAL_PCT, PASSOS_ARMADILHEIRO_SPEED_RATE, PASSOS_ARMADILHEIRO_SPEED_CAP, SOBREVIVENCIA_CAMPO_DMG_REDUCTION_RATE, SOBREVIVENCIA_CAMPO_DMG_REDUCTION_CAP, MECANICA_REFINADA_TRAP_DMG_RATE, MECANICA_REFINADA_TRAP_DMG_CAP, DESORIENTADO_ACCURACY_PCT, DESORIENTADO_ACCURACY_PCT_MARKED, DESORIENTADO_ROUNDS, PACIENCIA_DA_CACA_EVASION_RATE, PACIENCIA_DA_CACA_EVASION_CAP, TRAIL_MAX, TRAIL_GAIN_PER_ACTION, MEMORIA_DA_TRILHA_FIRST_ACTION_BONUS, MARKED_PREY_THRESHOLD, OLHOS_RASTREADOR_ACCURACY_RATE, OLHOS_RASTREADOR_ACCURACY_CAP, PASSOS_SILENCIOSOS_EVASION_RATE, PASSOS_SILENCIOSOS_EVASION_CAP, LEITURA_MOVIMENTO_DMG_REDUCTION_RATE, LEITURA_MOVIMENTO_DMG_REDUCTION_CAP, MIRA_PERSEGUICAO_ACCURACY_RATE, MIRA_PERSEGUICAO_ACCURACY_CAP, PRESA_MARCADA_ACCURACY_BONUS_PCT, PRESA_MARCADA_TRAP_DMG_BONUS_PCT, FOLEGO_PERSEGUICAO_SPEED_BASE, FOLEGO_PERSEGUICAO_SPEED_RATE, FOLEGO_PERSEGUICAO_SPEED_CAP, INSTINTO_FUGA_WINDOW_TICKS, LEITURA_COMPLETA_CRIT_RATE, LEITURA_COMPLETA_CRIT_CAP, PASSO_ETEREO_TRAIL_GAIN_ON_MISS, MANTO_SOMBRAS_MAX_BREACHES_PER_CAST, BREACH_MAX, applyBreach, tickBreach, MIRA_CIRURGICA_ACCURACY_RATE, MIRA_CIRURGICA_ACCURACY_CAP, PULSO_FRIO_CRIT_RATE, PULSO_FRIO_CRIT_CAP, LEITURA_BALISTICA_CRIT_DMG_BONUS_AT_3_BREACHES, MUNICAO_SELECIONADA_CRIT_DMG_RATE, MUNICAO_SELECIONADA_CRIT_DMG_CAP, RITMO_ABATE_SPEED_UNCONDITIONAL_PCT, RITMO_ABATE_SPEED_RATE, RITMO_ABATE_SPEED_CAP, PONTO_FRACO_ACCURACY_PER_BREACH, PONTO_FRACO_CRIT_DMG_PER_BREACH, FOCO_CARRASCO_HP_THRESHOLD, FOCO_CARRASCO_CRIT_RATE, FOCO_CARRASCO_CRIT_CAP } from '../lib/hunter';
 import { rollAbilityHit, mitigatedBase } from '../game/combat';
+import { poisonDmgPerTick, bleedDmgPerTick } from '../lib/statusEffects';
 import { heroSprites, enemySprite, drawSprite } from '../game/sprites';
 import { battleBackground } from '../game/battleBackgrounds';
 import { Panel } from './Panel';
@@ -39,7 +45,7 @@ import { MechanicQuickModal, MechanicText } from './ClassMechanics';
 import { CombatMechanicDisplay, CombatMechanicState } from './CombatMechanics';
 import { getClassMechanics } from '../lib/classMechanics';
 import { formatGameNumber, formatGamePercent } from '../lib/format';
-import { IconActive, IconSkull, IconSword } from './icons';
+import { IconActive, IconSkull, IconSword, IconShield } from './icons';
 import { activeAbilityIconStyle } from '../lib/abilityIcons';
 import { consumeCombatEvents, createCombatState, recoverAfterEncounter, resolvePlayerAction, type CombatEvent } from '../lib/combatEngine';
 import { buildAbilityConditionContext } from '../lib/combatConditions';
@@ -129,6 +135,14 @@ const ABILITY_CAST_DURATION_MS = 1800;
 // small lead each run, so first strike is fair over time instead of always
 // going to the player.
 const LEAN_MS = 90;
+// Canvas sprite entrance ("materializing" fade+rise into place) and death
+// (fade+grow "poof") timings — see heroSpawnAtRef/enemySpawnAtRef/
+// enemyDeathAtRef and the render loop below. BOSS_INTRO_MS is the full
+// "PERIGO! CHEFE" curtain shown before a boss reveals itself (see
+// maybeShowBossIntro) — long enough to read, short enough not to drag.
+const ENTRANCE_MS = 450;
+const DEATH_FADE_MS = 550;
+const BOSS_INTRO_MS = 2200;
 const POTION_COOLDOWN_ROUNDS = 4;
 const BASE_POTION_HEAL_PCT = 0.4;
 const DROP_SLOTS: ItemSlot[] = ['weapon', 'body', 'legs', 'hands', 'offhand', 'accessory'];
@@ -312,7 +326,7 @@ interface CombatTrap {
 // tick, the hit that follows it, a heal, a block tag — all in the same
 // round) each in their own fixed spot near the character, never overlapping
 // and never relocating mid-flight.
-interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean; slot: number }
+interface FloatingNumber { id: number; side: 'player' | 'enemy'; value: number; crit: boolean; blocked?: boolean; miss?: boolean; heal?: boolean; shielded?: number; slot: number }
 // A coin-icon + down-arrow burst over the player whenever an enemy's
 // stealGold effect actually takes gold — separate from FloatingNumber
 // since it isn't a damage number at all, just a distinct "you were
@@ -499,6 +513,13 @@ export function DungeonPanel({
   // silentRef) same as every other on-screen effect, and never set on a
   // retreat, which isn't a win or a loss.
   const [resultBanner, setResultBanner] = useState<'victory' | 'defeat' | null>(null);
+  // Full-screen "curtain" shown right before a boss reveals itself — see
+  // maybeShowBossIntro. Non-null only for its own fixed duration, skipped
+  // entirely during a silent catch-up pass same as every other on-screen
+  // effect, and it also holds combat's own clocks (schedulePlayer/
+  // scheduleEnemy) from starting until it clears, so the fight can't begin
+  // mid-reveal.
+  const [bossIntro, setBossIntro] = useState<{ name: string } | null>(null);
   // Non-null only right after a runCatchUp pass (see the visibilitychange
   // effect below) — shows the "enquanto você estava fora" summary modal
   // once, then goes back to null on dismiss.
@@ -529,6 +550,19 @@ export function DungeonPanel({
   const [enemyRoundMs, setEnemyRoundMs] = useState(ATTACK_INTERVAL);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const floaterId = useRef(0);
+  // Entrance/death timing for the canvas sprites (see the render loop below)
+  // — plain refs, not state, since they only ever feed a per-frame transform
+  // computation and never need to trigger a re-render themselves.
+  const heroSpawnAtRef = useRef(0);
+  const enemySpawnAtRef = useRef(0);
+  // Set the instant a kill is detected (resolveEnemyDeath), well before the
+  // ~900ms delay that used to just make the corpse vanish and the next
+  // enemy pop in with nothing in between — cleared the moment the next
+  // enemy is actually assigned. While non-null the render loop keeps
+  // drawing the dead enemy's own sprite fading out through a small burst
+  // instead of the old hard cut.
+  const enemyDeathAtRef = useRef<number | null>(null);
+  const enemyDeathParticlesRef = useRef<Array<{ angle: number; speed: number; size: number }>>([]);
 
   // Refs mirror the latest state so the timer-driven combat loop always acts
   // on fresh values, even though each step was scheduled several closures ago.
@@ -729,11 +763,29 @@ export function DungeonPanel({
   const archerPerfectCastRef = useRef(false);
   const archerLastActionHitsRef = useRef(0);
   const [archerState, setArcherState] = useState(archerStateRef.current);
-  const druidCycleRef = useRef<DruidCycleState>(createDruidCycle());
-  const druidGardenRef = useRef<GardenUnit[]>([]);
-  const druidGardenIdRef = useRef(1);
+  const druidSeasonRef = useRef<DruidSeason>('spring');
+  const druidYearLedgerRef = useRef<DruidYearLedger>(emptyDruidYear());
+  const druidRenewalRef = useRef(0);
+  const druidGardenRef = useRef<DruidGardenUnit[]>([]);
+  const druidGardenNextIdRef = useRef(1);
+  const druidFormRef = useRef<DruidForm>('none');
+  const druidInstinctRef = useRef(0);
   const druidAvatarActionsRef = useRef(0);
-  const [druidCycleState, setDruidCycleState] = useState(druidCycleRef.current);
+  const druidDissonanceRef = useRef(0);
+  const druidFruitReserveUsedRef = useRef(false);
+  const druidNothingLostUsedRef = useRef(false);
+  const druidMuCompleteUsedRef = useRef(false);
+  const druidCopaActionsRef = useRef(0);
+  const druidCopaPreservedUsedRef = useRef(false);
+  const [druidSeasonState, setDruidSeasonState] = useState<DruidSeason>('spring');
+  const [druidYearLedgerState, setDruidYearLedgerState] = useState<DruidYearLedger>(emptyDruidYear());
+  const [druidRenewalState, setDruidRenewalState] = useState(0);
+  const [druidFormState, setDruidFormState] = useState<DruidForm>('none');
+  const [druidInstinctState, setDruidInstinctState] = useState(0);
+  const [druidAvatarState, setDruidAvatarState] = useState(0);
+  const [druidDissonanceState, setDruidDissonanceState] = useState(0);
+  function druidGardenSnapshot() { return [...druidGardenRef.current]; }
+  const [druidGardenState, setDruidGardenState] = useState<DruidGardenUnit[]>([]);
   // Bruxo redesign — resources persist across enemies in the same attempt;
   // the enemy name state resets on each spawn.
   const warlockStateRef = useRef<WarlockPlayerState>(createWarlockPlayerState());
@@ -753,9 +805,17 @@ export function DungeonPanel({
     warlockSync();
   }
   function isDruid(){return chRef.current.classId==='druida';}
-  function druidSync(){if(!silentRef.current)setDruidCycleState({...druidCycleRef.current,completed:new Set(druidCycleRef.current.completed)});}
-  function druidAdvance(){if(!isDruid())return; druidCycleRef.current=advanceDruidSeason(druidCycleRef.current); druidSync();}
-  void druidAdvance;
+  function druidSync(){
+    if (silentRef.current) return;
+    setDruidSeasonState(druidSeasonRef.current);
+    setDruidYearLedgerState({ ...druidYearLedgerRef.current });
+    setDruidRenewalState(druidRenewalRef.current);
+    setDruidFormState(druidFormRef.current);
+    setDruidInstinctState(druidInstinctRef.current);
+    setDruidAvatarState(druidAvatarActionsRef.current);
+    setDruidDissonanceState(druidDissonanceRef.current);
+    setDruidGardenState(druidGardenSnapshot());
+  }
 
   function archerSync() { setArcherState({ ...archerStateRef.current, arrows: [...archerStateRef.current.arrows] }); }
   function isArcher(): boolean { return chRef.current.classId === 'arqueiro'; }
@@ -1024,7 +1084,7 @@ export function DungeonPanel({
     const segments = typeof line === 'string' ? [{ text: line }] : line;
     setLog((l) => [...l.slice(-4), segments]);
   }
-  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean, heal?: boolean) {
+  function pushFloat(side: 'player' | 'enemy', value: number, crit: boolean, blocked?: boolean, miss?: boolean, heal?: boolean, shielded?: number) {
     if (silentRef.current) return;
     if (heal && value <= 0) return;
     const id = floaterId.current++;
@@ -1034,7 +1094,7 @@ export function DungeonPanel({
       const used = new Set(f.filter((x) => x.side === side).map((x) => x.slot));
       let slot = 0;
       while (used.has(slot)) slot++;
-      return [...f, { id, side, value, crit, blocked, miss, heal, slot }];
+      return [...f, { id, side, value, crit, blocked, miss, heal, shielded, slot }];
     });
     setTimeout(() => setFloaters((f) => f.filter((x) => x.id !== id)), FLOAT_DURATION_MS);
   }
@@ -1096,6 +1156,27 @@ export function DungeonPanel({
       if (cGen !== catchUpGenRef.current) return; // stale timer from before a catch-up pass
       if (!pausedRef.current && phaseRef.current === 'fight') envTick();
     }, delay);
+  }
+
+  // Shown right before a boss's own first action clock starts — a plain
+  // "PERIGO! CHEFE" curtain over the canvas, held for BOSS_INTRO_MS, then
+  // onDone (always schedulePlayer/scheduleEnemy for that boss) runs. Skipped
+  // outright during a silent catch-up pass (see runCatchUp/silentRef), same
+  // as every other on-screen-only effect — onDone still has to run there,
+  // just with nothing to watch.
+  function maybeShowBossIntro(bossName: string, onDone: () => void) {
+    if (silentRef.current) { onDone(); return; }
+    setBossIntro({ name: bossName });
+    setTimeout(() => {
+      if (!mountedRef.current) return;
+      setBossIntro(null);
+      // The reveal moment — this is when the boss's own materialize
+      // animation (see enemySpawnAtRef in the render loop) should start,
+      // not whenever spawnEnemy() actually happened back before the curtain
+      // went up.
+      enemySpawnAtRef.current = performance.now();
+      onDone();
+    }, BOSS_INTRO_MS);
   }
 
   function schedulePlayer(delay: number) {
@@ -1243,6 +1324,9 @@ export function DungeonPanel({
         control: sorcererStateRef.current.control,
         ovation: bardStateRef.current.ovation,
         echo: bardStateRef.current.echo,
+        instinct: druidInstinctRef.current,
+        renewal: druidRenewalRef.current,
+        dissonance: druidDissonanceRef.current,
       },
       states: {
         frenzy: barbFrenzyRef.current, consecration: clerigoConsecrationActive(), commandSupreme: knightCommandSupremeRef.current,
@@ -1268,8 +1352,9 @@ export function DungeonPanel({
         countertempo: bardStateRef.current.countertempo,
         outOfTune: bardStateRef.current.outOfTune,
         sustain: bardStateRef.current.sustain,
+        trapTriggeredRecently: hunterTrapsTriggeredThisEnemyRef.current > 0,
       },
-      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0, fracture: sorcererEnemyRef.current.fractures, control: sorcererStateRef.current.control },
+      enemyStacks: { wounds: barbEnemyWoundStacks(), judgment: clerigoEnemyJudgmentStacks(), decomposition: necroDecompositionRef.current?.stacks ?? 0, fracture: sorcererEnemyRef.current.fractures, control: sorcererStateRef.current.control, trapsTriggered: hunterTrapsTriggeredThisEnemyRef.current, trail: hunterTrail(), breach: hunterBreachStacks() },
       painPct: barbPainTotal() / effectiveMaxHp(chRef.current),
       enemyPosture: isWarrior() ? warriorEnemyState().current : undefined,
       enemyPostureBand: isWarrior() ? postureBand(warriorEnemyState().current) : undefined,
@@ -2387,12 +2472,13 @@ export function DungeonPanel({
 
     let druidMdef = 1, druidDmgTaken = 0, druidAccuracy = 0, druidSpeed = 0, druidCrit = 0, druidPen = 0;
     if (isDruid()) {
-      const form = druidCycleRef.current.form;
-      if (form === 'cervo') druidMdef *= 1.04;
-      if (form === 'lobo') { druidSpeed += 0.05; druidAccuracy += 0.02; druidCrit += 0.02; }
-      if (form === 'urso') druidDmgTaken -= 0.05;
-      if (form === 'coruja') { druidAccuracy += 0.04; druidPen += 0.08; }
-      if (druidAvatarActionsRef.current > 0) { druidMdef *= 1.04; druidSpeed += 0.05; druidDmgTaken -= 0.05; druidAccuracy += 0.04; druidCrit += 0.02; druidPen += 0.08; }
+      const formBonus = druidAvatarActionsRef.current > 0 ? druidAvatarCombinedBonuses() : druidFormBonuses(druidFormRef.current);
+      druidMdef *= 1 + formBonus.mdefPct;
+      druidDmgTaken += formBonus.dmgTakenPct;
+      druidAccuracy += formBonus.accuracyPct;
+      druidSpeed += formBonus.speedPct;
+      druidCrit += formBonus.critChancePct;
+      druidPen += formBonus.mdefPenPct;
     }
     let warlockMdef = 1, warlockDmgTaken = 0, warlockAccuracy = 0, warlockTenacity = 0, warlockCritDmg = 0;
     if (isWarlock()) {
@@ -2479,6 +2565,15 @@ export function DungeonPanel({
       clerigoExtendConsecration(FE_VIGILANTE_EXTEND_ROUNDS);
     }
     return resisted;
+  }
+
+  // Tenacidade's second layer: an effect that got past the resist roll above
+  // still gets its duration shortened proportionally to tenacityPct (same
+  // stat, same roll's worth of investment — not a second independent
+  // defense). Never shortens below 1 round; a full negation is still only
+  // ever the resist roll's job.
+  function tenacityShortenedDuration(rounds: number, tenacityPct: number): number {
+    return Math.max(1, rounds - Math.floor(rounds * tenacityPct));
   }
 
   // Solo Consagrado (clerigo:retidao:6) — the FIRST negative effect (status/
@@ -2572,7 +2667,7 @@ export function DungeonPanel({
         faith: clerigoFaithRef.current,
       })[0] ?? null;
     }
-    return isDruid() ? pickDruidSeasonalAbility(eligible, druidCycleRef.current.season) : (eligible[0] ?? null);
+    return isDruid() ? pickDruidSeasonalAbility(eligible, druidSeasonRef.current) : (eligible[0] ?? null);
   }
 
   // Mirrors pickAbility() for the enemy side — a silenced enemy can't use
@@ -2816,6 +2911,20 @@ export function DungeonPanel({
   // depending on which source landed the killing blow (see the redesign
   // spec's "morte por efeito indireto").
   function resolveEnemyDeath() {
+    // Kick off the death fade/burst on the enemy's own sprite the instant
+    // the kill lands, not 900ms later when the corpse used to just vanish
+    // and the next enemy popped in with no transition at all — see
+    // enemyDeathAtRef and the render loop below. Particle angles/speeds are
+    // rolled once here rather than every frame, so the burst reads as one
+    // coherent explosion instead of jittering.
+    if (!silentRef.current) {
+      enemyDeathAtRef.current = performance.now();
+      enemyDeathParticlesRef.current = Array.from({ length: 14 }, (_, i) => ({
+        angle: (i / 14) * Math.PI * 2 + Math.random() * 0.4,
+        speed: 110 + Math.random() * 90,
+        size: 3.5 + Math.random() * 3,
+      }));
+    }
     const prevLevel = chRef.current.level;
     const isBossKill = enemyRef.current.isBoss === true;
     const isEliteKill = enemyRef.current.isElite === true;
@@ -2904,7 +3013,14 @@ export function DungeonPanel({
       const nextDepth = depthRef.current + 1;
       updateDepth(nextDepth);
       const next = spawnEnemy(nextDepth, dungeon);
-      updateEnemy(isWarrior() ? { ...next, warrior: createWarriorEnemyState() } : next);
+      const finalNext = isWarrior() ? { ...next, warrior: createWarriorEnemyState() } : next;
+      updateEnemy(finalNext);
+      // The old corpse's death burst (if still mid-fade) is done being shown
+      // the moment its replacement exists — a boss delays its own
+      // materialize animation until after the intro curtain instead (see
+      // maybeShowBossIntro), so this only pre-empts it for a non-boss.
+      enemyDeathAtRef.current = null;
+      if (!finalNext.isBoss) enemySpawnAtRef.current = performance.now();
       enemyGenRef.current += 1; // invalidates the old enemy's still-pending action timer, see scheduleEnemy()
       if (next.isElite) pushLog([{ text: `${next.name} bloqueia seu caminho — parece bem mais forte que o normal!`, color: '#f59e0b' }]);
       enemyStatusRef.current = [];
@@ -2913,10 +3029,6 @@ export function DungeonPanel({
       enemyAbilityCooldownsRef.current = {};
       bossPhaseIndexRef.current = 0;
       setBossPhaseName(null);
-      if (isDruid()) {
-        for (const a of equippedAbilities()) if (a.effect.druidSeason === druidCycleRef.current.season) cooldownsRef.current[a.id] = 0;
-        druidSync();
-      }
       syncEnemyStatuses();
       syncEnemyCC();
       syncEnemyMods();
@@ -3068,8 +3180,9 @@ export function DungeonPanel({
       // only the player's got a fresh schedulePlayer() call here, so
       // the enemy inherited whatever was left on the OLD enemy's timer
       // (its ATB bar would visibly pick up mid-fill instead of empty).
-      schedulePlayer(nextPlayerDelay());
-      scheduleEnemy();
+      const startClocks = () => { schedulePlayer(nextPlayerDelay()); scheduleEnemy(); };
+      if (finalNext.isBoss) maybeShowBossIntro(finalNext.name, startClocks);
+      else startClocks();
     };
     if (silentRef.current) advanceToNextEnemy(); else setTimeout(advanceToNextEnemy, 900);
   }
@@ -3132,6 +3245,8 @@ export function DungeonPanel({
         resource('determination', knightDeterminationRef.current);
         resource('momentum', knightMomentumRef.current);
         resource('orders', knightOrdersRef.current);
+        raw.retaliationCharges = knightRetaliationChargesRef.current;
+        raw.commandSupreme = knightCommandSupremeRef.current;
         break;
       case 'mago':
         resource('heat', mageHeatRef.current);
@@ -3139,6 +3254,7 @@ export function DungeonPanel({
         raw.thermalTicks = mageThermalTicksRef.current;
         raw.mageCircuit = mageCircuitRef.current;
         raw.magePolarity = mageLastPolarityRef.current;
+        raw.mageOverheatUsedThisEnemy = mageOverheatUsedThisEnemyRef.current;
         break;
       case 'ladino':
         raw.images = rogueImagesRef.current;
@@ -3146,6 +3262,7 @@ export function DungeonPanel({
         raw.exposed = rogueExposedMainLeftRef.current > 0;
         raw.advantageReady = rogueAdvantageRef.current;
         raw.preparedTrick = roguePreparedTrickRef.current?.kind ?? null;
+        raw.sharpenedEchoReady = rogueSharpenedEchoRef.current;
         break;
       case 'feiticeiro':
         resource('pulse', sorcererStateRef.current.pulse);
@@ -3170,12 +3287,24 @@ export function DungeonPanel({
         raw.servantAttacks = necroSummonsRef.current.map((summon) => summon.attacksRemaining);
         raw.servants = necroSummonsRef.current.length;
         break;
-      case 'druida':
-        raw.season = druidCycleRef.current.season;
-        raw.attunement = druidCycleRef.current.attunement;
-        raw.form = druidCycleRef.current.form;
-        raw.gardenSeeds = druidGardenRef.current.length;
+      case 'druida': {
+        const druidCore = core.classState as Extract<typeof core.classState, { classId: 'druida' }>;
+        druidCore.season = druidSeasonRef.current;
+        druidCore.yearLedger = { ...druidYearLedgerRef.current };
+        druidCore.renewal = druidRenewalRef.current;
+        druidCore.garden = druidGardenRef.current.map((u) => ({ ...u }));
+        druidCore.gardenNextId = druidGardenNextIdRef.current;
+        druidCore.form = druidFormRef.current;
+        druidCore.instinct = druidInstinctRef.current;
+        druidCore.avatarActionsLeft = druidAvatarActionsRef.current;
+        druidCore.dissonance = druidDissonanceRef.current;
+        druidCore.fruitReserveUsed = druidFruitReserveUsedRef.current;
+        druidCore.nothingLostUsed = druidNothingLostUsedRef.current;
+        druidCore.muCompleteUsed = druidMuCompleteUsedRef.current;
+        druidCore.copaActionsLeft = druidCopaActionsRef.current;
+        druidCore.copaPreservedUsed = druidCopaPreservedUsedRef.current;
         break;
+      }
       case 'paladino':
         raw.virtues = { ...paladinLiturgyRef.current.virtues };
         raw.liturgy = paladinLiturgyRef.current.actionsLeft;
@@ -3224,20 +3353,28 @@ export function DungeonPanel({
       knightDeterminationRef.current = Number(raw.determination ?? 0);
       knightMomentumRef.current = Number(raw.momentum ?? 0);
       knightOrdersRef.current = Number(raw.orders ?? 0);
+      knightRetaliationChargesRef.current = Number(raw.retaliationCharges ?? knightRetaliationChargesRef.current);
+      knightCommandSupremeRef.current = Boolean(raw.commandSupreme);
       setKnightDeterminationState(knightDeterminationRef.current);
       setKnightMomentumState(knightMomentumRef.current);
       setKnightOrdersState(knightOrdersRef.current);
+      setKnightRetaliationState(knightRetaliationChargesRef.current);
+      setKnightCommandSupremeState(knightCommandSupremeRef.current);
     }
     if (chRef.current.classId === 'mago') {
       mageHeatRef.current = Number(raw.heat ?? 0);
       mageThermalRef.current = String(raw.thermal ?? 'normal') as ThermalState;
       mageCircuitRef.current = Number(raw.mageCircuit ?? 0);
+      mageLastPolarityRef.current = String(raw.magePolarity ?? 'none') as 'none' | 'positive' | 'negative';
+      mageOverheatUsedThisEnemyRef.current = Boolean(raw.mageOverheatUsedThisEnemy);
       mageSync();
     }
     if (chRef.current.classId === 'ladino') {
       rogueImagesRef.current = Number(raw.images ?? 0);
       rogueStealthRef.current = Boolean(raw.stealthed);
+      rogueExposedMainLeftRef.current = raw.exposed ? ROGUE_EXPOSED_MAIN_LIMIT : 0;
       rogueAdvantageRef.current = Boolean(raw.advantageReady);
+      rogueSharpenedEchoRef.current = Boolean(raw.sharpenedEchoReady);
       rogueSync();
     }
     if (chRef.current.classId === 'feiticeiro') {
@@ -3268,27 +3405,41 @@ export function DungeonPanel({
       necroSummonsRef.current = necroSummonsRef.current.slice(0, attacks.length);
       while (necroSummonsRef.current.length < attacks.length) necroSummonOne(chosen?.id ?? 'necromante:core', attacks[necroSummonsRef.current.length]);
       necroSummonsRef.current = necroSummonsRef.current.map((summon, index) => ({ ...summon, attacksRemaining: attacks[index] ?? summon.attacksRemaining }));
+      // Decomposição/Praga: resolvePlayerAction (Praga Necrótica etc.) grava o
+      // resultado só em raw.decomposition/raw.plague — sem isto, o próprio
+      // acerto que aplica a Praga nunca chegava aos refs que a UI e o tick
+      // real (envTick) de fato leem, então o DoT e o stack nunca existiam
+      // fora do combatEngine.
+      const decompositionStacksAfter = Number(raw.decomposition ?? 0);
+      const decompositionStacksBefore = necroDecompositionRef.current?.stacks ?? 0;
+      if (decompositionStacksAfter <= 0) necroDecompositionRef.current = undefined;
+      else if (decompositionStacksAfter > decompositionStacksBefore) necroDecompositionRef.current = applyEnemyStack(necroDecompositionRef.current, decompositionStacksAfter - decompositionStacksBefore);
+      else necroDecompositionRef.current = { id: DECOMPOSITION_STACK_ID, maxStacks: DECOMPOSITION_MAX, ticksRemaining: DECOMPOSITION_DURATION, ...necroDecompositionRef.current, stacks: decompositionStacksAfter };
+      const plagueTicksAfter = Number(raw.plague ?? 0);
+      if (plagueTicksAfter <= 0) necroPlagueRef.current = undefined;
+      else if ((chosen?.effect as Record<string, unknown> | undefined)?.plagueApply) {
+        necroPlagueRef.current = { id: PLAGUE_EFFECT_ID, sourceId: chosen!.id, snapshotPower: computePlayerStats().matk, dmgMultiplier: Number(raw.plagueMultiplier ?? PLAGUE_BASE_MULT), ticksRemaining: plagueTicksAfter, tags: [], canCrit: false, bypassDefense: false };
+      } else if (necroPlagueRef.current) {
+        necroPlagueRef.current = { ...necroPlagueRef.current, ticksRemaining: plagueTicksAfter };
+      }
       necroSync();
     }
     if (chRef.current.classId === 'druida') {
-      druidCycleRef.current = {
-        ...druidCycleRef.current,
-        season: String(raw.season ?? druidCycleRef.current.season) as DruidSeason,
-        attunement: Number(raw.attunement ?? druidCycleRef.current.attunement),
-        form: raw.form && raw.form !== 'none' ? String(raw.form) as DruidForm : null,
-      };
-      const targetSeeds = Math.max(0, Number(raw.gardenSeeds ?? druidGardenRef.current.length));
-      if (targetSeeds < druidGardenRef.current.length) druidGardenRef.current = druidGardenRef.current.slice(0, targetSeeds);
-      else if (targetSeeds > druidGardenRef.current.length) {
-        const seedsToAdd = targetSeeds - druidGardenRef.current.length;
-        druidGardenRef.current = addGardenSeeds(
-          druidGardenRef.current,
-          druidGardenIdRef.current,
-          seedsToAdd,
-          hasSkill(chRef.current, 'druida:cura-natural:6') ? 3 : 2,
-        );
-        druidGardenIdRef.current += seedsToAdd;
-      }
+      const druidResult = core.classState as Extract<typeof core.classState, { classId: 'druida' }>;
+      druidSeasonRef.current = druidResult.season;
+      druidYearLedgerRef.current = { ...druidResult.yearLedger };
+      druidRenewalRef.current = druidResult.renewal;
+      druidGardenRef.current = druidResult.garden.map((u) => ({ ...u }));
+      druidGardenNextIdRef.current = druidResult.gardenNextId;
+      druidFormRef.current = druidResult.form;
+      druidInstinctRef.current = druidResult.instinct;
+      druidAvatarActionsRef.current = druidResult.avatarActionsLeft;
+      druidDissonanceRef.current = druidResult.dissonance;
+      druidFruitReserveUsedRef.current = druidResult.fruitReserveUsed;
+      druidNothingLostUsedRef.current = druidResult.nothingLostUsed;
+      druidMuCompleteUsedRef.current = druidResult.muCompleteUsed;
+      druidCopaActionsRef.current = druidResult.copaActionsLeft;
+      druidCopaPreservedUsedRef.current = druidResult.copaPreservedUsed;
       druidSync();
     }
     if (chRef.current.classId === 'paladino') {
@@ -3338,7 +3489,88 @@ export function DungeonPanel({
       onFlash: (side) => flash(side),
     });
     if (core.enemyHp <= 0) { resolveEnemyDeath(); return; }
+    if (isRogue()) rogueQuickAct();
     schedulePlayer(nextPlayerDelay());
+  }
+
+  // Ladino's "Janela de Iniciativa": right after a Principal resolves, one
+  // eligible Ação Rápida (actionType: 'quick') fires immediately in the same
+  // turn — it never competes with the Principal for the ATB cycle itself.
+  // This was previously entirely unreachable: pickAbility() was only ever
+  // called with 'main', so every quick node (Passo Sombrio, Lâmina
+  // Envenenada, Passo Cortante, Lâmina Reversa, Finta Baixa, Dado Viciado)
+  // could never be selected, and rogueQuickWindowRef never left its initial
+  // `false` — so even Finta Baixa/Dado Viciado's own `quickWindow` condition
+  // could never pass. The window here is real but narrow: true only for the
+  // single eligibility check below, closed again immediately after.
+  function rogueQuickAct() {
+    if (enemyRef.current.hp <= 0 || chRef.current.hp <= 0) return;
+    rogueQuickWindowRef.current = true;
+    const quick = firstEligibleQuick(
+      equippedAbilities(),
+      cooldownsRef.current,
+      (ability) => (!hasCC(playerCCRef.current, 'silence') || isSelfAbilityKind(ability.effect.kind)) && conditionMet(ability) && !abilityAlreadyActive(ability),
+    );
+    rogueQuickWindowRef.current = false;
+    if (!quick) return;
+
+    const stats = computePlayerStats();
+    const core = createCombatState(chRef.current, { ...enemyRef.current }, Math.floor(Math.random() * 0xFFFFFFFF), [quick.id], [quick.id]);
+    const panelBarrierAtCast = playerShieldRef.current;
+    core.playerHp = chRef.current.hp;
+    core.enemyHp = enemyRef.current.hp;
+    core.playerBarrier = playerShieldRef.current;
+    core.playerMods = playerModsRef.current.map((mod) => ({ stat: mod.stat, pct: mod.pct, roundsLeft: mod.roundsLeft }));
+    core.enemyMods = enemyModsRef.current.map((mod) => ({ stat: mod.stat, pct: mod.pct, roundsLeft: mod.roundsLeft }));
+    core.playerStatuses = playerStatusRef.current.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, damagePct: status.dmgPerTick / Math.max(1, stats.matk || stats.atk) }));
+    core.enemyStatuses = enemyStatusRef.current.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, damagePct: status.dmgPerTick / Math.max(1, stats.matk || stats.atk) }));
+    core.playerCC = playerCCRef.current.map((cc) => ({ kind: cc.kind, roundsLeft: cc.roundsLeft }));
+    core.enemyCC = enemyCCRef.current.map((cc) => ({ kind: cc.kind, roundsLeft: cc.roundsLeft }));
+    core.hots = playerRegenRef.current.map((hot) => ({ pct: hot.pct, roundsLeft: hot.roundsLeft }));
+
+    const raw = core.classState as unknown as Record<string, unknown>;
+    raw.images = rogueImagesRef.current;
+    raw.stealthed = rogueStealthRef.current;
+    raw.exposed = rogueExposedMainLeftRef.current > 0;
+    raw.advantageReady = rogueAdvantageRef.current;
+    raw.preparedTrick = roguePreparedTrickRef.current?.kind ?? null;
+    raw.sharpenedEchoReady = rogueSharpenedEchoRef.current;
+
+    resolvePlayerAction(core);
+
+    updateCh({ ...chRef.current, hp: core.playerHp });
+    updateEnemy({ ...core.enemy, hp: core.enemyHp });
+    playerShieldRef.current = core.playerBarrier;
+    if (chRef.current.classId === 'clerigo' && core.playerBarrier > panelBarrierAtCast) clerigoAddBarrierPortion(core.playerBarrier - panelBarrierAtCast);
+    syncShield();
+    playerModsRef.current = core.playerMods.map((mod) => ({ stat: mod.stat as StatModStat, pct: mod.pct, roundsLeft: mod.roundsLeft, sourceAbilityId: quick.id }));
+    enemyModsRef.current = core.enemyMods.map((mod) => ({ stat: mod.stat as StatModStat, pct: mod.pct, roundsLeft: mod.roundsLeft, sourceAbilityId: quick.id }));
+    const statusPower = Math.max(1, stats.matk || stats.atk);
+    playerStatusRef.current = core.playerStatuses.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, dmgPerTick: Math.max(1, Math.round(status.damagePct * statusPower)) }));
+    enemyStatusRef.current = core.enemyStatuses.map((status) => ({ kind: status.kind, roundsLeft: status.roundsLeft, dmgPerTick: Math.max(1, Math.round(status.damagePct * statusPower)) }));
+    playerCCRef.current = core.playerCC.map((cc) => ({ ...cc }));
+    enemyCCRef.current = core.enemyCC.map((cc) => ({ ...cc }));
+    playerRegenRef.current = core.hots.map((hot) => ({ pct: hot.pct, roundsLeft: hot.roundsLeft, sourceAbilityId: quick.id }));
+    syncPlayerMods(); syncEnemyMods(); syncPlayerStatuses(); syncEnemyStatuses(); syncPlayerCC(); syncEnemyCC();
+
+    rogueImagesRef.current = Number(raw.images ?? 0);
+    rogueStealthRef.current = Boolean(raw.stealthed);
+    rogueExposedMainLeftRef.current = raw.exposed ? ROGUE_EXPOSED_MAIN_LIMIT : 0;
+    rogueAdvantageRef.current = Boolean(raw.advantageReady);
+    rogueSharpenedEchoRef.current = Boolean(raw.sharpenedEchoReady);
+    const preparedKind = raw.preparedTrick as RogueTrickKind | null;
+    roguePreparedTrickRef.current = preparedKind ? prepareTrick(preparedKind, quick.id) : null;
+    rogueSync();
+
+    const castEvent = core.events.find((event) => event.type === 'abilityCast' && event.abilityId === quick.id);
+    if (castEvent) cooldownsRef.current[quick.id] = Math.max(1, core.cooldowns[quick.id] ?? quick.cooldown);
+    consumeCombatEvents(core.events, {
+      onLog: (line) => pushLog(line),
+      onFloat: (side, amount, wasCrit, miss, healEvent) => pushFloat(side, amount, !!wasCrit, undefined, !!miss, !!healEvent),
+      onAbilityCast: (side, name) => pushAbilityCast(side, name, side === 'player' ? activeAbilityIconStyle(chRef.current.classId, quick.id) : null, null, false),
+      onFlash: (side) => flash(side),
+    });
+    if (core.enemyHp <= 0) resolveEnemyDeath();
   }
 
   // Centralized "the player's HP just reached 0" closure — mirrors
@@ -3759,7 +3991,7 @@ export function DungeonPanel({
 
     const hp = Math.max(0, chRef.current.hp - edmg);
     updateCh({ ...chRef.current, hp });
-    pushFloat('player', edmg, ecrit, blocked);
+    pushFloat('player', edmg, ecrit, blocked, undefined, undefined, shieldAbsorbed);
     // Momentum loss — a single direct hit dealing >= the Golpe Pesado
     // threshold (base 15% of effective max HP, raised by Sangue de Combate)
     // costs Momentum, at most once per enemy action.
@@ -3829,10 +4061,13 @@ export function DungeonPanel({
         if (playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.statusRounds ?? 3)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
-            playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+            const statusDmgPerTick = abEffect.status === 'poison' ? poisonDmgPerTick(effectiveMaxHp(chRef.current))
+              : abEffect.status === 'bleed' ? bleedDmgPerTick(enemyPower, defStats.def)
+              : Math.max(1, Math.round(enemyPower * 0.35));
+            playerStatusRef.current.push({ kind: abEffect.status, roundsLeft: rounds, dmgPerTick: statusDmgPerTick });
             syncPlayerStatuses();
           }
           pushLog(`Você foi ${STATUS_VERB[abEffect.status]}!`);
@@ -3846,7 +4081,7 @@ export function DungeonPanel({
           // left of it. Silence is never negated (per spec).
           pushLog('Seu Escudo Colossal absorve o golpe atordoante!');
         } else {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(abEffect.ccRounds ?? 1)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerCCRef.current.push({ kind: abEffect.cc, roundsLeft: rounds });
@@ -3881,17 +4116,20 @@ export function DungeonPanel({
         if ((proc.status || proc.cc) && playerResists(defStats)) {
           pushLog('Você resistiu ao efeito!');
         } else if (proc.status) {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
-            playerStatusRef.current.push({ kind: proc.status, roundsLeft: rounds, dmgPerTick: Math.max(1, Math.round(enemyPower * 0.35)) });
+            const statusDmgPerTick = proc.status === 'poison' ? poisonDmgPerTick(effectiveMaxHp(chRef.current))
+              : proc.status === 'bleed' ? bleedDmgPerTick(enemyPower, defStats.def)
+              : Math.max(1, Math.round(enemyPower * 0.35));
+            playerStatusRef.current.push({ kind: proc.status, roundsLeft: rounds, dmgPerTick: statusDmgPerTick });
             syncPlayerStatuses();
           }
           pushLog(proc.label);
         } else if (proc.cc && isKnight() && (proc.cc === 'stun' || proc.cc === 'sleep') && knightColossalShieldNegateCC()) {
           pushLog('Seu Escudo Colossal absorve o golpe atordoante!');
         } else if (proc.cc) {
-          const rounds = knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds));
+          const rounds = tenacityShortenedDuration(knightJuramentoConsumeReduction(clerigoSoloConsagradoFirstNegative(proc.rounds)), defStats.tenacityPct);
           knightOnNegativeEffectApplied();
           if (rounds > 0) {
             playerCCRef.current.push({ kind: proc.cc, roundsLeft: rounds });
@@ -3923,6 +4161,30 @@ export function DungeonPanel({
     warriorOnEnemyRealAction();
     warlockOnEnemyRealAction();
     bardOnEnemyAction(1, 1);
+
+    // Flechas em Voo avançam após ações reais. Ao chegar a actionsRemaining = 0,
+    // uma flecha pousa e causa dano usando seu snapshot de ataque/precisão/etc.
+    if (chRef.current.classId === 'arqueiro' && archerStateRef.current.arrows.length > 0) {
+      const existingFlightIds = archerStateRef.current.arrows.map((arrow) => arrow.id);
+      const advanced = advanceInFlightArrows(archerStateRef.current, existingFlightIds);
+      archerStateRef.current = advanced.state;
+      for (const arrow of advanced.landed) {
+        if (enemyRef.current.hp <= 0) break;
+        // Check hit/miss: evasion vs accuracy+precision bonus
+        const enemyEvasion = enemyRef.current.evasion ?? 0;
+        const missChance = Math.max(0, Math.min(0.75, enemyEvasion - arrow.accuracy));
+        const missed = Math.random() < missChance;
+        if (missed) {
+          pushFloat('player', 0, false, true);
+          continue;
+        }
+        // Arrow lands: roll damage with its snapshot stats
+        const result = rollAbilityHit(arrow.atk, enemyRef.current.def * (1 - Math.max(0, Math.min(0.9, arrow.defPenPct))), arrow.dmgMult, arrow.critChance, arrow.critDmgMult);
+        enemyRef.current.hp = Math.max(0, enemyRef.current.hp - result.dmg);
+        pushFloat('enemy', result.dmg, result.crit);
+      }
+    }
+
     scheduleEnemy();
   }
 
@@ -4075,18 +4337,26 @@ export function DungeonPanel({
   // touches state after this panel is unmounted (leaving for another section).
   useEffect(() => {
     mountedRef.current = true;
+    heroSpawnAtRef.current = performance.now();
     scheduleEnv(700);
     // Who gets the opening strike is a coin flip, not a guarantee — this used
     // to always hand the player's timer the shorter delay (see LEAN_MS above),
     // so every single dungeon start had the player land a free hit before the
     // enemy's clock had even fired once. Now either side can win the flip.
-    if (Math.random() < 0.5) {
-      schedulePlayer(700);
-      scheduleEnemy(700 + LEAN_MS);
-    } else {
-      schedulePlayer(700 + LEAN_MS);
-      scheduleEnemy(700);
-    }
+    const startClocks = () => {
+      if (Math.random() < 0.5) {
+        schedulePlayer(700);
+        scheduleEnemy(700 + LEAN_MS);
+      } else {
+        schedulePlayer(700 + LEAN_MS);
+        scheduleEnemy(700);
+      }
+    };
+    // A Caçada (Hunt) dungeon's own startDepth === bossDepth, so the very
+    // first enemy this panel ever mounts with can already be the boss —
+    // same intro treatment as reaching one mid-run (see advanceToNextEnemy).
+    if (enemyRef.current.isBoss) maybeShowBossIntro(enemyRef.current.name, startClocks);
+    else { enemySpawnAtRef.current = performance.now(); startClocks(); }
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -4185,7 +4455,12 @@ export function DungeonPanel({
         const px1 = w * 0.27, ex = w * 0.73;
         const playerTint = statusTintFor(playerStatuses, playerCCState, playerModsState);
         const enemyTint = statusTintFor(enemyStatuses, enemyCCState, enemyModsState);
-        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0, 0, playerTint);
+        // Hero only ever "materializes" once, right after this panel mounts
+        // — heroSpawnAtRef never resets again after that, so heroT is 1
+        // (no-op transform) for the entire rest of the fight.
+        const heroT = Math.min(1, Math.max(0, (t - heroSpawnAtRef.current) / ENTRANCE_MS));
+        const heroTransform = heroT < 1 ? { alpha: heroT, riseOffset: (1 - heroT) * 22 } : undefined;
+        drawSprite(g, heroSpr.idle, px1, groundY, false, flashSide === 'player' ? 0.7 : 0, 0, playerTint, heroTransform);
         if (ch.classId === 'necromante') {
           necroSummonsState.forEach((summon, i) => {
             const sx = px1 - 34 + i * 68, sy = groundY - 24 - Math.sin(t / 280 + i) * 3;
@@ -4193,17 +4468,56 @@ export function DungeonPanel({
             g.beginPath(); g.arc(sx, sy, 10, 0, Math.PI * 2); g.fill();
             g.fillStyle = '#10251f'; g.beginPath(); g.arc(sx - 3, sy - 2, 2, 0, Math.PI * 2); g.arc(sx + 3, sy - 2, 2, 0, Math.PI * 2); g.fill();
             g.fillRect(sx - 4, sy + 5, 8, 3); g.restore();
-            g.fillStyle = '#d1fae5'; g.font = '9px sans-serif'; g.textAlign = 'center'; g.fillText(`${summon.attacksRemaining}`, sx, sy - 15);
+            g.fillStyle = '#d1fae5'; g.font = '9px Alagard, Georgia, serif'; g.textAlign = 'center'; g.fillText(`${summon.attacksRemaining}`, sx, sy - 15);
           });
         }
-        drawSprite(g, enemySprite(enemy.shape), ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint);
+        // A boss stays hidden behind its own intro curtain (see bossIntro
+        // JSX below) rather than popping in mid-reveal underneath it.
+        if (!bossIntro) {
+          const enemySpr = enemySprite(enemy.shape);
+          let enemyTransform: { alpha?: number; scale?: number; riseOffset?: number } | undefined;
+          let deathBurst: { burstY: number; elapsedSec: number; deathT: number } | undefined;
+          if (enemyDeathAtRef.current != null) {
+            // Dying: fade out while growing slightly, plus a small burst of
+            // particles flying outward from roughly chest height — replaces
+            // the old hard cut where the corpse just vanished the instant
+            // the next enemy was assigned.
+            const deathT = Math.min(1, (t - enemyDeathAtRef.current) / DEATH_FADE_MS);
+            enemyTransform = { alpha: 1 - deathT, scale: 1 + deathT * 0.25 };
+            deathBurst = {
+              burstY: groundY - enemySpr.scale * 0.55,
+              elapsedSec: Math.min(DEATH_FADE_MS, t - enemyDeathAtRef.current) / 1000,
+              deathT,
+            };
+          } else {
+            const enemyT = Math.min(1, Math.max(0, (t - enemySpawnAtRef.current) / ENTRANCE_MS));
+            if (enemyT < 1) enemyTransform = { alpha: enemyT, scale: 0.85 + enemyT * 0.15, riseOffset: (1 - enemyT) * 22 };
+          }
+          drawSprite(g, enemySpr, ex, groundY, false, flashSide === 'enemy' ? 0.7 : 0, 0, enemyTint, enemyTransform);
+          // Particles are drawn AFTER the sprite so the burst reads on top of
+          // the fading corpse instead of being hidden underneath it while
+          // still close to the body (early in the burst, dist is small).
+          if (deathBurst) {
+            const { burstY, elapsedSec, deathT } = deathBurst;
+            g.save();
+            for (const p of enemyDeathParticlesRef.current) {
+              const dist = p.speed * elapsedSec;
+              g.globalAlpha = Math.max(0, 1 - deathT);
+              g.fillStyle = '#ffe6a8';
+              g.shadowColor = '#ffb347';
+              g.shadowBlur = 6;
+              g.fillRect(ex + Math.cos(p.angle) * dist - p.size / 2, burstY + Math.sin(p.angle) * dist - p.size / 2, p.size, p.size);
+            }
+            g.restore();
+          }
+        }
       }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, [
-    ch.classId, enemy.shape, phase, flashSide, heroSpr,
+    ch.classId, enemy.shape, phase, flashSide, heroSpr, bossIntro,
     playerStatuses, playerCCState, playerModsState, enemyStatuses, enemyCCState, enemyModsState, necroSummonsState,
   ]);
 
@@ -4245,6 +4559,10 @@ export function DungeonPanel({
   const enemySorcerer = sorcererEnemyState;
   const warriorDisplay = enemy.warrior ?? createWarriorEnemyState();
   const warriorBandLabel = ({ firm: 'FIRME', unstable: 'INSTÁVEL', open: 'ABERTO', broken: 'GUARDA QUEBRADA' } as const)[postureBand(warriorDisplay.current)];
+  const druidHasRebirth = ch.unlockedSkills.some((s) => s.startsWith('druida:cura-natural:'));
+  const druidHasMetamorphosis = ch.unlockedSkills.some((s) => s.startsWith('druida:furia-natureza:'));
+  const druidHasBalance = ch.unlockedSkills.some((s) => s.startsWith('druida:equilibrio:'));
+  const druidAttunedSeasons = DRUID_SEASONS.filter((s) => druidYearLedgerState[s]);
   const mechanicValues: Record<string, Omit<CombatMechanicState, 'mechanic'>> = {
     'guerreiro:posture': { value: warriorDisplay.current, maxValue: POSTURE_MAX, detail: warriorBandLabel, visible: ch.classId === 'guerreiro' },
     'guerreiro:guardbreak': { value: warriorDisplay.guardBroken ? 1 : 0, duration: warriorDisplay.offensiveActionsLeft, detail: warriorDisplay.guardBroken ? `${warriorDisplay.offensiveActionsLeft} ações ofensivas` : undefined, visible: ch.classId === 'guerreiro' },
@@ -4283,14 +4601,15 @@ export function DungeonPanel({
     'arqueiro:reflex': { value: archerState.reflexActionsLeft, maxValue: 2, duration: archerState.reflexActionsLeft, visible: ch.classId === 'arqueiro' },
     'arqueiro:flight': { value: archerState.arrows.length, maxValue: 4, detail: archerState.arrows.map((a) => `${a.sourceName}: ↓${a.actionsRemaining}`).join(' · '), visible: ch.classId === 'arqueiro' },
     'arqueiro:convergence': { value: 0, visible: ch.classId === 'arqueiro' },
-    'druida:season': { value: ['spring','summer','autumn','winter'].indexOf(druidCycleState.season), detail: ({spring:'PRIMAVERA',summer:'VERÃO',autumn:'OUTONO',winter:'INVERNO'} as const)[druidCycleState.season], visible: ch.classId === 'druida' },
-    'druida:garden': { value: druidGardenRef.current.length, maxValue: ch.unlockedSkills.includes('druida:cura-natural:6') ? 3 : 2, detail: druidGardenRef.current.map((u) => u.stage.toUpperCase()).join(' · '), visible: ch.classId === 'druida' },
-    'druida:attunement': { value: druidCycleState.attunement, maxValue: 3, visible: ch.classId === 'druida' },
-    'druida:perfect_year': { value: druidCycleState.perfectYear ? 1 : 0, visible: ch.classId === 'druida' },
-    'druida:renewal': { value: druidCycleState.renewals, maxValue: 1, visible: ch.classId === 'druida' },
-    'druida:dissonance': { value: druidCycleState.dissonance, maxValue: 3, visible: ch.classId === 'druida' },
-    'druida:form': { value: druidCycleState.form ? 1 : 0, detail: druidCycleState.form?.toUpperCase(), visible: ch.classId === 'druida' },
-    'druida:avatar': { value: druidAvatarActionsRef.current, maxValue: 4, duration: druidAvatarActionsRef.current, visible: ch.classId === 'druida' },
+    'druida:season': { value: DRUID_SEASONS.indexOf(druidSeasonState), maxValue: DRUID_SEASONS.length - 1, detail: DRUID_SEASON_LABELS[druidSeasonState].toUpperCase(), visible: ch.classId === 'druida' },
+    'druida:attunement': { value: druidAttunedSeasons.length, maxValue: DRUID_SEASONS.length, detail: druidAttunedSeasons.map((s) => DRUID_SEASON_SHORT_LABELS[s]).join(' · ') || undefined, visible: ch.classId === 'druida' },
+    'druida:renewal': { value: druidRenewalState, maxValue: 1, visible: ch.classId === 'druida' },
+    'druida:garden': { value: druidGardenState.length, maxValue: druidGardenMax(ch.unlockedSkills.includes('druida:cura-natural:6')), detail: druidGardenState.map((u) => u.stage.toUpperCase()).join(' · ') || undefined, visible: druidHasRebirth },
+    'druida:form': { value: druidFormState === 'none' ? 0 : 1, detail: druidFormState !== 'none' ? DRUID_FORM_LABELS[druidFormState].toUpperCase() : undefined, visible: druidHasMetamorphosis },
+    'druida:instinct': { value: druidInstinctState, maxValue: DRUID_INSTINCT_MAX, visible: druidHasMetamorphosis },
+    'druida:avatar': { value: druidAvatarState, maxValue: DRUID_AVATAR_ACTIONS_RENEWED, duration: druidAvatarState, visible: druidHasMetamorphosis && druidAvatarState > 0 },
+    'druida:dissonance': { value: druidDissonanceState, maxValue: DRUID_DISSONANCE_MAX, visible: druidHasBalance },
+    'druida:reequilibrium': { value: druidDissonanceState >= DRUID_DISSONANCE_MAX ? 1 : 0, visible: druidHasBalance && druidDissonanceState >= DRUID_DISSONANCE_MAX },
     'bruxo:debt': { value: warlockState.debt, maxValue: 6, detail: warlockState.debt >= 6 ? 'PRAZO FINAL — próxima geração pode causar Sobrecontrato' : undefined, visible: ch.classId === 'bruxo' },
     'bruxo:deadline': { value: warlockState.debt >= 6 ? 1 : 0, detail: warlockState.debt >= 6 ? `Cobrança: ${collectionAmount(effMaxHp, 'normal')} HP` : undefined, visible: ch.classId === 'bruxo' },
     'bruxo:overcontract': { value: 0, detail: warlockState.debt >= 6 ? 'SOBRECONTRATO: +15% dano e cobrança de 10%' : undefined, visible: ch.classId === 'bruxo' },
@@ -4315,12 +4634,12 @@ export function DungeonPanel({
     'mago:resonance': { value: mageResonanceState ? 1 : 0 },
     'necromante:souls': { value: necroSoulsState, maxValue: SOUL_MAX, visible: ch.classId === 'necromante' },
     'necromante:decomposition': { value: necroDecompositionState?.stacks ?? 0, maxValue: DECOMPOSITION_MAX, duration: necroDecompositionState?.ticksRemaining, visible: ch.classId === 'necromante' },
-    'necromante:plague': { value: necroPlagueState ? 1 : 0, duration: necroPlagueState?.ticksRemaining, detail: necroPlagueState ? `${formatGameNumber(plagueTickDamage(necroPlagueState, necroDecompositionState?.stacks ?? 0))} por ciclo` : undefined, visible: ch.classId === 'necromante' },
+    'necromante:plague': { value: necroPlagueState ? 1 : 0, duration: necroPlagueState?.ticksRemaining, detail: necroPlagueState ? `${formatGameNumber(plagueTickDamage(necroPlagueState, necroDecompositionState?.stacks ?? 0))} por segundo` : undefined, visible: ch.classId === 'necromante' },
     'necromante:servants': { value: necroSummonsState.length, maxValue: necroMaxSummons(), detail: necroSummonsState.map((s, i) => `Servo ${i + 1}: ${s.attacksRemaining} ataques`).join(' · '), visible: ch.classId === 'necromante' },
     'ladino:initiative': { value: rogueQuickWindowRef.current ? 1 : 0, detail: 'PRINCIPAL → RÁPIDA', visible: ch.classId === 'ladino' },
     'ladino:stealth': { value: rogueStealthState ? 1 : 0, duration: rogueStealthMainLeftRef.current, visible: ch.classId === 'ladino' },
     'ladino:exposed': { value: rogueExposedState > 0 ? 1 : 0, duration: rogueExposedState, visible: ch.classId === 'ladino' },
-    'ladino:toxin': { value: rogueToxinState ? 1 : 0, duration: rogueToxinState?.ticksRemaining, detail: rogueToxinState ? `${formatGameNumber(Math.round(rogueToxinState.snapshotPower * rogueToxinState.dmgMultiplier))} por ciclo` : undefined, visible: ch.classId === 'ladino' },
+    'ladino:toxin': { value: rogueToxinState ? 1 : 0, duration: rogueToxinState?.ticksRemaining, detail: rogueToxinState ? `${formatGameNumber(Math.round(rogueToxinState.snapshotPower * rogueToxinState.dmgMultiplier))} por segundo` : undefined, visible: ch.classId === 'ladino' },
     'ladino:images': { value: rogueImagesState, maxValue: ROGUE_IMAGE_MAX, visible: ch.classId === 'ladino' },
     'ladino:sharpened_echo': { value: rogueSharpenedEchoState ? 1 : 0, visible: ch.classId === 'ladino' },
     'ladino:prepared_trick': { value: roguePreparedTrickState ? 1 : 0, duration: roguePreparedTrickState?.actionsLeft, detail: roguePreparedTrickState?.kind === 'feint' ? 'FINTA' : roguePreparedTrickState?.kind === 'loaded_die' ? 'DADO VICIADO' : undefined, visible: ch.classId === 'ladino' },
@@ -4445,7 +4764,7 @@ export function DungeonPanel({
         </div>
       )}
 
-      {phase === 'fight' && enemy.isBoss && (
+      {phase === 'fight' && enemy.isBoss && !bossIntro && (
         <div className="mb-3 bg-black/40 border-2 border-crimson/60 rounded px-3 py-2">
           <div className="flex justify-between items-baseline gap-2">
             <span className="font-display text-crimson text-xs sm:text-sm uppercase tracking-[0.1em] truncate flex items-center">
@@ -4464,6 +4783,31 @@ export function DungeonPanel({
 
       <div className="relative rounded border-2 border-black/60 overflow-hidden bg-black/30">
         <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} className="w-full block" style={{ imageRendering: 'pixelated' }} />
+        {bossIntro && (
+          <div
+            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 pointer-events-none"
+            style={{ background: 'rgba(4,2,2,0.85)', animation: `bossIntroCurtain ${BOSS_INTRO_MS}ms ease-in-out forwards` }}
+          >
+            <span
+              className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-[0.2em] text-crimson"
+              style={{
+                animation: 'bossWarningFlash 500ms ease-in-out infinite',
+                textShadow: '0 0 18px rgba(220,40,40,0.9), 0 3px 0 rgba(0,0,0,0.9)',
+              }}
+            >
+              ⚠ Chefe ⚠
+            </span>
+            <span
+              className="font-display text-lg sm:text-xl text-amber-300 tracking-wide text-center px-4"
+              style={{
+                textShadow: '0 0 14px rgba(255,200,60,0.8), 0 2px 0 rgba(0,0,0,0.9)',
+                animation: 'bossNameReveal 700ms ease-out 250ms both',
+              }}
+            >
+              {bossIntro.name}
+            </span>
+          </div>
+        )}
         {resultBanner && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <span
@@ -4556,6 +4900,17 @@ export function DungeonPanel({
                 {f.blocked && (
                   <div className="text-center text-sm font-bold text-sky-300 leading-tight drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
                     Bloqueado!
+                  </div>
+                )}
+                {/* Confirms the shield actually did something on THIS hit —
+                    previously the only proof was a log line gated behind the
+                    enemy using a named ability, so a barrier silently eating
+                    plain-attack damage (the common case) looked indistinguishable
+                    from having no effect at all. */}
+                {!!f.shielded && f.shielded > 0 && (
+                  <div className="flex items-center justify-center gap-1 text-sky-300 leading-tight drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
+                    <IconShield className="w-5 h-5" />
+                    <span className="text-xl font-bold">-{formatGameNumber(f.shielded)}</span>
                   </div>
                 )}
               </>
@@ -4760,7 +5115,7 @@ export function DungeonPanel({
         <p className="text-parchment/80"><MechanicText text={openCombatAbility.desc} character={ch} ability={openCombatAbility} /></p>
         <div className="rounded border border-panelborder/50 bg-panel2/50 p-2 text-xs space-y-1">
           {ch.classId === 'ladino' && <p><span className="text-parchment/45">Ação: </span>{openCombatAbility.actionType === 'quick' ? 'RÁPIDA — usada na Janela de Iniciativa' : 'PRINCIPAL'}</p>}
-          <p><span className="text-parchment/45">Recarga: </span>{openCombatAbility.cooldown} ciclos</p>
+          <p><span className="text-parchment/45">Recarga: </span>{openCombatAbility.cooldown} segundos</p>
           {combatAbilityRequirements.map((requirement) => <p key={requirement}><span className="text-parchment/45">Estado atual: </span>{requirement}</p>)}
           {openCombatAbility.effect.faithCost && <p><span className="text-parchment/45">Custo: </span>{openCombatAbility.effect.faithCost} Fé, cobrada ao usar</p>}
           {openCombatAbility.effect.soulCost && <p><span className="text-parchment/45">Custo: </span>{openCombatAbility.effect.soulCost} {openCombatAbility.effect.soulCost === 1 ? 'Alma' : 'Almas'}, cobrada ao usar</p>}
@@ -4771,10 +5126,56 @@ export function DungeonPanel({
       <div className={`grid gap-4 mt-3 text-sm ${enemy.isBoss ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <div>
           <div className="flex justify-between items-baseline gap-2">
-            <span className="truncate">{ch.name}{playerShieldState > 0 && <span className="text-sky-300 text-xs"> (+{playerShieldState} escudo)</span>}</span>
-            <span className="shrink-0">{formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}</span>
+            <span className="truncate">{ch.name}</span>
+            <span className="shrink-0">
+              {formatGameNumber(Math.max(0, ch.hp))}/{formatGameNumber(effMaxHp)}
+              {/* A bare "+3" read as bonus HP — the icon makes clear it's a
+                  separate, temporary resource with the same visual grammar
+                  as the shield tag on the damage floater. */}
+              {playerShieldState > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-sky-300 font-bold ml-1">
+                  <IconShield className="w-3 h-3" />
+                  {formatGameNumber(playerShieldState)}
+                </span>
+              )}
+            </span>
           </div>
-          <div className="h-2 bg-black/50 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: `${hpPct(ch.hp, effMaxHp)}%` }} /></div>
+          <div className="relative h-2 bg-black/50 rounded overflow-hidden">
+            {/* With a shield up, the bar's total span grows to fit it (hp +
+                shield instead of just maxHp) — the red fill shrinks back to
+                make room and a shield segment picks up right where it ends,
+                so the bar visibly gets bigger rather than the shield
+                squeezing into whatever missing-HP space happened to be
+                left, which used to make it invisible at high HP. */}
+            <div
+              className="h-2 bg-red-500"
+              style={{ width: `${playerShieldState > 0 ? hpPct(ch.hp, effMaxHp + playerShieldState) : hpPct(ch.hp, effMaxHp)}%` }}
+            />
+            {playerShieldState > 0 && (
+              <div
+                className="absolute inset-y-0 rounded-r overflow-hidden ring-1 ring-inset ring-white/40"
+                style={{
+                  left: `${hpPct(ch.hp, effMaxHp + playerShieldState)}%`,
+                  width: `${hpPct(playerShieldState, effMaxHp + playerShieldState)}%`,
+                  boxShadow: '0 0 4px rgba(186,230,253,0.8)',
+                }}
+              >
+                {/* Diagonal hazard-stripe texture + a bright seam on the
+                    left edge reads as "temporary barrier", not more HP —
+                    distinct from the flat red fill instead of just being a
+                    differently-colored copy of it. */}
+                <div className="absolute inset-0 bg-gradient-to-b from-sky-200 via-sky-300 to-sky-400" />
+                <div
+                  className="absolute inset-0 opacity-40"
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(45deg, rgba(255,255,255,0.9) 0px, rgba(255,255,255,0.9) 1.5px, transparent 1.5px, transparent 5px)',
+                  }}
+                />
+                <div className="absolute inset-y-0 left-0 w-px bg-white/90" />
+              </div>
+            )}
+          </div>
           {phase === 'fight' && <AtbBar roundKey={playerRoundKey} roundMs={playerRoundMs} paused={paused} colorClass="bg-sky-400" />}
           {playerTags.length > 0 && <div className="text-[11px] text-amber-300/90 mt-0.5 truncate">{playerTags.join(', ')}</div>}
         </div>

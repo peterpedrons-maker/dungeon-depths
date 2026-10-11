@@ -82,3 +82,37 @@ test('motor real acumula Julgamento e lança Apocalipse repetidamente sem injeç
   assert.equal(durationState.enemy.judgment?.stacks, 2);
   assert.equal(durationState.enemy.judgment?.ticksLeft, JUDGMENT_CONVICCAO_DURATION_TICKS);
 });
+
+test('aplicar novo Julgamento renova a duração de TODOS os stacks e gera Fé nos marcos 3/5', () => {
+  // Só Chama Purificadora (sem Convicção) + Peso do Veredito — foca no
+  // comportamento de renovação de duração e nos marcos de Fé do motor real,
+  // sem depender de crítico (Zelo Inflexível/Acusação são cobertos à parte).
+  const character = {
+    ...createCharacter('Clériga Julgamento', 'clerigo'),
+    unlockedSkills: ['clerigo:provacao:4', 'clerigo:provacao:8'],
+    equippedAbilities: ['clerigo:provacao:4'],
+    priorities: ['clerigo:provacao:4'],
+  };
+  const durableEnemy = { ...spawnEnemy(DUNGEONS[0].bossDepth, DUNGEONS[0]), maxHp: 1_000_000_000, evasion: 0 };
+  const state = createCombatState(character, durableEnemy, 11, ['clerigo:provacao:4'], ['clerigo:provacao:4']);
+  const faithOf = () => (state.classState.classId === 'clerigo' ? state.classState.faith : 0);
+
+  resolvePlayerAction(state); // stacks 0 -> 2
+  assert.equal(state.enemy.judgment?.stacks, 2);
+  assert.equal(state.enemy.judgment?.ticksLeft, JUDGMENT_BASE_DURATION_TICKS);
+  const faithAfterFirstCast = faithOf();
+
+  for (let t = 0; t < 3; t += 1) resolveEnvironmentTick(state); // duration decays 5 -> 2, cooldown still not ready
+  assert.equal(state.enemy.judgment?.ticksLeft, JUDGMENT_BASE_DURATION_TICKS - 3);
+  for (let t = 0; t < 1; t += 1) resolveEnvironmentTick(state); // cooldown 4 done, duration would be 1 without renewal
+
+  resolvePlayerAction(state); // stacks 2 -> 4, crosses milestone 3 -> +1 Fé
+  assert.equal(state.enemy.judgment?.stacks, 4);
+  assert.equal(state.enemy.judgment?.ticksLeft, JUDGMENT_BASE_DURATION_TICKS, 'aplicar Julgamento deve renovar a duração de todos os stacks, não só dos novos');
+  assert.equal(faithOf(), faithAfterFirstCast + 1, 'atingir 3 Julgamentos pela primeira vez deveria gerar +1 Fé');
+
+  for (let t = 0; t < 4; t += 1) resolveEnvironmentTick(state);
+  resolvePlayerAction(state); // stacks 4 -> 5 (cap), crosses milestone 5 -> +1 Fé
+  assert.equal(state.enemy.judgment?.stacks, 5);
+  assert.equal(faithOf(), faithAfterFirstCast + 2, 'atingir 5 Julgamentos pela primeira vez deveria gerar +1 Fé adicional');
+});

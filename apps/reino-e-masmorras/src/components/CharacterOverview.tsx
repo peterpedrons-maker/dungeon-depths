@@ -46,13 +46,14 @@ interface Props {
   onSell: (item: EquipmentItem) => void;
   onAllocateAttrs: (deltas: Partial<Record<AttributeKey, number>>) => void;
   onSellRunes: (rarity: Rarity, tier: number, count: number) => void;
+  onBack: () => void;
 }
 
 type Selected = { kind: 'equipped'; slot: ItemSlot; item: EquipmentItem | null } | { kind: 'inventory'; item: EquipmentItem };
 
 const ZERO_ALLOC: Record<AttributeKey, number> = { str: 0, dex: 0, agi: 0, vit: 0, int: 0, wis: 0, luk: 0 };
 
-export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs, onSellRunes }: Props) {
+export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, onAllocateAttrs, onSellRunes, onBack }: Props) {
   const cls = CLASSES[ch.classId];
   const attributeParts = attributeBreakdown(ch);
   const attrs = attributeParts.total;
@@ -131,13 +132,13 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
   };
 
   return (
-    <Panel title="Personagem">
+    <Panel title="Personagem" onBack={onBack}>
       {/* Sub-tabs replace the old static "Visão Geral" title — the avatar,
           name, level and XP bar already live in the TopBar above, so this
           screen no longer repeats them. */}
       <div className="flex gap-2 mb-3">
         <MainTab active={tab === 'equipamentos'} onClick={() => setTab('equipamentos')}>Equipamentos</MainTab>
-        <MainTab active={tab === 'atributos'} onClick={() => setTab('atributos')}>Atributos</MainTab>
+        <MainTab active={tab === 'atributos'} onClick={() => setTab('atributos')} attention={ch.attributePoints > 0}>Atributos</MainTab>
         <MainTab active={tab === 'runas'} onClick={() => setTab('runas')}>
           Runas{ch.runes.length > 0 ? ` (${ch.runes.length})` : ''}
         </MainTab>
@@ -153,13 +154,19 @@ export function CharacterOverview({ character: ch, onEquip, onUnequip, onSell, o
         </span>
         <div className="flex items-center gap-2 flex-wrap">
           {ch.skillPoints > 0 && (
-            <span className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold">
+            <span
+              className="text-xs bg-gold/20 border border-gold/50 text-gold rounded-full px-3 py-1 font-bold"
+              style={{ animation: 'tabAttentionGlowGold 1.8s ease-in-out infinite' }}
+            >
               {ch.skillPoints} ponto{ch.skillPoints > 1 ? 's' : ''} de habilidade
             </span>
           )}
           {ch.attributePoints > 0 && (
-            <span className="text-xs bg-sky-500/20 border border-sky-400/50 text-sky-300 rounded-full px-3 py-1 font-bold">
-              {ch.attributePoints} ponto{ch.attributePoints > 1 ? 's' : ''} de atributo
+            <span
+              className="text-xs bg-sky-500/20 border border-sky-400/50 text-sky-300 rounded-full px-3 py-1 font-bold"
+              style={{ animation: 'tabAttentionGlowSky 1.8s ease-in-out infinite' }}
+            >
+              {ch.attributePoints} ponto{ch.attributePoints > 1 ? 's' : ''} de atributo — aloque em Atributos
             </span>
           )}
         </div>
@@ -611,13 +618,18 @@ function PreviewStatRow({ label, from, to, suffix = '', prefix = '', equip, info
   );
 }
 
-function MainTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+// `attention` marks a sub-tab the player was just pointed at from the
+// sidebar (e.g. Atributos when there are unspent attribute points) with the
+// same pulsing-glow language as the sidebar nav item itself, so the two
+// signals read as one trail leading to where the action actually happens.
+function MainTab({ active, onClick, children, attention }: { active: boolean; onClick: () => void; children: React.ReactNode; attention?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 py-2 rounded font-display text-xs uppercase tracking-wider font-bold transition ${
-        active ? 'bg-gold text-ink' : 'bg-panel2/60 text-parchment/50 hover:text-parchment hover:bg-panel2'
+      className={`flex-1 py-2 rounded font-display text-xs uppercase tracking-wider font-bold transition border ${
+        active ? 'bg-gold text-ink border-transparent' : attention ? 'bg-panel2/60 text-sky-300 border-sky-400/60' : 'bg-panel2/60 text-parchment/50 border-transparent hover:text-parchment hover:bg-panel2'
       }`}
+      style={!active && attention ? { animation: 'tabAttentionGlowSky 1.8s ease-in-out infinite' } : undefined}
     >
       {children}
     </button>

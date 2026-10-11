@@ -30,8 +30,9 @@ export const DYNAMIC_HOOK_NODE_IDS = new Set([
   'mago:eletromante:1', 'mago:eletromante:3', 'mago:eletromante:5', 'mago:eletromante:6', 'mago:eletromante:8',
   'ladino:veneno:11', 'ladino:sombras:0', 'ladino:sombras:1', 'ladino:sombras:3', 'ladino:laminas:5',
   'clerigo:devocao:1', 'cavaleiro:bastiao:8', 'cavaleiro:comando:3',
-  'druida:cura-natural:8', 'druida:cura-natural:14', 'druida:furia-natureza:6', 'druida:furia-natureza:8',
-  'druida:furia-natureza:14', 'druida:equilibrio:6', 'druida:equilibrio:8', 'druida:equilibrio:14',
+  'druida:cura-natural:3', 'druida:cura-natural:8', 'druida:cura-natural:14', 'druida:furia-natureza:3',
+  'druida:furia-natureza:6', 'druida:furia-natureza:8', 'druida:furia-natureza:14', 'druida:equilibrio:3',
+  'druida:equilibrio:6', 'druida:equilibrio:8', 'druida:equilibrio:14',
 ]);
 
 export interface ClassAuditIssue { code: string; id?: string; detail: string; }
