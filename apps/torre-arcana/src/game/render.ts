@@ -84,8 +84,11 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
   ctx.beginPath(); ctx.moveTo(laneTop.x, laneTop.y); ctx.lineTo(laneBottom.x, laneBottom.y); ctx.stroke();
 
   // ── Enemies, far to near so closer ones overlap correctly ──
+  // Smoothing on: these are rasterized vector icons, not hand-drawn pixel
+  // art, so they should scale with clean antialiasing instead of going blocky.
   const sorted = [...state.enemies].sort((a, b) => a.depth - b.depth);
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   for (const e of sorted) {
     const pos = depthToScreen(e.depth, e.lane, view);
     const spr = e.isBoss ? bossSprite(e.flash) : enemySprite(e.kind, e.flash);

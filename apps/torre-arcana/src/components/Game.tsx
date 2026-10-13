@@ -4,6 +4,7 @@ import { render } from '../game/render';
 import { Input } from '../game/input';
 import { RUNES, upgradeCost } from '../game/runes';
 import { WAVES } from '../game/wave';
+import { ICON_BODY, ICON_VIEWBOX } from '../game/icons';
 import { GameState, Phase, RuneId, RuneSlot } from '../game/types';
 
 interface Hud {
@@ -135,7 +136,14 @@ export function Game() {
                 className="flex w-20 flex-col items-center gap-0.5 rounded-xl border-2 bg-panel/90 p-1.5 text-center active:scale-95"
                 style={{ borderColor: locked ? '#4a3a7a' : def.color }}
               >
-                <span className="h-8 w-8 rounded-full" style={{ background: locked ? '#2a2240' : def.color }} />
+                <span
+                  className="grid h-9 w-9 place-items-center rounded-full border border-black/30 p-1.5"
+                  style={{ background: locked ? '#2a2240' : def.color }}
+                >
+                  <svg viewBox={ICON_VIEWBOX} className="h-full w-full" style={{ color: locked ? '#584a7a' : '#140f20' }}>
+                    <g dangerouslySetInnerHTML={{ __html: ICON_BODY[def.id] }} />
+                  </svg>
+                </span>
                 <span className="truncate text-[9px] font-bold text-white">{def.name}</span>
                 <span className="text-[9px] text-white/60">{locked ? '🔒' : '★'.repeat(slot.stars)}</span>
                 {!maxed && <span className="text-[9px] font-bold text-gold">{cost}🪙</span>}
