@@ -151,7 +151,8 @@ function hitEnemy(state: GameState, e: Enemy, p: Projectile, view: View): void {
   e.flash = 0.12;
   const pos = depthToScreen(e.depth, e.lane, view);
   damageNumber(state, pos.x, pos.y - 10 * pos.scale, dmg, crit);
-  spawnBurst(state, pos.x, pos.y, runeDef(p.style).color, 6);
+  spawnBurst(state, pos.x, pos.y, runeDef(p.style).color, crit ? 16 : 10);
+  spawnBurst(state, pos.x, pos.y, '#ffffff', 3);
 
   if (p.slowOnHit) {
     e.slowMult = p.slowOnHit.mult;
@@ -253,6 +254,8 @@ export function update(state: GameState, dt: number, view: View, input: Input): 
     const def = runeDef(slot.id);
     fireRune(state, def, slot.stars, input.aimLane);
     slot.cooldownTimer = runeCooldown(def, slot.stars);
+    const muzzle = depthToScreen(1, input.aimLane, view);
+    spawnBurst(state, muzzle.x, muzzle.y, def.color, 5);
   }
 
   // ── Projectiles — move through the same depth/lane space as enemies, so
@@ -266,6 +269,16 @@ export function update(state: GameState, dt: number, view: View, input: Input): 
     const prevDepth = p.depth;
     p.depth -= p.speed * dt;
     let remove = p.depth <= 0;
+    // A thin trail of fading sparks behind the shot, so it reads as a
+    // streak of motion crossing the field instead of a dot that teleports.
+    if (!remove && Math.random() < 0.8) {
+      const pos = depthToScreen(p.depth, p.lane, view);
+      state.particles.push({
+        x: pos.x + (Math.random() * 6 - 3), y: pos.y + (Math.random() * 6 - 3),
+        vx: 0, vy: 0, life: 0.12 + Math.random() * 0.1, maxLife: 0.22,
+        color: runeDef(p.style).color, size: (1 + Math.random()) * Math.max(0.4, pos.scale),
+      });
+    }
     if (!remove) {
       for (const e of state.enemies) {
         if (e.hp <= 0) continue;

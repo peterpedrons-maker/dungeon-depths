@@ -4,6 +4,7 @@ import { enemySprite, bossSprite } from './sprites';
 import { ENEMY_DEFS } from './enemies';
 import { runeDef } from './runes';
 import { Input } from './input';
+import { renderScenery } from './scenery';
 
 const SKY_TOP = '#0a0714';
 const SKY_HORIZON = '#2c2050';
@@ -28,17 +29,6 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
   sky.addColorStop(1, SKY_HORIZON);
   ctx.fillStyle = sky;
   ctx.fillRect(-20, -20, w + 40, horizonY + 20);
-
-  // A couple of distant silhouette trees along the edges, for atmosphere.
-  ctx.fillStyle = 'rgba(10,7,20,0.8)';
-  for (const [fx, fy, s] of [[0.06, 0.26, 1], [0.14, 0.24, 0.7], [0.94, 0.26, 1], [0.86, 0.24, 0.7]] as const) {
-    const tx = w * fx, ty = h * fy, sc = s * h * 0.05;
-    ctx.beginPath();
-    ctx.moveTo(tx, ty - sc * 2.2);
-    ctx.lineTo(tx - sc * 0.8, ty);
-    ctx.lineTo(tx + sc * 0.8, ty);
-    ctx.closePath(); ctx.fill();
-  }
 
   // ── Ground (trapezoid, narrow at the horizon, wide at the camera) ──
   const ground = ctx.createLinearGradient(0, horizonY, 0, h);
@@ -71,6 +61,10 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
     const right = depthToScreen(d, 1, view);
     ctx.beginPath(); ctx.moveTo(left.x, left.y); ctx.lineTo(right.x, right.y); ctx.stroke();
   }
+
+  // Trees/rocks/ruins framing both edges of the path, so it reads as a cut
+  // through a forest instead of an empty void with enemies floating in it.
+  renderScenery(ctx, view);
 
   // ── Lane guide — a soft column from the horizon down, showing exactly
   // where shots are headed, independent of where the thumb physically is. ──
@@ -110,26 +104,63 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, view: Vi
   }
 
   // ── Projectiles — travel through depth/lane space like enemies do, so
-  // their screen position (and the short trail behind them) comes from the
-  // same projection, shrinking into the distance as they near the horizon. ──
+  // their screen position (and the trail behind them) comes from the same
+  // projection, shrinking into the distance as they near the horizon. A
+  // gradient-faded trail plus a glowing-outer/white-hot-core pair reads as a
+  // much punchier bolt than a flat dot; each rune gets its own accent shape
+  // on top so the four feel distinct at a glance, not just recolored. ──
   for (const p of state.projectiles) {
     const def = runeDef(p.style);
     const pos = depthToScreen(p.depth, p.lane, view);
-    const trail = depthToScreen(Math.min(1, p.depth + 0.05), p.lane, view);
+    const trail = depthToScreen(Math.min(1, p.depth + 0.09), p.lane, view);
+    const r = p.radius * pos.scale;
+
     ctx.save();
-    ctx.shadowColor = def.color;
-    ctx.shadowBlur = 8;
-    ctx.strokeStyle = def.color + '70';
-    ctx.lineWidth = 3;
+    const grad = ctx.createLinearGradient(pos.x, pos.y, trail.x, trail.y);
+    grad.addColorStop(0, def.color + 'cc');
+    grad.addColorStop(1, def.color + '00');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = Math.max(1.5, r * 0.9);
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     ctx.lineTo(trail.x, trail.y);
     ctx.stroke();
+
+    ctx.shadowColor = def.color;
+    ctx.shadowBlur = 12;
     ctx.fillStyle = def.color;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, p.radius * 0.6 * pos.scale, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, r * 0.75, 0, Math.PI * 2);
     ctx.fill();
+
+    switch (p.style) {
+      case 'frost': { // small rotating crystal facet instead of a plain dot
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(p.depth * 6);
+        ctx.fillStyle = '#eaf8ff';
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.6); ctx.lineTo(r * 0.45, 0); ctx.lineTo(0, r * 0.6); ctx.lineTo(-r * 0.45, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+        break;
+      }
+      case 'firecore': { // layered warm core, bigger and flickering
+        ctx.fillStyle = '#ffe9a8';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, r * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      default: { // missiles / chain — a bright white-hot pinpoint core
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, r * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.restore();
   }
 
