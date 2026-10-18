@@ -24,6 +24,10 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 - `apps/reino-e-masmorras/` — RPG single-player de masmorras em fantasia medieval, com
   menus/texto e um painel visual simples de combate estilo plataforma 2D. Publicado em
   `/reino-e-masmorras/`.
+- `apps/ricochete/` — roguelike arcade top-down 2D: o jogador arremessa uma bola do
+  centro da tela, que quica nas paredes de blocos quebráveis até parar, pontuando por
+  bloco destruído. Trilha sonora sintetizada por código (Web Audio API, sem arquivos
+  de áudio) que acelera conforme o jogador quebra blocos. Publicado em `/ricochete/`.
 
 ## reino-e-masmorras: KIT-DE-ARTE.md
 

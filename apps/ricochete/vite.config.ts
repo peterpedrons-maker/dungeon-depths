@@ -4,8 +4,8 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Served from https://<user>.github.io/dungeon-depths/torre-arcana/ on GitHub Pages.
-  base: mode === "production" ? "/dungeon-depths/torre-arcana/" : "/",
+  // Served from https://<user>.github.io/dungeon-depths/ricochete/ on GitHub Pages.
+  base: mode === "production" ? "/dungeon-depths/ricochete/" : "/",
   server: {
     host: "::",
     port: 8082,
