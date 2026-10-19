@@ -106,10 +106,6 @@ export function ballRadiusBonus(level: number): number {
   return level * 1.2;
 }
 
-export function goalSizeMultiplier(level: number): number {
-  return 1 + level * 0.18;
-}
-
 export function scoreMultiplier(level: number): number {
   return 1 + level * 0.1;
 }

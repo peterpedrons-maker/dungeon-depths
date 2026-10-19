@@ -12,7 +12,7 @@
 
 import { AudioEngine } from './audio';
 import { generateLevel, LEVEL_POINTS } from './arena';
-import { ballRadiusBonus, goalSizeMultiplier, loadSave, saveSave, scoreMultiplier, GOLD_RATE } from './progression';
+import { ballRadiusBonus, loadSave, saveSave, scoreMultiplier, GOLD_RATE } from './progression';
 import { Block, Edge, GameState } from './types';
 import { InputState } from './input';
 
@@ -64,7 +64,7 @@ export function startRun(state: GameState) {
 
 export function startLevel(state: GameState, levelIndex: number, seed = Date.now()) {
   const save = loadSave();
-  const { blocks, holes, goal } = generateLevel(VIEW_W, VIEW_H, seed, levelIndex, goalSizeMultiplier(save.upgrades.goalSize));
+  const { blocks, holes, goal } = generateLevel(VIEW_W, VIEW_H, seed, levelIndex, save.upgrades.goalSize);
   state.blocks = blocks;
   state.holes = holes;
   state.goal = goal;
