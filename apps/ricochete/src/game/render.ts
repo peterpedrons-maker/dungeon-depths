@@ -67,24 +67,37 @@ export function render(
   drawVignette(ctx, viewW, viewH);
 }
 
+// The goal is hidden until the ball gets close enough to it (as a path
+// gets broken through nearby) — it should never be visible as a beacon
+// across the whole arena from the first bounce.
+const GOAL_REVEAL_DIST = 150;
+
 function drawGoal(ctx: CanvasRenderingContext2D, state: GameState) {
   const g = state.goal;
+  const b = state.ball;
+  const nearestX = Math.max(g.x, Math.min(b.x, g.x + g.w));
+  const nearestY = Math.max(g.y, Math.min(b.y, g.y + g.h));
+  const dist = Math.hypot(b.x - nearestX, b.y - nearestY);
+  if (dist > GOAL_REVEAL_DIST) return;
+
+  const proximity = 1 - dist / GOAL_REVEAL_DIST; // 0 just revealed .. 1 right on top of it
   const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 500);
+  const fade = 0.35 + proximity * 0.65;
 
   ctx.save();
   const grad = ctx.createLinearGradient(g.x, g.y, g.x, g.y + g.h);
-  grad.addColorStop(0, `rgba(228,230,234,${0.05 + pulse * 0.08})`);
-  grad.addColorStop(1, `rgba(228,230,234,${0.16 + pulse * 0.1})`);
+  grad.addColorStop(0, `rgba(228,230,234,${(0.05 + pulse * 0.08) * fade})`);
+  grad.addColorStop(1, `rgba(228,230,234,${(0.16 + pulse * 0.1) * fade})`);
   ctx.fillStyle = grad;
   ctx.fillRect(g.x, g.y, g.w, g.h);
 
-  ctx.strokeStyle = `rgba(228,230,234,${0.3 + pulse * 0.25})`;
+  ctx.strokeStyle = `rgba(228,230,234,${(0.3 + pulse * 0.25) * fade})`;
   ctx.lineWidth = 2;
   ctx.setLineDash([10, 8]);
   ctx.strokeRect(g.x + 1, g.y + 1, g.w - 2, g.h - 2);
   ctx.setLineDash([]);
 
-  ctx.globalAlpha = 0.55 + pulse * 0.25;
+  ctx.globalAlpha = (0.55 + pulse * 0.25) * fade;
   ctx.fillStyle = '#e4e6ea';
   ctx.font = 'bold 13px sans-serif';
   ctx.textAlign = 'center';

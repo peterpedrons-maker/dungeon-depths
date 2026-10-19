@@ -22,7 +22,7 @@ export const BASE_BALL_RADIUS = 9;
 export const LAUNCH_SPEED = 540; // px/s, fixed — only the angle is player-controlled
 const COMBO_WINDOW = 0.6; // seconds to chain another break into the combo
 const SUBSTEP = 1 / 120;
-const MAX_PHASE_TIME = 45; // safety net so a pathological trajectory can't hang forever
+const MAX_PHASE_TIME = 70; // safety net so a pathological trajectory can't hang forever
 
 const BASE_ZOOM = 1;
 const FOLLOW_ZOOM = 1.6; // how close the camera gets while the ball is flying
