@@ -12,7 +12,7 @@
 import { Block } from './types';
 
 const COLS = 11;
-const FRAME_DEPTH = 3; // how many rings of blocks deep the shell is
+const FRAME_DEPTH = 4; // how many rings of blocks deep the shell is
 
 function mulberry32(seed: number) {
   let s = seed;

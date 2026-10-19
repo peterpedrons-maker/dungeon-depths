@@ -16,14 +16,20 @@ export const VIEW_W = 540;
 export const VIEW_H = 960;
 export const BALL_RADIUS = 9;
 export const LAUNCH_SPEED = 540; // px/s, fixed — only the angle is player-controlled
-export const ROUND_DURATION = 18; // seconds the ball stays alive for
+export const ROUND_DURATION = 30; // seconds the ball stays alive for
 const COMBO_WINDOW = 0.6; // seconds to chain another break into the combo
 const SUBSTEP = 1 / 120;
+const URGENCY_WINDOW = 3; // seconds remaining that trigger the audio riser
+
+const BASE_ZOOM = 1;
+const FOLLOW_ZOOM = 1.6; // how close the camera gets while the ball is flying
+const CAMERA_FOLLOW_SPEED = 6; // higher = camera catches up to its target faster
 
 export function createState(): GameState {
   return {
     phase: 'title',
     ball: { x: VIEW_W / 2, y: VIEW_H / 2, vx: 0, vy: 0, radius: BALL_RADIUS },
+    camera: { x: VIEW_W / 2, y: VIEW_H / 2, zoom: BASE_ZOOM },
     blocks: [],
     particles: [],
     scorePops: [],
@@ -34,6 +40,7 @@ export function createState(): GameState {
     roundTime: 0,
     roundDuration: ROUND_DURATION,
     shake: 0,
+    urgencyTriggered: false,
   };
 }
 
@@ -43,6 +50,9 @@ export function startRound(state: GameState, seed = Date.now()) {
   state.ball.y = VIEW_H / 2;
   state.ball.vx = 0;
   state.ball.vy = 0;
+  state.camera.x = VIEW_W / 2;
+  state.camera.y = VIEW_H / 2;
+  state.camera.zoom = BASE_ZOOM;
   state.particles = [];
   state.scorePops = [];
   state.score = 0;
@@ -52,6 +62,7 @@ export function startRound(state: GameState, seed = Date.now()) {
   state.roundTime = 0;
   state.roundDuration = ROUND_DURATION;
   state.shake = 0;
+  state.urgencyTriggered = false;
   state.phase = 'aiming';
 }
 
@@ -148,6 +159,26 @@ function simulateFlyingStep(state: GameState, dt: number, audio?: AudioEngine) {
   }
 }
 
+// Camera zooms out to show the whole arena while aiming/title/round-end, and
+// zooms in to follow the ball while it's flying, clamped so the visible
+// window never shows past the arena's true bounds — exponential smoothing
+// (framerate-independent) instead of a linear lerp so it still feels right
+// under a jittery dt.
+function updateCamera(state: GameState, dt: number) {
+  const cam = state.camera;
+  const targetZoom = state.phase === 'flying' ? FOLLOW_ZOOM : BASE_ZOOM;
+  const visW = VIEW_W / targetZoom;
+  const visH = VIEW_H / targetZoom;
+
+  const targetX = visW >= VIEW_W ? VIEW_W / 2 : Math.min(Math.max(state.ball.x, visW / 2), VIEW_W - visW / 2);
+  const targetY = visH >= VIEW_H ? VIEW_H / 2 : Math.min(Math.max(state.ball.y, visH / 2), VIEW_H - visH / 2);
+
+  const t = 1 - Math.exp(-CAMERA_FOLLOW_SPEED * dt);
+  cam.x += (targetX - cam.x) * t;
+  cam.y += (targetY - cam.y) * t;
+  cam.zoom += (targetZoom - cam.zoom) * t;
+}
+
 function updateEffects(state: GameState, dt: number) {
   for (const b of state.blocks) {
     if (b.flash > 0) b.flash = Math.max(0, b.flash - dt);
@@ -190,13 +221,19 @@ export function update(state: GameState, dt: number, input: InputState, audio?: 
     }
 
     state.roundTime += dt;
+    if (!state.urgencyTriggered && state.roundDuration - state.roundTime <= URGENCY_WINDOW) {
+      state.urgencyTriggered = true;
+      audio?.onUrgency();
+    }
     if (state.roundTime >= state.roundDuration) {
       state.roundTime = state.roundDuration;
       state.ball.vx = 0;
       state.ball.vy = 0;
       state.phase = 'roundEnd';
+      audio?.onRoundEnd();
     }
   }
 
+  updateCamera(state, dt);
   updateEffects(state, dt);
 }

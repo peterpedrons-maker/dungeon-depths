@@ -8,6 +8,12 @@ export interface Ball {
   radius: number;
 }
 
+export interface Camera {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface Block {
   x: number; // top-left corner
   y: number;
@@ -41,6 +47,7 @@ export interface ScorePop {
 export interface GameState {
   phase: Phase;
   ball: Ball;
+  camera: Camera;
   blocks: Block[];
   particles: Particle[];
   scorePops: ScorePop[];
@@ -51,4 +58,5 @@ export interface GameState {
   roundTime: number; // seconds elapsed since launch
   roundDuration: number; // total seconds the ball stays alive for
   shake: number;
+  urgencyTriggered: boolean; // whether the final-seconds audio riser has already fired this round
 }
