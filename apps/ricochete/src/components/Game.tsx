@@ -1,23 +1,22 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import gsap from 'gsap';
-import { createState, startRound, update, VIEW_W, VIEW_H } from '../game/engine';
+import { createState, startRun, continueToNextLevel, update, VIEW_W, VIEW_H } from '../game/engine';
 import { render } from '../game/render';
 import { createInput, attachInput, InputState } from '../game/input';
 import { AudioEngine } from '../game/audio';
 import { GameState, Phase } from '../game/types';
+import { loadSave, purchaseUpgrade, upgradeCost, UPGRADES, type Save, type UpgradeId } from '../game/progression';
 import {
   tweenNumber,
   resetNumber,
   punch,
   comboFlash,
   tapPunch,
-  startUrgencyPulse,
-  stopUrgencyPulse,
   slideDownIn,
   slideUpIn,
   titleEntrance,
   idlePulse,
-  roundEndEntrance,
+  resultEntrance,
 } from '../game/fx';
 
 interface Hud {
@@ -25,8 +24,8 @@ interface Hud {
   score: number;
   combo: number;
   blocksBroken: number;
-  roundTime: number;
-  roundDuration: number;
+  levelIndex: number;
+  shieldsLeft: number;
 }
 
 function snapshot(s: GameState): Hud {
@@ -35,12 +34,12 @@ function snapshot(s: GameState): Hud {
     score: Math.floor(s.score),
     combo: s.combo,
     blocksBroken: s.blocksBroken,
-    roundTime: s.roundTime,
-    roundDuration: s.roundDuration,
+    levelIndex: s.levelIndex,
+    shieldsLeft: s.shieldsLeft,
   };
 }
 
-const COMBO_FLASH_COLOR: Record<number, string> = { 1: '#2fe6ff', 2: '#ff3fb0', 3: '#ffd23f' };
+const COMBO_FLASH_COLOR: Record<number, string> = { 1: '#9aa0ab', 2: '#c9a86a', 3: '#e4e6ea' };
 
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,15 +49,16 @@ export function Game() {
   const [hud, setHud] = useState<Hud>(() => snapshot(stateRef.current));
   const [muted, setMuted] = useState(false);
 
-  // Live score pill (top HUD) — a GSAP tween drives this via React state so
-  // it chases the real score smoothly instead of snapping on every sync.
+  const [save, setSave] = useState<Save>(() => loadSave());
+  const [goldEarned, setGoldEarned] = useState(0);
+  const prevGoldRef = useRef(save.gold);
+
   const [scoreDisplay, setScoreDisplay] = useState(0);
   const liveScoreObj = useRef({ value: 0 });
 
   const statusBarRef = useRef<HTMLDivElement>(null);
   const comboBadgeRef = useRef<HTMLDivElement>(null);
   const comboFlashRef = useRef<HTMLDivElement>(null);
-  const timerBarRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
 
   const titleBallRef = useRef<HTMLDivElement>(null);
@@ -67,16 +67,17 @@ export function Game() {
   const titlePlayBtnRef = useRef<HTMLButtonElement>(null);
   const titleTipRef = useRef<HTMLDivElement>(null);
 
-  const roundEndFlagRef = useRef<HTMLDivElement>(null);
-  const roundEndHeadingRef = useRef<HTMLHeadingElement>(null);
-  const roundEndScoreWrapRef = useRef<HTMLParagraphElement>(null);
-  const roundEndBlocksRef = useRef<HTMLParagraphElement>(null);
-  const roundEndButtonRef = useRef<HTMLButtonElement>(null);
-  const roundEndScoreObj = useRef({ value: 0 });
-  const [roundEndScoreDisplay, setRoundEndScoreDisplay] = useState(0);
+  const shopPanelRef = useRef<HTMLDivElement>(null);
+
+  const resultIconRef = useRef<HTMLDivElement>(null);
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const resultScoreWrapRef = useRef<HTMLParagraphElement>(null);
+  const resultDetailRef = useRef<HTMLParagraphElement>(null);
+  const resultButtonRef = useRef<HTMLButtonElement>(null);
+  const resultScoreObj = useRef({ value: 0 });
+  const [resultScoreDisplay, setResultScoreDisplay] = useState(0);
 
   const prevComboRef = useRef(1);
-  const urgencyTweenRef = useRef<gsap.core.Tween | null>(null);
 
   const sync = () => setHud(snapshot(stateRef.current));
 
@@ -129,28 +130,39 @@ export function Game() {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
       detach();
-      urgencyTweenRef.current?.kill();
     };
   }, []);
 
-  // Fresh round: snap the live score counter back to 0 instantly (no tween —
-  // animating down from last round's score would read as points being lost).
+  // Refresh the persisted save whenever we land on a non-gameplay screen,
+  // and on the two "a run just ended" screens, work out how much gold was
+  // just banked since the last time we were on one of these screens.
+  useEffect(() => {
+    if (hud.phase === 'aiming' || hud.phase === 'flying') return;
+    const fresh = loadSave();
+    if (hud.phase === 'levelComplete' || hud.phase === 'gameOver') {
+      setGoldEarned(Math.max(0, fresh.gold - prevGoldRef.current));
+    }
+    prevGoldRef.current = fresh.gold;
+    setSave(fresh);
+  }, [hud.phase]);
+
+  // Entering aiming (fresh level, carried over from the previous one or a
+  // brand new run) slides the HUD bar/tip in.
   useEffect(() => {
     if (hud.phase !== 'aiming') return;
-    resetNumber(liveScoreObj.current, setScoreDisplay);
     prevComboRef.current = 1;
     slideDownIn(statusBarRef.current);
     slideUpIn(tipRef.current);
   }, [hud.phase]);
 
-  // Live score pill chases the real score with a short tween instead of
-  // snapping on every HUD sync.
+  // Live score pill chases the real (run-cumulative) score with a short
+  // tween instead of snapping on every HUD sync.
   useEffect(() => {
     tweenNumber(liveScoreObj.current, hud.score, setScoreDisplay);
   }, [hud.score]);
 
   // Combo badge punches every time the combo climbs, with a bigger radial
-  // flash across the screen every 3rd step — the "full dopamine" beats.
+  // flash across the screen every 3rd step.
   useEffect(() => {
     if (hud.combo > prevComboRef.current) {
       punch(comboBadgeRef.current);
@@ -161,18 +173,6 @@ export function Game() {
     }
     prevComboRef.current = hud.combo;
   }, [hud.combo]);
-
-  // Timer bar pulses with urgency in the final 3 seconds of a round.
-  useEffect(() => {
-    const remaining = hud.roundDuration - hud.roundTime;
-    const shouldPulse = hud.phase === 'flying' && remaining <= 3 && remaining > 0;
-    if (shouldPulse && !urgencyTweenRef.current) {
-      urgencyTweenRef.current = startUrgencyPulse(timerBarRef.current);
-    } else if (!shouldPulse && urgencyTweenRef.current) {
-      stopUrgencyPulse(urgencyTweenRef.current, timerBarRef.current);
-      urgencyTweenRef.current = null;
-    }
-  }, [hud.phase, hud.roundTime, hud.roundDuration]);
 
   // Title screen: ball drops in, text/button stagger in, then the button
   // idles with a gentle breathing pulse until tapped.
@@ -196,34 +196,67 @@ export function Game() {
     };
   }, [hud.phase]);
 
-  // Round-end: flag bounces in, heading/score/blocks/button stagger in, and
-  // the score counts up from zero to the final tally.
   useEffect(() => {
-    if (hud.phase !== 'roundEnd') return;
-    const tl = roundEndEntrance(
+    if (hud.phase !== 'shop') return;
+    gsap.fromTo(shopPanelRef.current, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+  }, [hud.phase]);
+
+  // Level-complete / game-over share one entrance: icon bounces in,
+  // heading/score/detail stagger in, score counts up, button last.
+  useEffect(() => {
+    if (hud.phase !== 'levelComplete' && hud.phase !== 'gameOver') return;
+    const tl = resultEntrance(
       {
-        flag: roundEndFlagRef.current,
-        heading: roundEndHeadingRef.current,
-        scoreWrap: roundEndScoreWrapRef.current,
-        blocksLine: roundEndBlocksRef.current,
-        button: roundEndButtonRef.current,
+        icon: resultIconRef.current,
+        heading: resultHeadingRef.current,
+        scoreWrap: resultScoreWrapRef.current,
+        detailLine: resultDetailRef.current,
+        button: resultButtonRef.current,
       },
-      roundEndScoreObj.current,
+      resultScoreObj.current,
       hud.score,
-      setRoundEndScoreDisplay,
+      setResultScoreDisplay,
     );
     return () => {
       tl.kill();
     };
   }, [hud.phase]);
 
-  const play = (e?: MouseEvent<HTMLButtonElement>) => {
-    if (e) tapPunch(e.currentTarget);
+  const startNewRun = (e: MouseEvent<HTMLButtonElement>) => {
+    tapPunch(e.currentTarget);
     audioRef.current.start();
-    startRound(stateRef.current);
+    startRun(stateRef.current);
+    inputRef.current.dragging = false;
+    inputRef.current.launchRequested = false;
+    resetNumber(liveScoreObj.current, setScoreDisplay);
+    prevComboRef.current = 1;
+    sync();
+  };
+
+  const continueLevel = (e: MouseEvent<HTMLButtonElement>) => {
+    tapPunch(e.currentTarget);
+    continueToNextLevel(stateRef.current);
     inputRef.current.dragging = false;
     inputRef.current.launchRequested = false;
     sync();
+  };
+
+  const openShop = (e?: MouseEvent<HTMLButtonElement>) => {
+    if (e) tapPunch(e.currentTarget);
+    stateRef.current.phase = 'shop';
+    sync();
+  };
+
+  const closeShop = (e: MouseEvent<HTMLButtonElement>) => {
+    tapPunch(e.currentTarget);
+    stateRef.current.phase = 'title';
+    sync();
+  };
+
+  const buyUpgrade = (id: UpgradeId) => (e: MouseEvent<HTMLButtonElement>) => {
+    tapPunch(e.currentTarget);
+    const ok = purchaseUpgrade(save, id);
+    if (ok) setSave({ ...save, upgrades: { ...save.upgrades } });
   };
 
   const toggleMute = (e: MouseEvent<HTMLButtonElement>) => {
@@ -232,8 +265,6 @@ export function Game() {
     setMuted(next);
     audioRef.current.setMuted(next);
   };
-
-  const timePct = Math.min(100, (hud.roundTime / hud.roundDuration) * 100);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-void touch-none select-none">
@@ -246,21 +277,17 @@ export function Game() {
       {(hud.phase === 'aiming' || hud.phase === 'flying') && (
         <div ref={statusBarRef} className="pointer-events-none absolute inset-x-0 top-0 p-3">
           <div className="mx-auto flex max-w-sm items-center justify-between gap-2">
-            <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-neon3">★ {scoreDisplay}</div>
+            <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-gold">★ {scoreDisplay}</div>
             {hud.combo > 1 && (
-              <div ref={comboBadgeRef} className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-combo">
+              <div ref={comboBadgeRef} className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-steel1">
                 x{hud.combo} combo
               </div>
             )}
             <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-white">🧱 {hud.blocksBroken}</div>
           </div>
-          <div className="mx-auto mt-2 max-w-sm">
-            <div ref={timerBarRef} className="h-2 overflow-hidden rounded-full border border-black/50 bg-black/50">
-              <div
-                className="h-full bg-gradient-to-r from-neon1 to-neon2 transition-all"
-                style={{ width: `${timePct}%` }}
-              />
-            </div>
+          <div className="mx-auto mt-2 flex max-w-sm items-center justify-between px-1 text-xs font-bold text-white/50">
+            <span>Fase {hud.levelIndex + 1}</span>
+            {hud.shieldsLeft > 0 && <span>🛡️ x{hud.shieldsLeft}</span>}
           </div>
         </div>
       )}
@@ -281,39 +308,92 @@ export function Game() {
       )}
 
       {hud.phase === 'title' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#120f1f]/90 to-[#07060d]/95 px-4">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#121214]/90 to-[#0a0a0c]/95 px-4">
           <div ref={titleBallRef} className="mb-2 text-6xl">⚪</div>
-          <h1 ref={titleHeadingRef} className="mb-1 text-4xl font-black text-neon1">RICOCHETE</h1>
-          <p ref={titleSubtitleRef} className="mb-8 text-xs uppercase tracking-[0.2em] text-white/50">
-            Quique. Quebre. Pontue.
+          <h1 ref={titleHeadingRef} className="mb-1 text-4xl font-black text-steel1">RICOCHETE</h1>
+          <p ref={titleSubtitleRef} className="mb-6 text-xs uppercase tracking-[0.2em] text-white/50">
+            Quique. Sobreviva. Avance.
           </p>
+          <div className="mb-6 rounded-full bg-black/50 px-4 py-1.5 text-sm font-bold text-gold">💰 {save.gold}</div>
           <button
             ref={titlePlayBtnRef}
-            onClick={play}
-            className="rounded-xl border-2 border-neon1 bg-gradient-to-b from-neon1 to-neon2 px-10 py-3.5 text-lg font-black text-void shadow-lg"
+            onClick={startNewRun}
+            className="rounded-xl border-2 border-steel1 bg-gradient-to-b from-steel1 to-steel2 px-10 py-3.5 text-lg font-black text-void shadow-lg"
           >
             ▶ Jogar
           </button>
+          <button onClick={openShop} className="mt-3 text-xs font-bold uppercase tracking-wide text-white/50 underline">
+            Loja
+          </button>
           <div ref={titleTipRef} className="mt-8 max-w-xs text-center text-xs leading-relaxed text-white/45">
             <p className="mb-1">🎯 Arraste a partir da bola pra mirar</p>
-            <p>Solte pra lançar e quebre o máximo de blocos antes do tempo acabar!</p>
+            <p>Encontre a saída pra avançar de fase — cuidado com os buracos nas bordas!</p>
           </div>
         </div>
       )}
 
-      {hud.phase === 'roundEnd' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 px-4">
-          <div ref={roundEndFlagRef} className="mb-2 text-6xl">🏁</div>
-          <h2 ref={roundEndHeadingRef} className="mb-1 text-3xl font-black text-neon3">Fim do round!</h2>
-          <p ref={roundEndScoreWrapRef} className="mb-1 text-2xl font-black text-white">{roundEndScoreDisplay} pontos</p>
-          <p ref={roundEndBlocksRef} className="mb-6 text-sm text-white/60">🧱 {hud.blocksBroken} blocos quebrados</p>
+      {hud.phase === 'shop' && (
+        <div className="absolute inset-0 flex flex-col items-center overflow-y-auto bg-gradient-to-b from-[#121214]/95 to-[#0a0a0c]/98 px-4 py-10">
+          <div ref={shopPanelRef} className="w-full max-w-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-black text-steel1">Loja</h2>
+              <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-gold">💰 {save.gold}</div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {UPGRADES.map((def) => {
+                const level = save.upgrades[def.id];
+                const maxed = level >= def.maxLevel;
+                const cost = maxed ? 0 : upgradeCost(def.id, level);
+                const canAfford = !maxed && save.gold >= cost;
+                return (
+                  <div key={def.id} className="rounded-xl border border-panelborder bg-panel/90 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-steel1">{def.name}</span>
+                      <span className="text-xs text-white/50">{level}/{def.maxLevel}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-white/50">{def.description}</p>
+                    <button
+                      onClick={buyUpgrade(def.id)}
+                      disabled={maxed || !canAfford}
+                      className="mt-2 w-full rounded-lg border border-panelborder bg-steel3/40 py-2 text-sm font-bold text-steel1 disabled:opacity-40"
+                    >
+                      {maxed ? 'Máximo' : `Comprar — 💰 ${cost}`}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={closeShop} className="mt-6 w-full rounded-xl border-2 border-steel2 py-3 font-black text-steel1">
+              Voltar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(hud.phase === 'levelComplete' || hud.phase === 'gameOver') && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 px-4">
+          <div ref={resultIconRef} className="mb-2 text-6xl">
+            {hud.phase === 'levelComplete' ? '🏁' : '🕳️'}
+          </div>
+          <h2 ref={resultHeadingRef} className="mb-1 text-3xl font-black text-steel1">
+            {hud.phase === 'levelComplete' ? `Fase ${hud.levelIndex + 1} concluída!` : 'Você caiu!'}
+          </h2>
+          <p ref={resultScoreWrapRef} className="mb-1 text-2xl font-black text-white">{resultScoreDisplay} pontos</p>
+          <p ref={resultDetailRef} className="mb-6 text-sm text-white/60">
+            🧱 {hud.blocksBroken} blocos · 💰 +{goldEarned} ouro
+          </p>
           <button
-            ref={roundEndButtonRef}
-            onClick={play}
-            className="rounded-xl border-2 border-neon1 bg-gradient-to-b from-neon1 to-neon2 px-8 py-3 font-black text-void"
+            ref={resultButtonRef}
+            onClick={hud.phase === 'levelComplete' ? continueLevel : startNewRun}
+            className="rounded-xl border-2 border-steel1 bg-gradient-to-b from-steel1 to-steel2 px-8 py-3 font-black text-void"
           >
-            Jogar de novo
+            {hud.phase === 'levelComplete' ? 'Continuar' : 'Jogar de novo'}
           </button>
+          {hud.phase === 'gameOver' && (
+            <button onClick={openShop} className="mt-3 text-xs font-bold uppercase tracking-wide text-white/50 underline">
+              Ir pra loja
+            </button>
+          )}
         </div>
       )}
     </div>

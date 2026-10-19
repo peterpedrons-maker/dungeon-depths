@@ -5,14 +5,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        void: "#07060d",
-        panel: "#15121f",
-        panelborder: "#3a3350",
-        neon1: "#2fe6ff",
-        neon2: "#ff3fb0",
-        neon3: "#ffd23f",
+        void: "#0a0a0c",
+        panel: "#17171b",
+        panelborder: "#33333a",
+        steel1: "#e4e6ea",
+        steel2: "#9aa0ab",
+        steel3: "#4b4f58",
+        gold: "#c9a86a",
+        danger: "#9a5a52",
         metal: "#d8e4ff",
-        combo: "#39ff88",
       },
     },
   },

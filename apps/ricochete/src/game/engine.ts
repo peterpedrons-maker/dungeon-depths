@@ -1,25 +1,28 @@
 // ─── Game engine ─────────────────────────────────────────────────────────────
 // Core loop: aim (pick an angle) -> launch (fixed speed, free angle) -> the
-// ball bounces wall-to-wall breaking blocks for a fixed round duration -> it
-// stops and the round-end summary shows the score. Collision is a real 2D
-// circle-vs-AABB reflection off the nearest point on each block, plus the true
-// screen edges as a safety net so the ball can never escape even once the
-// outer ring of blocks is gone. Movement is split into small fixed substeps
-// so a fast ball can't tunnel through a block in a single frame.
+// ball bounces wall-to-wall, breaking blocks for points, until one of two
+// things happens: it reaches the goal strip (phase clears, advance to a
+// harder one) or it finds its way through a worn-down patch of the shell
+// into a hole at the true edge (run over). Collision is a real 2D
+// circle-vs-AABB reflection off the nearest point on each block, plus the
+// true screen edges as a safety net — a hole only matters exactly where it
+// is, every other point on the boundary still bounces normally. Movement is
+// split into small fixed substeps so a fast ball can't tunnel through a
+// block (or a hole) in a single frame.
 
 import { AudioEngine } from './audio';
-import { generateArena, LEVEL_POINTS } from './arena';
-import { Block, GameState } from './types';
+import { generateLevel, LEVEL_POINTS } from './arena';
+import { ballRadiusBonus, goalSizeMultiplier, loadSave, saveSave, scoreMultiplier, GOLD_RATE } from './progression';
+import { Block, Edge, GameState } from './types';
 import { InputState } from './input';
 
 export const VIEW_W = 540;
 export const VIEW_H = 960;
-export const BALL_RADIUS = 9;
+export const BASE_BALL_RADIUS = 9;
 export const LAUNCH_SPEED = 540; // px/s, fixed — only the angle is player-controlled
-export const ROUND_DURATION = 30; // seconds the ball stays alive for
 const COMBO_WINDOW = 0.6; // seconds to chain another break into the combo
 const SUBSTEP = 1 / 120;
-const URGENCY_WINDOW = 3; // seconds remaining that trigger the audio riser
+const MAX_PHASE_TIME = 45; // safety net so a pathological trajectory can't hang forever
 
 const BASE_ZOOM = 1;
 const FOLLOW_ZOOM = 1.6; // how close the camera gets while the ball is flying
@@ -28,42 +31,64 @@ const CAMERA_FOLLOW_SPEED = 6; // higher = camera catches up to its target faste
 export function createState(): GameState {
   return {
     phase: 'title',
-    ball: { x: VIEW_W / 2, y: VIEW_H / 2, vx: 0, vy: 0, radius: BALL_RADIUS },
+    ball: { x: VIEW_W / 2, y: VIEW_H / 2, vx: 0, vy: 0, radius: BASE_BALL_RADIUS },
     camera: { x: VIEW_W / 2, y: VIEW_H / 2, zoom: BASE_ZOOM },
     blocks: [],
+    holes: [],
+    goal: { x: 0, y: 0, w: 0, h: 0 },
     particles: [],
     scorePops: [],
     score: 0,
+    goldBankedAt: 0,
     blocksBroken: 0,
     combo: 1,
     comboTimer: 0,
+    levelIndex: 0,
+    shieldsLeft: 0,
+    scoreMult: 1,
     roundTime: 0,
-    roundDuration: ROUND_DURATION,
     shake: 0,
-    urgencyTriggered: false,
   };
 }
 
-export function startRound(state: GameState, seed = Date.now()) {
-  state.blocks = generateArena(VIEW_W, VIEW_H, seed);
+// Begins a brand new run: fresh score, shields and a level-1 arena, with
+// whatever upgrades the player has bought so far applied.
+export function startRun(state: GameState) {
+  const save = loadSave();
+  state.score = 0;
+  state.goldBankedAt = 0;
+  state.blocksBroken = 0;
+  state.scoreMult = scoreMultiplier(save.upgrades.multiplier);
+  startLevel(state, 0);
+}
+
+export function startLevel(state: GameState, levelIndex: number, seed = Date.now()) {
+  const save = loadSave();
+  const { blocks, holes, goal } = generateLevel(VIEW_W, VIEW_H, seed, levelIndex, goalSizeMultiplier(save.upgrades.goalSize));
+  state.blocks = blocks;
+  state.holes = holes;
+  state.goal = goal;
   state.ball.x = VIEW_W / 2;
   state.ball.y = VIEW_H / 2;
   state.ball.vx = 0;
   state.ball.vy = 0;
+  state.ball.radius = BASE_BALL_RADIUS + ballRadiusBonus(save.upgrades.ballSize);
   state.camera.x = VIEW_W / 2;
   state.camera.y = VIEW_H / 2;
   state.camera.zoom = BASE_ZOOM;
   state.particles = [];
   state.scorePops = [];
-  state.score = 0;
-  state.blocksBroken = 0;
   state.combo = 1;
   state.comboTimer = 0;
+  state.levelIndex = levelIndex;
+  state.shieldsLeft = save.upgrades.shield;
   state.roundTime = 0;
-  state.roundDuration = ROUND_DURATION;
   state.shake = 0;
-  state.urgencyTriggered = false;
   state.phase = 'aiming';
+}
+
+export function continueToNextLevel(state: GameState) {
+  startLevel(state, state.levelIndex + 1);
 }
 
 export function launchBall(state: GameState, angle: number) {
@@ -71,6 +96,30 @@ export function launchBall(state: GameState, angle: number) {
   state.ball.vx = Math.cos(angle) * LAUNCH_SPEED;
   state.ball.vy = Math.sin(angle) * LAUNCH_SPEED;
   state.phase = 'flying';
+}
+
+function bankGold(state: GameState) {
+  const delta = state.score - state.goldBankedAt;
+  state.goldBankedAt = state.score;
+  const earned = Math.floor(delta / GOLD_RATE);
+  if (earned <= 0) return;
+  const save = loadSave();
+  save.gold += earned;
+  saveSave(save);
+}
+
+function triggerGameOver(state: GameState) {
+  bankGold(state);
+  state.ball.vx = 0;
+  state.ball.vy = 0;
+  state.phase = 'gameOver';
+}
+
+function triggerLevelComplete(state: GameState) {
+  bankGold(state);
+  state.ball.vx = 0;
+  state.ball.vy = 0;
+  state.phase = 'levelComplete';
 }
 
 function spawnBreakEffect(state: GameState, x: number, y: number, color: string, value: number, combo: number) {
@@ -119,19 +168,34 @@ function resolveBlockCollision(state: GameState, block: Block, audio?: AudioEngi
     else state.combo = 1;
     state.comboTimer = COMBO_WINDOW;
 
-    const points = (LEVEL_POINTS[block.maxLevel] ?? 10) * state.combo;
+    const points = Math.round((LEVEL_POINTS[block.maxLevel] ?? 10) * state.combo * state.scoreMult);
     state.score += points;
     state.blocksBroken += 1;
     state.shake = Math.min(1, state.shake + 0.25);
 
     const cx = block.x + block.w / 2;
     const cy = block.y + block.h / 2;
-    const color = block.maxLevel >= 3 ? '#ffd23f' : block.maxLevel === 2 ? '#ff3fb0' : '#2fe6ff';
+    const color = block.maxLevel >= 3 ? '#4b4f58' : block.maxLevel === 2 ? '#9aa0ab' : '#e4e6ea';
     spawnBreakEffect(state, cx, cy, color, points, state.combo);
-    audio?.onBreak(block.maxLevel, state.combo);
+    audio?.onBreak(block.maxLevel);
   }
 
   return true;
+}
+
+function crossesHole(state: GameState, edge: Edge, coord: number): boolean {
+  return state.holes.some((h) => h.edge === edge && coord >= h.from && coord <= h.to);
+}
+
+// Returns true if the ball should bounce off this edge; false means it fell
+// through (a shield, if any, silently buys back one fall).
+function resolveEdge(state: GameState, edge: Edge, coord: number): boolean {
+  if (!crossesHole(state, edge, coord)) return true;
+  if (state.shieldsLeft > 0) {
+    state.shieldsLeft -= 1;
+    return true;
+  }
+  return false;
 }
 
 function simulateFlyingStep(state: GameState, dt: number, audio?: AudioEngine) {
@@ -140,18 +204,27 @@ function simulateFlyingStep(state: GameState, dt: number, audio?: AudioEngine) {
   ball.y += ball.vy * dt;
 
   if (ball.x - ball.radius < 0) {
+    if (!resolveEdge(state, 'left', ball.y)) return triggerGameOver(state);
     ball.x = ball.radius;
     ball.vx = Math.abs(ball.vx);
   } else if (ball.x + ball.radius > VIEW_W) {
+    if (!resolveEdge(state, 'right', ball.y)) return triggerGameOver(state);
     ball.x = VIEW_W - ball.radius;
     ball.vx = -Math.abs(ball.vx);
   }
   if (ball.y - ball.radius < 0) {
+    if (!resolveEdge(state, 'top', ball.x)) return triggerGameOver(state);
     ball.y = ball.radius;
     ball.vy = Math.abs(ball.vy);
   } else if (ball.y + ball.radius > VIEW_H) {
+    if (!resolveEdge(state, 'bottom', ball.x)) return triggerGameOver(state);
     ball.y = VIEW_H - ball.radius;
     ball.vy = -Math.abs(ball.vy);
+  }
+
+  const g = state.goal;
+  if (ball.x > g.x && ball.x < g.x + g.w && ball.y > g.y && ball.y < g.y + g.h) {
+    return triggerLevelComplete(state);
   }
 
   for (const block of state.blocks) {
@@ -159,11 +232,11 @@ function simulateFlyingStep(state: GameState, dt: number, audio?: AudioEngine) {
   }
 }
 
-// Camera zooms out to show the whole arena while aiming/title/round-end, and
-// zooms in to follow the ball while it's flying, clamped so the visible
-// window never shows past the arena's true bounds — exponential smoothing
-// (framerate-independent) instead of a linear lerp so it still feels right
-// under a jittery dt.
+// Camera zooms out to show the whole arena while aiming/title/shop/
+// level-complete/game-over, and zooms in to follow the ball while it's
+// flying, clamped so the visible window never shows past the arena's true
+// bounds — exponential smoothing (framerate-independent) instead of a
+// linear lerp so it still feels right under a jittery dt.
 function updateCamera(state: GameState, dt: number) {
   const cam = state.camera;
   const targetZoom = state.phase === 'flying' ? FOLLOW_ZOOM : BASE_ZOOM;
@@ -220,17 +293,11 @@ export function update(state: GameState, dt: number, input: InputState, audio?: 
       remaining -= step;
     }
 
-    state.roundTime += dt;
-    if (!state.urgencyTriggered && state.roundDuration - state.roundTime <= URGENCY_WINDOW) {
-      state.urgencyTriggered = true;
-      audio?.onUrgency();
-    }
-    if (state.roundTime >= state.roundDuration) {
-      state.roundTime = state.roundDuration;
-      state.ball.vx = 0;
-      state.ball.vy = 0;
-      state.phase = 'roundEnd';
-      audio?.onRoundEnd();
+    if (state.phase === 'flying') {
+      state.roundTime += dt;
+      if (state.roundTime >= MAX_PHASE_TIME) {
+        triggerGameOver(state);
+      }
     }
   }
 

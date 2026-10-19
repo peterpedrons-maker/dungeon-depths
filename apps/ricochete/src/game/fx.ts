@@ -1,10 +1,10 @@
 // ─── GSAP-driven HUD "juice" ─────────────────────────────────────────────────
-// Pure DOM/React-overlay polish — title/round-end entrances, a smoothly
-// tweened score counter, combo punches, urgency pulses, tap feedback. This
-// never touches the canvas: the game's own RAF loop (engine.ts/render.ts)
-// stays the single source of truth for gameplay timing. GSAP only animates
-// the HTML overlay sitting on top of it, which until now just snapped
-// between states with bare Tailwind classes.
+// Pure DOM/React-overlay polish — title/result-screen entrances, a smoothly
+// tweened score counter, combo punches, tap feedback. This never touches the
+// canvas: the game's own RAF loop (engine.ts/render.ts) stays the single
+// source of truth for gameplay timing. GSAP only animates the HTML overlay
+// sitting on top of it, which until now just snapped between states with
+// bare Tailwind classes.
 
 import gsap from 'gsap';
 
@@ -42,16 +42,6 @@ export function tapPunch(el: Element | null) {
   gsap.fromTo(el, { scale: 0.86 }, { scale: 1, duration: 0.4, ease: 'elastic.out(1, 0.5)' });
 }
 
-export function startUrgencyPulse(el: Element | null): gsap.core.Tween | null {
-  if (!el) return null;
-  return gsap.to(el, { opacity: 0.35, duration: 0.3, repeat: -1, yoyo: true, ease: 'power1.inOut' });
-}
-
-export function stopUrgencyPulse(tween: gsap.core.Tween | null, el: Element | null) {
-  tween?.kill();
-  if (el) gsap.set(el, { opacity: 1 });
-}
-
 export function slideDownIn(el: Element | null) {
   if (!el) return;
   gsap.fromTo(el, { y: -24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out' });
@@ -85,16 +75,19 @@ export function idlePulse(el: Element | null): gsap.core.Tween | null {
   return gsap.to(el, { scale: 1.05, duration: 0.85, repeat: -1, yoyo: true, ease: 'sine.inOut' });
 }
 
-interface RoundEndRefs {
-  flag: Element | null;
+interface ResultRefs {
+  icon: Element | null;
   heading: Element | null;
   scoreWrap: Element | null;
-  blocksLine: Element | null;
+  detailLine: Element | null;
   button: Element | null;
 }
 
-export function roundEndEntrance(
-  refs: RoundEndRefs,
+// Shared entrance for the level-complete and game-over screens: icon bounces
+// in, heading/score/detail stagger in, score counts up from zero, button
+// last.
+export function resultEntrance(
+  refs: ResultRefs,
   scoreObj: { value: number },
   finalScore: number,
   onScoreUpdate: (rounded: number) => void,
@@ -102,11 +95,11 @@ export function roundEndEntrance(
   scoreObj.value = 0;
   onScoreUpdate(0);
   const tl = gsap.timeline();
-  tl.fromTo(refs.flag, { y: -60, opacity: 0, rotate: -15 }, { y: 0, opacity: 1, rotate: 0, duration: 0.5, ease: 'bounce.out' })
+  tl.fromTo(refs.icon, { y: -60, opacity: 0, rotate: -15 }, { y: 0, opacity: 1, rotate: 0, duration: 0.5, ease: 'bounce.out' })
     .fromTo(refs.heading, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3 }, '-=0.15')
     .fromTo(refs.scoreWrap, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' }, '-=0.1')
     .to(scoreObj, { value: finalScore, duration: 0.9, ease: 'power2.out', onUpdate: () => onScoreUpdate(Math.round(scoreObj.value)) }, '-=0.1')
-    .fromTo(refs.blocksLine, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3 }, '-=0.3')
+    .fromTo(refs.detailLine, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3 }, '-=0.3')
     .fromTo(refs.button, { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(3)' }, '-=0.1');
   return tl;
 }

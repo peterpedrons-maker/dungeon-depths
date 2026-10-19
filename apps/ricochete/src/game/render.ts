@@ -1,9 +1,9 @@
 // ─── Rendering ───────────────────────────────────────────────────────────────
 // Pure draw code — reads GameState, never mutates it (except the ball-trail
 // buffer kept locally here, which is a visual-only artifact, not game state).
-// Everything world-space (blocks, ball, trail, particles, score pops) is
-// drawn inside the camera transform, so it pans/zooms as one piece; the
-// vignette is screen-space and drawn after the transform is popped.
+// Everything world-space (blocks, goal, holes, ball, trail, particles, score
+// pops) is drawn inside the camera transform, so it pans/zooms as one piece;
+// the vignette is screen-space and drawn after the transform is popped.
 
 import { LEVEL_COLOR } from './arena';
 import { GameState } from './types';
@@ -30,7 +30,7 @@ export function render(
     ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
   }
 
-  ctx.fillStyle = '#07060d';
+  ctx.fillStyle = '#0a0a0c';
   ctx.fillRect(0, 0, viewW, viewH);
 
   const cam = state.camera;
@@ -53,7 +53,9 @@ export function render(
     ctx.stroke();
   }
 
+  drawGoal(ctx, state);
   drawBlocks(ctx, state);
+  drawHoles(ctx, state, viewW, viewH);
   drawTrail(ctx, state);
   drawBall(ctx, state);
   if (state.phase === 'aiming') drawAimLine(ctx, state, aimAngle);
@@ -65,9 +67,63 @@ export function render(
   drawVignette(ctx, viewW, viewH);
 }
 
+function drawGoal(ctx: CanvasRenderingContext2D, state: GameState) {
+  const g = state.goal;
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 500);
+
+  ctx.save();
+  const grad = ctx.createLinearGradient(g.x, g.y, g.x, g.y + g.h);
+  grad.addColorStop(0, `rgba(228,230,234,${0.05 + pulse * 0.08})`);
+  grad.addColorStop(1, `rgba(228,230,234,${0.16 + pulse * 0.1})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(g.x, g.y, g.w, g.h);
+
+  ctx.strokeStyle = `rgba(228,230,234,${0.3 + pulse * 0.25})`;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 8]);
+  ctx.strokeRect(g.x + 1, g.y + 1, g.w - 2, g.h - 2);
+  ctx.setLineDash([]);
+
+  ctx.globalAlpha = 0.55 + pulse * 0.25;
+  ctx.fillStyle = '#e4e6ea';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SAÍDA', g.x + g.w / 2, g.y + g.h / 2 + 4);
+  ctx.restore();
+}
+
+function drawHoles(ctx: CanvasRenderingContext2D, state: GameState, viewW: number, viewH: number) {
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 320);
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(154,90,82,${0.55 + pulse * 0.35})`;
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = 'rgba(154,90,82,0.85)';
+  for (const h of state.holes) {
+    ctx.beginPath();
+    if (h.edge === 'top') {
+      ctx.moveTo(h.from, 1);
+      ctx.lineTo(h.to, 1);
+    } else if (h.edge === 'bottom') {
+      ctx.moveTo(h.from, viewH - 1);
+      ctx.lineTo(h.to, viewH - 1);
+    } else if (h.edge === 'left') {
+      ctx.moveTo(1, h.from);
+      ctx.lineTo(1, h.to);
+    } else {
+      ctx.moveTo(viewW - 1, h.from);
+      ctx.lineTo(viewW - 1, h.to);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawBlocks(ctx: CanvasRenderingContext2D, state: GameState) {
   for (const b of state.blocks) {
-    const color = LEVEL_COLOR[b.maxLevel] ?? '#2fe6ff';
+    const color = LEVEL_COLOR[b.maxLevel] ?? '#9aa0ab';
     const damageRatio = b.level / b.maxLevel;
 
     ctx.globalAlpha = 0.3 + 0.7 * damageRatio;
@@ -109,7 +165,7 @@ function drawBlocks(ctx: CanvasRenderingContext2D, state: GameState) {
     }
 
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
     ctx.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
   }
 }
@@ -124,13 +180,13 @@ function drawTrail(ctx: CanvasRenderingContext2D, state: GameState) {
 
   ctx.save();
   ctx.shadowBlur = 10;
-  ctx.shadowColor = 'rgba(47,230,255,0.7)';
+  ctx.shadowColor = 'rgba(228,230,234,0.65)';
   for (let i = 0; i < trail.length; i++) {
     const t = trail[i];
     const ratio = (i + 1) / trail.length;
     ctx.beginPath();
     ctx.arc(t.x, t.y, state.ball.radius * (0.3 + 0.5 * ratio), 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(47,230,255,${ratio * 0.35})`;
+    ctx.fillStyle = `rgba(228,230,234,${ratio * 0.32})`;
     ctx.fill();
   }
   ctx.restore();
@@ -140,12 +196,12 @@ function drawBall(ctx: CanvasRenderingContext2D, state: GameState) {
   const b = state.ball;
   const gradient = ctx.createRadialGradient(b.x - 3, b.y - 3, 1, b.x, b.y, b.radius);
   gradient.addColorStop(0, '#ffffff');
-  gradient.addColorStop(0.45, '#d8e4ff');
-  gradient.addColorStop(1, '#5c6a8a');
+  gradient.addColorStop(0.45, '#d8dce3');
+  gradient.addColorStop(1, '#5c6168');
 
   ctx.save();
-  ctx.shadowBlur = 18;
-  ctx.shadowColor = 'rgba(47,230,255,0.95)';
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = 'rgba(228,230,234,0.9)';
   ctx.beginPath();
   ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
   ctx.fillStyle = gradient;
@@ -164,7 +220,7 @@ function drawAimLine(ctx: CanvasRenderingContext2D, state: GameState, angle: num
   const tipY = b.y + Math.sin(angle) * len;
 
   ctx.save();
-  ctx.strokeStyle = '#2fe6ff';
+  ctx.strokeStyle = '#cfd3db';
   ctx.lineWidth = 3;
   ctx.setLineDash([8, 10]);
   ctx.beginPath();
@@ -175,7 +231,7 @@ function drawAimLine(ctx: CanvasRenderingContext2D, state: GameState, angle: num
 
   ctx.beginPath();
   ctx.arc(tipX, tipY, 5, 0, Math.PI * 2);
-  ctx.fillStyle = '#2fe6ff';
+  ctx.fillStyle = '#cfd3db';
   ctx.fill();
   ctx.restore();
 }
@@ -201,7 +257,7 @@ function drawScorePops(ctx: CanvasRenderingContext2D, state: GameState) {
   ctx.font = 'bold 20px sans-serif';
   for (const s of state.scorePops) {
     ctx.globalAlpha = Math.max(0, s.life / 0.7);
-    const color = s.combo > 1 ? '#39ff88' : '#ffffff';
+    const color = s.combo > 1 ? '#c9a86a' : '#e4e6ea';
     ctx.shadowBlur = 10;
     ctx.shadowColor = color;
     ctx.fillStyle = color;
