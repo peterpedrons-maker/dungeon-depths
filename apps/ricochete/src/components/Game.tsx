@@ -39,7 +39,7 @@ function snapshot(s: GameState): Hud {
   };
 }
 
-const COMBO_FLASH_COLOR: Record<number, string> = { 1: '#9aa0ab', 2: '#c9a86a', 3: '#e4e6ea' };
+const COMBO_FLASH_COLOR: Record<number, string> = { 1: '#2ee6ff', 2: '#8b5cf6', 3: '#ff2d95' };
 
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -279,7 +279,7 @@ export function Game() {
           <div className="mx-auto flex max-w-sm items-center justify-between gap-2">
             <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-gold">★ {scoreDisplay}</div>
             {hud.combo > 1 && (
-              <div ref={comboBadgeRef} className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-steel1">
+              <div ref={comboBadgeRef} className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-neon2">
                 x{hud.combo} combo
               </div>
             )}
@@ -308,9 +308,9 @@ export function Game() {
       )}
 
       {hud.phase === 'title' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#121214]/90 to-[#0a0a0c]/95 px-4">
-          <div ref={titleBallRef} className="mb-2 text-6xl">⚪</div>
-          <h1 ref={titleHeadingRef} className="mb-1 text-4xl font-black text-steel1">RICOCHETE</h1>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#180f2e]/90 to-[#0b0618]/95 px-4">
+          <div ref={titleBallRef} className="neon-halo mb-2 text-6xl">⚪</div>
+          <h1 ref={titleHeadingRef} className="neon-glow-cyan mb-1 text-4xl font-black text-neon1">RICOCHETE</h1>
           <p ref={titleSubtitleRef} className="mb-6 text-xs uppercase tracking-[0.2em] text-white/50">
             Quique. Sobreviva. Avance.
           </p>
@@ -318,7 +318,7 @@ export function Game() {
           <button
             ref={titlePlayBtnRef}
             onClick={startNewRun}
-            className="rounded-xl border-2 border-steel1 bg-gradient-to-b from-steel1 to-steel2 px-10 py-3.5 text-lg font-black text-void shadow-lg"
+            className="rounded-xl border-2 border-neon1 bg-gradient-to-r from-neon1 to-neon2 px-10 py-3.5 text-lg font-black text-void shadow-[0_0_24px_rgba(46,230,255,0.45)]"
           >
             ▶ Jogar
           </button>
@@ -333,10 +333,10 @@ export function Game() {
       )}
 
       {hud.phase === 'shop' && (
-        <div className="absolute inset-0 flex flex-col items-center overflow-y-auto bg-gradient-to-b from-[#121214]/95 to-[#0a0a0c]/98 px-4 py-10">
+        <div className="absolute inset-0 flex flex-col items-center overflow-y-auto bg-gradient-to-b from-[#180f2e]/95 to-[#0b0618]/98 px-4 py-10">
           <div ref={shopPanelRef} className="w-full max-w-sm">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-black text-steel1">Loja</h2>
+              <h2 className="neon-glow-cyan text-2xl font-black text-neon1">Loja</h2>
               <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold text-gold">💰 {save.gold}</div>
             </div>
             <div className="flex flex-col gap-3">
@@ -348,14 +348,14 @@ export function Game() {
                 return (
                   <div key={def.id} className="rounded-xl border border-panelborder bg-panel/90 p-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-steel1">{def.name}</span>
+                      <span className="font-bold text-neon1">{def.name}</span>
                       <span className="text-xs text-white/50">{level}/{def.maxLevel}</span>
                     </div>
                     <p className="mt-1 text-xs text-white/50">{def.description}</p>
                     <button
                       onClick={buyUpgrade(def.id)}
                       disabled={maxed || !canAfford}
-                      className="mt-2 w-full rounded-lg border border-panelborder bg-steel3/40 py-2 text-sm font-bold text-steel1 disabled:opacity-40"
+                      className="mt-2 w-full rounded-lg border border-neon3/50 bg-neon3/15 py-2 text-sm font-bold text-neon1 disabled:border-panelborder disabled:bg-transparent disabled:opacity-40"
                     >
                       {maxed ? 'Máximo' : `Comprar — 💰 ${cost}`}
                     </button>
@@ -363,7 +363,7 @@ export function Game() {
                 );
               })}
             </div>
-            <button onClick={closeShop} className="mt-6 w-full rounded-xl border-2 border-steel2 py-3 font-black text-steel1">
+            <button onClick={closeShop} className="mt-6 w-full rounded-xl border-2 border-neon3 py-3 font-black text-neon1">
               Voltar
             </button>
           </div>
@@ -375,7 +375,11 @@ export function Game() {
           <div ref={resultIconRef} className="mb-2 text-6xl">
             {hud.phase === 'levelComplete' ? '🏁' : '🕳️'}
           </div>
-          <h2 ref={resultHeadingRef} className="mb-1 text-3xl font-black text-steel1">
+          <h2
+            ref={resultHeadingRef}
+            className={`mb-1 text-3xl font-black ${hud.phase === 'levelComplete' ? 'neon-glow-cyan text-neon1' : 'text-danger'}`}
+            style={hud.phase === 'gameOver' ? { textShadow: '0 0 8px rgba(255,77,77,0.85), 0 0 24px rgba(255,77,77,0.45)' } : undefined}
+          >
             {hud.phase === 'levelComplete' ? `Fase ${hud.levelIndex + 1} concluída!` : 'Você caiu!'}
           </h2>
           <p ref={resultScoreWrapRef} className="mb-1 text-2xl font-black text-white">{resultScoreDisplay} pontos</p>
@@ -385,7 +389,7 @@ export function Game() {
           <button
             ref={resultButtonRef}
             onClick={hud.phase === 'levelComplete' ? continueLevel : startNewRun}
-            className="rounded-xl border-2 border-steel1 bg-gradient-to-b from-steel1 to-steel2 px-8 py-3 font-black text-void"
+            className="rounded-xl border-2 border-neon1 bg-gradient-to-r from-neon1 to-neon2 px-8 py-3 font-black text-void shadow-[0_0_24px_rgba(46,230,255,0.4)]"
           >
             {hud.phase === 'levelComplete' ? 'Continuar' : 'Jogar de novo'}
           </button>

@@ -28,8 +28,8 @@ function mulberry32(seed: number) {
 }
 
 export const LEVEL_POINTS: Record<number, number> = { 1: 10, 2: 25, 3: 50 };
-// Neutral monochrome "brushed metal" tiers — darker reads as tougher.
-export const LEVEL_COLOR: Record<number, string> = { 1: '#e4e6ea', 2: '#9aa0ab', 3: '#4b4f58' };
+// Synthwave trio — cool cyan reads as weak, hot magenta as the toughest.
+export const LEVEL_COLOR: Record<number, string> = { 1: '#2ee6ff', 2: '#8b5cf6', 3: '#ff2d95' };
 
 export interface GeneratedLevel {
   blocks: Block[];

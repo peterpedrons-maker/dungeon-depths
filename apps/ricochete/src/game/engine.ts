@@ -11,7 +11,7 @@
 // block (or a hole) in a single frame.
 
 import { AudioEngine } from './audio';
-import { generateLevel, LEVEL_POINTS } from './arena';
+import { generateLevel, LEVEL_COLOR, LEVEL_POINTS } from './arena';
 import { ballRadiusBonus, loadSave, saveSave, scoreMultiplier, GOLD_RATE } from './progression';
 import { Block, Edge, GameState } from './types';
 import { InputState } from './input';
@@ -175,7 +175,7 @@ function resolveBlockCollision(state: GameState, block: Block, audio?: AudioEngi
 
     const cx = block.x + block.w / 2;
     const cy = block.y + block.h / 2;
-    const color = block.maxLevel >= 3 ? '#4b4f58' : block.maxLevel === 2 ? '#9aa0ab' : '#e4e6ea';
+    const color = LEVEL_COLOR[block.maxLevel] ?? LEVEL_COLOR[1];
     spawnBreakEffect(state, cx, cy, color, points, state.combo);
     audio?.onBreak(block.maxLevel);
   }
