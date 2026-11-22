@@ -5,10 +5,7 @@ para a convenção usada ao adicionar um novo jogo.
 
 ## Jogos publicados
 
-| Jogo | Pasta | Link |
-|---|---|---|
-| Dungeon Depths | `apps/dungeon-depths/` | https://peterpedrons-maker.github.io/dungeon-depths/ |
-| Reino & Masmorras | `apps/reino-e-masmorras/` | https://peterpedrons-maker.github.io/dungeon-depths/reino-e-masmorras/ |
+Nenhum no momento — `apps/` está vazio, aguardando um projeto novo.
 
 ## Rodando localmente
 
