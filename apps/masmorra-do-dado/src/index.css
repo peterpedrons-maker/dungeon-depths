@@ -37,7 +37,7 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
 @keyframes cap { 0% { opacity: 0; transform: translateY(6px); } 8%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 
 .hint { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font-size: 12px; pointer-events: none;
-  text-shadow: 2px 2px 0 #05040a; animation: hint 9s forwards; padding: 0 56px; }
+  text-shadow: 2px 2px 0 #05040a; animation: hint 9s forwards; padding: 0 100px; }
 .hint-touch { display: none; }
 @media (pointer: coarse) { .hint-pc { display: none; } .hint-touch { display: inline; } }
 @keyframes hint { 0%, 80% { opacity: 0.8; } 100% { opacity: 0; } }
@@ -53,4 +53,23 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
   .caption b { font-size: 14px; }
   .caption span { font-size: 11px; }
   .corner button { width: 30px; height: 30px; font-size: 16px; }
+}
+
+/* botões de toque (só em telas de toque): arremessar/recolher e girar o dado */
+.touchbtns { display: none; position: absolute; right: 14px; bottom: 14px; flex-direction: column; align-items: flex-end; gap: 10px; }
+@media (pointer: coarse) { .touchbtns { display: flex; } }
+.touchbtns button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+  font: inherit; font-weight: bold; letter-spacing: 1px; color: #efe6d0; cursor: pointer; touch-action: none;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  background: rgba(26, 22, 36, 0.82); border: 3px solid rgba(239, 230, 208, 0.55); box-shadow: 3px 3px 0 #05040a; }
+.touchbtns button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #05040a; background: rgba(58, 51, 80, 0.9); }
+.touchbtns .ico { font-size: 24px; line-height: 1; }
+.touchbtns span:last-child { font-size: 10px; }
+.btn-throw { width: 92px; height: 70px; border-color: #5be7ff !important; }
+.btn-rotate { width: 92px; height: 54px; flex-direction: row !important; gap: 8px !important; }
+.btn-rotate .ico { font-size: 20px; }
+@media (max-height: 420px) {
+  .btn-throw { width: 84px; height: 60px; }
+  .btn-rotate { width: 84px; height: 46px; }
+  .touchbtns { gap: 8px; right: 10px; bottom: 10px; }
 }

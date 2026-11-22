@@ -17,6 +17,7 @@ export default function App() {
   const [caption, setCaption] = useState<Caption | null>(null);
   const [complete, setComplete] = useState<{ gem: boolean } | null>(null);
   const [hint, setHint] = useState(true);
+  const [dieOut, setDieOut] = useState(false);
   const captionTimer = useRef(0);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function App() {
         captionTimer.current = window.setTimeout(() => setCaption(null), 2600);
       },
       onComplete: setComplete,
+      onDie: (st) => setDieOut(st !== 'hand'),
     });
     sceneRef.current = scene;
     const hintTimer = window.setTimeout(() => setHint(false), 9000);
@@ -84,7 +86,34 @@ export default function App() {
       {hint && (
         <div className="hint">
           <span className="hint-pc">clique: arremessar / recolher · 1–6 ou roda do mouse: face · WASD: andar · R: reiniciar</span>
-          <span className="hint-touch">toque: arremessar / recolher · deslize no dado: trocar face · esquerda: andar</span>
+          <span className="hint-touch">botões à direita: arremessar e girar o dado · esquerda: andar · arraste pra olhar</span>
+        </div>
+      )}
+
+      {!complete && (
+        <div className="touchbtns">
+          <button
+            className="btn-rotate"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              sceneRef.current?.rotate();
+            }}
+            aria-label="Girar o dado"
+          >
+            <span className="ico">↻</span>
+            <span>GIRAR</span>
+          </button>
+          <button
+            className="btn-throw"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              sceneRef.current?.action();
+            }}
+            aria-label={dieOut ? 'Recolher o dado' : 'Arremessar o dado'}
+          >
+            <span className="ico">{dieOut ? '↩' : '⤴'}</span>
+            <span>{dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
+          </button>
         </div>
       )}
 

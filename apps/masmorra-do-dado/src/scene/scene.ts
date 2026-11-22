@@ -53,9 +53,12 @@ export interface SceneOptions {
   onStick?: (s: StickState) => void;
   onCaption?: (title: string, sub: string, color: string) => void;
   onComplete?: (info: { gem: boolean }) => void;
+  onDie?: (state: 'hand' | 'flying' | 'rest') => void;
 }
 
 export interface SceneApi {
+  action(): void; // arremessa ou recolhe
+  rotate(): void; // próxima face
   reset(): void;
   dispose(): void;
 }
@@ -570,9 +573,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // ── entrada ─────────────────────────────────────────────────────────────
   // PC: WASD anda, arrastar o mouse olha, clique arremessa/recolhe, 1–6 ou a
   // roda do mouse trocam a face, R reinicia a sala.
-  // Celular (horizontal): metade esquerda = analógico, direita = olhar; toque
-  // curto (em qualquer lugar) arremessa/recolhe; deslizar na vertical sobre o
-  // dado (canto inferior direito) troca a face.
+  // Celular (horizontal): metade esquerda = analógico, direita = olhar; dois
+  // botões na tela (arremessar/recolher e girar o dado) fazem o resto.
   let yaw = 0;
   let pitch = -0.04;
   const START = new THREE.Vector3(0, 1.6, 1.2);
@@ -606,11 +608,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let downX = 0;
   let downY = 0;
   let moved = false;
-  // Gesto que começa em cima do dado (celular): deslize vertical troca a face;
-  // só vira "olhar" se o dedo for mais pra um dos lados.
-  let gesture: 'look' | 'undecided' | 'swiped' = 'look';
-  let stickDownT = 0;
-  let stickMoved = false;
   let stickOx = 0;
   let stickOy = 0;
   let stickX = 0;
@@ -621,15 +618,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const onDown = (e: PointerEvent) => {
     const rect = canvas.getBoundingClientRect();
     const rx = (e.clientX - rect.left) / rect.width;
-    const ry = (e.clientY - rect.top) / rect.height;
     if (e.pointerType !== 'mouse' && rx < 0.42 && stickId === -1) {
       stickId = e.pointerId;
       stickOx = e.clientX;
       stickOy = e.clientY;
       stickX = 0;
       stickY = 0;
-      stickDownT = performance.now();
-      stickMoved = false;
       emitStick(true);
     } else if (lookId === -1) {
       lookId = e.pointerId;
@@ -637,7 +631,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       lastY = downY = e.clientY;
       downT = performance.now();
       moved = false;
-      gesture = e.pointerType !== 'mouse' && rx > 0.66 && ry > 0.5 ? 'undecided' : 'look';
     } else {
       return;
     }
@@ -648,27 +641,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const dx = e.clientX - downX;
       const dy = e.clientY - downY;
       if (Math.hypot(dx, dy) > 8) moved = true;
-      if (gesture === 'undecided' && Math.hypot(dx, dy) > 16) {
-        if (Math.abs(dy) > Math.abs(dx) * 1.2) {
-          gesture = 'swiped';
-          cycleFace(dy < 0 ? 1 : -1);
-        } else {
-          gesture = 'look';
-        }
-        lastX = e.clientX;
-        lastY = e.clientY;
-        return;
-      }
-      if (gesture === 'look') {
-        yaw -= (e.clientX - lastX) * 0.006;
-        pitch = Math.max(-0.7, Math.min(0.7, pitch - (e.clientY - lastY) * 0.006));
-      }
+      yaw -= (e.clientX - lastX) * 0.006;
+      pitch = Math.max(-0.7, Math.min(0.7, pitch - (e.clientY - lastY) * 0.006));
       lastX = e.clientX;
       lastY = e.clientY;
     } else if (e.pointerId === stickId) {
       let dx = (e.clientX - stickOx) / STICK_R;
       let dy = (e.clientY - stickOy) / STICK_R;
-      if (Math.hypot(dx, dy) * STICK_R > 10) stickMoved = true;
       const len = Math.hypot(dx, dy);
       if (len > 1) {
         dx /= len;
@@ -682,15 +661,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const onUp = (e: PointerEvent) => {
     if (e.pointerId === lookId) {
       lookId = -1;
-      // toque curto, em qualquer lugar: arremessa (ou recolhe o dado)
-      if (e.type === 'pointerup' && !moved && performance.now() - downT < 350) action();
+      // mouse: clique curto arremessa/recolhe (no celular são os botões)
+      if (e.pointerType === 'mouse' && e.type === 'pointerup' && !moved && performance.now() - downT < 350) action();
     }
     if (e.pointerId === stickId) {
       stickId = -1;
       stickX = 0;
       stickY = 0;
       emitStick(false);
-      if (e.type === 'pointerup' && !stickMoved && performance.now() - stickDownT < 350) action();
     }
   };
   canvas.addEventListener('pointerdown', onDown);
@@ -756,6 +734,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let last = performance.now();
   let t = 0;
   let bob = 0;
+  let emittedDie: DieState | null = null;
   const loop = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -801,6 +780,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     if (dieState !== 'rest') plateDown = false;
+
+    if (dieState !== emittedDie) {
+      emittedDie = dieState;
+      opts.onDie?.(dieState);
+    }
 
     // ── porta, lâmpadas, braseiro ──
     const wantOpen = plateDown && lit ? 1 : 0;
@@ -885,6 +869,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   }
 
   return {
+    action,
+    rotate: () => cycleFace(1),
     reset,
     dispose() {
       cancelAnimationFrame(raf);
