@@ -306,7 +306,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   scene.add(worldDie);
 
   // visto de cima e de frente, girando devagar em torno do eixo vertical
-  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.95, -0.55, 0));
+  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.8, 0, 0));
   const targetQ = new THREE.Quaternion();
   const curQ = new THREE.Quaternion();
   const wobble = new THREE.Quaternion();
@@ -554,7 +554,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
     dieScaleBase = Math.min(0.17, halfW * 0.5);
-    dieBaseY = aspect < 1 ? -0.1 : -0.13;
+    dieBaseY = aspect < 1 ? -0.12 : -0.16;
     dieGroup.position.set(Math.min(halfW * 0.4, 0.44), dieBaseY, -1);
   };
   resize();
@@ -829,7 +829,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateMats();
     computeTarget(face, spin);
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
-    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.03, 0, Math.sin(t * 0.8) * 0.03));
+    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012, 0, Math.sin(t * 0.8) * 0.012));
     dieHolder.quaternion.copy(curQ).multiply(wobble);
     dieGroup.position.y = dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0);
     dieCam.position.set(0, 0, 0);
