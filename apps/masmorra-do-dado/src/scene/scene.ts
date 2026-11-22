@@ -64,6 +64,7 @@ export interface SceneOptions {
 
 export interface SceneApi {
   action(): void; // arremessa ou recolhe
+  place(): void; // posiciona o dado com cuidado onde a mira aponta
   rotate(): void; // próxima face
   reset(): void;
   mark(): void; // risca o símbolo atual onde a mira aponta
@@ -110,7 +111,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     '#4a1020', '#a02840', '#ff4d6d',
     '#1a3a30', '#3a7a62', '#7fffb0',
     '#4a3a7a', '#7a5ab0', '#b18cff',
-    '#a04a70', '#ff7fb0',
     '#5e7068', '#7f958c', '#a9bdb2', '#e9f0e6',
     '#ffffff',
   ];
@@ -336,6 +336,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.32, 0.3, 8), lambert(null, 0x3a3a46));
   bowl.position.set(2.9, 0.95, -9.2);
   scene.add(bowl);
+  markSurfaces.push(bowl);
   const BOWL = new THREE.Vector3(2.9, 1.15, -9.2);
   const brazierFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5, depthWrite: false }));
   brazierFlame.scale.set(0.75, 0.6, 1);
@@ -470,6 +471,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   worldDie.add(worldModel);
   worldDie.visible = false;
   scene.add(worldDie);
+  // "fantasma" do dado: mostra onde ele ficaria se for posicionado
+  const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false, fog: false });
+  const ghost = new THREE.Mesh(dieGeo, ghostMat);
+  ghost.scale.setScalar(0.42);
+  ghost.visible = false;
+  scene.add(ghost);
 
   // visto de cima e de frente, girando devagar em torno do eixo vertical
   const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.8, 0, 0));
@@ -490,6 +497,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   let face = 1; // face escolhida (virada pra cima no HUD)
   let thrownFace = 1; // face do dado que está lá fora
+  let dieThrown = true; // false = foi posicionado (não pega a gema)
   let handDim = 0; // 0 = dado na mão, 1 = dado lá fora
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
@@ -774,6 +782,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const throwDie = () => {
     if (dieState !== 'hand' || complete) return;
     thrownFace = face;
+    dieThrown = true;
     updateMats();
     const ph = PHYS[face] ?? PHYS[1];
     camera.getWorldDirection(fwdV);
@@ -787,6 +796,46 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     worldDie.visible = true;
     dieState = 'flying';
     restTimer = 0;
+  };
+
+  // Posicionar: em vez de arremessar, o jogador coloca o dado com cuidado no ponto
+  // que a mira aponta (alcance curto). Serve pra apertar placa e acender o braseiro
+  // com precisão — mas o dado "posicionado" não pega a gema escondida: pra ela
+  // ainda é preciso arremessar (ricochete).
+  const PLACE_RANGE = 3.2;
+  const aimPoint = (): { p: THREE.Vector3; n: THREE.Vector3 } | null => {
+    camera.updateMatrixWorld();
+    ray.setFromCamera(ndc0, camera);
+    ray.far = PLACE_RANGE;
+    const hit = ray.intersectObjects(markSurfaces, false)[0];
+    if (!hit || !hit.face) return null;
+    return { p: hit.point, n: hit.face.normal.clone().transformDirection(hit.object.matrixWorld) };
+  };
+  const placeDie = () => {
+    if (dieState !== 'hand' || complete) return;
+    const a = aimPoint();
+    if (!a) {
+      caption('Longe demais', 'Aponte para o chão ou uma superfície mais perto.', '#cfc6e8');
+      return;
+    }
+    thrownFace = face;
+    dieThrown = false;
+    updateMats();
+    dieP.copy(a.p).addScaledVector(a.n, R + 0.02);
+    dieP.x = clamp(dieP.x, ROOM.x0 + R, ROOM.x1 - R);
+    dieP.z = clamp(dieP.z, ROOM.z0 + R + 0.04, ROOM.z1 - R);
+    dieV.set(0, 0, 0);
+    dieW.set(0, 0, 0);
+    worldDie.position.copy(dieP);
+    worldDie.quaternion.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
+    worldDie.visible = true;
+    dieState = 'flying';
+    restTimer = 0;
+  };
+
+  const place = () => {
+    if (dieState === 'hand') placeDie();
+    else recall();
   };
 
   const action = () => {
@@ -868,6 +917,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       action();
     } else if (k === 'e') recall();
     else if (k === 'r') reset();
+    else if (k === 'g') place();
     else if (k === 'q') mark();
     else if (k === 'c') nextSymbol();
     else if (k === 'z') eraseAimed();
@@ -898,6 +948,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
 
   const onDown = (e: PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button === 2) {
+      place(); // botão direito do mouse
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     const rx = (e.clientX - rect.left) / rect.width;
     if (e.pointerType !== 'mouse' && rx < 0.42 && stickId === -1) {
@@ -953,6 +1007,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       emitStick(false);
     }
   };
+  const onContext = (e: Event) => e.preventDefault();
+  canvas.addEventListener('contextmenu', onContext);
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);
@@ -1038,7 +1094,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         tmpQ.setFromAxisAngle(tmpAxis.copy(dieW).normalize(), w * dt);
         worldDie.quaternion.premultiply(tmpQ);
       }
-      if (!gemTaken && dieP.distanceTo(GEM) < 0.55) {
+      if (!gemTaken && dieThrown && dieP.distanceTo(GEM) < 0.55) {
         gemTaken = true;
         gem.visible = false;
         gemLight.intensity = 0;
@@ -1114,6 +1170,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     dustGeo.attributes.position.needsUpdate = true;
 
+    // fantasma de onde o dado seria posicionado
+    const aim = dieState === 'hand' && !complete ? aimPoint() : null;
+    ghost.visible = !!aim;
+    if (aim) {
+      ghost.position.copy(aim.p).addScaledVector(aim.n, R + 0.02);
+      ghost.rotation.y = t * 0.8;
+      ghostMat.color.copy(accentLight.color);
+    }
+
     // dado na mão: gira até a face escolhida, balança e "pulsa" ao voltar
     handPop = Math.max(0, handPop - dt * 4);
     dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3));
@@ -1165,6 +1230,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       face: (n: number) => selectFace(n),
       mark: () => mark(),
+      put: () => place(),
       marks: () => marks.length,
       act: () => action(),
       reset: () => reset(),
@@ -1174,6 +1240,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   return {
     action,
     rotate: () => cycleFace(1),
+    place,
     reset,
     mark,
     nextSymbol,
@@ -1185,6 +1252,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('contextmenu', onContext);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);

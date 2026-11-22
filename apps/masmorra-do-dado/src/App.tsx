@@ -87,8 +87,8 @@ export default function App() {
 
       {hint && (
         <div className="hint">
-          <span className="hint-pc">clique: arremessar / recolher · 1–6 ou roda: face · Q: riscar · C: símbolo · Z: apagar · X: apagar tudo · WASD: andar</span>
-          <span className="hint-touch">botões à direita: arremessar e girar o dado · esquerda: andar · arraste pra olhar</span>
+          <span className="hint-pc">clique: arremessar · botão direito ou G: posicionar · E: recolher · 1–6 ou roda: face · Q: riscar · C: símbolo · Z: apagar · X: apagar tudo · WASD: andar</span>
+          <span className="hint-touch">à direita: arremessar, posicionar e girar · esquerda: andar · arraste: olhar</span>
         </div>
       )}
 
@@ -105,6 +105,19 @@ export default function App() {
             <span className="ico">↻</span>
             <span>GIRAR</span>
           </button>
+          {!dieOut && (
+            <button
+              className="btn-place"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                sceneRef.current?.place();
+              }}
+              aria-label="Posicionar o dado onde a mira aponta"
+            >
+              <span className="ico">⌖</span>
+              <span>POSICIONAR</span>
+            </button>
+          )}
           <button
             className="btn-throw"
             onPointerDown={(e) => {

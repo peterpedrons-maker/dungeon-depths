@@ -30,7 +30,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   (✕ ○ ↑ △ ✓) nas paredes/chão em 3D, com apagar a marca da mira e apagar tudo (Q/C/Z/X no PC,
   4 botões no celular). Planejado: minimapa com anotações persistentes e caderno de pistas.
   Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
-  salas. Hoje existe um protótipo de UMA sala (`src/scene/`): faces Ricochete/Peso/Fogo,
+  salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
+  celular). Hoje existe um protótipo de UMA sala (`src/scene/`): faces Ricochete/Peso/Fogo,
   placa de pressão, braseiro, porta e gema escondida. Mobile só na horizontal, além de PC.
   Publicado em `/masmorra-do-dado/`.
 

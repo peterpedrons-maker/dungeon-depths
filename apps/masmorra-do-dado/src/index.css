@@ -68,9 +68,13 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
 .btn-throw { width: 92px; height: 70px; border-color: #5be7ff !important; }
 .btn-rotate { width: 92px; height: 54px; flex-direction: row !important; gap: 8px !important; }
 .btn-rotate .ico { font-size: 20px; }
+.btn-place { width: 92px; height: 54px; border-color: #ffd36b !important; }
+.btn-place .ico { font-size: 18px; }
+.btn-place span:last-child { font-size: 9px; }
 @media (max-height: 420px) {
   .btn-throw { width: 84px; height: 60px; }
-  .btn-rotate { width: 84px; height: 46px; }
+  .btn-rotate { width: 84px; height: 42px; }
+  .btn-place { width: 84px; height: 42px; }
   .touchbtns { gap: 8px; right: 10px; bottom: 10px; }
 }
 
