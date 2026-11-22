@@ -4,6 +4,7 @@
 // é ampliado sem suavização pelo CSS.
 
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
 import {
   brickTexture,
@@ -258,52 +259,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   camera.add(accentLight);
 
   // ── o dado ──────────────────────────────────────────────────────────────
-  // Obsidiana com gemas no lugar dos pontos (cada face com a cor da sua
-  // habilidade; as bloqueadas ficam apagadas) e uma armação de latão.
-  const dieMats = DIE_FACES.map((n) => {
-    const f = FACES[n - 1];
-    return new THREE.MeshLambertMaterial({
-      map: dieFaceTexture(n, f.color, !f.unlocked),
-      emissive: 0xffffff,
-      emissiveMap: dieGlowTexture(n, f.color, !f.unlocked),
-      emissiveIntensity: 0.55,
+  // Cubo arredondado de obsidiana com filete dourado e gemas no lugar dos
+  // pontos (cada face com a cor da sua habilidade; as bloqueadas ficam
+  // apagadas). A face ESCOLHIDA é sempre a que está virada pra CIMA.
+  const makeMats = () =>
+    DIE_FACES.map((n) => {
+      const f = FACES[n - 1];
+      return new THREE.MeshLambertMaterial({
+        map: dieFaceTexture(n, f.color, !f.unlocked),
+        emissive: 0xffffff,
+        emissiveMap: dieGlowTexture(n, f.color, !f.unlocked),
+        emissiveIntensity: 0.5,
+      });
     });
-  });
-  const brass = new THREE.MeshLambertMaterial({ color: 0xb8943f, emissive: 0x1c1405, flatShading: true });
-  const brassLight = new THREE.MeshLambertMaterial({ color: 0xd8b458, emissive: 0x241a06, flatShading: true });
-  const buildDie = () => {
+  const dieMats = makeMats(); // dado arremessado (dentro da sala)
+  const handMats = makeMats(); // dado do HUD: escurece enquanto o outro está fora
+  const dieGeo = new RoundedBoxGeometry(1, 1, 1, 3, 0.16);
+  const buildDie = (mats: THREE.Material[]) => {
     const g = new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), dieMats));
-    const BAR = 0.11;
-    for (let a = 0; a < 3; a++) {
-      const b = (a + 1) % 3;
-      const c = (a + 2) % 3;
-      for (const sb of [-0.5, 0.5]) {
-        for (const sc of [-0.5, 0.5]) {
-          const size: [number, number, number] = [BAR, BAR, BAR];
-          size[a] = 1 + BAR;
-          const bar = new THREE.Mesh(new THREE.BoxGeometry(...size), brass);
-          const p: [number, number, number] = [0, 0, 0];
-          p[b] = sb;
-          p[c] = sc;
-          bar.position.set(...p);
-          g.add(bar);
-        }
-      }
-    }
-    for (const sx of [-0.5, 0.5]) {
-      for (const sy of [-0.5, 0.5]) {
-        for (const sz of [-0.5, 0.5]) {
-          const corner = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.19, 0.19), brassLight);
-          corner.position.set(sx, sy, sz);
-          g.add(corner);
-        }
-      }
-    }
+    g.add(new THREE.Mesh(dieGeo, mats));
     return g;
   };
 
-  // dado na mão: cena separada, desenhada por cima da sala
+  // dado do HUD: cena separada, desenhada por cima da sala, sempre visível
   const dieScene = new THREE.Scene();
   dieScene.add(new THREE.AmbientLight(0x9a8aa8, 1.6));
   const key = new THREE.DirectionalLight(0xffe2b8, 2.2);
@@ -317,35 +295,52 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   dieScene.add(dieGroup);
   const dieHolder = new THREE.Group();
   dieGroup.add(dieHolder);
-  dieHolder.add(buildDie());
+  dieHolder.add(buildDie(handMats));
 
   // dado arremessado: vive dentro da sala, com física própria
   const worldDie = new THREE.Group();
-  const worldModel = buildDie();
+  const worldModel = buildDie(dieMats);
   worldModel.scale.setScalar(0.42);
   worldDie.add(worldModel);
   worldDie.visible = false;
   scene.add(worldDie);
 
-  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.55, -0.78, 0.04));
+  // visto de cima e de frente, girando devagar em torno do eixo vertical
+  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.95, -0.55, 0));
   const targetQ = new THREE.Quaternion();
   const curQ = new THREE.Quaternion();
   const wobble = new THREE.Quaternion();
   const wobbleEuler = new THREE.Euler();
+  const spinQ = new THREE.Quaternion();
+  const Y_AXIS = new THREE.Vector3(0, 1, 0);
   const faceQ = (n: number) => {
     const [x, y, z] = FACE_EULER[n] ?? FACE_EULER[1];
     return new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));
   };
-  let face = 1;
-  const applyFace = (n: number) => {
-    targetQ.copy(tilt).multiply(faceQ(n));
-    dieMats.forEach((m, i) => {
-      m.emissiveIntensity = DIE_FACES[i] === n ? 1.5 : 0.55;
+  // leva a face n para CIMA (+y)
+  const upQ = (n: number) => new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)).multiply(faceQ(n));
+  const computeTarget = (n: number, spin: number) =>
+    targetQ.copy(tilt).multiply(spinQ.setFromAxisAngle(Y_AXIS, spin)).multiply(upQ(n));
+
+  let face = 1; // face escolhida (virada pra cima no HUD)
+  let thrownFace = 1; // face do dado que está lá fora
+  let handDim = 0; // 0 = dado na mão, 1 = dado lá fora
+  const updateMats = () => {
+    DIE_FACES.forEach((n, i) => {
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim);
+      handMats[i].color.setScalar(1 - 0.5 * handDim);
+      dieMats[i].emissiveIntensity = n === thrownFace ? 1.4 : 0.5;
     });
+  };
+  const applyFace = (n: number) => {
+    face = n;
+    updateMats();
     accentLight.color.set(FACES[n - 1]?.color ?? '#ffffff');
   };
   applyFace(1);
+  computeTarget(1, 0);
   curQ.copy(targetQ);
+  let spin = 0;
 
   // ── regras físicas ──────────────────────────────────────────────────────
   // Cada face muda como o dado se comporta ao ser arremessado.
@@ -440,7 +435,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieP.y < PLATE.top + R + 0.1;
 
   const stepDie = (dt: number) => {
-    const ph = PHYS[face] ?? PHYS[1];
+    const ph = PHYS[thrownFace] ?? PHYS[1];
     dieV.y -= ph.g * dt;
     dieP.addScaledVector(dieV, dt);
     let ground = false;
@@ -485,8 +480,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieV.set(0, 0, 0);
       restReturn = 0;
       const yawQ = tmpQ.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
-      restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(face));
-      if (onPlate() && face !== 2) caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
+      restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(thrownFace));
+      if (onPlate() && thrownFace !== 2) caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
     }
   };
 
@@ -494,12 +489,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (dieState === 'hand') return;
     dieState = 'hand';
     worldDie.visible = false;
-    dieGroup.visible = true;
     handPop = 1;
   };
 
   const throwDie = () => {
     if (dieState !== 'hand' || complete) return;
+    thrownFace = face;
+    updateMats();
     const ph = PHYS[face] ?? PHYS[1];
     camera.getWorldDirection(fwdV);
     rightV.set(Math.cos(yaw), 0, -Math.sin(yaw));
@@ -510,7 +506,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieW.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
     worldDie.position.copy(dieP);
     worldDie.visible = true;
-    dieGroup.visible = false;
     dieState = 'flying';
     restTimer = 0;
   };
@@ -523,15 +518,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const selectFace = (n: number) => {
     const f = FACES[n - 1];
     if (!f) return;
-    if (dieState !== 'hand') {
-      caption('O dado está fora', 'Recolha-o (E ou toque) para trocar a face.', '#cfc6e8');
-      return;
-    }
     if (!f.unlocked) {
       caption(`${n} · ???`, 'Face selada — descubra como libertá-la.', '#8f86a8');
       return;
     }
-    face = n;
     applyFace(n);
     caption(`${n} · ${f.name}`, f.desc, f.color);
   };
@@ -564,8 +554,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
     dieScaleBase = Math.min(0.17, halfW * 0.5);
-    dieBaseY = aspect < 1 ? -0.13 : -0.2;
-    dieGroup.position.set(Math.min(halfW * 0.6, 0.62), dieBaseY, -1);
+    dieBaseY = aspect < 1 ? -0.1 : -0.13;
+    dieGroup.position.set(Math.min(halfW * 0.4, 0.44), dieBaseY, -1);
   };
   resize();
   window.addEventListener('resize', resize);
@@ -763,7 +753,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         sparks.forEach((s) => (s.visible = false));
         caption('Gema encontrada!', 'Só o ricochete chega num lugar desses.', '#6ff0ff');
       }
-      if (!lit && face === 3 && dieP.distanceTo(BOWL) < 0.6) {
+      if (!lit && thrownFace === 3 && dieP.distanceTo(BOWL) < 0.6) {
         lit = true;
         brazierFlame.visible = true;
         caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
@@ -771,7 +761,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
       worldDie.position.copy(dieP);
-      const pressed = face === 2 && onPlate();
+      const pressed = thrownFace === 2 && onPlate();
       if (pressed && !plateDown) caption('Placa acionada', 'O dado pesado segura a placa. Não o recolha.', '#ffd36b');
       plateDown = pressed;
       if (!pressed) {
@@ -834,8 +824,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // dado na mão: gira até a face escolhida, balança e "pulsa" ao voltar
     handPop = Math.max(0, handPop - dt * 4);
     dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3));
-    curQ.slerp(targetQ, 1 - Math.exp(-dt * 10));
-    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.05, Math.sin(t * 0.8) * 0.08, 0));
+    spin += dt * 0.8;
+    handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
+    updateMats();
+    computeTarget(face, spin);
+    curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
+    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.03, 0, Math.sin(t * 0.8) * 0.03));
     dieHolder.quaternion.copy(curQ).multiply(wobble);
     dieGroup.position.y = dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0);
     dieCam.position.set(0, 0, 0);

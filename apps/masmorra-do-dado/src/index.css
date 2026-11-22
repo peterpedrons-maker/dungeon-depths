@@ -29,8 +29,8 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
   background: rgba(11, 9, 18, 0.45); border: 2px solid rgba(239, 230, 208, 0.25); }
 .corner button:hover { border-color: rgba(239, 230, 208, 0.6); }
 
-.caption { position: absolute; right: 22%; bottom: 7%; display: flex; flex-direction: column; align-items: flex-end;
-  gap: 2px; max-width: 46vw; text-align: right; pointer-events: none; text-shadow: 2px 2px 0 #05040a;
+.caption { position: absolute; left: 0; right: 0; bottom: 6%; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; margin: 0 auto; max-width: 46vw; text-align: center; pointer-events: none; text-shadow: 2px 2px 0 #05040a;
   animation: cap 2.6s steps(14) forwards; }
 .caption b { font-size: 17px; color: var(--accent); letter-spacing: 1px; }
 .caption span { font-size: 12px; opacity: 0.85; }

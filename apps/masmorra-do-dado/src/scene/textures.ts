@@ -264,21 +264,36 @@ function drawGem(ctx: CanvasRenderingContext2D, cx: number, cy: number, col: RGB
   }
 }
 
-const GEM_POS = [6.5, 16, 25.5];
+const GEM_POS = [9, 16, 23];
 
 export function dieFaceCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
   const { c, ctx } = canvas(32);
   const r = rng(40 + n);
-  const body = hex('#2b2438');
+  const body = hex('#2a2140');
+  const gold = hex('#d4ac4e');
+  // obsidiana com veios mais claros
   for (let y = 0; y < 32; y++) {
     for (let x = 0; x < 32; x++) {
-      let k = 0.94 + r() * 0.12;
-      const edge = Math.min(x, y, 31 - x, 31 - y);
-      if (edge < 2) k *= x + y < 32 ? 1.5 : 0.55;
-      else if (edge === 3) k *= 1.12;
-      px(ctx, x, y, shade(body, k));
+      const vein = Math.sin((x + y * 0.7 + n * 5) * 0.55) * Math.sin((x * 0.6 - y) * 0.35 + n) > 0.62 ? 1.35 : 1;
+      px(ctx, x, y, shade(body, (0.92 + r() * 0.1) * vein));
     }
   }
+  // faixa externa escura: cai sobre a quina arredondada do dado
+  for (let i = 0; i < 3; i++) {
+    const k = 0.45 + i * 0.12;
+    rect(ctx, i, i, 32 - i * 2, 1, shade(body, k));
+    rect(ctx, i, 31 - i, 32 - i * 2, 1, shade(body, k));
+    rect(ctx, i, i, 1, 32 - i * 2, shade(body, k));
+    rect(ctx, 31 - i, i, 1, 32 - i * 2, shade(body, k));
+  }
+  // filete dourado embutido, com brilho em cima/esquerda e sombra embaixo/direita
+  const lo = 4;
+  const hi = 27;
+  rect(ctx, lo, lo, hi - lo + 1, 1, shade(gold, 1.25));
+  rect(ctx, lo, lo, 1, hi - lo + 1, shade(gold, 1.15));
+  rect(ctx, lo, hi, hi - lo + 1, 1, shade(gold, 0.6));
+  rect(ctx, hi, lo, 1, hi - lo + 1, shade(gold, 0.7));
+  for (const [cx, cy] of [[lo, lo], [hi, lo], [lo, hi], [hi, hi]]) rect(ctx, cx - 1, cy - 1, 3, 3, shade(gold, 1.35));
   const col = locked ? hex('#5a5270') : hex(accent);
   for (const [gx, gy] of PIPS[n]) drawGem(ctx, Math.round(GEM_POS[gx]), Math.round(GEM_POS[gy]), col, false);
   return c;
