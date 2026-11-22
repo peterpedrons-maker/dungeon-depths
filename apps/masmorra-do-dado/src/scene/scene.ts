@@ -4,13 +4,15 @@
 // é ampliado sem suavização pelo CSS.
 
 import * as THREE from 'three';
+import { FACES } from '../faces';
 import {
   brickTexture,
   crackTexture,
   flameFrames,
   floorTexture,
   gemTexture,
-  pipTexture,
+  dieFaceTexture,
+  dieGlowTexture,
   plateTexture,
   runeTexture,
   sparkTexture,
@@ -38,6 +40,18 @@ const FACE_EULER: Record<number, [number, number, number]> = {
   6: [-Math.PI / 2, 0, 0],
 };
 
+export interface StickState {
+  active: boolean;
+  ox: number; // onde o dedo encostou (coordenadas da tela)
+  oy: number;
+  x: number; // -1..1
+  y: number;
+}
+
+export interface SceneOptions {
+  onStick?: (s: StickState) => void;
+}
+
 export interface SceneApi {
   setFace(n: number): void;
   dispose(): void;
@@ -47,7 +61,7 @@ function lambert(map: THREE.Texture | null, color = 0xffffff) {
   return new THREE.MeshLambertMaterial({ map, color });
 }
 
-export function createScene(canvas: HTMLCanvasElement): SceneApi {
+export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}): SceneApi {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
   renderer.autoClear = false;
   renderer.setPixelRatio(1);
@@ -74,8 +88,8 @@ export function createScene(canvas: HTMLCanvasElement): SceneApi {
         c = pow(c, vec3(1.0 / 2.2));
         float l = dot(c, vec3(0.299, 0.587, 0.114));
         c = mix(vec3(l), c, 1.15);
-        float levels = 7.0;
-        float t = 0.5 + (bayer4(floor(vUv * uRes)) - 0.47) * 0.6;
+        float levels = 11.0;
+        float t = 0.5 + (bayer4(floor(vUv * uRes)) - 0.47) * 0.3;
         vec3 q = floor(c * (levels - 1.0) + t) / (levels - 1.0);
         gl_FragColor = vec4(q, 1.0);
       }`,
@@ -217,78 +231,115 @@ export function createScene(canvas: HTMLCanvasElement): SceneApi {
 
   const camera = new THREE.PerspectiveCamera(66, 1, 0.05, 40);
   camera.rotation.order = 'YXZ';
+  scene.add(camera);
+  // Luz presa à câmera, na cor da face escolhida: tinge de leve o que está perto.
+  const accentLight = new THREE.PointLight(0x5be7ff, 5, 0, 2);
+  accentLight.position.set(0.35, -0.3, -0.6);
+  camera.add(accentLight);
 
-  // ── dado na mão (cena separada, desenhada por cima) ─────────────────────
-  const handScene = new THREE.Scene();
-  handScene.add(new THREE.AmbientLight(0x9a8aa0, 1.5));
-  const key = new THREE.DirectionalLight(0xffd9a8, 2.4);
+  // ── o dado (cena separada, desenhada por cima da sala) ──────────────────
+  // Obsidiana com gemas no lugar dos pontos (cada face com a cor da sua
+  // habilidade; as bloqueadas ficam apagadas) e uma armação de latão.
+  const dieScene = new THREE.Scene();
+  dieScene.add(new THREE.AmbientLight(0x9a8aa8, 1.6));
+  const key = new THREE.DirectionalLight(0xffe2b8, 2.2);
   key.position.set(-1, 1.6, 1.4);
-  handScene.add(key);
+  dieScene.add(key);
   const fill = new THREE.DirectionalLight(0x6a88ff, 0.7);
   fill.position.set(1.2, -0.6, 1);
-  handScene.add(fill);
-  const handCam = new THREE.PerspectiveCamera(45, 1, 0.05, 10);
+  dieScene.add(fill);
+  const dieCam = new THREE.PerspectiveCamera(45, 1, 0.05, 10);
 
-  const handGroup = new THREE.Group();
-  handScene.add(handGroup);
+  const dieGroup = new THREE.Group();
+  dieScene.add(dieGroup);
   const dieHolder = new THREE.Group();
-  handGroup.add(dieHolder);
-  const dieMats = DIE_FACES.map((n) => new THREE.MeshLambertMaterial({ map: pipTexture(n) }));
-  const die = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), dieMats);
-  dieHolder.add(die);
+  dieGroup.add(dieHolder);
 
-  const skin = new THREE.MeshLambertMaterial({ color: 0xc99a79, flatShading: true });
-  const sleeve = new THREE.MeshLambertMaterial({ color: 0x2f2550, flatShading: true });
-  const palm = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.3, 0.95), skin);
-  palm.position.set(0.05, -0.72, 0.05);
-  const thumb = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.28, 0.6), skin);
-  thumb.position.set(-0.62, -0.5, 0.3);
-  thumb.rotation.y = 0.3;
-  const finger1 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.6, 0.26), skin);
-  finger1.position.set(0.68, -0.4, 0.34);
-  const finger2 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.6, 0.26), skin);
-  finger2.position.set(0.68, -0.4, 0.02);
-  const sleeveMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.2, 1.5), sleeve);
-  sleeveMesh.position.set(0.3, -1.55, 0.4);
-  sleeveMesh.rotation.x = -0.25;
-  handGroup.add(palm, thumb, finger1, finger2, sleeveMesh);
+  const dieMats = DIE_FACES.map((n) => {
+    const f = FACES[n - 1];
+    return new THREE.MeshLambertMaterial({
+      map: dieFaceTexture(n, f.color, !f.unlocked),
+      emissive: 0xffffff,
+      emissiveMap: dieGlowTexture(n, f.color, !f.unlocked),
+      emissiveIntensity: 0.55,
+    });
+  });
+  dieHolder.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), dieMats));
 
-  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.3, -0.42, 0.04));
+  const brass = new THREE.MeshLambertMaterial({ color: 0xb8943f, emissive: 0x1c1405, flatShading: true });
+  const brassLight = new THREE.MeshLambertMaterial({ color: 0xd8b458, emissive: 0x241a06, flatShading: true });
+  const BAR = 0.11;
+  for (let a = 0; a < 3; a++) {
+    const b = (a + 1) % 3;
+    const c = (a + 2) % 3;
+    for (const sb of [-0.5, 0.5]) {
+      for (const sc of [-0.5, 0.5]) {
+        const size: [number, number, number] = [BAR, BAR, BAR];
+        size[a] = 1 + BAR;
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(...size), brass);
+        const p: [number, number, number] = [0, 0, 0];
+        p[b] = sb;
+        p[c] = sc;
+        bar.position.set(...p);
+        dieHolder.add(bar);
+      }
+    }
+  }
+  for (const sx of [-0.5, 0.5]) {
+    for (const sy of [-0.5, 0.5]) {
+      for (const sz of [-0.5, 0.5]) {
+        const corner = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.19, 0.19), brassLight);
+        corner.position.set(sx, sy, sz);
+        dieHolder.add(corner);
+      }
+    }
+  }
+
+  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.55, -0.78, 0.04));
   const targetQ = new THREE.Quaternion();
+  const curQ = new THREE.Quaternion();
+  const wobble = new THREE.Quaternion();
+  const wobbleEuler = new THREE.Euler();
   const applyFace = (n: number) => {
     const [x, y, z] = FACE_EULER[n] ?? FACE_EULER[1];
     targetQ.copy(tilt).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z)));
+    dieMats.forEach((m, i) => {
+      m.emissiveIntensity = DIE_FACES[i] === n ? 1.5 : 0.55;
+    });
+    accentLight.color.set(FACES[n - 1]?.color ?? '#ffffff');
   };
   applyFace(1);
-  dieHolder.quaternion.copy(targetQ);
+  curQ.copy(targetQ);
 
   // ── tamanho / proporção ─────────────────────────────────────────────────
-  let handHalfW = 0.5;
-  let handBaseY = -0.2;
+  let dieBaseY = -0.2;
   const resize = () => {
-    const scale = Math.max(3, Math.round(window.innerHeight / 200));
+    // ~240 linhas na vertical: granulado, mas legível (celular e PC).
+    const scale = Math.max(2, Math.round(window.innerHeight / 240));
     const w = Math.max(64, Math.ceil(window.innerWidth / scale));
     const h = Math.max(64, Math.ceil(window.innerHeight / scale));
     renderer.setSize(w, h, false);
     rt.setSize(w, h);
     postMat.uniforms.uRes.value.set(w, h);
     const aspect = w / h;
-    const vfov = aspect >= 1.6 ? 66 : Math.min(100, Math.max(66, (2 * Math.atan(Math.tan((82 * Math.PI) / 360) / aspect) * 180) / Math.PI));
-    camera.fov = vfov;
+    const vFromH = (hDeg: number) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / aspect) * 180) / Math.PI;
+    camera.fov = aspect >= 1 ? Math.min(66, vFromH(95)) : Math.min(100, Math.max(66, vFromH(82)));
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
-    handCam.aspect = aspect;
-    handCam.updateProjectionMatrix();
-    handHalfW = Math.tan((45 * Math.PI) / 360) * aspect;
-    const s = Math.min(0.18, handHalfW * 0.6);
-    handGroup.scale.setScalar(s);
-    handBaseY = aspect < 1 ? -0.13 : -0.2;
-    handGroup.position.set(handHalfW * 0.55, handBaseY, -1);
+    dieCam.aspect = aspect;
+    dieCam.updateProjectionMatrix();
+    const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
+    dieGroup.scale.setScalar(Math.min(0.17, halfW * 0.5));
+    dieBaseY = aspect < 1 ? -0.13 : -0.2;
+    dieGroup.position.set(Math.min(halfW * 0.6, 0.62), dieBaseY, -1);
   };
   resize();
   window.addEventListener('resize', resize);
 
-  // ── entrada: arrastar pra olhar, WASD pra andar ─────────────────────────
+  // ── entrada ─────────────────────────────────────────────────────────────
+  // PC: WASD anda, arrastar o mouse olha.
+  // Celular (horizontal): dedo na metade esquerda = analógico pra andar,
+  // dedo na direita = olhar.
   let yaw = 0;
   let pitch = -0.04;
   const pos = new THREE.Vector3(0, 1.6, 1.2);
@@ -298,24 +349,63 @@ export function createScene(canvas: HTMLCanvasElement): SceneApi {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
-  let dragging = false;
+  let lookId = -1;
+  let stickId = -1;
   let lastX = 0;
   let lastY = 0;
+  let stickOx = 0;
+  let stickOy = 0;
+  let stickX = 0;
+  let stickY = 0;
+  const STICK_R = 52;
+  const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
+
   const onDown = (e: PointerEvent) => {
-    dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
+    const rect = canvas.getBoundingClientRect();
+    const leftZone = e.clientX < rect.left + rect.width * 0.42;
+    if (e.pointerType !== 'mouse' && leftZone && stickId === -1) {
+      stickId = e.pointerId;
+      stickOx = e.clientX;
+      stickOy = e.clientY;
+      stickX = 0;
+      stickY = 0;
+      emitStick(true);
+    } else if (lookId === -1) {
+      lookId = e.pointerId;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    } else {
+      return;
+    }
     canvas.setPointerCapture(e.pointerId);
   };
   const onMove = (e: PointerEvent) => {
-    if (!dragging) return;
-    yaw -= (e.clientX - lastX) * 0.006;
-    pitch = Math.max(-0.7, Math.min(0.7, pitch - (e.clientY - lastY) * 0.006));
-    lastX = e.clientX;
-    lastY = e.clientY;
+    if (e.pointerId === lookId) {
+      yaw -= (e.clientX - lastX) * 0.006;
+      pitch = Math.max(-0.7, Math.min(0.7, pitch - (e.clientY - lastY) * 0.006));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    } else if (e.pointerId === stickId) {
+      let dx = (e.clientX - stickOx) / STICK_R;
+      let dy = (e.clientY - stickOy) / STICK_R;
+      const len = Math.hypot(dx, dy);
+      if (len > 1) {
+        dx /= len;
+        dy /= len;
+      }
+      stickX = dx;
+      stickY = dy;
+      emitStick(true);
+    }
   };
-  const onUp = () => {
-    dragging = false;
+  const onUp = (e: PointerEvent) => {
+    if (e.pointerId === lookId) lookId = -1;
+    if (e.pointerId === stickId) {
+      stickId = -1;
+      stickX = 0;
+      stickY = 0;
+      emitStick(false);
+    }
   };
   canvas.addEventListener('pointerdown', onDown);
   canvas.addEventListener('pointermove', onMove);
@@ -323,9 +413,16 @@ export function createScene(canvas: HTMLCanvasElement): SceneApi {
   canvas.addEventListener('pointercancel', onUp);
 
   const move = (dt: number) => {
-    const fwd = (keys.has('w') || keys.has('arrowup') ? 1 : 0) - (keys.has('s') || keys.has('arrowdown') ? 1 : 0);
-    const str = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
-    const moving = fwd !== 0 || str !== 0;
+    const kf = (keys.has('w') || keys.has('arrowup') ? 1 : 0) - (keys.has('s') || keys.has('arrowdown') ? 1 : 0);
+    const ks = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
+    let fwd = kf - stickY;
+    let str = ks + stickX;
+    const len = Math.hypot(fwd, str);
+    if (len > 1) {
+      fwd /= len;
+      str /= len;
+    }
+    const moving = len > 0.08;
     if (moving) {
       const sp = 2.6 * dt;
       pos.x += (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * sp;
@@ -383,16 +480,18 @@ export function createScene(canvas: HTMLCanvasElement): SceneApi {
     }
     dustGeo.attributes.position.needsUpdate = true;
 
-    // dado: gira suave até a face escolhida + balanço de respiração
-    dieHolder.quaternion.slerp(targetQ, 1 - Math.exp(-dt * 10));
-    handGroup.position.y = handBaseY + (moving ? Math.sin(bob + 1) * 0.015 : Math.sin(t * 1.3 + 0.6) * 0.008);
-    handCam.position.set(0, 0, 0);
+    // dado flutuando: gira até a face escolhida, com um balanço suave
+    curQ.slerp(targetQ, 1 - Math.exp(-dt * 10));
+    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.05, Math.sin(t * 0.8) * 0.08, 0));
+    dieHolder.quaternion.copy(curQ).multiply(wobble);
+    dieGroup.position.y = dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0);
+    dieCam.position.set(0, 0, 0);
 
     renderer.setRenderTarget(rt);
     renderer.clear();
     renderer.render(scene, camera);
     renderer.clearDepth();
-    renderer.render(handScene, handCam);
+    renderer.render(dieScene, dieCam);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
     raf = requestAnimationFrame(loop);

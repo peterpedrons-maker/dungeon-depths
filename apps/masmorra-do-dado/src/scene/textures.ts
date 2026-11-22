@@ -72,7 +72,7 @@ function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number) {
       const base = STONE[Math.floor(r() * STONE.length)];
       for (let y = 0; y < 7; y++) {
         for (let x = 0; x < 15; x++) {
-          let k = tint * (0.92 + r() * 0.16);
+          let k = tint * (0.96 + r() * 0.08);
           if (y === 0) k *= 1.22;
           if (y === 6) k *= 0.72;
           if (x === 0) k *= 1.1;
@@ -100,7 +100,7 @@ export function floorTexture(repeat: [number, number]) {
       const base = tones[Math.floor(r() * tones.length)];
       for (let y = 0; y < 15; y++) {
         for (let x = 0; x < 15; x++) {
-          let k = 0.9 + r() * 0.2;
+          let k = 0.95 + r() * 0.1;
           if (y === 0 || x === 0) k *= 1.18;
           if (y === 14 || x === 14) k *= 0.78;
           px(ctx, tx * 16 + x, ty * 16 + y, shade(base, k));
@@ -119,7 +119,7 @@ export function woodTexture(repeat: [number, number]) {
     const base = woods[p % woods.length];
     for (let y = 0; y < 32; y++) {
       for (let x = 0; x < 8; x++) {
-        let k = 0.9 + r() * 0.14 + (y % 7 === 0 ? -0.12 : 0);
+        let k = 0.95 + r() * 0.08 + (y % 7 === 0 ? -0.1 : 0);
         if (x === 0) k *= 0.6;
         if (x === 1) k *= 1.12;
         px(ctx, p * 8 + x, y, shade(base, k));
@@ -247,24 +247,56 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
 };
 
-export function pipCanvas(n: number, pip = '#1a1420', body = '#e8dcc0'): HTMLCanvasElement {
-  const { c, ctx } = canvas(32);
-  rect(ctx, 0, 0, 32, 32, body);
-  const r = rng(40 + n);
-  for (let i = 0; i < 60; i++) px(ctx, Math.floor(r() * 32), Math.floor(r() * 32), 'rgba(120,100,70,0.18)');
-  rect(ctx, 0, 0, 32, 2, '#f7efd8');
-  rect(ctx, 0, 0, 2, 32, '#f7efd8');
-  rect(ctx, 0, 30, 32, 2, '#b3a37c');
-  rect(ctx, 30, 0, 2, 32, '#b3a37c');
-  for (const [gx, gy] of PIPS[n]) {
-    const cx = 9 + gx * 7;
-    const cy = 9 + gy * 7;
-    rect(ctx, cx - 2, cy - 3, 5, 7, pip);
-    rect(ctx, cx - 3, cy - 2, 7, 5, pip);
+// "Pip" em forma de gema (losango) — o dado do jogo é de obsidiana com
+// gemas brilhantes no lugar dos pontos, cada face com a cor da sua habilidade.
+function drawGem(ctx: CanvasRenderingContext2D, cx: number, cy: number, col: RGB, glow: boolean) {
+  const c = (k: number) => shade(col, k);
+  const cells: [number, number, number][] = [];
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      const d = Math.abs(dx) + Math.abs(dy);
+      if (d <= 3) cells.push([dx, dy, d]);
+    }
   }
+  for (const [dx, dy, d] of cells) {
+    const k = glow ? (d <= 1 ? 1.35 : d === 2 ? 1 : 0.7) : d <= 1 ? 1.2 : d === 2 ? 0.95 : 0.55;
+    px(ctx, cx + dx, cy + dy, c(k));
+  }
+}
+
+const GEM_POS = [6.5, 16, 25.5];
+
+export function dieFaceCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
+  const { c, ctx } = canvas(32);
+  const r = rng(40 + n);
+  const body = hex('#2b2438');
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 32; x++) {
+      let k = 0.94 + r() * 0.12;
+      const edge = Math.min(x, y, 31 - x, 31 - y);
+      if (edge < 2) k *= x + y < 32 ? 1.5 : 0.55;
+      else if (edge === 3) k *= 1.12;
+      px(ctx, x, y, shade(body, k));
+    }
+  }
+  const col = locked ? hex('#5a5270') : hex(accent);
+  for (const [gx, gy] of PIPS[n]) drawGem(ctx, Math.round(GEM_POS[gx]), Math.round(GEM_POS[gy]), col, false);
   return c;
 }
 
-export function pipTexture(n: number) {
-  return toTexture(pipCanvas(n), undefined, false);
+export function dieGlowCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
+  const { c, ctx } = canvas(32);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, 32, 32);
+  const col = locked ? hex('#3a3450') : hex(accent);
+  for (const [gx, gy] of PIPS[n]) drawGem(ctx, Math.round(GEM_POS[gx]), Math.round(GEM_POS[gy]), col, true);
+  return c;
+}
+
+export function dieFaceTexture(n: number, accent: string, locked: boolean) {
+  return toTexture(dieFaceCanvas(n, accent, locked), undefined, false);
+}
+
+export function dieGlowTexture(n: number, accent: string, locked: boolean) {
+  return toTexture(dieGlowCanvas(n, accent, locked), undefined, false);
 }
