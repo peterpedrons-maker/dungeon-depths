@@ -20,5 +20,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 
 ## Jogos atuais
 
-Nenhum por enquanto — `apps/` foi esvaziado para começar um projeto novo. O histórico
-dos jogos anteriores (dungeon-depths, reino-e-masmorras, ricochete) continua no git.
+- `apps/masmorra-do-dado/` — (nome provisório) puzzle de masmorra 3D em primeira pessoa, visual
+  pixel art "crocante" (Three.js renderizando em baixa resolução + dithering, texturas
+  procedurais, sem arquivos de imagem). O jogador segura um dado e escolhe a face (1–6) antes
+  de arremessar/posicionar; cada face é uma mecânica de puzzle (ricochete, peso, fogo...).
+  Sem combate. Por enquanto só existe a tela de visual (`src/scene/`); o protótipo jogável
+  vem depois. Publicado em `/masmorra-do-dado/`.
+
+Os jogos antigos (dungeon-depths, reino-e-masmorras, ricochete) foram removidos de `apps/` e
+continuam no histórico do git.
