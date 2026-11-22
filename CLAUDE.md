@@ -21,12 +21,14 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 ## Jogos atuais
 
 - `apps/masmorra-do-dado/` — (nome provisório) puzzle de masmorra 3D em primeira pessoa, visual
-  pixel art "crocante" (Three.js renderizando em baixa resolução + dithering, texturas
-  procedurais, sem arquivos de imagem). O jogador segura um dado e escolhe a face (1–6) antes
+  pixel art "crocante" (Three.js renderizando em ~200 linhas, pós-processo com paleta fixa
+  de ~60 cores + contorno por profundidade + dithering leve, texturas procedurais, sem arquivos
+  de imagem). O jogador segura um dado e escolhe a face (1–6) antes
   de arremessar/posicionar; cada face é uma mecânica de puzzle (ricochete, peso, fogo...).
   Sem combate. Mundo conectado (estilo Metroidvania) com volta livre; faces novas destravam
-  caminhos. Planejado: pedra-sabão infinita para marcar paredes/chão em 3D (com apagar
-  individual e apagar tudo), minimapa com anotações persistentes e caderno de pistas.
+  caminhos. Pedra-sabão infinita na mão esquerda já funciona: risca símbolos de giz
+  (✕ ○ ↑ △ ✓) nas paredes/chão em 3D, com apagar a marca da mira e apagar tudo (Q/C/Z/X no PC,
+  4 botões no celular). Planejado: minimapa com anotações persistentes e caderno de pistas.
   Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. Hoje existe um protótipo de UMA sala (`src/scene/`): faces Ricochete/Peso/Fogo,
   placa de pressão, braseiro, porta e gema escondida. Mobile só na horizontal, além de PC.
