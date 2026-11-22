@@ -3,6 +3,10 @@ import { createScene, type SceneApi, type StickState } from './scene/scene';
 
 const STICK_R = 52;
 
+interface InstallEvent extends Event {
+  prompt(): Promise<void>;
+}
+
 interface Caption {
   id: number;
   title: string;
@@ -19,6 +23,7 @@ export default function App() {
   const [hint, setHint] = useState(true);
   const [dieOut, setDieOut] = useState(false);
   const [glyph, setGlyph] = useState('✕');
+  const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null);
   const captionTimer = useRef(0);
 
   useEffect(() => {
@@ -40,6 +45,25 @@ export default function App() {
       scene.dispose();
     };
   }, []);
+
+  // "Instalar": o navegador avisa quando o jogo pode ser instalado (PWA)
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallEvt(e as InstallEvent);
+    };
+    const onInstalled = () => setInstallEvt(null);
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+
+  const install = () => {
+    installEvt?.prompt().finally(() => setInstallEvt(null));
+  };
 
   const reset = () => {
     setComplete(null);
@@ -65,6 +89,11 @@ export default function App() {
         <button onClick={reset} aria-label="Reiniciar sala" title="Reiniciar sala (R)">
           ↺
         </button>
+        {installEvt && (
+          <button onClick={install} aria-label="Instalar o jogo" title="Instalar o jogo">
+            ⤓
+          </button>
+        )}
         {document.fullscreenEnabled && (
           <button onClick={fullscreen} aria-label="Tela cheia" title="Tela cheia">
             ⛶

@@ -33,7 +33,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
   celular). Hoje existe um protótipo de UMA sala (`src/scene/`): faces Ricochete/Peso/Fogo,
   placa de pressão, braseiro, porta e gema escondida. Mobile só na horizontal, além de PC.
-  Publicado em `/masmorra-do-dado/`.
+  Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
+  `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 
 Os jogos antigos (dungeon-depths, reino-e-masmorras, ricochete) foram removidos de `apps/` e
 continuam no histórico do git.
