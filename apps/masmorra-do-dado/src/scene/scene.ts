@@ -27,6 +27,7 @@ const PILLARS: [number, number][] = [
   [2.3, -7],
 ];
 const FOG = '#0b0912';
+const LAMP_OFF = 0x2a2230;
 
 // Ordem dos materiais do BoxGeometry: +x, -x, +y, -y, +z, -z (opostas somam 7).
 const DIE_FACES = [3, 4, 1, 6, 2, 5];
@@ -50,10 +51,12 @@ export interface StickState {
 
 export interface SceneOptions {
   onStick?: (s: StickState) => void;
+  onCaption?: (title: string, sub: string, color: string) => void;
+  onComplete?: (info: { gem: boolean }) => void;
 }
 
 export interface SceneApi {
-  setFace(n: number): void;
+  reset(): void;
   dispose(): void;
 }
 
@@ -144,9 +147,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   addBox(0.45, 2.9, 0.5, stoneMat, -1.4, 1.45, doorZ + 0.25);
   addBox(0.45, 2.9, 0.5, stoneMat, 1.4, 1.45, doorZ + 0.25);
   addBox(3.25, 0.45, 0.5, stoneMat, 0, 2.95, doorZ + 0.25);
-  addPlane(2.35, 2.7, lambert(woodTexture([2.35 / T, 2.7 / T])), 0, 1.35, doorZ + 0.03);
+  const doorMesh = addPlane(2.35, 2.7, lambert(woodTexture([2.35 / T, 2.7 / T])), 0, 1.35, doorZ + 0.03);
   const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(), transparent: true, alphaTest: 0.5, fog: false });
-  addPlane(1.5, 1.5, runeMat, 0, 1.45, doorZ + 0.06);
+  const runeMesh = addPlane(1.5, 1.5, runeMat, 0, 1.45, doorZ + 0.06);
+  // duas lâmpadas na verga: placa (esq.) e braseiro (dir.) — acendem quando cada parte do puzzle está feita
+  const lampPlate = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
+  const lampFire = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
+  addPlane(0.2, 0.2, lampPlate, -0.5, 2.95, doorZ + 0.51);
+  addPlane(0.2, 0.2, lampFire, 0.5, 2.95, doorZ + 0.51);
 
   // placa de pressão e piso rachado
   const plateTop = lambert(plateTexture());
@@ -160,6 +168,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.32, 0.3, 8), lambert(null, 0x3a3a46));
   bowl.position.set(2.9, 0.95, -9.2);
   scene.add(bowl);
+  const BOWL = new THREE.Vector3(2.9, 1.15, -9.2);
+  const brazierFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5 }));
+  brazierFlame.scale.set(0.75, 0.6, 1);
+  brazierFlame.position.set(BOWL.x, 1.45, BOWL.z);
+  brazierFlame.visible = false;
+  scene.add(brazierFlame);
+  const brazierLight = new THREE.PointLight(0xff8a2a, 0, 0, 2);
+  brazierLight.position.set(BOWL.x - 0.3, 1.9, BOWL.z + 0.4);
+  scene.add(brazierLight);
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
     const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), coalMat);
@@ -237,24 +254,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   accentLight.position.set(0.35, -0.3, -0.6);
   camera.add(accentLight);
 
-  // ── o dado (cena separada, desenhada por cima da sala) ──────────────────
+  // ── o dado ──────────────────────────────────────────────────────────────
   // Obsidiana com gemas no lugar dos pontos (cada face com a cor da sua
   // habilidade; as bloqueadas ficam apagadas) e uma armação de latão.
-  const dieScene = new THREE.Scene();
-  dieScene.add(new THREE.AmbientLight(0x9a8aa8, 1.6));
-  const key = new THREE.DirectionalLight(0xffe2b8, 2.2);
-  key.position.set(-1, 1.6, 1.4);
-  dieScene.add(key);
-  const fill = new THREE.DirectionalLight(0x6a88ff, 0.7);
-  fill.position.set(1.2, -0.6, 1);
-  dieScene.add(fill);
-  const dieCam = new THREE.PerspectiveCamera(45, 1, 0.05, 10);
-
-  const dieGroup = new THREE.Group();
-  dieScene.add(dieGroup);
-  const dieHolder = new THREE.Group();
-  dieGroup.add(dieHolder);
-
   const dieMats = DIE_FACES.map((n) => {
     const f = FACES[n - 1];
     return new THREE.MeshLambertMaterial({
@@ -264,45 +266,76 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       emissiveIntensity: 0.55,
     });
   });
-  dieHolder.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), dieMats));
-
   const brass = new THREE.MeshLambertMaterial({ color: 0xb8943f, emissive: 0x1c1405, flatShading: true });
   const brassLight = new THREE.MeshLambertMaterial({ color: 0xd8b458, emissive: 0x241a06, flatShading: true });
-  const BAR = 0.11;
-  for (let a = 0; a < 3; a++) {
-    const b = (a + 1) % 3;
-    const c = (a + 2) % 3;
-    for (const sb of [-0.5, 0.5]) {
-      for (const sc of [-0.5, 0.5]) {
-        const size: [number, number, number] = [BAR, BAR, BAR];
-        size[a] = 1 + BAR;
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(...size), brass);
-        const p: [number, number, number] = [0, 0, 0];
-        p[b] = sb;
-        p[c] = sc;
-        bar.position.set(...p);
-        dieHolder.add(bar);
+  const buildDie = () => {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), dieMats));
+    const BAR = 0.11;
+    for (let a = 0; a < 3; a++) {
+      const b = (a + 1) % 3;
+      const c = (a + 2) % 3;
+      for (const sb of [-0.5, 0.5]) {
+        for (const sc of [-0.5, 0.5]) {
+          const size: [number, number, number] = [BAR, BAR, BAR];
+          size[a] = 1 + BAR;
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(...size), brass);
+          const p: [number, number, number] = [0, 0, 0];
+          p[b] = sb;
+          p[c] = sc;
+          bar.position.set(...p);
+          g.add(bar);
+        }
       }
     }
-  }
-  for (const sx of [-0.5, 0.5]) {
-    for (const sy of [-0.5, 0.5]) {
-      for (const sz of [-0.5, 0.5]) {
-        const corner = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.19, 0.19), brassLight);
-        corner.position.set(sx, sy, sz);
-        dieHolder.add(corner);
+    for (const sx of [-0.5, 0.5]) {
+      for (const sy of [-0.5, 0.5]) {
+        for (const sz of [-0.5, 0.5]) {
+          const corner = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.19, 0.19), brassLight);
+          corner.position.set(sx, sy, sz);
+          g.add(corner);
+        }
       }
     }
-  }
+    return g;
+  };
+
+  // dado na mão: cena separada, desenhada por cima da sala
+  const dieScene = new THREE.Scene();
+  dieScene.add(new THREE.AmbientLight(0x9a8aa8, 1.6));
+  const key = new THREE.DirectionalLight(0xffe2b8, 2.2);
+  key.position.set(-1, 1.6, 1.4);
+  dieScene.add(key);
+  const fill = new THREE.DirectionalLight(0x6a88ff, 0.7);
+  fill.position.set(1.2, -0.6, 1);
+  dieScene.add(fill);
+  const dieCam = new THREE.PerspectiveCamera(45, 1, 0.05, 10);
+  const dieGroup = new THREE.Group();
+  dieScene.add(dieGroup);
+  const dieHolder = new THREE.Group();
+  dieGroup.add(dieHolder);
+  dieHolder.add(buildDie());
+
+  // dado arremessado: vive dentro da sala, com física própria
+  const worldDie = new THREE.Group();
+  const worldModel = buildDie();
+  worldModel.scale.setScalar(0.42);
+  worldDie.add(worldModel);
+  worldDie.visible = false;
+  scene.add(worldDie);
 
   const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.55, -0.78, 0.04));
   const targetQ = new THREE.Quaternion();
   const curQ = new THREE.Quaternion();
   const wobble = new THREE.Quaternion();
   const wobbleEuler = new THREE.Euler();
-  const applyFace = (n: number) => {
+  const faceQ = (n: number) => {
     const [x, y, z] = FACE_EULER[n] ?? FACE_EULER[1];
-    targetQ.copy(tilt).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z)));
+    return new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));
+  };
+  let face = 1;
+  const applyFace = (n: number) => {
+    targetQ.copy(tilt).multiply(faceQ(n));
     dieMats.forEach((m, i) => {
       m.emissiveIntensity = DIE_FACES[i] === n ? 1.5 : 0.55;
     });
@@ -311,8 +344,206 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   applyFace(1);
   curQ.copy(targetQ);
 
+  // ── regras físicas ──────────────────────────────────────────────────────
+  // Cada face muda como o dado se comporta ao ser arremessado.
+  const PHYS: Record<number, { speed: number; up: number; g: number; e: number; fr: number }> = {
+    1: { speed: 11, up: 0.14, g: 14, e: 0.9, fr: 0.5 }, // Ricochete: leve e saltitante
+    2: { speed: 6.5, up: 0.1, g: 30, e: 0.12, fr: 7 }, // Peso: cai e fica
+    3: { speed: 8.5, up: 0.12, g: 16, e: 0.5, fr: 2.5 }, // Fogo: meio-termo
+  };
+  const R = 0.22;
+  interface Box {
+    min: THREE.Vector3;
+    max: THREE.Vector3;
+  }
+  const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
+    min: new THREE.Vector3(x0, y0, z0),
+    max: new THREE.Vector3(x1, y1, z1),
+  });
+  const PLATE = { x: -1.4, z: -5, half: 0.65, top: 0.07 };
+  const BOXES: Box[] = [];
+  for (const [x, z] of PILLARS) {
+    BOXES.push(mkBox(x - 0.45, 0, z - 0.45, x + 0.45, ROOM.h, z + 0.45));
+    BOXES.push(mkBox(x - 0.55, 0, z - 0.55, x + 0.55, 0.25, z + 0.55));
+    BOXES.push(mkBox(x - 0.55, ROOM.h - 0.25, z - 0.55, x + 0.55, ROOM.h, z + 0.55));
+  }
+  BOXES.push(mkBox(PLATE.x - PLATE.half, 0, PLATE.z - PLATE.half, PLATE.x + PLATE.half, PLATE.top, PLATE.z + PLATE.half));
+  BOXES.push(mkBox(2.6, 0, -9.5, 3.2, 0.8, -8.9)); // pedestal do braseiro
+  BOXES.push(mkBox(-1.625, 0, -10, -1.175, 2.9, -9.5)); // batentes da porta
+  BOXES.push(mkBox(1.175, 0, -10, 1.625, 2.9, -9.5));
+  BOXES.push(mkBox(-1.625, 2.725, -10, 1.625, 3.175, -9.5));
+
+  type DieState = 'hand' | 'flying' | 'rest';
+  let dieState: DieState = 'hand';
+  const dieP = new THREE.Vector3();
+  const dieV = new THREE.Vector3();
+  const dieW = new THREE.Vector3();
+  let restTimer = 0;
+  let restReturn = 0;
+  let handPop = 0;
+  const restQ = new THREE.Quaternion();
+  const tmpC = new THREE.Vector3();
+  const tmpN = new THREE.Vector3();
+  const tmpQ = new THREE.Quaternion();
+  const tmpAxis = new THREE.Vector3();
+  const fwdV = new THREE.Vector3();
+  const rightV = new THREE.Vector3();
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+  // estado do puzzle
+  let lit = false;
+  let gemTaken = false;
+  let plateDown = false;
+  let doorOpen = 0;
+  let doorAnnounced = false;
+  let complete = false;
+  const GEM = new THREE.Vector3(ROOM.x1 - 0.3, 2.1, nz);
+
+  const caption = (title: string, sub: string, color: string) => opts.onCaption?.(title, sub, color);
+
+  const collideBox = (b: Box, e: number): THREE.Vector3 | null => {
+    tmpC.set(clamp(dieP.x, b.min.x, b.max.x), clamp(dieP.y, b.min.y, b.max.y), clamp(dieP.z, b.min.z, b.max.z));
+    tmpN.subVectors(dieP, tmpC);
+    const d2 = tmpN.lengthSq();
+    if (d2 >= R * R) return null;
+    let pen: number;
+    if (d2 > 1e-10) {
+      const d = Math.sqrt(d2);
+      tmpN.divideScalar(d);
+      pen = R - d;
+    } else {
+      // centro dentro da caixa: empurra pelo eixo de menor penetração
+      const opts6: [number, number, number, number][] = [
+        [dieP.x - b.min.x, -1, 0, 0],
+        [b.max.x - dieP.x, 1, 0, 0],
+        [dieP.y - b.min.y, 0, -1, 0],
+        [b.max.y - dieP.y, 0, 1, 0],
+        [dieP.z - b.min.z, 0, 0, -1],
+        [b.max.z - dieP.z, 0, 0, 1],
+      ];
+      opts6.sort((p, q) => p[0] - q[0]);
+      tmpN.set(opts6[0][1], opts6[0][2], opts6[0][3]);
+      pen = opts6[0][0] + R;
+    }
+    dieP.addScaledVector(tmpN, pen);
+    const vn = dieV.dot(tmpN);
+    if (vn < 0) dieV.addScaledVector(tmpN, -(1 + e) * vn);
+    return tmpN;
+  };
+
+  const onPlate = () =>
+    Math.abs(dieP.x - PLATE.x) < PLATE.half + 0.05 &&
+    Math.abs(dieP.z - PLATE.z) < PLATE.half + 0.05 &&
+    dieP.y < PLATE.top + R + 0.1;
+
+  const stepDie = (dt: number) => {
+    const ph = PHYS[face] ?? PHYS[1];
+    dieV.y -= ph.g * dt;
+    dieP.addScaledVector(dieV, dt);
+    let ground = false;
+    if (dieP.y < R) {
+      dieP.y = R;
+      if (dieV.y < 0) dieV.y = -dieV.y * ph.e;
+      ground = true;
+    }
+    if (dieP.y > ROOM.h - R) {
+      dieP.y = ROOM.h - R;
+      if (dieV.y > 0) dieV.y = -dieV.y * ph.e;
+    }
+    if (dieP.x < ROOM.x0 + R) {
+      dieP.x = ROOM.x0 + R;
+      if (dieV.x < 0) dieV.x = -dieV.x * ph.e;
+    } else if (dieP.x > ROOM.x1 - R) {
+      dieP.x = ROOM.x1 - R;
+      if (dieV.x > 0) dieV.x = -dieV.x * ph.e;
+    }
+    if (dieP.z < ROOM.z0 + R + 0.03) {
+      dieP.z = ROOM.z0 + R + 0.03;
+      if (dieV.z < 0) dieV.z = -dieV.z * ph.e;
+    } else if (dieP.z > ROOM.z1 - R) {
+      dieP.z = ROOM.z1 - R;
+      if (dieV.z > 0) dieV.z = -dieV.z * ph.e;
+    }
+    for (const b of BOXES) {
+      const n = collideBox(b, ph.e);
+      if (n && n.y > 0.7) ground = true;
+    }
+    if (ground) {
+      const k = Math.exp(-ph.fr * dt);
+      dieV.x *= k;
+      dieV.z *= k;
+      if (Math.abs(dieV.y) < 0.6) dieV.y = 0;
+      dieW.set(dieV.z, 0, -dieV.x).divideScalar(R * 1.6); // rola no chão
+    }
+    if (ground && dieV.length() < 0.45) restTimer += dt;
+    else restTimer = 0;
+    if (restTimer > 0.2) {
+      dieState = 'rest';
+      dieV.set(0, 0, 0);
+      restReturn = 0;
+      const yawQ = tmpQ.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
+      restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(face));
+      if (onPlate() && face !== 2) caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
+    }
+  };
+
+  const recall = () => {
+    if (dieState === 'hand') return;
+    dieState = 'hand';
+    worldDie.visible = false;
+    dieGroup.visible = true;
+    handPop = 1;
+  };
+
+  const throwDie = () => {
+    if (dieState !== 'hand' || complete) return;
+    const ph = PHYS[face] ?? PHYS[1];
+    camera.getWorldDirection(fwdV);
+    rightV.set(Math.cos(yaw), 0, -Math.sin(yaw));
+    dieP.copy(camera.position).addScaledVector(fwdV, 0.55).addScaledVector(rightV, 0.2);
+    dieP.y -= 0.18;
+    dieV.copy(fwdV).multiplyScalar(ph.speed);
+    dieV.y += ph.up * ph.speed;
+    dieW.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
+    worldDie.position.copy(dieP);
+    worldDie.visible = true;
+    dieGroup.visible = false;
+    dieState = 'flying';
+    restTimer = 0;
+  };
+
+  const action = () => {
+    if (dieState === 'hand') throwDie();
+    else recall();
+  };
+
+  const selectFace = (n: number) => {
+    const f = FACES[n - 1];
+    if (!f) return;
+    if (dieState !== 'hand') {
+      caption('O dado está fora', 'Recolha-o (E ou toque) para trocar a face.', '#cfc6e8');
+      return;
+    }
+    if (!f.unlocked) {
+      caption(`${n} · ???`, 'Face selada — descubra como libertá-la.', '#8f86a8');
+      return;
+    }
+    face = n;
+    applyFace(n);
+    caption(`${n} · ${f.name}`, f.desc, f.color);
+  };
+  const cycleFace = (dir: number) => {
+    let n = face;
+    for (let i = 0; i < 6; i++) {
+      n = ((n - 1 + dir + 6) % 6) + 1;
+      if (FACES[n - 1].unlocked) break;
+    }
+    selectFace(n);
+  };
+
   // ── tamanho / proporção ─────────────────────────────────────────────────
   let dieBaseY = -0.2;
+  let dieScaleBase = 0.17;
   const resize = () => {
     // ~240 linhas na vertical: granulado, mas legível (celular e PC).
     const scale = Math.max(2, Math.round(window.innerHeight / 240));
@@ -329,7 +560,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.aspect = aspect;
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
-    dieGroup.scale.setScalar(Math.min(0.17, halfW * 0.5));
+    dieScaleBase = Math.min(0.17, halfW * 0.5);
     dieBaseY = aspect < 1 ? -0.13 : -0.2;
     dieGroup.position.set(Math.min(halfW * 0.6, 0.62), dieBaseY, -1);
   };
@@ -337,22 +568,43 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   window.addEventListener('resize', resize);
 
   // ── entrada ─────────────────────────────────────────────────────────────
-  // PC: WASD anda, arrastar o mouse olha.
-  // Celular (horizontal): dedo na metade esquerda = analógico pra andar,
-  // dedo na direita = olhar.
+  // PC: WASD anda, arrastar o mouse olha, clique arremessa/recolhe, 1–6 ou a
+  // roda do mouse trocam a face, R reinicia a sala.
+  // Celular (horizontal): metade esquerda = analógico, direita = olhar; toque
+  // curto arremessa/recolhe; toque no dado (canto) troca a face.
   let yaw = 0;
   let pitch = -0.04;
-  const pos = new THREE.Vector3(0, 1.6, 1.2);
+  const START = new THREE.Vector3(0, 1.6, 1.2);
+  const pos = START.clone();
   const keys = new Set<string>();
-  const onKeyDown = (e: KeyboardEvent) => keys.add(e.key.toLowerCase());
+  const onKeyDown = (e: KeyboardEvent) => {
+    const k = e.key.toLowerCase();
+    keys.add(k);
+    if (e.repeat) return;
+    if (/^[1-6]$/.test(k)) selectFace(Number(k));
+    else if (k === ' ' || k === 'f') {
+      e.preventDefault();
+      action();
+    } else if (k === 'e') recall();
+    else if (k === 'r') reset();
+  };
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase());
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
+  const onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    cycleFace(e.deltaY > 0 ? 1 : -1);
+  };
+  canvas.addEventListener('wheel', onWheel, { passive: false });
 
   let lookId = -1;
   let stickId = -1;
   let lastX = 0;
   let lastY = 0;
+  let downT = 0;
+  let downX = 0;
+  let downY = 0;
+  let moved = false;
   let stickOx = 0;
   let stickOy = 0;
   let stickX = 0;
@@ -372,8 +624,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       emitStick(true);
     } else if (lookId === -1) {
       lookId = e.pointerId;
-      lastX = e.clientX;
-      lastY = e.clientY;
+      lastX = downX = e.clientX;
+      lastY = downY = e.clientY;
+      downT = performance.now();
+      moved = false;
     } else {
       return;
     }
@@ -381,6 +635,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const onMove = (e: PointerEvent) => {
     if (e.pointerId === lookId) {
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 8) moved = true;
       yaw -= (e.clientX - lastX) * 0.006;
       pitch = Math.max(-0.7, Math.min(0.7, pitch - (e.clientY - lastY) * 0.006));
       lastX = e.clientX;
@@ -399,7 +654,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   const onUp = (e: PointerEvent) => {
-    if (e.pointerId === lookId) lookId = -1;
+    if (e.pointerId === lookId) {
+      lookId = -1;
+      if (e.type === 'pointerup' && !moved && performance.now() - downT < 350) {
+        const rect = canvas.getBoundingClientRect();
+        const rx = (e.clientX - rect.left) / rect.width;
+        const ry = (e.clientY - rect.top) / rect.height;
+        if (rx > 0.68 && ry > 0.5) cycleFace(1); // toque no dado
+        else action();
+      }
+    }
     if (e.pointerId === stickId) {
       stickId = -1;
       stickX = 0;
@@ -413,6 +677,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   canvas.addEventListener('pointercancel', onUp);
 
   const move = (dt: number) => {
+    if (complete) return false;
     const kf = (keys.has('w') || keys.has('arrowup') ? 1 : 0) - (keys.has('s') || keys.has('arrowdown') ? 1 : 0);
     const ks = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
     let fwd = kf - stickY;
@@ -427,8 +692,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const sp = 2.6 * dt;
       pos.x += (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * sp;
       pos.z += (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * sp;
-      pos.x = Math.max(ROOM.x0 + 0.6, Math.min(ROOM.x1 - 0.6, pos.x));
-      pos.z = Math.max(ROOM.z0 + 0.8, Math.min(ROOM.z1 - 0.5, pos.z));
+      const doorway = doorOpen > 0.85;
+      pos.x = clamp(pos.x, ROOM.x0 + 0.6, ROOM.x1 - 0.6);
+      if (pos.z < ROOM.z0 + 1.0) pos.x = clamp(pos.x, -1.0, 1.0);
+      pos.z = clamp(pos.z, doorway ? ROOM.z0 - 0.8 : ROOM.z0 + 0.8, ROOM.z1 - 0.5);
       for (const [px, pz] of PILLARS) {
         const half = 0.75;
         const dx = pos.x - px;
@@ -440,6 +707,26 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     return moving;
+  };
+
+  const reset = () => {
+    dieState = 'hand';
+    worldDie.visible = false;
+    dieGroup.visible = true;
+    lit = false;
+    brazierFlame.visible = false;
+    brazierLight.intensity = 0;
+    gemTaken = false;
+    gem.visible = true;
+    sparks.forEach((s) => (s.visible = true));
+    plateDown = false;
+    doorOpen = 0;
+    doorAnnounced = false;
+    complete = false;
+    pos.copy(START);
+    yaw = 0;
+    pitch = -0.04;
+    handPop = 1;
   };
 
   // ── loop ────────────────────────────────────────────────────────────────
@@ -458,17 +745,75 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     camera.position.set(pos.x, pos.y + bobY, pos.z);
     camera.rotation.set(pitch, yaw, 0);
 
+    // ── dado no mundo ──
+    if (dieState === 'flying') {
+      const n = Math.max(1, Math.ceil(dt / (1 / 120)));
+      for (let i = 0; i < n && dieState === 'flying'; i++) stepDie(dt / n);
+      worldDie.position.copy(dieP);
+      const w = dieW.length();
+      if (w > 1e-4) {
+        tmpQ.setFromAxisAngle(tmpAxis.copy(dieW).normalize(), w * dt);
+        worldDie.quaternion.premultiply(tmpQ);
+      }
+      if (!gemTaken && dieP.distanceTo(GEM) < 0.55) {
+        gemTaken = true;
+        gem.visible = false;
+        gemLight.intensity = 0;
+        sparks.forEach((s) => (s.visible = false));
+        caption('Gema encontrada!', 'Só o ricochete chega num lugar desses.', '#6ff0ff');
+      }
+      if (!lit && face === 3 && dieP.distanceTo(BOWL) < 0.6) {
+        lit = true;
+        brazierFlame.visible = true;
+        caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
+      }
+    } else if (dieState === 'rest') {
+      worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
+      worldDie.position.copy(dieP);
+      const pressed = face === 2 && onPlate();
+      if (pressed && !plateDown) caption('Placa acionada', 'O dado pesado segura a placa. Não o recolha.', '#ffd36b');
+      plateDown = pressed;
+      if (!pressed) {
+        restReturn += dt;
+        if (restReturn > 1.8) recall();
+      }
+    }
+    if (dieState !== 'rest') plateDown = false;
+
+    // ── porta, lâmpadas, braseiro ──
+    const wantOpen = plateDown && lit ? 1 : 0;
+    doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
+    doorMesh.position.y = 1.35 + doorOpen * 2.75;
+    runeMesh.visible = doorOpen < 0.4;
+    lampPlate.color.setHex(plateDown ? 0xffd36b : LAMP_OFF);
+    lampFire.color.setHex(lit ? 0xff7a2e : LAMP_OFF);
+    if (wantOpen && doorOpen > 0.9 && !doorAnnounced) {
+      doorAnnounced = true;
+      caption('A porta se abriu', 'Atravesse enquanto o dado segura a placa.', '#ffd36b');
+    }
+    if (!wantOpen) doorAnnounced = false;
+    if (lit) {
+      brazierFlame.material.map = frames[Math.floor(t * 8) % frames.length];
+      brazierLight.intensity = 40 * (0.85 + 0.12 * Math.sin(t * 12) + 0.06 * Math.sin(t * 4.3));
+    }
+    if (!complete && doorOpen > 0.85 && pos.z < ROOM.z0 - 0.2) {
+      complete = true;
+      opts.onComplete?.({ gem: gemTaken });
+    }
+
     torches.forEach((tc, i) => {
       tc.light.intensity = 42 * (0.86 + 0.12 * Math.sin(t * 13 + tc.phase) + 0.07 * Math.sin(t * 5.1 + tc.phase * 3));
       tc.sprite.material.map = frames[Math.floor(t * 8 + i) % frames.length];
     });
-    gem.position.y = 2.1 + Math.sin(t * 2) * 0.04;
-    gemLight.intensity = 9 + Math.sin(t * 3) * 2;
-    sparks.forEach((s, i) => {
-      const a = t * 1.5 + i * 2.1;
-      s.position.set(ROOM.x1 - 0.3 + Math.sin(a * 0.7) * 0.06, 2.1 + Math.sin(a) * 0.32, nz + Math.cos(a) * 0.32);
-      s.material.rotation = a;
-    });
+    if (!gemTaken) {
+      gem.position.y = 2.1 + Math.sin(t * 2) * 0.04;
+      gemLight.intensity = 9 + Math.sin(t * 3) * 2;
+      sparks.forEach((s, i) => {
+        const a = t * 1.5 + i * 2.1;
+        s.position.set(ROOM.x1 - 0.3 + Math.sin(a * 0.7) * 0.06, 2.1 + Math.sin(a) * 0.32, nz + Math.cos(a) * 0.32);
+        s.material.rotation = a;
+      });
+    }
     const k = 0.75 + Math.sin(t * 2.5) * 0.25;
     runeMat.color.setRGB(k, k * 0.8, k * 0.85);
 
@@ -480,7 +825,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     dustGeo.attributes.position.needsUpdate = true;
 
-    // dado flutuando: gira até a face escolhida, com um balanço suave
+    // dado na mão: gira até a face escolhida, balança e "pulsa" ao voltar
+    handPop = Math.max(0, handPop - dt * 4);
+    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3));
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 10));
     wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.05, Math.sin(t * 0.8) * 0.08, 0));
     dieHolder.quaternion.copy(curQ).multiply(wobble);
@@ -490,23 +837,39 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     renderer.setRenderTarget(rt);
     renderer.clear();
     renderer.render(scene, camera);
-    renderer.clearDepth();
-    renderer.render(dieScene, dieCam);
+    if (dieGroup.visible) {
+      renderer.clearDepth();
+      renderer.render(dieScene, dieCam);
+    }
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
 
+  // Só em desenvolvimento: gancho pra testes automatizados (não vai pro build).
+  if (import.meta.env.DEV) {
+    (window as unknown as Record<string, unknown>).__mdd = {
+      state: () => ({ dieState, face, lit, plateDown, doorOpen, gemTaken, complete, x: pos.x, z: pos.z }),
+      place: (x: number, z: number, y: number, p: number) => {
+        pos.set(x, 1.6, z);
+        yaw = y;
+        pitch = p;
+      },
+      face: (n: number) => selectFace(n),
+      act: () => action(),
+      reset: () => reset(),
+    };
+  }
+
   return {
-    setFace(n) {
-      applyFace(n);
-    },
+    reset,
     dispose() {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);

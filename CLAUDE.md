@@ -24,8 +24,13 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   pixel art "crocante" (Three.js renderizando em baixa resolução + dithering, texturas
   procedurais, sem arquivos de imagem). O jogador segura um dado e escolhe a face (1–6) antes
   de arremessar/posicionar; cada face é uma mecânica de puzzle (ricochete, peso, fogo...).
-  Sem combate. Por enquanto só existe a tela de visual (`src/scene/`); o protótipo jogável
-  vem depois. Publicado em `/masmorra-do-dado/`.
+  Sem combate. Mundo conectado (estilo Metroidvania) com volta livre; faces novas destravam
+  caminhos. Planejado: pedra-sabão infinita para marcar paredes/chão em 3D (com apagar
+  individual e apagar tudo), minimapa com anotações persistentes e caderno de pistas.
+  Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
+  salas. Hoje existe um protótipo de UMA sala (`src/scene/`): faces Ricochete/Peso/Fogo,
+  placa de pressão, braseiro, porta e gema escondida. Mobile só na horizontal, além de PC.
+  Publicado em `/masmorra-do-dado/`.
 
 Os jogos antigos (dungeon-depths, reino-e-masmorras, ricochete) foram removidos de `apps/` e
 continuam no histórico do git.
