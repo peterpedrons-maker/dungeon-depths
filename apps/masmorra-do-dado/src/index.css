@@ -73,3 +73,12 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
   .btn-rotate { width: 84px; height: 46px; }
   .touchbtns { gap: 8px; right: 10px; bottom: 10px; }
 }
+
+/* pedra-sabão: quatro botõezinhos no canto esquerdo (só em tela de toque) */
+.soapbtns { display: none; position: absolute; left: 14px; bottom: 14px; grid-template-columns: 44px 44px; gap: 8px; }
+@media (pointer: coarse) { .soapbtns { display: grid; } }
+.soapbtns button { width: 44px; height: 44px; padding: 0; font: inherit; font-size: 20px; font-weight: bold; color: #e9f0e6; cursor: pointer;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  background: rgba(26, 22, 36, 0.78); border: 3px solid rgba(169, 189, 178, 0.6); box-shadow: 3px 3px 0 #05040a; }
+.soapbtns button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #05040a; background: rgba(58, 51, 80, 0.9); }
+@media (max-height: 420px) { .soapbtns { left: 10px; bottom: 10px; gap: 6px; grid-template-columns: 40px 40px; } .soapbtns button { width: 40px; height: 40px; font-size: 18px; } }

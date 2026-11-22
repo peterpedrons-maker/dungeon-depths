@@ -18,6 +18,7 @@ export default function App() {
   const [complete, setComplete] = useState<{ gem: boolean } | null>(null);
   const [hint, setHint] = useState(true);
   const [dieOut, setDieOut] = useState(false);
+  const [glyph, setGlyph] = useState('✕');
   const captionTimer = useRef(0);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function App() {
       },
       onComplete: setComplete,
       onDie: (st) => setDieOut(st !== 'hand'),
+      onSymbol: setGlyph,
     });
     sceneRef.current = scene;
     const hintTimer = window.setTimeout(() => setHint(false), 9000);
@@ -85,7 +87,7 @@ export default function App() {
 
       {hint && (
         <div className="hint">
-          <span className="hint-pc">clique: arremessar / recolher · 1–6 ou roda do mouse: face · WASD: andar · R: reiniciar</span>
+          <span className="hint-pc">clique: arremessar / recolher · 1–6 ou roda: face · Q: riscar · C: símbolo · Z: apagar · X: apagar tudo · WASD: andar</span>
           <span className="hint-touch">botões à direita: arremessar e girar o dado · esquerda: andar · arraste pra olhar</span>
         </div>
       )}
@@ -114,6 +116,31 @@ export default function App() {
             <span className="ico">{dieOut ? '↩' : '⤴'}</span>
             <span>{dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
           </button>
+        </div>
+      )}
+
+      {!complete && (
+        <div className="soapbtns">
+          {(
+            [
+              ['soap-sym', glyph, 'Trocar o símbolo da pedra-sabão', () => sceneRef.current?.nextSymbol()],
+              ['soap-mark', '✎', 'Riscar com a pedra-sabão', () => sceneRef.current?.mark()],
+              ['soap-erase', '⌫', 'Apagar a marca da mira', () => sceneRef.current?.eraseAimed()],
+              ['soap-clear', '⌧', 'Apagar todas as marcas', () => sceneRef.current?.eraseAll()],
+            ] as [string, string, string, () => void | undefined][]
+          ).map(([cls, label, aria, fn]) => (
+            <button
+              key={cls}
+              className={cls}
+              aria-label={aria}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                fn();
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
 

@@ -38,12 +38,18 @@ function canvas(w: number, h = w) {
 function toTexture(c: HTMLCanvasElement, repeat?: [number, number], wrap = true): THREE.CanvasTexture {
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.generateMipmaps = false;
   t.colorSpace = THREE.SRGBColorSpace;
   if (wrap) {
+    // texturas que repetem usam mipmap "nearest": de longe os pixels se fundem em
+    // vez de cintilar, e de perto continuam quadradões.
+    t.minFilter = THREE.NearestMipmapNearestFilter;
+    t.generateMipmaps = true;
+    t.anisotropy = 4;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     if (repeat) t.repeat.set(repeat[0], repeat[1]);
+  } else {
+    t.minFilter = THREE.NearestFilter;
+    t.generateMipmaps = false;
   }
   return t;
 }
@@ -314,4 +320,150 @@ export function dieFaceTexture(n: number, accent: string, locked: boolean) {
 
 export function dieGlowTexture(n: number, accent: string, locked: boolean) {
   return toTexture(dieGlowCanvas(n, accent, locked), undefined, false);
+}
+
+// ── porta: tábuas de madeira com cintas de ferro e um medalhão no centro ─────
+// Desenhada em 48x64 e esticada na laje em forma de arco (1,9 x 2,65 m).
+export function doorTexture() {
+  const { c, ctx } = canvas(48, 64);
+  const r = rng(77);
+  const woods: RGB[] = [hex('#7a5030'), hex('#6b4527'), hex('#85583a'), hex('#5f3d22')];
+  for (let p = 0; p < 6; p++) {
+    const base = woods[p % woods.length];
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 8; x++) {
+        let k = 0.97 + r() * 0.05;
+        if (x === 0) k *= 0.55;
+        else if (x === 1) k *= 1.14;
+        else if (x === 7) k *= 0.85;
+        if ((y + p * 11) % 17 === 0 && x > 1 && x < 6) k *= 0.82; // veio
+        px(ctx, p * 8 + x, y, shade(base, k));
+      }
+    }
+  }
+  // cintas de ferro com rebites
+  for (const y0 of [12, 44]) {
+    rect(ctx, 0, y0, 48, 1, '#6a6a7e');
+    rect(ctx, 0, y0 + 1, 48, 4, '#3a3a48');
+    rect(ctx, 0, y0 + 5, 48, 1, '#1a1a22');
+    for (let x = 3; x < 48; x += 8) rect(ctx, x, y0 + 2, 2, 2, '#9a9ab0');
+    // ponta da cinta (dobradiça) à esquerda
+    rect(ctx, 0, y0 - 2, 5, 9, '#3a3a48');
+    rect(ctx, 0, y0 - 2, 5, 1, '#6a6a7e');
+    rect(ctx, 1, y0 + 2, 2, 2, '#9a9ab0');
+  }
+  // medalhão de ferro no centro (onde brilha a runa)
+  const cx = 24;
+  const cy = 30;
+  for (let y = -11; y <= 11; y++) {
+    for (let x = -11; x <= 11; x++) {
+      const d = Math.hypot(x, y);
+      if (d > 11) continue;
+      const rim = d > 9.2;
+      const k = rim ? (x + y < 0 ? 1.5 : 0.5) : 0.7 + (x + y < 0 ? 0.08 : 0);
+      px(ctx, cx + x, cy + y, shade(hex('#4a4a5c'), k));
+    }
+  }
+  return toTexture(c, undefined, false);
+}
+
+// ── pedra-sabão ──────────────────────────────────────────────────────────────
+// Um bastão verde-acinzentado e macio, com a ponta de escrever coberta de pó
+// branco. `long` = sentido do comprimento (para esticar certo nas faces do bloco).
+export function soapSideTexture(horizontal: boolean) {
+  const L = 32;
+  const S = 12;
+  const { c, ctx } = canvas(horizontal ? L : S, horizontal ? S : L);
+  const r = rng(horizontal ? 91 : 92);
+  const base = hex('#7f958c');
+  for (let a = 0; a < L; a++) {
+    for (let b = 0; b < S; b++) {
+      const x = horizontal ? a : b;
+      const y = horizontal ? b : a;
+      // a = posição ao longo do bastão (0 = ponta de trás, L-1 = ponta de escrever)
+      let k = 0.93 + r() * 0.08;
+      const edge = Math.min(b, S - 1 - b);
+      if (edge === 0) k *= 0.78;
+      else if (b < S / 2 && edge === 1) k *= 1.12; // brilho num lado
+      const vein = Math.sin(a * 0.45 + b * 0.8) * Math.sin(a * 0.2 - b * 0.4) > 0.7;
+      if (vein) k *= 0.82;
+      let col = shade(base, k);
+      // pó branco perto da ponta de escrever
+      const dust = a > L - 9 ? (a - (L - 9)) / 9 : 0;
+      if (dust > 0 && r() < dust * 0.9) col = shade(hex('#e9f0e6'), 0.9 + r() * 0.1);
+      px(ctx, x, y, col);
+    }
+  }
+  return toTexture(c, undefined, false);
+}
+
+export function soapTipTexture(writing: boolean) {
+  const { c, ctx } = canvas(12);
+  const r = rng(writing ? 93 : 94);
+  for (let y = 0; y < 12; y++) {
+    for (let x = 0; x < 12; x++) {
+      const d = Math.hypot(x - 5.5, y - 5.5);
+      let col: string;
+      if (writing) {
+        col = shade(hex('#eef3ea'), 0.9 + r() * 0.12);
+        if (d > 4.6) col = shade(hex('#b9c8bf'), 0.95 + r() * 0.08);
+      } else {
+        col = shade(hex('#7f958c'), 0.85 + r() * 0.12);
+        if (d > 4.6) col = shade(hex('#5e7068'), 0.95);
+      }
+      px(ctx, x, y, col);
+    }
+  }
+  return toTexture(c, undefined, false);
+}
+
+// Símbolos de giz que o jogador deixa nas paredes e no chão (16x16).
+export const MARK_COUNT = 5;
+export function markTexture(kind: number) {
+  const { c, ctx } = canvas(16);
+  const r = rng(200 + kind);
+  const chalk = (x: number, y: number) => {
+    if (r() < 0.08) return; // falhas do giz
+    px(ctx, x, y, r() < 0.5 ? '#f4f1e6' : '#e6e3d4');
+  };
+  const line = (x0: number, y0: number, x1: number, y1: number) => {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    for (let i = 0; i <= n; i++) {
+      const t = n === 0 ? 0 : i / n;
+      const x = Math.round(x0 + (x1 - x0) * t);
+      const y = Math.round(y0 + (y1 - y0) * t);
+      chalk(x, y);
+      chalk(x + 1, y);
+    }
+  };
+  if (kind === 0) {
+    // X
+    line(3, 3, 12, 12);
+    line(12, 3, 3, 12);
+  } else if (kind === 1) {
+    // círculo
+    for (let a = 0; a < 360; a += 7) {
+      const rad = (a * Math.PI) / 180;
+      const x = Math.round(7.5 + Math.cos(rad) * 5.5);
+      const y = Math.round(7.5 + Math.sin(rad) * 5.5);
+      chalk(x, y);
+      chalk(x + 1, y);
+    }
+  } else if (kind === 2) {
+    // seta pra cima
+    line(7, 13, 7, 3);
+    line(8, 13, 8, 3);
+    line(3, 7, 7, 3);
+    line(12, 7, 8, 3);
+  } else if (kind === 3) {
+    // triângulo
+    line(7, 3, 2, 12);
+    line(8, 3, 13, 12);
+    line(2, 12, 13, 12);
+  } else {
+    // marca de "feito"
+    line(2, 8, 6, 12);
+    line(6, 12, 13, 3);
+  }
+  return toTexture(c, undefined, false);
 }

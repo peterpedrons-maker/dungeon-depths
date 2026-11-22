@@ -17,7 +17,11 @@ import {
   plateTexture,
   runeTexture,
   sparkTexture,
-  woodTexture,
+  doorTexture,
+  markTexture,
+  MARK_COUNT,
+  soapSideTexture,
+  soapTipTexture,
 } from './textures';
 
 const ROOM = { x0: -4, x1: 4, z0: -10, z1: 2, h: 3.2 };
@@ -55,12 +59,17 @@ export interface SceneOptions {
   onCaption?: (title: string, sub: string, color: string) => void;
   onComplete?: (info: { gem: boolean }) => void;
   onDie?: (state: 'hand' | 'flying' | 'rest') => void;
+  onSymbol?: (glyph: string) => void;
 }
 
 export interface SceneApi {
   action(): void; // arremessa ou recolhe
   rotate(): void; // próxima face
   reset(): void;
+  mark(): void; // risca o símbolo atual onde a mira aponta
+  nextSymbol(): void;
+  eraseAimed(): void; // apaga a marca mais próxima da mira
+  eraseAll(): void; // pede confirmação (aperte de novo)
   dispose(): void;
 }
 
@@ -74,31 +83,94 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   renderer.setPixelRatio(1);
   renderer.setClearColor(FOG, 1);
 
+  // sala (com textura de profundidade, usada pro contorno) e dado/pedra do HUD
   const rt = new THREE.WebGLRenderTarget(64, 64, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     type: THREE.HalfFloatType,
+    depthTexture: new THREE.DepthTexture(64, 64),
+  });
+  const rtHud = new THREE.WebGLRenderTarget(64, 64, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    type: THREE.HalfFloatType,
+  });
+  const CAM_NEAR = 0.1;
+  const CAM_FAR = 40;
+
+  // Paleta fixa (estilo pixel art de verdade): cada pixel vira a cor mais
+  // próxima desta lista, com um dithering ordenado bem leve só pra suavizar.
+  const PALETTE = [
+    '#000000', '#0b0912', '#1c1b26', '#2c2a3e', '#403e56', '#55536e', '#6e6c8a', '#8e8ca8', '#b8b4cc', '#e4e0f0',
+    '#1d1816', '#3a2a28', '#5a4540', '#7a5e54', '#9c7d6c', '#c2a48e',
+    '#2a180e', '#3a2214', '#4a2c1c', '#5a3a20', '#6a4028', '#7a5030', '#8c5a38', '#a06a3c', '#b07a4c', '#c88a4c', '#d8a070', '#e8b878', '#f0c890', '#ffe0b0',
+    '#5a1a10', '#a8321a', '#ff5a1f', '#ffb02e', '#fff3a8',
+    '#123a4a', '#1f7a90', '#2ab8d6', '#6ff0ff', '#d8ffff',
+    '#6a4a1a', '#a87a28', '#d4ac4e', '#f0d880',
+    '#4a1020', '#a02840', '#ff4d6d',
+    '#1a3a30', '#3a7a62', '#7fffb0',
+    '#4a3a7a', '#7a5ab0', '#b18cff',
+    '#a04a70', '#ff7fb0',
+    '#5e7068', '#7f958c', '#a9bdb2', '#e9f0e6',
+    '#ffffff',
+  ];
+  const palVec = PALETTE.map((h) => {
+    const n = parseInt(h.slice(1), 16);
+    return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
   });
 
-  // ── pós-processo: reduz cores + dithering ───────────────────────────────
+  // ── pós-processo: contorno + paleta + dithering ─────────────────────────
   const postScene = new THREE.Scene();
   const postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const postMat = new THREE.ShaderMaterial({
-    uniforms: { tDiffuse: { value: rt.texture }, uRes: { value: new THREE.Vector2(64, 64) } },
+    defines: { PAL_N: PALETTE.length },
+    uniforms: {
+      tRoom: { value: rt.texture },
+      tDepth: { value: rt.depthTexture },
+      tHud: { value: rtHud.texture },
+      uRes: { value: new THREE.Vector2(64, 64) },
+      uNear: { value: CAM_NEAR },
+      uFar: { value: CAM_FAR },
+      uPal: { value: palVec },
+    },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
-      uniform sampler2D tDiffuse; uniform vec2 uRes; varying vec2 vUv;
+      uniform sampler2D tRoom; uniform sampler2D tDepth; uniform sampler2D tHud;
+      uniform vec2 uRes; uniform float uNear; uniform float uFar;
+      uniform vec3 uPal[PAL_N];
+      varying vec2 vUv;
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
+      // inverso da distância: varia de forma LINEAR na tela dentro de uma superfície
+      // plana, então a derivada segunda só "acende" nas bordas de objetos.
+      float invZ(vec2 uv){
+        if (texture2D(tHud, uv).a > 0.5) return 2.5;
+        float d = texture2D(tDepth, uv).r;
+        float z = uNear * uFar / (uFar - d * (uFar - uNear));
+        return 1.0 / z;
+      }
       void main(){
-        vec3 c = clamp(texture2D(tDiffuse, vUv).rgb, 0.0, 1.0);
+        vec2 o = 1.0 / uRes;
+        vec4 hud = texture2D(tHud, vUv);
+        vec3 c = hud.a > 0.5 ? hud.rgb : texture2D(tRoom, vUv).rgb;
+        float ic = invZ(vUv);
+        float lx = invZ(vUv - vec2(o.x, 0.0)) + invZ(vUv + vec2(o.x, 0.0)) - 2.0 * ic;
+        float ly = invZ(vUv - vec2(0.0, o.y)) + invZ(vUv + vec2(0.0, o.y)) - 2.0 * ic;
+        float edge = step(0.1 * ic + 0.025, max(lx, ly));
+        c = clamp(c, 0.0, 1.0);
         c = pow(c, vec3(1.0 / 2.2));
         float l = dot(c, vec3(0.299, 0.587, 0.114));
-        c = mix(vec3(l), c, 1.15);
-        float levels = 11.0;
-        float t = 0.5 + (bayer4(floor(vUv * uRes)) - 0.47) * 0.3;
-        vec3 q = floor(c * (levels - 1.0) + t) / (levels - 1.0);
-        gl_FragColor = vec4(q, 1.0);
+        c = mix(vec3(l), c, 1.0);
+        c *= mix(1.0, 0.32, edge);
+        c += (bayer4(floor(vUv * uRes)) - 0.47) * 0.035;
+        vec3 best = uPal[0];
+        float bd = 1e9;
+        for (int i = 0; i < PAL_N; i++) {
+          vec3 d = c - uPal[i];
+          float dist = dot(d * d, vec3(0.6, 1.0, 0.45));
+          if (dist < bd) { bd = dist; best = uPal[i]; }
+        }
+        gl_FragColor = vec4(best, 1.0);
       }`,
     depthTest: false,
     depthWrite: false,
@@ -116,17 +188,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const L = ROOM.z1 - ROOM.z0;
   const T = 1.2;
 
+  const markSurfaces: THREE.Object3D[] = []; // onde dá pra riscar com a pedra-sabão
   const addPlane = (w: number, h: number, mat: THREE.Material, x: number, y: number, z: number, rx = 0, ry = 0) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     m.position.set(x, y, z);
     m.rotation.set(rx, ry, 0);
     scene.add(m);
+    markSurfaces.push(m);
     return m;
   };
 
   addPlane(W, L, lambert(floorTexture([W / T, L / T])), 0, 0, (ROOM.z0 + ROOM.z1) / 2, -Math.PI / 2);
   addPlane(W, L, lambert(brickTexture([W / T, L / T], 0.8, 17)), 0, ROOM.h, (ROOM.z0 + ROOM.z1) / 2, Math.PI / 2);
-  addPlane(W, ROOM.h, lambert(brickTexture([W / T, ROOM.h / T])), 0, ROOM.h / 2, ROOM.z0);
   addPlane(W, ROOM.h, lambert(brickTexture([W / T, ROOM.h / T], 1, 23)), 0, ROOM.h / 2, ROOM.z1, 0, Math.PI);
   addPlane(L, ROOM.h, lambert(brickTexture([L / T, ROOM.h / T], 1, 31)), ROOM.x0, ROOM.h / 2, (ROOM.z0 + ROOM.z1) / 2, 0, Math.PI / 2);
   addPlane(L, ROOM.h, lambert(brickTexture([L / T, ROOM.h / T], 1, 37)), ROOM.x1, ROOM.h / 2, (ROOM.z0 + ROOM.z1) / 2, 0, -Math.PI / 2);
@@ -136,6 +209,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     m.position.set(x, y, z);
     scene.add(m);
+    markSurfaces.push(m);
     return m;
   };
 
@@ -146,19 +220,109 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     addBox(1.1, 0.25, 1.1, stoneMat, x, ROOM.h - 0.125, z);
   }
 
-  // porta selada ao fundo
+  // porta selada ao fundo: arco de pedra, laje de madeira que sobe pra dentro
+  // da parede e um corredor atrás
+  const DW = 0.95; // meia-largura da abertura
+  const DH = 1.7; // altura da parte reta (o arco começa aqui)
   const doorZ = ROOM.z0;
-  addBox(0.45, 2.9, 0.5, stoneMat, -1.4, 1.45, doorZ + 0.25);
-  addBox(0.45, 2.9, 0.5, stoneMat, 1.4, 1.45, doorZ + 0.25);
-  addBox(3.25, 0.45, 0.5, stoneMat, 0, 2.95, doorZ + 0.25);
-  const doorMesh = addPlane(2.35, 2.7, lambert(woodTexture([2.35 / T, 2.7 / T])), 0, 1.35, doorZ + 0.03);
+  const archTop = DH + DW;
+  {
+    // parede do fundo: um único contorno com o "entalhe" do arco
+    const wall = new THREE.Shape();
+    wall.moveTo(ROOM.x0, 0);
+    wall.lineTo(-DW, 0);
+    wall.lineTo(-DW, DH);
+    wall.absarc(0, DH, DW, Math.PI, 0, true);
+    wall.lineTo(DW, 0);
+    wall.lineTo(ROOM.x1, 0);
+    wall.lineTo(ROOM.x1, ROOM.h);
+    wall.lineTo(ROOM.x0, ROOM.h);
+    wall.closePath();
+    const wm = new THREE.Mesh(new THREE.ShapeGeometry(wall, 12), lambert(brickTexture([1 / T, 1 / T])));
+    wm.position.z = doorZ;
+    scene.add(wm);
+    markSurfaces.push(wm);
+
+    // aro de pedra em volta da abertura, saindo 0,3 m da parede
+    const R2 = DW + 0.3;
+    const ring = new THREE.Shape();
+    ring.moveTo(-R2, 0);
+    ring.lineTo(-R2, DH);
+    ring.absarc(0, DH, R2, Math.PI, 0, true);
+    ring.lineTo(R2, 0);
+    ring.lineTo(DW, 0);
+    ring.lineTo(DW, DH);
+    ring.absarc(0, DH, DW, 0, Math.PI, false);
+    ring.lineTo(-DW, 0);
+    ring.closePath();
+    const rm = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(ring, { depth: 0.3, bevelEnabled: false, curveSegments: 12 }),
+      lambert(brickTexture([1 / 0.9, 1 / 0.9], 1.05, 61)),
+    );
+    rm.position.z = doorZ;
+    scene.add(rm);
+    markSurfaces.push(rm);
+    // pedra-chave com um soquete
+    addBox(0.4, 0.38, 0.36, stoneMat, 0, DH + DW + 0.15, doorZ + 0.18);
+  }
+  // laje da porta (atrás da parede, só aparece pela abertura)
+  const doorGroup = new THREE.Group();
+  doorGroup.position.z = doorZ - 0.13;
+  {
+    const slab = new THREE.Shape();
+    slab.moveTo(-DW - 0.08, 0);
+    slab.lineTo(-DW - 0.08, DH);
+    slab.absarc(0, DH, DW + 0.08, Math.PI, 0, true);
+    slab.lineTo(DW + 0.08, 0);
+    slab.closePath();
+    const tex = doorTexture();
+    // a textura cobre 1,9 x 2,7 m: ajusta o UV (que é a posição em metros)
+    tex.repeat.set(1 / (2 * DW + 0.16), 1 / 2.7);
+    tex.offset.set(0.5, 0);
+    const slabMesh = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(slab, { depth: 0.09, bevelEnabled: false, curveSegments: 12 }),
+      [lambert(tex, 0xb4a496), lambert(null, 0x4a3320)],
+    );
+    doorGroup.add(slabMesh);
+  }
   const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(), transparent: true, alphaTest: 0.5, fog: false });
-  const runeMesh = addPlane(1.5, 1.5, runeMat, 0, 1.45, doorZ + 0.06);
-  // duas lâmpadas na verga: placa (esq.) e braseiro (dir.) — acendem quando cada parte do puzzle está feita
+  const runeMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.0), runeMat);
+  runeMesh.position.set(0, 1.43, 0.1);
+  doorGroup.add(runeMesh);
+  scene.add(doorGroup);
+  // corredor atrás da porta
+  {
+    const cLen = 3.2;
+    const cm = lambert(brickTexture([cLen / T, archTop / T], 0.85, 71));
+    const ceilM = lambert(brickTexture([2 * DW / T, cLen / T], 0.7, 72));
+    const floorM = lambert(floorTexture([2 * DW / T, cLen / T]));
+    addPlane(cLen, archTop, cm, -DW, archTop / 2, doorZ - cLen / 2, 0, Math.PI / 2);
+    addPlane(cLen, archTop, cm, DW, archTop / 2, doorZ - cLen / 2, 0, -Math.PI / 2);
+    addPlane(2 * DW, cLen, ceilM, 0, archTop, doorZ - cLen / 2, Math.PI / 2);
+    addPlane(2 * DW, cLen, floorM, 0, 0, doorZ - cLen / 2, -Math.PI / 2);
+  }
+  const exitGlow = new THREE.Mesh(
+    new THREE.PlaneGeometry(2 * DW, archTop),
+    new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }),
+  );
+  exitGlow.position.set(0, archTop / 2, doorZ - 3.2);
+  scene.add(exitGlow);
+  const corridorLight = new THREE.PointLight(0xffe2b0, 0, 0, 2);
+  corridorLight.position.set(0, 1.9, doorZ - 1.4);
+  scene.add(corridorLight);
+  // duas gemas no aro: placa (esq.) e braseiro (dir.) — acendem quando cada parte do puzzle está feita
   const lampPlate = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
   const lampFire = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
-  addPlane(0.2, 0.2, lampPlate, -0.5, 2.95, doorZ + 0.51);
-  addPlane(0.2, 0.2, lampFire, 0.5, 2.95, doorZ + 0.51);
+  const lampBack = new THREE.MeshBasicMaterial({ color: 0x120f18 });
+  for (const [x, mat] of [[-0.62, lampPlate], [0.62, lampFire]] as [number, THREE.Material][]) {
+    const y = DH + Math.sqrt((DW + 0.15) ** 2 - x * x);
+    const back = new THREE.Mesh(new THREE.CircleGeometry(0.17, 4), lampBack);
+    back.position.set(x, y, doorZ + 0.305);
+    scene.add(back);
+    const g = new THREE.Mesh(new THREE.CircleGeometry(0.12, 4), mat);
+    g.position.set(x, y, doorZ + 0.31);
+    scene.add(g);
+  }
 
   // placa de pressão e piso rachado
   const plateTop = lambert(plateTexture());
@@ -173,7 +337,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   bowl.position.set(2.9, 0.95, -9.2);
   scene.add(bowl);
   const BOWL = new THREE.Vector3(2.9, 1.15, -9.2);
-  const brazierFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5 }));
+  const brazierFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5, depthWrite: false }));
   brazierFlame.scale.set(0.75, 0.6, 1);
   brazierFlame.position.set(BOWL.x, 1.45, BOWL.z);
   brazierFlame.visible = false;
@@ -203,7 +367,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const gemLight = new THREE.PointLight(0x4fe8ff, 9, 0, 2);
   gemLight.position.set(ROOM.x1 - 0.6, 2.1, nz);
   scene.add(gemLight);
-  const sparkMat = new THREE.SpriteMaterial({ map: sparkTexture(), fog: false });
+  const sparkMat = new THREE.SpriteMaterial({ map: sparkTexture(), fog: false, depthWrite: false });
   const sparks = [0, 1, 2].map(() => {
     const s = new THREE.Sprite(sparkMat);
     s.scale.set(0.1, 0.1, 1);
@@ -219,7 +383,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const y = 1.8;
     addBox(Math.abs(nzDir) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, stoneMat, x, y - 0.05, z);
     addBox(0.1, 0.6, 0.1, woodStick, x + nx * 0.16, y + 0.12, z + nzDir * 0.16);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: frames[0], fog: false, alphaTest: 0.5 }));
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
     sprite.scale.set(0.38, 0.3, 1);
     sprite.position.set(x + nx * 0.16, y + 0.57, z + nzDir * 0.16);
     scene.add(sprite);
@@ -246,11 +410,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
   const dust = new THREE.Points(
     dustGeo,
-    new THREE.PointsMaterial({ color: 0xe0cfa8, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.6, fog: false }),
+    new THREE.PointsMaterial({ color: 0xe0cfa8, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.6, fog: false, depthWrite: false }),
   );
   scene.add(dust);
 
-  const camera = new THREE.PerspectiveCamera(66, 1, 0.05, 40);
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+  let yaw = 0;
+  const camera = new THREE.PerspectiveCamera(66, 1, CAM_NEAR, CAM_FAR);
   camera.rotation.order = 'YXZ';
   scene.add(camera);
   // Luz presa à câmera, na cor da face escolhida: tinge de leve o que está perto.
@@ -342,6 +508,120 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   curQ.copy(targetQ);
   let spin = 0;
 
+  // ── pedra-sabão (mão esquerda) ──────────────────────────────────────────
+  // Um bastão verde-acinzentado com a ponta de escrever coberta de pó branco.
+  // Infinita por enquanto: cada toque risca um símbolo onde a mira aponta.
+  const soapMats = [
+    soapSideTexture(true),
+    soapSideTexture(true),
+    soapSideTexture(false),
+    soapSideTexture(false),
+    soapTipTexture(true),
+    soapTipTexture(false),
+  ].map(
+    (map) =>
+      new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.22 }),
+  );
+  const soapGroup = new THREE.Group();
+  const soapHolder = new THREE.Group();
+  soapHolder.add(new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.5, 1.45, 3, 0.13), soapMats));
+  soapGroup.add(soapHolder);
+  dieScene.add(soapGroup);
+  const SOAP_ROT = new THREE.Euler(-0.95, 0.55, 0.5);
+  soapHolder.rotation.copy(SOAP_ROT);
+  let soapKick = 0;
+
+  // símbolos de giz: ✕ ○ ↑ △ ✓
+  const GLYPHS = ['✕', '○', '↑', '△', '✓'];
+  const markMats = Array.from({ length: MARK_COUNT }, (_, i) => {
+    const m = new THREE.MeshLambertMaterial({
+      map: markTexture(i),
+      transparent: true,
+      alphaTest: 0.5,
+      depthWrite: false,
+      emissive: 0x55555c,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
+    return m;
+  });
+  const markGeo = new THREE.PlaneGeometry(0.62, 0.62);
+  const marks: THREE.Mesh[] = [];
+  const MAX_MARKS = 60;
+  let symbol = 0;
+  let eraseArmed = 0; // segundos restantes pra confirmar "apagar tudo"
+  const ray = new THREE.Raycaster();
+  const ndc0 = new THREE.Vector2(0, 0);
+
+  const nextSymbol = () => {
+    symbol = (symbol + 1) % MARK_COUNT;
+    opts.onSymbol?.(GLYPHS[symbol]);
+  };
+  opts.onSymbol?.(GLYPHS[symbol]);
+
+  const mark = () => {
+    soapKick = 1;
+    camera.updateMatrixWorld();
+    ray.setFromCamera(ndc0, camera);
+    ray.far = 4.5;
+    const hit = ray.intersectObjects(markSurfaces, false)[0];
+    if (!hit || !hit.face) {
+      caption('Longe demais', 'Chegue perto de uma parede ou do chão.', '#cfc6e8');
+      return;
+    }
+    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    const m = new THREE.Mesh(markGeo, markMats[symbol]);
+    m.position.copy(hit.point).addScaledVector(n, 0.012);
+    if (Math.abs(n.y) > 0.6) m.up.set(-Math.sin(yaw), 0, -Math.cos(yaw)); // no chão: "pra cima" = pra frente
+    m.lookAt(m.position.clone().add(n));
+    scene.add(m);
+    marks.push(m);
+    if (marks.length > MAX_MARKS) scene.remove(marks.shift()!);
+  };
+
+  const eraseAimed = () => {
+    soapKick = 1;
+    camera.updateMatrixWorld();
+    const fwd = camera.getWorldDirection(new THREE.Vector3());
+    let best: THREE.Mesh | null = null;
+    let bestA = 0.16; // ~9°
+    for (const m of marks) {
+      const to = m.position.clone().sub(camera.position);
+      const dist = to.length();
+      if (dist > 7) continue;
+      const a = Math.acos(clamp(to.divideScalar(dist).dot(fwd), -1, 1));
+      if (a < bestA) {
+        bestA = a;
+        best = m;
+      }
+    }
+    if (!best) {
+      caption('Nenhuma marca na mira', 'Aponte pra uma marca para apagá-la.', '#cfc6e8');
+      return;
+    }
+    scene.remove(best);
+    marks.splice(marks.indexOf(best), 1);
+  };
+
+  const eraseAll = () => {
+    if (marks.length === 0) {
+      caption('Sem marcas', 'Não há nada pra apagar.', '#cfc6e8');
+      return;
+    }
+    if (eraseArmed <= 0) {
+      eraseArmed = 2;
+      caption('Apagar todas as marcas?', 'Aperte de novo para confirmar.', '#ff9aa8');
+      return;
+    }
+    eraseArmed = 0;
+    const n = marks.length;
+    marks.forEach((m) => scene.remove(m));
+    marks.length = 0;
+    soapKick = 1;
+    caption('Marcas apagadas', `${n} ${n === 1 ? 'marca removida' : 'marcas removidas'}.`, '#cfc6e8');
+  };
+
   // ── regras físicas ──────────────────────────────────────────────────────
   // Cada face muda como o dado se comporta ao ser arremessado.
   const PHYS: Record<number, { speed: number; up: number; g: number; e: number; fr: number }> = {
@@ -367,9 +647,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   }
   BOXES.push(mkBox(PLATE.x - PLATE.half, 0, PLATE.z - PLATE.half, PLATE.x + PLATE.half, PLATE.top, PLATE.z + PLATE.half));
   BOXES.push(mkBox(2.6, 0, -9.5, 3.2, 0.8, -8.9)); // pedestal do braseiro
-  BOXES.push(mkBox(-1.625, 0, -10, -1.175, 2.9, -9.5)); // batentes da porta
-  BOXES.push(mkBox(1.175, 0, -10, 1.625, 2.9, -9.5));
-  BOXES.push(mkBox(-1.625, 2.725, -10, 1.625, 3.175, -9.5));
+  BOXES.push(mkBox(-1.25, 0, -10, -0.95, archTop, -9.7)); // aro da porta
+  BOXES.push(mkBox(0.95, 0, -10, 1.25, archTop, -9.7));
+  BOXES.push(mkBox(-1.25, archTop - 0.3, -10, 1.25, ROOM.h, -9.7));
 
   type DieState = 'hand' | 'flying' | 'rest';
   let dieState: DieState = 'hand';
@@ -386,7 +666,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const tmpAxis = new THREE.Vector3();
   const fwdV = new THREE.Vector3();
   const rightV = new THREE.Vector3();
-  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
   // estado do puzzle
   let lit = false;
@@ -535,15 +814,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
 
   // ── tamanho / proporção ─────────────────────────────────────────────────
+  const soapBase = new THREE.Vector3(-0.4, -0.15, -1);
   let dieBaseY = -0.2;
   let dieScaleBase = 0.17;
   const resize = () => {
-    // ~240 linhas na vertical: granulado, mas legível (celular e PC).
-    const scale = Math.max(2, Math.round(window.innerHeight / 240));
+    // ~200 linhas na vertical: pixels bem visíveis, mas ainda legível (celular e PC).
+    const scale = Math.max(2, Math.round(window.innerHeight / 200));
     const w = Math.max(64, Math.ceil(window.innerWidth / scale));
     const h = Math.max(64, Math.ceil(window.innerHeight / scale));
     renderer.setSize(w, h, false);
     rt.setSize(w, h);
+    rtHud.setSize(w, h);
+    if (rt.depthTexture) {
+      rt.depthTexture.image.width = w;
+      rt.depthTexture.image.height = h;
+      rt.depthTexture.dispose();
+    }
     postMat.uniforms.uRes.value.set(w, h);
     const aspect = w / h;
     const vFromH = (hDeg: number) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / aspect) * 180) / Math.PI;
@@ -554,8 +840,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
     dieScaleBase = Math.min(0.17, halfW * 0.5);
+    soapGroup.scale.setScalar(dieScaleBase * 0.95);
     dieBaseY = aspect < 1 ? -0.12 : -0.16;
     dieGroup.position.set(Math.min(halfW * 0.4, 0.44), dieBaseY, -1);
+    soapBase.set(-Math.min(halfW * 0.4, 0.44), dieBaseY + 0.02, -1);
+    soapGroup.position.copy(soapBase);
   };
   resize();
   window.addEventListener('resize', resize);
@@ -565,7 +854,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // roda do mouse trocam a face, R reinicia a sala.
   // Celular (horizontal): metade esquerda = analógico, direita = olhar; dois
   // botões na tela (arremessar/recolher e girar o dado) fazem o resto.
-  let yaw = 0;
   let pitch = -0.04;
   const START = new THREE.Vector3(0, 1.6, 1.2);
   const pos = START.clone();
@@ -580,6 +868,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       action();
     } else if (k === 'e') recall();
     else if (k === 'r') reset();
+    else if (k === 'q') mark();
+    else if (k === 'c') nextSymbol();
+    else if (k === 'z') eraseAimed();
+    else if (k === 'x') eraseAll();
   };
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase());
   window.addEventListener('keydown', onKeyDown);
@@ -682,10 +974,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const sp = 2.6 * dt;
       pos.x += (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * sp;
       pos.z += (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * sp;
-      const doorway = doorOpen > 0.85;
+      const through = doorOpen > 0.85 && Math.abs(pos.x) < 0.75;
       pos.x = clamp(pos.x, ROOM.x0 + 0.6, ROOM.x1 - 0.6);
-      if (pos.z < ROOM.z0 + 1.0) pos.x = clamp(pos.x, -1.0, 1.0);
-      pos.z = clamp(pos.z, doorway ? ROOM.z0 - 0.8 : ROOM.z0 + 0.8, ROOM.z1 - 0.5);
+      if (pos.z < ROOM.z0 + 0.8) pos.x = clamp(pos.x, -0.7, 0.7); // dentro da porta
+      pos.z = clamp(pos.z, through ? ROOM.z0 - 2.2 : ROOM.z0 + 0.8, ROOM.z1 - 0.5);
       for (const [px, pz] of PILLARS) {
         const half = 0.75;
         const dx = pos.x - px;
@@ -779,8 +1071,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // ── porta, lâmpadas, braseiro ──
     const wantOpen = plateDown && lit ? 1 : 0;
     doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
-    doorMesh.position.y = 1.35 + doorOpen * 2.75;
-    runeMesh.visible = doorOpen < 0.4;
+    doorGroup.position.y = doorOpen * (archTop + 0.2);
+    runeMesh.visible = doorOpen < 0.5;
+    corridorLight.intensity = doorOpen * 28;
     lampPlate.color.setHex(plateDown ? 0xffd36b : LAMP_OFF);
     lampFire.color.setHex(lit ? 0xff7a2e : LAMP_OFF);
     if (wantOpen && doorOpen > 0.9 && !doorAnnounced) {
@@ -834,13 +1127,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieGroup.position.y = dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0);
     dieCam.position.set(0, 0, 0);
 
+    // pedra-sabão: balança de leve e dá um "risco" no ar quando usada
+    soapKick = Math.max(0, soapKick - dt * 3.5);
+    eraseArmed = Math.max(0, eraseArmed - dt);
+    const kk = Math.sin(soapKick * Math.PI);
+    soapGroup.position.set(
+      soapBase.x + kk * 0.2,
+      soapBase.y + Math.sin(t * 1.4 + 1.3) * 0.012 + kk * 0.09 + (moving ? Math.sin(bob) * 0.012 : 0),
+      soapBase.z,
+    );
+    soapHolder.rotation.set(SOAP_ROT.x + kk * 0.5, SOAP_ROT.y + Math.sin(t * 0.9) * 0.05 + kk * 0.3, SOAP_ROT.z + Math.sin(t * 1.1) * 0.03);
+
     renderer.setRenderTarget(rt);
+    renderer.setClearColor(FOG, 1);
     renderer.clear();
     renderer.render(scene, camera);
-    if (dieGroup.visible) {
-      renderer.clearDepth();
-      renderer.render(dieScene, dieCam);
-    }
+    // dado e pedra-sabão do HUD: alvo à parte (fundo transparente), colado por cima no pós-processo
+    renderer.setRenderTarget(rtHud);
+    renderer.setClearColor(0x000000, 0);
+    renderer.clear();
+    renderer.render(dieScene, dieCam);
+    renderer.setClearColor(FOG, 1);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
     raf = requestAnimationFrame(loop);
@@ -857,6 +1164,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         pitch = p;
       },
       face: (n: number) => selectFace(n),
+      mark: () => mark(),
+      marks: () => marks.length,
       act: () => action(),
       reset: () => reset(),
     };
@@ -866,6 +1175,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     action,
     rotate: () => cycleFace(1),
     reset,
+    mark,
+    nextSymbol,
+    eraseAimed,
+    eraseAll,
     dispose() {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
@@ -878,6 +1191,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       canvas.removeEventListener('pointercancel', onUp);
       renderer.dispose();
       rt.dispose();
+      rtHud.dispose();
     },
   };
 }
