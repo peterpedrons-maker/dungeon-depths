@@ -84,7 +84,7 @@ export default function App() {
       {hint && (
         <div className="hint">
           <span className="hint-pc">clique: arremessar / recolher · 1–6 ou roda do mouse: face · WASD: andar · R: reiniciar</span>
-          <span className="hint-touch">toque à direita: arremessar · toque no dado: face · esquerda: andar</span>
+          <span className="hint-touch">toque: arremessar / recolher · deslize no dado: trocar face · esquerda: andar</span>
         </div>
       )}
 
