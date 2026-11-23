@@ -95,3 +95,11 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
 .soapbtns button.on { border-color: #ffd36b; background: rgba(70, 58, 30, 0.9); }
 .soapbtns .soap-swap { grid-column: 1 / -1; width: auto; }
 @media (max-height: 420px) { .soapbtns { left: 10px; bottom: 10px; gap: 6px; grid-template-columns: 52px 52px; } .soapbtns button { width: 52px; height: 40px; } }
+
+/* celular com o giz: faixa da direita = girar a câmera (o resto da direita desenha) */
+.lookzone { display: none; position: absolute; top: 0; bottom: 0; right: 0; width: 22%; pointer-events: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; letter-spacing: 1px;
+  color: rgba(239, 230, 208, 0.7); text-shadow: 2px 2px 0 #05040a;
+  border-left: 2px dashed rgba(239, 230, 208, 0.28); background: linear-gradient(90deg, rgba(8, 6, 14, 0), rgba(8, 6, 14, 0.28)); }
+.lookzone span:first-child { font-size: 20px; }
+@media (pointer: coarse) { .lookzone { display: flex; } }

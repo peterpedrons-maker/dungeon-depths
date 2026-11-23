@@ -293,64 +293,112 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
 };
 
-// "Pip" em forma de gema (losango) — o dado do jogo é de obsidiana com
-// gemas brilhantes no lugar dos pontos, cada face com a cor da sua habilidade.
+// "Pip" em forma de gema facetada (losango): luz em cima/esquerda, sombra embaixo/direita,
+// ponto de brilho e engaste escuro em volta. Dado de obsidiana com filete dourado.
 function drawGem(ctx: CanvasRenderingContext2D, cx: number, cy: number, col: RGB, glow: boolean) {
-  const c = (k: number) => shade(col, k);
-  const cells: [number, number, number][] = [];
-  for (let dy = -3; dy <= 3; dy++) {
-    for (let dx = -3; dx <= 3; dx++) {
+  const R = 7;
+  for (let dy = -R - 2; dy <= R + 2; dy++) {
+    for (let dx = -R - 2; dx <= R + 2; dx++) {
       const d = Math.abs(dx) + Math.abs(dy);
-      if (d <= 3) cells.push([dx, dy, d]);
+      if (d > R + 2) continue;
+      if (d > R) {
+        // engaste (aro escuro com um fio de ouro)
+        if (!glow) px(ctx, cx + dx, cy + dy, d === R + 2 ? '#8a6a28' : '#120d1c');
+        continue;
+      }
+      let k: number;
+      if (glow) k = d <= 2 ? 1.5 : d <= 4 ? 1.15 : 0.8;
+      else {
+        // facetas: quatro triângulos com luz diferente
+        const top = dy < 0;
+        const left = dx < 0;
+        k = top && left ? 1.3 : top ? 1.05 : left ? 0.85 : 0.55;
+        if (d <= 2) k += 0.2;
+        if (d === R) k *= 0.8;
+      }
+      px(ctx, cx + dx, cy + dy, shade(col, k));
     }
   }
-  for (const [dx, dy, d] of cells) {
-    const k = glow ? (d <= 1 ? 1.35 : d === 2 ? 1 : 0.7) : d <= 1 ? 1.2 : d === 2 ? 0.95 : 0.55;
-    px(ctx, cx + dx, cy + dy, c(k));
+  if (!glow) {
+    px(ctx, cx - 2, cy - 3, '#ffffff', 2, 1);
+    px(ctx, cx - 3, cy - 2, '#ffffff', 1, 2);
   }
 }
 
-const GEM_POS = [9, 16, 23];
+const GEM_POS = [17, 32, 47];
 
 export function dieFaceCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
-  const { c, ctx } = canvas(32);
+  const { c, ctx } = canvas(64);
   const r = rng(40 + n);
   const body = hex('#2a2140');
   const gold = hex('#d4ac4e');
-  // obsidiana com veios mais claros
-  for (let y = 0; y < 32; y++) {
-    for (let x = 0; x < 32; x++) {
-      const vein = Math.sin((x + y * 0.7 + n * 5) * 0.55) * Math.sin((x * 0.6 - y) * 0.35 + n) > 0.62 ? 1.35 : 1;
-      px(ctx, x, y, shade(body, (0.92 + r() * 0.1) * vein));
+  // obsidiana com veios claros e algumas rachaduras finas
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      const vein = Math.sin((x + y * 0.7 + n * 5) * 0.32) * Math.sin((x * 0.6 - y) * 0.2 + n) > 0.6 ? 1.35 : 1;
+      px(ctx, x, y, shade(body, (0.9 + r() * 0.14) * vein));
     }
   }
-  // faixa externa escura: cai sobre a quina arredondada do dado
-  for (let i = 0; i < 3; i++) {
-    const k = 0.45 + i * 0.12;
-    rect(ctx, i, i, 32 - i * 2, 1, shade(body, k));
-    rect(ctx, i, 31 - i, 32 - i * 2, 1, shade(body, k));
-    rect(ctx, i, i, 1, 32 - i * 2, shade(body, k));
-    rect(ctx, 31 - i, i, 1, 32 - i * 2, shade(body, k));
+  for (let k = 0; k < 3; k++) {
+    let x = Math.floor(r() * 56) + 4;
+    let y = Math.floor(r() * 56) + 4;
+    for (let i = 0; i < 12; i++) {
+      px(ctx, x, y, shade(body, 0.45));
+      x += r() < 0.5 ? 1 : 0;
+      y += r() < 0.5 ? 1 : 0;
+    }
   }
-  // filete dourado embutido, com brilho em cima/esquerda e sombra embaixo/direita
-  const lo = 4;
-  const hi = 27;
-  rect(ctx, lo, lo, hi - lo + 1, 1, shade(gold, 1.25));
-  rect(ctx, lo, lo, 1, hi - lo + 1, shade(gold, 1.15));
-  rect(ctx, lo, hi, hi - lo + 1, 1, shade(gold, 0.6));
-  rect(ctx, hi, lo, 1, hi - lo + 1, shade(gold, 0.7));
-  for (const [cx, cy] of [[lo, lo], [hi, lo], [lo, hi], [hi, hi]]) rect(ctx, cx - 1, cy - 1, 3, 3, shade(gold, 1.35));
+  // faixa externa escura: cai sobre a quina arredondada
+  for (let i = 0; i < 5; i++) {
+    const k = 0.4 + i * 0.1;
+    rect(ctx, i, i, 64 - i * 2, 1, shade(body, k));
+    rect(ctx, i, 63 - i, 64 - i * 2, 1, shade(body, k));
+    rect(ctx, i, i, 1, 64 - i * 2, shade(body, k));
+    rect(ctx, 63 - i, i, 1, 64 - i * 2, shade(body, k));
+  }
+  // filete dourado duplo (com brilho em cima/esquerda e sombra embaixo/direita)
+  const lo = 8;
+  const hi = 55;
+  for (const [o, k] of [[0, 1], [3, 0.6]] as [number, number][]) {
+    const a = lo + o;
+    const b = hi - o;
+    rect(ctx, a, a, b - a + 1, 1, shade(gold, 1.3 * k + (k < 1 ? 0.1 : 0)));
+    rect(ctx, a, a, 1, b - a + 1, shade(gold, 1.15 * k));
+    rect(ctx, a, b, b - a + 1, 1, shade(gold, 0.6 * k));
+    rect(ctx, b, a, 1, b - a + 1, shade(gold, 0.7 * k));
+  }
+  // cantos: rebites dourados em losango
+  for (const [cx, cy] of [[lo, lo], [hi, lo], [lo, hi], [hi, hi]]) {
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const d = Math.abs(dx) + Math.abs(dy);
+      if (d <= 3) px(ctx, cx + dx, cy + dy, shade(gold, d <= 1 ? 1.45 : d === 2 ? 1.1 : 0.7));
+    }
+  }
+  // entalhes no meio de cada lado
+  for (const t of [28, 35]) {
+    px(ctx, t, lo - 3, shade(gold, 0.8), 1, 3);
+    px(ctx, t, hi + 1, shade(gold, 0.8), 1, 3);
+    px(ctx, lo - 3, t, shade(gold, 0.8), 3, 1);
+    px(ctx, hi + 1, t, shade(gold, 0.8), 3, 1);
+  }
+  // runas fininhas entre o filete e as gemas
+  for (let i = 0; i < 10; i++) {
+    const x = 14 + Math.floor(r() * 36);
+    const y = 14 + Math.floor(r() * 36);
+    const near = PIPS[n].some(([gx, gy]) => Math.abs(GEM_POS[gx] - x) < 11 && Math.abs(GEM_POS[gy] - y) < 11);
+    if (!near) px(ctx, x, y, shade(body, 1.7), 1, 3);
+  }
   const col = locked ? hex('#5a5270') : hex(accent);
-  for (const [gx, gy] of PIPS[n]) drawGem(ctx, Math.round(GEM_POS[gx]), Math.round(GEM_POS[gy]), col, false);
+  for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, false);
   return c;
 }
 
 export function dieGlowCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
-  const { c, ctx } = canvas(32);
+  const { c, ctx } = canvas(64);
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, 32, 32);
+  ctx.fillRect(0, 0, 64, 64);
   const col = locked ? hex('#3a3450') : hex(accent);
-  for (const [gx, gy] of PIPS[n]) drawGem(ctx, Math.round(GEM_POS[gx]), Math.round(GEM_POS[gy]), col, true);
+  for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, true);
   return c;
 }
 
@@ -411,8 +459,8 @@ export function doorTexture() {
 // Um bastão verde-acinzentado e macio, com a ponta de escrever coberta de pó
 // branco. `long` = sentido do comprimento (para esticar certo nas faces do bloco).
 export function soapSideTexture(horizontal: boolean) {
-  const L = 32;
-  const S = 12;
+  const L = 48;
+  const S = 16;
   const { c, ctx } = canvas(horizontal ? L : S, horizontal ? S : L);
   const r = rng(horizontal ? 91 : 92);
   const base = hex('#7f958c');
@@ -423,37 +471,61 @@ export function soapSideTexture(horizontal: boolean) {
       // a = posição ao longo do bastão (0 = ponta de trás, L-1 = ponta de escrever)
       let k = 0.93 + r() * 0.08;
       const edge = Math.min(b, S - 1 - b);
-      if (edge === 0) k *= 0.78;
-      else if (b < S / 2 && edge === 1) k *= 1.12; // brilho num lado
-      const vein = Math.sin(a * 0.45 + b * 0.8) * Math.sin(a * 0.2 - b * 0.4) > 0.7;
-      if (vein) k *= 0.82;
+      if (edge === 0) k *= 0.72;
+      else if (b < S / 2 && edge <= 2) k *= 1.14; // brilho de um lado
+      else if (b >= S / 2 && edge <= 1) k *= 0.88;
+      // veios e manchinhas
+      if (Math.sin(a * 0.5 + b * 0.9) * Math.sin(a * 0.22 - b * 0.45) > 0.65) k *= 0.8;
+      if (r() < 0.04) k *= 1.25;
       let col = shade(base, k);
       // pó branco perto da ponta de escrever
-      const dust = a > L - 9 ? (a - (L - 9)) / 9 : 0;
+      const dust = a > L - 12 ? (a - (L - 12)) / 12 : 0;
       if (dust > 0 && r() < dust * 0.9) col = shade(hex('#e9f0e6'), 0.9 + r() * 0.1);
+      px(ctx, x, y, col);
+    }
+  }
+  // riscos e marcas de uso
+  for (let i = 0; i < 3; i++) {
+    const a0 = 6 + Math.floor(r() * 30);
+    const b0 = 3 + Math.floor(r() * 10);
+    for (let j = 0; j < 5; j++) px(ctx, horizontal ? a0 + j : b0, horizontal ? b0 : a0 + j, shade(base, 0.62));
+  }
+  return toTexture(c, undefined, false);
+}
+
+export function soapTipTexture(writing: boolean) {
+  const { c, ctx } = canvas(16);
+  const r = rng(writing ? 93 : 94);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const d = Math.hypot(x - 7.5, y - 7.5);
+      let col: string;
+      if (writing) {
+        col = shade(hex('#eef3ea'), 0.9 + r() * 0.12);
+        if (d > 6.2) col = shade(hex('#b9c8bf'), 0.95 + r() * 0.08);
+        else if (d > 3 && (x + y) % 5 === 0) col = shade(hex('#cdd9d0'), 1);
+      } else {
+        col = shade(hex('#7f958c'), 0.85 + r() * 0.12);
+        if (d > 6.2) col = shade(hex('#5e7068'), 0.95);
+      }
       px(ctx, x, y, col);
     }
   }
   return toTexture(c, undefined, false);
 }
 
-export function soapTipTexture(writing: boolean) {
-  const { c, ctx } = canvas(12);
-  const r = rng(writing ? 93 : 94);
-  for (let y = 0; y < 12; y++) {
-    for (let x = 0; x < 12; x++) {
-      const d = Math.hypot(x - 5.5, y - 5.5);
-      let col: string;
-      if (writing) {
-        col = shade(hex('#eef3ea'), 0.9 + r() * 0.12);
-        if (d > 4.6) col = shade(hex('#b9c8bf'), 0.95 + r() * 0.08);
-      } else {
-        col = shade(hex('#7f958c'), 0.85 + r() * 0.12);
-        if (d > 4.6) col = shade(hex('#5e7068'), 0.95);
-      }
-      px(ctx, x, y, col);
+// faixa de pano enrolada no meio do giz (pra segurar sem sujar a mão)
+export function soapWrapTexture() {
+  const { c, ctx } = canvas(16);
+  const r = rng(95);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const stripe = (x + y) % 6 < 3;
+      px(ctx, x, y, shade(hex(stripe ? '#9a3a3a' : '#7a2a30'), 0.9 + r() * 0.15));
     }
   }
+  rect(ctx, 0, 0, 16, 1, '#4a1a20');
+  rect(ctx, 0, 15, 16, 1, '#4a1a20');
   return toTexture(c, undefined, false);
 }
 

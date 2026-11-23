@@ -136,7 +136,7 @@ export default function App() {
           <span className="hint-pc">
             clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
           </span>
-          <span className="hint-touch">à direita: arremessar, posicionar e girar · esquerda: andar · arraste: olhar · GIZ no canto</span>
+          <span className="hint-touch">à direita: arremessar, posicionar, girar · esquerda: andar · GIZ no canto (com o giz, a borda direita gira a câmera)</span>
         </div>
       )}
 
@@ -199,7 +199,6 @@ export default function App() {
                 [
                   ['draw', '✎', 'Desenhar'],
                   ['erase', '⌫', 'Apagar'],
-                  ['look', '◉', 'Olhar'],
                 ] as [ChalkMode, string, string][]
               ).map(([m, ico, label]) => (
                 <button
@@ -228,6 +227,13 @@ export default function App() {
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {tool === 'chalk' && !complete && (
+        <div className="lookzone" aria-hidden="true">
+          <span>◉</span>
+          <span>OLHAR</span>
         </div>
       )}
 

@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
-import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture } from './textures';
+import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture, soapWrapTexture } from './textures';
 import { Chalk } from './chalk';
 import { CORRIDOR, dbg } from './kit';
 import { buildRoom1 } from './rooms/room1';
@@ -39,7 +39,7 @@ export interface StickState {
 }
 
 export type Tool = 'die' | 'chalk';
-export type ChalkMode = 'draw' | 'erase' | 'look';
+export type ChalkMode = 'draw' | 'erase';
 
 export interface SceneOptions {
   onStick?: (s: StickState) => void;
@@ -54,7 +54,7 @@ export interface SceneApi {
   place(): void; // posiciona o dado com cuidado onde a mira aponta
   rotate(): void; // próxima face
   swapTool(): void; // troca entre dado e giz na mão principal
-  setChalkMode(m: ChalkMode): void; // (celular) o que o dedo faz na tela com o giz
+  setChalkMode(m: ChalkMode): void; // (celular) desenhar ou apagar com o dedo
   clearChalk(): void; // apaga tudo (pede confirmação: aperte de novo)
   reset(): void; // reinicia a sala atual
   restart(): void; // volta pra primeira sala
@@ -235,10 +235,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     });
   const dieMats = makeMats(); // dado arremessado (dentro da sala)
   const handMats = makeMats(); // dado do HUD: escurece enquanto o outro está fora
-  const dieGeo = new RoundedBoxGeometry(1, 1, 1, 3, 0.16);
+  const dieGeo = new RoundedBoxGeometry(1, 1, 1, 4, 0.15);
+  // rebites dourados nos 8 cantos
+  const studGeo = new THREE.IcosahedronGeometry(0.075, 1);
+  const studMat = new THREE.MeshLambertMaterial({ color: 0xd4ac4e, emissive: 0x6a4a10, emissiveIntensity: 0.6 });
   const buildDie = (mats: THREE.Material[]) => {
     const g = new THREE.Group();
     g.add(new THREE.Mesh(dieGeo, mats));
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+      const st = new THREE.Mesh(studGeo, studMat);
+      st.position.set(sx * 0.41, sy * 0.41, sz * 0.41);
+      g.add(st);
+    }
     return g;
   };
 
@@ -325,6 +333,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const soapGroup = new THREE.Group();
   const soapHolder = new THREE.Group();
   soapHolder.add(new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.5, 1.45, 3, 0.13), soapMats));
+  const wrapMat = new THREE.MeshLambertMaterial({ map: soapWrapTexture() });
+  const wrap = new THREE.Mesh(new RoundedBoxGeometry(0.57, 0.57, 0.36, 2, 0.1), wrapMat);
+  wrap.position.z = -0.18;
+  soapHolder.add(wrap);
+  const capMat = new THREE.MeshLambertMaterial({ color: 0x3a3a48 });
+  const cap = new THREE.Mesh(new RoundedBoxGeometry(0.54, 0.54, 0.1, 2, 0.05), capMat);
+  cap.position.z = -0.73;
+  soapHolder.add(cap);
+  // pó de giz: grãozinhos que caem da ponta
+  const dustN = 10;
+  const dustPos = new Float32Array(dustN * 3);
+  const chalkDust = new THREE.Points(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(dustPos, 3)),
+    new THREE.PointsMaterial({ color: 0xeef3ea, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.9 }),
+  );
+  chalkDust.frustumCulled = false;
+  soapHolder.add(chalkDust);
   soapGroup.add(soapHolder);
   dieScene.add(soapGroup);
   const SOAP_ROT = new THREE.Euler(-0.95, 0.55, 0.5);
@@ -845,9 +870,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.aspect = aspect;
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
-    dieScaleBase = Math.min(0.17, halfW * 0.5);
-    dieBaseY = aspect < 1 ? -0.12 : -0.16;
-    handX = Math.min(halfW * 0.4, 0.44);
+    dieScaleBase = Math.min(0.235, halfW * 0.56);
+    dieBaseY = aspect < 1 ? -0.1 : -0.14;
+    handX = Math.min(halfW * 0.4, 0.47);
     soapBase.set(-handX, dieBaseY + 0.02, -1);
   };
   resize();
@@ -900,6 +925,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let stickX = 0;
   let stickY = 0;
   const STICK_R = 46;
+  const LOOK_EDGE = 0.78; // com o giz no celular: x ≥ 78% da tela = olhar
   const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
 
   let lockFailed = !canvas.requestPointerLock;
@@ -958,7 +984,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       stickX = 0;
       stickY = 0;
       emitStick(true);
-    } else if (tool === 'chalk' && (mouse || chalkMode !== 'look') && !brush.active) {
+    } else if (tool === 'chalk' && !mouse && rx >= LOOK_EDGE && lookId === -1) {
+      // celular com o giz: a faixa da direita gira a câmera (o meio da tela desenha)
+      lookId = e.pointerId;
+      lastX = downX = e.clientX;
+      lastY = downY = e.clientY;
+      downT = performance.now();
+      moved = false;
+    } else if (tool === 'chalk' && !brush.active) {
       // giz: arrastar desenha (ou apaga) onde o dedo/mouse está
       brush.active = true;
       brush.erase = !mouse && chalkMode === 'erase';
@@ -1341,7 +1374,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const drawing = brush.active && tool === 'chalk' && !brush.erase;
     const erasing = brush.active && tool === 'chalk' && brush.erase;
     const kk = Math.max(Math.sin(soapKick * Math.PI), drawing ? 0.55 + 0.25 * Math.sin(t * 17) : erasing ? 0.5 + 0.3 * Math.sin(t * 22) : 0);
-    soapGroup.scale.setScalar(dieScaleBase * 0.95 * (1 - 0.34 * su));
+    soapGroup.scale.setScalar(dieScaleBase * 1.18 * (1 - 0.34 * su));
     // x: de +handX (principal) para -handX (auxiliar); o golpe puxa um pouco pro centro
     const toCenter = -1 + 2 * su;
     soapGroup.position.set(
@@ -1350,6 +1383,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       soapBase.z,
     );
     const sgn = 2 * su - 1; // espelha a inclinação conforme a mão
+    {
+      const arr = chalkDust.geometry.attributes.position.array as Float32Array;
+      const active = drawing ? 1 : 0.25;
+      for (let i = 0; i < dustN; i++) {
+        const ph = (t * (0.7 + active) + i * 0.1) % 1;
+        arr[i * 3] = Math.sin(i * 12.9 + t) * 0.12 * ph;
+        arr[i * 3 + 1] = -ph * 0.55 * active;
+        arr[i * 3 + 2] = 0.78 + Math.cos(i * 7.7) * 0.08;
+      }
+      chalkDust.geometry.attributes.position.needsUpdate = true;
+      chalkDust.visible = drawing || su < 0.5;
+    }
     soapHolder.rotation.set(
       SOAP_ROT.x + kk * 0.5,
       sgn * SOAP_ROT.y + Math.sin(t * 0.9) * 0.05 + sgn * kk * 0.3,
@@ -1375,6 +1420,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Só em desenvolvimento: gancho pra testes automatizados (não vai pro build).
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
+      yaw: () => yaw,
       state: () => ({
         room: curRoom,
         dieState,
