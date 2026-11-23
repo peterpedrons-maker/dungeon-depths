@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { floorTexture, plateTexture } from '../textures';
-import { buildDoor, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import type { Box, Ctx, Room } from '../types';
 
 const X0 = -5;
@@ -17,7 +17,6 @@ const H = 5.8;
 const LEVEL = 2.4; // altura do palco
 const STAGE_Z = -5.5; // o palco vai daqui até o fundo
 const RAMP = { x0: 2.6, x1: 4.6, zLow: -1, zHigh: STAGE_Z };
-const PR = 0.3;
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
   max: new THREE.Vector3(x1, y1, z1),
@@ -35,7 +34,7 @@ export function buildRoom4(ctx: Ctx): Room {
 
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], 'frost')), 0, 0, zm, -Math.PI / 2);
   kit.plane(W, L, kit.brick([W / T, L / T], 0.7, 21), 0, H, zm, Math.PI / 2);
-  kit.plane(W, H, kit.brick([W / T, H / T], 1, 29), 0, H / 2, Z1, 0, Math.PI);
+  const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 35), X0, H / 2, zm, 0, Math.PI / 2);
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 41), X1, H / 2, zm, 0, -Math.PI / 2);
 
@@ -140,6 +139,8 @@ export function buildRoom4(ctx: Ctx): Room {
     subtitle: 'A porta fica no alto. A rampa sobe — a beirada, não.',
     group: kit.group,
     surfaces: kit.surfaces,
+    doorZ: Z0,
+    entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 2.2),
     startYaw: 0,
     fog: { color: '#070a14', near: 5, far: 26 },
@@ -149,12 +150,10 @@ export function buildRoom4(ctx: Ctx): Room {
       const r: ReturnType<Room['rects']> = [[X0 - 1, Z0 - 1, X1 + 1, STAGE_Z, LEVEL]];
       for (const [x, z] of PILLARS) r.push([x - 0.55, z - 0.55, x + 0.55, z + 0.55, H]);
       r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5, LEVEL + 1]);
+      r.push([X0 - 2, Z0, X0, Z1], [X1, Z0, X1 + 2, Z1]);
+      r.push(...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));
       return r;
-    },
-    clampPlayer(pos) {
-      pos.x = clamp(pos.x, X0 + PR, X1 - PR);
-      pos.z = clamp(pos.z, door.zEnd + PR, Z1 - PR);
     },
     clampDie(p, v, e, R) {
       if (p.y > H - R) {
@@ -195,7 +194,7 @@ export function buildRoom4(ctx: Ctx): Room {
       }
       if (lit) {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
-        flameLight.intensity = 40 * (0.85 + 0.12 * Math.sin(t * 12) + 0.06 * Math.sin(t * 4.3));
+        flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
       }
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();
       if (pressed && !plateDown) ctx.caption('Placa acionada', lit ? 'Suba até a porta, sem recolher o dado.' : 'Falta acender o braseiro lá em cima.', '#ffd36b');

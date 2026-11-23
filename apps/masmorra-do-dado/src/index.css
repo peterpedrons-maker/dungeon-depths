@@ -90,7 +90,3 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
 .soapbtns button.on { border-color: #ffd36b; background: rgba(70, 58, 30, 0.9); }
 .soapbtns .soap-swap { grid-column: 1 / -1; width: auto; }
 @media (max-height: 420px) { .soapbtns { left: 10px; bottom: 10px; gap: 6px; grid-template-columns: 52px 52px; } .soapbtns button { width: 52px; height: 40px; } }
-
-/* passagem entre salas */
-.fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 0.6s ease; z-index: 20; }
-.fade.on { opacity: 1; }

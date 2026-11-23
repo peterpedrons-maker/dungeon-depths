@@ -24,7 +24,6 @@ export default function App() {
   const [dieOut, setDieOut] = useState(false);
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
-  const [fade, setFade] = useState(false);
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null);
   const captionTimer = useRef(0);
 
@@ -39,7 +38,6 @@ export default function App() {
       onComplete: setComplete,
       onDie: (st) => setDieOut(st !== 'hand'),
       onTool: setTool,
-      onFade: setFade,
     });
     sceneRef.current = scene;
     const hintTimer = window.setTimeout(() => setHint(false), 9000);
@@ -224,8 +222,6 @@ export default function App() {
           )}
         </div>
       )}
-
-      <div className={`fade${fade ? ' on' : ''}`} />
 
       {complete && (
         <div className="done">

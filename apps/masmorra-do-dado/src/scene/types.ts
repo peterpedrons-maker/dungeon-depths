@@ -45,20 +45,22 @@ export interface Room {
   hint?: string;
   group: THREE.Group;
   surfaces: THREE.Object3D[]; // onde dá pra riscar com o giz
-  start: THREE.Vector3; // pés do jogador
+  doorZ: number; // z (local) da parede do fundo, onde fica a porta
+  entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior
+  start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)
   startYaw: number;
   fog: { color: string; near: number; far: number };
   ambient: { color: number; intensity: number };
   boxes: Box[]; // sólidos para o dado
   rects(feetY: number): Rect[]; // obstáculos para o jogador
-  clampPlayer(pos: THREE.Vector3): void; // limites externos
+  clampPlayer?(pos: THREE.Vector3): void; // limites curvos (coordenadas da sala); retas são obstáculos em rects()
   clampDie(p: THREE.Vector3, v: THREE.Vector3, e: number, R: number): void;
   groundY(x: number, z: number): number; // chão onde o jogador pisa
   dieFloor(x: number, z: number): number; // chão "inclinado" (rampa) para o dado
   update(dt: number, t: number): void;
   holdsDie(): boolean; // true = não recolhe o dado sozinho (ex.: placa apertada)
   onDieRest?(): void;
-  exitReached(): boolean;
+  exitReached?(): boolean; // só a última sala: fim da demonstração
   reset(): void;
   bonus?(): boolean; // achou o segredo da sala?
   dispose(): void;

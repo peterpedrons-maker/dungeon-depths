@@ -32,8 +32,10 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   apagar tudo pede confirmação). Planejado: minimapa com anotações persistentes e caderno
   de pistas. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
-  celular). Hoje há 4 salas em sequência (`src/scene/rooms/`, cada uma um módulo `Room` com
-  tema visual, formato e física próprios; `scene.ts` é o motor): 1 A Entrada (fogo + peso + gema
+  celular). Hoje há 4 salas num mundo contínuo (`src/scene/rooms/`, cada uma um módulo `Room` com
+  tema visual, formato e física próprios; `scene.ts` é o motor; as salas ficam lado a lado e o
+  corredor da porta de uma desemboca direto na entrada da próxima, sem tela de carregamento;
+  só o dado volta pra mão ao mudar de sala): 1 A Entrada (fogo + peso + gema
   escondida), 2 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
   fogo), 3 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
   4 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).

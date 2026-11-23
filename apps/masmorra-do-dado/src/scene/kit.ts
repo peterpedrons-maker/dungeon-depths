@@ -5,6 +5,8 @@ import { brickTexture, doorTexture, flameFrames, floorTexture, runeTexture } fro
 import type { Rect } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
+// chaves de depuração (só usadas pelos testes em desenvolvimento)
+export const dbg = { flicker: true, bob: true };
 export const LAMP_OFF = 0x2a2230;
 
 export function lambert(map: THREE.Texture | null, color = 0xffffff) {
@@ -89,7 +91,7 @@ export class Kit {
 
   tick(dt: number, t: number) {
     this.torches.forEach((tc, i) => {
-      tc.light.intensity = tc.base * (0.86 + 0.12 * Math.sin(t * 13 + tc.phase) + 0.07 * Math.sin(t * 5.1 + tc.phase * 3));
+      tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
       tc.sprite.material.map = this.frames[Math.floor(t * 8 + i) % this.frames.length];
     });
     if (this.dustGeo) {
@@ -121,6 +123,7 @@ export interface DoorOpts {
   h: number; // altura da parede acima de y0
   lamps: number; // 1, 2 ou 3 gemas
   theme?: string;
+  connected?: boolean; // true: o corredor desemboca na próxima sala (sem parede nem luz no fim)
 }
 
 export function buildDoor(kit: Kit, o: DoorOpts) {
@@ -210,9 +213,11 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   mk(CORRIDOR, ARCH_TOP, cm, DW, ARCH_TOP / 2, zc, 0, -Math.PI / 2);
   mk(2 * DW, CORRIDOR, ceilM, 0, ARCH_TOP, zc, Math.PI / 2, 0);
   mk(2 * DW, CORRIDOR, floorM, 0, 0.003, zc, -Math.PI / 2, 0);
-  const exitGlow = new THREE.Mesh(new THREE.PlaneGeometry(2 * DW, ARCH_TOP), new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }));
-  exitGlow.position.set(0, ARCH_TOP / 2, o.z0 - CORRIDOR);
-  g.add(exitGlow);
+  if (!o.connected) {
+    const exitGlow = new THREE.Mesh(new THREE.PlaneGeometry(2 * DW, ARCH_TOP), new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }));
+    exitGlow.position.set(0, ARCH_TOP / 2, o.z0 - CORRIDOR);
+    g.add(exitGlow);
+  }
   const corridorLight = new THREE.PointLight(0xffe2b0, 0, 0, 2);
   corridorLight.position.set(0, y0 + 1.9, o.z0 - 1.4);
   kit.group.add(corridorLight);
@@ -247,14 +252,69 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
     // paredes ao lado da abertura, aro e (fechada) a própria porta
     rects(open: boolean): Rect[] {
       const top = y0 + 3.5;
+      const zb = o.connected ? zEnd - 0.05 : zEnd - 0.4;
       const r: Rect[] = [
-        [o.x0 - 1, zEnd - 0.4, -DW, o.z0, top],
-        [DW, zEnd - 0.4, o.x1 + 1, o.z0, top],
+        [o.x0 - 1, zb, -DW, o.z0, top],
+        [DW, zb, o.x1 + 1, o.z0, top],
         [-R2, o.z0, -DW, o.z0 + 0.3, top],
         [DW, o.z0, R2, o.z0 + 0.3, top],
       ];
-      if (!open) r.push([-DW, zEnd - 0.4, DW, o.z0, top]);
+      // porta fechada: só a laje (fina) barra a passagem; o corredor em si fica livre
+      if (!open) r.push([-DW, o.z0 - 0.3, DW, o.z0, top]);
+      // sem saída (última sala): fecha o fundo do corredor
+      if (!o.connected) r.push([-DW, zEnd - 0.4, DW, zEnd, top]);
       return r;
+    },
+  };
+}
+
+// ── entrada de uma sala (liga com o corredor da sala anterior) ──────────────
+// Parede de frente (z = o.z, olhando pra dentro da sala, ou seja, -z) com a abertura em arco
+// no centro e um aro de pedra saindo pra dentro da sala.
+export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; h: number; theme?: string }) {
+  const theme = o.theme ?? kit.theme;
+  const wall = new THREE.Shape();
+  wall.moveTo(o.x0, 0);
+  wall.lineTo(-DW, 0);
+  wall.lineTo(-DW, DH);
+  wall.absarc(0, DH, DW, Math.PI, 0, true);
+  wall.lineTo(DW, 0);
+  wall.lineTo(o.x1, 0);
+  wall.lineTo(o.x1, o.h);
+  wall.lineTo(o.x0, o.h);
+  wall.closePath();
+  const wm = new THREE.Mesh(new THREE.ShapeGeometry(wall, 12), lambert(brickTexture([1 / T, 1 / T], 1, 25, theme)));
+  wm.rotation.y = Math.PI; // de frente pra dentro da sala
+  wm.position.z = o.z;
+  kit.add(wm);
+
+  const R2 = DW + 0.3;
+  const ring = new THREE.Shape();
+  ring.moveTo(-R2, 0);
+  ring.lineTo(-R2, DH);
+  ring.absarc(0, DH, R2, Math.PI, 0, true);
+  ring.lineTo(R2, 0);
+  ring.lineTo(DW, 0);
+  ring.lineTo(DW, DH);
+  ring.absarc(0, DH, DW, 0, Math.PI, false);
+  ring.lineTo(-DW, 0);
+  ring.closePath();
+  const rm = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(ring, { depth: 0.3, bevelEnabled: false, curveSegments: 12 }),
+    lambert(brickTexture([1 / 0.9, 1 / 0.9], 1.05, 63, theme)),
+  );
+  rm.rotation.y = Math.PI;
+  rm.position.z = o.z;
+  kit.add(rm);
+
+  return {
+    rects(): Rect[] {
+      return [
+        [o.x0 - 1, o.z, -DW, o.z + 0.5],
+        [DW, o.z, o.x1 + 1, o.z + 0.5],
+        [-R2, o.z - 0.3, -DW, o.z],
+        [DW, o.z - 0.3, R2, o.z],
+      ];
     },
   };
 }

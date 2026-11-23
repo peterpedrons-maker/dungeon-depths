@@ -12,7 +12,7 @@ import {
   sealPoints,
   slateTexture,
 } from '../textures';
-import { ARCH_TOP, buildDoor, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import type { Box, Ctx, Room } from '../types';
 
 const X0 = -5;
@@ -20,7 +20,6 @@ const X1 = 5;
 const Z0 = -14;
 const Z1 = 2;
 const H = 3.6;
-const PR = 0.3;
 const PILLARS: [number, number][] = [
   [-2.8, -3.5],
   [2.8, -3.5],
@@ -31,7 +30,6 @@ const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: n
   min: new THREE.Vector3(x0, y0, z0),
   max: new THREE.Vector3(x1, y1, z1),
 });
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 export function buildRoom2(ctx: Ctx): Room {
   const kit = new Kit('moss');
@@ -41,7 +39,7 @@ export function buildRoom2(ctx: Ctx): Room {
 
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], 'moss')), 0, 0, zm, -Math.PI / 2);
   kit.plane(W, L, kit.brick([W / T, L / T], 0.75, 19), 0, H, zm, Math.PI / 2);
-  kit.plane(W, H, kit.brick([W / T, H / T], 1, 27), 0, H / 2, Z1, 0, Math.PI);
+  const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 33), X0, H / 2, zm, 0, Math.PI / 2);
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 39), X1, H / 2, zm, 0, -Math.PI / 2);
 
@@ -51,7 +49,7 @@ export function buildRoom2(ctx: Ctx): Room {
     kit.box(1.1, 0.25, 1.1, kit.stone, x, H - 0.125, z);
   }
 
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 3 });
+  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 3, connected: true });
 
   // lousa à direita da porta
   const SLATE = new THREE.Vector3(3.4, 1.7, Z0 + 0.03);
@@ -72,14 +70,14 @@ export function buildRoom2(ctx: Ctx): Room {
   SEAL_PIECES.forEach((piece, i) => {
     const s = fragSpots[i];
     const side = Math.sign(-s.x) || 1;
-    kit.box(0.08, 1.4, 1.4, kit.stone, s.x + side * 0.03, 1.9, s.z, false);
+    kit.box(0.06, 1.4, 1.4, kit.stone, s.x + side * 0.0, 1.9, s.z, false); // moldura: da parede até 0,03 m
     const mat = new THREE.MeshBasicMaterial({ map: fragmentTexture(piece), fog: true, transparent: i === 2, opacity: i === 2 ? 0 : 1 });
     fragMats.push(mat);
-    kit.plane(1.15, 1.15, mat, s.x + side * 0.07, 1.9, s.z, 0, s.ry, false);
+    kit.plane(1.15, 1.15, mat, s.x + side * 0.06, 1.9, s.z, 0, s.ry, false); // 3 cm à frente da moldura
   });
   const hiddenFrag = fragMats[2];
   // moldura escura cobrindo o fragmento escondido enquanto não há fogo
-  const hiddenCover = kit.plane(1.15, 1.15, new THREE.MeshLambertMaterial({ color: 0x1a2220 }), fragSpots[2].x + 0.075, 1.9, fragSpots[2].z, 0, fragSpots[2].ry, false);
+  const hiddenCover = kit.plane(1.15, 1.15, new THREE.MeshLambertMaterial({ color: 0x1a2220 }), fragSpots[2].x + 0.065, 1.9, fragSpots[2].z, 0, fragSpots[2].ry, false);
 
   // braseiro (acende com Fogo e revela o fragmento escondido)
   const BX = -3.6;
@@ -168,6 +166,8 @@ export function buildRoom2(ctx: Ctx): Room {
     subtitle: 'Três fragmentos, uma lousa e a pedra-sabão. Um deles só aparece à luz do fogo.',
     group: kit.group,
     surfaces: kit.surfaces,
+    doorZ: Z0,
+    entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 0.8),
     startYaw: 0,
     fog: { color: '#050e0d', near: 4, far: 22 },
@@ -176,12 +176,10 @@ export function buildRoom2(ctx: Ctx): Room {
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5]);
+      r.push([X0 - 2, Z0, X0, Z1], [X1, Z0, X1 + 2, Z1]);
+      r.push(...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));
       return r;
-    },
-    clampPlayer(pos) {
-      pos.x = clamp(pos.x, X0 + PR, X1 - PR);
-      pos.z = clamp(pos.z, door.zEnd + PR, Z1 - PR);
     },
     clampDie(p, v, e, R) {
       if (p.y > H - R) {
@@ -216,7 +214,7 @@ export function buildRoom2(ctx: Ctx): Room {
       }
       if (lit) {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
-        flameLight.intensity = 40 * (0.85 + 0.12 * Math.sin(t * 12) + 0.06 * Math.sin(t * 4.3));
+        flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
         reveal = Math.min(1, reveal + dt * 0.7);
         hiddenFrag.opacity = reveal;
         hiddenCover.visible = reveal < 0.02;
@@ -241,7 +239,6 @@ export function buildRoom2(ctx: Ctx): Room {
         ctx.caption('O selo se completou', 'A porta se abre.', '#ffd36b');
       }
     },
-    exitReached: () => doorOpen > 0.85 && ctx.player.pos.z < door.zExit,
     reset() {
       lit = false;
       reveal = 0;

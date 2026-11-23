@@ -7,11 +7,12 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { FACES } from '../faces';
 import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture } from './textures';
 import { Chalk } from './chalk';
+import { CORRIDOR, dbg } from './kit';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
 import { buildRoom4 } from './rooms/room4';
-import type { ChalkDot, Ctx, DieState, Room, RoomBuilder } from './types';
+import type { Ctx, DieState, Rect, Room, RoomBuilder } from './types';
 
 const FOG = '#0b0912';
 const BUILDERS: RoomBuilder[] = [buildRoom1, buildRoom2, buildRoom3, buildRoom4];
@@ -45,8 +46,6 @@ export interface SceneOptions {
   onComplete?: (info: { gem: boolean }) => void;
   onDie?: (state: 'hand' | 'flying' | 'rest') => void;
   onTool?: (tool: Tool) => void;
-  onRoom?: (info: { index: number; total: number; name: string }) => void;
-  onFade?: (black: boolean) => void;
 }
 
 export interface SceneApi {
@@ -305,7 +304,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   const chalk = new Chalk();
   scene.add(chalk.mesh);
-  const chalkStores: ChalkDot[][] = BUILDERS.map(() => []);
   const ray = new THREE.Raycaster();
   const ndc0 = new THREE.Vector2(0, 0);
   const brush = { active: false, erase: false, id: -1, ndc: new THREE.Vector2(0, 0), mouse: false };
@@ -317,7 +315,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     camera.updateMatrixWorld();
     ray.setFromCamera(ndc, camera);
     ray.far = 4.5;
-    const hit = ray.intersectObjects(room.surfaces, false)[0];
+    const hit = ray.intersectObjects(nearSurfaces(), false)[0];
     if (!hit || !hit.face) {
       chalk.beginStroke();
       return;
@@ -378,40 +376,84 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let landKick = 0;
   const moveVel = new THREE.Vector3(); // velocidade horizontal (m/s)
 
-  // ── salas ───────────────────────────────────────────────────────────────
-  let room!: Room;
-  let roomIdx = 0;
+  // ── mundo: as salas ficam lado a lado, ligadas por corredores abertos ───
+  // Cada sala é construída em coordenadas próprias e colocada num deslocamento (offs) pra
+  // que o corredor da porta de uma desemboque direto na entrada da próxima: nada de carregar.
+  const rooms: Room[] = [];
+  const offs: THREE.Vector3[] = [];
+  let curRoom = 0;
+  let dieRoom = 0; // sala onde o dado está (a posição dieP é local a ela)
   let gems = 0;
   let complete = false;
-  let trans: { phase: 'out' | 'in'; t: number } | null = null;
+  const announced = new Set<number>();
+  const FAR = new THREE.Vector3(0, -99, 0);
 
-  const ctx: Ctx = {
-    caption: (a, b, c) => caption(a, b, c),
-    player: { pos },
-    feetY: () => feetY,
-    die: {
-      get state() {
-        return dieState;
+  const makeCtx = (off: THREE.Vector3, idx: number): Ctx => {
+    const lp = new THREE.Vector3();
+    return {
+      caption: (a, b, c) => caption(a, b, c),
+      player: {
+        get pos() {
+          return lp.copy(pos).sub(off);
+        },
       },
-      get face() {
-        return thrownFace;
+      feetY: () => feetY - off.y,
+      die: {
+        get state() {
+          return dieRoom === idx ? dieState : 'hand';
+        },
+        get face() {
+          return thrownFace;
+        },
+        get thrown() {
+          return dieThrown;
+        },
+        get pos() {
+          return dieRoom === idx ? dieP : FAR;
+        },
+        get R() {
+          return R;
+        },
       },
-      get thrown() {
-        return dieThrown;
+      chalk: {
+        dotsOn: (o) =>
+          chalk.dotsOn(o.id).map((d) => ({ ...d, x: d.x - off.x, y: d.y - off.y, z: d.z - off.z })),
+        get revision() {
+          return chalk.revision;
+        },
       },
-      get pos() {
-        return dieP;
-      },
-      get R() {
-        return R;
-      },
-    },
-    chalk: {
-      dotsOn: (o) => chalk.dotsOn(o.id),
-      get revision() {
-        return chalk.revision;
-      },
-    },
+    };
+  };
+
+  const buildWorld = () => {
+    rooms.forEach((r) => {
+      scene.remove(r.group);
+      r.dispose();
+    });
+    rooms.length = 0;
+    offs.length = 0;
+    BUILDERS.forEach((build, i) => {
+      const off = new THREE.Vector3();
+      const room = build(makeCtx(off, i));
+      if (i > 0) off.z = offs[i - 1].z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ;
+      room.group.position.copy(off);
+      scene.add(room.group);
+      rooms.push(room);
+      offs.push(off);
+    });
+  };
+
+  // em qual sala está o ponto z (o corredor pertence à sala da porta)
+  const roomOfZ = (z: number) => {
+    for (let i = 0; i < rooms.length; i++) {
+      if (z <= offs[i].z + rooms[i].entranceZ && z > offs[i].z + rooms[i].doorZ - CORRIDOR) return i;
+    }
+    return z > offs[0].z + rooms[0].entranceZ ? 0 : rooms.length - 1;
+  };
+  const nearSurfaces = () => {
+    const out: THREE.Object3D[] = [];
+    for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) out.push(...rooms[i].surfaces);
+    return out;
   };
 
   const resetDie = () => {
@@ -422,29 +464,36 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     handPop = 1;
   };
 
-  const loadRoom = (i: number, announce = true) => {
-    if (room) {
-      scene.remove(room.group);
-      room.dispose();
-    }
-    roomIdx = i;
-    room = BUILDERS[i](ctx);
-    scene.add(room.group);
-    scene.fog = new THREE.Fog(room.fog.color, room.fog.near, room.fog.far);
-    fogColor = room.fog.color;
-    ambient.color.setHex(room.ambient.color);
-    ambient.intensity = room.ambient.intensity;
-    feetY = room.start.y;
-    pos.set(room.start.x, feetY + EYE, room.start.z);
-    yaw = room.startYaw;
+  // põe o jogador no ponto de início de uma sala
+  const spawnIn = (i: number) => {
+    const r = rooms[i];
+    feetY = offs[i].y + r.start.y;
+    pos.set(offs[i].x + r.start.x, feetY + EYE, offs[i].z + r.start.z);
+    yaw = r.startYaw;
     pitch = -0.04;
     vy = 0;
     moveVel.set(0, 0, 0);
     brush.active = false;
-    chalk.use(chalkStores[i]);
+    curRoom = i;
+    dieRoom = i;
     resetDie();
-    opts.onRoom?.({ index: i, total: BUILDERS.length, name: room.name });
-    if (announce) caption(room.name, room.subtitle, '#ffd36b');
+  };
+
+  // luz, névoa e clima acompanham a sala onde o jogador está (suave, sem corte)
+  const fogC = new THREE.Color();
+  const ambC = new THREE.Color();
+  const blendAtmosphere = (dt: number, snap = false) => {
+    const r = rooms[curRoom];
+    const k = snap ? 1 : 1 - Math.exp(-dt * 2.2);
+    fogC.set(r.fog.color);
+    const f = scene.fog as THREE.Fog;
+    f.color.lerp(fogC, k);
+    f.near += (r.fog.near - f.near) * k;
+    f.far += (r.fog.far - f.far) * k;
+    ambC.setHex(r.ambient.color);
+    ambient.color.lerp(ambC, k);
+    ambient.intensity += (r.ambient.intensity - ambient.intensity) * k;
+    fogColor = '#' + f.color.getHexString();
   };
 
   // ── movimento e colisão do dado ─────────────────────────────────────────
@@ -489,6 +538,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     let ground = false;
     let flat = true;
     // chão (plano ou rampa)
+    const room = rooms[dieRoom];
     const fy = room.dieFloor(dieP.x, dieP.z) + R;
     if (dieP.y < fy) {
       const eps = 0.05;
@@ -544,7 +594,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieState = 'returning';
   };
 
-  const busy = () => !!trans || complete;
+  const busy = () => complete;
 
   const throwDie = () => {
     if (dieState !== 'hand' || busy()) return;
@@ -553,12 +603,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateMats();
     const ph = PHYS[face] ?? PHYS[1];
     camera.getWorldDirection(fwdV);
+    dieRoom = curRoom;
     handWorld(dieP);
+    dieP.sub(offs[dieRoom]); // a posição do dado é local à sala dele
     dieV.copy(fwdV).multiplyScalar(ph.speed);
     dieV.y += ph.up * ph.speed;
     dieV.addScaledVector(moveVel, 0.6); // herda um pouco do movimento de quem arremessa
     dieW.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
-    worldDie.position.copy(dieP);
+    worldDie.position.copy(dieP).add(offs[dieRoom]);
     worldModel.scale.setScalar(0.42);
     worldDie.visible = true;
     dieState = 'flying';
@@ -570,15 +622,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // com precisão — mas o dado "posicionado" não pega segredos: pra eles
   // ainda é preciso arremessar (ricochete).
   const PLACE_RANGE = 3.2;
-  const aimPoint = (): { p: THREE.Vector3; n: THREE.Vector3 } | null => {
+  const aimPoint = (): { p: THREE.Vector3; n: THREE.Vector3; room: number } | null => {
     camera.updateMatrixWorld();
     ray.setFromCamera(ndc0, camera);
     ray.far = PLACE_RANGE;
-    const hit = ray.intersectObjects(room.surfaces, false)[0];
+    const hit = ray.intersectObjects(nearSurfaces(), false)[0];
     if (!hit || !hit.face) return null;
+    // só dá pra posicionar dentro do salão (não no corredor, que é só passagem)
+    const ri = roomOfZ(hit.point.z);
+    const lz = hit.point.z - offs[ri].z;
+    if (lz < rooms[ri].doorZ + 0.15 || lz > rooms[ri].entranceZ - 0.15) return null;
     const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
     if (n.dot(ray.ray.direction) > 0) n.negate();
-    return { p: hit.point, n };
+    return { p: hit.point, n, room: ri };
   };
   const placeDie = () => {
     if (dieState !== 'hand' || busy()) return;
@@ -590,6 +646,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     thrownFace = face;
     dieThrown = false;
     updateMats();
+    dieRoom = a.room;
     animTo.copy(a.p).addScaledVector(a.n, R + 0.02);
     handWorld(animFrom);
     animT = 0;
@@ -889,6 +946,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
 
+  const lcl = new THREE.Vector3();
+  // obstáculos das salas vizinhas, em coordenadas do mundo
+  const worldRects = (): Rect[] => {
+    const out: Rect[] = [];
+    for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) {
+      const o = offs[i];
+      for (const r of rooms[i].rects(feetY - o.y)) out.push([r[0] + o.x, r[1] + o.z, r[2] + o.x, r[3] + o.z, r[4] === undefined ? undefined : r[4] + o.y]);
+    }
+    return out;
+  };
+
   const MAX_SPEED = 2.7;
   const move = (dt: number) => {
     if (busy()) {
@@ -924,7 +992,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pos.x += (moveVel.x * dt) / steps;
       pos.z += (moveVel.z * dt) / steps;
       for (let pass = 0; pass < 2; pass++) {
-        for (const r of room.rects(feetY)) pushOut(r);
+        for (const r of worldRects()) pushOut(r);
         if (dieState === 'rest') {
           const dx = pos.x - dieP.x;
           const dz = pos.z - dieP.z;
@@ -937,14 +1005,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           }
         }
       }
-      room.clampPlayer(pos);
+      const cr = rooms[curRoom];
+      if (cr.clampPlayer) {
+        lcl.copy(pos).sub(offs[curRoom]);
+        cr.clampPlayer(lcl);
+        pos.copy(lcl).add(offs[curRoom]);
+      }
     }
     return sp > 0.35;
   };
 
   // gravidade: subir rampa gruda no chão; ladeira abaixo acompanha; beirada = queda
   const vertical = (dt: number) => {
-    const gy = room.groundY(pos.x, pos.z);
+    const ri = roomOfZ(pos.z);
+    const gy = rooms[ri].groundY(pos.x - offs[ri].x, pos.z - offs[ri].z) + offs[ri].y;
     const diff = gy - feetY;
     if (diff >= 0 || (diff > -0.3 && vy === 0)) {
       feetY = gy;
@@ -963,26 +1037,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // reinicia só a sala atual (o giz fica)
   const reset = () => {
     if (busy()) return;
-    room.reset();
-    resetDie();
-    feetY = room.start.y;
-    pos.set(room.start.x, feetY + EYE, room.start.z);
-    yaw = room.startYaw;
-    pitch = -0.04;
-    vy = 0;
-    moveVel.set(0, 0, 0);
+    rooms[curRoom].reset();
+    spawnIn(curRoom);
   };
 
   const restart = () => {
     gems = 0;
     complete = false;
-    trans = null;
-    opts.onFade?.(false);
-    chalkStores.forEach((s) => (s.length = 0));
-    loadRoom(0);
+    chalk.clear();
+    announced.clear();
+    rooms.forEach((r) => r.reset());
+    spawnIn(0);
+    blendAtmosphere(0, true);
+    announced.add(0);
+    caption(rooms[0].name, rooms[0].subtitle, '#ffd36b');
   };
 
-  loadRoom(0, false);
+  buildWorld();
+  scene.fog = new THREE.Fog(rooms[0].fog.color, rooms[0].fog.near, rooms[0].fog.far);
+  ambient.color.setHex(rooms[0].ambient.color);
+  ambient.intensity = rooms[0].ambient.intensity;
+  spawnIn(0);
+  blendAtmosphere(0, true);
+  announced.add(0);
 
   // ── loop ────────────────────────────────────────────────────────────────
   let raf = 0;
@@ -998,11 +1075,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     const moving = move(dt);
     vertical(dt);
+    const ri = roomOfZ(pos.z);
+    if (ri !== curRoom) {
+      curRoom = ri;
+      // saiu da sala do dado: o dado volta pra mão (a porta atrás fecha)
+      if (dieState !== 'hand' && dieRoom !== curRoom) resetDie();
+      if (!announced.has(ri)) {
+        announced.add(ri);
+        caption(rooms[ri].name, rooms[ri].subtitle, '#ffd36b');
+      }
+    }
+    blendAtmosphere(dt);
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     bobAmp += (speedFrac - bobAmp) * Math.min(1, dt * 8);
     bob += dt * (6 + 4 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
-    const bobY = Math.sin(bob) * 0.032 * bobAmp + Math.sin(t * 1.3) * 0.012 * (1 - bobAmp) - landKick * 0.18;
+    const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
     pos.y = feetY + EYE;
     camera.position.set(pos.x, pos.y + bobY, pos.z);
     camera.rotation.set(pitch, yaw, 0);
@@ -1011,7 +1099,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (dieState === 'flying') {
       const n = Math.max(1, Math.ceil(dt / (1 / 120)));
       for (let i = 0; i < n && dieState === 'flying'; i++) stepDie(dt / n);
-      worldDie.position.copy(dieP);
+      worldDie.position.copy(dieP).add(offs[dieRoom]);
       const w = dieW.length();
       if (w > 1e-4) {
         tmpQ.setFromAxisAngle(tmpAxis.copy(dieW).normalize(), w * dt);
@@ -1026,7 +1114,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       worldDie.position.y += Math.sin(Math.PI * u) * 0.28;
       worldModel.scale.setScalar(0.3 + 0.12 * e);
       if (u >= 1) {
-        dieP.copy(animTo);
+        dieP.copy(animTo).sub(offs[dieRoom]);
         dieV.set(0, 0, 0);
         dieW.set(0, 0, 0);
         worldModel.scale.setScalar(0.42);
@@ -1051,8 +1139,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
-      worldDie.position.copy(dieP);
-      if (!room.holdsDie()) {
+      worldDie.position.copy(dieP).add(offs[dieRoom]);
+      if (!rooms[dieRoom].holdsDie()) {
         restReturn += dt;
         if (restReturn > 1.8) recall();
       }
@@ -1063,27 +1151,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
     }
 
-    // ── sala ──
-    room.update(dt, t);
-    if (!trans && !complete && room.exitReached()) {
-      trans = { phase: 'out', t: 0 };
-      opts.onFade?.(true);
-    }
-    if (trans) {
-      trans.t += dt;
-      if (trans.phase === 'out' && trans.t > 0.7) {
-        if (room.bonus?.()) gems++;
-        if (roomIdx + 1 >= BUILDERS.length) {
-          complete = true;
-          trans = null;
-          opts.onFade?.(false);
-          opts.onComplete?.({ gem: gems > 0 });
-        } else {
-          loadRoom(roomIdx + 1);
-          trans = { phase: 'in', t: 0 };
-          opts.onFade?.(false);
-        }
-      } else if (trans.phase === 'in' && trans.t > 0.7) trans = null;
+    // ── salas ──
+    rooms.forEach((r) => r.update(dt, t));
+    const lastRoom = rooms[rooms.length - 1];
+    if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
+      complete = true;
+      gems = rooms.filter((r) => r.bonus?.()).length;
+      opts.onComplete?.({ gem: gems > 0 });
     }
 
     // ── giz ──
@@ -1160,12 +1234,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
       state: () => ({
-        room: roomIdx,
+        room: curRoom,
         dieState,
         face,
         tool,
         complete,
-        trans: !!trans,
         x: pos.x,
         y: feetY,
         z: pos.z,
@@ -1182,7 +1255,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       act: () => action(),
       put: () => place(),
       reset: () => reset(),
-      goto: (i: number) => loadRoom(i),
+      goto: (i: number) => spawnIn(i),
       tool: (tl: Tool) => setTool(tl),
       swap: () => swapTool(),
       // coordenadas de tela (NDC) de um ponto do mundo
@@ -1196,9 +1269,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         for (const [x, y] of pts) paintAt(new THREE.Vector2(x, y), erase);
         chalk.beginStroke();
       },
+      dbg,
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)
       drop: (x: number, y: number, z: number) => {
+        dieRoom = curRoom;
         thrownFace = face;
         dieThrown = true;
         dieP.set(x, y, z);

@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { floorTexture, plateTexture } from '../textures';
-import { buildDoor, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import type { Box, Ctx, Room } from '../types';
 
 const R = 6.5; // raio do salão
@@ -30,13 +30,13 @@ export function buildRoom3(ctx: Ctx): Room {
 
   // paredes curvas (com um vão onde entra a parede reta da porta)
   const gap = 2 * Math.asin(HALF / R);
-  const thetaLen = Math.PI * 2 - gap;
-  const wall = new THREE.Mesh(
-    new THREE.CylinderGeometry(R, R, H, 56, 1, true, Math.PI + gap / 2, thetaLen),
-    new THREE.MeshLambertMaterial({ map: kit.brick([(R * thetaLen) / T, H / T], 1, 77).map, side: THREE.BackSide }),
-  );
-  wall.position.y = H / 2;
-  kit.add(wall);
+  const arc = Math.PI - gap; // cada metade da parede curva (um vão na frente e outro no fundo)
+  const wallMat = new THREE.MeshLambertMaterial({ map: kit.brick([(R * arc) / T, H / T], 1, 77).map, side: THREE.BackSide });
+  for (const start of [gap / 2, Math.PI + gap / 2]) {
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 32, 1, true, start, arc), wallMat);
+    wall.position.y = H / 2;
+    kit.add(wall);
+  }
   const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 56), lambert(floorTexture([(2 * R) / T, (2 * R) / T], 'ember')));
   floor.rotation.x = -Math.PI / 2;
   kit.add(floor);
@@ -51,7 +51,8 @@ export function buildRoom3(ctx: Ctx): Room {
     kit.box(1.1, 0.25, 1.1, kit.stone, x, H - 0.125, z);
   }
 
-  const door = buildDoor(kit, { x0: -HALF, x1: HALF, z0: Z0, h: H, lamps: 3 });
+  const door = buildDoor(kit, { x0: -HALF, x1: HALF, z0: Z0, h: H, lamps: 3, connected: true });
+  const entrance = buildEntrance(kit, { x0: -HALF, x1: HALF, z: -Z0, h: H });
 
   // placa central
   const PLATE = { x: 0, z: 0, half: 0.7, top: 0.07 };
@@ -114,7 +115,9 @@ export function buildRoom3(ctx: Ctx): Room {
     subtitle: 'Acenda as três chamas antes que se apaguem — e pese a placa central.',
     group: kit.group,
     surfaces: kit.surfaces,
-    start: new THREE.Vector3(0, 0, 5.0),
+    doorZ: Z0,
+    entranceZ: -Z0,
+    start: new THREE.Vector3(0, 0, 4.6),
     startYaw: 0,
     fog: { color: '#120706', near: 4, far: 20 },
     ambient: { color: 0xb08878, intensity: 1.7 },
@@ -122,11 +125,13 @@ export function buildRoom3(ctx: Ctx): Room {
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       for (const [x, z] of BRAZIERS) r.push([x - 0.5, z - 0.5, x + 0.5, z + 0.5]);
+      r.push(...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));
       return r;
     },
+    // só dentro do salão (nos corredores quem limita são as paredes retas)
     clampPlayer(pos) {
-      if (pos.z > Z0 - 0.01) {
+      if (pos.z > Z0 - 0.01 && pos.z < -Z0 + 0.01) {
         const d = Math.hypot(pos.x, pos.z);
         const max = R - PR;
         if (d > max) {
@@ -134,7 +139,6 @@ export function buildRoom3(ctx: Ctx): Room {
           pos.z *= max / d;
         }
       }
-      pos.z = Math.max(pos.z, door.zEnd + PR);
     },
     clampDie(p, v, e, Rd) {
       if (p.y > H - Rd) {
@@ -157,6 +161,10 @@ export function buildRoom3(ctx: Ctx): Room {
       if (Math.abs(p.x) < HALF + 0.2 && p.z < Z0 + Rd + 0.03) {
         p.z = Z0 + Rd + 0.03;
         if (v.z < 0) v.z = -v.z * e;
+      }
+      if (Math.abs(p.x) < HALF + 0.2 && p.z > -Z0 - Rd - 0.03) {
+        p.z = -Z0 - Rd - 0.03;
+        if (v.z > 0) v.z = -v.z * e;
       }
     },
     groundY: () => 0,
@@ -186,7 +194,7 @@ export function buildRoom3(ctx: Ctx): Room {
           const k = Math.min(1, b.left / 8); // nos últimos 8 s a chama encolhe
           b.flame.scale.set(0.75 * (0.4 + 0.6 * k), 0.6 * (0.4 + 0.6 * k), 1);
           b.flame.material.map = kit.frames[Math.floor(t * 8 + i) % kit.frames.length];
-          b.light.intensity = 40 * k * (0.85 + 0.12 * Math.sin(t * 12 + i) + 0.06 * Math.sin(t * 4.3));
+          b.light.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + i) + 0.012 * Math.sin(t * 11));
         }
         door.lampMats[i].color.setHex(b.left > 0 ? 0xff7a2e : LAMP_OFF);
       });
@@ -208,7 +216,6 @@ export function buildRoom3(ctx: Ctx): Room {
       }
       if (!wantOpen) announced = false;
     },
-    exitReached: () => doorOpen > 0.85 && ctx.player.pos.z < door.zExit,
     reset() {
       braziers.forEach((b) => {
         b.left = 0;

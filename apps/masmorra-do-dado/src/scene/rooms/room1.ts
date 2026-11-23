@@ -18,12 +18,10 @@ const PILLARS: [number, number][] = [
   [-2.3, -7],
   [2.3, -7],
 ];
-const PR = 0.3;
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
   max: new THREE.Vector3(x1, y1, z1),
 });
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 export function buildRoom1(ctx: Ctx): Room {
   const kit = new Kit('crypt');
@@ -44,7 +42,7 @@ export function buildRoom1(ctx: Ctx): Room {
     kit.box(1.1, 0.25, 1.1, kit.stone, x, H - 0.125, z);
   }
 
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 2 });
+  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 2, connected: true });
   const [lampPlate, lampFire] = door.lampMats;
 
   // placa de pressão e piso rachado
@@ -134,6 +132,8 @@ export function buildRoom1(ctx: Ctx): Room {
     subtitle: 'Fogo no braseiro, peso na placa — e a porta cede.',
     group: kit.group,
     surfaces: kit.surfaces,
+    doorZ: Z0,
+    entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0b0912', near: 4, far: 19 },
@@ -142,12 +142,10 @@ export function buildRoom1(ctx: Ctx): Room {
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       r.push([2.4, -9.7, 3.4, -8.7]);
+      // paredes: esquerda, direita e a da frente (a primeira sala não tem entrada)
+      r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5], [X0 - 2, Z1, X1 + 2, Z1 + 0.5]);
       r.push(...door.rects(doorOpen > 0.85));
       return r;
-    },
-    clampPlayer(pos) {
-      pos.x = clamp(pos.x, X0 + PR, X1 - PR);
-      pos.z = clamp(pos.z, door.zEnd + PR, Z1 - PR);
     },
     clampDie(p, v, e, R) {
       if (p.y > H - R) {
@@ -208,7 +206,7 @@ export function buildRoom1(ctx: Ctx): Room {
       if (!wantOpen) announced = false;
       if (lit) {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
-        flameLight.intensity = 40 * (0.85 + 0.12 * Math.sin(t * 12) + 0.06 * Math.sin(t * 4.3));
+        flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
       }
       if (!gemTaken) {
         gem.position.y = 2.1 + Math.sin(t * 2) * 0.04;
@@ -220,7 +218,6 @@ export function buildRoom1(ctx: Ctx): Room {
         });
       }
     },
-    exitReached: () => doorOpen > 0.85 && ctx.player.pos.z < door.zExit,
     reset() {
       lit = false;
       flame.visible = false;
