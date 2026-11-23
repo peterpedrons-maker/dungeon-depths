@@ -27,7 +27,7 @@ Tom: melancólico, curioso, sem humor forçado. Referências: *Chants of Sennaar
   2. **Absolver:** negar a frase (ATRAVESSAR/NÃO).
   3. **Repetir:** lançar o julgamento inteiro de novo (DE NOVO).
 - **O crime** nunca é entregue: o jogador o reconstrói por frases, e em partes ele é ambíguo.
-- Quem fala: **ecos** dos Contáveis (balões em glifos) e textos achados. Ver §7.
+- Quem fala: **poucos NPCs** (ecos dos Contáveis) e, sobretudo, **diários achados** de outros condenados. Ver §7b.
 - **[DECIDIR]** nome do jogador (ou sem nome), tom exato dos textos de lore, nome do jogo.
 
 ## 3. A língua (resumo; detalhe em `LINGUA.md`)
@@ -44,13 +44,16 @@ Tom: melancólico, curioso, sem humor forçado. Referências: *Chants of Sennaar
 
 **O jogo nunca explica.** Nenhum texto traduzido, nenhum balão dizendo o significado.
 
-**Regra 1-2-3** para toda palavra nova:
-1. **1ª vez:** o símbolo aparece **junto do efeito**. Ex.: em cima de uma tocha apagada; o jogador a acende.
-2. **2ª vez:** o símbolo aparece em cima de **outra coisa** que também sofre o mesmo efeito.
-3. **3ª vez:** o símbolo aparece **sozinho**, e o jogador precisa aplicá-lo.
+**Não há regra fixa.** Cada palavra é ensinada com a ferramenta que fizer mais sentido, e elas se misturam:
+- **Demonstração:** o símbolo aparece junto do efeito (em cima de uma tocha apagada; o jogador a acende).
+- **Repetição com variação:** o símbolo aparece em outra coisa (mudando só um elemento por vez, para separar a coisa da ação).
+- **Uso sozinho:** o símbolo aparece sem ajuda e o jogador precisa aplicá-lo.
+- **Altar:** destravar uma face do dado ensina a palavra dela.
+- **NPC/eco:** usa a palavra numa fala ou reage a ela.
+- **Diário achado:** o registro de outro condenado mostra um símbolo e o que ele achava que significava.
 
-Em cada encontro **muda só uma coisa** (a coisa ou a ação), para o jogador separar uma da outra.
-Triangulação: toda palavra aparece em pelo menos três contextos.
+Triangulação continua valendo: toda palavra precisa aparecer em contextos suficientes para ser deduzida.
+O que importa é que o jogo nunca diga o significado.
 
 ## 5. O Diário (guarda "tudo" do jogador)
 
@@ -87,6 +90,39 @@ Nunca por um selo no diário. A confirmação é **dentro do mundo**:
 3. **Textos de lore:** frases onde a palavra aparece de um jeito que só faz sentido com o significado certo.
 4. **[DECIDIR]** os balões dos ecos começam só em glifos; **quando uma palavra foi provada pelo uso**, ela passa
    a aparecer em português dentro do balão. Seria a grande recompensa visível, e funciona em qualquer idioma.
+
+## 7b. Conversas e diários achados
+
+**Janela de conversa** (estilo RPG clássico, não balão de HQ): caixa na parte de baixo da tela com o nome de quem fala
+e o texto aparecendo letra a letra. Toque ou Espaço avança; segurar acelera. Serve para NPCs e para leituras.
+
+**NPCs: poucos.** Ecos dos Contáveis, com falas curtas. **[DECIDIR]** quantidade (chute: 3 a 4 no jogo todo).
+
+**Diários achados.** Outros condenados deixaram cadernos pelo caminho, **no mesmo formato do diário do jogador**:
+símbolos desenhados com a anotação que a pessoa fez ("acho que é acender"), mais fragmentos da vida dela.
+- Servem de **dica sem a voz do jogo**, para desempacar um puzzle.
+- Cada autor tem personalidade e um destino (o diário é achado onde ele parou).
+- Nem todo diário acerta: um pode errar, dois podem se contradizer, e o jogador resolve testando.
+- Alguns falam de **segredos** (áreas opcionais que o autor descobriu).
+- Entram na aba **Textos** do diário do jogador.
+- Colocados perto de pontos difíceis, também servem de rede de segurança para quem travar.
+
+## 7c. O dado e o giz: progressão e funções (rascunho cerebral)
+
+- O jogador **não começa com tudo**. Começa com o giz, o dado, ou os dois, mas o dado com **1 ou 2 faces no máximo**.
+- As outras faces são destravadas em **altares** (cada altar é um puzzle e ensina a palavra da face).
+- Princípio: o dado é **um verbo que se coloca numa coisa**. Menos arremesso e mais posicionar, espelhando a
+  gramática da língua (verbo + coisa): colocar o dado de Fogo num braseiro é "ACENDER BRASEIRO".
+- Arremessar fica só como forma de alcançar lugares, não como puzzle.
+
+| Face | Palavra | Proposta (todas **[DECIDIR]**) |
+|---|---|---|
+| Fogo | ACENDER | acende e **revela** (escrita invisível só aparece à luz) |
+| Peso | IGUAL | o dado vale o **número da face** em balanças e placas (somas, base 6) |
+| Ricochete | DE NOVO | deixa de ser arremesso: vira **Eco**, o dado repete a última ação feita ali (re-aciona um mecanismo, repete uma sequência, espelha um traço de giz) |
+| Troca | EM VEZ DE | troca de lugar o estado de duas coisas, ou duas palavras numa frase talhada (mudando o que ela manda) |
+| Deslizar | ENTÃO | define a **ordem** (A dispara B): puzzles de sequência |
+| Atravessar | NÃO | nega: apaga o efeito de outra face ou torna algo intangível ("não acender" = apagar) |
 
 ## 8. Estilo visual da escrita
 
