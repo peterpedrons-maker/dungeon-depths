@@ -30,15 +30,13 @@ Tom: melancólico, curioso, sem humor forçado. Referências: *Chants of Sennaar
 - Quem fala: **poucos NPCs** (ecos dos Contáveis) e, sobretudo, **diários achados** de outros condenados. Ver §7b.
 - **[DECIDIR]** nome do jogador (ou sem nome), tom exato dos textos de lore, nome do jogo.
 
-## 3. A língua (resumo; detalhe em `LINGUA.md`)
+## 3. A língua (resumo; detalhe em `LINGUA.md`, vocabulário em `tools/lexicon.mjs`)
 
-- Alfabeto: grade **3×3** de pontos, como o rosto de um dado. Três famílias de forma:
-  **números** (pontos soltos), **verbos** (pontos ligados por linhas, as 6 faces),
-  **coisas** (dentro de uma moldura quadrada). Mais **ligações** (SE, TODOS) e **marcas do dado**
-  (onde o dado está diz se a frase é verdade: pousado, no ar, caído, dois no ar).
-- Números em **base 6** (o seis se escreve "10").
-- Ordem: verbo, número, coisa, marca.
-- ~28 palavras na primeira amostra, ~30 no jogo todo, com poucas palavras e muitos usos.
+- **Escrita por palavra** (um símbolo por palavra), com composição de palavras. Não é cifra de português nem de inglês:
+  o jogo é igual em qualquer idioma, e só diário, pensamentos e interface são traduzidos (PT/EN).
+- ~**115 palavras** no vocabulário completo, definidas desde já para não precisar inventar símbolos no meio da produção.
+- A **moldura** do símbolo diz a família (coisa, ser, conceito, ligação, posição/tempo); verbos e números não têm moldura.
+- Números em **base 6**. Ordem da frase: verbo, número, coisa, marca do dado.
 
 ## 4. Como o jogador aprende (regras de design dos puzzles)
 
@@ -146,7 +144,9 @@ Cada uso do dado tem uma **animação própria**, e o dado reage como personagem
 - Cuidados: a 1ª vez é a versão completa; nas seguintes, uma versão curta; dá para **pular** (toque/tecla).
   O jogo não tira o controle de forma brusca (a câmera acompanha de leve). As reações do dado são emocionais e
   **iguais** para acerto e erro (não viram dica).
-- Esboço para as demais faces **[DECIDIR]**: Peso (o dado afunda com um estrondo e a placa brilha), Eco (surge uma cópia
+- **Duração decidida: ~1,5 s no máximo, câmera fixa**, sem cutscene grande. O jogador aperta posicionar, o dado cai devagar,
+  queima e volta à mão. Serve só para ele não perder o foco.
+- Esboço para as demais faces (ajustáveis depois de ver no jogo) **[DECIDIR]**: Peso (o dado afunda com um estrondo e a placa brilha), Eco (surge uma cópia
   fantasma que repete), Troca (as duas coisas borram e trocam, o dado gira), Deslizar (o dado corre por um trilho
   deixando um rastro), Atravessar (o dado fica translúcido e atravessa).
 - Técnica: dissolução por limiar de ruído com borda emissiva, partículas de brasa, sem modelos animados.

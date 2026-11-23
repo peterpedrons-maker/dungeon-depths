@@ -1,0 +1,2720 @@
+[
+ {
+  "id": "n0",
+  "pt": "zero",
+  "en": "zero",
+  "fam": "numero",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "n1",
+  "pt": "um",
+  "en": "one",
+  "fam": "numero",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "n2",
+  "pt": "dois",
+  "en": "two",
+  "fam": "numero",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "n3",
+  "pt": "três",
+  "en": "three",
+  "fam": "numero",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    4,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "n4",
+  "pt": "quatro",
+  "en": "four",
+  "fam": "numero",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "n5",
+  "pt": "cinco",
+  "en": "five",
+  "fam": "numero",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    4,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "todos",
+  "pt": "todos",
+  "en": "all",
+  "fam": "numero",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "mais",
+  "pt": "mais",
+  "en": "more",
+  "fam": "numero",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    4,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "menos",
+  "pt": "menos",
+  "en": "less",
+  "fam": "numero",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "conf",
+  "pt": "confirmado",
+  "en": "confirmed",
+  "fam": "marca",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5
+   ],
+   "ring": [],
+   "big": [
+    4
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "boato",
+  "pt": "boato",
+  "en": "rumor",
+  "fam": "marca",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [
+    1
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "mem",
+  "pt": "memória (marca)",
+  "en": "was true, no longer",
+  "fam": "marca",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [
+    7
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "perg",
+  "pt": "pergunta",
+  "en": "question",
+  "fam": "marca",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [
+    0,
+    2
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "agente",
+  "pt": "-dor (quem faz)",
+  "en": "doer",
+  "fam": "mod",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 1,
+   "p": [
+    1
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "resultado",
+  "pt": "-do (o que foi feito)",
+  "en": "done to",
+  "fam": "mod",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 1,
+   "p": [
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "oposto",
+  "pt": "o contrário",
+  "en": "opposite",
+  "fam": "mod",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 1,
+   "p": [
+    0,
+    3
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     3
+    ]
+   ]
+  }
+ },
+ {
+  "id": "muitos",
+  "pt": "muitos",
+  "en": "many",
+  "fam": "mod",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 1,
+   "p": [
+    2,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "lugar",
+  "pt": "lugar de",
+  "en": "place of",
+  "fam": "mod",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 1,
+   "p": [
+    5,
+    7,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     5,
+     8
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "acender",
+  "pt": "acender",
+  "en": "ignite",
+  "fam": "verbo",
+  "cap": 1,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     6
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "igual",
+  "pt": "igual / pesar",
+  "en": "equal / weigh",
+  "fam": "verbo",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "denovo",
+  "pt": "de novo",
+  "en": "again",
+  "fam": "verbo",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "trocar",
+  "pt": "em vez de",
+  "en": "instead of",
+  "fam": "verbo",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     6
+    ]
+   ]
+  }
+ },
+ {
+  "id": "seguir",
+  "pt": "então / seguir",
+  "en": "then / follow",
+  "fam": "verbo",
+  "cap": 5,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     5
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     5,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "atravessar",
+  "pt": "atravessar / não",
+  "en": "cross / not",
+  "fam": "verbo",
+  "cap": 6,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    2,
+    6,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     2,
+     6
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ver",
+  "pt": "ver",
+  "en": "see",
+  "fam": "verbo",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    4,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     3,
+     7
+    ],
+    [
+     5,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "dizer",
+  "pt": "dizer",
+  "en": "say",
+  "fam": "verbo",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    2,
+    4,
+    5,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "escrever",
+  "pt": "escrever",
+  "en": "write",
+  "fam": "verbo",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    2,
+    3,
+    6
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     6
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ir",
+  "pt": "ir",
+  "en": "go",
+  "fam": "verbo",
+  "cap": 5,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     1,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "vir",
+  "pt": "vir",
+  "en": "come",
+  "fam": "verbo",
+  "cap": 5,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     3,
+     7
+    ],
+    [
+     5,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "pegar",
+  "pt": "pegar",
+  "en": "take",
+  "fam": "verbo",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     7
+    ],
+    [
+     2,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "colocar",
+  "pt": "colocar",
+  "en": "place",
+  "fam": "verbo",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ],
+    [
+     4,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "abrir",
+  "pt": "abrir",
+  "en": "open",
+  "fam": "verbo",
+  "cap": 6,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     6
+    ],
+    [
+     2,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "fechar",
+  "pt": "fechar",
+  "en": "close",
+  "fam": "verbo",
+  "cap": 6,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    2,
+    7,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     2,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "quebrar",
+  "pt": "quebrar",
+  "en": "break",
+  "fam": "verbo",
+  "cap": 6,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    4,
+    5,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     5,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "prender",
+  "pt": "prender",
+  "en": "bind",
+  "fam": "verbo",
+  "cap": 7,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    6,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     6,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "dar",
+  "pt": "dar",
+  "en": "give",
+  "fam": "verbo",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    3,
+    5,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ],
+    [
+     5,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "contar",
+  "pt": "contar",
+  "en": "count",
+  "fam": "verbo",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    1,
+    5,
+    6,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "julgar",
+  "pt": "julgar",
+  "en": "judge",
+  "fam": "verbo",
+  "cap": 7,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "querer",
+  "pt": "querer",
+  "en": "want",
+  "fam": "verbo",
+  "cap": 7,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    4,
+    5,
+    6
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     6
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ler",
+  "pt": "ler",
+  "en": "read",
+  "fam": "verbo",
+  "cap": 3,
+  "c": [
+   "escrever",
+   "oposto"
+  ]
+ },
+ {
+  "id": "saber",
+  "pt": "saber",
+  "en": "know",
+  "fam": "verbo",
+  "cap": 3,
+  "c": [
+   "ver",
+   "conf"
+  ]
+ },
+ {
+  "id": "lembrar",
+  "pt": "lembrar",
+  "en": "remember",
+  "fam": "verbo",
+  "cap": 3,
+  "c": [
+   "ver",
+   "mem"
+  ]
+ },
+ {
+  "id": "esquecer",
+  "pt": "esquecer",
+  "en": "forget",
+  "fam": "verbo",
+  "cap": 3,
+  "c": [
+   "lembrar",
+   "oposto"
+  ]
+ },
+ {
+  "id": "mentir",
+  "pt": "mentir",
+  "en": "lie",
+  "fam": "verbo",
+  "cap": 7,
+  "c": [
+   "dizer",
+   "boato"
+  ]
+ },
+ {
+  "id": "escolher",
+  "pt": "escolher",
+  "en": "choose",
+  "fam": "verbo",
+  "cap": 4,
+  "c": [
+   "pegar",
+   "trocar"
+  ]
+ },
+ {
+  "id": "libertar",
+  "pt": "libertar",
+  "en": "free",
+  "fam": "verbo",
+  "cap": 7,
+  "c": [
+   "prender",
+   "oposto"
+  ]
+ },
+ {
+  "id": "absolver",
+  "pt": "absolver",
+  "en": "absolve",
+  "fam": "verbo",
+  "cap": 7,
+  "c": [
+   "julgar",
+   "oposto"
+  ]
+ },
+ {
+  "id": "condenar",
+  "pt": "condenar",
+  "en": "condemn",
+  "fam": "verbo",
+  "cap": 7,
+  "c": [
+   "julgar",
+   "prender"
+  ]
+ },
+ {
+  "id": "brasa",
+  "pt": "braseiro",
+  "en": "brazier",
+  "fam": "coisa",
+  "cap": 1,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     7
+    ],
+    [
+     5,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "porta",
+  "pt": "porta",
+  "en": "door",
+  "fam": "coisa",
+  "cap": 1,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     3
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     5,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "chao",
+  "pt": "chão",
+  "en": "floor",
+  "fam": "coisa",
+  "cap": 1,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "placa",
+  "pt": "placa",
+  "en": "plate",
+  "fam": "coisa",
+  "cap": 2,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    4,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "dado",
+  "pt": "dado",
+  "en": "die",
+  "fam": "coisa",
+  "cap": 2,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    4,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "giz",
+  "pt": "giz",
+  "en": "chalk",
+  "fam": "coisa",
+  "cap": 2,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    2,
+    6
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     6
+    ]
+   ]
+  }
+ },
+ {
+  "id": "parede",
+  "pt": "parede",
+  "en": "wall",
+  "fam": "coisa",
+  "cap": 2,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "pedra",
+  "pt": "pedra",
+  "en": "stone",
+  "fam": "coisa",
+  "cap": 2,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "fogo",
+  "pt": "fogo",
+  "en": "fire",
+  "fam": "coisa",
+  "cap": 1,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     6
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "luz",
+  "pt": "luz",
+  "en": "light",
+  "fam": "coisa",
+  "cap": 1,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "livro",
+  "pt": "livro",
+  "en": "book",
+  "fam": "coisa",
+  "cap": 3,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    1,
+    2,
+    6,
+    7,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     6
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     2,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "mesa",
+  "pt": "mesa",
+  "en": "table",
+  "fam": "coisa",
+  "cap": 4,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     2,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "espelho",
+  "pt": "espelho",
+  "en": "mirror",
+  "fam": "coisa",
+  "cap": 4,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    2,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "chave",
+  "pt": "chave",
+  "en": "key",
+  "fam": "coisa",
+  "cap": 4,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    4,
+    7,
+    8
+   ],
+   "ring": [
+    1
+   ],
+   "big": [],
+   "l": [
+    [
+     1,
+     4
+    ],
+    [
+     4,
+     7
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "altar",
+  "pt": "altar",
+  "en": "altar",
+  "fam": "coisa",
+  "cap": 4,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ],
+    [
+     4,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "agua",
+  "pt": "água",
+  "en": "water",
+  "fam": "coisa",
+  "cap": 6,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    3,
+    4,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     3
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     2,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "poco",
+  "pt": "poço",
+  "en": "well",
+  "fam": "coisa",
+  "cap": 6,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "caminho",
+  "pt": "caminho",
+  "en": "path",
+  "fam": "coisa",
+  "cap": 5,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     6
+    ],
+    [
+     1,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "trilho",
+  "pt": "trilho",
+  "en": "rail",
+  "fam": "coisa",
+  "cap": 5,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    3,
+    5,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     6
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ponte",
+  "pt": "ponte",
+  "en": "bridge",
+  "fam": "coisa",
+  "cap": 5,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    3,
+    5,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     5,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "sala",
+  "pt": "sala",
+  "en": "room",
+  "fam": "coisa",
+  "cap": 5,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "sino",
+  "pt": "sino",
+  "en": "bell",
+  "fam": "coisa",
+  "cap": 3,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    1,
+    4,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     4
+    ],
+    [
+     4,
+     6
+    ],
+    [
+     4,
+     8
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "voce",
+  "pt": "você",
+  "en": "you",
+  "fam": "ser",
+  "cap": 1,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "alguem",
+  "pt": "alguém",
+  "en": "someone",
+  "fam": "ser",
+  "cap": 3,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    1
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "contaveis",
+  "pt": "os Contáveis",
+  "en": "the Countables",
+  "fam": "ser",
+  "cap": 2,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "eco",
+  "pt": "eco",
+  "en": "echo",
+  "fam": "ser",
+  "cap": 3,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "escrivao",
+  "pt": "o Escrivão",
+  "en": "the Scribe",
+  "fam": "ser",
+  "cap": 2,
+  "c": [
+   "escrever",
+   "agente"
+  ]
+ },
+ {
+  "id": "juiz",
+  "pt": "juiz",
+  "en": "judge",
+  "fam": "ser",
+  "cap": 7,
+  "c": [
+   "julgar",
+   "agente"
+  ]
+ },
+ {
+  "id": "condenado",
+  "pt": "condenado",
+  "en": "condemned",
+  "fam": "ser",
+  "cap": 7,
+  "c": [
+   "condenar",
+   "resultado"
+  ]
+ },
+ {
+  "id": "boatodado",
+  "pt": "o Boato (o dado)",
+  "en": "the Rumor (the die)",
+  "fam": "ser",
+  "cap": 1,
+  "c": [
+   "dado",
+   "boato"
+  ]
+ },
+ {
+  "id": "ninguem",
+  "pt": "ninguém",
+  "en": "no one",
+  "fam": "ser",
+  "cap": 3,
+  "c": [
+   "alguem",
+   "n0"
+  ]
+ },
+ {
+  "id": "verdade",
+  "pt": "verdade",
+  "en": "truth",
+  "fam": "conceito",
+  "cap": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5
+   ],
+   "ring": [],
+   "big": [
+    4
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "mentira",
+  "pt": "mentira",
+  "en": "falsehood",
+  "fam": "conceito",
+  "cap": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [
+    1
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "duvida",
+  "pt": "dúvida",
+  "en": "doubt",
+  "fam": "conceito",
+  "cap": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [
+    0,
+    2
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "memoria",
+  "pt": "memória",
+  "en": "memory",
+  "fam": "conceito",
+  "cap": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [
+    7
+   ],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "acaso",
+  "pt": "acaso",
+  "en": "chance",
+  "fam": "conceito",
+  "cap": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "ordem",
+  "pt": "ordem",
+  "en": "order",
+  "fam": "conceito",
+  "cap": 5,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    1,
+    2
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ]
+   ]
+  }
+ },
+ {
+  "id": "escolha",
+  "pt": "escolha",
+  "en": "choice",
+  "fam": "conceito",
+  "cap": 4,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     7
+    ],
+    [
+     2,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "tempo",
+  "pt": "tempo",
+  "en": "time",
+  "fam": "conceito",
+  "cap": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     6
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "nome",
+  "pt": "nome",
+  "en": "name",
+  "fam": "conceito",
+  "cap": 2,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "crime",
+  "pt": "crime",
+  "en": "crime",
+  "fam": "conceito",
+  "cap": 7,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    4,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     4
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "sentenca",
+  "pt": "sentença",
+  "en": "sentence",
+  "fam": "conceito",
+  "cap": 7,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    3,
+    5,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     2
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "pena",
+  "pt": "pena",
+  "en": "penalty",
+  "fam": "conceito",
+  "cap": 7,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     6
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "medo",
+  "pt": "medo",
+  "en": "fear",
+  "fam": "conceito",
+  "cap": 4,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "liberdade",
+  "pt": "liberdade",
+  "en": "freedom",
+  "fam": "conceito",
+  "cap": 7,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    1,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     6
+    ],
+    [
+     1,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "vida",
+  "pt": "vida",
+  "en": "life",
+  "fam": "conceito",
+  "cap": 6,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "morte",
+  "pt": "morte",
+  "en": "death",
+  "fam": "conceito",
+  "cap": 6,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "lei",
+  "pt": "lei",
+  "en": "law",
+  "fam": "conceito",
+  "cap": 7,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    3,
+    5,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     6
+    ],
+    [
+     2,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "culpa",
+  "pt": "culpa",
+  "en": "guilt",
+  "fam": "conceito",
+  "cap": 7,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    4,
+    6,
+    7,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     4,
+     7
+    ],
+    [
+     6,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "se",
+  "pt": "se",
+  "en": "if",
+  "fam": "ligacao",
+  "cap": 2,
+  "g": {
+   "F": "R",
+   "s": 0,
+   "p": [
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "e",
+  "pt": "e",
+  "en": "and",
+  "fam": "ligacao",
+  "cap": 2,
+  "g": {
+   "F": "R",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "com",
+  "pt": "com",
+  "en": "with",
+  "fam": "ligacao",
+  "cap": 4,
+  "g": {
+   "F": "R",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ou",
+  "pt": "ou",
+  "en": "or",
+  "fam": "ligacao",
+  "cap": 4,
+  "g": {
+   "F": "R",
+   "s": 0,
+   "p": [
+    1,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "porque",
+  "pt": "porque",
+  "en": "because",
+  "fam": "ligacao",
+  "cap": 5,
+  "g": {
+   "F": "R",
+   "s": 0,
+   "p": [
+    3,
+    4,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     4
+    ]
+   ]
+  }
+ },
+ {
+  "id": "para",
+  "pt": "para",
+  "en": "toward",
+  "fam": "ligacao",
+  "cap": 5,
+  "g": {
+   "F": "R",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     5
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     5,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "sem",
+  "pt": "sem",
+  "en": "without",
+  "fam": "ligacao",
+  "cap": 6,
+  "c": [
+   "atravessar",
+   "com"
+  ]
+ },
+ {
+  "id": "agora",
+  "pt": "agora",
+  "en": "now",
+  "fam": "posicao",
+  "cap": 1,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "antes",
+  "pt": "antes",
+  "en": "before",
+  "fam": "posicao",
+  "cap": 3,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    3
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "depois",
+  "pt": "depois",
+  "en": "after",
+  "fam": "posicao",
+  "cap": 3,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "sempre",
+  "pt": "sempre",
+  "en": "always",
+  "fam": "posicao",
+  "cap": 3,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "acima",
+  "pt": "acima",
+  "en": "above",
+  "fam": "posicao",
+  "cap": 5,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    1
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "abaixo",
+  "pt": "abaixo",
+  "en": "below",
+  "fam": "posicao",
+  "cap": 5,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "dentro",
+  "pt": "dentro",
+  "en": "inside",
+  "fam": "posicao",
+  "cap": 6,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "perto",
+  "pt": "perto",
+  "en": "near",
+  "fam": "posicao",
+  "cap": 5,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    3,
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     4
+    ]
+   ]
+  }
+ },
+ {
+  "id": "longe",
+  "pt": "longe",
+  "en": "far",
+  "fam": "posicao",
+  "cap": 5,
+  "g": {
+   "F": "L",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "nunca",
+  "pt": "nunca",
+  "en": "never",
+  "fam": "posicao",
+  "cap": 3,
+  "c": [
+   "atravessar",
+   "sempre"
+  ]
+ },
+ {
+  "id": "fora",
+  "pt": "fora",
+  "en": "outside",
+  "fam": "posicao",
+  "cap": 6,
+  "c": [
+   "atravessar",
+   "dentro"
+  ]
+ }
+]
