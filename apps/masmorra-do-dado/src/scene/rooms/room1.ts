@@ -134,6 +134,7 @@ export function buildRoom1(ctx: Ctx): Room {
   let plateDown = false;
   let doorOpen = 0;
   let announced = false;
+  let prevWant = 0;
 
   const onPlate = () => {
     const p = ctx.die.pos;
@@ -197,18 +198,24 @@ export function buildRoom1(ctx: Ctx): Room {
           gemLight.intensity = 0;
           sparks.forEach((s) => (s.visible = false));
           ctx.caption('Gema encontrada!', 'Só o ricochete chega num lugar desses.', '#6ff0ff');
+          ctx.sfx('gem');
         }
         if (!lit && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
           lit = true;
           flame.visible = true;
           ctx.caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
+          ctx.sfx('ignite');
         }
       }
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();
+      if (pressed && !plateDown) ctx.sfx('plate');
       if (pressed && !plateDown) ctx.caption('Placa acionada', 'O dado pesado segura a placa. Não o recolha.', '#ffd36b');
       plateDown = pressed;
 
       const wantOpen = plateDown && lit ? 1 : 0;
+      if (wantOpen && !prevWant) ctx.sfx('door');
+      else if (!wantOpen && prevWant && doorOpen > 0.15) ctx.sfx('doorClose');
+      prevWant = wantOpen;
       doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
       lampPlate.color.setHex(plateDown ? 0xffd36b : LAMP_OFF);
@@ -242,6 +249,7 @@ export function buildRoom1(ctx: Ctx): Room {
       plateDown = false;
       doorOpen = 0;
       announced = false;
+      prevWant = 0;
       door.setOpen(0);
     },
     bonus: () => gemTaken,

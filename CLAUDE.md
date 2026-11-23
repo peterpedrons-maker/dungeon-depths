@@ -40,7 +40,9 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   escondida), 2 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
   fogo), 3 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
   4 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
-  Mobile só na horizontal, além de PC.
+  Mobile só na horizontal, além de PC. Som 100% sintetizado em Web Audio (`src/scene/audio.ts`, sem
+  arquivos): efeitos reativos + uma música ambiente única (não muda por sala); botão ♫/♪/∅ no canto
+  (tudo / só efeitos / mudo, lembrado no aparelho); o áudio só liga após o 1º toque/tecla.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 

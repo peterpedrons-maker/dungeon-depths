@@ -140,6 +140,7 @@ export function buildRoom4(ctx: Ctx): Room {
   let plateDown = false;
   let doorOpen = 0;
   let announced = false;
+  let prevWant = 0;
   let latched = false;
 
   const onPlate = () => {
@@ -205,17 +206,22 @@ export function buildRoom4(ctx: Ctx): Room {
         lit = true;
         flame.visible = true;
         ctx.caption('O braseiro acendeu!', 'Agora a placa, lá embaixo.', '#ff9a3c');
+        ctx.sfx('ignite');
       }
       if (lit) {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
         flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
       }
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();
+      if (pressed && !plateDown) ctx.sfx('plate');
       if (pressed && !plateDown) ctx.caption('Placa acionada', lit ? 'Suba até a porta, sem recolher o dado.' : 'Falta acender o braseiro lá em cima.', '#ffd36b');
       plateDown = pressed;
 
       latched = lit && plateDown;
       const wantOpen = latched ? 1 : 0;
+      if (wantOpen && !prevWant) ctx.sfx('door');
+      else if (!wantOpen && prevWant && doorOpen > 0.15) ctx.sfx('doorClose');
+      prevWant = wantOpen;
       doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
       lampPlate.color.setHex(plateDown ? 0xffd36b : LAMP_OFF);
@@ -234,6 +240,7 @@ export function buildRoom4(ctx: Ctx): Room {
       plateDown = false;
       doorOpen = 0;
       announced = false;
+      prevWant = 0;
       latched = false;
       door.setOpen(0);
     },

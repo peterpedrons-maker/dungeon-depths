@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import type { AudioMode } from './scene/audio';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
 
 const STICK_R = 46;
@@ -26,6 +27,14 @@ export default function App() {
   const [dieOut, setDieOut] = useState(false);
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
+  const [audio, setAudio] = useState<AudioMode>(() => {
+    try {
+      const v = Number(localStorage.getItem('mdd-audio'));
+      return v === 1 || v === 2 ? v : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null);
   const captionTimer = useRef(0);
 
@@ -56,6 +65,16 @@ export default function App() {
       scene.dispose();
     };
   }, []);
+
+  // som: 0 = música + efeitos, 1 = só efeitos, 2 = mudo (lembra a escolha)
+  useEffect(() => {
+    sceneRef.current?.setAudio(audio);
+    try {
+      localStorage.setItem('mdd-audio', String(audio));
+    } catch {
+      /* sem armazenamento: tudo bem */
+    }
+  }, [audio]);
 
   // "Instalar": o navegador avisa quando o jogo pode ser instalado (PWA)
   useEffect(() => {
@@ -105,6 +124,13 @@ export default function App() {
       <div className="crosshair" />
 
       <div className="corner">
+        <button
+          onClick={() => setAudio(((audio + 1) % 3) as AudioMode)}
+          aria-label="Som"
+          title={['Som: música e efeitos', 'Som: só efeitos', 'Som: mudo'][audio]}
+        >
+          {['♫', '♪', '∅'][audio]}
+        </button>
         <button onClick={reset} aria-label="Reiniciar sala" title="Reiniciar sala (R)">
           ↺
         </button>

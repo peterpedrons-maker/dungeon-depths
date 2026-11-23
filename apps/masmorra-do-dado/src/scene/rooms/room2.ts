@@ -146,6 +146,7 @@ export function buildRoom2(ctx: Ctx): Room {
   let solved = [false, false, false];
   let latched = false;
   let announced = false;
+  let prevWant = 0;
   let overInk = false;
   let lastRev = -1;
   let evalTimer = 0;
@@ -155,6 +156,7 @@ export function buildRoom2(ctx: Ctx): Room {
     const dots = ctx.chalk.dotsOn(slate);
     const expected = SEAL_PIECES.reduce((n, p) => n + p.unit.length, 0) * 1.2;
     const tooMuch = dots.length > expected * 2.4 + 60;
+    if (tooMuch && !overInk) ctx.sfx('error');
     if (tooMuch && !overInk) ctx.caption('Rabisco demais', 'Apague um pouco e refaça com traços limpos.', '#ff9aa8');
     overInk = tooMuch;
     SEAL_PIECES.forEach((p, i) => {
@@ -175,6 +177,7 @@ export function buildRoom2(ctx: Ctx): Room {
       const done = !tooMuch && ok / pts.length >= 0.8;
       if (done && !solved[i]) {
         ctx.caption(`Peça ${solved.filter(Boolean).length + 1} de 3`, 'O selo reconhece o traço.', p.color);
+        ctx.sfx('piece');
       }
       solved[i] = done;
     });
@@ -231,6 +234,7 @@ export function buildRoom2(ctx: Ctx): Room {
         lit = true;
         flame.visible = true;
         ctx.caption('O braseiro acendeu!', 'Algo surge na parede, ao lado.', '#ff9a3c');
+        ctx.sfx('ignite');
       }
       if (lit) {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
@@ -251,6 +255,9 @@ export function buildRoom2(ctx: Ctx): Room {
       if (solved.every(Boolean)) latched = true;
       door.lampMats.forEach((m, i) => m.color.set(solved[i] ? SEAL_PIECES[i].color : LAMP_OFF));
       const wantOpen = latched ? 1 : 0;
+      if (wantOpen && !prevWant) ctx.sfx('door');
+      else if (!wantOpen && prevWant && doorOpen > 0.15) ctx.sfx('doorClose');
+      prevWant = wantOpen;
       doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
       if (wantOpen && doorOpen > 0.9 && !announced) {
@@ -268,6 +275,7 @@ export function buildRoom2(ctx: Ctx): Room {
       solved = [false, false, false];
       latched = false;
       announced = false;
+      prevWant = 0;
       overInk = false;
       lastRev = -1;
       door.setOpen(0);

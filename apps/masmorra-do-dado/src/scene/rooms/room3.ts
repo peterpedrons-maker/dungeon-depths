@@ -111,6 +111,7 @@ export function buildRoom3(ctx: Ctx): Room {
   let doorOpen = 0;
   let latched = false;
   let announced = false;
+  let prevWant = 0;
   let warned = false;
 
   const onPlate = () => {
@@ -192,6 +193,7 @@ export function buildRoom3(ctx: Ctx): Room {
           b.left = BURN;
           b.flame.visible = true;
           ctx.caption(`Braseiro ${braziers.filter((x) => x.left > 0).length} de 3`, 'Ele não vai durar muito.', '#ff9a3c');
+          ctx.sfx('ignite');
         }
         if (b.left > 0 && !latched) {
           b.left -= dt;
@@ -199,6 +201,7 @@ export function buildRoom3(ctx: Ctx): Room {
             b.flame.visible = false;
             b.light.intensity = 0;
             ctx.caption('Uma chama se apagou', 'Acenda de novo — e seja mais rápido.', '#cfc6e8');
+            ctx.sfx('burnout');
           }
         }
         if (b.left > 0) {
@@ -212,6 +215,7 @@ export function buildRoom3(ctx: Ctx): Room {
       if (!warned && braziers.some((b) => b.left > 0 && b.left < 8) && !allLit()) warned = true;
 
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();
+      if (pressed && !plateDown) ctx.sfx('plate');
       if (pressed && !plateDown) ctx.caption('Placa acionada', allLit() ? 'As chamas respondem.' : 'Faltam chamas acesas.', '#ffd36b');
       plateDown = pressed;
 
@@ -219,6 +223,9 @@ export function buildRoom3(ctx: Ctx): Room {
       if (!plateDown && doorOpen < 0.05) latched = false;
       if (latched && !plateDown) latched = false;
       const wantOpen = latched ? 1 : 0;
+      if (wantOpen && !prevWant) ctx.sfx('door');
+      else if (!wantOpen && prevWant && doorOpen > 0.15) ctx.sfx('doorClose');
+      prevWant = wantOpen;
       doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
       if (wantOpen && doorOpen > 0.9 && !announced) {
@@ -237,6 +244,7 @@ export function buildRoom3(ctx: Ctx): Room {
       doorOpen = 0;
       latched = false;
       announced = false;
+      prevWant = 0;
       warned = false;
       door.setOpen(0);
     },

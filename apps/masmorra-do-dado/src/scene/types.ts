@@ -24,6 +24,7 @@ export interface ChalkDot {
 // O que o motor oferece a cada sala.
 export interface Ctx {
   caption(title: string, sub: string, color: string): void;
+  sfx(name: 'ignite' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout'): void;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
   die: {

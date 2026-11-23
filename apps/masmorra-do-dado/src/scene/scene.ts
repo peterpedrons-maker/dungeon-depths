@@ -7,6 +7,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { FACES } from '../faces';
 import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture, soapWrapTexture } from './textures';
 import { Chalk } from './chalk';
+import { Sfx, type AudioMode } from './audio';
 import { CORRIDOR, dbg } from './kit';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
@@ -54,6 +55,7 @@ export interface SceneApi {
   place(): void; // posiciona o dado com cuidado onde a mira aponta
   rotate(): void; // próxima face
   swapTool(): void; // troca entre dado e giz na mão principal
+  setAudio(m: AudioMode): void; // 0 tudo · 1 só efeitos · 2 mudo
   setChalkMode(m: ChalkMode): void; // (celular) desenhar ou apagar com o dedo
   clearChalk(): void; // apaga tudo (pede confirmação: aperte de novo)
   reset(): void; // reinicia a sala atual
@@ -62,6 +64,14 @@ export interface SceneApi {
 }
 
 export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}): SceneApi {
+  // som: só liga depois do primeiro toque/tecla (regra dos navegadores)
+  const sfx = new Sfx();
+  const unlockAudio = () => sfx.unlock();
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('keydown', unlockAudio);
+  const onVis = () => sfx.suspend(document.hidden);
+  document.addEventListener('visibilitychange', onVis);
+
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
   renderer.autoClear = false;
   renderer.info.autoReset = false; // contamos as chamadas do quadro inteiro (cena + HUD + pós)
@@ -363,6 +373,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const setTool = (t: Tool) => {
     if (tool === t) return;
     tool = t;
+    sfx.play('swap');
     brush.active = false;
     chalk.beginStroke();
     opts.onTool?.(tool);
@@ -404,6 +415,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       return;
     }
     eraseArmed = 0;
+    sfx.play('sweep');
     chalk.clear();
     soapKick = 1;
     caption('Giz apagado', 'A sala está limpa.', '#cfc6e8');
@@ -417,6 +429,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     3: { speed: 8.5, up: 0.12, g: 16, e: 0.5, fr: 2.5 }, // Fogo: meio-termo
   };
   const R = 0.22;
+  let dieRoll = 0;
   let dieState: DieState = 'hand';
   const dieP = new THREE.Vector3();
   const dieV = new THREE.Vector3();
@@ -459,6 +472,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const lp = new THREE.Vector3();
     return {
       caption: (a, b, c) => caption(a, b, c),
+      sfx: (n) => sfx.play(n),
       player: {
         get pos() {
           return lp.copy(pos).sub(off);
@@ -582,6 +596,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       }
     }
+    let fireNear = 0;
     for (const sl of slots) {
       if (!sl.em) {
         sl.light.intensity = 0;
@@ -598,7 +613,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
       sl.light.color.setHex(sl.em.color);
       sl.light.intensity = sl.em.intensity * sl.w;
+      fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
     }
+    sfx.fire(fireNear);
   };
 
   const resetDie = () => {
@@ -681,6 +698,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const ph = PHYS[thrownFace] ?? PHYS[1];
     dieV.y -= ph.g * dt;
     dieP.addScaledVector(dieV, dt);
+    const vx0 = dieV.x;
+    const vy0 = dieV.y;
+    const vz0 = dieV.z;
     let ground = false;
     let flat = true;
     // chão (plano ou rampa)
@@ -702,6 +722,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const n = collideBox(b, ph.e);
       if (n && n.y > 0.7) ground = true;
     }
+    sfx.bounce(Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0));
     if (ground) {
       const k = Math.exp(-ph.fr * dt);
       dieV.x *= k;
@@ -709,6 +730,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (flat && Math.abs(dieV.y) < 0.6) dieV.y = 0;
       dieW.set(dieV.z, 0, -dieV.x).divideScalar(R * 1.6); // rola no chão
     }
+    dieRoll = ground && flat ? Math.min(1, Math.hypot(dieV.x, dieV.z) / 6) : 0;
     if (ground && dieV.length() < 0.45) restTimer += dt;
     else restTimer = 0;
     if (restTimer > 0.2) {
@@ -718,6 +740,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const yawQ = tmpQ.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
       restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(thrownFace));
       room.onDieRest?.();
+      sfx.play('rest');
+      dieRoll = 0;
     }
   };
 
@@ -738,6 +762,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     animFrom.copy(worldDie.position);
     animT = 0;
     dieState = 'returning';
+    sfx.play('recall');
   };
 
   const busy = () => complete;
@@ -761,6 +786,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     worldDie.visible = true;
     dieState = 'flying';
     restTimer = 0;
+    sfx.play('throw');
   };
 
   // Posicionar: em vez de arremessar, o jogador coloca o dado com cuidado no ponto
@@ -803,6 +829,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     worldDie.quaternion.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
     worldDie.visible = true;
     dieState = 'placing';
+    sfx.play('throw', 0.4);
   };
 
   const place = () => {
@@ -822,10 +849,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (!f) return;
     if (!f.unlocked) {
       caption(`${n} · ???`, 'Face selada — descubra como libertá-la.', '#8f86a8');
+      sfx.play('locked');
       return;
     }
     if (tool !== 'die') setTool('die');
     applyFace(n);
+    sfx.play('face', n);
     caption(`${n} · ${f.name}`, f.desc, f.color);
   };
   const cycleFace = (dir: number) => {
@@ -1186,6 +1215,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       feetY += vy * dt;
       if (feetY <= gy) {
         landKick = Math.min(1, -vy / 9);
+        sfx.play('land', landKick);
         feetY = gy;
         vy = 0;
       }
@@ -1225,6 +1255,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let t = 0;
   let bob = 0;
   let bobAmp = 0;
+  let lastStepIdx = 0;
+  let lastRev = 0;
   let emittedDie: DieState | null = null;
   let aimTick = 0;
   let aimCache: ReturnType<typeof aimPoint> = null;
@@ -1243,6 +1275,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (dieState !== 'hand' && dieRoom !== curRoom) resetDie();
       if (!announced.has(ri)) {
         announced.add(ri);
+        sfx.play('room');
         caption(rooms[ri].name, rooms[ri].subtitle, '#ffd36b');
       }
     }
@@ -1257,6 +1290,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     bobAmp += (speedFrac - bobAmp) * Math.min(1, dt * 8);
     bob += dt * (7 + 5 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
+    const stepIdx = Math.floor(bob / Math.PI);
+    if (stepIdx !== lastStepIdx) {
+      lastStepIdx = stepIdx;
+      if (speedFrac > 0.12 && vy === 0) sfx.step(speedFrac);
+    }
     const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
     pos.y = feetY + EYE;
     camera.position.set(pos.x, pos.y + bobY, pos.z);
@@ -1287,6 +1325,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         worldModel.scale.setScalar(0.42);
         restTimer = 0;
         dieState = 'flying';
+        sfx.play('put');
       }
     } else if (dieState === 'returning') {
       animT += dt / 0.4;
@@ -1303,6 +1342,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         worldDie.visible = false;
         worldModel.scale.setScalar(0.42);
         handPop = 1;
+        sfx.play('catch');
       }
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
@@ -1324,6 +1364,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
       complete = true;
+      sfx.play('fanfare');
       gems = rooms.filter((r) => r.bonus?.()).length;
       opts.onComplete?.({ gem: gems > 0 });
     }
@@ -1331,6 +1372,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // ── giz ──
     eraseArmed = Math.max(0, eraseArmed - dt);
     if (brush.active && tool === 'chalk') paintAt(brush.ndc, brush.erase);
+    const rv = chalk.revision;
+    sfx.scratch(brush.active && tool === 'chalk' && rv !== lastRev ? 1 : 0, brush.erase);
+    lastRev = rv;
+    sfx.roll(dieState === 'flying' ? dieRoll : 0);
+    sfx.tick(dt);
 
     // fantasma de onde o dado seria posicionado
     aimTick -= dt;
@@ -1421,6 +1467,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
       yaw: () => yaw,
+      audio: () => ({ state: sfx.state, played: sfx.played }),
       state: () => ({
         room: curRoom,
         dieState,
@@ -1489,6 +1536,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     place,
     rotate: () => cycleFace(1),
     swapTool,
+    setAudio: (m) => sfx.setMode(m),
     setChalkMode: (m) => {
       chalkMode = m;
       brush.active = false;
@@ -1502,6 +1550,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       document.removeEventListener('pointerlockerror', onLockError);
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('visibilitychange', onVis);
       if (locked()) document.exitPointerLock();
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', onContext);
