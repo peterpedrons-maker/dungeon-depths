@@ -1,118 +1,138 @@
-# Masmorra do Dado — Documento de design (rascunho v0.1)
+# Masmorra do Dado — Documento de design (v0.2)
 
-> Rascunho para discussão. Tudo aqui pode mudar. Itens marcados **[DECIDIR]** esperam a sua escolha.
+> Direção aprovada pelo autor em conversa: **"A Sentença"** (história + língua própria).
+> Itens marcados **[DECIDIR]** ainda esperam escolha. O vocabulário e a gramática ficam em `LINGUA.md`.
+> Imagens de referência de estilo em `docs/lingua/`.
 
 ## 1. Pitch
 
-Você acorda dentro de **A Casa**, uma masmorra que é, na verdade, um **tabuleiro de jogo** gigante.
-No mundo lá fora tudo é decidido pelo **Acaso** — ninguém escolhe nada, tudo "cai como cair". Você
-é a única pessoa que carrega um dado **que obedece**: você escolhe a face de cima. Cada face é uma
-*lei do mundo* (fogo, peso, ricochete…) que o Acaso esqueceu. Para sair, você precisa reaprender
-as seis leis e chegar ao salão onde o dono da Casa joga para sempre contra ninguém.
+Um puzzle de exploração em primeira pessoa, sem combate. O jogador está **condenado**: a masmorra é a sua
+**sentença**, escrita numa língua que ele não lê. Cada sala é uma palavra dessa frase, e cumprir a pena é
+**aprender a ler**. O dado que ele segura (cada face é uma lei do mundo) é a sua voz, e o giz é a sua mão.
 
-Um puzzle de exploração em primeira pessoa, sem combate, melancólico e com humor seco.
-Referências de tom: *The Talos Principle*, *Return of the Obra Dinn*, *Hollow Knight*, *Outer Wilds*.
+Em português, *sentença* é uma frase e também um veredito. É o título e o motor da história.
 
-## 2. Lore (proposta)
+Tom: melancólico, curioso, sem humor forçado. Referências: *Chants of Sennaar*, *The Witness*,
+*Return of the Obra Dinn*, *The Talos Principle*.
 
-**O Dado Primeiro.** Antes de haver mundo, seis irmãos — **os Seis** — jogaram um único dado. Cada
-lançamento escrevia uma lei: o Fogo, o Peso, o Ricochete, a Troca, o Deslizar, a Travessia. Cansados
-da própria criação, deixaram o dado cair. Ele **rachou em seis**, e desde então o mundo é regido
-pelo **Acaso cego**: coisas acontecem sem que ninguém decida.
+## 2. História (mínima, mas com motivo)
 
-**A Casa.** O **Crupiê** — o último servo dos Seis — construiu A Casa para prender os cacos e quem se
-aproximar deles. Cada ala guarda um caco (uma face) e um enigma. O Crupiê não é cruel: é **solitário**
-e acredita que a escolha é uma doença. Joga sozinho, todas as noites, no **Salão do Último Lançamento**.
+- **Os Contáveis** foram um povo que só falava com pontos de dado. Para eles **dizer era fazer**: uma frase
+  só era verdadeira se o dado a confirmasse.
+- **Por que o jogador está ali:** foi condenado por eles. A masmorra é a sentença.
+- **A virada:** a sentença está **incompleta**. Falta a última palavra, e só o jogador pode escrevê-la.
+  O veredito dele **não tem a marca de confirmação do dado**: foi condenado por uma frase que nunca foi lançada.
+- **Os três finais** nascem da gramática, não de um menu:
+  1. **Cumprir:** confirmar a sentença lançando o dado sobre ela.
+  2. **Absolver:** negar a frase (ATRAVESSAR/NÃO).
+  3. **Repetir:** lançar o julgamento inteiro de novo (DE NOVO).
+- **O crime** nunca é entregue: o jogador o reconstrói por frases, e em partes ele é ambíguo.
+- Quem fala: **ecos** dos Contáveis (balões em glifos) e textos achados. Ver §7.
+- **[DECIDIR]** nome do jogador (ou sem nome), tom exato dos textos de lore, nome do jogo.
 
-**Os Jogadores Perdidos.** Os que vieram antes ficaram presos como **ecos**: fantasmas que repetem a
-última aposta que fizeram. São os NPCs. Cada um guarda uma pista (ou a própria face) e fala por
-balões de conversa. Alguns querem ajudar, outros só querem ser lembrados.
+## 3. A língua (resumo; detalhe em `LINGUA.md`)
 
-### Quem é você — **[DECIDIR]**
-- **A) O Escrevente** *(recomendada)* — anotava as apostas na casa de jogo do Crupiê, **com giz**
-  (por isso o giz!). Viu o Crupiê trapacear a própria casa e foi lançado na masmorra como "aposta
-  final". Carrega um **Dado Quebrado**, sem números, e o giz do ofício. Ligação direta com a mecânica.
-- B) A Herdeira — filha de uma talhadora de dados que sumiu na Casa; procura a mãe.
-- C) Sem nome — memória apagada (clichê, mas barato de escrever).
+- Alfabeto: grade **3×3** de pontos, como o rosto de um dado. Três famílias de forma:
+  **números** (pontos soltos), **verbos** (pontos ligados por linhas, as 6 faces),
+  **coisas** (dentro de uma moldura quadrada). Mais **ligações** (SE, TODOS) e **marcas do dado**
+  (onde o dado está diz se a frase é verdade: pousado, no ar, caído, dois no ar).
+- Números em **base 6** (o seis se escreve "10").
+- Ordem: verbo, número, coisa, marca.
+- ~28 palavras na primeira amostra, ~30 no jogo todo, com poucas palavras e muitos usos.
 
-### O que é o dado — **[DECIDIR]**
-- **A) O Dado Quebrado** *(recomendada)* — um caco que *escolheu* você. Não fala, mas **reage**: brilha,
-  esquenta, vibra. Seu "comportamento" vira linguagem (e dá personalidade ao HUD).
-- B) Um companheiro que fala por balões, com humor seco.
-- C) Um objeto mudo; toda a narrativa vem das paredes e dos ecos.
+## 4. Como o jogador aprende (regras de design dos puzzles)
 
-### Objetivo e finais
-Reunir as seis faces e chegar ao Salão do Último Lançamento. Não há luta: o "chefe" é um puzzle em que
-você precisa **escolher** onde o Acaso mandaria. Três finais:
-1. **Devolver o dado** — o Acaso volta a reinar (ordem, mas sem escolha).
-2. **Quebrar a mesa** — o mundo passa a ser decidido por quem vive nele (liberdade, e o risco dela).
-3. **Sentar no lugar do Crupiê** — você vira o novo guardião (poder, solidão).
+**O jogo nunca explica.** Nenhum texto traduzido, nenhum balão dizendo o significado.
 
-### Regiões (mundo estilo Metroidvania, com volta livre)
-| Região | Tema | Face / mecânica |
-|---|---|---|
-| **A Antecâmara** | tutorial: a mesa de apostas | todas as três iniciais |
-| Salões das Brasas | calor, sinos, tochas | **Fogo** |
-| O Mirante | alturas, ventos | **Ricochete** |
-| A Cisterna | água, eco | **Deslizar** |
-| A Biblioteca de Dados | lore, giz, anotações | pistas |
-| A Casa dos Espelhos | reflexos | **Troca** |
-| O Poço | queda, silêncio | **Atravessar** |
-| O Salão do Último Lançamento | final | as seis juntas |
+**Regra 1-2-3** para toda palavra nova:
+1. **1ª vez:** o símbolo aparece **junto do efeito**. Ex.: em cima de uma tocha apagada; o jogador a acende.
+2. **2ª vez:** o símbolo aparece em cima de **outra coisa** que também sofre o mesmo efeito.
+3. **3ª vez:** o símbolo aparece **sozinho**, e o jogador precisa aplicá-lo.
 
-Salas já feitas (A Entrada, O Selo, Salão das Brasas, O Mirante) viram a **Antecâmara** e as primeiras
-alas; os nomes serão ajustados.
+Em cada encontro **muda só uma coisa** (a coisa ou a ação), para o jogador separar uma da outra.
+Triangulação: toda palavra aparece em pelo menos três contextos.
 
-## 3. Como a história é contada (balões de conversa)
-- **Balões** com nome do falante, texto que digita e pausa curta; tocar/Espaço avança.
-- **Ecos dos Jogadores Perdidos**: fantasmas translúcidos que falam ao chegar perto.
-- **Inscrições** nas paredes (giz do Escrevente aparece em *lousas* e livros-caixa).
-- **Diário de pistas** (já planejado): cada fala-chave vira uma página.
-- Nada de cinemática longa: a história se descobre andando e lendo.
-- Textos ficam em arquivo próprio (`src/story/`) para traduzir (PT-BR primeiro, depois EN).
+## 5. O Diário (guarda "tudo" do jogador)
 
-## 4. Primeiro puzzle — **A Mesa do Crupiê** (proposta) — **[DECIDIR]**
-Objetivo de design: ensinar *três* ideias (a face de **cima** é a escolhida; faces **opostas somam 7**;
-o **giz** serve de memória) e contar a premissa, **sem** parecer tutorial.
+Abre a qualquer momento (PC e celular), **inclusive na sala final**. O desafio é entender a língua, não decorar desenhos.
 
-**Cena:** um salão com uma longa **mesa de apostas** e seis cadeiras. Em cada cadeira, um **eco**
-imóvel e, à frente dele, uma **aposta** gravada: três nichos com símbolos de **pontos** (3 pontos,
-5 pontos, 6 pontos). Na parede, o **Livro-Caixa** do Crupiê, com colunas de apostas apagadas pela metade.
+Abas:
+- **Dicionário:** cada símbolo visto entra sozinho, marcado **"avistado"**. A página mostra o desenho copiado
+  da parede (e a sala onde foi visto) e um espaço para o jogador escrever **o que ele acha que significa**,
+  com as próprias palavras. Pode apagar e reescrever à vontade. **O diário nunca diz se está certo.**
+- **Mapa:** o minimapa com as marcações persistentes do jogador (já planejado).
+- **Textos:** lore achada (inscrições, bilhetes, falas dos ecos).
+- **Faces:** as seis faces do dado, com o que o jogador já descobriu de cada uma.
+- **Anotações livres.**
 
-**Regra escondida:** o altar de cada nicho só aceita o dado se a face **de baixo** mostrar aquele número.
-O jogador só tem as faces 1, 2 e 3 liberadas… e o dado repousa com uma face para baixo que ele *não vê*.
-Ele precisa deduzir que **baixo = 7 − cima** (1↔6, 2↔5, 3↔4).
+Sem miniatura da cena na página (seria dica demais).
 
-**Solução (resumo):**
-1. Ler o Livro-Caixa: a última aposta do Crupiê foi **3 – 5 – 6** (nessa ordem).
-2. Em cada nicho, **posicionar** o dado com a face de baixo pedida, ou seja, escolher a de cima
-   **4, 2, 1** (7−3, 7−5, 7−6).
-3. Os eco(s) confirmam cada acerto falando uma frase da história. A porta abre ao acertar na ordem
-   (o giz serve pra anotar a ordem enquanto se circula pela sala).
+## 6. Como o jogador escreve
 
-**Camada extra (opcional):** um nicho está atrás de uma grade que só abre acendendo o braseiro (Fogo) —
-liga o puzzle ao que o jogador já aprendeu.
+- A superfície de escrita é **lisa**: sem grade, sem rastro, sem guia.
+- O jogador consulta o **diário** (o que viu e o que ele mesmo anotou) e escreve **de memória** com o giz.
+- Os puzzles de escrita são **frases talhadas com uma lacuna lisa**: o jogador completa a palavra que falta,
+  deduzindo pelo que viu na sala.
+- Errou: **nada acontece.** A parede não comenta nem lê em voz alta. Acertou: o puzzle reage (a porta abre).
+- Técnico: a lacuna é uma área delimitada; o jogo normaliza o traço dentro dela para a grade 3×3 e compara
+  com tolerância generosa (principalmente no celular).
+- Na sala do veredito não há ajuda alguma: ninguém escreve o veredito por você.
 
-Alternativas se não gostar: (B) *O Relicário dos Quatro Sinos* (som/ordem) · (C) *A Roleta* (sala giratória).
+## 7. Como o jogo confirma que o jogador entendeu (sem dizer)
 
-## 5. Rumo ao produto (Steam / app)
+Nunca por um selo no diário. A confirmação é **dentro do mundo**:
+1. **Usar a palavra exata num puzzle:** a porta abre, a chama acende, algo reage.
+2. **Ecos (NPCs):** os ecos falam em glifos. Usam palavras que o jogador já viu e reagem quando ele
+   escreve algo na frente deles.
+3. **Textos de lore:** frases onde a palavra aparece de um jeito que só faz sentido com o significado certo.
+4. **[DECIDIR]** os balões dos ecos começam só em glifos; **quando uma palavra foi provada pelo uso**, ela passa
+   a aparecer em português dentro do balão. Seria a grande recompensa visível, e funciona em qualquer idioma.
+
+## 8. Estilo visual da escrita
+
+Decidido: **a escrita é branca**, como o giz do jogador.
+- **Talhada e pintada de cal:** sulco escavado na pedra e preenchido de branco, com relevo que reage à luz
+  das tochas. É o texto dos Contáveis.
+- **Envelhecida:** a tinta descascou, ficou o sulco escuro, com sujeira, líquen e rachaduras. A idade da
+  inscrição aparece no desgaste.
+- **Giz do jogador:** pó branco por cima da pedra lisa, sem escavar. É como o jogador distingue o que é dele.
+- Técnico: o relevo é gerado por mapa de altura (traço de cinzel de largura irregular, furos irregulares,
+  bordas lascadas) e aplicado como decal com relevo, iluminado pelas luzes do jogo. Passa pelo filtro
+  pixelado, então o resultado final é mais "crocante" que as imagens de referência.
+
+## 9. Primeira sala: O Vestíbulo dos Números (rascunho)
+
+Ensina **ACENDER**, **UM, DOIS, TRÊS** e o **giz como escrita**, sem uma palavra de explicação.
+
+1. **Porta 1.** Um braseiro apagado com a frase talhada acima: ACENDER · UM · BRASEIRO. O jogador acende o braseiro
+   (já sabe fazer) e a porta abre.
+2. **Porta 2.** Três braseiros apagados, frase: ACENDER · DOIS · BRASEIRO. A porta só abre com **exatamente
+   dois** acesos ao mesmo tempo. O símbolo de ACENDER repete (2ª vez), e DOIS aparece pela primeira vez.
+3. **Porta 3.** Três braseiros já acesos. A frase tem uma **lacuna lisa**: ACENDER · ____ · BRASEIRO.
+   O jogador conta os acesos, abre o diário, e escreve TRÊS na lacuna. Abre.
+   ACENDER agora aparece sem ajuda (3ª vez).
+
+Solução, ao implementar, vai para `PUZZLES.md` (convenção do projeto).
+
+## 10. Rumo ao produto (Steam / app)
+
 | Área | Plano |
 |---|---|
 | **Empacotar PC** | Electron (ou Tauri) com o build web atual; atualização via Steam. |
 | **Steam** | `steamworks.js`: conquistas, nuvem de saves, overlay; página da loja, trailer, capsule art. |
 | **Celular** | PWA hoje; Capacitor para Play Store / App Store depois. |
-| **Salvar** | progresso, giz e configurações (arquivo no PC, `localStorage` na web). |
-| **Menu/Opções** | tela inicial, continuar, qualidade gráfica, volume, sensibilidade, teclas, idioma. |
+| **Salvar** | progresso, **diário**, giz e configurações (arquivo no PC, `localStorage` na web). |
+| **Menu/Opções** | tela inicial, continuar, qualidade gráfica, volume, sensibilidade, teclas. |
 | **Controle** | Gamepad API (Xbox/PlayStation/Steam Deck), dicas na tela por dispositivo. |
-| **Acessibilidade** | legendas para falas, redução de brilho/flash, tamanho de texto, daltonismo. |
-| **Localização** | tabela de textos (PT-BR → EN → ES), sem texto fixo no código. |
+| **Acessibilidade** | tamanho do texto do diário, redução de brilho/flash, daltonismo (a língua é em forma, não em cor). |
+| **Localização** | como a língua é própria, o jogo fica quase independente de idioma; só diário e interface traduzem. |
 | **Qualidade** | metas: 60 fps em PC médio e 30–60 em celular; modos Baixo/Médio/Alto. |
 | **Legal** | créditos dos sons (CC BY exige), licenças de terceiros, classificação etária. |
-| **Pipeline** | GitHub Actions gerando instaladores; testes de jogabilidade e de regressão. |
 
-## 6. Próximos passos sugeridos
-1. Você escolhe: protagonista, natureza do dado, primeiro puzzle.
-2. Implementar: balões + falas do primeiro puzzle + a sala nova (Antecâmara).
-3. Menu inicial + salvar + opções + qualidade gráfica.
-4. Pesquisa de arte: texturas, sombras e vida no cenário (em andamento).
-5. Primeira versão "de vitrine" para a página da Steam (3–4 min de jogo polido).
+## 11. Próximos passos
+
+1. **Diário** (abas, "avistado", anotações do jogador, persistência) e detecção de "símbolo visto pela 1ª vez".
+2. **Sistema de inscrições** (decal talhado e pintado de cal, com relevo e luz) e avaliação da escrita do giz na lacuna.
+3. **Primeira sala** (§9) e o início da língua (números 1–3 e ACENDER).
+4. Balões dos ecos (em glifos), se a decisão do §7.4 for aprovada.
+5. Menu inicial + salvar + qualidade gráfica.
