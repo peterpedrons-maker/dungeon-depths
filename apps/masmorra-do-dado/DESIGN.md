@@ -96,7 +96,7 @@ Nunca por um selo no diário. A confirmação é **dentro do mundo**:
 **Janela de conversa** (estilo RPG clássico, não balão de HQ): caixa na parte de baixo da tela com o nome de quem fala
 e o texto aparecendo letra a letra. Toque ou Espaço avança; segurar acelera. Serve para NPCs e para leituras.
 
-**NPCs: poucos.** Ecos dos Contáveis, com falas curtas. **[DECIDIR]** quantidade (chute: 3 a 4 no jogo todo).
+**NPCs: 4 no jogo todo** (decidido; 3D é o trabalho mais caro). Falas curtas. **Um deles é um companheiro que acompanha o jogador** e se liga à história. **[DECIDIR]** quem é ele (ver proposta na conversa: O Boato, O Escrivão ou O Pó).
 
 **Diários achados.** Outros condenados deixaram cadernos pelo caminho, **no mesmo formato do diário do jogador**:
 símbolos desenhados com a anotação que a pessoa fez ("acho que é acender"), mais fragmentos da vida dela.
@@ -109,13 +109,13 @@ símbolos desenhados com a anotação que a pessoa fez ("acho que é acender"), 
 
 ## 7c. O dado e o giz: progressão e funções (rascunho cerebral)
 
-- O jogador **não começa com tudo**. Começa com o giz, o dado, ou os dois, mas o dado com **1 ou 2 faces no máximo**.
+- O jogador **não começa com tudo**. **Decidido:** começa com o **giz** e o **dado só com Fogo**; o Peso vem no primeiro altar.
 - As outras faces são destravadas em **altares** (cada altar é um puzzle e ensina a palavra da face).
 - Princípio: o dado é **um verbo que se coloca numa coisa**. Menos arremesso e mais posicionar, espelhando a
   gramática da língua (verbo + coisa): colocar o dado de Fogo num braseiro é "ACENDER BRASEIRO".
-- Arremessar fica só como forma de alcançar lugares, não como puzzle.
+- **Decidido: sem arremesso.** Só posicionar, com **encaixe** (socket) no braseiro/altar para dar precisão. Colisão do topo dos objetos precisa ser fiel ao modelo 3D.
 
-| Face | Palavra | Proposta (todas **[DECIDIR]**) |
+| Face | Palavra | Proposta (aprovada; detalhes ainda a desenhar) |
 |---|---|---|
 | Fogo | ACENDER | acende e **revela** (escrita invisível só aparece à luz) |
 | Peso | IGUAL | o dado vale o **número da face** em balanças e placas (somas, base 6) |
