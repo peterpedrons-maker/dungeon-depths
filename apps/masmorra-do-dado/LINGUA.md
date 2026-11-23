@@ -43,7 +43,7 @@ EM VEZ DE + duas coisas. Marca MEMÓRIA para o passado, PERGUNTA para perguntas,
 e não lançado.
 
 ## Tamanho
-**115 palavras** (84 símbolos próprios e 31 compostas). Cada palavra tem um **capítulo** provisório de introdução
+**115 palavras** (98 símbolos próprios e 17 compostas). Cada palavra tem um **capítulo** provisório de introdução
 (1 a 7, ligados às faces do dado: 1 Fogo, 2 Peso, 3 Eco, 4 Troca, 5 Deslizar, 6 Atravessar, 7 o veredito).
 O vocabulário completo, com português, inglês e capítulo, está em `docs/lingua/LEXICON.md`.
 
