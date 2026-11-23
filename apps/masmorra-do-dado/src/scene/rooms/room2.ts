@@ -105,6 +105,14 @@ export function buildRoom2(ctx: Ctx): Room {
 
   // decoração
   kit.skirting(X0, X1, Z0, Z1, 1.3);
+  kit.aoSides(X0, X1, Z0, Z1, H);
+  kit.cornice(X0, X1, Z0, Z1, H);
+  for (const z of [-3.5, -8.5]) {
+    kit.pilaster(X0, z, 1, 0, H);
+    kit.pilaster(X1, z, -1, 0, H);
+  }
+  for (const [x, z] of PILLARS) kit.contact(x, z, 2.1);
+  kit.contact(BX, BZ, 1.6);
   kit.moss(X0, 0.8, -7.4, 1, 0, 2.0);
   kit.moss(X1, 0.9, -3.0, -1, 0, 1.8);
   kit.moss(X1, 1.2, -10.6, -1, 0, 2.2);
@@ -182,6 +190,8 @@ export function buildRoom2(ctx: Ctx): Room {
       solved[i] = done;
     });
   };
+
+  kit.bake();
 
   return {
     name: 'Sala 2 · O Selo',

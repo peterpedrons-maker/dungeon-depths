@@ -103,6 +103,15 @@ export function buildRoom4(ctx: Ctx): Room {
   }
 
   // decoração
+  kit.aoSides(X0, X1, STAGE_Z, Z1, H);
+  kit.aoSides(X0, X1, Z0, STAGE_Z, H, LEVEL);
+  kit.cornice(X0, X1, Z0, Z1, H);
+  kit.pilaster(X0, 0.8, 1, 0, H);
+  kit.pilaster(X0, -3.2, 1, 0, H);
+  kit.pilaster(X1, 1.6, -1, 0, H);
+  for (const [x, z] of PILLARS) kit.contact(x, z, 2.1);
+  kit.contact(0, STAGE_Z + 0.45, W, 1.1);
+  kit.contact(BX, BZ, 1.6, 1.6, LEVEL);
   for (const z of [1.5, -1.5, -4.5, -7.5, -10.5]) kit.beam(0, H - 0.2, z, W, 0.35, 0.35);
   kit.banner(X0 + 0.02, 3.4, 0.2, 1, 0, '#2a3a6a', '#aabcdc', 2.6);
   kit.banner(X0 + 0.02, 3.4, -3.4, 1, 0, '#2a3a6a', '#aabcdc', 2.6);
@@ -148,6 +157,8 @@ export function buildRoom4(ctx: Ctx): Room {
     const p = ctx.die.pos;
     return Math.abs(p.x - PLATE.x) < PLATE.half + 0.05 && Math.abs(p.z - PLATE.z) < PLATE.half + 0.05 && p.y < PLATE.top + ctx.die.R + 0.1;
   };
+
+  kit.bake();
 
   return {
     name: 'Sala 4 · O Mirante',

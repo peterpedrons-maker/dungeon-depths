@@ -1,7 +1,11 @@
 // Peças em comum entre as salas: criação de malhas, tochas, poeira e a porta em arco.
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
+  aoRingTexture,
+  aoStripTexture,
+  blobShadowTexture,
   bannerTexture,
   barrelTexture,
   brickTexture,
@@ -82,13 +86,14 @@ export class Kit {
   box(w: number, h: number, d: number, mat: THREE.Material | THREE.Material[], x: number, y: number, z: number, mark = true) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     m.position.set(x, y, z);
+    if (!mark && !Array.isArray(mat)) m.userData.merge = true;
     return this.add(m, mark);
   }
 
   // tocha de parede: (nx, nz) = para onde a parede "olha" (de onde vem a luz)
   torch(x: number, y: number, z: number, nx: number, nz: number, phase: number, color = 0xff9a3c, intensity = 42) {
-    this.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.stone, x, y - 0.05, z);
-    this.box(0.1, 0.6, 0.1, lambert(null, 0x5a3a24), x + nx * 0.16, y + 0.12, z + nz * 0.16);
+    this.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.stone, x, y - 0.05, z, false);
+    this.box(0.1, 0.6, 0.1, this.mat('torchStick', () => lambert(null, 0x5a3a24)), x + nx * 0.16, y + 0.12, z + nz * 0.16, false);
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: this.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }),
     );
@@ -129,6 +134,7 @@ export class Kit {
     b.position.set(x, baseY + size / 2, z);
     b.rotation.y = yaw;
     this.add(b);
+    if (baseY === 0) this.contact(x, z, size * 1.9);
     const half = (size / 2) * (Math.abs(Math.cos(yaw)) + Math.abs(Math.sin(yaw)));
     this.rects.push([x - half, z - half, x + half, z + half, baseY + size]);
     this.boxes.push({ min: new THREE.Vector3(x - half, baseY, z - half), max: new THREE.Vector3(x + half, baseY + size, z + half) });
@@ -142,6 +148,7 @@ export class Kit {
     const b = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.85, 10), [side, top, top]);
     b.position.set(x, baseY + 0.425, z);
     this.add(b);
+    if (baseY === 0) this.contact(x, z, 1.25);
     this.rects.push([x - 0.32, z - 0.32, x + 0.32, z + 0.32, baseY + 0.85]);
     this.boxes.push({ min: new THREE.Vector3(x - 0.3, baseY, z - 0.3), max: new THREE.Vector3(x + 0.3, baseY + 0.85, z + 0.3) });
     return b;
@@ -154,6 +161,72 @@ export class Kit {
   surfaceAt(x: number, z: number): Surface {
     for (let i = this.zones.length - 1; i >= 0; i--) if (this.zones[i].test(x, z)) return this.zones[i].kind;
     return 'stone';
+  }
+
+  // sombra suave (oclusão ambiente) no encontro das paredes laterais com chão e teto
+  aoSides(x0: number, x1: number, z0: number, z1: number, h: number, y0 = 0) {
+    const m = this.mat('aoStrip', () => new THREE.MeshBasicMaterial({ map: aoStripTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+    const len = z1 - z0;
+    const cz = (z0 + z1) / 2;
+    const strip = (x: number, y: number, ry: number, flip: boolean, hh: number) => {
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(len, hh), m);
+      p.position.set(x, y, cz);
+      p.rotation.set(0, ry, flip ? Math.PI : 0);
+      p.renderOrder = 2;
+      this.group.add(p);
+    };
+    // plano girado em torno de Y: o "comprimento" da faixa corre ao longo de z
+    strip(x0 + 0.008, y0 + 0.3, Math.PI / 2, false, 0.6);
+    strip(x1 - 0.008, y0 + 0.3, -Math.PI / 2, false, 0.6);
+    strip(x0 + 0.008, h - 0.3, Math.PI / 2, true, 0.6);
+    strip(x1 - 0.008, h - 0.3, -Math.PI / 2, true, 0.6);
+  }
+
+  // anel de sombra no chão e no teto, junto à parede curva
+  aoRing(R: number, h: number) {
+    const m = this.mat('aoRing', () => new THREE.MeshBasicMaterial({ map: aoRingTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+    const f = new THREE.Mesh(new THREE.CircleGeometry(R, 40), m);
+    f.rotation.x = -Math.PI / 2;
+    f.position.y = 0.013;
+    f.renderOrder = 2;
+    this.group.add(f);
+    const c = new THREE.Mesh(new THREE.CircleGeometry(R, 40), m);
+    c.rotation.x = Math.PI / 2;
+    c.position.y = h - 0.013;
+    c.renderOrder = 2;
+    this.group.add(c);
+  }
+
+  // mancha de sombra no chão sob um objeto
+  contact(x: number, z: number, w: number, d = w, y = 0) {
+    const m = this.mat('blob', () => new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), m);
+    p.rotation.x = -Math.PI / 2;
+    p.position.set(x, y + 0.016, z);
+    p.renderOrder = 3;
+    this.group.add(p);
+  }
+
+  // cornija: faixa de pedra no alto das paredes laterais
+  cornice(x0: number, x1: number, z0: number, z1: number, h: number) {
+    const len = z1 - z0;
+    const cz = (z0 + z1) / 2;
+    for (const [x, s] of [[x0, 1], [x1, -1]] as [number, number][]) {
+      this.box(0.2, 0.2, len, this.stone, x + s * 0.1, h - 0.1, cz, false);
+      this.box(0.12, 0.12, len, this.stone, x + s * 0.06, h - 0.26, cz, false);
+    }
+  }
+
+  // pilastra encostada na parede (base, fuste e capitel)
+  pilaster(x: number, z: number, nx: number, nz: number, h: number, w = 0.5) {
+    const dx = nx !== 0 ? 0.12 : w;
+    const dz = nz !== 0 ? 0.12 : w;
+    const ox = nx * 0.06;
+    const oz = nz * 0.06;
+    const m = this.mat('pilaster', () => lambert(brickTexture([0.4, 2], 1.05, 77, this.theme)));
+    this.box(dx, h - 0.5, dz, m, x + ox, h / 2, z + oz, false);
+    this.box(nx !== 0 ? 0.16 : w + 0.1, 0.25, nz !== 0 ? 0.16 : w + 0.1, this.stone, x + nx * 0.08, 0.125, z + nz * 0.08, false);
+    this.box(nx !== 0 ? 0.16 : w + 0.1, 0.25, nz !== 0 ? 0.16 : w + 0.1, this.stone, x + nx * 0.08, h - 0.25, z + nz * 0.08, false);
   }
 
   // tapete no chão (sem rotação)
@@ -187,6 +260,7 @@ export class Kit {
     const m = this.mat('beam', () => lambert(null, 0x3a2616));
     const b = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m);
     b.position.set(cx, cy, cz);
+    b.userData.merge = true;
     this.group.add(b);
     return b;
   }
@@ -197,6 +271,7 @@ export class Kit {
     const mk = (w: number, d: number, x: number, z: number) => {
       const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), m);
       b.position.set(x, 0.1, z);
+      b.userData.merge = true;
       this.group.add(b);
     };
     mk(0.1, z1 - z0, x0 + 0.05, (z0 + z1) / 2);
@@ -254,6 +329,38 @@ export class Kit {
         new THREE.PointsMaterial({ color: 0xe0cfa8, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.6, fog: false, depthWrite: false }),
       ),
     );
+  }
+
+  // Junta as caixas decorativas que usam o mesmo material numa única malha (menos chamadas de
+  // desenho). Chamar uma vez, no fim da montagem da sala.
+  bake() {
+    const byMat = new Map<THREE.Material, THREE.Mesh[]>();
+    for (const o of [...this.group.children]) {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && m.userData.merge && !Array.isArray(m.material)) {
+        const arr = byMat.get(m.material) ?? [];
+        arr.push(m);
+        byMat.set(m.material, arr);
+      }
+    }
+    byMat.forEach((meshes, material) => {
+      if (meshes.length < 2) return;
+      const geos = meshes.map((m) => {
+        m.updateMatrix();
+        const g = m.geometry.clone();
+        g.applyMatrix4(m.matrix);
+        return g;
+      });
+      const merged = mergeGeometries(geos);
+      if (!merged) return;
+      const out = new THREE.Mesh(merged, material);
+      this.group.add(out);
+      meshes.forEach((m) => {
+        this.group.remove(m);
+        m.geometry.dispose();
+      });
+      geos.forEach((g) => g.dispose());
+    });
   }
 
   private buildEmbers() {

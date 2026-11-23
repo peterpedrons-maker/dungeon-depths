@@ -113,3 +113,11 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
 .credits-box p { margin: 0 0 8px; opacity: 0.9; }
 .credits-box button { padding: 6px 16px; font: inherit; font-weight: bold; color: #efe6d0; cursor: pointer;
   background: #1a1624; border: 2px solid #5be7ff; box-shadow: 2px 2px 0 #05040a; }
+
+/* PC: aviso pra clicar e capturar o mouse */
+.clicktoplay { position: absolute; left: 0; right: 0; top: 38%; margin: 0 auto; width: fit-content; max-width: 80vw; padding: 10px 22px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; pointer-events: none;
+  background: rgba(8, 6, 14, 0.82); border: 2px solid #ffd36b; box-shadow: 4px 4px 0 #05040a; text-shadow: 2px 2px 0 #05040a; }
+.clicktoplay b { font-size: 20px; letter-spacing: 2px; color: #ffd36b; animation: blink 1.4s steps(2) infinite; }
+.clicktoplay span { font-size: 12px; opacity: 0.85; }
+@keyframes blink { 50% { opacity: 0.55; } }

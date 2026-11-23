@@ -95,6 +95,14 @@ export function buildRoom1(ctx: Ctx): Room {
 
   // decoração
   kit.skirting(X0, X1, Z0, Z1, 1.3);
+  kit.aoSides(X0, X1, Z0, Z1, H);
+  kit.cornice(X0, X1, Z0, Z1, H);
+  for (const z of [-3, -7]) {
+    kit.pilaster(X0, z, 1, 0, H);
+    kit.pilaster(X1, z, -1, 0, H);
+  }
+  for (const [x, z] of PILLARS) kit.contact(x, z, 2.1);
+  kit.contact(2.9, -9.2, 1.6);
   for (const z of [-2, -5.5, -8.8]) kit.beam(0, H - 0.15, z, W, 0.3, 0.3);
   kit.rug(0, -3.6, 1.4, 8.2, '#6a2a3a', '#d4ac4e');
   kit.banner(X0 + 0.02, 1.9, -5.0, 1, 0, '#5a2a6a', '#d4ac4e');
@@ -141,6 +149,8 @@ export function buildRoom1(ctx: Ctx): Room {
     const p = ctx.die.pos;
     return Math.abs(p.x - PLATE.x) < PLATE.half + 0.05 && Math.abs(p.z - PLATE.z) < PLATE.half + 0.05 && p.y < PLATE.top + ctx.die.R + 0.1;
   };
+
+  kit.bake();
 
   return {
     name: 'Sala 1 · A Entrada',

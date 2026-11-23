@@ -81,7 +81,10 @@ export function buildRoom3(ctx: Ctx): Room {
   });
 
   // tochas na parede curva
-  // decoração: mosaico no chão, vigas em cruz, estandartes, barris
+  // decoração: sombras, mosaico no chão, vigas em cruz, estandartes, barris
+  kit.aoRing(R, H);
+  for (const [x, z] of PILLARS) kit.contact(x, z, 2.1);
+  for (const [x, z] of BRAZIERS) kit.contact(x, z, 1.6);
   kit.decal(8.6, 8.6, 'mosaic', () => mosaicTexture(), 0, 0.011, 0, -Math.PI / 2, 0, 0);
   kit.beam(0, H - 0.15, 0, 12.2, 0.3, 0.3);
   kit.beam(0, H - 0.15, 0, 0.3, 0.3, 12.2);
@@ -120,6 +123,8 @@ export function buildRoom3(ctx: Ctx): Room {
     return Math.abs(p.x - PLATE.x) < PLATE.half + 0.05 && Math.abs(p.z - PLATE.z) < PLATE.half + 0.05 && p.y < PLATE.top + ctx.die.R + 0.1;
   };
   const allLit = () => braziers.every((b) => b.left > 0);
+
+  kit.bake();
 
   return {
     name: 'Sala 3 · O Salão das Brasas',

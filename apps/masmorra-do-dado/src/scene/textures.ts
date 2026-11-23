@@ -115,15 +115,36 @@ function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number, t
       const x0 = col * 16 + off;
       const y0 = row * 8;
       const base = th.stone[Math.floor(r() * th.stone.length)];
+      // cada tijolo tem o seu "tom": uns mais escuros, uns mais claros (bem mais variação que antes)
+      const roll = r();
+      const brickK = roll < 0.14 ? 0.74 : roll > 0.88 ? 1.22 : 0.88 + r() * 0.24;
+      const chip = [r() < 0.35, r() < 0.35, r() < 0.35, r() < 0.35]; // cantos lascados
       for (let y = 0; y < 7; y++) {
         for (let x = 0; x < 15; x++) {
-          let k = tint * (0.96 + r() * 0.08);
+          let k = tint * brickK * (0.96 + r() * 0.08);
           if (y === 0) k *= 1.22;
           if (y === 6) k *= 0.72;
           if (x === 0) k *= 1.1;
           if (x === 14) k *= 0.8;
-          px(ctx, x0 + x, y0 + y, shade(base, k));
+          // sujeira que escorre: mais escura embaixo do tijolo
+          if (y >= 4) k *= 0.93;
+          const corner = (x < 2 && y < 2 && chip[0]) || (x > 12 && y < 2 && chip[1]) || (x < 2 && y > 4 && chip[2]) || (x > 12 && y > 4 && chip[3]);
+          px(ctx, x0 + x, y0 + y, corner ? th.mortar : shade(base, k));
         }
+      }
+      // algumas rachaduras finas
+      if (r() < 0.22) {
+        let cx = x0 + 3 + Math.floor(r() * 9);
+        let cy = y0 + 1;
+        for (let i = 0; i < 5; i++) {
+          px(ctx, ((cx % 32) + 32) % 32, ((cy % 32) + 32) % 32, shade(base, 0.4));
+          cx += r() < 0.5 ? 0 : 1;
+          cy += 1;
+        }
+      }
+      // musgo no topo dos tijolos (só no tema úmido)
+      if (th === THEMES.moss && r() < 0.4) {
+        for (let x = 1; x < 14; x++) if (r() < 0.55) px(ctx, x0 + x, y0 + 1, shade(hex('#4a8a4e'), 0.8 + r() * 0.4));
       }
     }
   }
@@ -144,12 +165,24 @@ export function floorTexture(repeat: [number, number], theme = 'crypt') {
   for (let ty = 0; ty < 2; ty++) {
     for (let tx = 0; tx < 2; tx++) {
       const base = tones[Math.floor(r() * tones.length)];
+      const slabK = 0.82 + r() * 0.32; // cada laje com seu tom
+      const worn = r() < 0.4; // algumas lajes mais gastas no meio
       for (let y = 0; y < 15; y++) {
         for (let x = 0; x < 15; x++) {
-          let k = 0.95 + r() * 0.1;
+          let k = slabK * (0.95 + r() * 0.1);
           if (y === 0 || x === 0) k *= 1.18;
           if (y === 14 || x === 14) k *= 0.78;
+          if (worn && x > 3 && x < 11 && y > 3 && y < 11) k *= 1.08;
           px(ctx, tx * 16 + x, ty * 16 + y, shade(base, k));
+        }
+      }
+      if (r() < 0.3) {
+        let cx = tx * 16 + 3 + Math.floor(r() * 8);
+        let cy = ty * 16 + 2;
+        for (let i = 0; i < 9; i++) {
+          px(ctx, cx, cy, shade(base, 0.42));
+          cy += 1;
+          cx += r() < 0.4 ? (r() < 0.5 ? -1 : 1) : 0;
         }
       }
     }
@@ -855,6 +888,47 @@ export function mosaicTexture() {
         if (d > 10 && d < 12) col = cols[3];
       }
       px(ctx, x, y, shade(hex(col), 0.9 + r() * 0.15));
+    }
+  }
+  return toTexture(c, undefined, false, true);
+}
+
+
+// ── sombras falsas (oclusão ambiente) ───────────────────────────────────────
+// Faixa de sombra que escurece o encontro de parede com chão/teto (gradiente em degraus).
+export function aoStripTexture() {
+  const { c, ctx } = canvas(4, 32);
+  for (let y = 0; y < 32; y++) {
+    const a = Math.max(0, 1 - y / 31);
+    ctx.fillStyle = `rgba(4,3,10,${(Math.round(a * a * 6) / 6) * 0.62})`;
+    ctx.fillRect(0, y, 4, 1);
+  }
+  return toTexture(c, undefined, false, true);
+}
+
+// Mancha redonda de sombra sob objetos (pilares, caixas, barris, braseiros).
+export function blobShadowTexture() {
+  const { c, ctx } = canvas(32);
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 32; x++) {
+      const d = Math.hypot(x - 15.5, y - 15.5) / 15.5;
+      const a = Math.max(0, 1 - d);
+      ctx.fillStyle = `rgba(4,3,10,${(Math.round(a * 5) / 5) * 0.6})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  return toTexture(c, undefined, false, true);
+}
+
+// Anel de sombra junto à parede curva (sala redonda): escuro na borda, some pra dentro.
+export function aoRingTexture() {
+  const { c, ctx } = canvas(64);
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      const d = Math.hypot(x - 31.5, y - 31.5) / 31.5;
+      const a = Math.max(0, (d - 0.78) / 0.22);
+      ctx.fillStyle = `rgba(4,3,10,${(Math.round(a * 6) / 6) * 0.62})`;
+      ctx.fillRect(x, y, 1, 1);
     }
   }
   return toTexture(c, undefined, false, true);

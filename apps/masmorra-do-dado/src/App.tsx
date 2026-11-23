@@ -28,6 +28,9 @@ export default function App() {
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
   const [credits, setCredits] = useState(false);
+  // PC: o mouse precisa ser capturado (clique) pra olhar livremente
+  const [look, setLook] = useState<'locked' | 'free' | 'denied'>('free');
+  const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
   const [audio, setAudio] = useState<AudioMode>(() => {
     try {
       const v = Number(localStorage.getItem('mdd-audio'));
@@ -58,6 +61,7 @@ export default function App() {
       onComplete: setComplete,
       onDie: (st) => setDieOut(st !== 'hand'),
       onTool: setTool,
+      onLook: setLook,
     });
     sceneRef.current = scene;
     const hintTimer = window.setTimeout(() => setHint(false), 9000);
@@ -264,6 +268,13 @@ export default function App() {
         <div className="lookzone" aria-hidden="true">
           <span>◉</span>
           <span>OLHAR</span>
+        </div>
+      )}
+
+      {!coarse && look === 'free' && !complete && !credits && (
+        <div className="clicktoplay" aria-hidden="true">
+          <b>Clique para jogar</b>
+          <span>WASD anda · Shift corre · mouse olha · Esc solta o mouse</span>
         </div>
       )}
 

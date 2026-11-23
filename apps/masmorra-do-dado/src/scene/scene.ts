@@ -48,6 +48,7 @@ export interface SceneOptions {
   onComplete?: (info: { gem: boolean }) => void;
   onDie?: (state: 'hand' | 'flying' | 'rest') => void;
   onTool?: (tool: Tool) => void;
+  onLook?: (s: 'locked' | 'free' | 'denied') => void; // mouse capturado, solto ou negado (PC)
 }
 
 export interface SceneApi {
@@ -962,8 +963,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const locked = () => document.pointerLockElement === canvas;
   const onLockError = () => {
     lockFailed = true;
+    opts.onLook?.('denied');
   };
+  const onLockChange = () => opts.onLook?.(locked() ? 'locked' : 'free');
   document.addEventListener('pointerlockerror', onLockError);
+  document.addEventListener('pointerlockchange', onLockChange);
 
   const setBrushNdc = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && locked()) {
@@ -1163,12 +1167,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       str /= len;
     }
     const run = keys.has('shift') ? SPRINT : 1;
-    const tx = (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * MAX_SPEED * run;
-    const tz = (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * MAX_SPEED * run;
-    // aceleração e frenagem suaves (em vez de ligar/desligar de uma vez)
+    // A inércia é calculada NO REFERENCIAL DA CÂMERA (f = pra frente, s = pra direita). Antes era no
+    // mundo: ao girar andando, a velocidade demorava a acompanhar e o personagem "escorregava".
+    const cyw = Math.cos(yaw);
+    const syw = Math.sin(yaw);
+    let vf = -syw * moveVel.x - cyw * moveVel.z;
+    let vs = cyw * moveVel.x - syw * moveVel.z;
     const k = 1 - Math.exp(-dt * (len > 0.02 ? 15 : 20)); // arranca e freia rápido
-    moveVel.x += (tx - moveVel.x) * k;
-    moveVel.z += (tz - moveVel.z) * k;
+    vf += (fwd * MAX_SPEED * run - vf) * k;
+    vs += (str * MAX_SPEED * run - vs) * k;
+    moveVel.x = -syw * vf + cyw * vs;
+    moveVel.z = -cyw * vf - syw * vs;
     const sp = Math.hypot(moveVel.x, moveVel.z);
     if (sp < 0.02) {
       moveVel.set(0, 0, 0);
@@ -1284,7 +1293,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     // sensação de velocidade: o campo de visão abre um pouquinho correndo
-    const fovTarget = fovBase + 4 * Math.min(1.3, speedFrac);
+    const fovTarget = fovBase + 2.5 * Math.min(1.3, speedFrac);
     if (Math.abs(camera.fov - fovTarget) > 0.01) {
       camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 8);
       camera.updateProjectionMatrix();
@@ -1493,6 +1502,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         z: pos.z,
         die: [dieP.x, dieP.y, dieP.z].map((v) => +v.toFixed(2)),
         marks: chalk.count,
+        vx: moveVel.x,
+        vz: moveVel.z,
         gems,
       }),
       place: (x: number, z: number, y: number, p: number) => {
@@ -1522,6 +1533,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       exp: (k: string) => {
         if (k === 'pal1') {
         }
+        if (k === 'noao') scene.traverse((o) => { if (o.renderOrder === 2 || o.renderOrder === 3) o.visible = false; });
         if (k === 'nobloom') postMat.uniforms.uBloom.value = 0;
         if (k === 'nolights') scene.traverse((o) => { if ((o as THREE.Light).isLight && !(o as THREE.AmbientLight).isAmbientLight) o.visible = false; });
         if (k === 'half') { renderer.setSize(200, 90, false); rt.setSize(200, 90); rtHud.setSize(200, 90); postMat.uniforms.uRes.value.set(200, 90); }
@@ -1564,6 +1576,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       document.removeEventListener('pointerlockerror', onLockError);
+      document.removeEventListener('pointerlockchange', onLockChange);
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
       document.removeEventListener('visibilitychange', onVis);
