@@ -26,13 +26,18 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   de imagem). O jogador segura um dado e escolhe a face (1–6) antes
   de arremessar/posicionar; cada face é uma mecânica de puzzle (ricochete, peso, fogo...).
   Sem combate. Mundo conectado (estilo Metroidvania) com volta livre; faces novas destravam
-  caminhos. Pedra-sabão infinita na mão esquerda já funciona: risca símbolos de giz
-  (✕ ○ ↑ △ ✓) nas paredes/chão em 3D, com apagar a marca da mira e apagar tudo (Q/C/Z/X no PC,
-  4 botões no celular). Planejado: minimapa com anotações persistentes e caderno de pistas.
-  Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
+  caminhos. Pedra-sabão (giz) infinita: o jogador a troca com o dado na mão principal
+  (Tab/Q no PC, botão GIZ/DADO no celular) e desenha livremente nas paredes/chão em 3D
+  (segurar o botão esquerdo desenha, o direito apaga; no celular, modos desenhar/apagar/olhar;
+  apagar tudo pede confirmação). Planejado: minimapa com anotações persistentes e caderno
+  de pistas. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
-  celular). Hoje existe um protótipo de UMA sala (`src/scene/`): faces Ricochete/Peso/Fogo,
-  placa de pressão, braseiro, porta e gema escondida. Mobile só na horizontal, além de PC.
+  celular). Hoje há 4 salas em sequência (`src/scene/rooms/`, cada uma um módulo `Room` com
+  tema visual, formato e física próprios; `scene.ts` é o motor): 1 A Entrada (fogo + peso + gema
+  escondida), 2 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
+  fogo), 3 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
+  4 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
+  Mobile só na horizontal, além de PC.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 

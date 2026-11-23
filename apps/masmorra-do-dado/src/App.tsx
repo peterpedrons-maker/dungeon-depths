@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { createScene, type SceneApi, type StickState } from './scene/scene';
+import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
 
 const STICK_R = 52;
 
@@ -22,7 +22,9 @@ export default function App() {
   const [complete, setComplete] = useState<{ gem: boolean } | null>(null);
   const [hint, setHint] = useState(true);
   const [dieOut, setDieOut] = useState(false);
-  const [glyph, setGlyph] = useState('✕');
+  const [tool, setTool] = useState<Tool>('die');
+  const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
+  const [fade, setFade] = useState(false);
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null);
   const captionTimer = useRef(0);
 
@@ -32,11 +34,12 @@ export default function App() {
       onCaption: (title, sub, color) => {
         setCaption({ id: performance.now(), title, sub, color });
         window.clearTimeout(captionTimer.current);
-        captionTimer.current = window.setTimeout(() => setCaption(null), 2600);
+        captionTimer.current = window.setTimeout(() => setCaption(null), 3800);
       },
       onComplete: setComplete,
       onDie: (st) => setDieOut(st !== 'hand'),
-      onSymbol: setGlyph,
+      onTool: setTool,
+      onFade: setFade,
     });
     sceneRef.current = scene;
     const hintTimer = window.setTimeout(() => setHint(false), 9000);
@@ -66,9 +69,17 @@ export default function App() {
   };
 
   const reset = () => {
-    setComplete(null);
     setCaption(null);
     sceneRef.current?.reset();
+  };
+  const restart = () => {
+    setComplete(null);
+    setCaption(null);
+    sceneRef.current?.restart();
+  };
+  const pickMode = (m: ChalkMode) => {
+    setChalkMode(m);
+    sceneRef.current?.setChalkMode(m);
   };
 
   const fullscreen = () => {
@@ -116,12 +127,14 @@ export default function App() {
 
       {hint && (
         <div className="hint">
-          <span className="hint-pc">clique: capturar o mouse (Esc solta) · esquerdo: arremessar · direito/G: posicionar · E: recolher · 1–6: face · Q/C/Z/X: giz · WASD</span>
-          <span className="hint-touch">à direita: arremessar, posicionar e girar · esquerda: andar · arraste: olhar</span>
+          <span className="hint-pc">
+            clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
+          </span>
+          <span className="hint-touch">à direita: arremessar, posicionar e girar · esquerda: andar · arraste: olhar · GIZ no canto</span>
         </div>
       )}
 
-      {!complete && (
+      {!complete && tool === 'die' && (
         <div className="touchbtns">
           <button
             className="btn-rotate"
@@ -162,35 +175,63 @@ export default function App() {
       )}
 
       {!complete && (
-        <div className="soapbtns">
-          {(
-            [
-              ['soap-sym', glyph, 'Trocar o símbolo da pedra-sabão', () => sceneRef.current?.nextSymbol()],
-              ['soap-mark', '✎', 'Riscar com a pedra-sabão', () => sceneRef.current?.mark()],
-              ['soap-erase', '⌫', 'Apagar a marca da mira', () => sceneRef.current?.eraseAimed()],
-              ['soap-clear', '⌧', 'Apagar todas as marcas', () => sceneRef.current?.eraseAll()],
-            ] as [string, string, string, () => void | undefined][]
-          ).map(([cls, label, aria, fn]) => (
-            <button
-              key={cls}
-              className={cls}
-              aria-label={aria}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                fn();
-              }}
-            >
-              {label}
-            </button>
-          ))}
+        <div className={`soapbtns${tool === 'chalk' ? ' chalk' : ''}`}>
+          <button
+            className="soap-swap"
+            aria-label={tool === 'die' ? 'Pegar o giz' : 'Pegar o dado'}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              sceneRef.current?.swapTool();
+            }}
+          >
+            <span className="ico">{tool === 'die' ? '✎' : '⚀'}</span>
+            <span>{tool === 'die' ? 'GIZ' : 'DADO'}</span>
+          </button>
+          {tool === 'chalk' && (
+            <>
+              {(
+                [
+                  ['draw', '✎', 'Desenhar'],
+                  ['erase', '⌫', 'Apagar'],
+                  ['look', '◉', 'Olhar'],
+                ] as [ChalkMode, string, string][]
+              ).map(([m, ico, label]) => (
+                <button
+                  key={m}
+                  className={`soap-mode${chalkMode === m ? ' on' : ''}`}
+                  aria-label={label}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    pickMode(m);
+                  }}
+                >
+                  <span className="ico">{ico}</span>
+                  <span>{label.toUpperCase()}</span>
+                </button>
+              ))}
+              <button
+                className="soap-clear"
+                aria-label="Apagar tudo"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  sceneRef.current?.clearChalk();
+                }}
+              >
+                <span className="ico">⌧</span>
+                <span>LIMPAR</span>
+              </button>
+            </>
+          )}
         </div>
       )}
 
+      <div className={`fade${fade ? ' on' : ''}`} />
+
       {complete && (
         <div className="done">
-          <h1>Sala concluída</h1>
-          <p>{complete.gem ? 'Gema encontrada ✦' : 'Ainda há uma gema escondida nesta sala…'}</p>
-          <button onClick={reset}>Jogar de novo</button>
+          <h1>Fim da demonstração</h1>
+          <p>{complete.gem ? 'Você achou a gema escondida da primeira sala ✦' : 'Ainda havia uma gema escondida na primeira sala…'}</p>
+          <button onClick={restart}>Jogar de novo</button>
         </div>
       )}
 

@@ -67,15 +67,48 @@ function rect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
 const STONE: RGB[] = [hex('#4a485e'), hex('#55536b'), hex('#403e52'), hex('#4f4a64')];
 const MORTAR = '#1c1b26';
 
-function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number) {
+// Cada sala tem seu "clima": tons da pedra, da argamassa e do piso.
+export interface Theme {
+  stone: RGB[];
+  mortar: string;
+  floor: RGB[];
+  floorGap: string;
+}
+export const THEMES: Record<string, Theme> = {
+  // sala 1: roxo-acinzentado, tijolo comum
+  crypt: { stone: STONE, mortar: MORTAR, floor: [hex('#5a4d47'), hex('#645650'), hex('#4c413d')], floorGap: '#1d1816' },
+  // sala 2: pedra esverdeada, úmida
+  moss: {
+    stone: [hex('#3f5a58'), hex('#486660'), hex('#355150'), hex('#41605a')],
+    mortar: '#12201f',
+    floor: [hex('#44564f'), hex('#4d6058'), hex('#3a4a45')],
+    floorGap: '#101a18',
+  },
+  // sala 3: arenito avermelhado, cor de brasa
+  ember: {
+    stone: [hex('#6a4640'), hex('#74504a'), hex('#5c3c38'), hex('#6e4a42')],
+    mortar: '#241210',
+    floor: [hex('#5e4038'), hex('#6a4a40'), hex('#50362f')],
+    floorGap: '#1c0f0d',
+  },
+  // sala 4: pedra azul-fria, bem alta
+  frost: {
+    stone: [hex('#4a5878'), hex('#55648a'), hex('#404e6c'), hex('#4f5e82')],
+    mortar: '#141a2a',
+    floor: [hex('#4a566e'), hex('#546080'), hex('#404a60')],
+    floorGap: '#121622',
+  },
+};
+
+function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number, th: Theme) {
   const r = rng(seed);
-  rect(ctx, 0, 0, 32, 32, MORTAR);
+  rect(ctx, 0, 0, 32, 32, th.mortar);
   for (let row = 0; row < 4; row++) {
     const off = row % 2 ? 8 : 0;
     for (let col = -1; col < 3; col++) {
       const x0 = col * 16 + off;
       const y0 = row * 8;
-      const base = STONE[Math.floor(r() * STONE.length)];
+      const base = th.stone[Math.floor(r() * th.stone.length)];
       for (let y = 0; y < 7; y++) {
         for (let x = 0; x < 15; x++) {
           let k = tint * (0.96 + r() * 0.08);
@@ -90,17 +123,18 @@ function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number) {
   }
 }
 
-export function brickTexture(repeat: [number, number], tint = 1, seed = 11) {
+export function brickTexture(repeat: [number, number], tint = 1, seed = 11, theme = 'crypt') {
   const { c, ctx } = canvas(32);
-  drawBricks(ctx, tint, seed);
+  drawBricks(ctx, tint, seed, THEMES[theme]);
   return toTexture(c, repeat);
 }
 
-export function floorTexture(repeat: [number, number]) {
+export function floorTexture(repeat: [number, number], theme = 'crypt') {
   const { c, ctx } = canvas(32);
   const r = rng(5);
-  const tones: RGB[] = [hex('#5a4d47'), hex('#645650'), hex('#4c413d')];
-  rect(ctx, 0, 0, 32, 32, '#1d1816');
+  const th = THEMES[theme];
+  const tones: RGB[] = th.floor;
+  rect(ctx, 0, 0, 32, 32, th.floorGap);
   for (let ty = 0; ty < 2; ty++) {
     for (let tx = 0; tx < 2; tx++) {
       const base = tones[Math.floor(r() * tones.length)];
@@ -464,6 +498,91 @@ export function markTexture(kind: number) {
     // marca de "feito"
     line(2, 8, 6, 12);
     line(6, 12, 13, 3);
+  }
+  return toTexture(c, undefined, false);
+}
+
+// ── o Selo (sala 2) ─────────────────────────────────────────────────────────
+// Três peças do selo (triângulo, círculo, cruz); cada uma fica numa casa de uma grade 3x3.
+// A MESMA definição serve pra desenhar os fragmentos nas paredes e pra conferir o que o
+// jogador riscou na lousa.
+export const SEAL_CELL = 0.8; // metros por casa, na lousa
+export const SEAL_SCALE = 0.27; // raio da forma dentro da casa, em metros
+export interface SealPiece {
+  id: string;
+  col: number; // -1, 0, 1
+  row: number; // -1 (embaixo), 0, 1 (em cima)
+  color: string;
+  unit: [number, number][]; // pontos da forma, em unidades (-1..1)
+}
+function ring(n: number): [number, number][] {
+  return Array.from({ length: n }, (_, i) => [Math.cos((i / n) * Math.PI * 2), Math.sin((i / n) * Math.PI * 2)]);
+}
+function poly(pts: [number, number][], closed: boolean, step = 0.09): [number, number][] {
+  const out: [number, number][] = [];
+  const n = pts.length;
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % n];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const k = Math.max(1, Math.round(len / step));
+    for (let j = 0; j < k; j++) out.push([a[0] + ((b[0] - a[0]) * j) / k, a[1] + ((b[1] - a[1]) * j) / k]);
+  }
+  return out;
+}
+export const SEAL_PIECES: SealPiece[] = [
+  { id: 'tri', col: 0, row: 1, color: '#ffd36b', unit: poly([[0, 1], [-0.95, -0.7], [0.95, -0.7]], true) },
+  { id: 'circle', col: 0, row: 0, color: '#6ff0ff', unit: ring(36) },
+  {
+    id: 'cross',
+    col: 1,
+    row: -1,
+    color: '#ff7a9a',
+    unit: [...poly([[-0.8, -0.8], [0.8, 0.8]], false, 0.09), ...poly([[-0.8, 0.8], [0.8, -0.8]], false, 0.09)],
+  },
+];
+// pontos da peça na lousa (metros, a partir do centro da lousa)
+export function sealPoints(p: SealPiece): [number, number][] {
+  return p.unit.map(([x, y]) => [p.col * SEAL_CELL + x * SEAL_SCALE, p.row * SEAL_CELL + y * SEAL_SCALE]);
+}
+
+// lousa: pedra escura com a grade 3x3 apagadinha
+export function slateTexture() {
+  const { c, ctx } = canvas(48);
+  const r = rng(300);
+  for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) px(ctx, x, y, shade(hex('#262932'), 0.92 + r() * 0.1));
+  for (const k of [16, 32]) {
+    rect(ctx, k, 1, 1, 46, '#3a3e4c');
+    rect(ctx, 1, k, 46, 1, '#3a3e4c');
+  }
+  for (let i = 0; i < 160; i++) px(ctx, Math.floor(r() * 48), Math.floor(r() * 48), '#32363f');
+  return toTexture(c, undefined, false);
+}
+
+// fragmento gravado na parede: a grade 3x3 e a peça acesa na casa certa
+export function fragmentTexture(piece: SealPiece) {
+  const { c, ctx } = canvas(48);
+  const col = hex(piece.color);
+  rect(ctx, 0, 0, 48, 48, '#14131c');
+  rect(ctx, 0, 0, 48, 1, '#4a4660');
+  rect(ctx, 0, 47, 48, 1, '#4a4660');
+  rect(ctx, 0, 0, 1, 48, '#4a4660');
+  rect(ctx, 47, 0, 1, 48, '#4a4660');
+  for (const k of [16, 32]) {
+    rect(ctx, k, 2, 1, 44, '#2c2a3c');
+    rect(ctx, 2, k, 44, 1, '#2c2a3c');
+  }
+  const cx = 24 + piece.col * 16;
+  const cy = 24 - piece.row * 16;
+  // casa realçada
+  rect(ctx, cx - 7, cy - 7, 15, 1, shade(col, 0.45));
+  rect(ctx, cx - 7, cy + 7, 15, 1, shade(col, 0.45));
+  rect(ctx, cx - 7, cy - 7, 1, 15, shade(col, 0.45));
+  rect(ctx, cx + 7, cy - 7, 1, 15, shade(col, 0.45));
+  for (const [ux, uy] of piece.unit) {
+    const x = Math.round(cx + ux * 5.2);
+    const y = Math.round(cy - uy * 5.2);
+    px(ctx, x, y, shade(col, 1.15), 2, 2);
   }
   return toTexture(c, undefined, false);
 }

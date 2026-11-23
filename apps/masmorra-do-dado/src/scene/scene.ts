@@ -1,38 +1,20 @@
-// Cena 3D em primeira pessoa. O truque do visual "pixelado 3D": a cena é
-// renderizada num alvo de baixíssima resolução (~180-250 linhas), passa por um
-// shader que reduz as cores e aplica dithering ordenado (Bayer 4x4), e o canvas
-// é ampliado sem suavização pelo CSS.
+// Motor do jogo: renderização pixel art (alvo de baixa resolução + paleta fixa +
+// contorno + dithering), mãos no HUD (dado e pedra-sabão), física do dado, movimento
+// do jogador, giz livre e a passagem de uma sala para a outra.
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
-import {
-  brickTexture,
-  crackTexture,
-  flameFrames,
-  floorTexture,
-  gemTexture,
-  dieFaceTexture,
-  dieGlowTexture,
-  plateTexture,
-  runeTexture,
-  sparkTexture,
-  doorTexture,
-  markTexture,
-  MARK_COUNT,
-  soapSideTexture,
-  soapTipTexture,
-} from './textures';
+import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture } from './textures';
+import { Chalk } from './chalk';
+import { buildRoom1 } from './rooms/room1';
+import { buildRoom2 } from './rooms/room2';
+import { buildRoom3 } from './rooms/room3';
+import { buildRoom4 } from './rooms/room4';
+import type { ChalkDot, Ctx, DieState, Room, RoomBuilder } from './types';
 
-const ROOM = { x0: -4, x1: 4, z0: -10, z1: 2, h: 3.2 };
-const PILLARS: [number, number][] = [
-  [-2.3, -3],
-  [2.3, -3],
-  [-2.3, -7],
-  [2.3, -7],
-];
 const FOG = '#0b0912';
-const LAMP_OFF = 0x2a2230;
+const BUILDERS: RoomBuilder[] = [buildRoom1, buildRoom2, buildRoom3, buildRoom4];
 
 // Ordem dos materiais do BoxGeometry: +x, -x, +y, -y, +z, -z (opostas somam 7).
 const DIE_FACES = [3, 4, 1, 6, 2, 5];
@@ -54,28 +36,29 @@ export interface StickState {
   y: number;
 }
 
+export type Tool = 'die' | 'chalk';
+export type ChalkMode = 'draw' | 'erase' | 'look';
+
 export interface SceneOptions {
   onStick?: (s: StickState) => void;
   onCaption?: (title: string, sub: string, color: string) => void;
   onComplete?: (info: { gem: boolean }) => void;
   onDie?: (state: 'hand' | 'flying' | 'rest') => void;
-  onSymbol?: (glyph: string) => void;
+  onTool?: (tool: Tool) => void;
+  onRoom?: (info: { index: number; total: number; name: string }) => void;
+  onFade?: (black: boolean) => void;
 }
 
 export interface SceneApi {
   action(): void; // arremessa ou recolhe
   place(): void; // posiciona o dado com cuidado onde a mira aponta
   rotate(): void; // próxima face
-  reset(): void;
-  mark(): void; // risca o símbolo atual onde a mira aponta
-  nextSymbol(): void;
-  eraseAimed(): void; // apaga a marca mais próxima da mira
-  eraseAll(): void; // pede confirmação (aperte de novo)
+  swapTool(): void; // troca entre dado e giz na mão principal
+  setChalkMode(m: ChalkMode): void; // (celular) o que o dedo faz na tela com o giz
+  clearChalk(): void; // apaga tudo (pede confirmação: aperte de novo)
+  reset(): void; // reinicia a sala atual
+  restart(): void; // volta pra primeira sala
   dispose(): void;
-}
-
-function lambert(map: THREE.Texture | null, color = 0xffffff) {
-  return new THREE.MeshLambertMaterial({ map, color });
 }
 
 export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}): SceneApi {
@@ -111,6 +94,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     '#4a1020', '#a02840', '#ff4d6d',
     '#1a3a30', '#3a7a62', '#7fffb0',
     '#4a3a7a', '#7a5ab0', '#b18cff',
+    '#1c2438', '#2c3a58', '#3e4e76', '#5a6e98', '#8098c0', '#aabcdc',
     '#5e7068', '#7f958c', '#a9bdb2', '#e9f0e6',
     '#ffffff',
   ];
@@ -178,245 +162,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat);
   postQuad.frustumCulled = false;
   postScene.add(postQuad);
-
-  // ── sala ────────────────────────────────────────────────────────────────
+  // ── sala e cena ─────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(FOG, 4, 19);
-  scene.add(new THREE.AmbientLight(0x7a78b8, 1.9));
-
-  const W = ROOM.x1 - ROOM.x0;
-  const L = ROOM.z1 - ROOM.z0;
-  const T = 1.2;
-
-  const markSurfaces: THREE.Object3D[] = []; // onde dá pra riscar com a pedra-sabão
-  const addPlane = (w: number, h: number, mat: THREE.Material, x: number, y: number, z: number, rx = 0, ry = 0) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-    m.position.set(x, y, z);
-    m.rotation.set(rx, ry, 0);
-    scene.add(m);
-    markSurfaces.push(m);
-    return m;
-  };
-
-  addPlane(W, L, lambert(floorTexture([W / T, L / T])), 0, 0, (ROOM.z0 + ROOM.z1) / 2, -Math.PI / 2);
-  addPlane(W, L, lambert(brickTexture([W / T, L / T], 0.8, 17)), 0, ROOM.h, (ROOM.z0 + ROOM.z1) / 2, Math.PI / 2);
-  addPlane(W, ROOM.h, lambert(brickTexture([W / T, ROOM.h / T], 1, 23)), 0, ROOM.h / 2, ROOM.z1, 0, Math.PI);
-  addPlane(L, ROOM.h, lambert(brickTexture([L / T, ROOM.h / T], 1, 31)), ROOM.x0, ROOM.h / 2, (ROOM.z0 + ROOM.z1) / 2, 0, Math.PI / 2);
-  addPlane(L, ROOM.h, lambert(brickTexture([L / T, ROOM.h / T], 1, 37)), ROOM.x1, ROOM.h / 2, (ROOM.z0 + ROOM.z1) / 2, 0, -Math.PI / 2);
-
-  const stoneMat = lambert(brickTexture([1, 1], 0.9, 41));
-  const addBox = (w: number, h: number, d: number, mat: THREE.Material | THREE.Material[], x: number, y: number, z: number) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z);
-    scene.add(m);
-    markSurfaces.push(m);
-    return m;
-  };
-
-  for (const [x, z] of PILLARS) {
-    const pillarMat = lambert(brickTexture([0.75, 2.7], 0.95, 50 + Math.abs(x * z)));
-    addBox(0.9, ROOM.h, 0.9, pillarMat, x, ROOM.h / 2, z);
-    addBox(1.1, 0.25, 1.1, stoneMat, x, 0.125, z);
-    addBox(1.1, 0.25, 1.1, stoneMat, x, ROOM.h - 0.125, z);
-  }
-
-  // porta selada ao fundo: arco de pedra, laje de madeira que sobe pra dentro
-  // da parede e um corredor atrás
-  const DW = 0.95; // meia-largura da abertura
-  const DH = 1.7; // altura da parte reta (o arco começa aqui)
-  const doorZ = ROOM.z0;
-  const archTop = DH + DW;
-  {
-    // parede do fundo: um único contorno com o "entalhe" do arco
-    const wall = new THREE.Shape();
-    wall.moveTo(ROOM.x0, 0);
-    wall.lineTo(-DW, 0);
-    wall.lineTo(-DW, DH);
-    wall.absarc(0, DH, DW, Math.PI, 0, true);
-    wall.lineTo(DW, 0);
-    wall.lineTo(ROOM.x1, 0);
-    wall.lineTo(ROOM.x1, ROOM.h);
-    wall.lineTo(ROOM.x0, ROOM.h);
-    wall.closePath();
-    const wm = new THREE.Mesh(new THREE.ShapeGeometry(wall, 12), lambert(brickTexture([1 / T, 1 / T])));
-    wm.position.z = doorZ;
-    scene.add(wm);
-    markSurfaces.push(wm);
-
-    // aro de pedra em volta da abertura, saindo 0,3 m da parede
-    const R2 = DW + 0.3;
-    const ring = new THREE.Shape();
-    ring.moveTo(-R2, 0);
-    ring.lineTo(-R2, DH);
-    ring.absarc(0, DH, R2, Math.PI, 0, true);
-    ring.lineTo(R2, 0);
-    ring.lineTo(DW, 0);
-    ring.lineTo(DW, DH);
-    ring.absarc(0, DH, DW, 0, Math.PI, false);
-    ring.lineTo(-DW, 0);
-    ring.closePath();
-    const rm = new THREE.Mesh(
-      new THREE.ExtrudeGeometry(ring, { depth: 0.3, bevelEnabled: false, curveSegments: 12 }),
-      lambert(brickTexture([1 / 0.9, 1 / 0.9], 1.05, 61)),
-    );
-    rm.position.z = doorZ;
-    scene.add(rm);
-    markSurfaces.push(rm);
-    // pedra-chave com um soquete
-    addBox(0.4, 0.38, 0.36, stoneMat, 0, DH + DW + 0.15, doorZ + 0.18);
-  }
-  // laje da porta (atrás da parede, só aparece pela abertura)
-  const doorGroup = new THREE.Group();
-  doorGroup.position.z = doorZ - 0.13;
-  {
-    const slab = new THREE.Shape();
-    slab.moveTo(-DW - 0.08, 0);
-    slab.lineTo(-DW - 0.08, DH);
-    slab.absarc(0, DH, DW + 0.08, Math.PI, 0, true);
-    slab.lineTo(DW + 0.08, 0);
-    slab.closePath();
-    const tex = doorTexture();
-    // a textura cobre 1,9 x 2,7 m: ajusta o UV (que é a posição em metros)
-    tex.repeat.set(1 / (2 * DW + 0.16), 1 / 2.7);
-    tex.offset.set(0.5, 0);
-    const slabMesh = new THREE.Mesh(
-      new THREE.ExtrudeGeometry(slab, { depth: 0.09, bevelEnabled: false, curveSegments: 12 }),
-      [lambert(tex, 0xb4a496), lambert(null, 0x4a3320)],
-    );
-    doorGroup.add(slabMesh);
-  }
-  const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(), transparent: true, alphaTest: 0.5, fog: false });
-  const runeMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.0), runeMat);
-  runeMesh.position.set(0, 1.43, 0.1);
-  doorGroup.add(runeMesh);
-  scene.add(doorGroup);
-  // corredor atrás da porta
-  {
-    const cLen = 3.2;
-    const cm = lambert(brickTexture([cLen / T, archTop / T], 0.85, 71));
-    const ceilM = lambert(brickTexture([2 * DW / T, cLen / T], 0.7, 72));
-    const floorM = lambert(floorTexture([2 * DW / T, cLen / T]));
-    addPlane(cLen, archTop, cm, -DW, archTop / 2, doorZ - cLen / 2, 0, Math.PI / 2);
-    addPlane(cLen, archTop, cm, DW, archTop / 2, doorZ - cLen / 2, 0, -Math.PI / 2);
-    addPlane(2 * DW, cLen, ceilM, 0, archTop, doorZ - cLen / 2, Math.PI / 2);
-    addPlane(2 * DW, cLen, floorM, 0, 0, doorZ - cLen / 2, -Math.PI / 2);
-  }
-  const exitGlow = new THREE.Mesh(
-    new THREE.PlaneGeometry(2 * DW, archTop),
-    new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }),
-  );
-  exitGlow.position.set(0, archTop / 2, doorZ - 3.2);
-  scene.add(exitGlow);
-  const corridorLight = new THREE.PointLight(0xffe2b0, 0, 0, 2);
-  corridorLight.position.set(0, 1.9, doorZ - 1.4);
-  scene.add(corridorLight);
-  // duas gemas no aro: placa (esq.) e braseiro (dir.) — acendem quando cada parte do puzzle está feita
-  const lampPlate = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
-  const lampFire = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
-  const lampBack = new THREE.MeshBasicMaterial({ color: 0x120f18 });
-  for (const [x, mat] of [[-0.62, lampPlate], [0.62, lampFire]] as [number, THREE.Material][]) {
-    const y = DH + Math.sqrt((DW + 0.15) ** 2 - x * x);
-    const back = new THREE.Mesh(new THREE.CircleGeometry(0.17, 4), lampBack);
-    back.position.set(x, y, doorZ + 0.305);
-    scene.add(back);
-    const g = new THREE.Mesh(new THREE.CircleGeometry(0.12, 4), mat);
-    g.position.set(x, y, doorZ + 0.31);
-    scene.add(g);
-  }
-
-  // placa de pressão e piso rachado
-  const plateTop = lambert(plateTexture());
-  const plateSide = lambert(null, 0x3a3638);
-  addBox(1.3, 0.07, 1.3, [plateSide, plateSide, plateTop, plateSide, plateSide, plateSide], -1.4, 0.035, -5);
-  const crackMat = new THREE.MeshLambertMaterial({ map: crackTexture(), transparent: true, alphaTest: 0.5 });
-  addPlane(1.7, 1.7, crackMat, 1.5, 0.015, -4.8, -Math.PI / 2);
-
-  // braseiro apagado
-  addBox(0.6, 0.8, 0.6, stoneMat, 2.9, 0.4, -9.2);
-  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.32, 0.3, 8), lambert(null, 0x3a3a46));
-  bowl.position.set(2.9, 0.95, -9.2);
-  scene.add(bowl);
-  markSurfaces.push(bowl);
-  const BOWL = new THREE.Vector3(2.9, 1.15, -9.2);
-  const brazierFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5, depthWrite: false }));
-  brazierFlame.scale.set(0.75, 0.6, 1);
-  brazierFlame.position.set(BOWL.x, 1.45, BOWL.z);
-  brazierFlame.visible = false;
-  scene.add(brazierFlame);
-  const brazierLight = new THREE.PointLight(0xff8a2a, 0, 0, 2);
-  brazierLight.position.set(BOWL.x - 0.3, 1.9, BOWL.z + 0.4);
-  scene.add(brazierLight);
-  const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
-  for (let i = 0; i < 5; i++) {
-    const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), coalMat);
-    coal.position.set(2.9 + Math.cos(i * 1.3) * 0.22, 1.12 + (i % 2) * 0.05, -9.2 + Math.sin(i * 1.3) * 0.22);
-    scene.add(coal);
-  }
-
-  // nicho na parede direita com o item "escondido"
-  const nz = -8.3;
-  const nicheX = ROOM.x1 - 0.12;
-  addBox(0.24, 1.4, 0.2, stoneMat, nicheX, 2.1, nz - 0.5);
-  addBox(0.24, 1.4, 0.2, stoneMat, nicheX, 2.1, nz + 0.5);
-  addBox(0.24, 0.2, 1.2, stoneMat, nicheX, 2.9, nz);
-  addBox(0.24, 0.2, 1.2, stoneMat, nicheX, 1.3, nz);
-  addPlane(0.8, 1.0, new THREE.MeshBasicMaterial({ color: 0x06050a }), ROOM.x1 - 0.01, 2.1, nz, 0, -Math.PI / 2);
-  const gem = new THREE.Sprite(new THREE.SpriteMaterial({ map: gemTexture(), fog: false }));
-  gem.scale.set(0.42, 0.42, 1);
-  gem.position.set(ROOM.x1 - 0.3, 2.1, nz);
-  scene.add(gem);
-  const gemLight = new THREE.PointLight(0x4fe8ff, 9, 0, 2);
-  gemLight.position.set(ROOM.x1 - 0.6, 2.1, nz);
-  scene.add(gemLight);
-  const sparkMat = new THREE.SpriteMaterial({ map: sparkTexture(), fog: false, depthWrite: false });
-  const sparks = [0, 1, 2].map(() => {
-    const s = new THREE.Sprite(sparkMat);
-    s.scale.set(0.1, 0.1, 1);
-    scene.add(s);
-    return s;
-  });
-
-  // tochas
-  const frames = flameFrames();
-  const woodStick = lambert(null, 0x5a3a24);
-  const torches: { sprite: THREE.Sprite; light: THREE.PointLight; phase: number }[] = [];
-  const addTorch = (x: number, z: number, nx: number, nzDir: number, phase: number) => {
-    const y = 1.8;
-    addBox(Math.abs(nzDir) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, stoneMat, x, y - 0.05, z);
-    addBox(0.1, 0.6, 0.1, woodStick, x + nx * 0.16, y + 0.12, z + nzDir * 0.16);
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-    sprite.scale.set(0.38, 0.3, 1);
-    sprite.position.set(x + nx * 0.16, y + 0.57, z + nzDir * 0.16);
-    scene.add(sprite);
-    const light = new THREE.PointLight(0xff9a3c, 42, 0, 2);
-    light.position.set(x + nx * 0.45, y + 0.6, z + nzDir * 0.45);
-    scene.add(light);
-    torches.push({ sprite, light, phase });
-  };
-  addTorch(ROOM.x0 + 0.1, -1.5, 1, 0, 0);
-  addTorch(ROOM.x1 - 0.1, -1.5, -1, 0, 1.7);
-  addTorch(ROOM.x0 + 0.1, -7.6, 1, 0, 3.1);
-  addTorch(-1.95, ROOM.z0 + 0.1, 0, 1, 4.4);
-  addTorch(1.95, ROOM.z0 + 0.1, 0, 1, 5.2);
-
-  // poeira flutuando
-  const DUST = 70;
-  const dustPos = new Float32Array(DUST * 3);
-  for (let i = 0; i < DUST; i++) {
-    dustPos[i * 3] = ROOM.x0 + 0.3 + Math.random() * (W - 0.6);
-    dustPos[i * 3 + 1] = Math.random() * ROOM.h;
-    dustPos[i * 3 + 2] = ROOM.z0 + 0.3 + Math.random() * (L - 0.6);
-  }
-  const dustGeo = new THREE.BufferGeometry();
-  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-  const dust = new THREE.Points(
-    dustGeo,
-    new THREE.PointsMaterial({ color: 0xe0cfa8, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.6, fog: false, depthWrite: false }),
-  );
-  scene.add(dust);
-
+  const ambient = new THREE.AmbientLight(0x7a78b8, 1.9);
+  scene.add(ambient);
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
   let yaw = 0;
+  let pitch = -0.04;
   const camera = new THREE.PerspectiveCamera(66, 1, CAM_NEAR, CAM_FAR);
   camera.rotation.order = 'YXZ';
   scene.add(camera);
@@ -424,6 +176,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const accentLight = new THREE.PointLight(0x5be7ff, 5, 0, 2);
   accentLight.position.set(0.35, -0.3, -0.6);
   camera.add(accentLight);
+  let fogColor = FOG;
 
   // ── o dado ──────────────────────────────────────────────────────────────
   // Cubo arredondado de obsidiana com filete dourado e gemas no lugar dos
@@ -516,9 +269,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   curQ.copy(targetQ);
   let spin = 0;
 
-  // ── pedra-sabão (mão esquerda) ──────────────────────────────────────────
-  // Um bastão verde-acinzentado com a ponta de escrever coberta de pó branco.
-  // Infinita por enquanto: cada toque risca um símbolo onde a mira aponta.
+
+  // ── pedra-sabão (giz) ───────────────────────────────────────────────────
+  // Bastão verde-acinzentado com a ponta de escrever coberta de pó branco. Infinita.
+  // Fica numa das mãos: a principal (direita, em uso) ou a auxiliar (esquerda, guardada).
   const soapMats = [
     soapSideTexture(true),
     soapSideTexture(true),
@@ -526,10 +280,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     soapSideTexture(false),
     soapTipTexture(true),
     soapTipTexture(false),
-  ].map(
-    (map) =>
-      new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.22 }),
-  );
+  ].map((map) => new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.22 }));
   const soapGroup = new THREE.Group();
   const soapHolder = new THREE.Group();
   soapHolder.add(new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.5, 1.45, 3, 0.13), soapMats));
@@ -539,95 +290,58 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   soapHolder.rotation.copy(SOAP_ROT);
   let soapKick = 0;
 
-  // símbolos de giz: ✕ ○ ↑ △ ✓
-  const GLYPHS = ['✕', '○', '↑', '△', '✓'];
-  const markMats = Array.from({ length: MARK_COUNT }, (_, i) => {
-    const m = new THREE.MeshLambertMaterial({
-      map: markTexture(i),
-      transparent: true,
-      alphaTest: 0.5,
-      depthWrite: false,
-      emissive: 0x55555c,
-      polygonOffset: true,
-      polygonOffsetFactor: -2,
-      polygonOffsetUnits: -2,
-    });
-    return m;
-  });
-  const markGeo = new THREE.PlaneGeometry(0.62, 0.62);
-  const marks: THREE.Mesh[] = [];
-  const MAX_MARKS = 60;
-  let symbol = 0;
-  let eraseArmed = 0; // segundos restantes pra confirmar "apagar tudo"
+  let tool: Tool = 'die';
+  let dieU = 0; // 0 = dado na mão principal, 1 = na auxiliar
+  let soapU = 1;
+  let chalkMode: ChalkMode = 'draw';
+  const setTool = (t: Tool) => {
+    if (tool === t) return;
+    tool = t;
+    brush.active = false;
+    chalk.beginStroke();
+    opts.onTool?.(tool);
+  };
+  const swapTool = () => setTool(tool === 'die' ? 'chalk' : 'die');
+
+  const chalk = new Chalk();
+  scene.add(chalk.mesh);
+  const chalkStores: ChalkDot[][] = BUILDERS.map(() => []);
   const ray = new THREE.Raycaster();
   const ndc0 = new THREE.Vector2(0, 0);
+  const brush = { active: false, erase: false, id: -1, ndc: new THREE.Vector2(0, 0), mouse: false };
+  const nrm = new THREE.Vector3();
+  let eraseArmed = 0;
 
-  const nextSymbol = () => {
-    symbol = (symbol + 1) % MARK_COUNT;
-    opts.onSymbol?.(GLYPHS[symbol]);
-  };
-  opts.onSymbol?.(GLYPHS[symbol]);
-
-  const mark = () => {
-    soapKick = 1;
+  // risca (ou apaga) onde o NDC aponta
+  const paintAt = (ndc: THREE.Vector2, erase: boolean) => {
     camera.updateMatrixWorld();
-    ray.setFromCamera(ndc0, camera);
+    ray.setFromCamera(ndc, camera);
     ray.far = 4.5;
-    const hit = ray.intersectObjects(markSurfaces, false)[0];
+    const hit = ray.intersectObjects(room.surfaces, false)[0];
     if (!hit || !hit.face) {
-      caption('Longe demais', 'Chegue perto de uma parede ou do chão.', '#cfc6e8');
+      chalk.beginStroke();
       return;
     }
-    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-    const m = new THREE.Mesh(markGeo, markMats[symbol]);
-    m.position.copy(hit.point).addScaledVector(n, 0.012);
-    if (Math.abs(n.y) > 0.6) m.up.set(-Math.sin(yaw), 0, -Math.cos(yaw)); // no chão: "pra cima" = pra frente
-    m.lookAt(m.position.clone().add(n));
-    scene.add(m);
-    marks.push(m);
-    if (marks.length > MAX_MARKS) scene.remove(marks.shift()!);
+    nrm.copy(hit.face.normal).transformDirection(hit.object.matrixWorld);
+    if (nrm.dot(ray.ray.direction) > 0) nrm.negate(); // sempre de frente pra quem olha
+    if (erase) chalk.erase(hit.point, 0.1);
+    else chalk.add(hit.point, nrm, hit.object.id);
   };
 
-  const eraseAimed = () => {
-    soapKick = 1;
-    camera.updateMatrixWorld();
-    const fwd = camera.getWorldDirection(new THREE.Vector3());
-    let best: THREE.Mesh | null = null;
-    let bestA = 0.16; // ~9°
-    for (const m of marks) {
-      const to = m.position.clone().sub(camera.position);
-      const dist = to.length();
-      if (dist > 7) continue;
-      const a = Math.acos(clamp(to.divideScalar(dist).dot(fwd), -1, 1));
-      if (a < bestA) {
-        bestA = a;
-        best = m;
-      }
-    }
-    if (!best) {
-      caption('Nenhuma marca na mira', 'Aponte pra uma marca para apagá-la.', '#cfc6e8');
-      return;
-    }
-    scene.remove(best);
-    marks.splice(marks.indexOf(best), 1);
-  };
-
-  const eraseAll = () => {
-    if (marks.length === 0) {
-      caption('Sem marcas', 'Não há nada pra apagar.', '#cfc6e8');
+  const clearChalk = () => {
+    if (chalk.count === 0) {
+      caption('Nada pra apagar', 'Não há marcas de giz nesta sala.', '#cfc6e8');
       return;
     }
     if (eraseArmed <= 0) {
       eraseArmed = 2;
-      caption('Apagar todas as marcas?', 'Aperte de novo para confirmar.', '#ff9aa8');
+      caption('Apagar tudo?', 'Aperte de novo para confirmar.', '#ff9aa8');
       return;
     }
     eraseArmed = 0;
-    const n = marks.length;
-    marks.forEach((m) => scene.remove(m));
-    marks.length = 0;
+    chalk.clear();
     soapKick = 1;
-    caption('Marcas apagadas', `${n} ${n === 1 ? 'marca removida' : 'marcas removidas'}.`, '#cfc6e8');
+    caption('Giz apagado', 'A sala está limpa.', '#cfc6e8');
   };
 
   // ── regras físicas ──────────────────────────────────────────────────────
@@ -638,28 +352,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     3: { speed: 8.5, up: 0.12, g: 16, e: 0.5, fr: 2.5 }, // Fogo: meio-termo
   };
   const R = 0.22;
-  interface Box {
-    min: THREE.Vector3;
-    max: THREE.Vector3;
-  }
-  const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
-    min: new THREE.Vector3(x0, y0, z0),
-    max: new THREE.Vector3(x1, y1, z1),
-  });
-  const PLATE = { x: -1.4, z: -5, half: 0.65, top: 0.07 };
-  const BOXES: Box[] = [];
-  for (const [x, z] of PILLARS) {
-    BOXES.push(mkBox(x - 0.45, 0, z - 0.45, x + 0.45, ROOM.h, z + 0.45));
-    BOXES.push(mkBox(x - 0.55, 0, z - 0.55, x + 0.55, 0.25, z + 0.55));
-    BOXES.push(mkBox(x - 0.55, ROOM.h - 0.25, z - 0.55, x + 0.55, ROOM.h, z + 0.55));
-  }
-  BOXES.push(mkBox(PLATE.x - PLATE.half, 0, PLATE.z - PLATE.half, PLATE.x + PLATE.half, PLATE.top, PLATE.z + PLATE.half));
-  BOXES.push(mkBox(2.6, 0, -9.5, 3.2, 0.8, -8.9)); // pedestal do braseiro
-  BOXES.push(mkBox(-1.25, 0, -10, -0.95, archTop, -9.7)); // aro da porta
-  BOXES.push(mkBox(0.95, 0, -10, 1.25, archTop, -9.7));
-  BOXES.push(mkBox(-1.25, archTop - 0.3, -10, 1.25, ROOM.h, -9.7));
-
-  type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
   let dieState: DieState = 'hand';
   const dieP = new THREE.Vector3();
   const dieV = new THREE.Vector3();
@@ -674,19 +366,93 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const tmpAxis = new THREE.Vector3();
   const fwdV = new THREE.Vector3();
   const rightV = new THREE.Vector3();
-
-  // estado do puzzle
-  let lit = false;
-  let gemTaken = false;
-  let plateDown = false;
-  let doorOpen = 0;
-  let doorAnnounced = false;
-  let complete = false;
-  const GEM = new THREE.Vector3(ROOM.x1 - 0.3, 2.1, nz);
+  const gN = new THREE.Vector3();
 
   const caption = (title: string, sub: string, color: string) => opts.onCaption?.(title, sub, color);
 
-  const collideBox = (b: Box, e: number): THREE.Vector3 | null => {
+  // ── jogador ─────────────────────────────────────────────────────────────
+  const EYE = 1.6;
+  const pos = new THREE.Vector3(0, EYE, 0); // olhos
+  let feetY = 0;
+  let vy = 0;
+  let landKick = 0;
+  const moveVel = new THREE.Vector3(); // velocidade horizontal (m/s)
+
+  // ── salas ───────────────────────────────────────────────────────────────
+  let room!: Room;
+  let roomIdx = 0;
+  let gems = 0;
+  let complete = false;
+  let trans: { phase: 'out' | 'in'; t: number } | null = null;
+
+  const ctx: Ctx = {
+    caption: (a, b, c) => caption(a, b, c),
+    player: { pos },
+    feetY: () => feetY,
+    die: {
+      get state() {
+        return dieState;
+      },
+      get face() {
+        return thrownFace;
+      },
+      get thrown() {
+        return dieThrown;
+      },
+      get pos() {
+        return dieP;
+      },
+      get R() {
+        return R;
+      },
+    },
+    chalk: {
+      dotsOn: (o) => chalk.dotsOn(o.id),
+      get revision() {
+        return chalk.revision;
+      },
+    },
+  };
+
+  const resetDie = () => {
+    dieState = 'hand';
+    worldDie.visible = false;
+    worldModel.scale.setScalar(0.42);
+    dieV.set(0, 0, 0);
+    handPop = 1;
+  };
+
+  const loadRoom = (i: number, announce = true) => {
+    if (room) {
+      scene.remove(room.group);
+      room.dispose();
+    }
+    roomIdx = i;
+    room = BUILDERS[i](ctx);
+    scene.add(room.group);
+    scene.fog = new THREE.Fog(room.fog.color, room.fog.near, room.fog.far);
+    fogColor = room.fog.color;
+    ambient.color.setHex(room.ambient.color);
+    ambient.intensity = room.ambient.intensity;
+    feetY = room.start.y;
+    pos.set(room.start.x, feetY + EYE, room.start.z);
+    yaw = room.startYaw;
+    pitch = -0.04;
+    vy = 0;
+    moveVel.set(0, 0, 0);
+    brush.active = false;
+    chalk.use(chalkStores[i]);
+    resetDie();
+    opts.onRoom?.({ index: i, total: BUILDERS.length, name: room.name });
+    if (announce) caption(room.name, room.subtitle, '#ffd36b');
+  };
+
+  // ── movimento e colisão do dado ─────────────────────────────────────────
+  interface BoxT {
+    min: THREE.Vector3;
+    max: THREE.Vector3;
+  }
+  const collideBox = (b: BoxT, e: number): THREE.Vector3 | null => {
     tmpC.set(clamp(dieP.x, b.min.x, b.max.x), clamp(dieP.y, b.min.y, b.max.y), clamp(dieP.z, b.min.z, b.max.z));
     tmpN.subVectors(dieP, tmpC);
     const d2 = tmpN.lengthSq();
@@ -716,40 +482,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return tmpN;
   };
 
-  const onPlate = () =>
-    Math.abs(dieP.x - PLATE.x) < PLATE.half + 0.05 &&
-    Math.abs(dieP.z - PLATE.z) < PLATE.half + 0.05 &&
-    dieP.y < PLATE.top + R + 0.1;
-
   const stepDie = (dt: number) => {
     const ph = PHYS[thrownFace] ?? PHYS[1];
     dieV.y -= ph.g * dt;
     dieP.addScaledVector(dieV, dt);
     let ground = false;
-    if (dieP.y < R) {
-      dieP.y = R;
-      if (dieV.y < 0) dieV.y = -dieV.y * ph.e;
+    let flat = true;
+    // chão (plano ou rampa)
+    const fy = room.dieFloor(dieP.x, dieP.z) + R;
+    if (dieP.y < fy) {
+      const eps = 0.05;
+      const gx = (room.dieFloor(dieP.x + eps, dieP.z) - room.dieFloor(dieP.x - eps, dieP.z)) / (2 * eps);
+      const gz = (room.dieFloor(dieP.x, dieP.z + eps) - room.dieFloor(dieP.x, dieP.z - eps)) / (2 * eps);
+      gN.set(-gx, 1, -gz).normalize();
+      dieP.y = fy;
+      const vn = dieV.dot(gN);
+      if (vn < 0) dieV.addScaledVector(gN, -(1 + ph.e) * vn);
       ground = true;
+      flat = gN.y > 0.98;
     }
-    if (dieP.y > ROOM.h - R) {
-      dieP.y = ROOM.h - R;
-      if (dieV.y > 0) dieV.y = -dieV.y * ph.e;
-    }
-    if (dieP.x < ROOM.x0 + R) {
-      dieP.x = ROOM.x0 + R;
-      if (dieV.x < 0) dieV.x = -dieV.x * ph.e;
-    } else if (dieP.x > ROOM.x1 - R) {
-      dieP.x = ROOM.x1 - R;
-      if (dieV.x > 0) dieV.x = -dieV.x * ph.e;
-    }
-    if (dieP.z < ROOM.z0 + R + 0.03) {
-      dieP.z = ROOM.z0 + R + 0.03;
-      if (dieV.z < 0) dieV.z = -dieV.z * ph.e;
-    } else if (dieP.z > ROOM.z1 - R) {
-      dieP.z = ROOM.z1 - R;
-      if (dieV.z > 0) dieV.z = -dieV.z * ph.e;
-    }
-    for (const b of BOXES) {
+    room.clampDie(dieP, dieV, ph.e, R);
+    for (const b of room.boxes) {
       const n = collideBox(b, ph.e);
       if (n && n.y > 0.7) ground = true;
     }
@@ -757,7 +510,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const k = Math.exp(-ph.fr * dt);
       dieV.x *= k;
       dieV.z *= k;
-      if (Math.abs(dieV.y) < 0.6) dieV.y = 0;
+      if (flat && Math.abs(dieV.y) < 0.6) dieV.y = 0;
       dieW.set(dieV.z, 0, -dieV.x).divideScalar(R * 1.6); // rola no chão
     }
     if (ground && dieV.length() < 0.45) restTimer += dt;
@@ -768,7 +521,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       restReturn = 0;
       const yawQ = tmpQ.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
       restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(thrownFace));
-      if (onPlate() && thrownFace !== 2) caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
+      room.onDieRest?.();
     }
   };
 
@@ -791,8 +544,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieState = 'returning';
   };
 
+  const busy = () => !!trans || complete;
+
   const throwDie = () => {
-    if (dieState !== 'hand' || complete) return;
+    if (dieState !== 'hand' || busy()) return;
     thrownFace = face;
     dieThrown = true;
     updateMats();
@@ -812,19 +567,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // Posicionar: em vez de arremessar, o jogador coloca o dado com cuidado no ponto
   // que a mira aponta (alcance curto). Serve pra apertar placa e acender o braseiro
-  // com precisão — mas o dado "posicionado" não pega a gema escondida: pra ela
+  // com precisão — mas o dado "posicionado" não pega segredos: pra eles
   // ainda é preciso arremessar (ricochete).
   const PLACE_RANGE = 3.2;
   const aimPoint = (): { p: THREE.Vector3; n: THREE.Vector3 } | null => {
     camera.updateMatrixWorld();
     ray.setFromCamera(ndc0, camera);
     ray.far = PLACE_RANGE;
-    const hit = ray.intersectObjects(markSurfaces, false)[0];
+    const hit = ray.intersectObjects(room.surfaces, false)[0];
     if (!hit || !hit.face) return null;
-    return { p: hit.point, n: hit.face.normal.clone().transformDirection(hit.object.matrixWorld) };
+    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    if (n.dot(ray.ray.direction) > 0) n.negate();
+    return { p: hit.point, n };
   };
   const placeDie = () => {
-    if (dieState !== 'hand' || complete) return;
+    if (dieState !== 'hand' || busy()) return;
     const a = aimPoint();
     if (!a) {
       caption('Longe demais', 'Aponte para o chão ou uma superfície mais perto.', '#cfc6e8');
@@ -834,8 +591,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieThrown = false;
     updateMats();
     animTo.copy(a.p).addScaledVector(a.n, R + 0.02);
-    animTo.x = clamp(animTo.x, ROOM.x0 + R, ROOM.x1 - R);
-    animTo.z = clamp(animTo.z, ROOM.z0 + R + 0.04, ROOM.z1 - R);
     handWorld(animFrom);
     animT = 0;
     dieV.set(0, 0, 0);
@@ -848,11 +603,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
 
   const place = () => {
+    if (tool !== 'die') return;
     if (dieState === 'hand') placeDie();
     else recall();
   };
 
   const action = () => {
+    if (tool !== 'die') return;
     if (dieState === 'hand') throwDie();
     else recall();
   };
@@ -864,10 +621,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       caption(`${n} · ???`, 'Face selada — descubra como libertá-la.', '#8f86a8');
       return;
     }
+    if (tool !== 'die') setTool('die');
     applyFace(n);
     caption(`${n} · ${f.name}`, f.desc, f.color);
   };
   const cycleFace = (dir: number) => {
+    if (tool !== 'die') {
+      setTool('die');
+      return;
+    }
     let n = face;
     for (let i = 0; i < 6; i++) {
       n = ((n - 1 + dir + 6) % 6) + 1;
@@ -878,6 +640,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // ── tamanho / proporção ─────────────────────────────────────────────────
   const soapBase = new THREE.Vector3(-0.4, -0.15, -1);
+  let handX = 0.44;
   let dieBaseY = -0.2;
   let dieScaleBase = 0.17;
   const resize = () => {
@@ -903,24 +666,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
     dieScaleBase = Math.min(0.17, halfW * 0.5);
-    soapGroup.scale.setScalar(dieScaleBase * 0.95);
     dieBaseY = aspect < 1 ? -0.12 : -0.16;
-    dieGroup.position.set(Math.min(halfW * 0.4, 0.44), dieBaseY, -1);
-    soapBase.set(-Math.min(halfW * 0.4, 0.44), dieBaseY + 0.02, -1);
-    soapGroup.position.copy(soapBase);
+    handX = Math.min(halfW * 0.4, 0.44);
+    soapBase.set(-handX, dieBaseY + 0.02, -1);
   };
   resize();
   window.addEventListener('resize', resize);
 
   // ── entrada ─────────────────────────────────────────────────────────────
-  // PC: WASD anda, arrastar o mouse olha, clique arremessa/recolhe, 1–6 ou a
-  // roda do mouse trocam a face, R reinicia a sala.
-  // Celular (horizontal): metade esquerda = analógico, direita = olhar; dois
-  // botões na tela (arremessar/recolher e girar o dado) fazem o resto.
-  let pitch = -0.04;
-  const START = new THREE.Vector3(0, 1.6, 1.2);
-  const pos = START.clone();
-  const keys = new Set<string>();
+  // PC: WASD anda, o primeiro clique captura o mouse (olhar livre; Esc solta).
+  //   Dado: botão esquerdo arremessa/recolhe, direito (ou G) posiciona, 1–6 / roda trocam a face.
+  //   Giz (Tab/Q troca): segurar o esquerdo desenha, segurar o direito apaga, X apaga tudo.
+  //   R reinicia a sala.
+  // Celular (horizontal): lado esquerdo = analógico; lado direito = olhar (ou desenhar/apagar,
+  // conforme o modo do giz). Os botões na tela fazem o resto.
+  const START_KEYS = new Set<string>();
+  const keys = START_KEYS;
   const onKeyDown = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase();
     keys.add(k);
@@ -932,10 +693,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (k === 'e') recall();
     else if (k === 'r') reset();
     else if (k === 'g') place();
-    else if (k === 'q') mark();
-    else if (k === 'c') nextSymbol();
-    else if (k === 'z') eraseAimed();
-    else if (k === 'x') eraseAll();
+    else if (k === 'tab' || k === 'q') {
+      e.preventDefault();
+      swapTool();
+    } else if (k === 'x') clearChalk();
   };
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase());
   window.addEventListener('keydown', onKeyDown);
@@ -961,9 +722,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const STICK_R = 52;
   const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
 
-  // PC: o primeiro clique captura o mouse (olhar livre, Esc solta); depois o botão
-  // esquerdo arremessa/recolhe e o direito posiciona. Se o navegador negar, volta
-  // a funcionar arrastando.
   let lockFailed = !canvas.requestPointerLock;
   let lockClick = false;
   const locked = () => document.pointerLockElement === canvas;
@@ -971,12 +729,28 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     lockFailed = true;
   };
   document.addEventListener('pointerlockerror', onLockError);
-  const onDown = (e: PointerEvent) => {
-    if (e.pointerType === 'mouse' && e.button === 2) {
-      place(); // botão direito do mouse
+
+  const setBrushNdc = (e: PointerEvent) => {
+    if (e.pointerType === 'mouse' && locked()) {
+      brush.ndc.set(0, 0);
       return;
     }
-    if (e.pointerType === 'mouse' && e.button === 0 && !locked() && !lockFailed) {
+    const r = canvas.getBoundingClientRect();
+    brush.ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
+  };
+
+  const capture = (id: number) => {
+    try {
+      canvas.setPointerCapture(id);
+    } catch {
+      /* ponteiro já não está ativo: segue sem captura */
+    }
+  };
+  const onDown = (e: PointerEvent) => {
+    if (busy()) return;
+    const mouse = e.pointerType === 'mouse';
+    // PC: o primeiro clique captura o mouse
+    if (mouse && e.button === 0 && !locked() && !lockFailed) {
       lockClick = true;
       try {
         Promise.resolve(canvas.requestPointerLock()).catch(onLockError);
@@ -984,15 +758,34 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         onLockError();
       }
     }
+    if (mouse && e.button === 2) {
+      if (tool === 'chalk') {
+        brush.active = true;
+        brush.erase = true;
+        brush.id = e.pointerId;
+        brush.mouse = true;
+        setBrushNdc(e);
+        capture(e.pointerId);
+      } else place(); // botão direito: posicionar
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     const rx = (e.clientX - rect.left) / rect.width;
-    if (e.pointerType !== 'mouse' && rx < 0.42 && stickId === -1) {
+    if (!mouse && rx < 0.42 && stickId === -1) {
       stickId = e.pointerId;
       stickOx = e.clientX;
       stickOy = e.clientY;
       stickX = 0;
       stickY = 0;
       emitStick(true);
+    } else if (tool === 'chalk' && (mouse || chalkMode !== 'look') && !brush.active) {
+      // giz: arrastar desenha (ou apaga) onde o dedo/mouse está
+      brush.active = true;
+      brush.erase = !mouse && chalkMode === 'erase';
+      brush.id = e.pointerId;
+      brush.mouse = mouse;
+      setBrushNdc(e);
+      chalk.beginStroke();
     } else if (lookId === -1) {
       lookId = e.pointerId;
       lastX = downX = e.clientX;
@@ -1002,21 +795,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else {
       return;
     }
-    canvas.setPointerCapture(e.pointerId);
+    capture(e.pointerId);
   };
   const onMove = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && locked()) {
       yaw -= e.movementX * 0.0022;
-      pitch = Math.max(-1.2, Math.min(1.2, pitch - e.movementY * 0.0022));
+      pitch = clamp(pitch - e.movementY * 0.0022, -1.2, 1.2);
     } else if (e.pointerId === lookId) {
       const dx = e.clientX - downX;
       const dy = e.clientY - downY;
       if (Math.hypot(dx, dy) > 8) moved = true;
       yaw -= (e.clientX - lastX) * 0.006;
-      pitch = Math.max(-0.7, Math.min(0.7, pitch - (e.clientY - lastY) * 0.006));
+      pitch = clamp(pitch - (e.clientY - lastY) * 0.006, -0.7, 0.7);
       lastX = e.clientX;
       lastY = e.clientY;
-    } else if (e.pointerId === stickId) {
+    }
+    if (e.pointerId === brush.id && brush.active) setBrushNdc(e);
+    if (e.pointerId === stickId) {
       let dx = (e.clientX - stickOx) / STICK_R;
       let dy = (e.clientY - stickOy) / STICK_R;
       const len = Math.hypot(dx, dy);
@@ -1030,12 +825,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   const onUp = (e: PointerEvent) => {
+    if (e.pointerId === brush.id && brush.active) {
+      const mouseBtn = e.pointerType === 'mouse' && e.type === 'pointerup';
+      if (!mouseBtn || (brush.erase ? e.button === 2 : e.button === 0)) {
+        brush.active = false;
+        chalk.beginStroke();
+      }
+    }
     if (e.pointerId === lookId) {
       lookId = -1;
-      // mouse: clique curto arremessa/recolhe (no celular são os botões)
       if (lockClick) lockClick = false; // esse clique só capturou o mouse
       else if (e.pointerType === 'mouse' && e.type === 'pointerup' && !moved && performance.now() - downT < 350) action();
     }
+    if (lockClick && e.pointerType === 'mouse' && e.button === 0) lockClick = false;
     if (e.pointerId === stickId) {
       stickId = -1;
       stickX = 0;
@@ -1052,16 +854,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // Colisão do jogador: círculo (raio PR) contra retângulos no plano XZ.
   const PR = 0.3;
-  const RECTS: [number, number, number, number][] = [];
-  for (const [x, z] of PILLARS) RECTS.push([x - 0.55, z - 0.55, x + 0.55, z + 0.55]);
-  RECTS.push([2.4, -9.7, 3.4, -8.7]); // braseiro e pedestal
-  RECTS.push([-1.25, -10, -0.95, -9.7]); // aro da porta
-  RECTS.push([0.95, -10, 1.25, -9.7]);
-  RECTS.push([ROOM.x0 - 1, ROOM.z0 - 3.6, -DW, ROOM.z0]); // parede do fundo e lados do corredor
-  RECTS.push([DW, ROOM.z0 - 3.6, ROOM.x1 + 1, ROOM.z0]);
-  const DOOR_RECT: [number, number, number, number] = [-DW, ROOM.z0 - 3.6, DW, ROOM.z0];
-  const moveVel = new THREE.Vector3(); // velocidade do jogador (m/s)
-  const pushOut = (r: [number, number, number, number]) => {
+  const pushOut = (r: [number, number, number, number, (number | undefined)?]) => {
+    if (r[4] !== undefined && feetY >= r[4] - 0.3) return; // por cima do obstáculo: não bloqueia
     const cx = clamp(pos.x, r[0], r[2]);
     const cz = clamp(pos.z, r[1], r[3]);
     const dx = pos.x - cx;
@@ -1097,7 +891,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   const MAX_SPEED = 2.7;
   const move = (dt: number) => {
-    if (complete) {
+    if (busy()) {
       moveVel.set(0, 0, 0);
       return false;
     }
@@ -1130,13 +924,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pos.x += (moveVel.x * dt) / steps;
       pos.z += (moveVel.z * dt) / steps;
       for (let pass = 0; pass < 2; pass++) {
-        for (const r of RECTS) pushOut(r);
-        if (doorOpen < 0.85) pushOut(DOOR_RECT);
+        for (const r of room.rects(feetY)) pushOut(r);
         if (dieState === 'rest') {
           const dx = pos.x - dieP.x;
           const dz = pos.z - dieP.z;
           const d = Math.hypot(dx, dz);
-          if (d < PR + R && dieP.y < 1.2) {
+          if (d < PR + R && Math.abs(dieP.y - feetY) < 1.2) {
             const nx = d > 1e-6 ? dx / d : 1;
             const nz = d > 1e-6 ? dz / d : 0;
             pos.x = dieP.x + nx * (PR + R);
@@ -1144,33 +937,52 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           }
         }
       }
-      pos.x = clamp(pos.x, ROOM.x0 + PR, ROOM.x1 - PR);
-      pos.z = clamp(pos.z, ROOM.z0 - 3.6 + PR, ROOM.z1 - PR);
+      room.clampPlayer(pos);
     }
     return sp > 0.35;
   };
 
-  const reset = () => {
-    dieState = 'hand';
-    worldDie.visible = false;
-    worldModel.scale.setScalar(0.42);
-    moveVel.set(0, 0, 0);
-    dieGroup.visible = true;
-    lit = false;
-    brazierFlame.visible = false;
-    brazierLight.intensity = 0;
-    gemTaken = false;
-    gem.visible = true;
-    sparks.forEach((s) => (s.visible = true));
-    plateDown = false;
-    doorOpen = 0;
-    doorAnnounced = false;
-    complete = false;
-    pos.copy(START);
-    yaw = 0;
-    pitch = -0.04;
-    handPop = 1;
+  // gravidade: subir rampa gruda no chão; ladeira abaixo acompanha; beirada = queda
+  const vertical = (dt: number) => {
+    const gy = room.groundY(pos.x, pos.z);
+    const diff = gy - feetY;
+    if (diff >= 0 || (diff > -0.3 && vy === 0)) {
+      feetY = gy;
+      vy = 0;
+    } else {
+      vy -= 22 * dt;
+      feetY += vy * dt;
+      if (feetY <= gy) {
+        landKick = Math.min(1, -vy / 9);
+        feetY = gy;
+        vy = 0;
+      }
+    }
   };
+
+  // reinicia só a sala atual (o giz fica)
+  const reset = () => {
+    if (busy()) return;
+    room.reset();
+    resetDie();
+    feetY = room.start.y;
+    pos.set(room.start.x, feetY + EYE, room.start.z);
+    yaw = room.startYaw;
+    pitch = -0.04;
+    vy = 0;
+    moveVel.set(0, 0, 0);
+  };
+
+  const restart = () => {
+    gems = 0;
+    complete = false;
+    trans = null;
+    opts.onFade?.(false);
+    chalkStores.forEach((s) => (s.length = 0));
+    loadRoom(0);
+  };
+
+  loadRoom(0, false);
 
   // ── loop ────────────────────────────────────────────────────────────────
   let raf = 0;
@@ -1185,10 +997,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     t += dt;
 
     const moving = move(dt);
+    vertical(dt);
+    landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     bobAmp += (speedFrac - bobAmp) * Math.min(1, dt * 8);
     bob += dt * (6 + 4 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
-    const bobY = Math.sin(bob) * 0.032 * bobAmp + Math.sin(t * 1.3) * 0.012 * (1 - bobAmp);
+    const bobY = Math.sin(bob) * 0.032 * bobAmp + Math.sin(t * 1.3) * 0.012 * (1 - bobAmp) - landKick * 0.18;
+    pos.y = feetY + EYE;
     camera.position.set(pos.x, pos.y + bobY, pos.z);
     camera.rotation.set(pitch, yaw, 0);
 
@@ -1201,18 +1016,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (w > 1e-4) {
         tmpQ.setFromAxisAngle(tmpAxis.copy(dieW).normalize(), w * dt);
         worldDie.quaternion.premultiply(tmpQ);
-      }
-      if (!gemTaken && dieThrown && dieP.distanceTo(GEM) < 0.55) {
-        gemTaken = true;
-        gem.visible = false;
-        gemLight.intensity = 0;
-        sparks.forEach((s) => (s.visible = false));
-        caption('Gema encontrada!', 'Só o ricochete chega num lugar desses.', '#6ff0ff');
-      }
-      if (!lit && thrownFace === 3 && dieP.distanceTo(BOWL) < 0.6) {
-        lit = true;
-        brazierFlame.visible = true;
-        caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
       }
     } else if (dieState === 'placing') {
       animT += dt / 0.36;
@@ -1249,69 +1052,46 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
       worldDie.position.copy(dieP);
-      const pressed = thrownFace === 2 && onPlate();
-      if (pressed && !plateDown) caption('Placa acionada', 'O dado pesado segura a placa. Não o recolha.', '#ffd36b');
-      plateDown = pressed;
-      if (!pressed) {
+      if (!room.holdsDie()) {
         restReturn += dt;
         if (restReturn > 1.8) recall();
       }
     }
-    if (dieState !== 'rest') plateDown = false;
 
     if (dieState !== emittedDie) {
       emittedDie = dieState;
       opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
     }
 
-    // ── porta, lâmpadas, braseiro ──
-    const wantOpen = plateDown && lit ? 1 : 0;
-    doorOpen += (wantOpen - doorOpen) * Math.min(1, dt * 2.4);
-    doorGroup.position.y = doorOpen * (archTop + 0.2);
-    runeMesh.visible = doorOpen < 0.5;
-    corridorLight.intensity = doorOpen * 28;
-    lampPlate.color.setHex(plateDown ? 0xffd36b : LAMP_OFF);
-    lampFire.color.setHex(lit ? 0xff7a2e : LAMP_OFF);
-    if (wantOpen && doorOpen > 0.9 && !doorAnnounced) {
-      doorAnnounced = true;
-      caption('A porta se abriu', 'Atravesse enquanto o dado segura a placa.', '#ffd36b');
+    // ── sala ──
+    room.update(dt, t);
+    if (!trans && !complete && room.exitReached()) {
+      trans = { phase: 'out', t: 0 };
+      opts.onFade?.(true);
     }
-    if (!wantOpen) doorAnnounced = false;
-    if (lit) {
-      brazierFlame.material.map = frames[Math.floor(t * 8) % frames.length];
-      brazierLight.intensity = 40 * (0.85 + 0.12 * Math.sin(t * 12) + 0.06 * Math.sin(t * 4.3));
-    }
-    if (!complete && doorOpen > 0.85 && pos.z < ROOM.z0 - 0.2) {
-      complete = true;
-      opts.onComplete?.({ gem: gemTaken });
+    if (trans) {
+      trans.t += dt;
+      if (trans.phase === 'out' && trans.t > 0.7) {
+        if (room.bonus?.()) gems++;
+        if (roomIdx + 1 >= BUILDERS.length) {
+          complete = true;
+          trans = null;
+          opts.onFade?.(false);
+          opts.onComplete?.({ gem: gems > 0 });
+        } else {
+          loadRoom(roomIdx + 1);
+          trans = { phase: 'in', t: 0 };
+          opts.onFade?.(false);
+        }
+      } else if (trans.phase === 'in' && trans.t > 0.7) trans = null;
     }
 
-    torches.forEach((tc, i) => {
-      tc.light.intensity = 42 * (0.86 + 0.12 * Math.sin(t * 13 + tc.phase) + 0.07 * Math.sin(t * 5.1 + tc.phase * 3));
-      tc.sprite.material.map = frames[Math.floor(t * 8 + i) % frames.length];
-    });
-    if (!gemTaken) {
-      gem.position.y = 2.1 + Math.sin(t * 2) * 0.04;
-      gemLight.intensity = 9 + Math.sin(t * 3) * 2;
-      sparks.forEach((s, i) => {
-        const a = t * 1.5 + i * 2.1;
-        s.position.set(ROOM.x1 - 0.3 + Math.sin(a * 0.7) * 0.06, 2.1 + Math.sin(a) * 0.32, nz + Math.cos(a) * 0.32);
-        s.material.rotation = a;
-      });
-    }
-    const k = 0.75 + Math.sin(t * 2.5) * 0.25;
-    runeMat.color.setRGB(k, k * 0.8, k * 0.85);
-
-    const arr = dustGeo.attributes.position.array as Float32Array;
-    for (let i = 0; i < DUST; i++) {
-      arr[i * 3 + 1] += dt * (0.03 + (i % 5) * 0.012);
-      arr[i * 3] += Math.sin(t * 0.4 + i) * dt * 0.03;
-      if (arr[i * 3 + 1] > ROOM.h) arr[i * 3 + 1] = 0;
-    }
-    dustGeo.attributes.position.needsUpdate = true;
+    // ── giz ──
+    eraseArmed = Math.max(0, eraseArmed - dt);
+    if (brush.active && tool === 'chalk') paintAt(brush.ndc, brush.erase);
 
     // fantasma de onde o dado seria posicionado
-    const aim = dieState === 'hand' && !complete ? aimPoint() : null;
+    const aim = dieState === 'hand' && tool === 'die' && !busy() ? aimPoint() : null;
     ghost.visible = !!aim;
     if (aim) {
       ghost.position.copy(aim.p).addScaledVector(aim.n, R + 0.02);
@@ -1319,9 +1099,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       ghostMat.color.copy(accentLight.color);
     }
 
-    // dado na mão: gira até a face escolhida, balança e "pulsa" ao voltar
+    // ── mãos (dado e giz trocam de lugar com um deslize suave) ──
+    const swapK = Math.min(1, dt * 9);
+    dieU += ((tool === 'die' ? 0 : 1) - dieU) * swapK;
+    soapU += ((tool === 'chalk' ? 0 : 1) - soapU) * swapK;
+    const ease = (u: number) => u * u * (3 - 2 * u);
     handPop = Math.max(0, handPop - dt * 4);
-    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3));
     spin += dt * 0.8;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     updateMats();
@@ -1329,30 +1112,44 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
     wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012, 0, Math.sin(t * 0.8) * 0.012));
     dieHolder.quaternion.copy(curQ).multiply(wobble);
-    dieGroup.position.y = dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0);
+    const du = ease(dieU);
+    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du));
+    dieGroup.position.set(
+      handX + (-handX - handX) * du,
+      dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05,
+      -1,
+    );
     dieCam.position.set(0, 0, 0);
 
-    // pedra-sabão: balança de leve e dá um "risco" no ar quando usada
     soapKick = Math.max(0, soapKick - dt * 3.5);
-    eraseArmed = Math.max(0, eraseArmed - dt);
-    const kk = Math.sin(soapKick * Math.PI);
+    const su = ease(soapU);
+    const drawing = brush.active && tool === 'chalk' && !brush.erase;
+    const erasing = brush.active && tool === 'chalk' && brush.erase;
+    const kk = Math.max(Math.sin(soapKick * Math.PI), drawing ? 0.55 + 0.25 * Math.sin(t * 17) : erasing ? 0.5 + 0.3 * Math.sin(t * 22) : 0);
+    soapGroup.scale.setScalar(dieScaleBase * 0.95 * (1 - 0.34 * su));
+    // x: de +handX (principal) para -handX (auxiliar); o golpe puxa um pouco pro centro
+    const toCenter = -1 + 2 * su;
     soapGroup.position.set(
-      soapBase.x + kk * 0.2,
-      soapBase.y + Math.sin(t * 1.4 + 1.3) * 0.012 + kk * 0.09 + (moving ? Math.sin(bob) * 0.012 : 0),
+      handX + (-handX - handX) * su + toCenter * kk * 0.15,
+      soapBase.y + Math.sin(t * 1.4 + 1.3) * 0.012 + kk * 0.07 + (moving ? Math.sin(bob) * 0.012 : 0) + Math.sin(Math.PI * su) * 0.05,
       soapBase.z,
     );
-    soapHolder.rotation.set(SOAP_ROT.x + kk * 0.5, SOAP_ROT.y + Math.sin(t * 0.9) * 0.05 + kk * 0.3, SOAP_ROT.z + Math.sin(t * 1.1) * 0.03);
+    const sgn = 2 * su - 1; // espelha a inclinação conforme a mão
+    soapHolder.rotation.set(
+      SOAP_ROT.x + kk * 0.5,
+      sgn * SOAP_ROT.y + Math.sin(t * 0.9) * 0.05 + sgn * kk * 0.3,
+      sgn * SOAP_ROT.z + Math.sin(t * 1.1) * 0.03,
+    );
 
     renderer.setRenderTarget(rt);
-    renderer.setClearColor(FOG, 1);
+    renderer.setClearColor(fogColor, 1);
     renderer.clear();
     renderer.render(scene, camera);
-    // dado e pedra-sabão do HUD: alvo à parte (fundo transparente), colado por cima no pós-processo
+    // dado e giz do HUD: alvo à parte (fundo transparente), colados por cima no pós-processo
     renderer.setRenderTarget(rtHud);
     renderer.setClearColor(0x000000, 0);
     renderer.clear();
     renderer.render(dieScene, dieCam);
-    renderer.setClearColor(FOG, 1);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
     raf = requestAnimationFrame(loop);
@@ -1362,38 +1159,80 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Só em desenvolvimento: gancho pra testes automatizados (não vai pro build).
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
-      state: () => ({ dieState, face, lit, plateDown, doorOpen, gemTaken, complete, x: pos.x, z: pos.z, die: [dieP.x, dieP.y, dieP.z].map((v) => +v.toFixed(2)) }),
+      state: () => ({
+        room: roomIdx,
+        dieState,
+        face,
+        tool,
+        complete,
+        trans: !!trans,
+        x: pos.x,
+        y: feetY,
+        z: pos.z,
+        die: [dieP.x, dieP.y, dieP.z].map((v) => +v.toFixed(2)),
+        marks: chalk.count,
+        gems,
+      }),
       place: (x: number, z: number, y: number, p: number) => {
-        pos.set(x, 1.6, z);
+        pos.set(x, feetY + EYE, z);
         yaw = y;
         pitch = p;
       },
       face: (n: number) => selectFace(n),
-      mark: () => mark(),
-      put: () => place(),
-      marks: () => marks.length,
       act: () => action(),
+      put: () => place(),
       reset: () => reset(),
+      goto: (i: number) => loadRoom(i),
+      tool: (tl: Tool) => setTool(tl),
+      swap: () => swapTool(),
+      // coordenadas de tela (NDC) de um ponto do mundo
+      ndc: (x: number, y: number, z: number) => {
+        camera.updateMatrixWorld();
+        const v = new THREE.Vector3(x, y, z).project(camera);
+        return [v.x, v.y];
+      },
+      stroke: (pts: [number, number][], erase = false) => {
+        chalk.beginStroke();
+        for (const [x, y] of pts) paintAt(new THREE.Vector2(x, y), erase);
+        chalk.beginStroke();
+      },
+      chalkCount: () => chalk.count,
+      // coloca o dado direto num ponto (para testes de puzzle)
+      drop: (x: number, y: number, z: number) => {
+        thrownFace = face;
+        dieThrown = true;
+        dieP.set(x, y, z);
+        dieV.set(0, 0, 0);
+        dieW.set(0, 0, 0);
+        worldDie.position.copy(dieP);
+        worldModel.scale.setScalar(0.42);
+        worldDie.visible = true;
+        dieState = 'flying';
+        restTimer = 0;
+      },
     };
   }
 
   return {
     action,
-    rotate: () => cycleFace(1),
     place,
+    rotate: () => cycleFace(1),
+    swapTool,
+    setChalkMode: (m) => {
+      chalkMode = m;
+      brush.active = false;
+    },
+    clearChalk,
     reset,
-    mark,
-    nextSymbol,
-    eraseAimed,
-    eraseAll,
+    restart,
     dispose() {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
-      canvas.removeEventListener('wheel', onWheel);
       document.removeEventListener('pointerlockerror', onLockError);
       if (locked()) document.exitPointerLock();
+      canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', onContext);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
