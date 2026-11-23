@@ -49,7 +49,7 @@ export function buildRoom1(ctx: Ctx): Room {
   const PLATE = { x: -1.4, z: -5, half: 0.65, top: 0.07 };
   const plateSide = lambert(null, 0x3a3638);
   kit.box(1.3, 0.07, 1.3, [plateSide, plateSide, lambert(plateTexture()), plateSide, plateSide, plateSide], PLATE.x, 0.035, PLATE.z);
-  kit.plane(1.7, 1.7, new THREE.MeshLambertMaterial({ map: crackTexture(), transparent: true, alphaTest: 0.5 }), 1.5, 0.015, -4.8, -Math.PI / 2);
+  kit.plane(1.7, 1.7, new THREE.MeshLambertMaterial({ map: crackTexture(), transparent: true, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), 1.5, 0.015, -4.8, -Math.PI / 2);
 
   // braseiro apagado
   kit.box(0.6, 0.8, 0.6, kit.stone, 2.9, 0.4, -9.2);

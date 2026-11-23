@@ -31,7 +31,7 @@ export class Chalk {
     this.geo.setDrawRange(0, 0);
     this.mesh = new THREE.Mesh(
       this.geo,
-      new THREE.MeshBasicMaterial({ color: 0xf0ecdc, side: THREE.DoubleSide, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color: 0xf0ecdc, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
     );
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 5; // por último, só testando profundidade

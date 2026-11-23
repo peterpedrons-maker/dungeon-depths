@@ -53,7 +53,11 @@ export function buildRoom2(ctx: Ctx): Room {
 
   // lousa à direita da porta
   const SLATE = new THREE.Vector3(3.4, 1.7, Z0 + 0.03);
-  const slate = kit.plane(2.4, 2.4, lambert(slateTexture(), 0xd0d0d8), SLATE.x, SLATE.y, SLATE.z);
+  const slateMat = lambert(slateTexture(), 0xd0d0d8);
+  slateMat.polygonOffset = true;
+  slateMat.polygonOffsetFactor = -2;
+  slateMat.polygonOffsetUnits = -4;
+  const slate = kit.plane(2.4, 2.4, slateMat, SLATE.x, SLATE.y, SLATE.z);
   const fr = 0.14;
   kit.box(2.4 + fr * 2, fr, 0.16, kit.stone, SLATE.x, SLATE.y + 1.2 + fr / 2, Z0 + 0.08);
   kit.box(2.4 + fr * 2, fr, 0.16, kit.stone, SLATE.x, SLATE.y - 1.2 - fr / 2, Z0 + 0.08);
@@ -71,13 +75,12 @@ export function buildRoom2(ctx: Ctx): Room {
     const s = fragSpots[i];
     const side = Math.sign(-s.x) || 1;
     kit.box(0.06, 1.4, 1.4, kit.stone, s.x + side * 0.0, 1.9, s.z, false); // moldura: da parede até 0,03 m
-    const mat = new THREE.MeshBasicMaterial({ map: fragmentTexture(piece), fog: true, transparent: i === 2, opacity: i === 2 ? 0 : 1 });
+    const mat = new THREE.MeshBasicMaterial({ map: fragmentTexture(piece), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+    if (i === 2) mat.color.setScalar(0.06); // escondido: painel escuro até o fogo revelar
     fragMats.push(mat);
     kit.plane(1.15, 1.15, mat, s.x + side * 0.06, 1.9, s.z, 0, s.ry, false); // 3 cm à frente da moldura
   });
   const hiddenFrag = fragMats[2];
-  // moldura escura cobrindo o fragmento escondido enquanto não há fogo
-  const hiddenCover = kit.plane(1.15, 1.15, new THREE.MeshLambertMaterial({ color: 0x1a2220 }), fragSpots[2].x + 0.065, 1.9, fragSpots[2].z, 0, fragSpots[2].ry, false);
 
   // braseiro (acende com Fogo e revela o fragmento escondido)
   const BX = -3.6;
@@ -216,10 +219,9 @@ export function buildRoom2(ctx: Ctx): Room {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
         flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
         reveal = Math.min(1, reveal + dt * 0.7);
-        hiddenFrag.opacity = reveal;
-        hiddenCover.visible = reveal < 0.02;
+        hiddenFrag.color.setScalar(0.06 + 0.94 * reveal);
       } else {
-        hiddenFrag.opacity = 0;
+        hiddenFrag.color.setScalar(0.06);
       }
 
       // confere a lousa de vez em quando (só se o desenho mudou)
@@ -244,8 +246,7 @@ export function buildRoom2(ctx: Ctx): Room {
       reveal = 0;
       flame.visible = false;
       flameLight.intensity = 0;
-      hiddenFrag.opacity = 0;
-      hiddenCover.visible = true;
+      hiddenFrag.color.setScalar(0.06);
       doorOpen = 0;
       solved = [false, false, false];
       latched = false;

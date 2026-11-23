@@ -192,7 +192,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
       lambert(null, 0x4a3320),
     ]),
   );
-  const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(), transparent: true, alphaTest: 0.5, fog: false });
+  const runeMat = new THREE.MeshBasicMaterial({ map: runeTexture(), transparent: true, alphaTest: 0.5, fog: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
   const rune = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.0), runeMat);
   rune.position.set(0, 1.43, 0.1);
   slabG.add(rune);
@@ -227,7 +227,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   const lampMats: THREE.MeshBasicMaterial[] = [];
   const xs = o.lamps === 1 ? [0] : o.lamps === 2 ? [-0.62, 0.62] : [-0.8, 0, 0.8];
   for (const x of xs) {
-    const mat = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false });
+    const mat = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
     lampMats.push(mat);
     const y = x === 0 ? ARCH_TOP + 0.15 : DH + Math.sqrt((DW + 0.15) ** 2 - x * x);
     const zf = x === 0 ? o.z0 + 0.375 : o.z0 + 0.305;

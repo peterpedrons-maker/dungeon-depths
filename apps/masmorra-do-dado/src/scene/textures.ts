@@ -35,7 +35,9 @@ function canvas(w: number, h = w) {
   return { c, ctx };
 }
 
-function toTexture(c: HTMLCanvasElement, repeat?: [number, number], wrap = true): THREE.CanvasTexture {
+// smooth = decalques com detalhes finos (linhas, runas): mipmap trilinear, pra não "cintilar"
+// quando ficam menores que um pixel da tela.
+function toTexture(c: HTMLCanvasElement, repeat?: [number, number], wrap = true, smooth = false): THREE.CanvasTexture {
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.colorSpace = THREE.SRGBColorSpace;
@@ -47,6 +49,10 @@ function toTexture(c: HTMLCanvasElement, repeat?: [number, number], wrap = true)
     t.anisotropy = 4;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     if (repeat) t.repeat.set(repeat[0], repeat[1]);
+  } else if (smooth) {
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.generateMipmaps = true;
+    t.anisotropy = 4;
   } else {
     t.minFilter = THREE.NearestFilter;
     t.generateMipmaps = false;
@@ -193,7 +199,7 @@ export function plateTexture() {
     px(ctx, Math.round(16 + Math.cos(rad) * 9), Math.round(16 + Math.sin(rad) * 9), '#2a2523', 2, 2);
   }
   px(ctx, 14, 14, '#2a2523', 4, 4);
-  return toTexture(c, undefined, false);
+  return toTexture(c, undefined, false, true);
 }
 
 export function crackTexture() {
@@ -215,7 +221,7 @@ export function crackTexture() {
       }
     }
   }
-  return toTexture(c, undefined, false);
+  return toTexture(c, undefined, false, true);
 }
 
 export function runeTexture() {
@@ -234,7 +240,7 @@ export function runeTexture() {
     px(ctx, 12, i, col);
   }
   px(ctx, 11, 11, '#ffd0d8', 3, 3);
-  return toTexture(c, undefined, false);
+  return toTexture(c, undefined, false, true);
 }
 
 export function gemTexture() {
@@ -398,7 +404,7 @@ export function doorTexture() {
       px(ctx, cx + x, cy + y, shade(hex('#4a4a5c'), k));
     }
   }
-  return toTexture(c, undefined, false);
+  return toTexture(c, undefined, false, true);
 }
 
 // ── pedra-sabão ──────────────────────────────────────────────────────────────
@@ -550,13 +556,14 @@ export function sealPoints(p: SealPiece): [number, number][] {
 export function slateTexture() {
   const { c, ctx } = canvas(48);
   const r = rng(300);
-  for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) px(ctx, x, y, shade(hex('#262932'), 0.92 + r() * 0.1));
-  for (const k of [16, 32]) {
-    rect(ctx, k, 1, 1, 46, '#3a3e4c');
-    rect(ctx, 1, k, 46, 1, '#3a3e4c');
+  // cor lisa (sem granulado): granulado + dithering na tela "fervia" quando a câmera se mexia
+  rect(ctx, 0, 0, 48, 48, '#262932');
+  for (const k of [15, 31]) {
+    rect(ctx, k, 1, 2, 46, '#454a5a');
+    rect(ctx, 1, k, 46, 2, '#454a5a');
   }
-  for (let i = 0; i < 160; i++) px(ctx, Math.floor(r() * 48), Math.floor(r() * 48), '#32363f');
-  return toTexture(c, undefined, false);
+  void r;
+  return toTexture(c, undefined, false, true);
 }
 
 // fragmento gravado na parede: a grade 3x3 e a peça acesa na casa certa
@@ -568,9 +575,9 @@ export function fragmentTexture(piece: SealPiece) {
   rect(ctx, 0, 47, 48, 1, '#4a4660');
   rect(ctx, 0, 0, 1, 48, '#4a4660');
   rect(ctx, 47, 0, 1, 48, '#4a4660');
-  for (const k of [16, 32]) {
-    rect(ctx, k, 2, 1, 44, '#2c2a3c');
-    rect(ctx, 2, k, 44, 1, '#2c2a3c');
+  for (const k of [15, 31]) {
+    rect(ctx, k, 2, 2, 44, '#34324a');
+    rect(ctx, 2, k, 44, 2, '#34324a');
   }
   const cx = 24 + piece.col * 16;
   const cy = 24 - piece.row * 16;
@@ -584,5 +591,5 @@ export function fragmentTexture(piece: SealPiece) {
     const y = Math.round(cy - uy * 5.2);
     px(ctx, x, y, shade(col, 1.15), 2, 2);
   }
-  return toTexture(c, undefined, false);
+  return toTexture(c, undefined, false, true);
 }

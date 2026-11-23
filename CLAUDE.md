@@ -43,5 +43,10 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 
+## Convenção para puzzles (masmorra-do-dado)
+
+Sempre que criar ou alterar um puzzle: **explique ao usuário como resolvê-lo** na resposta e
+registre a solução em `apps/masmorra-do-dado/PUZZLES.md`.
+
 Os jogos antigos (dungeon-depths, reino-e-masmorras, ricochete) foram removidos de `apps/` e
 continuam no histórico do git.

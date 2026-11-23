@@ -71,14 +71,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     type: THREE.HalfFloatType,
-    depthTexture: new THREE.DepthTexture(64, 64),
+    depthTexture: Object.assign(new THREE.DepthTexture(64, 64), { type: THREE.UnsignedIntType }),
   });
   const rtHud = new THREE.WebGLRenderTarget(64, 64, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     type: THREE.HalfFloatType,
   });
-  const CAM_NEAR = 0.1;
+  const CAM_NEAR = 0.15;
   const CAM_FAR = 40;
 
   // Paleta fixa (estilo pixel art de verdade): cada pixel vira a cor mais
