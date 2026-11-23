@@ -16,7 +16,7 @@ import {
   stainTexture,
   vineTexture,
 } from './textures';
-import type { Box, Rect } from './types';
+import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
 // chaves de depuração (só usadas pelos testes em desenvolvimento)
@@ -39,6 +39,7 @@ export class Emitter {
 
 export class Kit {
   emitters: Emitter[] = [];
+  private zones: { kind: Surface; test: (x: number, z: number) => boolean }[] = [];
   // obstáculos criados por objetos de cena (caixas, barris): a sala os soma aos seus
   rects: Rect[] = [];
   boxes: Box[] = [];
@@ -146,13 +147,23 @@ export class Kit {
     return b;
   }
 
-  // tapete no chão
+  // piso especial (tapete, placa, poça...): o som dos passos muda
+  zone(kind: Surface, test: (x: number, z: number) => boolean) {
+    this.zones.push({ kind, test });
+  }
+  surfaceAt(x: number, z: number): Surface {
+    for (let i = this.zones.length - 1; i >= 0; i--) if (this.zones[i].test(x, z)) return this.zones[i].kind;
+    return 'stone';
+  }
+
+  // tapete no chão (sem rotação)
   rug(x: number, z: number, w: number, l: number, main: string, accent: string, yaw = 0, y = 0) {
     const m = this.mat(`rug:${main}${accent}`, () => new THREE.MeshLambertMaterial({ map: rugTexture(main, accent), polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }));
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, l), m);
     p.rotation.set(-Math.PI / 2, 0, yaw);
     p.position.set(x, y + 0.012, z);
     this.add(p);
+    this.zone('rug', (px, pz) => Math.abs(px - x) < w / 2 && Math.abs(pz - z) < l / 2);
     return p;
   }
 
@@ -213,6 +224,7 @@ export class Kit {
     return this.decal(w, h, 'vine', () => vineTexture(), x + nx * 0.02, y, z + nz * 0.02, 0, Math.atan2(nx, nz));
   }
   puddle(x: number, z: number, size = 1.4, rot = 0) {
+    this.zone('water', (px, pz) => (px - x) ** 2 + (pz - z) ** 2 < (size * 0.3) ** 2);
     return this.decal(size, size, 'puddle', () => puddleTexture(), x, 0.014, z, -Math.PI / 2, 0, rot);
   }
   web(x: number, y: number, z: number, nx: number, nz: number, flip = false, size = 0.9) {

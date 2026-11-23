@@ -33,10 +33,10 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 // Muda quando qualquer arquivo de áudio é trocado: força o navegador/PWA a baixar de novo
-const AUDIO_VERSION = 3;
+const AUDIO_VERSION = 4;
 
 const SFX_FILES = [
-  'boot1', 'boot2', 'boot3', 'boot4', 'boot5', 'boot6', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
+  'step_stone', 'step_rug', 'step_plate', 'step_water', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
   'bounce1', 'bounce2', 'bounce3', 'bounce4', 'roll', 'locked', 'swap1', 'swap2', 'sweep', 'chalk1', 'chalk2',
   'erase', 'ignite', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door1', 'door2', 'doorclose1',
   'doorclose2', 'error', 'burnout', 'fire',
@@ -85,7 +85,6 @@ export class Sfx {
   private scratchNext = 0;
   private scratchNode: GainNode | null = null;
   private lastBounce = 0;
-  private stepIdx = 0;
   // música
   private chordAt = 0;
   private chordIdx = 0;
@@ -404,16 +403,13 @@ export class Sfx {
     }
   }
 
-  // passo (speed 0..1)
-  step(speed: number) {
+  // passo: SEMPRE a mesma gravação pra cada tipo de piso (pedra, tapete, placa, poça)
+  step(surface: 'stone' | 'rug' | 'plate' | 'water') {
     if (!this.ac || this.mode === 2) return;
     this.steps++;
-    // sorteia entre as 6 gravações sem repetir a anterior
-    let i = Math.floor(Math.random() * 6);
-    if (i === this.stepIdx) i = (i + 1 + Math.floor(Math.random() * 5)) % 6;
-    this.stepIdx = i;
-    const k = 0.5 + 0.4 * speed;
-    this.sample(`boot${i + 1}`, k, rand(0.95, 1.05), 0, 0.22);
+    const vol = { stone: 0.7, rug: 0.7, plate: 0.8, water: 0.65 }[surface];
+    const verb = { stone: 0.22, rug: 0.04, plate: 0.2, water: 0.15 }[surface];
+    this.sample(`step_${surface}`, vol, 1, 0, verb);
   }
 
   // batida do dado (impact em m/s)

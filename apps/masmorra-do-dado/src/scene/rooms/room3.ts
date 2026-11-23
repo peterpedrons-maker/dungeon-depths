@@ -56,6 +56,7 @@ export function buildRoom3(ctx: Ctx): Room {
 
   // placa central
   const PLATE = { x: 0, z: 0, half: 0.7, top: 0.07 };
+  kit.zone('plate', (x, z) => Math.abs(x - PLATE.x) < PLATE.half && Math.abs(z - PLATE.z) < PLATE.half);
   const plateSide = lambert(null, 0x3a3638);
   kit.box(1.4, 0.07, 1.4, [plateSide, plateSide, lambert(plateTexture()), plateSide, plateSide, plateSide], 0, 0.035, 0);
 
@@ -180,6 +181,7 @@ export function buildRoom3(ctx: Ctx): Room {
       }
     },
     groundY: () => 0,
+    surfaceAt: (x, z) => kit.surfaceAt(x, z),
     dieFloor: () => 0,
     holdsDie: () => plateDown,
     onDieRest() {

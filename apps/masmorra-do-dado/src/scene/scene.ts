@@ -1296,7 +1296,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const stepIdx = Math.floor(bob / Math.PI);
     if (stepIdx !== lastStepIdx) {
       lastStepIdx = stepIdx;
-      if (speedFrac > 0.12 && vy === 0) sfx.step(speedFrac);
+      if (speedFrac > 0.12 && vy === 0) {
+        const sr = roomOfZ(pos.z);
+        sfx.step(rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone');
+      }
     }
     const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
     pos.y = feetY + EYE;
@@ -1470,8 +1473,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
       yaw: () => yaw,
+      surface: () => {
+        const sr = roomOfZ(pos.z);
+        return rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone';
+      },
       sfx: (n: string, v = 1) => sfx.play(n as never, v),
-      sfxStep: (s: number) => sfx.step(s),
+      sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
       audio: () => ({ state: sfx.state, played: sfx.played, steps: sfx.steps, loaded: sfx.ready }),

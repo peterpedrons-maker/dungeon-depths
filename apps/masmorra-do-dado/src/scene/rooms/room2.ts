@@ -225,6 +225,7 @@ export function buildRoom2(ctx: Ctx): Room {
       }
     },
     groundY: () => 0,
+    surfaceAt: (x, z) => kit.surfaceAt(x, z),
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {

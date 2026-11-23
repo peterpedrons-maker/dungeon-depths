@@ -59,7 +59,10 @@ C2 = p('x', 'sfx_100_v2')
 MS = p('metal_steps.ogg')  # passos de bota em concreto (OpenGameArt, CC0)
 
 SFX = {
-    # passos: bootN.mp3 são recortados de metal_steps.ogg por tools/cut_steps.py
+    # passos por piso (um som fixo cada): pedra vem de tools/cut_steps.py
+    'step_rug': (K + '/footstep05.ogg', {}),          # tapete: passo abafado
+    'step_plate': (C2 + '/sfx100v2_footstep_wood_01.ogg', {}),  # placa: baque oco
+    'step_water': (C2 + '/sfx100v2_footstep_wet_01.ogg', {}),   # poça: passo molhado
     'land': (K + '/dropLeather.ogg', {}),
     # dado
     'throw1': (C2 + '/sfx100v2_air_03.ogg', {}),

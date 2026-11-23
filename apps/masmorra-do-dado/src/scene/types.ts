@@ -1,6 +1,9 @@
 import type * as THREE from 'three';
 import type { Emitter } from './kit';
 
+// tipo de piso sob os pés (muda o som dos passos)
+export type Surface = 'stone' | 'rug' | 'plate' | 'water';
+
 export type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
 
 // retângulo no plano XZ: x0, z0, x1, z1 (+ altura do topo: só bloqueia quem está abaixo dela)
@@ -59,6 +62,7 @@ export interface Room {
   clampPlayer?(pos: THREE.Vector3): void; // limites curvos (coordenadas da sala); retas são obstáculos em rects()
   clampDie(p: THREE.Vector3, v: THREE.Vector3, e: number, R: number): void;
   groundY(x: number, z: number): number; // chão onde o jogador pisa
+  surfaceAt?(x: number, z: number): Surface; // piso nesse ponto (pedra por padrão)
   dieFloor(x: number, z: number): number; // chão "inclinado" (rampa) para o dado
   update(dt: number, t: number): void;
   holdsDie(): boolean; // true = não recolhe o dado sozinho (ex.: placa apertada)

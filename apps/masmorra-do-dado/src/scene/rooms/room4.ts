@@ -77,6 +77,7 @@ export function buildRoom4(ctx: Ctx): Room {
 
   // placa embaixo
   const PLATE = { x: -1.4, z: -3.0, half: 0.65, top: 0.07 };
+  kit.zone('plate', (x, z) => Math.abs(x - PLATE.x) < PLATE.half && Math.abs(z - PLATE.z) < PLATE.half);
   const plateSide = lambert(null, 0x3a3638);
   kit.box(1.3, 0.07, 1.3, [plateSide, plateSide, lambert(plateTexture()), plateSide, plateSide, plateSide], PLATE.x, 0.035, PLATE.z);
 
@@ -190,6 +191,7 @@ export function buildRoom4(ctx: Ctx): Room {
         if (v.z > 0) v.z = -v.z * e;
       }
     },
+    surfaceAt: (x, z) => kit.surfaceAt(x, z),
     groundY(x, z) {
       if (z <= STAGE_Z) return LEVEL;
       return rampY(x, z);
