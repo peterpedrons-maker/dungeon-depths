@@ -593,3 +593,197 @@ export function fragmentTexture(piece: SealPiece) {
   }
   return toTexture(c, undefined, false, true);
 }
+
+// ── decoração das salas ─────────────────────────────────────────────────────
+// Tudo procedural, 16–48 px, filtro "nearest" (ou suave nos decalques finos).
+
+export function crateTexture() {
+  const { c, ctx } = canvas(32);
+  const r = rng(401);
+  const wood = hex('#7a5030');
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) px(ctx, x, y, shade(wood, 0.9 + r() * 0.14 + (y % 8 === 0 ? -0.18 : 0)));
+  // moldura e travessas em X
+  const dark = hex('#4a2c1a');
+  rect(ctx, 0, 0, 32, 3, shade(dark, 1.1));
+  rect(ctx, 0, 29, 32, 3, shade(dark, 0.8));
+  rect(ctx, 0, 0, 3, 32, shade(dark, 1.0));
+  rect(ctx, 29, 0, 3, 32, shade(dark, 0.85));
+  for (let i = 3; i < 29; i++) {
+    px(ctx, i, i, shade(dark, 0.95), 2, 2);
+    px(ctx, 31 - i, i, shade(dark, 0.95), 2, 2);
+  }
+  for (const [x, y] of [[1, 1], [30, 1], [1, 30], [30, 30]]) px(ctx, x, y, '#9a9ab0');
+  return toTexture(c, undefined, false, true);
+}
+
+export function barrelTexture() {
+  const { c, ctx } = canvas(32);
+  const r = rng(402);
+  const wood = hex('#6b4527');
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 32; x++) {
+      let k = 0.92 + r() * 0.1;
+      if (x % 6 === 0) k *= 0.6; // frestas entre as tábuas
+      px(ctx, x, y, shade(wood, k));
+    }
+  }
+  for (const y0 of [4, 14, 24]) {
+    rect(ctx, 0, y0, 32, 1, '#7a7a90');
+    rect(ctx, 0, y0 + 1, 32, 2, '#3a3a48');
+    rect(ctx, 0, y0 + 3, 32, 1, '#1c1c24');
+  }
+  return toTexture(c, [1, 1], true, true);
+}
+
+export function rugTexture(main: string, accent: string) {
+  const { c, ctx } = canvas(32, 48);
+  const a = hex(main);
+  const b = hex(accent);
+  const r = rng(403);
+  for (let y = 0; y < 48; y++) for (let x = 0; x < 32; x++) px(ctx, x, y, shade(a, 0.9 + r() * 0.1));
+  // bordas
+  for (const [i, col] of [[0, shade(b, 1.0)], [2, shade(a, 0.6)], [4, shade(b, 0.8)]] as [number, string][]) {
+    rect(ctx, i, i, 32 - i * 2, 1, col);
+    rect(ctx, i, 47 - i, 32 - i * 2, 1, col);
+    rect(ctx, i, i, 1, 48 - i * 2, col);
+    rect(ctx, 31 - i, i, 1, 48 - i * 2, col);
+  }
+  // losangos no meio
+  for (const cy of [12, 24, 36]) {
+    for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
+      const d = Math.abs(dx) + Math.abs(dy);
+      if (d <= 5) px(ctx, 16 + dx, cy + dy, d === 5 ? shade(b, 0.85) : d <= 2 ? shade(b, 1.1) : shade(a, 0.7));
+    }
+  }
+  // franjas
+  for (let x = 0; x < 32; x += 2) {
+    px(ctx, x, 0, shade(b, 1.2));
+    px(ctx, x, 47, shade(b, 1.2));
+  }
+  return toTexture(c, undefined, false, true);
+}
+
+export function bannerTexture(main: string, emblem: string) {
+  const { c, ctx } = canvas(16, 32);
+  const a = hex(main);
+  const b = hex(emblem);
+  const r = rng(404);
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 16; x++) {
+      px(ctx, x, y, shade(a, 0.9 + r() * 0.1 + (x % 5 === 0 ? -0.08 : 0)));
+    }
+  }
+  // corta o "V" da ponta
+  for (let y = 26; y < 32; y++) {
+    const cut = (y - 25) * 1.4;
+    for (let x = 0; x < 16; x++) if (Math.abs(x - 7.5) > 8 - cut) ctx.clearRect(x, y, 1, 1);
+  }
+  // emblema: olho
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -5; dx <= 5; dx++) {
+    const d = Math.abs(dx) / 5 + Math.abs(dy) / 3;
+    if (d <= 1) px(ctx, 8 + dx, 12 + dy, shade(b, d > 0.8 ? 0.8 : 1.1));
+  }
+  px(ctx, 7, 11, shade(a, 0.5), 2, 2);
+  rect(ctx, 0, 0, 16, 2, shade(b, 0.7));
+  return toTexture(c, undefined, false, true);
+}
+
+// manchas de umidade/musgo (decalque com transparência)
+export function stainTexture(kind: 'moss' | 'damp') {
+  const { c, ctx } = canvas(32);
+  const r = rng(kind === 'moss' ? 405 : 406);
+  const base = kind === 'moss' ? hex('#3a7a42') : hex('#14131c');
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 32; x++) {
+      const d = Math.hypot(x - 16, (y - 14) * 1.2) / 16;
+      const n = r() * 0.5;
+      const v = Math.sin(x * 0.7 + y * 0.3) * 0.15 + n;
+      if (d + v < 0.85 && !(kind === 'moss' && y < 6 && r() < 0.3)) {
+        ctx.fillStyle = shade(base, 0.75 + r() * 0.5);
+        ctx.globalAlpha = kind === 'moss' ? 0.95 : 0.55;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  return toTexture(c, undefined, false, true);
+}
+
+// trepadeira pendurada (decalque)
+export function vineTexture() {
+  const { c, ctx } = canvas(16, 32);
+  const r = rng(407);
+  for (const x0 of [3, 8, 12]) {
+    let x = x0;
+    const len = 12 + Math.floor(r() * 18);
+    for (let y = 0; y < len; y++) {
+      if (r() < 0.25) x += r() < 0.5 ? -1 : 1;
+      x = Math.max(1, Math.min(14, x));
+      px(ctx, x, y, y % 5 === 4 ? '#7fd18a' : '#2f6a3a');
+      if (y % 6 === 3) px(ctx, x + 1, y, '#4fa05a');
+    }
+  }
+  return toTexture(c, undefined, false, true);
+}
+
+// poça d'água no chão (decalque)
+export function puddleTexture() {
+  const { c, ctx } = canvas(32);
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 32; x++) {
+      const d = Math.hypot((x - 16) / 14, (y - 16) / 9);
+      if (d < 1) {
+        ctx.globalAlpha = d > 0.85 ? 0.45 : 0.75;
+        ctx.fillStyle = d < 0.35 ? '#2a5a7a' : '#1c3a52';
+        if ((x + y * 2) % 11 === 0 && d < 0.7) ctx.fillStyle = '#6fd0f0';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  return toTexture(c, undefined, false, true);
+}
+
+// teia de aranha no canto (decalque)
+export function cobwebTexture() {
+  const { c, ctx } = canvas(24);
+  const col = '#cfd2e0';
+  for (let i = 0; i < 24; i++) px(ctx, i, 0, col);
+  for (let i = 0; i < 24; i++) px(ctx, 0, i, col);
+  for (let i = 0; i < 24; i++) px(ctx, i, i, col);
+  for (let i = 0; i < 24; i += 2) px(ctx, i, Math.floor(i / 2), col);
+  for (let i = 0; i < 24; i += 2) px(ctx, Math.floor(i / 2), i, col);
+  for (const rad of [7, 13, 19]) {
+    for (let a = 0; a <= 90; a += 6) {
+      const rr = (a * Math.PI) / 180;
+      px(ctx, Math.round(Math.cos(rr) * rad), Math.round(Math.sin(rr) * rad), col);
+    }
+  }
+  return toTexture(c, undefined, false, true);
+}
+
+// piso de mosaico circular (sala redonda)
+export function mosaicTexture() {
+  const { c, ctx } = canvas(64);
+  const r = rng(408);
+  const cols = ['#8a5a44', '#a06a4c', '#704636', '#c0905c'];
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      const d = Math.hypot(x - 31.5, y - 31.5);
+      if (d > 31.5) continue;
+      const ang = Math.atan2(y - 31.5, x - 31.5);
+      let col: string;
+      if (d > 28) col = '#3a2018';
+      else if (d > 25) col = '#c0905c';
+      else if (d > 22) col = '#3a2018';
+      else if (d < 5) col = '#e8b878';
+      else {
+        const seg = Math.floor(((ang + Math.PI) / (Math.PI * 2)) * 16);
+        col = (seg + Math.floor(d / 4)) % 2 === 0 ? cols[0] : cols[2];
+        if (d > 10 && d < 12) col = cols[3];
+      }
+      px(ctx, x, y, shade(hex(col), 0.9 + r() * 0.15));
+    }
+  }
+  return toTexture(c, undefined, false, true);
+}

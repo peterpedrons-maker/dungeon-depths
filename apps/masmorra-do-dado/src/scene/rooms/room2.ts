@@ -95,9 +95,7 @@ export function buildRoom2(ctx: Ctx): Room {
   flame.position.set(BX, 1.45, BZ);
   flame.visible = false;
   kit.group.add(flame);
-  const flameLight = new THREE.PointLight(0xff8a2a, 0, 0, 2);
-  flameLight.position.set(BX + 0.3, 1.9, BZ + 0.4);
-  kit.group.add(flameLight);
+  const flameLight = kit.light(BX + 0.3, 1.9, BZ + 0.4, 0xff8a2a, 0);
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
     const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), coalMat);
@@ -105,6 +103,24 @@ export function buildRoom2(ctx: Ctx): Room {
     kit.group.add(coal);
   }
 
+  // decoração
+  kit.skirting(X0, X1, Z0, Z1, 1.3);
+  kit.moss(X0, 0.8, -7.4, 1, 0, 2.0);
+  kit.moss(X1, 0.9, -3.0, -1, 0, 1.8);
+  kit.moss(X1, 1.2, -10.6, -1, 0, 2.2);
+  kit.moss(X0, 1.0, -1.8, 1, 0, 1.5);
+  kit.vine(X0, H - 0.9, -2.6, 1, 0);
+  kit.vine(X0, H - 1.0, -9.5, 1, 0, 0.9, 1.9);
+  kit.vine(X1, H - 0.9, -4.6, -1, 0, 0.9, 1.7);
+  kit.vine(X1, H - 0.8, -8.8, -1, 0);
+  kit.puddle(-1.5, -6.5, 1.8, 0.4);
+  kit.puddle(2.2, -1.0, 1.3, 1.2);
+  kit.puddle(-0.5, -11.0, 1.5, 2.0);
+  kit.barrel(-4.2, 1.15);
+  kit.barrel(-3.55, 1.4);
+  kit.crate(4.1, 1.05, 0.7, 0.4);
+  kit.web(X0, H - 0.45, Z1 - 0.45, 1, 0);
+  kit.web(X1, H - 0.45, Z1 - 0.45, -1, 0, true);
   const tc = 0x8fe8c8;
   kit.torch(X0 + 0.1, 1.9, -1.0, 1, 0, 0, tc, 40);
   kit.torch(X1 - 0.1, 1.9, -1.0, -1, 0, 1.7, tc, 40);
@@ -169,16 +185,17 @@ export function buildRoom2(ctx: Ctx): Room {
     subtitle: 'Três fragmentos, uma lousa e a pedra-sabão. Um deles só aparece à luz do fogo.',
     group: kit.group,
     surfaces: kit.surfaces,
+    emitters: kit.emitters,
     doorZ: Z0,
     entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 0.8),
     startYaw: 0,
     fog: { color: '#050e0d', near: 4, far: 22 },
     ambient: { color: 0x6a9a90, intensity: 1.8 },
-    boxes,
+    boxes: [...boxes, ...kit.boxes],
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
-      r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5]);
+      r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5], ...kit.rects);
       r.push([X0 - 2, Z0, X0, Z1], [X1, Z0, X1 + 2, Z1]);
       r.push(...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));

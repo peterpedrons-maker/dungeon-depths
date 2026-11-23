@@ -62,9 +62,7 @@ export function buildRoom1(ctx: Ctx): Room {
   flame.position.set(BOWL.x, 1.45, BOWL.z);
   flame.visible = false;
   kit.group.add(flame);
-  const flameLight = new THREE.PointLight(0xff8a2a, 0, 0, 2);
-  flameLight.position.set(BOWL.x - 0.3, 1.9, BOWL.z + 0.4);
-  kit.group.add(flameLight);
+  const flameLight = kit.light(BOWL.x - 0.3, 1.9, BOWL.z + 0.4, 0xff8a2a, 0);
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
     const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), coalMat);
@@ -84,9 +82,7 @@ export function buildRoom1(ctx: Ctx): Room {
   gem.scale.set(0.42, 0.42, 1);
   gem.position.set(X1 - 0.3, 2.1, nz);
   kit.group.add(gem);
-  const gemLight = new THREE.PointLight(0x4fe8ff, 9, 0, 2);
-  gemLight.position.set(X1 - 0.6, 2.1, nz);
-  kit.group.add(gemLight);
+  const gemLight = kit.light(X1 - 0.6, 2.1, nz, 0x4fe8ff, 9);
   const sparkMat = new THREE.SpriteMaterial({ map: sparkTexture(), fog: false, depthWrite: false });
   const sparks = [0, 1, 2].map(() => {
     const s = new THREE.Sprite(sparkMat);
@@ -96,6 +92,23 @@ export function buildRoom1(ctx: Ctx): Room {
   });
   const GEM = new THREE.Vector3(X1 - 0.3, 2.1, nz);
 
+  // decoração
+  kit.skirting(X0, X1, Z0, Z1, 1.3);
+  for (const z of [-2, -5.5, -8.8]) kit.beam(0, H - 0.15, z, W, 0.3, 0.3);
+  kit.rug(0, -3.6, 1.4, 8.2, '#6a2a3a', '#d4ac4e');
+  kit.banner(X0 + 0.02, 1.9, -5.0, 1, 0, '#5a2a6a', '#d4ac4e');
+  kit.banner(X1 - 0.02, 1.9, -5.0, -1, 0, '#5a2a6a', '#d4ac4e');
+  kit.crate(3.35, 1.25, 0.75, 0.3);
+  kit.crate(3.45, 0.45, 0.55, -0.2);
+  kit.crate(-3.4, 1.2, 0.8, 0.1);
+  kit.barrel(-2.75, 1.45);
+  kit.barrel(-3.5, -9.3);
+  kit.barrel(-2.85, -9.45);
+  kit.web(X0, H - 0.45, Z1 - 0.45, 1, 0);
+  kit.web(X1, H - 0.45, Z1 - 0.45, -1, 0, true);
+  kit.web(X0, H - 0.45, Z0 + 0.45, 1, 0, true);
+  kit.damp(X0, 1.0, -6.4, 1, 0, 1.9);
+  kit.damp(X1, 2.3, -3.4, -1, 0, 1.5);
   kit.torch(X0 + 0.1, 1.8, -1.5, 1, 0, 0);
   kit.torch(X1 - 0.1, 1.8, -1.5, -1, 0, 1.7);
   kit.torch(X0 + 0.1, 1.8, -7.6, 1, 0, 3.1);
@@ -132,16 +145,17 @@ export function buildRoom1(ctx: Ctx): Room {
     subtitle: 'Fogo no braseiro, peso na placa — e a porta cede.',
     group: kit.group,
     surfaces: kit.surfaces,
+    emitters: kit.emitters,
     doorZ: Z0,
     entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0b0912', near: 4, far: 19 },
     ambient: { color: 0x7a78b8, intensity: 1.9 },
-    boxes,
+    boxes: [...boxes, ...kit.boxes],
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
-      r.push([2.4, -9.7, 3.4, -8.7]);
+      r.push([2.4, -9.7, 3.4, -8.7], ...kit.rects);
       // paredes: esquerda, direita e a da frente (a primeira sala não tem entrada)
       r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5], [X0 - 2, Z1, X1 + 2, Z1 + 0.5]);
       r.push(...door.rects(doorOpen > 0.85));

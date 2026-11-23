@@ -1,8 +1,22 @@
 // Peças em comum entre as salas: criação de malhas, tochas, poeira e a porta em arco.
 
 import * as THREE from 'three';
-import { brickTexture, doorTexture, flameFrames, floorTexture, runeTexture } from './textures';
-import type { Rect } from './types';
+import {
+  bannerTexture,
+  barrelTexture,
+  brickTexture,
+  cobwebTexture,
+  crateTexture,
+  doorTexture,
+  flameFrames,
+  floorTexture,
+  puddleTexture,
+  rugTexture,
+  runeTexture,
+  stainTexture,
+  vineTexture,
+} from './textures';
+import type { Box, Rect } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
 // chaves de depuração (só usadas pelos testes em desenvolvimento)
@@ -13,12 +27,28 @@ export function lambert(map: THREE.Texture | null, color = 0xffffff) {
   return new THREE.MeshLambertMaterial({ map, color });
 }
 
+// Fonte de luz "virtual": o motor mantém só algumas PointLights de verdade e as empresta
+// aos emissores mais relevantes (perto e fortes). Menos luzes = shader bem mais leve.
+export class Emitter {
+  constructor(
+    public pos: THREE.Vector3,
+    public color: number,
+    public intensity: number,
+  ) {}
+}
+
 export class Kit {
+  emitters: Emitter[] = [];
+  // obstáculos criados por objetos de cena (caixas, barris): a sala os soma aos seus
+  rects: Rect[] = [];
+  boxes: Box[] = [];
+  private cache = new Map<string, THREE.Material>();
+  private emberPts: THREE.Points | null = null;
   group = new THREE.Group();
   surfaces: THREE.Object3D[] = [];
   frames = flameFrames();
   stone: THREE.MeshLambertMaterial;
-  private torches: { sprite: THREE.Sprite; light: THREE.PointLight; phase: number; base: number }[] = [];
+  private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number }[] = [];
   private dustGeo: THREE.BufferGeometry | null = null;
   private dustH = 3;
   private dustN = 0;
@@ -64,10 +94,135 @@ export class Kit {
     sprite.scale.set(0.38, 0.3, 1);
     sprite.position.set(x + nx * 0.16, y + 0.57, z + nz * 0.16);
     this.group.add(sprite);
-    const light = new THREE.PointLight(color, intensity, 0, 2);
-    light.position.set(x + nx * 0.45, y + 0.6, z + nz * 0.45);
-    this.group.add(light);
+    const light = this.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, color, intensity);
     this.torches.push({ sprite, light, phase, base: intensity });
+  }
+
+  private mat(key: string, make: () => THREE.Material) {
+    let m = this.cache.get(key);
+    if (!m) {
+      m = make();
+      this.cache.set(key, m);
+    }
+    return m;
+  }
+
+  // decalque: plano fino com transparência "recortada" (estilo pixel), sem brigar com a parede
+  decal(w: number, h: number, key: string, tex: () => THREE.Texture, x: number, y: number, z: number, rx = 0, ry = 0, rz = 0, flipX = false) {
+    const m = this.mat(
+      'decal:' + key,
+      () => new THREE.MeshLambertMaterial({ map: tex(), transparent: true, alphaTest: 0.45, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
+    );
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    p.position.set(x, y, z);
+    p.rotation.set(rx, ry, rz);
+    if (flipX) p.scale.x = -1;
+    this.group.add(p);
+    return p;
+  }
+
+  // caixa de madeira (sólida)
+  crate(x: number, z: number, size = 0.7, yaw = 0, baseY = 0) {
+    const m = this.mat('crate', () => lambert(crateTexture()));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), m);
+    b.position.set(x, baseY + size / 2, z);
+    b.rotation.y = yaw;
+    this.add(b);
+    const half = (size / 2) * (Math.abs(Math.cos(yaw)) + Math.abs(Math.sin(yaw)));
+    this.rects.push([x - half, z - half, x + half, z + half, baseY + size]);
+    this.boxes.push({ min: new THREE.Vector3(x - half, baseY, z - half), max: new THREE.Vector3(x + half, baseY + size, z + half) });
+    return b;
+  }
+
+  // barril (sólido)
+  barrel(x: number, z: number, baseY = 0) {
+    const side = this.mat('barrel', () => lambert(barrelTexture()));
+    const top = this.mat('barrelTop', () => lambert(null, 0x4a2e1a));
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.85, 10), [side, top, top]);
+    b.position.set(x, baseY + 0.425, z);
+    this.add(b);
+    this.rects.push([x - 0.32, z - 0.32, x + 0.32, z + 0.32, baseY + 0.85]);
+    this.boxes.push({ min: new THREE.Vector3(x - 0.3, baseY, z - 0.3), max: new THREE.Vector3(x + 0.3, baseY + 0.85, z + 0.3) });
+    return b;
+  }
+
+  // tapete no chão
+  rug(x: number, z: number, w: number, l: number, main: string, accent: string, yaw = 0, y = 0) {
+    const m = this.mat(`rug:${main}${accent}`, () => new THREE.MeshLambertMaterial({ map: rugTexture(main, accent), polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }));
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, l), m);
+    p.rotation.set(-Math.PI / 2, 0, yaw);
+    p.position.set(x, y + 0.012, z);
+    this.add(p);
+    return p;
+  }
+
+  // estandarte na parede (nx,nz = pra onde a parede "olha")
+  banner(x: number, y: number, z: number, nx: number, nz: number, main: string, emblem: string, h = 1.7) {
+    const m = this.mat(`banner:${main}${emblem}`, () => new THREE.MeshLambertMaterial({ map: bannerTexture(main, emblem), transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }));
+    const ry = Math.atan2(nx, nz);
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(h * 0.5, h), m);
+    p.position.set(x + nx * 0.05, y, z + nz * 0.05);
+    p.rotation.y = ry;
+    this.group.add(p);
+    const rod = new THREE.Mesh(new THREE.BoxGeometry(h * 0.62, 0.05, 0.05), this.mat('rod', () => lambert(null, 0x2a2018)));
+    rod.position.set(x + nx * 0.06, y + h / 2, z + nz * 0.06);
+    rod.rotation.y = ry;
+    this.group.add(rod);
+    return p;
+  }
+
+  // viga de madeira (caixa escura); mark=false: não dá pra riscar
+  beam(cx: number, cy: number, cz: number, sx: number, sy: number, sz: number) {
+    const m = this.mat('beam', () => lambert(null, 0x3a2616));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m);
+    b.position.set(cx, cy, cz);
+    this.group.add(b);
+    return b;
+  }
+
+  // rodapé baixo em volta da sala
+  skirting(x0: number, x1: number, z0: number, z1: number, gap = 0) {
+    const m = this.mat('skirt', () => lambert(null, 0x2a2838));
+    const mk = (w: number, d: number, x: number, z: number) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), m);
+      b.position.set(x, 0.1, z);
+      this.group.add(b);
+    };
+    mk(0.1, z1 - z0, x0 + 0.05, (z0 + z1) / 2);
+    mk(0.1, z1 - z0, x1 - 0.05, (z0 + z1) / 2);
+    // paredes da frente e do fundo (com vão pra porta/entrada)
+    const half = gap > 0 ? gap : 0;
+    for (const z of [z0 + 0.05, z1 - 0.05]) {
+      if (half === 0) mk(x1 - x0, 0.1, (x0 + x1) / 2, z);
+      else {
+        const wl = -half - x0;
+        const wr = x1 - half;
+        mk(wl, 0.1, x0 + wl / 2, z);
+        mk(wr, 0.1, half + wr / 2, z);
+      }
+    }
+  }
+
+  moss(x: number, y: number, z: number, nx: number, nz: number, size = 1.4) {
+    return this.decal(size, size, 'moss', () => stainTexture('moss'), x + nx * 0.015, y, z + nz * 0.015, 0, Math.atan2(nx, nz));
+  }
+  damp(x: number, y: number, z: number, nx: number, nz: number, size = 1.6) {
+    return this.decal(size, size, 'damp', () => stainTexture('damp'), x + nx * 0.015, y, z + nz * 0.015, 0, Math.atan2(nx, nz));
+  }
+  vine(x: number, y: number, z: number, nx: number, nz: number, w = 0.8, h = 1.6) {
+    return this.decal(w, h, 'vine', () => vineTexture(), x + nx * 0.02, y, z + nz * 0.02, 0, Math.atan2(nx, nz));
+  }
+  puddle(x: number, z: number, size = 1.4, rot = 0) {
+    return this.decal(size, size, 'puddle', () => puddleTexture(), x, 0.014, z, -Math.PI / 2, 0, rot);
+  }
+  web(x: number, y: number, z: number, nx: number, nz: number, flip = false, size = 0.9) {
+    return this.decal(size, size, 'web', () => cobwebTexture(), x + nx * 0.02, y, z + nz * 0.02, 0, Math.atan2(nx, nz), 0, flip);
+  }
+
+  light(x: number, y: number, z: number, color: number, intensity = 0) {
+    const e = new Emitter(new THREE.Vector3(x, y, z), color, intensity);
+    this.emitters.push(e);
+    return e;
   }
 
   dust(x0: number, x1: number, z0: number, z1: number, y0: number, y1: number, n = 70) {
@@ -89,7 +244,32 @@ export class Kit {
     );
   }
 
+  private buildEmbers() {
+    const n = this.torches.length * 5;
+    const pos = new Float32Array(n * 3);
+    this.emberPts = new THREE.Points(
+      new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3)),
+      new THREE.PointsMaterial({ color: 0xffb02e, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.9, fog: false, depthWrite: false }),
+    );
+    this.emberPts.frustumCulled = false;
+    this.group.add(this.emberPts);
+  }
+
   tick(dt: number, t: number) {
+    if (!this.emberPts && this.torches.length) this.buildEmbers();
+    if (this.emberPts) {
+      const arr = this.emberPts.geometry.attributes.position.array as Float32Array;
+      this.torches.forEach((tc, i) => {
+        for (let k = 0; k < 5; k++) {
+          const ph = (t * 0.55 + k * 0.2 + i * 0.13) % 1; // sobe e some
+          const o = (i * 5 + k) * 3;
+          arr[o] = tc.sprite.position.x + Math.sin(t * 2 + k * 2.1 + i) * 0.06 * ph;
+          arr[o + 1] = tc.sprite.position.y + 0.1 + ph * 0.7;
+          arr[o + 2] = tc.sprite.position.z + Math.cos(t * 1.7 + k * 1.3 + i) * 0.06 * ph;
+        }
+      });
+      this.emberPts.geometry.attributes.position.needsUpdate = true;
+    }
     this.torches.forEach((tc, i) => {
       tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
       tc.sprite.material.map = this.frames[Math.floor(t * 8 + i) % this.frames.length];
@@ -218,9 +398,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
     exitGlow.position.set(0, ARCH_TOP / 2, o.z0 - CORRIDOR);
     g.add(exitGlow);
   }
-  const corridorLight = new THREE.PointLight(0xffe2b0, 0, 0, 2);
-  corridorLight.position.set(0, y0 + 1.9, o.z0 - 1.4);
-  kit.group.add(corridorLight);
+  const corridorLight = kit.light(0, y0 + 1.9, o.z0 - 1.4, 0xffe2b0, 0);
 
   // gemas-lâmpada no aro
   const lampBack = new THREE.MeshBasicMaterial({ color: 0x120f18 });

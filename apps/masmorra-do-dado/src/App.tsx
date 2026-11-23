@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
 
-const STICK_R = 52;
+const STICK_R = 46;
 
 interface InstallEvent extends Event {
   prompt(): Promise<void>;
@@ -17,7 +17,9 @@ interface Caption {
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<SceneApi | null>(null);
-  const [stick, setStick] = useState<StickState>({ active: false, ox: 0, oy: 0, x: 0, y: 0 });
+  const [stickOn, setStickOn] = useState(false);
+  const stickRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
   const [caption, setCaption] = useState<Caption | null>(null);
   const [complete, setComplete] = useState<{ gem: boolean } | null>(null);
   const [hint, setHint] = useState(true);
@@ -29,7 +31,15 @@ export default function App() {
 
   useEffect(() => {
     const scene = createScene(canvasRef.current!, {
-      onStick: setStick,
+      // o analógico mexe direto no DOM (sem re-renderizar o React a cada toque)
+      onStick: (st: StickState) => {
+        setStickOn((on) => (on === st.active ? on : st.active));
+        if (stickRef.current) {
+          stickRef.current.style.left = `${st.ox - STICK_R}px`;
+          stickRef.current.style.top = `${st.oy - STICK_R}px`;
+        }
+        if (thumbRef.current) thumbRef.current.style.transform = `translate(${st.x * STICK_R}px, ${st.y * STICK_R}px)`;
+      },
       onCaption: (title, sub, color) => {
         setCaption({ id: performance.now(), title, sub, color });
         window.clearTimeout(captionTimer.current);
@@ -110,11 +120,9 @@ export default function App() {
         )}
       </div>
 
-      {stick.active && (
-        <div className="stick" style={{ left: stick.ox - STICK_R, top: stick.oy - STICK_R }}>
-          <div className="thumb" style={{ transform: `translate(${stick.x * STICK_R}px, ${stick.y * STICK_R}px)` }} />
-        </div>
-      )}
+      <div ref={stickRef} className="stick" style={{ display: stickOn ? 'block' : 'none' }}>
+        <div ref={thumbRef} className="thumb" />
+      </div>
 
       {caption && (
         <div key={caption.id} className="caption" style={{ '--accent': caption.color } as CSSProperties}>

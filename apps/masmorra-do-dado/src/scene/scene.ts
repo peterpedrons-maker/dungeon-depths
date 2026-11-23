@@ -13,6 +13,7 @@ import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
 import { buildRoom4 } from './rooms/room4';
 import type { Ctx, DieState, Rect, Room, RoomBuilder } from './types';
+import type { Emitter } from './kit';
 
 const FOG = '#0b0912';
 const BUILDERS: RoomBuilder[] = [buildRoom1, buildRoom2, buildRoom3, buildRoom4];
@@ -63,6 +64,7 @@ export interface SceneApi {
 export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}): SceneApi {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
   renderer.autoClear = false;
+  renderer.info.autoReset = false; // contamos as chamadas do quadro inteiro (cena + HUD + pós)
   renderer.setPixelRatio(1);
   renderer.setClearColor(FOG, 1);
 
@@ -86,7 +88,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const PALETTE = [
     '#000000', '#0b0912', '#1c1b26', '#2c2a3e', '#403e56', '#55536e', '#6e6c8a', '#8e8ca8', '#b8b4cc', '#e4e0f0',
     '#1d1816', '#3a2a28', '#5a4540', '#7a5e54', '#9c7d6c', '#c2a48e',
-    '#2a180e', '#3a2214', '#4a2c1c', '#5a3a20', '#6a4028', '#7a5030', '#8c5a38', '#a06a3c', '#b07a4c', '#c88a4c', '#d8a070', '#e8b878', '#f0c890', '#ffe0b0',
+    '#2a180e', '#3a2214', '#4a2c1c', '#7a3420', '#8c4228', '#a05030', '#5a3a20', '#6a4028', '#7a5030', '#8c5a38', '#a06a3c', '#b07a4c', '#c88a4c', '#d8a070', '#e8b878', '#f0c890', '#ffe0b0',
     '#5a1a10', '#a8321a', '#ff5a1f', '#ffb02e', '#fff3a8',
     '#123a4a', '#1f7a90', '#2ab8d6', '#6ff0ff', '#d8ffff',
     '#6a4a1a', '#a87a28', '#d4ac4e', '#f0d880',
@@ -102,11 +104,46 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
   });
 
+  // Tabela 3D (cor → cor mais próxima da paleta): troca o laço de ~60 comparações por pixel
+  // por uma única leitura de textura.
+  const LUT = 48;
+  const lutData = new Uint8Array(LUT * LUT * LUT * 4);
+  for (let bz = 0; bz < LUT; bz++) {
+    for (let gy = 0; gy < LUT; gy++) {
+      for (let rx = 0; rx < LUT; rx++) {
+        const cr = (rx + 0.5) / LUT;
+        const cg = (gy + 0.5) / LUT;
+        const cb = (bz + 0.5) / LUT;
+        let best = 0;
+        let bd = 1e9;
+        for (let i = 0; i < palVec.length; i++) {
+          const p = palVec[i];
+          const d = (cr - p.x) ** 2 * 0.6 + (cg - p.y) ** 2 + (cb - p.z) ** 2 * 0.45;
+          if (d < bd) {
+            bd = d;
+            best = i;
+          }
+        }
+        const o = ((bz * LUT + gy) * LUT + rx) * 4;
+        lutData[o] = Math.round(palVec[best].x * 255);
+        lutData[o + 1] = Math.round(palVec[best].y * 255);
+        lutData[o + 2] = Math.round(palVec[best].z * 255);
+        lutData[o + 3] = 255;
+      }
+    }
+  }
+  const lutTex = new THREE.Data3DTexture(lutData, LUT, LUT, LUT);
+  lutTex.format = THREE.RGBAFormat;
+  lutTex.type = THREE.UnsignedByteType;
+  lutTex.minFilter = THREE.NearestFilter;
+  lutTex.magFilter = THREE.NearestFilter;
+  lutTex.unpackAlignment = 1;
+  lutTex.needsUpdate = true;
+
   // ── pós-processo: contorno + paleta + dithering ─────────────────────────
   const postScene = new THREE.Scene();
   const postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const postMat = new THREE.ShaderMaterial({
-    defines: { PAL_N: PALETTE.length },
     uniforms: {
       tRoom: { value: rt.texture },
       tDepth: { value: rt.depthTexture },
@@ -114,13 +151,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uRes: { value: new THREE.Vector2(64, 64) },
       uNear: { value: CAM_NEAR },
       uFar: { value: CAM_FAR },
-      uPal: { value: palVec },
+      tLut: { value: lutTex },
+      uBloom: { value: 1 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
       uniform sampler2D tRoom; uniform sampler2D tDepth; uniform sampler2D tHud;
       uniform vec2 uRes; uniform float uNear; uniform float uFar;
-      uniform vec3 uPal[PAL_N];
+      uniform highp sampler3D tLut;
+      uniform float uBloom;
       varying vec2 vUv;
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
@@ -140,20 +179,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         float lx = invZ(vUv - vec2(o.x, 0.0)) + invZ(vUv + vec2(o.x, 0.0)) - 2.0 * ic;
         float ly = invZ(vUv - vec2(0.0, o.y)) + invZ(vUv + vec2(0.0, o.y)) - 2.0 * ic;
         float edge = step(0.1 * ic + 0.025, max(lx, ly));
+        // brilho (bloom barato): luz forte "vaza" pros pixels vizinhos
+        if (hud.a < 0.5 && uBloom > 0.5) {
+          vec3 glow = vec3(0.0);
+          for (int k = 0; k < 8; k++) {
+            float a = float(k) * 0.7853982;
+            vec3 sm = texture2D(tRoom, vUv + vec2(cos(a), sin(a)) * o * 2.5).rgb;
+            glow += max(sm - 0.7, 0.0);
+          }
+          c += glow * 0.16;
+        }
         c = clamp(c, 0.0, 1.0);
         c = pow(c, vec3(1.0 / 2.2));
         float l = dot(c, vec3(0.299, 0.587, 0.114));
         c = mix(vec3(l), c, 1.0);
         c *= mix(1.0, 0.32, edge);
         c += (bayer4(floor(vUv * uRes)) - 0.47) * 0.035;
-        vec3 best = uPal[0];
-        float bd = 1e9;
-        for (int i = 0; i < PAL_N; i++) {
-          vec3 d = c - uPal[i];
-          float dist = dot(d * d, vec3(0.6, 1.0, 0.45));
-          if (dist < bd) { bd = dist; best = uPal[i]; }
-        }
-        gl_FragColor = vec4(best, 1.0);
+        gl_FragColor = vec4(texture(tLut, clamp(c, 0.0, 1.0)).rgb, 1.0);
       }`,
     depthTest: false,
     depthWrite: false,
@@ -450,10 +492,88 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     return z > offs[0].z + rooms[0].entranceZ ? 0 : rooms.length - 1;
   };
-  const nearSurfaces = () => {
-    const out: THREE.Object3D[] = [];
-    for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) out.push(...rooms[i].surfaces);
-    return out;
+  // Só as salas vizinhas são desenhadas/atualizadas. As LUZES continuam acesas (se o número de
+  // luzes mudasse, o three recompilaria o shader e daria um tranco); só as malhas vão pra
+  // uma camada que a câmera não enxerga.
+  let surfCache: THREE.Object3D[] = [];
+  const activeRooms = new Set<number>();
+  const applyActive = () => {
+    activeRooms.clear();
+    surfCache = [];
+    for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) {
+      activeRooms.add(i);
+      surfCache.push(...rooms[i].surfaces);
+    }
+    rooms.forEach((r, i) => {
+      const layer = activeRooms.has(i) ? 0 : 1;
+      r.group.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh || (o as THREE.Sprite).isSprite || (o as THREE.Points).isPoints) o.layers.set(layer);
+      });
+    });
+  };
+  const nearSurfaces = () => surfCache;
+
+  // ── pool de luzes: poucas luzes reais, emprestadas aos emissores mais relevantes ──
+  const POOL = 6;
+  interface Slot {
+    light: THREE.PointLight;
+    em: Emitter | null;
+    room: number;
+    w: number;
+    leaving: boolean;
+  }
+  const slots: Slot[] = Array.from({ length: POOL }, () => {
+    const light = new THREE.PointLight(0xffffff, 0, 0, 2);
+    scene.add(light);
+    return { light, em: null, room: 0, w: 0, leaving: false };
+  });
+  let lightTick = 0;
+  const wp = new THREE.Vector3();
+  const updateLights = (dt: number) => {
+    lightTick -= dt;
+    if (lightTick <= 0) {
+      lightTick = 0.1;
+      const cand: { e: Emitter; room: number; score: number }[] = [];
+      activeRooms.forEach((i) => {
+        for (const e of rooms[i].emitters) {
+          if (e.intensity < 0.5) continue;
+          wp.copy(e.pos).add(offs[i]);
+          cand.push({ e, room: i, score: e.intensity / (1 + wp.distanceToSquared(camera.position)) });
+        }
+      });
+      cand.sort((p, q) => q.score - p.score);
+      const top = cand.slice(0, POOL);
+      slots.forEach((sl) => {
+        if (sl.em && !top.some((c) => c.e === sl.em)) sl.leaving = true; // saiu do top: apaga aos poucos
+      });
+      for (const c of top) {
+        if (slots.some((sl) => sl.em === c.e)) continue;
+        const free = slots.find((sl) => !sl.em);
+        if (free) {
+          free.em = c.e;
+          free.room = c.room;
+          free.w = 0;
+          free.leaving = false;
+        }
+      }
+    }
+    for (const sl of slots) {
+      if (!sl.em) {
+        sl.light.intensity = 0;
+        continue;
+      }
+      sl.w += (sl.leaving ? -1 : 1) * dt * 7;
+      if (sl.leaving && sl.w <= 0) {
+        sl.em = null;
+        sl.w = 0;
+        sl.light.intensity = 0;
+        continue;
+      }
+      sl.w = Math.min(1, sl.w);
+      sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
+      sl.light.color.setHex(sl.em.color);
+      sl.light.intensity = sl.em.intensity * sl.w;
+    }
   };
 
   const resetDie = () => {
@@ -477,6 +597,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     curRoom = i;
     dieRoom = i;
     resetDie();
+    applyActive();
   };
 
   // luz, névoa e clima acompanham a sala onde o jogador está (suave, sem corte)
@@ -697,6 +818,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // ── tamanho / proporção ─────────────────────────────────────────────────
   const soapBase = new THREE.Vector3(-0.4, -0.15, -1);
+  let fovBase = 66;
   let handX = 0.44;
   let dieBaseY = -0.2;
   let dieScaleBase = 0.17;
@@ -716,7 +838,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     postMat.uniforms.uRes.value.set(w, h);
     const aspect = w / h;
     const vFromH = (hDeg: number) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / aspect) * 180) / Math.PI;
-    camera.fov = aspect >= 1 ? Math.min(66, vFromH(95)) : Math.min(100, Math.max(66, vFromH(82)));
+    fovBase = aspect >= 1 ? Math.min(66, vFromH(95)) : Math.min(100, Math.max(66, vFromH(82)));
+    camera.fov = fovBase;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
     dieCam.aspect = aspect;
@@ -776,7 +899,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let stickOy = 0;
   let stickX = 0;
   let stickY = 0;
-  const STICK_R = 52;
+  const STICK_R = 46;
   const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
 
   let lockFailed = !canvas.requestPointerLock;
@@ -862,8 +985,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const dx = e.clientX - downX;
       const dy = e.clientY - downY;
       if (Math.hypot(dx, dy) > 8) moved = true;
-      yaw -= (e.clientX - lastX) * 0.006;
-      pitch = clamp(pitch - (e.clientY - lastY) * 0.006, -0.7, 0.7);
+      yaw -= (e.clientX - lastX) * 0.0075;
+      pitch = clamp(pitch - (e.clientY - lastY) * 0.0075, -0.7, 0.7);
       lastX = e.clientX;
       lastY = e.clientY;
     }
@@ -957,7 +1080,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return out;
   };
 
-  const MAX_SPEED = 2.7;
+  const MAX_SPEED = 4.2; // m/s (antes 2,7)
+  const SPRINT = 1.35; // Shift (PC)
   const move = (dt: number) => {
     if (busy()) {
       moveVel.set(0, 0, 0);
@@ -975,10 +1099,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       fwd /= len;
       str /= len;
     }
-    const tx = (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * MAX_SPEED;
-    const tz = (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * MAX_SPEED;
+    const run = keys.has('shift') ? SPRINT : 1;
+    const tx = (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * MAX_SPEED * run;
+    const tz = (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * MAX_SPEED * run;
     // aceleração e frenagem suaves (em vez de ligar/desligar de uma vez)
-    const k = 1 - Math.exp(-dt * (len > 0.02 ? 11 : 14));
+    const k = 1 - Math.exp(-dt * (len > 0.02 ? 15 : 20)); // arranca e freia rápido
     moveVel.x += (tx - moveVel.x) * k;
     moveVel.z += (tz - moveVel.z) * k;
     const sp = Math.hypot(moveVel.x, moveVel.z);
@@ -1068,6 +1193,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let bob = 0;
   let bobAmp = 0;
   let emittedDie: DieState | null = null;
+  let aimTick = 0;
+  let aimCache: ReturnType<typeof aimPoint> = null;
   const loop = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
@@ -1078,6 +1205,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const ri = roomOfZ(pos.z);
     if (ri !== curRoom) {
       curRoom = ri;
+      applyActive();
       // saiu da sala do dado: o dado volta pra mão (a porta atrás fecha)
       if (dieState !== 'hand' && dieRoom !== curRoom) resetDie();
       if (!announced.has(ri)) {
@@ -1088,8 +1216,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     blendAtmosphere(dt);
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
+    // sensação de velocidade: o campo de visão abre um pouquinho correndo
+    const fovTarget = fovBase + 4 * Math.min(1.3, speedFrac);
+    if (Math.abs(camera.fov - fovTarget) > 0.01) {
+      camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 8);
+      camera.updateProjectionMatrix();
+    }
     bobAmp += (speedFrac - bobAmp) * Math.min(1, dt * 8);
-    bob += dt * (6 + 4 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
+    bob += dt * (7 + 5 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
     const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
     pos.y = feetY + EYE;
     camera.position.set(pos.x, pos.y + bobY, pos.z);
@@ -1152,7 +1286,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
 
     // ── salas ──
-    rooms.forEach((r) => r.update(dt, t));
+    activeRooms.forEach((i) => rooms[i].update(dt, t));
+    updateLights(dt);
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
       complete = true;
@@ -1165,8 +1300,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (brush.active && tool === 'chalk') paintAt(brush.ndc, brush.erase);
 
     // fantasma de onde o dado seria posicionado
-    const aim = dieState === 'hand' && tool === 'die' && !busy() ? aimPoint() : null;
-    ghost.visible = !!aim;
+    aimTick -= dt;
+    if (aimTick <= 0) {
+      aimTick = 0.05;
+      aimCache = dieState === 'hand' && tool === 'die' && !busy() ? aimPoint() : null;
+    }
+    const aim = dieState === 'hand' && tool === 'die' ? aimCache : null;
+    // some quando o ponto está colado na câmera (o fantasma tamparia a tela toda)
+    ghost.visible = !!aim && aim.p.distanceTo(camera.position) > 1.1;
     if (aim) {
       ghost.position.copy(aim.p).addScaledVector(aim.n, R + 0.02);
       ghost.rotation.y = t * 0.8;
@@ -1215,6 +1356,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sgn * SOAP_ROT.z + Math.sin(t * 1.1) * 0.03,
     );
 
+    renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
     renderer.clear();
@@ -1270,6 +1412,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         chalk.beginStroke();
       },
       dbg,
+      exp: (k: string) => {
+        if (k === 'pal1') {
+        }
+        if (k === 'nobloom') postMat.uniforms.uBloom.value = 0;
+        if (k === 'nolights') scene.traverse((o) => { if ((o as THREE.Light).isLight && !(o as THREE.AmbientLight).isAmbientLight) o.visible = false; });
+        if (k === 'half') { renderer.setSize(200, 90, false); rt.setSize(200, 90); rtHud.setSize(200, 90); postMat.uniforms.uRes.value.set(200, 90); }
+      },
+      perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)
       drop: (x: number, y: number, z: number) => {

@@ -1,4 +1,5 @@
 import type * as THREE from 'three';
+import type { Emitter } from './kit';
 
 export type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
 
@@ -45,6 +46,7 @@ export interface Room {
   hint?: string;
   group: THREE.Group;
   surfaces: THREE.Object3D[]; // onde dá pra riscar com o giz
+  emitters: Emitter[]; // luzes da sala (o motor empresta luzes reais às mais relevantes)
   doorZ: number; // z (local) da parede do fundo, onde fica a porta
   entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)

@@ -93,9 +93,7 @@ export function buildRoom4(ctx: Ctx): Room {
   flame.position.set(BX, LEVEL + 1.45, BZ);
   flame.visible = false;
   kit.group.add(flame);
-  const flameLight = new THREE.PointLight(0xff8a2a, 0, 0, 2);
-  flameLight.position.set(BX + 0.3, LEVEL + 1.9, BZ + 0.4);
-  kit.group.add(flameLight);
+  const flameLight = kit.light(BX + 0.3, LEVEL + 1.9, BZ + 0.4, 0xff8a2a, 0);
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
     const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), coalMat);
@@ -103,6 +101,21 @@ export function buildRoom4(ctx: Ctx): Room {
     kit.group.add(coal);
   }
 
+  // decoração
+  for (const z of [1.5, -1.5, -4.5, -7.5, -10.5]) kit.beam(0, H - 0.2, z, W, 0.35, 0.35);
+  kit.banner(X0 + 0.02, 3.4, 0.2, 1, 0, '#2a3a6a', '#aabcdc', 2.6);
+  kit.banner(X0 + 0.02, 3.4, -3.4, 1, 0, '#2a3a6a', '#aabcdc', 2.6);
+  kit.banner(X1 - 0.02, 3.4, 1.4, -1, 0, '#2a3a6a', '#aabcdc', 2.6);
+  kit.puddle(-1.4, 0.8, 1.6, 0.5);
+  kit.puddle(1.2, -1.6, 1.1, 1.4);
+  kit.crate(-4.2, -6.4, 0.8, 0.2, LEVEL);
+  kit.crate(-4.25, -6.35, 0.55, 0.9, LEVEL + 0.8);
+  kit.barrel(-3.3, -6.35, LEVEL);
+  kit.barrel(4.3, -9.2, LEVEL);
+  kit.barrel(-4.3, 2.2);
+  kit.crate(4.2, 2.3, 0.75, 0.3);
+  kit.web(X0, H - 0.45, Z1 - 0.45, 1, 0);
+  kit.web(X1, H - 0.45, Z1 - 0.45, -1, 0, true);
   const tc = 0xd8e0ff;
   kit.torch(X0 + 0.1, 2.0, 1.0, 1, 0, 0, tc, 40);
   kit.torch(X1 - 0.1, 2.0, 1.8, -1, 0, 1.7, tc, 40);
@@ -139,17 +152,18 @@ export function buildRoom4(ctx: Ctx): Room {
     subtitle: 'A porta fica no alto. A rampa sobe — a beirada, não.',
     group: kit.group,
     surfaces: kit.surfaces,
+    emitters: kit.emitters,
     doorZ: Z0,
     entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 2.2),
     startYaw: 0,
     fog: { color: '#070a14', near: 5, far: 26 },
     ambient: { color: 0x8aa0e0, intensity: 1.7 },
-    boxes,
+    boxes: [...boxes, ...kit.boxes],
     rects() {
       const r: ReturnType<Room['rects']> = [[X0 - 1, Z0 - 1, X1 + 1, STAGE_Z, LEVEL]];
       for (const [x, z] of PILLARS) r.push([x - 0.55, z - 0.55, x + 0.55, z + 0.55, H]);
-      r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5, LEVEL + 1]);
+      r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5, LEVEL + 1], ...kit.rects);
       r.push([X0 - 2, Z0, X0, Z1], [X1, Z0, X1 + 2, Z1]);
       r.push(...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));

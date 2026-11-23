@@ -3,7 +3,7 @@
 // com o Fogo e só então pesar a placa com o Peso — antes que a primeira morra.
 
 import * as THREE from 'three';
-import { floorTexture, plateTexture } from '../textures';
+import { floorTexture, mosaicTexture, plateTexture } from '../textures';
 import { buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import type { Box, Ctx, Room } from '../types';
 
@@ -70,9 +70,7 @@ export function buildRoom3(ctx: Ctx): Room {
     flame.position.set(x, 1.45, z);
     flame.visible = false;
     kit.group.add(flame);
-    const light = new THREE.PointLight(0xff8a2a, 0, 0, 2);
-    light.position.set(x * 0.9, 1.9, z * 0.9);
-    kit.group.add(light);
+    const light = kit.light(x * 0.9, 1.9, z * 0.9, 0xff8a2a, 0);
     for (let i = 0; i < 5; i++) {
       const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11), coalMat);
       coal.position.set(x + Math.cos(i * 1.3) * 0.22, 1.12 + (i % 2) * 0.05, z + Math.sin(i * 1.3) * 0.22);
@@ -82,6 +80,17 @@ export function buildRoom3(ctx: Ctx): Room {
   });
 
   // tochas na parede curva
+  // decoração: mosaico no chão, vigas em cruz, estandartes, barris
+  kit.decal(8.6, 8.6, 'mosaic', () => mosaicTexture(), 0, 0.011, 0, -Math.PI / 2, 0, 0);
+  kit.beam(0, H - 0.15, 0, 12.2, 0.3, 0.3);
+  kit.beam(0, H - 0.15, 0, 0.3, 0.3, 12.2);
+  for (const deg of [0, 180, 235, 305]) {
+    const a = (deg * Math.PI) / 180;
+    const r = R - 0.04;
+    kit.banner(r * Math.cos(a), 2.1, r * Math.sin(a), -Math.cos(a), -Math.sin(a), '#7a2a1a', '#e8b878', 2.0);
+  }
+  kit.barrel(4.6, 3.5);
+  kit.barrel(4.0, 4.2);
   const tc = 0xffb070;
   [45, 135, 200, 340].forEach((deg, i) => {
     const a = (deg * Math.PI) / 180;
@@ -115,16 +124,18 @@ export function buildRoom3(ctx: Ctx): Room {
     subtitle: 'Acenda as três chamas antes que se apaguem — e pese a placa central.',
     group: kit.group,
     surfaces: kit.surfaces,
+    emitters: kit.emitters,
     doorZ: Z0,
     entranceZ: -Z0,
     start: new THREE.Vector3(0, 0, 4.6),
     startYaw: 0,
     fog: { color: '#120706', near: 4, far: 20 },
     ambient: { color: 0xb08878, intensity: 1.7 },
-    boxes,
+    boxes: [...boxes, ...kit.boxes],
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       for (const [x, z] of BRAZIERS) r.push([x - 0.5, z - 0.5, x + 0.5, z + 0.5]);
+      r.push(...kit.rects);
       r.push(...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));
       return r;
