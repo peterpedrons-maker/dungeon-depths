@@ -1,4 +1,5 @@
 import type * as THREE from 'three';
+import type { Line } from '../story/dialogue';
 import type { Emitter } from './kit';
 
 // tipo de piso sob os pés (muda o som dos passos)
@@ -39,6 +40,8 @@ export interface Ctx {
   sfx(name: 'ignite' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout'): void;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
+  say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa
+  seen(id: string): void; // o jogador viu este símbolo (vai pro diário como "avistado")
   die: {
     readonly state: DieState;
     readonly face: number; // face do dado que está lá fora

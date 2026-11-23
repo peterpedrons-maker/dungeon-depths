@@ -9,6 +9,9 @@ import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture, soapWr
 import { Chalk } from './chalk';
 import { Sfx, type AudioMode } from './audio';
 import { CORRIDOR, dbg } from './kit';
+import { diary } from '../story/diary';
+import { dialogue } from '../story/dialogue';
+import { ui } from '../story/ui';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
@@ -52,6 +55,7 @@ export interface SceneOptions {
 }
 
 export interface SceneApi {
+  playUi(name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew', v?: number): void; // sons da interface (conversa e diário)
   action(): void; // arremessa ou recolhe
   place(): void; // posiciona o dado com cuidado onde a mira aponta
   rotate(): void; // próxima face
@@ -480,6 +484,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         },
       },
       feetY: () => feetY - off.y,
+      say: (lines, o) => dialogue.say(lines, o),
+      seen: (id) => diary.markSeen(id, rooms[idx]?.name),
       die: {
         get state() {
           return dieRoom === idx ? dieState : 'hand';
@@ -766,7 +772,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.play('recall');
   };
 
-  const busy = () => complete;
+  const busy = () => complete || ui.blocked(); // fim de jogo, conversa ou diário aberto: o jogador fica parado
 
   const throwDie = () => {
     if (dieState !== 'hand' || busy()) return;
@@ -929,6 +935,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const START_KEYS = new Set<string>();
   const keys = START_KEYS;
   const onKeyDown = (e: KeyboardEvent) => {
+    if (ui.blocked()) return;
     const k = e.key.toLowerCase();
     keys.add(k);
     if (e.repeat) return;
@@ -1259,6 +1266,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     spawnIn(0);
     blendAtmosphere(0, true);
     announced.add(0);
+    diary.visitRoom(rooms[0].name);
     caption(rooms[0].name, rooms[0].subtitle, '#ffd36b');
   };
 
@@ -1269,6 +1277,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   spawnIn(0);
   blendAtmosphere(0, true);
   announced.add(0);
+  diary.visitRoom(rooms[0].name);
 
   // ── loop ────────────────────────────────────────────────────────────────
   let raf = 0;
@@ -1286,11 +1295,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     last = now;
     t += dt;
 
+    if (ui.diaryOpen() && locked()) document.exitPointerLock(); // o diário precisa do mouse livre
     const moving = move(dt);
     vertical(dt);
     const ri = roomOfZ(pos.z);
     if (ri !== curRoom) {
       curRoom = ri;
+      diary.visitRoom(rooms[ri].name);
       applyActive();
       // saiu da sala do dado: o dado volta pra mão (a porta atrás fecha)
       if (dieState !== 'hand' && dieRoom !== curRoom) resetDie();
@@ -1498,6 +1509,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone';
       },
       sfx: (n: string, v = 1) => sfx.play(n as never, v),
+      say: (lines: Parameters<typeof dialogue.say>[0], block = true) => dialogue.say(lines, { block }),
+      seen: (id: string) => diary.markSeen(id, rooms[curRoom]?.name),
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
@@ -1569,6 +1582,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   }
 
   return {
+    playUi: (name, v = 1) => sfx.play(name, v),
     action,
     place,
     rotate: () => cycleFace(1),

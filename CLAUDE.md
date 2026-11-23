@@ -47,6 +47,13 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Os passos têm UM som fixo por tipo
   de piso (pedra, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`), sem variação aleatória. Botão
   ♫/♪/∅ no canto (tudo / só efeitos / mudo, lembrado no aparelho); o áudio só liga após o 1º toque/tecla.
+  **História e língua** (ver `apps/masmorra-do-dado/DESIGN.md`, `LINGUA.md`): o jogador está condenado por uma "sentença"
+  escrita numa língua inventada (os Contáveis; 174 palavras em `tools/lexicon.mjs` → `src/story/lexicon.json`).
+  O mundo fala em glifos; pensamentos do jogador e diários de outros condenados vêm em português. Já existem:
+  **janela de conversa** estilo RPG no rodapé (`src/ui/DialogueBox.tsx`, `src/story/dialogue.ts`; salas usam `ctx.say(...)`)
+  e **diário** (tecla J ou botão do canto; `src/ui/Diary.tsx`, `src/story/diary.ts`): símbolos "avistados" entram sozinhos
+  (`ctx.seen(id)`), o jogador anota o que acha que significam (o diário nunca corrige), mais faces, textos, mapa e notas;
+  salvo no aparelho. Conversa e diário param o jogador. `?demo=1` abre uma pré-visualização com dados de exemplo.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 

@@ -24,7 +24,11 @@ export type SfxName =
   | 'burnout'
   | 'land'
   | 'room'
-  | 'fanfare';
+  | 'fanfare'
+  | 'uiblip'
+  | 'uiopen'
+  | 'uiclose'
+  | 'uinew';
 
 // 0 = tudo ligado, 1 = só efeitos, 2 = mudo
 export type AudioMode = 0 | 1 | 2;
@@ -348,6 +352,21 @@ export class Sfx {
         break;
       case 'locked':
         this.sample('locked', 0.7, rand(0.75, 0.85));
+        break;
+      // interface (conversa e diário): sons suaves, sempre com os instrumentos reais
+      case 'uiblip':
+        this.fxNote('celesta', 79 + (Math.round(v) % 5) * 2, 0.07, 0, 0.15, 0);
+        break;
+      case 'uiopen':
+        this.sample('swap1', 0.45, rand(0.85, 0.95));
+        this.fxNote('orchestral_harp', 67, 0.25, 0.05, 0.5, 0.2);
+        break;
+      case 'uiclose':
+        this.sample('swap2', 0.4, rand(0.8, 0.9));
+        break;
+      case 'uinew':
+        this.fxNote('glockenspiel', 88, 0.3, 0, 0.6, 0.25);
+        this.fxNote('glockenspiel', 95, 0.26, 0.11, 0.6, 0.25);
         break;
       case 'swap':
         this.sample(pick(['swap1', 'swap2']), 0.7, rand(0.95, 1.05));

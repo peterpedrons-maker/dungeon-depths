@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { AudioMode } from './scene/audio';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
+import { diary, diaryStore } from './story/diary';
+import { dialogue, dialogueStore } from './story/dialogue';
+import { useStore } from './story/store';
+import { ui, uiStore } from './story/ui';
+import { BookIcon, Diary } from './ui/Diary';
+import { DialogueBox } from './ui/DialogueBox';
+import { WordGlyph } from './ui/Glyph';
 
 const STICK_R = 46;
 
@@ -41,6 +48,58 @@ export default function App() {
   });
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null);
   const captionTimer = useRef(0);
+  const dry = useStore(diaryStore);
+  const talking = useStore(dialogueStore) !== null;
+  const diaryOpen = useStore(uiStore).diaryOpen;
+  const [toast, setToast] = useState<{ id: string; n: number } | null>(null);
+  const toastTimer = useRef(0);
+
+  const sound = useCallback((name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew', v?: number) => sceneRef.current?.playUi(name, v), []);
+  const toggleDiary = useCallback(() => {
+    if (dialogue.blocking) return;
+    const open = !ui.diaryOpen();
+    sceneRef.current?.playUi(open ? 'uiopen' : 'uiclose');
+    ui.setDiary(open);
+  }, []);
+  const closeDiary = useCallback(() => ui.setDiary(false), []);
+
+  // J abre o diário (Esc e J fecham, dentro do próprio diário)
+  useEffect(() => {
+    const kd = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'j' || e.repeat || ui.diaryOpen()) return;
+      if ((e.target as HTMLElement | null)?.tagName === 'TEXTAREA') return;
+      toggleDiary();
+    };
+    window.addEventListener('keydown', kd);
+    return () => window.removeEventListener('keydown', kd);
+  }, [toggleDiary]);
+
+  // símbolo novo: aviso rápido no topo
+  useEffect(() => {
+    if (!dry.last) return;
+    setToast(dry.last);
+    sound('uinew');
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3200);
+  }, [dry.last, sound]);
+
+  // ?demo=1: pré-visualização do diário e da conversa (não grava nada no aparelho)
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).has('demo')) return;
+    diary.demo();
+    // Falas de EXEMPLO: a história de verdade será escrita depois.
+    const t = window.setTimeout(
+      () =>
+        dialogue.say([
+          { who: 'boato', glyphs: ['eu', 'ter', 'medo'] },
+          { who: 'thought', text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
+          { who: 'escrivao', glyphs: ['voce', 'poder', 'ajudar', 'eu', 'perg'] },
+          { who: 'thought', text: 'Parece uma pergunta. Vou anotar no diário o que eu acho que significa.' },
+        ]),
+      1400,
+    );
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const scene = createScene(canvasRef.current!, {
@@ -129,6 +188,10 @@ export default function App() {
       <div className="crosshair" />
 
       <div className="corner">
+        <button className="diary-btn" onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
+          <BookIcon />
+          {dry.unread > 0 && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
+        </button>
         <button
           onClick={() => setAudio(((audio + 1) % 3) as AudioMode)}
           aria-label="Som"
@@ -165,10 +228,19 @@ export default function App() {
         </div>
       )}
 
+      {toast && (
+        <div key={toast.n} className="toast">
+          <WordGlyph id={toast.id} size={30} />
+          <span>
+            <b>AVISTADO</b> · anotado no diário (J)
+          </span>
+        </div>
+      )}
+
       {hint && (
         <div className="hint">
           <span className="hint-pc">
-            clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
+            clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · J: diário · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
           </span>
           <span className="hint-touch">à direita: arremessar, posicionar, girar · esquerda: andar · GIZ no canto (com o giz, a borda direita gira a câmera)</span>
         </div>
@@ -271,12 +343,15 @@ export default function App() {
         </div>
       )}
 
-      {!coarse && look === 'free' && !complete && !credits && (
+      {!coarse && look === 'free' && !complete && !credits && !diaryOpen && !talking && (
         <div className="clicktoplay" aria-hidden="true">
           <b>Clique para jogar</b>
           <span>WASD anda · Shift corre · mouse olha · Esc solta o mouse</span>
         </div>
       )}
+
+      <DialogueBox onSound={sound} />
+      {diaryOpen && <Diary onClose={closeDiary} onSound={sound} />}
 
       {credits && (
         <div className="credits" onPointerDown={() => setCredits(false)}>
