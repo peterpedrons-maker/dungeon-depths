@@ -56,14 +56,10 @@ def p(*a):
 K = p('x', 'RPGsounds_Kenney', 'OGG')
 C1 = p('x', '100-CC0-SFX_0')
 C2 = p('x', 'sfx_100_v2')
-FS = p('x', 'Fantozzi-footsteps', 'Fantozzi-footsteps', 'ogg')
+MS = p('metal_steps.ogg')  # passos de bota em concreto (OpenGameArt, CC0)
 
 SFX = {
-    # passos em pedra (Fantozzi) e pouso
-    'step1': (FS + '/Fantozzi-StoneL1.ogg', {}),
-    'step2': (FS + '/Fantozzi-StoneR1.ogg', {}),
-    'step3': (FS + '/Fantozzi-StoneL2.ogg', {}),
-    'step4': (FS + '/Fantozzi-StoneR2.ogg', {}),
+    # passos: stepN.mp3 são recortados de metal_steps.ogg por tools/cut_steps.py
     'land': (K + '/dropLeather.ogg', {}),
     # dado
     'throw1': (C2 + '/sfx100v2_air_03.ogg', {}),

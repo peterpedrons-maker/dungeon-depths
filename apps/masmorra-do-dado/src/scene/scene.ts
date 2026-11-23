@@ -1143,6 +1143,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
 
   const MAX_SPEED = 4.2; // m/s (antes 2,7)
+  const STRIDE = 1.7; // metros por passo
   const SPRINT = 1.35; // Shift (PC)
   const move = (dt: number) => {
     if (busy()) {
@@ -1289,7 +1290,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       camera.updateProjectionMatrix();
     }
     bobAmp += (speedFrac - bobAmp) * Math.min(1, dt * 8);
-    bob += dt * (7 + 5 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
+    // 1 passo (meio ciclo do balanço) a cada STRIDE metros: sincroniza balanço e som
+    const walkSpeed = Math.hypot(moveVel.x, moveVel.z);
+    bob += dt * Math.PI * (walkSpeed / STRIDE);
     const stepIdx = Math.floor(bob / Math.PI);
     if (stepIdx !== lastStepIdx) {
       lastStepIdx = stepIdx;
@@ -1471,7 +1474,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sfxStep: (s: number) => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
-      audio: () => ({ state: sfx.state, played: sfx.played, loaded: sfx.ready }),
+      audio: () => ({ state: sfx.state, played: sfx.played, steps: sfx.steps, loaded: sfx.ready }),
       state: () => ({
         room: curRoom,
         dieState,

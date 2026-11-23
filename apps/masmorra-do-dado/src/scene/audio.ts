@@ -33,7 +33,7 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 const SFX_FILES = [
-  'step1', 'step2', 'step3', 'step4', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
+  'step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
   'bounce1', 'bounce2', 'bounce3', 'bounce4', 'roll', 'locked', 'swap1', 'swap2', 'sweep', 'chalk1', 'chalk2',
   'erase', 'ignite', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door1', 'door2', 'doorclose1',
   'doorclose2', 'error', 'burnout', 'fire',
@@ -91,6 +91,7 @@ export class Sfx {
   private nextFlute = 0;
   private nextTimpani = 0;
   played = 0; // só pra testes
+  steps = 0;
   private loaded = 0;
   get state() {
     return this.ac ? this.ac.state : 'sem-contexto';
@@ -403,9 +404,13 @@ export class Sfx {
   // passo (speed 0..1)
   step(speed: number) {
     if (!this.ac || this.mode === 2) return;
-    this.stepIdx = (this.stepIdx + 1) % 4;
-    const k = 0.45 + 0.4 * speed;
-    this.sample(`step${this.stepIdx + 1}`, k, rand(0.94, 1.06), 0, 0.12);
+    this.steps++;
+    // sorteia entre as 6 gravações sem repetir a anterior
+    let i = Math.floor(Math.random() * 6);
+    if (i === this.stepIdx) i = (i + 1 + Math.floor(Math.random() * 5)) % 6;
+    this.stepIdx = i;
+    const k = 0.5 + 0.4 * speed;
+    this.sample(`step${i + 1}`, k, rand(0.95, 1.05), 0, 0.22);
   }
 
   // batida do dado (impact em m/s)

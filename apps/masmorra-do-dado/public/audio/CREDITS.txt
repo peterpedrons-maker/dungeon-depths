@@ -14,7 +14,7 @@ EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
   - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro, facada, trinco.
   - 100 CC0 SFX e 100 CC0 SFX #2 — rubberduck: gongo, sinos, vidro, pancadas,
     pedras, interruptores, ar, madeira.
-  - Fantozzi's Footsteps (Grass/Sand/Stone): passos em pedra.
+  - Metal footsteps on concrete: passos de bota em piso de pedra/concreto.
   - Drawing with chalk: giz riscando pedra.
   - Pencil sounds: borracha.
   - Stone door: porta de pedra.
