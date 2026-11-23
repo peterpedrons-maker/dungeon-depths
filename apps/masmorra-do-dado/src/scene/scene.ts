@@ -659,7 +659,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   BOXES.push(mkBox(0.95, 0, -10, 1.25, archTop, -9.7));
   BOXES.push(mkBox(-1.25, archTop - 0.3, -10, 1.25, ROOM.h, -9.7));
 
-  type DieState = 'hand' | 'flying' | 'rest';
+  type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
   let dieState: DieState = 'hand';
   const dieP = new THREE.Vector3();
   const dieV = new THREE.Vector3();
@@ -772,11 +772,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
 
+  // onde fica o dado na mão (em coordenadas do mundo): por aqui ele sai e volta
+  const handWorld = (out: THREE.Vector3) => {
+    camera.updateMatrixWorld();
+    camera.getWorldDirection(fwdV);
+    rightV.set(Math.cos(yaw), 0, -Math.sin(yaw));
+    return out.copy(camera.position).addScaledVector(fwdV, 0.6).addScaledVector(rightV, 0.3).setY(camera.position.y - 0.26);
+  };
+  const animFrom = new THREE.Vector3();
+  const animTo = new THREE.Vector3();
+  let animT = 0;
+
+  // recolher: o dado voa de volta até a mão (em vez de sumir)
   const recall = () => {
-    if (dieState === 'hand') return;
-    dieState = 'hand';
-    worldDie.visible = false;
-    handPop = 1;
+    if (dieState === 'hand' || dieState === 'returning' || dieState === 'placing') return;
+    animFrom.copy(worldDie.position);
+    animT = 0;
+    dieState = 'returning';
   };
 
   const throwDie = () => {
@@ -786,13 +798,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateMats();
     const ph = PHYS[face] ?? PHYS[1];
     camera.getWorldDirection(fwdV);
-    rightV.set(Math.cos(yaw), 0, -Math.sin(yaw));
-    dieP.copy(camera.position).addScaledVector(fwdV, 0.55).addScaledVector(rightV, 0.2);
-    dieP.y -= 0.18;
+    handWorld(dieP);
     dieV.copy(fwdV).multiplyScalar(ph.speed);
     dieV.y += ph.up * ph.speed;
+    dieV.addScaledVector(moveVel, 0.6); // herda um pouco do movimento de quem arremessa
     dieW.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
     worldDie.position.copy(dieP);
+    worldModel.scale.setScalar(0.42);
     worldDie.visible = true;
     dieState = 'flying';
     restTimer = 0;
@@ -821,16 +833,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     thrownFace = face;
     dieThrown = false;
     updateMats();
-    dieP.copy(a.p).addScaledVector(a.n, R + 0.02);
-    dieP.x = clamp(dieP.x, ROOM.x0 + R, ROOM.x1 - R);
-    dieP.z = clamp(dieP.z, ROOM.z0 + R + 0.04, ROOM.z1 - R);
+    animTo.copy(a.p).addScaledVector(a.n, R + 0.02);
+    animTo.x = clamp(animTo.x, ROOM.x0 + R, ROOM.x1 - R);
+    animTo.z = clamp(animTo.z, ROOM.z0 + R + 0.04, ROOM.z1 - R);
+    handWorld(animFrom);
+    animT = 0;
     dieV.set(0, 0, 0);
     dieW.set(0, 0, 0);
-    worldDie.position.copy(dieP);
+    worldDie.position.copy(animFrom);
+    worldModel.scale.setScalar(0.3);
     worldDie.quaternion.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
     worldDie.visible = true;
-    dieState = 'flying';
-    restTimer = 0;
+    dieState = 'placing';
   };
 
   const place = () => {
@@ -947,10 +961,28 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const STICK_R = 52;
   const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
 
+  // PC: o primeiro clique captura o mouse (olhar livre, Esc solta); depois o botão
+  // esquerdo arremessa/recolhe e o direito posiciona. Se o navegador negar, volta
+  // a funcionar arrastando.
+  let lockFailed = !canvas.requestPointerLock;
+  let lockClick = false;
+  const locked = () => document.pointerLockElement === canvas;
+  const onLockError = () => {
+    lockFailed = true;
+  };
+  document.addEventListener('pointerlockerror', onLockError);
   const onDown = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button === 2) {
       place(); // botão direito do mouse
       return;
+    }
+    if (e.pointerType === 'mouse' && e.button === 0 && !locked() && !lockFailed) {
+      lockClick = true;
+      try {
+        Promise.resolve(canvas.requestPointerLock()).catch(onLockError);
+      } catch {
+        onLockError();
+      }
     }
     const rect = canvas.getBoundingClientRect();
     const rx = (e.clientX - rect.left) / rect.width;
@@ -973,7 +1005,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     canvas.setPointerCapture(e.pointerId);
   };
   const onMove = (e: PointerEvent) => {
-    if (e.pointerId === lookId) {
+    if (e.pointerType === 'mouse' && locked()) {
+      yaw -= e.movementX * 0.0022;
+      pitch = Math.max(-1.2, Math.min(1.2, pitch - e.movementY * 0.0022));
+    } else if (e.pointerId === lookId) {
       const dx = e.clientX - downX;
       const dy = e.clientY - downY;
       if (Math.hypot(dx, dy) > 8) moved = true;
@@ -998,7 +1033,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (e.pointerId === lookId) {
       lookId = -1;
       // mouse: clique curto arremessa/recolhe (no celular são os botões)
-      if (e.pointerType === 'mouse' && e.type === 'pointerup' && !moved && performance.now() - downT < 350) action();
+      if (lockClick) lockClick = false; // esse clique só capturou o mouse
+      else if (e.pointerType === 'mouse' && e.type === 'pointerup' && !moved && performance.now() - downT < 350) action();
     }
     if (e.pointerId === stickId) {
       stickId = -1;
@@ -1014,42 +1050,111 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointercancel', onUp);
 
+  // Colisão do jogador: círculo (raio PR) contra retângulos no plano XZ.
+  const PR = 0.3;
+  const RECTS: [number, number, number, number][] = [];
+  for (const [x, z] of PILLARS) RECTS.push([x - 0.55, z - 0.55, x + 0.55, z + 0.55]);
+  RECTS.push([2.4, -9.7, 3.4, -8.7]); // braseiro e pedestal
+  RECTS.push([-1.25, -10, -0.95, -9.7]); // aro da porta
+  RECTS.push([0.95, -10, 1.25, -9.7]);
+  RECTS.push([ROOM.x0 - 1, ROOM.z0 - 3.6, -DW, ROOM.z0]); // parede do fundo e lados do corredor
+  RECTS.push([DW, ROOM.z0 - 3.6, ROOM.x1 + 1, ROOM.z0]);
+  const DOOR_RECT: [number, number, number, number] = [-DW, ROOM.z0 - 3.6, DW, ROOM.z0];
+  const moveVel = new THREE.Vector3(); // velocidade do jogador (m/s)
+  const pushOut = (r: [number, number, number, number]) => {
+    const cx = clamp(pos.x, r[0], r[2]);
+    const cz = clamp(pos.z, r[1], r[3]);
+    const dx = pos.x - cx;
+    const dz = pos.z - cz;
+    const d2 = dx * dx + dz * dz;
+    if (d2 >= PR * PR) return;
+    let nx: number;
+    let nz: number;
+    if (d2 > 1e-8) {
+      const d = Math.sqrt(d2);
+      nx = dx / d;
+      nz = dz / d;
+      pos.x = cx + nx * PR;
+      pos.z = cz + nz * PR;
+    } else {
+      // centro dentro do retângulo: sai pelo lado mais próximo
+      const l = pos.x - r[0];
+      const rr = r[2] - pos.x;
+      const f = pos.z - r[1];
+      const b = r[3] - pos.z;
+      const m = Math.min(l, rr, f, b);
+      nx = m === l ? -1 : m === rr ? 1 : 0;
+      nz = m === f ? -1 : m === b ? 1 : 0;
+      if (nx !== 0) pos.x = nx < 0 ? r[0] - PR : r[2] + PR;
+      else pos.z = nz < 0 ? r[1] - PR : r[3] + PR;
+    }
+    const vn = moveVel.x * nx + moveVel.z * nz;
+    if (vn < 0) {
+      moveVel.x -= nx * vn;
+      moveVel.z -= nz * vn;
+    }
+  };
+
+  const MAX_SPEED = 2.7;
   const move = (dt: number) => {
-    if (complete) return false;
+    if (complete) {
+      moveVel.set(0, 0, 0);
+      return false;
+    }
     const kf = (keys.has('w') || keys.has('arrowup') ? 1 : 0) - (keys.has('s') || keys.has('arrowdown') ? 1 : 0);
     const ks = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
-    let fwd = kf - stickY;
-    let str = ks + stickX;
+    // analógico: zona morta pequena e resposta suave (empurrar pouco = andar devagar)
+    const sl = Math.hypot(stickX, stickY);
+    const sk = sl < 0.12 ? 0 : Math.min(1, (sl - 0.12) / 0.78) ** 1.2 / sl;
+    let fwd = kf - stickY * sk;
+    let str = ks + stickX * sk;
     const len = Math.hypot(fwd, str);
     if (len > 1) {
       fwd /= len;
       str /= len;
     }
-    const moving = len > 0.08;
-    if (moving) {
-      const sp = 2.6 * dt;
-      pos.x += (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * sp;
-      pos.z += (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * sp;
-      const through = doorOpen > 0.85 && Math.abs(pos.x) < 0.75;
-      pos.x = clamp(pos.x, ROOM.x0 + 0.6, ROOM.x1 - 0.6);
-      if (pos.z < ROOM.z0 + 0.8) pos.x = clamp(pos.x, -0.7, 0.7); // dentro da porta
-      pos.z = clamp(pos.z, through ? ROOM.z0 - 2.2 : ROOM.z0 + 0.8, ROOM.z1 - 0.5);
-      for (const [px, pz] of PILLARS) {
-        const half = 0.75;
-        const dx = pos.x - px;
-        const dz = pos.z - pz;
-        if (Math.abs(dx) < half && Math.abs(dz) < half) {
-          if (half - Math.abs(dx) < half - Math.abs(dz)) pos.x = px + Math.sign(dx || 1) * half;
-          else pos.z = pz + Math.sign(dz || 1) * half;
+    const tx = (-Math.sin(yaw) * fwd + Math.cos(yaw) * str) * MAX_SPEED;
+    const tz = (-Math.cos(yaw) * fwd - Math.sin(yaw) * str) * MAX_SPEED;
+    // aceleração e frenagem suaves (em vez de ligar/desligar de uma vez)
+    const k = 1 - Math.exp(-dt * (len > 0.02 ? 11 : 14));
+    moveVel.x += (tx - moveVel.x) * k;
+    moveVel.z += (tz - moveVel.z) * k;
+    const sp = Math.hypot(moveVel.x, moveVel.z);
+    if (sp < 0.02) {
+      moveVel.set(0, 0, 0);
+      return false;
+    }
+    // passos curtos pra nunca atravessar parede
+    const steps = Math.max(1, Math.ceil((sp * dt) / 0.1));
+    for (let i = 0; i < steps; i++) {
+      pos.x += (moveVel.x * dt) / steps;
+      pos.z += (moveVel.z * dt) / steps;
+      for (let pass = 0; pass < 2; pass++) {
+        for (const r of RECTS) pushOut(r);
+        if (doorOpen < 0.85) pushOut(DOOR_RECT);
+        if (dieState === 'rest') {
+          const dx = pos.x - dieP.x;
+          const dz = pos.z - dieP.z;
+          const d = Math.hypot(dx, dz);
+          if (d < PR + R && dieP.y < 1.2) {
+            const nx = d > 1e-6 ? dx / d : 1;
+            const nz = d > 1e-6 ? dz / d : 0;
+            pos.x = dieP.x + nx * (PR + R);
+            pos.z = dieP.z + nz * (PR + R);
+          }
         }
       }
+      pos.x = clamp(pos.x, ROOM.x0 + PR, ROOM.x1 - PR);
+      pos.z = clamp(pos.z, ROOM.z0 - 3.6 + PR, ROOM.z1 - PR);
     }
-    return moving;
+    return sp > 0.35;
   };
 
   const reset = () => {
     dieState = 'hand';
     worldDie.visible = false;
+    worldModel.scale.setScalar(0.42);
+    moveVel.set(0, 0, 0);
     dieGroup.visible = true;
     lit = false;
     brazierFlame.visible = false;
@@ -1072,6 +1177,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let last = performance.now();
   let t = 0;
   let bob = 0;
+  let bobAmp = 0;
   let emittedDie: DieState | null = null;
   const loop = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
@@ -1079,8 +1185,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     t += dt;
 
     const moving = move(dt);
-    if (moving) bob += dt * 9;
-    const bobY = moving ? Math.sin(bob) * 0.04 : Math.sin(t * 1.3) * 0.012;
+    const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
+    bobAmp += (speedFrac - bobAmp) * Math.min(1, dt * 8);
+    bob += dt * (6 + 4 * speedFrac) * (speedFrac > 0.05 ? 1 : 0);
+    const bobY = Math.sin(bob) * 0.032 * bobAmp + Math.sin(t * 1.3) * 0.012 * (1 - bobAmp);
     camera.position.set(pos.x, pos.y + bobY, pos.z);
     camera.rotation.set(pitch, yaw, 0);
 
@@ -1106,6 +1214,38 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         brazierFlame.visible = true;
         caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
       }
+    } else if (dieState === 'placing') {
+      animT += dt / 0.36;
+      const u = Math.min(1, animT);
+      const e = u * u * (3 - 2 * u);
+      handWorld(animFrom);
+      worldDie.position.lerpVectors(animFrom, animTo, e);
+      worldDie.position.y += Math.sin(Math.PI * u) * 0.28;
+      worldModel.scale.setScalar(0.3 + 0.12 * e);
+      if (u >= 1) {
+        dieP.copy(animTo);
+        dieV.set(0, 0, 0);
+        dieW.set(0, 0, 0);
+        worldModel.scale.setScalar(0.42);
+        restTimer = 0;
+        dieState = 'flying';
+      }
+    } else if (dieState === 'returning') {
+      animT += dt / 0.4;
+      const u = Math.min(1, animT);
+      const e = u * u; // acelera em direção à mão
+      handWorld(animTo);
+      worldDie.position.lerpVectors(animFrom, animTo, e);
+      worldDie.position.y += Math.sin(Math.PI * u) * 0.25;
+      worldModel.scale.setScalar(0.42 - 0.17 * e);
+      tmpQ.setFromAxisAngle(tmpAxis.set(0.6, 1, 0.3).normalize(), dt * 14);
+      worldDie.quaternion.premultiply(tmpQ);
+      if (u >= 1) {
+        dieState = 'hand';
+        worldDie.visible = false;
+        worldModel.scale.setScalar(0.42);
+        handPop = 1;
+      }
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
       worldDie.position.copy(dieP);
@@ -1121,7 +1261,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     if (dieState !== emittedDie) {
       emittedDie = dieState;
-      opts.onDie?.(dieState);
+      opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
     }
 
     // ── porta, lâmpadas, braseiro ──
@@ -1222,7 +1362,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Só em desenvolvimento: gancho pra testes automatizados (não vai pro build).
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
-      state: () => ({ dieState, face, lit, plateDown, doorOpen, gemTaken, complete, x: pos.x, z: pos.z }),
+      state: () => ({ dieState, face, lit, plateDown, doorOpen, gemTaken, complete, x: pos.x, z: pos.z, die: [dieP.x, dieP.y, dieP.z].map((v) => +v.toFixed(2)) }),
       place: (x: number, z: number, y: number, p: number) => {
         pos.set(x, 1.6, z);
         yaw = y;
@@ -1252,6 +1392,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       canvas.removeEventListener('wheel', onWheel);
+      document.removeEventListener('pointerlockerror', onLockError);
+      if (locked()) document.exitPointerLock();
       canvas.removeEventListener('contextmenu', onContext);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);

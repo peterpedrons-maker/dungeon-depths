@@ -116,7 +116,7 @@ export default function App() {
 
       {hint && (
         <div className="hint">
-          <span className="hint-pc">clique: arremessar · botão direito ou G: posicionar · E: recolher · 1–6 ou roda: face · Q: riscar · C: símbolo · Z: apagar · X: apagar tudo · WASD: andar</span>
+          <span className="hint-pc">clique: capturar o mouse (Esc solta) · esquerdo: arremessar · direito/G: posicionar · E: recolher · 1–6: face · Q/C/Z/X: giz · WASD</span>
           <span className="hint-touch">à direita: arremessar, posicionar e girar · esquerda: andar · arraste: olhar</span>
         </div>
       )}
