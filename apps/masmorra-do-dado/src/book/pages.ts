@@ -17,7 +17,7 @@ const PER_PAGE = 12;
 // descrições curtas para caber no livro (as faces ainda vão mudar)
 const SHORT: Record<number, string> = { 1: 'Quica nas paredes.', 2: 'Aperta placas.', 3: 'Acende o fogo.', 4: 'Troca de lugar.', 5: 'Desliza reto.', 6: 'Atravessa.' };
 export const NOTE_MAX = 64;
-export const FREE_MAX = 380;
+export const FREE_MAX = 440;
 
 export interface Region {
   x: number;
@@ -333,17 +333,17 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     const all = wrap(d.free + (editing && view.caret ? '_' : ''), CH);
     if (side === 'L') {
       heading(ctx, 'ANOTAÇÕES', side);
-      lines(ctx, all.length || editing ? all : wrap('Espaço livre. Toque e escreva o que quiser lembrar.', CH), x0, 34, all.length || editing ? INK : INK2, 11);
-      for (let i = 0; i < 11; i++) {
+      lines(ctx, all.length || editing ? all : wrap('Espaço livre. Toque e escreva o que quiser lembrar.', CH), x0, 34, all.length || editing ? INK : INK2, 12);
+      for (let i = 0; i < 12; i++) {
         ctx.fillStyle = 'rgba(122,80,48,0.28)';
-        ctx.fillRect(x0, 34 + i * LINE + 10, CW, 1);
+        ctx.fillRect(x0, 34 + i * LINE + 9, CW, 1);
       }
       regions.push({ x: x0 - 2, y: 30, w: CW + 4, h: 124, id: 'edit:free' });
     } else {
-      lines(ctx, all.slice(11), x0, 16, INK, 12);
-      for (let i = 0; i < 12; i++) {
+      lines(ctx, all.slice(12), x0, 16, INK, 13);
+      for (let i = 0; i < 13; i++) {
         ctx.fillStyle = 'rgba(122,80,48,0.28)';
-        ctx.fillRect(x0, 16 + i * LINE + 10, CW, 1);
+        ctx.fillRect(x0, 16 + i * LINE + 9, CW, 1);
       }
       regions.push({ x: x0 - 2, y: 12, w: CW + 4, h: 140, id: 'edit:free' });
     }

@@ -45,7 +45,7 @@ add('C', 'Ç', 'cedil');
 add('u', 'ü', 'uml');
 const ALIAS: Record<string, string> = { '–': '-', '—': '-', '…': '...', '“': '"', '”': '"', '‘': "'", '’': "'", '·': '-', '«': '<', '»': '>', 'º': 'o', 'ª': 'a', '•': '*' };
 
-export const LINE = 11; // altura de uma linha de texto (escala 1)
+export const LINE = 10; // altura de uma linha de texto (escala 1)
 export const ADV = 6; // avanço horizontal por caractere (escala 1)
 
 function pixels(ch: string): number[] {
