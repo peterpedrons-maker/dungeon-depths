@@ -5,7 +5,17 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
-import { dieFaceTexture, dieGlowTexture, soapSideTexture, soapTipTexture, soapWrapTexture } from './textures';
+import {
+  diaryCoverTexture,
+  diaryEdgeTexture,
+  diaryLeatherTexture,
+  diaryPageTexture,
+  dieFaceTexture,
+  dieGlowTexture,
+  soapSideTexture,
+  soapTipTexture,
+  soapWrapTexture,
+} from './textures';
 import { Chalk } from './chalk';
 import { Sfx, type AudioMode } from './audio';
 import { CORRIDOR, dbg } from './kit';
@@ -370,6 +380,50 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const SOAP_ROT = new THREE.Euler(-0.95, 0.55, 0.5);
   soapHolder.rotation.copy(SOAP_ROT);
   let soapKick = 0;
+
+  // ── o diário: um livro de verdade, que o personagem tira da bolsa ────────
+  // Duas metades presas ao lombo (x = 0). Fechado, a metade esquerda dobra por cima da direita.
+  const BW = 0.5; // largura de cada metade
+  const BH = 0.68;
+  const bookEdge = new THREE.MeshLambertMaterial({ map: diaryEdgeTexture() });
+  const bookLeather = new THREE.MeshLambertMaterial({ map: diaryLeatherTexture() });
+  const frontMap = diaryCoverTexture();
+  const bookFront = new THREE.MeshLambertMaterial({ map: frontMap, emissive: 0xffffff, emissiveMap: frontMap, emissiveIntensity: 0.28 });
+  const bookPage = (left: boolean) => {
+    const m = diaryPageTexture(left);
+    return new THREE.MeshLambertMaterial({ map: m, emissive: 0xffffff, emissiveMap: m, emissiveIntensity: 0.5 });
+  };
+  const bookPageL = bookPage(true);
+  const bookPageR = bookPage(false);
+  const makeHalf = (left: boolean) => {
+    const g = new THREE.Group();
+    const s = left ? -1 : 1;
+    // ordem dos materiais do BoxGeometry: +x, -x, +y, -y, +z, -z
+    const pages = new THREE.Mesh(new THREE.BoxGeometry(BW - 0.03, BH - 0.05, 0.04), [bookEdge, bookEdge, bookEdge, bookEdge, left ? bookPageL : bookPageR, bookEdge]);
+    pages.position.set((s * BW) / 2, 0, -0.02);
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, 0.03), [bookLeather, bookLeather, bookLeather, bookLeather, bookLeather, left ? bookFront : bookLeather]);
+    cover.position.set((s * BW) / 2, 0, -0.055);
+    g.add(pages, cover);
+    return g;
+  };
+  const bookGroup = new THREE.Group();
+  const bookInner = new THREE.Group();
+  const bookLeftPivot = new THREE.Group();
+  bookLeftPivot.add(makeHalf(true));
+  const bookSpine = new THREE.Mesh(new THREE.BoxGeometry(0.035, BH, 0.14), bookLeather);
+  const bookRibbon = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.17, 0.006), new THREE.MeshLambertMaterial({ color: 0xa8321a, emissive: 0x5a1a10 }));
+  bookRibbon.position.set(0.07, -BH / 2 - 0.055, 0.004);
+  bookInner.add(makeHalf(false), bookLeftPivot, bookSpine, bookRibbon);
+  bookGroup.add(bookInner);
+  bookGroup.visible = false;
+  dieScene.add(bookGroup);
+  let bookT = 0; // 0 = guardado, 1 = aberto na frente da câmera
+  let hudHalfW = 0.7;
+  const BOOK = {
+    start: { x: 0.55, y: -0.95, rx: -1.1, ry: -0.55, rz: 0.4, s: 0.6 },
+    mid: { x: 0.3, y: -0.22, rx: -0.85, ry: -0.35, rz: 0.22, s: 0.72 },
+    end: { x: 0, y: 0.0, rx: -0.08, ry: 0, rz: 0, s: 0.92 },
+  };
 
   let tool: Tool = 'die';
   let dieU = 0; // 0 = dado na mão principal, 1 = na auxiliar
@@ -772,7 +826,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.play('recall');
   };
 
-  const busy = () => complete || ui.blocked(); // fim de jogo, conversa ou diário aberto: o jogador fica parado
+  const busy = () => complete || ui.blocked() || bookT > 0.01; // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
 
   const throwDie = () => {
     if (dieState !== 'hand' || busy()) return;
@@ -920,6 +974,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieScaleBase = Math.min(0.235, halfW * 0.56);
     dieBaseY = aspect < 1 ? -0.1 : -0.14;
     handX = Math.min(halfW * 0.4, 0.47);
+    hudHalfW = halfW;
     soapBase.set(-handX, dieBaseY + 0.02, -1);
   };
   resize();
@@ -935,7 +990,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const START_KEYS = new Set<string>();
   const keys = START_KEYS;
   const onKeyDown = (e: KeyboardEvent) => {
-    if (ui.blocked()) return;
+    if (ui.blocked() || bookT > 0.01) return;
     const k = e.key.toLowerCase();
     keys.add(k);
     if (e.repeat) return;
@@ -1483,6 +1538,52 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sgn * SOAP_ROT.y + Math.sin(t * 0.9) * 0.05 + sgn * kk * 0.3,
       sgn * SOAP_ROT.z + Math.sin(t * 1.1) * 0.03,
     );
+
+    // ── o diário: sobe da bolsa, abre a capa e as páginas ficam na frente da câmera ──
+    {
+      const want = ui.diaryOpen() ? 1 : 0;
+      const dir = want - bookT;
+      if (Math.abs(dir) > 1e-4) bookT = clamp(bookT + Math.sign(dir) * dt * (want ? 1 / 0.95 : 1 / 0.7), 0, 1);
+      const e = (u: number) => ease(clamp(u, 0, 1));
+      const rise = e(bookT / 0.45);
+      const frame = e((bookT - 0.25) / 0.5);
+      const open = e((bookT - 0.45) / 0.55);
+      bookGroup.visible = bookT > 0.002;
+      ui.setBookOut(bookT > 0.002);
+      if (bookGroup.visible) {
+        bookLeftPivot.rotation.y = -Math.PI * (1 - open);
+        bookInner.position.x = (-BW / 2) * (1 - open);
+        bookSpine.visible = open < 0.6;
+        const mx = (a: number, b: number, k: number) => a + (b - a) * k;
+        const f = (key: 'x' | 'y' | 'rx' | 'ry' | 'rz' | 's') => mx(mx(BOOK.start[key], BOOK.mid[key], rise), BOOK.end[key], frame);
+        const sway = Math.sin(t * 1.7) * 0.012 * (1 - frame);
+        const endS = Math.min(BOOK.end.s, hudHalfW * 1.75);
+        bookGroup.position.set(f('x'), f('y') + sway, -1);
+        bookGroup.rotation.set(f('rx') + sway, f('ry'), f('rz'));
+        bookGroup.scale.setScalar(mx(mx(BOOK.start.s, BOOK.mid.s, rise), endS, frame));
+        // dado e giz saem da frente enquanto o livro está na mão
+        const hide = e(bookT * 3);
+        dieGroup.position.y -= hide * 0.95;
+        soapGroup.position.y -= hide * 0.95;
+      }
+      // pronto: onde estão as páginas na tela (a interface do diário se encaixa aí)
+      if (want && bookT >= 0.99) {
+        bookGroup.updateMatrixWorld(true);
+        dieCam.updateMatrixWorld();
+        const cw = canvas.clientWidth;
+        const ch = canvas.clientHeight;
+        const proj = (x: number, y: number): [number, number] => {
+          const v = new THREE.Vector3(x, y, 0.002);
+          bookInner.localToWorld(v);
+          v.project(dieCam);
+          return [(v.x * 0.5 + 0.5) * cw, (1 - (v.y * 0.5 + 0.5)) * ch];
+        };
+        const [x0, y0] = proj(-BW + 0.035, BH / 2 - 0.03);
+        const [x1, y1] = proj(BW - 0.035, -BH / 2 + 0.03);
+        ui.setRect({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+        ui.setReady(true);
+      } else ui.setReady(false);
+    }
 
     renderer.info.reset();
     renderer.setRenderTarget(rt);

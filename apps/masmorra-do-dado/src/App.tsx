@@ -50,7 +50,8 @@ export default function App() {
   const captionTimer = useRef(0);
   const dry = useStore(diaryStore);
   const talking = useStore(dialogueStore) !== null;
-  const diaryOpen = useStore(uiStore).diaryOpen;
+  const uis = useStore(uiStore);
+  const diaryOpen = uis.diaryOpen;
   const [toast, setToast] = useState<{ id: string; n: number } | null>(null);
   const toastTimer = useRef(0);
 
@@ -66,7 +67,13 @@ export default function App() {
   // J abre o diário (Esc e J fecham, dentro do próprio diário)
   useEffect(() => {
     const kd = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'j' || e.repeat || ui.diaryOpen()) return;
+      const k = e.key.toLowerCase();
+      // o livro ainda está subindo/abrindo: J ou Esc guardam de volta
+      if (ui.diaryOpen() && !uiStore.get().diaryReady) {
+        if (k === 'j' || k === 'escape') ui.setDiary(false);
+        return;
+      }
+      if (k !== 'j' || e.repeat || ui.diaryOpen()) return;
       if ((e.target as HTMLElement | null)?.tagName === 'TEXTAREA') return;
       toggleDiary();
     };
@@ -343,7 +350,7 @@ export default function App() {
         </div>
       )}
 
-      {!coarse && look === 'free' && !complete && !credits && !diaryOpen && !talking && (
+      {!coarse && look === 'free' && !complete && !credits && !diaryOpen && !uis.bookOut && !talking && (
         <div className="clicktoplay" aria-hidden="true">
           <b>Clique para jogar</b>
           <span>WASD anda · Shift corre · mouse olha · Esc solta o mouse</span>
@@ -351,7 +358,7 @@ export default function App() {
       )}
 
       <DialogueBox onSound={sound} />
-      {diaryOpen && <Diary onClose={closeDiary} onSound={sound} />}
+      {diaryOpen && uis.diaryReady && uis.rect && <Diary rect={uis.rect} onClose={closeDiary} onSound={sound} />}
 
       {credits && (
         <div className="credits" onPointerDown={() => setCredits(false)}>

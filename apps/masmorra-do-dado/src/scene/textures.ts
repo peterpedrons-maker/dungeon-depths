@@ -933,3 +933,91 @@ export function aoRingTexture() {
   }
   return toTexture(c, undefined, false, true);
 }
+
+// ── o diário (livro que o personagem carrega) ───────────────────────────
+// Couro escuro com costura; na capa, o símbolo "DADO" (moldura com 5 pontos) em dourado.
+export function diaryLeatherTexture() {
+  const { c, ctx } = canvas(16);
+  const r = rng(201);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      let k = 0.9 + r() * 0.16;
+      if ((x * 3 + y * 5) % 11 === 0) k *= 0.82; // grão do couro
+      px(ctx, x, y, shade(hex('#4a2c1c'), k));
+    }
+  }
+  return toTexture(c, undefined, false);
+}
+
+export function diaryCoverTexture() {
+  const W = 32;
+  const H = 44;
+  const { c, ctx } = canvas(W, H);
+  const r = rng(202);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let k = 0.92 + r() * 0.15;
+      if ((x * 3 + y * 5) % 11 === 0) k *= 0.82;
+      px(ctx, x, y, shade(hex('#5a3420'), k));
+    }
+  }
+  // costura (pontilhado) rente à borda
+  for (let i = 3; i < W - 3; i += 2) {
+    px(ctx, i, 2, '#c2a48e');
+    px(ctx, i, H - 3, '#c2a48e');
+  }
+  for (let j = 3; j < H - 3; j += 2) {
+    px(ctx, 2, j, '#c2a48e');
+    px(ctx, W - 3, j, '#c2a48e');
+  }
+  // cantos metálicos
+  for (const [cx, cy] of [[0, 0], [W - 4, 0], [0, H - 4], [W - 4, H - 4]]) rect(ctx, cx, cy, 4, 4, '#a87a28');
+  for (const [cx, cy] of [[1, 1], [W - 3, 1], [1, H - 3], [W - 3, H - 3]]) rect(ctx, cx, cy, 2, 2, '#f0d880');
+  // símbolo DADO: moldura + 5 pontos
+  const gx = 7;
+  const gy = 11;
+  const s = 18;
+  const gold = '#d4ac4e';
+  rect(ctx, gx, gy, s, 2, gold);
+  rect(ctx, gx, gy + s - 2, s, 2, gold);
+  rect(ctx, gx, gy, 2, s, gold);
+  rect(ctx, gx + s - 2, gy, 2, s, gold);
+  for (const [dx, dy] of [[4, 4], [12, 4], [8, 8], [4, 12], [12, 12]]) rect(ctx, gx + dx, gy + dy, 2, 2, '#f0d880');
+  // barras do lombo
+  rect(ctx, 0, 0, 1, H, '#2a180e');
+  return toTexture(c, undefined, false);
+}
+
+// borda cremosa das folhas
+export function diaryEdgeTexture() {
+  const { c, ctx } = canvas(8, 16);
+  const r = rng(203);
+  for (let y = 0; y < 16; y++) {
+    const line = y % 2 === 0;
+    for (let x = 0; x < 8; x++) px(ctx, x, y, shade(hex(line ? '#c2a48e' : '#9c7d6c'), 0.92 + r() * 0.12));
+  }
+  return toTexture(c, undefined, false);
+}
+
+// páginas: papel escuro com pautas bem apagadas (o texto vem da interface, por cima)
+export function diaryPageTexture(left: boolean) {
+  const W = 40;
+  const H = 52;
+  const { c, ctx } = canvas(W, H);
+  const r = rng(left ? 204 : 205);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let k = 0.94 + r() * 0.1;
+      // sombra perto do lombo (lado interno de cada página)
+      const d = left ? W - 1 - x : x;
+      if (d < 7) k *= 0.62 + d * 0.055;
+      if (y % 6 === 4 && d > 3 && x > 2 && x < W - 3) k *= 1.22; // pautas
+      px(ctx, x, y, shade(hex('#2c2a3e'), k));
+    }
+  }
+  // moldura fina
+  const bx = left ? 2 : 5;
+  rect(ctx, bx, 2, W - 7, 1, '#403e56');
+  rect(ctx, bx, H - 3, W - 7, 1, '#403e56');
+  return toTexture(c, undefined, false);
+}

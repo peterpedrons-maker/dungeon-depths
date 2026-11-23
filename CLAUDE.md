@@ -51,7 +51,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   escrita numa língua inventada (os Contáveis; 174 palavras em `tools/lexicon.mjs` → `src/story/lexicon.json`).
   O mundo fala em glifos; pensamentos do jogador e diários de outros condenados vêm em português. Já existem:
   **janela de conversa** estilo RPG no rodapé (`src/ui/DialogueBox.tsx`, `src/story/dialogue.ts`; salas usam `ctx.say(...)`)
-  e **diário** (tecla J ou botão do canto; `src/ui/Diary.tsx`, `src/story/diary.ts`): símbolos "avistados" entram sozinhos
+  e **diário** (tecla J ou botão do canto): é um **livro 3D** que o personagem tira da bolsa, abre e fecha com animação (modelo e animação em `scene.ts`, bloco "o diário"; texturas `diary*Texture`); as páginas (`src/ui/Diary.tsx`, `src/story/diary.ts`) são HTML encaixado por projeção sobre o livro aberto: símbolos "avistados" entram sozinhos
   (`ctx.seen(id)`), o jogador anota o que acha que significam (o diário nunca corrige), mais faces, textos, mapa e notas;
   salvo no aparelho. Conversa e diário param o jogador. `?demo=1` abre uma pré-visualização com dados de exemplo.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em

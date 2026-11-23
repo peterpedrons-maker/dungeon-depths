@@ -211,7 +211,7 @@ Solução, ao implementar, vai para `PUZZLES.md` (convenção do projeto).
 
 ## 11. Próximos passos
 
-1. ~~Diário e janela de conversa~~ **(feitos)**: `src/story/`, `src/ui/`. Falta ligar o aviso de "símbolo visto" às inscrições reais e o minimapa com giz.
+1. ~~Diário (livro 3D com animação) e janela de conversa~~ **(feitos)**: `src/story/`, `src/ui/`. Falta ligar o aviso de "símbolo visto" às inscrições reais e o minimapa com giz.
 2. **Sistema de inscrições** (decal talhado e pintado de cal, com relevo e luz) e avaliação da escrita do giz na lacuna.
 3. **Primeira sala** (§9) e o início da língua (números 1–3 e ACENDER).
 4. Balões dos ecos (em glifos), se a decisão do §7.4 for aprovada.
