@@ -32,8 +32,11 @@ export type AudioMode = 0 | 1 | 2;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
+// Muda quando qualquer arquivo de áudio é trocado: força o navegador/PWA a baixar de novo
+const AUDIO_VERSION = 3;
+
 const SFX_FILES = [
-  'step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
+  'boot1', 'boot2', 'boot3', 'boot4', 'boot5', 'boot6', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
   'bounce1', 'bounce2', 'bounce3', 'bounce4', 'roll', 'locked', 'swap1', 'swap2', 'sweep', 'chalk1', 'chalk2',
   'erase', 'ignite', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door1', 'door2', 'doorclose1',
   'doorclose2', 'error', 'burnout', 'fire',
@@ -191,7 +194,7 @@ export class Sfx {
     // efeitos primeiro (são pequenos), depois os instrumentos da música
     await Promise.all(
       SFX_FILES.map(async (n) => {
-        const b = await this.decode(`${base}sfx/${n}.mp3`);
+        const b = await this.decode(`${base}sfx/${n}.mp3?v=${AUDIO_VERSION}`);
         if (b) this.buf.set(n, b);
         this.loaded++;
       }),
@@ -205,7 +208,7 @@ export class Sfx {
         this.inst[name] = inst;
         await Promise.all(
           notes.map(async (m) => {
-            const b = await this.decode(`${base}inst/${name}/${m}.mp3`);
+            const b = await this.decode(`${base}inst/${name}/${m}.mp3?v=${AUDIO_VERSION}`);
             if (b) inst.bufs.set(m, b);
           }),
         );
@@ -410,7 +413,7 @@ export class Sfx {
     if (i === this.stepIdx) i = (i + 1 + Math.floor(Math.random() * 5)) % 6;
     this.stepIdx = i;
     const k = 0.5 + 0.4 * speed;
-    this.sample(`step${i + 1}`, k, rand(0.95, 1.05), 0, 0.22);
+    this.sample(`boot${i + 1}`, k, rand(0.95, 1.05), 0, 0.22);
   }
 
   // batida do dado (impact em m/s)

@@ -59,7 +59,7 @@ C2 = p('x', 'sfx_100_v2')
 MS = p('metal_steps.ogg')  # passos de bota em concreto (OpenGameArt, CC0)
 
 SFX = {
-    # passos: stepN.mp3 são recortados de metal_steps.ogg por tools/cut_steps.py
+    # passos: bootN.mp3 são recortados de metal_steps.ogg por tools/cut_steps.py
     'land': (K + '/dropLeather.ogg', {}),
     # dado
     'throw1': (C2 + '/sfx100v2_air_03.ogg', {}),

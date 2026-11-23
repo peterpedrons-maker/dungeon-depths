@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Recorta passos individuais (botas em concreto) de metal_steps.ogg -> public/audio/sfx/step1..6.mp3
+"""Recorta passos individuais (botas em concreto) de metal_steps.ogg -> public/audio/sfx/boot1..6.mp3
 Uso: python3 tools/cut_steps.py <metal_steps.ogg> <pasta sfx>   (usa os passos de som mais "seco" e grave)"""
 import subprocess, re, sys, numpy as np
 src, out = sys.argv[1], sys.argv[2]
@@ -27,5 +27,5 @@ for n, t0 in enumerate(good[:6], 1):
     subprocess.run(['ffmpeg', '-y', '-v', 'error', '-ss', str(t0), '-t', '0.30', '-i', src, '-ac', '1', '-ar', '44100', '-af', 'afade=t=out:st=0.2:d=0.1,lowpass=f=7000', tmp])
     r = subprocess.run(['ffmpeg', '-hide_banner', '-i', tmp, '-af', 'volumedetect', '-f', 'null', '-'], capture_output=True, text=True)
     g = -4.0 - float(re.search(r'max_volume: (-?[\d.]+) dB', r.stderr).group(1))
-    subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', tmp, '-af', f'volume={g}dB', '-ac', '1', '-b:a', '64k', f'{out}/step{n}.mp3'])
+    subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', tmp, '-af', f'volume={g}dB', '-ac', '1', '-b:a', '64k', f'{out}/boot{n}.mp3'])
 print('passos:', len(good[:6]))
