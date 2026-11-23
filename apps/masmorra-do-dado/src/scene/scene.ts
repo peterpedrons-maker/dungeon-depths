@@ -821,6 +821,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateMats();
     dieRoom = a.room;
     animTo.copy(a.p).addScaledVector(a.n, R + 0.02);
+    // encaixe: perto de um braseiro/altar, o dado vai exatamente pro centro, em cima dele
+    const off = offs[a.room];
+    let best = 0.6; // tolerância vertical (m)
+    for (const s of rooms[a.room].sockets ?? []) {
+      const dh = Math.hypot(a.p.x - off.x - s.x, a.p.z - off.z - s.z);
+      const dy = Math.abs(a.p.y - off.y - s.y);
+      if (dh <= s.r && dy < best) {
+        best = dy;
+        animTo.set(off.x + s.x, off.y + s.y + R + 0.02, off.z + s.z);
+      }
+    }
     handWorld(animFrom);
     animT = 0;
     dieV.set(0, 0, 0);

@@ -144,6 +144,7 @@ export function buildRoom2(ctx: Ctx): Room {
     boxes.push(mkBox(x - 0.55, H - 0.25, z - 0.55, x + 0.55, H, z + 0.55));
   }
   boxes.push(mkBox(BX - 0.3, 0, BZ - 0.3, BX + 0.3, 0.8, BZ + 0.3));
+  boxes.push(mkBox(BX - 0.42, 0.8, BZ - 0.42, BX + 0.42, 1.1, BZ + 0.42)); // tigela
   boxes.push(mkBox(-1.25, 0, -14, -0.95, ARCH_TOP, -13.7));
   boxes.push(mkBox(0.95, 0, -14, 1.25, ARCH_TOP, -13.7));
   boxes.push(mkBox(-1.25, ARCH_TOP - 0.3, -14, 1.25, H, -13.7));
@@ -206,6 +207,7 @@ export function buildRoom2(ctx: Ctx): Room {
     fog: { color: '#050e0d', near: 4, far: 22 },
     ambient: { color: 0x6a9a90, intensity: 1.8 },
     boxes: [...boxes, ...kit.boxes],
+    sockets: [{ x: BX, y: 1.1, z: BZ, r: 0.6 }],
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       r.push([BX - 0.5, BZ - 0.5, BX + 0.5, BZ + 0.5], ...kit.rects);
@@ -241,7 +243,7 @@ export function buildRoom2(ctx: Ctx): Room {
     update(dt, t) {
       kit.tick(dt, t);
       const d = ctx.die;
-      if (!lit && d.state === 'flying' && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
+      if (!lit && (d.state === 'flying' || d.state === 'rest') && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
         lit = true;
         flame.visible = true;
         ctx.caption('O braseiro acendeu!', 'Algo surge na parede, ao lado.', '#ff9a3c');

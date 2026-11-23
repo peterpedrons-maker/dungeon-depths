@@ -134,6 +134,7 @@ export function buildRoom1(ctx: Ctx): Room {
   }
   boxes.push(mkBox(PLATE.x - PLATE.half, 0, PLATE.z - PLATE.half, PLATE.x + PLATE.half, PLATE.top, PLATE.z + PLATE.half));
   boxes.push(mkBox(2.6, 0, -9.5, 3.2, 0.8, -8.9));
+  boxes.push(mkBox(2.9 - 0.42, 0.8, -9.2 - 0.42, 2.9 + 0.42, 1.1, -9.2 + 0.42)); // a tigela: o dado repousa em cima dela
   boxes.push(mkBox(-1.25, 0, -10, -0.95, ARCH_TOP, -9.7));
   boxes.push(mkBox(0.95, 0, -10, 1.25, ARCH_TOP, -9.7));
   boxes.push(mkBox(-1.25, ARCH_TOP - 0.3, -10, 1.25, H, -9.7));
@@ -165,6 +166,7 @@ export function buildRoom1(ctx: Ctx): Room {
     fog: { color: '#0b0912', near: 4, far: 19 },
     ambient: { color: 0x7a78b8, intensity: 1.9 },
     boxes: [...boxes, ...kit.boxes],
+    sockets: [{ x: 2.9, y: 1.1, z: -9.2, r: 0.6 }],
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       r.push([2.4, -9.7, 3.4, -8.7], ...kit.rects);
@@ -212,12 +214,12 @@ export function buildRoom1(ctx: Ctx): Room {
           ctx.caption('Gema encontrada!', 'Só o ricochete chega num lugar desses.', '#6ff0ff');
           ctx.sfx('gem');
         }
-        if (!lit && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
-          lit = true;
-          flame.visible = true;
-          ctx.caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
-          ctx.sfx('ignite');
-        }
+      }
+      if (!lit && (d.state === 'flying' || d.state === 'rest') && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
+        lit = true;
+        flame.visible = true;
+        ctx.caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
+        ctx.sfx('ignite');
       }
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();
       if (pressed && !plateDown) ctx.sfx('plate');

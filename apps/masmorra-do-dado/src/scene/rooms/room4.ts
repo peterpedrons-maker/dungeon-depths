@@ -142,6 +142,7 @@ export function buildRoom4(ctx: Ctx): Room {
   }
   boxes.push(mkBox(PLATE.x - PLATE.half, 0, PLATE.z - PLATE.half, PLATE.x + PLATE.half, PLATE.top, PLATE.z + PLATE.half));
   boxes.push(mkBox(BX - 0.3, LEVEL, BZ - 0.3, BX + 0.3, LEVEL + 0.8, BZ + 0.3));
+  boxes.push(mkBox(BX - 0.42, LEVEL + 0.8, BZ - 0.42, BX + 0.42, LEVEL + 1.1, BZ + 0.42)); // tigela
   boxes.push(mkBox(-1.25, LEVEL, Z0, -0.95, LEVEL + 2.65, Z0 + 0.3));
   boxes.push(mkBox(0.95, LEVEL, Z0, 1.25, LEVEL + 2.65, Z0 + 0.3));
   boxes.push(mkBox(-1.25, LEVEL + 2.35, Z0, 1.25, H, Z0 + 0.3));
@@ -173,6 +174,7 @@ export function buildRoom4(ctx: Ctx): Room {
     fog: { color: '#070a14', near: 5, far: 26 },
     ambient: { color: 0x8aa0e0, intensity: 1.7 },
     boxes: [...boxes, ...kit.boxes],
+    sockets: [{ x: BX, y: LEVEL + 1.1, z: BZ, r: 0.6 }],
     rects() {
       const r: ReturnType<Room['rects']> = [[X0 - 1, Z0 - 1, X1 + 1, STAGE_Z, LEVEL]];
       for (const [x, z] of PILLARS) r.push([x - 0.55, z - 0.55, x + 0.55, z + 0.55, H]);
@@ -215,7 +217,7 @@ export function buildRoom4(ctx: Ctx): Room {
     update(dt, t) {
       kit.tick(dt, t);
       const d = ctx.die;
-      if (!lit && d.state === 'flying' && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
+      if (!lit && (d.state === 'flying' || d.state === 'rest') && d.face === 3 && d.pos.distanceTo(BOWL) < 0.6) {
         lit = true;
         flame.visible = true;
         ctx.caption('O braseiro acendeu!', 'Agora a placa, lá embaixo.', '#ff9a3c');

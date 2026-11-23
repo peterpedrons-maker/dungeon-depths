@@ -24,6 +24,15 @@ export interface ChalkDot {
   s: number; // id da superfície riscada
 }
 
+// Ponto de encaixe do dado ao posicionar (braseiro, altar...): se a mira cair perto dele,
+// o dado vai pro centro, em cima da superfície. (x, y, z) locais da sala; y = topo do suporte.
+export interface Socket {
+  x: number;
+  y: number;
+  z: number;
+  r: number; // alcance horizontal da mira
+}
+
 // O que o motor oferece a cada sala.
 export interface Ctx {
   caption(title: string, sub: string, color: string): void;
@@ -58,6 +67,7 @@ export interface Room {
   fog: { color: string; near: number; far: number };
   ambient: { color: number; intensity: number };
   boxes: Box[]; // sólidos para o dado
+  sockets?: Socket[]; // pontos de encaixe ao posicionar o dado
   rects(feetY: number): Rect[]; // obstáculos para o jogador
   clampPlayer?(pos: THREE.Vector3): void; // limites curvos (coordenadas da sala); retas são obstáculos em rects()
   clampDie(p: THREE.Vector3, v: THREE.Vector3, e: number, R: number): void;

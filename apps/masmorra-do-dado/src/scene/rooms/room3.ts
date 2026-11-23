@@ -108,7 +108,10 @@ export function buildRoom3(ctx: Ctx): Room {
     boxes.push(mkBox(x - 0.45, 0, z - 0.45, x + 0.45, H, z + 0.45));
     boxes.push(mkBox(x - 0.55, 0, z - 0.55, x + 0.55, 0.25, z + 0.55));
   }
-  for (const [x, z] of BRAZIERS) boxes.push(mkBox(x - 0.3, 0, z - 0.3, x + 0.3, 0.8, z + 0.3));
+  for (const [x, z] of BRAZIERS) {
+    boxes.push(mkBox(x - 0.3, 0, z - 0.3, x + 0.3, 0.8, z + 0.3));
+    boxes.push(mkBox(x - 0.42, 0.8, z - 0.42, x + 0.42, 1.1, z + 0.42)); // tigela
+  }
   boxes.push(mkBox(-0.7, 0, -0.7, 0.7, PLATE.top, 0.7));
 
   let plateDown = false;
@@ -139,6 +142,7 @@ export function buildRoom3(ctx: Ctx): Room {
     fog: { color: '#120706', near: 4, far: 20 },
     ambient: { color: 0xb08878, intensity: 1.7 },
     boxes: [...boxes, ...kit.boxes],
+    sockets: BRAZIERS.map(([x, z]) => ({ x, y: 1.1, z, r: 0.6 })),
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       for (const [x, z] of BRAZIERS) r.push([x - 0.5, z - 0.5, x + 0.5, z + 0.5]);
@@ -196,7 +200,7 @@ export function buildRoom3(ctx: Ctx): Room {
       kit.tick(dt, t);
       const d = ctx.die;
       braziers.forEach((b, i) => {
-        if (b.left <= 0 && !latched && d.state === 'flying' && d.face === 3 && d.pos.distanceTo(b.pos) < 0.6) {
+        if (b.left <= 0 && !latched && (d.state === 'flying' || d.state === 'rest') && d.face === 3 && d.pos.distanceTo(b.pos) < 0.6) {
           b.left = BURN;
           b.flame.visible = true;
           ctx.caption(`Braseiro ${braziers.filter((x) => x.left > 0).length} de 3`, 'Ele não vai durar muito.', '#ff9a3c');
