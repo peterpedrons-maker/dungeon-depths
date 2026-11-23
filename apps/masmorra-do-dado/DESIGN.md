@@ -124,6 +124,33 @@ símbolos desenhados com a anotação que a pessoa fez ("acho que é acender"), 
 | Deslizar | ENTÃO | define a **ordem** (A dispara B): puzzles de sequência |
 | Atravessar | NÃO | nega: apaga o efeito de outra face ou torna algo intangível ("não acender" = apagar) |
 
+## 7d. Quem fala o quê (decidido)
+
+- **O dado é o Boato:** o companheiro do jogador. Fala em glifos, reage ao que o jogador faz (emoção, nunca dica).
+- **O Escrivão** é um NPC que o jogador **vai encontrando** pelo caminho (não acompanha o tempo todo). Fala em glifos.
+  O jogo terá 4 NPCs além do dado **[DECIDIR]** quem são os outros três.
+- **Regra do mundo:** tudo o que é *do mundo* (cenário, NPCs, o dado, ecos, inscrições) fala **em glifos**.
+  Tudo o que é **humano** (os **pensamentos do jogador** e os **diários dos outros condenados**) vem **em português**.
+  Isso dá um canal natural para dicas raras: os diários e os pensamentos, nunca as vozes do mundo.
+- Consequência: a língua **cresce** com o jogo. As 28 palavras da amostra são só o primeiro capítulo; para contar a
+  lore inteira em glifos serão necessárias ~80–120 palavras, introduzidas aos poucos. A história só pode dizer o que o
+  jogador já consegue ler naquele ponto, o que dita o ritmo. (A planilha em `LINGUA.md` precisa crescer junto.)
+- A janela de conversa mostra glifos em linha (mesmo desenho dos entalhes); os pensamentos do jogador aparecem em
+  português, em estilo visual diferente.
+
+## 7e. Animações de uso do dado (decidido o conceito)
+
+Cada uso do dado tem uma **animação própria**, e o dado reage como personagem.
+- **Fogo (ACENDER):** minicena curta. O jogador fica parado, o dado vai devagar até o braseiro, **começa a se desfazer**
+  e vira combustível; a chama acende; depois o dado **renasce** (da cinza, na mão do jogador).
+- Cuidados: a 1ª vez é a versão completa; nas seguintes, uma versão curta; dá para **pular** (toque/tecla).
+  O jogo não tira o controle de forma brusca (a câmera acompanha de leve). As reações do dado são emocionais e
+  **iguais** para acerto e erro (não viram dica).
+- Esboço para as demais faces **[DECIDIR]**: Peso (o dado afunda com um estrondo e a placa brilha), Eco (surge uma cópia
+  fantasma que repete), Troca (as duas coisas borram e trocam, o dado gira), Deslizar (o dado corre por um trilho
+  deixando um rastro), Atravessar (o dado fica translúcido e atravessa).
+- Técnica: dissolução por limiar de ruído com borda emissiva, partículas de brasa, sem modelos animados.
+
 ## 8. Estilo visual da escrita
 
 Decidido: **a escrita é branca**, como o giz do jogador.
