@@ -5,6 +5,7 @@
   "en": "zero",
   "fam": "numero",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -14,7 +15,8 @@
    ],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "n1",
@@ -22,6 +24,7 @@
   "en": "one",
   "fam": "numero",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -31,7 +34,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "n2",
@@ -39,6 +43,7 @@
   "en": "two",
   "fam": "numero",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -49,7 +54,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "n3",
@@ -57,6 +63,7 @@
   "en": "three",
   "fam": "numero",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -68,7 +75,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "n4",
@@ -76,6 +84,7 @@
   "en": "four",
   "fam": "numero",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -88,7 +97,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "n5",
@@ -96,6 +106,7 @@
   "en": "five",
   "fam": "numero",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -109,7 +120,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "todos",
@@ -117,6 +129,7 @@
   "en": "all",
   "fam": "numero",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -134,7 +147,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "mais",
@@ -142,6 +156,7 @@
   "en": "more",
   "fam": "numero",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -155,7 +170,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "menos",
@@ -163,6 +179,7 @@
   "en": "less",
   "fam": "numero",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -174,7 +191,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "conf",
@@ -182,6 +200,7 @@
   "en": "confirmed",
   "fam": "marca",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -200,7 +219,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "boato",
@@ -208,6 +228,7 @@
   "en": "rumor",
   "fam": "marca",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -226,7 +247,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "mem",
@@ -234,6 +256,7 @@
   "en": "was true, no longer",
   "fam": "marca",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -252,7 +275,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "perg",
@@ -260,6 +284,7 @@
   "en": "question",
   "fam": "marca",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -280,7 +305,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "agente",
@@ -288,6 +314,7 @@
   "en": "doer",
   "fam": "mod",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 1,
@@ -297,7 +324,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "resultado",
@@ -305,6 +333,7 @@
   "en": "done to",
   "fam": "mod",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 1,
@@ -320,7 +349,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "oposto",
@@ -328,6 +358,7 @@
   "en": "opposite",
   "fam": "mod",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 1,
@@ -343,7 +374,8 @@
      3
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "muitos",
@@ -351,6 +383,7 @@
   "en": "many",
   "fam": "mod",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 1,
@@ -361,7 +394,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "lugar",
@@ -369,6 +403,7 @@
   "en": "place of",
   "fam": "mod",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 1,
@@ -389,7 +424,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "acender",
@@ -397,6 +433,7 @@
   "en": "ignite",
   "fam": "verbo",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -421,7 +458,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "igual",
@@ -429,6 +467,7 @@
   "en": "equal / weigh",
   "fam": "verbo",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -450,7 +489,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "denovo",
@@ -458,6 +498,7 @@
   "en": "again",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -483,7 +524,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "trocar",
@@ -491,6 +533,7 @@
   "en": "instead of",
   "fam": "verbo",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -512,7 +555,8 @@
      6
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "seguir",
@@ -520,6 +564,7 @@
   "en": "then / follow",
   "fam": "verbo",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -545,7 +590,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "atravessar",
@@ -553,6 +599,7 @@
   "en": "cross / not",
   "fam": "verbo",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -574,7 +621,8 @@
      6
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ver",
@@ -582,6 +630,7 @@
   "en": "see",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -612,7 +661,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "dizer",
@@ -620,6 +670,7 @@
   "en": "say",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -645,7 +696,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "escrever",
@@ -653,6 +705,7 @@
   "en": "write",
   "fam": "verbo",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -669,7 +722,8 @@
      6
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ir",
@@ -677,6 +731,7 @@
   "en": "go",
   "fam": "verbo",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -702,7 +757,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "vir",
@@ -710,6 +766,7 @@
   "en": "come",
   "fam": "verbo",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -735,7 +792,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "pegar",
@@ -743,6 +801,7 @@
   "en": "take",
   "fam": "verbo",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -763,7 +822,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "colocar",
@@ -771,6 +831,7 @@
   "en": "place",
   "fam": "verbo",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -792,7 +853,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "abrir",
@@ -800,6 +862,7 @@
   "en": "open",
   "fam": "verbo",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -821,7 +884,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "fechar",
@@ -829,6 +893,7 @@
   "en": "close",
   "fam": "verbo",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -850,7 +915,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "quebrar",
@@ -858,6 +924,7 @@
   "en": "break",
   "fam": "verbo",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -883,7 +950,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "prender",
@@ -891,6 +959,7 @@
   "en": "bind",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -911,7 +980,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "dar",
@@ -919,6 +989,7 @@
   "en": "give",
   "fam": "verbo",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -939,7 +1010,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "contar",
@@ -947,6 +1019,7 @@
   "en": "count",
   "fam": "verbo",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -969,7 +1042,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "julgar",
@@ -977,6 +1051,7 @@
   "en": "judge",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -998,7 +1073,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "querer",
@@ -1006,6 +1082,7 @@
   "en": "want",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "",
    "s": 0,
@@ -1026,7 +1103,8 @@
      6
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "ler",
@@ -1034,10 +1112,12 @@
   "en": "read",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "c": [
    "escrever",
    "oposto"
-  ]
+  ],
+  "uso": "puzzle"
  },
  {
   "id": "saber",
@@ -1045,10 +1125,12 @@
   "en": "know",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "c": [
    "ver",
    "conf"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "lembrar",
@@ -1056,10 +1138,12 @@
   "en": "remember",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "c": [
    "ver",
    "mem"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "esquecer",
@@ -1067,10 +1151,12 @@
   "en": "forget",
   "fam": "verbo",
   "cap": 3,
+  "lote": 1,
   "c": [
    "lembrar",
    "oposto"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "mentir",
@@ -1078,10 +1164,12 @@
   "en": "lie",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "c": [
    "dizer",
    "boato"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "escolher",
@@ -1089,10 +1177,12 @@
   "en": "choose",
   "fam": "verbo",
   "cap": 4,
+  "lote": 1,
   "c": [
    "pegar",
    "trocar"
-  ]
+  ],
+  "uso": "puzzle"
  },
  {
   "id": "libertar",
@@ -1100,10 +1190,12 @@
   "en": "free",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "c": [
    "prender",
    "oposto"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "absolver",
@@ -1111,10 +1203,12 @@
   "en": "absolve",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "c": [
    "julgar",
    "oposto"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "condenar",
@@ -1122,10 +1216,12 @@
   "en": "condemn",
   "fam": "verbo",
   "cap": 7,
+  "lote": 1,
   "c": [
    "julgar",
    "prender"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "brasa",
@@ -1133,6 +1229,7 @@
   "en": "brazier",
   "fam": "coisa",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1153,7 +1250,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "porta",
@@ -1161,6 +1259,7 @@
   "en": "door",
   "fam": "coisa",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1191,7 +1290,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "chao",
@@ -1199,6 +1299,7 @@
   "en": "floor",
   "fam": "coisa",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1214,7 +1315,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "placa",
@@ -1222,6 +1324,7 @@
   "en": "plate",
   "fam": "coisa",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1238,7 +1341,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "dado",
@@ -1246,6 +1350,7 @@
   "en": "die",
   "fam": "coisa",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1259,7 +1364,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "giz",
@@ -1267,6 +1373,7 @@
   "en": "chalk",
   "fam": "coisa",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1282,7 +1389,8 @@
      6
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "parede",
@@ -1290,6 +1398,7 @@
   "en": "wall",
   "fam": "coisa",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1305,7 +1414,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "pedra",
@@ -1313,6 +1423,7 @@
   "en": "stone",
   "fam": "coisa",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1324,7 +1435,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "fogo",
@@ -1332,6 +1444,7 @@
   "en": "fire",
   "fam": "coisa",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1356,7 +1469,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "luz",
@@ -1364,6 +1478,7 @@
   "en": "light",
   "fam": "coisa",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1378,7 +1493,8 @@
    ],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "livro",
@@ -1386,6 +1502,7 @@
   "en": "book",
   "fam": "coisa",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1413,7 +1530,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "mesa",
@@ -1421,6 +1539,7 @@
   "en": "table",
   "fam": "coisa",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1446,7 +1565,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "espelho",
@@ -1454,6 +1574,7 @@
   "en": "mirror",
   "fam": "coisa",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1470,7 +1591,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "chave",
@@ -1478,6 +1600,7 @@
   "en": "key",
   "fam": "coisa",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1504,7 +1627,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "altar",
@@ -1512,6 +1636,7 @@
   "en": "altar",
   "fam": "coisa",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1533,7 +1658,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "agua",
@@ -1541,6 +1667,7 @@
   "en": "water",
   "fam": "coisa",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1571,7 +1698,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "poco",
@@ -1579,6 +1707,7 @@
   "en": "well",
   "fam": "coisa",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1593,7 +1722,8 @@
    ],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "caminho",
@@ -1601,6 +1731,7 @@
   "en": "path",
   "fam": "coisa",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1621,7 +1752,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "trilho",
@@ -1629,6 +1761,7 @@
   "en": "rail",
   "fam": "coisa",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1656,7 +1789,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ponte",
@@ -1664,6 +1798,7 @@
   "en": "bridge",
   "fam": "coisa",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1689,7 +1824,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "sala",
@@ -1697,6 +1833,7 @@
   "en": "room",
   "fam": "coisa",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1726,7 +1863,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "sino",
@@ -1734,6 +1872,7 @@
   "en": "bell",
   "fam": "coisa",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "full",
    "s": 0,
@@ -1763,7 +1902,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "voce",
@@ -1771,6 +1911,7 @@
   "en": "you",
   "fam": "ser",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "U",
    "s": 0,
@@ -1780,7 +1921,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "alguem",
@@ -1788,6 +1930,7 @@
   "en": "someone",
   "fam": "ser",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "U",
    "s": 0,
@@ -1797,7 +1940,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "contaveis",
@@ -1805,6 +1949,7 @@
   "en": "the Countables",
   "fam": "ser",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "U",
    "s": 0,
@@ -1816,7 +1961,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "eco",
@@ -1824,6 +1970,7 @@
   "en": "echo",
   "fam": "ser",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "U",
    "s": 0,
@@ -1833,7 +1980,8 @@
    ],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "escrivao",
@@ -1841,10 +1989,12 @@
   "en": "the Scribe",
   "fam": "ser",
   "cap": 2,
+  "lote": 1,
   "c": [
    "escrever",
    "agente"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "juiz",
@@ -1852,10 +2002,12 @@
   "en": "judge",
   "fam": "ser",
   "cap": 7,
+  "lote": 1,
   "c": [
    "julgar",
    "agente"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "condenado",
@@ -1863,10 +2015,12 @@
   "en": "condemned",
   "fam": "ser",
   "cap": 7,
+  "lote": 1,
   "c": [
    "condenar",
    "resultado"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "boatodado",
@@ -1874,10 +2028,12 @@
   "en": "the Rumor (the die)",
   "fam": "ser",
   "cap": 1,
+  "lote": 1,
   "c": [
    "dado",
    "boato"
-  ]
+  ],
+  "uso": "puzzle"
  },
  {
   "id": "ninguem",
@@ -1885,10 +2041,12 @@
   "en": "no one",
   "fam": "ser",
   "cap": 3,
+  "lote": 1,
   "c": [
    "alguem",
    "n0"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "verdade",
@@ -1896,6 +2054,7 @@
   "en": "truth",
   "fam": "conceito",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -1914,7 +2073,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "mentira",
@@ -1922,6 +2082,7 @@
   "en": "falsehood",
   "fam": "conceito",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -1940,7 +2101,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "duvida",
@@ -1948,6 +2110,7 @@
   "en": "doubt",
   "fam": "conceito",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -1968,7 +2131,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "memoria",
@@ -1976,6 +2140,7 @@
   "en": "memory",
   "fam": "conceito",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -1994,7 +2159,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "acaso",
@@ -2002,6 +2168,7 @@
   "en": "chance",
   "fam": "conceito",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2013,7 +2180,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "ordem",
@@ -2021,6 +2189,7 @@
   "en": "order",
   "fam": "conceito",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2037,7 +2206,8 @@
      2
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "escolha",
@@ -2045,6 +2215,7 @@
   "en": "choice",
   "fam": "conceito",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2065,7 +2236,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "tempo",
@@ -2073,6 +2245,7 @@
   "en": "time",
   "fam": "conceito",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2102,7 +2275,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "nome",
@@ -2110,6 +2284,7 @@
   "en": "name",
   "fam": "conceito",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2122,7 +2297,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "crime",
@@ -2130,6 +2306,7 @@
   "en": "crime",
   "fam": "conceito",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2150,7 +2327,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "sentenca",
@@ -2158,6 +2336,7 @@
   "en": "sentence",
   "fam": "conceito",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2185,7 +2364,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "pena",
@@ -2193,6 +2373,7 @@
   "en": "penalty",
   "fam": "conceito",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2213,7 +2394,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "medo",
@@ -2221,6 +2403,7 @@
   "en": "fear",
   "fam": "conceito",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2233,7 +2416,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "liberdade",
@@ -2241,6 +2425,7 @@
   "en": "freedom",
   "fam": "conceito",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2261,7 +2446,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "vida",
@@ -2269,6 +2455,7 @@
   "en": "life",
   "fam": "conceito",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2294,7 +2481,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "morte",
@@ -2302,6 +2490,7 @@
   "en": "death",
   "fam": "conceito",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2323,7 +2512,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "lei",
@@ -2331,6 +2521,7 @@
   "en": "law",
   "fam": "conceito",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2354,7 +2545,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "culpa",
@@ -2362,6 +2554,7 @@
   "en": "guilt",
   "fam": "conceito",
   "cap": 7,
+  "lote": 1,
   "g": {
    "F": "N",
    "s": 0,
@@ -2383,7 +2576,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "se",
@@ -2391,6 +2585,7 @@
   "en": "if",
   "fam": "ligacao",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "R",
    "s": 0,
@@ -2400,7 +2595,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "e",
@@ -2408,6 +2604,7 @@
   "en": "and",
   "fam": "ligacao",
   "cap": 2,
+  "lote": 1,
   "g": {
    "F": "R",
    "s": 0,
@@ -2418,7 +2615,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "com",
@@ -2426,6 +2624,7 @@
   "en": "with",
   "fam": "ligacao",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "R",
    "s": 0,
@@ -2441,7 +2640,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ou",
@@ -2449,6 +2649,7 @@
   "en": "or",
   "fam": "ligacao",
   "cap": 4,
+  "lote": 1,
   "g": {
    "F": "R",
    "s": 0,
@@ -2459,7 +2660,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "porque",
@@ -2467,6 +2669,7 @@
   "en": "because",
   "fam": "ligacao",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "R",
    "s": 0,
@@ -2483,7 +2686,8 @@
      4
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "para",
@@ -2491,6 +2695,7 @@
   "en": "toward",
   "fam": "ligacao",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "R",
    "s": 0,
@@ -2516,7 +2721,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "sem",
@@ -2524,10 +2730,12 @@
   "en": "without",
   "fam": "ligacao",
   "cap": 6,
+  "lote": 1,
   "c": [
    "atravessar",
    "com"
-  ]
+  ],
+  "uso": "puzzle"
  },
  {
   "id": "agora",
@@ -2535,6 +2743,7 @@
   "en": "now",
   "fam": "posicao",
   "cap": 1,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2544,7 +2753,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "antes",
@@ -2552,6 +2762,7 @@
   "en": "before",
   "fam": "posicao",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2561,7 +2772,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "depois",
@@ -2569,6 +2781,7 @@
   "en": "after",
   "fam": "posicao",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2578,7 +2791,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "sempre",
@@ -2586,6 +2800,7 @@
   "en": "always",
   "fam": "posicao",
   "cap": 3,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2601,7 +2816,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "acima",
@@ -2609,6 +2825,7 @@
   "en": "above",
   "fam": "posicao",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2618,7 +2835,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "abaixo",
@@ -2626,6 +2844,7 @@
   "en": "below",
   "fam": "posicao",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2635,7 +2854,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "dentro",
@@ -2643,6 +2863,7 @@
   "en": "inside",
   "fam": "posicao",
   "cap": 6,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2652,7 +2873,8 @@
    ],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "perto",
@@ -2660,6 +2882,7 @@
   "en": "near",
   "fam": "posicao",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2675,7 +2898,8 @@
      4
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "longe",
@@ -2683,6 +2907,7 @@
   "en": "far",
   "fam": "posicao",
   "cap": 5,
+  "lote": 1,
   "g": {
    "F": "L",
    "s": 0,
@@ -2693,7 +2918,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "nunca",
@@ -2701,10 +2927,12 @@
   "en": "never",
   "fam": "posicao",
   "cap": 3,
+  "lote": 1,
   "c": [
    "atravessar",
    "sempre"
-  ]
+  ],
+  "uso": "puzzle"
  },
  {
   "id": "fora",
@@ -2712,10 +2940,12 @@
   "en": "outside",
   "fam": "posicao",
   "cap": 6,
+  "lote": 1,
   "c": [
    "atravessar",
    "dentro"
-  ]
+  ],
+  "uso": "puzzle"
  },
  {
   "id": "eu",
@@ -2723,6 +2953,7 @@
   "en": "I",
   "fam": "ser",
   "cap": 3,
+  "lote": 2,
   "g": {
    "F": "U",
    "s": 0,
@@ -2732,7 +2963,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "ele",
@@ -2740,6 +2972,7 @@
   "en": "he / she",
   "fam": "ser",
   "cap": 3,
+  "lote": 2,
   "g": {
    "F": "U",
    "s": 0,
@@ -2749,7 +2982,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "nos",
@@ -2757,6 +2991,7 @@
   "en": "we",
   "fam": "ser",
   "cap": 3,
+  "lote": 2,
   "g": {
    "F": "U",
    "s": 0,
@@ -2772,7 +3007,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "amigo",
@@ -2780,6 +3016,7 @@
   "en": "friend",
   "fam": "ser",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "U",
    "s": 0,
@@ -2795,7 +3032,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "coisa",
@@ -2803,6 +3041,7 @@
   "en": "thing",
   "fam": "coisa",
   "cap": 2,
+  "lote": 2,
   "g": {
    "F": "full",
    "s": 0,
@@ -2812,7 +3051,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "mundo",
@@ -2820,10 +3060,12 @@
   "en": "world",
   "fam": "coisa",
   "cap": 5,
+  "lote": 2,
   "c": [
    "todos",
    "coisa"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "casa",
@@ -2831,10 +3073,12 @@
   "en": "house",
   "fam": "coisa",
   "cap": 5,
+  "lote": 2,
   "c": [
    "sala",
    "muitos"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "palavra",
@@ -2842,10 +3086,12 @@
   "en": "word",
   "fam": "coisa",
   "cap": 3,
+  "lote": 2,
   "c": [
    "dizer",
    "resultado"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "quem",
@@ -2853,10 +3099,12 @@
   "en": "who",
   "fam": "ser",
   "cap": 3,
+  "lote": 2,
   "c": [
    "alguem",
    "perg"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "oque",
@@ -2864,10 +3112,12 @@
   "en": "what",
   "fam": "coisa",
   "cap": 3,
+  "lote": 2,
   "c": [
    "coisa",
    "perg"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "onde",
@@ -2875,10 +3125,12 @@
   "en": "where",
   "fam": "posicao",
   "cap": 3,
+  "lote": 2,
   "c": [
    "lugar",
    "perg"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "porquep",
@@ -2886,10 +3138,12 @@
   "en": "why",
   "fam": "ligacao",
   "cap": 3,
+  "lote": 2,
   "c": [
    "porque",
    "perg"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "quando",
@@ -2897,10 +3151,12 @@
   "en": "when",
   "fam": "posicao",
   "cap": 3,
+  "lote": 2,
   "c": [
    "tempo",
    "perg"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "primeiro",
@@ -2908,6 +3164,7 @@
   "en": "first",
   "fam": "qualidade",
   "cap": 2,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -2917,7 +3174,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ultimo",
@@ -2925,6 +3183,7 @@
   "en": "last",
   "fam": "qualidade",
   "cap": 7,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -2934,7 +3193,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "grande",
@@ -2942,6 +3202,7 @@
   "en": "big",
   "fam": "qualidade",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -2954,7 +3215,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "pequeno",
@@ -2962,6 +3224,7 @@
   "en": "small",
   "fam": "qualidade",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -2971,7 +3234,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "novo",
@@ -2979,6 +3243,7 @@
   "en": "new",
   "fam": "qualidade",
   "cap": 3,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -2994,7 +3259,8 @@
      4
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "velho",
@@ -3002,6 +3268,7 @@
   "en": "old",
   "fam": "qualidade",
   "cap": 3,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -3017,7 +3284,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "bom",
@@ -3025,6 +3293,7 @@
   "en": "good",
   "fam": "qualidade",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -3045,7 +3314,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "mau",
@@ -3053,10 +3323,12 @@
   "en": "bad",
   "fam": "qualidade",
   "cap": 4,
+  "lote": 2,
   "c": [
    "bom",
    "oposto"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "outro",
@@ -3064,6 +3336,7 @@
   "en": "other",
   "fam": "qualidade",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -3074,7 +3347,8 @@
    "ring": [],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "vazio",
@@ -3082,6 +3356,7 @@
   "en": "empty",
   "fam": "qualidade",
   "cap": 2,
+  "lote": 2,
   "g": {
    "F": "V",
    "s": 0,
@@ -3091,7 +3366,8 @@
    ],
    "big": [],
    "l": []
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "fazer",
@@ -3099,6 +3375,7 @@
   "en": "do / make",
   "fam": "verbo",
   "cap": 2,
+  "lote": 2,
   "g": {
    "F": "",
    "s": 0,
@@ -3124,7 +3401,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ter",
@@ -3132,6 +3410,7 @@
   "en": "have",
   "fam": "verbo",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "",
    "s": 0,
@@ -3152,7 +3431,8 @@
      6
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "poder",
@@ -3160,6 +3440,7 @@
   "en": "can",
   "fam": "verbo",
   "cap": 4,
+  "lote": 2,
   "g": {
    "F": "",
    "s": 0,
@@ -3180,7 +3461,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "historia"
  },
  {
   "id": "cair",
@@ -3188,6 +3470,7 @@
   "en": "fall",
   "fam": "verbo",
   "cap": 5,
+  "lote": 2,
   "g": {
    "F": "",
    "s": 0,
@@ -3213,7 +3496,8 @@
      8
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "voltar",
@@ -3221,6 +3505,7 @@
   "en": "return",
   "fam": "verbo",
   "cap": 5,
+  "lote": 2,
   "g": {
    "F": "",
    "s": 0,
@@ -3246,7 +3531,8 @@
      7
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "ficar",
@@ -3254,6 +3540,7 @@
   "en": "stay",
   "fam": "verbo",
   "cap": 3,
+  "lote": 2,
   "g": {
    "F": "",
    "s": 0,
@@ -3275,7 +3562,8 @@
      5
     ]
    ]
-  }
+  },
+  "uso": "puzzle"
  },
  {
   "id": "dever",
@@ -3283,10 +3571,12 @@
   "en": "must",
   "fam": "verbo",
   "cap": 7,
+  "lote": 2,
   "c": [
    "seguir",
    "lei"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "ajudar",
@@ -3294,10 +3584,12 @@
   "en": "help",
   "fam": "verbo",
   "cap": 4,
+  "lote": 2,
   "c": [
    "dar",
    "com"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "esperar",
@@ -3305,10 +3597,12 @@
   "en": "wait",
   "fam": "verbo",
   "cap": 3,
+  "lote": 2,
   "c": [
    "ficar",
    "depois"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "viver",
@@ -3316,10 +3610,12 @@
   "en": "live",
   "fam": "verbo",
   "cap": 6,
+  "lote": 2,
   "c": [
    "igual",
    "vida"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "morrer",
@@ -3327,10 +3623,12 @@
   "en": "die",
   "fam": "verbo",
   "cap": 6,
+  "lote": 2,
   "c": [
    "igual",
    "morte"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "pensar",
@@ -3338,10 +3636,12 @@
   "en": "think",
   "fam": "verbo",
   "cap": 3,
+  "lote": 2,
   "c": [
    "dizer",
    "dentro"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "sentir",
@@ -3349,10 +3649,12 @@
   "en": "feel",
   "fam": "verbo",
   "cap": 4,
+  "lote": 2,
   "c": [
    "pegar",
    "dentro"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "lancar",
@@ -3360,10 +3662,12 @@
   "en": "throw / cast",
   "fam": "verbo",
   "cap": 2,
+  "lote": 2,
   "c": [
    "ir",
    "dado"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "pousar",
@@ -3371,10 +3675,12 @@
   "en": "land",
   "fam": "verbo",
   "cap": 2,
+  "lote": 2,
   "c": [
    "vir",
    "chao"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "esperanca",
@@ -3382,10 +3688,12 @@
   "en": "hope",
   "fam": "conceito",
   "cap": 6,
+  "lote": 2,
   "c": [
    "querer",
    "depois"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "tristeza",
@@ -3393,10 +3701,12 @@
   "en": "sadness",
   "fam": "conceito",
   "cap": 6,
+  "lote": 2,
   "c": [
    "vida",
    "menos"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "alegria",
@@ -3404,10 +3714,12 @@
   "en": "joy",
   "fam": "conceito",
   "cap": 6,
+  "lote": 2,
   "c": [
    "vida",
    "mais"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "saudade",
@@ -3415,10 +3727,12 @@
   "en": "longing",
   "fam": "conceito",
   "cap": 6,
+  "lote": 2,
   "c": [
    "memoria",
    "querer"
-  ]
+  ],
+  "uso": "historia"
  },
  {
   "id": "raiva",
@@ -3426,9 +3740,276 @@
   "en": "anger",
   "fam": "conceito",
   "cap": 6,
+  "lote": 2,
   "c": [
    "fogo",
    "medo"
-  ]
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "quente",
+  "pt": "quente",
+  "en": "hot",
+  "fam": "qualidade",
+  "cap": 2,
+  "lote": 3,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    1,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     6
+    ],
+    [
+     1,
+     8
+    ]
+   ]
+  },
+  "uso": "puzzle"
+ },
+ {
+  "id": "frio",
+  "pt": "frio",
+  "en": "cold",
+  "fam": "qualidade",
+  "cap": 2,
+  "lote": 3,
+  "c": [
+   "quente",
+   "oposto"
+  ],
+  "uso": "puzzle"
+ },
+ {
+  "id": "forte",
+  "pt": "forte",
+  "en": "strong",
+  "fam": "qualidade",
+  "cap": 4,
+  "lote": 3,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     7
+    ],
+    [
+     3,
+     5
+    ]
+   ]
+  },
+  "uso": "historia"
+ },
+ {
+  "id": "fraco",
+  "pt": "fraco",
+  "en": "weak",
+  "fam": "qualidade",
+  "cap": 4,
+  "lote": 3,
+  "c": [
+   "forte",
+   "oposto"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "escuro",
+  "pt": "escuro",
+  "en": "dark",
+  "fam": "qualidade",
+  "cap": 1,
+  "lote": 3,
+  "c": [
+   "luz",
+   "oposto"
+  ],
+  "uso": "puzzle"
+ },
+ {
+  "id": "som",
+  "pt": "som",
+  "en": "sound",
+  "fam": "conceito",
+  "cap": 3,
+  "lote": 3,
+  "g": {
+   "F": "N",
+   "s": 0,
+   "p": [
+    2,
+    4,
+    5,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     4
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  },
+  "uso": "puzzle"
+ },
+ {
+  "id": "silencio",
+  "pt": "silêncio",
+  "en": "silence",
+  "fam": "conceito",
+  "cap": 3,
+  "lote": 3,
+  "c": [
+   "som",
+   "oposto"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "dia",
+  "pt": "dia",
+  "en": "day",
+  "fam": "conceito",
+  "cap": 3,
+  "lote": 3,
+  "c": [
+   "luz",
+   "tempo"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "noite",
+  "pt": "noite",
+  "en": "night",
+  "fam": "conceito",
+  "cap": 3,
+  "lote": 3,
+  "c": [
+   "escuro",
+   "tempo"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "segredo",
+  "pt": "segredo",
+  "en": "secret",
+  "fam": "conceito",
+  "cap": 4,
+  "lote": 3,
+  "c": [
+   "palavra",
+   "dentro"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "mestre",
+  "pt": "mestre",
+  "en": "master",
+  "fam": "ser",
+  "cap": 4,
+  "lote": 3,
+  "c": [
+   "saber",
+   "agente"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "pai",
+  "pt": "pai",
+  "en": "father",
+  "fam": "ser",
+  "cap": 4,
+  "lote": 3,
+  "c": [
+   "alguem",
+   "velho"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "filho",
+  "pt": "filho",
+  "en": "child",
+  "fam": "ser",
+  "cap": 4,
+  "lote": 3,
+  "c": [
+   "alguem",
+   "novo"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "achar",
+  "pt": "achar",
+  "en": "find",
+  "fam": "verbo",
+  "cap": 3,
+  "lote": 3,
+  "c": [
+   "ver",
+   "pegar"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "perder",
+  "pt": "perder",
+  "en": "lose",
+  "fam": "verbo",
+  "cap": 3,
+  "lote": 3,
+  "c": [
+   "achar",
+   "oposto"
+  ],
+  "uso": "historia"
+ },
+ {
+  "id": "ouvir",
+  "pt": "ouvir",
+  "en": "hear",
+  "fam": "verbo",
+  "cap": 3,
+  "lote": 3,
+  "c": [
+   "pegar",
+   "som"
+  ],
+  "uso": "historia"
  }
 ]

@@ -21,8 +21,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
 
 const words = [];
-const W = (id, pt, en, fam, cap, g) => words.push({ id, pt, en, fam, cap, g });
-const C = (id, pt, en, fam, cap, c) => words.push({ id, pt, en, fam, cap, c });
+let LOTE = 1; // em que leva a palavra entrou (só para mostrar o que é novo)
+const W = (id, pt, en, fam, cap, g) => words.push({ id, pt, en, fam, cap, lote: LOTE, g });
+const C = (id, pt, en, fam, cap, c) => words.push({ id, pt, en, fam, cap, lote: LOTE, c });
 
 // ── números e quantidades ──────────────────────────────────────────────
 W('n0', 'zero', 'zero', 'numero', 1, { ring: [4] });
@@ -164,6 +165,7 @@ C('nunca', 'nunca', 'never', 'posicao', 3, ['atravessar', 'sempre']);
 C('fora', 'fora', 'outside', 'posicao', 6, ['atravessar', 'dentro']);
 
 
+LOTE = 2;
 // ══ segunda leva: o que falta para conversas e lore ═══════════════════
 // ── seres: pronomes e relações ─────────────────────────────────────────
 W('eu', 'eu', 'I', 'ser', 3, { F: 'U', p: [7] });
@@ -215,6 +217,37 @@ C('tristeza', 'tristeza', 'sadness', 'conceito', 6, ['vida', 'menos']);
 C('alegria', 'alegria', 'joy', 'conceito', 6, ['vida', 'mais']);
 C('saudade', 'saudade', 'longing', 'conceito', 6, ['memoria', 'querer']);
 C('raiva', 'raiva', 'anger', 'conceito', 6, ['fogo', 'medo']);
+
+LOTE = 3;
+// ══ terceira leva: palavras que o roteiro vai pedir de qualquer jeito ═══
+W('quente', 'quente', 'hot', 'qualidade', 2, { F: V, l: [[6, 1], [1, 8]] });
+C('frio', 'frio', 'cold', 'qualidade', 2, ['quente', 'oposto']);
+W('forte', 'forte', 'strong', 'qualidade', 4, { F: V, l: [[1, 7], [3, 5]] });
+C('fraco', 'fraco', 'weak', 'qualidade', 4, ['forte', 'oposto']);
+C('escuro', 'escuro', 'dark', 'qualidade', 1, ['luz', 'oposto']);
+W('som', 'som', 'sound', 'conceito', 3, { F: N, l: [[4, 2], [4, 5], [4, 8]] });
+C('silencio', 'silêncio', 'silence', 'conceito', 3, ['som', 'oposto']);
+C('dia', 'dia', 'day', 'conceito', 3, ['luz', 'tempo']);
+C('noite', 'noite', 'night', 'conceito', 3, ['escuro', 'tempo']);
+C('segredo', 'segredo', 'secret', 'conceito', 4, ['palavra', 'dentro']);
+C('mestre', 'mestre', 'master', 'ser', 4, ['saber', 'agente']);
+C('pai', 'pai', 'father', 'ser', 4, ['alguem', 'velho']);
+C('filho', 'filho', 'child', 'ser', 4, ['alguem', 'novo']);
+C('achar', 'achar', 'find', 'verbo', 3, ['ver', 'pegar']);
+C('perder', 'perder', 'lose', 'verbo', 3, ['achar', 'oposto']);
+C('ouvir', 'ouvir', 'hear', 'verbo', 3, ['pegar', 'som']);
+
+// Palavras de HISTÓRIA: o jogador entende a lore se aprendê-las (diários e conversas),
+// mas nenhum puzzle depende delas. Todas as outras são palavras de PUZZLE (obrigatórias).
+const LORE = new Set([
+  'alguem', 'contaveis', 'eco', 'escrivao', 'juiz', 'condenado', 'ninguem', 'eu', 'ele', 'nos', 'amigo', 'quem', 'mestre', 'pai', 'filho',
+  'oque', 'onde', 'porquep', 'quando', 'porque',
+  'verdade', 'mentira', 'duvida', 'memoria', 'acaso', 'nome', 'crime', 'sentenca', 'pena', 'medo', 'liberdade', 'vida', 'morte', 'lei', 'culpa',
+  'esperanca', 'tristeza', 'alegria', 'saudade', 'raiva', 'dia', 'noite', 'segredo', 'silencio',
+  'esquecer', 'lembrar', 'mentir', 'libertar', 'absolver', 'condenar', 'julgar', 'prender', 'querer', 'esperar', 'pensar', 'sentir',
+  'ajudar', 'viver', 'morrer', 'dever', 'ter', 'poder', 'saber', 'achar', 'perder', 'ouvir', 'lancar', 'pousar',
+  'novo', 'velho', 'bom', 'mau', 'forte', 'fraco', 'mundo', 'casa', 'palavra',
+]);
 
 const CATS = [
   ['numero', 'Números e quantidades'],
@@ -269,6 +302,9 @@ for (const w of words) if (w.c) {
   ckeys.set(k, w.id);
 }
 
+for (const w of words) w.uso = LORE.has(w.id) ? 'historia' : 'puzzle';
+for (const id of LORE) if (!byId.has(id)) throw new Error('LORE: palavra desconhecida ' + id);
+
 // ── saídas ─────────────────────────────────────────────────────────────
 fs.mkdirSync(path.join(ROOT, 'src/story'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'src/story/lexicon.json'), JSON.stringify(words, null, 1) + '\n');
@@ -276,12 +312,13 @@ fs.writeFileSync(path.join(ROOT, 'src/story/lexicon.json'), JSON.stringify(words
 const famName = Object.fromEntries(CATS);
 let md = '# Vocabulário dos Contáveis (gerado por `tools/lexicon.mjs`; não editar à mão)\n\n';
 md += `Total: **${words.length} palavras** (${words.filter((w) => !w.c).length} símbolos próprios, ${words.filter((w) => w.c).length} compostas).\n`;
+md += `Uso: **${words.filter((w) => w.uso === 'puzzle').length} de puzzle** (obrigatórias) e **${words.filter((w) => w.uso === 'historia').length} de história** (opcionais: só enriquecem a lore).\n`;
 md += 'Capítulo = quando a palavra começa a aparecer (provisório).\n';
 for (const [f, name] of CATS) {
-  md += `\n## ${name}\n\n| id | Português | English | Cap. | Escrita |\n|---|---|---|---|---|\n`;
+  md += `\n## ${name}\n\n| id | Português | English | Cap. | Uso | Escrita |\n|---|---|---|---|---|---|\n`;
   for (const w of words.filter((x) => x.fam === f)) {
     const how = w.c ? w.c.join(' + ') : 'símbolo próprio';
-    md += `| ${w.id} | ${w.pt} | ${w.en} | ${w.cap} | ${how} |\n`;
+    md += `| ${w.id} | ${w.pt} | ${w.en} | ${w.cap} | ${w.uso === 'historia' ? 'história' : 'puzzle'} | ${how} |\n`;
   }
 }
 fs.mkdirSync(path.join(ROOT, 'docs/lingua'), { recursive: true });
@@ -334,8 +371,9 @@ if (si > 0) {
     ['1-base', 'Base: números, marcas, modificadores e verbos', ['numero', 'marca', 'mod', 'verbo']],
     ['2-mundo', 'Mundo: coisas e seres', ['coisa', 'ser']],
     ['3-ideias', 'Ideias: conceitos, qualidades, ligações e posição/tempo', ['conceito', 'qualidade', 'ligacao', 'posicao']],
+    ['4-novas', 'Palavras acrescentadas na 3ª leva', CATS.map((c) => c[0]), true],
   ];
-  const html = (title, fams) => `<!doctype html><meta charset="utf-8"><style>
+  const html = (title, fams, onlyNew) => `<!doctype html><meta charset="utf-8"><style>
   body{margin:0;background:#14110f;color:#f2e6c9;font-family:system-ui,sans-serif;width:1180px;padding:26px 30px 30px}
   h1{font:600 24px Georgia,serif;margin:0 0 4px} .s{color:#b8a98f;font-size:13px;margin-bottom:4px}
   h2{font:600 12px system-ui;letter-spacing:1.8px;text-transform:uppercase;color:#e0a84c;margin:22px 0 10px}
@@ -345,20 +383,21 @@ if (si > 0) {
   .n{font:600 12px system-ui;color:#f2e6c9;margin-top:2px} .e{font:10.5px system-ui;color:#8f8272} .k{font:10px system-ui;color:#6f6354}
   </style><h1>${title}</h1><div class="s">${words.length} palavras no total · a moldura (aberta ou fechada) diz a família antes de se saber o significado</div><div id="o"></div>
   <script>${GLYPH_JS}
-  const WORDS=${JSON.stringify(words)}, COL=${JSON.stringify(COL)}, FC=${JSON.stringify(FRAME)}, FAMS=${JSON.stringify(fams)}, CATS=${JSON.stringify(CATS)};
+  const WORDS=${JSON.stringify(words)}, COL=${JSON.stringify(COL)}, FC=${JSON.stringify(FRAME)}, FAMS=${JSON.stringify(fams)}, CATS=${JSON.stringify(CATS)}, ONLY=${onlyNew ? 'true' : 'false'};
+  const SEL=ONLY?WORDS.filter(w=>w.lote===3):WORDS;
   const by=Object.fromEntries(WORDS.map(w=>[w.id,w]));
   const flat=w=>w.c?w.c.flatMap(x=>flat(by[x])):[w];
   function tile(w){
     const parts=flat(w),sz=parts.length===1?84:parts.length===2?58:42;
     const gl=parts.map(p=>glyph(p.g,sz*150/130,FC[p.g.F]||'#e0a84c')).join('');
-    return '<div class="t" style="--c:'+COL[w.fam]+'"><div class="row">'+gl+'</div><div class="n">'+w.pt+'</div><div class="e">'+w.en+'</div><div class="k">cap. '+w.cap+(w.c?' · composta':'')+'</div></div>';
+    return '<div class="t" style="--c:'+COL[w.fam]+'"><div class="row">'+gl+'</div><div class="n">'+w.pt+'</div><div class="e">'+w.en+'</div><div class="k">cap. '+w.cap+(w.c?' · composta':'')+(w.uso==='historia'?' · história':'')+'</div></div>';
   }
-  document.getElementById('o').innerHTML=CATS.filter(c=>FAMS.includes(c[0])).map(([f,n])=>'<h2>'+n+' ('+WORDS.filter(w=>w.fam===f).length+')</h2><div class="g">'+WORDS.filter(w=>w.fam===f).map(tile).join('')+'</div>').join('');
+  document.getElementById('o').innerHTML=CATS.filter(c=>FAMS.includes(c[0])&&SEL.some(w=>w.fam===c[0])).map(([f,n])=>'<h2>'+n+' ('+SEL.filter(w=>w.fam===f).length+')</h2><div class="g">'+SEL.filter(w=>w.fam===f).map(tile).join('')+'</div>').join('');
   </script>`;
   const pairs = [];
-  for (const [file, title, fams] of sheets) {
+  for (const [file, title, fams, only] of sheets) {
     const h = path.join(out, file + '.html');
-    fs.writeFileSync(h, html(title, fams));
+    fs.writeFileSync(h, html(title, fams, only));
     pairs.push([h, path.join(out, file + '.png')]);
   }
   await shoot(pairs, 1180, 900);

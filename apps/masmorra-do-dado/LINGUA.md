@@ -46,9 +46,22 @@ EM VEZ DE + duas coisas. Marca MEMÓRIA para o passado, PERGUNTA para perguntas,
 e não lançado.
 
 ## Tamanho
-**158 palavras** (118 símbolos próprios e 40 compostas). Cada palavra tem um **capítulo** provisório de introdução
+**174 palavras** (121 símbolos próprios e 53 compostas; 97 de puzzle e 77 de história). Cada palavra tem um **capítulo** provisório de introdução
 (1 a 7, ligados às faces do dado: 1 Fogo, 2 Peso, 3 Eco, 4 Troca, 5 Deslizar, 6 Atravessar, 7 o veredito).
 O vocabulário completo, com português, inglês e capítulo, está em `docs/lingua/LEXICON.md`.
+
+## Dois tipos de palavra
+- **Palavra de puzzle** (97): obrigatória. Ensinada pelos próprios puzzles (demonstração, repetição, uso sozinho).
+- **Palavra de história** (77): opcional. Nenhum puzzle depende dela; quem aprende entende melhor a lore. Aprendida
+  por **diários achados** e **conversas com NPCs** (e por inscrições no cenário).
+- O jogador **não precisa aprender as 174**. Está marcado em cada palavra (`uso` no vocabulário).
+
+## Como as pessoas falam (regras de fala; servem de dica)
+- **Inscrições e ordens do mundo:** o verbo vem primeiro ("ACENDER QUATRO BRASEIRO").
+- **Fala de gente (NPCs):** o sujeito vem primeiro. Quem fala de si **sempre começa com EU**; falando com o jogador,
+  começa com VOCÊ; pergunta termina com a marca PERGUNTA.
+- Cada NPC tem uma **abertura fixa** (um "tique"), que o jogador aprende a reconhecer.
+- Frases curtas (até ~6 símbolos) e **no máximo uma palavra desconhecida por frase**, para dar para deduzir pelo contexto.
 
 ## Próximos passos da língua
 1. Revisar os símbolos (alguns são parecidos entre si e precisam ser testados com jogadores).

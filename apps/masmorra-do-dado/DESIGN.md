@@ -34,7 +34,7 @@ Tom: melancólico, curioso, sem humor forçado. Referências: *Chants of Sennaar
 
 - **Escrita por palavra** (um símbolo por palavra), com composição de palavras. Não é cifra de português nem de inglês:
   o jogo é igual em qualquer idioma, e só diário, pensamentos e interface são traduzidos (PT/EN).
-- **158 palavras** no vocabulário completo (a primeira versão, com 115, não bastava: faltavam pronomes, perguntas,
+- **174 palavras** no vocabulário completo (a primeira versão, com 115, não bastava: faltavam pronomes, perguntas,
   qualidades e verbos básicos; testado com 12 frases típicas de NPC). Definidas desde já para não inventar símbolos
   no meio da produção. Mais palavras só entram se uma frase de lore pedir.
 - A **moldura** do símbolo diz a família (coisa, ser, conceito, ligação, posição/tempo); verbos e números não têm moldura.
@@ -152,6 +152,21 @@ Cada uso do dado tem uma **animação própria**, e o dado reage como personagem
   fantasma que repete), Troca (as duas coisas borram e trocam, o dado gira), Deslizar (o dado corre por um trilho
   deixando um rastro), Atravessar (o dado fica translúcido e atravessa).
 - Técnica: dissolução por limiar de ruído com borda emissiva, partículas de brasa, sem modelos animados.
+
+## 7f. Aprender conversando (proposta; detalhes **[DECIDIR]**)
+
+Com ~170 palavras, os puzzles sozinhos não ensinam tudo. Canais de aprendizado:
+- **Puzzles:** as palavras de puzzle (obrigatórias).
+- **Diários achados** (em português, de outros condenados): palavras de história e dicas.
+- **NPCs:** conversas em que o NPC fala em glifos e o jogador tenta **decifrar** e **responder**.
+- **Inscrições no cenário.**
+
+Regras para a conversa não virar tentativa e erro:
+- O NPC **mostra o que diz** (fala e faz: diz "acender o braseiro" e o braseiro acende), então a conversa também é demonstração.
+- **Tentativas limitadas por assunto** (ex.: 2). Errou, o NPC perde a paciência e encerra aquele assunto.
+- O assunto só **reabre quando o jogador aprendeu algo novo** (ex.: +3 palavras), então não adianta insistir.
+- As respostas são montadas com **palavras que o jogador já viu** (escolher peças do diário, sem desenhar).
+- Os NPCs seguem as regras de fala (§ `LINGUA.md`): começam com EU, uma palavra nova por frase.
 
 ## 8. Estilo visual da escrita
 
