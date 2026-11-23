@@ -10,6 +10,7 @@
 // p: pontos · l: ligações entre células · ring: ponto vazio · big: ponto maior · s: símbolo pequeno (modificador)
 // F: moldura  full = coisa · U = ser (aberta em cima) · N = conceito (aberta embaixo)
 //             R = ligação (aberta à direita) · L = posição/tempo (aberta à esquerda)
+//             V = qualidade (só as duas laterais)
 // Palavras compostas ('c') são escritas como uma sequência de símbolos.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -162,6 +163,59 @@ W('longe', 'longe', 'far', 'posicao', 5, { F: L, p: [3, 5] });
 C('nunca', 'nunca', 'never', 'posicao', 3, ['atravessar', 'sempre']);
 C('fora', 'fora', 'outside', 'posicao', 6, ['atravessar', 'dentro']);
 
+
+// ══ segunda leva: o que falta para conversas e lore ═══════════════════
+// ── seres: pronomes e relações ─────────────────────────────────────────
+W('eu', 'eu', 'I', 'ser', 3, { F: 'U', p: [7] });
+W('ele', 'ele / ela', 'he / she', 'ser', 3, { F: 'U', p: [5] });
+W('nos', 'nós', 'we', 'ser', 3, { F: 'U', l: [[4, 7]] });
+W('amigo', 'amigo', 'friend', 'ser', 4, { F: 'U', l: [[3, 5]] });
+// ── coisas gerais ──────────────────────────────────────────────────────
+W('coisa', 'coisa', 'thing', 'coisa', 2, { F, p: [4] });
+C('mundo', 'mundo', 'world', 'coisa', 5, ['todos', 'coisa']);
+C('casa', 'casa', 'house', 'coisa', 5, ['sala', 'muitos']);
+C('palavra', 'palavra', 'word', 'coisa', 3, ['dizer', 'resultado']);
+// ── perguntas (a marca PERGUNTA junto de outra palavra) ────────────────
+C('quem', 'quem', 'who', 'ser', 3, ['alguem', 'perg']);
+C('oque', 'o quê', 'what', 'coisa', 3, ['coisa', 'perg']);
+C('onde', 'onde', 'where', 'posicao', 3, ['lugar', 'perg']);
+C('porquep', 'por quê', 'why', 'ligacao', 3, ['porque', 'perg']);
+C('quando', 'quando', 'when', 'posicao', 3, ['tempo', 'perg']);
+// ── qualidades (moldura: duas laterais) ────────────────────────────────
+const V = 'V';
+W('primeiro', 'primeiro', 'first', 'qualidade', 2, { F: V, p: [1] });
+W('ultimo', 'último', 'last', 'qualidade', 7, { F: V, p: [7] });
+W('grande', 'grande', 'big', 'qualidade', 4, { F: V, p: [0, 2, 6, 8] });
+W('pequeno', 'pequeno', 'small', 'qualidade', 4, { F: V, p: [4] });
+W('novo', 'novo', 'new', 'qualidade', 3, { F: V, l: [[4, 1]] });
+W('velho', 'velho', 'old', 'qualidade', 3, { F: V, l: [[4, 7]] });
+W('bom', 'bom', 'good', 'qualidade', 4, { F: V, l: [[3, 7], [7, 2]] });
+C('mau', 'mau', 'bad', 'qualidade', 4, ['bom', 'oposto']);
+W('outro', 'outro', 'other', 'qualidade', 4, { F: V, p: [3, 5] });
+W('vazio', 'vazio', 'empty', 'qualidade', 2, { F: V, ring: [4] });
+// ── mais verbos ────────────────────────────────────────────────────────
+W('fazer', 'fazer', 'do / make', 'verbo', 2, { l: [[0, 4], [4, 8], [2, 4]] });
+W('ter', 'ter', 'have', 'verbo', 4, { l: [[0, 4], [4, 6]] });
+W('poder', 'poder', 'can', 'verbo', 4, { l: [[2, 4], [4, 8]] });
+W('cair', 'cair', 'fall', 'verbo', 5, { l: [[2, 5], [5, 8], [8, 7]] });
+W('voltar', 'voltar', 'return', 'verbo', 5, { l: [[5, 3], [3, 1], [3, 7]] });
+W('ficar', 'ficar', 'stay', 'verbo', 3, { ring: [4], l: [[3, 4], [4, 5]] });
+C('dever', 'dever', 'must', 'verbo', 7, ['seguir', 'lei']);
+C('ajudar', 'ajudar', 'help', 'verbo', 4, ['dar', 'com']);
+C('esperar', 'esperar', 'wait', 'verbo', 3, ['ficar', 'depois']);
+C('viver', 'viver', 'live', 'verbo', 6, ['igual', 'vida']);
+C('morrer', 'morrer', 'die', 'verbo', 6, ['igual', 'morte']);
+C('pensar', 'pensar', 'think', 'verbo', 3, ['dizer', 'dentro']);
+C('sentir', 'sentir', 'feel', 'verbo', 4, ['pegar', 'dentro']);
+C('lancar', 'lançar', 'throw / cast', 'verbo', 2, ['ir', 'dado']);
+C('pousar', 'pousar', 'land', 'verbo', 2, ['vir', 'chao']);
+// ── sentimentos (compostos) ────────────────────────────────────────────
+C('esperanca', 'esperança', 'hope', 'conceito', 6, ['querer', 'depois']);
+C('tristeza', 'tristeza', 'sadness', 'conceito', 6, ['vida', 'menos']);
+C('alegria', 'alegria', 'joy', 'conceito', 6, ['vida', 'mais']);
+C('saudade', 'saudade', 'longing', 'conceito', 6, ['memoria', 'querer']);
+C('raiva', 'raiva', 'anger', 'conceito', 6, ['fogo', 'medo']);
+
 const CATS = [
   ['numero', 'Números e quantidades'],
   ['marca', 'Marcas do dado'],
@@ -170,6 +224,7 @@ const CATS = [
   ['coisa', 'Coisas'],
   ['ser', 'Seres'],
   ['conceito', 'Conceitos'],
+  ['qualidade', 'Qualidades'],
   ['ligacao', 'Ligações'],
   ['posicao', 'Posição e tempo'],
 ];
@@ -233,17 +288,52 @@ fs.mkdirSync(path.join(ROOT, 'docs/lingua'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'docs/lingua/LEXICON.md'), md);
 console.log(`${words.length} palavras gravadas.`);
 
-// ── folha visual (opcional) ────────────────────────────────────────────
+// ── folhas visuais (opcional) ──────────────────────────────────────────
+const GLYPH_JS = `
+const pt=(i,cx,cy,S)=>[cx+((i%3)-1)*S,cy+(Math.floor(i/3)-1)*S];
+function glyph(g,w,fc,dots){
+  const S=34,cx=75,cy=58,h=S+22,sm=g.s?1:0,R=sm?4.2:7,lw=sm?3.4:5;
+  let o='<svg width="'+w+'" height="'+Math.round(w*130/150)+'" viewBox="0 0 150 130">';
+  if(dots!==false)for(let i=0;i<9;i++){const [x,y]=pt(i,cx,cy,S);o+='<circle cx="'+x+'" cy="'+y+'" r="2" fill="#3a312b"/>'}
+  const x0=cx-h,x1=cx+h,y0=cy-h,y1=cy+h;
+  const pl={U:[[x0,y0],[x0,y1],[x1,y1],[x1,y0]],N:[[x0,y1],[x0,y0],[x1,y0],[x1,y1]],R:[[x1,y0],[x0,y0],[x0,y1],[x1,y1]],L:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]};
+  const st='" fill="none" stroke="'+fc+'" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>';
+  if(g.F==='full')o+='<rect x="'+x0+'" y="'+y0+'" width="'+2*h+'" height="'+2*h+'" rx="4'+st;
+  else if(g.F==='V')o+='<polyline points="'+x0+','+y0+' '+x0+','+y1+st+'<polyline points="'+x1+','+y0+' '+x1+','+y1+st;
+  else if(g.F)o+='<polyline points="'+pl[g.F].map(p=>p.join(',')).join(' ')+st;
+  for(const [a,b] of g.l||[]){const [xa,ya]=pt(a,cx,cy,S),[xb,yb]=pt(b,cx,cy,S);o+='<line x1="'+xa+'" y1="'+ya+'" x2="'+xb+'" y2="'+yb+'" stroke="#f2e6c9" stroke-width="'+lw+'" stroke-linecap="round"/>'}
+  for(const i of g.p||[]){const [x,y]=pt(i,cx,cy,S);o+='<circle cx="'+x+'" cy="'+y+'" r="'+((g.big||[]).includes(i)?10:R)+'" fill="#f2e6c9"/>'}
+  for(const i of g.ring||[]){const [x,y]=pt(i,cx,cy,S);o+='<circle cx="'+x+'" cy="'+y+'" r="10" fill="none" stroke="#f2e6c9" stroke-width="4"/>'}
+  return o+'<rect x="63" y="120" width="24" height="4" rx="2" fill="#6f6354"/></svg>';
+}`;
+const COL = { numero: '#e8c98a', quant: '#e8c98a', marca: '#9fb6e8', mod: '#9fb6e8', verbo: '#9fd1b4', coisa: '#e0a84c', ser: '#7fd0d8', conceito: '#b79df0', qualidade: '#d9d27a', ligacao: '#e8a07a', posicao: '#8fd18f' };
+const FRAME = { full: '#e0a84c', U: '#7fd0d8', N: '#b79df0', V: '#d9d27a', R: '#e8a07a', L: '#8fd18f' };
+
+async function shoot(pairs, w, h) {
+  try {
+    const { chromium } = createRequire(import.meta.url)('playwright');
+    const b = await chromium.launch();
+    for (const [html, png] of pairs) {
+      const pg = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+      await pg.goto('file://' + html);
+      await pg.screenshot({ path: png, fullPage: true });
+      await pg.close();
+    }
+    await b.close();
+    console.log('imagens:\n  ' + pairs.map((x) => x[1]).join('\n  '));
+  } catch (e) {
+    console.log('HTML gerado; para o PNG instale o playwright. (' + e.message + ')');
+  }
+}
+
 const si = process.argv.indexOf('--sheet');
 if (si > 0) {
   const out = path.resolve(process.argv[si + 1]);
   fs.mkdirSync(out, { recursive: true });
-  const COL = { numero: '#e8c98a', quant: '#e8c98a', marca: '#9fb6e8', mod: '#9fb6e8', verbo: '#9fd1b4', coisa: '#e0a84c', ser: '#7fd0d8', conceito: '#b79df0', ligacao: '#e8a07a', posicao: '#8fd18f' };
-  const frameCol = { full: '#e0a84c', U: '#7fd0d8', N: '#b79df0', R: '#e8a07a', L: '#8fd18f' };
   const sheets = [
     ['1-base', 'Base: números, marcas, modificadores e verbos', ['numero', 'marca', 'mod', 'verbo']],
     ['2-mundo', 'Mundo: coisas e seres', ['coisa', 'ser']],
-    ['3-ideias', 'Ideias: conceitos, ligações e posição/tempo', ['conceito', 'ligacao', 'posicao']],
+    ['3-ideias', 'Ideias: conceitos, qualidades, ligações e posição/tempo', ['conceito', 'qualidade', 'ligacao', 'posicao']],
   ];
   const html = (title, fams) => `<!doctype html><meta charset="utf-8"><style>
   body{margin:0;background:#14110f;color:#f2e6c9;font-family:system-ui,sans-serif;width:1180px;padding:26px 30px 30px}
@@ -253,50 +343,48 @@ if (si > 0) {
   .t{width:124px;background:#1f1a17;border:1px solid #3a312b;border-bottom:3px solid var(--c);border-radius:8px;padding:5px 3px 7px;text-align:center}
   .t .row{display:flex;justify-content:center;align-items:center;height:84px;gap:1px}
   .n{font:600 12px system-ui;color:#f2e6c9;margin-top:2px} .e{font:10.5px system-ui;color:#8f8272} .k{font:10px system-ui;color:#6f6354}
-  </style><h1>${title}</h1><div class="s">${words.length} palavras no total · moldura aberta ou fechada diz a família antes de se saber o significado</div><div id="o"></div>
-  <script>
-  const WORDS=${JSON.stringify(words)}, COL=${JSON.stringify(COL)}, FC=${JSON.stringify(frameCol)}, FAMS=${JSON.stringify(fams)}, CATS=${JSON.stringify(CATS)};
+  </style><h1>${title}</h1><div class="s">${words.length} palavras no total · a moldura (aberta ou fechada) diz a família antes de se saber o significado</div><div id="o"></div>
+  <script>${GLYPH_JS}
+  const WORDS=${JSON.stringify(words)}, COL=${JSON.stringify(COL)}, FC=${JSON.stringify(FRAME)}, FAMS=${JSON.stringify(fams)}, CATS=${JSON.stringify(CATS)};
   const by=Object.fromEntries(WORDS.map(w=>[w.id,w]));
-  const pt=(i,cx,cy,S)=>[cx+((i%3)-1)*S,cy+(Math.floor(i/3)-1)*S];
-  function glyph(g,w,fam){
-    const S=34,cx=75,cy=58,h=S+22,sm=g.s?1:0,R=sm?4.2:7,lw=sm?3.4:5;
-    let o='<svg width="'+w+'" height="'+Math.round(w*130/150)+'" viewBox="0 0 150 130">';
-    for(let i=0;i<9;i++){const [x,y]=pt(i,cx,cy,S);o+='<circle cx="'+x+'" cy="'+y+'" r="2" fill="#3a312b"/>'}
-    const fc=FC[g.F]||'#e0a84c',x0=cx-h,x1=cx+h,y0=cy-h,y1=cy+h;
-    const pl={full:null,U:[[x0,y0],[x0,y1],[x1,y1],[x1,y0]],N:[[x0,y1],[x0,y0],[x1,y0],[x1,y1]],R:[[x1,y0],[x0,y0],[x0,y1],[x1,y1]],L:[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]};
-    if(g.F==='full')o+='<rect x="'+x0+'" y="'+y0+'" width="'+2*h+'" height="'+2*h+'" rx="4" fill="none" stroke="'+fc+'" stroke-width="4"/>';
-    else if(g.F)o+='<polyline points="'+pl[g.F].map(p=>p.join(',')).join(' ')+'" fill="none" stroke="'+fc+'" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>';
-    for(const [a,b] of g.l||[]){const [x1_,y1_]=pt(a,cx,cy,S),[x2,y2]=pt(b,cx,cy,S);o+='<line x1="'+x1_+'" y1="'+y1_+'" x2="'+x2+'" y2="'+y2+'" stroke="#f2e6c9" stroke-width="'+lw+'" stroke-linecap="round"/>'}
-    for(const i of g.p||[]){const [x,y]=pt(i,cx,cy,S);o+='<circle cx="'+x+'" cy="'+y+'" r="'+((g.big||[]).includes(i)?10:R)+'" fill="#f2e6c9"/>'}
-    for(const i of g.ring||[]){const [x,y]=pt(i,cx,cy,S);o+='<circle cx="'+x+'" cy="'+y+'" r="10" fill="none" stroke="#f2e6c9" stroke-width="4"/>'}
-    return o+'<rect x="63" y="120" width="24" height="4" rx="2" fill="#6f6354"/></svg>';
-  }
   const flat=w=>w.c?w.c.flatMap(x=>flat(by[x])):[w];
   function tile(w){
     const parts=flat(w),sz=parts.length===1?84:parts.length===2?58:42;
-    const gl=parts.map(p=>glyph(p.g,sz*150/130,p.fam)).join('');
+    const gl=parts.map(p=>glyph(p.g,sz*150/130,FC[p.g.F]||'#e0a84c')).join('');
     return '<div class="t" style="--c:'+COL[w.fam]+'"><div class="row">'+gl+'</div><div class="n">'+w.pt+'</div><div class="e">'+w.en+'</div><div class="k">cap. '+w.cap+(w.c?' · composta':'')+'</div></div>';
   }
   document.getElementById('o').innerHTML=CATS.filter(c=>FAMS.includes(c[0])).map(([f,n])=>'<h2>'+n+' ('+WORDS.filter(w=>w.fam===f).length+')</h2><div class="g">'+WORDS.filter(w=>w.fam===f).map(tile).join('')+'</div>').join('');
   </script>`;
-  const written = [];
+  const pairs = [];
   for (const [file, title, fams] of sheets) {
-    const p = path.join(out, file + '.html');
-    fs.writeFileSync(p, html(title, fams));
-    written.push([p, path.join(out, file + '.png')]);
+    const h = path.join(out, file + '.html');
+    fs.writeFileSync(h, html(title, fams));
+    pairs.push([h, path.join(out, file + '.png')]);
   }
-  try {
-    const { chromium } = createRequire(import.meta.url)('playwright');
-    const b = await chromium.launch();
-    for (const [h, png] of written) {
-      const pg = await b.newPage({ viewport: { width: 1180, height: 900 }, deviceScaleFactor: 2 });
-      await pg.goto('file://' + h);
-      await pg.screenshot({ path: png, fullPage: true });
-      await pg.close();
-    }
-    await b.close();
-    console.log('folhas:', written.map((x) => x[1]).join('\n       '));
-  } catch (e) {
-    console.log('HTML gerado; para o PNG instale o playwright. (' + e.message + ')');
-  }
+  await shoot(pairs, 1180, 900);
+}
+
+// Folha "para mostrar a um amigo": só os símbolos próprios, numerados, sem significado.
+const fi = process.argv.indexOf('--friend');
+if (fi > 0) {
+  const out = path.resolve(process.argv[fi + 1]);
+  fs.mkdirSync(out, { recursive: true });
+  const own = [];
+  for (const [f] of CATS) for (const w of words) if (w.fam === f && !w.c) own.push(w);
+  const key = '# Chave da folha do amigo\n\n| nº | id | português |\n|---|---|---|\n' + own.map((w, i) => `| ${i + 1} | ${w.id} | ${w.pt} |`).join('\n') + '\n';
+  fs.writeFileSync(path.join(out, 'chave.md'), key);
+  const h = path.join(out, 'amigo.html');
+  fs.writeFileSync(h, `<!doctype html><meta charset="utf-8"><style>
+  body{margin:0;background:#17130f;color:#f2e6c9;font-family:system-ui,sans-serif;width:1180px;padding:28px 32px 32px}
+  h1{font:600 26px Georgia,serif;margin:0 0 4px} .s{color:#b8a98f;font-size:14px;margin-bottom:18px}
+  .g{display:flex;flex-wrap:wrap;gap:8px}
+  .t{width:90px;background:#1f1a17;border:1px solid #3a312b;border-radius:8px;padding:4px 2px 6px;text-align:center}
+  .t svg{display:block;margin:0 auto} .n{font:600 12px system-ui;color:#8f8272;margin-top:1px}
+  </style><h1>Símbolos de uma língua inventada</h1>
+  <div class="s">${own.length} símbolos, cada um é uma palavra. O pezinho cinza marca o lado de baixo.</div><div id="o" class="g"></div>
+  <script>${GLYPH_JS}
+  const OWN=${JSON.stringify(own.map((w) => w.g))};
+  document.getElementById('o').innerHTML=OWN.map((g,i)=>'<div class="t">'+glyph(g,86,'#d8cdb3',false)+'<div class="n">'+(i+1)+'</div></div>').join('');
+  </script>`);
+  await shoot([[h, path.join(out, 'amigo.png')]], 1180, 900);
 }

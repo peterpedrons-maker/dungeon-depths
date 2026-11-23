@@ -2716,5 +2716,719 @@
    "atravessar",
    "dentro"
   ]
+ },
+ {
+  "id": "eu",
+  "pt": "eu",
+  "en": "I",
+  "fam": "ser",
+  "cap": 3,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "ele",
+  "pt": "ele / ela",
+  "en": "he / she",
+  "fam": "ser",
+  "cap": 3,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "nos",
+  "pt": "nós",
+  "en": "we",
+  "fam": "ser",
+  "cap": 3,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    4,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     4,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "amigo",
+  "pt": "amigo",
+  "en": "friend",
+  "fam": "ser",
+  "cap": 4,
+  "g": {
+   "F": "U",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     3,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "coisa",
+  "pt": "coisa",
+  "en": "thing",
+  "fam": "coisa",
+  "cap": 2,
+  "g": {
+   "F": "full",
+   "s": 0,
+   "p": [
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "mundo",
+  "pt": "mundo",
+  "en": "world",
+  "fam": "coisa",
+  "cap": 5,
+  "c": [
+   "todos",
+   "coisa"
+  ]
+ },
+ {
+  "id": "casa",
+  "pt": "casa",
+  "en": "house",
+  "fam": "coisa",
+  "cap": 5,
+  "c": [
+   "sala",
+   "muitos"
+  ]
+ },
+ {
+  "id": "palavra",
+  "pt": "palavra",
+  "en": "word",
+  "fam": "coisa",
+  "cap": 3,
+  "c": [
+   "dizer",
+   "resultado"
+  ]
+ },
+ {
+  "id": "quem",
+  "pt": "quem",
+  "en": "who",
+  "fam": "ser",
+  "cap": 3,
+  "c": [
+   "alguem",
+   "perg"
+  ]
+ },
+ {
+  "id": "oque",
+  "pt": "o quê",
+  "en": "what",
+  "fam": "coisa",
+  "cap": 3,
+  "c": [
+   "coisa",
+   "perg"
+  ]
+ },
+ {
+  "id": "onde",
+  "pt": "onde",
+  "en": "where",
+  "fam": "posicao",
+  "cap": 3,
+  "c": [
+   "lugar",
+   "perg"
+  ]
+ },
+ {
+  "id": "porquep",
+  "pt": "por quê",
+  "en": "why",
+  "fam": "ligacao",
+  "cap": 3,
+  "c": [
+   "porque",
+   "perg"
+  ]
+ },
+ {
+  "id": "quando",
+  "pt": "quando",
+  "en": "when",
+  "fam": "posicao",
+  "cap": 3,
+  "c": [
+   "tempo",
+   "perg"
+  ]
+ },
+ {
+  "id": "primeiro",
+  "pt": "primeiro",
+  "en": "first",
+  "fam": "qualidade",
+  "cap": 2,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    1
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "ultimo",
+  "pt": "último",
+  "en": "last",
+  "fam": "qualidade",
+  "cap": 7,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "grande",
+  "pt": "grande",
+  "en": "big",
+  "fam": "qualidade",
+  "cap": 4,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    6,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "pequeno",
+  "pt": "pequeno",
+  "en": "small",
+  "fam": "qualidade",
+  "cap": 4,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "novo",
+  "pt": "novo",
+  "en": "new",
+  "fam": "qualidade",
+  "cap": 3,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    1,
+    4
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     4
+    ]
+   ]
+  }
+ },
+ {
+  "id": "velho",
+  "pt": "velho",
+  "en": "old",
+  "fam": "qualidade",
+  "cap": 3,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    4,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     4,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "bom",
+  "pt": "bom",
+  "en": "good",
+  "fam": "qualidade",
+  "cap": 4,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    2,
+    3,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     7
+    ],
+    [
+     3,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "mau",
+  "pt": "mau",
+  "en": "bad",
+  "fam": "qualidade",
+  "cap": 4,
+  "c": [
+   "bom",
+   "oposto"
+  ]
+ },
+ {
+  "id": "outro",
+  "pt": "outro",
+  "en": "other",
+  "fam": "qualidade",
+  "cap": 4,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "vazio",
+  "pt": "vazio",
+  "en": "empty",
+  "fam": "qualidade",
+  "cap": 2,
+  "g": {
+   "F": "V",
+   "s": 0,
+   "p": [],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": []
+  }
+ },
+ {
+  "id": "fazer",
+  "pt": "fazer",
+  "en": "do / make",
+  "fam": "verbo",
+  "cap": 2,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    2,
+    4,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     4
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ter",
+  "pt": "ter",
+  "en": "have",
+  "fam": "verbo",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    0,
+    4,
+    6
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     0,
+     4
+    ],
+    [
+     4,
+     6
+    ]
+   ]
+  }
+ },
+ {
+  "id": "poder",
+  "pt": "poder",
+  "en": "can",
+  "fam": "verbo",
+  "cap": 4,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    2,
+    4,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     4
+    ],
+    [
+     4,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "cair",
+  "pt": "cair",
+  "en": "fall",
+  "fam": "verbo",
+  "cap": 5,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    2,
+    5,
+    7,
+    8
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     2,
+     5
+    ],
+    [
+     5,
+     8
+    ],
+    [
+     7,
+     8
+    ]
+   ]
+  }
+ },
+ {
+  "id": "voltar",
+  "pt": "voltar",
+  "en": "return",
+  "fam": "verbo",
+  "cap": 5,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "ring": [],
+   "big": [],
+   "l": [
+    [
+     1,
+     3
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     3,
+     7
+    ]
+   ]
+  }
+ },
+ {
+  "id": "ficar",
+  "pt": "ficar",
+  "en": "stay",
+  "fam": "verbo",
+  "cap": 3,
+  "g": {
+   "F": "",
+   "s": 0,
+   "p": [
+    3,
+    5
+   ],
+   "ring": [
+    4
+   ],
+   "big": [],
+   "l": [
+    [
+     3,
+     4
+    ],
+    [
+     4,
+     5
+    ]
+   ]
+  }
+ },
+ {
+  "id": "dever",
+  "pt": "dever",
+  "en": "must",
+  "fam": "verbo",
+  "cap": 7,
+  "c": [
+   "seguir",
+   "lei"
+  ]
+ },
+ {
+  "id": "ajudar",
+  "pt": "ajudar",
+  "en": "help",
+  "fam": "verbo",
+  "cap": 4,
+  "c": [
+   "dar",
+   "com"
+  ]
+ },
+ {
+  "id": "esperar",
+  "pt": "esperar",
+  "en": "wait",
+  "fam": "verbo",
+  "cap": 3,
+  "c": [
+   "ficar",
+   "depois"
+  ]
+ },
+ {
+  "id": "viver",
+  "pt": "viver",
+  "en": "live",
+  "fam": "verbo",
+  "cap": 6,
+  "c": [
+   "igual",
+   "vida"
+  ]
+ },
+ {
+  "id": "morrer",
+  "pt": "morrer",
+  "en": "die",
+  "fam": "verbo",
+  "cap": 6,
+  "c": [
+   "igual",
+   "morte"
+  ]
+ },
+ {
+  "id": "pensar",
+  "pt": "pensar",
+  "en": "think",
+  "fam": "verbo",
+  "cap": 3,
+  "c": [
+   "dizer",
+   "dentro"
+  ]
+ },
+ {
+  "id": "sentir",
+  "pt": "sentir",
+  "en": "feel",
+  "fam": "verbo",
+  "cap": 4,
+  "c": [
+   "pegar",
+   "dentro"
+  ]
+ },
+ {
+  "id": "lancar",
+  "pt": "lançar",
+  "en": "throw / cast",
+  "fam": "verbo",
+  "cap": 2,
+  "c": [
+   "ir",
+   "dado"
+  ]
+ },
+ {
+  "id": "pousar",
+  "pt": "pousar",
+  "en": "land",
+  "fam": "verbo",
+  "cap": 2,
+  "c": [
+   "vir",
+   "chao"
+  ]
+ },
+ {
+  "id": "esperanca",
+  "pt": "esperança",
+  "en": "hope",
+  "fam": "conceito",
+  "cap": 6,
+  "c": [
+   "querer",
+   "depois"
+  ]
+ },
+ {
+  "id": "tristeza",
+  "pt": "tristeza",
+  "en": "sadness",
+  "fam": "conceito",
+  "cap": 6,
+  "c": [
+   "vida",
+   "menos"
+  ]
+ },
+ {
+  "id": "alegria",
+  "pt": "alegria",
+  "en": "joy",
+  "fam": "conceito",
+  "cap": 6,
+  "c": [
+   "vida",
+   "mais"
+  ]
+ },
+ {
+  "id": "saudade",
+  "pt": "saudade",
+  "en": "longing",
+  "fam": "conceito",
+  "cap": 6,
+  "c": [
+   "memoria",
+   "querer"
+  ]
+ },
+ {
+  "id": "raiva",
+  "pt": "raiva",
+  "en": "anger",
+  "fam": "conceito",
+  "cap": 6,
+  "c": [
+   "fogo",
+   "medo"
+  ]
  }
 ]

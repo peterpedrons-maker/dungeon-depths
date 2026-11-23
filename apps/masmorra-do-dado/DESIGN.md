@@ -34,7 +34,9 @@ Tom: melancólico, curioso, sem humor forçado. Referências: *Chants of Sennaar
 
 - **Escrita por palavra** (um símbolo por palavra), com composição de palavras. Não é cifra de português nem de inglês:
   o jogo é igual em qualquer idioma, e só diário, pensamentos e interface são traduzidos (PT/EN).
-- ~**115 palavras** no vocabulário completo, definidas desde já para não precisar inventar símbolos no meio da produção.
+- **158 palavras** no vocabulário completo (a primeira versão, com 115, não bastava: faltavam pronomes, perguntas,
+  qualidades e verbos básicos; testado com 12 frases típicas de NPC). Definidas desde já para não inventar símbolos
+  no meio da produção. Mais palavras só entram se uma frase de lore pedir.
 - A **moldura** do símbolo diz a família (coisa, ser, conceito, ligação, posição/tempo); verbos e números não têm moldura.
 - Números em **base 6**. Ordem da frase: verbo, número, coisa, marca do dado.
 
