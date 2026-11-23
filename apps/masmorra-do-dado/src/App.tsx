@@ -27,6 +27,7 @@ export default function App() {
   const [dieOut, setDieOut] = useState(false);
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
+  const [credits, setCredits] = useState(false);
   const [audio, setAudio] = useState<AudioMode>(() => {
     try {
       const v = Number(localStorage.getItem('mdd-audio'));
@@ -133,6 +134,9 @@ export default function App() {
         </button>
         <button onClick={reset} aria-label="Reiniciar sala" title="Reiniciar sala (R)">
           ↺
+        </button>
+        <button onClick={() => setCredits(true)} aria-label="Créditos" title="Créditos dos sons">
+          ⓘ
         </button>
         {installEvt && (
           <button onClick={install} aria-label="Instalar o jogo" title="Instalar o jogo">
@@ -260,6 +264,24 @@ export default function App() {
         <div className="lookzone" aria-hidden="true">
           <span>◉</span>
           <span>OLHAR</span>
+        </div>
+      )}
+
+      {credits && (
+        <div className="credits" onPointerDown={() => setCredits(false)}>
+          <div className="credits-box" onPointerDown={(e) => e.stopPropagation()}>
+            <h2>Créditos dos sons</h2>
+            <p>
+              <b>Instrumentos</b> (música, sinos e notas): amostras reais do soundfont <i>FluidR3_GM</i>, de Frank Wen
+              (CC BY 3.0) — violoncelo, cordas, coro, harpa, celesta, glockenspiel, flauta, tímpano e sinos tubulares.
+            </p>
+            <p>
+              <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi
+              (passos), qubodup (bola rolando), e gravações de giz, borracha, porta de pedra, arrastos, chama, lareira
+              e vapor.
+            </p>
+            <button onClick={() => setCredits(false)}>Fechar</button>
+          </div>
         </div>
       )}
 

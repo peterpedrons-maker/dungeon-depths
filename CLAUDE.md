@@ -40,9 +40,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   escondida), 2 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
   fogo), 3 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
   4 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
-  Mobile só na horizontal, além de PC. Som 100% sintetizado em Web Audio (`src/scene/audio.ts`, sem
-  arquivos): efeitos reativos + uma música ambiente única (não muda por sala); botão ♫/♪/∅ no canto
-  (tudo / só efeitos / mudo, lembrado no aparelho); o áudio só liga após o 1º toque/tecla.
+  Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
+  `src/scene/audio.ts` + `public/audio/`): efeitos de pacotes CC0 (OpenGameArt) e instrumentos reais do
+  soundfont FluidR3_GM (CC BY 3.0 — por isso há um botão ⓘ de créditos); a música é composta em tempo
+  real tocando essas notas gravadas e é uma só pro jogo todo (não muda por sala). Os arquivos são gerados
+  por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Botão
+  ♫/♪/∅ no canto (tudo / só efeitos / mudo, lembrado no aparelho); o áudio só liga após o 1º toque/tecla.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 

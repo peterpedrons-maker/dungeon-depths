@@ -1,5 +1,7 @@
-// Som 100% sintetizado (Web Audio): nada de arquivos. Efeitos reagem ao que acontece e a
-// música ambiente é uma só pro jogo inteiro (acordes lentos + notas esparsas com eco).
+// Som do jogo com GRAVAÇÕES REAIS (nada sintetizado): efeitos de pacotes livres (CC0) e
+// instrumentos reais (violoncelo, cordas, coro, harpa, celesta, flauta, tímpano, sinos...)
+// do soundfont FluidR3_GM. A música é composta em tempo real, tocando essas notas
+// gravadas; uma só pra o jogo todo. Créditos em public/audio/CREDITS.txt.
 // O navegador só libera áudio depois de um toque/tecla: unlock() cria tudo nesse momento.
 
 export type SfxName =
@@ -28,39 +30,73 @@ export type SfxName =
 export type AudioMode = 0 | 1 | 2;
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
-const FACE_NOTES = [329.63, 392, 440, 523.25, 587.33, 659.25]; // pentatônica
-// Lá menor → Fá → Ré menor → Mi (com 4ª suspensa): cada acorde dura ~10 s
-const CHORDS: number[][] = [
-  [110, 164.81, 220, 261.63, 329.63],
-  [87.31, 130.81, 174.61, 220, 261.63],
-  [73.42, 110, 146.83, 174.61, 220],
-  [82.41, 123.47, 164.81, 220, 246.94],
+const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
+const SFX_FILES = [
+  'step1', 'step2', 'step3', 'step4', 'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
+  'bounce1', 'bounce2', 'bounce3', 'bounce4', 'roll', 'locked', 'swap1', 'swap2', 'sweep', 'chalk1', 'chalk2',
+  'erase', 'ignite', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door1', 'door2', 'doorclose1',
+  'doorclose2', 'error', 'burnout', 'fire',
 ];
-const ARP_NOTES = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880];
+const INSTRUMENTS = ['cello', 'string_ensemble_1', 'choir_aahs', 'orchestral_harp', 'celesta', 'glockenspiel', 'flute', 'timpani', 'tubular_bells'];
+
+// notas (MIDI) das faces 1–6 no glockenspiel: pentatônica de lá menor
+const FACE_MIDI = [76, 79, 81, 84, 86, 88];
+
+// Lá menor → Fá → Ré menor → Mi: cada acorde dura 16 s
+interface Chord {
+  root: number; // baixo (violoncelo)
+  pad: number[]; // acorde das cordas/coro
+  scale: number[]; // notas da harpa / celesta / flauta
+}
+const PROG: Chord[] = [
+  { root: 45, pad: [57, 60, 64], scale: [57, 60, 62, 64, 67, 69, 72, 74, 76] },
+  { root: 41, pad: [53, 57, 60], scale: [57, 60, 62, 65, 67, 69, 72, 74, 77] },
+  { root: 38, pad: [50, 53, 57], scale: [57, 59, 62, 65, 67, 69, 71, 74, 77] },
+  { root: 40, pad: [52, 56, 59], scale: [56, 59, 62, 64, 68, 71, 74, 76, 80] },
+];
+const CHORD_LEN = 16;
+
+interface Inst {
+  notes: number[];
+  bufs: Map<number, AudioBuffer>;
+}
 
 export class Sfx {
   private ac: AudioContext | null = null;
   private master!: GainNode;
   private bus!: GainNode;
   private musicBus!: GainNode;
-  private arpBus!: GainNode;
   private verbSend!: GainNode;
-  private noise!: AudioBuffer;
+  private echoSend!: GainNode;
   private mode: AudioMode = 0;
-  private rollG!: GainNode;
-  private scratchG!: GainNode;
-  private scratchF!: BiquadFilterNode;
-  private fireLevel = 0;
+  private buf = new Map<string, AudioBuffer>();
+  private inst: Record<string, Inst> = {};
+  // laços contínuos
+  private rollSrc: AudioBufferSourceNode | null = null;
+  private rollG: GainNode | null = null;
+  private fireG: GainNode | null = null;
   private fireTarget = 0;
-  private nextPop = 0;
+  private fireLevel = 0;
+  // giz
+  private scratchNext = 0;
+  private scratchNode: GainNode | null = null;
   private lastBounce = 0;
-  private stepSide = 0;
+  private stepIdx = 0;
+  // música
   private chordAt = 0;
   private chordIdx = 0;
-  private nextNote = 0;
+  private nextHarp = 0;
+  private nextCelesta = 0;
+  private nextFlute = 0;
+  private nextTimpani = 0;
   played = 0; // só pra testes
+  private loaded = 0;
   get state() {
     return this.ac ? this.ac.state : 'sem-contexto';
+  }
+  get ready() {
+    return this.loaded;
   }
 
   setMode(m: AudioMode) {
@@ -72,10 +108,10 @@ export class Sfx {
     if (!this.ac) return;
     const t = this.ac.currentTime;
     this.master.gain.setTargetAtTime(this.mode === 2 ? 0 : 1, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.mode === 0 ? 0.32 : 0, t, 0.3);
+    this.musicBus.gain.setTargetAtTime(this.mode === 0 ? 0.2 : 0, t, 0.4);
   }
 
-  // cria o contexto de áudio (precisa de um gesto do usuário)
+  // cria o contexto de áudio (precisa de um gesto do usuário) e começa a baixar as gravações
   unlock() {
     if (!this.ac) {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -83,75 +119,51 @@ export class Sfx {
       const ac = new AC();
       this.ac = ac;
       const comp = ac.createDynamicsCompressor();
-      comp.threshold.value = -16;
-      comp.ratio.value = 4;
+      comp.threshold.value = -14;
+      comp.ratio.value = 3;
       this.master = ac.createGain();
       this.master.connect(comp).connect(ac.destination);
       this.bus = ac.createGain();
-      this.bus.gain.value = 1.0;
+      this.bus.gain.value = 0.85;
       this.bus.connect(this.master);
       this.musicBus = ac.createGain();
       this.musicBus.gain.value = 0;
       this.musicBus.connect(this.master);
 
-      // reverb sintético (ruído que decai)
-      const len = Math.floor(ac.sampleRate * 2.6);
+      // reverb de sala (só processamento: o som continua sendo o das gravações)
+      const len = Math.floor(ac.sampleRate * 3.2);
       const ir = ac.createBuffer(2, len, ac.sampleRate);
       for (let c = 0; c < 2; c++) {
         const d = ir.getChannelData(c);
-        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
       }
       const conv = ac.createConvolver();
       conv.buffer = ir;
       this.verbSend = ac.createGain();
-      this.verbSend.gain.value = 0.5;
+      this.verbSend.gain.value = 1;
       const verbRet = ac.createGain();
-      verbRet.gain.value = 0.7;
+      verbRet.gain.value = 0.55;
       this.verbSend.connect(conv).connect(verbRet).connect(this.master);
-
-      // eco das notas soltas
-      this.arpBus = ac.createGain();
-      this.arpBus.gain.value = 0.9;
-      const delay = ac.createDelay(1);
-      delay.delayTime.value = 0.46;
+      // eco (celesta e harpa)
+      const delay = ac.createDelay(1.5);
+      delay.delayTime.value = 0.52;
       const fb = ac.createGain();
-      fb.gain.value = 0.36;
-      this.arpBus.connect(this.musicBus);
-      this.arpBus.connect(delay);
+      fb.gain.value = 0.34;
+      this.echoSend = ac.createGain();
+      this.echoSend.gain.value = 1;
+      this.echoSend.connect(delay);
       delay.connect(fb).connect(delay);
       delay.connect(this.musicBus);
-      this.arpBus.connect(this.verbSend);
+      delay.connect(this.verbSend);
 
-      // ruído branco compartilhado
-      this.noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
-      const nd = this.noise.getChannelData(0);
-      for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
-
-      // laços contínuos: rolar do dado e giz riscando
-      const loop = () => {
-        const s = ac.createBufferSource();
-        s.buffer = this.noise;
-        s.loop = true;
-        s.start();
-        return s;
-      };
-      const roll = ac.createBiquadFilter();
-      roll.type = 'lowpass';
-      roll.frequency.value = 340;
-      this.rollG = ac.createGain();
-      this.rollG.gain.value = 0;
-      loop().connect(roll).connect(this.rollG).connect(this.bus);
-      this.scratchF = ac.createBiquadFilter();
-      this.scratchF.type = 'bandpass';
-      this.scratchF.frequency.value = 4200;
-      this.scratchF.Q.value = 0.9;
-      this.scratchG = ac.createGain();
-      this.scratchG.gain.value = 0;
-      loop().connect(this.scratchF).connect(this.scratchG).connect(this.bus);
-
-      this.chordAt = ac.currentTime + 0.4;
-      this.nextNote = ac.currentTime + 3;
+      this.chordAt = ac.currentTime + 0.5;
+      const t0 = ac.currentTime;
+      this.nextHarp = t0 + 4;
+      this.nextCelesta = t0 + 9;
+      this.nextFlute = t0 + 20;
+      this.nextTimpani = t0 + 45;
       this.applyMode();
+      void this.loadAll();
     }
     if (this.ac.state !== 'running') void this.ac.resume();
   }
@@ -162,52 +174,146 @@ export class Sfx {
     else void this.ac.resume();
   }
 
-  // ── blocos de síntese ───────────────────────────────────────────────────
-  private tone(f: number, dur: number, type: OscillatorType, vol: number, f2 = 0, delay = 0, verb = 0, attack = 0.006) {
-    const ac = this.ac;
-    if (!ac) return;
-    const t = ac.currentTime + delay;
-    const o = ac.createOscillator();
-    o.type = type;
-    o.frequency.setValueAtTime(f, t);
-    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.bus);
-    if (verb > 0) {
-      const s = ac.createGain();
-      s.gain.value = verb;
-      g.connect(s).connect(this.verbSend);
+  // ── carregamento das gravações ──────────────────────────────────────────
+  private async decode(url: string): Promise<AudioBuffer | null> {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      return await this.ac!.decodeAudioData(await r.arrayBuffer());
+    } catch {
+      return null;
     }
-    o.start(t);
-    o.stop(t + dur + 0.05);
   }
 
-  private burst(dur: number, type: BiquadFilterType, f: number, q: number, vol: number, f2 = 0, delay = 0, verb = 0, attack = 0.004) {
-    const ac = this.ac;
-    if (!ac) return;
-    const t = ac.currentTime + delay;
-    const src = ac.createBufferSource();
-    src.buffer = this.noise;
-    const flt = ac.createBiquadFilter();
-    flt.type = type;
-    flt.Q.value = q;
-    flt.frequency.setValueAtTime(f, t);
-    if (f2) flt.frequency.exponentialRampToValueAtTime(f2, t + dur);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(flt).connect(g).connect(this.bus);
-    if (verb > 0) {
-      const s = ac.createGain();
-      s.gain.value = verb;
-      g.connect(s).connect(this.verbSend);
+  private async loadAll() {
+    const base = `${import.meta.env.BASE_URL}audio/`;
+    // efeitos primeiro (são pequenos), depois os instrumentos da música
+    await Promise.all(
+      SFX_FILES.map(async (n) => {
+        const b = await this.decode(`${base}sfx/${n}.mp3`);
+        if (b) this.buf.set(n, b);
+        this.loaded++;
+      }),
+    );
+    this.startLoops();
+    try {
+      const man = (await (await fetch(`${base}inst/manifest.json`)).json()) as Record<string, number[]>;
+      for (const name of INSTRUMENTS) {
+        const notes = man[name] ?? [];
+        const inst: Inst = { notes, bufs: new Map() };
+        this.inst[name] = inst;
+        await Promise.all(
+          notes.map(async (m) => {
+            const b = await this.decode(`${base}inst/${name}/${m}.mp3`);
+            if (b) inst.bufs.set(m, b);
+          }),
+        );
+        this.loaded++;
+      }
+    } catch {
+      /* sem instrumentos: só os efeitos tocam */
     }
-    src.start(t, Math.random() * 1.5);
-    src.stop(t + dur + 0.05);
+  }
+
+  private startLoops() {
+    const ac = this.ac!;
+    const loop = (name: string, bus: AudioNode) => {
+      const b = this.buf.get(name);
+      if (!b) return null;
+      const s = ac.createBufferSource();
+      s.buffer = b;
+      s.loop = true;
+      const g = ac.createGain();
+      g.gain.value = 0;
+      s.connect(g).connect(bus);
+      s.start(0, Math.random() * b.duration);
+      return { s, g };
+    };
+    const r = loop('roll', this.bus);
+    if (r) {
+      this.rollSrc = r.s;
+      this.rollG = r.g;
+    }
+    const f = loop('fire', this.bus);
+    if (f) {
+      this.fireG = f.g;
+    }
+  }
+
+  // ── tocar gravações ─────────────────────────────────────────────────────
+  private sample(name: string, vol = 1, rate = 1, delay = 0, verb = 0, pan = 0) {
+    const ac = this.ac;
+    const b = this.buf.get(name);
+    if (!ac || !b) return;
+    const s = ac.createBufferSource();
+    s.buffer = b;
+    s.playbackRate.value = rate;
+    const g = ac.createGain();
+    g.gain.value = vol;
+    let node: AudioNode = g;
+    s.connect(g);
+    if (pan !== 0 && ac.createStereoPanner) {
+      const p = ac.createStereoPanner();
+      p.pan.value = pan;
+      g.connect(p);
+      node = p;
+    }
+    node.connect(this.bus);
+    if (verb > 0) {
+      const v = ac.createGain();
+      v.gain.value = verb;
+      node.connect(v).connect(this.verbSend);
+    }
+    s.start(ac.currentTime + delay);
+  }
+
+  // uma nota de instrumento real: usa a gravação mais próxima e ajusta a altura (rate)
+  private note(instName: string, midi: number, t: number, vol: number, opts: { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number; toMusic?: boolean } = {}) {
+    const ac = this.ac;
+    const inst = this.inst[instName];
+    if (!ac || !inst || inst.bufs.size === 0) return;
+    let best = inst.notes[0];
+    for (const n of inst.notes) if (inst.bufs.has(n) && Math.abs(n - midi) < Math.abs(best - midi)) best = n;
+    const b = inst.bufs.get(best);
+    if (!b) return;
+    const s = ac.createBufferSource();
+    s.buffer = b;
+    s.playbackRate.value = Math.pow(2, (midi - best) / 12);
+    const g = ac.createGain();
+    const fi = opts.fadeIn ?? 0.01;
+    const hold = opts.hold ?? b.duration / s.playbackRate.value - fi - (opts.fadeOut ?? 0.3);
+    const fo = opts.fadeOut ?? 0.3;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + fi);
+    g.gain.setValueAtTime(vol, t + fi + Math.max(0, hold));
+    g.gain.linearRampToValueAtTime(0.0001, t + fi + Math.max(0, hold) + fo);
+    let node: AudioNode = g;
+    s.connect(g);
+    if (opts.pan && ac.createStereoPanner) {
+      const p = ac.createStereoPanner();
+      p.pan.value = opts.pan;
+      g.connect(p);
+      node = p;
+    }
+    node.connect(opts.toMusic === false ? this.bus : this.musicBus);
+    if (opts.verb) {
+      const v = ac.createGain();
+      v.gain.value = opts.verb;
+      node.connect(v).connect(this.verbSend);
+    }
+    if (opts.echo) {
+      const e = ac.createGain();
+      e.gain.value = opts.echo;
+      node.connect(e).connect(this.echoSend);
+    }
+    s.start(t);
+    s.stop(t + fi + Math.max(0, hold) + fo + 0.05);
+  }
+
+  // nota de instrumento como EFEITO (sai pelo canal dos efeitos, mesmo com a música desligada)
+  private fxNote(inst: string, midi: number, vol: number, delay = 0, verb = 0.5, echo = 0) {
+    if (!this.ac) return;
+    this.note(inst, midi, this.ac.currentTime + delay, vol, { fadeIn: 0.005, fadeOut: 0.5, verb, echo, toMusic: false });
   }
 
   // ── efeitos ─────────────────────────────────────────────────────────────
@@ -216,93 +322,80 @@ export class Sfx {
     this.played++;
     switch (name) {
       case 'throw':
-        this.burst(0.28, 'bandpass', 500, 1.2, 0.5, 2000);
-        this.tone(160, 0.12, 'triangle', 0.18, 90);
+        this.sample(pick(['throw1', 'throw2']), 0.9 * Math.min(1, 0.4 + v), rand(0.93, 1.07));
         break;
       case 'recall':
-        this.burst(0.34, 'bandpass', 2200, 1.4, 0.4, 450);
+        this.sample('recall', 0.85, rand(0.95, 1.05));
         break;
       case 'catch':
-        this.tone(660, 0.18, 'triangle', 0.22, 0, 0, 0.5);
-        this.tone(990, 0.28, 'sine', 0.16, 0, 0.05, 0.6);
-        this.burst(0.06, 'highpass', 2500, 0.7, 0.2);
+        this.sample('catch', 0.9, rand(0.95, 1.05));
+        this.fxNote('celesta', 88, 0.22, 0.04, 0.6, 0.2);
         break;
       case 'put':
-        this.tone(120, 0.14, 'sine', 0.4, 70);
-        this.burst(0.06, 'lowpass', 900, 0.8, 0.35);
+        this.sample(pick(['put1', 'put2']), 0.9, rand(0.92, 1.05));
         break;
       case 'rest':
-        this.tone(95, 0.16, 'sine', 0.34 * v, 60);
-        this.burst(0.05, 'lowpass', 1200, 0.8, 0.22);
+        this.sample(pick(['bounce1', 'bounce2', 'bounce3']), 0.7 * Math.min(1, v), rand(0.75, 0.9));
         break;
       case 'face':
         {
-          const f = FACE_NOTES[Math.max(0, Math.min(5, Math.round(v) - 1))];
-          this.tone(f, 0.22, 'triangle', 0.22, 0, 0, 0.4);
-          this.tone(f * 2, 0.16, 'sine', 0.08, 0, 0.02, 0.4);
-          this.burst(0.03, 'highpass', 3500, 0.7, 0.12);
+          const m = FACE_MIDI[Math.max(0, Math.min(5, Math.round(v) - 1))];
+          this.fxNote('glockenspiel', m, 0.45, 0, 0.5, 0.15);
         }
         break;
       case 'locked':
-        this.tone(110, 0.18, 'square', 0.12, 80);
-        this.tone(104, 0.18, 'square', 0.08, 76);
+        this.sample('locked', 0.7, rand(0.75, 0.85));
         break;
       case 'swap':
-        this.burst(0.1, 'highpass', 2200, 0.6, 0.25);
-        this.burst(0.09, 'highpass', 2800, 0.6, 0.2, 0, 0.09);
-        this.tone(280, 0.06, 'triangle', 0.06, 0, 0.02);
+        this.sample(pick(['swap1', 'swap2']), 0.7, rand(0.95, 1.05));
         break;
       case 'sweep':
-        this.burst(0.5, 'bandpass', 3500, 0.9, 0.3, 700);
+        this.sample('sweep', 0.8, 1);
         break;
       case 'ignite':
-        this.burst(0.7, 'lowpass', 250, 0.8, 0.7, 2600, 0, 0.3, 0.04);
-        this.tone(70, 0.6, 'sine', 0.45, 40, 0, 0.2);
-        this.burst(0.3, 'highpass', 3000, 0.7, 0.18, 0, 0.1);
+        this.sample('ignite', 1, rand(0.9, 1), 0, 0.3);
+        this.fxNote('timpani', 36, 0.35, 0.02, 0.6);
         break;
       case 'plate':
-        this.tone(55, 0.5, 'sine', 0.55, 38);
-        this.burst(0.14, 'lowpass', 700, 0.9, 0.5);
-        this.tone(210, 0.05, 'square', 0.12, 150, 0.02);
-        this.burst(0.12, 'bandpass', 1400, 2, 0.18, 0, 0.04);
+        this.sample('plate1', 1, 0.85);
+        this.sample('plate2', 0.7, 0.9, 0.03);
+        this.fxNote('timpani', 36, 0.3, 0, 0.5);
         break;
       case 'gem':
-        for (const [f, d] of [[1046.5, 0], [1568, 0.09], [2093, 0.18]] as [number, number][]) this.tone(f, 1.2, 'sine', 0.2, 0, d, 0.9);
-        this.burst(0.25, 'highpass', 6000, 0.7, 0.06, 0, 0.05);
-        break;
-      case 'piece':
-        this.tone(659.25, 0.5, 'triangle', 0.22, 0, 0, 0.7);
-        this.tone(987.77, 0.8, 'sine', 0.18, 0, 0.1, 0.8);
+        this.sample('gem1', 0.7, 1.1, 0, 0.5);
+        this.sample('gem2', 0.5, 1, 0.05, 0.5);
+        [84, 88, 91, 96].forEach((m, i) => this.fxNote('celesta', m, 0.4, 0.08 + i * 0.12, 0.7, 0.3));
         break;
       case 'door':
-        // pedra pesada arrastando
-        this.burst(2.4, 'lowpass', 140, 0.9, 0.8, 90, 0, 0.1, 0.15);
-        this.burst(2.2, 'bandpass', 700, 2.5, 0.12, 420, 0.1);
-        this.tone(48, 2.4, 'sawtooth', 0.12, 36, 0, 0, 0.3);
-        this.tone(60, 0.5, 'sine', 0.5, 36, 2.3);
+        this.sample('door1', 1, 0.92, 0, 0.3);
+        this.sample('door2', 0.7, 0.9, 0.55, 0.2);
+        this.fxNote('cello', 36, 0.45, 0.1, 0.8);
         break;
       case 'doorClose':
-        this.burst(1.2, 'lowpass', 120, 0.9, 0.8, 70, 0, 0.1, 0.05);
-        this.tone(50, 0.4, 'sine', 0.6, 32, 1.0);
-        this.burst(0.15, 'lowpass', 600, 0.9, 0.4, 0, 1.0);
+        this.sample('doorclose2', 0.6, 0.9);
+        this.sample('doorclose1', 0.9, 0.85, 0.55, 0.2);
+        break;
+      case 'piece':
+        this.fxNote('celesta', 79, 0.45, 0, 0.7, 0.3);
+        this.fxNote('celesta', 91, 0.4, 0.12, 0.7, 0.3);
+        this.sample('bell', 0.25, 1.2, 0.05, 0.7);
         break;
       case 'error':
-        this.tone(150, 0.22, 'sawtooth', 0.1, 90);
-        this.tone(142, 0.22, 'sawtooth', 0.08, 85);
+        this.sample('error', 0.8, 0.8);
         break;
       case 'burnout':
-        this.burst(0.7, 'highpass', 3200, 0.7, 0.25, 1500);
+        this.sample('burnout', 0.7, 1);
         break;
       case 'land':
-        this.tone(80, 0.18, 'sine', 0.5 * Math.min(1, v + 0.2), 45);
-        this.burst(0.08, 'lowpass', 500, 0.8, 0.3 * Math.min(1, v + 0.2));
+        this.sample('land', 0.8 * Math.min(1, v + 0.25), rand(0.85, 1));
         break;
       case 'room':
-        this.tone(196, 2.4, 'sine', 0.2, 0, 0, 1.0, 0.05);
-        this.tone(293.66, 2.0, 'sine', 0.12, 0, 0.04, 1.0, 0.05);
+        this.sample('gong', 0.6, 0.85, 0, 0.7);
+        this.fxNote('cello', 45, 0.45, 0.15, 0.8);
         break;
       case 'fanfare':
-        for (const [f, d] of [[392, 0], [523.25, 0.18], [659.25, 0.36], [783.99, 0.54]] as [number, number][]) this.tone(f, 1.8, 'triangle', 0.2, 0, d, 0.9);
+        [60, 64, 67, 72, 76, 79].forEach((m, i) => this.fxNote('orchestral_harp', m, 0.5, i * 0.14, 0.6));
+        [72, 76, 79, 84].forEach((m, i) => this.fxNote('tubular_bells', m, 0.35, 0.3 + i * 0.3, 0.9));
         break;
     }
   }
@@ -310,11 +403,9 @@ export class Sfx {
   // passo (speed 0..1)
   step(speed: number) {
     if (!this.ac || this.mode === 2) return;
-    this.stepSide ^= 1;
-    const k = 0.55 + 0.45 * speed;
-    this.tone(this.stepSide ? 92 : 78 + rand(-6, 6), 0.1, 'sine', 0.32 * k, 52);
-    this.burst(0.07, 'lowpass', rand(500, 900), 0.8, 0.28 * k);
-    this.burst(0.03, 'highpass', 2600, 0.6, 0.05 * k);
+    this.stepIdx = (this.stepIdx + 1) % 4;
+    const k = 0.45 + 0.4 * speed;
+    this.sample(`step${this.stepIdx + 1}`, k, rand(0.94, 1.06), 0, 0.12);
   }
 
   // batida do dado (impact em m/s)
@@ -325,25 +416,46 @@ export class Sfx {
     if (now - this.lastBounce < 0.07) return;
     this.lastBounce = now;
     const k = Math.min(1, impact / 9);
-    this.tone(rand(170, 220), 0.1, 'triangle', 0.1 + 0.3 * k, 90);
-    this.burst(0.05, 'bandpass', rand(1400, 2200), 1.2, 0.08 + 0.3 * k);
+    this.sample(pick(['bounce1', 'bounce2', 'bounce3', 'bounce4']), 0.2 + 0.8 * k, rand(0.85, 1.15) * (1.1 - 0.25 * k), 0, 0.15);
   }
 
-  // dado rolando (0..1)
+  // dado rolando (0..1): gravação de uma bola rolando, mais rápida quando o dado corre
   roll(level: number) {
-    if (!this.ac) return;
-    this.rollG.gain.setTargetAtTime(level * 0.35, this.ac.currentTime, 0.06);
-  }
-
-  // giz riscando / borracha (0..1)
-  scratch(level: number, erase: boolean) {
-    if (!this.ac) return;
+    if (!this.ac || !this.rollG || !this.rollSrc) return;
     const t = this.ac.currentTime;
-    this.scratchF.frequency.setTargetAtTime(erase ? 1800 : 4200 + Math.sin(t * 38) * 700, t, 0.02);
-    this.scratchG.gain.setTargetAtTime(level * (erase ? 0.16 : 0.22) * (0.6 + 0.4 * Math.abs(Math.sin(t * 29))), t, 0.03);
+    this.rollG.gain.setTargetAtTime(this.mode === 2 ? 0 : level * 0.55, t, 0.06);
+    this.rollSrc.playbackRate.setTargetAtTime(0.7 + level * 0.7, t, 0.1);
   }
 
-  // intensidade do fogo por perto (0..1)
+  // giz riscando / borracha (0..1): gravações de giz na pedra e de borracha, repetidas enquanto você arrasta
+  scratch(level: number, erase: boolean) {
+    const ac = this.ac;
+    if (!ac || this.mode === 2) return;
+    const now = ac.currentTime;
+    if (level > 0.5) {
+      if (now >= this.scratchNext) {
+        const name = erase ? 'erase' : pick(['chalk1', 'chalk2']);
+        const b = this.buf.get(name);
+        if (!b) return;
+        const s = ac.createBufferSource();
+        s.buffer = b;
+        s.playbackRate.value = rand(0.92, 1.1);
+        const g = ac.createGain();
+        g.gain.value = erase ? 0.7 : 0.85;
+        s.connect(g).connect(this.bus);
+        s.start();
+        this.scratchNode?.gain.setTargetAtTime(0.0001, now, 0.04);
+        this.scratchNode = g;
+        this.scratchNext = now + (erase ? 0.5 : 0.3);
+      }
+    } else if (this.scratchNode) {
+      this.scratchNode.gain.setTargetAtTime(0.0001, now, 0.05); // parou de arrastar: a gravação some rápido
+      this.scratchNode = null;
+      this.scratchNext = 0;
+    }
+  }
+
+  // intensidade do fogo por perto (0..1): volume da gravação de uma lareira estalando
   fire(level: number) {
     this.fireTarget = Math.min(1, level);
   }
@@ -354,93 +466,69 @@ export class Sfx {
     if (!ac) return;
     const now = ac.currentTime;
     this.fireLevel += (this.fireTarget - this.fireLevel) * Math.min(1, dt * 3);
-    // estalos do fogo
-    if (this.mode !== 2 && this.fireLevel > 0.02) {
-      while (this.nextPop < now + 0.05) {
-        const pw = 0.04 + 0.2 * this.fireLevel * Math.random();
-        const t = Math.max(now, this.nextPop);
-        this.popAt(t, pw);
-        this.nextPop = t + rand(0.03, 0.28) / (0.3 + this.fireLevel);
-      }
-    } else this.nextPop = now;
-    if (this.mode !== 0) return;
-    // música: acordes lentos
+    if (this.fireG) this.fireG.gain.setTargetAtTime(this.mode === 2 ? 0 : this.fireLevel * 0.7, now, 0.1);
+    if (this.mode !== 0 || !this.inst.cello || this.inst.cello.bufs.size === 0) return;
+
+    // ── música: acordes de baixo + cordas + coro, harpa, celesta, flauta e tímpano ──
     while (this.chordAt < now + 2) {
-      this.padChord(CHORDS[this.chordIdx % CHORDS.length], this.chordAt, 10.5);
-      this.chordAt += 10;
+      this.scheduleChord(PROG[this.chordIdx % PROG.length], this.chordAt, this.chordIdx);
+      this.chordAt += CHORD_LEN;
       this.chordIdx++;
     }
-    // notas soltas, com eco
-    while (this.nextNote < now + 0.4) {
-      const f = ARP_NOTES[Math.floor(Math.random() * ARP_NOTES.length)];
-      this.pluck(f, Math.max(now, this.nextNote));
-      this.nextNote += rand(1.6, 4.2);
+    const ch = PROG[(this.chordIdx - 1 + PROG.length) % PROG.length];
+    while (this.nextHarp < now + 0.5) {
+      this.harpPhrase(ch, Math.max(now, this.nextHarp));
+      this.nextHarp += rand(5, 9);
+    }
+    while (this.nextCelesta < now + 0.5) {
+      const m = pick(ch.scale) + 24;
+      this.note('celesta', m, Math.max(now, this.nextCelesta), 0.3, { fadeIn: 0.005, fadeOut: 0.6, verb: 0.8, echo: 0.55, pan: rand(-0.5, 0.5) });
+      this.nextCelesta += rand(7, 14);
+    }
+    while (this.nextFlute < now + 0.5) {
+      this.flutePhrase(ch, Math.max(now, this.nextFlute));
+      this.nextFlute += rand(24, 40);
+    }
+    while (this.nextTimpani < now + 0.5) {
+      this.note('timpani', pick([33, 36, 38]), Math.max(now, this.nextTimpani), 0.28, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.9 });
+      this.nextTimpani += rand(40, 70);
     }
   }
 
-  private popAt(t: number, vol: number) {
-    const ac = this.ac!;
-    const src = ac.createBufferSource();
-    src.buffer = this.noise;
-    const f = ac.createBiquadFilter();
-    f.type = 'highpass';
-    f.frequency.value = rand(1500, 4500);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + rand(0.008, 0.03));
-    src.connect(f).connect(g).connect(this.bus);
-    src.start(t, Math.random() * 1.5);
-    src.stop(t + 0.05);
-  }
-
-  private padChord(notes: number[], t: number, dur: number) {
-    const ac = this.ac!;
-    const lp = ac.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 650;
-    const lfo = ac.createOscillator();
-    lfo.frequency.value = 0.08;
-    const lfoG = ac.createGain();
-    lfoG.gain.value = 260;
-    lfo.connect(lfoG).connect(lp.frequency);
-    lfo.start(t);
-    lfo.stop(t + dur + 4);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.3, t + 3.2);
-    g.gain.setValueAtTime(0.3, t + dur - 1.5);
-    g.gain.linearRampToValueAtTime(0.0001, t + dur + 3.5);
-    lp.connect(g);
-    g.connect(this.musicBus);
-    const s = ac.createGain();
-    s.gain.value = 0.7;
-    g.connect(s).connect(this.verbSend);
-    notes.forEach((f, i) => {
-      for (const det of [-7, 7]) {
-        const o = ac.createOscillator();
-        o.type = i === 0 ? 'sine' : 'triangle';
-        o.frequency.value = f;
-        o.detune.value = det;
-        const og = ac.createGain();
-        og.gain.value = i === 0 ? 0.5 : 0.22;
-        o.connect(og).connect(lp);
-        o.start(t);
-        o.stop(t + dur + 4);
+  private scheduleChord(c: Chord, t: number, idx: number) {
+    // baixo: violoncelo, nota longa renovada a cada ~2,7 s (a gravação dura ~3 s)
+    for (let k = 0; t + k * 2.7 < t + CHORD_LEN; k++) {
+      this.note('cello', c.root, t + k * 2.7, 0.85, { fadeIn: 0.5, fadeOut: 0.7, verb: 0.5 });
+      if (k % 2 === 0) this.note('cello', c.root + 7, t + k * 2.7 + 0.2, 0.4, { fadeIn: 0.7, fadeOut: 0.8, verb: 0.5 });
+    }
+    // colchão: cordas num acorde, coro no seguinte (entradas escalonadas, bem suaves)
+    const pad = idx % 2 === 0 ? 'string_ensemble_1' : 'choir_aahs';
+    c.pad.forEach((m, i) => {
+      for (let k = 0; t + i * 0.7 + k * 2.6 < t + CHORD_LEN + 1.5; k++) {
+        this.note(pad, m, t + i * 0.7 + k * 2.6, 0.5, { fadeIn: 1.1, fadeOut: 1.3, verb: 0.8, pan: (i - 1) * 0.35 });
       }
     });
   }
 
-  private pluck(f: number, t: number) {
-    const ac = this.ac!;
-    const o = ac.createOscillator();
-    o.type = 'triangle';
-    o.frequency.value = f;
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
-    o.connect(g).connect(this.arpBus);
-    o.start(t);
-    o.stop(t + 2.3);
+  private harpPhrase(c: Chord, t: number) {
+    const n = 4 + Math.floor(Math.random() * 3);
+    let idx = Math.floor(Math.random() * 4);
+    const up = Math.random() < 0.6;
+    const pan = rand(-0.5, 0.5);
+    for (let i = 0; i < n; i++) {
+      idx = Math.max(0, Math.min(c.scale.length - 1, idx + (up ? 1 : -1) * (Math.random() < 0.7 ? 1 : 2)));
+      this.note('orchestral_harp', c.scale[idx], t + i * rand(0.7, 1.2), 0.5, { fadeIn: 0.004, fadeOut: 0.8, verb: 0.7, echo: 0.3, pan });
+    }
+  }
+
+  private flutePhrase(c: Chord, t: number) {
+    const n = 3 + Math.floor(Math.random() * 2);
+    let at = t;
+    let idx = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      idx = Math.max(0, Math.min(c.scale.length - 1, idx + pick([-2, -1, 1, 2])));
+      this.note('flute', c.scale[idx] + 12, at, 0.38, { fadeIn: 0.25, fadeOut: 0.9, verb: 0.9, echo: 0.3 });
+      at += rand(1.6, 2.6);
+    }
   }
 }

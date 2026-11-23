@@ -1467,7 +1467,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
       yaw: () => yaw,
-      audio: () => ({ state: sfx.state, played: sfx.played }),
+      sfx: (n: string, v = 1) => sfx.play(n as never, v),
+      sfxStep: (s: number) => sfx.step(s),
+      sfxBounce: (i: number) => sfx.bounce(i),
+      sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
+      audio: () => ({ state: sfx.state, played: sfx.played, loaded: sfx.ready }),
       state: () => ({
         room: curRoom,
         dieState,

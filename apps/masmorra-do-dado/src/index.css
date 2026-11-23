@@ -103,3 +103,13 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #efe6d0; -web
   border-left: 2px dashed rgba(239, 230, 208, 0.28); background: linear-gradient(90deg, rgba(8, 6, 14, 0), rgba(8, 6, 14, 0.28)); }
 .lookzone span:first-child { font-size: 20px; }
 @media (pointer: coarse) { .lookzone { display: flex; } }
+
+/* créditos */
+.credits { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 30;
+  background: rgba(5, 4, 10, 0.78); }
+.credits-box { max-width: min(560px, 86vw); max-height: 86vh; overflow: auto; padding: 14px 20px; text-align: left;
+  background: #14101f; border: 3px solid rgba(239, 230, 208, 0.5); box-shadow: 4px 4px 0 #05040a; font-size: 13px; line-height: 1.45; }
+.credits-box h2 { margin: 0 0 8px; font-size: 16px; letter-spacing: 1px; }
+.credits-box p { margin: 0 0 8px; opacity: 0.9; }
+.credits-box button { padding: 6px 16px; font: inherit; font-weight: bold; color: #efe6d0; cursor: pointer;
+  background: #1a1624; border: 2px solid #5be7ff; box-shadow: 2px 2px 0 #05040a; }
