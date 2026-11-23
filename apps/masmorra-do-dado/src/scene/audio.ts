@@ -26,6 +26,7 @@ export type SfxName =
   | 'room'
   | 'fanfare'
   | 'uiblip'
+  | 'uiflip'
   | 'uiopen'
   | 'uiclose'
   | 'uinew';
@@ -360,6 +361,9 @@ export class Sfx {
       case 'uiopen':
         this.sample('swap1', 0.45, rand(0.85, 0.95));
         this.fxNote('orchestral_harp', 67, 0.25, 0.05, 0.5, 0.2);
+        break;
+      case 'uiflip':
+        this.sample('swap2', 0.32, rand(1.15, 1.35));
         break;
       case 'uiclose':
         this.sample('swap2', 0.4, rand(0.8, 0.9));

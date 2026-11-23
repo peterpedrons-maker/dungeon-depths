@@ -5,7 +5,7 @@ import { diary, diaryStore } from './story/diary';
 import { dialogue, dialogueStore } from './story/dialogue';
 import { useStore } from './story/store';
 import { ui, uiStore } from './story/ui';
-import { BookIcon, Diary } from './ui/Diary';
+import { BookIcon } from './ui/BookIcon';
 import { DialogueBox } from './ui/DialogueBox';
 import { WordGlyph } from './ui/Glyph';
 
@@ -58,21 +58,13 @@ export default function App() {
   const sound = useCallback((name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew', v?: number) => sceneRef.current?.playUi(name, v), []);
   const toggleDiary = useCallback(() => {
     if (dialogue.blocking) return;
-    const open = !ui.diaryOpen();
-    sceneRef.current?.playUi(open ? 'uiopen' : 'uiclose');
-    ui.setDiary(open);
+    ui.setDiary(!ui.diaryOpen()); // o livro (src/book) cuida da animação e dos sons
   }, []);
-  const closeDiary = useCallback(() => ui.setDiary(false), []);
 
   // J abre o diário (Esc e J fecham, dentro do próprio diário)
   useEffect(() => {
     const kd = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      // o livro ainda está subindo/abrindo: J ou Esc guardam de volta
-      if (ui.diaryOpen() && !uiStore.get().diaryReady) {
-        if (k === 'j' || k === 'escape') ui.setDiary(false);
-        return;
-      }
       if (k !== 'j' || e.repeat || ui.diaryOpen()) return;
       if ((e.target as HTMLElement | null)?.tagName === 'TEXTAREA') return;
       toggleDiary();
@@ -358,7 +350,6 @@ export default function App() {
       )}
 
       <DialogueBox onSound={sound} />
-      {diaryOpen && uis.diaryReady && uis.rect && <Diary rect={uis.rect} onClose={closeDiary} onSound={sound} />}
 
       {credits && (
         <div className="credits" onPointerDown={() => setCredits(false)}>

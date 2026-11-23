@@ -51,9 +51,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   escrita numa língua inventada (os Contáveis; 174 palavras em `tools/lexicon.mjs` → `src/story/lexicon.json`).
   O mundo fala em glifos; pensamentos do jogador e diários de outros condenados vêm em português. Já existem:
   **janela de conversa** estilo RPG no rodapé (`src/ui/DialogueBox.tsx`, `src/story/dialogue.ts`; salas usam `ctx.say(...)`)
-  e **diário** (tecla J ou botão do canto): é um **livro 3D** que o personagem tira da bolsa, abre e fecha com animação (modelo e animação em `scene.ts`, bloco "o diário"; texturas `diary*Texture`); as páginas (`src/ui/Diary.tsx`, `src/story/diary.ts`) são HTML encaixado por projeção sobre o livro aberto: símbolos "avistados" entram sozinhos
-  (`ctx.seen(id)`), o jogador anota o que acha que significam (o diário nunca corrige), mais faces, textos, mapa e notas;
-  salvo no aparelho. Conversa e diário param o jogador. `?demo=1` abre uma pré-visualização com dados de exemplo.
+  e **diário** (tecla J ou botão do canto): um **livro 3D** que o personagem tira da bolsa, abre e fecha; as folhas **viram de verdade**
+  (`src/book/book3d.ts`) e todo o conteúdo é desenhado em pixels **no próprio papel amarelado** (`src/book/pages.ts` + fonte
+  bitmap com acentos em `src/book/font.ts`), nada de interface por cima. Na contracapa há o **índice** (Símbolos, Faces, Textos,
+  Mapa, Notas): escolher vira as folhas até lá. Toque/clique nas regiões das páginas (raycast), setas/roda viram a página, J/Esc ou
+  tocar fora guardam. Os símbolos "avistados" entram sozinhos (`ctx.seen(id)`); o jogador anota o que acha que significam (o diário
+  nunca corrige); salvo no aparelho. Conversa e diário param o jogador. `?demo=1` abre uma pré-visualização com dados de exemplo.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
 

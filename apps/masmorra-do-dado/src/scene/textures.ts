@@ -943,7 +943,7 @@ export function diaryLeatherTexture() {
     for (let x = 0; x < 16; x++) {
       let k = 0.9 + r() * 0.16;
       if ((x * 3 + y * 5) % 11 === 0) k *= 0.82; // grão do couro
-      px(ctx, x, y, shade(hex('#4a2c1c'), k));
+      px(ctx, x, y, shade(hex('#8c3a22'), k));
     }
   }
   return toTexture(c, undefined, false);
@@ -958,7 +958,7 @@ export function diaryCoverTexture() {
     for (let x = 0; x < W; x++) {
       let k = 0.92 + r() * 0.15;
       if ((x * 3 + y * 5) % 11 === 0) k *= 0.82;
-      px(ctx, x, y, shade(hex('#5a3420'), k));
+      px(ctx, x, y, shade(hex('#9a4026'), k));
     }
   }
   // costura (pontilhado) rente à borda
@@ -984,7 +984,7 @@ export function diaryCoverTexture() {
   rect(ctx, gx + s - 2, gy, 2, s, gold);
   for (const [dx, dy] of [[4, 4], [12, 4], [8, 8], [4, 12], [12, 12]]) rect(ctx, gx + dx, gy + dy, 2, 2, '#f0d880');
   // barras do lombo
-  rect(ctx, 0, 0, 1, H, '#2a180e');
+  rect(ctx, 0, 0, 1, H, '#4a1a10');
   return toTexture(c, undefined, false);
 }
 
@@ -994,7 +994,7 @@ export function diaryEdgeTexture() {
   const r = rng(203);
   for (let y = 0; y < 16; y++) {
     const line = y % 2 === 0;
-    for (let x = 0; x < 8; x++) px(ctx, x, y, shade(hex(line ? '#c2a48e' : '#9c7d6c'), 0.92 + r() * 0.12));
+    for (let x = 0; x < 8; x++) px(ctx, x, y, shade(hex(line ? '#f0c890' : '#c88a4c'), 0.92 + r() * 0.12));
   }
   return toTexture(c, undefined, false);
 }
