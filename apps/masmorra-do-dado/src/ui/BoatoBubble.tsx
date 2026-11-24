@@ -1,8 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { diary, diaryStore } from '../story/diary';
 import { chatter, chatterStore } from '../story/chatter';
 import { useStore } from '../story/store';
 import { WordGlyph } from './Glyph';
+import { sketchCanvas, type SketchKind } from '../scene/sketch';
+
+// o rabisco da palavra (o mesmo que o dado mostra na face), em pixel
+function SketchPic({ kind, size }: { kind: SketchKind; size: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv) return;
+    const g = cv.getContext('2d')!;
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, 40, 40);
+    g.drawImage(sketchCanvas(kind, 8, 40), 0, 0);
+  }, [kind]);
+  return <canvas ref={ref} width={40} height={40} style={{ width: size, height: size, imageRendering: 'pixelated' }} aria-hidden="true" />;
+}
 
 // Balão do dado falante: os símbolos aparecem um a um perto do dado e somem sozinhos.
 // Cada símbolo que ele "diz" vai para o diário como avistado.
@@ -13,7 +28,7 @@ export function BoatoBubble({ left = false }: { left?: boolean }) {
   useEffect(() => setShown(0), [c?.id]);
   useEffect(() => {
     if (!c) return;
-    if (shown < c.glyphs.length) {
+    if (shown < c.glyphs.length + (c.pic ? 1 : 0)) {
       const t = window.setTimeout(() => setShown(shown + 1), 320);
       return () => window.clearTimeout(t);
     }
@@ -23,13 +38,18 @@ export function BoatoBubble({ left = false }: { left?: boolean }) {
   useEffect(() => {
     if (!c) return;
     const here = diaryStore.get().here;
-    c.glyphs.slice(0, shown).forEach((id) => diary.markSeen(id, here));
+    c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).forEach((id) => diary.markSeen(id, here));
   }, [c, shown]);
 
   if (!c) return null;
   return (
     <div className={`boato${left ? ' left' : ''}`} aria-hidden="true">
-      {c.glyphs.slice(0, shown).map((id, k) => (
+      {c.pic && shown >= 1 && (
+        <span className="dlg-tile" key={`${c.id}-pic`}>
+          <SketchPic kind={c.pic as SketchKind} size={34} />
+        </span>
+      )}
+      {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, k) => (
         <span className="dlg-tile" key={`${c.id}-${k}`}>
           <WordGlyph id={id} size={26} />
         </span>

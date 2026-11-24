@@ -444,6 +444,7 @@ export function dieGlowCanvas(n: number, accent: string, locked = false): HTMLCa
 }
 
 // A face do dado mostrando o rabisco de uma palavra: o dado "traduz" o glifo que o jogador olha.
+// A troca é uma DISSOLUÇÃO PONTILHADA (padrão de Bayer, no clima do dithering do jogo): `set(p)` com p de 0 (face normal) a 1 (desenho).
 function sketchInset(base: HTMLCanvasElement, kind: SketchKind, glow: boolean) {
   const g = base.getContext('2d')!;
   g.fillStyle = glow ? '#000' : '#17111f';
@@ -452,11 +453,40 @@ function sketchInset(base: HTMLCanvasElement, kind: SketchKind, glow: boolean) {
   g.drawImage(sketchCanvas(kind, 8, 40), 12, 12);
   return base;
 }
-export function dieSketchFaceTexture(n: number, accent: string, locked: boolean, kind: SketchKind) {
-  return toTexture(sketchInset(dieFaceCanvas(n, accent, locked), kind, false), undefined, false);
-}
-export function dieSketchGlowTexture(n: number, accent: string, locked: boolean, kind: SketchKind) {
-  return toTexture(sketchInset(dieGlowCanvas(n, accent, locked), kind, true), undefined, false);
+const BAYER = [0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26, 12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22, 3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25, 15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21];
+export function dieSketchBlend(n: number, accent: string, locked: boolean, kind: SketchKind) {
+  const pix = (c: HTMLCanvasElement) => c.getContext('2d')!.getImageData(0, 0, 64, 64).data;
+  const baseFace = pix(dieFaceCanvas(n, accent, locked));
+  const skFace = pix(sketchInset(dieFaceCanvas(n, accent, locked), kind, false));
+  const baseGlow = pix(dieGlowCanvas(n, accent, locked));
+  const skGlow = pix(sketchInset(dieGlowCanvas(n, accent, locked), kind, true));
+  const mk = () => {
+    const { c, ctx } = canvas(64);
+    return { c, ctx, img: ctx.createImageData(64, 64), tex: toTexture(c, undefined, false) };
+  };
+  const face = mk();
+  const glow = mk();
+  const compose = (o: ReturnType<typeof mk>, a: Uint8ClampedArray, b: Uint8ClampedArray, p: number) => {
+    const d = o.img.data;
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 64; x++) {
+        const i = (y * 64 + x) * 4;
+        const src = p * 64 > BAYER[(y & 7) * 8 + (x & 7)] ? b : a;
+        d[i] = src[i];
+        d[i + 1] = src[i + 1];
+        d[i + 2] = src[i + 2];
+        d[i + 3] = 255;
+      }
+    }
+    o.ctx.putImageData(o.img, 0, 0);
+    o.tex.needsUpdate = true;
+  };
+  const set = (p: number) => {
+    compose(face, baseFace, skFace, p);
+    compose(glow, baseGlow, skGlow, p);
+  };
+  set(0);
+  return { map: face.tex, glow: glow.tex, set, dispose: () => { face.tex.dispose(); glow.tex.dispose(); } };
 }
 
 export function dieFaceTexture(n: number, accent: string, locked: boolean) {

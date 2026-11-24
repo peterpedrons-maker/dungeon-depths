@@ -7,8 +7,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { FACES } from '../faces';
 import {
   dieFaceTexture,
-  dieSketchFaceTexture,
-  dieSketchGlowTexture,
+  dieSketchBlend,
   dieGlowTexture,
   flameFrames,
   soapSideTexture,
@@ -365,7 +364,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const SKETCH_WORDS: Record<string, SketchKind> = { brasa: 'braseiro' }; // palavra (id do léxico) -> desenho
   const SKETCH_MAX = 3; // só nas primeiras vezes que a palavra aparece: a ajuda diminui
   const SKETCH_KEY = 'mdd-sketch-v1';
-  let SKETCH_SPIN = 0; // giro (rad) em que o desenho fica de pé para quem olha; o dado para de girar enquanto ele aparece
+  const SKETCH_SPIN = 0; // giro (rad) em que o desenho fica de pé para quem olha; o dado para de girar enquanto ele aparece
   const sketchCount: Record<string, number> = (() => {
     try {
       return JSON.parse(localStorage.getItem(SKETCH_KEY) || '{}');
@@ -373,16 +372,37 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       return {};
     }
   })();
-  let sketchOn: { i: number; t: number; map: THREE.Texture | null; em: THREE.Texture | null; nmap: THREE.Texture; nem: THREE.Texture } | null = null;
+  // linha do tempo (s): 0 a 0,4 as gemas escurecem e o dado dá um impulso; 0,4 a 1,3 o desenho entra pontilhado; ~1,3 o dado FALA (glifo + desenho);
+  // segura; nos últimos 0,9 s o desenho se desfaz do mesmo jeito e as gemas voltam.
+  const SK_IN0 = 0.4;
+  const SK_IN1 = 1.3;
+  const SK_LIFE = 6;
+  const SK_OUT = 0.9;
+  let sketchOn: {
+    i: number;
+    age: number;
+    word: string;
+    kind: SketchKind;
+    spoke: boolean;
+    map: THREE.Texture | null;
+    em: THREE.Texture | null;
+    blend: ReturnType<typeof dieSketchBlend>;
+  } | null = null;
   const endSketch = () => {
     if (!sketchOn) return;
     const m = handMats[sketchOn.i];
     m.map = sketchOn.map;
     m.emissiveMap = sketchOn.em;
     m.needsUpdate = true;
-    sketchOn.nmap.dispose();
-    sketchOn.nem.dispose();
+    sketchOn.blend.dispose();
     sketchOn = null;
+  };
+  // 0 = face normal, 1 = desenho inteiro
+  const sketchP = () => {
+    if (!sketchOn) return 0;
+    const a = sketchOn.age;
+    const k = a < SK_IN1 ? Math.max(0, (a - SK_IN0) / (SK_IN1 - SK_IN0)) : a > SK_LIFE - SK_OUT ? Math.max(0, (SK_LIFE - a) / SK_OUT) : 1;
+    return k * k * (3 - 2 * k);
   };
   const showSketch = (word: string, force = false) => {
     const kind = SKETCH_WORDS[word];
@@ -399,15 +419,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const i = DIE_FACES.indexOf(face);
     const f = FACES[face - 1];
     const m = handMats[i];
-    sketchOn = { i, t: 5, map: m.map, em: m.emissiveMap, nmap: dieSketchFaceTexture(face, f.color, !f.unlocked, kind), nem: dieSketchGlowTexture(face, f.color, !f.unlocked, kind) };
-    m.map = sketchOn.nmap;
-    m.emissiveMap = sketchOn.nem;
+    const blend = dieSketchBlend(face, f.color, !f.unlocked, kind);
+    sketchOn = { i, age: 0, word, kind, spoke: false, map: m.map, em: m.emissiveMap, blend };
+    m.map = blend.map; // com p = 0 a mistura é idêntica à face normal: nenhum salto
+    m.emissiveMap = blend.glow;
     m.needsUpdate = true;
-    sfx.play('uiblip', 1);
+    handPop = Math.max(handPop, 0.5); // o impulso do dado
+    chatCool = Math.max(chatCool, 20); // não fala outra coisa por cima
   };
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
-      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1.5 : 1);
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1);
       handMats[i].color.setScalar(1 - 0.5 * handDim);
       dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat + 2.4 * talkGlow);
     });
@@ -1992,13 +2014,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     handPop = Math.max(0, handPop - dt * 4);
     if (sketchOn) {
       // o dado para de girar com a face do desenho de pé para quem olha, e volta a girar quando o desenho some
-      sketchOn.t -= dt;
-      if (import.meta.env.DEV && typeof (globalThis as Record<string, unknown>).__spinHold === 'number') SKETCH_SPIN = (globalThis as Record<string, unknown>).__spinHold as number;
+      sketchOn.age += dt;
+      if (import.meta.env.DEV && typeof (globalThis as Record<string, unknown>).__skAge === 'number') sketchOn.age = (globalThis as Record<string, unknown>).__skAge as number; // teste: congela a linha do tempo
+      sketchOn.blend.set(sketchP());
+      if (!sketchOn.spoke && sketchOn.age >= SK_IN1) {
+        // o dado FALA: o glifo da palavra e o desenho dela, juntos (fala sincera: as gemas ficam firmes e quentes)
+        sketchOn.spoke = true;
+        chatter.say([sketchOn.word], sketchOn.kind);
+        sfx.play('uiblip', 0.6);
+      }
       let dsp = (SKETCH_SPIN - spin) % (Math.PI * 2);
       if (dsp > Math.PI) dsp -= Math.PI * 2;
       if (dsp < -Math.PI) dsp += Math.PI * 2;
       spin += dsp * Math.min(1, dt * 5);
-      if (sketchOn.t <= 0) endSketch();
+      if (sketchOn.age >= SK_LIFE) endSketch();
     } else spin += dt * 0.8;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     updateMats();
@@ -2098,7 +2127,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
-      sketchSpin: (v: number) => { (globalThis as Record<string, unknown>).__spinHold = v; },
+      sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
