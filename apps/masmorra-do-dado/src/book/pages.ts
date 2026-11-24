@@ -1,8 +1,8 @@
 import { FACES } from '../faces';
 import type { DiaryState } from '../story/diary';
 import { TEXTS } from '../story/texts';
-import { ADV, drawCentered, drawText, drawWord, LINE, textWidth, wrap } from './font';
-import { drawGlyph } from './font';
+import { ADV, drawCentered, drawChar, drawGlyph, drawText, drawWord, LINE, textWidth, wrap } from './font';
+import { MAP_CELL_H, MAP_CELL_W, shortRoom, WORLD } from '../story/worldmap';
 import { LEX } from '../story/lexicon';
 
 // Páginas do diário, desenhadas em pixels no próprio papel (nada de interface por cima do livro).
@@ -16,7 +16,21 @@ const HILITE = '#f6d9a0';
 const PER_PAGE = 12;
 // descrições curtas para caber no livro (as faces ainda vão mudar)
 const SHORT: Record<number, string> = { 1: 'Quica nas paredes.', 2: 'Aperta placas.', 3: 'Acende o fogo.', 4: 'Troca de lugar.', 5: 'Desliza reto.', 6: 'Atravessa.' };
-export const NOTE_MAX = 64;
+export const NOTE_MAX = 58;
+export interface MarkerKind {
+  name: string;
+  glyph: string | null; // null = borracha
+  color: string;
+}
+export const MARKERS: MarkerKind[] = [
+  { name: 'Marca', glyph: 'X', color: INK },
+  { name: 'Perigo', glyph: '!', color: RED },
+  { name: 'Dúvida', glyph: '?', color: INK },
+  { name: 'Segredo', glyph: '*', color: GOLD },
+  { name: 'Porta', glyph: 'D', color: INK },
+  { name: 'Apagar', glyph: null, color: INK2 },
+];
+export const ERASER = 5;
 export const FREE_MAX = 440;
 
 export interface Region {
@@ -30,6 +44,7 @@ export interface Region {
 export interface View {
   spread: number;
   sel: string | null; // símbolo escolhido
+  tool: number; // marcador escolhido no mapa (5 = borracha)
   editing: 'note' | 'free' | null;
   hover: string | null;
   caret: boolean;
@@ -240,31 +255,25 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         });
       }
     } else if (cur) {
-      ctx.fillStyle = HILITE;
-      ctx.fillRect(x0, 14, CW, 44);
+      const cx = x0 + CW / 2;
+      drawWord(ctx, cur, x0 + 8, 14, CW - 16, 36, INK); // o símbolo direto no papel, sem caixa
+      heading(ctx, 'AVISTADO EM', side, 54);
+      drawCentered(ctx, shortRoom(d.seen[cur].room || 'um lugar'), cx, 71, INK);
+      drawCentered(ctx, 'O QUE EU ACHO QUE', cx, 85, INK);
+      drawCentered(ctx, 'SIGNIFICA', cx, 95, INK);
       ctx.fillStyle = INK2;
-      ctx.fillRect(x0, 14, CW, 1);
-      ctx.fillRect(x0, 57, CW, 1);
-      ctx.fillRect(x0, 14, 1, 44);
-      ctx.fillRect(x0 + CW - 1, 14, 1, 44);
-      drawWord(ctx, cur, x0 + 4, 17, CW - 8, 38, INK);
-      drawText(ctx, 'avistado em', x0, 64, INK2);
-      lines(ctx, wrap(d.seen[cur].room || 'um lugar que esqueci', CH), x0, 75, INK, 2);
-      drawText(ctx, 'O QUE EU ACHO QUE', x0, 98, INK2);
-      drawText(ctx, 'SIGNIFICA:', x0, 109, INK2);
-      // caixa de anotação (pautada)
-      const by = 122;
+      ctx.fillRect(x0 + 10, 106, CW - 20, 1);
+      ctx.fillRect(Math.round(cx) - 1, 105, 3, 3);
+      // área de anotação pautada (4 linhas)
+      const by = 110;
       const editing = view.editing === 'note';
-      ctx.fillStyle = editing ? RED : INK2;
-      ctx.fillRect(x0 - 2, by - 2, CW + 4, 1);
-      ctx.fillRect(x0 - 2, by + 33, CW + 4, 1);
-      ctx.fillRect(x0 - 2, by - 2, 1, 36);
-      ctx.fillRect(x0 + CW + 1, by - 2, 1, 36);
+      ctx.fillStyle = editing ? RED : 'rgba(122,80,48,0.45)';
+      for (let i = 0; i < 4; i++) ctx.fillRect(x0, by + i * LINE + 9, CW, 1);
       const note = d.notes[cur] ?? '';
       const txt = note + (editing && view.caret ? '_' : '');
-      if (!note && !editing) drawText(ctx, 'toque e escreva…', x0 + 1, by + 1, INK2);
-      lines(ctx, wrap(txt, CH), x0 + 1, by, INK, 3);
-      regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: 36, id: 'edit:note' });
+      if (!note && !editing) drawText(ctx, 'toque e escreva…', x0 + 1, by, INK2);
+      lines(ctx, wrap(txt, CH), x0 + 1, by, INK, 4);
+      regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: 44, id: 'edit:note' });
     } else {
       lines(ctx, wrap('Os símbolos que você vir pelo caminho ficam guardados aqui, com um espaço para anotar o que acha que significam.', CH), x0, 30, INK2, 12);
     }
@@ -299,33 +308,92 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
   } else if (s === lay.mapAt) {
     if (side === 'L') {
       heading(ctx, 'MAPA', side);
-      d.rooms.forEach((r, i) => {
-        const y = 34 + i * 31;
-        const here = d.here === r;
-        ctx.fillStyle = here ? HILITE : 'rgba(0,0,0,0)';
-        if (here) ctx.fillRect(x0, y, CW, 27);
-        ctx.fillStyle = here ? INK : INK2;
-        ctx.fillRect(x0, y, CW, 1);
-        ctx.fillRect(x0, y + 26, CW, 1);
-        ctx.fillRect(x0, y, 1, 27);
-        ctx.fillRect(x0 + CW - 1, y, 1, 27);
-        lines(ctx, wrap(r, CH - 2), x0 + 4, y + 3, INK, 2);
-        if (here) {
-          ctx.fillStyle = RED;
-          ctx.fillRect(x0 + CW - 9, y + 4, 5, 5);
+      lines(ctx, wrap('Escolha e toque no mapa.', CH), x0, 32, INK2, 2);
+      MARKERS.forEach((m, i) => {
+        const bx = x0 + (i % 2) * 51;
+        const by = 60 + Math.floor(i / 2) * 19;
+        const on = view.tool === i;
+        if (on) {
+          ctx.fillStyle = HILITE;
+          ctx.fillRect(bx, by, 49, 16);
         }
-        if (i > 0) {
+        ctx.fillStyle = on ? INK : INK2;
+        ctx.fillRect(bx, by, 49, 1);
+        ctx.fillRect(bx, by + 15, 49, 1);
+        ctx.fillRect(bx, by, 1, 16);
+        ctx.fillRect(bx + 48, by, 1, 16);
+        if (m.glyph) drawChar(ctx, m.glyph, bx + 4, by + 3, m.color);
+        else drawText(ctx, 'x', bx + 4, by + 3, INK2);
+        drawText(ctx, m.name, bx + 14, by + 3, INK);
+        regions.push({ x: bx, y: by, w: 49, h: 16, id: `tool:${i}` });
+      });
+      drawText(ctx, 'Você está em:', x0, 126, INK2);
+      drawText(ctx, d.here ? shortRoom(d.here) : '-', x0, 137, INK);
+    } else {
+      // o mapa em si: salas visitadas, ligadas por passagens com portas (norte para cima)
+      const ox = x0 + Math.round((CW - 3 * MAP_CELL_W) / 2);
+      const oy = 22;
+      ctx.fillStyle = 'rgba(122,80,48,0.5)';
+      ctx.fillRect(x0 - 2, 12, CW + 4, 1);
+      ctx.fillRect(x0 - 2, 143, CW + 4, 1);
+      ctx.fillRect(x0 - 2, 12, 1, 132);
+      ctx.fillRect(x0 + CW + 1, 12, 1, 132);
+      const seen = (key: string) => d.rooms.some((n) => n.startsWith(key));
+      const here = (key: string) => !!d.here && d.here.startsWith(key);
+      WORLD.forEach((r, i) => {
+        if (!seen(r.key)) return;
+        const rx = ox + r.x * MAP_CELL_W;
+        const ry = oy + r.y * MAP_CELL_H;
+        const rw = r.w * MAP_CELL_W;
+        const rh = r.h * MAP_CELL_H;
+        // passagem até a sala de baixo (a anterior no caminho), se ela também foi visitada
+        const below = WORLD[i + 1];
+        if (below && seen(below.key)) {
+          const cx = rx + Math.round(rw / 2) - 3;
           ctx.fillStyle = INK2;
-          ctx.fillRect(x0 + CW / 2, y - 4, 1, 4);
+          ctx.fillRect(cx, ry + rh, 6, (below.y - r.y - r.h) * MAP_CELL_H);
+          ctx.fillStyle = HILITE;
+          ctx.fillRect(cx + 1, ry + rh, 4, (below.y - r.y - r.h) * MAP_CELL_H);
+          ctx.fillStyle = INK; // portas nas pontas da passagem
+          ctx.fillRect(cx, ry + rh - 1, 6, 2);
+          ctx.fillRect(cx, ry + rh + (below.y - r.y - r.h) * MAP_CELL_H - 1, 6, 2);
+        }
+        ctx.fillStyle = here(r.key) ? '#f0cf86' : HILITE;
+        ctx.fillRect(rx, ry, rw, rh);
+        ctx.fillStyle = INK;
+        ctx.fillRect(rx, ry, rw, 1);
+        ctx.fillRect(rx, ry + rh - 1, rw, 1);
+        ctx.fillRect(rx, ry, 1, rh);
+        ctx.fillRect(rx + rw - 1, ry, 1, rh);
+        // dica do formato
+        ctx.fillStyle = INK2;
+        if (r.kind === 'stage') ctx.fillRect(rx + 4, ry + Math.round(rh / 2), rw - 8, 1);
+        if (r.kind === 'round') {
+          ctx.fillRect(rx + Math.round(rw / 2) - 3, ry + Math.round(rh / 2) - 3, 7, 1);
+          ctx.fillRect(rx + Math.round(rw / 2) - 3, ry + Math.round(rh / 2) + 3, 7, 1);
+          ctx.fillRect(rx + Math.round(rw / 2) - 4, ry + Math.round(rh / 2) - 2, 1, 5);
+          ctx.fillRect(rx + Math.round(rw / 2) + 4, ry + Math.round(rh / 2) - 2, 1, 5);
+        }
+        if (here(r.key)) {
+          ctx.fillStyle = RED; // você está aqui
+          ctx.fillRect(rx + Math.round(rw / 2) - 1, ry + Math.round(rh / 2) - 1, 4, 4);
         }
       });
-    } else {
-      lines(ctx, wrap('As salas que você já viu ficam em fila, como o mundo é: uma depois da outra.', CH), x0, 16, INK2, 6);
-      if (d.here) {
-        drawText(ctx, 'Você está em:', x0, 84, INK2);
-        lines(ctx, wrap(d.here, CH), x0, 96, INK, 3);
-      }
-      lines(ctx, wrap('O desenho do mapa, com as suas marcas de giz, vem depois.', CH), x0, 112, INK2, 4);
+      // marcações do jogador
+      d.marks.forEach((m) => {
+        const mk = MARKERS[m.k] ?? MARKERS[0];
+        if (!mk.glyph) return;
+        ctx.fillStyle = '#fbe6b8'; // fundo claro: o marcador aparece mesmo em cima de uma sala
+        ctx.fillRect(x0 + m.x - 4, 12 + m.y - 5, 9, 11);
+        ctx.fillStyle = mk.color;
+        ctx.fillRect(x0 + m.x - 4, 12 + m.y - 5, 9, 1);
+        ctx.fillRect(x0 + m.x - 4, 12 + m.y + 5, 9, 1);
+        ctx.fillRect(x0 + m.x - 4, 12 + m.y - 5, 1, 11);
+        ctx.fillRect(x0 + m.x + 4, 12 + m.y - 5, 1, 11);
+        drawChar(ctx, mk.glyph, x0 + m.x - 2, 12 + m.y - 7, mk.color);
+      });
+      if (!d.rooms.length) drawCentered(ctx, 'sem salas ainda', x0 + CW / 2, 70, INK2);
+      regions.push({ x: x0 - 2, y: 12, w: CW + 4, h: 132, id: 'map' });
     }
   } else {
     // notas livres: o texto continua da página da esquerda para a da direita

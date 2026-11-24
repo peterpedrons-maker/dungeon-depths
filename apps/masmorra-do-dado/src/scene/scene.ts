@@ -16,7 +16,7 @@ import { Chalk } from './chalk';
 import { Sfx, type AudioMode } from './audio';
 import { CORRIDOR, dbg } from './kit';
 import { createDiaryBook } from '../book/book3d';
-import { diary } from '../story/diary';
+import { diary, diaryStore } from '../story/diary';
 import { dialogue } from '../story/dialogue';
 import { ui } from '../story/ui';
 import { buildRoom1 } from './rooms/room1';
@@ -1533,6 +1533,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sfx: (n: string, v = 1) => sfx.play(n as never, v),
       say: (lines: Parameters<typeof dialogue.say>[0], block = true) => dialogue.say(lines, { block }),
       seen: (id: string) => diary.markSeen(id, rooms[curRoom]?.name),
+      visit: (name: string) => diary.visitRoom(name),
+      bookClick: (id: string, px?: number, py?: number) => book.click(id, px, py),
+      marks: () => diaryStore.get().marks.length,
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),

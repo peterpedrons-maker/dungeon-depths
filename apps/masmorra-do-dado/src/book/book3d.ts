@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { diary, diaryStore } from '../story/diary';
+import { diary, diaryStore, MAX_MARKS } from '../story/diary';
 import { ui } from '../story/ui';
 import { diaryCoverTexture, diaryEdgeTexture, diaryLeatherTexture } from '../scene/textures';
-import { FREE_MAX, layout, NOTE_MAX, PH, PW, renderPage, type Region, type View } from './pages';
+import { ERASER, FREE_MAX, layout, NOTE_MAX, PH, PW, renderPage, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -138,7 +138,7 @@ export function createDiaryBook(env: BookEnv) {
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
   let open = 0;
-  const view: View = { spread: 0, sel: null, editing: null, hover: null, caret: true };
+  const view: View = { spread: 0, sel: null, tool: 0, editing: null, hover: null, caret: true };
   let regL: Region[] = [];
   let regR: Region[] = [];
   let target = 0;
@@ -244,7 +244,7 @@ export function createDiaryBook(env: BookEnv) {
     const r = env.dom.getBoundingClientRect();
     ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
   };
-  const pick = (e: { clientX: number; clientY: number }): { side: 'L' | 'R'; region: Region | null } | null => {
+  const pick = (e: { clientX: number; clientY: number }): { side: 'L' | 'R'; region: Region | null; px: number; py: number } | null => {
     if (flip) return null;
     toNdc(e);
     ray.setFromCamera(ndc, env.cam);
@@ -256,14 +256,14 @@ export function createDiaryBook(env: BookEnv) {
     const list = side === 'L' ? regL : regR;
     let found: Region | null = null;
     for (const r of list) if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) found = r;
-    return { side, region: found };
+    return { side, region: found, px, py };
   };
   const overBook = (e: { clientX: number; clientY: number }) => {
     toNdc(e);
     ray.setFromCamera(ndc, env.cam);
     return ray.intersectObject(root, true).length > 0;
   };
-  const act = (id: string) => {
+  const act = (id: string, px = 0, py = 0) => {
     const d = dState();
     const lay = layout(d);
     if (id === 'prev') goTo(view.spread - 1);
@@ -276,6 +276,24 @@ export function createDiaryBook(env: BookEnv) {
       refresh();
     } else if (id === 'edit:note') startEdit('note');
     else if (id === 'edit:free') startEdit('free');
+    else if (id.startsWith('tool:')) {
+      view.tool = Number(id.slice(5));
+      refresh();
+    } else if (id === 'map') {
+      // toque no mapa: coloca o marcador escolhido, ou apaga o mais próximo com a borracha
+      const x = Math.round(px - 19);
+      const y = Math.round(py - 12);
+      const marks = dState().marks;
+      let best = -1;
+      let bd = 7 * 7;
+      marks.forEach((m, i) => {
+        const dd = (m.x - x) ** 2 + (m.y - y) ** 2;
+        if (dd < bd) (bd = dd), (best = i);
+      });
+      if (view.tool === ERASER) {
+        if (best >= 0) diary.removeMark(best);
+      } else if (marks.length < MAX_MARKS) diary.addMark({ x, y, k: view.tool });
+    }
     void lay;
   };
   const close = () => {
@@ -302,7 +320,7 @@ export function createDiaryBook(env: BookEnv) {
     if (!ready()) return;
     const p = pick(e);
     if (p?.region) {
-      act(p.region.id);
+      act(p.region.id, p.px, p.py);
       return;
     }
     if (p) {
@@ -342,6 +360,7 @@ export function createDiaryBook(env: BookEnv) {
   // ── a cada quadro ──
   return {
     isOut: () => T > 0.01,
+    click: (id: string, px = 0, py = 0) => act(id, px, py), // (também usado nos testes)
     update(dt: number, t: number) {
       const want = ui.diaryOpen() ? 1 : 0;
       if (want !== lastWant) {

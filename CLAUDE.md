@@ -55,7 +55,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   (`src/book/book3d.ts`) e todo o conteúdo é desenhado em pixels **no próprio papel amarelado** (`src/book/pages.ts` + fonte
   bitmap com acentos em `src/book/font.ts`), nada de interface por cima. Na contracapa há o **índice** (Símbolos, Faces, Textos,
   Mapa, Notas): escolher vira as folhas até lá. Toque/clique nas regiões das páginas (raycast), setas/roda viram a página, J/Esc ou
-  tocar fora guardam. Os símbolos "avistados" entram sozinhos (`ctx.seen(id)`); o jogador anota o que acha que significam (o diário
+  tocar fora guardam. O **mapa** é 2D estilo Symphony of the Night (`src/story/worldmap.ts`: salas em grade, passagens e portas; só as visitadas aparecem) e o jogador **faz marcações** (marca, perigo, dúvida, segredo, porta, borracha), salvas no aparelho. Os símbolos "avistados" entram sozinhos (`ctx.seen(id)`); o jogador anota o que acha que significam (o diário
   nunca corrige); salvo no aparelho. Conversa e diário param o jogador. `?demo=1` abre uma pré-visualização com dados de exemplo.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).

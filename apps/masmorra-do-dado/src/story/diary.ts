@@ -9,6 +9,14 @@ export interface Seen {
   at: number;
 }
 
+export interface Mark {
+  x: number; // posição no mapa (pixels da página)
+  y: number;
+  k: number; // tipo de marcador
+}
+
+export const MAX_MARKS = 80;
+
 export interface DiaryState {
   seen: Record<string, Seen>; // símbolos avistados
   order: string[]; // na ordem em que foram avistados
@@ -16,12 +24,13 @@ export interface DiaryState {
   free: string; // anotações livres
   texts: string[]; // textos de lore achados
   rooms: string[]; // salas visitadas (para o mapa)
+  marks: Mark[]; // marcações do jogador no mapa
   here: string; // sala atual
   unread: number; // símbolos novos desde a última vez que abriu
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
 }
 
-const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], here: '', unread: 0, last: null };
+const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], marks: [], here: '', unread: 0, last: null };
 
 function load(): DiaryState {
   try {
@@ -69,6 +78,12 @@ export const diary = {
   visitRoom(name: string) {
     diaryStore.set((s) => ({ ...s, here: name, rooms: s.rooms.includes(name) ? s.rooms : [...s.rooms, name] }));
   },
+  addMark(m: Mark) {
+    diaryStore.set((s) => (s.marks.length >= MAX_MARKS ? s : { ...s, marks: [...s.marks, m] }));
+  },
+  removeMark(i: number) {
+    diaryStore.set((s) => ({ ...s, marks: s.marks.filter((_, j) => j !== i) }));
+  },
   clearUnread() {
     if (diaryStore.get().unread) diaryStore.set((s) => ({ ...s, unread: 0 }));
   },
@@ -82,6 +97,7 @@ export const diary = {
       order: ids,
       notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
       texts: ['demo-pagina'],
+      marks: [{ x: 50, y: 112, k: 1 }, { x: 30, y: 70, k: 3 }],
       unread: 0,
     }));
   },
