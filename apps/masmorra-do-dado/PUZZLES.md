@@ -46,9 +46,16 @@ Aqui **as chamas se apagam sozinhas**, e **quanto maior o braseiro, mais a chama
 3. Se a primeira tentativa falhar, o pequeno pode ser **reacendido**, desde que os outros dois ainda estejam acesos (vale também: qualquer ordem em que o último a acender ocorra antes do primeiro apagar).
 - O tempo **espera** durante as cenas de queima, conversas e o diário.
 - O que o jogador aprende: chamas duram; o tamanho diz a duração; planejar pela duração. Reusa a contagem de três (Sala 3) e a leitura da frase. A palavra TEMPO entra no diário e ganha sentido ao ver as chamas morrerem.
-- Dificuldade: baixa a média (4 de 10). Próximas salas de tempo podem **misturar com ordem** (números nos pedestais) e com durações marcadas.
+- **Dificuldade: 2 de 10** (régua corrigida: ver `DESIGN.md` §17; as Salas 1 a 5 são nível 1 a 2 de propósito, porque ensinam). Próximas salas de tempo podem **misturar com ordem** (números nos pedestais) e com durações marcadas.
 
-## Sala 6 — A Entrada  (e a cena do Escrivão)
+## Sala 6 — A Confirmação  (ACENDER · BRASEIRO · ORDEM · ?)  — dedução, nível 3
+Sala média com **quatro braseiros iguais** (dois à esquerda, dois à direita, sem nenhuma marca). A frase **pergunta a ordem** (a marca ? no fim) e não a dá. O jogador acende os quatro, **em qualquer ordem**; quando os quatro estão acesos, a Casa **confirma** quantos estavam na posição certa: as **gemas do arco da porta** acendem na quantidade de acertos (só a contagem, não quais). Depois de uns 3 s ela apaga tudo para uma nova tentativa. Com os quatro certos a porta abre para sempre.
+- **Resolver é deduzir, não adivinhar:** são 24 ordens possíveis, e cada contagem elimina várias. A contagem pode ser 0, 1, 2 ou 4 (3 é impossível: se três estão certos, o quarto também está). Um método: tente uma ordem; se a contagem for 1, troque só dois braseiros de lugar e veja se a contagem sobe, desce ou fica (isso diz qual deles estava certo); repita. Costuma levar de 3 a 5 tentativas.
+- **A ordem certa desta sala** (para o autor): 1º o braseiro **da direita, do lado da porta**; 2º o **da esquerda, do lado da entrada**; 3º o **da esquerda, do lado da porta**; 4º o **da direita, do lado da entrada**.
+- O que o jogador já sabe e reaproveita: a ordem importa (Sala 4) e as gemas do arco **confirmam** passos certos (Sala 4); a marca ? e a palavra ORDEM entram no diário.
+- **Dificuldade: 3 de 10.** Próxima da mesma família: **cinco** braseiros ou **com tempo** (as chamas duram pouco, então cada tentativa vira uma corrida), e uma versão em que a ordem vem de números vistos em outra sala.
+
+## Sala 7 — A Entrada  (e a cena do Escrivão)
 Ao andar até o meio da sala, **o Escrivão** (criatura encapuzada, de rosto coberto) aparece junto da parede esquerda e escreve
 EU · ESCREVER · SENTENÇA e depois VOCÊ · LER · SENTENÇA ? (a câmera vira sozinha; é só olhar e avançar a conversa). Ele se vira para
 você, some, e **deixa cair o giz no chão**: aparece "E · Pegar o giz". **Só a partir daí o jogador tem o giz** (Tab/Q para trocar com o dado).
@@ -63,14 +70,14 @@ A porta tem duas gemas: placa (esquerda) e fogo (direita). As duas precisam esta
 - **Gema escondida (opcional):** no nicho alto da parede direita. Só **arremessando** com
   **Ricochete (1)** — o dado *posicionado* não conta. (O Ricochete está selado no começo: dá para voltar aqui mais tarde.)
 
-## Sala 7 — A Lacuna  (ACENDER · ▢ · BRASEIRO)  — o 1º puzzle com o giz
+## Sala 8 — A Lacuna  (ACENDER · ▢ · BRASEIRO)  — o 1º puzzle com o giz
 A sala é baixa e apertada. Os três braseiros já estão acesos. Na parede esquerda, a frase tem uma **placa lisa** no lugar da palavra do meio.
 1. Conte os braseiros acesos: **três**. O símbolo de TRÊS é o que você viu na Sala 3 (e está no diário): **três pontos na diagonal**.
 2. Pegue o giz (`Tab`/`Q`) e desenhe na placa três pontos: canto superior esquerdo, centro e canto inferior direito. Uma linha ligando os
    três também vale. Pontos nos outros cantos (os de QUATRO) **não** valem.
 3. A porta abre. (Como o dado já tem Fogo e Peso, a sala não pede mais nada.)
 
-## Sala 8 — O Selo
+## Sala 9 — O Selo
 O Selo é uma grade 3×3 na **lousa** (ao lado da porta). Três peças, cada uma numa casa. Três gemas
 sobre a porta acendem, uma por peça certa.
 
@@ -86,7 +93,7 @@ sobre a porta acendem, uma por peça certa.
 4. Muito rabisco anula as peças ("Rabisco demais"): apague (`botão direito` / modo APAGAR) e refaça.
 5. Com as 3 gemas acesas a porta abre e fica aberta.
 
-## Sala 9 — O Salão das Brasas (sala redonda)
+## Sala 10 — O Salão das Brasas (sala redonda)
 Três braseiros na parede; as gemas sobre a porta mostram quais estão acesos. Cada chama dura **40 s**
 (encolhe nos últimos 8 s).
 1. Com o **Fogo (3)**, acenda os **três** braseiros — rápido: arremesse, recolha (`E`), arremesse...
@@ -94,7 +101,7 @@ Três braseiros na parede; as gemas sobre a porta mostram quais estão acesos. C
    e a placa pressionada a porta abre.
 3. Atravesse sem recolher o dado. Se uma chama se apagar, reacenda (a placa só vale com as três).
 
-## Sala 10 — O Mirante (dois níveis)
+## Sala 11 — O Mirante (dois níveis)
 A porta e um braseiro ficam no **palco** (alto, no fundo); a placa fica **embaixo** (esquerda).
 A única subida é a **rampa** da parede direita; a beirada do palco é queda livre (dá pra descer
 pulando, mas a volta é pela rampa).

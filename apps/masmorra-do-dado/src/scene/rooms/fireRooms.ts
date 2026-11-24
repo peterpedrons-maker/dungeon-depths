@@ -49,4 +49,24 @@ export const FIRE_TEMPO: FireSpec = {
   ],
 };
 
-export const FIRE_ROOMS: FireSpec[] = [FIRE_ORDEM, FIRE_TEMPO];
+// ── ORDEM SECRETA ──────────────────────────────────────────────────────────────────
+// A frase pergunta a ordem (ACENDER · BRASEIRO · ORDEM · ?) e NÃO a dá. O jogador acende os quatro como quiser; a Casa "confirma" por gemas
+// QUANTOS estavam na posição certa (só a contagem) e apaga tudo. Descobrir a ordem é dedução (como um Mastermind), não adivinhação:
+// a contagem de cada tentativa elimina possibilidades. Já viu: a ordem importa (Sala 4) e as gemas confirmam passos certos.
+export const FIRE_SEGREDO: FireSpec = {
+  name: 'A Confirmação',
+  subtitle: 'Quatro braseiros. A Casa guarda a ordem.',
+  hx: 4.2,
+  z0: -11,
+  h: 3.5,
+  braziers: [
+    { x: -2.6, dz: 8.2 },
+    { x: 2.6, dz: 8.2 },
+    { x: -2.6, dz: 5.4 },
+    { x: 2.6, dz: 5.4 },
+  ],
+  rule: { kind: 'secret', seq: [3, 0, 2, 1] }, // 1º: direita, lado da porta · 2º: esquerda, lado da entrada · 3º: esquerda, lado da porta · 4º: direita, lado da entrada
+  words: ['acender', 'brasa', 'ordem', 'perg'],
+};
+
+export const FIRE_ROOMS: FireSpec[] = [FIRE_ORDEM, FIRE_TEMPO, FIRE_SEGREDO];

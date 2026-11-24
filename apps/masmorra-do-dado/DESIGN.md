@@ -285,3 +285,22 @@ Uma sala de braseiros é uma **descrição** (`FireSpec`): tamanho, tema, brasei
   (`layoutWorld`: 6 por fileira, 3 fileiras por andar = 18 por andar, escadas entre andares). Para inserir uma sala basta pôr na lista.
 - **Plano de ritmo** (aprovado): ~50 a 60 salas, ~6 h; só Fogo nas primeiras ~16 salas, Peso na ~17, giz pouco depois (~28), a 3ª face (Eco) no capítulo 3.
   O Escrivão aparece de longe 3 a 4 vezes (cedo, no meio, no fim do cap. 1) e só no começo do cap. 2 de perto, deixando o giz.
+
+## 17. Régua de dificuldade (corrigida) e curva do capítulo 1
+Aprendido com o feedback: o que eu chamava de "4 de 10" era **nível 1 ou 2**. Em um jogo de puzzle, qualquer pessoa resolve um nível 1.
+Se for fácil demais por muito tempo o jogador perde a vontade; se for difícil cedo ele não entende o jogo. A régua:
+| Nível | O que é |
+|---|---|
+| **1** | uma regra, resposta à vista (ensina) |
+| **2** | uma regra mais um detalhe não óbvio; dá para vencer por tentativa |
+| **3** | **duas regras juntas** e é preciso **deduzir** (pistas, contagens, eliminar possibilidades); ~3 a 5 min |
+| **4 a 5** | três camadas, informação espalhada por salas, planejar antes de agir |
+| **6 a 7** | lembrar de salas antigas, várias portas, a primeira impressão engana |
+| **8 a 10** | fim de jogo: combinações de tudo, segredos |
+
+**Curva planejada para o capítulo 1 (só Fogo, ~16 salas):** salas 1 a 5 = nível 1 a 2 (ensinam); 6 a 9 = **nível 3**; 10 a 13 = **nível 4**; 14 a 16 = **nível 5** (as últimas antes do Peso).
+Cada sala nova **soma** uma camada ao que o jogador já domina (ordem, contagem, tempo, tamanho, confirmação), nunca só repete.
+**Paleta de mecânicas de Fogo** para misturar: contagem exata, ordem explícita, **ordem secreta com confirmação** (implementada), tempo e duração por tamanho (implementada),
+fogo que **corre por canaletas** de um braseiro a outro, braseiros **ligados** (acender um acende um gêmeo longe, depois de um tempo), luz que **revela** inscrições escondidas,
+número vindo de outra sala, cordas e madeira para queimar, várias portas decididas pela sequência (hubs), e frases com palavras que mudam a regra (NÃO, TODOS, MENOS, DEPOIS).
+**Regra de ouro:** se a sala puder ser vencida sem pensar, ela ainda é nível 1.

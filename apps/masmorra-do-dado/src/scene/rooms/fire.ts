@@ -18,7 +18,10 @@ export type FireRule =
   | { kind: 'order'; seq: number[] }
   // todos acesos AO MESMO TEMPO, num instante qualquer (então a porta abre para sempre). Só faz sentido com `burn`:
   // as chamas se apagam sozinhas, e quem dura menos tem que ser aceso por último
-  | { kind: 'together' };
+  | { kind: 'together' }
+  // ordem SECRETA: o jogador acende todos, em qualquer ordem, e a Casa "confirma" quantos estavam na posição certa
+  // (as gemas do arco mostram só a CONTAGEM, não quais). Depois apaga tudo para uma nova tentativa. `seq` = índices na ordem certa.
+  | { kind: 'secret'; seq: number[] };
 
 export interface FireBrazier {
   x: number; // a partir do centro da sala
@@ -71,8 +74,8 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
 
-  const steps = spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' ? spec.braziers.length : 1;
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: Math.min(3, steps), connected: true, theme });
+  const steps = spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
+  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: Math.min(4, steps), connected: true, theme });
 
   // colunas (também seguram o dado)
   const boxes: Box[] = [];
@@ -131,6 +134,9 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   let prevWant = 0;
   let progress = 0; // (order) quantos já foram acesos na ordem certa
   let failT = -1; // (order) contagem para apagar tudo depois de um erro
+  let tries: number[] = []; // (secret) braseiros na ordem em que o jogador os acendeu nesta tentativa
+  let shown = -1; // (secret) quanto tempo a Casa ainda mostra a contagem de acertos
+  let lastCount = 0;
   let overlit = 0; // (exact) tempo com braseiros demais
   const left = spec.braziers.map(() => Infinity); // quanto falta para cada chama se apagar
   let solved = false;
@@ -139,6 +145,8 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     braziers.forEach((b, i) => b.light(!!spec.braziers[i].lit, true));
     progress = 0;
     failT = -1;
+    tries = [];
+    shown = -1;
     overlit = 0;
     left.fill(Infinity);
     solved = false;
@@ -148,7 +156,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
   };
 
-  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__fire = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved });
+  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__fire = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount });
   kit.bake();
 
   return {
@@ -231,6 +239,38 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
               if (progress >= rule.seq.length) solved = true;
             } else failT = 1.3;
           });
+        }
+        want = solved ? 1 : 0;
+      }
+      if (rule.kind === 'secret') {
+        if (!solved && shown < 0) {
+          // acendendo: cada braseiro entra na lista na ordem em que foi aceso
+          braziers.forEach((b, i) => {
+            if (b.touched() && !tries.includes(i)) {
+              b.light(true);
+              tries.push(i);
+            }
+          });
+          if (tries.length === braziers.length) {
+            // todos acesos: a Casa confirma quantos estavam na posição certa
+            lastCount = tries.filter((bi, pos) => bi === rule.seq[pos]).length;
+            door.lampMats.forEach((m, i) => m.color.setHex(i < lastCount ? 0xff7a2e : LAMP_OFF));
+            if (lastCount === braziers.length) {
+              solved = true;
+              ctx.sfx('piece');
+            } else {
+              shown = 3;
+              ctx.sfx(lastCount > 0 ? 'plate' : 'error');
+            }
+          }
+        } else if (shown >= 0) {
+          // mostra a contagem por uns segundos e apaga tudo para uma nova tentativa
+          shown -= dt;
+          if (shown < 0) {
+            braziers.forEach((b) => b.light(false));
+            tries = [];
+            door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
+          }
         }
         want = solved ? 1 : 0;
       }
