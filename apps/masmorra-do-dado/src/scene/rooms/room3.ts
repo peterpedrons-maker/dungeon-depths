@@ -204,7 +204,7 @@ export function buildRoom3(ctx: Ctx): Room {
           b.left = BURN;
           b.flame.visible = true;
           ctx.caption(`Braseiro ${braziers.filter((x) => x.left > 0).length} de 3`, 'Ele não vai durar muito.', '#ff9a3c');
-          ctx.sfx('ignite');
+          ctx.sfx('ignite', String(i));
         }
         if (b.left > 0 && !latched) {
           b.left -= dt;

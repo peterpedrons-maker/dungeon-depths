@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { crackTexture, floorTexture, gemTexture, plateTexture, sparkTexture } from '../textures';
+import { makeScribe } from '../scribe';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import type { Box, Ctx, Room } from '../types';
 
@@ -110,6 +111,13 @@ export function buildRoom1(ctx: Ctx): Room {
   // o Escrivão escreve nesta parede quando o jogador chega (as duas linhas começam ocultas)
   const scribeA = kit.inscribe({ words: ['eu', 'escrever', 'sentenca'], x: X0 + 0.02, y: 2.1, z: -5.0, nx: 1, nz: 0, size: 0.36, age: 0.1, seed: 5, hidden: true });
   const scribeB = kit.inscribe({ words: ['voce', 'ler', 'sentenca', 'perg'], x: X0 + 0.02, y: 1.5, z: -5.0, nx: 1, nz: 0, size: 0.36, age: 0.1, seed: 9, hidden: true });
+  // o próprio Escrivão: encapuzado, de rosto coberto, junto à parede (só existe durante a cena)
+  const scribe = makeScribe();
+  scribe.group.position.set(X0 + 0.95, 0, -3.1);
+  scribe.group.rotation.y = -Math.PI / 2; // de frente pra parede da esquerda
+  scribe.setAlpha(0);
+  kit.group.add(scribe.group);
+  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__scribe = scribe;
   kit.crate(3.35, 1.25, 0.75, 0.3);
   kit.crate(3.45, 0.45, 0.55, -0.2);
   kit.crate(-3.4, 1.2, 0.8, 0.1);
@@ -149,8 +157,8 @@ export function buildRoom1(ctx: Ctx): Room {
   let announced = false;
   let prevWant = 0;
   // cena do Escrivão: 0 espera · 1 pensamento · 2 escreve a 1ª linha · 3 fala · 4 escreve a 2ª · 5 fala · 6 fim
-  const sc = { ph: 0, t: 0 };
-  const scribeAt = new THREE.Vector3(X0 + 0.1, 1.8, -5.0);
+  const sc = { ph: 0, t: 0, alpha: 0, fadeOut: false, turn: 0, z: -3.1 };
+  const scribeAt = new THREE.Vector3(X0 + 0.1, 1.55, -6.5); // a escrita fica à esquerda do centro e o Escrivão ao meio da tela
   const WRITE0 = 1.0; // pausa antes do primeiro símbolo
   const STEP = 1.0; // um símbolo por segundo
   const written = new Set<string>();
@@ -229,14 +237,33 @@ export function buildRoom1(ctx: Ctx): Room {
       kit.tick(dt, t);
       const d = ctx.die;
       // ── Escrivão ──
+      if (sc.ph >= 2) {
+        // aparece como névoa, anda junto da escrita (sempre à direita da palavra do momento) e some no fim
+        const writing = sc.ph === 2 || sc.ph === 4;
+        const line = sc.ph <= 3 ? scribeA : scribeB;
+        const idx = writing ? Math.max(0, Math.min(line.panels.length - 1, Math.floor((sc.t - WRITE0) / STEP))) : line.panels.length - 1;
+        const targetZ = line.panels[idx].mesh.position.z - 0.85;
+        sc.z += Math.max(-1.1 * dt, Math.min(1.1 * dt, targetZ - sc.z));
+        sc.alpha = sc.fadeOut ? Math.max(0, sc.alpha - dt * 0.45) : Math.min(1, sc.alpha + dt * 0.9);
+        scribe.setAlpha(sc.alpha);
+        scribe.group.position.z = sc.z;
+        // na hora da pergunta ele se vira pro jogador (o capuz vazio acompanha)
+        const toward = sc.ph >= 5 ? 1 : 0;
+        sc.turn += (toward - sc.turn) * Math.min(1, dt * 1.6);
+        const pp = ctx.player.pos;
+        const faceYaw = Math.atan2(pp.x - scribe.group.position.x, pp.z - sc.z);
+        scribe.group.rotation.y = -Math.PI / 2 + (faceYaw - -Math.PI / 2) * sc.turn;
+        scribe.update(t, writing && sc.t > 0.5 ? 1 : 0);
+      }
       if (sc.ph === 0 && ctx.player.pos.z < -4.0 && ctx.player.pos.x > X0 + 0.5) {
         sc.ph = 1;
         ctx.freeze(true);
-        ctx.say([{ who: 'thought', text: 'Na parede da esquerda… alguma coisa está sendo escrita. Os símbolos acendem um a um.' }], {
+        ctx.say([{ who: 'thought', text: 'Tem alguém na parede da esquerda. Está escrevendo, e os símbolos acendem um a um.' }], {
           block: true,
           onEnd: () => {
             sc.ph = 2;
             sc.t = 0;
+            sc.z = -3.1;
             ctx.lookAt(scribeAt, 1.0);
           },
         });
@@ -259,6 +286,7 @@ export function buildRoom1(ctx: Ctx): Room {
               block: true,
               onEnd: () => {
                 sc.ph = 6;
+                sc.fadeOut = true;
                 scribeA.reveal();
                 scribeB.reveal();
                 ctx.freeze(false);
@@ -282,7 +310,7 @@ export function buildRoom1(ctx: Ctx): Room {
         lit = true;
         flame.visible = true;
         ctx.caption('O braseiro acendeu!', 'A lâmpada da direita brilha sobre a porta.', '#ff9a3c');
-        ctx.sfx('ignite');
+        ctx.sfx('ignite', 'a');
       }
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();
       if (pressed && !plateDown) ctx.sfx('plate');

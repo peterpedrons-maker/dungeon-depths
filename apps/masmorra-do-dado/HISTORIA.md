@@ -69,3 +69,7 @@ Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidad
 2. **O dado mente.** Pode ser que o jogador só descubra isso no meio? Ou desde o começo?
 3. **O Escrivão traiu ou protegeu?** Ele deixou a sentença sem confirmação por maldade ou porque não acreditou na acusação? Recomendo deixar **ambíguo**.
 4. **Quem são os outros 2 NPCs?** (o Contador e o Juiz são proposta; "a que veio antes" é a diarista)
+
+## Duração e ritmo
+O jogo deve durar **algumas horas** (meta 4 a 6 h), não 20 minutos. O dado começa com **só Fogo e Peso** e fica com eles por
+um bom tempo; novas faces chegam por capítulo e nunca todas de uma vez (ver `DESIGN.md` §13).

@@ -58,7 +58,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
       b.lit = on;
       flame.visible = on;
       if (!on) lamp.intensity = 0;
-      if (!quiet) ctx.sfx(on ? 'ignite' : 'burnout');
+      if (!quiet) ctx.sfx(on ? 'ignite' : 'burnout', `${Math.round(x * 10)},${Math.round(z * 10)}`);
     },
     update(t) {
       if (!b.lit) return;

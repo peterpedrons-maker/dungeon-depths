@@ -39,7 +39,8 @@ export interface Socket {
 // O que o motor oferece a cada sala.
 export interface Ctx {
   caption(title: string, sub: string, color: string): void;
-  sfx(name: 'ignite' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout'): void;
+  // `key` identifica o braseiro em 'ignite': a cena do dado queimando só toca inteira na 1ª vez de cada um
+  sfx(name: 'ignite' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout', key?: string): void;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa

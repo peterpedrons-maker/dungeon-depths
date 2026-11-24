@@ -45,6 +45,17 @@ Ordem: **verbo, número, coisa, marca.** SE (frase) ENTÃO (frase). IGUAL liga u
 EM VEZ DE + duas coisas. Marca MEMÓRIA para o passado, PERGUNTA para perguntas, BOATO para o que foi dito
 e não lançado.
 
+## Frases e pontuação (proposta; **[DECIDIR]**)
+- **Mesma ordem para todo tipo de frase.** O que muda o "tom" é a **marca final**, não a ordem das palavras. Assim o jogador
+  aprende uma regra só.
+- **A pontuação são as marcas do dado** (símbolos próprios, já criados): PERGUNTA (o nosso "?"), CONFIRMADO (verdade),
+  BOATO (dizem que...) e MEMÓRIA (passado). Não há vírgula, ponto nem exclamação: o espaço largo separa as palavras e a
+  marca fecha a frase.
+- **Uma PERGUNTA só, para todas as perguntas** (QUEM = ALGUÉM + PERGUNTA; ONDE = LUGAR + PERGUNTA). Nada de vários pontos de
+  interrogação.
+- **Sem exclamação:** ordens do mundo já são "verbo primeiro" (ACENDER UM BRASEIRO) e a ênfase vem de MUITOS/MAIS.
+- Dentro do mundo o "?" latino não aparece; só o símbolo PERGUNTA. No diário, o jogador escreve em português normal.
+
 ## Tamanho
 **174 palavras** (121 símbolos próprios e 53 compostas; 97 de puzzle e 77 de história). Cada palavra tem um **capítulo** provisório de introdução
 (1 a 7, ligados às faces do dado: 1 Fogo, 2 Peso, 3 Eco, 4 Troca, 5 Deslizar, 6 Atravessar, 7 o veredito).

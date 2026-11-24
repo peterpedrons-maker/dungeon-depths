@@ -7,21 +7,25 @@ const KEY = 'mdd-progress-v1';
 
 // Em ordem: cada marco alcançado sobe um "estágio" da Casa.
 export const STAGE_FLAGS = ['fogo', 'dois', 'tres', 'escrivao', 'selo', 'brasas'] as const;
-export type Flag = (typeof STAGE_FLAGS)[number] | 'intro';
+export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco';
 export const MAX_STAGE = STAGE_FLAGS.length;
 
 interface State {
   flags: Partial<Record<Flag, true>>;
+  burned: Record<string, true>; // braseiros que o jogador já acendeu (a cena completa só toca na 1ª vez de cada um)
 }
 
 function load(): State {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { flags: JSON.parse(raw).flags ?? {} };
+    if (raw) {
+      const j = JSON.parse(raw);
+      return { flags: j.flags ?? {}, burned: j.burned ?? {} };
+    }
   } catch {
     /* sem armazenamento: começa do zero */
   }
-  return { flags: {} };
+  return { flags: {}, burned: {} };
 }
 
 export const progressStore = createStore<State>(load());
@@ -35,12 +39,13 @@ progressStore.subscribe(() => {
   }
 });
 
-// as faces do dado liberadas dependem dos marcos: começa só o Fogo
+// as faces do dado liberadas dependem dos marcos: começam Fogo e Peso
 function applyFaces() {
   const f = progressStore.get().flags;
-  FACES[2].unlocked = true; // Fogo: desde o começo
-  FACES[1].unlocked = !!f.escrivao; // Peso
-  FACES[0].unlocked = !!f.escrivao; // Ricochete
+  // Duas faces por MUITO tempo: Fogo e Peso. As outras só chegam bem depois (ver DESIGN.md §13).
+  FACES[2].unlocked = true; // Fogo
+  FACES[1].unlocked = true; // Peso
+  FACES[0].unlocked = !!f.eco; // (reservado: a 3ª face chega com o marco "eco")
 }
 applyFaces();
 
@@ -50,8 +55,14 @@ export const progress = {
   // devolve true se o marco é novo
   set(f: Flag): boolean {
     if (progressStore.get().flags[f]) return false;
-    progressStore.set((s) => ({ flags: { ...s.flags, [f]: true } }));
+    progressStore.set((s) => ({ ...s, flags: { ...s.flags, [f]: true } }));
     applyFaces();
+    return true;
+  },
+  // true se é a primeira vez que este braseiro é aceso
+  firstBurn(key: string): boolean {
+    if (progressStore.get().burned[key]) return false;
+    progressStore.set((s) => ({ ...s, burned: { ...s.burned, [key]: true } }));
     return true;
   },
   // só pré-visualizações (?demo) e testes
@@ -59,7 +70,7 @@ export const progress = {
     persist = false;
   },
   reset() {
-    progressStore.set({ flags: {} });
+    progressStore.set({ flags: {}, burned: {} });
     applyFaces();
   },
 };

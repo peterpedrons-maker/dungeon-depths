@@ -37,8 +37,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   tema visual, formato e física próprios; `scene.ts` é o motor; as salas ficam lado a lado e o
   corredor da porta de uma desemboca direto na entrada da próxima, sem tela de carregamento;
   só o dado volta pra mão ao mudar de sala): 1–3 O Vestíbulo (O Poço, O Vestíbulo, A Lacuna: ACENDER · UM/DOIS/TRÊS · BRASEIRO; só o Fogo; a
-  3ª pede escrever TRÊS com o giz numa lacuna da frase), 4 A Entrada (cena do Escrivão escrevendo na parede; libera Peso e Ricochete; fogo + peso + gema
-  escondida), 5 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
+  3ª pede escrever TRÊS com o giz numa lacuna da frase), 4 A Entrada (cena do Escrivão, uma criatura encapuzada, escrevendo na parede; fogo + peso + gema
+  escondida que espera o Ricochete), 5 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
   fogo), 6 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
   7 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
   Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
@@ -50,8 +50,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   ♫/♪/∅ no canto (tudo / só efeitos / mudo, lembrado no aparelho); o áudio só liga após o 1º toque/tecla.
   **Abertura e progressão** (`DESIGN.md` §12): o jogo começa com uma cena de acordar (deitado, poço de luz no teto; só na 1ª vez,
   `?intro=0` pula); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o
-  jogador olha para elas; acender com o Fogo toca uma cena de ≤1,5 s do dado queimando; **marcos** (`src/story/progress.ts`) sobem o
-  "estágio" da Casa (luz mais quente, cal brilhando) e liberam as faces do dado (começa só o Fogo). Cenas usam `ctx.freeze/lookAt/say`.
+  jogador olha para elas; acender com o Fogo toca uma cena do dado queimando (1,5 s só na 1ª vez de cada braseiro; depois ~0,3 s); **marcos** (`src/story/progress.ts`) sobem o
+  "estágio" da Casa (luz mais quente, cal brilhando) (o dado começa só com **Fogo e Peso** por muito tempo; o jogo deve durar algumas horas, ver `DESIGN.md` §13). Cenas usam `ctx.freeze/lookAt/say`.
   **História e língua** (ver `apps/masmorra-do-dado/DESIGN.md`, `LINGUA.md`): o jogador está condenado por uma "sentença"
   escrita numa língua inventada (os Contáveis; 174 palavras em `tools/lexicon.mjs` → `src/story/lexicon.json`).
   O mundo fala em glifos; pensamentos do jogador e diários de outros condenados vêm em português. Já existem:

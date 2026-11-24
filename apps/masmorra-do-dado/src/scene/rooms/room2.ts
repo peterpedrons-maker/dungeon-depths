@@ -247,7 +247,7 @@ export function buildRoom2(ctx: Ctx): Room {
         lit = true;
         flame.visible = true;
         ctx.caption('O braseiro acendeu!', 'Algo surge na parede, ao lado.', '#ff9a3c');
-        ctx.sfx('ignite');
+        ctx.sfx('ignite', 'b');
       }
       if (lit) {
         flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];

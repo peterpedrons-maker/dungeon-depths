@@ -348,10 +348,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateMats();
     accentLight.color.set(FACES[n - 1]?.color ?? '#ffffff');
   };
-  applyFace(FACES.find((f) => f.unlocked)?.n ?? 3);
+  applyFace(3); // o jogo começa na face Fogo
   computeTarget(face, 0);
   // faces liberadas pela história: refaz as texturas do dado quando um marco libera uma nova
+  let facesSig = FACES.map((f) => +f.unlocked).join('');
   const refreshFaces = () => {
+    const sig = FACES.map((f) => +f.unlocked).join('');
+    if (sig === facesSig) return; // só refaz se uma face mudou (o progresso também guarda outras coisas)
+    facesSig = sig;
     for (const mats of [dieMats, handMats]) {
       DIE_FACES.forEach((n, i) => {
         const f = FACES[n - 1];
@@ -507,7 +511,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let holds = 0;
   let camTween: null | { y0: number; p0: number; y1: number; p1: number; t: number; dur: number } = null;
   let intro: null | { ph: number; t: number } = null;
-  let burn: null | { t: number } = null;
+  let burn: null | { t: number; dur: number } = null;
   let dieRoom = 0; // sala onde o dado está (a posição dieP é local a ela)
   let gems = 0;
   let complete = false;
@@ -518,9 +522,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const lp = new THREE.Vector3();
     return {
       caption: (a, b, c) => caption(a, b, c),
-      sfx: (n) => {
+      sfx: (n, key) => {
         sfx.play(n);
-        if (n === 'ignite') startBurn(); // acender com o dado: cena rápida dele queimando
+        // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
+        if (n === 'ignite') startBurn(key ? progress.firstBurn(`${idx}:${key}`) : true);
       },
       player: {
         get pos() {
@@ -875,20 +880,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // ── marcos da história ──
   const onMilestone = (f: Flag) => {
-    if (f === 'escrivao') {
-      caption('O dado aprendeu', 'Peso (2) e Ricochete (1) foram liberados.', '#d9a066');
-      sfx.play('face', 2);
-    }
+    void f; // (por enquanto os marcos só mudam a luz e a cal; faces novas chegam bem depois)
   };
 
   // ── dado queimando (acender com o Fogo): ~1,5 s, câmera parada, qualquer toque pula o resto ──
-  const BURN_DUR = 1.5;
+  const BURN_FIRST = 1.5;
+  const BURN_AGAIN = 0.3;
   const burnFrames = flameFrames();
   const burnSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: burnFrames[0], fog: false, alphaTest: 0.4, depthWrite: false }));
   burnSprite.visible = false;
   scene.add(burnSprite);
   let skipScene = false;
-  const startBurn = () => {
+  const startBurn = (first: boolean) => {
     if (burn || (dieState !== 'flying' && dieState !== 'rest')) return;
     if (dieState === 'flying') {
       restQ.copy(worldDie.quaternion);
@@ -897,7 +900,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieV.set(0, 0, 0);
     dieW.set(0, 0, 0);
     restReturn = 0;
-    burn = { t: 0 };
+    burn = { t: 0, dur: first ? BURN_FIRST : BURN_AGAIN };
     skipScene = false;
   };
   const endBurn = () => {
@@ -915,7 +918,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const updateBurn = (dt: number, time: number) => {
     if (!burn) return;
     burn.t += dt * (skipScene ? 5 : 1);
-    const u = Math.min(1, burn.t / BURN_DUR);
+    const u = Math.min(1, burn.t / burn.dur);
     // 0–0.25: a chama sobe; 0.25–0.7: o dado esquenta e escurece; 0.7–1: vira brasa e some
     const grow = u < 0.25 ? u / 0.25 : u < 0.7 ? 1 : Math.max(0, 1 - (u - 0.7) / 0.3);
     burnHeat = u < 0.6 ? u / 0.6 : Math.max(0, 1 - (u - 0.6) / 0.4) * 1;

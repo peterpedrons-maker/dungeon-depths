@@ -5,8 +5,9 @@
 
 Controles rápidos: **arremessar** (clique esq. / botão ARREMESSAR) · **posicionar** (botão direito, `G`,
 botão POSICIONAR) · **trocar a face** (`1`–`6`, roda do mouse, botão GIRAR) · **dado ↔ giz** (`Tab`/`Q`,
-botão GIZ/DADO). Faces: **1 Ricochete**, **2 Peso**, **3 Fogo**. O jogo começa **só com o Fogo (3)**;
-Peso e Ricochete são liberados quando o Escrivão escreve na parede da Sala 4 (marco `escrivao`).
+botão GIZ/DADO). Faces: **1 Ricochete**, **2 Peso**, **3 Fogo**. O jogo começa com **Fogo (3) e Peso (2)**;
+o **Ricochete (1) fica selado** por enquanto (só chega bem mais tarde; a gema escondida da Sala 4 espera por ele).
+Ao acender um braseiro o dado queima: 1,5 s na 1ª vez de cada braseiro, ~0,3 s nas seguintes.
 Olhar uns segundos para uma inscrição na parede manda os símbolos dela ao diário (como "avistado").
 
 ## Sala 1 — O Poço  (ACENDER · UM · BRASEIRO)
@@ -34,7 +35,7 @@ Os três braseiros já estão acesos. Na frase, no lugar da palavra do meio há 
 ## Sala 4 — A Entrada: a cena do Escrivão
 Ao andar até o meio da sala, **o Escrivão escreve na parede da esquerda** (a câmera vira sozinha, não há o que fazer):
 EU · ESCREVER · SENTENÇA e depois VOCÊ · LER · SENTENÇA ? — e a conversa mostra as mesmas frases em glifos.
-Isso libera **Peso (2)** e **Ricochete (1)** no dado e sobe o estágio da Casa. Depois o puzzle da sala segue abaixo.
+O Escrivão é uma criatura encapuzada, de rosto coberto; ele vira o capuz para você no fim e some. A cena sobe o estágio da Casa. Depois o puzzle da sala segue abaixo.
 
 ## Sala 4 — A Entrada
 A porta tem duas gemas: placa (esquerda) e fogo (direita). As duas precisam estar acesas.
@@ -45,7 +46,7 @@ A porta tem duas gemas: placa (esquerda) e fogo (direita). As duas precisam esta
 3. **Não recolha o dado** — ele segura a placa. A porta abre; atravesse o corredor.
    (Ao entrar na sala seguinte o dado volta pra mão e a porta fecha atrás de você.)
 - **Gema escondida (opcional):** no nicho alto da parede direita. Só **arremessando** com
-  **Ricochete (1)** — o dado *posicionado* não conta.
+  **Ricochete (1)** — o dado *posicionado* não conta. (O Ricochete está selado no começo: dá para voltar aqui mais tarde.)
 
 ## Sala 5 — O Selo
 O Selo é uma grade 3×3 na **lousa** (ao lado da porta). Três peças, cada uma numa casa. Três gemas
