@@ -432,7 +432,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   // ── o dado "traduz" o glifo: ao olhar uma palavra que tem desenho, a face de CIMA mostra o rabisco por alguns segundos ──
-  const SKETCH_WORDS: Record<string, SketchKind> = { brasa: 'braseiro' }; // palavra (id do léxico) -> desenho
+  const SKETCH_WORDS: Record<string, SketchKind> = { brasa: 'braseiro', acender: 'chama', porta: 'porta', placa: 'placa' }; // palavra (id do léxico) -> desenho
   const SKETCH_MAX = 3; // só nas primeiras vezes que a palavra aparece: a ajuda diminui
   const SKETCH_KEY = 'mdd-sketch-v1';
   const SKETCH_SPIN = 0; // giro (rad) em que o desenho fica de pé para quem olha; o dado para de girar enquanto ele aparece

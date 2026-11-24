@@ -397,3 +397,9 @@ O dado da mão **olha, reage, pisca e cochila** (tudo sutil: inclinação, pulin
 - **Rachaduras no chão** onde cada pilar vai subir: anel de pedra quebrada com **brasas nas frestas** pulsando. Ao liberar a trava elas se acendem forte enquanto o pilar sobe e depois ficam só as frestas. O jogador vê, antes de resolver, que há algo escondido.
 - **A Casa lê a frase da porta**: quando a porta abre, as palavras da frase acendem uma a uma, da esquerda para a direita (salas do construtor e do vestíbulo). Ensina "escrita que acende = aprovação" e reforça a ordem de leitura.
 - Verificado (números, `__mdd.glyphFire`): na Sala 4 acender o braseiro do DOIS acende ACENDER e o glifo DOIS; na Sala 5 acender um braseiro acende ACENDER, o número enche e TEMPO pulsa. A Sala 6 foi vista em imagem (soquetes, rachaduras e pilares subindo).
+
+## 26. Mais palavras com desenho, fio de luz e ornamento de abertura (implementado)
+- **Desenhos do dado para mais palavras** (`SKETCH_WORDS` em `scene.ts`, `sketch.ts`): ACENDER = **tocha com chama**, PORTA = **porta em arco com argola**, PLACA = **laje com seta de peso**, BRASEIRO = braseiro (já existia). Valem para qualquer sala onde a palavra apareça, no máx. 3 vezes por palavra.
+- **Fio de luz** (`src/scene/thread.ts`, `LightThread`): quando um braseiro acende, uma **fileira de faíscas em arco corre do glifo da parede até o braseiro** (de BRASEIRO ou ACENDER; se o braseiro tem número, também do número). Dura ~1,8 s. Salas do construtor e do vestíbulo.
+- **Ornamento de abertura** (`InscribeOpts.lead`): um **losango talhado com um ponto no meio** antes da 1ª palavra de cada frase de porta marca **onde a frase começa** (não é palavra do léxico). Junto com a marca final (a partir do Tribunal) fecha a convenção de leitura: ornamento -> palavras -> marca.
+- Pendentes: o "livro de pedra" (ordem de leitura fixa no Tribunal), o Escrivão aparecendo de longe, o salão com várias portas e as salas de ensino.

@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { floorTexture, plateTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
+import { LightThread } from '../thread';
 import { glyphsOf } from '../../story/lexicon';
 import type { Box, Ctx, Room } from '../types';
 
@@ -173,6 +174,7 @@ const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: n
 
 // largura de uma frase em unidades de "altura de símbolo" (cada símbolo ≈ 1,29; espaço entre palavras ≈ 0,55)
 const phraseUnits = (words: string[]) => words.reduce((n, w) => n + 1.29 * Math.max(1, glyphsOf(w).length), 0) + 0.55 * (words.length - 1);
+const LEAD_UNITS = 0.85 + 0.55; // o ornamento de abertura (losango) e o espaço depois dele
 
 export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const X0 = -spec.hx;
@@ -209,18 +211,26 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   // a frase talhada na parede
   const sign = spec.sign ?? 'back';
-  const units = phraseUnits(spec.words);
+  const units = phraseUnits(spec.words) + LEAD_UNITS;
   const avail = sign === 'back' ? spec.hx - 1.5 : L - 3;
   const size = Math.min(0.5, avail / units);
   const ins =
     sign === 'back'
-      ? kit.inscribe({ words: spec.words, x: -(spec.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.3, seed: 9 })
+      ? kit.inscribe({ words: spec.words, x: -(spec.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.3, seed: 9, lead: true })
       : sign === 'left'
-        ? kit.inscribe({ words: spec.words, x: X0 + 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: 1, nz: 0, size, age: 0.3, seed: 9 })
-        : kit.inscribe({ words: spec.words, x: X1 - 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: -1, nz: 0, size, age: 0.3, seed: 9 });
+        ? kit.inscribe({ words: spec.words, x: X0 + 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: 1, nz: 0, size, age: 0.3, seed: 9, lead: true })
+        : kit.inscribe({ words: spec.words, x: X1 - 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: -1, nz: 0, size, age: 0.3, seed: 9, lead: true });
 
   // os glifos da frase REAGEM ao que o jogador faz (DESIGN.md §24): ACENDER brilha enquanto há fogo; cada número brilha com o braseiro dele (ou enche com a contagem);
   // BRASEIRO pisca ao acender; TEMPO pulsa enquanto uma chama está acabando; CONFIRMADO brilha quando a porta abre (ou quando uma frase confirmada acende)
+  // fios de luz: quando um braseiro acende, uma faísca corre da palavra BRASEIRO (ou ACENDER) até ele; se ele tem número, também do número
+  const threads = Array.from({ length: 6 }, () => new LightThread(kit.group));
+  const threadFire = (from: THREE.Vector3, to: THREE.Vector3) => {
+    const t = threads.find((x) => !x.active);
+    if (t) t.fire(from, to);
+  };
+  const prevLitArr: boolean[] = [];
+  let primed = false; // a 1ª passada só anota quem já está aceso (sem disparar fios)
   let flash = 0;
   let readT = 0; // há quanto tempo a porta está aberta (a frase é lida)
   let prevLit = 0;
@@ -500,6 +510,8 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   const reset = () => {
     plateDown = false;
+    prevLitArr.length = 0;
+    primed = false;
     litLines.forEach((l) => {
       l.lit = false;
       l.fire = 0;
@@ -799,6 +811,18 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       braziers.forEach((b) => b.update(t));
       {
         const nLit = braziers.filter((b) => b.lit).length;
+        braziers.forEach((b, bi) => {
+          if (primed && b.lit && !prevLitArr[bi]) {
+            const src = ins.panels.find((p) => p.id === 'brasa') ?? ins.panels.find((p) => p.id === 'acender');
+            if (src) threadFire(src.mesh.position, b.bowl);
+            const mk = spec.braziers[bi].mark;
+            const np = mk ? ins.panels.find((p) => p.id === mk) : undefined;
+            if (np && np !== src) threadFire(np.mesh.position, b.bowl);
+          }
+          prevLitArr[bi] = b.lit;
+        });
+        primed = true;
+        threads.forEach((th) => th.update(dt));
         if (nLit > prevLit) flash = 1;
         prevLit = nLit;
         flash = Math.max(0, flash - dt / 1.3);

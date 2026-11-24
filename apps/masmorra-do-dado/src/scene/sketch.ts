@@ -2,7 +2,7 @@
 // Ficam claramente "feitos à mão": traço tremido, falhas, sulco escuro com um fio claro por cima, sem cor viva.
 
 
-export type SketchKind = 'braseiro';
+export type SketchKind = 'braseiro' | 'chama' | 'porta' | 'placa';
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -165,6 +165,31 @@ function drawSimple(kind: SketchKind, seed: number, N: number): HTMLCanvasElemen
     for (const [cx, h, wd] of [[34, 22, 7], [51, 38, 9], [68, 20, 7]] as [number, number, number][]) {
       line([[cx - wd, 42], [cx - wd * 0.8, 42 - h * 0.5], [cx, 42 - h], [cx + wd * 0.7, 42 - h * 0.5], [cx + wd, 42]], OCRE, 5);
     }
+  }
+  if (kind === 'chama') {
+    // uma tocha: cabo e uma chama grande de três línguas
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[50, 96], [50, 56]], PALE, 6);
+    line([[38, 58], [62, 58]], PALE, 5);
+    line([[34, 52], [38, 28], [46, 40], [50, 8], [56, 38], [64, 24], [66, 52], [34, 52]], OCRE, 5);
+  }
+  if (kind === 'porta') {
+    // uma porta em arco, com tábuas e a argola
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[22, 96], [22, 40], [30, 18], [50, 8], [70, 18], [78, 40], [78, 96], [22, 96]], PALE, 5);
+    line([[50, 10], [50, 94]], PALE, 3);
+    line([[22, 62], [78, 62]], PALE, 3);
+    line([[40, 56], [44, 60], [40, 64], [36, 60], [40, 56]], OCRE, 4);
+  }
+  if (kind === 'placa') {
+    // uma laje no chão e uma seta de peso apertando
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[14, 78], [86, 78], [76, 94], [24, 94], [14, 78]], PALE, 5);
+    line([[50, 10], [50, 56]], OCRE, 6);
+    line([[34, 42], [50, 60], [66, 42]], OCRE, 6);
   }
   return c;
 }

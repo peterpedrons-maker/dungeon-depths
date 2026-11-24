@@ -25,6 +25,7 @@ export interface InscribeOpts {
   hidden?: boolean; // começa invisível (será escrita por uma cena)
   frame?: boolean; // moldura talhada em volta de cada símbolo (rótulo de pedestal)
   plaque?: boolean; // moldura talhada em volta da FRASE inteira (tablete confirmado)
+  lead?: boolean; // ornamento de ABERTURA: um losango talhado antes da 1ª palavra (marca onde a frase começa; não é palavra)
 }
 
 export interface InscriptionPanel {
@@ -131,6 +132,24 @@ function wordCanvas(id: string, age: number, seed: number, frame = false): { c: 
   return { c, parts };
 }
 
+// ornamento de abertura: losango talhado com um ponto no meio (sulco escuro + cal), como um "início" da frase
+function leadCanvas(): HTMLCanvasElement {
+  const n = 64;
+  const c = document.createElement('canvas');
+  c.width = n;
+  c.height = n;
+  const g = c.getContext('2d')!;
+  const diamond = (r: number, color: string) => {
+    g.fillStyle = color;
+    for (let y = -r; y <= r; y++) g.fillRect(n / 2 - (r - Math.abs(y)), n / 2 + y, 2 * (r - Math.abs(y)) + 1, 1);
+  };
+  diamond(24, SULCO);
+  diamond(19, CAL);
+  diamond(14, SULCO);
+  diamond(5, CAL);
+  return c;
+}
+
 // lacuna lisa: pedra polida emoldurada por um filete, esperando o giz
 function gapCanvas(): HTMLCanvasElement {
   const n = CELL + PAD * 2;
@@ -159,9 +178,10 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
     id: string | null;
     c: HTMLCanvasElement;
   }
+  const leadW = o.lead ? size * 0.85 : 0;
   const items: Item[] = o.words.map((w, i) => (w ? { id: w, c: wordCanvas(w, age, seed + i * 31, !!o.frame).c } : { id: null, c: gapCanvas() }));
   const widths = items.map((it) => it.c.width * pxm);
-  const total = widths.reduce((a, b) => a + b, 0) + GAP * (items.length - 1);
+  const total = widths.reduce((a, b) => a + b, 0) + GAP * (items.length - 1) + (o.lead ? leadW + GAP : 0);
   const h = (CELL + PAD * 2) * pxm;
 
   const normal = new THREE.Vector3(o.nx, 0, o.nz).normalize();
@@ -169,6 +189,19 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
   const panels: InscriptionPanel[] = [];
   let cursor = -total / 2;
   let gap: THREE.Mesh | undefined;
+  let leadMat: THREE.MeshLambertMaterial | null = null;
+  if (o.lead) {
+    const t = tex(leadCanvas());
+    leadMat = new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.02, depthWrite: false, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+    const lm = new THREE.Mesh(new THREE.PlaneGeometry(leadW, leadW), leadMat);
+    const lx = cursor + leadW / 2;
+    lm.position.set(o.x + Math.cos(ry) * lx, o.y, o.z - Math.sin(ry) * lx);
+    lm.rotation.y = ry;
+    lm.renderOrder = 1;
+    lm.visible = !o.hidden;
+    group.add(lm);
+    cursor += leadW + GAP;
+  }
   items.forEach((it, i) => {
     const w = widths[i];
     const t = tex(it.c);
@@ -249,7 +282,7 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
       p.mat.opacity = Math.min(1, v);
       p.mat.transparent = true;
     },
-    extras: plaqueMat ? [plaqueMat] : [],
+    extras: [...(plaqueMat ? [plaqueMat] : []), ...(leadMat ? [leadMat] : [])],
     setGlow(v) {
       for (const p of panels) {
         if (!p.id) continue;
