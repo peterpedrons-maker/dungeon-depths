@@ -497,9 +497,7 @@ export function dieSketchBlend(n: number, accent: string, locked: boolean, kind:
 // ── O ROSTO de cada número, feito de TRAÇOS (decisão do jogador: parecido com os glifos da língua) ─────────────────────────────────────
 // O dado é vivo: a face virada para o JOGADOR (a de baixo, que ele vê de frente) vira um rosto sério e abstrato, desenhado como um glifo: olhos (pontos
 // que brilham na cor da face), uma testa (sobrancelhas), um nariz e uma boca, tudo em linhas finas de ouro. O número aparece como `n` pontinhos na testa.
-// A seriedade muda de número para número só no ângulo das sobrancelhas e na boca: 1 o ciclope (um olho só) · 2 desconfiado (olhos desencontrados, uma sobrancelha mais alta)
-// · 3 determinado (o do Fogo: sobrancelhas para dentro, boca reta) · 4 grave (sobrancelhas tristes, boca caída nas pontas) · 5 severo (sobrancelhas grossas, nariz com pé)
-// · 6 o mais duro (sobrancelhas fundas, boca caída, riscos nos cantos).
+// A afeição é NEUTRA e igual em todos os números (só mudam a cor dos olhos e os pontinhos).
 function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string) {
   const gold = glow ? '#d09a34' : '#f0c868';
   const dark = glow ? '#000' : '#0a0710';
@@ -545,55 +543,14 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
     px1(x0t + i * 5, 10);
     px1(x0t + i * 5 + 1, 10);
   }
-  switch (n) {
-    case 1: // ciclope: um olho só, testa reta
-      eye(32, 28, 6);
-      brow(18, 17, 46, 17);
-      mouth(24, 40, 50);
-      break;
-    case 2: // desconfiado: olhos desencontrados, uma sobrancelha mais alta
-      eye(20, 28);
-      eye(44, 31);
-      browL(-4, 16);
-      browR(1, 19);
-      nose();
-      mouth(24, 42, 52);
-      break;
-    case 3: // determinado (Fogo): sobrancelhas para dentro, boca reta
-      eye(20, 29);
-      eye(44, 29);
-      browL(3, 17);
-      browR(3, 17);
-      nose();
-      mouth(22, 42, 51);
-      break;
-    case 4: // grave: sobrancelhas tristes, boca caída nas pontas
-      eye(20, 29);
-      eye(44, 29);
-      browL(-3, 18);
-      browR(-3, 18);
-      nose();
-      mouth(22, 42, 50, 3);
-      break;
-    case 5: // severo: sobrancelhas grossas, nariz com pé, boca reta e longa
-      eye(20, 29);
-      eye(44, 29);
-      browL(2, 17, 2);
-      browR(2, 17, 2);
-      nose(true);
-      mouth(20, 44, 51);
-      break;
-    case 6: // o mais duro: sobrancelhas fundas, boca caída com riscos nos cantos
-      eye(20, 30);
-      eye(44, 30);
-      browL(6, 15, 2);
-      browR(6, 15, 2);
-      nose(true);
-      mouth(22, 42, 50, 4);
-      seg(18, 47, 22, 50);
-      seg(46, 47, 42, 50);
-      break;
-  }
+  // TODOS os rostos têm a MESMA afeição neutra (decisão do jogador): olhos na mesma altura, sobrancelhas retas, nariz reto, boca reta.
+  // O que muda de um número para outro é só a cor dos olhos e os pontinhos na testa.
+  eye(20, 29);
+  eye(44, 29);
+  browL(0, 17);
+  browR(0, 17);
+  nose();
+  mouth(22, 42, 51);
 }
 
 // gira o conteúdo de uma face em múltiplos de 90° (sentido horário): as faces laterais do dado podem aparecer deitadas na tela, e o rosto precisa ficar de pé
