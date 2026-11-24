@@ -4,6 +4,7 @@ import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool 
 import { startMapDemo } from './book/mapdemo';
 import { LAB_WORDS } from './scene/rooms/lab';
 import { diary, diaryStore } from './story/diary';
+import { progress } from './story/progress';
 import { dialogue, dialogueStore } from './story/dialogue';
 import { useStore } from './story/store';
 import { ui, uiStore } from './story/ui';
@@ -41,6 +42,7 @@ export default function App() {
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
   const [credits, setCredits] = useState(false);
+  const [askRestart, setAskRestart] = useState(false);
   // PC: o mouse precisa ser capturado (clique) pra olhar livremente
   const [look, setLook] = useState<'locked' | 'free' | 'denied'>('free');
   const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
@@ -189,6 +191,20 @@ export default function App() {
     setCaption(null);
     sceneRef.current?.restart();
   };
+  // RECOMEÇAR O JOGO DO ZERO: apaga o progresso, o diário (símbolos, notas, mapa, carimbos) e as ajudas já vistas, e recarrega a página sem parâmetros:
+  // o jogo começa de novo, com a cena de acordar e tudo. (A preferência de som é mantida.)
+  const newGame = () => {
+    progress.noSave();
+    diary.noSave();
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('mdd-') && k !== 'mdd-audio')
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      /* sem armazenamento: nada a apagar */
+    }
+    location.replace(location.pathname);
+  };
   const pickMode = (m: ChalkMode) => {
     setChalkMode(m);
     sceneRef.current?.setChalkMode(m);
@@ -223,7 +239,7 @@ export default function App() {
         <button onClick={reset} aria-label="Reiniciar sala" title="Reiniciar sala (R)">
           ↺
         </button>
-        <button onClick={() => setCredits(true)} aria-label="Créditos" title="Créditos dos sons">
+        <button onClick={() => setCredits(true)} aria-label="Informações e recomeçar" title="Créditos dos sons e recomeçar o jogo">
           ⓘ
         </button>
         {installEvt && (
@@ -391,7 +407,13 @@ export default function App() {
       <DialogueBox onSound={sound} />
 
       {credits && (
-        <div className="credits" onPointerDown={() => setCredits(false)}>
+        <div
+          className="credits"
+          onPointerDown={() => {
+            setCredits(false);
+            setAskRestart(false);
+          }}
+        >
           <div className="credits-box" onPointerDown={(e) => e.stopPropagation()}>
             <h2>Créditos dos sons</h2>
             <p>
@@ -403,7 +425,27 @@ export default function App() {
               (passos), qubodup (bola rolando), e gravações de giz, borracha, porta de pedra, arrastos, chama, lareira
               e vapor.
             </p>
-            <button onClick={() => setCredits(false)}>Fechar</button>
+            <h2 style={{ marginTop: 14 }}>Recomeçar</h2>
+            {!askRestart ? (
+              <p>
+                <button onClick={() => setAskRestart(true)}>Recomeçar o jogo do zero</button>
+              </p>
+            ) : (
+              <>
+                <p>Isso apaga TODO o progresso, o diário e o mapa, e o jogo recomeça com a cena inicial. Tem certeza?</p>
+                <p>
+                  <button onClick={newGame}>Sim, apagar tudo e recomeçar</button> <button onClick={() => setAskRestart(false)}>Cancelar</button>
+                </p>
+              </>
+            )}
+            <button
+              onClick={() => {
+                setCredits(false);
+                setAskRestart(false);
+              }}
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}

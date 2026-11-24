@@ -121,6 +121,10 @@ export const diary = {
   clearUnread() {
     if (diaryStore.get().unread) diaryStore.set((s) => ({ ...s, unread: 0 }));
   },
+  // para de gravar no aparelho (usado ao recomeçar o jogo do zero)
+  noSave() {
+    persist = false;
+  },
   // Sala de teste (?lab=1): os símbolos da sala já estão no diário, sem gravar no aparelho.
   lab(ids: string[]) {
     persist = false;
