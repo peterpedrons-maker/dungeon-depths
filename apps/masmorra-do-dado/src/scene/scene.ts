@@ -29,6 +29,7 @@ import { buildFireRoom } from './rooms/fire';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
+import { DieLife, type LifeTarget } from './dielife';
 import { FIRE_FRASES, FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
@@ -360,6 +361,72 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let burnHeat = 0; // 0..1: o dado esquentando na cena de queimar
   let talkGlow = 0; // o dado caído brilha quando fala
   let handTalk = 0; // o dado da mão pulsa quando fala
+  // ── o dado vivo: olha, pisca, se assusta, cochila (ver dielife.ts) ──
+  const life = new DieLife();
+  let lifeGlow = 1; // multiplicador do brilho das gemas vindo da "vida"
+  const dieNdc = new THREE.Vector3();
+  const tgtNdc = new THREE.Vector3();
+  const lookedPos = new THREE.Vector3(); // última inscrição que o jogador encarou
+  let lookedT = 99; // há quanto tempo
+  // para onde o dado olha agora: inscrição encarada > braseiro à frente > porta > nada (ele vagueia)
+  const lifeTarget = (): LifeTarget | null => {
+    camera.getWorldDirection(lookDir);
+    const pick = (p: THREE.Vector3, minCos: number, maxD: number): number => {
+      toIns.copy(p).sub(camera.position);
+      const d = toIns.length();
+      if (d > maxD || d < 0.3) return -1;
+      toIns.divideScalar(d);
+      const c = lookDir.dot(toIns);
+      return c > minCos ? c : -1;
+    };
+    const ndcOf = (p: THREE.Vector3, eager = false, player = false): LifeTarget | null => {
+      dieNdc.copy(dieGroup.position).project(dieCam);
+      tgtNdc.copy(p).project(camera);
+      const dx = tgtNdc.x - dieNdc.x;
+      const dy = tgtNdc.y - dieNdc.y;
+      return Number.isFinite(dx + dy) ? { dx, dy, eager, player } : null;
+    };
+    if (lookedT < 1.6) return ndcOf(lookedPos);
+    if (dieState === 'hand') {
+      const eagerFire = hasDie && tool === 'die' && face === 3;
+      let best: THREE.Vector3 | null = null;
+      let bc = 0;
+      const sp = new THREE.Vector3();
+      for (const i of activeRooms) {
+        for (const s of rooms[i].sockets ?? []) {
+          if (s.r <= 0) continue; // pilar ainda escondido: o dado não o "vê"
+          sp.set(s.x, s.y, s.z).add(offs[i]);
+          const c = pick(sp, 0.35, 7);
+          if (c > bc) {
+            bc = c;
+            best = sp.clone();
+          }
+        }
+      }
+      if (best) return ndcOf(best, eagerFire);
+      const r = rooms[curRoom];
+      if (r) {
+        sp.set(0, 1.4, r.doorZ).add(offs[curRoom]);
+        if (pick(sp, 0.6, 10) > 0) return ndcOf(sp);
+      }
+    }
+    return null;
+  };
+  // posição do dado na tela, em % da janela (o balão de fala se centra nela)
+  let dieCssX = -1;
+  let dieCssY = -1;
+  const publishDieScreen = () => {
+    dieNdc.copy(dieGroup.position).project(dieCam);
+    const x = ((dieNdc.x + 1) / 2) * 100;
+    const y = ((1 - dieNdc.y) / 2) * 100;
+    if (Math.abs(x - dieCssX) > 0.15 || Math.abs(y - dieCssY) > 0.15) {
+      dieCssX = x;
+      dieCssY = y;
+      const st = document.documentElement.style;
+      st.setProperty('--die-x', `${x.toFixed(2)}%`);
+      st.setProperty('--die-y', `${y.toFixed(2)}%`);
+    }
+  };
   // ── o dado "traduz" o glifo: ao olhar uma palavra que tem desenho, a face de CIMA mostra o rabisco por alguns segundos ──
   const SKETCH_WORDS: Record<string, SketchKind> = { brasa: 'braseiro' }; // palavra (id do léxico) -> desenho
   const SKETCH_MAX = 3; // só nas primeiras vezes que a palavra aparece: a ajuda diminui
@@ -429,7 +496,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
-      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1);
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1) * lifeGlow;
       handMats[i].color.setScalar(1 - 0.5 * handDim);
       dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat + 2.4 * talkGlow);
     });
@@ -629,9 +696,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (n === 'ignite') {
           const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
           startBurn(first);
+          life.react('flinch');
           if (first) chatFn('burn');
-        } else if (n === 'plate') chatFn('plate');
-        else if (n === 'door') chatFn('door');
+        } else if (n === 'plate') {
+          life.react('thump');
+          chatFn('plate');
+        } else if (n === 'door') {
+          life.react('perk');
+          chatFn('door');
+        } else if (n === 'error') life.react('shake');
+        else if (n === 'piece' || n === 'gem') life.react('joy');
+        else if (n === 'burnout') life.react('sad');
       },
       player: {
         get pos() {
@@ -899,6 +974,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) - inscGlow) * Math.min(1, dt * 0.8);
     camera.getWorldDirection(lookDir);
     const canRead = !ui.blocked() && !book.isOut() && !intro;
+    // a inscrição que o jogador encara: o dado olha para lá também
+    if (canRead && hasDie) {
+      for (const i of activeRooms) {
+        for (const ins of rooms[i].inscriptions ?? []) {
+          if (ins.hidden) continue;
+          toIns.copy(ins.center).add(offs[i]).sub(camera.position);
+          const d = toIns.length();
+          if (d > 6) continue;
+          toIns.divideScalar(d);
+          if (lookDir.dot(toIns) > 0.955 && toIns.dot(ins.normal) < -0.2) {
+            lookedPos.copy(ins.center).add(offs[i]);
+            lookedT = 0;
+          }
+        }
+      }
+    }
     // olhar uma palavra que tem desenho: o dado da mão mostra o rabisco na face de cima
     if (canRead && hasDie && !sketchOn) {
       for (const i of activeRooms) {
@@ -2030,18 +2121,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (sketchOn.age >= SK_LIFE) endSketch();
     } else spin += dt * 0.8;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
+    lookedT += dt;
+    const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy() });
+    lifeGlow = lo.glow;
     updateMats();
     computeTarget(face, spin);
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
     wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012, 0, Math.sin(t * 0.8) * 0.012));
-    dieHolder.quaternion.copy(curQ).multiply(wobble);
+    dieHolder.quaternion.copy(lo.quat).multiply(curQ).multiply(wobble);
     const du = ease(dieU);
-    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du));
+    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale);
     dieGroup.position.set(
-      handX + (-handX - handX) * du,
-      dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05,
+      handX + (-handX - handX) * du + lo.dx,
+      dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy,
       -1,
     );
+    publishDieScreen();
     dieCam.position.set(0, 0, 0);
 
     soapKick = Math.max(0, soapKick - dt * 3.5);
@@ -2127,6 +2222,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
+      lifeDbg: () => ({ out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
+      life: (k: string) => { if (k === 'sleep') life.sleepNow(); else life.react(k as never); },
       sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
