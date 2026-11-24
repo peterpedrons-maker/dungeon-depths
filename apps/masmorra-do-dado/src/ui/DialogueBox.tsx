@@ -3,19 +3,23 @@ import { diary, diaryStore } from '../story/diary';
 import { dialogue, dialogueStore, SPEAKER_WORD } from '../story/dialogue';
 import { useStore } from '../story/store';
 import { WordGlyph } from './Glyph';
+import { PART_MS, scribbleFor, wordMs } from '../story/writing';
 import './story.css';
 
 // Janela de conversa estilo RPG clássico, no rodapé. O mundo fala em glifos (aparecem um a um);
 // os pensamentos do jogador vêm em português, letra a letra.
-const GLYPH_MS = 460; // tempo para cada símbolo se formar
 export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' | 'write', v?: number) => void }) {
   const c = useStore(dialogueStore);
   const line = c ? c.lines[c.i] : null;
   const total = line ? (line.glyphs ? line.glyphs.length : (line.text?.length ?? 0)) : 0;
   const key = c ? `${c.id}:${c.i}` : '';
   const [shown, setShown] = useState(0);
+  const [skipped, setSkipped] = useState(false); // o jogador pulou a escrita: tudo aparece de uma vez, sem animação
 
-  useEffect(() => setShown(0), [key]);
+  useEffect(() => {
+    setShown(0);
+    setSkipped(false);
+  }, [key]);
 
   // "digitação": um glifo por vez (mais lento) ou uma letra por vez
   useEffect(() => {
@@ -23,14 +27,10 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
     const t = window.setTimeout(
       () => {
         setShown(shown + 1);
-        if (line.glyphs) {
-          // um símbolo se forma: 3 risquinhos enquanto ele é desenhado
-          onSound?.('write', 1.1);
-          window.setTimeout(() => onSound?.('write', 0.9), 120);
-          window.setTimeout(() => onSound?.('write', 0.8), 240);
-        } else if (shown % 3 === 0 && /\S/.test(line.text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
+        if (line.glyphs) scribbleFor(wordMs(line.glyphs[shown]), onSound); // risquinhos de giz enquanto o símbolo é escrito
+        else if (shown % 3 === 0 && /\S/.test(line.text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
       },
-      line.glyphs ? GLYPH_MS : 32,
+      line.glyphs ? (shown === 0 ? 200 : wordMs(line.glyphs[shown - 1])) : 32, // cada símbolo só começa quando o anterior terminou de ser escrito
     );
     return () => window.clearTimeout(t);
   }, [line, shown, total, onSound]);
@@ -46,7 +46,10 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
   const done = shown >= total;
   const block = !!c?.block;
   const advance = useCallback(() => {
-    if (!done) setShown(total);
+    if (!done) {
+      setShown(total);
+      setSkipped(true);
+    }
     else dialogue.next();
   }, [done, total]);
 
@@ -93,7 +96,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
           <div className="dlg-glyphs">
             {line.glyphs.slice(0, shown).map((id, k) => (
               <span className="dlg-tile" key={`${key}-${k}`}>
-                <WordGlyph id={id} size={50} draw={GLYPH_MS - 40} />
+                <WordGlyph id={id} size={50} draw={skipped ? 0 : PART_MS - 100} />
               </span>
             ))}
           </div>

@@ -37,6 +37,7 @@ import { DieLife, type LifeTarget } from './dielife';
 import { FIRE_FRASES, FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
+import { LINGER_MS, lineMs } from '../story/writing';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
@@ -422,6 +423,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     return null;
   };
+  // fala do dado (balão): da mão ou, antes de pegá-lo, do dado caído no chão
+  const saySay = (glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }) => {
+    window.setTimeout(() => {
+      if (!hasDie && !worldDie.visible) return;
+      chatter.say(glyphs, o?.pic);
+      handTalk = 1;
+      handPop = Math.max(handPop, 0.5);
+      chatCool = Math.max(chatCool, 30); // depois de falar de propósito, fica calado um tempo
+      sfx.play('uiblip', 0.6);
+      if (o?.joy) life.react('joy');
+    }, (o?.delay ?? 0) * 1000);
+  };
   // posição do dado na tela, em % da janela (o balão de fala se centra nela)
   let dieUp = 19;
   let dieCssX = -1;
@@ -431,7 +444,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     let x: number;
     let y: number;
     let up: number;
-    if (hasDie || !worldDie.visible) {
+    if (dieGroup.visible || !worldDie.visible) {
       dieNdc.copy(dieGroup.position).project(dieCam);
       x = ((dieNdc.x + 1) / 2) * 100;
       y = ((1 - dieNdc.y) / 2) * 100;
@@ -892,16 +905,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           camTween = { y0: yaw, p0: pitch, y1: yaw, p1: -0.04, t: 0, dur: 1.4 }; // os olhos sobem do chão: o dado fala de frente
         }
       },
-      dieSay: (glyphs, o) => {
-        window.setTimeout(() => {
-          if (!hasDie && !worldDie.visible) return; // fala o dado da mão ou, antes de pegá-lo, o dado caído no chão
-          chatter.say(glyphs, o?.pic);
-          handTalk = 1;
-          handPop = Math.max(handPop, 0.5);
-          chatCool = Math.max(chatCool, 30); // depois de falar de propósito, fica calado um tempo
-          sfx.play('uiblip', 0.6);
-          if (o?.joy) life.react('joy');
-        }, (o?.delay ?? 0) * 1000);
+      dieSay: (glyphs, o) => saySay(glyphs, o),
+      dieTalk: (lines, o) => {
+        let at = (o?.delay ?? 0) * 1000;
+        const gap = (o?.gap ?? 1.7) * 1000; // respiro entre uma frase e a seguinte (a anterior fica à vista, completa)
+        lines.forEach((l, i) => {
+          saySay(l.glyphs, { pic: l.pic, joy: l.joy, delay: at / 1000 });
+          at += 150 + lineMs(l.glyphs, !!l.pic) + (i < lines.length - 1 ? gap : LINGER_MS);
+        });
+        return at - (o?.delay ?? 0) * 1000;
       },
       freeze: (on) => {
         holds = Math.max(0, holds + (on ? 1 : -1));
@@ -2364,7 +2376,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = hasDie; // sem dado/giz nas mãos até achá-los
+      dieGroup.visible = hasDie && dieState === 'hand'; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk;
       const hide = book.update(dt, t);
       if (hide > 0) {

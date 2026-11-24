@@ -3,6 +3,7 @@ import { diary, diaryStore } from '../story/diary';
 import { chatter, chatterStore } from '../story/chatter';
 import { useStore } from '../story/store';
 import { WordGlyph } from './Glyph';
+import { LINGER_MS, PART_MS, PIC_MS, scribbleFor, wordMs } from '../story/writing';
 import { sketchCanvas, type SketchKind } from '../scene/sketch';
 
 // o rabisco da palavra (o mesmo que o dado mostra na face), em pixel
@@ -21,7 +22,6 @@ function SketchPic({ kind, size }: { kind: SketchKind; size: number }) {
 
 // Balão do dado falante: os símbolos aparecem um a um perto do dado e somem sozinhos.
 // Cada símbolo que ele "diz" vai para o diário como avistado.
-const GLYPH_MS = 460;
 export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number) => void }) {
   const c = useStore(chatterStore);
   const [shown, setShown] = useState(0);
@@ -29,17 +29,16 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
   useEffect(() => setShown(0), [c?.id]);
   useEffect(() => {
     if (!c) return;
-    if (shown < c.glyphs.length + (c.pic ? 1 : 0)) {
+    // o desenho e cada símbolo são ESCRITOS um depois do outro: o próximo só começa quando o anterior termina
+    const durs = [...(c.pic ? [PIC_MS] : []), ...c.glyphs.map(wordMs)];
+    if (shown < durs.length) {
       const t = window.setTimeout(() => {
         setShown(shown + 1);
-        // um símbolo se forma: 3 risquinhos enquanto ele é desenhado
-        onSound?.('write', 1);
-        window.setTimeout(() => onSound?.('write', 0.9), 130);
-        window.setTimeout(() => onSound?.('write', 0.8), 260);
-      }, GLYPH_MS);
+        scribbleFor(durs[shown], onSound); // risquinhos de giz durante a escrita
+      }, shown === 0 ? 150 : durs[shown - 1]);
       return () => window.clearTimeout(t);
     }
-    const t = window.setTimeout(() => chatter.clear(), 3600); // o balão fica à vista por mais tempo depois do último símbolo
+    const t = window.setTimeout(() => chatter.clear(), (durs[durs.length - 1] ?? 0) + LINGER_MS); // o balão fica à vista por mais tempo depois do último símbolo
     return () => window.clearTimeout(t);
   }, [c, shown]);
   useEffect(() => {
@@ -58,7 +57,7 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
       )}
       {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, k) => (
         <span className="dlg-tile" key={`${c.id}-${k}`}>
-          <WordGlyph id={id} size={26} draw={GLYPH_MS - 40} />
+          <WordGlyph id={id} size={26} draw={PART_MS - 100} />
         </span>
       ))}
     </div>

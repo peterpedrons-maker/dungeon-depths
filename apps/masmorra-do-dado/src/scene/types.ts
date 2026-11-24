@@ -57,6 +57,8 @@ export interface Ctx {
   dropDie(onLanded: () => void): void;
   dieCenter(on: boolean): void; // cena: o dado da mão vem pro centro da tela, maior, de frente, com faixas de cinema
   dieSay(glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }): void;
+  // uma conversa do dado em várias frases, uma depois da outra (cada uma só começa quando a anterior terminou de ser ESCRITA e foi lida); devolve a duração total (ms)
+  dieTalk(lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }): number;
   paused(): boolean; // cena, conversa ou diário em andamento: cronômetros de puzzle devem esperar
   freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
   lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)

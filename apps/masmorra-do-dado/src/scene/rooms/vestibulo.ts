@@ -254,9 +254,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
               ctx.say([{ who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' }], {
                 block: true,
                 onEnd: () => {
-                  ctx.dieSay(['eu', 'cair'], { delay: 0.4 });
-                  ctx.dieSay(['voce', 'ajudar', 'eu', 'perg'], { delay: 5.2 });
-                  window.setTimeout(() => ctx.freeze(false), 10800);
+                  const ms = ctx.dieTalk([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0.4 });
+                  window.setTimeout(() => ctx.freeze(false), 400 + ms - 1500);
                 },
               });
             });
@@ -278,17 +277,14 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         ctx.giveDie(() => {
           // o dado está na mão: cinema (faixas, dado grande no centro) e a explicação, uma frase curta por vez
           ctx.dieCenter(true);
-          ctx.dieSay(['voce', 'condenado'], { delay: 1.3 });
-          ctx.dieSay(['eu', 'boato'], { delay: 6.0 });
-          ctx.dieSay(['eu', 'ajudar', 'voce'], { delay: 10.7 });
-          ctx.dieSay(['acender', 'brasa'], { pic: 'braseiro', delay: 15.6 });
+          const ms = ctx.dieTalk([{ glyphs: ['voce', 'condenado'] }, { glyphs: ['eu', 'boato'] }, { glyphs: ['eu', 'ajudar', 'voce'] }, { glyphs: ['acender', 'brasa'], pic: 'braseiro' }], { delay: 1.3 });
           window.setTimeout(() => {
             ctx.dieCenter(false);
             ctx.freeze(false);
             pickingUp = false;
             nudge = 0; // a partir daqui, se o jogador demorar a acender, o dado repete o pedido
             ctx.say([{ who: 'thought', text: 'Pesa na mão como se me conhecesse.' }], { block: true });
-          }, 21000);
+          }, 1300 + ms);
         });
       },
     });
@@ -384,8 +380,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         if (nLit > 0 && nudge >= 0) {
           nudge = -1;
           // comemoração: ele reage quando o braseiro pega (depois da cena do fogo): "VOCÊ ACENDER CONFIRMADO", e logo em seguida a alegria dele
-          ctx.dieSay(['voce', 'acender', 'conf'], { delay: 1.9, joy: true });
-          ctx.dieSay(['eu', 'sentir', 'alegria'], { delay: 7.2 });
+          ctx.dieTalk([{ glyphs: ['voce', 'acender', 'conf'], joy: true }, { glyphs: ['eu', 'sentir', 'alegria'] }], { delay: 1.9 });
         }
       }
       if (nLit > prevLit) flash = 1;
