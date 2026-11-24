@@ -142,6 +142,15 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   // frases na parede (rumores, leis...)
   const rubs: { ins: ReturnType<typeof kit.inscribe>; wall: THREE.Mesh; v: number[] }[] = [];
+  // tochas das paredes laterais: nunca duas muito perto uma da outra (a lista guarda onde já há uma)
+  const wallTz: Record<'left' | 'right', number[]> = { left: [], right: [] };
+  const wallTorch = (side: 'left' | 'right', z: number, y: number, phase: number, minGap = 3.2) => {
+    if (wallTz[side].some((q) => Math.abs(q - z) < minGap)) return;
+    wallTz[side].push(z);
+    if (side === 'left') kit.torch(X0 + 0.1, y, z, 1, 0, phase);
+    else kit.torch(X1 - 0.1, y, z, -1, 0, phase);
+  };
+  const blocks: Record<'left' | 'right', [number, number][]> = { left: [], right: [] }; // onde ficam os parágrafos (z de cada ponta)
   // largura exata de uma frase (m): cada símbolo ocupa (n + 0,29) alturas, e o espaço entre palavras é 0,55
   const lineW = (words: string[], sz: number) => words.reduce((a, w) => a + (Math.max(1, glyphsOf(w).length) + 0.2917) * sz, 0) + 0.55 * sz * (words.length - 1);
   (spec.tablets ?? []).forEach((t, i) => {
@@ -221,12 +230,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       fmesh.renderOrder = 0;
       kit.group.add(fmesh);
       first[0].extras.push(fm); // acompanha o brilho da escrita
-      // tochas nas duas pontas do parágrafo, para dar para ler
-      const e = FW / 2 + 0.55;
-      for (const sgn of [-1, 1]) {
-        if (left) kit.torch(X0 + 0.1, 1.9, zc + sgn * e, 1, 0, 0.9 + sgn);
-        else kit.torch(X1 - 0.1, 1.9, zc + sgn * e, -1, 0, 2.3 + sgn);
-      }
+      blocks[left ? 'left' : 'right'].push([zc - FW / 2, zc + FW / 2]);
       return;
     }
     const words = t.words ?? [];
@@ -245,14 +249,19 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     }
   });
 
-  // tochas entre as frases das paredes (para dar para ler)
+  // tochas para dar para ler os parágrafos: uma em cada ponta, e UMA SÓ entre dois parágrafos vizinhos (nunca duas coladas)
   for (const side of ['left', 'right'] as const) {
+    const bl = blocks[side].sort((m, n) => m[0] - n[0]);
+    bl.forEach(([z0b, z1b], i) => {
+      if (i === 0) wallTorch(side, z0b - 0.6, 1.9, 0.9 + i, 0);
+      const next = bl[i + 1];
+      if (next) {
+        if (next[0] - z1b > 0.9) wallTorch(side, (z1b + next[0]) / 2, 1.9, 1.7 + i, 0);
+      } else wallTorch(side, z1b + 0.6, 1.9, 2.3 + i, 0);
+    });
+    // frases soltas (sem parágrafo): uma tocha entre cada duas
     const dzs = (spec.tablets ?? []).filter((t) => t.wall === side && !t.lines).map((t) => t.dz ?? 8).sort((m, n) => m - n);
-    for (let i = 1; i < dzs.length; i++) {
-      const mid = (dzs[i - 1] + dzs[i]) / 2;
-      if (side === 'left') kit.torch(X0 + 0.1, 1.9, Z0 + mid, 1, 0, 0.9 + i);
-      else kit.torch(X1 - 0.1, 1.9, Z0 + mid, -1, 0, 2.3 + i);
-    }
+    for (let i = 1; i < dzs.length; i++) wallTorch(side, Z0 + (dzs[i - 1] + dzs[i]) / 2, 1.9, 0.9 + i);
   }
 
   // decoração
@@ -261,13 +270,13 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   kit.skirting(X0, X1, Z0, Z1, 1.3);
   kit.aoSides(X0, X1, Z0, Z1, H);
   kit.cornice(X0, X1, Z0, Z1, H);
-  kit.torch(X0 + 0.1, 1.8, -1.2, 1, 0, 0.7);
-  kit.torch(X1 - 0.1, 1.8, -1.2, -1, 0, 2.4);
+  wallTorch('left', -1.2, 1.8, 0.7);
+  wallTorch('right', -1.2, 1.8, 2.4);
   kit.torch(X1 - 0.9, 1.8, Z0 + 0.1, 0, 1, 4.1);
   // salas compridas: tochas espaçadas nas paredes, alternando os lados, para dar para ver o caminho
   for (let z = -7, k = 0; z > Z0 + 3; z -= 7, k++) {
-    if (k % 2 === 0) kit.torch(X1 - 0.1, 1.8, z, -1, 0, 1.3 + k);
-    else kit.torch(X0 + 0.1, 1.8, z, 1, 0, 3.1 + k);
+    if (k % 2 === 0) wallTorch('right', z, 1.8, 1.3 + k);
+    else wallTorch('left', z, 1.8, 3.1 + k);
   }
   kit.dust(X0, X1, Z0, Z1, 0, H);
 

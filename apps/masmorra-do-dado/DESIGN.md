@@ -334,3 +334,11 @@ Como o jogo é sobre a **escrita**, as pistas são **frases da língua** (e o qu
 - **Nível mínimo a partir da sala 6**: o jogo todo deve ser do nível do Tribunal / da Placa que Julga **para cima**; só as 5 primeiras salas são mais simples.
 - **Parágrafos pequenos, em várias paredes** (decidido pelo jogador): 2 a 3 linhas por bloco; não juntar tudo num bloco só nem dar a volta na sala. As frases da sala não dependem da ordem entre blocos (cada linha é uma condição), então não é preciso numerar os blocos; frases que SÃO sequência ficam na mesma linha.
 - **Toda frase termina numa marca**: as ordens das portas (salas 1 a 5, Tribunal, sala de teste) fecham com CONFIRMADO; as perguntas, com PERGUNTA. Falta o **ornamento de abertura** (decidir o símbolo).
+
+## 20. Estrutura atual da lista de salas e o que fazer com ela
+- **Lista de `BUILDERS` (scene.ts), hoje 12 salas**: 1 O Poço · 2 O Vestíbulo · 3 Os Quatro · 4 A Ordem · 5 A Chama Curta · 6 A Confirmação · 7 A Entrada (Escrivão; dá o giz) · 8 A Lacuna (giz) · 9 O Selo (giz) ·
+  10 O Salão das Brasas (Fogo+Peso) · 11 O Mirante (Fogo+Peso) · 12 O Tribunal dos Rumores (nível 10; foi movido para o fim, posição provisória).
+- **Fora da lista (reserva)**: `A Placa que Julga` (`?lab=1`, `rooms/lab.ts`): Fogo+Peso+giz juntos; guardada para o meio/fim do jogo, quando o jogador tiver as 3 ferramentas e o vocabulário (SE, ENTÃO, NÃO, E).
+- **Descompasso com o plano de ferramentas**: as salas 7 a 11 são antigas e já usam giz e Peso logo depois da 6. O plano é Fogo até ~16, Peso ~17, giz ~28; elas devem sair do começo e voltar nos capítulos 2 e 3.
+- **Tochas**: nas salas de fogo nunca há duas tochas na mesma parede a menos de 3,2 m (`wallTorch` em `fire.ts`); parágrafos ganham uma tocha em cada ponta e uma só entre dois vizinhos.
+- **Salões com várias portas (ideia do jogador)**: o motor liga as salas em fila (eixo z), então um "hall de castelo" ramificado pede ou (a) **anexos dentro do mesmo módulo** (câmaras laterais atrás de portas, algumas abertas, outras trancadas) ou (b) um mundo em grafo (x, z por sala), que é refatoração grande. Começar por (a).

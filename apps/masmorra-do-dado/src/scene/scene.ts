@@ -48,12 +48,12 @@ function MAIN_BUILDERS(): RoomBuilder[] {
   (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
   (c) => buildFireRoom(c, FIRE_TEMPO), // TEMPO: as chamas se apagam; o maior dura mais
   (c) => buildFireRoom(c, FIRE_SEGREDO), // ORDEM SECRETA: dedução pela contagem de acertos
-  buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala ~16): rumores, marcas e lógica
   buildRoom1,
   (c) => buildVestibulo(c, 4), // A Lacuna: o 1º puzzle que pede o giz (que o jogador acabou de achar)
   buildRoom2,
   buildRoom3,
   buildRoom4,
+  buildTribunal, // NÍVEL 10 (provisório aqui no fim; a posição final é a sala ~16, depois de as salas de ensino darem as palavras): rumores, marcas e lógica
   ];
 }
 
