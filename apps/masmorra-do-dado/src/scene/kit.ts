@@ -20,6 +20,7 @@ import {
   stainTexture,
   vineTexture,
 } from './textures';
+import { makeInscription, type InscribeOpts, type Inscription } from './inscription';
 import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
@@ -47,6 +48,7 @@ export class Kit {
   // obstáculos criados por objetos de cena (caixas, barris): a sala os soma aos seus
   rects: Rect[] = [];
   boxes: Box[] = [];
+  inscriptions: Inscription[] = [];
   private cache = new Map<string, THREE.Material>();
   private emberPts: THREE.Points | null = null;
   group = new THREE.Group();
@@ -102,6 +104,13 @@ export class Kit {
     this.group.add(sprite);
     const light = this.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, color, intensity);
     this.torches.push({ sprite, light, phase, base: intensity });
+  }
+
+  // inscrição dos Contáveis (talhada, cal branca); olhar para ela manda os símbolos ao diário
+  inscribe(o: InscribeOpts): Inscription {
+    const ins = makeInscription(this.group, o, this.surfaces);
+    this.inscriptions.push(ins);
+    return ins;
   }
 
   private mat(key: string, make: () => THREE.Material) {

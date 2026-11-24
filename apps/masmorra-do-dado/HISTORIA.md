@@ -28,7 +28,7 @@ Você foi **lançado, como um dado**, dentro de uma Casa que é ao mesmo tempo o
 | **O Juiz** | sala do veredito | Quem leu a sentença. Só fala com as marcas CONFIRMADO e BOATO. |
 
 ## Como começa
-**Recomendo: o poço.** A primeira sala tem um **buraco redondo no teto, com luz lá em cima**, alto demais para alcançar. Não há porta atrás de você: ninguém te trouxe, você foi **jogado**. Isso liga com o tema (você é um dado lançado) e dá o final de graça: a luz do começo é o destino.
+**Decidido: o poço** (implementado: acordar deitado, olhar a luz no teto, ver `DESIGN.md` §12). A primeira sala tem um **buraco redondo no teto, com luz lá em cima**, alto demais para alcançar. Não há porta atrás de você: ninguém te trouxe, você foi **jogado**. Isso liga com o tema (você é um dado lançado) e dá o final de graça: a luz do começo é o destino.
 - **Alternativa B:** acordar numa sala com a porta de trás trancada. Mais simples, mas some o tema do lançamento.
 - **Alternativa C:** acordar numa cela. Mais comum e menos misterioso.
 
@@ -65,7 +65,7 @@ O jogador não precisa de tudo, só de poucas palavras logo de início. Elas vir
 Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidade é opcional: salas secretas, a língua inteira, os diários completos, o passado do Escrivão. Quem só passa correndo acha um final. Quem lê tudo acha o porquê.
 
 ## Decisões em aberto
-1. **O poço** é a abertura que você quer? (alternativas B e C acima)
+1. ~~O poço é a abertura?~~ **Sim** (decidido).
 2. **O dado mente.** Pode ser que o jogador só descubra isso no meio? Ou desde o começo?
 3. **O Escrivão traiu ou protegeu?** Ele deixou a sentença sem confirmação por maldade ou porque não acreditou na acusação? Recomendo deixar **ambíguo**.
 4. **Quem são os outros 2 NPCs?** (o Contador e o Juiz são proposta; "a que veio antes" é a diarista)

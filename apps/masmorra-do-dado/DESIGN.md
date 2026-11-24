@@ -213,12 +213,38 @@ Solução, ao implementar, vai para `PUZZLES.md` (convenção do projeto).
 
 ## 11. Próximos passos
 
-1. ~~Diário (livro 3D com folhas que viram, escrita no próprio papel) e janela de conversa~~ **(feitos)**: `src/story/`, `src/ui/`. Falta ligar o aviso de "símbolo visto" às inscrições reais e o minimapa com giz.
-2. **Sistema de inscrições** (decal talhado e pintado de cal, com relevo e luz) e avaliação da escrita do giz na lacuna.
-3. **Primeira sala** (§9) e o início da língua (números 1–3 e ACENDER).
+1. ~~Diário (livro 3D com folhas que viram, escrita no próprio papel) e janela de conversa~~ **(feitos)**: `src/story/`, `src/ui/`.
+2. ~~Sistema de inscrições~~ **(feito)**: `src/scene/inscription.ts` (cada palavra é um painel talhado, com sulco e cal desgastada; olhar manda os símbolos ao diário; lacuna lisa onde o jogador escreve com o giz). Falta o relevo por mapa de altura.
+3. ~~Primeira sala~~ **(feita)**: Vestíbulo em 3 salas (`rooms/vestibulo.ts`), poço no teto e cena de acordar (§12).
 4. Balões dos ecos (em glifos), se a decisão do §7.4 for aprovada.
 5. Menu inicial + salvar + qualidade gráfica.
 
 ### Mapa: carimbos e segredos
 - O mapa aceita **carimbos**: só de símbolos que o jogador já avistou (vêm de `diary.order`). Uma ferramenta no rodapé, toque simples, funciona no celular.
 - Futuro: segredos opcionais como nos Metroidvanias; o jogo pode ser terminado sem eles.
+
+## 12. Abertura, cenas e progressão visual (implementado)
+
+**Abertura (só na 1ª vez, `scene.ts`):** preto, um baque; a vista volta devagar com o personagem **deitado** (câmera baixa e
+torta); dois pensamentos; ele **levanta**; a câmera sobe até o **poço de luz** no teto; o Boato fala em glifos
+(VOCÊ · CONDENADO · BOATO, sem tradução); último pensamento (giz e dado); olhos descem e o jogo começa. O poço
+(buraco redondo, tubo de tijolo até uma luz distante, coluna de luz e mancha no chão) é o mesmo lugar por onde o jogador chega ao veredito no final.
+
+**Cenas curtas** usam `ctx.freeze`, `ctx.lookAt` e `ctx.say`: a câmera vira sozinha, o jogador fica parado. **Dado queimando** (acender com o Fogo): ≤ 1,5 s, câmera parada,
+o dado esquenta, escurece e vira brasa, e renasce na mão; qualquer toque/tecla pula o resto.
+
+**Marcos (`src/story/progress.ts`)**: `fogo` (1º braseiro), `dois`, `tres`, `escrivao`, `selo`, `brasas`. Cada marco sobe um **estágio** da Casa (0–6). O estágio muda:
+- a **luz**: o ambiente esquenta e clareia (até ~22%), a névoa recua e perde a cor fria;
+- a **escrita**: a cal das inscrições passa a brilhar (de um mínimo legível até forte), de modo que a Casa responde a quem aprende a ler;
+- as **faces do dado**: só o Fogo no começo; Peso e Ricochete com `escrivao`.
+
+**Progressão do cenário (um clima por capítulo, em ordem):**
+| Capítulo | Salas | Clima |
+|---|---|---|
+| Fogo | 1–3 Vestíbulo | `ruin`: pedra cinza, sem cor, poeira, rachaduras, entulho; só a luz do poço e os braseiros |
+| Escrita | 4 A Entrada | `crypt`: tijolo mais vivo, tapete e estandartes, tochas; o Escrivão |
+| Umidade | 5 O Selo | `moss`: pedra esverdeada e úmida |
+| Brasas | 6 O Salão | `ember`: arenito de brasa, sala redonda |
+| Altura | 7 O Mirante | `frost`: azul frio, dois níveis |
+| (a fazer) | veredito | mármore claro e limpo, a mesma luz do poço (por cima) |
+Como o mundo é conectado, voltar a uma sala antiga a mostra mais viva (mais luz e cal brilhando) do que na primeira vez.

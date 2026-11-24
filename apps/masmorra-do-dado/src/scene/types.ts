@@ -1,6 +1,8 @@
 import type * as THREE from 'three';
 import type { Line } from '../story/dialogue';
 import type { Emitter } from './kit';
+import type { Inscription } from './inscription';
+import type { Flag } from '../story/progress';
 
 // tipo de piso sob os pés (muda o som dos passos)
 export type Surface = 'stone' | 'rug' | 'plate' | 'water';
@@ -42,6 +44,10 @@ export interface Ctx {
   feetY(): number;
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa
   seen(id: string): void; // o jogador viu este símbolo (vai pro diário como "avistado")
+  milestone(f: Flag): boolean; // marco da história (true se for novo): o mundo muda com eles
+  stage(): number; // quantos marcos já aconteceram
+  freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
+  lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)
   die: {
     readonly state: DieState;
     readonly face: number; // face do dado que está lá fora
@@ -63,6 +69,8 @@ export interface Room {
   group: THREE.Group;
   surfaces: THREE.Object3D[]; // onde dá pra riscar com o giz
   emitters: Emitter[]; // luzes da sala (o motor empresta luzes reais às mais relevantes)
+  inscriptions?: Inscription[]; // escrita nas paredes: olhar manda os símbolos ao diário
+  shaft?: THREE.Vector3; // poço de luz no teto (local): a câmera olha pra ele na cena de acordar
   doorZ: number; // z (local) da parede do fundo, onde fica a porta
   entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)

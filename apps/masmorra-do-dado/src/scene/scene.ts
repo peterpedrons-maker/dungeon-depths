@@ -8,6 +8,7 @@ import { FACES } from '../faces';
 import {
   dieFaceTexture,
   dieGlowTexture,
+  flameFrames,
   soapSideTexture,
   soapTipTexture,
   soapWrapTexture,
@@ -19,6 +20,8 @@ import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { dialogue } from '../story/dialogue';
 import { ui } from '../story/ui';
+import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
+import { buildVestibulo } from './rooms/vestibulo';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
@@ -27,7 +30,8 @@ import type { Ctx, DieState, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 
 const FOG = '#0b0912';
-const BUILDERS: RoomBuilder[] = [buildRoom1, buildRoom2, buildRoom3, buildRoom4];
+// O Vestíbulo (3 salas) abre o jogo; depois vêm as salas antigas.
+const BUILDERS: RoomBuilder[] = [(c) => buildVestibulo(c, 1), (c) => buildVestibulo(c, 2), (c) => buildVestibulo(c, 3), buildRoom1, buildRoom2, buildRoom3, buildRoom4];
 
 // Ordem dos materiais do BoxGeometry: +x, -x, +y, -y, +z, -z (opostas somam 7).
 const DIE_FACES = [3, 4, 1, 6, 2, 5];
@@ -235,6 +239,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const camera = new THREE.PerspectiveCamera(66, 1, CAM_NEAR, CAM_FAR);
   camera.rotation.order = 'YXZ';
   scene.add(camera);
+  // preto que cobre a tela (cena de acordar): é um plano colado na câmera, então passa pelo mesmo filtro pixelado
+  const fadeMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false });
+  const fadeQuad = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), fadeMat);
+  fadeQuad.position.z = -0.3;
+  fadeQuad.renderOrder = 999;
+  fadeQuad.frustumCulled = false;
+  fadeQuad.visible = false;
+  camera.add(fadeQuad);
   // Luz presa à câmera, na cor da face escolhida: tinge de leve o que está perto.
   const accentLight = new THREE.PointLight(0x5be7ff, 5, 0, 2);
   accentLight.position.set(0.35, -0.3, -0.6);
@@ -320,14 +332,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     targetQ.copy(tilt).multiply(spinQ.setFromAxisAngle(Y_AXIS, spin)).multiply(upQ(n));
 
   let face = 1; // face escolhida (virada pra cima no HUD)
-  let thrownFace = 1; // face do dado que está lá fora
+  let thrownFace = 3; // face do dado que está lá fora
   let dieThrown = true; // false = foi posicionado (não pega a gema)
   let handDim = 0; // 0 = dado na mão, 1 = dado lá fora
+  let burnHeat = 0; // 0..1: o dado esquentando na cena de queimar
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
       handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim);
       handMats[i].color.setScalar(1 - 0.5 * handDim);
-      dieMats[i].emissiveIntensity = n === thrownFace ? 1.4 : 0.5;
+      dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat);
     });
   };
   const applyFace = (n: number) => {
@@ -335,8 +348,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateMats();
     accentLight.color.set(FACES[n - 1]?.color ?? '#ffffff');
   };
-  applyFace(1);
-  computeTarget(1, 0);
+  applyFace(FACES.find((f) => f.unlocked)?.n ?? 3);
+  computeTarget(face, 0);
+  // faces liberadas pela história: refaz as texturas do dado quando um marco libera uma nova
+  const refreshFaces = () => {
+    for (const mats of [dieMats, handMats]) {
+      DIE_FACES.forEach((n, i) => {
+        const f = FACES[n - 1];
+        mats[i].map = dieFaceTexture(n, f.color, !f.unlocked);
+        mats[i].emissiveMap = dieGlowTexture(n, f.color, !f.unlocked);
+        mats[i].needsUpdate = true;
+      });
+    }
+  };
+  const unsubProgress = progressStore.subscribe(refreshFaces);
   curQ.copy(targetQ);
   let spin = 0;
 
@@ -478,6 +503,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const rooms: Room[] = [];
   const offs: THREE.Vector3[] = [];
   let curRoom = 0;
+  // cenas: quem "segura" o jogador (freeze), o giro suave da câmera (lookAt), a cena de acordar e o dado queimando
+  let holds = 0;
+  let camTween: null | { y0: number; p0: number; y1: number; p1: number; t: number; dur: number } = null;
+  let intro: null | { ph: number; t: number } = null;
+  let burn: null | { t: number } = null;
   let dieRoom = 0; // sala onde o dado está (a posição dieP é local a ela)
   let gems = 0;
   let complete = false;
@@ -488,7 +518,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const lp = new THREE.Vector3();
     return {
       caption: (a, b, c) => caption(a, b, c),
-      sfx: (n) => sfx.play(n),
+      sfx: (n) => {
+        sfx.play(n);
+        if (n === 'ignite') startBurn(); // acender com o dado: cena rápida dele queimando
+      },
       player: {
         get pos() {
           return lp.copy(pos).sub(off);
@@ -497,6 +530,24 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       feetY: () => feetY - off.y,
       say: (lines, o) => dialogue.say(lines, o),
       seen: (id) => diary.markSeen(id, rooms[idx]?.name),
+      milestone: (f) => {
+        const fresh = progress.set(f);
+        if (fresh) onMilestone(f);
+        return fresh;
+      },
+      stage: () => progress.stage(),
+      freeze: (on) => {
+        holds = Math.max(0, holds + (on ? 1 : -1));
+      },
+      lookAt: (p, dur = 0.9) => {
+        camera.updateMatrixWorld();
+        const wx = p.x + off.x - pos.x;
+        const wy = p.y + off.y - pos.y;
+        const wz = p.z + off.z - pos.z;
+        const y1 = Math.atan2(-wx, -wz);
+        const dy = Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw)); // caminho mais curto
+        camTween = { y0: yaw, p0: pitch, y1: yaw + dy, p1: clamp(Math.atan2(wy, Math.hypot(wx, wz)), -1.0, 1.0), t: 0, dur };
+      },
       die: {
         get state() {
           return dieRoom === idx ? dieState : 'hand';
@@ -663,18 +714,55 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // luz, névoa e clima acompanham a sala onde o jogador está (suave, sem corte)
   const fogC = new THREE.Color();
   const ambC = new THREE.Color();
+  // A Casa "acorda" conforme a história avança (marcos em src/story/progress.ts): a luz esquenta e
+  // clareia aos poucos, a névoa recua e a cal das inscrições passa a brilhar.
+  const WARM_FOG = new THREE.Color('#1c100c');
+  const WARM_AMB = new THREE.Color(0xffc890);
+  let stageK = progress.stage(); // suavizado: a mudança acontece ao longo de alguns segundos
+  let inscGlow = 0;
   const blendAtmosphere = (dt: number, snap = false) => {
     const r = rooms[curRoom];
     const k = snap ? 1 : 1 - Math.exp(-dt * 2.2);
-    fogC.set(r.fog.color);
+    stageK += (progress.stage() - stageK) * (snap ? 1 : Math.min(1, dt * 0.35));
+    const sf = stageK / MAX_STAGE;
+    fogC.set(r.fog.color).lerp(WARM_FOG, sf * 0.3);
     const f = scene.fog as THREE.Fog;
     f.color.lerp(fogC, k);
     f.near += (r.fog.near - f.near) * k;
-    f.far += (r.fog.far - f.far) * k;
-    ambC.setHex(r.ambient.color);
+    f.far += (r.fog.far + 3.5 * sf - f.far) * k;
+    ambC.setHex(r.ambient.color).lerp(WARM_AMB, sf * 0.3);
     ambient.color.lerp(ambC, k);
-    ambient.intensity += (r.ambient.intensity - ambient.intensity) * k;
+    ambient.intensity += (r.ambient.intensity * (1 + 0.22 * sf) - ambient.intensity) * k;
     fogColor = '#' + f.color.getHexString();
+  };
+
+  // Olhar para uma inscrição por um instante manda os símbolos dela para o diário (como "avistados").
+  const lookDir = new THREE.Vector3();
+  const toIns = new THREE.Vector3();
+  const readInscriptions = (dt: number) => {
+    inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) - inscGlow) * Math.min(1, dt * 0.8);
+    camera.getWorldDirection(lookDir);
+    const canRead = !ui.blocked() && !book.isOut() && !intro;
+    activeRooms.forEach((i) => {
+      for (const ins of rooms[i].inscriptions ?? []) {
+        ins.setGlow(inscGlow);
+        if (ins.read || ins.hidden || !canRead) continue;
+        toIns.copy(ins.center).add(offs[i]).sub(camera.position);
+        const d = toIns.length();
+        if (d > 5.2) continue;
+        toIns.divideScalar(d);
+        // olhando de frente (ângulo estreito) e do lado de onde se lê
+        if (lookDir.dot(toIns) < 0.88 || toIns.dot(ins.normal) > -0.2) {
+          ins.seeT = Math.max(0, ins.seeT - dt);
+          continue;
+        }
+        ins.seeT += dt;
+        if (ins.seeT > 0.6) {
+          ins.read = true;
+          ins.words.forEach((id) => diary.markSeen(id, rooms[i].name));
+        }
+      }
+    });
   };
 
   // ── movimento e colisão do dado ─────────────────────────────────────────
@@ -783,7 +871,186 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.play('recall');
   };
 
-  const busy = () => complete || ui.blocked() || book.isOut(); // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
+  const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null; // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
+
+  // ── marcos da história ──
+  const onMilestone = (f: Flag) => {
+    if (f === 'escrivao') {
+      caption('O dado aprendeu', 'Peso (2) e Ricochete (1) foram liberados.', '#d9a066');
+      sfx.play('face', 2);
+    }
+  };
+
+  // ── dado queimando (acender com o Fogo): ~1,5 s, câmera parada, qualquer toque pula o resto ──
+  const BURN_DUR = 1.5;
+  const burnFrames = flameFrames();
+  const burnSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: burnFrames[0], fog: false, alphaTest: 0.4, depthWrite: false }));
+  burnSprite.visible = false;
+  scene.add(burnSprite);
+  let skipScene = false;
+  const startBurn = () => {
+    if (burn || (dieState !== 'flying' && dieState !== 'rest')) return;
+    if (dieState === 'flying') {
+      restQ.copy(worldDie.quaternion);
+      dieState = 'rest';
+    }
+    dieV.set(0, 0, 0);
+    dieW.set(0, 0, 0);
+    restReturn = 0;
+    burn = { t: 0 };
+    skipScene = false;
+  };
+  const endBurn = () => {
+    burn = null;
+    burnHeat = 0;
+    burnSprite.visible = false;
+    for (const m of dieMats) {
+      m.emissive.setHex(0xffffff);
+      m.color.setScalar(1);
+    }
+    resetDie(); // o dado renasce na mão
+    handPop = 1.6;
+    sfx.play('catch');
+  };
+  const updateBurn = (dt: number, time: number) => {
+    if (!burn) return;
+    burn.t += dt * (skipScene ? 5 : 1);
+    const u = Math.min(1, burn.t / BURN_DUR);
+    // 0–0.25: a chama sobe; 0.25–0.7: o dado esquenta e escurece; 0.7–1: vira brasa e some
+    const grow = u < 0.25 ? u / 0.25 : u < 0.7 ? 1 : Math.max(0, 1 - (u - 0.7) / 0.3);
+    burnHeat = u < 0.6 ? u / 0.6 : Math.max(0, 1 - (u - 0.6) / 0.4) * 1;
+    const char = clamp((u - 0.35) / 0.4, 0, 1);
+    for (const m of dieMats) {
+      m.emissive.setRGB(1, 1 - 0.5 * burnHeat, 1 - 0.85 * burnHeat);
+      m.color.setScalar(1 - 0.7 * char);
+    }
+    worldDie.visible = true;
+    const shrink = u > 0.7 ? 1 - ((u - 0.7) / 0.3) * 0.92 : 1;
+    worldModel.scale.setScalar(0.42 * shrink);
+    worldDie.position.x += Math.sin(time * 60) * 0.004 * burnHeat;
+    burnSprite.visible = grow > 0.02;
+    burnSprite.position.copy(worldDie.position);
+    burnSprite.position.y += 0.2 + 0.12 * grow;
+    burnSprite.scale.set(0.2 + 0.85 * grow, 0.16 + 0.72 * grow, 1);
+    burnSprite.material.map = burnFrames[Math.floor(time * 14) % burnFrames.length];
+    if (u >= 1) endBurn();
+  };
+
+  // ── cena de acordar (só na primeira vez): escuro, o corpo no chão, o poço de luz no teto ──
+  const introEase = (u: number) => u * u * (3 - 2 * u);
+  let introDrop = 0; // quanto a câmera está abaixo dos olhos (deitado)
+  let introRoll = 0;
+  const INTRO_LINES = {
+    lying: [
+      { who: 'thought' as const, text: 'Dói tudo. Cheiro de pedra molhada e de poeira.' },
+      { who: 'thought' as const, text: 'Caí. Ou fui lançado. Não lembro de ter descido.' },
+    ],
+    shaft: [
+      { who: 'thought' as const, text: 'Um buraco redondo no teto. Lá em cima, luz.' },
+      { who: 'thought' as const, text: 'Alto demais. Daqui não dá para subir.' },
+      { who: 'boato' as const, glyphs: ['voce', 'condenado', 'boato'] },
+      { who: 'thought' as const, text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
+      { who: 'thought' as const, text: 'Tenho um giz e um dado. Não lembro de ter pegado nenhum dos dois.' },
+    ],
+  };
+  const startIntro = () => {
+    intro = { ph: 0, t: 0 };
+    introDrop = 1.25;
+    introRoll = 0.34;
+    fadeQuad.visible = true;
+    fadeMat.opacity = 1;
+    yaw = rooms[0].startYaw + 0.55;
+    pitch = -0.42;
+  };
+  // o ponto de onde cada fase do giro parte (e o ponto onde ele pára)
+  let introY0 = 0;
+  let introP0 = 0;
+  let introY1 = 0;
+  let introP1 = 0;
+  const updateIntro = (dt: number) => {
+    if (!intro) return;
+    intro.t += dt;
+    const I = intro;
+    const sy = rooms[0].startYaw;
+    if (I.ph === 0 || I.ph === 1) {
+      yaw = sy + 0.55;
+      pitch = -0.42;
+      introDrop = 1.25 + Math.sin(I.t * 1.5) * 0.012;
+      introRoll = 0.34 + Math.sin(I.t * 0.9) * 0.02;
+    }
+    if (I.ph === 0) {
+      // preto, um baque, e a vista volta devagar
+      if (I.t > 0.5 && I.t - dt <= 0.5) sfx.play('rest');
+      fadeMat.opacity = 1 - introEase(clamp((I.t - 0.8) / 2.4, 0, 1));
+      if (I.t > 3.6) {
+        fadeQuad.visible = false;
+        I.ph = 1;
+        I.t = 0;
+        dialogue.say(INTRO_LINES.lying, {
+          block: true,
+          onEnd: () => {
+            if (!intro) return;
+            intro.ph = 2;
+            intro.t = 0;
+            introY0 = yaw;
+            introP0 = pitch;
+          },
+        });
+      }
+    } else if (I.ph === 2) {
+      // levanta
+      const u = introEase(clamp(I.t / 2.6, 0, 1));
+      introDrop = 1.25 * (1 - u);
+      introRoll = 0.34 * (1 - u);
+      pitch = introP0 + (-0.04 - introP0) * u;
+      yaw = introY0 + (sy - introY0) * u;
+      if (I.t >= 2.6) {
+        I.ph = 3;
+        I.t = 0;
+        introY0 = yaw;
+        introP0 = pitch;
+        // para onde olhar: o poço
+        const sh = rooms[0].shaft;
+        const w = sh ? sh.clone().add(offs[0]) : new THREE.Vector3(0, 8, -4);
+        const y1 = Math.atan2(-(w.x - pos.x), -(w.z - pos.z));
+        introY1 = introY0 + Math.atan2(Math.sin(y1 - introY0), Math.cos(y1 - introY0));
+        introP1 = clamp(Math.atan2(w.y - (pos.y - 0.05), Math.hypot(w.x - pos.x, w.z - pos.z)), -0.2, 1.05);
+      }
+    } else if (I.ph === 3) {
+      // olha o poço no teto
+      const u = introEase(clamp(I.t / 1.8, 0, 1));
+      yaw = introY0 + (introY1 - introY0) * u;
+      pitch = introP0 + (introP1 - introP0) * u;
+      if (I.t >= 1.8) {
+        I.ph = 4;
+        I.t = 0;
+        dialogue.say(INTRO_LINES.shaft, {
+          block: true,
+          onEnd: () => {
+            if (!intro) return;
+            intro.ph = 5;
+            intro.t = 0;
+          },
+        });
+      }
+    } else if (I.ph === 4) {
+      yaw = introY1;
+      pitch = introP1;
+    } else if (I.ph === 5) {
+      // baixa os olhos de volta: o jogo começa
+      const u = introEase(clamp(I.t / 1.6, 0, 1));
+      yaw = introY1 + (sy - introY1) * u;
+      pitch = introP1 + (-0.04 - introP1) * u;
+      if (I.t >= 1.6) {
+        pitch = -0.04;
+        yaw = sy;
+        intro = null;
+        introDrop = 0;
+        introRoll = 0;
+        progress.set('intro');
+      }
+    }
+  };
 
   const throwDie = () => {
     if (dieState !== 'hand' || busy()) return;
@@ -1291,6 +1558,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   blendAtmosphere(0, true);
   announced.add(0);
   diary.visitRoom(rooms[0].name);
+  {
+    // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
+    const q = new URLSearchParams(location.search);
+    if (q.has('demo')) {
+      progress.noSave();
+      for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro'] as const) progress.set(f);
+    } else if (q.get('intro') === '0') {
+      progress.noSave();
+      progress.set('intro');
+    }
+    if (!progress.has('intro')) startIntro();
+  }
+  const onSkip = () => {
+    if (burn) skipScene = true;
+  };
+  window.addEventListener('pointerdown', onSkip, { passive: true });
+  window.addEventListener('keydown', onSkip);
 
   // ── loop ────────────────────────────────────────────────────────────────
   let raf = 0;
@@ -1347,8 +1631,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
     pos.y = feetY + EYE;
-    camera.position.set(pos.x, pos.y + bobY, pos.z);
-    camera.rotation.set(pitch, yaw, 0);
+    updateIntro(dt);
+    if (camTween) {
+      const c = camTween;
+      c.t += dt;
+      const u = introEase(clamp(c.t / c.dur, 0, 1));
+      yaw = c.y0 + (c.y1 - c.y0) * u;
+      pitch = c.p0 + (c.p1 - c.p0) * u;
+      if (c.t >= c.dur) camTween = null;
+    }
+    camera.position.set(pos.x, pos.y + bobY - introDrop, pos.z);
+    camera.rotation.set(pitch, yaw, introRoll);
 
     // ── dado no mundo ──
     if (dieState === 'flying') {
@@ -1403,6 +1696,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
 
+    updateBurn(dt, t);
     if (dieState !== emittedDie) {
       emittedDie = dieState;
       opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
@@ -1410,6 +1704,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── salas ──
     activeRooms.forEach((i) => rooms[i].update(dt, t));
+    readInscriptions(dt);
     updateLights(dt);
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
@@ -1537,6 +1832,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       bookClick: (id: string) => book.click(id),
       strokes: () => diaryStore.get().strokes.length,
       stamps: () => diaryStore.get().stamps.length,
+      flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
+      cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
+      inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
+      progressReset: () => progress.reset(),
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
@@ -1623,6 +1922,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     restart,
     dispose() {
       cancelAnimationFrame(raf);
+      unsubProgress();
+      window.removeEventListener('pointerdown', onSkip);
+      window.removeEventListener('keydown', onSkip);
       book.dispose();
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);

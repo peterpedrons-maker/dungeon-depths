@@ -81,6 +81,13 @@ export interface Theme {
   floorGap: string;
 }
 export const THEMES: Record<string, Theme> = {
+  // vestíbulo: ruína velha, pedra cinza e sem cor, poeira por tudo (o começo, antes da Casa "acordar")
+  ruin: {
+    stone: [hex('#56565c'), hex('#5e5d64'), hex('#4b4a52'), hex('#59575f')],
+    mortar: '#17161c',
+    floor: [hex('#4f4b49'), hex('#58534f'), hex('#444040')],
+    floorGap: '#171413',
+  },
   // sala 1: roxo-acinzentado, tijolo comum
   crypt: { stone: STONE, mortar: MORTAR, floor: [hex('#5a4d47'), hex('#645650'), hex('#4c413d')], floorGap: '#1d1816' },
   // sala 2: pedra esverdeada, úmida

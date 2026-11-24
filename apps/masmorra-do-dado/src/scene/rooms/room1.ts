@@ -1,10 +1,11 @@
-// Sala 1 — A Entrada. Ensina o dado: fogo acende o braseiro, peso aperta a placa.
+// Sala 4 — A Entrada. Aqui o dado aprende Peso e Ricochete (o Escrivão aparece e escreve na parede).
+// Fogo acende o braseiro, peso aperta a placa.
 // A porta só abre com as duas coisas feitas. Há uma gema escondida num nicho alto
 // que só o ricochete alcança.
 
 import * as THREE from 'three';
 import { crackTexture, floorTexture, gemTexture, plateTexture, sparkTexture } from '../textures';
-import { ARCH_TOP, buildDoor, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import type { Box, Ctx, Room } from '../types';
 
 const X0 = -4;
@@ -31,7 +32,7 @@ export function buildRoom1(ctx: Ctx): Room {
 
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], 'crypt')), 0, 0, zm, -Math.PI / 2);
   kit.plane(W, L, kit.brick([W / T, L / T], 0.8, 17), 0, H, zm, Math.PI / 2);
-  kit.plane(W, H, kit.brick([W / T, H / T], 1, 23), 0, H / 2, Z1, 0, Math.PI);
+  const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 31), X0, H / 2, zm, 0, Math.PI / 2);
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 37), X1, H / 2, zm, 0, -Math.PI / 2);
 
@@ -105,8 +106,10 @@ export function buildRoom1(ctx: Ctx): Room {
   kit.contact(2.9, -9.2, 1.6);
   for (const z of [-2, -5.5, -8.8]) kit.beam(0, H - 0.15, z, W, 0.3, 0.3);
   kit.rug(0, -3.6, 1.4, 8.2, '#6a2a3a', '#d4ac4e');
-  kit.banner(X0 + 0.02, 1.9, -5.0, 1, 0, '#5a2a6a', '#d4ac4e');
   kit.banner(X1 - 0.02, 1.9, -5.0, -1, 0, '#5a2a6a', '#d4ac4e');
+  // o Escrivão escreve nesta parede quando o jogador chega (as duas linhas começam ocultas)
+  const scribeA = kit.inscribe({ words: ['eu', 'escrever', 'sentenca'], x: X0 + 0.02, y: 2.1, z: -5.0, nx: 1, nz: 0, size: 0.36, age: 0.1, seed: 5, hidden: true });
+  const scribeB = kit.inscribe({ words: ['voce', 'ler', 'sentenca', 'perg'], x: X0 + 0.02, y: 1.5, z: -5.0, nx: 1, nz: 0, size: 0.36, age: 0.1, seed: 9, hidden: true });
   kit.crate(3.35, 1.25, 0.75, 0.3);
   kit.crate(3.45, 0.45, 0.55, -0.2);
   kit.crate(-3.4, 1.2, 0.8, 0.1);
@@ -145,6 +148,25 @@ export function buildRoom1(ctx: Ctx): Room {
   let doorOpen = 0;
   let announced = false;
   let prevWant = 0;
+  // cena do Escrivão: 0 espera · 1 pensamento · 2 escreve a 1ª linha · 3 fala · 4 escreve a 2ª · 5 fala · 6 fim
+  const sc = { ph: 0, t: 0 };
+  const scribeAt = new THREE.Vector3(X0 + 0.1, 1.8, -5.0);
+  const WRITE0 = 1.0; // pausa antes do primeiro símbolo
+  const STEP = 1.0; // um símbolo por segundo
+  const written = new Set<string>();
+  const writeLine = (ins: typeof scribeA, t: number) => {
+    ins.panels.forEach((_, i) => {
+      const a = WRITE0 + i * STEP;
+      const v = Math.max(0, Math.min(1, (t - a) / 0.6));
+      const key = `${ins.words.join('+')}:${i}`;
+      if (v > 0 && !written.has(key)) {
+        written.add(key); // o som toca uma vez por símbolo
+        ctx.sfx('piece');
+      }
+      ins.setReveal(i, v);
+    });
+    return t > WRITE0 + ins.panels.length * STEP + 0.3;
+  };
 
   const onPlate = () => {
     const p = ctx.die.pos;
@@ -154,11 +176,12 @@ export function buildRoom1(ctx: Ctx): Room {
   kit.bake();
 
   return {
-    name: 'Sala 1 · A Entrada',
+    name: 'Sala 4 · A Entrada',
     subtitle: 'Fogo no braseiro, peso na placa — e a porta cede.',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
+    inscriptions: kit.inscriptions,
     doorZ: Z0,
     entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 1.2),
@@ -170,8 +193,8 @@ export function buildRoom1(ctx: Ctx): Room {
     rects() {
       const r: ReturnType<Room['rects']> = PILLARS.map(([x, z]) => [x - 0.55, z - 0.55, x + 0.55, z + 0.55] as [number, number, number, number]);
       r.push([2.4, -9.7, 3.4, -8.7], ...kit.rects);
-      // paredes: esquerda, direita e a da frente (a primeira sala não tem entrada)
-      r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5], [X0 - 2, Z1, X1 + 2, Z1 + 0.5]);
+      // paredes laterais e a entrada (liga com o Vestíbulo)
+      r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5], ...entrance.rects());
       r.push(...door.rects(doorOpen > 0.85));
       return r;
     },
@@ -205,6 +228,46 @@ export function buildRoom1(ctx: Ctx): Room {
     update(dt, t) {
       kit.tick(dt, t);
       const d = ctx.die;
+      // ── Escrivão ──
+      if (sc.ph === 0 && ctx.player.pos.z < -4.0 && ctx.player.pos.x > X0 + 0.5) {
+        sc.ph = 1;
+        ctx.freeze(true);
+        ctx.say([{ who: 'thought', text: 'Na parede da esquerda… alguma coisa está sendo escrita. Os símbolos acendem um a um.' }], {
+          block: true,
+          onEnd: () => {
+            sc.ph = 2;
+            sc.t = 0;
+            ctx.lookAt(scribeAt, 1.0);
+          },
+        });
+      } else if (sc.ph === 2) {
+        sc.t += dt;
+        if (writeLine(scribeA, sc.t)) {
+          sc.ph = 3;
+          ctx.say([{ who: 'escrivao', glyphs: ['eu', 'escrever', 'sentenca'] }], { block: true, onEnd: () => ((sc.ph = 4), (sc.t = 0)) });
+        }
+      } else if (sc.ph === 4) {
+        sc.t += dt;
+        if (writeLine(scribeB, sc.t)) {
+          sc.ph = 5;
+          ctx.say(
+            [
+              { who: 'escrivao', glyphs: ['voce', 'ler', 'sentenca', 'perg'] },
+              { who: 'thought', text: 'Ele espera. A Casa inteira é uma frase… e eu estou dentro dela.' },
+            ],
+            {
+              block: true,
+              onEnd: () => {
+                sc.ph = 6;
+                scribeA.reveal();
+                scribeB.reveal();
+                ctx.freeze(false);
+                ctx.milestone('escrivao');
+              },
+            },
+          );
+        }
+      }
       if (d.state === 'flying') {
         if (!gemTaken && d.thrown && d.pos.distanceTo(GEM) < 0.55) {
           gemTaken = true;

@@ -1,0 +1,213 @@
+// Inscrições dos Contáveis nas paredes: sulco talhado na pedra, preenchido de cal branca e gasto
+// pelo tempo (ver DESIGN.md §8). Cada palavra é um painel próprio, o que permite escrevê-las uma a uma
+// (cena do Escrivão) e acendê-las aos poucos conforme o jogador aprende a ler.
+// Quando o jogador olha pra uma inscrição por um instante, os símbolos vão pro diário como "avistados".
+
+import * as THREE from 'three';
+import { drawGlyph } from '../book/font';
+import { glyphsOf } from '../story/lexicon';
+
+const CELL = 96; // pixels por símbolo
+const PAD = 14;
+const CAL = '#f1ebd9';
+const SULCO = '#15110f';
+
+export interface InscribeOpts {
+  words: (string | null)[]; // ids do léxico; null = lacuna lisa onde o jogador escreve com o giz
+  x: number;
+  y: number;
+  z: number;
+  nx: number; // para onde a parede "olha" (de onde se lê)
+  nz: number;
+  size?: number; // altura de um símbolo, em metros
+  age?: number; // 0 = nítida, 1 = muito gasta
+  seed?: number;
+  hidden?: boolean; // começa invisível (será escrita por uma cena)
+}
+
+export interface InscriptionPanel {
+  id: string | null; // null = lacuna
+  mesh: THREE.Mesh;
+  mat: THREE.MeshLambertMaterial;
+}
+
+export interface Inscription {
+  words: string[]; // só as palavras de verdade (sem lacunas)
+  center: THREE.Vector3; // coordenadas locais da sala
+  normal: THREE.Vector3;
+  panels: InscriptionPanel[];
+  read: boolean; // já foi lida (foi pro diário)
+  seeT: number; // tempo seguido olhando pra ela
+  hidden: boolean; // ainda não foi escrita
+  gap?: THREE.Mesh; // a lacuna (superfície de giz), se houver
+  setReveal(i: number, v: number): void; // v 0..1 do painel i
+  setGlow(v: number): void; // brilho da cal (cresce conforme o jogador aprende)
+  reveal(): void; // mostra tudo
+}
+
+function rng(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function tex(c: HTMLCanvasElement): THREE.CanvasTexture {
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter; // de longe o traço fino se perderia no filtro pixelado
+  t.generateMipmaps = true;
+  t.anisotropy = 4;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// uma palavra talhada: sulco escuro com a cal por dentro, falhas conforme a idade
+function wordCanvas(id: string, age: number, seed: number): { c: HTMLCanvasElement; parts: number } {
+  const glyphs = glyphsOf(id);
+  const parts = Math.max(1, glyphs.length);
+  const c = document.createElement('canvas');
+  c.width = parts * CELL + PAD * 2;
+  c.height = CELL + PAD * 2;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  const size = (CELL / 0.86) * 0.94;
+  const draw = (dx: number, dy: number, color: string) =>
+    glyphs.forEach((g, i) => drawGlyph(ctx, g, Math.round(PAD + CELL * (i + 0.5) + dx), Math.round(PAD + CELL / 2 + dy), size, color));
+  // sulco: o traço engordado em volta (bem grosso: a escrita precisa aparecer a 5 m, na tela de ~200 linhas)
+  const ring = (rad: number, color: string) => {
+    for (let a = 0; a < 16; a++) draw(Math.round(Math.cos((a / 16) * Math.PI * 2) * rad), Math.round(Math.sin((a / 16) * Math.PI * 2) * rad), color);
+  };
+  ring(5, SULCO);
+  ring(4, SULCO);
+  // cal por dentro
+  ring(2.5, CAL);
+  draw(0, 0, CAL);
+  // desgaste: a cal descascou em pontos, e ficou manchada
+  const r = rng(seed);
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+  for (let y = 0; y < c.height; y++) {
+    for (let x = 0; x < c.width; x++) {
+      const o = (y * c.width + x) * 4;
+      if (d[o + 3] === 0 || d[o] < 180) continue; // só a cal
+      const rr = r();
+      // manchas em blocos (a tinta some em lascas, não em pontos soltos)
+      const blot = Math.sin(x * 0.19 + seed) * Math.sin(y * 0.23 - seed * 0.7) > 0.55 - age * 0.5;
+      if (rr < age * 0.28 || (blot && rr < 0.55)) {
+        d[o] = 22;
+        d[o + 1] = 17;
+        d[o + 2] = 15;
+      } else if (rr < age * 0.5) {
+        d[o] = 186;
+        d[o + 1] = 176;
+        d[o + 2] = 154;
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return { c, parts };
+}
+
+// lacuna lisa: pedra polida emoldurada por um filete, esperando o giz
+function gapCanvas(): HTMLCanvasElement {
+  const n = CELL + PAD * 2;
+  const c = document.createElement('canvas');
+  c.width = n;
+  c.height = n;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = SULCO;
+  ctx.fillRect(PAD - 6, PAD - 6, CELL + 12, CELL + 12);
+  ctx.fillStyle = '#6b6870';
+  ctx.fillRect(PAD - 2, PAD - 2, CELL + 4, CELL + 4);
+  ctx.fillStyle = '#585560';
+  ctx.fillRect(PAD, PAD, CELL, CELL);
+  return c;
+}
+
+export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: THREE.Object3D[]): Inscription {
+  const size = o.size ?? 0.5;
+  const age = o.age ?? 0.3;
+  const seed = o.seed ?? 7;
+  const ry = Math.atan2(o.nx, o.nz);
+  const pxm = size / CELL; // metros por pixel
+  const GAP = size * 0.55; // espaço entre palavras
+
+  interface Item {
+    id: string | null;
+    c: HTMLCanvasElement;
+  }
+  const items: Item[] = o.words.map((w, i) => (w ? { id: w, c: wordCanvas(w, age, seed + i * 31).c } : { id: null, c: gapCanvas() }));
+  const widths = items.map((it) => it.c.width * pxm);
+  const total = widths.reduce((a, b) => a + b, 0) + GAP * (items.length - 1);
+  const h = (CELL + PAD * 2) * pxm;
+
+  const normal = new THREE.Vector3(o.nx, 0, o.nz).normalize();
+  const center = new THREE.Vector3(o.x, o.y, o.z);
+  const panels: InscriptionPanel[] = [];
+  let cursor = -total / 2;
+  let gap: THREE.Mesh | undefined;
+  items.forEach((it, i) => {
+    const w = widths[i];
+    const t = tex(it.c);
+    const mat = new THREE.MeshLambertMaterial({
+      map: t,
+      transparent: true,
+      alphaTest: 0.02,
+      depthWrite: false,
+      emissive: 0xffffff,
+      emissiveMap: it.id ? t : null,
+      emissiveIntensity: 0,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -4,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    // posição ao longo da parede (eixo local x do painel)
+    const lx = cursor + w / 2;
+    mesh.position.set(o.x + Math.cos(ry) * lx, o.y, o.z - Math.sin(ry) * lx);
+    mesh.rotation.y = ry;
+    mesh.renderOrder = 1;
+    mesh.visible = !o.hidden;
+    group.add(mesh);
+    if (!it.id) {
+      gap = mesh;
+      surfaces.push(mesh); // dá pra riscar com o giz
+      mat.depthWrite = true;
+      mat.transparent = false;
+    }
+    panels.push({ id: it.id, mesh, mat });
+    cursor += w + GAP;
+  });
+
+  const ins: Inscription = {
+    words: o.words.filter((w): w is string => !!w),
+    center,
+    normal,
+    panels,
+    read: false,
+    seeT: 0,
+    hidden: !!o.hidden,
+    gap,
+    setReveal(i, v) {
+      const p = panels[i];
+      if (!p || !p.id) return;
+      p.mesh.visible = v > 0.01;
+      p.mat.opacity = Math.min(1, v);
+      p.mat.transparent = true;
+    },
+    setGlow(v) {
+      for (const p of panels) if (p.id) p.mat.emissiveIntensity = v;
+    },
+    reveal() {
+      ins.hidden = false;
+      panels.forEach((p) => {
+        p.mesh.visible = true;
+        p.mat.opacity = 1;
+      });
+    },
+  };
+  return ins;
+}
