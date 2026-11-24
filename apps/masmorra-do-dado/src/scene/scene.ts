@@ -2308,6 +2308,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       freezeSpin: (v: number | null) => { (globalThis as Record<string, unknown>).__spinFreeze = v === null ? undefined : v; },
       life: (k: string) => { if (k === 'sleep') life.sleepNow(); else life.react(k as never); },
+      glyphFire: (ri: number) => (rooms[ri]?.inscriptions ?? []).map((ins) => ins.panels.filter((p) => p.id).map((p) => `${p.id}:${(p.fire ?? 0).toFixed(2)}`).join(' ')),
       sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),

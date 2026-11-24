@@ -213,6 +213,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   // os glifos da frase REAGEM ao que o jogador faz (DESIGN.md §24): ACENDER brilha enquanto há fogo; o número enche conforme os braseiros acesos; BRASEIRO
   // pisca ao acender; a marca final brilha quando a porta abre
   let flash = 0;
+  let readT = 0; // há quanto tempo a porta está aberta (a Casa lê a frase)
   let prevLit = 0;
   const glow = (id: string, target: number, dt: number) => {
     for (const p of ins.panels) if (p.id === id) p.fire = (p.fire ?? 0) + (target - (p.fire ?? 0)) * Math.min(1, dt * 6);
@@ -389,6 +390,11 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       glow('acender', v === 4 ? (open ? 1 : 0) : nLit > 0 ? 1 : 0, dt);
       glow('brasa', Math.max(flash, open ? 0.6 : 0), dt);
       glow('conf', open ? 1 : 0, dt);
+      // a Casa "lê" a frase quando a porta abre: as palavras acendem uma a uma, da esquerda para a direita
+      readT = open ? readT + dt : 0;
+      ins.panels.forEach((p, k) => {
+        if (open && readT > 0.15 + k * 0.4 && p.id) p.fire = Math.max(p.fire ?? 0, Math.min(1, (readT - (0.15 + k * 0.4)) * 4));
+      });
       if (v === 2 || v === 3) glow(v === 2 ? 'n2' : 'n3', open ? 1 : Math.min(1, nLit / (v === 2 ? 2 : 3)) * (nLit > (v === 2 ? 2 : 3) ? 0.3 : 1), dt);
     },
     reset() {

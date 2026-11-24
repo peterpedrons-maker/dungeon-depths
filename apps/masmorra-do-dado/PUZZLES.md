@@ -50,7 +50,7 @@ As chamas **se apagam sozinhas**; quanto maior o braseiro, mais dura: ~6 s, ~10 
 ## Sala 6 — O Que a Casa Confirma  (ACENDER · CONFIRMADO)  — NÍVEL 5 (ensina CONFIRMADO×BOATO e ANTES/DEPOIS)
 Primeira sala do **dado que acende palavras**. Na parede há **sete frases** em três parágrafos pequenos (esquerda: 2 + 2 linhas; direita: 3 linhas). Cada frase é «X ANTES Y» ou «X DEPOIS Y» e termina numa **marca**: CONFIRMADO ou BOATO. **Não há braseiros à vista**: os quatro pilares estão escondidos sob o chão.
 A porta diz «ACENDER CONFIRMADO»: **acenda as frases CONFIRMADAS**.
-**Passo 1 — ler e acender (liberar o puzzle):**
+**Passo 1 — ler e acender (liberar o puzzle):** (dicas: cada frase acendível tem um **soquete com brasa fraca** no começo; no chão há **rachaduras com brasas** onde os pilares vão subir)
 1. Com o **Fogo (3)**, arremesse (ou posicione) o dado **junto de cada frase CONFIRMADA** (na parede, perto do texto): a frase brilha em brasa, com uma chama ao lado.
 2. As frases de **BOATO** não podem ser acesas: tocar uma delas **apaga todas as frases acesas** e a Casa **recusa o fogo por 4 s**. É preciso **ler a marca final de cada frase**.
 3. As confirmadas são quatro: **TRÊS antes de UM · UM antes de QUATRO · QUATRO antes de DOIS · DOIS depois de UM**. Ao acender as quatro, ouve-se um estrondo e **os quatro pilares sobem do chão**, cada um com seu número.

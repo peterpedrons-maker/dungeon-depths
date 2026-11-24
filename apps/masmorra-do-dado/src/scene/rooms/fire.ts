@@ -83,6 +83,88 @@ export interface FireSpec {
   ambient?: { color: number; intensity: number };
 }
 
+// brasa fraca (um pontinho laranja) para o soquete das frases acendíveis
+let emberTex: THREE.CanvasTexture | null = null;
+function emberTexture() {
+  if (emberTex) return emberTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 8;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#ff5a1e';
+  g.fillRect(2, 2, 4, 4);
+  g.fillStyle = '#ffb048';
+  g.fillRect(3, 3, 2, 2);
+  g.fillStyle = '#ff8a30';
+  g.fillRect(3, 1, 2, 1);
+  g.fillRect(3, 6, 2, 1);
+  g.fillRect(1, 3, 1, 2);
+  g.fillRect(6, 3, 1, 2);
+  emberTex = new THREE.CanvasTexture(c);
+  emberTex.magFilter = THREE.NearestFilter;
+  emberTex.minFilter = THREE.NearestFilter;
+  return emberTex;
+}
+// rachaduras no chão onde um pilar vai subir: anel de pedra, riscos e brasas nas frestas (o mapa de brilho só tem as brasas)
+function crackTextures(seed: number) {
+  const N = 96;
+  const mk = () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = N;
+    return c;
+  };
+  const a = mk();
+  const b = mk();
+  const ga = a.getContext('2d')!;
+  const gb = b.getContext('2d')!;
+  gb.fillStyle = '#000';
+  gb.fillRect(0, 0, N, N);
+  let s = seed >>> 0;
+  const r = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  // anel
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const d = Math.hypot(x - N / 2 + 0.5, y - N / 2 + 0.5);
+      if (d > 38 && d < 42) {
+        ga.fillStyle = r() < 0.2 ? '#6a6478' : '#2a2536';
+        ga.fillRect(x, y, 1, 1);
+      }
+    }
+  // riscos que saem do centro, tortos, com brasas nas frestas
+  for (let k = 0; k < 9; k++) {
+    let ang = (k / 9) * Math.PI * 2 + r() * 0.4;
+    let px0 = N / 2;
+    let py0 = N / 2;
+    for (let st = 0; st < 40; st++) {
+      ang += (r() - 0.5) * 0.6;
+      px0 += Math.cos(ang);
+      py0 += Math.sin(ang);
+      const x = Math.round(px0);
+      const y = Math.round(py0);
+      ga.fillStyle = '#0c0a12';
+      ga.fillRect(x, y, 2, 2);
+      if (st > 6 && r() < 0.28) {
+        gb.fillStyle = r() < 0.4 ? '#ffb048' : '#ff6a22';
+        gb.fillRect(x, y, 1, 1);
+        ga.fillStyle = '#ff6a22';
+        ga.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  const mkTex = (c: HTMLCanvasElement) => {
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  return { map: mkTex(a), em: mkTex(b) };
+}
+
 const Z1 = 2;
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
@@ -140,6 +222,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   // os glifos da frase REAGEM ao que o jogador faz (DESIGN.md §24): ACENDER brilha enquanto há fogo; cada número brilha com o braseiro dele (ou enche com a contagem);
   // BRASEIRO pisca ao acender; TEMPO pulsa enquanto uma chama está acabando; CONFIRMADO brilha quando a porta abre (ou quando uma frase confirmada acende)
   let flash = 0;
+  let readT = 0; // há quanto tempo a porta está aberta (a frase é lida)
   let prevLit = 0;
   const glow = (id: string, target: number, dt: number) => {
     for (const p of ins.panels) if (p.id === id) p.fire = (p.fire ?? 0) + (target - (p.fire ?? 0)) * Math.min(1, dt * 6);
@@ -155,6 +238,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     label?: ReturnType<typeof kit.inscribe>;
   }
   const risers: (Riser | null)[] = [];
+  const cracks: THREE.Mesh[] = [];
   const braziers: Brazier[] = spec.braziers.map((b) => {
     const start = kit.group.children.length;
     const br = makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit, b.scale ?? 1);
@@ -172,6 +256,17 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       risers.push({ grp, base: br.boxes.flatMap((bx) => [bx.min.y, bx.max.y]), sockR: br.socket.r, label });
       const touched = br.touched;
       br.touched = () => riseK >= 1 && touched();
+      // DICA VISUAL (DESIGN.md §25): rachaduras com brasas no chão, onde o pilar vai subir
+      const ct = crackTextures(31 + Math.round(b.x * 11 + b.dz * 7));
+      const cm = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.7 * (b.scale ?? 1) + 0.4, 1.7 * (b.scale ?? 1) + 0.4),
+        new THREE.MeshLambertMaterial({ map: ct.map, emissive: 0xff7a2e, emissiveMap: ct.em, emissiveIntensity: 0.5, transparent: true, alphaTest: 0.05, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
+      );
+      cm.rotation.x = -Math.PI / 2;
+      cm.rotation.z = (b.x * 3 + b.dz) % 6.28;
+      cm.position.set(b.x, 0.014, Z0 + b.dz);
+      kit.group.add(cm);
+      cracks.push(cm);
     } else risers.push(null);
     return br;
   });
@@ -215,6 +310,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     lit: boolean;
     fire: number;
     flame: THREE.Sprite;
+    emb: THREE.Sprite; // a brasa fraca do soquete (some quando a frase acende)
     key: string;
   }
   const litLines: LitLine[] = []
@@ -255,7 +351,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           flame.position.set(left ? X0 + 0.14 : X1 - 0.14, fy + 0.04, zc + dir * (-Wb / 2 - sz * 0.9));
           flame.visible = false;
           kit.group.add(flame);
-          litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: false, fire: 0, flame, key: `L${litLines.length}` });
+          // DICA VISUAL (DESIGN.md §25): um soquete de pedra com uma brasa fraca pulsando no começo da frase diz "isto pode ser aceso"
+          const fz = zc + dir * (-Wb / 2 - sz * 0.9);
+          kit.box(0.16, 0.3, 0.26, kit.stone, left ? X0 + 0.08 : X1 - 0.08, fy, fz, false);
+          const emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, depthWrite: false, transparent: true }));
+          emb.scale.set(0.2, 0.2, 1);
+          emb.position.set(left ? X0 + 0.19 : X1 - 0.19, fy, fz);
+          kit.group.add(emb);
+          litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: false, fire: 0, flame, emb, key: `L${litLines.length}` });
         }
         if (ln.rub) {
           li.panels.forEach((_, q) => li.setReveal(q, 0));
@@ -527,7 +630,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         }
         if (risen && riseK < 1) riseK = Math.min(1, riseK + dt / 2.2);
         applyRise();
+        // rachaduras no chão: brasas fracas pulsando; ao liberar, acendem forte enquanto o pilar sobe e depois só ficam as frestas
+        const pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+        for (const c of cracks) (c.material as THREE.MeshLambertMaterial).emissiveIntensity = risen ? (riseK < 1 ? 1.8 : 0.25) : 0.35 + 0.45 * pulse;
         for (const l of litLines) {
+          // a brasa fraca do soquete pulsa enquanto a frase espera
+          l.emb.visible = !risen && l.fire < 0.15;
+          const es = 0.17 + 0.07 * (0.5 + 0.5 * Math.sin(t * 3 + l.z));
+          l.emb.scale.set(es, es, 1);
           l.fire += ((l.lit ? 1 : 0) - l.fire) * Math.min(1, dt * 6);
           l.ins.panels.forEach((p) => (p.fire = l.fire));
           l.flame.visible = l.fire > 0.05;
@@ -693,6 +803,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         prevLit = nLit;
         flash = Math.max(0, flash - dt / 1.3);
         const open = doorOpen > 0.5;
+        // a Casa "lê" a frase quando a porta abre: as palavras acendem uma a uma, da esquerda para a direita
+        readT = open ? readT + dt : 0;
+        ins.panels.forEach((p, k) => {
+          if (open && readT > 0.15 + k * 0.4 && p.id) p.fire = Math.max(p.fire ?? 0, Math.min(1, (readT - (0.15 + k * 0.4)) * 4));
+        });
         const anyLine = litLines.some((l) => l.lit);
         glow('acender', nLit > 0 || anyLine ? 1 : 0, dt);
         glow('brasa', Math.max(flash, open ? 0.6 : 0), dt);
