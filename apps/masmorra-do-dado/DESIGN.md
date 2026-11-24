@@ -342,3 +342,17 @@ Como o jogo é sobre a **escrita**, as pistas são **frases da língua** (e o qu
 - **Descompasso com o plano de ferramentas**: as salas 7 a 11 são antigas e já usam giz e Peso logo depois da 6. O plano é Fogo até ~16, Peso ~17, giz ~28; elas devem sair do começo e voltar nos capítulos 2 e 3.
 - **Tochas**: nas salas de fogo nunca há duas tochas na mesma parede a menos de 3,2 m (`wallTorch` em `fire.ts`); parágrafos ganham uma tocha em cada ponta e uma só entre dois vizinhos.
 - **Salões com várias portas (ideia do jogador)**: o motor liga as salas em fila (eixo z), então um "hall de castelo" ramificado pede ou (a) **anexos dentro do mesmo módulo** (câmaras laterais atrás de portas, algumas abertas, outras trancadas) ou (b) um mundo em grafo (x, z por sala), que é refatoração grande. Começar por (a).
+
+## 21. Curva do capítulo 1 refeita (decisão do jogador) e o "dado que acende escrita"
+**Regra:** salas 1 a 4 ficam como estão (nível 1 a 2). **Da 5 em diante só sobe**: 4, 5, 6, 7... até o Tribunal (10). O jogo deve ser difícil. As salas antigas com Peso/giz (A Entrada, A Lacuna, O Selo, O Salão das Brasas, O Mirante) e o Mastermind (A Confirmação) saíram da lista (RESERVA em `PUZZLES.md`).
+| # | Sala | Nível | Ideia |
+|---|---|---|---|
+| 5 | A Chama Curta | 4 | tempo com 4 braseiros em salão de 27 m: planejar duração e caminho |
+| 6 | O Que a Casa Confirma | 5 | **acender frases CONFIRMADAS** (as de BOATO punem) → **pilares sobem do chão** → ordem por cadeia de ANTES/DEPOIS |
+| 7 (a fazer) | | 6 | acender frases **na ordem** (`lock.ordered`) dada por números; os pilares têm tamanhos (tempo) |
+| 8 (a fazer) | | 7 | ANTES/DEPOIS com GRANDE/PEQUENO e 5 pilares; boatos que contradizem só em parte |
+| 9 (a fazer) | | 8 a 9 | duas paredes que se contradizem + a lei «N BOATO = VERDADE» em versão curta; frases que acendem e **apagam sozinhas** |
+| ~16 | O Tribunal | 10 | (já existe; depois uma versão com 6 pilares) |
+Entre elas: **salões com várias portas** (§20) e salas abertas para explorar, com símbolos nas paredes.
+**Mecânica nova (implementada em `fire.ts`)**: `FireTablet.lit` faz as linhas de um parágrafo **acenderem quando o dado de Fogo as toca** (laranja, com chama ao lado); `FireLine.good` (modo conjunto) ou `FireLine.ord` + `lock.ordered` (modo ordem) dizem quais valem; errar apaga todas e a Casa recusa o fogo por `lock.penalty` s. `FireBrazier.hidden` esconde o pilar sob o chão até a trava ser resolvida (sobe em 2,2 s, com estrondo e legenda). Serve de **ensino** (o jogador aprende a ler a marca antes de precisar dela) e de **puzzle em dois passos** (liberar e depois resolver). Quando o dado só passa perto da frase, ela acende: arremessar ou posicionar junto da parede.
+**Risco conhecido**: o passo 1 (escolher quais frases acender) pode ser vencido por tentativa e erro, porque errar só custa 4 s. Se ficar fácil, aumentar a pena (ex.: pilares que descem de novo) ou usar o modo ordenado.

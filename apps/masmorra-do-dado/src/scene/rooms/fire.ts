@@ -34,6 +34,7 @@ export interface FireBrazier {
   lit?: boolean; // já começa aceso
   scale?: number; // tamanho do braseiro (maior = chama que dura mais, quando a sala usa `burn`)
   burn?: number; // segundos que a chama dura (sem isso, fica acesa)
+  hidden?: boolean; // pilar escondido sob o chão: só sobe quando a trava (`FireSpec.lock`) é resolvida
 }
 
 // uma linha de um parágrafo (uma frase completa, que termina numa marca: CONFIRMADO, BOATO...)
@@ -41,6 +42,8 @@ export interface FireLine {
   words: string[];
   worn?: boolean; // gasta (boato)
   rub?: boolean; // lisa: só aparece esfregando o giz
+  good?: boolean; // (tablete `lit`, modo conjunto) esta frase DEVE ser acesa; as outras punem
+  ord?: number; // (tablete `lit`, modo `ordered`) posição na ordem certa de acender (0, 1, 2...); sem `ord` = engano
 }
 
 // uma frase talhada na parede, num ponto escolhido. Com `lines`, vira um PARÁGRAFO: frases completas, uma embaixo da outra, alinhadas à
@@ -48,6 +51,7 @@ export interface FireLine {
 export interface FireTablet {
   words?: string[];
   lines?: FireLine[]; // parágrafo (só nas paredes 'left' e 'right')
+  lit?: boolean; // as linhas do parágrafo acendem quando o dado de Fogo as toca (ver `FireSpec.lock`)
   wall: 'left' | 'right' | 'backL' | 'backR'; // esquerda, direita, fundo à esquerda ou à direita da porta
   dz?: number; // posição ao longo da parede (distância do fundo); ignorado no fundo
   seal?: boolean; // moldura talhada (frase confirmada)
@@ -71,6 +75,10 @@ export interface FireSpec {
   pillars?: [number, number][]; // [x, dz] colunas no meio da sala
   tablets?: FireTablet[]; // frases na parede (rumores, leis...)
   plate?: { x: number; dz: number }; // placa de pressão (regra `commit`): só o Peso a afunda
+  // TRAVA DE ESCRITA: antes do puzzle de braseiros, o jogador passa o dado de Fogo pelas FRASES da parede (tablete `lit`). Acender as certas faz os pilares
+  // `hidden` subirem do chão (puzzle liberado). Acender uma errada apaga todas as frases acesas e a Casa recusa o fogo por `penalty` segundos.
+  // `ordered`: as frases com `ord` têm de ser acesas nessa ordem; senão (padrão) basta acender todas as `good`, em qualquer ordem.
+  lock?: { ordered?: boolean; penalty?: number };
   fog?: { color: string; near: number; far: number };
   ambient?: { color: number; intensity: number };
 }
@@ -132,13 +140,51 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   void ins; // (a frase fica registrada em kit.inscriptions)
 
   // braseiros e os símbolos nos pedestais
-  const braziers: Brazier[] = spec.braziers.map((b) => makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit, b.scale ?? 1));
-  spec.braziers.forEach((b) => {
+  // pilares escondidos (`hidden`): tudo do braseiro (pedestal, tigela, brasas, sombra, chama e rótulo) vai para um grupo que fica SOB o chão até a trava ser resolvida
+  const RISE = 2.7;
+  interface Riser {
+    grp: THREE.Group;
+    base: number[]; // y original de cada caixa de colisão (min, max, min, max...)
+    sockR: number;
+    label?: ReturnType<typeof kit.inscribe>;
+  }
+  const risers: (Riser | null)[] = [];
+  const braziers: Brazier[] = spec.braziers.map((b) => {
+    const start = kit.group.children.length;
+    const br = makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit, b.scale ?? 1);
+    let label: ReturnType<typeof kit.inscribe> | undefined;
     if (b.mark) {
       const sc = b.scale ?? 1;
-      kit.inscribe({ words: [b.mark], x: b.x, y: 0.45 * sc, z: Z0 + b.dz + 0.305 * sc, nx: 0, nz: 1, size: 0.5 * Math.min(1, sc), age: 0.12, frame: true, seed: 21 + Math.round(b.x * 7) });
+      label = kit.inscribe({ words: [b.mark], x: b.x, y: 0.45 * sc, z: Z0 + b.dz + 0.305 * sc, nx: 0, nz: 1, size: 0.5 * Math.min(1, sc), age: 0.12, frame: true, seed: 21 + Math.round(b.x * 7) });
     }
+    if (b.hidden && spec.lock) {
+      const grp = new THREE.Group();
+      for (const k of kit.group.children.slice(start)) grp.add(k);
+      kit.group.add(grp);
+      grp.position.y = -RISE;
+      if (label) label.hidden = true; // enquanto está no chão, olhar para o rótulo não manda símbolos ao diário
+      risers.push({ grp, base: br.boxes.flatMap((bx) => [bx.min.y, bx.max.y]), sockR: br.socket.r, label });
+      const touched = br.touched;
+      br.touched = () => riseK >= 1 && touched();
+    } else risers.push(null);
+    return br;
   });
+  let riseK = spec.lock ? 0 : 1;
+  const applyRise = () => {
+    const e = riseK * riseK * (3 - 2 * riseK);
+    risers.forEach((r, i) => {
+      if (!r) return;
+      const dy = -RISE * (1 - e);
+      r.grp.position.y = dy;
+      braziers[i].boxes.forEach((bx, k) => {
+        bx.min.y = r.base[k * 2] + dy;
+        bx.max.y = r.base[k * 2 + 1] + dy;
+      });
+      braziers[i].socket.r = riseK >= 1 ? r.sockR : 0;
+      if (r.label) r.label.hidden = riseK < 1;
+    });
+  };
+  applyRise();
 
   // frases na parede (rumores, leis...)
   const rubs: { ins: ReturnType<typeof kit.inscribe>; wall: THREE.Mesh; v: number[] }[] = [];
@@ -151,6 +197,21 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     else kit.torch(X1 - 0.1, y, z, -1, 0, phase);
   };
   const blocks: Record<'left' | 'right', [number, number][]> = { left: [], right: [] }; // onde ficam os parágrafos (z de cada ponta)
+  // frases que o Fogo acende (trava de escrita)
+  interface LitLine {
+    ins: ReturnType<typeof kit.inscribe>;
+    x: number;
+    y: number;
+    z: number;
+    hw: number; // meia largura da frase
+    good: boolean;
+    ord: number;
+    lit: boolean;
+    fire: number;
+    flame: THREE.Sprite;
+    key: string;
+  }
+  const litLines: LitLine[] = []
   // largura exata de uma frase (m): cada símbolo ocupa (n + 0,29) alturas, e o espaço entre palavras é 0,55
   const lineW = (words: string[], sz: number) => words.reduce((a, w) => a + (Math.max(1, glyphsOf(w).length) + 0.2917) * sz, 0) + 0.55 * sz * (words.length - 1);
   (spec.tablets ?? []).forEach((t, i) => {
@@ -181,6 +242,15 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           seed: 40 + i * 13 + k * 7,
         });
         first.push(li);
+        if (t.lit) {
+          const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5, depthWrite: false }));
+          flame.scale.set(0.5, 0.42, 1);
+          const fy = yc + ((n - 1) / 2 - k) * lh;
+          flame.position.set(left ? X0 + 0.14 : X1 - 0.14, fy + 0.04, zc + dir * (-Wb / 2 - sz * 0.9));
+          flame.visible = false;
+          kit.group.add(flame);
+          litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: false, fire: 0, flame, key: `L${litLines.length}` });
+        }
         if (ln.rub) {
           li.panels.forEach((_, q) => li.setReveal(q, 0));
           li.hidden = true;
@@ -313,9 +383,25 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const left = spec.braziers.map(() => Infinity); // quanto falta para cada chama se apagar
   let solved = false;
   let lastRubRev = -1;
+  let lockProg = 0; // (trava ordenada) quantas frases já foram acesas na ordem certa
+  let lockCold = 0; // a Casa recusa o fogo nas frases depois de um erro
+  let lockBeep = 0;
+  let risen = !spec.lock; // pilares já subiram?
+  const needed = litLines.filter((l) => (spec.lock?.ordered ? l.ord >= 0 : l.good)).length;
 
   const reset = () => {
     plateDown = false;
+    litLines.forEach((l) => {
+      l.lit = false;
+      l.fire = 0;
+      l.flame.visible = false;
+      l.ins.panels.forEach((p) => (p.fire = 0));
+    });
+    lockProg = 0;
+    lockCold = 0;
+    risen = !spec.lock;
+    riseK = spec.lock ? 0 : 1;
+    applyRise();
     braziers.forEach((b, i) => b.light(!!spec.braziers[i].lit, true));
     progress = 0;
     failT = -1;
@@ -331,7 +417,12 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
   };
 
-  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__fire = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))) });
+  if (import.meta.env.DEV) {
+    const g = globalThis as Record<string, unknown>;
+    const fn = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rise: +riseK.toFixed(2), lockCold: +lockCold.toFixed(1), lines: litLines.map((l) => l.lit), spots: litLines.map((l) => [l.x, l.y, l.z, l.hw]), rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))) });
+    g.__fire = fn; // a última sala construída
+    ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
+  }
   kit.bake();
 
   return {
@@ -350,7 +441,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     boxes: [...boxes, ...kit.boxes],
     sockets: braziers.map((b) => b.socket),
     rects() {
-      const r: ReturnType<Room['rects']> = [...rects, ...braziers.map((b) => b.rect), ...kit.rects, ...entrance.rects()];
+      const r: ReturnType<Room['rects']> = [...rects, ...braziers.filter((_, i) => !risers[i] || riseK >= 1).map((b) => b.rect), ...kit.rects, ...entrance.rects()];
       r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
       r.push(...door.rects(doorOpen > 0.85));
       return r;
@@ -386,6 +477,60 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       kit.tick(dt, t);
       const rule = spec.rule;
       let want = 0;
+      // ── trava de escrita: o dado de Fogo acende as frases; as certas fazem os pilares subirem do chão ──
+      if (spec.lock && litLines.length) {
+        const lk = spec.lock;
+        const d = ctx.die;
+        if (!risen && !ctx.paused()) {
+          if (lockCold > 0) {
+            lockCold -= dt;
+            lockBeep -= dt;
+          }
+          if (lockCold <= 0 && (d.state === 'flying' || d.state === 'rest') && d.face === 3) {
+            let best: LitLine | null = null;
+            let bd = Infinity;
+            for (const l of litLines) {
+              if (l.lit) continue;
+              const dz = Math.abs(d.pos.z - l.z);
+              const dy = Math.abs(d.pos.y - l.y);
+              if (dz < l.hw + 0.45 && dy < 0.4 && Math.abs(d.pos.x - l.x) < 1.1 && dy + dz * 0.2 < bd) {
+                bd = dy + dz * 0.2;
+                best = l;
+              }
+            }
+            if (best) {
+              const ok = lk.ordered ? best.ord === lockProg : best.good;
+              if (ok) {
+                best.lit = true;
+                if (lk.ordered) lockProg++;
+                ctx.sfx('ignite', best.key);
+                if (litLines.filter((l) => l.lit).length >= needed) {
+                  risen = true;
+                  ctx.sfx('door');
+                  ctx.caption('Algo se move sob o chão', 'Os pilares de fogo subiram. O puzzle está liberado.', '#ffd36b');
+                } else ctx.caption('A frase acendeu', 'A Casa aceitou esta.', '#ff9a3c');
+              } else {
+                litLines.forEach((l) => (l.lit = false));
+                lockProg = 0;
+                lockCold = lk.penalty ?? 4;
+                ctx.sfx('error');
+                ctx.caption('A Casa apagou as frases', 'Aquela não era a certa. Leia as marcas.', '#cfc6e8');
+              }
+            }
+          }
+        }
+        if (risen && riseK < 1) riseK = Math.min(1, riseK + dt / 2.2);
+        applyRise();
+        for (const l of litLines) {
+          l.fire += ((l.lit ? 1 : 0) - l.fire) * Math.min(1, dt * 6);
+          l.ins.panels.forEach((p) => (p.fire = l.fire));
+          l.flame.visible = l.fire > 0.05;
+          if (l.flame.visible) {
+            l.flame.material.map = kit.frames[Math.floor(t * 8 + l.z) % kit.frames.length];
+            l.flame.scale.set(0.5 * l.fire, 0.42 * l.fire, 1);
+          }
+        }
+      }
       // esfregar o giz num tablete liso faz as palavras aparecerem (só quando o desenho muda)
       if (rubs.length && ctx.chalk.revision !== lastRubRev) {
         lastRubRev = ctx.chalk.revision;

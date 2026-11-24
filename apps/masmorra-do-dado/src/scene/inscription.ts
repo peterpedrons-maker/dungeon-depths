@@ -31,6 +31,7 @@ export interface InscriptionPanel {
   id: string | null; // null = lacuna
   mesh: THREE.Mesh;
   mat: THREE.MeshLambertMaterial;
+  fire?: number; // 0..1: a palavra foi acesa pelo Fogo (brilha laranja)
 }
 
 export interface Inscription {
@@ -250,7 +251,12 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
     },
     extras: plaqueMat ? [plaqueMat] : [],
     setGlow(v) {
-      for (const p of panels) if (p.id) p.mat.emissiveIntensity = v;
+      for (const p of panels) {
+        if (!p.id) continue;
+        const f = p.fire ?? 0;
+        p.mat.emissive.setRGB(1, 1 - 0.5 * f, 1 - 0.85 * f); // acesa: a cal vira brasa
+        p.mat.emissiveIntensity = v + 1.15 * f;
+      }
       for (const m of ins.extras) m.emissiveIntensity = v;
     },
     reveal() {

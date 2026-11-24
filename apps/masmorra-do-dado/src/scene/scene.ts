@@ -27,11 +27,7 @@ import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
-import { FIRE_ORDEM, FIRE_SEGREDO, FIRE_TEMPO } from './rooms/fireRooms';
-import { buildRoom1 } from './rooms/room1';
-import { buildRoom2 } from './rooms/room2';
-import { buildRoom3 } from './rooms/room3';
-import { buildRoom4 } from './rooms/room4';
+import { FIRE_FRASES, FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 
@@ -41,19 +37,17 @@ const FOG = '#0b0912';
 const LAB = new URLSearchParams(location.search).has('lab');
 const BUILDERS: RoomBuilder[] = LAB ? [buildLab] : MAIN_BUILDERS();
 function MAIN_BUILDERS(): RoomBuilder[] {
+  // Capítulo 1 (só Fogo). Níveis: 1, 1, 1-2, 2, 4, 5, ... 10. Faltam as salas de nível 6 a 9 entre a 6 e o Tribunal (ver DESIGN.md §21).
   return [
-  (c) => buildVestibulo(c, 1),
-  (c) => buildVestibulo(c, 2),
-  (c) => buildVestibulo(c, 3),
-  (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
-  (c) => buildFireRoom(c, FIRE_TEMPO), // TEMPO: as chamas se apagam; o maior dura mais
-  (c) => buildFireRoom(c, FIRE_SEGREDO), // ORDEM SECRETA: dedução pela contagem de acertos
-  buildRoom1,
-  (c) => buildVestibulo(c, 4), // A Lacuna: o 1º puzzle que pede o giz (que o jogador acabou de achar)
-  buildRoom2,
-  buildRoom3,
-  buildRoom4,
-  buildTribunal, // NÍVEL 10 (provisório aqui no fim; a posição final é a sala ~16, depois de as salas de ensino darem as palavras): rumores, marcas e lógica
+    (c) => buildVestibulo(c, 1),
+    (c) => buildVestibulo(c, 2),
+    (c) => buildVestibulo(c, 3),
+    (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
+    (c) => buildFireRoom(c, FIRE_TEMPO), // NÍVEL 4. TEMPO: 4 braseiros, as chamas se apagam; o maior dura mais; todos acesos ao mesmo tempo
+    (c) => buildFireRoom(c, FIRE_FRASES), // NÍVEL 5. Acende as frases CONFIRMADAS com o Fogo -> os pilares sobem do chão -> ordem dada por ANTES/DEPOIS
+    buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala ~16, depois das salas de ensino e dos níveis 6 a 9)
+    // Reserva (fora do jogo por ora; usam Peso e giz, que só chegam nos capítulos 2 e 3): room1.ts (A Entrada, cena do Escrivão que dá o giz), vestibulo.ts v4 (A Lacuna),
+    // room2.ts (O Selo), room3.ts (O Salão das Brasas), room4.ts (O Mirante); FIRE_SEGREDO (A Confirmação, Mastermind) em fireRooms.ts; lab.ts (A Placa que Julga).
   ];
 }
 
