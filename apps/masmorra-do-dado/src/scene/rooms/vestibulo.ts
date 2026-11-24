@@ -223,18 +223,22 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   let nudge = -1; // v1: segundos desde que o dado pediu para acender (-1 = ainda não pediu); se demorar, ele repete
   const doorPos = new THREE.Vector3(0, 1.0, Z0 + 0.5);
 
-  // ── sala 1: a porta trancada e o dado que fala ──
+  // ── sala 1: a porta trancada, o dado que CAI do poço e a cena de pegá-lo (DESIGN.md §29) ──
   const interactables: Room['interactables'] = [];
+  const diePos = new THREE.Vector3(); // onde o dado está no chão (acompanha onde ele parou)
+  let pickingUp = false;
+  let murmurT = 0;
+  let murmurN = 0;
+  // o que o dado murmura enquanto espera ajuda: bem curto, em glifos
+  const MURMURS: string[][] = [['ajudar', 'eu'], ['voce', 'vir'], ['eu', 'esperar']];
   if (v === 1 && dieLie) {
-    const lie = dieLie;
     interactables.push({
       pos: doorPos,
       r: 2.6,
       label: 'Tentar abrir a porta',
-      enabled: () => !ctx.have().die && doorOpen < 0.05,
+      enabled: () => !ctx.have().die && doorOpen < 0.05 && !pickingUp,
       use: () => {
-        const eye = new THREE.Vector3(lie.x, lie.y + 0.3, lie.z);
-        if (tried) {
+        if (tried || ctx.flag('caiu')) {
           ctx.say([{ who: 'thought', text: 'Continua trancada.' }], { block: true });
           return;
         }
@@ -243,45 +247,47 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         ctx.say([{ who: 'thought', text: 'Trancada. Empurro, puxo… nada se mexe.' }], {
           block: true,
           onEnd: () => {
-            // alguma coisa brilha no entulho, lá atrás: o dado caído "fala"
-            ctx.lookAt(eye, 1.3);
-            ctx.dieGlow(0.8);
+            // um barulho lá em cima: algo cai pelo poço (a câmera vira para o buraco)
             ctx.freeze(true);
-            window.setTimeout(() => {
-              ctx.freeze(false);
+            ctx.dropDie(() => {
               ctx.say(
                 [
-                  { who: 'thought', text: 'Alguma coisa brilhou lá no entulho. Um dado?' },
-                  { who: 'boato', glyphs: ['voce', 'condenado', 'boato'] },
-                  { who: 'thought', text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
+                  { who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' },
+                  { who: 'boato', glyphs: ['eu', 'cair'] },
+                  { who: 'boato', glyphs: ['voce', 'ajudar', 'eu', 'perg'] },
                 ],
-                {
-                  block: true,
-                  onEnd: () => {
-                    ctx.freeze(true);
-                    // o dado voa até a mão
-                    ctx.giveDie(() => {
-                      ctx.freeze(false);
-                      ctx.say(
-                        [
-                          { who: 'thought', text: 'Pesa na mão como se me conhecesse.' },
-                          { who: 'thought', text: 'Na parede, perto da porta, alguém escreveu alguma coisa. E aquele braseiro, apagado…' },
-                        ],
-                        {
-                          block: true,
-                          // o dado "conversa": em glifos, diz ao jogador para acender o braseiro (ACENDER BRASEIRO), com o desenho dele
-                          onEnd: () => {
-                            ctx.dieSay(['acender', 'brasa'], { pic: 'braseiro', delay: 0.5 });
-                            nudge = 0;
-                          },
-                        },
-                      );
-                    });
-                  },
-                },
+                { block: true, onEnd: () => ctx.freeze(false) },
               );
-            }, 1500);
+            });
           },
+        });
+      },
+    });
+    // pegar o dado do chão (depois de ele ter caído): ele vai para a mão, vem para o CENTRO da tela e explica, em glifos
+    interactables.push({
+      pos: diePos,
+      r: 1.9,
+      label: 'Pegar o dado',
+      enabled: () => ctx.flag('caiu') && !ctx.have().die && ctx.die.state === 'rest' && !pickingUp,
+      use: () => {
+        pickingUp = true;
+        ctx.freeze(true);
+        ctx.dieGlow(1);
+        ctx.lookAt(diePos, 0.6);
+        ctx.giveDie(() => {
+          // o dado está na mão: cinema (faixas, dado grande no centro) e a explicação, uma frase curta por vez
+          ctx.dieCenter(true);
+          ctx.dieSay(['voce', 'condenado'], { delay: 1.3 });
+          ctx.dieSay(['eu', 'boato'], { delay: 4.6 });
+          ctx.dieSay(['eu', 'ajudar', 'voce'], { delay: 7.9 });
+          ctx.dieSay(['acender', 'brasa'], { pic: 'braseiro', delay: 11.4 });
+          window.setTimeout(() => {
+            ctx.dieCenter(false);
+            ctx.freeze(false);
+            pickingUp = false;
+            nudge = 0; // a partir daqui, se o jogador demorar a acender, o dado repete o pedido
+            ctx.say([{ who: 'thought', text: 'Pesa na mão como se me conhecesse.' }], { block: true });
+          }, 15500);
         });
       },
     });
@@ -345,6 +351,18 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     holdsDie: () => false,
     update(dt, t) {
       kit.tick(dt, t);
+      if (v === 1 && ctx.flag('caiu') && !ctx.have().die) {
+        // o dado no chão pede ajuda: pulsa e murmura, enquanto o jogador não o pega
+        diePos.copy(ctx.die.pos);
+        ctx.dieGlow(0.5 + 0.35 * Math.sin(t * 2.4));
+        if (!pickingUp && !ctx.paused()) {
+          murmurT += dt;
+          if (murmurT > 9) {
+            murmurT = 0;
+            ctx.say([{ who: 'boato', glyphs: MURMURS[murmurN++ % MURMURS.length] }], { block: false });
+          }
+        }
+      }
       // acender
       for (const b of braziers) {
         if (v !== 4 && b.touched()) {

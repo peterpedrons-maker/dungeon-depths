@@ -222,6 +222,10 @@ export default function App() {
     <div className="stage">
       <canvas ref={canvasRef} />
       <div className="vignette" />
+      <div className={`bars${uis.bars ? ' on' : ''}`} aria-hidden="true">
+        <i />
+        <i />
+      </div>
       <div className="crosshair" />
 
       <div className="corner">

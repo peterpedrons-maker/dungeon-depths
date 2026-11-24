@@ -43,11 +43,18 @@
 @media (pointer: coarse) { .corner button { width: 40px; height: 40px; } }
 
 /* balão do dado falante: pequeno, perto do dado (embaixo à direita), não segura toques */
-.boato { position: absolute; left: var(--die-x, 72%); top: var(--die-y, 58%); transform: translate(-50%, calc(-100% - 19vh)); z-index: 14; display: flex; align-items: center; gap: 6px; padding: 6px 10px; pointer-events: none;
+.boato { position: absolute; left: var(--die-x, 72%); top: var(--die-y, 58%); transform: translate(-50%, calc(-100% - var(--die-up, 19vh))); z-index: 14; display: flex; align-items: center; gap: 6px; padding: 6px 10px; pointer-events: none;
   background: rgba(10, 8, 20, 0.82); border: 2px solid rgba(201, 163, 90, 0.7); animation: bin 0.25s steps(4) both; }
-@keyframes bin { from { opacity: 0; transform: translate(-50%, calc(-100% - 19vh + 8px)); } to { opacity: 1; transform: translate(-50%, calc(-100% - 19vh)); } }
+@keyframes bin { from { opacity: 0; transform: translate(-50%, calc(-100% - var(--die-up, 19vh) + 8px)); } to { opacity: 1; transform: translate(-50%, calc(-100% - var(--die-up, 19vh))); } }
 .boato::after { content: ''; position: absolute; left: 50%; bottom: -9px; width: 10px; height: 10px; background: rgba(10, 8, 20, 0.95);
   border-right: 2px solid rgba(201, 163, 90, 0.7); border-bottom: 2px solid rgba(201, 163, 90, 0.7); transform: translateX(-50%) rotate(45deg); }
 .prompt { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); z-index: 12; padding: 7px 14px; pointer-events: none;
   background: rgba(10, 8, 20, 0.85); border: 2px solid rgba(255, 211, 107, 0.8); color: #ffd36b; font-size: 17px; letter-spacing: 0.05em; }
 .prompt b { color: #fff; margin-right: 8px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 0 6px; }
+
+/* faixas de cinema nas cenas (a história toma a tela) */
+.bars { position: absolute; inset: 0; z-index: 13; pointer-events: none; }
+.bars i { position: absolute; left: 0; right: 0; height: 11vh; background: #000; transition: transform 0.7s ease; }
+.bars i:first-child { top: 0; transform: translateY(-100%); }
+.bars i:last-child { bottom: 0; transform: translateY(100%); }
+.bars.on i { transform: none; }

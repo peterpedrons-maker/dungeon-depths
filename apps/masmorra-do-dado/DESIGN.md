@@ -412,3 +412,11 @@ O dado da mão **olha, reage, pisca e cochila** (tudo sutil: inclinação, pulin
 
 ## 28. Recomeçar o jogo do zero (implementado em `App.tsx`)
 Botão **ⓘ** (canto) > **Recomeçar o jogo do zero** > confirmação ("Sim, apagar tudo e recomeçar"). Apaga **todas** as chaves `mdd-*` do aparelho (progresso, diário com símbolos, notas, mapa e carimbos, ajudas do dado já vistas), **menos a preferência de som** (`mdd-audio`), e recarrega a página sem parâmetros: o jogo recomeça com a **cena de acordar**, sem dado nem giz. Antes de apagar, desliga a gravação (`progress.noSave`, `diary.noSave`) para nada ser regravado. O botão "Jogar de novo" do fim da demonstração continua só reiniciando a sala 1.
+
+## 29. A abertura revista: o dado cai do poço (implementado; substitui a cena do dado já no chão)
+O dado **não está mais no chão ao acordar**. Sequência (tudo em glifos e bem curto):
+1. **Porta trancada** ("E · Tentar abrir"): o jogador pensa "Trancada…" e, na hora, **um barulho lá em cima** (duas batidas no poço); a **câmera vira para o buraco** (jogador parado, `freeze`).
+2. **O dado despenca** pelo poço (`ctx.dropDie`, física do dado), bate no chão e para; **a câmera o acompanha na queda** (do buraco até o chão). Marco `caiu` guardado: se o jogador recarregar, o dado já está no chão.
+3. Depois de parar: pensamento "Caiu alguma coisa. Um dado… e ele brilha." e o dado fala (`EU CAIR`, `VOCÊ AJUDAR EU ?`). **O jogador toma o controle** enquanto o dado **pulsa e murmura** (`AJUDAR EU`, `VOCÊ VIR`, `EU ESPERAR`, a cada ~9 s).
+4. **"Pegar o dado" (E/AGIR)**: o dado voa para a mão e vem para o **centro da tela, maior, de frente** (faixas de cinema, `ctx.dieCenter`, olhos do jogador sobem do chão; o rosto aparece) e **explica**, uma frase por vez: `VOCÊ CONDENADO` · `EU BOATO` · `EU AJUDAR VOCÊ` · `ACENDER BRASEIRO` (+ desenho do braseiro). Depois volta para a mão e o jogador retoma o controle; a comemoração do 1º braseiro (§27) continua igual.
+- Novos: `Ctx.dropDie`, `Ctx.dieCenter`, `ui.setBars` (faixas, `.bars` em `story.css`), flag `caiu`, `--die-up` (altura do balão do dado). Pendente: som próprio para a queda (hoje são as batidas do dado) e um tremor do dado de lá de cima antes de cair.

@@ -12,10 +12,9 @@ Olhar uns segundos para uma inscrição na parede manda os símbolos dela ao di�
 
 ## Sala 1 — O Poço  (só ACENDER)
 Você acorda no chão, **sem nada nas mãos**, olha o poço de luz no teto e a cena termina. A sala é pequena.
-1. Vá até a **porta** (fundo da sala): aparece "E · Tentar abrir a porta" (no celular, o botão AGIR). **Não abre.**
-2. Um brilho no entulho (perto da luz do poço): é o **dado**. Ele "fala" em glifos (`VOCÊ · CONDENADO · BOATO`) e voa até a sua mão.
-3. Agora você tem o dado, na face **Fogo (3)**. Na parede esquerda da porta está talhada **uma só palavra: ACENDER**. Quando você acende o braseiro, **o glifo brilha** (assim você aprende o que ele significa).
-   Acenda o **único braseiro** (canto direito, perto da porta): arremesse o dado dentro da tigela ou posicione-o nela. A porta abre.
+1. Vá até a **porta** (fundo da sala): aparece "E · Tentar abrir a porta" (no celular, o botão AGIR). **Não abre.** Logo em seguida você ouve **um barulho lá em cima**: a câmera vira para o poço e **o dado despenca pelo buraco**, bate no chão e para junto do entulho, brilhando. Ele "fala" em glifos (`EU CAIR`, `VOCÊ AJUDAR EU ?`) e depois **murmura** (`AJUDAR EU`, `VOCÊ VIR`, `EU ESPERAR`) a cada ~9 s enquanto você não o pega.
+2. Você tem o controle: aproxime-se do dado e **pressione E / AGIR ("Pegar o dado")**. O dado voa para a sua mão, vem para o **centro da tela** (com faixas de cinema) e explica, uma frase curta por vez: `VOCÊ CONDENADO` · `EU BOATO` · `EU AJUDAR VOCÊ` · `ACENDER BRASEIRO` (com o desenho do braseiro).
+3. Agora você tem o dado, na face **Fogo (3)**. Na parede esquerda da porta está talhada **uma só palavra: ACENDER**. Acenda o **único braseiro** (canto direito, perto da porta): arremesse o dado dentro da tigela ou posicione-o nela. O glifo brilha, o dado comemora (`VOCÊ ACENDER CONFIRMADO`, `EU SENTIR ALEGRIA`) e a porta abre. Se você demorar 50 s, ele repete o pedido.
 - O dado queima ~1,5 s na 1ª vez (rápido nas seguintes). **Você ainda não tem o giz.**
 
 ## Sala 2 — O Vestíbulo  (ACENDER · DOIS)  — o salão comprido, com colunas

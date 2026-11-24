@@ -419,6 +419,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return null;
   };
   // posição do dado na tela, em % da janela (o balão de fala se centra nela)
+  let dieUp = 19;
   let dieCssX = -1;
   let dieCssY = -1;
   const publishDieScreen = () => {
@@ -431,6 +432,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const st = document.documentElement.style;
       st.setProperty('--die-x', `${x.toFixed(2)}%`);
       st.setProperty('--die-y', `${y.toFixed(2)}%`);
+    }
+    const up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
+    if (Math.abs(up - dieUp) > 0.2) {
+      dieUp = up;
+      document.documentElement.style.setProperty('--die-up', `${up.toFixed(1)}vh`);
     }
   };
   // ── o dado "traduz" o glifo: ao olhar uma palavra que tem desenho, a face de CIMA mostra o rabisco por alguns segundos ──
@@ -762,6 +768,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let camTween: null | { y0: number; p0: number; y1: number; p1: number; t: number; dur: number } = null;
   let intro: null | { ph: number; t: number } = null;
   let burn: null | { t: number; dur: number } = null;
+  let dropWatch: { t: number; cb: () => void } | null = null; // esperando o dado que caiu do poço parar no chão
+  let dieCine = 0; // 0 = dado na mão de sempre, 1 = dado no centro da tela (cena)
+  let dieCineTarget = 0;
   let pickup: (() => void) | null = null; // chamado quando o dado caído chega na mão
   let dieRoom = 0; // sala onde o dado está (a posição dieP é local a ela)
   let gems = 0;
@@ -826,6 +835,46 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       dieGlow: (v) => {
         talkGlow = v;
+      },
+      dropDie: (onLanded) => {
+        const sh = rooms[0].shaft;
+        if (!sh) {
+          onLanded();
+          return;
+        }
+        const top = sh.y - 2.5; // o teto da sala (o poço sai dele)
+        // 1) o barulho de algo caindo lá em cima; no mesmo instante a câmera vira para o buraco
+        sfx.bounce(2.6);
+        window.setTimeout(() => sfx.bounce(4.5), 420);
+        camera.updateMatrixWorld();
+        const wx = sh.x + offs[0].x - pos.x;
+        const wz = sh.z + offs[0].z - pos.z;
+        const y1 = Math.atan2(-wx, -wz);
+        const dy = Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw));
+        camTween = { y0: yaw, p0: pitch, y1: yaw + dy, p1: 1.0, t: 0, dur: 1.0 };
+        // 2) ele despenca pelo buraco
+        window.setTimeout(() => {
+          dieRoom = 0;
+          dieP.set(sh.x + 0.06, top - 0.3, sh.z + 0.04);
+          dieV.set(0.5, -1.5, 0.35);
+          dieW.set(9, 6, -7);
+          worldDie.position.copy(dieP).add(offs[0]);
+          worldModel.scale.setScalar(0.42);
+          worldDie.visible = true;
+          thrownFace = 3;
+          dieThrown = true;
+          dieState = 'flying';
+          restTimer = 0;
+          dropWatch = { t: 0, cb: onLanded };
+        }, 1000);
+      },
+      dieCenter: (on) => {
+        dieCineTarget = on ? 1 : 0;
+        ui.setBars(on);
+        if (on) {
+          life.react('perk');
+          camTween = { y0: yaw, p0: pitch, y1: yaw, p1: -0.04, t: 0, dur: 1.4 }; // os olhos sobem do chão: o dado fala de frente
+        }
       },
       dieSay: (glyphs, o) => {
         window.setTimeout(() => {
@@ -1005,7 +1054,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     worldDie.position.copy(dieP).add(offs[0]);
     worldDie.quaternion.copy(restQ);
     worldModel.scale.setScalar(0.42);
-    worldDie.visible = true;
+    // o dado SÓ está no chão depois de ter caído do poço (cena da porta trancada, `ctx.dropDie`); antes disso a sala não tem dado
+    worldDie.visible = progress.has('caiu');
     thrownFace = 3;
     dieState = 'rest';
     restReturn = 0;
@@ -2147,6 +2197,25 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
 
+    if (dropWatch && !camTween && (dieState === 'flying' || dieState === 'rest')) {
+      // a câmera ACOMPANHA o dado despencando (cinema): do buraco até o chão
+      const wx = dieP.x + offs[0].x - pos.x;
+      const wy = dieP.y + offs[0].y - pos.y;
+      const wz = dieP.z + offs[0].z - pos.z;
+      const ty = Math.atan2(-wx, -wz);
+      const tp = clamp(Math.atan2(wy, Math.hypot(wx, wz)), -1.0, 1.2);
+      yaw += Math.atan2(Math.sin(ty - yaw), Math.cos(ty - yaw)) * Math.min(1, dt * 5);
+      pitch += (tp - pitch) * Math.min(1, dt * 5);
+    }
+    if (dropWatch && dieState === 'rest') {
+      dropWatch.t += dt;
+      if (dropWatch.t > 0.8) {
+        const f = dropWatch.cb;
+        dropWatch = null;
+        progress.set('caiu');
+        f();
+      }
+    }
     updateBurn(dt, t);
     chatTick(dt, moving);
     if (dieState !== emittedDie) {
@@ -2213,6 +2282,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (dsp < -Math.PI) dsp += Math.PI * 2;
       spin += dsp * Math.min(1, dt * 5);
       if (sketchOn.age >= SK_LIFE) endSketch();
+    } else if (dieCine > 0.3) {
+      // na cena, o dado para de girar com uma face de frente para o jogador (o rosto aparece)
+      let dsp = (Math.PI - spin) % (Math.PI * 2);
+      if (dsp > Math.PI) dsp -= Math.PI * 2;
+      if (dsp < -Math.PI) dsp += Math.PI * 2;
+      spin += dsp * Math.min(1, dt * 3);
     } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) spin += dt * 0.8;
     else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
@@ -2224,11 +2299,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
     wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012, 0, Math.sin(t * 0.8) * 0.012));
     dieHolder.quaternion.copy(lo.quat).multiply(curQ).multiply(wobble);
+    dieCine += (dieCineTarget - dieCine) * Math.min(1, dt * 2.6);
+    const cn = dieCine * dieCine * (3 - 2 * dieCine);
     const du = ease(dieU);
-    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale);
+    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 0.75 * cn));
     dieGroup.position.set(
-      handX + (-handX - handX) * du + lo.dx,
-      dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy,
+      (handX + (-handX - handX) * du) * (1 - cn) + lo.dx,
+      dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + 0.1 * cn,
       -1,
     );
     updateRostos(dt);

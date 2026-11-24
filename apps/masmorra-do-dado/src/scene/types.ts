@@ -53,6 +53,9 @@ export interface Ctx {
   giveChalk(): void; // o jogador pega o giz
   dieGlow(v: number): void; // o dado caído brilha (0..1) quando "fala"
   // o dado da mão FALA em glifos (balão sobre ele); `pic` = desenho que acompanha, `delay` em s, `joy` = comemora (pulo e balanço)
+  // o dado cai do poço (1ª sala): o som, a câmera olha pro buraco, ele despenca e para no chão; `onLanded` é chamado ~0,8 s depois de parar
+  dropDie(onLanded: () => void): void;
+  dieCenter(on: boolean): void; // cena: o dado da mão vem pro centro da tela, maior, de frente, com faixas de cinema
   dieSay(glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }): void;
   paused(): boolean; // cena, conversa ou diário em andamento: cronômetros de puzzle devem esperar
   freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
