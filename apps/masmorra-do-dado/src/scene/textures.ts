@@ -518,13 +518,6 @@ function rosto(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: 
     for (let y = -ry; y <= ry; y++)
       for (let x = -rx; x <= rx; x++) if ((x * x) / (rx * rx) + (y * y) / (ry * ry) <= 1.02 && (!pred || pred(x, y))) px(ctx, Math.round(cx + x), Math.round(cy + y), color);
   };
-  const line = (x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
-    const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-    for (let i = 0; i <= steps; i++) {
-      const t = steps ? i / steps : 0;
-      px(ctx, Math.round(x0 + (x1 - x0) * t - w / 2), Math.round(y0 + (y1 - y0) * t - w / 2), color, w, w);
-    }
-  };
   // olho: contorno, branco, íris (a GEMA, na cor da face), pupila, brilho; `lid` esconde parte do olho (pálpebra); 'happy' e 'wink' são olhos FECHADOS (um arco)
   type Lid = 'none' | 'angryL' | 'angryR' | 'happy' | 'half' | 'wink';
   const eye = (cx: number, cy: number, o: { rx?: number; ry?: number; look?: [number, number]; lid?: Lid; pup?: number } = {}) => {
