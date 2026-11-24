@@ -274,3 +274,14 @@ O personagem acorda **sem dado e sem giz**. Ordem de descoberta:
 3. **Interação genérica** (`Room.interactables`, `ctx.have/giveDie/giveChalk`): prompt na tela, E / AGIR / toque. Os botões do celular só aparecem quando há o que usar.
 4. **Dado falante** (`story/chatter.ts`, `ui/BoatoBubble.tsx`): balão pequeno com 2–4 símbolos, raro (a cada 45–90 s), nunca durante conversa/diário; reage a queimar, placa, porta e salas novas, e reclama se o jogador fica parado. Os símbolos que ele diz vão para o diário.
 5. **Tamanhos de sala variam** no começo: O Poço 6,8×11 m (teto 3,2), O Vestíbulo 9,4×17 (3,9, colunas), Os Quatro 7,4×13,5, A Lacuna 6,6×10 (teto 3,0).
+
+## 16. Construtor de salas de fogo (implementado: `rooms/fire.ts`, `rooms/fireRooms.ts`)
+Uma sala de braseiros é uma **descrição** (`FireSpec`): tamanho, tema, braseiros (posição, símbolo no pedestal, se já começa aceso), colunas, a
+**regra** e a frase na parede. O construtor monta o resto. Regras prontas: `exact` (exatamente N acesos; com mais, a Casa apaga tudo) e `order`
+(acender na ordem certa; fora de ordem apaga tudo). Outras (tempo, corda a queimar, várias portas) entram como novas regras, uma de cada vez.
+- **Uma sala por vez, bem pensada** (regra do projeto): cada sala ensina UMA ideia e está descrita em `PUZZLES.md` com o que ensina.
+- Salas especiais (poço, lacuna, selo, cenas do Escrivão) continuam como módulos à mão.
+- **Numeração e mapa automáticos:** as salas são numeradas pela posição na lista (`Sala N ·`), e o mapa do diário é gerado dessas salas
+  (`layoutWorld`: 6 por fileira, 3 fileiras por andar = 18 por andar, escadas entre andares). Para inserir uma sala basta pôr na lista.
+- **Plano de ritmo** (aprovado): ~50 a 60 salas, ~6 h; só Fogo nas primeiras ~16 salas, Peso na ~17, giz pouco depois (~28), a 3ª face (Eco) no capítulo 3.
+  O Escrivão aparece de longe 3 a 4 vezes (cedo, no meio, no fim do cap. 1) e só no começo do cap. 2 de perto, deixando o giz.

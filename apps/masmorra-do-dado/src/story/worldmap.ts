@@ -96,6 +96,36 @@ export const REAL_WORLD: World = {
   ],
 };
 
+// O mapa do mundo real é gerado a partir das salas que existem (para crescer sozinho conforme eu adiciono salas):
+// as salas seguem em ordem, em "cobra" (6 por fileira, 3 fileiras por andar = 18 salas por andar). A mudança de andar tem escadas.
+export function layoutWorld(names: string[]): World {
+  const PER_ROW = 6;
+  const PER_FLOOR = PER_ROW * 3;
+  const nFloors = Math.max(1, Math.ceil(names.length / PER_FLOOR));
+  const rooms: MapRoom[] = names.map((nm, i) => {
+    const f = Math.floor(i / PER_FLOOR);
+    const k = i % PER_FLOOR;
+    const row = Math.floor(k / PER_ROW);
+    let col = k % PER_ROW;
+    if (row % 2) col = PER_ROW - 1 - col; // volta para a esquerda na fileira de baixo
+    const kind = /Salão/.test(nm) ? 'round' : /Mirante/.test(nm) ? 'stage' : undefined;
+    return { key: shortRoom(nm), floor: f, x: 1 + col * 6, y: 1 + row * 8, w: 4, h: 6, kind };
+  });
+  const links: MapLink[] = [];
+  for (let i = 1; i < rooms.length; i++) {
+    const a = rooms[i - 1];
+    const b = rooms[i];
+    if (a.floor !== b.floor) {
+      (a.stairs ??= []).push('up');
+      (b.stairs ??= []).push('down');
+    } else if (a.y === b.y) {
+      const [l, r] = a.x < b.x ? [a, b] : [b, a];
+      links.push({ a: a.key, b: b.key, path: connect(l, r, false) });
+    } else links.push({ a: a.key, b: b.key, path: connect(a, b, true) });
+  }
+  return { floors: Array.from({ length: nFloors }, (_, i) => `${i + 1}F`), cols: 40, rows: 25, rooms, links };
+}
+
 let world: World = REAL_WORLD;
 export const getWorld = () => world;
 export const setWorld = (w: World) => {

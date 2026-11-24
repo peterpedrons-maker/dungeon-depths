@@ -1,7 +1,7 @@
 // Service worker: deixa o jogo abrir offline depois da primeira visita.
 // - navegação: rede primeiro (pega versões novas), cache como reserva
 // - arquivos do build (nomes com hash): cache primeiro
-const CACHE = 'masmorra-do-dado-v14';
+const CACHE = 'masmorra-do-dado-v15';
 const SHELL = ['./', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

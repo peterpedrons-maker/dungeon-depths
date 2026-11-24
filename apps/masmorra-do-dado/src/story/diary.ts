@@ -127,7 +127,7 @@ export const diary = {
     const ids = ['acender', 'brasa', 'n1', 'n2', 'n3', 'porta', 'voce', 'conf', 'boato', 'eu', 'ter', 'medo', 'escrivao', 'boatodado', 'igual', 'placa'];
     diaryStore.set((s) => ({
       ...s,
-      seen: Object.fromEntries(ids.map((id, k) => [id, { room: s.here || 'Sala 4 · A Entrada', at: k }])),
+      seen: Object.fromEntries(ids.map((id, k) => [id, { room: s.here || 'Sala 5 · A Entrada', at: k }])),
       order: ids,
       notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
       texts: ['demo-pagina'],

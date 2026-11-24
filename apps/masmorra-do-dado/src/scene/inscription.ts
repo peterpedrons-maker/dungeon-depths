@@ -23,6 +23,7 @@ export interface InscribeOpts {
   age?: number; // 0 = nítida, 1 = muito gasta
   seed?: number;
   hidden?: boolean; // começa invisível (será escrita por uma cena)
+  frame?: boolean; // moldura talhada em volta do símbolo (rótulo de pedestal)
 }
 
 export interface InscriptionPanel {
@@ -66,7 +67,7 @@ function tex(c: HTMLCanvasElement): THREE.CanvasTexture {
 }
 
 // uma palavra talhada: sulco escuro com a cal por dentro, falhas conforme a idade
-function wordCanvas(id: string, age: number, seed: number): { c: HTMLCanvasElement; parts: number } {
+function wordCanvas(id: string, age: number, seed: number, frame = false): { c: HTMLCanvasElement; parts: number } {
   const glyphs = glyphsOf(id);
   const parts = Math.max(1, glyphs.length);
   const c = document.createElement('canvas');
@@ -85,6 +86,22 @@ function wordCanvas(id: string, age: number, seed: number): { c: HTMLCanvasEleme
   // cal por dentro
   ring(2.5, CAL);
   draw(0, 0, CAL);
+  if (frame) {
+    // moldura quadrada (rótulo): sulco largo com um fio de cal no meio
+    const x0 = PAD + 2;
+    const y0 = PAD + 2;
+    const s = CELL * parts - 4;
+    const h = CELL - 4;
+    const edge = (color: string, t: number) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x0 - t / 2, y0 - t / 2, s + t, t);
+      ctx.fillRect(x0 - t / 2, y0 + h - t / 2, s + t, t);
+      ctx.fillRect(x0 - t / 2, y0 - t / 2, t, h + t);
+      ctx.fillRect(x0 + s - t / 2, y0 - t / 2, t, h + t);
+    };
+    edge(SULCO, 9);
+    edge(CAL, 3);
+  }
   // desgaste: a cal descascou em pontos, e ficou manchada
   const r = rng(seed);
   const img = ctx.getImageData(0, 0, c.width, c.height);
@@ -139,7 +156,7 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
     id: string | null;
     c: HTMLCanvasElement;
   }
-  const items: Item[] = o.words.map((w, i) => (w ? { id: w, c: wordCanvas(w, age, seed + i * 31).c } : { id: null, c: gapCanvas() }));
+  const items: Item[] = o.words.map((w, i) => (w ? { id: w, c: wordCanvas(w, age, seed + i * 31, !!o.frame).c } : { id: null, c: gapCanvas() }));
   const widths = items.map((it) => it.c.width * pxm);
   const total = widths.reduce((a, b) => a + b, 0) + GAP * (items.length - 1);
   const h = (CELL + PAD * 2) * pxm;

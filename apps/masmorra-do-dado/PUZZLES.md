@@ -29,7 +29,16 @@ Quatro braseiros apagados (nos quatro cantos); a frase diz TRÊS (três pontos n
 2. Se acender o **quarto**, a Casa apaga todos depois de ~1,5 s. Acenda três de novo.
 - Aqui o jogador vê (e o diário guarda) o símbolo de **TRÊS**: vai precisar dele na Sala 5.
 
-## Sala 4 — A Entrada  (e a cena do Escrivão)
+## Sala 4 — A Ordem  (ACENDER · DOIS · TRÊS · UM · BRASEIRO)  — ensina a ORDEM
+Sala larga (10 m) com duas colunas e **três braseiros**, cada um com um **símbolo talhado numa plaquinha no pedestal**: um ponto (UM), dois pontos (DOIS) e três pontos (TRÊS). Eles estão espalhados de propósito (TRÊS à esquerda, perto da entrada; UM à direita, no meio; DOIS à direita, perto da porta). A frase na parede ao lado da porta lista os números **fora de ordem**: DOIS · TRÊS · UM.
+1. Leia a frase: a ordem de acender é **DOIS, depois TRÊS, depois UM**.
+2. Acenda primeiro o braseiro marcado com **dois pontos**, depois o de **três pontos**, depois o de **um ponto**. A cada passo certo uma gema acende no arco da porta (são três).
+3. Se acender um braseiro **fora de ordem** (quem assume "1, 2, 3" erra logo no 1º), ele acende, queima um instante e a Casa **apaga todos** (e as gemas). É só recomeçar.
+4. Com os três na ordem certa a porta abre.
+- O que o jogador aprende: uma sequência de números na frase é uma **ordem**; os símbolos nos objetos dizem qual é qual; errar é barato e dá resposta (a Casa apaga), sem texto.
+- Ideia das próximas salas de ordem (mais difíceis): ordem pedida em palavras diferentes, braseiros sem plaquinha (a ordem vem da posição), uma ordem vista duas salas atrás.
+
+## Sala 5 — A Entrada  (e a cena do Escrivão)
 Ao andar até o meio da sala, **o Escrivão** (criatura encapuzada, de rosto coberto) aparece junto da parede esquerda e escreve
 EU · ESCREVER · SENTENÇA e depois VOCÊ · LER · SENTENÇA ? (a câmera vira sozinha; é só olhar e avançar a conversa). Ele se vira para
 você, some, e **deixa cair o giz no chão**: aparece "E · Pegar o giz". **Só a partir daí o jogador tem o giz** (Tab/Q para trocar com o dado).
@@ -44,14 +53,14 @@ A porta tem duas gemas: placa (esquerda) e fogo (direita). As duas precisam esta
 - **Gema escondida (opcional):** no nicho alto da parede direita. Só **arremessando** com
   **Ricochete (1)** — o dado *posicionado* não conta. (O Ricochete está selado no começo: dá para voltar aqui mais tarde.)
 
-## Sala 5 — A Lacuna  (ACENDER · ▢ · BRASEIRO)  — o 1º puzzle com o giz
+## Sala 6 — A Lacuna  (ACENDER · ▢ · BRASEIRO)  — o 1º puzzle com o giz
 A sala é baixa e apertada. Os três braseiros já estão acesos. Na parede esquerda, a frase tem uma **placa lisa** no lugar da palavra do meio.
 1. Conte os braseiros acesos: **três**. O símbolo de TRÊS é o que você viu na Sala 3 (e está no diário): **três pontos na diagonal**.
 2. Pegue o giz (`Tab`/`Q`) e desenhe na placa três pontos: canto superior esquerdo, centro e canto inferior direito. Uma linha ligando os
    três também vale. Pontos nos outros cantos (os de QUATRO) **não** valem.
 3. A porta abre. (Como o dado já tem Fogo e Peso, a sala não pede mais nada.)
 
-## Sala 6 — O Selo
+## Sala 7 — O Selo
 O Selo é uma grade 3×3 na **lousa** (ao lado da porta). Três peças, cada uma numa casa. Três gemas
 sobre a porta acendem, uma por peça certa.
 
@@ -67,7 +76,7 @@ sobre a porta acendem, uma por peça certa.
 4. Muito rabisco anula as peças ("Rabisco demais"): apague (`botão direito` / modo APAGAR) e refaça.
 5. Com as 3 gemas acesas a porta abre e fica aberta.
 
-## Sala 7 — O Salão das Brasas (sala redonda)
+## Sala 8 — O Salão das Brasas (sala redonda)
 Três braseiros na parede; as gemas sobre a porta mostram quais estão acesos. Cada chama dura **40 s**
 (encolhe nos últimos 8 s).
 1. Com o **Fogo (3)**, acenda os **três** braseiros — rápido: arremesse, recolha (`E`), arremesse...
@@ -75,7 +84,7 @@ Três braseiros na parede; as gemas sobre a porta mostram quais estão acesos. C
    e a placa pressionada a porta abre.
 3. Atravesse sem recolher o dado. Se uma chama se apagar, reacenda (a placa só vale com as três).
 
-## Sala 8 — O Mirante (dois níveis)
+## Sala 9 — O Mirante (dois níveis)
 A porta e um braseiro ficam no **palco** (alto, no fundo); a placa fica **embaixo** (esquerda).
 A única subida é a **rampa** da parede direita; a beirada do palco é queda livre (dá pra descer
 pulando, mas a volta é pela rampa).

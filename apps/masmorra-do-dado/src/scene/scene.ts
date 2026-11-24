@@ -22,7 +22,10 @@ import { dialogue } from '../story/dialogue';
 import { ui } from '../story/ui';
 import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
 import { chatter } from '../story/chatter';
+import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
+import { buildFireRoom } from './rooms/fire';
+import { FIRE_ORDEM } from './rooms/fireRooms';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
@@ -36,6 +39,7 @@ const BUILDERS: RoomBuilder[] = [
   (c) => buildVestibulo(c, 1),
   (c) => buildVestibulo(c, 2),
   (c) => buildVestibulo(c, 3),
+  (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
   buildRoom1,
   (c) => buildVestibulo(c, 4), // A Lacuna: o 1º puzzle que pede o giz (que o jogador acabou de achar)
   buildRoom2,
@@ -638,6 +642,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     BUILDERS.forEach((build, i) => {
       const off = new THREE.Vector3();
       const room = build(makeCtx(off, i));
+      room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
       if (i > 0) off.z = offs[i - 1].z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ;
       room.group.position.copy(off);
       scene.add(room.group);
@@ -1627,6 +1632,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   let chatFn: (key: string) => void = () => {};
   buildWorld();
+  if (new URLSearchParams(location.search).get('demo') !== 'mapa') setWorld(layoutWorld(rooms.map((r) => r.name)));
   scene.fog = new THREE.Fog(rooms[0].fog.color, rooms[0].fog.near, rooms[0].fog.far);
   ambient.color.setHex(rooms[0].ambient.color);
   ambient.intensity = rooms[0].ambient.intensity;
