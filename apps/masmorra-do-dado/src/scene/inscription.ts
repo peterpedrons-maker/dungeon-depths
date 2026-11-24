@@ -23,7 +23,8 @@ export interface InscribeOpts {
   age?: number; // 0 = nítida, 1 = muito gasta
   seed?: number;
   hidden?: boolean; // começa invisível (será escrita por uma cena)
-  frame?: boolean; // moldura talhada em volta do símbolo (rótulo de pedestal)
+  frame?: boolean; // moldura talhada em volta de cada símbolo (rótulo de pedestal)
+  plaque?: boolean; // moldura talhada em volta da FRASE inteira (tablete confirmado)
 }
 
 export interface InscriptionPanel {
@@ -42,6 +43,7 @@ export interface Inscription {
   hidden: boolean; // ainda não foi escrita
   gap?: THREE.Mesh; // a lacuna (superfície de giz), se houver
   setReveal(i: number, v: number): void; // v 0..1 do painel i
+  extras: THREE.MeshLambertMaterial[]; // molduras (acompanham o brilho)
   setGlow(v: number): void; // brilho da cal (cresce conforme o jogador aprende)
   reveal(): void; // mostra tudo
 }
@@ -199,6 +201,37 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
     cursor += w + GAP;
   });
 
+  // moldura da frase inteira: sulco largo com um fio de cal, e um segundo fio por dentro
+  let plaqueMat: THREE.MeshLambertMaterial | null = null;
+  if (o.plaque) {
+    const W = total + size * 0.5;
+    const Hh = h + size * 0.25;
+    const cw = 512;
+    const ch = Math.max(64, Math.round((cw * Hh) / W));
+    const c = document.createElement('canvas');
+    c.width = cw;
+    c.height = ch;
+    const g = c.getContext('2d')!;
+    const rect = (x: number, y: number, w: number, hh: number, t: number, color: string) => {
+      g.fillStyle = color;
+      g.fillRect(x - t / 2, y - t / 2, w + t, t);
+      g.fillRect(x - t / 2, y + hh - t / 2, w + t, t);
+      g.fillRect(x - t / 2, y - t / 2, t, hh + t);
+      g.fillRect(x + w - t / 2, y - t / 2, t, hh + t);
+    };
+    rect(10, 10, cw - 20, ch - 20, 12, SULCO);
+    rect(10, 10, cw - 20, ch - 20, 5, CAL);
+    rect(24, 24, cw - 48, ch - 48, 4, CAL);
+    const t = tex(c);
+    plaqueMat = new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.02, depthWrite: false, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    const pm = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), plaqueMat);
+    pm.position.set(o.x + Math.sin(ry) * 0.004, o.y, o.z + Math.cos(ry) * 0.004);
+    pm.rotation.y = ry;
+    pm.renderOrder = 0;
+    pm.visible = !o.hidden;
+    group.add(pm);
+  }
+
   const ins: Inscription = {
     words: o.words.filter((w): w is string => !!w),
     center,
@@ -215,8 +248,10 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
       p.mat.opacity = Math.min(1, v);
       p.mat.transparent = true;
     },
+    extras: plaqueMat ? [plaqueMat] : [],
     setGlow(v) {
       for (const p of panels) if (p.id) p.mat.emissiveIntensity = v;
+      for (const m of ins.extras) m.emissiveIntensity = v;
     },
     reveal() {
       ins.hidden = false;

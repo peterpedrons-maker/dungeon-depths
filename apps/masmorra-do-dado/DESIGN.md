@@ -304,3 +304,13 @@ Cada sala nova **soma** uma camada ao que o jogador já domina (ordem, contagem,
 fogo que **corre por canaletas** de um braseiro a outro, braseiros **ligados** (acender um acende um gêmeo longe, depois de um tempo), luz que **revela** inscrições escondidas,
 número vindo de outra sala, cordas e madeira para queimar, várias portas decididas pela sequência (hubs), e frases com palavras que mudam a regra (NÃO, TODOS, MENOS, DEPOIS).
 **Regra de ouro:** se a sala puder ser vencida sem pensar, ela ainda é nível 1.
+
+## 18. O que é "dedução" neste jogo (lição do nível 10)
+Feedback do autor: **tentativa e erro com um contador (tipo Mastermind) não é dedução**. Dedução é chegar à resposta **só raciocinando**, a partir de **pistas visíveis** que se leem.
+Como o jogo é sobre a **escrita**, as pistas são **frases da língua** (e o que se vê: tamanhos, números, molduras). Princípios para os puzzles daqui para frente:
+- Toda sala de nível 3 ou mais tem **frases para ler e interpretar**, não só uma ordem de fogo para achar.
+- **Solução única, provada por busca** (`tools/verify_*.mjs`), e **nenhuma pista descartável**.
+- **Sem feedback que permita chutar** (nada de gema por passo): errar tem **custo** (os braseiros esfriam).
+- Misturar **canais**: o que se lê (frases e marcas CONFIRMADO/BOATO) com o que se vê (tamanho, número no pedestal).
+- O **diário** é parte do puzzle: o jogador copia e risca hipóteses. Os puzzles mais difíceis esperam isso.
+- **A Sala 6 (A Confirmação) é um Mastermind**: fica como um puzzle de nível 2 a 3 (ensina a ideia de eliminar), não como "dedução". O **Tribunal dos Rumores** (nível 10) é o modelo do que queremos.

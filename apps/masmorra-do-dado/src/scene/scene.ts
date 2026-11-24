@@ -25,6 +25,7 @@ import { chatter } from '../story/chatter';
 import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
+import { buildTribunal } from './rooms/tribunal';
 import { FIRE_ORDEM, FIRE_SEGREDO, FIRE_TEMPO } from './rooms/fireRooms';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
@@ -42,6 +43,7 @@ const BUILDERS: RoomBuilder[] = [
   (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
   (c) => buildFireRoom(c, FIRE_TEMPO), // TEMPO: as chamas se apagam; o maior dura mais
   (c) => buildFireRoom(c, FIRE_SEGREDO), // ORDEM SECRETA: dedução pela contagem de acertos
+  buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala ~16): rumores, marcas e lógica
   buildRoom1,
   (c) => buildVestibulo(c, 4), // A Lacuna: o 1º puzzle que pede o giz (que o jogador acabou de achar)
   buildRoom2,

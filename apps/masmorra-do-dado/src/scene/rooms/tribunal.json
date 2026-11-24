@@ -1,0 +1,23 @@
+{
+  "nome": "O Tribunal dos Rumores",
+  "lei": { "verdadeiros": 2 },
+  "braseiros": [
+    { "rotulo": 1, "tamanho": "medio", "x": -4.2, "dz": 9.5 },
+    { "rotulo": 2, "tamanho": "pequeno", "x": -1.6, "dz": 12.5 },
+    { "rotulo": 3, "tamanho": "grande", "x": 3.4, "dz": 11 },
+    { "rotulo": 4, "tamanho": "medio", "x": 4.4, "dz": 6 },
+    { "rotulo": 5, "tamanho": "medio", "x": -3.0, "dz": 5 }
+  ],
+  "solucao": [5, 3, 2, 4, 1],
+  "confirmadas": [
+    { "rel": "antes", "a": "n4", "b": "n1" },
+    { "rel": "antes", "a": "grande", "b": "n1" },
+    { "rel": "depois", "a": "n3", "b": "n5" }
+  ],
+  "boatos": [
+    { "rel": "depois", "a": "n2", "b": "n1" },
+    { "rel": "depois", "a": "n4", "b": "pequeno" },
+    { "rel": "antes", "a": "n1", "b": "pequeno" },
+    { "rel": "antes", "a": "n3", "b": "pequeno" }
+  ]
+}

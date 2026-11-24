@@ -55,7 +55,35 @@ Sala média com **quatro braseiros iguais** (dois à esquerda, dois à direita, 
 - O que o jogador já sabe e reaproveita: a ordem importa (Sala 4) e as gemas do arco **confirmam** passos certos (Sala 4); a marca ? e a palavra ORDEM entram no diário.
 - **Dificuldade: 3 de 10.** Próxima da mesma família: **cinco** braseiros ou **com tempo** (as chamas duram pouco, então cada tentativa vira uma corrida), e uma versão em que a ordem vem de números vistos em outra sala.
 
-## Sala 7 — A Entrada  (e a cena do Escrivão)
+## Sala 7 — O Tribunal dos Rumores  — NÍVEL 10 (o fecho do capítulo do Fogo; **provisório aqui**: a posição final é a sala ~16)
+Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
+Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).
+
+**Chave de leitura (para o autor):**
+| Frase | Marca | Significa | Na solução |
+|---|---|---|---|
+| 4 ANTES 1 | confirmado | o 4 acende antes do 1 | verdade |
+| GRANDE ANTES 1 | confirmado | o 3 (grande) antes do 1 | verdade |
+| 3 DEPOIS 5 | confirmado | o 3 depois do 5 | verdade |
+| 2 DEPOIS 1 | boato | o 2 (pequeno) depois do 1 | **falso** |
+| 4 DEPOIS PEQUENO | boato | o 4 depois do 2 | verdade |
+| 1 ANTES PEQUENO | boato | o 1 antes do 2 | **falso** |
+| 3 ANTES PEQUENO | boato | o 3 antes do 2 | verdade |
+
+**Solução (ordem de acender): 5, depois 3, depois 2, depois 4, depois 1.**
+**Como se deduz (sem chutar):**
+1. Olhar os braseiros: o **GRANDE é o 3** e o **PEQUENO é o 2**. As frases falam do mesmo braseiro por dois nomes (a 2ª confirmada é «3 antes do 1»).
+2. Com os **confirmados** (certos): 5 → 3 → 1 e também 4 → 1. O 2 ainda não tem lugar (15 ordens possíveis).
+3. **Percebe-se que dois boatos dizem a mesma coisa**: «2 depois do 1» e «1 antes do **pequeno**» (= antes do 2). Então os dois são ambos verdadeiros ou ambos falsos.
+4. A **lei** diz que exatamente dois boatos são verdade. Só há duas possibilidades: **ou esses dois** são os verdadeiros, **ou os outros dois**.
+5. Testar a 1ª: se «1 antes do 2» é verdade, então 5 → 3 → 1 → 2; mas o outro boato «3 antes do 2»… seria falso, e isso exige o 3 depois do 2, **contradição** (o 3 vem antes do 1, que vem antes do 2). Descartada.
+6. Então os verdadeiros são **«4 depois do 2»** e **«3 antes do 2»** (e os outros dois boatos são falsos, logo o 2 vem **antes** do 1): 5 → 3 → 2, e o 4 fica depois do 2 e antes do 1: **5, 3, 2, 4, 1**.
+- **Provado por busca exaustiva** (`tools/verify_tribunal.mjs`, dados em `src/scene/rooms/tribunal.json`): a solução é **única**; sem qualquer uma das 7 frases ou sem a lei da contagem sobram **várias** soluções (nenhuma pista é descartável); só com os confirmados há 15 ordens; tratar todos os boatos como falsos dá 3 soluções e como verdadeiros dá 0; a ordem 1-2-3-4-5 não é a resposta.
+- **Para o jogador anotar:** o diário (Notas e o mapa à mão livre) é a ferramenta natural: copiar as frases e riscar as hipóteses.
+- **Vocabulário que as salas anteriores precisam ensinar antes** (a fazer): ANTES e DEPOIS, GRANDE e PEQUENO (a Sala 5 pode rotular os braseiros por tamanho), TODOS, IGUAL, VERDADE e o conceito de BOATO × CONFIRMADO (marcas), além dos números 1 a 5 e ORDEM (já existem).
+- **Dificuldade: 9 a 10.** É o teto do capítulo de Fogo, não uma sala de início de jogo.
+
+## Sala 8 — A Entrada  (e a cena do Escrivão)
 Ao andar até o meio da sala, **o Escrivão** (criatura encapuzada, de rosto coberto) aparece junto da parede esquerda e escreve
 EU · ESCREVER · SENTENÇA e depois VOCÊ · LER · SENTENÇA ? (a câmera vira sozinha; é só olhar e avançar a conversa). Ele se vira para
 você, some, e **deixa cair o giz no chão**: aparece "E · Pegar o giz". **Só a partir daí o jogador tem o giz** (Tab/Q para trocar com o dado).
@@ -70,14 +98,14 @@ A porta tem duas gemas: placa (esquerda) e fogo (direita). As duas precisam esta
 - **Gema escondida (opcional):** no nicho alto da parede direita. Só **arremessando** com
   **Ricochete (1)** — o dado *posicionado* não conta. (O Ricochete está selado no começo: dá para voltar aqui mais tarde.)
 
-## Sala 8 — A Lacuna  (ACENDER · ▢ · BRASEIRO)  — o 1º puzzle com o giz
+## Sala 9 — A Lacuna  (ACENDER · ▢ · BRASEIRO)  — o 1º puzzle com o giz
 A sala é baixa e apertada. Os três braseiros já estão acesos. Na parede esquerda, a frase tem uma **placa lisa** no lugar da palavra do meio.
 1. Conte os braseiros acesos: **três**. O símbolo de TRÊS é o que você viu na Sala 3 (e está no diário): **três pontos na diagonal**.
 2. Pegue o giz (`Tab`/`Q`) e desenhe na placa três pontos: canto superior esquerdo, centro e canto inferior direito. Uma linha ligando os
    três também vale. Pontos nos outros cantos (os de QUATRO) **não** valem.
 3. A porta abre. (Como o dado já tem Fogo e Peso, a sala não pede mais nada.)
 
-## Sala 9 — O Selo
+## Sala 10 — O Selo
 O Selo é uma grade 3×3 na **lousa** (ao lado da porta). Três peças, cada uma numa casa. Três gemas
 sobre a porta acendem, uma por peça certa.
 
@@ -93,7 +121,7 @@ sobre a porta acendem, uma por peça certa.
 4. Muito rabisco anula as peças ("Rabisco demais"): apague (`botão direito` / modo APAGAR) e refaça.
 5. Com as 3 gemas acesas a porta abre e fica aberta.
 
-## Sala 10 — O Salão das Brasas (sala redonda)
+## Sala 11 — O Salão das Brasas (sala redonda)
 Três braseiros na parede; as gemas sobre a porta mostram quais estão acesos. Cada chama dura **40 s**
 (encolhe nos últimos 8 s).
 1. Com o **Fogo (3)**, acenda os **três** braseiros — rápido: arremesse, recolha (`E`), arremesse...
@@ -101,7 +129,7 @@ Três braseiros na parede; as gemas sobre a porta mostram quais estão acesos. C
    e a placa pressionada a porta abre.
 3. Atravesse sem recolher o dado. Se uma chama se apagar, reacenda (a placa só vale com as três).
 
-## Sala 11 — O Mirante (dois níveis)
+## Sala 12 — O Mirante (dois níveis)
 A porta e um braseiro ficam no **palco** (alto, no fundo); a placa fica **embaixo** (esquerda).
 A única subida é a **rampa** da parede direita; a beirada do palco é queda livre (dá pra descer
 pulando, mas a volta é pela rampa).

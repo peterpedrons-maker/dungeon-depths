@@ -33,14 +33,14 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   apagar tudo pede confirmação). Planejado: minimapa com anotações persistentes e caderno
   de pistas. Segredos opcionais ao estilo Metroidvania ficam para depois (dá para terminar só correndo). História resumida em `apps/masmorra-do-dado/HISTORIA.md`. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
-  celular). Hoje há 11 salas num mundo contínuo (numeração e mapa do diário são automáticos a partir da lista em `scene.ts`; plano: ~50 a 60 salas, só Fogo nas ~16 primeiras; **dificuldade: régua e curva em `DESIGN.md` §17** (as primeiras salas são nível 1 a 2; a partir da 6ª sobe rápido), ver também §16) (`src/scene/rooms/`, cada uma um módulo `Room` com
+  celular). Hoje há 12 salas num mundo contínuo (numeração e mapa do diário são automáticos a partir da lista em `scene.ts`; plano: ~50 a 60 salas, só Fogo nas ~16 primeiras; **dificuldade: régua e curva em `DESIGN.md` §17** (as primeiras salas são nível 1 a 2; a partir da 6ª sobe rápido), ver também §16) (`src/scene/rooms/`, cada uma um módulo `Room` com
   tema visual, formato e física próprios; `scene.ts` é o motor; as salas ficam lado a lado e o
   corredor da porta de uma desemboca direto na entrada da próxima, sem tela de carregamento;
   só o dado volta pra mão ao mudar de sala): 1–3 O Vestíbulo (O Poço, O Vestíbulo, Os Quatro: ACENDER · UM/DOIS/TRÊS · BRASEIRO, de tamanhos diferentes; o jogador
-  acorda SEM NADA: acha o dado na Sala 1), 4 A Ordem (1ª sala do **construtor de salas de fogo guiado por dados**, `src/scene/rooms/fire.ts`+`fireRooms.ts`: a frase lista números e é a ordem de acender), 5 A Chama Curta (TEMPO: chamas que se apagam, o braseiro maior dura mais; todos acesos ao mesmo tempo), 6 A Confirmação (nível 3: ordem secreta, a Casa confirma a contagem de acertos), 7 A Entrada (cena do Escrivão, criatura encapuzada, que deixa cair o giz: só aí o jogador o tem; fogo + peso + gema
-  escondida que espera o Ricochete), 8 A Lacuna (1º puzzle com o giz: escrever TRÊS numa lacuna da frase), 9 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
-  fogo), 10 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
-  11 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
+  acorda SEM NADA: acha o dado na Sala 1), 4 A Ordem (1ª sala do **construtor de salas de fogo guiado por dados**, `src/scene/rooms/fire.ts`+`fireRooms.ts`: a frase lista números e é a ordem de acender), 5 A Chama Curta (TEMPO: chamas que se apagam, o braseiro maior dura mais; todos acesos ao mesmo tempo), 6 A Confirmação (ordem secreta, a Casa confirma a contagem de acertos; é um Mastermind: nível 2 a 3), 7 O Tribunal dos Rumores (**nível 10**, provisório: frases com marcas CONFIRMADO/BOATO, tamanhos, lei da contagem; solução única provada em `tools/verify_tribunal.mjs`; ver `DESIGN.md` §18), 8 A Entrada (cena do Escrivão, criatura encapuzada, que deixa cair o giz: só aí o jogador o tem; fogo + peso + gema
+  escondida que espera o Ricochete), 9 A Lacuna (1º puzzle com o giz: escrever TRÊS numa lacuna da frase), 10 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
+  fogo), 11 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
+  12 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
   Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
   `src/scene/audio.ts` + `public/audio/`): efeitos de pacotes CC0 (OpenGameArt) e instrumentos reais do
   soundfont FluidR3_GM (CC BY 3.0 — por isso há um botão ⓘ de créditos); a música é composta em tempo

@@ -429,7 +429,7 @@ export interface DoorOpts {
   z0: number;
   y0?: number; // altura do chão da porta
   h: number; // altura da parede acima de y0
-  lamps: number; // 1 a 4 gemas
+  lamps: number; // 1 a 5 gemas
   theme?: string;
   connected?: boolean; // true: o corredor desemboca na próxima sala (sem parede nem luz no fim)
 }
@@ -531,7 +531,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   // gemas-lâmpada no aro
   const lampBack = new THREE.MeshBasicMaterial({ color: 0x120f18 });
   const lampMats: THREE.MeshBasicMaterial[] = [];
-  const xs = o.lamps === 1 ? [0] : o.lamps === 2 ? [-0.62, 0.62] : o.lamps === 3 ? [-0.8, 0, 0.8] : [-0.88, -0.3, 0.3, 0.88];
+  const xs = o.lamps === 1 ? [0] : o.lamps === 2 ? [-0.62, 0.62] : o.lamps === 3 ? [-0.8, 0, 0.8] : o.lamps === 4 ? [-0.88, -0.3, 0.3, 0.88] : [-0.95, -0.5, 0, 0.5, 0.95];
   for (const x of xs) {
     const mat = new THREE.MeshBasicMaterial({ color: LAMP_OFF, fog: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
     lampMats.push(mat);
