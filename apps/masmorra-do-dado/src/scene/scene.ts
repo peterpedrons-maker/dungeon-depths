@@ -10,7 +10,6 @@ import {
   dieSketchBlend,
   dieRostoBlend,
   dieRostoCanvas,
-  dieAbstractCanvas,
   dieGlowTexture,
   flameFrames,
   soapSideTexture,
@@ -2293,23 +2292,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           g.drawImage(r.face, (n - 1) * 64 * S, 0, 64 * S, 64 * S);
           g.drawImage(r.glow, (n - 1) * 64 * S, 64 * S, 64 * S, 64 * S);
         }
-        return cv.toDataURL('image/png');
-      },
-      abstractSheet: () => {
-        // prévia dos candidatos abstratos: linhas A (olhos), B (constelação), C (máscara); em cima a cor, embaixo o brilho de cada um
-        const S = 5;
-        const cv = document.createElement('canvas');
-        cv.width = 64 * S * 6;
-        cv.height = 64 * S * 6;
-        const g = cv.getContext('2d')!;
-        g.imageSmoothingEnabled = false;
-        (['A', 'B', 'C'] as const).forEach((v, row) => {
-          for (let n = 1; n <= 6; n++) {
-            const r = dieAbstractCanvas(n, FACES[n - 1].color, false, v);
-            g.drawImage(r.face, (n - 1) * 64 * S, row * 2 * 64 * S, 64 * S, 64 * S);
-            g.drawImage(r.glow, (n - 1) * 64 * S, (row * 2 + 1) * 64 * S, 64 * S, 64 * S);
-          }
-        });
         return cv.toDataURL('image/png');
       },
       freezeSpin: (v: number | null) => { (globalThis as Record<string, unknown>).__spinFreeze = v === null ? undefined : v; },
