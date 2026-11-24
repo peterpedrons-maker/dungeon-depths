@@ -585,65 +585,57 @@ function rosto(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: 
       }
     }
   };
-  const blush = (cx: number, cy: number) => {
-    for (const dx of [-4, 1, 6]) line(cx + dx - 3, cy + 3, cx + dx, cy - 1, 1, C.blush);
-  };
   const nose = (cx: number, cy: number) => {
     fill(cx, cy, 3, 3, C.out);
     fill(cx, cy, 2, 2, C.gold);
   };
-  const fang = (x: number, y: number) => {
-    for (let k = 0; k < 4; k++) px(ctx, x + (k > 2 ? 1 : 0), y + k, C.tooth, 3 - Math.min(2, k), 1);
-  };
+  // TODOS os rostos são SÉRIOS (nada de riso, dentes ou bochechas): a Casa julga. Cada número é um tipo de seriedade.
   switch (n) {
-    case 1: // ciclope calmo e surpreso
+    case 1: // o ciclope: impassível, vigia
       eye(32, 28, { rx: 15, ry: 12, pup: 6 });
       brow(32, 10, 0, 11);
-      mouth(32, 49, 6, 4);
+      mouth(32, 50, 7, 0, false);
       break;
-    case 2: // desconfiado: um olho pequeno em cima, um baixo e cético, sobrancelhas desiguais, boca torta
-      eye(17, 18, { rx: 9, ry: 8, look: [2, 1] });
-      eye(47, 46, { rx: 10, ry: 8, lid: 'half', look: [-2, 0] });
+    case 2: // desconfiado: olhos estreitos, uma sobrancelha mais alta
+      eye(17, 18, { rx: 9, ry: 8, lid: 'half', look: [2, 1] });
+      eye(47, 46, { rx: 9, ry: 8, lid: 'half', look: [-2, 0] });
       brow(17, 5, -0.3, 7);
-      brow(47, 34, 0.25, 7);
-      mouth(22, 50, 8, 1, false);
+      brow(47, 35, 0.12, 7);
+      mouth(24, 53, 8, -1, false);
       break;
-    case 3: // sorriso de canto, confiante (o do Fogo): um olho piscando
-      eye(17, 18, { rx: 9, ry: 8, look: [2, 0] });
-      eye(47, 46, { rx: 9, ry: 8, lid: 'wink' });
+    case 3: // determinado (o do Fogo): olhar firme, sobrancelhas para dentro, boca reta
+      eye(17, 18, { rx: 9, ry: 8, lid: 'half', look: [2, 1] });
+      eye(47, 46, { rx: 9, ry: 8, lid: 'half', look: [-1, 1] });
       nose(32, 32);
-      brow(17, 5, -0.3, 7);
+      brow(17, 5, 0.2, 7);
       brow(47, 35, -0.2, 7);
-      mouth(26, 55, 11, 4);
+      mouth(26, 55, 11, -1, false);
       break;
-    case 4: // feliz: olhos sorridentes, bochechas, sorriso grande
-      eye(17, 17, { rx: 10, ry: 8, lid: 'happy' });
-      eye(47, 17, { rx: 10, ry: 8, lid: 'happy' });
-      brow(17, 4, -0.15, 7);
-      brow(47, 4, 0.15, 7);
-      blush(17, 36);
-      blush(47, 36);
-      mouth(32, 46, 9, 6);
-      break;
-    case 5: // sorriso largo, de nariz e dentes
-      eye(17, 17, { rx: 10, ry: 9 });
-      eye(47, 17, { rx: 10, ry: 9 });
+    case 4: // grave, cansado: pálpebras pesadas, sobrancelhas tristes, boca reta
+      eye(17, 17, { rx: 10, ry: 8, lid: 'half' });
+      eye(47, 17, { rx: 10, ry: 8, lid: 'half' });
       brow(17, 4, -0.2, 7);
       brow(47, 4, 0.2, 7);
-      nose(32, 33);
-      mouth(32, 50, 12, 6);
+      mouth(32, 48, 9, -2, false);
       break;
-    case 6: // carrancudo, de presas
+    case 5: // severo: olhos abertos, sobrancelhas pesadas, boca fechada
+      eye(17, 17, { rx: 10, ry: 9, look: [1, 1] });
+      eye(47, 17, { rx: 10, ry: 9, look: [-1, 1] });
+      brow(17, 4, 0.15, 7);
+      brow(47, 4, -0.15, 7);
+      nose(32, 33);
+      mouth(32, 51, 10, -1, false);
+      break;
+    case 6: // carrancudo, o mais duro
       eye(17, 17, { rx: 10, ry: 9, lid: 'angryL', look: [2, 2] });
       eye(47, 17, { rx: 10, ry: 9, lid: 'angryR', look: [-2, 2] });
       brow(17, 6, 0.45, 7);
       brow(47, 6, -0.45, 7);
-      mouth(32, 51, 8, -4, false);
-      fang(26, 48);
-      fang(36, 48);
+      mouth(32, 51, 8, -3, false);
       break;
   }
 }
+
 // gira o conteúdo de uma face em múltiplos de 90° (sentido horário): as faces laterais do dado podem aparecer deitadas na tela, e o rosto precisa ficar de pé
 function turned(c: HTMLCanvasElement, turn: number): HTMLCanvasElement {
   const t = ((turn % 4) + 4) % 4;
