@@ -11,7 +11,6 @@ import { floorTexture, brickTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
-import { LightThread } from '../thread';
 import type { Box, Ctx, Room } from '../types';
 
 export type VestVariant = 1 | 2 | 3 | 4;
@@ -213,10 +212,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   let overlit = 0; // v2/v3: tempo com braseiros demais
   // os glifos da frase REAGEM ao que o jogador faz (DESIGN.md §24): ACENDER brilha enquanto há fogo; o número enche conforme os braseiros acesos; BRASEIRO
   // pisca ao acender; a marca final brilha quando a porta abre
-  const threads = Array.from({ length: 4 }, () => new LightThread(kit.group));
-  const prevLitArr: boolean[] = [];
-  let primed = false;
-  if (import.meta.env.DEV) ((globalThis as Record<string, unknown>).__vthreads ??= {} as Record<number, unknown>) && (((globalThis as Record<string, unknown>).__vthreads as Record<number, unknown>)[v] = threads);
   let flash = 0;
   let readT = 0; // há quanto tempo a porta está aberta (a Casa lê a frase)
   let prevLit = 0;
@@ -351,16 +346,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         b.update(t);
       }
       const nLit = braziers.filter((b) => b.lit).length;
-      braziers.forEach((b, bi) => {
-        if (primed && b.lit && !prevLitArr[bi]) {
-          const src = ins.panels.find((p) => p.id === 'brasa') ?? ins.panels.find((p) => p.id === 'acender');
-          const t = threads.find((x) => !x.active);
-          if (src && t) t.fire(src.mesh.position, b.bowl);
-        }
-        prevLitArr[bi] = b.lit;
-      });
-      primed = true;
-      threads.forEach((th) => th.update(dt));
       if (nLit > prevLit) flash = 1;
       prevLit = nLit;
       flash = Math.max(0, flash - dt / 1.3);
@@ -413,8 +398,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       if (v === 2 || v === 3) glow(v === 2 ? 'n2' : 'n3', open ? 1 : Math.min(1, nLit / (v === 2 ? 2 : 3)) * (nLit > (v === 2 ? 2 : 3) ? 0.3 : 1), dt);
     },
     reset() {
-      primed = false;
-      prevLitArr.length = 0;
       braziers.forEach((b) => b.light(v === 4, true));
       doorOpen = 0;
       prevWant = 0;
