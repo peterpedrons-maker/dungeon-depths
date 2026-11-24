@@ -255,8 +255,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
                 block: true,
                 onEnd: () => {
                   ctx.dieSay(['eu', 'cair'], { delay: 0.4 });
-                  ctx.dieSay(['voce', 'ajudar', 'eu', 'perg'], { delay: 3.9 });
-                  window.setTimeout(() => ctx.freeze(false), 8200);
+                  ctx.dieSay(['voce', 'ajudar', 'eu', 'perg'], { delay: 5.2 });
+                  window.setTimeout(() => ctx.freeze(false), 10800);
                 },
               });
             });
@@ -279,16 +279,16 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
           // o dado está na mão: cinema (faixas, dado grande no centro) e a explicação, uma frase curta por vez
           ctx.dieCenter(true);
           ctx.dieSay(['voce', 'condenado'], { delay: 1.3 });
-          ctx.dieSay(['eu', 'boato'], { delay: 4.6 });
-          ctx.dieSay(['eu', 'ajudar', 'voce'], { delay: 7.9 });
-          ctx.dieSay(['acender', 'brasa'], { pic: 'braseiro', delay: 11.4 });
+          ctx.dieSay(['eu', 'boato'], { delay: 6.0 });
+          ctx.dieSay(['eu', 'ajudar', 'voce'], { delay: 10.7 });
+          ctx.dieSay(['acender', 'brasa'], { pic: 'braseiro', delay: 15.6 });
           window.setTimeout(() => {
             ctx.dieCenter(false);
             ctx.freeze(false);
             pickingUp = false;
             nudge = 0; // a partir daqui, se o jogador demorar a acender, o dado repete o pedido
             ctx.say([{ who: 'thought', text: 'Pesa na mão como se me conhecesse.' }], { block: true });
-          }, 15500);
+          }, 21000);
         });
       },
     });
@@ -385,7 +385,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
           nudge = -1;
           // comemoração: ele reage quando o braseiro pega (depois da cena do fogo): "VOCÊ ACENDER CONFIRMADO", e logo em seguida a alegria dele
           ctx.dieSay(['voce', 'acender', 'conf'], { delay: 1.9, joy: true });
-          ctx.dieSay(['eu', 'sentir', 'alegria'], { delay: 5.6 });
+          ctx.dieSay(['eu', 'sentir', 'alegria'], { delay: 7.2 });
         }
       }
       if (nLit > prevLit) flash = 1;

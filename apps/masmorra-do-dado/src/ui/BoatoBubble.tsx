@@ -32,7 +32,7 @@ export function BoatoBubble({ left = false }: { left?: boolean }) {
       const t = window.setTimeout(() => setShown(shown + 1), 320);
       return () => window.clearTimeout(t);
     }
-    const t = window.setTimeout(() => chatter.clear(), 2600);
+    const t = window.setTimeout(() => chatter.clear(), 3600); // o balão fica à vista por mais tempo depois do último símbolo
     return () => window.clearTimeout(t);
   }, [c, shown]);
   useEffect(() => {
