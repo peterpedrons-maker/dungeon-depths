@@ -314,3 +314,16 @@ Como o jogo é sobre a **escrita**, as pistas são **frases da língua** (e o qu
 - Misturar **canais**: o que se lê (frases e marcas CONFIRMADO/BOATO) com o que se vê (tamanho, número no pedestal).
 - O **diário** é parte do puzzle: o jogador copia e risca hipóteses. Os puzzles mais difíceis esperam isso.
 - **A Sala 6 (A Confirmação) é um Mastermind**: fica como um puzzle de nível 2 a 3 (ensina a ideia de eliminar), não como "dedução". O **Tribunal dos Rumores** (nível 10) é o modelo do que queremos.
+
+## 19. Salas de várias ferramentas e o "puzzle de escrever" (proposta + a sala de teste)
+- **Sala de teste `?lab=1` — A Placa que Julga** (implementada; `rooms/lab.ts`, regra `commit` e tablete `rub` em `rooms/fire.ts`): mostra as 3 ferramentas juntas. O Fogo
+  monta o conjunto de chamas; o **Peso é o "enviar"** (a placa avalia e, se errado, abafa o fogo); o **giz LÊ**: esfregar num tablete liso faz a frase
+  aparecer (o giz não só escreve). Lógica: condições SE/ENTÃO/E + marcas CONFIRMADO/BOATO + lei da contagem (nível ~6 a 7 só na lógica; o que a
+  sala mostra é o cruzamento das ferramentas e a restrição do dado único).
+- **Fileiras (regra → torção → reprise)**, uma sala de tutorial por palavra nova, como em The Witness. Aprovado pelo jogador.
+- **Frases em parágrafo**: 3 a 4 linhas de frases, uma sob a outra, começando e terminando do mesmo jeito (o jogador aprende por repetição onde a frase começa/termina). Ver o
+  "livro de pedra" (ordem de leitura fixa) pendente.
+- **Puzzle de escrever SEM giz** (ideia do jogador): os braseiros acendem e apagam sozinhos indicando uma ordem; o jogador monta a frase na parede **trocando blocos de
+  glifos de lugar** (estilo quebra-cabeça de deslizar: selecionar um bloco e outro com E/AGIR), sem giz. Serve de tutorial de "escrever uma frase" antes do giz. Para não ser só
+  memória, a sequência se repete em laço e a frase correta usa uma regra que o jogador já viu (ex.: números fora de ordem nos pedestais).
+- **Opcionais em níveis** (fácil/médio → gema colecionável, diário ou atalho; difícil → história). Segredos ficam para depois.

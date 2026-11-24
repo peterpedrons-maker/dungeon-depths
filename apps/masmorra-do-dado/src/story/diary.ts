@@ -121,6 +121,17 @@ export const diary = {
   clearUnread() {
     if (diaryStore.get().unread) diaryStore.set((s) => ({ ...s, unread: 0 }));
   },
+  // Sala de teste (?lab=1): os símbolos da sala já estão no diário, sem gravar no aparelho.
+  lab(ids: string[]) {
+    persist = false;
+    const ok = ids.filter((id) => LEX[id]);
+    diaryStore.set((s) => ({
+      ...s,
+      seen: Object.fromEntries(ok.map((id, k) => [id, { room: s.here || 'Sala 1 · A Placa que Julga', at: k }])),
+      order: ok,
+      unread: 0,
+    }));
+  },
   // Pré-visualização (?demo=1): enche o diário com exemplos, sem gravar no aparelho.
   demo() {
     persist = false;

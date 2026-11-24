@@ -1,0 +1,18 @@
+{
+  "nome": "A Placa que Julga",
+  "braseiros": 5,
+  "acesos": 3,
+  "lei": { "verdadeiros": 2 },
+  "solucao": [1, 2, 4],
+  "confirmadas": [
+    { "t": "se", "a": 3, "b": 1 },
+    { "t": "se", "a": 5, "b": 1, "giz": true },
+    { "t": "nao_juntos", "a": 3, "b": 5 }
+  ],
+  "boatos": [
+    { "t": "e", "a": 3, "b": 4 },
+    { "t": "se", "a": 2, "b": 4 },
+    { "t": "se", "a": 4, "b": 5 },
+    { "t": "e", "a": 1, "b": 4 }
+  ]
+}

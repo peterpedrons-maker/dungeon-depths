@@ -4,7 +4,7 @@
 // Salas especiais (com lógica própria) continuam sendo módulos escritos à mão.
 
 import * as THREE from 'three';
-import { floorTexture } from '../textures';
+import { floorTexture, plateTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
@@ -22,7 +22,10 @@ export type FireRule =
   | { kind: 'together' }
   // ordem SECRETA: o jogador acende todos, em qualquer ordem, e a Casa "confirma" quantos estavam na posição certa
   // (as gemas do arco mostram só a CONTAGEM, não quais). Depois apaga tudo para uma nova tentativa. `seq` = índices na ordem certa.
-  | { kind: 'secret'; seq: number[] };
+  | { kind: 'secret'; seq: number[] }
+  // CONFIRMAR NA PLACA: o jogador acende os braseiros que quiser (ficam acesos) e então pesa a placa com o Peso. A placa avalia o conjunto
+  // aceso: se for exatamente `lit` (índices em `braziers`), a porta abre; senão ela ABAFA o fogo (apaga todos) e os braseiros ficam frios um tempo.
+  | { kind: 'commit'; lit: number[]; penalty?: number };
 
 export interface FireBrazier {
   x: number; // a partir do centro da sala
@@ -40,6 +43,8 @@ export interface FireTablet {
   dz?: number; // posição ao longo da parede (distância do fundo); ignorado no fundo
   seal?: boolean; // moldura talhada (frase confirmada)
   worn?: boolean; // muito gasta (boato)
+  age?: number; // desgaste (0 nítida .. 1 muito gasta); padrão: 0.18, ou 0.75 se `worn`
+  rub?: boolean; // lisa: só aparece ESFREGANDO o giz em cima (o jogador revela a pista)
   size?: number;
 }
 
@@ -56,6 +61,7 @@ export interface FireSpec {
   sign?: 'back' | 'left' | 'right'; // em que parede está a frase (padrão: fundo, à esquerda da porta)
   pillars?: [number, number][]; // [x, dz] colunas no meio da sala
   tablets?: FireTablet[]; // frases na parede (rumores, leis...)
+  plate?: { x: number; dz: number }; // placa de pressão (regra `commit`): só o Peso a afunda
   fog?: { color: string; near: number; far: number };
   ambient?: { color: number; intensity: number };
 }
@@ -83,10 +89,10 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], theme)), 0, 0, zm, -Math.PI / 2);
   kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
   const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
-  kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
-  kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
+  const wallL = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
+  const wallR = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
 
-  const steps = spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
+  const steps = spec.rule.kind === 'commit' ? 1 : spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
   const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: Math.min(5, steps), connected: true, theme });
 
   // colunas (também seguram o dado)
@@ -126,13 +132,21 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   });
 
   // frases na parede (rumores, leis...)
+  const rubs: { ins: ReturnType<typeof kit.inscribe>; wall: THREE.Mesh; v: number[] }[] = [];
   (spec.tablets ?? []).forEach((t, i) => {
     const tu = phraseUnits(t.words);
     const sz = t.size ?? 0.36;
-    const common = { words: t.words, size: sz, age: t.worn ? 0.75 : 0.18, seed: 40 + i * 13, plaque: !!t.seal, y: 1.85 } as const;
-    if (t.wall === 'left') kit.inscribe({ ...common, x: X0 + 0.025, z: Z0 + (t.dz ?? 8), nx: 1, nz: 0 });
-    else if (t.wall === 'right') kit.inscribe({ ...common, x: X1 - 0.025, z: Z0 + (t.dz ?? 8), nx: -1, nz: 0 });
-    else kit.inscribe({ ...common, x: (t.wall === 'backL' ? -1 : 1) * (spec.hx + 1.25) / 2, y: 1.6, size: Math.min(sz, (spec.hx - 1.5) / tu), z: Z0 + 0.025, nx: 0, nz: 1 });
+    const common = { words: t.words, size: sz, age: t.age ?? (t.worn ? 0.75 : 0.18), seed: 40 + i * 13, plaque: !!t.seal, y: 1.85 } as const;
+    let tIns;
+    if (t.wall === 'left') tIns = kit.inscribe({ ...common, x: X0 + 0.025, z: Z0 + (t.dz ?? 8), nx: 1, nz: 0 });
+    else if (t.wall === 'right') tIns = kit.inscribe({ ...common, x: X1 - 0.025, z: Z0 + (t.dz ?? 8), nx: -1, nz: 0 });
+    else tIns = kit.inscribe({ ...common, x: (t.wall === 'backL' ? -1 : 1) * (spec.hx + 1.25) / 2, y: 1.6, size: Math.min(sz, (spec.hx - 1.5) / tu), z: Z0 + 0.025, nx: 0, nz: 1 });
+    if (t.rub && (t.wall === 'left' || t.wall === 'right')) {
+      // tablete liso: as palavras só aparecem onde o jogador esfrega o giz (a moldura fica visível, o texto não)
+      tIns.panels.forEach((_, k) => tIns.setReveal(k, 0));
+      tIns.hidden = true; // enquanto estiver liso, olhar para ele não manda símbolos ao diário
+      rubs.push({ ins: tIns, wall: t.wall === 'left' ? wallL : wallR, v: tIns.panels.map(() => 0) });
+    }
   });
 
   // tochas entre as frases das paredes (para dar para ler)
@@ -161,6 +175,22 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   }
   kit.dust(X0, X1, Z0, Z1, 0, H);
 
+  // placa de pressão (regra `commit`)
+  const PL = spec.plate ? { x: spec.plate.x, z: Z0 + spec.plate.dz, half: 0.7, top: 0.07 } : null;
+  if (PL) {
+    kit.zone('plate', (x, z) => Math.abs(x - PL.x) < PL.half && Math.abs(z - PL.z) < PL.half);
+    const side = lambert(null, 0x3a3638);
+    kit.box(1.4, 0.07, 1.4, [side, side, lambert(plateTexture()), side, side, side], PL.x, 0.035, PL.z);
+    kit.contact(PL.x, PL.z, 1.8);
+    boxes.push(mkBox(PL.x - 0.7, 0, PL.z - 0.7, PL.x + 0.7, PL.top, PL.z + 0.7));
+  }
+  const onPlate = () => {
+    if (!PL) return false;
+    const p = ctx.die.pos;
+    return Math.abs(p.x - PL.x) < PL.half + 0.05 && Math.abs(p.z - PL.z) < PL.half + 0.05 && p.y < PL.top + ctx.die.R + 0.1;
+  };
+  let plateDown = false;
+
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3), mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
   braziers.forEach((b) => boxes.push(...b.boxes));
 
@@ -177,8 +207,10 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   let overlit = 0; // (exact) tempo com braseiros demais
   const left = spec.braziers.map(() => Infinity); // quanto falta para cada chama se apagar
   let solved = false;
+  let lastRubRev = -1;
 
   const reset = () => {
+    plateDown = false;
     braziers.forEach((b, i) => b.light(!!spec.braziers[i].lit, true));
     progress = 0;
     failT = -1;
@@ -194,7 +226,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
   };
 
-  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__fire = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1) });
+  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__fire = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))) });
   kit.bake();
 
   return {
@@ -241,11 +273,30 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     groundY: () => 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
     dieFloor: () => 0,
-    holdsDie: () => false,
+    holdsDie: () => plateDown,
+    onDieRest() {
+      if (PL && onPlate() && ctx.die.face !== 2) ctx.caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
+    },
     update(dt, t) {
       kit.tick(dt, t);
       const rule = spec.rule;
       let want = 0;
+      // esfregar o giz num tablete liso faz as palavras aparecerem (só quando o desenho muda)
+      if (rubs.length && ctx.chalk.revision !== lastRubRev) {
+        lastRubRev = ctx.chalk.revision;
+        for (const r of rubs) {
+          const dots = ctx.chalk.dotsOn(r.wall);
+          r.ins.panels.forEach((p, k) => {
+            const g = p.mesh.geometry as THREE.PlaneGeometry;
+            const w = g.parameters.width;
+            const h = g.parameters.height;
+            const n = dots.filter((d) => Math.abs(d.z - p.mesh.position.z) < w / 2 + 0.04 && Math.abs(d.y - p.mesh.position.y) < h / 2 + 0.04).length;
+            r.v[k] = Math.max(r.v[k], Math.min(1, n / 7));
+            r.ins.setReveal(k, r.v[k]);
+          });
+          if (r.v.every((x) => x > 0.99)) r.ins.hidden = false;
+        }
+      }
       if (rule.kind === 'exact') {
         for (const b of braziers) if (b.touched()) b.light(true);
         const nLit = braziers.filter((b) => b.lit).length;
@@ -291,6 +342,39 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             } else failT = 1.3;
           });
         }
+        want = solved ? 1 : 0;
+      }
+      if (rule.kind === 'commit') {
+        if (!solved && coldT > 0) {
+          // depois de um erro a placa abafou o fogo: os braseiros ficam frios um tempo
+          coldT -= dt;
+          coldBeep -= dt;
+          if (coldBeep <= 0 && braziers.some((b) => b.touched())) {
+            ctx.sfx('error');
+            coldBeep = 0.9;
+          }
+        } else if (!solved) {
+          for (const b of braziers) if (b.touched()) b.light(true);
+        }
+        const pressed = !solved && ctx.die.state === 'rest' && ctx.die.face === 2 && onPlate();
+        if (pressed && !plateDown) {
+          plateDown = true;
+          ctx.sfx('plate');
+          const litNow = braziers.map((b, i) => (b.lit ? i : -1)).filter((i) => i >= 0);
+          const ok = litNow.length === rule.lit.length && rule.lit.every((i) => litNow.includes(i));
+          if (ok) {
+            solved = true;
+            door.lampMats.forEach((m) => m.color.setHex(0xff7a2e));
+            ctx.sfx('piece');
+            ctx.caption('A placa aceitou', 'As chamas respondem.', '#ffd36b');
+          } else {
+            braziers.forEach((b) => b.light(false, true));
+            coldT = rule.penalty ?? 6;
+            ctx.sfx('error');
+            ctx.caption('A placa abafou o fogo', 'A Casa não aceitou estas chamas.', '#cfc6e8');
+          }
+        }
+        if (!pressed && !(solved && onPlate())) plateDown = false;
         want = solved ? 1 : 0;
       }
       if (rule.kind === 'secret') {

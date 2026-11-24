@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { AudioMode } from './scene/audio';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
 import { startMapDemo } from './book/mapdemo';
+import { LAB_WORDS } from './scene/rooms/lab';
 import { diary, diaryStore } from './story/diary';
 import { dialogue, dialogueStore } from './story/dialogue';
 import { useStore } from './story/store';
@@ -90,6 +91,7 @@ export default function App() {
   // ?demo=1: pré-visualização do diário e da conversa (não grava nada no aparelho)
   useEffect(() => {
     const q = new URLSearchParams(location.search);
+    if (q.has('lab')) diary.lab(LAB_WORDS); // sala de teste: as palavras da sala já estão no diário
     if (!q.has('demo')) return;
     diary.demo();
     if (q.get('demo') === 'mapa') {

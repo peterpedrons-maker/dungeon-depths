@@ -137,3 +137,23 @@ pulando, mas a volta é pela rampa).
 2. Desça (rampa ou beirada) e **posicione o Peso (2)** na placa embaixo, à esquerda. Não recolha.
 3. Suba de novo pela rampa e atravesse a porta do palco: ela só fica aberta enquanto o dado
    segura a placa lá embaixo.
+
+## Sala de teste — A Placa que Julga  (`?lab=1`; Fogo + Peso + giz; fora do jogo principal)
+Sala isolada para mostrar o que as três ferramentas fazem juntas. Abre com `…/masmorra-do-dado/?lab=1` (nada é salvo no aparelho; o dado e o giz já
+estão nas mãos e as palavras da sala já estão no diário). Dados em `src/scene/rooms/lab.json`; `node tools/verify_lab.mjs` prova que a solução é única
+e que nenhuma pista é descartável.
+
+**Palavras novas (legenda):** SE, ENTÃO (a seta →), NÃO (o símbolo de "atravessar/não"), E, PLACA, e as marcas CONFIRMADO e BOATO do Tribunal.
+- Porta: «ACENDER TRÊS BRASEIRO PLACA» = acenda três braseiros e depois pese a placa (a placa é o juiz: confere o conjunto aceso).
+- Lei da casa (ao lado da porta): «DOIS BOATO = VERDADE» = exatamente dois dos boatos são verdadeiros.
+- Frases: «SE a → b» (se a está aceso, b também); «SE a → NÃO b» (a e b nunca juntos); «a E b» (os dois acesos).
+
+**Solução (spoiler): acender UM, DOIS e QUATRO e pesar a placa.**
+1. Há UM tablete **liso** (parede direita, o do meio): é uma frase CONFIRMADA apagada. Com o **giz**, risque em cima dele: as palavras
+   aparecem. Ela diz «SE CINCO → UM».
+2. Com os 3 confirmados (SE TRÊS → UM · SE CINCO → UM · TRÊS e CINCO nunca juntos) e a regra «três acesos», **o UM sempre está aceso** e sobram 5 conjuntos:
+   123, 124, 125, 134, 145.
+3. Teste cada conjunto contra os 4 boatos e a lei «exatamente dois verdadeiros» (um «SE» com o primeiro apagado é verdadeiro):
+   123 → 1 verdadeiro ✗ · 125 → 1 ✗ · 134 → 3 ✗ · 145 → 3 ✗ · **124 → 2 ✓**.
+4. Acenda 1, 2 e 4 (Fogo) e **pese a placa** (Peso, posicionar o dado nela). Se o conjunto estiver errado, a placa **abafa o fogo** (apaga tudo) e os
+   braseiros ficam **frios por 6 s**: chutar não compensa. Para recomeçar, recolha o dado (`E`).

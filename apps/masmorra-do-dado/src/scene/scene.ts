@@ -26,6 +26,7 @@ import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
 import { buildTribunal } from './rooms/tribunal';
+import { buildLab } from './rooms/lab';
 import { FIRE_ORDEM, FIRE_SEGREDO, FIRE_TEMPO } from './rooms/fireRooms';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
@@ -36,7 +37,11 @@ import type { Emitter } from './kit';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
-const BUILDERS: RoomBuilder[] = [
+// ?lab=1: sala de teste isolada (só a sala nova, com todas as ferramentas e nada salvo no aparelho)
+const LAB = new URLSearchParams(location.search).has('lab');
+const BUILDERS: RoomBuilder[] = LAB ? [buildLab] : MAIN_BUILDERS();
+function MAIN_BUILDERS(): RoomBuilder[] {
+  return [
   (c) => buildVestibulo(c, 1),
   (c) => buildVestibulo(c, 2),
   (c) => buildVestibulo(c, 3),
@@ -49,7 +54,8 @@ const BUILDERS: RoomBuilder[] = [
   buildRoom2,
   buildRoom3,
   buildRoom4,
-];
+  ];
+}
 
 // Ordem dos materiais do BoxGeometry: +x, -x, +y, -y, +z, -z (opostas somam 7).
 const DIE_FACES = [3, 4, 1, 6, 2, 5];
@@ -1647,6 +1653,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (q.has('demo')) {
       progress.noSave();
       for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz'] as const) progress.set(f);
+    } else if (q.has('lab')) {
+      progress.noSave();
+      for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
     } else if (q.get('intro') === '0') {
       progress.noSave();
       for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
