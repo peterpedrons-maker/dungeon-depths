@@ -8,6 +8,7 @@ import { FACES } from '../faces';
 import {
   dieFaceTexture,
   dieSketchBlend,
+  dieRostoBlend,
   dieGlowTexture,
   flameFrames,
   soapSideTexture,
@@ -355,6 +356,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     targetQ.copy(tilt).multiply(spinQ.setFromAxisAngle(Y_AXIS, spin)).multiply(upQ(n));
 
   let face = 1; // face escolhida (virada pra cima no HUD)
+  let rostosDirty = false; // a face escolhida mudou: refazer os rostos
   let thrownFace = 3; // face do dado que está lá fora
   let dieThrown = true; // false = foi posicionado (não pega a gema)
   let handDim = 0; // 0 = dado na mão, 1 = dado lá fora
@@ -504,11 +506,60 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const applyFace = (n: number) => {
     endSketch();
     face = n;
+    rostosDirty = true;
     updateMats();
     accentLight.color.set(FACES[n - 1]?.color ?? '#ffffff');
   };
   applyFace(3); // o jogo começa na face Fogo
   computeTarget(face, 0);
+  // ── o ROSTO de cada número: a face virada para o jogador (a de baixo, que ele vê de frente) vira um rosto; as gemas viram os olhos (ver `dieRostoBlend`) ──
+  let rostos: ReturnType<typeof dieRostoBlend>[] = [];
+  const rostoP = [0, 0, 0, 0, 0, 0];
+  const rostoLast = [0, 0, 0, 0, 0, 0];
+  // quantos giros de 90° cada face lateral precisa para o rosto ficar de pé quando ela vem para a frente (depende da face escolhida, que fica em cima)
+  const FACE_UP = [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0)];
+  const faceTurn = (i: number) => {
+    const q = upQ(face);
+    const nw = new THREE.Vector3().copy(FACE_N_LOCAL[i]).applyQuaternion(q);
+    if (Math.abs(nw.y) > 0.9) return 0; // a de cima (escolhida) e a de baixo
+    const up = new THREE.Vector3().copy(FACE_UP[i]).applyQuaternion(q);
+    up.applyAxisAngle(Y_AXIS, -Math.atan2(nw.x, nw.z)); // traz a face para a frente do jogador
+    const k = Math.round(Math.atan2(up.x, up.y) / (Math.PI / 2));
+    return (4 - (((k % 4) + 4) % 4)) % 4; // giros horários para desfazer a rotação
+  };
+  const buildRostos = () => {
+    rostos.forEach((r) => r.dispose());
+    rostos = DIE_FACES.map((n, i) => {
+      const f = FACES[n - 1];
+      const b = dieRostoBlend(n, f.color, !f.unlocked, faceTurn(i));
+      handMats[i].map = b.map;
+      handMats[i].emissiveMap = b.glow;
+      handMats[i].needsUpdate = true;
+      b.set(rostoP[i]);
+      return b;
+    });
+  };
+  const FRONT = new THREE.Vector3(0, -0.72, 0.7).normalize(); // para o jogador e para baixo
+  const FACE_N_LOCAL = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)];
+  const FACE_N = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)];
+  const nW = new THREE.Vector3();
+  const updateRostos = (dt: number) => {
+    if (rostosDirty) {
+      rostosDirty = false;
+      buildRostos(); // a face escolhida mudou: as faces laterais giram de outro jeito
+    }
+    DIE_FACES.forEach((_, i) => {
+      nW.copy(FACE_N[i]).applyQuaternion(dieHolder.quaternion);
+      const d = nW.dot(FRONT);
+      const k = Math.max(0, Math.min(1, (d - 0.55) / 0.33));
+      const target = k * k * (3 - 2 * k);
+      rostoP[i] += (target - rostoP[i]) * Math.min(1, dt * 5);
+      if (Math.abs(rostoP[i] - rostoLast[i]) > 0.03 || (rostoP[i] < 0.005 && rostoLast[i] > 0) || (rostoP[i] > 0.995 && rostoLast[i] < 1)) {
+        if (!(sketchOn && sketchOn.i === i)) rostos[i]?.set(rostoP[i]);
+        rostoLast[i] = rostoP[i];
+      }
+    });
+  };
   // faces liberadas pela história: refaz as texturas do dado quando um marco libera uma nova
   let facesSig = FACES.map((f) => +f.unlocked).join('');
   const refreshFaces = () => {
@@ -524,8 +575,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         mats[i].needsUpdate = true;
       });
     }
+    buildRostos(); // o dado da mão volta a ter os rostos
   };
   const unsubProgress = progressStore.subscribe(refreshFaces);
+  buildRostos();
   curQ.copy(targetQ);
   let spin = 0;
 
@@ -2119,7 +2172,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (dsp < -Math.PI) dsp += Math.PI * 2;
       spin += dsp * Math.min(1, dt * 5);
       if (sketchOn.age >= SK_LIFE) endSketch();
-    } else spin += dt * 0.8;
+    } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) spin += dt * 0.8;
+    else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     lookedT += dt;
     const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy() });
@@ -2136,6 +2190,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy,
       -1,
     );
+    updateRostos(dt);
     publishDieScreen();
     dieCam.position.set(0, 0, 0);
 
@@ -2222,7 +2277,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
-      lifeDbg: () => ({ out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
+      lifeDbg: () => ({ rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
+      freezeSpin: (v: number | null) => { (globalThis as Record<string, unknown>).__spinFreeze = v === null ? undefined : v; },
       life: (k: string) => { if (k === 'sleep') life.sleepNow(); else life.react(k as never); },
       sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),

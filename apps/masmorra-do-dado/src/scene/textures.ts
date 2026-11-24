@@ -443,23 +443,14 @@ export function dieGlowCanvas(n: number, accent: string, locked = false): HTMLCa
   return c;
 }
 
-// A face do dado mostrando o rabisco de uma palavra: o dado "traduz" o glifo que o jogador olha.
-// A troca é uma DISSOLUÇÃO PONTILHADA (padrão de Bayer, no clima do dithering do jogo): `set(p)` com p de 0 (face normal) a 1 (desenho).
-function sketchInset(base: HTMLCanvasElement, kind: SketchKind, glow: boolean) {
-  const g = base.getContext('2d')!;
-  g.fillStyle = glow ? '#000' : '#17111f';
-  g.fillRect(12, 12, 40, 40); // dentro do segundo filete de ouro
-  g.imageSmoothingEnabled = false;
-  g.drawImage(sketchCanvas(kind, 8, 40), 12, 12);
-  return base;
-}
+// ── mistura pontilhada (padrão de Bayer, no clima do dithering do jogo) entre duas versões de uma face do dado ──
 const BAYER = [0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26, 12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22, 3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25, 15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21];
-export function dieSketchBlend(n: number, accent: string, locked: boolean, kind: SketchKind) {
+function ditherBlend(baseFace: HTMLCanvasElement, otherFace: HTMLCanvasElement, baseGlow: HTMLCanvasElement, otherGlow: HTMLCanvasElement) {
   const pix = (c: HTMLCanvasElement) => c.getContext('2d')!.getImageData(0, 0, 64, 64).data;
-  const baseFace = pix(dieFaceCanvas(n, accent, locked));
-  const skFace = pix(sketchInset(dieFaceCanvas(n, accent, locked), kind, false));
-  const baseGlow = pix(dieGlowCanvas(n, accent, locked));
-  const skGlow = pix(sketchInset(dieGlowCanvas(n, accent, locked), kind, true));
+  const bF = pix(baseFace);
+  const oF = pix(otherFace);
+  const bG = pix(baseGlow);
+  const oG = pix(otherGlow);
   const mk = () => {
     const { c, ctx } = canvas(64);
     return { c, ctx, img: ctx.createImageData(64, 64), tex: toTexture(c, undefined, false) };
@@ -481,12 +472,138 @@ export function dieSketchBlend(n: number, accent: string, locked: boolean, kind:
     o.ctx.putImageData(o.img, 0, 0);
     o.tex.needsUpdate = true;
   };
+  // `set(p)`: p de 0 (face normal) a 1 (a outra versão)
   const set = (p: number) => {
-    compose(face, baseFace, skFace, p);
-    compose(glow, baseGlow, skGlow, p);
+    compose(face, bF, oF, p);
+    compose(glow, bG, oG, p);
   };
   set(0);
   return { map: face.tex, glow: glow.tex, set, dispose: () => { face.tex.dispose(); glow.tex.dispose(); } };
+}
+
+// A face do dado mostrando o rabisco de uma palavra: o dado "traduz" o glifo que o jogador olha.
+function sketchInset(base: HTMLCanvasElement, kind: SketchKind, glow: boolean) {
+  const g = base.getContext('2d')!;
+  g.fillStyle = glow ? '#000' : '#17111f';
+  g.fillRect(12, 12, 40, 40); // dentro do segundo filete de ouro
+  g.imageSmoothingEnabled = false;
+  g.drawImage(sketchCanvas(kind, 8, 40), 12, 12);
+  return base;
+}
+export function dieSketchBlend(n: number, accent: string, locked: boolean, kind: SketchKind) {
+  return ditherBlend(dieFaceCanvas(n, accent, locked), sketchInset(dieFaceCanvas(n, accent, locked), kind, false), dieGlowCanvas(n, accent, locked), sketchInset(dieGlowCanvas(n, accent, locked), kind, true));
+}
+
+// ── O ROSTO de cada número ───────────────────────────────────────────────────────────────────────────
+// O dado é vivo: a face virada para o JOGADOR (a de baixo, a que ele vê de frente) vira um rosto. As gemas ficam EXATAMENTE onde estão (o número continua
+// legível); elas viram os OLHOS (ganham pupila), e ao redor entram sobrancelhas, bochechas e boca. Cada número tem a sua expressão:
+//  1 ciclope calmo e surpreso · 2 desconfiado (olhos em diagonal, sobrancelhas desiguais) · 3 sorriso de canto, confiante (o do Fogo) · 4 feliz, de bochechas coradas ·
+//  5 sorriso largo, com nariz · 6 carrancudo, de presas.
+const PUPIL = '#07050c';
+const GOLD = '#e0b858';
+const EMBER = '#ff8a3c';
+function rosto(ctx: CanvasRenderingContext2D, n: number, glow: boolean) {
+  const gold = glow ? '#c89030' : GOLD;
+  const ember = glow ? '#ffb060' : EMBER;
+  const pupil = (x: number, y: number, s = 5) => px(ctx, x - Math.floor(s / 2), y - Math.floor(s / 2) + 1, glow ? '#000' : PUPIL, s, s);
+  const sparkle = (x: number, y: number) => px(ctx, x - 4, y - 4, glow ? '#fff' : '#ffffff', 2, 2);
+  // sobrancelha: linha de 11 px com inclinação (tilt > 0: a ponta direita fica mais baixa)
+  const brow = (cx: number, cy: number, tilt: number, w = 5) => {
+    for (let i = -w; i <= w; i++) px(ctx, cx + i, cy + Math.round(i * tilt), gold, 1, 3);
+  };
+  // boca: curva (depth > 0 sorri, < 0 fecha a cara)
+  const mouth = (cx: number, cy: number, w: number, depth: number) => {
+    for (let i = -w; i <= w; i++) px(ctx, cx + i, cy + Math.round(depth * (1 - (i * i) / (w * w))), ember, 1, 3);
+  };
+  const blush = (cx: number, cy: number) => {
+    px(ctx, cx - 5, cy + 9, ember, 4, 1);
+    px(ctx, cx + 1, cy + 9, ember, 4, 1);
+  };
+  const fang = (x: number, y: number) => {
+    px(ctx, x, y, glow ? '#fff' : '#f4efe0', 2, 1);
+    px(ctx, x, y + 1, glow ? '#fff' : '#f4efe0', 1, 1);
+  };
+  switch (n) {
+    case 1:
+      pupil(32, 32, 7);
+      sparkle(32, 32);
+      brow(32, 20, 0, 7);
+      mouth(32, 46, 5, 2);
+      break;
+    case 2:
+      pupil(17, 17);
+      pupil(47, 47);
+      sparkle(17, 17);
+      sparkle(47, 47);
+      brow(17, 6, -0.35); // levantada
+      brow(47, 36, 0.35); // baixa
+      mouth(20, 50, 7, 1);
+      break;
+    case 3:
+      pupil(17, 17);
+      pupil(47, 47);
+      sparkle(17, 17);
+      sparkle(47, 47);
+      brow(17, 6, -0.25);
+      brow(47, 36, -0.25);
+      mouth(30, 58, 11, 3); // sorriso de canto, largo
+      break;
+    case 4:
+      pupil(17, 17);
+      pupil(47, 17);
+      sparkle(17, 17);
+      sparkle(47, 17);
+      brow(17, 6, -0.2);
+      brow(47, 6, 0.2);
+      blush(17, 38);
+      blush(47, 38);
+      mouth(32, 46, 8, 4);
+      break;
+    case 5:
+      pupil(17, 17);
+      pupil(47, 17);
+      sparkle(17, 17);
+      sparkle(47, 17);
+      brow(17, 6, -0.2);
+      brow(47, 6, 0.2);
+      mouth(32, 53, 8, 4);
+      fang(26, 57);
+      fang(37, 57);
+      break;
+    case 6:
+      pupil(17, 17);
+      pupil(47, 17);
+      sparkle(17, 17);
+      sparkle(47, 17);
+      brow(17, 7, 0.45); // carranca: as pontas internas descem
+      brow(47, 7, -0.45);
+      mouth(32, 52, 8, -3);
+      fang(25, 49);
+      fang(38, 49);
+      break;
+  }
+}
+// gira o conteúdo de uma face em múltiplos de 90° (sentido horário): as faces laterais do dado podem aparecer deitadas na tela, e o rosto precisa ficar de pé
+function turned(c: HTMLCanvasElement, turn: number): HTMLCanvasElement {
+  const t = ((turn % 4) + 4) % 4;
+  if (t === 0) return c;
+  const { c: o, ctx } = canvas(64);
+  ctx.translate(32, 32);
+  ctx.rotate((t * Math.PI) / 2);
+  ctx.drawImage(c, -32, -32);
+  return o;
+}
+export function dieRostoCanvas(n: number, accent: string, locked: boolean, turn = 0) {
+  const face = dieFaceCanvas(n, accent, locked);
+  const glow = dieGlowCanvas(n, accent, locked);
+  rosto(face.getContext('2d')!, n, false);
+  rosto(glow.getContext('2d')!, n, true);
+  return { face: turned(face, turn), glow: turned(glow, turn) };
+}
+// mistura da face normal com o rosto: `set(p)` de 0 (gemas) a 1 (rosto). `turn`: giros de 90° para o rosto ficar de pé na tela (a face base gira junto)
+export function dieRostoBlend(n: number, accent: string, locked: boolean, turn = 0) {
+  const r = dieRostoCanvas(n, accent, locked, turn);
+  return ditherBlend(turned(dieFaceCanvas(n, accent, locked), turn), r.face, turned(dieGlowCanvas(n, accent, locked), turn), r.glow);
 }
 
 export function dieFaceTexture(n: number, accent: string, locked: boolean) {

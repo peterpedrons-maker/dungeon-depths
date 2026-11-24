@@ -384,3 +384,9 @@ O dado da mão **olha, reage, pisca e cochila** (tudo sutil: inclinação, pulin
 - Os glifos usam `Inscription.panels[i].fire` (0 a 1), que o `setGlow` já converte em laranja forte; salas do construtor (`fire.ts`) e do vestíbulo (`vestibulo.ts`) fazem isso por palavra (`glow(id, alvo)`).
 - A **marca final** (CONFIRMADO) só fecha as frases a partir do Tribunal e da sala de teste; antes disso o jogador ainda não a conhece.
 - Pendente: o **fio de luz** do glifo até o objeto, rabiscos para outras palavras concretas (chama, porta), e o mesmo tratamento para as palavras de salas futuras (cada sala nova = uma palavra nova + o glifo reagindo).
+
+### O rosto de cada número (implementado; `rosto()` / `dieRostoBlend` em `textures.ts`, `updateRostos` em `scene.ts`)
+- O dado da mão gira devagar; **a face virada para o jogador (a de baixo, que ele vê de frente) vira um ROSTO** (dissolução pontilhada, ~0,2 s) e volta a ser gemas quando gira para longe. A face de cima (a escolhida) continua sendo o número/gemas.
+- **As gemas ficam exatamente onde estão** (o número continua legível: é "o mais parecido possível" com o número): elas viram os **olhos** (ganham pupila e brilho); ao redor entram sobrancelhas, bochechas, nariz e boca. Cada número tem a sua expressão: **1** ciclope calmo e surpreso · **2** desconfiado (olhos em diagonal, sobrancelhas desiguais, boca de lado) · **3** sorriso de canto, confiante (o do Fogo) · **4** feliz, de bochechas coradas · **5** sorriso largo, de nariz e dentes · **6** carrancudo, de presas.
+- As faces laterais podem aparecer deitadas (depende da face escolhida): `faceTurn` gira o conteúdo em múltiplos de 90° para o rosto ficar **de pé**; os rostos são refeitos quando a face escolhida muda.
+- O **piscar** do dado vivo apaga as gemas = os olhos piscam. Ainda não: pupilas que seguem o olhar do dado, boca que fala junto com o balão, olhos fechados no cochilo.
