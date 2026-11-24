@@ -68,7 +68,7 @@ export default function App() {
   const [toastQ, setToastQ] = useState<{ id: string; n: number }[]>([]); // avisos de "avistado" esperando o fim da conversa
   const toastTimer = useRef(0);
 
-  const sound = useCallback((name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew', v?: number) => sceneRef.current?.playUi(name, v), []);
+  const sound = useCallback((name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew' | 'write', v?: number) => sceneRef.current?.playUi(name, v), []);
   const toggleDiary = useCallback(() => {
     if (dialogue.blocking) return;
     ui.setDiary(!ui.diaryOpen()); // o livro (src/book) cuida da animação e dos sons
@@ -300,7 +300,7 @@ export default function App() {
           {prompt}
         </div>
       )}
-      <BoatoBubble left={tool === 'chalk'} />
+      <BoatoBubble onSound={sound} />
 
       {hintShown && (
         <div className="hint">

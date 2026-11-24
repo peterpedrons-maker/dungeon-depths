@@ -30,6 +30,7 @@ export type SfxName =
   | 'uiopen'
   | 'uiclose'
   | 'uinew'
+  | 'write'
   | 'shaftRumble'
   | 'shaftFall';
 
@@ -414,6 +415,10 @@ export class Sfx {
       case 'burnout':
         this.sample('burnout', 0.7, 1);
         break;
+      // a escrita (letras e símbolos aparecendo): um pedaço curto e suave de uma gravação de giz, a cada vez em outro ponto, volume e altura
+      case 'write':
+        this.scribble(0.12 * v * (0.6 + 0.7 * Math.random()));
+        break;
       // o barulho de algo se mexendo lá em cima, no poço (só gravações, mais graves e com muito eco): um estrondo surdo, duas batidas e o arrastar
       case 'shaftRumble':
         this.fxNote('timpani', 38, 0.5, 0, 0.95);
@@ -471,6 +476,26 @@ export class Sfx {
       g.connect(v).connect(this.verbSend);
     }
     s.start(ac.currentTime);
+  }
+
+  // um "risquinho": pedaço curto de uma gravação de giz (início e fim suaves), em ponto aleatório
+  scribble(vol: number) {
+    const ac = this.ac;
+    if (!ac || this.mode === 2) return;
+    const b = this.buf.get(pick(['chalk1', 'chalk2']));
+    if (!b) return;
+    const dur = rand(0.06, 0.13);
+    const off = rand(0.02, Math.max(0.03, b.duration - dur - 0.05));
+    const t = ac.currentTime;
+    const s = ac.createBufferSource();
+    s.buffer = b;
+    s.playbackRate.value = rand(0.92, 1.15);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.018);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    s.connect(g).connect(this.bus);
+    s.start(t, off, dur + 0.03);
   }
 
   // batida do dado (impact em m/s)

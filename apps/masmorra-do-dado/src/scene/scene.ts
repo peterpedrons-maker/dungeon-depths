@@ -93,7 +93,7 @@ export interface SceneOptions {
 }
 
 export interface SceneApi {
-  playUi(name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew', v?: number): void; // sons da interface (conversa e diário)
+  playUi(name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew' | 'write', v?: number): void; // sons da interface (conversa e diário)
   action(): void; // arremessa ou recolhe
   place(): void; // posiciona o dado com cuidado onde a mira aponta
   rotate(): void; // próxima face

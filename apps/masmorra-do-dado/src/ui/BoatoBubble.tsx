@@ -21,7 +21,8 @@ function SketchPic({ kind, size }: { kind: SketchKind; size: number }) {
 
 // Balão do dado falante: os símbolos aparecem um a um perto do dado e somem sozinhos.
 // Cada símbolo que ele "diz" vai para o diário como avistado.
-export function BoatoBubble({ left = false }: { left?: boolean }) {
+const GLYPH_MS = 460;
+export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number) => void }) {
   const c = useStore(chatterStore);
   const [shown, setShown] = useState(0);
 
@@ -29,7 +30,13 @@ export function BoatoBubble({ left = false }: { left?: boolean }) {
   useEffect(() => {
     if (!c) return;
     if (shown < c.glyphs.length + (c.pic ? 1 : 0)) {
-      const t = window.setTimeout(() => setShown(shown + 1), 320);
+      const t = window.setTimeout(() => {
+        setShown(shown + 1);
+        // um símbolo se forma: 3 risquinhos enquanto ele é desenhado
+        onSound?.('write', 1);
+        window.setTimeout(() => onSound?.('write', 0.9), 130);
+        window.setTimeout(() => onSound?.('write', 0.8), 260);
+      }, GLYPH_MS);
       return () => window.clearTimeout(t);
     }
     const t = window.setTimeout(() => chatter.clear(), 3600); // o balão fica à vista por mais tempo depois do último símbolo
@@ -43,7 +50,7 @@ export function BoatoBubble({ left = false }: { left?: boolean }) {
 
   if (!c) return null;
   return (
-    <div className={`boato${left ? ' left' : ''}`} aria-hidden="true">
+    <div className="boato" aria-hidden="true">
       {c.pic && shown >= 1 && (
         <span className="dlg-tile" key={`${c.id}-pic`}>
           <SketchPic kind={c.pic as SketchKind} size={34} />
@@ -51,7 +58,7 @@ export function BoatoBubble({ left = false }: { left?: boolean }) {
       )}
       {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, k) => (
         <span className="dlg-tile" key={`${c.id}-${k}`}>
-          <WordGlyph id={id} size={26} />
+          <WordGlyph id={id} size={26} draw={GLYPH_MS - 40} />
         </span>
       ))}
     </div>

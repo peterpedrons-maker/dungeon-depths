@@ -7,7 +7,8 @@ import './story.css';
 
 // Janela de conversa estilo RPG clássico, no rodapé. O mundo fala em glifos (aparecem um a um);
 // os pensamentos do jogador vêm em português, letra a letra.
-export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew', v?: number) => void }) {
+const GLYPH_MS = 460; // tempo para cada símbolo se formar
+export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' | 'write', v?: number) => void }) {
   const c = useStore(dialogueStore);
   const line = c ? c.lines[c.i] : null;
   const total = line ? (line.glyphs ? line.glyphs.length : (line.text?.length ?? 0)) : 0;
@@ -22,9 +23,14 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew', 
     const t = window.setTimeout(
       () => {
         setShown(shown + 1);
-        onSound?.('uiblip', shown);
+        if (line.glyphs) {
+          // um símbolo se forma: 3 risquinhos enquanto ele é desenhado
+          onSound?.('write', 1.1);
+          window.setTimeout(() => onSound?.('write', 0.9), 120);
+          window.setTimeout(() => onSound?.('write', 0.8), 240);
+        } else if (shown % 3 === 0 && /\S/.test(line.text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
       },
-      line.glyphs ? 260 : 32,
+      line.glyphs ? GLYPH_MS : 32,
     );
     return () => window.clearTimeout(t);
   }, [line, shown, total, onSound]);
@@ -87,12 +93,17 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew', 
           <div className="dlg-glyphs">
             {line.glyphs.slice(0, shown).map((id, k) => (
               <span className="dlg-tile" key={`${key}-${k}`}>
-                <WordGlyph id={id} size={50} />
+                <WordGlyph id={id} size={50} draw={GLYPH_MS - 40} />
               </span>
             ))}
           </div>
         ) : (
-          <p className={done ? 'done' : ''}>{(line.text ?? '').slice(0, shown)}</p>
+          <p data-done={done ? '' : undefined}>
+            {shown > 0 ? '(' : ''}
+            {(line.text ?? '').slice(0, shown)}
+            <span className="ghost">{(line.text ?? '').slice(shown)}</span>
+            <span className={done ? undefined : 'ghost'}>)</span>
+          </p>
         )}
       </div>
       {block && done && <span className="dlg-next">▼</span>}
