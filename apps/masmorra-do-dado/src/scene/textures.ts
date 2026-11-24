@@ -4,6 +4,8 @@
 
 import { sketchCanvas, type SketchKind } from './sketch';
 import * as THREE from 'three';
+import { drawGlyph } from '../book/font';
+import type { GlyphDef } from '../story/lexicon';
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -334,39 +336,37 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
 };
 
-// "Pip" em forma de gema facetada (losango): luz em cima/esquerda, sombra embaixo/direita,
-// ponto de brilho e engaste escuro em volta. Dado de obsidiana com filete dourado.
-function drawGem(ctx: CanvasRenderingContext2D, cx: number, cy: number, col: RGB, glow: boolean) {
-  const R = 7;
-  for (let dy = -R - 2; dy <= R + 2; dy++) {
-    for (let dx = -R - 2; dx <= R + 2; dx++) {
-      const d = Math.abs(dx) + Math.abs(dy);
-      if (d > R + 2) continue;
-      if (d > R) {
-        // engaste (aro escuro com um fio de ouro)
-        if (!glow) px(ctx, cx + dx, cy + dy, d === R + 2 ? '#8a6a28' : '#120d1c');
-        continue;
-      }
-      let k: number;
-      if (glow) k = d <= 2 ? 1.5 : d <= 4 ? 1.15 : 0.8;
-      else {
-        // facetas: quatro triângulos com luz diferente
-        const top = dy < 0;
-        const left = dx < 0;
-        k = top && left ? 1.3 : top ? 1.05 : left ? 0.85 : 0.55;
-        if (d <= 2) k += 0.2;
-        if (d === R) k *= 0.8;
-      }
-      px(ctx, cx + dx, cy + dy, shade(col, k));
-    }
-  }
-  if (!glow) {
-    px(ctx, cx - 2, cy - 3, '#ffffff', 2, 1);
-    px(ctx, cx - 3, cy - 2, '#ffffff', 1, 2);
-  }
-}
-
 const GEM_POS = [17, 32, 47];
+
+// A MARCA de cada face no lugar das gemas (decisão do jogador): o GLIFO do efeito (3 Fogo = ACENDER...), só quando o jogador já viu a palavra; antes disso, uma marca
+// apagada. O número continua como `n` pontinhos na borda de baixo. `faceMarks` é preenchido pelo motor (scene.ts) a partir do diário.
+export const faceMarks: Record<number, GlyphDef | 'blank'> = {};
+function drawFaceMark(ctx: CanvasRenderingContext2D, n: number, accent: string, locked: boolean, glow: boolean) {
+  const mark = faceMarks[n] ?? 'blank';
+  const col = locked ? '#5a5270' : accent;
+  if (mark === 'blank') {
+    // marca apagada: losango de contorno, quase sumido (a palavra ainda não foi vista)
+    const dim = glow ? '#2c2640' : '#4a4066';
+    for (let k = 0; k < 2; k++) {
+      const r = 15 - k * 3;
+      for (let t = -r; t <= r; t++) {
+        const a = r - Math.abs(t);
+        px(ctx, 32 + t, 32 - a, dim);
+        px(ctx, 32 + t, 32 + a, dim);
+      }
+    }
+  } else {
+    const size = 44;
+    if (!glow) {
+      // sulco escuro em volta e o glifo em ouro por cima (como na parede)
+      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [-1, 1], [1, -1]]) drawGlyph(ctx, mark, 32 + dx, 32 + dy, size, '#0a0710');
+      drawGlyph(ctx, mark, 32, 32, size, '#f0d078');
+    } else drawGlyph(ctx, mark, 32, 32, size, col);
+  }
+  // o número, em pontinhos pequenos na borda de baixo
+  const x0 = 32 - ((n - 1) * 4) / 2;
+  for (let i = 0; i < n; i++) px(ctx, Math.round(x0 + i * 4), 52, glow ? shade(hex(col), 1.3) : '#d4ac4e', 2, 2);
+}
 
 export function dieFaceCanvas(n: number, accent: string, locked = false, gems = true): HTMLCanvasElement {
   const { c, ctx } = canvas(64);
@@ -429,8 +429,7 @@ export function dieFaceCanvas(n: number, accent: string, locked = false, gems = 
     const near = PIPS[n].some(([gx, gy]) => Math.abs(GEM_POS[gx] - x) < 11 && Math.abs(GEM_POS[gy] - y) < 11);
     if (!near) px(ctx, x, y, shade(body, 1.7), 1, 3);
   }
-  const col = locked ? hex('#5a5270') : hex(accent);
-  if (gems) for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, false);
+  if (gems) drawFaceMark(ctx, n, accent, locked, false);
   return c;
 }
 
@@ -438,8 +437,7 @@ export function dieGlowCanvas(n: number, accent: string, locked = false, gems = 
   const { c, ctx } = canvas(64);
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, 64, 64);
-  const col = locked ? hex('#3a3450') : hex(accent);
-  if (gems) for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, true);
+  if (gems) drawFaceMark(ctx, n, accent, locked, true);
   return c;
 }
 

@@ -9,6 +9,7 @@ import {
   dieFaceTexture,
   dieSketchBlend,
   dieRostoBlend,
+  faceMarks,
   dieRostoCanvas,
   dieGlowTexture,
   flameFrames,
@@ -21,6 +22,7 @@ import { Sfx, type AudioMode } from './audio';
 import { CORRIDOR, dbg } from './kit';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
+import { LEX } from '../story/lexicon';
 import { dialogue } from '../story/dialogue';
 import { ui } from '../story/ui';
 import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
@@ -573,10 +575,24 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     });
   };
+  // a MARCA de cada face: o glifo do efeito (3 Fogo = ACENDER, 2 Peso = IGUAL/PESAR, 1 Ricochete = ECO), só depois de o jogador ter visto a palavra e com a face liberada;
+  // as outras ficam com a marca apagada (a palavra delas ainda não está definida na língua). Ver DESIGN.md §27.
+  const FACE_WORD: Record<number, string> = { 3: 'acender', 2: 'igual', 1: 'eco' };
+  const marksSig = () => {
+    let sig = '';
+    for (let n = 1; n <= 6; n++) {
+      const w = FACE_WORD[n];
+      const g = w && FACES[n - 1].unlocked && diaryStore.get().seen[w] ? LEX[w]?.g : undefined;
+      if (g) faceMarks[n] = g;
+      else faceMarks[n] = 'blank';
+      sig += g ? '1' : '0';
+    }
+    return sig;
+  };
   // faces liberadas pela história: refaz as texturas do dado quando um marco libera uma nova
-  let facesSig = FACES.map((f) => +f.unlocked).join('');
+  let facesSig = FACES.map((f) => +f.unlocked).join('') + marksSig();
   const refreshFaces = () => {
-    const sig = FACES.map((f) => +f.unlocked).join('');
+    const sig = FACES.map((f) => +f.unlocked).join('') + marksSig();
     if (sig === facesSig) return; // só refaz se uma face mudou (o progresso também guarda outras coisas)
     facesSig = sig;
     endSketch();
@@ -591,6 +607,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     buildRostos(); // o dado da mão volta a ter os rostos
   };
   const unsubProgress = progressStore.subscribe(refreshFaces);
+  const unsubDiaryFaces = diaryStore.subscribe(refreshFaces);
   buildRostos();
   curQ.copy(targetQ);
   let spin = 0;
@@ -763,7 +780,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
           startBurn(first);
           life.react('flinch');
-          if (first) chatFn('burn');
+          if (first && progress.has('fogo')) chatFn('burn'); // a 1ª de todas não tem medo: o dado comemora (sala 1)
         } else if (n === 'plate') {
           life.react('thump');
           chatFn('plate');
@@ -809,6 +826,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       dieGlow: (v) => {
         talkGlow = v;
+      },
+      dieSay: (glyphs, o) => {
+        window.setTimeout(() => {
+          if (!hasDie) return;
+          chatter.say(glyphs, o?.pic);
+          handTalk = 1;
+          handPop = Math.max(handPop, 0.5);
+          chatCool = Math.max(chatCool, 30); // depois de falar de propósito, fica calado um tempo
+          sfx.play('uiblip', 0.6);
+          if (o?.joy) life.react('joy');
+        }, (o?.delay ?? 0) * 1000);
       },
       freeze: (on) => {
         holds = Math.max(0, holds + (on ? 1 : -1));
@@ -2397,6 +2425,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dispose() {
       cancelAnimationFrame(raf);
       unsubProgress();
+      unsubDiaryFaces();
       window.removeEventListener('pointerdown', onSkip);
       window.removeEventListener('keydown', onSkip);
       book.dispose();

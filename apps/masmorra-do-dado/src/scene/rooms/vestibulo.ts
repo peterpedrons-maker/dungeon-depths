@@ -220,6 +220,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   };
   let marked = false;
   let tried = false; // v1: já tentou abrir a porta
+  let nudge = -1; // v1: segundos desde que o dado pediu para acender (-1 = ainda não pediu); se demorar, ele repete
   const doorPos = new THREE.Vector3(0, 1.0, Z0 + 0.5);
 
   // ── sala 1: a porta trancada e o dado que fala ──
@@ -266,7 +267,14 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
                           { who: 'thought', text: 'Pesa na mão como se me conhecesse.' },
                           { who: 'thought', text: 'Na parede, perto da porta, alguém escreveu alguma coisa. E aquele braseiro, apagado…' },
                         ],
-                        { block: true },
+                        {
+                          block: true,
+                          // o dado "conversa": em glifos, diz ao jogador para acender o braseiro (ACENDER BRASEIRO), com o desenho dele
+                          onEnd: () => {
+                            ctx.dieSay(['acender', 'brasa'], { pic: 'braseiro', delay: 0.5 });
+                            nudge = 0;
+                          },
+                        },
                       );
                     });
                   },
@@ -346,6 +354,21 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         b.update(t);
       }
       const nLit = braziers.filter((b) => b.lit).length;
+      if (v === 1) {
+        if (nudge >= 0 && nLit === 0 && !ctx.paused()) {
+          nudge += dt;
+          if (nudge > 50) {
+            nudge = 0;
+            ctx.dieSay(['acender', 'brasa']); // repete o pedido se o jogador demorar
+          }
+        }
+        if (nLit > 0 && nudge >= 0) {
+          nudge = -1;
+          // comemoração: ele reage quando o braseiro pega (depois da cena do fogo): "VOCÊ ACENDER CONFIRMADO", e logo em seguida a alegria dele
+          ctx.dieSay(['voce', 'acender', 'conf'], { delay: 1.9, joy: true });
+          ctx.dieSay(['eu', 'sentir', 'alegria'], { delay: 5.6 });
+        }
+      }
       if (nLit > prevLit) flash = 1;
       prevLit = nLit;
       flash = Math.max(0, flash - dt / 1.3);
