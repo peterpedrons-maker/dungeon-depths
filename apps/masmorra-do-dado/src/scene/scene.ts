@@ -798,6 +798,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let intro: null | { ph: number; t: number } = null;
   let burn: null | { t: number; dur: number } = null;
   let dropWatch: { t: number; cb: () => void } | null = null; // esperando o dado que caiu do poço parar no chão
+  let walkAnim: { tx: number; tz: number; t: number; cb: (() => void) | null } | null = null; // cena (ctx.walkTo): andar sozinho até um ponto, em coordenadas do mundo
   let dieCine = 0; // 0 = dado na mão de sempre, 1 = dado no centro da tela (cena)
   let dieCineTarget = 0;
   let pickup: (() => void) | null = null; // chamado quando o dado caído chega na mão
@@ -926,6 +927,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         const y1 = Math.atan2(-wx, -wz);
         const dy = Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw)); // caminho mais curto
         camTween = { y0: yaw, p0: pitch, y1: yaw + dy, p1: clamp(Math.atan2(wy, Math.hypot(wx, wz)), -1.0, 1.0), t: 0, dur };
+      },
+      walkTo: (p, onDone) => {
+        walkAnim = { tx: p.x + off.x, tz: p.z + off.z, t: 0, cb: onDone ?? null };
       },
       die: {
         get state() {
@@ -1106,6 +1110,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     yaw = r.startYaw;
     pitch = -0.04;
     vy = 0;
+    walkAnim = null;
     moveVel.set(0, 0, 0);
     brush.active = false;
     curRoom = i;
@@ -1889,6 +1894,43 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const MAX_SPEED = 4.2; // m/s (antes 2,7)
   const STRIDE = 1.7; // metros por passo
   const SPRINT = 1.35; // Shift (PC)
+  // cena (ctx.walkTo): o jogador anda sozinho até o alvo, com os mesmos empurrões de parede do
+  // movimento normal. Roda FORA do move() porque quem chama segura o jogador com freeze — e o
+  // move() desiste quando busy(). Preenche o moveVel pra balanço da câmera e som dos passos valerem.
+  const stepWalk = (dt: number): boolean => {
+    const w = walkAnim;
+    if (!w) return false;
+    w.t += dt;
+    const dx = w.tx - pos.x;
+    const dz = w.tz - pos.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.07 || w.t > 12) {
+      // chegou (ou algo bloqueou o caminho por tempo demais: não trava a cena)
+      walkAnim = null;
+      moveVel.set(0, 0, 0);
+      const cb = w.cb;
+      cb?.();
+      return false;
+    }
+    const step = Math.min(dist, 2.3 * dt); // passo de caminhada, sem correr
+    const nx = (dx / dist) * step;
+    const nz = (dz / dist) * step;
+    pos.x += nx;
+    pos.z += nz;
+    for (let pass = 0; pass < 2; pass++) for (const r of worldRects()) pushOut(r);
+    const cr = rooms[curRoom];
+    if (cr.clampPlayer) {
+      lcl.copy(pos).sub(offs[curRoom]);
+      cr.clampPlayer(lcl);
+      pos.copy(lcl).add(offs[curRoom]);
+    }
+    moveVel.set(nx / dt, 0, nz / dt);
+    // vira o corpo (e o olhar) para onde está andando, e nivela o olhar
+    const yT = Math.atan2(-dx, -dz);
+    yaw += Math.atan2(Math.sin(yT - yaw), Math.cos(yT - yaw)) * Math.min(1, dt * 5);
+    pitch += (0 - pitch) * Math.min(1, dt * 3);
+    return true;
+  };
   const move = (dt: number) => {
     if (busy()) {
       moveVel.set(0, 0, 0);
@@ -2110,7 +2152,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     t += dt;
 
     if (ui.diaryOpen() && locked()) document.exitPointerLock(); // o diário precisa do mouse livre
-    const moving = move(dt);
+    const moving = walkAnim ? stepWalk(dt) : move(dt);
     vertical(dt);
     const ri = roomOfZ(pos.z);
     if (ri !== curRoom) {
