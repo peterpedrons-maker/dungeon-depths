@@ -10,15 +10,15 @@ o **Ricochete (1) fica selado** por enquanto (só chega bem mais tarde; a gema e
 Ao acender um braseiro o dado queima: 1,5 s na 1ª vez de cada braseiro, ~0,3 s nas seguintes.
 Olhar uns segundos para uma inscrição na parede manda os símbolos dela ao diário (como "avistado").
 
-## Sala 1 — O Poço  (ACENDER · UM · BRASEIRO)
+## Sala 1 — O Poço  (só ACENDER)
 Você acorda no chão, **sem nada nas mãos**, olha o poço de luz no teto e a cena termina. A sala é pequena.
 1. Vá até a **porta** (fundo da sala): aparece "E · Tentar abrir a porta" (no celular, o botão AGIR). **Não abre.**
 2. Um brilho no entulho (perto da luz do poço): é o **dado**. Ele "fala" em glifos (`VOCÊ · CONDENADO · BOATO`) e voa até a sua mão.
-3. Agora você tem o dado, na face **Fogo (3)**. Na parede esquerda da porta está talhada a frase **ACENDER · UM · BRASEIRO**.
+3. Agora você tem o dado, na face **Fogo (3)**. Na parede esquerda da porta está talhada **uma só palavra: ACENDER**. Quando você acende o braseiro, **o glifo brilha** (assim você aprende o que ele significa).
    Acenda o **único braseiro** (canto direito, perto da porta): arremesse o dado dentro da tigela ou posicione-o nela. A porta abre.
 - O dado queima ~1,5 s na 1ª vez (rápido nas seguintes). **Você ainda não tem o giz.**
 
-## Sala 2 — O Vestíbulo  (ACENDER · DOIS · BRASEIRO)  — o salão comprido, com colunas
+## Sala 2 — O Vestíbulo  (ACENDER · DOIS)  — o salão comprido, com colunas
 Três braseiros apagados; a frase diz DOIS (o símbolo de DOIS são dois pontos na diagonal).
 1. Acenda **exatamente dois** braseiros (quaisquer). Com dois acesos a porta abre.
 2. Se acender o **terceiro**, depois de ~1,5 s a Casa apaga todos ("dizer é fazer": o número tem que ser exato). Aí é só acender dois de novo.
@@ -38,7 +38,7 @@ Sala larga (10 m) com duas colunas e **três braseiros**, cada um com um **símb
 - O que o jogador aprende: uma sequência de números na frase é uma **ordem**; os símbolos nos objetos dizem qual é qual; errar é barato e dá resposta (a Casa apaga), sem texto.
 - Ideia das próximas salas de ordem (mais difíceis): ordem pedida em palavras diferentes, braseiros sem plaquinha (a ordem vem da posição), uma ordem vista duas salas atrás.
 
-## Sala 5 — A Chama Curta  (ACENDER · QUATRO · BRASEIRO · TEMPO · ✓)  — NÍVEL 4
+## Sala 5 — A Chama Curta  (ACENDER · QUATRO · BRASEIRO · TEMPO)  — NÍVEL 4
 Salão **muito comprido** (27 m) com **quatro braseiros de tamanhos diferentes**: pequeno (junto da entrada, esquerda), médio-pequeno (direita), médio-grande (esquerda) e **grande** (direita, junto da porta). A frase é a das salas anteriores com a palavra **TEMPO** e fecha com a marca CONFIRMADO.
 As chamas **se apagam sozinhas**; quanto maior o braseiro, mais dura: ~6 s, ~10 s, ~15 s e ~22 s (a chama encolhe quando está acabando). A porta só abre quando os **quatro estão acesos ao mesmo tempo** (e abre para sempre). As gemas do arco mostram quais estão acesos.
 1. O jeito natural (do mais perto da entrada para o mais longe) **falha**: o pequeno apaga muito antes de você chegar ao último, e a sala é longa.
@@ -47,9 +47,9 @@ As chamas **se apagam sozinhas**; quanto maior o braseiro, mais dura: ~6 s, ~10 
 - O tempo **espera** durante as cenas de queima, conversas e o diário.
 - **Dificuldade: 4 de 10**: a regra já é conhecida (Sala 5 antiga), mas agora exige **planejar o caminho e o tempo** com quatro braseiros.
 
-## Sala 6 — O Que a Casa Confirma  (ACENDER · CONFIRMADO · PALAVRA · ✓)  — NÍVEL 5 (ensina CONFIRMADO×BOATO e ANTES/DEPOIS)
+## Sala 6 — O Que a Casa Confirma  (ACENDER · CONFIRMADO)  — NÍVEL 5 (ensina CONFIRMADO×BOATO e ANTES/DEPOIS)
 Primeira sala do **dado que acende palavras**. Na parede há **sete frases** em três parágrafos pequenos (esquerda: 2 + 2 linhas; direita: 3 linhas). Cada frase é «X ANTES Y» ou «X DEPOIS Y» e termina numa **marca**: CONFIRMADO ou BOATO. **Não há braseiros à vista**: os quatro pilares estão escondidos sob o chão.
-A porta diz «ACENDER CONFIRMADO PALAVRA»: **acenda as palavras (frases) CONFIRMADAS**.
+A porta diz «ACENDER CONFIRMADO»: **acenda as frases CONFIRMADAS**.
 **Passo 1 — ler e acender (liberar o puzzle):**
 1. Com o **Fogo (3)**, arremesse (ou posicione) o dado **junto de cada frase CONFIRMADA** (na parede, perto do texto): a frase brilha em brasa, com uma chama ao lado.
 2. As frases de **BOATO** não podem ser acesas: tocar uma delas **apaga todas as frases acesas** e a Casa **recusa o fogo por 4 s**. É preciso **ler a marca final de cada frase**.
@@ -176,4 +176,4 @@ e que nenhuma pista é descartável.
 4. Acenda 1, 2 e 4 (Fogo) e **pese a placa** (Peso, posicionar o dado nela). Se o conjunto estiver errado, a placa **abafa o fogo** (apaga tudo) e os
    braseiros ficam **frios por 6 s**: chutar não compensa. Para recomeçar, recolha o dado (`E`).
 
-> **Convenção de escrita:** toda frase das portas agora termina numa **marca** (CONFIRMADO nas ordens da Casa, PERGUNTA nas perguntas). As soluções acima não mudam.
+> **Convenção de escrita (atualizada):** as frases das portas das salas 1 a 6 mostram **só as palavras que a sala ensina** (uma nova por sala; ver `DESIGN.md` §24); a marca final (CONFIRMADO) volta a fechar as frases do Tribunal e da sala de teste. Os glifos **brilham** quando o que eles dizem acontece. As soluções não mudam.

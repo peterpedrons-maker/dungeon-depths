@@ -16,7 +16,7 @@ export const FIRE_ORDEM: FireSpec = {
     { x: 3.2, dz: 2.2, mark: 'n2' }, // à direita, perto da porta
   ],
   rule: { kind: 'order', seq: [2, 0, 1] }, // DOIS (direita, porta) → TRÊS (esquerda, entrada) → UM (direita, meio)
-  words: ['acender', 'n2', 'n3', 'n1', 'brasa', 'conf'],
+  words: ['acender', 'n2', 'n3', 'n1', 'brasa'],
   pillars: [
     [-1.6, 5.0],
     [1.6, 7.6],
@@ -43,7 +43,7 @@ export const FIRE_TEMPO: FireSpec = {
   rule: { kind: 'together' },
   fog: { color: '#0a0a11', near: 5, far: 30 },
   ambient: { color: 0x7a78b8, intensity: 1.9 },
-  words: ['acender', 'n4', 'brasa', 'tempo', 'conf'],
+  words: ['acender', 'n4', 'brasa', 'tempo'],
   pillars: [
     [2.2, 21],
     [-2.2, 13],
@@ -72,7 +72,7 @@ export const FIRE_FRASES: FireSpec = {
   ],
   rule: { kind: 'order', seq: [2, 0, 3, 1], hints: false, penalty: 8 }, // TRÊS, UM, QUATRO, DOIS
   lock: { penalty: 4 },
-  words: ['acender', 'conf', 'palavra', 'conf'],
+  words: ['acender', 'conf'],
   tablets: [
     { lines: [frase('n2', 'antes', 'n4', 'boato', false), frase('n3', 'antes', 'n1', 'conf', true)], wall: 'left', dz: 13, size: 0.45, lit: true },
     { lines: [frase('n1', 'antes', 'n4', 'conf', true), frase('n1', 'antes', 'n3', 'boato', false)], wall: 'left', dz: 6, size: 0.45, lit: true },

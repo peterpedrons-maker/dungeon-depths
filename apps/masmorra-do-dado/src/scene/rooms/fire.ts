@@ -137,7 +137,13 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         ? kit.inscribe({ words: spec.words, x: X0 + 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: 1, nz: 0, size, age: 0.3, seed: 9 })
         : kit.inscribe({ words: spec.words, x: X1 - 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: -1, nz: 0, size, age: 0.3, seed: 9 });
 
-  void ins; // (a frase fica registrada em kit.inscriptions)
+  // os glifos da frase REAGEM ao que o jogador faz (DESIGN.md §24): ACENDER brilha enquanto há fogo; cada número brilha com o braseiro dele (ou enche com a contagem);
+  // BRASEIRO pisca ao acender; TEMPO pulsa enquanto uma chama está acabando; CONFIRMADO brilha quando a porta abre (ou quando uma frase confirmada acende)
+  let flash = 0;
+  let prevLit = 0;
+  const glow = (id: string, target: number, dt: number) => {
+    for (const p of ins.panels) if (p.id === id) p.fire = (p.fire ?? 0) + (target - (p.fire ?? 0)) * Math.min(1, dt * 6);
+  };
 
   // braseiros e os símbolos nos pedestais
   // pilares escondidos (`hidden`): tudo do braseiro (pedestal, tigela, brasas, sombra, chama e rótulo) vai para um grupo que fica SOB o chão até a trava ser resolvida
@@ -681,6 +687,25 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         door.lampMats.forEach((m, i) => m.color.setHex(solved || braziers[i]?.lit ? 0xff7a2e : LAMP_OFF));
       }
       braziers.forEach((b) => b.update(t));
+      {
+        const nLit = braziers.filter((b) => b.lit).length;
+        if (nLit > prevLit) flash = 1;
+        prevLit = nLit;
+        flash = Math.max(0, flash - dt / 1.3);
+        const open = doorOpen > 0.5;
+        const anyLine = litLines.some((l) => l.lit);
+        glow('acender', nLit > 0 || anyLine ? 1 : 0, dt);
+        glow('brasa', Math.max(flash, open ? 0.6 : 0), dt);
+        glow('conf', spec.lock ? (anyLine ? 1 : 0) : open ? 1 : 0, dt);
+        const dying = braziers.some((b) => b.lit && b.flameK < 1);
+        glow('tempo', dying ? 0.55 + 0.45 * Math.sin(t * 7) : nLit > 0 ? 0.35 : 0, dt);
+        for (const p of ins.panels) {
+          if (!p.id || !/^n\d$/.test(p.id)) continue;
+          const bi = spec.braziers.findIndex((b) => b.mark === p.id);
+          // com rótulos nos pedestais: o número brilha com o braseiro dele; senão, enche com a contagem de acesos
+          glow(p.id, open ? 1 : bi >= 0 ? (braziers[bi].lit ? 1 : 0) : Math.min(1, nLit / Number(p.id.slice(1))), dt);
+        }
+      }
       if (rule.kind === 'exact') door.lampMats[0].color.setHex(want ? 0xff7a2e : LAMP_OFF);
       if (want && !prevWant) ctx.sfx('door');
       else if (!want && prevWant && doorOpen > 0.15) ctx.sfx('doorClose');

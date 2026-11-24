@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { floorTexture, brickTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
+import { glyphsOf } from '../../story/lexicon';
 import type { Box, Ctx, Room } from '../types';
 
 export type VestVariant = 1 | 2 | 3 | 4;
@@ -106,9 +107,11 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme });
 
   // a frase talhada: v1–v3 na parede do fundo, à esquerda da porta; a lacuna (v4) na parede esquerda, bem maior
-  const words: (string | null)[] = v === 1 ? ['acender', 'n1', 'brasa', 'conf'] : v === 2 ? ['acender', 'n2', 'brasa', 'conf'] : v === 3 ? ['acender', 'n3', 'brasa', 'conf'] : ['acender', null, 'brasa', 'conf'];
+  // UMA palavra nova por sala (DESIGN.md §24): 1 = só ACENDER; 2 = ACENDER + DOIS; 3 = ACENDER + TRÊS + BRASEIRO (o desenho do braseiro aparece no dado)
+  const words: (string | null)[] = v === 1 ? ['acender'] : v === 2 ? ['acender', 'n2'] : v === 3 ? ['acender', 'n3', 'brasa'] : ['acender', null, 'brasa', 'conf'];
   const onBack = v !== 4;
-  const size = onBack ? Math.min(0.5, (D.hx - 1.5) / 6.81) : 0.55;
+  const units = words.reduce((a, w) => a + (w ? Math.max(1, glyphsOf(w).length) : 1) + 0.2917, 0) + 0.55 * (words.length - 1);
+  const size = onBack ? Math.min(0.5, (D.hx - 1.5) / units) : 0.55;
   const ins = onBack
     ? kit.inscribe({ words, x: -(D.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.4 - v * 0.05, seed: 3 + v * 11 })
     : kit.inscribe({ words, x: X0 + 0.025, y: 1.55, z: Z0 + 4.4, nx: 1, nz: 0, size, age: 0.2, seed: 3 + v * 11 });
@@ -207,6 +210,13 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   let evalT = 0;
   let lastRev = -1;
   let overlit = 0; // v2/v3: tempo com braseiros demais
+  // os glifos da frase REAGEM ao que o jogador faz (DESIGN.md §24): ACENDER brilha enquanto há fogo; o número enche conforme os braseiros acesos; BRASEIRO
+  // pisca ao acender; a marca final brilha quando a porta abre
+  let flash = 0;
+  let prevLit = 0;
+  const glow = (id: string, target: number, dt: number) => {
+    for (const p of ins.panels) if (p.id === id) p.fire = (p.fire ?? 0) + (target - (p.fire ?? 0)) * Math.min(1, dt * 6);
+  };
   let marked = false;
   let tried = false; // v1: já tentou abrir a porta
   const doorPos = new THREE.Vector3(0, 1.0, Z0 + 0.5);
@@ -335,6 +345,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         b.update(t);
       }
       const nLit = braziers.filter((b) => b.lit).length;
+      if (nLit > prevLit) flash = 1;
+      prevLit = nLit;
+      flash = Math.max(0, flash - dt / 1.3);
       let want = 0;
       if (v === 1) want = nLit >= 1 ? 1 : 0;
       else if (v === 2 || v === 3) {
@@ -371,6 +384,12 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       doorOpen += (want - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
       door.lampMats[0].color.setHex(want ? 0xff7a2e : LAMP_OFF);
+      // reações dos glifos
+      const open = doorOpen > 0.5;
+      glow('acender', v === 4 ? (open ? 1 : 0) : nLit > 0 ? 1 : 0, dt);
+      glow('brasa', Math.max(flash, open ? 0.6 : 0), dt);
+      glow('conf', open ? 1 : 0, dt);
+      if (v === 2 || v === 3) glow(v === 2 ? 'n2' : 'n3', open ? 1 : Math.min(1, nLit / (v === 2 ? 2 : 3)) * (nLit > (v === 2 ? 2 : 3) ? 0.3 : 1), dt);
     },
     reset() {
       braziers.forEach((b) => b.light(v === 4, true));

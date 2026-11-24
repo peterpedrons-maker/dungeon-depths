@@ -371,3 +371,16 @@ O dado da mão **olha, reage, pisca e cochila** (tudo sutil: inclinação, pulin
 - **Vida própria**: respira, **pisca** (as gemas apagam por um instante) a cada 3 a 8 s, e com o jogador parado por ~40 s **cochila** (cabeça baixa, gemas fracas); acorda assustado ao se mexer.
 - **Balão de fala centrado no dado**: o motor publica a posição do dado na tela (`--die-x`, `--die-y`) e o balão se centra nela, nas duas mãos.
 - **Ainda não**: olhar para **personagens** (NPCs como o Escrivão: falta `Room.interest()` para a sala apontar o ponto), "pupila" (uma gema só brilhar mais, exige textura por gema), sons (chilreios), tremor das gemas como sinal de mentira. Dev: `__mdd.life('flinch'|'perk'|'joy'|'shake'|'thump'|'sad'|'sleep')`.
+
+## 24. Uma palavra nova por sala; o glifo reage (decisão do jogador, implementado nas salas 1 a 6)
+| Sala | Frase da porta | Palavra nova | Como o glifo reage |
+|---|---|---|---|
+| 1 O Poço | ACENDER | ACENDER | brilha em brasa quando o braseiro é aceso |
+| 2 O Vestíbulo | ACENDER · DOIS | DOIS | o número **enche** conforme os braseiros acesos (dois = cheio) e fica forte com a porta aberta |
+| 3 Os Quatro | ACENDER · TRÊS · BRASEIRO | TRÊS, BRASEIRO | idem; BRASEIRO **pisca** a cada braseiro aceso; olhar o glifo faz o dado mostrar o desenho |
+| 4 A Ordem | ACENDER · DOIS · TRÊS · UM · BRASEIRO | UM + a ideia de ORDEM | cada número brilha **com o braseiro dele** (o rótulo do pedestal é o mesmo símbolo) |
+| 5 A Chama Curta | ACENDER · QUATRO · BRASEIRO · TEMPO | QUATRO, TEMPO | TEMPO **pulsa** enquanto uma chama está acabando |
+| 6 O Que a Casa Confirma | ACENDER · CONFIRMADO | CONFIRMADO (e BOATO, ANTES, DEPOIS nas frases) | CONFIRMADO brilha quando uma frase confirmada acende |
+- Os glifos usam `Inscription.panels[i].fire` (0 a 1), que o `setGlow` já converte em laranja forte; salas do construtor (`fire.ts`) e do vestíbulo (`vestibulo.ts`) fazem isso por palavra (`glow(id, alvo)`).
+- A **marca final** (CONFIRMADO) só fecha as frases a partir do Tribunal e da sala de teste; antes disso o jogador ainda não a conhece.
+- Pendente: o **fio de luz** do glifo até o objeto, rabiscos para outras palavras concretas (chama, porta), e o mesmo tratamento para as palavras de salas futuras (cada sala nova = uma palavra nova + o glifo reagindo).
