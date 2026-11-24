@@ -21,17 +21,27 @@ import { diary, diaryStore } from '../story/diary';
 import { dialogue } from '../story/dialogue';
 import { ui } from '../story/ui';
 import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
+import { chatter } from '../story/chatter';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
 import { buildRoom4 } from './rooms/room4';
-import type { Ctx, DieState, Rect, Room, RoomBuilder } from './types';
+import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 
 const FOG = '#0b0912';
-// O Vestíbulo (3 salas) abre o jogo; depois vêm as salas antigas.
-const BUILDERS: RoomBuilder[] = [(c) => buildVestibulo(c, 1), (c) => buildVestibulo(c, 2), (c) => buildVestibulo(c, 3), buildRoom1, buildRoom2, buildRoom3, buildRoom4];
+// O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
+const BUILDERS: RoomBuilder[] = [
+  (c) => buildVestibulo(c, 1),
+  (c) => buildVestibulo(c, 2),
+  (c) => buildVestibulo(c, 3),
+  buildRoom1,
+  (c) => buildVestibulo(c, 4), // A Lacuna: o 1º puzzle que pede o giz (que o jogador acabou de achar)
+  buildRoom2,
+  buildRoom3,
+  buildRoom4,
+];
 
 // Ordem dos materiais do BoxGeometry: +x, -x, +y, -y, +z, -z (opostas somam 7).
 const DIE_FACES = [3, 4, 1, 6, 2, 5];
@@ -63,6 +73,8 @@ export interface SceneOptions {
   onDie?: (state: 'hand' | 'flying' | 'rest') => void;
   onTool?: (tool: Tool) => void;
   onLook?: (s: 'locked' | 'free' | 'denied') => void; // mouse capturado, solto ou negado (PC)
+  onPrompt?: (label: string | null) => void; // algo ao alcance para interagir ("Tentar abrir")
+  onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
 }
 
 export interface SceneApi {
@@ -336,11 +348,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let dieThrown = true; // false = foi posicionado (não pega a gema)
   let handDim = 0; // 0 = dado na mão, 1 = dado lá fora
   let burnHeat = 0; // 0..1: o dado esquentando na cena de queimar
+  let talkGlow = 0; // o dado caído brilha quando fala
+  let handTalk = 0; // o dado da mão pulsa quando fala
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
-      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim);
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk);
       handMats[i].color.setScalar(1 - 0.5 * handDim);
-      dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat);
+      dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat + 2.4 * talkGlow);
     });
   };
   const applyFace = (n: number) => {
@@ -416,14 +430,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let soapU = 1;
   let chalkMode: ChalkMode = 'draw';
   const setTool = (t: Tool) => {
-    if (tool === t) return;
+    if (tool === t || (t === 'chalk' && !hasChalk)) return;
     tool = t;
     sfx.play('swap');
     brush.active = false;
     chalk.beginStroke();
     opts.onTool?.(tool);
   };
-  const swapTool = () => setTool(tool === 'die' ? 'chalk' : 'die');
+  const swapTool = () => {
+    if (!hasDie || !hasChalk) return; // sem giz (ou sem dado) não há o que trocar
+    setTool(tool === 'die' ? 'chalk' : 'die');
+  };
 
   const chalk = new Chalk();
   scene.add(chalk.mesh);
@@ -509,9 +526,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let curRoom = 0;
   // cenas: quem "segura" o jogador (freeze), o giro suave da câmera (lookAt), a cena de acordar e o dado queimando
   let holds = 0;
+  // o jogador começa SEM NADA nas mãos: o dado e o giz são achados (progresso salvo)
+  let hasDie = progress.has('dado');
+  let hasChalk = progress.has('giz');
+
   let camTween: null | { y0: number; p0: number; y1: number; p1: number; t: number; dur: number } = null;
   let intro: null | { ph: number; t: number } = null;
   let burn: null | { t: number; dur: number } = null;
+  let pickup: (() => void) | null = null; // chamado quando o dado caído chega na mão
   let dieRoom = 0; // sala onde o dado está (a posição dieP é local a ela)
   let gems = 0;
   let complete = false;
@@ -525,7 +547,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sfx: (n, key) => {
         sfx.play(n);
         // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
-        if (n === 'ignite') startBurn(key ? progress.firstBurn(`${idx}:${key}`) : true);
+        if (n === 'ignite') {
+          const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
+          startBurn(first);
+          if (first) chatFn('burn');
+        } else if (n === 'plate') chatFn('plate');
+        else if (n === 'door') chatFn('door');
       },
       player: {
         get pos() {
@@ -540,7 +567,28 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (fresh) onMilestone(f);
         return fresh;
       },
+      flag: (f) => progress.has(f),
       stage: () => progress.stage(),
+      have: () => ({ die: hasDie, chalk: hasChalk }),
+      giveDie: (onDone) => {
+        if (hasDie || dieState !== 'rest') {
+          onDone?.();
+          return;
+        }
+        pickup = onDone ?? (() => {});
+        recall(); // o dado caído voa até a mão
+      },
+      giveChalk: () => {
+        if (hasChalk) return;
+        hasChalk = true;
+        progress.set('giz');
+        soapKick = 1;
+        sfx.play('catch');
+        opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+      },
+      dieGlow: (v) => {
+        talkGlow = v;
+      },
       freeze: (on) => {
         holds = Math.max(0, holds + (on ? 1 : -1));
       },
@@ -692,7 +740,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.fire(fireNear);
   };
 
+  // o dado caído no chão da 1ª sala (antes de o jogador pegá-lo)
+  const layDie = () => {
+    const lie = rooms[0]?.dieLie;
+    if (!lie) {
+      hasDie = true; // sala sem dado caído: não deixa o jogo sem dado
+      return false;
+    }
+    dieRoom = 0;
+    dieP.set(lie.x, lie.y + R, lie.z);
+    dieV.set(0, 0, 0);
+    dieW.set(0, 0, 0);
+    restQ.setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.35, 0.9, 0.2));
+    worldDie.position.copy(dieP).add(offs[0]);
+    worldDie.quaternion.copy(restQ);
+    worldModel.scale.setScalar(0.42);
+    worldDie.visible = true;
+    thrownFace = 3;
+    dieState = 'rest';
+    restReturn = 0;
+    return true;
+  };
   const resetDie = () => {
+    if (!hasDie && layDie()) return;
     dieState = 'hand';
     worldDie.visible = false;
     worldModel.scale.setScalar(0.42);
@@ -951,9 +1021,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     shaft: [
       { who: 'thought' as const, text: 'Um buraco redondo no teto. Lá em cima, luz.' },
       { who: 'thought' as const, text: 'Alto demais. Daqui não dá para subir.' },
-      { who: 'boato' as const, glyphs: ['voce', 'condenado', 'boato'] },
-      { who: 'thought' as const, text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
-      { who: 'thought' as const, text: 'Tenho um giz e um dado. Não lembro de ter pegado nenhum dos dois.' },
+      { who: 'thought' as const, text: 'Não tenho nada comigo. Nem lembro do que eu trazia.' },
+      { who: 'thought' as const, text: 'Deve haver uma saída. Uma porta, pelo menos.' },
     ],
   };
   const startIntro = () => {
@@ -1017,7 +1086,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         const w = sh ? sh.clone().add(offs[0]) : new THREE.Vector3(0, 8, -4);
         const y1 = Math.atan2(-(w.x - pos.x), -(w.z - pos.z));
         introY1 = introY0 + Math.atan2(Math.sin(y1 - introY0), Math.cos(y1 - introY0));
-        introP1 = clamp(Math.atan2(w.y - (pos.y - 0.05), Math.hypot(w.x - pos.x, w.z - pos.z)), -0.2, 1.05);
+        introP1 = clamp(Math.atan2(w.y - (pos.y - 0.05), Math.hypot(w.x - pos.x, w.z - pos.z)), -0.2, 1.45);
       }
     } else if (I.ph === 3) {
       // olha o poço no teto
@@ -1132,13 +1201,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
 
   const place = () => {
-    if (tool !== 'die') return;
+    if (!hasDie || tool !== 'die') return;
     if (dieState === 'hand') placeDie();
     else recall();
   };
 
   const action = () => {
-    if (tool !== 'die') return;
+    if (interact()) return; // algo ao alcance (a porta, o giz no chão)? usa isso em vez de arremessar
+    if (!hasDie || tool !== 'die') return;
     if (dieState === 'hand') throwDie();
     else recall();
   };
@@ -1221,11 +1291,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const k = e.key.toLowerCase();
     keys.add(k);
     if (e.repeat) return;
-    if (/^[1-6]$/.test(k)) selectFace(Number(k));
+    if (/^[1-6]$/.test(k)) hasDie && selectFace(Number(k));
     else if (k === ' ' || k === 'f') {
       e.preventDefault();
       action();
-    } else if (k === 'e') recall();
+    } else if (k === 'e') {
+      if (!interact() && hasDie) recall();
+    }
     else if (k === 'r') reset();
     else if (k === 'g') place();
     else if (k === 'tab' || k === 'q') {
@@ -1239,7 +1311,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const onWheel = (e: WheelEvent) => {
     e.preventDefault();
     if (busy()) return;
-    cycleFace(e.deltaY > 0 ? 1 : -1);
+    if (hasDie) cycleFace(e.deltaY > 0 ? 1 : -1);
   };
   canvas.addEventListener('wheel', onWheel, { passive: false });
 
@@ -1347,13 +1419,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const onMove = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && locked()) {
       yaw -= e.movementX * 0.0022;
-      pitch = clamp(pitch - e.movementY * 0.0022, -1.2, 1.2);
+      pitch = clamp(pitch - e.movementY * 0.0022, -1.2, 1.5);
     } else if (e.pointerId === lookId) {
       const dx = e.clientX - downX;
       const dy = e.clientY - downY;
       if (Math.hypot(dx, dy) > 8) moved = true;
       yaw -= (e.clientX - lastX) * 0.0075;
-      pitch = clamp(pitch - (e.clientY - lastY) * 0.0075, -0.7, 0.7);
+      pitch = clamp(pitch - (e.clientY - lastY) * 0.0075, -0.8, 1.3);
       lastX = e.clientX;
       lastY = e.clientY;
     }
@@ -1553,26 +1625,97 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     caption(rooms[0].name, rooms[0].subtitle, '#ffd36b');
   };
 
+  let chatFn: (key: string) => void = () => {};
   buildWorld();
   scene.fog = new THREE.Fog(rooms[0].fog.color, rooms[0].fog.near, rooms[0].fog.far);
   ambient.color.setHex(rooms[0].ambient.color);
   ambient.intensity = rooms[0].ambient.intensity;
-  spawnIn(0);
-  blendAtmosphere(0, true);
-  announced.add(0);
-  diary.visitRoom(rooms[0].name);
   {
     // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
     const q = new URLSearchParams(location.search);
     if (q.has('demo')) {
       progress.noSave();
-      for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro'] as const) progress.set(f);
+      for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz'] as const) progress.set(f);
     } else if (q.get('intro') === '0') {
       progress.noSave();
-      progress.set('intro');
+      for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
     }
-    if (!progress.has('intro')) startIntro();
+    hasDie = progress.has('dado');
+    hasChalk = progress.has('giz');
   }
+  spawnIn(0);
+  blendAtmosphere(0, true);
+  announced.add(0);
+  diary.visitRoom(rooms[0].name);
+  if (!progress.has('intro')) startIntro();
+  opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+  // ── interação (E no PC, AGIR / toque no celular): a porta trancada, o giz no chão... ──
+  let promptLabel: string | null = null;
+  let nearest: Interactable | null = null;
+  const scanInteract = () => {
+    let best: Interactable | null = null;
+    let bd = Infinity;
+    if (!busy()) {
+      camera.getWorldDirection(lookDir);
+      activeRooms.forEach((i) => {
+        for (const it of rooms[i].interactables ?? []) {
+          if (!it.enabled()) continue;
+          toIns.copy(it.pos).add(offs[i]).sub(camera.position);
+          const d = Math.hypot(toIns.x, toIns.z);
+          if (d > it.r || lookDir.dot(toIns.normalize()) < 0.3) continue;
+          if (d < bd) {
+            bd = d;
+            best = it;
+          }
+        }
+      });
+    }
+    nearest = best;
+    const label: string | null = best ? (best as Interactable).label : null;
+    if (label !== promptLabel) {
+      promptLabel = label;
+      opts.onPrompt?.(label);
+    }
+  };
+  const interact = (): boolean => {
+    if (!nearest || busy()) return false;
+    const it = nearest;
+    sfx.play('uiblip', 1);
+    it.use();
+    return true;
+  };
+
+  // ── o dado fala (raro, curto, nunca atrapalha): balão pequeno com 2–4 símbolos ──
+  const CHAT: Record<string, string[][]> = {
+    burn: [['eu', 'ter', 'medo'], ['fogo', 'eu', 'sentir']],
+    idle: [['eu', 'esperar'], ['voce', 'esperar', 'perg'], ['eu', 'querer', 'pousar'], ['voce', 'ajudar', 'eu', 'perg']],
+    plate: [['eu', 'pousar', 'conf']],
+    door: [['voce', 'poder', 'conf'], ['eu', 'ver', 'voce']],
+    cold: [['eu', 'sentir', 'frio']],
+    room: [['eu', 'ver', 'voce'], ['eu', 'ficar', 'voce']],
+  };
+  let chatCool = 0; // segundos até ele poder falar de novo
+  let idleT = 0;
+  let chatN = 0;
+  chatFn = (key: string) => {
+    if (!hasDie || chatCool > 0 || busy() || dieState === 'returning') return;
+    const lines = CHAT[key];
+    if (!lines) return;
+    chatter.say(lines[chatN++ % lines.length]);
+    chatCool = 45 + Math.random() * 45;
+    handTalk = 1;
+    handPop = Math.max(handPop, 0.5);
+    sfx.play('uiblip', 0.6);
+  };
+  const chatTick = (dt: number, moving: boolean) => {
+    chatCool = Math.max(0, chatCool - dt);
+    handTalk = Math.max(0, handTalk - dt * 0.9);
+    if (moving || busy() || dieState !== 'hand') idleT = 0;
+    else if ((idleT += dt) > 75) {
+      idleT = 0;
+      chatFn('idle');
+    }
+  };
   const onSkip = () => {
     if (burn) skipScene = true;
   };
@@ -1605,6 +1748,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       applyActive();
       // saiu da sala do dado: o dado volta pra mão (a porta atrás fecha)
       if (dieState !== 'hand' && dieRoom !== curRoom) resetDie();
+      if (/Mirante/.test(rooms[ri].name)) chatFn('cold');
+      else if (!announced.has(ri) && Math.random() < 0.3) chatFn('room');
       if (!announced.has(ri)) {
         announced.add(ri);
         sfx.play('room');
@@ -1689,17 +1834,28 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         worldModel.scale.setScalar(0.42);
         handPop = 1;
         sfx.play('catch');
+        if (!hasDie) {
+          hasDie = true;
+          talkGlow = 0;
+          chatCool = 70; // acabou de ganhar o dado: um tempo calado
+          progress.set('dado');
+          opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+          const f = pickup;
+          pickup = null;
+          f?.();
+        }
       }
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
       worldDie.position.copy(dieP).add(offs[dieRoom]);
-      if (!rooms[dieRoom].holdsDie()) {
+      if (hasDie && !rooms[dieRoom].holdsDie()) {
         restReturn += dt;
         if (restReturn > 1.8) recall();
       }
     }
 
     updateBurn(dt, t);
+    chatTick(dt, moving);
     if (dieState !== emittedDie) {
       emittedDie = dieState;
       opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
@@ -1708,6 +1864,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // ── salas ──
     activeRooms.forEach((i) => rooms[i].update(dt, t));
     readInscriptions(dt);
+    scanInteract();
     updateLights(dt);
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
@@ -1797,6 +1954,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
+      dieGroup.visible = hasDie; // sem dado/giz nas mãos até achá-los
+      soapGroup.visible = hasChalk;
       const hide = book.update(dt, t);
       if (hide > 0) {
         dieGroup.position.y -= hide * 0.95; // dado e giz saem da frente enquanto o livro está na mão
@@ -1835,6 +1994,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       bookClick: (id: string) => book.click(id),
       strokes: () => diaryStore.get().strokes.length,
       stamps: () => diaryStore.get().stamps.length,
+      inv: () => ({ die: hasDie, chalk: hasChalk, prompt: promptLabel }),
+      interact: () => interact(),
+      chat: (k: string) => { chatCool = 0; chatFn(k); },
+      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1) })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),

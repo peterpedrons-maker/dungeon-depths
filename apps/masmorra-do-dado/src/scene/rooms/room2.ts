@@ -1,4 +1,4 @@
-// Sala 5 — O Selo. Puzzle do giz: três fragmentos do selo estão gravados em paredes
+// Sala 6 — O Selo. Puzzle do giz: três fragmentos do selo estão gravados em paredes
 // diferentes (um deles só aparece à luz do fogo). Cada fragmento mostra uma peça e a
 // casa da grade 3x3 onde ela fica. O jogador reproduz as peças na lousa, desenhando
 // com a pedra-sabão. Cada peça certa acende uma gema sobre a porta.
@@ -195,7 +195,7 @@ export function buildRoom2(ctx: Ctx): Room {
   kit.bake();
 
   return {
-    name: 'Sala 5 · O Selo',
+    name: 'Sala 6 · O Selo',
     subtitle: 'Três fragmentos, uma lousa e a pedra-sabão. Um deles só aparece à luz do fogo.',
     group: kit.group,
     surfaces: kit.surfaces,

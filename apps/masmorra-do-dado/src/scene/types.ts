@@ -46,7 +46,12 @@ export interface Ctx {
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa
   seen(id: string): void; // o jogador viu este símbolo (vai pro diário como "avistado")
   milestone(f: Flag): boolean; // marco da história (true se for novo): o mundo muda com eles
+  flag(f: Flag): boolean; // este marco já aconteceu?
   stage(): number; // quantos marcos já aconteceram
+  have(): { die: boolean; chalk: boolean }; // o que o jogador já tem nas mãos
+  giveDie(onDone?: () => void): void; // o dado caído voa até a mão do jogador
+  giveChalk(): void; // o jogador pega o giz
+  dieGlow(v: number): void; // o dado caído brilha (0..1) quando "fala"
   freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
   lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)
   die: {
@@ -62,6 +67,15 @@ export interface Ctx {
   };
 }
 
+// Algo com que o jogador interage (E no PC, o botão AGIR ou um toque no celular): a porta trancada, o giz no chão...
+export interface Interactable {
+  pos: THREE.Vector3; // local da sala
+  r: number; // de quão perto (m)
+  label: string; // o que aparece na tela ("Tentar abrir")
+  enabled(): boolean;
+  use(): void;
+}
+
 // Uma sala: tudo que o motor precisa saber pra montar, colidir e jogar.
 export interface Room {
   name: string;
@@ -71,6 +85,8 @@ export interface Room {
   surfaces: THREE.Object3D[]; // onde dá pra riscar com o giz
   emitters: Emitter[]; // luzes da sala (o motor empresta luzes reais às mais relevantes)
   inscriptions?: Inscription[]; // escrita nas paredes: olhar manda os símbolos ao diário
+  interactables?: Interactable[];
+  dieLie?: THREE.Vector3; // onde o dado está caído, no chão, antes de o jogador pegá-lo (só a 1ª sala)
   shaft?: THREE.Vector3; // poço de luz no teto (local): a câmera olha pra ele na cena de acordar
   doorZ: number; // z (local) da parede do fundo, onde fica a porta
   entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior

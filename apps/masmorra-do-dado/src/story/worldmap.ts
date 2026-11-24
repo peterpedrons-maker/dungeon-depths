@@ -70,20 +70,21 @@ function connect(a: MapRoom, b: MapRoom, vertical: boolean): [number, number][] 
   return join(hv(from, [xa, my], false), hv([xa, my], [xb, my], true), hv([xb, my], to, false));
 }
 
-// O mundo de verdade (hoje: 7 salas). O mapa é abstrato: as três salas do Vestíbulo em fila, a Entrada
-// logo depois, e o resto desce e volta para a esquerda (como uma cobra), para caber na página dupla.
-const R1: MapRoom = { key: 'Sala 1', floor: 0, x: 1, y: 3, w: 5, h: 5 };
-const R2: MapRoom = { key: 'Sala 2', floor: 0, x: 9, y: 3, w: 5, h: 5 };
-const R3: MapRoom = { key: 'Sala 3', floor: 0, x: 17, y: 3, w: 5, h: 5 };
+// O mundo de verdade (hoje: 8 salas). O mapa é abstrato: as salas do Vestíbulo em fila, a Entrada logo depois, e o
+// resto desce e volta para a esquerda (como uma cobra), para caber na página dupla.
+const R1: MapRoom = { key: 'Sala 1', floor: 0, x: 1, y: 3, w: 4, h: 5 };
+const R2: MapRoom = { key: 'Sala 2', floor: 0, x: 8, y: 2, w: 6, h: 7 };
+const R3: MapRoom = { key: 'Sala 3', floor: 0, x: 17, y: 3, w: 5, h: 6 };
 const R4: MapRoom = { key: 'Sala 4', floor: 0, x: 25, y: 3, w: 7, h: 6 };
-const R5: MapRoom = { key: 'Sala 5', floor: 0, x: 26, y: 13, w: 7, h: 6 };
-const R6: MapRoom = { key: 'Sala 6', floor: 0, x: 14, y: 12, w: 8, h: 8, kind: 'round' };
-const R7: MapRoom = { key: 'Sala 7', floor: 0, x: 4, y: 13, w: 5, h: 6, kind: 'stage' };
+const R5: MapRoom = { key: 'Sala 5', floor: 0, x: 26, y: 13, w: 5, h: 5 };
+const R6: MapRoom = { key: 'Sala 6', floor: 0, x: 16, y: 13, w: 6, h: 7 };
+const R7: MapRoom = { key: 'Sala 7', floor: 0, x: 6, y: 12, w: 7, h: 7, kind: 'round' };
+const R8: MapRoom = { key: 'Sala 8', floor: 0, x: 0, y: 15, w: 3, h: 6, kind: 'stage' };
 export const REAL_WORLD: World = {
   floors: ['1F'],
   cols: 40,
   rows: 25,
-  rooms: [R1, R2, R3, R4, R5, R6, R7],
+  rooms: [R1, R2, R3, R4, R5, R6, R7, R8],
   links: [
     { a: R1.key, b: R2.key, path: connect(R1, R2, false) },
     { a: R2.key, b: R3.key, path: connect(R2, R3, false) },
@@ -91,6 +92,7 @@ export const REAL_WORLD: World = {
     { a: R4.key, b: R5.key, path: connect(R4, R5, true) },
     { a: R5.key, b: R6.key, path: connect(R6, R5, false) },
     { a: R6.key, b: R7.key, path: connect(R7, R6, false) },
+    { a: R7.key, b: R8.key, path: connect(R8, R7, false) },
   ],
 };
 

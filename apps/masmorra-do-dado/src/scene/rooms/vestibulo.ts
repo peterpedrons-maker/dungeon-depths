@@ -1,8 +1,10 @@
-// O Vestíbulo dos Números: três salas pequenas e ruinosas que ensinam ACENDER, UM, DOIS e TRÊS
-// sem uma palavra de explicação (ver DESIGN.md §9 e PUZZLES.md). Só o Fogo está liberado.
-//   1 · O Poço       ACENDER · UM · BRASEIRO     um braseiro → a porta abre
+// O Vestíbulo dos Números: salas pequenas e ruinosas que ensinam ACENDER, UM, DOIS e TRÊS sem uma
+// palavra de explicação (ver DESIGN.md §9 e PUZZLES.md). O jogador começa SEM NADA nas mãos.
+//   1 · O Poço       porta trancada; o dado caído "fala" e vai para a mão; ACENDER · UM · BRASEIRO
 //   2 · O Vestíbulo  ACENDER · DOIS · BRASEIRO   três braseiros; só abre com EXATAMENTE dois acesos
-//   3 · A Lacuna     ACENDER · ▢ · BRASEIRO      três já acesos; escreva o número no giz
+//   3 · Os Quatro    ACENDER · TRÊS · BRASEIRO   quatro braseiros; só abre com EXATAMENTE três acesos
+//   5 · A Lacuna     ACENDER · ▢ · BRASEIRO      (depois do Escrivão, com o giz) escreva o número que falta
+// Cada sala tem um tamanho diferente.
 
 import * as THREE from 'three';
 import { floorTexture, brickTexture } from '../textures';
@@ -10,37 +12,46 @@ import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '.
 import { makeBrazier, type Brazier } from '../brazier';
 import type { Box, Ctx, Room } from '../types';
 
-const X0 = -4;
-const X1 = 4;
-const Z0 = -10;
+export type VestVariant = 1 | 2 | 3 | 4;
+
+interface Dim {
+  hx: number; // meia-largura
+  z0: number; // parede do fundo (a da frente é sempre z = 2)
+  h: number;
+  theme: string;
+  name: string;
+  subtitle: string;
+  fog: { color: string; near: number; far: number };
+  ambient: { color: number; intensity: number };
+}
+
+// tamanhos bem diferentes: pequena e abafada, um salão comprido, média, baixa e apertada
+const DIMS: Record<VestVariant, Dim> = {
+  1: { hx: 3.4, z0: -9, h: 3.2, theme: 'ruin', name: 'Sala 1 · O Poço', subtitle: 'A porta não cede. Um braseiro espera.', fog: { color: '#090a11', near: 3, far: 15 }, ambient: { color: 0x6a72a4, intensity: 1.45 } },
+  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: 'Mais braseiros. A escrita mudou um pouco.', fog: { color: '#0a0a11', near: 3.5, far: 19 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
+  3: { hx: 3.7, z0: -11.5, h: 3.4, theme: 'ruin', name: 'Sala 3 · Os Quatro', subtitle: 'Quatro braseiros. Outro número.', fog: { color: '#0a0a11', near: 3.5, far: 17 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
+  4: { hx: 3.3, z0: -8, h: 3.0, theme: 'crypt', name: 'Sala 5 · A Lacuna', subtitle: 'Falta uma palavra na frase.', fog: { color: '#0b0912', near: 3.5, far: 15 }, ambient: { color: 0x7a78b8, intensity: 1.7 } },
+};
+
 const Z1 = 2;
-const H = 3.4;
-const SHAFT = { x: 0, z: -4.4, r: 0.95 };
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
   max: new THREE.Vector3(x1, y1, z1),
 });
 
-// onde ficam os braseiros em cada sala
-const BRAZIERS: Record<1 | 2 | 3, [number, number][]> = {
-  1: [[2.9, -8.9]],
-  2: [[-3.1, -7.4], [3.1, -7.4], [3.1, -3.2]],
-  3: [[-3.1, -4.6], [3.1, -4.6], [2.9, -8.9]],
-};
-
-const NAMES = {
-  1: { name: 'Sala 1 · O Poço', subtitle: 'Alguém escreveu na parede. Um braseiro espera.' },
-  2: { name: 'Sala 2 · O Vestíbulo', subtitle: 'Mais braseiros. A escrita mudou um pouco.' },
-  3: { name: 'Sala 3 · A Lacuna', subtitle: 'Falta uma palavra na frase.' },
-} as const;
-
-export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
-  const kit = new Kit('ruin');
+export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
+  const D = DIMS[v];
+  const X0 = -D.hx;
+  const X1 = D.hx;
+  const Z0 = D.z0;
+  const H = D.h;
+  const kit = new Kit(D.theme);
   const W = X1 - X0;
   const L = Z1 - Z0;
   const zm = (Z0 + Z1) / 2;
+  const SHAFT = { x: 0, z: Z0 + 5.4, r: 0.95 };
 
-  kit.plane(W, L, lambert(floorTexture([W / T, L / T], 'ruin')), 0, 0, zm, -Math.PI / 2);
+  kit.plane(W, L, lambert(floorTexture([W / T, L / T], D.theme)), 0, 0, zm, -Math.PI / 2);
   // teto (o primeiro tem o poço)
   if (v === 1) {
     const shape = new THREE.Shape();
@@ -52,7 +63,7 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
     const hole = new THREE.Path();
     hole.absarc(SHAFT.x, SHAFT.z - zm, SHAFT.r, 0, Math.PI * 2, true);
     shape.holes.push(hole);
-    const ceil = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), lambert(brickTexture([1 / T, 1 / T], 0.6, 17, 'ruin')));
+    const ceil = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), lambert(brickTexture([1 / T, 1 / T], 0.6, 17, D.theme)));
     ceil.rotation.x = Math.PI / 2;
     ceil.position.set(0, H, zm);
     kit.add(ceil);
@@ -60,7 +71,7 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
     const shaftH = 16;
     const tube = new THREE.Mesh(
       new THREE.CylinderGeometry(SHAFT.r, SHAFT.r, shaftH, 20, 1, true),
-      lambert(brickTexture([6, shaftH / T], 0.75, 41, 'ruin')),
+      lambert(brickTexture([6, shaftH / T], 0.75, 41, D.theme)),
     );
     (tube.material as THREE.MeshLambertMaterial).side = THREE.BackSide;
     tube.position.set(SHAFT.x, H + shaftH / 2, SHAFT.z);
@@ -92,65 +103,87 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 31 + v), X0, H / 2, zm, 0, Math.PI / 2);
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 37 + v), X1, H / 2, zm, 0, -Math.PI / 2);
 
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true });
+  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme });
 
-  // a frase, talhada na parede à esquerda da porta (envelhecida)
-  const words: (string | null)[] = v === 1 ? ['acender', 'n1', 'brasa'] : v === 2 ? ['acender', 'n2', 'brasa'] : ['acender', null, 'brasa'];
-  const ins = kit.inscribe({ words, x: -2.62, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size: 0.5, age: 0.4 - v * 0.05, seed: 3 + v * 11 });
+  // a frase talhada: v1–v3 na parede do fundo, à esquerda da porta; a lacuna (v4) na parede esquerda, bem maior
+  const words: (string | null)[] = v === 1 ? ['acender', 'n1', 'brasa'] : v === 2 ? ['acender', 'n2', 'brasa'] : v === 3 ? ['acender', 'n3', 'brasa'] : ['acender', null, 'brasa'];
+  const onBack = v !== 4;
+  const size = onBack ? Math.min(0.5, (D.hx - 1.5) / 4.97) : 0.55;
+  const ins = onBack
+    ? kit.inscribe({ words, x: -(D.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.4 - v * 0.05, seed: 3 + v * 11 })
+    : kit.inscribe({ words, x: X0 + 0.025, y: 1.55, z: Z0 + 4.4, nx: 1, nz: 0, size, age: 0.2, seed: 3 + v * 11 });
 
-  // braseiros
-  const braziers: Brazier[] = BRAZIERS[v].map(([x, z]) => makeBrazier(kit, ctx, x, z, v === 3));
+  // braseiros (posições relativas ao tamanho da sala)
+  const spots: [number, number][] =
+    v === 1
+      ? [[X1 - 0.8, Z0 + 1.0]]
+      : v === 2
+        ? [[X0 + 1.0, Z0 + 3.8], [X1 - 1.0, Z0 + 3.8], [X1 - 1.0, Z0 + 10]]
+        : v === 3
+          ? [[X0 + 1.0, Z0 + 2.4], [X1 - 1.0, Z0 + 2.4], [X0 + 1.0, Z0 + 6.8], [X1 - 1.0, Z0 + 6.8]]
+          : [[X1 - 0.9, Z0 + 1.0], [X1 - 0.9, Z0 + 4.4], [X1 - 0.9, Z0 + 7.2]];
+  const braziers: Brazier[] = spots.map(([x, z]) => makeBrazier(kit, ctx, x, z, v === 4));
 
-  // ── sala 1: entulho embaixo do poço e a laje onde o personagem caiu ──
+  // ── sala 1: entulho embaixo do poço; é ali que o dado caiu junto com você ──
+  let dieLie: THREE.Vector3 | undefined;
   if (v === 1) {
-    const rubble = kit.stone;
     const rocks: [number, number, number, number][] = [
-      [-0.9, -3.4, 0.34, 0.3],
-      [0.7, -5.2, 0.28, 1.1],
-      [1.2, -3.8, 0.2, 2.0],
-      [-0.4, -5.0, 0.16, 0.4],
-      [-1.5, -4.9, 0.22, 2.4],
+      [-0.9, 0.6, 0.34, 0.3],
+      [0.8, -0.8, 0.28, 1.1],
+      [1.3, 0.5, 0.2, 2.0],
+      [-0.5, -0.7, 0.16, 0.4],
+      [-1.5, -0.5, 0.22, 2.4],
     ];
-    for (const [x, z, s, rot] of rocks) {
-      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), rubble);
-      m.position.set(x, s * 0.7, z);
+    for (const [dx, dz, sz, rot] of rocks) {
+      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), kit.stone);
+      m.position.set(SHAFT.x + dx, sz * 0.7, SHAFT.z + dz);
       m.rotation.set(rot, rot * 1.7, 0);
       kit.group.add(m);
     }
-    kit.crate(-3.3, -2.0, 0.7, 0.5); // restos de caixa
+    dieLie = new THREE.Vector3(SHAFT.x - 0.15, 0.0, SHAFT.z + 1.05); // no chão, à beira da mancha de luz
+    kit.crate(X0 + 0.7, Z1 - 1.8, 0.7, 0.5); // restos de caixa
     kit.web(X0, H - 0.45, Z1 - 0.45, 1, 0);
     kit.web(X1, H - 0.45, Z1 - 0.45, -1, 0, true);
   }
   // rachaduras e umidade: a Casa está velha
-  kit.damp(X0, 1.0, -3.6 - v, 1, 0, 1.9);
-  kit.damp(X1, 2.2, -6.2, -1, 0, 1.5);
+  kit.damp(X0, 1.0, Z0 + 4.4, 1, 0, 1.9);
+  kit.damp(X1, 2.2, Z0 + 3.8, -1, 0, 1.5);
   kit.skirting(X0, X1, Z0, Z1, 1.3);
   kit.aoSides(X0, X1, Z0, Z1, H);
   kit.cornice(X0, X1, Z0, Z1, H);
-  kit.pilaster(X0, -4.5, 1, 0, H);
-  kit.pilaster(X1, -4.5, -1, 0, H);
+  kit.pilaster(X0, Z0 + 5.5, 1, 0, H);
+  kit.pilaster(X1, Z0 + 5.5, -1, 0, H);
   if (v >= 2) {
     kit.torch(X0 + 0.1, 1.8, -1.2, 1, 0, 0.7);
     kit.torch(X1 - 0.1, 1.8, -1.2, -1, 0, 2.4);
   }
-  if (v === 3) kit.torch(-1.95, 1.8, Z0 + 0.1, 0, 1, 4.1);
+  if (v === 3) kit.torch(-D.hx + 0.9, 1.8, Z0 + 0.1, 0, 1, 4.1);
+  if (v === 2) {
+    // o salão comprido: colunas dos dois lados
+    for (const z of [-5, -9.5]) {
+      kit.box(0.8, H, 0.8, kit.brick([0.7, 3], 0.95, 50 + Math.abs(z)), X0 + 0.4, H / 2, z);
+      kit.box(0.8, H, 0.8, kit.brick([0.7, 3], 0.95, 52 + Math.abs(z)), X1 - 0.4, H / 2, z);
+    }
+  }
   kit.dust(X0, X1, Z0, Z1, 0, H);
 
-  // lacuna: pontos do giz
+  // lacuna (v4): como dividir a placa em 3×3 para ler o que o jogador riscou
   const gapMesh = ins.gap;
   const gapCenter = new THREE.Vector3();
   let gapHalf = 0.23;
+  const ry = onBack ? 0 : Math.PI / 2; // a parede olha +z (fundo) ou +x (esquerda)
   if (gapMesh) {
     gapCenter.copy(gapMesh.position);
     // o miolo liso da placa (sem a moldura): CELL / (CELL + 2·PAD) da largura
     gapHalf = (gapMesh.geometry as THREE.PlaneGeometry).parameters.width * (96 / 124) * 0.5;
   }
-  // ao dividir a lacuna em 3×3, o 3 (três pontos na diagonal) ocupa as casas 0, 4 e 8
+  // o 3 (três pontos na diagonal) ocupa as casas 0, 4 e 8 da placa
   const gapReads = () => {
     if (!gapMesh) return false;
     const cnt = new Array(9).fill(0);
     for (const d of ctx.chalk.dotsOn(gapMesh)) {
-      const u = (d.x - gapCenter.x) / gapHalf; // a parede olha +z: a direita do leitor é +x
+      // eixo "à direita de quem lê": (cos ry, 0, -sin ry)
+      const u = ((d.x - gapCenter.x) * Math.cos(ry) - (d.z - gapCenter.z) * Math.sin(ry)) / gapHalf;
       const w = (d.y - gapCenter.y) / gapHalf;
       if (Math.abs(u) > 1.05 || Math.abs(w) > 1.05) continue;
       const col = u < -1 / 3 ? 0 : u > 1 / 3 ? 2 : 1;
@@ -164,34 +197,96 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
   // sólidos pro dado
   const boxes: Box[] = [];
   braziers.forEach((b) => boxes.push(...b.boxes));
-  boxes.push(mkBox(-1.25, 0, -10, -0.95, ARCH_TOP, -9.7));
-  boxes.push(mkBox(0.95, 0, -10, 1.25, ARCH_TOP, -9.7));
-  boxes.push(mkBox(-1.25, ARCH_TOP - 0.3, -10, 1.25, H, -9.7));
+  boxes.push(mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3));
+  boxes.push(mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3));
+  boxes.push(mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
 
   let doorOpen = 0;
   let prevWant = 0;
   let solved = false;
   let evalT = 0;
   let lastRev = -1;
-  let overlit = 0; // v2: tempo com três acesas
+  let overlit = 0; // v2/v3: tempo com braseiros demais
   let marked = false;
+  let tried = false; // v1: já tentou abrir a porta
+  const doorPos = new THREE.Vector3(0, 1.0, Z0 + 0.5);
+
+  // ── sala 1: a porta trancada e o dado que fala ──
+  const interactables: Room['interactables'] = [];
+  if (v === 1 && dieLie) {
+    const lie = dieLie;
+    interactables.push({
+      pos: doorPos,
+      r: 2.6,
+      label: 'Tentar abrir a porta',
+      enabled: () => !ctx.have().die && doorOpen < 0.05,
+      use: () => {
+        const eye = new THREE.Vector3(lie.x, lie.y + 0.3, lie.z);
+        if (tried) {
+          ctx.say([{ who: 'thought', text: 'Continua trancada.' }], { block: true });
+          return;
+        }
+        tried = true;
+        ctx.sfx('error');
+        ctx.say([{ who: 'thought', text: 'Trancada. Empurro, puxo… nada se mexe.' }], {
+          block: true,
+          onEnd: () => {
+            // alguma coisa brilha no entulho, lá atrás: o dado caído "fala"
+            ctx.lookAt(eye, 1.3);
+            ctx.dieGlow(0.8);
+            ctx.freeze(true);
+            window.setTimeout(() => {
+              ctx.freeze(false);
+              ctx.say(
+                [
+                  { who: 'thought', text: 'Alguma coisa brilhou lá no entulho. Um dado?' },
+                  { who: 'boato', glyphs: ['voce', 'condenado', 'boato'] },
+                  { who: 'thought', text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
+                ],
+                {
+                  block: true,
+                  onEnd: () => {
+                    ctx.freeze(true);
+                    // o dado voa até a mão
+                    ctx.giveDie(() => {
+                      ctx.freeze(false);
+                      ctx.say(
+                        [
+                          { who: 'thought', text: 'Pesa na mão como se me conhecesse.' },
+                          { who: 'thought', text: 'Na parede, perto da porta, alguém escreveu alguma coisa. E aquele braseiro, apagado…' },
+                        ],
+                        { block: true },
+                      );
+                    });
+                  },
+                },
+              );
+            }, 1500);
+          },
+        });
+      },
+    });
+  }
 
   kit.bake();
 
   return {
-    name: NAMES[v].name,
-    subtitle: NAMES[v].subtitle,
+    name: D.name,
+    subtitle: D.subtitle,
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
     inscriptions: kit.inscriptions,
-    shaft: v === 1 ? new THREE.Vector3(SHAFT.x, H + 8, SHAFT.z) : undefined,
+    interactables,
+    dieLie,
+    shaft: v === 1 ? new THREE.Vector3(SHAFT.x, H + 2.5, SHAFT.z) : undefined,
     doorZ: Z0,
     entranceZ: Z1,
-    start: v === 1 ? new THREE.Vector3(0.7, 0, -1.9) : new THREE.Vector3(0, 0, 1.2),
+    // 1ª sala: o jogador acorda perto da luz do poço, olhando pra ela
+    start: v === 1 ? new THREE.Vector3(0.35, 0, SHAFT.z + 1.2) : new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
-    fog: v === 1 ? { color: '#090a11', near: 3, far: 15 } : { color: '#0a0a11', near: 3.5, far: 17 },
-    ambient: v === 1 ? { color: 0x6a72a4, intensity: 1.45 } : { color: 0x706ea8, intensity: 1.6 },
+    fog: D.fog,
+    ambient: D.ambient,
     boxes: [...boxes, ...kit.boxes],
     sockets: braziers.map((b) => b.socket),
     rects() {
@@ -200,6 +295,8 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
       r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
       if (v === 1) r.push([X0 - 2, Z1, X1 + 2, Z1 + 0.5]);
       else r.push(...(entrance?.rects() ?? []));
+      if (v === 2)
+        for (const z of [-5, -9.5]) r.push([X0, z - 0.4, X0 + 0.8, z + 0.4], [X1 - 0.8, z - 0.4, X1, z + 0.4]);
       r.push(...door.rects(doorOpen > 0.85));
       return r;
     },
@@ -231,7 +328,7 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
       kit.tick(dt, t);
       // acender
       for (const b of braziers) {
-        if (v !== 3 && b.touched()) {
+        if (v !== 4 && b.touched()) {
           b.light(true);
           if (v === 1) ctx.milestone('fogo');
         }
@@ -240,10 +337,11 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
       const nLit = braziers.filter((b) => b.lit).length;
       let want = 0;
       if (v === 1) want = nLit >= 1 ? 1 : 0;
-      else if (v === 2) {
-        want = nLit === 2 ? 1 : 0;
-        // três é demais: a Casa apaga tudo (o número tem que ser exato)
-        if (nLit >= 3) {
+      else if (v === 2 || v === 3) {
+        // o número tem que ser EXATO: com mais braseiros do que o pedido, a Casa apaga tudo
+        const need = v === 2 ? 2 : 3;
+        want = nLit === need ? 1 : 0;
+        if (nLit > need) {
           overlit += dt;
           if (overlit > 1.6) {
             braziers.forEach((b) => b.light(false));
@@ -266,7 +364,7 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
         ctx.sfx('door');
         if (!marked) {
           marked = true;
-          ctx.milestone(v === 1 ? 'fogo' : v === 2 ? 'dois' : 'tres');
+          if (v <= 3) ctx.milestone(v === 1 ? 'fogo' : v === 2 ? 'dois' : 'tres');
         }
       } else if (!want && prevWant && doorOpen > 0.15) ctx.sfx('doorClose');
       prevWant = want;
@@ -275,7 +373,7 @@ export function buildVestibulo(ctx: Ctx, v: 1 | 2 | 3): Room {
       door.lampMats[0].color.setHex(want ? 0xff7a2e : LAMP_OFF);
     },
     reset() {
-      braziers.forEach((b) => b.light(v === 3, true));
+      braziers.forEach((b) => b.light(v === 4, true));
       doorOpen = 0;
       prevWant = 0;
       solved = false;

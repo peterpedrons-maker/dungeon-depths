@@ -118,6 +118,19 @@ export function buildRoom1(ctx: Ctx): Room {
   scribe.setAlpha(0);
   kit.group.add(scribe.group);
   if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__scribe = scribe;
+  // o giz que o Escrivão deixa cair ao ir embora: o jogador o pega do chão (e passa a poder escrever)
+  const chalkStick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 8), new THREE.MeshLambertMaterial({ color: 0xf1ebd9, emissive: 0xb8b09a }));
+  chalkStick.rotation.z = Math.PI / 2;
+  chalkStick.rotation.y = 0.7;
+  chalkStick.visible = false;
+  kit.group.add(chalkStick);
+  // brilhinho pairando sobre o giz, para dar pra ver de longe
+  const chalkGlint = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTexture(), fog: false, depthWrite: false }));
+  chalkGlint.scale.set(0.45, 0.45, 1);
+  chalkGlint.visible = false;
+  kit.group.add(chalkGlint);
+  const chalkLight = kit.light(X0 + 1.0, 0.7, -6.4, 0xfff0c8, 0);
+  const chalkSpot = new THREE.Vector3(X0 + 1.0, 0.05, -6.4);
   kit.crate(3.35, 1.25, 0.75, 0.3);
   kit.crate(3.45, 0.45, 0.55, -0.2);
   kit.crate(-3.4, 1.2, 0.8, 0.1);
@@ -176,6 +189,20 @@ export function buildRoom1(ctx: Ctx): Room {
     return t > WRITE0 + ins.panels.length * STEP + 0.3;
   };
 
+  // quem recarrega o jogo depois da cena não a revê: as frases já estão escritas, e o giz espera no chão se ainda não foi pego
+  if (ctx.flag('escrivao')) {
+    sc.ph = 6;
+    scribeA.reveal();
+    scribeB.reveal();
+    if (!ctx.have().chalk) {
+      chalkStick.position.copy(chalkSpot).setY(0.04);
+      chalkStick.visible = true;
+      chalkGlint.visible = true;
+      chalkGlint.position.set(chalkSpot.x, 0.35, chalkSpot.z);
+      chalkLight.intensity = 14;
+    }
+  }
+
   const onPlate = () => {
     const p = ctx.die.pos;
     return Math.abs(p.x - PLATE.x) < PLATE.half + 0.05 && Math.abs(p.z - PLATE.z) < PLATE.half + 0.05 && p.y < PLATE.top + ctx.die.R + 0.1;
@@ -190,6 +217,27 @@ export function buildRoom1(ctx: Ctx): Room {
     surfaces: kit.surfaces,
     emitters: kit.emitters,
     inscriptions: kit.inscriptions,
+    interactables: [
+      {
+        pos: chalkSpot,
+        r: 2.4,
+        label: 'Pegar o giz',
+        enabled: () => sc.ph >= 6 && !ctx.have().chalk,
+        use: () => {
+          ctx.giveChalk();
+          chalkStick.visible = false;
+          chalkGlint.visible = false;
+          chalkLight.intensity = 0;
+          ctx.say(
+            [
+              { who: 'thought', text: 'O giz do Escrivão. Ele o deixou cair… ou deixou para mim.' },
+              { who: 'thought', text: 'Com ele posso escrever nas paredes e no chão. Tab troca entre o dado e o giz.' },
+            ],
+            { block: true },
+          );
+        },
+      },
+    ],
     doorZ: Z0,
     entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 1.2),
@@ -236,6 +284,7 @@ export function buildRoom1(ctx: Ctx): Room {
     update(dt, t) {
       kit.tick(dt, t);
       const d = ctx.die;
+      if (chalkGlint.visible) chalkGlint.position.y = 0.35 + Math.sin(t * 2.2) * 0.05;
       // ── Escrivão ──
       if (sc.ph >= 2) {
         // aparece como névoa, anda junto da escrita (sempre à direita da palavra do momento) e some no fim
@@ -255,7 +304,7 @@ export function buildRoom1(ctx: Ctx): Room {
         scribe.group.rotation.y = -Math.PI / 2 + (faceYaw - -Math.PI / 2) * sc.turn;
         scribe.update(t, writing && sc.t > 0.5 ? 1 : 0);
       }
-      if (sc.ph === 0 && ctx.player.pos.z < -4.0 && ctx.player.pos.x > X0 + 0.5) {
+      if (sc.ph === 0 && ctx.player.pos.z < -4.0 && ctx.player.pos.z > Z0 + 0.5 && ctx.player.pos.x > X0 + 0.5) {
         sc.ph = 1;
         ctx.freeze(true);
         ctx.say([{ who: 'thought', text: 'Tem alguém na parede da esquerda. Está escrevendo, e os símbolos acendem um a um.' }], {
@@ -287,6 +336,14 @@ export function buildRoom1(ctx: Ctx): Room {
               onEnd: () => {
                 sc.ph = 6;
                 sc.fadeOut = true;
+                // ao ir embora o Escrivão deixa cair o giz
+                chalkSpot.set(X0 + 1.0, 0.05, sc.z - 0.1);
+                chalkStick.position.copy(chalkSpot).setY(0.04);
+                chalkStick.visible = !ctx.have().chalk;
+                chalkGlint.visible = chalkStick.visible;
+                chalkGlint.position.set(chalkSpot.x, 0.35, chalkSpot.z);
+                chalkLight.pos.set(chalkSpot.x, 0.7, chalkSpot.z);
+                chalkLight.intensity = ctx.have().chalk ? 0 : 14;
                 scribeA.reveal();
                 scribeB.reveal();
                 ctx.freeze(false);

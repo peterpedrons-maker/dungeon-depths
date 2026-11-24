@@ -35,10 +35,7 @@ Você foi **lançado, como um dado**, dentro de uma Casa que é ao mesmo tempo o
 ### A primeira mensagem (rascunho)
 1. Tela preta, um baque surdo, poeira. A luz entra.
 2. O dado fala, em glifos: `VOCÊ · CONDENADO · BOATO` ("dizem que você está condenado"). O jogador **não entende nada**, mas os símbolos vão para o diário.
-3. Pensamentos do jogador, em português:
-   - *"(Caí. Ou fui lançado.)"*
-   - *"(Ainda tem luz lá em cima, mas daqui não dá para subir.)"*
-   - *"(Tenho um giz e um dado. Não lembro de ter pegado nenhum dos dois.)"*
+3. Pensamentos do jogador, em português: ele acorda **sem nada**. A porta está trancada; o dado, caído no entulho, é quem fala com ele e vai para a sua mão. O giz só vem depois, deixado pelo Escrivão.
 - **Detalhe:** essa primeira frase do dado só é entendida **no final do jogo**. Quando o jogador a relê, ela diz que ele foi acusado, e que ninguém nunca confirmou.
 
 ## Como a premissa é revelada cedo (palavras-chave)

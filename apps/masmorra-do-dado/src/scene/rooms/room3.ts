@@ -1,4 +1,4 @@
-// Sala 6 — O Salão das Brasas. Sala redonda: três braseiros em volta e uma placa no
+// Sala 7 — O Salão das Brasas. Sala redonda: três braseiros em volta e uma placa no
 // centro. As chamas se apagam sozinhas depois de um tempo: é preciso acendê-las todas
 // com o Fogo e só então pesar a placa com o Peso — antes que a primeira morra.
 
@@ -130,7 +130,7 @@ export function buildRoom3(ctx: Ctx): Room {
   kit.bake();
 
   return {
-    name: 'Sala 6 · O Salão das Brasas',
+    name: 'Sala 7 · O Salão das Brasas',
     subtitle: 'Acenda as três chamas antes que se apaguem — e pese a placa central.',
     group: kit.group,
     surfaces: kit.surfaces,

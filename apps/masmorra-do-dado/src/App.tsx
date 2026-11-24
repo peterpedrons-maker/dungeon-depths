@@ -7,6 +7,7 @@ import { dialogue, dialogueStore } from './story/dialogue';
 import { useStore } from './story/store';
 import { ui, uiStore } from './story/ui';
 import { BookIcon } from './ui/BookIcon';
+import { BoatoBubble } from './ui/BoatoBubble';
 import { DialogueBox } from './ui/DialogueBox';
 import { WordGlyph } from './ui/Glyph';
 
@@ -33,6 +34,9 @@ export default function App() {
   const [complete, setComplete] = useState<{ gem: boolean } | null>(null);
   const [hint, setHint] = useState(true);
   const [dieOut, setDieOut] = useState(false);
+  // o que o jogador já tem nas mãos (começa sem nada) e o que está ao alcance pra interagir
+  const [inv, setInv] = useState({ die: false, chalk: false });
+  const [prompt, setPrompt] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
   const [credits, setCredits] = useState(false);
@@ -107,6 +111,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let hintTimer = 0;
     const scene = createScene(canvasRef.current!, {
       // o analógico mexe direto no DOM (sem re-renderizar o React a cada toque)
       onStick: (st: StickState) => {
@@ -126,9 +131,18 @@ export default function App() {
       onDie: (st) => setDieOut(st !== 'hand'),
       onTool: setTool,
       onLook: setLook,
+      onPrompt: setPrompt,
+      onInventory: (i) => {
+        setInv(i);
+        // ganhou o dado: mostra de novo as dicas de controle
+        if (i.die) {
+          setHint(true);
+          window.clearTimeout(hintTimer);
+          hintTimer = window.setTimeout(() => setHint(false), 9000);
+        }
+      },
     });
     sceneRef.current = scene;
-    const hintTimer = window.setTimeout(() => setHint(false), 9000);
     return () => {
       window.clearTimeout(hintTimer);
       scene.dispose();
@@ -242,7 +256,15 @@ export default function App() {
         </div>
       )}
 
-      {hint && (
+      {prompt && (
+        <div className="prompt">
+          <b className="hint-pc">E</b>
+          {prompt}
+        </div>
+      )}
+      <BoatoBubble left={tool === 'chalk'} />
+
+      {inv.die && hint && (
         <div className="hint">
           <span className="hint-pc">
             clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · J: diário · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
@@ -251,7 +273,16 @@ export default function App() {
         </div>
       )}
 
-      {!complete && tool === 'die' && (
+      {!complete && !inv.die && prompt && (
+        <div className="touchbtns">
+          <button className="btn-throw" onPointerDown={(e) => { e.preventDefault(); sceneRef.current?.action(); }} aria-label={prompt}>
+            <span className="ico">✋</span>
+            <span>AGIR</span>
+          </button>
+        </div>
+      )}
+
+      {!complete && inv.die && tool === 'die' && (
         <div className="touchbtns">
           <button
             className="btn-rotate"
@@ -285,13 +316,13 @@ export default function App() {
             }}
             aria-label={dieOut ? 'Recolher o dado' : 'Arremessar o dado'}
           >
-            <span className="ico">{dieOut ? '↩' : '⤴'}</span>
-            <span>{dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
+            <span className="ico">{prompt ? '✋' : dieOut ? '↩' : '⤴'}</span>
+            <span>{prompt ? 'AGIR' : dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
           </button>
         </div>
       )}
 
-      {!complete && (
+      {!complete && inv.die && inv.chalk && (
         <div className={`soapbtns${tool === 'chalk' ? ' chalk' : ''}`}>
           <button
             className="soap-swap"

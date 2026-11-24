@@ -1,4 +1,4 @@
-// Sala 7 — O Mirante. Sala alta de dois níveis: embaixo a entrada e uma placa, no alto
+// Sala 8 — O Mirante. Sala alta de dois níveis: embaixo a entrada e uma placa, no alto
 // (um palco) a porta e um braseiro. A rampa na parede direita é a única subida; o
 // jogador pode se jogar da beirada, mas aí tem que subir de novo. A sequência é:
 // subir, acender o braseiro com o Fogo, descer, segurar a placa com o Peso e subir
@@ -162,7 +162,7 @@ export function buildRoom4(ctx: Ctx): Room {
   kit.bake();
 
   return {
-    name: 'Sala 7 · O Mirante',
+    name: 'Sala 8 · O Mirante',
     subtitle: 'A porta fica no alto. A rampa sobe — a beirada, não.',
     group: kit.group,
     surfaces: kit.surfaces,

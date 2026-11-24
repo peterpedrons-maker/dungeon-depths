@@ -426,13 +426,35 @@ export class Sfx {
     }
   }
 
-  // passo: SEMPRE a mesma gravação pra cada tipo de piso (pedra, tapete, placa, poça)
+  // passo: SEMPRE a mesma gravação pra cada tipo de piso (pedra, tapete, placa, poça), só que abafada:
+  // o corte nos agudos tira o "toque-toque" de bota, mais grave e mais baixo, como sapato em pedra
   step(surface: 'stone' | 'rug' | 'plate' | 'water') {
-    if (!this.ac || this.mode === 2) return;
+    const ac = this.ac;
+    if (!ac || this.mode === 2) return;
     this.steps++;
-    const vol = { stone: 0.7, rug: 0.7, plate: 0.8, water: 0.65 }[surface];
-    const verb = { stone: 0.22, rug: 0.04, plate: 0.2, water: 0.15 }[surface];
-    this.sample(`step_${surface}`, vol, 1, 0, verb);
+    const b = this.buf.get(`step_${surface}`);
+    if (!b) return;
+    const vol = { stone: 0.42, rug: 0.4, plate: 0.5, water: 0.42 }[surface];
+    const rate = { stone: 0.8, rug: 0.86, plate: 0.84, water: 0.9 }[surface];
+    const cut = { stone: 1100, rug: 700, plate: 950, water: 1250 }[surface];
+    const verb = { stone: 0.1, rug: 0.02, plate: 0.1, water: 0.08 }[surface];
+    const s = ac.createBufferSource();
+    s.buffer = b;
+    s.playbackRate.value = rate;
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = cut;
+    lp.Q.value = 0.5;
+    const g = ac.createGain();
+    g.gain.value = vol;
+    s.connect(lp).connect(g);
+    g.connect(this.bus);
+    if (verb > 0) {
+      const v = ac.createGain();
+      v.gain.value = verb;
+      g.connect(v).connect(this.verbSend);
+    }
+    s.start(ac.currentTime);
   }
 
   // batida do dado (impact em m/s)

@@ -33,14 +33,14 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   apagar tudo pede confirmação). Planejado: minimapa com anotações persistentes e caderno
   de pistas. Segredos opcionais ao estilo Metroidvania ficam para depois (dá para terminar só correndo). História resumida em `apps/masmorra-do-dado/HISTORIA.md`. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
-  celular). Hoje há 7 salas num mundo contínuo (`src/scene/rooms/`, cada uma um módulo `Room` com
+  celular). Hoje há 8 salas num mundo contínuo (`src/scene/rooms/`, cada uma um módulo `Room` com
   tema visual, formato e física próprios; `scene.ts` é o motor; as salas ficam lado a lado e o
   corredor da porta de uma desemboca direto na entrada da próxima, sem tela de carregamento;
-  só o dado volta pra mão ao mudar de sala): 1–3 O Vestíbulo (O Poço, O Vestíbulo, A Lacuna: ACENDER · UM/DOIS/TRÊS · BRASEIRO; só o Fogo; a
-  3ª pede escrever TRÊS com o giz numa lacuna da frase), 4 A Entrada (cena do Escrivão, uma criatura encapuzada, escrevendo na parede; fogo + peso + gema
-  escondida que espera o Ricochete), 5 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
-  fogo), 6 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
-  7 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
+  só o dado volta pra mão ao mudar de sala): 1–3 O Vestíbulo (O Poço, O Vestíbulo, Os Quatro: ACENDER · UM/DOIS/TRÊS · BRASEIRO, de tamanhos diferentes; o jogador
+  acorda SEM NADA: acha o dado na Sala 1), 4 A Entrada (cena do Escrivão, criatura encapuzada, que deixa cair o giz: só aí o jogador o tem; fogo + peso + gema
+  escondida que espera o Ricochete), 5 A Lacuna (1º puzzle com o giz: escrever TRÊS numa lacuna da frase), 6 O Selo (puzzle do giz: reproduzir 3 peças numa lousa; uma só aparece à luz do
+  fogo), 7 O Salão das Brasas (sala redonda; acender 3 chamas que se apagam + pesar a placa),
+  8 O Mirante (dois níveis com rampa e queda; subir/descer pra combinar braseiro e placa).
   Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
   `src/scene/audio.ts` + `public/audio/`): efeitos de pacotes CC0 (OpenGameArt) e instrumentos reais do
   soundfont FluidR3_GM (CC BY 3.0 — por isso há um botão ⓘ de créditos); a música é composta em tempo
@@ -51,7 +51,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **Abertura e progressão** (`DESIGN.md` §12): o jogo começa com uma cena de acordar (deitado, poço de luz no teto; só na 1ª vez,
   `?intro=0` pula); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o
   jogador olha para elas; acender com o Fogo toca uma cena do dado queimando (1,5 s só na 1ª vez de cada braseiro; depois ~0,3 s); **marcos** (`src/story/progress.ts`) sobem o
-  "estágio" da Casa (luz mais quente, cal brilhando) (o dado começa só com **Fogo e Peso** por muito tempo; o jogo deve durar algumas horas, ver `DESIGN.md` §13). Cenas usam `ctx.freeze/lookAt/say`.
+  "estágio" da Casa (luz mais quente, cal brilhando) (o dado começa só com **Fogo e Peso** por muito tempo; o jogo deve durar algumas horas, ver `DESIGN.md` §13). Cenas usam `ctx.freeze/lookAt/say`; interação com E/AGIR via `Room.interactables`; o **dado fala** de vez em quando (balão em glifos, `story/chatter.ts`).
   **História e língua** (ver `apps/masmorra-do-dado/DESIGN.md`, `LINGUA.md`): o jogador está condenado por uma "sentença"
   escrita numa língua inventada (os Contáveis; 174 palavras em `tools/lexicon.mjs` → `src/story/lexicon.json`).
   O mundo fala em glifos; pensamentos do jogador e diários de outros condenados vêm em português. Já existem:
