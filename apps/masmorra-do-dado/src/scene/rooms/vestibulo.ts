@@ -7,6 +7,7 @@
 // Cada sala tem um tamanho diferente.
 
 import * as THREE from 'three';
+import { makeSketch } from '../sketch';
 import { floorTexture, brickTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
@@ -112,6 +113,12 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const ins = onBack
     ? kit.inscribe({ words, x: -(D.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.4 - v * 0.05, seed: 3 + v * 11 })
     : kit.inscribe({ words, x: X0 + 0.025, y: 1.55, z: Z0 + 4.4, nx: 1, nz: 0, size, age: 0.2, seed: 3 + v * 11 });
+
+  // prévia (?rabisco=1): o desenho da palavra, riscado na pedra por um condenado anterior, ao lado do glifo
+  if (new URLSearchParams(location.search).has('rabisco') && onBack) {
+    const p = ins.panels.find((q) => q.id === 'brasa');
+    if (p) makeSketch(kit.group, 'braseiro', { x: p.mesh.position.x, y: p.mesh.position.y - size * 1.55, z: Z0 + 0.02, nx: 0, nz: 1, size: size * 1.9, seed: 8 });
+  }
 
   // braseiros (posições relativas ao tamanho da sala)
   const spots: [number, number][] =
