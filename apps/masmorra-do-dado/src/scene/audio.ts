@@ -29,7 +29,9 @@ export type SfxName =
   | 'uiflip'
   | 'uiopen'
   | 'uiclose'
-  | 'uinew';
+  | 'uinew'
+  | 'shaftRumble'
+  | 'shaftFall';
 
 // 0 = tudo ligado, 1 = só efeitos, 2 = mudo
 export type AudioMode = 0 | 1 | 2;
@@ -411,6 +413,20 @@ export class Sfx {
         break;
       case 'burnout':
         this.sample('burnout', 0.7, 1);
+        break;
+      // o barulho de algo se mexendo lá em cima, no poço (só gravações, mais graves e com muito eco): um estrondo surdo, duas batidas e o arrastar
+      case 'shaftRumble':
+        this.fxNote('timpani', 38, 0.5, 0, 0.95);
+        this.sample('doorclose1', 0.5, 0.5, 0.05, 1);
+        this.sample('bounce3', 0.5, 0.5, 0.5, 1);
+        this.sample('bounce1', 0.4, 0.58, 0.85, 1);
+        this.sample('sweep', 0.35, 0.55, 0.1, 0.9);
+        break;
+      // o dado despenca pelo poço: um assobio de ar que cai e a pancada grave no chão
+      case 'shaftFall':
+        this.sample('sweep', 0.5, 0.8, 0, 0.6);
+        this.sample('land', 1, 0.6, 0.5, 0.8);
+        this.fxNote('timpani', 43, 0.35, 0.5, 0.9);
         break;
       case 'land':
         this.sample('land', 0.8 * Math.min(1, v + 0.25), rand(0.85, 1));

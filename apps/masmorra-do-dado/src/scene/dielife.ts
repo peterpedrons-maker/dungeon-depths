@@ -19,6 +19,7 @@ export interface LifeInput {
   idle: boolean; // jogador parado e sem fazer nada
   target: LifeTarget | null;
   busy: boolean; // cena, conversa ou diário: fica quieto e atento
+  face?: number; // 0..1: quanto um ROSTO está virado para o jogador. Com o rosto à vista, o DADO fica quieto e quem se mexe são os olhos e o rosto
 }
 
 export interface LifeOut {
@@ -148,9 +149,10 @@ export class DieLife {
       this.wanderT -= dt;
       if (this.wanderT <= 0) {
         this.lookPlayer = Math.random() < 0.3;
-        this.wanderT = 2.2 + Math.random() * 3.6;
-        this.wy = this.lookPlayer ? 0 : (Math.random() - 0.5) * 0.9;
-        this.wp = this.lookPlayer ? 0.1 : (Math.random() - 0.5) * 0.5;
+        const f = i.face ?? 0;
+        this.wanderT = (2.2 + Math.random() * 3.6) * (1 - 0.55 * f); // com o rosto à vista, os olhos passeiam mais depressa
+        this.wy = this.lookPlayer ? 0 : (Math.random() - 0.5) * (0.9 + 0.5 * f);
+        this.wp = this.lookPlayer ? 0.1 : (Math.random() - 0.5) * (0.5 + 0.3 * f);
         if (Math.random() < 0.18) this.blinkT = 0; // um piscar junto com a mudança de olhar
       }
       ty = this.wy;
@@ -188,11 +190,15 @@ export class DieLife {
     const tr = Math.sin(this.time * 61) * sh;
     const roll = tr * 0.12 + Math.sin(this.time * 17) * this.wiggle * 0.35;
     this.e.set(this.gp + Math.sin(this.time * 47) * sh * 0.05, this.gy + Math.sin(this.time * 53) * sh * 0.06 + (this.wiggle * Math.sin(this.time * 14) * 0.25), roll);
+    // o rosto à vista: o dado quase não se inclina nem anda; só os olhos e o rosto olham em volta
+    const calm = 1 - 0.9 * Math.min(1, i.face ?? 0);
+    this.e.x *= calm;
+    this.e.y *= calm;
     this.q.setFromEuler(this.e);
     const breathe = Math.sin(this.time * 1.7) * 0.012 * (1 - 0.5 * this.sleep);
     const eagerPulse = this.lean * (0.5 + 0.5 * Math.sin(this.time * 7)) * 0.35;
-    this.out.dx = (i.target ? clamp(i.target.dx, -1, 1) * 0.035 * this.lean : 0) + tr * 0.012;
-    this.out.dy = this.hopY * 0.045 - this.droop * 0.07 - this.sleep * 0.05 + breathe + (i.target ? clamp(i.target.dy, -1, 1) * 0.02 * this.lean : 0);
+    this.out.dx = ((i.target ? clamp(i.target.dx, -1, 1) * 0.035 * this.lean : 0) + tr * 0.012) * (0.2 + 0.8 * calm);
+    this.out.dy = this.hopY * 0.045 - this.droop * 0.07 - this.sleep * 0.05 + breathe + (i.target ? clamp(i.target.dy, -1, 1) * 0.02 * this.lean : 0) * (0.2 + 0.8 * calm);
     this.out.scale = 1 + breathe * 0.6 - this.squash * 0.1 + this.lean * 0.04;
     const eyelid = 1 - 0.85 * this.blink;
     this.out.glow = Math.max(0.05, (1 + this.boost + eagerPulse) * eyelid * (1 - 0.55 * this.sleep));

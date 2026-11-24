@@ -542,11 +542,16 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   // sobrancelhas esquerda (ponta interna à direita) e direita
   const browL = (tilt: number, y = 17, th = 1) => brow(12 + Math.round(look.ex / 2), y + look.by, 27 + Math.round(look.ex / 2), y + look.by + Math.round(tilt), th);
   const browR = (tilt: number, y = 17, th = 1) => brow(37 + Math.round(look.ex / 2), y + look.by + Math.round(tilt), 52 + Math.round(look.ex / 2), y + look.by, th);
+  const fx = Math.round(look.ex / 2); // o nariz e a boca acompanham o olhar um pouco menos que os olhos (o rosto "vira")
+  const fy = Math.round(look.ey / 2);
   const nose = (foot = false) => {
-    seg(32, 28, 32, 41);
-    if (foot) seg(32, 41, 28, 41);
+    seg(32 + fx, 28 + fy, 32 + fx, 41 + fy);
+    if (foot) seg(32 + fx, 41 + fy, 28 + fx, 41 + fy);
   };
   const mouth = (x0: number, x1: number, y: number, drop = 0, th = 1) => {
+    x0 += fx;
+    x1 += fx;
+    y += fy;
     seg(x0, y, x1, y, th);
     if (drop) {
       seg(x0, y, x0, y + drop);

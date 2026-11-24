@@ -844,8 +844,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         const top = sh.y - 2.5; // o teto da sala (o poço sai dele)
         // 1) o barulho de algo caindo lá em cima; no mesmo instante a câmera vira para o buraco
-        sfx.bounce(2.6);
-        window.setTimeout(() => sfx.bounce(4.5), 420);
+        sfx.play('shaftRumble');
         camera.updateMatrixWorld();
         const wx = sh.x + offs[0].x - pos.x;
         const wz = sh.z + offs[0].z - pos.z;
@@ -865,6 +864,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           dieThrown = true;
           dieState = 'flying';
           restTimer = 0;
+          sfx.play('shaftFall');
           dropWatch = { t: 0, cb: onLanded };
         }, 1000);
       },
@@ -2292,7 +2292,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     lookedT += dt;
-    const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy() });
+    const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
     lifeGlow = lo.glow;
     updateMats();
     computeTarget(face, spin);
