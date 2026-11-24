@@ -9,6 +9,7 @@ import {
   dieFaceTexture,
   dieSketchBlend,
   dieRostoBlend,
+  dieRostoCanvas,
   dieGlowTexture,
   flameFrames,
   soapSideTexture,
@@ -364,6 +365,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let talkGlow = 0; // o dado caído brilha quando fala
   let handTalk = 0; // o dado da mão pulsa quando fala
   // ── o dado vivo: olha, pisca, se assusta, cochila (ver dielife.ts) ──
+  const rostoP = [0, 0, 0, 0, 0, 0]; // 0..1: quanto cada face é rosto agora
   const life = new DieLife();
   let lifeGlow = 1; // multiplicador do brilho das gemas vindo da "vida"
   const dieNdc = new THREE.Vector3();
@@ -498,7 +500,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
-      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1) * lifeGlow;
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1) * lifeGlow * (1 + 0.7 * rostoP[i]);
       handMats[i].color.setScalar(1 - 0.5 * handDim);
       dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat + 2.4 * talkGlow);
     });
@@ -514,7 +516,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   computeTarget(face, 0);
   // ── o ROSTO de cada número: a face virada para o jogador (a de baixo, que ele vê de frente) vira um rosto; as gemas viram os olhos (ver `dieRostoBlend`) ──
   let rostos: ReturnType<typeof dieRostoBlend>[] = [];
-  const rostoP = [0, 0, 0, 0, 0, 0];
   const rostoLast = [0, 0, 0, 0, 0, 0];
   // quantos giros de 90° cada face lateral precisa para o rosto ficar de pé quando ela vem para a frente (depende da face escolhida, que fica em cima)
   const FACE_UP = [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0)];
@@ -2278,6 +2279,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
       lifeDbg: () => ({ rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
+      rostoSheet: () => {
+        // prévia dos 6 rostos (face e brilho) em grande, só para avaliar o desenho
+        const S = 6;
+        const cv = document.createElement('canvas');
+        cv.width = 64 * S * 6;
+        cv.height = 64 * S * 2;
+        const g = cv.getContext('2d')!;
+        g.imageSmoothingEnabled = false;
+        for (let n = 1; n <= 6; n++) {
+          const r = dieRostoCanvas(n, FACES[n - 1].color, false, 0);
+          g.drawImage(r.face, (n - 1) * 64 * S, 0, 64 * S, 64 * S);
+          g.drawImage(r.glow, (n - 1) * 64 * S, 64 * S, 64 * S, 64 * S);
+        }
+        return cv.toDataURL('image/png');
+      },
       freezeSpin: (v: number | null) => { (globalThis as Record<string, unknown>).__spinFreeze = v === null ? undefined : v; },
       life: (k: string) => { if (k === 'sleep') life.sleepNow(); else life.react(k as never); },
       sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },

@@ -499,87 +499,148 @@ export function dieSketchBlend(n: number, accent: string, locked: boolean, kind:
 // legível); elas viram os OLHOS (ganham pupila), e ao redor entram sobrancelhas, bochechas e boca. Cada número tem a sua expressão:
 //  1 ciclope calmo e surpreso · 2 desconfiado (olhos em diagonal, sobrancelhas desiguais) · 3 sorriso de canto, confiante (o do Fogo) · 4 feliz, de bochechas coradas ·
 //  5 sorriso largo, com nariz · 6 carrancudo, de presas.
-const PUPIL = '#07050c';
-const GOLD = '#e0b858';
-const EMBER = '#ff8a3c';
-function rosto(ctx: CanvasRenderingContext2D, n: number, glow: boolean) {
-  const gold = glow ? '#c89030' : GOLD;
-  const ember = glow ? '#ffb060' : EMBER;
-  const pupil = (x: number, y: number, s = 5) => px(ctx, x - Math.floor(s / 2), y - Math.floor(s / 2) + 1, glow ? '#000' : PUPIL, s, s);
-  const sparkle = (x: number, y: number) => px(ctx, x - 4, y - 4, glow ? '#fff' : '#ffffff', 2, 2);
-  // sobrancelha: linha de 11 px com inclinação (tilt > 0: a ponta direita fica mais baixa)
-  const brow = (cx: number, cy: number, tilt: number, w = 5) => {
-    for (let i = -w; i <= w; i++) px(ctx, cx + i, cy + Math.round(i * tilt), gold, 1, 3);
+const OBS = '#1a1428'; // contorno escuro (obsidiana)
+// Desenho "de verdade" de um rosto, em formas grandes e de contorno escuro, para ler à distância (a face do dado tem 64 px).
+function rosto(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string) {
+  const C = {
+    out: glow ? '#000' : OBS,
+    white: glow ? '#b8a878' : '#f4eedc',
+    pupil: glow ? '#000' : '#0a0710',
+    gold: glow ? '#e0b050' : '#f0c868',
+    ember: glow ? '#ff9a40' : '#ff8a3c',
+    mouth: glow ? '#000' : '#210a10',
+    tongue: glow ? '#ff7a50' : '#e0503c',
+    tooth: glow ? '#ffffff' : '#fbf6e8',
+    blush: glow ? '#ff7a70' : '#e86a60',
+    iris: accent,
   };
-  // boca: curva (depth > 0 sorri, < 0 fecha a cara)
-  const mouth = (cx: number, cy: number, w: number, depth: number) => {
-    for (let i = -w; i <= w; i++) px(ctx, cx + i, cy + Math.round(depth * (1 - (i * i) / (w * w))), ember, 1, 3);
+  const fill = (cx: number, cy: number, rx: number, ry: number, color: string, pred?: (dx: number, dy: number) => boolean) => {
+    for (let y = -ry; y <= ry; y++)
+      for (let x = -rx; x <= rx; x++) if ((x * x) / (rx * rx) + (y * y) / (ry * ry) <= 1.02 && (!pred || pred(x, y))) px(ctx, Math.round(cx + x), Math.round(cy + y), color);
+  };
+  const line = (x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
+    const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    for (let i = 0; i <= steps; i++) {
+      const t = steps ? i / steps : 0;
+      px(ctx, Math.round(x0 + (x1 - x0) * t - w / 2), Math.round(y0 + (y1 - y0) * t - w / 2), color, w, w);
+    }
+  };
+  // olho: contorno, branco, íris (a GEMA, na cor da face), pupila, brilho; `lid` esconde parte do olho (pálpebra); 'happy' e 'wink' são olhos FECHADOS (um arco)
+  type Lid = 'none' | 'angryL' | 'angryR' | 'happy' | 'half' | 'wink';
+  const eye = (cx: number, cy: number, o: { rx?: number; ry?: number; look?: [number, number]; lid?: Lid; pup?: number } = {}) => {
+    const rx = o.rx ?? 10;
+    const ry = o.ry ?? 8;
+    const [lx, ly] = o.look ?? [0, 0];
+    const lid = o.lid ?? 'none';
+    // apaga a gema que estava aqui (o olho a substitui): sobra só a obsidiana
+    for (let y = -9; y <= 9; y++) for (let x = -9; x <= 9; x++) if (Math.abs(x) + Math.abs(y) <= 9) px(ctx, cx + x, cy + y, glow ? '#000' : '#2a2140');
+    if (lid === 'happy' || lid === 'wink') {
+      // olho fechado: um arco grosso (sorridente), contorno escuro com miolo claro
+      for (let x = -rx; x <= rx; x++) {
+        const yy = Math.round((lid === 'happy' ? -ry * 0.55 : ry * 0.1) * (1 - (x * x) / (rx * rx))) + 3;
+        px(ctx, cx + x, cy + yy - 2, C.out, 1, 6);
+        px(ctx, cx + x, cy + yy, C.white, 1, 2);
+      }
+      return;
+    }
+    // quais pontos do olho aparecem (a pálpebra esconde o resto)
+    const vis = (x: number, y: number, pad = 0) => {
+      if (lid === 'half') return y >= -ry * 0.2 - pad;
+      if (lid === 'angryL') return y >= -ry * 0.1 + x * 0.55 - 1 - pad;
+      if (lid === 'angryR') return y >= -ry * 0.1 - x * 0.55 - 1 - pad;
+      return true;
+    };
+    fill(cx, cy, rx + 2, ry + 2, C.out, (x, y) => vis(x, y, 2));
+    fill(cx, cy, rx, ry, C.white, (x, y) => vis(x, y));
+    const ir = Math.round(ry * 0.8);
+    for (let y = -ir; y <= ir; y++) for (let x = -ir; x <= ir; x++) if (Math.abs(x) + Math.abs(y) <= ir && vis(x + lx, y + ly)) px(ctx, cx + lx + x, cy + ly + y, C.iris);
+    const p = o.pup ?? 3;
+    px(ctx, cx + lx - Math.floor(p / 2), cy + ly - Math.floor(p / 2), C.pupil, p, p + 1);
+    if (vis(lx - p, ly - p - 1)) px(ctx, cx + lx - p, cy + ly - p - 1, '#ffffff', 2, 2); // brilho
+  };
+  const brow = (cx: number, cy: number, tilt: number, w = 7, th = 3) => {
+    for (let i = -w; i <= w; i++) {
+      const y = cy + Math.round(i * tilt);
+      px(ctx, cx + i - 1, y - 1, C.out, 3, th + 2);
+    }
+    for (let i = -w; i <= w; i++) px(ctx, cx + i, cy + Math.round(i * tilt), C.gold, 1, th);
+  };
+  // boca: aberta (interior escuro, língua, dentes) ou uma linha grossa
+  const mouth = (cx: number, cy: number, w: number, depth: number, open = true) => {
+    const yAt = (i: number) => cy + Math.round(depth * (1 - (i * i) / (w * w)));
+    if (open && depth > 0) {
+      for (let i = -w; i <= w; i++) {
+        const y0 = cy - 1;
+        const y1 = yAt(i) + 2;
+        for (let y = y0; y <= y1; y++) px(ctx, cx + i, y, y === y0 ? C.tooth : y > y1 - 2 && Math.abs(i) < w * 0.6 ? C.tongue : C.mouth);
+        px(ctx, cx + i, y0 - 1, C.out);
+        px(ctx, cx + i, y1 + 1, C.out);
+      }
+      px(ctx, cx - w - 1, cy - 1, C.out, 1, depth + 3);
+      px(ctx, cx + w + 1, cy - 1, C.out, 1, depth + 3);
+    } else {
+      for (let i = -w; i <= w; i++) {
+        px(ctx, cx + i, yAt(i) - 1, C.out, 1, 5);
+        px(ctx, cx + i, yAt(i), C.ember, 1, 3);
+      }
+    }
   };
   const blush = (cx: number, cy: number) => {
-    px(ctx, cx - 5, cy + 9, ember, 4, 1);
-    px(ctx, cx + 1, cy + 9, ember, 4, 1);
+    for (const dx of [-4, 1, 6]) line(cx + dx - 3, cy + 3, cx + dx, cy - 1, 1, C.blush);
+  };
+  const nose = (cx: number, cy: number) => {
+    fill(cx, cy, 3, 3, C.out);
+    fill(cx, cy, 2, 2, C.gold);
   };
   const fang = (x: number, y: number) => {
-    px(ctx, x, y, glow ? '#fff' : '#f4efe0', 2, 1);
-    px(ctx, x, y + 1, glow ? '#fff' : '#f4efe0', 1, 1);
+    for (let k = 0; k < 4; k++) px(ctx, x + (k > 2 ? 1 : 0), y + k, C.tooth, 3 - Math.min(2, k), 1);
   };
   switch (n) {
-    case 1:
-      pupil(32, 32, 7);
-      sparkle(32, 32);
-      brow(32, 20, 0, 7);
-      mouth(32, 46, 5, 2);
+    case 1: // ciclope calmo e surpreso
+      eye(32, 28, { rx: 15, ry: 12, pup: 6 });
+      brow(32, 10, 0, 11);
+      mouth(32, 49, 6, 4);
       break;
-    case 2:
-      pupil(17, 17);
-      pupil(47, 47);
-      sparkle(17, 17);
-      sparkle(47, 47);
-      brow(17, 6, -0.35); // levantada
-      brow(47, 36, 0.35); // baixa
-      mouth(20, 50, 7, 1);
+    case 2: // desconfiado: um olho pequeno em cima, um baixo e cético, sobrancelhas desiguais, boca torta
+      eye(17, 18, { rx: 9, ry: 8, look: [2, 1] });
+      eye(47, 46, { rx: 10, ry: 8, lid: 'half', look: [-2, 0] });
+      brow(17, 5, -0.3, 7);
+      brow(47, 34, 0.25, 7);
+      mouth(22, 50, 8, 1, false);
       break;
-    case 3:
-      pupil(17, 17);
-      pupil(47, 47);
-      sparkle(17, 17);
-      sparkle(47, 47);
-      brow(17, 6, -0.25);
-      brow(47, 36, -0.25);
-      mouth(30, 58, 11, 3); // sorriso de canto, largo
+    case 3: // sorriso de canto, confiante (o do Fogo): um olho piscando
+      eye(17, 18, { rx: 9, ry: 8, look: [2, 0] });
+      eye(47, 46, { rx: 9, ry: 8, lid: 'wink' });
+      nose(32, 32);
+      brow(17, 5, -0.3, 7);
+      brow(47, 35, -0.2, 7);
+      mouth(26, 55, 11, 4);
       break;
-    case 4:
-      pupil(17, 17);
-      pupil(47, 17);
-      sparkle(17, 17);
-      sparkle(47, 17);
-      brow(17, 6, -0.2);
-      brow(47, 6, 0.2);
-      blush(17, 38);
-      blush(47, 38);
-      mouth(32, 46, 8, 4);
+    case 4: // feliz: olhos sorridentes, bochechas, sorriso grande
+      eye(17, 17, { rx: 10, ry: 8, lid: 'happy' });
+      eye(47, 17, { rx: 10, ry: 8, lid: 'happy' });
+      brow(17, 4, -0.15, 7);
+      brow(47, 4, 0.15, 7);
+      blush(17, 36);
+      blush(47, 36);
+      mouth(32, 46, 9, 6);
       break;
-    case 5:
-      pupil(17, 17);
-      pupil(47, 17);
-      sparkle(17, 17);
-      sparkle(47, 17);
-      brow(17, 6, -0.2);
-      brow(47, 6, 0.2);
-      mouth(32, 53, 8, 4);
-      fang(26, 57);
-      fang(37, 57);
+    case 5: // sorriso largo, de nariz e dentes
+      eye(17, 17, { rx: 10, ry: 9 });
+      eye(47, 17, { rx: 10, ry: 9 });
+      brow(17, 4, -0.2, 7);
+      brow(47, 4, 0.2, 7);
+      nose(32, 33);
+      mouth(32, 50, 12, 6);
       break;
-    case 6:
-      pupil(17, 17);
-      pupil(47, 17);
-      sparkle(17, 17);
-      sparkle(47, 17);
-      brow(17, 7, 0.45); // carranca: as pontas internas descem
-      brow(47, 7, -0.45);
-      mouth(32, 52, 8, -3);
-      fang(25, 49);
-      fang(38, 49);
+    case 6: // carrancudo, de presas
+      eye(17, 17, { rx: 10, ry: 9, lid: 'angryL', look: [2, 2] });
+      eye(47, 17, { rx: 10, ry: 9, lid: 'angryR', look: [-2, 2] });
+      brow(17, 6, 0.45, 7);
+      brow(47, 6, -0.45, 7);
+      mouth(32, 51, 8, -4, false);
+      fang(26, 48);
+      fang(36, 48);
       break;
   }
 }
@@ -596,8 +657,9 @@ function turned(c: HTMLCanvasElement, turn: number): HTMLCanvasElement {
 export function dieRostoCanvas(n: number, accent: string, locked: boolean, turn = 0) {
   const face = dieFaceCanvas(n, accent, locked);
   const glow = dieGlowCanvas(n, accent, locked);
-  rosto(face.getContext('2d')!, n, false);
-  rosto(glow.getContext('2d')!, n, true);
+  const col = locked ? '#5a5270' : accent;
+  rosto(face.getContext('2d')!, n, false, col);
+  rosto(glow.getContext('2d')!, n, true, locked ? '#3a3450' : accent);
   return { face: turned(face, turn), glow: turned(glow, turn) };
 }
 // mistura da face normal com o rosto: `set(p)` de 0 (gemas) a 1 (rosto). `turn`: giros de 90° para o rosto ficar de pé na tela (a face base gira junto)
