@@ -368,7 +368,7 @@ function drawGem(ctx: CanvasRenderingContext2D, cx: number, cy: number, col: RGB
 
 const GEM_POS = [17, 32, 47];
 
-export function dieFaceCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
+export function dieFaceCanvas(n: number, accent: string, locked = false, gems = true): HTMLCanvasElement {
   const { c, ctx } = canvas(64);
   const r = rng(40 + n);
   const body = hex('#2a2140');
@@ -430,16 +430,16 @@ export function dieFaceCanvas(n: number, accent: string, locked = false): HTMLCa
     if (!near) px(ctx, x, y, shade(body, 1.7), 1, 3);
   }
   const col = locked ? hex('#5a5270') : hex(accent);
-  for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, false);
+  if (gems) for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, false);
   return c;
 }
 
-export function dieGlowCanvas(n: number, accent: string, locked = false): HTMLCanvasElement {
+export function dieGlowCanvas(n: number, accent: string, locked = false, gems = true): HTMLCanvasElement {
   const { c, ctx } = canvas(64);
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, 64, 64);
   const col = locked ? hex('#3a3450') : hex(accent);
-  for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, true);
+  if (gems) for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, true);
   return c;
 }
 
@@ -627,6 +627,110 @@ function rosto(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: 
       mouth(32, 51, 8, -3, false);
       break;
   }
+}
+
+// ── ROSTO ABSTRATO (candidatos; ainda não ligados ao jogo): em vez de um rosto de desenho, o dado tem SÓ o que sugere um rosto, sério e misterioso.
+//  A "olhos": cada gema vira um olho em fenda (amêndoa da cor da face, pupila vertical, pálpebra pesada) e só; o número é o número de olhos. Uma linha fina de ouro (testa ou boca) em alguns.
+//  B "constelação": as gemas são pontos ligados por linhas finas de ouro, no estilo dos glifos da língua: olhos, uma testa, uma boca reta.
+//  C "máscara": uma placa clara de obsidiana com duas fendas de luz e um sulco de nariz; o número vira pontinhos na testa.
+export function dieAbstractCanvas(n: number, accent: string, locked: boolean, variant: 'A' | 'B' | 'C') {
+  const col = locked ? '#5a5270' : accent;
+  const out = {} as { face: HTMLCanvasElement; glow: HTMLCanvasElement };
+  for (const glow of [false, true]) {
+    const c = glow ? dieGlowCanvas(n, accent, locked, false) : dieFaceCanvas(n, accent, locked, false);
+    const ctx = c.getContext('2d')!;
+    const base = hex(col);
+    const gold = glow ? '#c89030' : '#f0c868';
+    const dark = glow ? '#000' : '#0a0710';
+    const lens = glow ? shade(base, 1.45) : shade(base, 1.1);
+    const hl = (x0: number, x1: number, y: number, color = gold, th = 1) => px(ctx, x0, y, color, x1 - x0 + 1, th);
+    const vl = (x: number, y0: number, y1: number, color = gold, th = 1) => px(ctx, x, y0, color, th, y1 - y0 + 1);
+    const seg = (x0: number, y0: number, x1: number, y1: number, color = gold) => {
+      const st = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      for (let i = 0; i <= st; i++) px(ctx, Math.round(x0 + ((x1 - x0) * i) / (st || 1)), Math.round(y0 + ((y1 - y0) * i) / (st || 1)), color);
+    };
+    // olho em fenda: amêndoa, pálpebra pesada (corta o topo), pupila vertical
+    const slit = (cx: number, cy: number, w = 8, h = 4, lid = 0.25) => {
+      const top = -Math.round(h * (1 - 2 * lid)); // a pálpebra baixa corta a parte de cima
+      for (let x = -w; x <= w; x++) {
+        const hh = Math.round(h * Math.sqrt(Math.max(0, 1 - (x * x) / (w * w))));
+        for (let y = -hh; y <= hh; y++) {
+          if (y < top) continue;
+          const edge = Math.abs(x) >= w - 1 || y === hh || y === top;
+          px(ctx, cx + x, cy + y, edge ? dark : lens);
+        }
+      }
+      hl(cx - w - 1, cx + w + 1, cy + top - 1, gold); // a linha da pálpebra
+      vl(cx, cy + top, cy + Math.round(h * 0.9), dark, 2); // pupila vertical
+    };
+    const node = (cx: number, cy: number, r = 3) => {
+      for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (Math.abs(x) + Math.abs(y) <= r) px(ctx, cx + x, cy + y, Math.abs(x) + Math.abs(y) <= r - 2 ? (glow ? shade(base, 1.6) : shade(base, 1.2)) : dark);
+    };
+    const P = (gx: number) => GEM_POS[gx];
+    if (variant === 'A') {
+      const eyes = PIPS[n].map(([gx, gy]) => [P(gx), P(gy)] as [number, number]);
+      for (const [x, y] of eyes) slit(x, y, n === 1 ? 14 : 8, n === 1 ? 6 : 4, n === 6 ? 0.35 : 0.25);
+      if (n === 1) hl(22, 42, 50);
+      if (n === 2) hl(32, 56, 56);
+      if (n === 3) hl(8, 30, 8);
+      if (n === 4) hl(20, 44, 32);
+      if (n === 5) hl(18, 46, 56);
+      if (n === 6) vl(32, 10, 54);
+    } else if (variant === 'B') {
+      const pts = PIPS[n].map(([gx, gy]) => [P(gx), P(gy)] as [number, number]);
+      if (n === 1) {
+        hl(18, 46, 22);
+        hl(26, 38, 46);
+        seg(18, 22, 12, 30);
+        seg(46, 22, 52, 30);
+      } else if (n === 2) {
+        seg(17, 17, 47, 47);
+        hl(10, 28, 10);
+        hl(36, 54, 54);
+      } else if (n === 3) {
+        seg(17, 17, 47, 47);
+        seg(26, 38, 38, 26);
+        hl(8, 28, 8);
+      } else if (n === 4) {
+        hl(17, 47, 17);
+        hl(17, 47, 47);
+        vl(32, 17, 47);
+        hl(10, 54, 8);
+      } else if (n === 5) {
+        hl(17, 47, 17);
+        seg(17, 17, 32, 32);
+        seg(47, 17, 32, 32);
+        hl(17, 47, 47);
+        hl(10, 54, 8);
+      } else {
+        vl(17, 17, 47);
+        vl(47, 17, 47);
+        hl(17, 47, 17);
+        hl(17, 47, 47);
+        hl(10, 54, 8);
+      }
+      for (const [x, y] of pts) node(x, y, n === 1 ? 5 : 3);
+    } else {
+      // máscara: placa oval mais clara, duas fendas de luz, sulco de nariz, boca reta; o número = pontinhos na testa
+      const mk = glow ? '#000' : '#3a3158';
+      for (let y = 6; y <= 58; y++) for (let x = 12; x <= 52; x++) {
+        const dx = (x - 32) / 20;
+        const dy = (y - 32) / 26;
+        if (dx * dx + dy * dy <= 1) px(ctx, x, y, mk);
+      }
+      if (!glow) for (let y = 6; y <= 58; y++) for (let x = 12; x <= 52; x++) { const dx = (x - 32) / 20; const dy = (y - 32) / 26; const r = dx * dx + dy * dy; if (r <= 1 && r > 0.88) px(ctx, x, y, '#150f26'); }
+      slit(21, 28, 7, 3, 0.3);
+      slit(43, 28, 7, 3, 0.3);
+      vl(32, 32, 42, glow ? '#000' : '#1a1430', 2);
+      hl(24, 40, 48, gold);
+      const dots = n;
+      const x0 = 32 - ((dots - 1) * 4) / 2;
+      for (let i = 0; i < dots; i++) node(Math.round(x0 + i * 4), 15, 1);
+    }
+    if (glow) out.glow = c;
+    else out.face = c;
+  }
+  return out;
 }
 
 // gira o conteúdo de uma face em múltiplos de 90° (sentido horário): as faces laterais do dado podem aparecer deitadas na tela, e o rosto precisa ficar de pé
