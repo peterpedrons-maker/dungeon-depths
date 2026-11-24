@@ -355,8 +355,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // leva a face n para CIMA (+y)
   const upQ = (n: number) => new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)).multiply(faceQ(n));
+  const tiltNow = new THREE.Quaternion(); // a inclinação do dado: some na cena (o dado fica de frente, sem inclinar)
+  const idQ = new THREE.Quaternion();
+  const lifeQ = new THREE.Quaternion();
   const computeTarget = (n: number, spin: number) =>
-    targetQ.copy(tilt).multiply(spinQ.setFromAxisAngle(Y_AXIS, spin)).multiply(upQ(n));
+    targetQ.copy(tiltNow).multiply(spinQ.setFromAxisAngle(Y_AXIS, spin)).multiply(upQ(n));
 
   let face = 1; // face escolhida (virada pra cima no HUD)
   let rostosDirty = false; // a face escolhida mudou: refazer os rostos
@@ -376,6 +379,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let lookedT = 99; // há quanto tempo
   // para onde o dado olha agora: inscrição encarada > braseiro à frente > porta > nada (ele vagueia)
   const lifeTarget = (): LifeTarget | null => {
+    if (dieCineTarget > 0.5) return { dx: 0, dy: 0, player: true }; // na cena, o dado olha DIRETO para o jogador
     camera.getWorldDirection(lookDir);
     const pick = (p: THREE.Vector3, minCos: number, maxD: number): number => {
       toIns.copy(p).sub(camera.position);
@@ -559,6 +563,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       rostosDirty = false;
       buildRostos(); // a face escolhida mudou: as faces laterais giram de outro jeito
     }
+    FRONT.set(0, -0.72 * (1 - dieCine), 0.7 + 0.3 * dieCine).normalize(); // na cena, o rosto fica de frente (sem inclinar)
     DIE_FACES.forEach((_, i) => {
       nW.copy(FACE_N[i]).applyQuaternion(dieHolder.quaternion);
       const d = nW.dot(FRONT);
@@ -2292,20 +2297,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     lookedT += dt;
+    dieCine += (dieCineTarget - dieCine) * Math.min(1, dt * 2.6);
+    const cn = dieCine * dieCine * (3 - 2 * dieCine);
+    tiltNow.copy(idQ).slerp(tilt, 1 - cn);
     const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
     lifeGlow = lo.glow;
     updateMats();
     computeTarget(face, spin);
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
-    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012, 0, Math.sin(t * 0.8) * 0.012));
-    dieHolder.quaternion.copy(lo.quat).multiply(curQ).multiply(wobble);
-    dieCine += (dieCineTarget - dieCine) * Math.min(1, dt * 2.6);
-    const cn = dieCine * dieCine * (3 - 2 * dieCine);
+    wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012 * (1 - cn), 0, Math.sin(t * 0.8) * 0.012 * (1 - cn)));
+    lifeQ.copy(lo.quat).slerp(idQ, cn);
+    dieHolder.quaternion.copy(lifeQ).multiply(curQ).multiply(wobble);
     const du = ease(dieU);
     dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 0.75 * cn));
     dieGroup.position.set(
-      (handX + (-handX - handX) * du) * (1 - cn) + lo.dx,
-      dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + 0.1 * cn,
+      ((handX + (-handX - handX) * du) + lo.dx) * (1 - cn), // na cena: exatamente no centro da tela
+      (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy) * (1 - cn),
       -1,
     );
     updateRostos(dt);

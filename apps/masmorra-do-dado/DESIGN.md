@@ -423,3 +423,6 @@ O dado **não está mais no chão ao acordar**. Sequência (tudo em glifos e bem
 
 ### O rosto olha sem mexer o dado (implementado em `dielife.ts`/`textures.ts`)
 Quando um **rosto está virado para o jogador** (`face` = max de `rostoP`, e sempre na cena do dado no centro), o **dado quase não se inclina nem anda** (movimento reduzido a ~10%): quem olha em volta são os **olhos e o rosto**. Os olhos passeiam mais depressa e mais longe (a cada ~1 a 3 s), as sobrancelhas sobem e descem, e **o nariz e a boca acompanham o olhar um pouco menos que os olhos** (o rosto "vira"). Sem rosto à vista, o dado continua a se inclinar como antes.
+
+### Cena do dado no centro: de frente e olhando direto (implementado)
+Na cena inicial (`ctx.dieCenter`), o dado **perde a inclinação** (`tiltNow` vai a zero), fica **exatamente no centro da tela** (x e y = 0, sem balanço) e gira até uma face lateral ficar **perfeitamente de frente** (o rosto aparece de pé, simétrico); o dado não se inclina nem ondula. O **olhar é fixo no jogador** durante toda a cena (alvo `player`, olhos centrados; ele só pisca). Fora da cena a inclinação e o olhar em volta voltam ao normal.
