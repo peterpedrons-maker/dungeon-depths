@@ -27,6 +27,8 @@ export interface LifeOut {
   dy: number;
   scale: number;
   glow: number; // multiplicador do brilho das gemas (pisca, cochila, vibra)
+  // o olhar do ROSTO: para onde os olhos apontam (-1 a 1; +x direita, +y cima), quanto as sobrancelhas sobem (-1 a 1) e se os olhos estão fechados (piscar, cochilo)
+  look: { x: number; y: number; brow: number; closed: boolean };
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -61,7 +63,7 @@ export class DieLife {
   private time = 0;
   private q = new THREE.Quaternion();
   private e = new THREE.Euler();
-  out: LifeOut = { quat: this.q, dx: 0, dy: 0, scale: 1, glow: 1 };
+  out: LifeOut = { quat: this.q, dx: 0, dy: 0, scale: 1, glow: 1, look: { x: 0, y: 0, brow: 0, closed: false } };
 
   react(kind: Reaction) {
     this.idleT = 0;
@@ -194,6 +196,11 @@ export class DieLife {
     this.out.scale = 1 + breathe * 0.6 - this.squash * 0.1 + this.lean * 0.04;
     const eyelid = 1 - 0.85 * this.blink;
     this.out.glow = Math.max(0.05, (1 + this.boost + eagerPulse) * eyelid * (1 - 0.55 * this.sleep));
+    // o olhar do rosto: os olhos acompanham o alvo; as sobrancelhas sobem com interesse, alegria e susto e descem com o cansaço
+    this.out.look.x = clamp(this.gy / 0.5, -1, 1);
+    this.out.look.y = clamp(-this.gp / 0.35, -1, 1);
+    this.out.look.brow = clamp(this.boost * 0.9 + this.lean * 0.8 + this.out.look.y * 0.5 - this.sleep * 0.8 - this.droop, -1, 1);
+    this.out.look.closed = this.blink > 0.5 || this.sleep > 0.6;
     // rede de segurança: se algum número virar NaN, a vida reinicia em vez de contaminar o resto
     if (!Number.isFinite(this.out.dx + this.out.dy + this.out.scale + this.out.glow + this.q.x + this.q.y + this.q.z + this.q.w)) {
       this.gy = this.gp = this.vy = this.vp = this.hopY = this.hopV = this.shake = this.squash = this.boost = this.droop = this.wiggle = this.lean = 0;

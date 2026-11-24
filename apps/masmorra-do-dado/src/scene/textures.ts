@@ -448,9 +448,10 @@ const BAYER = [0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26, 12, 
 function ditherBlend(baseFace: HTMLCanvasElement, otherFace: HTMLCanvasElement, baseGlow: HTMLCanvasElement, otherGlow: HTMLCanvasElement) {
   const pix = (c: HTMLCanvasElement) => c.getContext('2d')!.getImageData(0, 0, 64, 64).data;
   const bF = pix(baseFace);
-  const oF = pix(otherFace);
+  let oF = pix(otherFace);
   const bG = pix(baseGlow);
-  const oG = pix(otherGlow);
+  let oG = pix(otherGlow);
+  let curP = 0;
   const mk = () => {
     const { c, ctx } = canvas(64);
     return { c, ctx, img: ctx.createImageData(64, 64), tex: toTexture(c, undefined, false) };
@@ -474,11 +475,18 @@ function ditherBlend(baseFace: HTMLCanvasElement, otherFace: HTMLCanvasElement, 
   };
   // `set(p)`: p de 0 (face normal) a 1 (a outra versão)
   const set = (p: number) => {
+    curP = p;
     compose(face, bF, oF, p);
     compose(glow, bG, oG, p);
   };
+  // troca a "outra" versão (o rosto olhando para outro lado) e recompõe com o mesmo p
+  const setOther = (of: HTMLCanvasElement, og: HTMLCanvasElement) => {
+    oF = pix(of);
+    oG = pix(og);
+    set(curP);
+  };
   set(0);
-  return { map: face.tex, glow: glow.tex, set, dispose: () => { face.tex.dispose(); glow.tex.dispose(); } };
+  return { map: face.tex, glow: glow.tex, set, setOther, dispose: () => { face.tex.dispose(); glow.tex.dispose(); } };
 }
 
 // A face do dado mostrando o rabisco de uma palavra: o dado "traduz" o glifo que o jogador olha.
@@ -498,7 +506,14 @@ export function dieSketchBlend(n: number, accent: string, locked: boolean, kind:
 // O dado é vivo: a face virada para o JOGADOR (a de baixo, que ele vê de frente) vira um rosto sério e abstrato, desenhado como um glifo: olhos (pontos
 // que brilham na cor da face), uma testa (sobrancelhas), um nariz e uma boca, tudo em linhas finas de ouro. O número aparece como `n` pontinhos na testa.
 // A afeição é NEUTRA e igual em todos os números (só mudam a cor dos olhos e os pontinhos).
-function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string) {
+export interface RostoLook {
+  ex: number; // deslocamento dos olhos (px da face): -4..4
+  ey: number; // -3..3 (+ = para baixo)
+  by: number; // sobrancelhas: -3..3 (+ = para baixo)
+  closed: boolean; // olhos fechados (piscar, cochilo)
+}
+const NO_LOOK: RostoLook = { ex: 0, ey: 0, by: 0, closed: false };
+function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string, look: RostoLook = NO_LOOK) {
   const gold = glow ? '#d09a34' : '#f0c868';
   const dark = glow ? '#000' : '#0a0710';
   const base = hex(accent);
@@ -514,6 +529,11 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   };
   // olho: ponto-losango da cor da face, com um núcleo mais claro
   const eye = (cx: number, cy: number, r = 4) => {
+    if (look.closed) {
+      // olho fechado: um traço
+      seg(cx - r, cy + 1, cx + r, cy + 1, 2);
+      return;
+    }
     for (let y = -r; y <= r; y++)
       for (let x = -r; x <= r; x++) {
         const d = Math.abs(x) + Math.abs(y);
@@ -522,8 +542,8 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   };
   const brow = (x0: number, y0: number, x1: number, y1: number, th = 1) => seg(x0, y0, x1, y1, th);
   // sobrancelhas esquerda (ponta interna à direita) e direita
-  const browL = (tilt: number, y = 17, th = 1) => brow(12, y, 27, y + Math.round(tilt), th);
-  const browR = (tilt: number, y = 17, th = 1) => brow(37, y + Math.round(tilt), 52, y, th);
+  const browL = (tilt: number, y = 17, th = 1) => brow(12 + Math.round(look.ex / 2), y + look.by, 27 + Math.round(look.ex / 2), y + look.by + Math.round(tilt), th);
+  const browR = (tilt: number, y = 17, th = 1) => brow(37 + Math.round(look.ex / 2), y + look.by + Math.round(tilt), 52 + Math.round(look.ex / 2), y + look.by, th);
   const nose = (foot = false) => {
     seg(32, 28, 32, 41);
     if (foot) seg(32, 41, 28, 41);
@@ -545,8 +565,8 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   }
   // TODOS os rostos têm a MESMA afeição neutra (decisão do jogador): olhos na mesma altura, sobrancelhas retas, nariz reto, boca reta.
   // O que muda de um número para outro é só a cor dos olhos e os pontinhos na testa.
-  eye(20, 29);
-  eye(44, 29);
+  eye(20 + look.ex, 29 + look.ey);
+  eye(44 + look.ex, 29 + look.ey);
   browL(0, 17);
   browR(0, 17);
   nose();
@@ -563,19 +583,25 @@ function turned(c: HTMLCanvasElement, turn: number): HTMLCanvasElement {
   ctx.drawImage(c, -32, -32);
   return o;
 }
-export function dieRostoCanvas(n: number, accent: string, locked: boolean, turn = 0) {
+export function dieRostoCanvas(n: number, accent: string, locked: boolean, turn = 0, look: RostoLook = NO_LOOK) {
   // a face SEM as gemas (o rosto as substitui): obsidiana, filete dourado e rebites; o número fica nos pontinhos da testa
   const face = dieFaceCanvas(n, accent, locked, false);
   const glow = dieGlowCanvas(n, accent, locked, false);
   const col = locked ? '#5a5270' : accent;
-  tracos(face.getContext('2d')!, n, false, col);
-  tracos(glow.getContext('2d')!, n, true, col);
+  tracos(face.getContext('2d')!, n, false, col, look);
+  tracos(glow.getContext('2d')!, n, true, col, look);
   return { face: turned(face, turn), glow: turned(glow, turn) };
 }
 // mistura da face normal (gemas) com o rosto: `set(p)` de 0 a 1. `turn`: giros de 90° para o rosto ficar de pé na tela (a face base gira junto)
 export function dieRostoBlend(n: number, accent: string, locked: boolean, turn = 0) {
   const r = dieRostoCanvas(n, accent, locked, turn);
-  return ditherBlend(turned(dieFaceCanvas(n, accent, locked), turn), r.face, turned(dieGlowCanvas(n, accent, locked), turn), r.glow);
+  const b = ditherBlend(turned(dieFaceCanvas(n, accent, locked), turn), r.face, turned(dieGlowCanvas(n, accent, locked), turn), r.glow);
+  // o rosto olhando para outro lado (olhos e sobrancelhas mexem)
+  const setLook = (look: RostoLook) => {
+    const o = dieRostoCanvas(n, accent, locked, turn, look);
+    b.setOther(o.face, o.glow);
+  };
+  return { ...b, setLook };
 }
 
 export function dieFaceTexture(n: number, accent: string, locked: boolean) {

@@ -517,6 +517,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // ── o ROSTO de cada número: a face virada para o jogador (a de baixo, que ele vê de frente) vira um rosto; as gemas viram os olhos (ver `dieRostoBlend`) ──
   let rostos: ReturnType<typeof dieRostoBlend>[] = [];
   const rostoLast = [0, 0, 0, 0, 0, 0];
+  const rostoKey: string[] = ['', '', '', '', '', ''];
   // quantos giros de 90° cada face lateral precisa para o rosto ficar de pé quando ela vem para a frente (depende da face escolhida, que fica em cima)
   const FACE_UP = [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0)];
   const faceTurn = (i: number) => {
@@ -537,6 +538,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       handMats[i].emissiveMap = b.glow;
       handMats[i].needsUpdate = true;
       b.set(rostoP[i]);
+      rostoKey[i] = '';
       return b;
     });
   };
@@ -555,6 +557,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const k = Math.max(0, Math.min(1, (d - 0.55) / 0.33));
       const target = k * k * (3 - 2 * k);
       rostoP[i] += (target - rostoP[i]) * Math.min(1, dt * 5);
+      // o rosto que está à vista olha em volta: os olhos e as sobrancelhas acompanham o olhar do dado (só refaz a textura quando o olhar muda um pixel)
+      if (rostoP[i] > 0.05 && rostos[i]) {
+        const lk = life.out.look;
+        const q = { ex: Math.round(lk.x * 4), ey: Math.round(-lk.y * 3), by: Math.round(-lk.brow * 3), closed: lk.closed };
+        const key = `${q.ex},${q.ey},${q.by},${q.closed}`;
+        if (rostoKey[i] !== key) {
+          rostoKey[i] = key;
+          rostos[i].setLook(q);
+        }
+      }
       if (Math.abs(rostoP[i] - rostoLast[i]) > 0.03 || (rostoP[i] < 0.005 && rostoLast[i] > 0) || (rostoP[i] > 0.995 && rostoLast[i] < 1)) {
         if (!(sketchOn && sketchOn.i === i)) rostos[i]?.set(rostoP[i]);
         rostoLast[i] = rostoP[i];
