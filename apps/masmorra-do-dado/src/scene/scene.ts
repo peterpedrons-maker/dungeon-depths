@@ -7,6 +7,8 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { FACES } from '../faces';
 import {
   dieFaceTexture,
+  dieSketchFaceTexture,
+  dieSketchGlowTexture,
   dieGlowTexture,
   flameFrames,
   soapSideTexture,
@@ -27,6 +29,7 @@ import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
+import type { SketchKind } from './sketch';
 import { FIRE_FRASES, FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
@@ -358,14 +361,59 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let burnHeat = 0; // 0..1: o dado esquentando na cena de queimar
   let talkGlow = 0; // o dado caído brilha quando fala
   let handTalk = 0; // o dado da mão pulsa quando fala
+  // ── o dado "traduz" o glifo: ao olhar uma palavra que tem desenho, a face de CIMA mostra o rabisco por alguns segundos ──
+  const SKETCH_WORDS: Record<string, SketchKind> = { brasa: 'braseiro' }; // palavra (id do léxico) -> desenho
+  const SKETCH_MAX = 3; // só nas primeiras vezes que a palavra aparece: a ajuda diminui
+  const SKETCH_KEY = 'mdd-sketch-v1';
+  let SKETCH_SPIN = 0; // giro (rad) em que o desenho fica de pé para quem olha; o dado para de girar enquanto ele aparece
+  const sketchCount: Record<string, number> = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(SKETCH_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  let sketchOn: { i: number; t: number; map: THREE.Texture | null; em: THREE.Texture | null; nmap: THREE.Texture; nem: THREE.Texture } | null = null;
+  const endSketch = () => {
+    if (!sketchOn) return;
+    const m = handMats[sketchOn.i];
+    m.map = sketchOn.map;
+    m.emissiveMap = sketchOn.em;
+    m.needsUpdate = true;
+    sketchOn.nmap.dispose();
+    sketchOn.nem.dispose();
+    sketchOn = null;
+  };
+  const showSketch = (word: string, force = false) => {
+    const kind = SKETCH_WORDS[word];
+    if (!kind || sketchOn) return;
+    if (!force) {
+      if ((sketchCount[word] ?? 0) >= SKETCH_MAX) return;
+      sketchCount[word] = (sketchCount[word] ?? 0) + 1;
+      try {
+        localStorage.setItem(SKETCH_KEY, JSON.stringify(sketchCount));
+      } catch {
+        /* sem armazenamento: tudo bem */
+      }
+    }
+    const i = DIE_FACES.indexOf(face);
+    const f = FACES[face - 1];
+    const m = handMats[i];
+    sketchOn = { i, t: 5, map: m.map, em: m.emissiveMap, nmap: dieSketchFaceTexture(face, f.color, !f.unlocked, kind), nem: dieSketchGlowTexture(face, f.color, !f.unlocked, kind) };
+    m.map = sketchOn.nmap;
+    m.emissiveMap = sketchOn.nem;
+    m.needsUpdate = true;
+    sfx.play('uiblip', 1);
+  };
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
-      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk);
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1.5 : 1);
       handMats[i].color.setScalar(1 - 0.5 * handDim);
       dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat + 2.4 * talkGlow);
     });
   };
   const applyFace = (n: number) => {
+    endSketch();
     face = n;
     updateMats();
     accentLight.color.set(FACES[n - 1]?.color ?? '#ffffff');
@@ -378,6 +426,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const sig = FACES.map((f) => +f.unlocked).join('');
     if (sig === facesSig) return; // só refaz se uma face mudou (o progresso também guarda outras coisas)
     facesSig = sig;
+    endSketch();
     for (const mats of [dieMats, handMats]) {
       DIE_FACES.forEach((n, i) => {
         const f = FACES[n - 1];
@@ -828,6 +877,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) - inscGlow) * Math.min(1, dt * 0.8);
     camera.getWorldDirection(lookDir);
     const canRead = !ui.blocked() && !book.isOut() && !intro;
+    // olhar uma palavra que tem desenho: o dado da mão mostra o rabisco na face de cima
+    if (canRead && hasDie && !sketchOn) {
+      for (const i of activeRooms) {
+        for (const ins of rooms[i].inscriptions ?? []) {
+          if (ins.hidden) continue;
+          for (const p of ins.panels) {
+            if (!p.id || !SKETCH_WORDS[p.id] || (sketchCount[p.id] ?? 0) >= SKETCH_MAX) continue;
+            p.mesh.getWorldPosition(toIns).sub(camera.position);
+            const d = toIns.length();
+            toIns.divideScalar(d);
+            const pg = p as unknown as { gaze?: number; shown?: boolean };
+            if (pg.shown) continue; // cada palavra da parede só mostra o desenho uma vez por visita
+            const looking = d < 4.6 && lookDir.dot(toIns) > 0.965 && toIns.dot(ins.normal) < -0.2;
+            pg.gaze = Math.max(0, (pg.gaze ?? 0) + (looking ? dt : -dt));
+            if (pg.gaze > 0.5) {
+              pg.gaze = 0;
+              pg.shown = true;
+              showSketch(p.id);
+            }
+          }
+        }
+      }
+    }
     activeRooms.forEach((i) => {
       for (const ins of rooms[i].inscriptions ?? []) {
         ins.setGlow(inscGlow);
@@ -1918,7 +1990,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     soapU += ((tool === 'chalk' ? 0 : 1) - soapU) * swapK;
     const ease = (u: number) => u * u * (3 - 2 * u);
     handPop = Math.max(0, handPop - dt * 4);
-    spin += dt * 0.8;
+    if (sketchOn) {
+      // o dado para de girar com a face do desenho de pé para quem olha, e volta a girar quando o desenho some
+      sketchOn.t -= dt;
+      if (import.meta.env.DEV && typeof (globalThis as Record<string, unknown>).__spinHold === 'number') SKETCH_SPIN = (globalThis as Record<string, unknown>).__spinHold as number;
+      let dsp = (SKETCH_SPIN - spin) % (Math.PI * 2);
+      if (dsp > Math.PI) dsp -= Math.PI * 2;
+      if (dsp < -Math.PI) dsp += Math.PI * 2;
+      spin += dsp * Math.min(1, dt * 5);
+      if (sketchOn.t <= 0) endSketch();
+    } else spin += dt * 0.8;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     updateMats();
     computeTarget(face, spin);
@@ -2016,6 +2097,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
+      sketch: (w = 'brasa') => showSketch(w, true),
+      sketchSpin: (v: number) => { (globalThis as Record<string, unknown>).__spinHold = v; },
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),

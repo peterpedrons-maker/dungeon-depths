@@ -2,6 +2,7 @@
 // usadas com filtro "nearest" — nenhum arquivo de imagem, o visual granulado
 // vem do próprio código.
 
+import { sketchCanvas, type SketchKind } from './sketch';
 import * as THREE from 'three';
 
 function rng(seed: number) {
@@ -440,6 +441,22 @@ export function dieGlowCanvas(n: number, accent: string, locked = false): HTMLCa
   const col = locked ? hex('#3a3450') : hex(accent);
   for (const [gx, gy] of PIPS[n]) drawGem(ctx, GEM_POS[gx], GEM_POS[gy], col, true);
   return c;
+}
+
+// A face do dado mostrando o rabisco de uma palavra: o dado "traduz" o glifo que o jogador olha.
+function sketchInset(base: HTMLCanvasElement, kind: SketchKind, glow: boolean) {
+  const g = base.getContext('2d')!;
+  g.fillStyle = glow ? '#000' : '#17111f';
+  g.fillRect(12, 12, 40, 40); // dentro do segundo filete de ouro
+  g.imageSmoothingEnabled = false;
+  g.drawImage(sketchCanvas(kind, 8, 40), 12, 12);
+  return base;
+}
+export function dieSketchFaceTexture(n: number, accent: string, locked: boolean, kind: SketchKind) {
+  return toTexture(sketchInset(dieFaceCanvas(n, accent, locked), kind, false), undefined, false);
+}
+export function dieSketchGlowTexture(n: number, accent: string, locked: boolean, kind: SketchKind) {
+  return toTexture(sketchInset(dieGlowCanvas(n, accent, locked), kind, true), undefined, false);
 }
 
 export function dieFaceTexture(n: number, accent: string, locked: boolean) {

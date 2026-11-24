@@ -1,7 +1,6 @@
 // Rabiscos de outros condenados: desenhos riscados na pedra ao lado dos glifos, só nas primeiras vezes em que uma palavra aparece (ver DESIGN.md §22).
 // Ficam claramente "feitos à mão": traço tremido, falhas, sulco escuro com um fio claro por cima, sem cor viva.
 
-import * as THREE from 'three';
 
 export type SketchKind = 'braseiro';
 
@@ -15,11 +14,9 @@ function rng(seed: number) {
   };
 }
 
-const N = 104; // pixels do rabisco (baixo de propósito: fica "crocante" e rústico, como o resto do jogo)
-
 type Pt = [number, number];
 
-function draw(kind: SketchKind, seed: number): HTMLCanvasElement {
+function draw(kind: SketchKind, seed: number, N: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = N;
   c.height = N;
@@ -54,7 +51,7 @@ function draw(kind: SketchKind, seed: number): HTMLCanvasElement {
         const y = (y0 + dy * t + (dx / len) * wob + (r() - 0.5) * shake * 2) * K;
         if (r() > 0.1) {
           // (10% dos trechinhos pulam: a ponta do prego saiu da pedra)
-          g.lineWidth = w * K * (0.65 + r() * 0.8);
+          g.lineWidth = Math.max(1, w * K * (0.65 + r() * 0.8));
           g.beginPath();
           g.moveTo(px, py);
           g.lineTo(x, y);
@@ -104,6 +101,7 @@ function draw(kind: SketchKind, seed: number): HTMLCanvasElement {
     for (const [x, y] of [[48, 24], [113, 30], [92, 10]] as Pt[]) scratch([[x - 2, y + 1], [x + 3, y - 1]], '#d29a58', 0.4, 2);
   }
   // desgaste: a pedra lascou e a poeira foi limpando o risco em manchas (como nas inscrições, só que mais)
+  const wear = N >= 80 ? 1 : 0.35; // em tamanho pequeno (face do dado) o desgaste é menor, senão o desenho some
   const img = g.getImageData(0, 0, N, N);
   const d = img.data;
   for (let y = 0; y < N; y++) {
@@ -112,7 +110,7 @@ function draw(kind: SketchKind, seed: number): HTMLCanvasElement {
       if (d[o + 3] === 0) continue;
       const blot = Math.sin(x * 0.31 + seed) * Math.sin(y * 0.27 - seed * 0.6) > 0.42;
       const rr = r();
-      if ((blot && rr < 0.7) || rr < 0.07) d[o + 3] = 0; // lascou
+      if ((blot && rr < 0.7 * wear) || rr < 0.07 * wear) d[o + 3] = 0; // lascou
       else if (rr < 0.3) {
         d[o] = d[o] * 0.7;
         d[o + 1] = d[o + 1] * 0.7;
@@ -125,39 +123,53 @@ function draw(kind: SketchKind, seed: number): HTMLCanvasElement {
   return c;
 }
 
-export interface SketchOpts {
-  x: number;
-  y: number;
-  z: number;
-  nx: number; // para onde a parede "olha"
-  nz: number;
-  size: number; // lado do desenho (m)
-  seed?: number;
+// Versão SIMPLES para a face do dado (pequena, vista de longe): poucos traços grossos e claros, nada de hachura nem riscos soltos.
+function drawSimple(kind: SketchKind, seed: number, N: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = N;
+  c.height = N;
+  const g = c.getContext('2d')!;
+  const r = rng(seed);
+  const K = N / 100;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  // traço à mão: um trecho por segmento, com tremorzinho e largura variando
+  const line = (pts: Pt[], color: string, w: number) => {
+    g.strokeStyle = color;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[i + 1];
+      const steps = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 7));
+      let px = x0 * K;
+      let py = y0 * K;
+      for (let k = 1; k <= steps; k++) {
+        const t = k / steps;
+        const x = (x0 + (x1 - x0) * t + (r() - 0.5) * 2.2) * K;
+        const y = (y0 + (y1 - y0) * t + (r() - 0.5) * 2.2) * K;
+        g.lineWidth = Math.max(1.5, w * K * (0.8 + r() * 0.5));
+        g.beginPath();
+        g.moveTo(px, py);
+        g.lineTo(x, y);
+        g.stroke();
+        px = x;
+        py = y;
+      }
+    }
+  };
+  if (kind === 'braseiro') {
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    // pedestal, tigela e três chamas
+    line([[36, 96], [38, 64], [66, 63], [64, 96], [36, 96]], PALE, 5);
+    line([[18, 42], [34, 64], [68, 63], [84, 44], [20, 43]], PALE, 5);
+    for (const [cx, h, wd] of [[34, 22, 7], [51, 38, 9], [68, 20, 7]] as [number, number, number][]) {
+      line([[cx - wd, 42], [cx - wd * 0.8, 42 - h * 0.5], [cx, 42 - h], [cx + wd * 0.7, 42 - h * 0.5], [cx + wd, 42]], OCRE, 5);
+    }
+  }
+  return c;
 }
 
-export function makeSketch(group: THREE.Group, kind: SketchKind, o: SketchOpts) {
-  const cv = draw(kind, o.seed ?? 5);
-  const t = new THREE.CanvasTexture(cv);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.LinearMipmapLinearFilter;
-  t.generateMipmaps = true;
-  t.colorSpace = THREE.SRGBColorSpace;
-  const mat = new THREE.MeshLambertMaterial({
-    map: t,
-    transparent: true,
-    alphaTest: 0.02,
-    depthWrite: false,
-    emissive: 0xffffff,
-    emissiveMap: t,
-    emissiveIntensity: 0.3,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -4,
-  });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(o.size, o.size), mat);
-  m.position.set(o.x, o.y, o.z);
-  m.rotation.y = Math.atan2(o.nx, o.nz);
-  m.renderOrder = 1;
-  group.add(m);
-  return { mesh: m, mat };
+// O desenho de uma palavra, riscado à mão (N pixels de lado). Na face do dado (ver `dieSketchFaceTexture` em textures.ts) usa a versão simples.
+export function sketchCanvas(kind: SketchKind, seed = 8, N = 40): HTMLCanvasElement {
+  return N < 80 ? drawSimple(kind, seed, N) : draw(kind, seed, N);
 }
