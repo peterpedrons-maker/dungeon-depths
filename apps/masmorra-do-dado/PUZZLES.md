@@ -146,10 +146,11 @@ e que nenhuma pista é descartável.
 **Palavras novas (legenda):** SE, ENTÃO (a seta →), NÃO (o símbolo de "atravessar/não"), E, PLACA, e as marcas CONFIRMADO e BOATO do Tribunal.
 - Porta: «ACENDER TRÊS BRASEIRO PLACA» = acenda três braseiros e depois pese a placa (a placa é o juiz: confere o conjunto aceso).
 - Lei da casa (ao lado da porta): «DOIS BOATO = VERDADE» = exatamente dois dos boatos são verdadeiros.
+- As paredes têm **dois parágrafos** (frases completas, uma embaixo da outra, alinhadas à esquerda, lidas de cima para baixo; cada frase termina na sua marca).
 - Frases: «SE a → b» (se a está aceso, b também); «SE a → NÃO b» (a e b nunca juntos); «a E b» (os dois acesos).
 
 **Solução (spoiler): acender UM, DOIS e QUATRO e pesar a placa.**
-1. Há UM tablete **liso** (parede direita, o do meio): é uma frase CONFIRMADA apagada. Com o **giz**, risque em cima dele: as palavras
+1. No parágrafo da **parede direita** há uma **linha lisa** (a do meio): é uma frase CONFIRMADA apagada. Com o **giz**, risque por cima dela: as palavras
    aparecem. Ela diz «SE CINCO → UM».
 2. Com os 3 confirmados (SE TRÊS → UM · SE CINCO → UM · TRÊS e CINCO nunca juntos) e a regra «três acesos», **o UM sempre está aceso** e sobram 5 conjuntos:
    123, 124, 125, 134, 145.

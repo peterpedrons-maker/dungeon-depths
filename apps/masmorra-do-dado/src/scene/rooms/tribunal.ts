@@ -7,7 +7,7 @@
 // tamanho (GRANDE, PEQUENO), então é preciso olhar para eles. A ordem certa sai só do raciocínio. Errar apaga tudo e deixa os
 // braseiros FRIOS por 12 s, então chutar não compensa.
 import data from './tribunal.json';
-import { buildFireRoom, type FireSpec, type FireTablet } from './fire';
+import { buildFireRoom, type FireLine, type FireSpec, type FireTablet } from './fire';
 import type { Ctx, Room } from '../types';
 
 const SCALE: Record<string, number> = { pequeno: 0.7, medio: 1, grande: 1.35 };
@@ -22,14 +22,11 @@ export function buildTribunal(ctx: Ctx): Room {
   const C = data.confirmadas as Stmt[];
   const B = data.boatos as Stmt[];
   // onde cada frase fica: misturadas (confirmadas e boatos nas duas paredes) para o jogador ter que LER as marcas
+  const ln = (st: Stmt, mark: 'conf' | 'boato'): FireLine => ({ words: words(st, mark), worn: mark === 'boato' });
   const tablets: FireTablet[] = [
-    { words: words(B[0], 'boato'), wall: 'left', dz: 14.5, worn: true },
-    { words: words(C[0], 'conf'), wall: 'left', dz: 11, seal: true },
-    { words: words(B[2], 'boato'), wall: 'left', dz: 7.5, worn: true },
-    { words: words(C[2], 'conf'), wall: 'left', dz: 4, seal: true },
-    { words: words(B[1], 'boato'), wall: 'right', dz: 14.5, worn: true },
-    { words: words(C[1], 'conf'), wall: 'right', dz: 11, seal: true },
-    { words: words(B[3], 'boato'), wall: 'right', dz: 7.5, worn: true },
+    // dois parágrafos (frases completas, uma embaixo da outra, de cima para baixo), com confirmadas e boatos misturados
+    { lines: [ln(B[0], 'boato'), ln(C[0], 'conf'), ln(B[2], 'boato'), ln(C[2], 'conf')], wall: 'left', dz: 10, size: 0.45 },
+    { lines: [ln(B[1], 'boato'), ln(C[1], 'conf'), ln(B[3], 'boato')], wall: 'right', dz: 8, size: 0.45 },
     // a lei da casa, ao lado da porta: «DOIS BOATO = VERDADE» (dois dos boatos são verdade)
     { words: ['n2', 'boato', 'igual', 'verdade'], wall: 'backR', seal: true, size: 0.4 },
   ];

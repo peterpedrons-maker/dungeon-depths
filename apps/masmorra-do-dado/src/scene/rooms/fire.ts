@@ -36,9 +36,18 @@ export interface FireBrazier {
   burn?: number; // segundos que a chama dura (sem isso, fica acesa)
 }
 
-// uma frase talhada na parede, num ponto escolhido
-export interface FireTablet {
+// uma linha de um parágrafo (uma frase completa, que termina numa marca: CONFIRMADO, BOATO...)
+export interface FireLine {
   words: string[];
+  worn?: boolean; // gasta (boato)
+  rub?: boolean; // lisa: só aparece esfregando o giz
+}
+
+// uma frase talhada na parede, num ponto escolhido. Com `lines`, vira um PARÁGRAFO: frases completas, uma embaixo da outra, alinhadas à
+// esquerda, lidas de cima para baixo, dentro de uma moldura só.
+export interface FireTablet {
+  words?: string[];
+  lines?: FireLine[]; // parágrafo (só nas paredes 'left' e 'right')
   wall: 'left' | 'right' | 'backL' | 'backR'; // esquerda, direita, fundo à esquerda ou à direita da porta
   dz?: number; // posição ao longo da parede (distância do fundo); ignorado no fundo
   seal?: boolean; // moldura talhada (frase confirmada)
@@ -133,10 +142,97 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   // frases na parede (rumores, leis...)
   const rubs: { ins: ReturnType<typeof kit.inscribe>; wall: THREE.Mesh; v: number[] }[] = [];
+  // largura exata de uma frase (m): cada símbolo ocupa (n + 0,29) alturas, e o espaço entre palavras é 0,55
+  const lineW = (words: string[], sz: number) => words.reduce((a, w) => a + (Math.max(1, glyphsOf(w).length) + 0.2917) * sz, 0) + 0.55 * sz * (words.length - 1);
   (spec.tablets ?? []).forEach((t, i) => {
-    const tu = phraseUnits(t.words);
+    if (t.lines && (t.wall === 'left' || t.wall === 'right')) {
+      // ── parágrafo: linhas alinhadas à esquerda, de cima para baixo ──
+      const sz = t.size ?? 0.4;
+      const lh = sz * 1.55; // altura de uma linha
+      const n = t.lines.length;
+      const Wb = Math.max(...t.lines.map((l) => lineW(l.words, sz)));
+      const yc = 1.85;
+      const left = t.wall === 'left';
+      const zc = Z0 + (t.dz ?? 9);
+      const wx = left ? X0 + 0.025 : X1 - 0.025;
+      const dir = left ? -1 : 1; // para onde fica a "direita" de quem lê (esquerda: rumo à porta; direita: rumo à entrada)
+      const first: ReturnType<typeof kit.inscribe>[] = [];
+      t.lines.forEach((ln, k) => {
+        const w = lineW(ln.words, sz);
+        const u = -Wb / 2 + w / 2; // o começo de todas as linhas fica no mesmo ponto
+        const li = kit.inscribe({
+          words: ln.words,
+          x: wx,
+          y: yc + ((n - 1) / 2 - k) * lh,
+          z: zc + dir * u,
+          nx: left ? 1 : -1,
+          nz: 0,
+          size: sz,
+          age: ln.worn ? 0.55 : 0.18,
+          seed: 40 + i * 13 + k * 7,
+        });
+        first.push(li);
+        if (ln.rub) {
+          li.panels.forEach((_, q) => li.setReveal(q, 0));
+          li.hidden = true;
+          rubs.push({ ins: li, wall: left ? wallL : wallR, v: li.panels.map(() => 0) });
+        }
+      });
+      // moldura única em volta do parágrafo (sulco largo com um fio de cal, e um segundo fio por dentro)
+      const FW = Wb + sz * 0.9;
+      const FH = n * lh + sz * 0.3;
+      const cw = 768;
+      const ch = Math.max(96, Math.round((cw * FH) / FW));
+      const cv = document.createElement('canvas');
+      cv.width = cw;
+      cv.height = ch;
+      const g = cv.getContext('2d')!;
+      const rect = (x: number, y: number, ww: number, hh: number, th: number, color: string) => {
+        g.fillStyle = color;
+        g.fillRect(x - th / 2, y - th / 2, ww + th, th);
+        g.fillRect(x - th / 2, y + hh - th / 2, ww + th, th);
+        g.fillRect(x - th / 2, y - th / 2, th, hh + th);
+        g.fillRect(x + ww - th / 2, y - th / 2, th, hh + th);
+      };
+      rect(10, 10, cw - 20, ch - 20, 12, '#15110f');
+      rect(10, 10, cw - 20, ch - 20, 5, '#f1ebd9');
+      rect(26, 26, cw - 52, ch - 52, 4, '#f1ebd9');
+      const ft = new THREE.CanvasTexture(cv);
+      ft.magFilter = THREE.NearestFilter;
+      ft.minFilter = THREE.LinearMipmapLinearFilter;
+      ft.generateMipmaps = true;
+      ft.anisotropy = 4;
+      ft.colorSpace = THREE.SRGBColorSpace;
+      const fm = new THREE.MeshLambertMaterial({
+        map: ft,
+        transparent: true,
+        alphaTest: 0.02,
+        depthWrite: false,
+        emissive: 0xffffff,
+        emissiveMap: ft,
+        emissiveIntensity: 0,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -2,
+      });
+      const fmesh = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), fm);
+      fmesh.position.set(left ? X0 + 0.021 : X1 - 0.021, yc, zc);
+      fmesh.rotation.y = left ? Math.PI / 2 : -Math.PI / 2;
+      fmesh.renderOrder = 0;
+      kit.group.add(fmesh);
+      first[0].extras.push(fm); // acompanha o brilho da escrita
+      // tochas nas duas pontas do parágrafo, para dar para ler
+      const e = FW / 2 + 0.55;
+      for (const sgn of [-1, 1]) {
+        if (left) kit.torch(X0 + 0.1, 1.9, zc + sgn * e, 1, 0, 0.9 + sgn);
+        else kit.torch(X1 - 0.1, 1.9, zc + sgn * e, -1, 0, 2.3 + sgn);
+      }
+      return;
+    }
+    const words = t.words ?? [];
+    const tu = phraseUnits(words);
     const sz = t.size ?? 0.36;
-    const common = { words: t.words, size: sz, age: t.age ?? (t.worn ? 0.75 : 0.18), seed: 40 + i * 13, plaque: !!t.seal, y: 1.85 } as const;
+    const common = { words, size: sz, age: t.age ?? (t.worn ? 0.75 : 0.18), seed: 40 + i * 13, plaque: !!t.seal, y: 1.85 } as const;
     let tIns;
     if (t.wall === 'left') tIns = kit.inscribe({ ...common, x: X0 + 0.025, z: Z0 + (t.dz ?? 8), nx: 1, nz: 0 });
     else if (t.wall === 'right') tIns = kit.inscribe({ ...common, x: X1 - 0.025, z: Z0 + (t.dz ?? 8), nx: -1, nz: 0 });
@@ -151,7 +247,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   // tochas entre as frases das paredes (para dar para ler)
   for (const side of ['left', 'right'] as const) {
-    const dzs = (spec.tablets ?? []).filter((t) => t.wall === side).map((t) => t.dz ?? 8).sort((m, n) => m - n);
+    const dzs = (spec.tablets ?? []).filter((t) => t.wall === side && !t.lines).map((t) => t.dz ?? 8).sort((m, n) => m - n);
     for (let i = 1; i < dzs.length; i++) {
       const mid = (dzs[i - 1] + dzs[i]) / 2;
       if (side === 'left') kit.torch(X0 + 0.1, 1.9, Z0 + mid, 1, 0, 0.9 + i);

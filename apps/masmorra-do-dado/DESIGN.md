@@ -327,3 +327,8 @@ Como o jogo é sobre a **escrita**, as pistas são **frases da língua** (e o qu
   glifos de lugar** (estilo quebra-cabeça de deslizar: selecionar um bloco e outro com E/AGIR), sem giz. Serve de tutorial de "escrever uma frase" antes do giz. Para não ser só
   memória, a sequência se repete em laço e a frase correta usa uma regra que o jogador já viu (ex.: números fora de ordem nos pedestais).
 - **Opcionais em níveis** (fácil/médio → gema colecionável, diário ou atalho; difícil → história). Segredos ficam para depois.
+
+### Regra de escrita nas paredes (decidida pelo jogador, implementada)
+- **Texto em parágrafo**: frases completas, 3 a 4 linhas, uma embaixo da outra, alinhadas à esquerda, lidas **de cima para baixo**, dentro de uma moldura só
+  (`FireTablet.lines` em `rooms/fire.ts`). Cada linha termina na sua marca (CONFIRMADO, BOATO...). Parágrafos podem ficar em paredes diferentes. O Tribunal e a sala de teste já usam isso.
+- **Nível mínimo a partir da sala 6**: o jogo todo deve ser do nível do Tribunal / da Placa que Julga **para cima**; só as 5 primeiras salas são mais simples.

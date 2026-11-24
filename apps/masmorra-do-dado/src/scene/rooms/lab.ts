@@ -6,7 +6,7 @@
 // diz que exatamente DOIS dos boatos são verdadeiros. A placa é o juiz: ela avalia o conjunto de chamas acesas; se estiver errado, ABAFA o
 // fogo (apaga tudo e deixa os braseiros frios um tempo). Uma das frases confirmadas está num tablete LISO: só aparece esfregando o giz nele.
 import data from './lab.json';
-import { buildFireRoom, type FireSpec, type FireTablet } from './fire';
+import { buildFireRoom, type FireLine, type FireSpec, type FireTablet } from './fire';
 import type { Ctx, Room } from '../types';
 
 interface Clue {
@@ -46,18 +46,11 @@ export const LAB_WORDS = [
 export function buildLab(ctx: Ctx): Room {
   const C = data.confirmadas as Clue[];
   const B = data.boatos as Clue[];
-  const mk = (c: Clue, mark: 'conf' | 'boato', wall: FireTablet['wall'], dz: number): FireTablet =>
-    mark === 'conf'
-      ? { words: words(c, mark), wall, dz, seal: true, rub: !!c.giz, size: 0.34 }
-      : { words: words(c, mark), wall, dz, worn: true, age: 0.5, size: 0.34 };
+  const ln = (c: Clue, mark: 'conf' | 'boato'): FireLine => ({ words: words(c, mark), worn: mark === 'boato', rub: !!c.giz });
+  // dois parágrafos, um em cada parede (frases completas, uma embaixo da outra, lidas de cima para baixo); confirmadas e boatos misturados
   const tablets: FireTablet[] = [
-    mk(B[0], 'boato', 'left', 15.5),
-    mk(C[0], 'conf', 'left', 11.3),
-    mk(B[1], 'boato', 'left', 7.1),
-    mk(C[2], 'conf', 'left', 2.9),
-    mk(B[2], 'boato', 'right', 15.5),
-    mk(C[1], 'conf', 'right', 11.3), // o liso: só aparece esfregando o giz
-    mk(B[3], 'boato', 'right', 7.1),
+    { lines: [ln(C[0], 'conf'), ln(B[0], 'boato'), ln(C[2], 'conf'), ln(B[1], 'boato')], wall: 'left', dz: 10, size: 0.4 },
+    { lines: [ln(B[2], 'boato'), ln(C[1], 'conf'), ln(B[3], 'boato')], wall: 'right', dz: 8, size: 0.4 }, // a linha lisa: só aparece esfregando o giz
     // a lei da casa: «DOIS BOATO = VERDADE» (exatamente dois boatos são verdadeiros)
     {
       words: ['n2', 'boato', 'igual', 'verdade'],
