@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { diary, diaryStore, MAX_MARKS } from '../story/diary';
+import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
 import { diaryCoverTexture, diaryEdgeTexture, diaryLeatherTexture } from '../scene/textures';
-import { ERASER, FREE_MAX, layout, NOTE_MAX, PH, PW, renderPage, type Region, type View } from './pages';
+import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -138,7 +138,8 @@ export function createDiaryBook(env: BookEnv) {
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
   let open = 0;
-  const view: View = { spread: 0, sel: null, tool: 0, editing: null, hover: null, caret: true };
+  const view: View = { spread: 0, sel: null, pen: 0, floor: null, live: null, editing: null, hover: null, caret: true };
+  let drawing: null | { erase: boolean } = null;
   let regL: Region[] = [];
   let regR: Region[] = [];
   let target = 0;
@@ -263,7 +264,7 @@ export function createDiaryBook(env: BookEnv) {
     ray.setFromCamera(ndc, env.cam);
     return ray.intersectObject(root, true).length > 0;
   };
-  const act = (id: string, px = 0, py = 0) => {
+  const act = (id: string) => {
     const d = dState();
     const lay = layout(d);
     if (id === 'prev') goTo(view.spread - 1);
@@ -276,23 +277,14 @@ export function createDiaryBook(env: BookEnv) {
       refresh();
     } else if (id === 'edit:note') startEdit('note');
     else if (id === 'edit:free') startEdit('free');
-    else if (id.startsWith('tool:')) {
-      view.tool = Number(id.slice(5));
+    else if (id.startsWith('floor:')) {
+      view.floor = Number(id.slice(6));
+      refresh();
+    } else if (id.startsWith('pen:')) {
+      view.pen = Number(id.slice(4));
       refresh();
     } else if (id === 'map') {
-      // toque no mapa: coloca o marcador escolhido, ou apaga o mais próximo com a borracha
-      const x = Math.round(px - 19);
-      const y = Math.round(py - 12);
-      const marks = dState().marks;
-      let best = -1;
-      let bd = 7 * 7;
-      marks.forEach((m, i) => {
-        const dd = (m.x - x) ** 2 + (m.y - y) ** 2;
-        if (dd < bd) (bd = dd), (best = i);
-      });
-      if (view.tool === ERASER) {
-        if (best >= 0) diary.removeMark(best);
-      } else if (marks.length < MAX_MARKS) diary.addMark({ x, y, k: view.tool });
+      // (a escrita livre é tratada no ponteiro: ver beginDraw)
     }
     void lay;
   };
@@ -303,7 +295,60 @@ export function createDiaryBook(env: BookEnv) {
   const ready = () => T >= 0.99 && ui.diaryOpen();
   const inHud = (e: Event) => !!(e.target as HTMLElement | null)?.closest?.('.corner');
 
+  // ── escrita livre no mapa ──
+  const mapXY = (p: { side: 'L' | 'R'; px: number; py: number }) => ({ x: p.px + (p.side === 'R' ? PW : 0), y: p.py });
+  const inMap = (x: number, y: number) => x >= MAP_AREA.x && x <= MAP_AREA.x + MAP_AREA.w && y >= MAP_AREA.y && y <= MAP_AREA.y + MAP_AREA.h;
+  const eraseAt = (x: number, y: number) => {
+    const fl = currentFloor(view, dState());
+    const hit: number[] = [];
+    dState().strokes.forEach((st, i) => {
+      if (st.f !== fl) return;
+      for (let k = 0; k < st.p.length; k += 2) {
+        if ((st.p[k] / 2 - x) ** 2 + (st.p[k + 1] / 2 - y) ** 2 < 25) {
+          hit.push(i);
+          break;
+        }
+      }
+    });
+    diary.removeStrokes(hit);
+  };
+  const beginDraw = (side: 'L' | 'R', px: number, py: number) => {
+    stopEdit();
+    const { x, y } = mapXY({ side, px, py });
+    if (view.pen === ERASER_PEN) {
+      drawing = { erase: true };
+      eraseAt(x, y);
+      return;
+    }
+    drawing = { erase: false };
+    view.live = { f: currentFloor(view, dState()), c: view.pen, p: [Math.round(x * 2), Math.round(y * 2)] };
+    refresh();
+  };
+  const endDraw = () => {
+    if (!drawing) return;
+    if (!drawing.erase && view.live) diary.addStroke(view.live);
+    drawing = null;
+    view.live = null;
+    refresh();
+  };
   const onMove = (e: PointerEvent) => {
+    if (drawing) {
+      const p = pick(e);
+      if (!p) return;
+      const { x, y } = mapXY(p);
+      if (!inMap(x, y)) return;
+      if (drawing.erase) eraseAt(x, y);
+      else if (view.live) {
+        const n = view.live.p.length;
+        const nx = Math.round(x * 2);
+        const ny = Math.round(y * 2);
+        if (nx !== view.live.p[n - 2] || ny !== view.live.p[n - 1]) {
+          view.live = { ...view.live, p: [...view.live.p, nx, ny] };
+          refresh();
+        }
+      }
+      return;
+    }
     if (!ready() || inHud(e)) return;
     const p = pick(e);
     const id = p?.region?.id ?? null;
@@ -320,7 +365,8 @@ export function createDiaryBook(env: BookEnv) {
     if (!ready()) return;
     const p = pick(e);
     if (p?.region) {
-      act(p.region.id, p.px, p.py);
+      if (p.region.id === 'map') beginDraw(p.side, p.px, p.py);
+      else act(p.region.id);
       return;
     }
     if (p) {
@@ -353,6 +399,8 @@ export function createDiaryBook(env: BookEnv) {
     if (!flip && Math.abs(e.deltaY) > 4) goTo(view.spread + (e.deltaY > 0 ? 1 : -1));
   };
   window.addEventListener('pointermove', onMove, true);
+  window.addEventListener('pointerup', endDraw, true);
+  window.addEventListener('pointercancel', endDraw, true);
   window.addEventListener('pointerdown', onDown, true);
   window.addEventListener('keydown', onKey, true);
   window.addEventListener('wheel', onWheel, { capture: true, passive: false });
@@ -360,7 +408,7 @@ export function createDiaryBook(env: BookEnv) {
   // ── a cada quadro ──
   return {
     isOut: () => T > 0.01,
-    click: (id: string, px = 0, py = 0) => act(id, px, py), // (também usado nos testes)
+    click: (id: string) => act(id), // (também usado nos testes)
     update(dt: number, t: number) {
       const want = ui.diaryOpen() ? 1 : 0;
       if (want !== lastWant) {
@@ -436,6 +484,8 @@ export function createDiaryBook(env: BookEnv) {
     dispose() {
       unsub();
       window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('pointerup', endDraw, true);
+      window.removeEventListener('pointercancel', endDraw, true);
       window.removeEventListener('pointerdown', onDown, true);
       window.removeEventListener('keydown', onKey, true);
       window.removeEventListener('wheel', onWheel, true);

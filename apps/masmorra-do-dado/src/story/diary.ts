@@ -9,13 +9,15 @@ export interface Seen {
   at: number;
 }
 
-export interface Mark {
-  x: number; // posição no mapa (pixels da página)
-  y: number;
-  k: number; // tipo de marcador
+// Um traço de escrita livre no mapa: pontos em meios-pixels da página (x0, y0, x1, y1...), por andar e cor.
+export interface Stroke {
+  f: number; // andar
+  c: number; // caneta
+  p: number[];
 }
 
-export const MAX_MARKS = 80;
+export const MAX_STROKES = 220;
+export const MAX_STROKE_POINTS = 5000;
 
 export interface DiaryState {
   seen: Record<string, Seen>; // símbolos avistados
@@ -24,13 +26,13 @@ export interface DiaryState {
   free: string; // anotações livres
   texts: string[]; // textos de lore achados
   rooms: string[]; // salas visitadas (para o mapa)
-  marks: Mark[]; // marcações do jogador no mapa
+  strokes: Stroke[]; // o que o jogador escreveu à mão no mapa
   here: string; // sala atual
   unread: number; // símbolos novos desde a última vez que abriu
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
 }
 
-const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], marks: [], here: '', unread: 0, last: null };
+const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], strokes: [], here: '', unread: 0, last: null };
 
 function load(): DiaryState {
   try {
@@ -78,11 +80,21 @@ export const diary = {
   visitRoom(name: string) {
     diaryStore.set((s) => ({ ...s, here: name, rooms: s.rooms.includes(name) ? s.rooms : [...s.rooms, name] }));
   },
-  addMark(m: Mark) {
-    diaryStore.set((s) => (s.marks.length >= MAX_MARKS ? s : { ...s, marks: [...s.marks, m] }));
+  addStroke(st: Stroke) {
+    diaryStore.set((s) => {
+      const pts = s.strokes.reduce((n, x) => n + x.p.length / 2, 0);
+      if (s.strokes.length >= MAX_STROKES || pts + st.p.length / 2 > MAX_STROKE_POINTS) return s;
+      return { ...s, strokes: [...s.strokes, st] };
+    });
   },
-  removeMark(i: number) {
-    diaryStore.set((s) => ({ ...s, marks: s.marks.filter((_, j) => j !== i) }));
+  removeStrokes(indices: number[]) {
+    if (!indices.length) return;
+    const drop = new Set(indices);
+    diaryStore.set((s) => ({ ...s, strokes: s.strokes.filter((_, i) => !drop.has(i)) }));
+  },
+  // pré-visualização do mapa grande (?demo=mapa)
+  demoMap(rooms: string[], here: string, strokes: Stroke[]) {
+    diaryStore.set((s) => ({ ...s, rooms, here, strokes }));
   },
   clearUnread() {
     if (diaryStore.get().unread) diaryStore.set((s) => ({ ...s, unread: 0 }));
@@ -97,7 +109,6 @@ export const diary = {
       order: ids,
       notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
       texts: ['demo-pagina'],
-      marks: [{ x: 50, y: 112, k: 1 }, { x: 30, y: 70, k: 3 }],
       unread: 0,
     }));
   },

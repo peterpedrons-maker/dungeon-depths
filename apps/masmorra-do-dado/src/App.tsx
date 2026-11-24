@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { AudioMode } from './scene/audio';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
+import { startMapDemo } from './book/mapdemo';
 import { diary, diaryStore } from './story/diary';
 import { dialogue, dialogueStore } from './story/dialogue';
 import { useStore } from './story/store';
@@ -84,8 +85,13 @@ export default function App() {
 
   // ?demo=1: pré-visualização do diário e da conversa (não grava nada no aparelho)
   useEffect(() => {
-    if (!new URLSearchParams(location.search).has('demo')) return;
+    const q = new URLSearchParams(location.search);
+    if (!q.has('demo')) return;
     diary.demo();
+    if (q.get('demo') === 'mapa') {
+      const m = startMapDemo();
+      diary.demoMap(m.rooms, m.here, m.strokes);
+    }
     // Falas de EXEMPLO: a história de verdade será escrita depois.
     const t = window.setTimeout(
       () =>

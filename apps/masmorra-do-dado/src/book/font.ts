@@ -131,7 +131,7 @@ export function wrap(s: string, maxChars: number): string[] {
 }
 
 // ── símbolos da língua, desenhados em pixels ────────────────────────────
-function plot(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, w: number) {
+export function plot(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, w: number) {
   x0 = Math.round(x0);
   y0 = Math.round(y0);
   x1 = Math.round(x1);
