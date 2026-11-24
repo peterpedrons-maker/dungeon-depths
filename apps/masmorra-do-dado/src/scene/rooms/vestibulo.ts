@@ -10,7 +10,6 @@ import * as THREE from 'three';
 import { floorTexture, brickTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
-import { makeScribe, type Scribe } from '../scribe';
 import { glyphsOf } from '../../story/lexicon';
 import type { Box, Ctx, Room } from '../types';
 
@@ -130,7 +129,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
 
   // ── sala 1: entulho embaixo do poço; é ali que o dado caiu junto com você ──
   let dieLie: THREE.Vector3 | undefined;
-  let pitScribe: Scribe | undefined; // o Escrivão no topo do poço (só na cena da queda do dado)
   if (v === 1) {
     const rocks: [number, number, number, number][] = [
       [-0.9, 0.6, 0.34, 0.3],
@@ -146,13 +144,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       kit.group.add(m);
     }
     dieLie = new THREE.Vector3(SHAFT.x - 0.15, 0.0, SHAFT.z + 1.05); // no chão, à beira da mancha de luz
-    // o Escrivão no topo do poço: os pés na borda do buraco (no teto), o corpo acima do teto — daqui de
-    // baixo só se vê, contra a luz, o capuz e os ombros debruçados sobre a abertura, e o braço que solta o dado
-    pitScribe = makeScribe();
-    pitScribe.group.position.set(SHAFT.x + 0.1, H, SHAFT.z - SHAFT.r - 0.4);
-    pitScribe.group.rotation.set(0.42, 0.15, 0); // debruçado sobre o poço, olhando pra baixo
-    pitScribe.setAlpha(0);
-    kit.group.add(pitScribe.group);
     kit.crate(X0 + 0.7, Z1 - 1.8, 0.7, 0.5); // restos de caixa
     kit.web(X0, H - 0.45, Z1 - 0.45, 1, 0);
     kit.web(X1, H - 0.45, Z1 - 0.45, -1, 0, true);
@@ -231,8 +222,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   let tried = false; // v1: já tentou abrir a porta
   let nudge = -1; // v1: segundos desde que o dado pediu para acender (-1 = ainda não pediu); se demorar, ele repete
   const doorPos = new THREE.Vector3(0, 1.0, Z0 + 0.5);
-  // cena do poço (v1): 0 ninguém lá em cima · 1 o Escrivão aparece, ergue o braço e solta o dado · 2 some na névoa
-  const pit = { ph: 0, t: 0, alpha: 0, arm: 0 };
 
   // ── sala 1: a porta trancada, o dado que CAI do poço e a cena de pegá-lo (DESIGN.md §29) ──
   const interactables: Room['interactables'] = [];
@@ -258,22 +247,16 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         ctx.say([{ who: 'thought', text: 'Trancada. Empurro, puxo… nada se mexe.' }], {
           block: true,
           onEnd: () => {
-            // um barulho lá em cima: ANTES de olhar, o jogador anda até a luz do poço — e há alguém
-            // lá em cima: o Escrivão, debruçado sobre o buraco, que ergue o braço e solta o dado
+            // um barulho lá em cima: algo cai pelo poço (a câmera vira para o buraco)
             ctx.freeze(true);
-            ctx.walkTo(new THREE.Vector3(0.3, 0, SHAFT.z + 1.9), () => {
-              pit.ph = 1;
-              pit.t = 0;
-              ctx.dropDie(() => {
-                pit.ph = 2; // ele some na névoa enquanto o jogador lê: ao olhar de novo, não há ninguém
-                // o jogador pensa (caixa de conversa); o DADO fala só por balão, em glifos curtos
-                ctx.say([{ who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' }], {
-                  block: true,
-                  onEnd: () => {
-                    const ms = ctx.dieTalk([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0.4 });
-                    window.setTimeout(() => ctx.freeze(false), 400 + ms - 1500);
-                  },
-                });
+            ctx.dropDie(() => {
+              // o jogador pensa (caixa de conversa); o DADO fala só por balão, em glifos curtos
+              ctx.say([{ who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' }], {
+                block: true,
+                onEnd: () => {
+                  const ms = ctx.dieTalk([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0.4 });
+                  window.setTimeout(() => ctx.freeze(false), 400 + ms - 1500);
+                },
               });
             });
           },
@@ -365,22 +348,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     holdsDie: () => false,
     update(dt, t) {
       kit.tick(dt, t);
-      // o Escrivão do poço: aparece como névoa enquanto a câmera sobe, ergue o braço e o solta na
-      // hora em que o dado despenca (o dropDie solta o dado ~1 s depois do barulho); depois some
-      if (pitScribe && pit.ph > 0) {
-        pit.t += dt;
-        let aT = 0;
-        let armT = 0;
-        if (pit.ph === 1) {
-          aT = 1;
-          armT = pit.t < 0.9 ? Math.min(1, pit.t / 0.7) : 0.15; // ergue… e solta
-        }
-        pit.alpha += Math.max(-dt * 0.8, Math.min(dt * 1.1, aT - pit.alpha));
-        pit.arm += Math.max(-dt * 6, Math.min(dt * 2.4, armT - pit.arm));
-        if (pit.ph === 2 && pit.alpha <= 0.01) pit.ph = 0;
-        pitScribe.setAlpha(pit.alpha);
-        pitScribe.update(t, pit.arm);
-      }
       if (v === 1 && ctx.flag('caiu') && !ctx.have().die) {
         // o dado no chão pede ajuda: pulsa e murmura, enquanto o jogador não o pega
         diePos.copy(ctx.die.pos);

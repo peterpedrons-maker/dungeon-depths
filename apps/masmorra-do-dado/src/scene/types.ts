@@ -62,7 +62,6 @@ export interface Ctx {
   paused(): boolean; // cena, conversa ou diário em andamento: cronômetros de puzzle devem esperar
   freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
   lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)
-  walkTo(p: THREE.Vector3, onDone?: () => void): void; // cena: o jogador anda sozinho até um ponto (local da sala), em passo de caminhada, e chama onDone ao chegar
   die: {
     readonly state: DieState;
     readonly face: number; // face do dado que está lá fora
