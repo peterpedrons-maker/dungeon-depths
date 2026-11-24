@@ -16,8 +16,17 @@ export interface Stroke {
   p: number[];
 }
 
+// Um carimbo: um símbolo já avistado, colocado no mapa (centro em pixels da página dupla).
+export interface Stamp {
+  f: number; // andar
+  id: string; // símbolo (do dicionário)
+  x: number;
+  y: number;
+}
+
 export const MAX_STROKES = 220;
 export const MAX_STROKE_POINTS = 5000;
+export const MAX_STAMPS = 120;
 
 export interface DiaryState {
   seen: Record<string, Seen>; // símbolos avistados
@@ -27,12 +36,13 @@ export interface DiaryState {
   texts: string[]; // textos de lore achados
   rooms: string[]; // salas visitadas (para o mapa)
   strokes: Stroke[]; // o que o jogador escreveu à mão no mapa
+  stamps: Stamp[]; // símbolos já avistados que o jogador carimbou no mapa
   here: string; // sala atual
   unread: number; // símbolos novos desde a última vez que abriu
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
 }
 
-const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], strokes: [], here: '', unread: 0, last: null };
+const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
 
 function load(): DiaryState {
   try {
@@ -92,9 +102,21 @@ export const diary = {
     const drop = new Set(indices);
     diaryStore.set((s) => ({ ...s, strokes: s.strokes.filter((_, i) => !drop.has(i)) }));
   },
+  // só símbolos que o jogador já avistou podem virar carimbo
+  addStamp(st: Stamp) {
+    diaryStore.set((s) => {
+      if (!s.seen[st.id] || s.stamps.length >= MAX_STAMPS) return s;
+      return { ...s, stamps: [...s.stamps, st] };
+    });
+  },
+  removeStamps(indices: number[]) {
+    if (!indices.length) return;
+    const drop = new Set(indices);
+    diaryStore.set((s) => ({ ...s, stamps: s.stamps.filter((_, i) => !drop.has(i)) }));
+  },
   // pré-visualização do mapa grande (?demo=mapa)
-  demoMap(rooms: string[], here: string, strokes: Stroke[]) {
-    diaryStore.set((s) => ({ ...s, rooms, here, strokes }));
+  demoMap(rooms: string[], here: string, strokes: Stroke[], stamps: Stamp[] = []) {
+    diaryStore.set((s) => ({ ...s, rooms, here, strokes, stamps }));
   },
   clearUnread() {
     if (diaryStore.get().unread) diaryStore.set((s) => ({ ...s, unread: 0 }));

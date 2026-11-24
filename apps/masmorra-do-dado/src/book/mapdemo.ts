@@ -1,10 +1,10 @@
-import type { Stroke } from '../story/diary';
+import type { Stamp, Stroke } from '../story/diary';
 import { CELL_H, CELL_W, getWorld, mockWorld, setWorld } from '../story/worldmap';
 import { mapOrigin } from './pages';
 
 // ?demo=mapa — só para ver como ficaria um mapa grande (3 andares, dezenas de salas) com
 // anotações à mão perto de uma porta trancada. Nada disso existe no jogo ainda.
-export function startMapDemo(): { rooms: string[]; here: string; strokes: Stroke[] } {
+export function startMapDemo(): { rooms: string[]; here: string; strokes: Stroke[]; stamps: Stamp[] } {
   setWorld(mockWorld());
   const w = getWorld();
   const r = (i: number) => ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1;
@@ -32,5 +32,10 @@ export function startMapDemo(): { rooms: string[]; here: string; strokes: Stroke
     h([[px + 4, py - 17], [px + 7, py - 20], [px + 10, py - 17], [px + 7, py - 14], [px + 7, py - 12]], 1),
     dot(px + 7, py - 9, 1),
   ];
-  return { rooms, here: a.key, strokes };
+  // dois carimbos (símbolos que o jogador já avistou) ao lado da porta
+  const stamps: Stamp[] = [
+    { f: a.floor, id: 'porta', x: Math.round(px + 22), y: Math.round(py - 18) },
+    { f: a.floor, id: 'acender', x: Math.round(px + 22), y: Math.round(py + 14) },
+  ];
+  return { rooms, here: a.key, strokes, stamps };
 }

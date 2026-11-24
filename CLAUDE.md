@@ -31,7 +31,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   (Tab/Q no PC, botão GIZ/DADO no celular) e desenha livremente nas paredes/chão em 3D
   (segurar o botão esquerdo desenha, o direito apaga; no celular, modos desenhar/apagar/olhar;
   apagar tudo pede confirmação). Planejado: minimapa com anotações persistentes e caderno
-  de pistas. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
+  de pistas. Segredos opcionais ao estilo Metroidvania ficam para depois (dá para terminar só correndo). História resumida em `apps/masmorra-do-dado/HISTORIA.md`. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
   celular). Hoje há 4 salas num mundo contínuo (`src/scene/rooms/`, cada uma um módulo `Room` com
   tema visual, formato e física próprios; `scene.ts` é o motor; as salas ficam lado a lado e o
@@ -55,7 +55,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   (`src/book/book3d.ts`) e todo o conteúdo é desenhado em pixels **no próprio papel amarelado** (`src/book/pages.ts` + fonte
   bitmap com acentos em `src/book/font.ts`), nada de interface por cima. Na contracapa há o **índice** (Símbolos, Faces, Textos,
   Mapa, Notas): escolher vira as folhas até lá. Toque/clique nas regiões das páginas (raycast), setas/roda viram a página, J/Esc ou
-  tocar fora guardam. O **mapa** é 2D estilo Symphony of the Night, na **horizontal, ocupando as duas páginas** (`src/story/worldmap.ts`: salas em grade, passagens com portas, **vários andares** com abas 1F/2F/3F e escadas; só as salas visitadas aparecem) e o jogador **escreve à mão livre no mapa** (3 canetas e borracha, no rodapé; traços por andar, salvos no aparelho) para anotar, por exemplo, os símbolos de uma porta que ainda não entendeu. `?demo=mapa` mostra um mundo de teste grande (3 andares, dezenas de salas) que ainda não existe no jogo. Os símbolos "avistados" entram sozinhos (`ctx.seen(id)`); o jogador anota o que acha que significam (o diário
+  tocar fora guardam. O **mapa** é 2D estilo Symphony of the Night, na **horizontal, ocupando as duas páginas** (`src/story/worldmap.ts`: salas em grade, passagens com portas, **vários andares** com abas 1F/2F/3F e escadas; só as salas visitadas aparecem) e o jogador **escreve à mão livre no mapa** (3 canetas e borracha, no rodapé; traços por andar, salvos no aparelho) e **põe carimbos**: a ferramenta de carimbo abre, no rodapé da página direita, uma bandeja só com os símbolos que já avistou (4 por vez, ◄ ►); um toque no mapa carimba o escolhido (funciona no celular; a borracha também tira carimbos) — para anotar, por exemplo, os símbolos de uma porta que ainda não entendeu. `?demo=mapa` mostra um mundo de teste grande (3 andares, dezenas de salas) que ainda não existe no jogo. Os símbolos "avistados" entram sozinhos (`ctx.seen(id)`); o jogador anota o que acha que significam (o diário
   nunca corrige); salvo no aparelho. Conversa e diário param o jogador. `?demo=1` abre uma pré-visualização com dados de exemplo.
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).

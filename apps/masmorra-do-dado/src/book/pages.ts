@@ -3,7 +3,7 @@ import type { DiaryState, Stroke } from '../story/diary';
 import { TEXTS } from '../story/texts';
 import { ADV, drawCentered, drawGlyph, drawText, drawWord, LINE, plot, textWidth, wrap } from './font';
 import { CELL_H, CELL_W, getWorld, shortRoom, type MapRoom } from '../story/worldmap';
-import { LEX } from '../story/lexicon';
+import { glyphsOf, LEX } from '../story/lexicon';
 
 // Páginas do diário, desenhadas em pixels no próprio papel (nada de interface por cima do livro).
 export const PW = 132;
@@ -12,6 +12,7 @@ const INK = '#3a2214';
 const INK2 = '#7a5030';
 const RED = '#a8321a';
 const GOLD = '#a87a28';
+const STAMP_BLUE = '#2c4a7a';
 const HILITE = '#f6d9a0';
 const PER_PAGE = 12;
 // descrições curtas para caber no livro (as faces ainda vão mudar)
@@ -23,9 +24,26 @@ export const PENS = [
   { name: 'Vermelho', color: RED },
   { name: 'Azul', color: '#2c4a7a' },
   { name: 'Borracha', color: INK2 },
+  { name: 'Carimbo', color: STAMP_BLUE },
 ];
 export const ERASER_PEN = 3;
+export const STAMP_PEN = 4; // ferramenta "carimbo": põe no mapa um símbolo já avistado
 export const FREE_MAX = 440;
+export const TRAY_N = 4; // quantos símbolos cabem na bandeja de uma vez
+
+// tamanho (em px do papel) de um carimbo: símbolos compostos ficam mais largos para continuar legíveis
+export function stampBox(id: string): { w: number; h: number } {
+  const n = Math.max(1, Math.min(3, glyphsOf(id).length));
+  return { w: 11 * n, h: 11 };
+}
+// símbolo escolhido pra carimbar (por padrão, o último avistado) e a primeira posição da bandeja
+export function stampChoice(view: View, d: DiaryState): number {
+  const n = d.order.length;
+  return view.stamp >= 0 && view.stamp < n ? view.stamp : n - 1;
+}
+export function trayStart(view: View, d: DiaryState): number {
+  return Math.max(0, Math.min(view.trayAt, d.order.length - TRAY_N));
+}
 
 export interface Region {
   x: number;
@@ -40,6 +58,8 @@ export interface View {
   sel: string | null; // símbolo escolhido
   pen: number; // caneta escolhida no mapa
   floor: number | null; // andar do mapa (null = o andar onde o jogador está)
+  stamp: number; // índice (na ordem de avistados) do símbolo escolhido pro carimbo; -1 = o último
+  trayAt: number; // primeiro símbolo mostrado na bandeja de carimbos
   live: Stroke | null; // traço que está sendo desenhado agora
   editing: 'note' | 'free' | null;
   hover: string | null;
@@ -481,6 +501,12 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
   // o que o jogador escreveu à mão
   d.strokes.forEach((st) => st.f === fl && drawStroke(cx, st));
   if (view.live && view.live.f === fl) drawStroke(cx, view.live);
+  // carimbos (símbolos já avistados)
+  d.stamps.forEach((st) => {
+    if (st.f !== fl || !LEX[st.id]) return;
+    const b = stampBox(st.id);
+    drawWord(cx, st.id, Math.round(st.x - b.w / 2), Math.round(st.y - b.h / 2), b.w, b.h, STAMP_BLUE);
+  });
 
   // rodapé pequeno: canetas e onde você está
   PENS.forEach((p, i) => {
@@ -495,7 +521,13 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     cx.fillRect(bx - 1, PH - 12, 13, 1);
     cx.fillRect(bx - 1, PH - 23, 1, 12);
     cx.fillRect(bx + 11, PH - 23, 1, 12);
-    if (i < ERASER_PEN) {
+    if (i === STAMP_PEN) {
+      // ícone de carimbo: cabo e base
+      cx.fillStyle = p.color;
+      cx.fillRect(bx + 4, PH - 21, 3, 4);
+      cx.fillRect(bx + 2, PH - 17, 7, 2);
+      cx.fillRect(bx + 1, PH - 14, 9, 1);
+    } else if (i < ERASER_PEN) {
       cx.fillStyle = p.color;
       cx.fillRect(bx + 2, PH - 20, 7, 6);
     } else {
@@ -508,7 +540,36 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     regs.push({ x: bx - 1, y: PH - 23, w: 13, h: 12, id: `pen:${i}` });
   });
   const here = d.here ? `${shortRoom(d.here)} - ${w.floors[w.rooms.find((r) => named(r.key, [d.here]))?.floor ?? 0] ?? ''}` : '';
-  if (here) drawText(cx, here, PW + 20, PH - 22, INK2);
+  if (view.pen === STAMP_PEN) {
+    // bandeja: só os símbolos que o jogador já avistou (◄ quatro de cada vez ►)
+    const n = d.order.length;
+    if (!n) {
+      drawText(cx, 'Nenhum símbolo avistado.', PW + 14, PH - 22, INK2);
+    } else {
+      const first = trayStart(view, d);
+      const sel = stampChoice(view, d);
+      const ty = PH - 24;
+      arrow(cx, PW + 12, ty + 5, -1, first > 0 ? INK : INK2);
+      regs.push({ x: PW + 8, y: ty, w: 10, h: 14, id: 'stampnav:-1' });
+      for (let k = 0; k < TRAY_N && first + k < n; k++) {
+        const i = first + k;
+        const x = PW + 20 + k * 19;
+        if (i === sel) {
+          cx.fillStyle = HILITE;
+          cx.fillRect(x, ty, 18, 14);
+          cx.fillStyle = INK;
+          cx.fillRect(x, ty, 18, 1);
+          cx.fillRect(x, ty + 13, 18, 1);
+          cx.fillRect(x, ty, 1, 14);
+          cx.fillRect(x + 17, ty, 1, 14);
+        }
+        drawWord(cx, d.order[i], x + 2, ty + 2, 14, 10, STAMP_BLUE);
+        regs.push({ x, y: ty, w: 18, h: 14, id: `stamp:${i}` });
+      }
+      arrow(cx, PW + 20 + TRAY_N * 19 + 5, ty + 5, 1, first + TRAY_N < n ? INK : INK2);
+      regs.push({ x: PW + 20 + TRAY_N * 19, y: ty, w: 10, h: 14, id: 'stampnav:1' });
+    }
+  } else if (here) drawText(cx, here, PW + 20, PH - 22, INK2);
   // setas (pé da página)
   arrow(cx, 14, PH - 19, -1, INK);
   regs.push({ x: 8, y: PH - 24, w: 16, h: 14, id: 'prev' });
@@ -526,7 +587,7 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
 }
 
 function renderMapHalf(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
-  const sig = [view.floor, view.pen, view.hover, view.live ? view.live.p.length : -1, getWorld().rooms.length].join('|');
+  const sig = [view.floor, view.pen, view.stamp, view.trayAt, view.hover, view.live ? view.live.p.length : -1, getWorld().rooms.length].join('|');
   if (!memo || memo.d !== d || memo.sig !== sig) memo = { d, sig, ...buildMap(view, d, lay) };
   const off = side === 'L' ? 0 : PW;
   ctx.clearRect(0, 0, PW, PH);

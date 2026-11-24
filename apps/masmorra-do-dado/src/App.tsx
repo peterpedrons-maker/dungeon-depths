@@ -90,7 +90,7 @@ export default function App() {
     diary.demo();
     if (q.get('demo') === 'mapa') {
       const m = startMapDemo();
-      diary.demoMap(m.rooms, m.here, m.strokes);
+      diary.demoMap(m.rooms, m.here, m.strokes, m.stamps);
     }
     // Falas de EXEMPLO: a história de verdade será escrita depois.
     const t = window.setTimeout(

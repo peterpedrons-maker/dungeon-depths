@@ -107,6 +107,8 @@ símbolos desenhados com a anotação que a pessoa fez ("acho que é acender"), 
 - Entram na aba **Textos** do diário do jogador.
 - Colocados perto de pontos difíceis, também servem de rede de segurança para quem travar.
 
+> Resumo da história (premissa, NPCs, abertura pelo poço, finais): ver `HISTORIA.md`.
+
 ## 7c. O dado e o giz: progressão e funções (rascunho cerebral)
 
 - O jogador **não começa com tudo**. **Decidido:** começa com o **giz** e o **dado só com Fogo**; o Peso vem no primeiro altar.
@@ -216,3 +218,7 @@ Solução, ao implementar, vai para `PUZZLES.md` (convenção do projeto).
 3. **Primeira sala** (§9) e o início da língua (números 1–3 e ACENDER).
 4. Balões dos ecos (em glifos), se a decisão do §7.4 for aprovada.
 5. Menu inicial + salvar + qualidade gráfica.
+
+### Mapa: carimbos e segredos
+- O mapa aceita **carimbos**: só de símbolos que o jogador já avistou (vêm de `diary.order`). Uma ferramenta no rodapé, toque simples, funciona no celular.
+- Futuro: segredos opcionais como nos Metroidvanias; o jogo pode ser terminado sem eles.

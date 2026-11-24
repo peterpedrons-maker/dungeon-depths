@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
 import { diaryCoverTexture, diaryEdgeTexture, diaryLeatherTexture } from '../scene/textures';
-import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, type Region, type View } from './pages';
+import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, TRAY_N, trayStart, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -18,7 +18,7 @@ export interface BookEnv {
   scene: THREE.Scene;
   cam: THREE.PerspectiveCamera;
   dom: HTMLElement;
-  sound(name: 'uiopen' | 'uiclose' | 'uiflip'): void;
+  sound(name: 'uiopen' | 'uiclose' | 'uiflip' | 'uiblip'): void;
   halfW(): number;
 }
 
@@ -138,7 +138,7 @@ export function createDiaryBook(env: BookEnv) {
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
   let open = 0;
-  const view: View = { spread: 0, sel: null, pen: 0, floor: null, live: null, editing: null, hover: null, caret: true };
+  const view: View = { spread: 0, sel: null, pen: 0, floor: null, stamp: -1, trayAt: 9999, live: null, editing: null, hover: null, caret: true };
   let drawing: null | { erase: boolean } = null;
   let regL: Region[] = [];
   let regR: Region[] = [];
@@ -283,8 +283,17 @@ export function createDiaryBook(env: BookEnv) {
     } else if (id.startsWith('pen:')) {
       view.pen = Number(id.slice(4));
       refresh();
+    } else if (id.startsWith('stamp:')) {
+      view.stamp = Number(id.slice(6));
+      refresh();
+    } else if (id.startsWith('stampnav:')) {
+      // a bandeja anda de TRAY_N em TRAY_N símbolos
+      const n = dState().order.length;
+      const cur = trayStart(view, dState());
+      view.trayAt = Math.max(0, Math.min(n - TRAY_N, cur + Number(id.slice(9)) * TRAY_N));
+      refresh();
     } else if (id === 'map') {
-      // (a escrita livre é tratada no ponteiro: ver beginDraw)
+      // (a escrita livre e os carimbos são tratados no ponteiro: ver beginDraw)
     }
     void lay;
   };
@@ -311,6 +320,14 @@ export function createDiaryBook(env: BookEnv) {
       }
     });
     diary.removeStrokes(hit);
+    // a borracha também tira carimbos (o ponto tocado cai dentro da caixa do símbolo, com folga)
+    const gone: number[] = [];
+    dState().stamps.forEach((st, i) => {
+      if (st.f !== fl) return;
+      const b = stampBox(st.id);
+      if (Math.abs(st.x - x) <= b.w / 2 + 2 && Math.abs(st.y - y) <= b.h / 2 + 2) gone.push(i);
+    });
+    diary.removeStamps(gone);
   };
   const beginDraw = (side: 'L' | 'R', px: number, py: number) => {
     stopEdit();
@@ -320,8 +337,18 @@ export function createDiaryBook(env: BookEnv) {
       eraseAt(x, y);
       return;
     }
+    if (view.pen === STAMP_PEN) {
+      // carimbo: um toque = um símbolo (nada de arrastar); só os avistados chegam aqui
+      const d = dState();
+      const i = stampChoice(view, d);
+      if (i >= 0 && d.order[i]) {
+        diary.addStamp({ f: currentFloor(view, d), id: d.order[i], x: Math.round(x), y: Math.round(y) });
+        env.sound('uiblip');
+      }
+      return;
+    }
     drawing = { erase: false };
-    view.live = { f: currentFloor(view, dState()), c: view.pen, p: [Math.round(x * 2), Math.round(y * 2)] };
+    view.live ={ f: currentFloor(view, dState()), c: view.pen, p: [Math.round(x * 2), Math.round(y * 2)] };
     refresh();
   };
   const endDraw = () => {

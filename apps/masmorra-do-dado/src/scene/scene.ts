@@ -1536,6 +1536,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       visit: (name: string) => diary.visitRoom(name),
       bookClick: (id: string) => book.click(id),
       strokes: () => diaryStore.get().strokes.length,
+      stamps: () => diaryStore.get().stamps.length,
       sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
