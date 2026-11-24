@@ -250,14 +250,15 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
             // um barulho lá em cima: algo cai pelo poço (a câmera vira para o buraco)
             ctx.freeze(true);
             ctx.dropDie(() => {
-              ctx.say(
-                [
-                  { who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' },
-                  { who: 'boato', glyphs: ['eu', 'cair'] },
-                  { who: 'boato', glyphs: ['voce', 'ajudar', 'eu', 'perg'] },
-                ],
-                { block: true, onEnd: () => ctx.freeze(false) },
-              );
+              // o jogador pensa (caixa de conversa); o DADO fala só por balão, em glifos curtos
+              ctx.say([{ who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' }], {
+                block: true,
+                onEnd: () => {
+                  ctx.dieSay(['eu', 'cair'], { delay: 0.4 });
+                  ctx.dieSay(['voce', 'ajudar', 'eu', 'perg'], { delay: 3.9 });
+                  window.setTimeout(() => ctx.freeze(false), 8200);
+                },
+              });
             });
           },
         });
@@ -359,7 +360,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
           murmurT += dt;
           if (murmurT > 9) {
             murmurT = 0;
-            ctx.say([{ who: 'boato', glyphs: MURMURS[murmurN++ % MURMURS.length] }], { block: false });
+            ctx.dieSay(MURMURS[murmurN++ % MURMURS.length]); // o dado fala por balão, nunca pela caixa de conversa
           }
         }
       }

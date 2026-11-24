@@ -6,6 +6,7 @@ import { LAB_WORDS } from './scene/rooms/lab';
 import { diary, diaryStore } from './story/diary';
 import { progress } from './story/progress';
 import { dialogue, dialogueStore } from './story/dialogue';
+import { chatterStore } from './story/chatter';
 import { useStore } from './story/store';
 import { ui, uiStore } from './story/ui';
 import { BookIcon } from './ui/BookIcon';
@@ -58,9 +59,13 @@ export default function App() {
   const captionTimer = useRef(0);
   const dry = useStore(diaryStore);
   const talking = useStore(dialogueStore) !== null;
+  const dieTalking = useStore(chatterStore) !== null; // o balão do dado
   const uis = useStore(uiStore);
+  // REGRA: nada se sobrepõe na tela. Enquanto alguém fala (caixa de conversa, balão do dado) ou há cena (faixas), avisos, legendas, dicas e botões esperam ou somem.
+  const speaking = talking || dieTalking || uis.bars;
   const diaryOpen = uis.diaryOpen;
   const [toast, setToast] = useState<{ id: string; n: number } | null>(null);
+  const [toastQ, setToastQ] = useState<{ id: string; n: number }[]>([]); // avisos de "avistado" esperando o fim da conversa
   const toastTimer = useRef(0);
 
   const sound = useCallback((name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew', v?: number) => sceneRef.current?.playUi(name, v), []);
@@ -81,14 +86,30 @@ export default function App() {
     return () => window.removeEventListener('keydown', kd);
   }, [toggleDiary]);
 
+  // a dica de controles some 9 s depois de aparecer (só conta o tempo em que ela está visível)
+  const hintShown = inv.die && hint && !speaking && !toast && !caption;
+  useEffect(() => {
+    if (!hintShown) return;
+    const t = window.setTimeout(() => setHint(false), 9000);
+    return () => window.clearTimeout(t);
+  }, [hintShown]);
+
   // símbolo novo: aviso rápido no topo
+  // (os avisos entram numa fila e só aparecem DEPOIS da conversa; no máximo os 3 mais recentes)
   useEffect(() => {
     if (!dry.last) return;
-    setToast(dry.last);
+    const l = dry.last;
+    setToastQ((q) => (q.some((x) => x.n === l.n) ? q : [...q, l].slice(-3)));
+  }, [dry.last]);
+  useEffect(() => {
+    if (speaking || toast || !toastQ.length) return;
+    const [next, ...rest] = toastQ;
+    setToastQ(rest);
+    setToast(next);
     sound('uinew');
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 3200);
-  }, [dry.last, sound]);
+  }, [speaking, toast, toastQ, sound]);
 
   // ?demo=1: pré-visualização do diário e da conversa (não grava nada no aparelho)
   useEffect(() => {
@@ -104,7 +125,6 @@ export default function App() {
     const t = window.setTimeout(
       () =>
         dialogue.say([
-          { who: 'boato', glyphs: ['eu', 'ter', 'medo'] },
           { who: 'thought', text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
           { who: 'escrivao', glyphs: ['voce', 'poder', 'ajudar', 'eu', 'perg'] },
           { who: 'thought', text: 'Parece uma pergunta. Vou anotar no diário o que eu acho que significa.' },
@@ -115,7 +135,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let hintTimer = 0;
     const scene = createScene(canvasRef.current!, {
       // o analógico mexe direto no DOM (sem re-renderizar o React a cada toque)
       onStick: (st: StickState) => {
@@ -141,14 +160,11 @@ export default function App() {
         // ganhou o dado: mostra de novo as dicas de controle
         if (i.die) {
           setHint(true);
-          window.clearTimeout(hintTimer);
-          hintTimer = window.setTimeout(() => setHint(false), 9000);
         }
       },
     });
     sceneRef.current = scene;
     return () => {
-      window.clearTimeout(hintTimer);
       scene.dispose();
     };
   }, []);
@@ -262,14 +278,14 @@ export default function App() {
         <div ref={thumbRef} className="thumb" />
       </div>
 
-      {caption && (
+      {caption && !speaking && !toast && (
         <div key={caption.id} className="caption" style={{ '--accent': caption.color } as CSSProperties}>
           <b>{caption.title}</b>
           <span>{caption.sub}</span>
         </div>
       )}
 
-      {toast && (
+      {toast && !speaking && (
         <div key={toast.n} className="toast">
           <WordGlyph id={toast.id} size={30} />
           <span>
@@ -278,7 +294,7 @@ export default function App() {
         </div>
       )}
 
-      {prompt && (
+      {prompt && !speaking && (
         <div className="prompt">
           <b className="hint-pc">E</b>
           {prompt}
@@ -286,7 +302,7 @@ export default function App() {
       )}
       <BoatoBubble left={tool === 'chalk'} />
 
-      {inv.die && hint && (
+      {hintShown && (
         <div className="hint">
           <span className="hint-pc">
             clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · J: diário · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
@@ -295,7 +311,7 @@ export default function App() {
         </div>
       )}
 
-      {!complete && !inv.die && prompt && (
+      {!complete && !inv.die && prompt && !speaking && (
         <div className="touchbtns">
           <button className="btn-throw" onPointerDown={(e) => { e.preventDefault(); sceneRef.current?.action(); }} aria-label={prompt}>
             <span className="ico">✋</span>
@@ -304,7 +320,7 @@ export default function App() {
         </div>
       )}
 
-      {!complete && inv.die && tool === 'die' && (
+      {!complete && inv.die && tool === 'die' && !uis.bars && (
         <div className="touchbtns">
           <button
             className="btn-rotate"
@@ -345,7 +361,7 @@ export default function App() {
       )}
 
       {!complete && inv.die && inv.chalk && (
-        <div className={`soapbtns${tool === 'chalk' ? ' chalk' : ''}`}>
+        <div className={`soapbtns${tool === 'chalk' ? ' chalk' : ''}`} style={uis.bars ? { display: 'none' } : undefined}>
           <button
             className="soap-swap"
             aria-label={tool === 'die' ? 'Pegar o giz' : 'Pegar o dado'}
@@ -401,7 +417,7 @@ export default function App() {
         </div>
       )}
 
-      {!coarse && look === 'free' && !complete && !credits && !diaryOpen && !uis.bookOut && !talking && (
+      {!coarse && look === 'free' && !complete && !credits && !diaryOpen && !uis.bookOut && !speaking && (
         <div className="clicktoplay" aria-hidden="true">
           <b>Clique para jogar</b>
           <span>WASD anda · Shift corre · mouse olha · Esc solta o mouse</span>

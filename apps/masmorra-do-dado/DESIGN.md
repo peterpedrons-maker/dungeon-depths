@@ -426,3 +426,8 @@ Quando um **rosto está virado para o jogador** (`face` = max de `rostoP`, e sem
 
 ### Cena do dado no centro: de frente e olhando direto (implementado)
 Na cena inicial (`ctx.dieCenter`), o dado **perde a inclinação** (`tiltNow` vai a zero), fica **exatamente no centro da tela** (x e y = 0, sem balanço) e gira até uma face lateral ficar **perfeitamente de frente** (o rosto aparece de pé, simétrico); o dado não se inclina nem ondula. O **olhar é fixo no jogador** durante toda a cena (alvo `player`, olhos centrados; ele só pisca). Fora da cena a inclinação e o olhar em volta voltam ao normal.
+
+## 30. Regra de tela: nada se sobrepõe; o dado só fala por balão (implementado)
+- **Nada se sobrepõe.** Enquanto alguém fala (caixa de conversa **ou** balão do dado) ou há cena (faixas de cinema), os outros elementos esperam ou somem (`speaking` em `App.tsx`): os avisos **AVISTADO** entram numa **fila** (os 3 mais recentes) e **aparecem só depois do fim da conversa**, um de cada vez; legendas ("3 · Fogo"), o "E · Pegar...", a dica de controles, o "Clique para jogar" e os botões de toque (nas cenas) ficam escondidos. A dica de controles só conta seus 9 s enquanto está à vista. Legenda e aviso também não aparecem juntos.
+- **O dado fala SÓ por balão** (nunca pela caixa de conversa, que é do jogador/pensamentos e do Escrivão). `ctx.dieSay` funciona com o dado da mão e, antes de o jogador pegá-lo, com o **dado caído no chão** (o balão sai de cima dele, projetado na tela). Combina com o Boato: fala escondida, curta, em glifos.
+- **O dado da mão gira mais devagar** (metade da velocidade de antes).

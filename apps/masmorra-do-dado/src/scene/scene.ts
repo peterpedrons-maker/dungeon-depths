@@ -427,9 +427,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let dieCssX = -1;
   let dieCssY = -1;
   const publishDieScreen = () => {
-    dieNdc.copy(dieGroup.position).project(dieCam);
-    const x = ((dieNdc.x + 1) / 2) * 100;
-    const y = ((1 - dieNdc.y) / 2) * 100;
+    // de onde o balão de fala sai: do dado da mão, ou (antes de o jogador pegá-lo) do dado caído no chão
+    let x: number;
+    let y: number;
+    let up: number;
+    if (hasDie || !worldDie.visible) {
+      dieNdc.copy(dieGroup.position).project(dieCam);
+      x = ((dieNdc.x + 1) / 2) * 100;
+      y = ((1 - dieNdc.y) / 2) * 100;
+      up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
+    } else {
+      dieNdc.copy(worldDie.position).project(camera);
+      x = Math.max(14, Math.min(86, ((dieNdc.x + 1) / 2) * 100));
+      y = Math.max(26, Math.min(92, ((1 - dieNdc.y) / 2) * 100));
+      up = 7;
+    }
     if (Math.abs(x - dieCssX) > 0.15 || Math.abs(y - dieCssY) > 0.15) {
       dieCssX = x;
       dieCssY = y;
@@ -437,7 +449,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       st.setProperty('--die-x', `${x.toFixed(2)}%`);
       st.setProperty('--die-y', `${y.toFixed(2)}%`);
     }
-    const up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
     if (Math.abs(up - dieUp) > 0.2) {
       dieUp = up;
       document.documentElement.style.setProperty('--die-up', `${up.toFixed(1)}vh`);
@@ -883,7 +894,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       dieSay: (glyphs, o) => {
         window.setTimeout(() => {
-          if (!hasDie) return;
+          if (!hasDie && !worldDie.visible) return; // fala o dado da mão ou, antes de pegá-lo, o dado caído no chão
           chatter.say(glyphs, o?.pic);
           handTalk = 1;
           handPop = Math.max(handPop, 0.5);
@@ -2293,7 +2304,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (dsp > Math.PI) dsp -= Math.PI * 2;
       if (dsp < -Math.PI) dsp += Math.PI * 2;
       spin += dsp * Math.min(1, dt * 3);
-    } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) spin += dt * 0.8;
+    } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) spin += dt * 0.4; // gira devagar (metade do que girava)
     else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     lookedT += dt;
