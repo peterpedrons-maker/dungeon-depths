@@ -25,8 +25,9 @@ export function buildTribunal(ctx: Ctx): Room {
   const ln = (st: Stmt, mark: 'conf' | 'boato'): FireLine => ({ words: words(st, mark), worn: mark === 'boato' });
   const tablets: FireTablet[] = [
     // dois parágrafos (frases completas, uma embaixo da outra, de cima para baixo), com confirmadas e boatos misturados
-    { lines: [ln(B[0], 'boato'), ln(C[0], 'conf'), ln(B[2], 'boato'), ln(C[2], 'conf')], wall: 'left', dz: 10, size: 0.45 },
-    { lines: [ln(B[1], 'boato'), ln(C[1], 'conf'), ln(B[3], 'boato')], wall: 'right', dz: 8, size: 0.45 },
+    { lines: [ln(B[0], 'boato'), ln(C[0], 'conf')], wall: 'left', dz: 13, size: 0.45 },
+    { lines: [ln(B[2], 'boato'), ln(C[2], 'conf')], wall: 'left', dz: 6, size: 0.45 },
+    { lines: [ln(B[1], 'boato'), ln(C[1], 'conf'), ln(B[3], 'boato')], wall: 'right', dz: 9, size: 0.45 },
     // a lei da casa, ao lado da porta: «DOIS BOATO = VERDADE» (dois dos boatos são verdade)
     { words: ['n2', 'boato', 'igual', 'verdade'], wall: 'backR', seal: true, size: 0.4 },
   ];
@@ -39,7 +40,7 @@ export function buildTribunal(ctx: Ctx): Room {
     theme: 'crypt',
     braziers: data.braseiros.map((b) => ({ x: b.x, dz: b.dz, mark: `n${b.rotulo}`, scale: SCALE[b.tamanho] })),
     rule: { kind: 'order', seq: data.solucao.map((l) => l - 1), hints: false, penalty: 12 },
-    words: ['acender', 'todos', 'brasa', 'ordem'],
+    words: ['acender', 'todos', 'brasa', 'ordem', 'conf'],
     tablets,
     fog: { color: '#0a0a11', near: 5, far: 30 },
     ambient: { color: 0x7a78b8, intensity: 1.9 },

@@ -49,8 +49,9 @@ export function buildLab(ctx: Ctx): Room {
   const ln = (c: Clue, mark: 'conf' | 'boato'): FireLine => ({ words: words(c, mark), worn: mark === 'boato', rub: !!c.giz });
   // dois parágrafos, um em cada parede (frases completas, uma embaixo da outra, lidas de cima para baixo); confirmadas e boatos misturados
   const tablets: FireTablet[] = [
-    { lines: [ln(C[0], 'conf'), ln(B[0], 'boato'), ln(C[2], 'conf'), ln(B[1], 'boato')], wall: 'left', dz: 10, size: 0.4 },
-    { lines: [ln(B[2], 'boato'), ln(C[1], 'conf'), ln(B[3], 'boato')], wall: 'right', dz: 8, size: 0.4 }, // a linha lisa: só aparece esfregando o giz
+    { lines: [ln(C[0], 'conf'), ln(B[0], 'boato'), ln(C[2], 'conf')], wall: 'left', dz: 12, size: 0.4 },
+    { lines: [ln(B[1], 'boato'), ln(B[2], 'boato')], wall: 'right', dz: 13, size: 0.4 },
+    { lines: [ln(C[1], 'conf'), ln(B[3], 'boato')], wall: 'right', dz: 6, size: 0.4 }, // a 1ª linha é lisa: só aparece esfregando o giz
     // a lei da casa: «DOIS BOATO = VERDADE» (exatamente dois boatos são verdadeiros)
     {
       words: ['n2', 'boato', 'igual', 'verdade'],
@@ -75,7 +76,7 @@ export function buildLab(ctx: Ctx): Room {
     ],
     plate: { x: 0, dz: 4.2 },
     rule: { kind: 'commit', lit: data.solucao.map((n) => n - 1), penalty: 6 },
-    words: ['acender', 'n3', 'brasa', 'placa'],
+    words: ['acender', 'n3', 'brasa', 'placa', 'conf'],
     tablets,
     fog: { color: '#0a0a11', near: 5, far: 30 },
     ambient: { color: 0x7a78b8, intensity: 1.9 },

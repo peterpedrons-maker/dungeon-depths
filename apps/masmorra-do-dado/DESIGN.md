@@ -332,3 +332,5 @@ Como o jogo é sobre a **escrita**, as pistas são **frases da língua** (e o qu
 - **Texto em parágrafo**: frases completas, 3 a 4 linhas, uma embaixo da outra, alinhadas à esquerda, lidas **de cima para baixo**, dentro de uma moldura só
   (`FireTablet.lines` em `rooms/fire.ts`). Cada linha termina na sua marca (CONFIRMADO, BOATO...). Parágrafos podem ficar em paredes diferentes. O Tribunal e a sala de teste já usam isso.
 - **Nível mínimo a partir da sala 6**: o jogo todo deve ser do nível do Tribunal / da Placa que Julga **para cima**; só as 5 primeiras salas são mais simples.
+- **Parágrafos pequenos, em várias paredes** (decidido pelo jogador): 2 a 3 linhas por bloco; não juntar tudo num bloco só nem dar a volta na sala. As frases da sala não dependem da ordem entre blocos (cada linha é uma condição), então não é preciso numerar os blocos; frases que SÃO sequência ficam na mesma linha.
+- **Toda frase termina numa marca**: as ordens das portas (salas 1 a 5, Tribunal, sala de teste) fecham com CONFIRMADO; as perguntas, com PERGUNTA. Falta o **ornamento de abertura** (decidir o símbolo).

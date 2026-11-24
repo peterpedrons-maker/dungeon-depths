@@ -16,7 +16,7 @@ export const FIRE_ORDEM: FireSpec = {
     { x: 3.2, dz: 2.2, mark: 'n2' }, // à direita, perto da porta
   ],
   rule: { kind: 'order', seq: [2, 0, 1] }, // DOIS (direita, porta) → TRÊS (esquerda, entrada) → UM (direita, meio)
-  words: ['acender', 'n2', 'n3', 'n1', 'brasa'],
+  words: ['acender', 'n2', 'n3', 'n1', 'brasa', 'conf'],
   pillars: [
     [-1.6, 5.0],
     [1.6, 7.6],
@@ -41,7 +41,7 @@ export const FIRE_TEMPO: FireSpec = {
   rule: { kind: 'together' },
   fog: { color: '#0a0a11', near: 5, far: 30 },
   ambient: { color: 0x7a78b8, intensity: 1.9 },
-  words: ['acender', 'n3', 'brasa', 'tempo'],
+  words: ['acender', 'n3', 'brasa', 'tempo', 'conf'],
   pillars: [
     [2.2, 17],
     [-2.2, 7],

@@ -106,9 +106,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme });
 
   // a frase talhada: v1–v3 na parede do fundo, à esquerda da porta; a lacuna (v4) na parede esquerda, bem maior
-  const words: (string | null)[] = v === 1 ? ['acender', 'n1', 'brasa'] : v === 2 ? ['acender', 'n2', 'brasa'] : v === 3 ? ['acender', 'n3', 'brasa'] : ['acender', null, 'brasa'];
+  const words: (string | null)[] = v === 1 ? ['acender', 'n1', 'brasa', 'conf'] : v === 2 ? ['acender', 'n2', 'brasa', 'conf'] : v === 3 ? ['acender', 'n3', 'brasa', 'conf'] : ['acender', null, 'brasa', 'conf'];
   const onBack = v !== 4;
-  const size = onBack ? Math.min(0.5, (D.hx - 1.5) / 4.97) : 0.55;
+  const size = onBack ? Math.min(0.5, (D.hx - 1.5) / 6.81) : 0.55;
   const ins = onBack
     ? kit.inscribe({ words, x: -(D.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.4 - v * 0.05, seed: 3 + v * 11 })
     : kit.inscribe({ words, x: X0 + 0.025, y: 1.55, z: Z0 + 4.4, nx: 1, nz: 0, size, age: 0.2, seed: 3 + v * 11 });

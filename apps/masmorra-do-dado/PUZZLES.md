@@ -144,13 +144,13 @@ estão nas mãos e as palavras da sala já estão no diário). Dados em `src/sce
 e que nenhuma pista é descartável.
 
 **Palavras novas (legenda):** SE, ENTÃO (a seta →), NÃO (o símbolo de "atravessar/não"), E, PLACA, e as marcas CONFIRMADO e BOATO do Tribunal.
-- Porta: «ACENDER TRÊS BRASEIRO PLACA» = acenda três braseiros e depois pese a placa (a placa é o juiz: confere o conjunto aceso).
+- Porta: «ACENDER TRÊS BRASEIRO PLACA» + a marca CONFIRMADO no fim = acenda três braseiros e depois pese a placa (a placa é o juiz: confere o conjunto aceso).
 - Lei da casa (ao lado da porta): «DOIS BOATO = VERDADE» = exatamente dois dos boatos são verdadeiros.
-- As paredes têm **dois parágrafos** (frases completas, uma embaixo da outra, alinhadas à esquerda, lidas de cima para baixo; cada frase termina na sua marca).
+- As paredes têm **três parágrafos pequenos** (frases completas, uma embaixo da outra, alinhadas à esquerda, lidas de cima para baixo; cada frase termina na sua marca): um de 3 linhas na esquerda e dois de 2 linhas na direita.
 - Frases: «SE a → b» (se a está aceso, b também); «SE a → NÃO b» (a e b nunca juntos); «a E b» (os dois acesos).
 
 **Solução (spoiler): acender UM, DOIS e QUATRO e pesar a placa.**
-1. No parágrafo da **parede direita** há uma **linha lisa** (a do meio): é uma frase CONFIRMADA apagada. Com o **giz**, risque por cima dela: as palavras
+1. No parágrafo da **parede direita mais perto da porta** a **1ª linha está lisa**: é uma frase CONFIRMADA apagada. Com o **giz**, risque por cima dela: as palavras
    aparecem. Ela diz «SE CINCO → UM».
 2. Com os 3 confirmados (SE TRÊS → UM · SE CINCO → UM · TRÊS e CINCO nunca juntos) e a regra «três acesos», **o UM sempre está aceso** e sobram 5 conjuntos:
    123, 124, 125, 134, 145.
@@ -158,3 +158,5 @@ e que nenhuma pista é descartável.
    123 → 1 verdadeiro ✗ · 125 → 1 ✗ · 134 → 3 ✗ · 145 → 3 ✗ · **124 → 2 ✓**.
 4. Acenda 1, 2 e 4 (Fogo) e **pese a placa** (Peso, posicionar o dado nela). Se o conjunto estiver errado, a placa **abafa o fogo** (apaga tudo) e os
    braseiros ficam **frios por 6 s**: chutar não compensa. Para recomeçar, recolha o dado (`E`).
+
+> **Convenção de escrita:** toda frase das portas agora termina numa **marca** (CONFIRMADO nas ordens da Casa, PERGUNTA nas perguntas). As soluções acima não mudam.
