@@ -277,8 +277,8 @@ O personagem acorda **sem dado e sem giz**. Ordem de descoberta:
 
 ## 16. Construtor de salas de fogo (implementado: `rooms/fire.ts`, `rooms/fireRooms.ts`)
 Uma sala de braseiros é uma **descrição** (`FireSpec`): tamanho, tema, braseiros (posição, símbolo no pedestal, se já começa aceso), colunas, a
-**regra** e a frase na parede. O construtor monta o resto. Regras prontas: `exact` (exatamente N acesos; com mais, a Casa apaga tudo) e `order`
-(acender na ordem certa; fora de ordem apaga tudo). Outras (tempo, corda a queimar, várias portas) entram como novas regras, uma de cada vez.
+**regra** e a frase na parede. O construtor monta o resto. Regras prontas: `exact` (exatamente N acesos; com mais, a Casa apaga tudo), `order`
+(acender na ordem certa; fora de ordem apaga tudo) e `together` (todos acesos ao mesmo tempo; os braseiros têm `burn` = segundos de duração e `scale` = tamanho; ao acontecer, a porta abre para sempre). Outras (corda a queimar, várias portas) entram como novas regras, uma de cada vez. Cronômetros de puzzle usam `ctx.paused()` para esperar durante cenas, conversas e o diário.
 - **Uma sala por vez, bem pensada** (regra do projeto): cada sala ensina UMA ideia e está descrita em `PUZZLES.md` com o que ensina.
 - Salas especiais (poço, lacuna, selo, cenas do Escrivão) continuam como módulos à mão.
 - **Numeração e mapa automáticos:** as salas são numeradas pela posição na lista (`Sala N ·`), e o mapa do diário é gerado dessas salas

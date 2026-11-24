@@ -15,13 +15,18 @@ export type FireRule =
   // exatamente n braseiros acesos ao mesmo tempo; com mais do que isso a Casa apaga todos
   | { kind: 'exact'; n: number }
   // acender na ordem certa (índices dos braseiros em `braziers`); um fora de ordem apaga todos
-  | { kind: 'order'; seq: number[] };
+  | { kind: 'order'; seq: number[] }
+  // todos acesos AO MESMO TEMPO, num instante qualquer (então a porta abre para sempre). Só faz sentido com `burn`:
+  // as chamas se apagam sozinhas, e quem dura menos tem que ser aceso por último
+  | { kind: 'together' };
 
 export interface FireBrazier {
   x: number; // a partir do centro da sala
   dz: number; // distância da parede do fundo (para a frente)
   mark?: string; // símbolo talhado no pedestal (id do léxico)
   lit?: boolean; // já começa aceso
+  scale?: number; // tamanho do braseiro (maior = chama que dura mais, quando a sala usa `burn`)
+  burn?: number; // segundos que a chama dura (sem isso, fica acesa)
 }
 
 export interface FireSpec {
@@ -66,7 +71,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
 
-  const steps = spec.rule.kind === 'order' ? spec.rule.seq.length : 1;
+  const steps = spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' ? spec.braziers.length : 1;
   const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: Math.min(3, steps), connected: true, theme });
 
   // colunas (também seguram o dado)
@@ -97,7 +102,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   void ins; // (a frase fica registrada em kit.inscriptions)
 
   // braseiros e os símbolos nos pedestais
-  const braziers: Brazier[] = spec.braziers.map((b) => makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit));
+  const braziers: Brazier[] = spec.braziers.map((b) => makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit, b.scale ?? 1));
   spec.braziers.forEach((b) => {
     if (b.mark) kit.inscribe({ words: [b.mark], x: b.x, y: 0.45, z: Z0 + b.dz + 0.305, nx: 0, nz: 1, size: 0.5, age: 0.12, frame: true, seed: 21 + Math.round(b.x * 7) });
   });
@@ -111,6 +116,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   kit.torch(X0 + 0.1, 1.8, -1.2, 1, 0, 0.7);
   kit.torch(X1 - 0.1, 1.8, -1.2, -1, 0, 2.4);
   kit.torch(X1 - 0.9, 1.8, Z0 + 0.1, 0, 1, 4.1);
+  // salas compridas: tochas espaçadas nas paredes, alternando os lados, para dar para ver o caminho
+  for (let z = -7, k = 0; z > Z0 + 3; z -= 7, k++) {
+    if (k % 2 === 0) kit.torch(X1 - 0.1, 1.8, z, -1, 0, 1.3 + k);
+    else kit.torch(X0 + 0.1, 1.8, z, 1, 0, 3.1 + k);
+  }
   kit.dust(X0, X1, Z0, Z1, 0, H);
 
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3), mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
@@ -122,6 +132,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   let progress = 0; // (order) quantos já foram acesos na ordem certa
   let failT = -1; // (order) contagem para apagar tudo depois de um erro
   let overlit = 0; // (exact) tempo com braseiros demais
+  const left = spec.braziers.map(() => Infinity); // quanto falta para cada chama se apagar
   let solved = false;
 
   const reset = () => {
@@ -129,6 +140,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     progress = 0;
     failT = -1;
     overlit = 0;
+    left.fill(Infinity);
     solved = false;
     doorOpen = 0;
     prevWant = 0;
@@ -136,6 +148,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
   };
 
+  if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__fire = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved });
   kit.bake();
 
   return {
@@ -199,7 +212,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             overlit = 0;
           }
         } else overlit = 0;
-      } else {
+      } else if (rule.kind === 'order') {
         if (failT >= 0) {
           // um braseiro fora de ordem: ele queima um instante e a Casa apaga todos
           failT -= dt;
@@ -220,6 +233,27 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           });
         }
         want = solved ? 1 : 0;
+      }
+      if (rule.kind === 'together') {
+        // as chamas acendem, encolhem e se apagam sozinhas; o tempo espera durante cenas, conversa e diário
+        braziers.forEach((b, i) => {
+          const life = spec.braziers[i].burn ?? Infinity;
+          if (!solved && b.touched()) {
+            b.light(true);
+            left[i] = life;
+          }
+          if (b.lit && Number.isFinite(life) && !ctx.paused()) {
+            left[i] -= dt;
+            b.flameK = left[i] < 0.4 * life ? Math.max(0.15, left[i] / (0.4 * life)) : 1;
+            if (left[i] <= 0) b.light(false);
+          }
+        });
+        if (!solved && braziers.every((b) => b.lit)) {
+          solved = true;
+          ctx.sfx('piece');
+        }
+        want = solved ? 1 : 0;
+        door.lampMats.forEach((m, i) => m.color.setHex(solved || braziers[i]?.lit ? 0xff7a2e : LAMP_OFF));
       }
       braziers.forEach((b) => b.update(t));
       if (rule.kind === 'exact') door.lampMats[0].color.setHex(want ? 0xff7a2e : LAMP_OFF);

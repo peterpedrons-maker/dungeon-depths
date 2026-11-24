@@ -23,4 +23,30 @@ export const FIRE_ORDEM: FireSpec = {
   ],
 };
 
-export const FIRE_ROOMS: FireSpec[] = [FIRE_ORDEM];
+// ── TEMPO ──────────────────────────────────────────────────────────────────────────
+// A frase é a das salas anteriores (ACENDER · TRÊS · BRASEIRO), com UMA palavra nova no fim: TEMPO. Aqui as chamas se apagam sozinhas e o
+// tamanho do braseiro diz quanto dura (maior = mais). A porta só abre se os três estiverem acesos AO MESMO TEMPO.
+// Quem acende do mais perto para o mais longe (o jeito natural) vê o pequeno apagar antes de chegar ao último. O certo: o que dura mais PRIMEIRO.
+export const FIRE_TEMPO: FireSpec = {
+  name: 'A Chama Curta',
+  subtitle: 'Quatro palavras, três braseiros. Alguma coisa mudou.',
+  hx: 5,
+  z0: -22,
+  h: 3.8,
+  braziers: [
+    { x: -3.4, dz: 21, scale: 0.7, burn: 4 }, // pequeno, perto da entrada: dura pouco
+    { x: 3.4, dz: 11, scale: 1, burn: 9 }, // médio, no meio
+    { x: -3.0, dz: 2.2, scale: 1.35, burn: 16 }, // grande, perto da porta: dura mais
+  ],
+  rule: { kind: 'together' },
+  fog: { color: '#0a0a11', near: 5, far: 30 },
+  ambient: { color: 0x7a78b8, intensity: 1.9 },
+  words: ['acender', 'n3', 'brasa', 'tempo'],
+  pillars: [
+    [2.2, 17],
+    [-2.2, 7],
+    [2.2, 5],
+  ],
+};
+
+export const FIRE_ROOMS: FireSpec[] = [FIRE_ORDEM, FIRE_TEMPO];

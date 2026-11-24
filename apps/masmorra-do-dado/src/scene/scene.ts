@@ -25,7 +25,7 @@ import { chatter } from '../story/chatter';
 import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
-import { FIRE_ORDEM } from './rooms/fireRooms';
+import { FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
 import { buildRoom1 } from './rooms/room1';
 import { buildRoom2 } from './rooms/room2';
 import { buildRoom3 } from './rooms/room3';
@@ -40,6 +40,7 @@ const BUILDERS: RoomBuilder[] = [
   (c) => buildVestibulo(c, 2),
   (c) => buildVestibulo(c, 3),
   (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
+  (c) => buildFireRoom(c, FIRE_TEMPO), // TEMPO: as chamas se apagam; o maior dura mais
   buildRoom1,
   (c) => buildVestibulo(c, 4), // A Lacuna: o 1º puzzle que pede o giz (que o jogador acabou de achar)
   buildRoom2,
@@ -573,6 +574,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       flag: (f) => progress.has(f),
       stage: () => progress.stage(),
+      paused: () => busy(),
       have: () => ({ die: hasDie, chalk: hasChalk }),
       giveDie: (onDone) => {
         if (hasDie || dieState !== 'rest') {
