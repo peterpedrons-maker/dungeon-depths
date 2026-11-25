@@ -224,6 +224,14 @@ export function buildApelidos(ctx: Ctx): Room {
       doorOpen += (want - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
     },
+    // salvamento: a sala já resolvida (ao carregar um jogo, as salas de trás voltam abertas; a porta abre sem som)
+    skip() {
+      solved = true;
+      readT = 99;
+      prevWant = 1;
+      doorOpen = 1;
+    },
+    isSolved: () => solved,
     reset,
     dispose() {},
   };

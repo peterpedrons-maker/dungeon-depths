@@ -1,9 +1,10 @@
 import { FACES } from '../faces';
+import { slotKey } from './save';
 import { createStore } from './store';
 
 // Marcos da história. O mundo muda conforme eles acontecem (luz, escrita mais viva, faces do dado).
 // Guardado no aparelho; sem isso o jogador começaria de novo a cada visita.
-const KEY = 'mdd-progress-v1';
+const KEY = slotKey('progress'); // (no espaço de jogo ativo: story/save.ts)
 
 // Em ordem: cada marco alcançado sobe um "estágio" da Casa.
 export const STAGE_FLAGS = ['fogo', 'dois', 'tres', 'escrivao', 'selo', 'brasas'] as const;

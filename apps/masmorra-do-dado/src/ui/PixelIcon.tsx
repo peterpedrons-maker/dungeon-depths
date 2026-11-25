@@ -264,6 +264,51 @@ const ICONS: Record<string, string[]> = {
     '............',
     '............',
   ],
+  // pausa: duas barras de pedra talhada
+  pausa: [
+    '............',
+    '............',
+    '..www..www..',
+    '..wgw..wgw..',
+    '..wgw..wgw..',
+    '..wgw..wgw..',
+    '..wgw..wgw..',
+    '..wgw..wgw..',
+    '..wgw..wgw..',
+    '..www..www..',
+    '............',
+    '............',
+  ],
+  // configurações: uma engrenagem feita de pontos (INTERFACE.md §6), com a brasa no meio
+  config: [
+    '............',
+    '.....oo.....',
+    '..o..oo..o..',
+    '...o....o...',
+    '....bbbb....',
+    '.oo.b..b.oo.',
+    '.oo.b.rb.oo.',
+    '....bbbb....',
+    '...o....o...',
+    '..o..oo..o..',
+    '.....oo.....',
+    '............',
+  ],
+  // gema
+  gema: [
+    '............',
+    '...oooooo...',
+    '..owwoobbo..',
+    '.owwooobbbo.',
+    '.oooooobbbb.',
+    '..obooobbb..',
+    '...obobbb...',
+    '....obbb....',
+    '.....bb.....',
+    '............',
+    '............',
+    '............',
+  ],
 };
 
 export type IconName = keyof typeof ICONS;

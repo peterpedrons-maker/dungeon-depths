@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { AudioMode } from './scene/audio';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
 import { startMapDemo } from './book/mapdemo';
 import { LAB_WORDS } from './scene/rooms/lab';
 import { diary, diaryStore } from './story/diary';
-import { progress, progressStore } from './story/progress';
+import { progressStore } from './story/progress';
 import { dialogue, dialogueStore } from './story/dialogue';
 import { chatterStore } from './story/chatter';
 import { useStore } from './story/store';
@@ -17,12 +16,17 @@ import { QuizPanel } from './ui/QuizPanel';
 import { quiz } from './story/quiz';
 import { WordGlyph } from './ui/Glyph';
 import { useUiScale } from './ui/scale';
+import { Credits, PauseMenu, SaveIndicator, TitleScreen } from './ui/Menus';
+import { saves } from './story/save';
+import { configStore } from './story/config';
+
+// TELA INICIAL ao abrir a página (INTERFACE.md §3.1); não aparece logo depois de escolher um espaço (a página recarrega já no jogo)
+// nem nas pré-visualizações e testes (?demo, ?lab, ?intro=0, ?titulo=0)
+const Q = new URLSearchParams(location.search);
+const PLAY_NOW = saves.consumePlay();
+const SHOW_TITLE = !PLAY_NOW && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
 
 const STICK_R = 46;
-
-interface InstallEvent extends Event {
-  prompt(): Promise<void>;
-}
 
 interface Caption {
   id: number;
@@ -47,21 +51,13 @@ export default function App() {
   const [prompt, setPrompt] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
-  const [credits, setCredits] = useState(false);
-  const [askRestart, setAskRestart] = useState(false);
+  const [credits, setCredits] = useState(false); // créditos no fim da demonstração
   // PC: o mouse precisa ser capturado (clique) pra olhar livremente
   const [look, setLook] = useState<'locked' | 'free' | 'denied'>('free');
   const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
-  const [audio, setAudio] = useState<AudioMode>(() => {
-    try {
-      const v = Number(localStorage.getItem('mdd-audio'));
-      return v === 1 || v === 2 ? v : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null);
   const captionTimer = useRef(0);
+  const completeRef = useRef(false);
+  const openPauseRef = useRef<() => void>(() => {});
   const dry = useStore(diaryStore);
   const talking = useStore(dialogueStore) !== null;
   const dieTalking = useStore(chatterStore) !== null; // o balão do dado
@@ -90,11 +86,33 @@ export default function App() {
     ui.setDiary(!ui.diaryOpen()); // o livro (src/book) cuida da animação e dos sons
   }, []);
 
-  // J abre o diário (Esc e J fecham, dentro do próprio diário)
+  // PAUSA (INTERFACE.md §3.2): Esc, o mouse solto no meio do jogo ou o botão do celular. O jogo salva ao pausar.
+  const pausable = () => ui.menu() === null && !ui.diaryOpen() && !uiStore.get().bookOut && !dialogue.blocking && !quiz.active() && !completeRef.current;
+  const openPause = useCallback(() => {
+    if (!pausable()) return;
+    ui.setMenu('pause');
+    sceneRef.current?.saveNow();
+    sound('uiopen', 0.7);
+    if (document.pointerLockElement) document.exitPointerLock();
+  }, [sound]);
+  const resume = () => {
+    ui.setMenu(null);
+    sceneRef.current?.lock(); // (no PC, captura o mouse de novo: estamos dentro do clique)
+  };
+  useEffect(() => {
+    const kd = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.repeat) return;
+      if (ui.menu() === null) openPause(); // (com o menu aberto, o próprio menu cuida do Esc)
+    };
+    window.addEventListener('keydown', kd);
+    return () => window.removeEventListener('keydown', kd);
+  }, [openPause]);
+
+  // J (ou a tecla escolhida) abre o diário (Esc e J fecham, dentro do próprio diário)
   useEffect(() => {
     const kd = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (k !== 'j' || e.repeat || ui.diaryOpen()) return;
+      if (k !== configStore.get().keys.diario || e.repeat || ui.diaryOpen() || ui.menu() !== null) return;
       if ((e.target as HTMLElement | null)?.tagName === 'TEXTAREA') return;
       toggleDiary();
     };
@@ -103,7 +121,7 @@ export default function App() {
   }, [toggleDiary]);
 
   // a dica de controles some 9 s depois de aparecer (só conta o tempo em que ela está visível)
-  const hintShown = inv.die && hint && !speaking && !toast && !caption && !uis.bookOut;
+  const hintShown = inv.die && hint && !speaking && !toast && !caption && !uis.bookOut && uis.menu === null;
   useEffect(() => {
     if (!hintShown) return;
     const t = window.setTimeout(() => setHint(false), 9000);
@@ -166,7 +184,12 @@ export default function App() {
         window.clearTimeout(captionTimer.current);
         captionTimer.current = window.setTimeout(() => setCaption(null), 3800);
       },
-      onComplete: setComplete,
+      onComplete: (c) => {
+        completeRef.current = true;
+        setComplete(c);
+      },
+      title: SHOW_TITLE,
+      onPause: () => openPauseRef.current(),
       onDie: (st) => setDieOut(st !== 'hand'),
       onTool: setTool,
       onLook: setLook,
@@ -185,71 +208,20 @@ export default function App() {
     };
   }, []);
 
-  // som: 0 = música + efeitos, 1 = só efeitos, 2 = mudo (lembra a escolha)
-  useEffect(() => {
-    sceneRef.current?.setAudio(audio);
-    try {
-      localStorage.setItem('mdd-audio', String(audio));
-    } catch {
-      /* sem armazenamento: tudo bem */
-    }
-  }, [audio]);
+  openPauseRef.current = openPause;
 
-  // "Instalar": o navegador avisa quando o jogo pode ser instalado (PWA)
-  useEffect(() => {
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallEvt(e as InstallEvent);
-    };
-    const onInstalled = () => setInstallEvt(null);
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt);
-      window.removeEventListener('appinstalled', onInstalled);
-    };
-  }, []);
-
-  const install = () => {
-    installEvt?.prompt().finally(() => setInstallEvt(null));
-  };
-
-  const reset = () => {
+  const resetRoom = () => {
     setCaption(null);
+    ui.setMenu(null);
     sceneRef.current?.reset();
-  };
-  const restart = () => {
-    setComplete(null);
-    setCaption(null);
-    sceneRef.current?.restart();
-  };
-  // RECOMEÇAR O JOGO DO ZERO: apaga o progresso, o diário (símbolos, notas, mapa, carimbos) e as ajudas já vistas, e recarrega a página sem parâmetros:
-  // o jogo começa de novo, com a cena de acordar e tudo. (A preferência de som é mantida.)
-  const newGame = () => {
-    progress.noSave();
-    diary.noSave();
-    quiz.noSave();
-    try {
-      Object.keys(localStorage)
-        .filter((k) => k.startsWith('mdd-') && k !== 'mdd-audio')
-        .forEach((k) => localStorage.removeItem(k));
-    } catch {
-      /* sem armazenamento: nada a apagar */
-    }
-    location.replace(location.pathname);
+    sceneRef.current?.lock();
   };
   const pickMode = (m: ChalkMode) => {
     setChalkMode(m);
     sceneRef.current?.setChalkMode(m);
   };
 
-  const fullscreen = () => {
-    const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
-    document.documentElement
-      .requestFullscreen?.()
-      .then(() => orientation.lock?.('landscape'))
-      .catch(() => {});
-  };
+  const inMenu = uis.menu !== null;
 
   return (
     <div className="stage">
@@ -259,47 +231,33 @@ export default function App() {
         <i />
         <i />
       </div>
-      <div className="crosshair" />
+      {!inMenu && <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />}
       {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
       <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 
-      <div className="corner">
-        {hasBook && (
-          <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
-            <BookIcon />
-            {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
-          </button>
-        )}
-        <button
-          onClick={() => setAudio(((audio + 1) % 3) as AudioMode)}
-          aria-label="Som"
-          title={['Som: música e efeitos', 'Som: só efeitos', 'Som: mudo'][audio]}
-        >
-          <PixelIcon name={(['musica', 'efeitos', 'mudo'] as const)[audio]} />
-        </button>
-        <button onClick={reset} aria-label="Reiniciar sala" title="Reiniciar sala (R)">
-          <PixelIcon name="reiniciar" />
-        </button>
-        <button onClick={() => setCredits(true)} aria-label="Informações e recomeçar" title="Créditos dos sons e recomeçar o jogo">
-          <PixelIcon name="info" />
-        </button>
-        {installEvt && (
-          <button onClick={install} aria-label="Instalar o jogo" title="Instalar o jogo">
-            <PixelIcon name="instalar" />
-          </button>
-        )}
-        {document.fullscreenEnabled && (
-          <button onClick={fullscreen} aria-label="Tela cheia" title="Tela cheia">
-            <PixelIcon name="tela" />
-          </button>
-        )}
-      </div>
+      {/* NADA FIXO NO PC (INTERFACE.md §4). No celular, só a pausa; o diário ganha um botão depois do caderno. No PC o botão do diário só aparece
+          no momento em que o caderno é achado (a tela escurece e ele pulsa) */}
+      {!inMenu && !complete && (
+        <div className="hudbtns">
+          {hasBook && (coarse || uis.bookCall) && !uis.bookOut && (
+            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
+              <BookIcon />
+              {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
+            </button>
+          )}
+          {coarse && !uis.bookOut && (
+            <button onClick={openPause} aria-label="Pausa">
+              <PixelIcon name="pausa" />
+            </button>
+          )}
+        </div>
+      )}
 
       <div ref={stickRef} className="stick" style={{ display: stickOn ? 'block' : 'none' }}>
         <div ref={thumbRef} className="thumb" />
       </div>
 
-      {caption && !speaking && !toast && !uis.bookOut && (
+      {caption && !speaking && !toast && !uis.bookOut && !inMenu && (
         <div key={caption.id} className="caption" style={{ '--accent': caption.color } as CSSProperties}>
           <b>{caption.title}</b>
           <span>{caption.sub}</span>
@@ -315,7 +273,7 @@ export default function App() {
         </div>
       )}
 
-      {prompt && !speaking && (
+      {prompt && !speaking && !inMenu && (
         <div className="prompt">
           <b className="hint-pc">E</b>
           {prompt}
@@ -338,7 +296,7 @@ export default function App() {
         </div>
       )}
 
-      {!complete && !inv.die && prompt && !speaking && (
+      {!complete && !inMenu && !inv.die && prompt && !speaking && (
         <div className="touchbtns">
           <button className="btn-throw" onPointerDown={(e) => { e.preventDefault(); sceneRef.current?.action(); }} aria-label={prompt}>
             <span className="ico"><PixelIcon name="agir" /></span>
@@ -347,7 +305,7 @@ export default function App() {
         </div>
       )}
 
-      {!complete && inv.die && tool === 'die' && !uis.bars && (
+      {!complete && !inMenu && inv.die && tool === 'die' && !uis.bars && (
         <div className="touchbtns">
           <button
             className="btn-rotate"
@@ -387,7 +345,7 @@ export default function App() {
         </div>
       )}
 
-      {!complete && inv.die && inv.chalk && (
+      {!complete && !inMenu && inv.die && inv.chalk && (
         <div className={`soapbtns${tool === 'chalk' ? ' chalk' : ''}`} style={uis.bars ? { display: 'none' } : undefined}>
           <button
             className="soap-swap"
@@ -444,7 +402,7 @@ export default function App() {
         </div>
       )}
 
-      {!coarse && look === 'free' && !complete && !credits && !diaryOpen && !uis.bookOut && !speaking && (
+      {!coarse && look === 'free' && !complete && !inMenu && !diaryOpen && !uis.bookOut && !speaking && (
         <div className="clicktoplay" aria-hidden="true">
           <b>Clique para jogar</b>
           <span>WASD anda · Shift corre · mouse olha · Esc solta o mouse</span>
@@ -454,57 +412,33 @@ export default function App() {
       <DialogueBox onSound={sound} />
       <QuizPanel onSound={sound} />
 
-      {credits && (
-        <div
-          className="credits"
-          onPointerDown={() => {
-            setCredits(false);
-            setAskRestart(false);
+      {uis.menu === 'title' && <TitleScreen onBegin={() => sceneRef.current?.begin()} snd={sound} />}
+      {uis.menu === 'pause' && (
+        <PauseMenu
+          hasBook={hasBook}
+          onResume={resume}
+          onDiary={() => {
+            ui.setMenu(null);
+            toggleDiary();
           }}
-        >
-          <div className="credits-box" onPointerDown={(e) => e.stopPropagation()}>
-            <h2>Créditos dos sons</h2>
-            <p>
-              <b>Instrumentos</b> (música, sinos e notas): amostras reais do soundfont <i>FluidR3_GM</i>, de Frank Wen
-              (CC BY 3.0) — violoncelo, cordas, coro, harpa, celesta, glockenspiel, flauta, tímpano e sinos tubulares.
-            </p>
-            <p>
-              <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi
-              (passos), qubodup (bola rolando), e gravações de giz, borracha, porta de pedra, arrastos, chama, lareira
-              e vapor.
-            </p>
-            <h2 style={{ marginTop: 14 }}>Recomeçar</h2>
-            {!askRestart ? (
-              <p>
-                <button onClick={() => setAskRestart(true)}>Recomeçar o jogo do zero</button>
-              </p>
-            ) : (
-              <>
-                <p>Isso apaga TODO o progresso, o diário e o mapa, e o jogo recomeça com a cena inicial. Tem certeza?</p>
-                <p>
-                  <button onClick={newGame}>Sim, apagar tudo e recomeçar</button> <button onClick={() => setAskRestart(false)}>Cancelar</button>
-                </p>
-              </>
-            )}
-            <button
-              onClick={() => {
-                setCredits(false);
-                setAskRestart(false);
-              }}
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
+          onResetRoom={resetRoom}
+          onTitle={() => sceneRef.current?.toTitle()}
+          snd={sound}
+        />
       )}
+      <SaveIndicator hidden={uis.menu === 'title'} />
 
       {complete && (
         <div className="done">
           <h1>Fim da demonstração</h1>
-          <p>{complete.gem ? 'Você achou a gema escondida da primeira sala ✦' : 'Ainda havia uma gema escondida na primeira sala…'}</p>
-          <button onClick={restart}>Jogar de novo</button>
+          <p>{complete.gem ? 'Você achou uma gema escondida.' : 'Ainda havia gemas escondidas pelo caminho.'}</p>
+          <div className="row-btns">
+            <button onClick={() => setCredits(true)}>Créditos</button>
+            <button onClick={() => sceneRef.current?.toTitle()}>Voltar à tela inicial</button>
+          </div>
         </div>
       )}
+      {credits && <Credits onBack={() => setCredits(false)} snd={sound} />}
 
       <div className="rotate">
         <div className="phone" />

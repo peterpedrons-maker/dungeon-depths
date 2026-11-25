@@ -130,6 +130,9 @@ export interface Room {
   onDieRest?(): void;
   exitReached?(): boolean; // só a última sala: fim da demonstração
   reset(): void;
+  // salvamento: deixar a sala como resolvida (ao carregar um jogo salvo, as salas de trás voltam abertas) e saber se ela está resolvida
+  skip?(): void;
+  isSolved?(): boolean;
   bonus?(): boolean; // achou o segredo da sala?
   dispose(): void;
 }

@@ -111,7 +111,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
           </p>
         )}
       </div>
-      {block && done && <span className="dlg-next">▼</span>}
+      {block && done && <span className="dlg-next" aria-hidden="true" />}
     </div>
   );
 }

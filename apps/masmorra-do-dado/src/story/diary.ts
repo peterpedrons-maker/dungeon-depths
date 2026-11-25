@@ -1,8 +1,9 @@
 import { LEX } from './lexicon';
+import { slotKey } from './save';
 import { createStore } from './store';
 
 // O diário do jogador: guarda o que ele viu e o que ele mesmo anotou. NUNCA diz se uma anotação está certa.
-const KEY = 'mdd-diary-v1';
+const KEY = slotKey('diary');
 
 export interface Seen {
   room: string;

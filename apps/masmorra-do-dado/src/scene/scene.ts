@@ -29,6 +29,7 @@ import { ui } from '../story/ui';
 import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
 import { chatter, chatterStore } from '../story/chatter';
 import { quiz, quizStore, type QuizDef } from '../story/quiz';
+import { saves, slotKey, type SlotMeta } from '../story/save';
 import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
@@ -36,6 +37,7 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
+import { config, configStore } from '../story/config';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
@@ -110,6 +112,8 @@ export interface SceneOptions {
   onLook?: (s: 'locked' | 'free' | 'denied') => void; // mouse capturado, solto ou negado (PC)
   onPrompt?: (label: string | null) => void; // algo ao alcance para interagir ("Tentar abrir")
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
+  title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
+  onPause?: () => void; // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
 }
 
 export interface SceneApi {
@@ -123,6 +127,10 @@ export interface SceneApi {
   clearChalk(): void; // apaga tudo (pede confirmação: aperte de novo)
   reset(): void; // reinicia a sala atual
   restart(): void; // volta pra primeira sala
+  begin(): void; // sai da tela inicial: continua do último ponto salvo do espaço ativo (ou acorda, num jogo novo)
+  toTitle(): void; // salva e volta à tela inicial
+  saveNow(): void; // salva agora (pausa, sair)
+  lock(): void; // (PC) captura o mouse de novo (precisa de um clique ou tecla)
   dispose(): void;
 }
 
@@ -231,6 +239,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uFar: { value: CAM_FAR },
       tLut: { value: lutTex },
       uBloom: { value: 1 },
+      uBright: { value: 1 },
+      uGlowK: { value: 0.16 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
@@ -238,6 +248,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform vec2 uRes; uniform float uNear; uniform float uFar;
       uniform highp sampler3D tLut;
       uniform float uBloom;
+      uniform float uBright;
+      uniform float uGlowK;
       varying vec2 vUv;
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
@@ -265,9 +277,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
             vec3 sm = texture2D(tRoom, vUv + vec2(cos(a), sin(a)) * o * 2.5).rgb;
             glow += max(sm - 0.7, 0.0);
           }
-          c += glow * 0.16;
+          c += glow * uGlowK;
         }
-        c = clamp(c, 0.0, 1.0);
+        c = clamp(c * uBright, 0.0, 1.0);
         c = pow(c, vec3(1.0 / 2.2));
         float l = dot(c, vec3(0.299, 0.587, 0.114));
         c = mix(vec3(l), c, 1.0);
@@ -545,7 +557,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // ── o dado "traduz" o glifo: ao olhar uma palavra que tem desenho, a face de CIMA mostra o rabisco por alguns segundos ──
   const SKETCH_WORDS: Record<string, SketchKind> = { brasa: 'braseiro', acender: 'chama', porta: 'porta', placa: 'placa' }; // palavra (id do léxico) -> desenho
   const SKETCH_MAX = 3; // só nas primeiras vezes que a palavra aparece: a ajuda diminui
-  const SKETCH_KEY = 'mdd-sketch-v1';
+  const SKETCH_KEY = slotKey('sketch');
   const SKETCH_SPIN = 0; // giro (rad) em que o desenho fica de pé para quem olha; o dado para de girar enquanto ele aparece
   const sketchCount: Record<string, number> = (() => {
     try {
@@ -1241,8 +1253,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         } else if (n === 'door') {
           life.react('perk');
           chatFn('door');
-        } else if (n === 'error') life.react('shake');
-        else if (n === 'piece' || n === 'gem') life.react('joy');
+          saveIn = Math.min(saveIn, 1.4); // puzzle resolvido: salva quando a porta terminar de abrir
+        } else if (n === 'error') {
+          life.react('shake');
+          if (configStore.get().vibration && window.matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(70); // (celular: vibra no erro)
+        }
+        else if (n === 'piece' || n === 'gem') {
+          life.react('joy');
+          saveIn = Math.min(saveIn, 1.2);
+        }
         else if (n === 'burnout') life.react('sad');
       },
       player: {
@@ -1550,7 +1569,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const lookDir = new THREE.Vector3();
   const toIns = new THREE.Vector3();
   const readInscriptions = (dt: number) => {
-    inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) - inscGlow) * Math.min(1, dt * 0.8);
+    inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) + (configStore.get().highContrast ? 0.35 : 0) - inscGlow) * Math.min(1, dt * 0.8); // (alto contraste: a cal brilha mais)
     camera.getWorldDirection(lookDir);
     const canRead = !ui.blocked() && !book.isOut() && !intro;
     // a inscrição que o jogador encara: o dado olha para lá também
@@ -2027,9 +2046,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let handX = 0.44;
   let dieBaseY = -0.2;
   let dieScaleBase = 0.17;
+  // vindos das CONFIGURAÇÕES (story/config.ts)
+  let pixelLines = 200;
+  let fovH = 95;
+  let sensMouse = 1;
+  let sensTouch = 1;
+  let invY = 1;
+  let fpsCap = 0;
+  let calmFx = false; // reduzir tremores e clarões
+  let lastDraw = 0;
+  let shadowsOn = true;
+  let diaryWas = false;
   const resize = () => {
     // ~200 linhas na vertical: pixels bem visíveis, mas ainda legível (celular e PC).
-    const scale = Math.max(2, Math.round(window.innerHeight / 200));
+    const scale = Math.max(2, Math.round(window.innerHeight / pixelLines));
     const w = Math.max(64, Math.ceil(window.innerWidth / scale));
     const h = Math.max(64, Math.ceil(window.innerHeight / scale));
     renderer.setSize(w, h, false);
@@ -2043,7 +2073,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     postMat.uniforms.uRes.value.set(w, h);
     const aspect = w / h;
     const vFromH = (hDeg: number) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / aspect) * 180) / Math.PI;
-    fovBase = aspect >= 1 ? Math.min(66, vFromH(95)) : Math.min(100, Math.max(66, vFromH(82)));
+    fovBase = aspect >= 1 ? Math.min(66 * (fovH / 95), vFromH(fovH)) : Math.min(100, Math.max(66, vFromH(82 * (fovH / 95))));
     camera.fov = fovBase;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
@@ -2058,6 +2088,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   resize();
   window.addEventListener('resize', resize);
+  const applyConfig = () => {
+    const c = configStore.get();
+    sfx.setVolumes(c.volMaster / 10, c.volMusic / 10, c.volSfx / 10);
+    postMat.uniforms.uBright.value = 1 + c.brightness * 0.07;
+    postMat.uniforms.uBloom.value = c.quality === 'baixa' ? 0 : 1;
+    postMat.uniforms.uGlowK.value = c.reduceFlash ? 0.08 : 0.16;
+    shadowsOn = c.quality === 'alta';
+    rooms.forEach((r) => {
+      if (r.shadowLight && r.shadowLight.castShadow !== shadowsOn) r.shadowLight.castShadow = shadowsOn;
+    });
+    pixelLines = c.pixel === 'fino' ? 270 : c.pixel === 'grosso' ? 150 : 200;
+    fovH = c.fov;
+    sensMouse = c.mouseSens / 5;
+    sensTouch = c.touchSens / 5;
+    invY = c.invertY ? -1 : 1;
+    fpsCap = c.fpsCap;
+    calmFx = c.reduceFlash;
+    dbg.bob = !c.reduceMotion;
+    resize();
+  };
+  const unsubConfig = configStore.subscribe(applyConfig);
 
   // ── entrada ─────────────────────────────────────────────────────────────
   // PC: WASD anda, o primeiro clique captura o mouse (olhar livre; Esc solta).
@@ -2070,7 +2121,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const keys = START_KEYS;
   const onKeyDown = (e: KeyboardEvent) => {
     if (ui.blocked() || book.isOut() || quizPh !== 'idle') return;
-    const k = e.key.toLowerCase();
+    const k = config.translate(e.key.toLowerCase()); // teclas remapeadas nas configurações → a tecla padrão da ação
+    if (!k) return;
     keys.add(k);
     if (e.repeat) return;
     if (/^[1-6]$/.test(k)) hasDie && selectFace(Number(k));
@@ -2087,7 +2139,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       swapTool();
     } else if (k === 'x') clearChalk();
   };
-  const onKeyUp = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase());
+  const onKeyUp = (e: KeyboardEvent) => {
+    const k = config.translate(e.key.toLowerCase());
+    if (k) keys.delete(k);
+    keys.delete(e.key.toLowerCase());
+  };
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   const onWheel = (e: WheelEvent) => {
@@ -2116,11 +2172,30 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let lockFailed = !canvas.requestPointerLock;
   let lockClick = false;
   const locked = () => document.pointerLockElement === canvas;
+  let everLocked = false;
   const onLockError = () => {
+    // depois de soltar com Esc, o navegador recusa capturar de novo por ~1 s: não é "negado", é só cedo demais
+    if (everLocked) {
+      opts.onLook?.('free');
+      return;
+    }
     lockFailed = true;
     opts.onLook?.('denied');
   };
-  const onLockChange = () => opts.onLook?.(locked() ? 'locked' : 'free');
+  const onLockChange = () => {
+    if (locked()) everLocked = true;
+    opts.onLook?.(locked() ? 'locked' : 'free');
+    // o mouse foi solto no meio do jogo (Esc, trocar de janela): PAUSA
+    if (!locked() && mode === 'play' && !ui.diaryOpen() && !book.isOut() && !ui.blocked() && !complete) opts.onPause?.();
+  };
+  const requestLock = () => {
+    if (locked() || lockFailed || window.matchMedia('(pointer: coarse)').matches) return;
+    try {
+      Promise.resolve(canvas.requestPointerLock()).catch(onLockError);
+    } catch {
+      onLockError();
+    }
+  };
   document.addEventListener('pointerlockerror', onLockError);
   document.addEventListener('pointerlockchange', onLockChange);
 
@@ -2202,14 +2277,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (pinned && e.pointerId !== brush.id) {
       // cena travada: o olhar não se mexe
     } else if (e.pointerType === 'mouse' && locked()) {
-      yaw -= e.movementX * 0.0022;
-      pitch = clamp(pitch - e.movementY * 0.0022, -1.2, 1.5);
+      yaw -= e.movementX * 0.0022 * sensMouse;
+      pitch = clamp(pitch - e.movementY * 0.0022 * sensMouse * invY, -1.2, 1.5);
     } else if (e.pointerId === lookId) {
       const dx = e.clientX - downX;
       const dy = e.clientY - downY;
       if (Math.hypot(dx, dy) > 8) moved = true;
-      yaw -= (e.clientX - lastX) * 0.0075;
-      pitch = clamp(pitch - (e.clientY - lastY) * 0.0075, -0.8, 1.3);
+      yaw -= (e.clientX - lastX) * 0.0075 * sensTouch;
+      pitch = clamp(pitch - (e.clientY - lastY) * 0.0075 * sensTouch * invY, -0.8, 1.3);
       lastX = e.clientX;
       lastY = e.clientY;
     }
@@ -2440,6 +2515,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   {
     // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
     const q = new URLSearchParams(location.search);
+    if (q.has('demo') || q.has('lab') || q.get('intro') === '0') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
     if (q.has('demo')) {
       progress.noSave();
       for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz'] as const) progress.set(f);
@@ -2453,12 +2529,136 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     hasDie = progress.has('dado');
     hasChalk = CHALK_OK && progress.has('giz');
   }
-  spawnIn(0);
-  blendAtmosphere(0, true);
-  announced.add(0);
-  diary.visitRoom(rooms[0].name);
-  if (!progress.has('intro')) startIntro();
-  opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+  // ── ESPAÇOS DE JOGO E SALVAMENTO (INTERFACE.md §2, story/save.ts) ──
+  // Salva sozinho ao entrar numa sala, ao resolver um puzzle (a porta abre, a gema) e ao fechar o diário; também ao pausar e ao sair da página.
+  // O resumo (meta) guarda a sala, a posição, o tempo, as gemas e uma miniatura; o resto (marcos, diário, perguntas) cada loja grava sozinha.
+  const bonusSet = new Set<number>(saves.meta()?.bonus ?? []);
+  let playTime = saves.meta()?.time ?? 0;
+  let saveIn = Infinity; // segundos até salvar (agendado)
+  let thumbWant = false;
+  let afterSave: (() => void) | null = null;
+  const thumbCanvas = document.createElement('canvas');
+  thumbCanvas.width = 192;
+  thumbCanvas.height = 108;
+  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB;
+  const writeSave = (thumb?: string) => {
+    if (!canSave()) return;
+    rooms.forEach((r, i) => r.bonus?.() && bonusSet.add(i));
+    const r = rooms[curRoom];
+    const m: SlotMeta = {
+      room: curRoom,
+      roomName: r.name,
+      x: +(pos.x - offs[curRoom].x).toFixed(2),
+      z: +(pos.z - offs[curRoom].z).toFixed(2),
+      feet: +(feetY - offs[curRoom].y).toFixed(2),
+      yaw: +yaw.toFixed(3),
+      solvedHere: r.isSolved?.() ?? true,
+      bonus: [...bonusSet].sort((a, b) => a - b),
+      time: Math.round(playTime),
+      chapter: 1,
+      at: Date.now(),
+      thumb: thumb ?? saves.meta()?.thumb,
+    };
+    saves.writeMeta(m);
+  };
+  // pede um salvamento com miniatura (a imagem é copiada logo depois do próximo quadro)
+  const saveGame = (then?: () => void) => {
+    saveIn = Infinity;
+    if (!canSave()) {
+      then?.();
+      return;
+    }
+    thumbWant = true;
+    if (then) afterSave = then;
+  };
+  const captureThumb = () => {
+    thumbWant = false;
+    let url: string | undefined;
+    try {
+      const g = thumbCanvas.getContext('2d')!;
+      g.imageSmoothingEnabled = false;
+      // corta o meio da imagem em 16:9
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const sh = Math.min(ch, (cw * 9) / 16);
+      const sw = (sh * 16) / 9;
+      g.drawImage(canvas, (cw - sw) / 2, (ch - sh) / 2, sw, sh, 0, 0, 192, 108);
+      url = thumbCanvas.toDataURL('image/jpeg', 0.7);
+    } catch {
+      url = undefined;
+    }
+    writeSave(url);
+    const f = afterSave;
+    afterSave = null;
+    f?.();
+  };
+  const onHide = () => {
+    if (document.visibilityState === 'hidden') writeSave();
+  };
+  document.addEventListener('visibilitychange', onHide);
+  window.addEventListener('pagehide', onHide);
+
+  // TELA INICIAL: o poço visto de baixo, a luz lá em cima (o jogo espera o begin())
+  let mode: 'title' | 'play' = 'play';
+  let titleT = 0;
+  const titleCam = () => {
+    const sh = rooms[0].shaft;
+    if (!sh) return;
+    const tc = (import.meta.env.DEV && ((globalThis as Record<string, unknown>).__titleCam as { d: number; up: number; dp: number; h: number; dy: number; ox: number } | undefined)) || { d: 1.2, up: 6, dp: 0, h: -0.6, dy: 0, ox: 0 };
+    const c = sh.clone().add(offs[0]);
+    feetY = offs[0].y;
+    pos.set(c.x + tc.ox, feetY + EYE + tc.h, c.z + tc.d);
+    const top = shaftWorld().setY(sh.y + tc.up + offs[0].y);
+    top.x += tc.ox;
+    yaw = Math.atan2(-(top.x - pos.x), -(top.z - pos.z)) + tc.dy + Math.sin(titleT * 0.11) * 0.04;
+    pitch = clamp(Math.atan2(top.y - pos.y, Math.hypot(top.x - pos.x, top.z - pos.z)), -0.2, 1.4) + tc.dp + Math.sin(titleT * 0.08) * 0.02;
+    curRoom = 0;
+  };
+  const enterTitle = () => {
+    mode = 'title';
+    ui.setMenu('title');
+    spawnIn(0);
+    blendAtmosphere(0, true);
+    titleCam();
+  };
+  // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo)
+  let begun = false;
+  const begin = () => {
+    if (begun) return;
+    begun = true;
+    mode = 'play';
+    ui.setMenu(null);
+    hasDie = progress.has('dado');
+    hasChalk = CHALK_OK && progress.has('giz');
+    const m = saves.meta();
+    if (m && progress.has('intro') && m.room >= 0 && m.room < rooms.length && saves.saving()) {
+      for (let i = 0; i < m.room; i++) rooms[i].skip?.();
+      if (m.solvedHere) rooms[m.room].skip?.();
+      spawnIn(m.room);
+      const r = rooms[m.room];
+      const gy = r.groundY(m.x, m.z, m.feet);
+      // a posição salva só vale se ainda há chão ali (senão, o começo da sala)
+      if (Number.isFinite(gy) && Math.abs(gy - m.feet) < 1.2) {
+        feetY = offs[m.room].y + gy;
+        pos.set(offs[m.room].x + m.x, feetY + EYE, offs[m.room].z + m.z);
+        yaw = m.yaw;
+      }
+      for (let i = 0; i <= m.room; i++) announced.add(i);
+      diary.visitRoom(r.name);
+      caption(r.name, r.subtitle, '#ffd36b');
+    } else {
+      spawnIn(0);
+      announced.add(0);
+      diary.visitRoom(rooms[0].name);
+      if (!progress.has('intro')) startIntro();
+    }
+    blendAtmosphere(0, true);
+    opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+    requestLock();
+  };
+  applyConfig();
+  if (opts.title) enterTitle();
+  else begin();
   // ── interação (E no PC, AGIR / toque no celular): a porta trancada, o giz no chão... ──
   let promptLabel: string | null = null;
   let nearest: Interactable | null = null;
@@ -2688,16 +2888,34 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let aimTick = 0;
   let aimCache: ReturnType<typeof aimPoint> = null;
   const loop = (now: number) => {
-    const dt = Math.min(0.05, (now - last) / 1000) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
+    if (fpsCap > 0 && now - lastDraw < 1000 / fpsCap - 2) {
+      raf = requestAnimationFrame(loop); // limitar quadros (configurações)
+      return;
+    }
+    lastDraw = now;
+    const paused = ui.menu() === 'pause'; // pausa: o mundo pára (fogo, tempo, dado), só a imagem continua
+    const dt = paused ? 0 : Math.min(0.05, (now - last) / 1000) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
     last = now;
     t += dt;
+    if (mode === 'title') {
+      titleT += dt;
+      titleCam();
+    } else if (!paused) {
+      playTime += dt;
+      saveIn -= dt;
+      if (saveIn <= 0) saveGame();
+      const dOpen = ui.diaryOpen();
+      if (diaryWas && !dOpen) saveIn = Math.min(saveIn, 0.6); // fechou o diário: salva
+      diaryWas = dOpen;
+    }
 
     if (ui.diaryOpen() && locked()) document.exitPointerLock(); // o diário precisa do mouse livre
     const moving = move(dt);
     vertical(dt);
     const ri = roomOfZ(pos.z);
-    if (ri !== curRoom) {
+    if (ri !== curRoom && mode === 'play') {
       curRoom = ri;
+      saveIn = Math.min(saveIn, 0.25); // entrou numa sala: salva
       diary.visitRoom(rooms[ri].name);
       applyActive();
       // saiu da sala do dado: o dado volta pra mão (a porta atrás fecha)
@@ -2715,7 +2933,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     // sensação de velocidade: o campo de visão abre um pouquinho correndo
-    const fovTarget = fovCine > 0 ? fovCine : fovBase + 2.5 * Math.min(1.3, speedFrac);
+    const fovTarget = fovCine > 0 ? fovCine : fovBase + (dbg.bob ? 2.5 : 0) * Math.min(1.3, speedFrac); // (reduzir movimento: sem o campo de visão abrindo)
     if (Math.abs(camera.fov - fovTarget) > 0.01) {
       camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * (fovCine > 0 ? 2.2 : 8));
       camera.updateProjectionMatrix();
@@ -2867,8 +3085,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieShadowMat.opacity = Math.max(0, 1 - hgt / 3);
     } else dieShadow.visible = false;
     updateBurn(dt, t);
-    chatTick(dt, moving);
-    quizTick(dt);
+    if (mode === 'play') {
+      chatTick(dt, moving);
+      quizTick(dt);
+    }
     if (dieState !== emittedDie) {
       emittedDie = dieState;
       opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
@@ -2961,7 +3181,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const cn = dieCine * dieCine * (3 - 2 * dieCine);
     tiltNow.copy(idQ).slerp(tilt, 1 - cn);
     const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
-    lifeGlow = lo.glow * (quizShake > 0.05 ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
+    lifeGlow = lo.glow * (quizShake > 0.05 && !calmFx ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
     updateMats();
     computeTarget(face, spin);
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
@@ -2972,8 +3192,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const du = ease(dieU);
     dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 0.75 * cn));
     dieGroup.position.set(
-      ((handX + (-handX - handX) * du) + lo.dx + Math.sin(t * 71) * 0.011 * quizShake) * (1 - cn), // na cena: exatamente no centro da tela
-      (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
+      ((handX + (-handX - handX) * du) + lo.dx + Math.sin(t * 71) * 0.011 * quizShake * (calmFx ? 0.25 : 1)) * (1 - cn), // na cena: exatamente no centro da tela
+      (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake * (calmFx ? 0.25 : 1)) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
       -1,
     );
     updateRostos(dt);
@@ -3014,8 +3234,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = hasDie && dieState === 'hand'; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
-      soapGroup.visible = hasChalk;
+      dieGroup.visible = hasDie && dieState === 'hand' && mode === 'play'; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
+      soapGroup.visible = hasChalk && mode === 'play';
       const hide = book.update(dt, t);
       if (hide > 0) {
         dieGroup.position.y -= hide * 0.95; // dado e giz saem da frente enquanto o livro está na mão
@@ -3025,7 +3245,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     body.position.set(pos.x, feetY, pos.z);
     body.rotation.y = yaw;
-    renderer.shadowMap.needsUpdate = !!rooms[curRoom]?.shadowLight;
+    renderer.shadowMap.needsUpdate = !!rooms[curRoom]?.shadowLight && shadowsOn;
     renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
@@ -3044,6 +3264,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       bookCanvas.style.display = bookOut ? 'block' : 'none';
     }
     if (bookOut) bookRenderer.render(bookScene, dieCam);
+    if (thumbWant) captureThumb(); // (logo depois de desenhar: a imagem ainda está no canvas)
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
@@ -3138,6 +3359,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       put: () => place(),
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
+      save: () => saveGame(),
+      meta: () => saves.meta(),
+      solved: () => rooms.map((r) => r.isSolved?.() ?? null),
       tool: (tl: Tool) => setTool(tl),
       swap: () => swapTool(),
       // coordenadas de tela (NDC) de um ponto do mundo
@@ -3193,6 +3417,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     clearChalk,
     reset,
     restart,
+    begin,
+    toTitle: () => saveGame(() => location.replace(location.pathname + location.search)),
+    saveNow: () => saveGame(),
+    lock: requestLock,
     dispose() {
       cancelAnimationFrame(raf);
       unsubProgress();
@@ -3200,6 +3428,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       window.removeEventListener('pointerdown', onSkip);
       window.removeEventListener('keydown', onSkip);
       book.dispose();
+      unsubConfig();
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onHide);
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

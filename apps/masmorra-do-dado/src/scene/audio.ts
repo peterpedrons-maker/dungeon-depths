@@ -110,16 +110,24 @@ export class Sfx {
     return this.loaded;
   }
 
+  private vol = { master: 0.8, music: 0.6, sfx: 0.8 };
   setMode(m: AudioMode) {
     this.mode = m;
+    this.applyMode();
+  }
+  // volumes da aba Áudio (0 a 1): geral, música, efeitos
+  setVolumes(master: number, music: number, sfx: number) {
+    this.vol = { master, music, sfx };
+    this.mode = master <= 0 ? 2 : music <= 0 ? 1 : 0;
     this.applyMode();
   }
 
   private applyMode() {
     if (!this.ac) return;
     const t = this.ac.currentTime;
-    this.master.gain.setTargetAtTime(this.mode === 2 ? 0 : 1, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.mode === 0 ? 0.2 : 0, t, 0.4);
+    this.master.gain.setTargetAtTime(this.mode === 2 ? 0 : this.vol.master / 0.8, t, 0.05);
+    this.musicBus.gain.setTargetAtTime(this.mode === 0 ? 0.2 * (this.vol.music / 0.6) : 0, t, 0.4);
+    this.bus.gain.setTargetAtTime(0.85 * (this.vol.sfx / 0.8), t, 0.05);
   }
 
   // cria o contexto de áudio (precisa de um gesto do usuário) e começa a baixar as gravações

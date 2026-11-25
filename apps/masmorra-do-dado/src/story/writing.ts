@@ -2,8 +2,18 @@
 // que usa estes números para espaçar as falas do dado em sequência.
 import { glyphsOf } from './lexicon';
 
-export const PART_MS = 950; // tempo para um símbolo (uma "parte" da palavra) ser escrito
-export const LINGER_MS = 3600; // quanto o balão do dado fica à vista depois do último símbolo
+import { configStore } from './config';
+
+// (a velocidade do texto vem da aba Acessibilidade; `export let`: quem importa vê o valor novo)
+export let PART_MS = 950; // tempo para um símbolo (uma "parte" da palavra) ser escrito
+export let LINGER_MS = 3600; // quanto o balão do dado fica à vista depois do último símbolo
+const applySpeed = () => {
+  const k = { lenta: 1.5, normal: 1, rapida: 0.6 }[configStore.get().textSpeed];
+  PART_MS = Math.round(950 * k);
+  LINGER_MS = Math.round(3600 * Math.max(1, k));
+};
+applySpeed();
+configStore.subscribe(applySpeed);
 export const PIC_MS = 500; // o desenho que acompanha uma fala só aparece
 
 // quanto dura escrever uma palavra (as compostas são várias partes, uma depois da outra)

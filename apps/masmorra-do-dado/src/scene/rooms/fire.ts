@@ -948,7 +948,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       if (rule.kind === 'exact') {
         for (const b of braziers) if (b.touched()) b.light(true);
         const nLit = braziers.filter((b) => b.lit).length;
-        want = nLit === rule.n ? 1 : 0;
+        want = nLit === rule.n || solved ? 1 : 0;
         // o número tem que ser EXATO: com braseiros demais, a Casa apaga tudo
         if (nLit > rule.n) {
           overlit += dt;
@@ -1118,6 +1118,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       doorOpen += (want - doorOpen) * Math.min(1, dt * 2.4);
       door.setOpen(doorOpen);
     },
+    // salvamento: a sala já resolvida (ao carregar um jogo, as salas de trás voltam abertas; a porta abre sem som)
+    skip() {
+      solved = true;
+      readT = 99;
+      prevWant = 1;
+      doorOpen = 1;
+    },
+    isSolved: () => solved,
     reset,
     dispose() {},
   };

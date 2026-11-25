@@ -1,3 +1,4 @@
+import { configStore } from '../story/config';
 import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
@@ -589,7 +590,7 @@ export function createDiaryBook(env: BookEnv) {
     if (!ui.diaryOpen() || e.repeat) return;
     if (document.activeElement === ta) return;
     const k = e.key.toLowerCase();
-    if (k === 'j' || k === 'escape') {
+    if (k === configStore.get().keys.diario || k === 'escape') {
       e.preventDefault();
       e.stopPropagation();
       close();

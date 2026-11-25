@@ -1,10 +1,11 @@
 import { diary, diaryStore } from './diary';
+import { slotKey } from './save';
 import { createStore } from './store';
 
 // AS PERGUNTAS DO DADO (DESIGN.md §42): de tempos em tempos, num momento calmo, o dado treme, vem ao centro da tela, mostra um glifo e
 // pergunta «VOCÊ SABER ?». O jogador escolhe entre 4 significados e "não sei". É o único lugar do jogo onde alguém diz se ele acertou
 // (o diário continua sem corrigir: a escolha entra na página do glifo, certa ou errada, do mesmo jeito).
-const KEY = 'mdd-quiz-v1';
+const KEY = slotKey('quiz');
 
 // Onde a pergunta acontece: no CORREDOR depois da sala (`after`) ou na CHEGADA a uma área livre (`arrive`: a sala diz o ponto com `Room.calm`).
 export interface QuizDef {

@@ -618,6 +618,14 @@ export function buildPonte(ctx: Ctx): Room {
       }
       niche.update(dt, t);
     },
+    // salvamento: a sala já resolvida (ao carregar um jogo, as salas de trás voltam abertas; a porta abre sem som)
+    skip() {
+      solved = true;
+      readT = 99;
+      prevWant = 1;
+      doorOpen = 1;
+    },
+    isSolved: () => solved,
     reset,
     bonus: () => bonus,
     dispose() {},

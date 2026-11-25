@@ -334,6 +334,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   let doorOpen = 0;
   let prevWant = 0;
   let solved = false;
+  let forced = false; // (salvamento) a sala já tinha sido resolvida
   let evalT = 0;
   let lastRev = -1;
   let overlit = 0; // v2/v3: tempo com braseiros demais
@@ -633,6 +634,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         }
         want = solved ? 1 : 0;
       }
+      if (forced) want = 1;
       if (want && !prevWant) {
         ctx.sfx('door');
         if (!marked) {
@@ -656,6 +658,15 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       });
       if (v === 2 || v === 3) glow(v === 2 ? 'n2' : 'n3', open ? 1 : Math.min(1, nLit / (v === 2 ? 2 : 3)) * (nLit > (v === 2 ? 2 : 3) ? 0.3 : 1), dt);
     },
+    skip() {
+      forced = true;
+      solved = true;
+      readT = 99;
+      prevWant = 1;
+      doorOpen = 1;
+      marked = true;
+    },
+    isSolved: () => forced || solved || doorOpen > 0.5,
     reset() {
       braziers.forEach((b) => b.light(v === 4, true));
       doorOpen = 0;

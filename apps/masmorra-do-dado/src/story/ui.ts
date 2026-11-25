@@ -8,17 +8,21 @@ import { createStore } from './store';
 // `bookCall`: o caderno acabou de ser achado; o botão do diário pulsa e o resto da tela escurece até o jogador abri-lo.
 // `guided`: a 1ª abertura do caderno (vira sozinho até BRASEIRO e não fecha antes de o jogador escrever alguma coisa).
 // `guidedNote`: no modo guiado, o jogador já escreveu (o ícone de fechar pulsa).
-export const uiStore = createStore<{ diaryOpen: boolean; bookOut: boolean; bars: boolean; bookCall: boolean; guided: boolean; guidedNote: boolean }>({
+// `menu`: a tela inicial ou a pausa estão por cima (o jogo para)
+export const uiStore = createStore<{ diaryOpen: boolean; bookOut: boolean; bars: boolean; bookCall: boolean; guided: boolean; guidedNote: boolean; menu: 'title' | 'pause' | null }>({
   diaryOpen: false,
   bookOut: false,
   bars: false,
   bookCall: false,
   guided: false,
   guidedNote: false,
+  menu: null,
 });
 
 export const ui = {
-  blocked: () => uiStore.get().diaryOpen || dialogue.blocking || quiz.active(), // (a pergunta do dado também para o jogador)
+  blocked: () => uiStore.get().diaryOpen || dialogue.blocking || quiz.active() || uiStore.get().menu !== null, // (a pergunta do dado, a pausa e a tela inicial também param o jogador)
+  menu: () => uiStore.get().menu,
+  setMenu: (m: 'title' | 'pause' | null) => uiStore.set((s) => (s.menu === m ? s : { ...s, menu: m })),
   diaryOpen: () => uiStore.get().diaryOpen,
   setDiary: (open: boolean) => uiStore.set((s) => (s.diaryOpen === open ? s : { ...s, diaryOpen: open })),
   setBars: (on: boolean) => uiStore.set((s) => (s.bars === on ? s : { ...s, bars: on })), // faixas de cinema (cenas)

@@ -221,6 +221,14 @@ export function buildChamaCurta(ctx: Ctx): Room {
       S.door.setOpen(doorOpen);
       void readT;
     },
+    // salvamento: a sala já resolvida (ao carregar um jogo, as salas de trás voltam abertas; a porta abre sem som)
+    skip() {
+      solved = true;
+      readT = 99;
+      prevWant = 1;
+      doorOpen = 1;
+    },
+    isSolved: () => solved,
     reset,
     dispose() {},
   };

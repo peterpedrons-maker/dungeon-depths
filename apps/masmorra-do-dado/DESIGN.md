@@ -410,8 +410,8 @@ O dado da mão **olha, reage, pisca e cochila** (tudo sutil: inclinação, pulin
 - **Comemoração (1ª vez que o jogador acende)**: sem o medo de antes (a 1ª queimadura de todas não dispara a fala de medo); ~1,9 s depois (fim da cena do fogo) o dado pula e diz **VOCÊ ACENDER CONFIRMADO**, e uns 4 s depois **EU SENTIR ALEGRIA** (tudo em glifos; vai ao diário como avistado). Vale só na 1ª vez (estado `nudge` da sala 1).
 - Pendente: palavras para Troca/Deslizar/Atravessar no léxico (hoje a língua as lista como capítulos, não como palavras de efeito); o glifo da face selecionada pode piscar quando o efeito é usado.
 
-## 28. Recomeçar o jogo do zero (implementado em `App.tsx`)
-Botão **ⓘ** (canto) > **Recomeçar o jogo do zero** > confirmação ("Sim, apagar tudo e recomeçar"). Apaga **todas** as chaves `mdd-*` do aparelho (progresso, diário com símbolos, notas, mapa e carimbos, ajudas do dado já vistas), **menos a preferência de som** (`mdd-audio`), e recarrega a página sem parâmetros: o jogo recomeça com a **cena de acordar**, sem dado nem giz. Antes de apagar, desliga a gravação (`progress.noSave`, `diary.noSave`) para nada ser regravado. O botão "Jogar de novo" do fim da demonstração continua só reiniciando a sala 1.
+## 28. Recomeçar o jogo do zero (substituído pelos espaços de jogo, §45)
+*(Histórico: saiu com a interface de lançamento; hoje um jogo novo se começa em Novo jogo, num dos três espaços, e apagar um jogo é na tela de espaços.)* Botão **ⓘ** (canto) > **Recomeçar o jogo do zero** > confirmação ("Sim, apagar tudo e recomeçar"). Apaga **todas** as chaves `mdd-*` do aparelho (progresso, diário com símbolos, notas, mapa e carimbos, ajudas do dado já vistas), **menos a preferência de som** (`mdd-audio`), e recarrega a página sem parâmetros: o jogo recomeça com a **cena de acordar**, sem dado nem giz. Antes de apagar, desliga a gravação (`progress.noSave`, `diary.noSave`) para nada ser regravado. O botão "Jogar de novo" do fim da demonstração continua só reiniciando a sala 1.
 
 ## 29. A abertura revista: o dado cai do poço (implementado; os passos 1 a 3 foram substituídos pela §32: agora é o Escrivão quem joga o dado)
 O dado **não está mais no chão ao acordar**. Sequência (tudo em glifos e bem curto):
@@ -637,3 +637,44 @@ chama; poeira só em feixes; nada flutua sem sombra de contato.
 capa de trás, dá a volta na borda das folhas e, por cima da capa da frente, a fivela de latão prende num pino. Ao abrir o diário, o livro
 sobe fechado, a fivela solta do pino com um clique e a aba se afasta; só então a capa abre. Ao guardar, a capa fecha, a aba volta e prende
 (outro clique) e o livro desce. A abertura ficou um pouco mais longa (1,15 s; fechar, 0,85 s) para caber esse tempo.
+
+
+## 45. Interface de lançamento, passos 1 a 3 (implementado; `INTERFACE.md`, da branch `claude/puzzles-design`)
+
+**1. Espaços de jogo e salvamento automático** (`src/story/save.ts`). Três espaços; cada um guarda, com o prefixo `mdd-slotN-`, o progresso
+(marcos), o diário (anotações, carimbos, mapa à mão, folhas), as perguntas do dado, os desenhos do dado já mostrados e um **resumo** (`meta`):
+a sala, a posição e o rumo, se a sala já estava resolvida, as salas com a gema achada, o tempo de jogo, o capítulo, a data e uma **miniatura**
+(192 × 108, copiada do próprio canvas logo depois de um quadro). O espaço ativo fica em `mdd-slot`; trocar de espaço recarrega a página (as
+lojas leem o espaço ao carregar). Os saves antigos (`mdd-progress-v1` etc.) vão para o espaço 1. **Salva sozinho** ao entrar numa sala, quando
+uma porta abre ou uma gema aparece (puzzle resolvido), ao fechar o diário, ao pausar e ao esconder/fechar a página (sem miniatura). Um
+**dadinho girando** no canto de cima, por ~1 s, diz que salvou. Ao continuar, as salas antes da salva ficam **resolvidas** (`Room.skip()`, novo
+em `types.ts`; os respiros não têm trava), a sala da salva também se já estava resolvida, e o jogador volta ao ponto salvo (se ali ainda há
+chão; senão, ao começo da sala). Não salva durante a cena de acordar, nas pré-visualizações (`?demo`, `?lab`) nem com `?intro=0` (testes).
+*Limite conhecido:* os segredos de cada sala (a gema acesa, as folhas achadas) não voltam acesos ao recarregar; as gemas contam pelo resumo.
+
+**2. Tela inicial, pausa e configurações** (`src/ui/Menus.tsx`, `menus.css`). A **tela inicial** é o poço visto de baixo, com a luz lá em cima
+(a câmera fica na sala 1, olhando para cima; o dado some da mão), o logo **provisório** «SENTENÇ» + o triângulo ACENDER no lugar do último A
+(o logo definitivo é o passo 6) e as plaquinhas: Continuar (o último espaço usado), Novo jogo (escolhe o espaço; se ocupado, confirma), Carregar
+(as três tábuas com miniatura, sala, capítulo, tempo, gemas e data; **Apagar** com confirmação dupla), Configurações e Créditos. "Sair" não
+aparece na web. A **pausa** abre com Esc, quando o mouse é solto no meio do jogo ou no botão do celular; o mundo **pára** (o fogo, o tempo, o
+dado) e o jogo salva: Continuar · Diário · Configurações · **Reiniciar a sala** (era o botão ↺ do canto; reinicia só a sala, não o jogo) ·
+Voltar à tela inicial (salva antes, com confirmação). As **configurações** valem para o aparelho (`src/story/config.ts`, `mdd-config-v1`):
+- Áudio: volume geral, música e efeitos (o antigo ♫/♪/∅ vira os volumes na 1ª vez).
+- Imagem: janela/tela cheia, qualidade (baixa = sem brilho nem sombra; média = sem sombra; alta = tudo), tamanho do pixel (fino ~270 linhas,
+  médio ~200, grosso ~150), brilho, campo de visão, limitar quadros (30/60).
+- Controles: sensibilidade do mouse e do toque, inverter o eixo Y, vibração (celular, no erro) e **remapear as teclas** (andar, correr, agir,
+  posicionar, diário, reiniciar; a tecla que já era de outra ação troca de lugar; o motor continua lendo as teclas padrão e `config.translate`
+  converte).
+- Acessibilidade: tamanho da interface (80 a 160%, multiplica o `--ui`), velocidade da escrita dos glifos, reduzir tremores e clarões (o dado
+  da pergunta treme menos, as gemas não piscam, o brilho cai), reduzir o movimento da câmera (sem balanço da cabeça nem o campo de visão abrindo
+  ao correr), alto contraste nos glifos (a cal brilha mais) e mira sempre visível (desligada, ela só aparece, como um anel, quando há algo a fazer).
+- Idioma: português (inglês marcado "em breve").
+O visual segue o `DIRECAO_DE_ARTE.md`: tábuas de ardósia com borda talhada e cantos lascados, plaquinhas com a quina de cima clara e a de baixo
+escura, ouro só no item escolhido (com os dois pontinhos dos glifos dos lados), a fonte do diário em tudo; navega com setas, Enter e Esc.
+
+**3. Fora os botões do canto e os emojis.** Saíram o som (♫/♪/∅), o ↺ (agora na pausa), o ⓘ com "Recomeçar o jogo do zero" (os créditos estão
+na tela inicial e no fim; recomeçar deixou de existir), o ⤓ de instalar e a tela cheia (aba Imagem). No PC não há nada fixo na tela; o botão do
+diário só aparece no momento em que o caderno é achado (a tela escurece e ele pulsa) e depois o diário abre com J ou pela pausa. No celular fica
+só o botão de pausa (e o do diário, depois do caderno). O ▼ da caixa de conversa virou um triângulo de ouro desenhado; o ✦ do fim saiu.
+*Ainda não feito (passos 4 a 6 do `INTERFACE.md` e partes do 2):* controle (gamepad) e seus botões, tamanho/posição dos botões de toque, as caixas
+de texto novas, os ícones definitivos em 16×16/24×24 com a tecla no aviso de ação, o logo e o ícone do app.

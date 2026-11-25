@@ -42,11 +42,11 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **Direção de arte** (`DIRECAO_DE_ARTE.md`, `DESIGN.md` §44): o giz não aparece no capítulo 1 (uma mão em pixel segurando o dado foi testada e retirada a pedido do Pedro; o dado da mão segue no tamanho de antes); **toda a interface usa a fonte do diário** (`public/fonts/mdd-pixel.otf`, gerada por `tools/build_font.mjs`) e **ícones à mão** (`src/ui/PixelIcon.tsx`); poeira só em feixes de luz (`kit.beamDust`), brasas e poças de luz nos braseiros, sombra de contato pontilhada; a **sala 3 é o quadro de estilo** (abóbada, colunas com base e capitel, batentes, nicho, luz com sombra de verdade e a sombra do jogador, fuligem, riscos de giz).
   Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
   `src/scene/audio.ts` + `public/audio/`): efeitos de pacotes CC0 (OpenGameArt) e instrumentos reais do
-  soundfont FluidR3_GM (CC BY 3.0 — por isso há um botão ⓘ de créditos); a música é composta em tempo
+  soundfont FluidR3_GM (CC BY 3.0 — por isso há a tela de Créditos, na tela inicial e no fim); a música é composta em tempo
   real tocando essas notas gravadas e é uma só pro jogo todo (não muda por sala). Os arquivos são gerados
   por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Os passos têm UM som fixo por tipo
-  de piso (pedra, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`), sem variação aleatória. Botão
-  ♫/♪/∅ no canto (tudo / só efeitos / mudo, lembrado no aparelho); o áudio só liga após o 1º toque/tecla.
+  de piso (pedra, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`), sem variação aleatória. Volumes
+  (geral, música, efeitos) na aba Áudio das Configurações; o áudio só liga após o 1º toque/tecla.
   **Abertura e progressão** (`DESIGN.md` §12): o jogo começa com uma cena de acordar (deitado, poço de luz no teto; só na 1ª vez,
   `?intro=0` pula); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o
   jogador olha para elas; acender com o Fogo toca uma cena do dado queimando (1,5 s só na 1ª vez de cada braseiro; depois ~0,3 s); **marcos** (`src/story/progress.ts`) sobem o
@@ -68,10 +68,17 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **Regra de tela**: nada se sobrepõe (avisos "avistado" esperam o fim de toda conversa; legendas, prompts e dicas somem enquanto alguém fala) e **o dado só fala por balão** (`DESIGN.md` §30).
   **Escrita dos símbolos**: todo glifo em conversa/balão é ESCRITO traço a traço, um traço de cada vez (moldura, ligações, pontos; `src/story/writing.ts`, ~0,95 s por símbolo, `ctx.dieTalk` espaça as falas do dado pelo tempo real de escrita); dado arremessado ou posicionado NÃO fica na mão (`DESIGN.md` §30–31).
   **Interface no PC**: `ui/scale.ts` (variável CSS `--ui`) aumenta glifos, balões, avisos e textos em telas grandes (1 no celular, até 2,1).
-  **Recomeçar do zero**: botão ⓘ > "Recomeçar o jogo do zero" (com confirmação) apaga progresso, diário e mapa do aparelho e recarrega com a cena de acordar (`DESIGN.md` §28).
+  **Interface de lançamento** (`INTERFACE.md`, da branch `claude/puzzles-design`; `DESIGN.md` §45): **tela inicial** (o poço visto de baixo, logo provisório
+  «SENTENÇ» + triângulo ACENDER; Continuar, Novo jogo, Carregar, Configurações, Créditos; `?titulo=0` pula), **três espaços de jogo** com
+  **salvamento automático** (ao entrar numa sala, ao resolver um puzzle, ao fechar o diário, ao pausar e ao sair da página; dadinho girando no
+  canto; chaves `mdd-slotN-*`, `src/story/save.ts`; retoma na sala e na posição salvas, as salas anteriores ficam resolvidas com `Room.skip()`),
+  **pausa** (Esc, mouse solto ou o botão do celular: o mundo pára; Continuar, Diário, Configurações, Reiniciar a sala, Voltar à tela inicial) e
+  **configurações** em abas (Áudio, Imagem, Controles com remapear teclas, Acessibilidade, Idioma; valem para o aparelho, `src/story/config.ts`).
+  Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
+  no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
-  `public/`, funciona offline depois da primeira visita; botão ⤓ no jogo quando o navegador permite).
+  `public/`, funciona offline depois da primeira visita; a instalação fica com o navegador).
 
 ## Convenção para puzzles (masmorra-do-dado)
 
