@@ -68,7 +68,7 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 | 4 | **O Fio de Fogo** ✔ | 3 | o fogo **corre**; «ACENDER UM» pode acender vários | M1+M2 | UM, CINCO |
 | 5 | **A Casa Escreve** ✔ | 3 | a Casa fala em fogo; **a lousa é um mapa** do salão | M9 + ordem | ORDEM |
 | 6 | **A Chama Curta** ✔ | 4 | tempo e tamanho; **uma canaleta longa é um pavio** (o fogo espera) | M7+M2 | TEMPO |
-| 7 | O Que a Casa Confirma | 5 | marcas; o dado acende frases (a sala 6 atual) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
+| 7 | **O Que a Casa Confirma** ✔ | 5 | marcas; o dado acende frases; cadeia de ANTES/DEPOIS com 5 pilares (a sala 6 atual, revisada) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
 | 8 | **O Pano** | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
 | 9 | **Os Apelidos** ✔ | 6 | o mesmo braseiro tem dois nomes; o glifo engana | M8 | GRANDE, PEQUENO |
 | 10 | **A Ponte de Madeira** | 6 | o fogo **destrói o próprio caminho**: a ordem das ignições importa | M2+M3 | (nenhuma) |
@@ -125,8 +125,9 @@ galeria com quatro braseiros que se apagam. Os dois mínimos ficam um em cada po
 perto da porta é um **pavio**. **Solução: acender o grande e o médio (o médio acende o pavio), voltar até o mínimo da entrada e acendê-lo
 quando o mínimo do fundo pegar fogo sozinho.** Segredo de voltar depois: S3 (pano-parede).
 
-### Sala 7 — O Que a Casa Confirma (nível 5) · a atual
-Fica como está (ver `PUZZLES.md`). Ela ensina as marcas, e as salas 9, 11, 14, 16 e 17 dependem disso.
+### Sala 7 — O Que a Casa Confirma (nível 5) · revisada ✔ `tools/verify_confirma.mjs`
+(Detalhada na seção 5.) A sala 6 atual do jogo, com **5 pilares** em vez de 4 (na versão antiga uma frase confirmada sobrava).
+**Solução: acender as quatro frases CONFIRMADAS; os pilares sobem; acender QUATRO, UM, CINCO, DOIS, TRÊS.**
 
 ### Sala 8 — O Pano (nível 5) · "o fogo queima o boato" ✔ `tools/verify_pano.mjs`
 (Detalhada na seção 5, com a constelação C2.) Panos tecidos (marca BOATO bordada) cobrem partes de frases talhadas. Queimados com o dado,
@@ -194,6 +195,81 @@ sala anterior. O diário guarda (o jogador copiou ou carimbou). Porta: «ACENDER
 Como está (`PUZZLES.md`, `tools/verify_tribunal.mjs`).
 
 ---
+
+## 2b. Respiros: lugares livres entre os puzzles (pedido do Pedro)
+
+O jogo não pode ser só "sala, puzzle, porta, sala, puzzle". De tempos em tempos o jogador entra num lugar **sem porta trancada**, onde ele
+anda à vontade, olha, lê e acha coisas. É o descanso depois de uma sequência difícil e é onde o **mundo** se mostra: quem foram os
+Contáveis, quem passou por ali antes, o que é a Casa. Também é onde ficam os segredos fáceis e os **atalhos** de volta.
+
+**Regras dos respiros:**
+- **Nada obrigatório.** A passagem para a frente está sempre aberta. Dá para atravessar em 1 minuto ou ficar 10.
+- **Nenhuma mecânica nova obrigatória**, nenhuma punição, nenhum tempo correndo.
+- Cada respiro tem **pelo menos um diário achado** (em português, de outros condenados), **uma inscrição do mundo** em glifos (só palavras
+  conhecidas, no máximo uma nova, demonstrada) e **um pequeno puzzle opcional** (nível 1 a 3) com gema ou página de diário.
+- Cada respiro tem **uma coisa que só faz sentido depois** (semente da camada 2), para dar vontade de voltar.
+- Cada respiro abre um **atalho** para trás (uma grade que só abre deste lado), para a volta às salas antigas ser rápida.
+- **Forma livre:** corredores que viram, pátios, escadarias, varandas com vista para salas já resolvidas. Nunca um retângulo com uma porta.
+- No motor, um respiro é uma sala da lista como outra qualquer (a numeração e o mapa continuam automáticos), só que **sem trava na porta**,
+  e pode ter **câmaras laterais** (§20, opção a).
+
+**Ritmo do capítulo 1** (puzzle = P, respiro = R): P1 P2 P3 P4 · **R1** · P5 P6 P7 · **R2** · P8 P9 P10 P11 · **R3** · P12 P13 P14 · **R4** · P15 P16 P17 · P18 (Tribunal).
+Os respiros não entram na numeração dos puzzles deste documento (para não renumerar tudo); no jogo a numeração das salas é automática.
+
+### R1 · O Corredor dos Nichos (entre as salas 4 e 5)
+- **Forma:** corredor estreito que vira três vezes, com **nichos** nas paredes, cada um com um objeto velho (uma tigela, um giz gasto,
+  uma corrente). Luz baixa de velas. Numa curva, uma **janela de grade** para uma galeria distante.
+- **O Escrivão de longe (2ª aparição):** pela janela, ele passa na galeria do outro lado, devagar, e some. Não dá para chegar lá (ainda).
+- **Inscrição do mundo:** «ACENDER BRASEIRO» repetida acima de cada nicho, mas num nicho só aparece «ACENDER» e o resto está **quebrado**
+  (a pedra caiu): a Casa é velha, as frases se gastam.
+- **Puzzle opcional (nível 1):** pela parede, **dados talhados** mostram as faces 1, 2, 3, (nicho vazio), 5. No fim do corredor, uma lousa
+  pequena ao lado do nicho vazio. **Solução:** escrever a face que falta, **QUATRO** (os quatro cantos). Abre o nicho: uma página de diário.
+- **Diário 1 (de "a que veio antes"):** *"Os pontos são números. Os números são dados. Eu já sabia disso antes de cair aqui, só não
+  sabia que sabia. Contei os nichos três vezes. Um está vazio. Tudo aqui está faltando um pedaço."*
+- **Semente (camada 2):** um nicho tem uma **tapeçaria pequena** com um glifo tecido. Na 1ª passagem não dá para fazer nada (o jogador nem
+  sabe que pano queima). Depois da sala 8, queimada, mostra embaixo uma palavra talhada que vai para o diário.
+- **Atalho:** uma grade do lado direito abre para o balcão da sala 4.
+
+### R2 · O Pátio da Cisterna (entre as salas 7 e 8)
+- **Forma:** o **primeiro espaço aberto**. Um pátio quadrado alto, com galerias em volta em **dois andares** (escadas nos cantos) e, no
+  meio, uma **cisterna** redonda com água parada. Lá no alto, muito acima, um **buraco redondo** deixa entrar luz pálida (é um "ponto" do dado:
+  semente do S9, não comentada).
+- **Inscrições do mundo:** nas galerias, frases curtas sobre os Contáveis com as marcas que o jogador acabou de aprender, por exemplo
+  «CONTÁVEIS DIZER CONFIRMADO» e, gasta, «CONTÁVEIS MENTIR BOATO». (Palavras novas aparecem uma por frase e sem obrigação: são de história.)
+- **Puzzle opcional (nível 2):** na beira da cisterna, **reflexos**: quatro braseiros apagados nos cantos do pátio se refletem na água
+  como pontos numa grade. Acender os que fazem o **reflexo** formar TRÊS (lembrando que o reflexo **inverte**: a diagonal que se vê na água
+  é a outra). Sobe uma gema do fundo da cisterna.
+- **Diário 2:** *"Aqui o que está talhado não mente. O que alguém só disse, mente às vezes. Eu acendi uma frase de boato e a Casa me
+  apagou como quem apaga uma vela. Acho que eles não gostavam de quem repete o que ouviu."*
+- **Semente (camada 2):** um **estandarte tecido** pendurado alto na galeria de cima, com a marca BOATO bordada. Na sala 8 o jogador
+  aprende que pano queima. Voltando, queima o estandarte: atrás dele, uma **porta secreta** para uma câmara com diário e gema.
+- **Atalho:** a galeria de baixo tem uma grade que dá para o fundo da sala 6 (a galeria comprida).
+
+### R3 · A Galeria dos Condenados (entre as salas 11 e 12)
+- **Forma:** galeria longa e alta, com **bancos de pedra** e, nas paredes, centenas de **marcas de contagem** riscadas a giz por outros
+  condenados (dias? tentativas?). Algumas paredes têm desenhos de giz de outras pessoas: um braseiro, uma porta, um rosto apagado.
+- **O Escrivão de longe (3ª aparição):** sentado no fim da galeria, escrevendo. Quando o jogador se aproxima, ele se levanta e some
+  numa porta que não estava lá. Deixa no banco uma marca de giz fresca.
+- **Inscrição do mundo:** a frase «CONDENADO LER SENTENÇA» talhada sobre a porta de saída (CONDENADO e SENTENÇA já foram vistas: o dado diz
+  VOCÊ CONDENADO na sala 1). Primeira vez que o jogador vê a palavra SENTENÇA na pedra.
+- **Puzzle opcional (nível 3):** quatro frases riscadas a giz por condenados (boatos, porque giz não é pedra) sobre "qual braseiro
+  acender primeiro" numa câmara lateral com três braseiros; uma frase talhada (confirmada) diz quantos dos boatos são verdade. É a 1ª
+  vez que o jogador vê uma **lei da contagem**, sem obrigação (prepara a sala 14). Solução a fechar com verificador quando chegarmos lá.
+- **Diário 3 (que erra):** *"O símbolo com o ponto no meio e as duas barras do lado quer dizer UM, tenho certeza."* (é PEQUENO; quem fez a
+  sala 9 sabe que ela errou: os diários nem sempre acertam.)
+- **Semente:** uma das marcas de giz é um **rosto** igual ao do dado, quase apagado (eco bem fraco do S11).
+- **Atalho:** escada lateral que desce até o pátio R2.
+
+### R4 · A Escadaria (entre as salas 14 e 15)
+- **Forma:** um poço vertical largo com uma **escada em espiral** subindo pelas paredes. Em cada volta, uma **janela** dá para uma sala já
+  resolvida, vista **de cima** (a sala 5 com suas 9 colunas; o fosso da sala 10; a capela da sala 8). O mundo é conectado: o jogador entende
+  onde está.
+- **Puzzle opcional (nível 3):** da janela que dá para a sala 5, **vista de cima**, as colunas da sala formam a grade inteira. Se a constelação
+  C1 já foi feita, a câmara secreta dela aparece acesa. Se não, é a dica mais clara de que aquelas colunas eram uma grade.
+- **Diário 4:** *"Contei as faces de tudo aqui. Salas de quatro cantos, buracos redondos no teto, sempre um, dois… Esta casa tem a forma
+  de alguma coisa que eu conheço. Não consigo lembrar do quê."* (dica suave do S9.)
+- **Semente:** no topo, uma porta com **seis** pontinhos de bronze (a face seis, que a língua não tem): só se abre num capítulo posterior.
+- **Atalho:** a escada desce até a Galeria R3.
 
 ## 3. Constelações: tochas que escrevem (ideia do Pedro) ✔ `tools/verify_constelacoes.mjs`
 
@@ -518,6 +594,54 @@ o caminho e **esperar** no lugar certo. **Palavras novas:** QUATRO (já vista na
 
 **Motor:** regra `together` com `burn` (já existe); portão que fica aberto só enquanto um braseiro queima (novo, pequeno); canaleta-pavio com
 atraso e brasa visível andando (M2 com tempo); fumaça com vento e pano-parede (S3).
+
+### Sala 7 — O Que a Casa Confirma (NÍVEL 5) · revisada
+
+**O que muda da versão atual (sala 6 do jogo, `FIRE_FRASES`):** a ideia e as duas etapas ficam; muda o conteúdo. Na versão atual, a 4ª
+frase confirmada («DOIS DEPOIS UM») **sobra**: as outras três já dão a ordem. Pela regra do projeto, nenhuma pista pode ser descartável.
+Com **cinco** pilares (CINCO o jogador já escreveu na sala 4), quatro confirmadas viram exatamente o necessário.
+
+**A ideia:** a marca no fim da frase **muda o que ela vale**. CONFIRMADO (com moldura talhada) vale; BOATO (gasto) não. As frases com
+ANTES/DEPOIS dão uma **ordem**, e ela não está na ordem de leitura.
+
+**Forma:** retangular média (11×20 m), como a atual. Sem braseiros à vista: **cinco rachaduras com brasa** no chão, onde os pilares vão subir.
+Três parágrafos pequenos nas paredes, cada frase com o **soquete de brasa** no começo (o símbolo de "isto se acende", §25).
+
+**Frases:**
+| Parede | Linha | Marca |
+|---|---|---|
+| esquerda, perto da entrada | «DOIS DEPOIS CINCO» | CONFIRMADO |
+| | «CINCO ANTES UM» | boato |
+| esquerda, perto da porta | «TRÊS DEPOIS DOIS» | CONFIRMADO |
+| | «TRÊS ANTES QUATRO» | boato |
+| direita | «UM DEPOIS QUATRO» | CONFIRMADO |
+| | «DOIS DEPOIS TRÊS» | boato |
+| | «UM ANTES CINCO» | CONFIRMADO |
+A porta: «ACENDER CONFIRMADO».
+
+**Solução (passo a passo):**
+1. **Ensino (passo 1):** com o Fogo, acender as frases **CONFIRMADAS** (o dado junto da frase, na parede). Uma frase de BOATO **apaga as acesas**
+   e a Casa recusa o fogo por 4 s. É aqui que a marca se explica pelo efeito; por isso a resposta frase a frase continua (é ensino, não o puzzle).
+2. Com as quatro confirmadas acesas, ouve-se um estrondo e **cinco pilares sobem** (UM a CINCO), cada um com seu número.
+3. **O puzzle (passo 2):** montar a cadeia com as quatro frases acesas:
+   - «UM DEPOIS QUATRO» → 4 antes de 1;
+   - «UM ANTES CINCO» → 1 antes de 5;
+   - «DOIS DEPOIS CINCO» → 5 antes de 2;
+   - «TRÊS DEPOIS DOIS» → 2 antes de 3.
+   Cadeia: **4 → 1 → 5 → 2 → 3**.
+4. **Acender QUATRO, UM, CINCO, DOIS, TRÊS.** Errar apaga tudo e deixa os pilares **frios por 8 s** (sem gema por passo).
+
+**Por que é única** (`node tools/verify_confirma.mjs`): uma ordem só entre 120; sem qualquer uma das quatro confirmadas sobram 5 a 10
+ordens (todas são necessárias); os três boatos são falsos e, se alguém acreditar neles, cai em contradição; a ordem não é 1-2-3-4-5 nem a
+ordem em que os números aparecem lidos nas frases (2-5-3-1-4).
+
+**Por que todos os boatos são falsos aqui:** de propósito. O jogador sai desta sala achando que "boato = mentira". A sala 11 (O Boato
+Verdadeiro) quebra esse hábito. É a "primeira impressão que engana" em duas salas.
+
+**Sem segredo próprio:** nem toda sala precisa ter (o respiro R2 vem logo depois, cheio de coisas para achar).
+
+**O que ensina:** CONFIRMADO × BOATO; ANTES/DEPOIS formam uma cadeia; a ordem certa não é a de leitura; o dado de Fogo também acende escrita.
+**Motor:** já existe quase tudo (`FIRE_FRASES`, tablete `lit`, `lock`, `hidden`); muda só o conteúdo (5 pilares, as frases acima, `seq` = 4, 1, 5, 2, 3).
 
 ### Sala 8 — O Pano (NÍVEL 5) · "o fogo queima o boato" + constelação C2
 
