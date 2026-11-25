@@ -96,62 +96,182 @@ function rngf(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const papers: Partial<Record<'L' | 'R', HTMLCanvasElement>> = {};
-function paper(side: 'L' | 'R'): HTMLCanvasElement {
-  const cached = papers[side];
+const papers: Record<string, HTMLCanvasElement> = {};
+// ruído suave (manchas largas do papel)
+function smooth(seed: number, cell: number) {
+  const r = rngf(seed);
+  const gw = Math.ceil(PW / cell) + 2;
+  const gh = Math.ceil(PH / cell) + 2;
+  const g = Array.from({ length: gw * gh }, () => r());
+  return (x: number, y: number) => {
+    // fora da folha, dá a volta (nunca lê fora da grade)
+    const fx = (((x % PW) + PW) % PW) / cell;
+    const fy = (((y % PH) + PH) % PH) / cell;
+    const x0 = Math.floor(fx);
+    const y0 = Math.floor(fy);
+    const tx = fx - x0;
+    const ty = fy - y0;
+    const sx = tx * tx * (3 - 2 * tx);
+    const sy = ty * ty * (3 - 2 * ty);
+    const a = g[y0 * gw + x0];
+    const b = g[y0 * gw + x0 + 1];
+    const c = g[(y0 + 1) * gw + x0];
+    const d = g[(y0 + 1) * gw + x0 + 1];
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
+}
+// papel envelhecido: fibras, manchas de umidade, pintas de mofo (foxing), beirada gasta e a sombra do lombo.
+// `v` = variação da folha (0 = limpa; 1..3 = uma marca de uso diferente: anel de caneca, borrão de tinta, rabisco na margem)
+function paper(side: 'L' | 'R', v = 0): HTMLCanvasElement {
+  const key = side + v;
+  const cached = papers[key];
   if (cached) return cached;
   const c = document.createElement('canvas');
   c.width = PW;
   c.height = PH;
   const ctx = c.getContext('2d')!;
   const r = rngf(side === 'L' ? 41 : 42);
+  const big = smooth(side === 'L' ? 7 : 8, 22);
+  const mid = smooth(side === 'L' ? 9 : 10, 7);
   const img = ctx.createImageData(PW, PH);
   for (let y = 0; y < PH; y++) {
     for (let x = 0; x < PW; x++) {
       const dSpine = side === 'L' ? PW - 1 - x : x;
       const dEdge = side === 'L' ? x : PW - 1 - x;
-      let k = 0.95 + r() * 0.09;
-      if (dSpine < 16) k *= 0.66 + dSpine * 0.021; // sombra do lombo
-      if (dEdge < 5) k *= 0.88 + dEdge * 0.02; // borda mais escura
-      if (y < 4 || y > PH - 5) k *= 0.93;
-      // manchas lentas de umidade
-      k *= 1 - 0.1 * Math.max(0, Math.sin(x * 0.11 + y * 0.07 + (side === 'L' ? 1 : 3)) * Math.sin(y * 0.05 - x * 0.04));
+      let k = 0.9 + 0.1 * big(x, y) + 0.05 * mid(x, y) + (r() - 0.5) * 0.06;
+      if ((x * 7 + y * 3) % 23 === 0 && r() < 0.5) k *= 0.96; // fibras
+      // sombra do lombo, suave (o papel afunda para dentro)
+      if (dSpine < 22) k *= 0.6 + 0.4 * Math.pow(dSpine / 22, 0.7);
+      else if (dSpine < 30) k *= 1.02; // a curva do papel pega um pouco de luz
+      // beirada gasta e escurecida (irregular)
+      const wob = 2.5 + 2 * mid(y * 0.7, x * 0.3);
+      const de = Math.min(dEdge, y, PH - 1 - y);
+      if (de < wob + 4) k *= 0.8 + 0.2 * Math.min(1, de / (wob + 4));
+      // manchas de umidade
+      k *= 1 - 0.09 * Math.max(0, big(y * 0.8 + 30, x * 0.9) - 0.55) * 3;
       const o = (y * PW + x) * 4;
-      img.data[o] = Math.min(255, 236 * k);
-      img.data[o + 1] = Math.min(255, 192 * k);
-      img.data[o + 2] = Math.min(255, 132 * k);
+      img.data[o] = Math.min(255, 238 * k);
+      img.data[o + 1] = Math.min(255, 196 * k);
+      img.data[o + 2] = Math.min(255, 138 * k);
       img.data[o + 3] = 255;
     }
   }
   ctx.putImageData(img, 0, 0);
-  // fibras e pontinhos de uso
-  for (let i = 0; i < 70; i++) {
-    ctx.fillStyle = r() < 0.5 ? 'rgba(122,80,48,0.35)' : 'rgba(255,230,170,0.3)';
+  // pintas de mofo (foxing): grupinhos castanhos
+  for (let i = 0; i < 7; i++) {
+    const cx = r() * PW;
+    const cy = r() * PH;
+    const n = 2 + Math.floor(r() * 5);
+    for (let k = 0; k < n; k++) {
+      ctx.fillStyle = `rgba(140,82,40,${0.18 + r() * 0.22})`;
+      ctx.fillRect(Math.round(cx + (r() - 0.5) * 6), Math.round(cy + (r() - 0.5) * 6), 1 + Math.floor(r() * 2), 1);
+    }
+  }
+  for (let i = 0; i < 60; i++) {
+    ctx.fillStyle = r() < 0.5 ? 'rgba(122,80,48,0.28)' : 'rgba(255,236,190,0.3)';
     ctx.fillRect(Math.floor(r() * PW), Math.floor(r() * PH), 1, 1);
   }
-  papers[side] = c;
+  // marcas de uso, cada uma num canto que o texto não usa
+  const rv = rngf(91 + v * 7 + (side === 'L' ? 0 : 3));
+  if (v === 1) {
+    // anel de caneca (meio fora da folha, no canto de baixo de fora)
+    const cx = side === 'L' ? 4 : PW - 5;
+    const cy = PH - 18;
+    for (let a = 0; a < 260; a++) {
+      const ang = (a / 260) * Math.PI * 2;
+      const rr = 15 + Math.sin(ang * 3) * 0.6;
+      ctx.fillStyle = `rgba(120,64,28,${0.12 + 0.12 * Math.max(0, Math.sin(ang + 1))})`;
+      ctx.fillRect(Math.round(cx + Math.cos(ang) * rr), Math.round(cy + Math.sin(ang) * rr), 1, 1);
+    }
+  } else if (v === 2) {
+    // borrão de tinta com respingos (no canto de cima de fora)
+    const cx = side === 'L' ? 9 : PW - 10;
+    const cy = 7;
+    for (let k = 0; k < 26; k++) {
+      const a = rv() * Math.PI * 2;
+      const d = rv() * rv() * 4;
+      ctx.fillStyle = 'rgba(42,26,18,0.7)';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d), 1, 1);
+    }
+    for (let k = 0; k < 5; k++) {
+      ctx.fillStyle = 'rgba(42,26,18,0.55)';
+      ctx.fillRect(Math.round(cx + (rv() - 0.5) * 14), Math.round(cy + rv() * 8), 1, 1);
+    }
+  } else if (v === 3 && side === 'R') {
+    // rabisco na margem de baixo: um dadinho desenhado à mão
+    ctx.fillStyle = 'rgba(90,58,34,0.55)';
+    const x = 24;
+    const y = PH - 25;
+    const L = (a: number, b: number, c2: number, d: number) => plot(ctx, x + a, y + b, x + c2, y + d, 1);
+    L(0, 3, 6, 0); L(6, 0, 12, 3); L(0, 3, 6, 6); L(6, 6, 12, 3); L(0, 3, 0, 10); L(6, 6, 6, 13); L(12, 3, 12, 10); L(0, 10, 6, 13); L(6, 13, 12, 10);
+    ctx.fillRect(x + 6, y + 2, 1, 1);
+    ctx.fillRect(x + 2, y + 6, 1, 1);
+    ctx.fillRect(x + 4, y + 9, 1, 1);
+    ctx.fillRect(x + 9, y + 6, 1, 1);
+  } else if (v === 3) {
+    // uma chaminha rabiscada
+    ctx.fillStyle = 'rgba(90,58,34,0.5)';
+    const x = 92;
+    const y = PH - 27;
+    plot(ctx, x + 3, y, x + 1, y + 5, 1);
+    plot(ctx, x + 1, y + 5, x + 3, y + 9, 1);
+    plot(ctx, x + 3, y + 9, x + 6, y + 7, 1);
+    plot(ctx, x + 6, y + 7, x + 5, y + 3, 1);
+    plot(ctx, x + 5, y + 3, x + 3, y, 1);
+    plot(ctx, x + 3, y + 5, x + 4, y + 8, 1);
+  }
+  papers[key] = c;
   return c;
 }
 
-// moldura dupla, com os cantos enfeitados
-function frame(ctx: CanvasRenderingContext2D, side: 'L' | 'R') {
-  const xo = side === 'L' ? 6 : 10; // do lado do lombo a moldura fica mais afastada
-  const xi = side === 'L' ? PW - 10 : PW - 6;
+// moldura: filete duplo, cantos com um nó de volutas e um losango no meio de cima e de baixo
+function corner(ctx: CanvasRenderingContext2D, x: number, y: number, sx: 1 | -1, sy: 1 | -1) {
+  ctx.fillStyle = INK;
+  ctx.fillRect(x - 1, y - 1, 3, 3);
+  ctx.fillStyle = PAPER_BG;
+  ctx.fillRect(x, y, 1, 1);
   ctx.fillStyle = INK2;
+  // duas volutas que saem do canto, uma para cada lado
+  for (const [a, b] of [[3, 0], [4, 0], [5, 1], [5, 2], [4, 3], [0, 3], [0, 4], [1, 5], [2, 5], [3, 4]]) ctx.fillRect(x + a * sx, y + b * sy, 1, 1);
+  ctx.fillRect(x + 2 * sx, y + 2 * sy, 1, 1);
+}
+const PAPER_BG = '#e3bb84';
+function diamond(ctx: CanvasRenderingContext2D, cx: number, cy: number, color = INK2) {
+  ctx.fillStyle = color;
+  ctx.fillRect(cx, cy - 2, 1, 1);
+  ctx.fillRect(cx - 1, cy - 1, 3, 1);
+  ctx.fillRect(cx - 2, cy, 5, 1);
+  ctx.fillRect(cx - 1, cy + 1, 3, 1);
+  ctx.fillRect(cx, cy + 2, 1, 1);
+}
+function frame(ctx: CanvasRenderingContext2D, side: 'L' | 'R') {
   const x0 = side === 'L' ? 6 : 10;
   const x1 = side === 'L' ? PW - 10 : PW - 6;
+  ctx.fillStyle = INK2;
   ctx.fillRect(x0, 6, x1 - x0, 1);
   ctx.fillRect(x0, PH - 7, x1 - x0, 1);
   ctx.fillRect(x0, 6, 1, PH - 12);
   ctx.fillRect(x1 - 1, 6, 1, PH - 12);
-  ctx.fillRect(x0 + 2, 8, x1 - x0 - 4, 1);
-  ctx.fillRect(x0 + 2, PH - 9, x1 - x0 - 4, 1);
-  ctx.fillRect(x0 + 2, 8, 1, PH - 16);
-  ctx.fillRect(x1 - 3, 8, 1, PH - 16);
-  ctx.fillStyle = INK;
-  for (const [cx, cy] of [[x0 - 1, 5], [x1 - 2, 5], [x0 - 1, PH - 8], [x1 - 2, PH - 8]]) ctx.fillRect(cx, cy, 3, 3);
-  void xo;
-  void xi;
+  // o filete de dentro é pontilhado (mais leve)
+  ctx.fillStyle = 'rgba(122,80,48,0.75)';
+  for (let x = x0 + 3; x < x1 - 3; x += 2) {
+    ctx.fillRect(x, 8, 1, 1);
+    ctx.fillRect(x, PH - 9, 1, 1);
+  }
+  for (let y = 9; y < PH - 9; y += 2) {
+    ctx.fillRect(x0 + 2, y, 1, 1);
+    ctx.fillRect(x1 - 3, y, 1, 1);
+  }
+  corner(ctx, x0, 6, 1, 1);
+  corner(ctx, x1 - 1, 6, -1, 1);
+  corner(ctx, x0, PH - 7, 1, -1);
+  corner(ctx, x1 - 1, PH - 7, -1, -1);
+  const mx = Math.round((x0 + x1) / 2);
+  ctx.fillStyle = PAPER_BG;
+  ctx.fillRect(mx - 4, 5, 9, 3);
+  ctx.fillRect(mx - 4, PH - 8, 9, 3);
+  diamond(ctx, mx, 6, INK2);
+  diamond(ctx, mx, PH - 7, INK2);
 }
 
 const X0 = (side: 'L' | 'R') => (side === 'L' ? 13 : 19);
@@ -170,15 +290,33 @@ function arrow(ctx: CanvasRenderingContext2D, x: number, y: number, dir: 1 | -1,
 function heading(ctx: CanvasRenderingContext2D, text: string, side: 'L' | 'R', y = 14) {
   const cx = X0(side) + CW / 2;
   drawCentered(ctx, text, cx, y, INK);
+  rule(ctx, Math.round(cx), y + 13, CW / 2 - 8);
+}
+// fio com as pontas afinando (pontilhado) e um losango no meio
+function rule(ctx: CanvasRenderingContext2D, cx: number, y: number, half: number) {
   ctx.fillStyle = INK2;
-  ctx.fillRect(X0(side) + 10, y + 13, CW - 20, 1);
-  ctx.fillRect(Math.round(cx) - 1, y + 12, 3, 3);
+  ctx.fillRect(cx - half + 6, y, 2 * half - 12, 1);
+  for (let k = 0; k < 3; k++) {
+    ctx.fillRect(cx - half + k * 2, y, 1, 1);
+    ctx.fillRect(cx + half - 1 - k * 2, y, 1, 1);
+  }
+  ctx.fillStyle = PAPER_BG;
+  ctx.fillRect(cx - 4, y, 9, 1);
+  diamond(ctx, cx, y, INK);
+  ctx.fillStyle = INK2;
+  ctx.fillRect(cx - 6, y, 1, 1);
+  ctx.fillRect(cx + 6, y, 1, 1);
 }
 
 function chrome(ctx: CanvasRenderingContext2D, side: 'L' | 'R', spread: number, lay: Layout, out: Region[]) {
   frame(ctx, side);
   const num = String(2 * spread + (side === 'L' ? 1 : 2));
-  drawCentered(ctx, num, PW / 2 + (side === 'L' ? -3 : 3), PH - 20, INK2);
+  const ncx = PW / 2 + (side === 'L' ? -3 : 3);
+  drawCentered(ctx, num, ncx, PH - 20, INK2);
+  const nw = textWidth(num) / 2 + 4;
+  ctx.fillStyle = INK2;
+  ctx.fillRect(Math.round(ncx - nw - 3), PH - 15, 3, 1);
+  ctx.fillRect(Math.round(ncx + nw), PH - 15, 3, 1);
   if (side === 'L' && spread > 0) {
     arrow(ctx, 14, PH - 19, -1, INK);
     out.push({ x: 8, y: PH - 24, w: 16, h: 14, id: 'prev' });
@@ -197,25 +335,140 @@ const lines = (ctx: CanvasRenderingContext2D, ls: string[], x: number, y: number
   ls.slice(0, max).forEach((l, i) => drawText(ctx, l, x, y + i * LINE, color));
 };
 
+// um dadinho desenhado (cantos arredondados, os pontos da face); selada = tracejado e um "?" no meio
+const PIPS: Record<number, [number, number][]> = {
+  1: [[1, 1]],
+  2: [[0, 0], [2, 2]],
+  3: [[0, 0], [1, 1], [2, 2]],
+  4: [[0, 0], [2, 0], [0, 2], [2, 2]],
+  5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
+  6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
+};
+function dieFace(ctx: CanvasRenderingContext2D, x: number, y: number, n: number, open: boolean) {
+  const S = 16;
+  if (open) {
+    ctx.fillStyle = 'rgba(90,50,20,0.25)';
+    ctx.fillRect(x + 1, y + S, S - 1, 1);
+    ctx.fillRect(x + S, y + 1, 1, S - 1);
+    ctx.fillStyle = HILITE;
+    ctx.fillRect(x + 1, y + 1, S - 2, S - 2);
+  }
+  ctx.fillStyle = open ? INK : INK2;
+  for (let i = 1; i < S - 1; i++) {
+    if (open || i % 3 !== 0) {
+      ctx.fillRect(x + i, y, 1, 1);
+      ctx.fillRect(x + i, y + S - 1, 1, 1);
+      ctx.fillRect(x, y + i, 1, 1);
+      ctx.fillRect(x + S - 1, y + i, 1, 1);
+    }
+  }
+  if (!open) {
+    drawCentered(ctx, '?', x + S / 2, y + 3, INK2);
+    return;
+  }
+  for (const [a, b] of PIPS[n] ?? []) ctx.fillRect(x + 3 + a * 4, y + 3 + b * 4, 2, 2);
+}
+// os ícones do índice (8x8, a pena de quem escreve à mão)
+function indexIcon(ctx: CanvasRenderingContext2D, i: number, x: number, y: number) {
+  ctx.fillStyle = INK2;
+  const P = (pts: number[][]) => pts.forEach(([a, b]) => ctx.fillRect(x + a, y + b, 1, 1));
+  if (i === 0) P([[3, 1], [2, 3], [4, 3], [1, 5], [5, 5], [0, 7], [1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [2, 2], [4, 2], [1, 6], [5, 6], [1, 4], [5, 4], [0, 6], [6, 6]]); // ACENDER (o triângulo)
+  else if (i === 1) {
+    for (let k = 0; k < 7; k++) P([[k, 1], [k, 7], [0, 1 + k], [6, 1 + k]]);
+    P([[2, 3], [4, 5], [3, 4]]);
+  } else if (i === 2) {
+    // pergaminho enrolado
+    for (let k = 1; k < 6; k++) P([[k, 1], [k, 7]]);
+    P([[0, 2], [0, 3], [6, 5], [6, 6], [1, 2], [5, 6]]);
+    for (let k = 2; k < 7; k++) P([[1, k], [5, k - 1]]);
+    P([[2, 3], [3, 3], [2, 5], [4, 5]]);
+  } else if (i === 3) {
+    // mapa dobrado com um X
+    P([[0, 1], [0, 7], [2, 2], [2, 8], [4, 1], [4, 7], [6, 2], [6, 8], [1, 1], [3, 2], [5, 1], [1, 7], [3, 8], [5, 7]]);
+    for (let k = 2; k < 7; k++) P([[0, k], [6, k + 1]]);
+    ctx.fillStyle = RED;
+    P([[2, 4], [4, 6], [3, 5], [4, 4], [2, 6]]);
+  } else {
+    // pena
+    for (let k = 0; k < 7; k++) P([[6 - k, 1 + k]]);
+    P([[5, 1], [6, 2], [4, 2], [6, 3], [3, 3], [5, 4], [2, 4], [4, 5]]);
+  }
+}
+// guarda marmorizada (o avesso da capa) com a etiqueta do dono: DIÁRIO, o dado e as duas linhas
+function endpaper(ctx: CanvasRenderingContext2D) {
+  const img = ctx.createImageData(PW, PH);
+  const n = smooth(77, 18);
+  const m = smooth(78, 6);
+  for (let y = 0; y < PH; y++)
+    for (let x = 0; x < PW; x++) {
+      // veios: o seno de uma coordenada torcida pelo ruído (como tinta penteada na água)
+      const t = Math.sin(x * 0.16 + y * 0.09 + n(x, y) * 10 + m(x, y) * 3);
+      const u = Math.sin(x * 0.07 - y * 0.13 + n(y, x) * 8);
+      let col: [number, number, number];
+      if (t > 0.9) col = [182, 140, 80]; // veio de ouro velho
+      else if (t > 0.55) col = [112, 42, 32]; // vinho
+      else if (u > 0.5) col = [44, 58, 86]; // azul
+      else col = [30, 28, 42];
+      const dSpine = PW - 1 - x;
+      const k = (dSpine < 16 ? 0.55 + (0.45 * dSpine) / 16 : 1) * (0.9 + 0.1 * m(x * 2, y * 2));
+      const o = (y * PW + x) * 4;
+      img.data[o] = col[0] * k;
+      img.data[o + 1] = col[1] * k;
+      img.data[o + 2] = col[2] * k;
+      img.data[o + 3] = 255;
+    }
+  ctx.putImageData(img, 0, 0);
+  // a dobra do couro por cima das beiradas da guarda
+  ctx.fillStyle = '#5a2216';
+  ctx.fillRect(0, 0, PW, 4);
+  ctx.fillRect(0, PH - 4, PW, 4);
+  ctx.fillRect(0, 0, 4, PH);
+  ctx.fillStyle = 'rgba(255,190,150,0.25)';
+  ctx.fillRect(4, 4, PW - 4, 1);
+  ctx.fillRect(4, 4, 1, PH - 8);
+  // a etiqueta colada (papel claro, moldura dupla, levemente torta não: reta e limpa, para ler)
+  const lx = 17;
+  const ly = 22;
+  const lw = 94;
+  const lh = 132;
+  ctx.drawImage(paper('L'), 20, 20, lw, lh, lx, ly, lw, lh);
+  ctx.fillStyle = 'rgba(10,6,10,0.4)';
+  ctx.fillRect(lx + 2, ly + lh, lw, 2);
+  ctx.fillRect(lx + lw, ly + 2, 2, lh);
+  ctx.fillStyle = INK2;
+  ctx.fillRect(lx + 3, ly + 3, lw - 6, 1);
+  ctx.fillRect(lx + 3, ly + lh - 4, lw - 6, 1);
+  ctx.fillRect(lx + 3, ly + 3, 1, lh - 6);
+  ctx.fillRect(lx + lw - 4, ly + 3, 1, lh - 6);
+  for (let x = lx + 6; x < lx + lw - 6; x += 2) {
+    ctx.fillRect(x, ly + 5, 1, 1);
+    ctx.fillRect(x, ly + lh - 6, 1, 1);
+  }
+  const cx = lx + lw / 2;
+  drawCentered(ctx, 'DIÁRIO', cx, ly + 12, INK, 2);
+  rule(ctx, Math.round(cx), ly + 36, 32);
+  drawGlyph(ctx, LEX.dado.g!, Math.round(cx), ly + 70, 50, INK);
+  drawCentered(ctx, 'O que eu vi.', cx, ly + 102, INK2);
+  drawCentered(ctx, 'O que eu acho.', cx, ly + 114, INK2);
+}
+
 // leva a lista de regiões a sério: dá para clicar em quase tudo que está escrito
 export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
   if (view.spread === lay.mapAt) return renderMapHalf(ctx, side, view, d, lay);
   ctx.clearRect(0, 0, PW, PH);
-  ctx.drawImage(paper(side), 0, 0);
   const regions: Region[] = [];
-  chrome(ctx, side, view.spread, lay, regions);
   const x0 = X0(side);
   const s = view.spread;
+  if (s === 0 && side === 'L') {
+    // a contracapa por dentro: papel marmorizado (guarda) com a etiqueta do dono colada
+    endpaper(ctx);
+    return regions;
+  }
+  ctx.drawImage(paper(side, s === 0 ? 0 : (s * 5 + (side === 'L' ? 0 : 2)) % 4), 0, 0); // cada folha com a sua marca de uso (ou nenhuma)
+  chrome(ctx, side, view.spread, lay, regions);
 
   if (s === 0) {
-    if (side === 'L') {
-      drawCentered(ctx, 'DIÁRIO', PW / 2 - 2, 26, INK, 2);
-      ctx.fillStyle = INK2;
-      ctx.fillRect(x0 + 12, 50, CW - 24, 1);
-      drawGlyph(ctx, LEX.dado.g!, PW / 2 - 2, 92, 62, INK);
-      drawCentered(ctx, 'O que eu vi.', PW / 2 - 2, 134, INK2);
-      drawCentered(ctx, 'O que eu acho.', PW / 2 - 2, 146, INK2);
-    } else {
+    {
       drawCentered(ctx, 'ÍNDICE', PW / 2 + 4, 22, INK, 2);
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 8, 44, CW - 16, 1);
@@ -228,11 +481,12 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       ];
       rows.forEach(([label, n, to], i) => {
         const y = 54 + i * 17;
-        drawText(ctx, label, x0 + 2, y, INK);
+        indexIcon(ctx, i, x0 + 1, y);
+        drawText(ctx, label, x0 + 12, y, INK);
         if (n) drawText(ctx, n, x0 + CW - textWidth(n) - 2, y, INK2);
         // pontilhado
         ctx.fillStyle = INK2;
-        const a = x0 + 2 + textWidth(label) + 4;
+        const a = x0 + 12 + textWidth(label) + 4;
         const b = x0 + CW - textWidth(n) - 6;
         for (let px = a; px < b; px += 3) ctx.fillRect(px, y + 9, 1, 1);
         regions.push({ x: x0 - 2, y: y - 3, w: CW + 4, h: 16, id: `goto:${to}` });
@@ -254,10 +508,11 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         items.forEach((id, i) => {
           const cx = x0 + (i % 3) * 35;
           const cy = 34 + Math.floor(i / 3) * 28;
-          if (cur === id) {
-            ctx.fillStyle = HILITE;
-            ctx.fillRect(cx, cy, 32, 26);
-          }
+          ctx.fillStyle = 'rgba(90,50,20,0.22)'; // sombrinha: o cartão está colado no papel
+          ctx.fillRect(cx + 1, cy + 26, 32, 1);
+          ctx.fillRect(cx + 32, cy + 1, 1, 26);
+          ctx.fillStyle = cur === id ? HILITE : 'rgba(250,226,180,0.45)';
+          ctx.fillRect(cx, cy, 32, 26);
           ctx.fillStyle = cur === id ? INK : INK2;
           ctx.fillRect(cx, cy, 32, 1);
           ctx.fillRect(cx, cy + 25, 32, 1);
@@ -299,12 +554,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     const list = side === 'L' ? FACES.slice(0, 3) : FACES.slice(3, 6);
     list.forEach((f, i) => {
       const y = 32 + i * 40;
-      ctx.fillStyle = f.unlocked ? INK : INK2;
-      ctx.fillRect(x0, y, 16, 1);
-      ctx.fillRect(x0, y + 15, 16, 1);
-      ctx.fillRect(x0, y, 1, 16);
-      ctx.fillRect(x0 + 15, y, 1, 16);
-      drawCentered(ctx, String(f.n), x0 + 8, y + 3, f.unlocked ? INK : INK2);
+      dieFace(ctx, x0, y, f.n, f.unlocked);
       drawText(ctx, f.unlocked ? f.name : '???', x0 + 22, y + 1, f.unlocked ? INK : INK2);
       lines(ctx, wrap(f.unlocked ? (SHORT[f.n] ?? f.desc) : 'Selada.', 13), x0 + 22, y + 12, INK2, 2);
     });
@@ -436,12 +686,19 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
   cx.fillRect(6, PH - 7, W2 - 12, 1);
   cx.fillRect(6, 6, 1, PH - 12);
   cx.fillRect(W2 - 7, 6, 1, PH - 12);
-  cx.fillRect(8, 8, W2 - 16, 1);
-  cx.fillRect(8, PH - 9, W2 - 16, 1);
-  cx.fillRect(8, 8, 1, PH - 16);
-  cx.fillRect(W2 - 9, 8, 1, PH - 16);
-  cx.fillStyle = INK;
-  for (const [x, y] of [[5, 5], [W2 - 8, 5], [5, PH - 8], [W2 - 8, PH - 8]]) cx.fillRect(x, y, 3, 3);
+  cx.fillStyle = 'rgba(122,80,48,0.75)';
+  for (let x = 9; x < W2 - 9; x += 2) {
+    cx.fillRect(x, 8, 1, 1);
+    cx.fillRect(x, PH - 9, 1, 1);
+  }
+  for (let y = 9; y < PH - 9; y += 2) {
+    cx.fillRect(8, y, 1, 1);
+    cx.fillRect(W2 - 9, y, 1, 1);
+  }
+  corner(cx, 6, 6, 1, 1);
+  corner(cx, W2 - 7, 6, -1, 1);
+  corner(cx, 6, PH - 7, 1, -1);
+  corner(cx, W2 - 7, PH - 7, -1, -1);
 
   const w = getWorld();
   const fl = currentFloor(view, d);

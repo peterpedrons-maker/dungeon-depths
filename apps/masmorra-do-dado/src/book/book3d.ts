@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
-import { diaryCoverTexture, diaryEdgeTexture, diaryLeatherTexture } from '../scene/textures';
+import { diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt } from './bookart';
 import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, TRAY_N, trayStart, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
@@ -64,10 +64,15 @@ export function createDiaryBook(env: BookEnv) {
   const matLeafF = paperMat(lfF.t, THREE.FrontSide);
   const matLeafB = paperMat(lfB.t, THREE.BackSide);
 
-  const edge = new THREE.MeshLambertMaterial({ map: diaryEdgeTexture() });
-  const leather = new THREE.MeshLambertMaterial({ map: diaryLeatherTexture() });
-  const frontMap = diaryCoverTexture();
+  const edgeMap = diaryEdgeArt();
+  edgeMap.repeat.set(1, 1);
+  const edge = new THREE.MeshLambertMaterial({ map: edgeMap, emissive: 0xffffff, emissiveMap: edgeMap, emissiveIntensity: 0.18 });
+  const leatherMap = diaryLeatherArt();
+  leatherMap.repeat.set(2, 2.6);
+  const leather = new THREE.MeshLambertMaterial({ map: leatherMap, emissive: 0xffffff, emissiveMap: leatherMap, emissiveIntensity: 0.22 });
+  const frontMap = diaryCoverArt();
   const front = new THREE.MeshLambertMaterial({ map: frontMap, emissive: 0xffffff, emissiveMap: frontMap, emissiveIntensity: 0.3 });
+  const brass = new THREE.MeshLambertMaterial({ color: 0xc89a48, emissive: 0x5a3a10, emissiveIntensity: 0.6 });
 
   // metade do livro: bloco de folhas + capa
   const makeHalf = (left: boolean) => {
@@ -86,6 +91,18 @@ export function createDiaryBook(env: BookEnv) {
     const cover = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, 0.03), [leather, leather, leather, leather, leather, left ? front : leather]);
     cover.position.set((s * BW) / 2, 0, -0.055);
     g.add(block, cover);
+    // cantoneiras de latão nas duas pontas de fora: dobram por cima da beirada da capa
+    for (const sy of [1, -1]) {
+      const cx = s * (BW - 0.022);
+      const cy = sy * (BH / 2 - 0.022);
+      const a = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.036), brass);
+      a.position.set(cx, sy * (BH / 2 - 0.004), -0.055);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.05, 0.036), brass);
+      b.position.set(s * (BW - 0.004), cy, -0.055);
+      const rivet = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.01, 0.006), brass);
+      rivet.position.set(cx, cy, -0.037);
+      g.add(a, b, rivet);
+    }
     return g;
   };
   const rightHalf = makeHalf(false);
@@ -130,10 +147,72 @@ export function createDiaryBook(env: BookEnv) {
     leafGeo.computeBoundingSphere();
   };
 
-  // fita marcadora que pende do livro
-  const ribbon = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.17, 0.006), new THREE.MeshLambertMaterial({ color: 0xa8321a, emissive: 0x5a1a10 }));
-  ribbon.position.set(0.06, -BH / 2 - 0.055, 0.004);
+  // a lombada: meia-cana de couro atrás do dobra, com as nervuras e o ouro
+  const spineGeo = new THREE.CylinderGeometry(0.04, 0.04, BH, 14, 1, true, Math.PI / 2, Math.PI);
+  const spine = new THREE.Mesh(spineGeo, new THREE.MeshLambertMaterial({ map: diarySpineArt(), side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: diarySpineArt(), emissiveIntensity: 0.22 }));
+  spine.position.set(0, 0, -0.055);
+  inner.add(spine);
+  // cabeceado: o cordão listrado no alto e embaixo do miolo, junto do lombo
+  const hbTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = 8;
+    c.height = 2;
+    const g = c.getContext('2d')!;
+    for (let i = 0; i < 8; i++) {
+      g.fillStyle = i % 2 ? '#c89a48' : '#8a2418';
+      g.fillRect(i, 0, 1, 2);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = THREE.NearestFilter;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })();
+  for (const sy of [1, -1]) {
+    const hb = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 6), new THREE.MeshLambertMaterial({ map: hbTex, emissive: 0x401008 }));
+    hb.rotation.z = Math.PI / 2;
+    hb.position.set(0, sy * (PHD / 2 + 0.002), -0.012);
+    inner.add(hb);
+  }
+  // duas fitas marcadoras que pendem do lombo (vermelha e verde-escura), com a ponta em V
+  const ribbonGeo = (() => {
+    const sh = new THREE.Shape();
+    const w = 0.009;
+    sh.moveTo(-w, 0);
+    sh.lineTo(w, 0);
+    sh.lineTo(w, -0.18);
+    sh.lineTo(0, -0.165);
+    sh.lineTo(-w, -0.18);
+    sh.closePath();
+    return new THREE.ShapeGeometry(sh);
+  })();
+  const ribbon = new THREE.Group();
+  const rib1 = new THREE.Mesh(ribbonGeo, new THREE.MeshLambertMaterial({ color: 0xa8321a, emissive: 0x5a1a10, side: THREE.DoubleSide }));
+  rib1.position.set(0.05, -BH / 2 + 0.03, 0.004);
+  rib1.rotation.z = 0.12;
+  const rib2 = new THREE.Mesh(ribbonGeo, new THREE.MeshLambertMaterial({ color: 0x2a5a3a, emissive: 0x0e2a18, side: THREE.DoubleSide }));
+  rib2.position.set(0.085, -BH / 2 + 0.03, 0.003);
+  rib2.rotation.z = 0.32;
+  rib2.scale.y = 0.8;
+  ribbon.add(rib1, rib2);
   inner.add(ribbon);
+  // a presilha: uma tira de couro solta na beirada da capa de trás, com a fivela de latão na ponta
+  const strap = new THREE.Group();
+  const band = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, 0.007), leather);
+  band.position.set(0.055, 0, 0);
+  strap.add(band);
+  const fr = (w: number, h: number, x: number, y: number) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.012), brass);
+    m.position.set(x, y, 0.002);
+    strap.add(m);
+  };
+  fr(0.008, 0.074, 0.11, 0);
+  fr(0.008, 0.074, 0.142, 0);
+  fr(0.04, 0.008, 0.126, 0.033);
+  fr(0.04, 0.008, 0.126, -0.033);
+  fr(0.03, 0.005, 0.124, 0); // a lingueta
+  strap.position.set(BW - 0.01, -0.06, -0.072);
+  strap.rotation.z = -0.18;
+  inner.add(strap);
 
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
@@ -465,6 +544,10 @@ export function createDiaryBook(env: BookEnv) {
       const frame = ease(clamp01((T - 0.25) / 0.5));
       open = ease(clamp01((T - 0.45) / 0.55));
       leftPivot.rotation.y = -Math.PI * (1 - open);
+      // a lombada acompanha: aberto, é a meia-cana atrás do dobra; fechado, vira a lateral redonda que une as duas capas
+      spine.rotation.y = (Math.PI / 2) * (1 - open);
+      spine.position.z = -0.055 * open;
+      spine.scale.x = spine.scale.z = 1 + 0.8 * (1 - open);
       inner.position.x = (-BW / 2) * (1 - open);
       const mx = (a: number, b: number, k: number) => a + (b - a) * k;
       const f = (key: 'x' | 'y' | 'rx' | 'ry' | 'rz' | 's') => mx(mx(POSE.start[key], POSE.mid[key], rise), POSE.end[key], frame);
@@ -474,6 +557,7 @@ export function createDiaryBook(env: BookEnv) {
       root.rotation.set(f('rx') + sway, f('ry'), f('rz'));
       root.scale.setScalar(mx(mx(POSE.start.s, POSE.mid.s, rise), endS, frame));
       ribbon.visible = open > 0.8;
+      strap.visible = open > 0.3;
 
       // virada de página
       if (ready() && !flip && view.spread !== target) {
