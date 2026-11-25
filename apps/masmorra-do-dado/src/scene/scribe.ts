@@ -375,6 +375,12 @@ export function makeScribe(): Scribe {
   const neck = new THREE.Group();
   neck.position.set(0, 0.45, 0.0);
   torso.add(neck);
+  // o pano que liga os ombros ao capuz quando ele projeta a cabeça para a frente (o capuz se estica como tecido)
+  const drapeGeo = new THREE.CylinderGeometry(0.15, 0.2, 1, 10, 1, true);
+  drapeGeo.translate(0, 0.5, 0);
+  const drape = new THREE.Mesh(facet(drapeGeo), purpleMat);
+  drape.visible = false;
+  torso.add(drape);
   const hood = new THREE.Group();
   hood.scale.setScalar(1.16); // capuz grande, como na referência
   neck.add(hood);
@@ -533,7 +539,7 @@ export function makeScribe(): Scribe {
   };
   // o dado fica APOIADO na palma direita
   const hand = new THREE.Group();
-  hand.position.set(0, -0.11, 0.165);
+  hand.position.set(0, -0.1, 0.105); // o dado (≈22 cm) apoiado na palma
   armR.wrist.add(hand);
 
   // ── estado animado ──
@@ -604,7 +610,20 @@ export function makeScribe(): Scribe {
       glanceTo = (Math.random() - 0.5) * 0.7 * (1 - cur.lean * 0.7);
     }
     glance += (glanceTo - glance) * (1 - Math.exp(-dt * 5));
-    neck.position.set(0, 0.45, Math.max(0, cur.lean - 0.8) * 0.8); // bem debruçado, ele estica o pescoço por cima do poço
+    // debruçado, ele projeta a cabeça para a FRENTE na horizontal (por cima do poço), sem baixá-la: no espaço do tronco inclinado (θ),
+    // o deslocamento (0, d·sen θ, d·cos θ) vira, no mundo, d metros para a frente na mesma altura
+    const th = torso.rotation.x;
+    const d = Math.max(0, cur.lean - 0.6) * 1.3;
+    neck.position.set(0, 0.45 + d * Math.sin(th), d * Math.cos(th));
+    drape.visible = d > 0.03;
+    if (drape.visible) {
+      const from = new THREE.Vector3(0, 0.36, -0.02);
+      const to = new THREE.Vector3(0, neck.position.y + 0.12, neck.position.z - 0.02);
+      const dir = to.clone().sub(from);
+      drape.position.copy(from);
+      drape.quaternion.setFromUnitVectors(Y, dir.clone().normalize());
+      drape.scale.set(1, dir.length(), 1);
+    }
     neck.rotation.set(cur.headPitch + cur.lean * 0.4 + Math.sin(t * 0.9) * 0.02, cur.headYaw + glance + Math.sin(t * 0.6) * 0.03, Math.sin(t * 0.5) * 0.03, 'YXZ');
     blinkT -= dt;
     if (blinkT < 0) {

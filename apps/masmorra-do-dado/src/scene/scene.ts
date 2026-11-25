@@ -841,6 +841,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const sPos = new THREE.Vector3();
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
+  const DIE_IN_HAND = 0.22;
   const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
   const SCRIBE_AT = new THREE.Vector3(0, 0, 1.76); // longe o bastante da mureta (raio 1,38): a barra do manto, espalhada no chão, nunca a atravessa // onde ele para, na borda, de frente para o furo
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
@@ -869,7 +870,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       scribeDie = worldModel.clone();
       topScribe.hand.add(scribeDie);
       scribeDie.position.set(0, 0, 0);
-      scribeDie.scale.setScalar(0.42);
+      scribeDie.scale.setScalar(DIE_IN_HAND); // na mão dele, do tamanho de um dado grande de verdade (no mundo ele tem 42 cm)
     }
     topScribe.setAlpha(0); // ainda não chegou
     scribeDie!.visible = false; // o dado está guardado dentro do manto
@@ -915,7 +916,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieV.set(0, -0.3, 0);
     dieW.set(4, 2.5, -3.5);
     worldDie.position.copy(dieP).add(offs[0]);
-    worldModel.scale.setScalar(0.42);
+    worldModel.scale.setScalar(DIE_IN_HAND); // sai da mão no tamanho da mão; cresce enquanto cai (parece só a perspectiva: ele vem na direção da câmera)
     worldDie.visible = true;
     thrownFace = 3;
     dieThrown = true;
@@ -1029,11 +1030,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 4:
         if (S.arrived) {
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
-          S.pose = { walk: 0, lean: 1.45, rest: 1, headPitch: -0.15 }; // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
+          S.pose = { walk: 0, lean: 1.0, rest: 1, headPitch: 0.3 }; // a cabeça vai à frente, por cima do poço, e o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           if (S.t > 6.2) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
-            fovCine = 8;
+            fovCine = 10;
             topScribe!.head.getWorldPosition(tmpV);
             yaw = lookYaw(tmpV.x, tmpV.z);
             pitch = lookPitch(tmpV.x, tmpV.y, tmpV.z);
@@ -2512,6 +2513,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           dieV.z += ((sh0.z + 0.3 - dieP.z) * 1.4 - dieV.z) * Math.min(1, dt * 4);
           if (dieP.y < sh0.y - 2.5 + 1.2) dieV.z = 0.8;
         }
+        // do tamanho da mão (lá em cima) ao tamanho do mundo (ao passar pelo teto da sala)
+        const topY = rooms[0].wellTop ? rooms[0].wellTop.y + 1.5 : sh0.y + 14;
+        const kk = clamp((dieP.y - (sh0.y - 2.5)) / (topY - (sh0.y - 2.5)), 0, 1);
+        worldModel.scale.setScalar(0.42 + (DIE_IN_HAND - 0.42) * kk * kk);
       }
       for (let i = 0; i < n && dieState === 'flying'; i++) stepDie(dt / n);
       worldDie.position.copy(dieP).add(offs[dieRoom]);
@@ -2794,7 +2799,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
       dieSay: (g: string[], pic?: string) => saySay(g, { pic }),
-      opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
+      opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, headW: topScribe && rooms[0].wellTop ? (topScribe.head.getWorldPosition(tmpV), [+(tmpV.x - wellWorld().x).toFixed(2), +(tmpV.y - wellWorld().y).toFixed(2), +(tmpV.z - wellWorld().z).toFixed(2)]) : null, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
       lifeDbg: () => ({ rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
       rostoSheet: () => {
         // prévia dos 6 rostos (face e brilho) em grande, só para avaliar o desenho
