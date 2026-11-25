@@ -656,6 +656,16 @@ panos pendurados **alto** (só se alcançam **arremessando**), rachaduras frias 
 
 **Braseiros:** quatro, com número no pedestal (UM a QUATRO). Regra `order` com `hints: false`, penalidade 8 s.
 
+**Revisão (casar com o pátio R2 e ensinar sem punir):**
+- O jogador chega do **pátio R2**, onde viu um estandarte de pano com BOATO bordado, alto demais e sem nada a fazer, e leu no diário 2
+  *"o que está talhado não mente"*. A sala 8 é onde isso vira ferramenta.
+- **Demonstração na entrada (§22, sem punição):** logo depois da porta de entrada, a Casa deixou um **braseiro pequeno aceso** e, pendurado
+  acima dele, um **trapo** com um glifo tecido. Enquanto o jogador olha, uma fagulha sobe, o trapo **pega fogo sozinho** e queima de baixo
+  para cima, e atrás dele aparece, talhada na pedra, a palavra **BRASEIRO**. Ninguém explicou nada: o jogador **viu** que pano queima e que
+  embaixo há pedra escrita. Daí em diante é ele quem atira o fogo nos panos.
+- Isso troca a "epifania no escuro" por uma **epifania guiada**: o puzzle continua sendo **ler** (qual pano esconde o quê, qual marca vale),
+  não adivinhar que pano queima.
+
 **Frases:**
 | Onde | Pedra (talhado) | Pano por cima (tecido, com BOATO) | Debaixo do pano |
 |---|---|---|---|
@@ -691,6 +701,17 @@ frase inteira, não só a parte à vista. Prepara a sala 16 (queimar um boato mu
 pilar com tempo, frisos com fogo correndo, rachaduras frias + braseiro `hidden`, câmara secreta).
 
 ### Sala 9 — Os Apelidos (NÍVEL 6) · ensina GRANDE e PEQUENO
+
+**Revisão na curva nova:**
+- **A armadilha ficou mais forte.** Desde a sala 3 o jogador sabe que **número = face do dado**. O glifo GRANDE é a moldura de qualidade com
+  os **quatro cantos** (a face 4) e PEQUENO, com **o ponto do meio** (a face 1). Quem aprendeu bem a sala 3 lê "QUATRO" e "UM" e cai direto na
+  contradição. A lição da sala: **a moldura muda o sentido** (sem moldura = número; com as duas barras = qualidade). Isso prepara a ideia de
+  família de glifos pela moldura.
+- **Forma redonda (rotunda, ~12 m):** o GRANDE fica **no centro** e os outros quatro em volta, em cruz, de modo que **não há começo óbvio**
+  de leitura (nem esquerda-direita, nem frente-fundo). Posições (vistas da entrada): UM à esquerda, DOIS ao fundo, TRÊS à direita, QUATRO (o
+  pequeno) à frente, junto da entrada. As três frases ficam em parágrafos curtos em três pontos da parede curva; a frase da porta, na porta.
+  (O `FireSpec` acima foi escrito para uma sala retangular: a rotunda precisa de um módulo à mão ou de `shape: 'round'` no construtor.)
+- **Sem segredo próprio**: logo antes vem a sala 8 (C2) e logo depois a 10.
 
 **A ideia:** um braseiro pode ser chamado pelo **número** ou pelo **tamanho**. As frases misturam os dois nomes, e a cadeia só fecha
 quando o jogador percebe quem é quem **olhando a sala**. A armadilha é o próprio desenho dos glifos: no léxico, GRANDE é a moldura de
