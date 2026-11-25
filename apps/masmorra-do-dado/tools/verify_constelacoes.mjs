@@ -41,7 +41,30 @@ const CONSTELACOES = [
     alvo: 'acender',
     pista: { tipo: 'frisos', descricao: 'os frisos do teto têm a forma das linhas de um verbo' },
   },
+  {
+    sala: 'Biblioteca · O Átrio (9 mesas de leitura em grade, cada uma com lamparina)',
+    nota: 'a pista é a página na mesa do Escrivão, vista pela grade do escritório: o jogador a vê DE CABEÇA PARA BAIXO (a mesa está virada para a cadeira dele). Copiada como se vê, dá o triângulo de ACENDER, que o jogador conhece: a armadilha. Lida do lado certo, é PEGAR.',
+    tochas: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => ({ id: `mesa${c}`, casa: c })),
+      { id: 'parede-1', casa: null }, { id: 'parede-2', casa: null }, { id: 'parede-3', casa: null }, { id: 'parede-4', casa: null },
+    ],
+    frisos: [],
+    alvo: 'pegar',
+    pista: { tipo: 'invertida', armadilha: 'acender', descricao: 'a página do Escrivão, vista de cabeça para baixo' },
+  },
+  {
+    sala: 'Sala 16 · Os Que Dizem o Mesmo (claustro: 8 colunas da galeria + a fonte no meio = grade 3x3)',
+    nota: 'todas as 9 têm tocha, mais 3 nas paredes. Frisos: o da galeria do fundo (de canto a canto), uma VIGA de pedra que cruza o pátio na diagonal, e o da galeria da frente. Formam um Z.',
+    tochas: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => ({ id: `coluna${c}`, casa: c })),
+      { id: 'parede-1', casa: null }, { id: 'parede-2', casa: null }, { id: 'parede-3', casa: null },
+    ],
+    frisos: [[0, 2], [2, 6], [6, 8]],
+    alvo: 'denovo',
+    pista: { tipo: 'frisos', descricao: 'os frisos e a viga desenham as linhas de um verbo' },
+  },
 ];
+const gira = (c) => 8 - c; // vista de cabeça para baixo (180°)
 
 let ok = true;
 const check = (c, m) => {
@@ -69,6 +92,11 @@ for (const k of CONSTELACOES) {
     const fr = k.frisos.map(([a, b]) => [Math.min(a, b), Math.max(a, b)].join('-')).sort().join();
     const batem = formaveis.filter((w) => linhas(w).join() === fr);
     check(batem.length === 1 && batem[0].id === k.alvo, `a pista (${k.pista.descricao}) aponta para uma palavra só: ${batem.map((w) => w.pt.toUpperCase()).join(', ')}`);
+  } else if (k.pista.tipo === 'invertida') {
+    const arm = words.find((w) => w.id === k.pista.armadilha);
+    const visto = T.map(gira).sort((a, b) => a - b);
+    check(visto.join() === pts(arm).join(), `vista de cabeça para baixo, a página mostra os pontos de ${arm.pt.toUpperCase()} (${visto.join(', ')}): a armadilha`);
+    check(visto.join() !== T.join(), `lida do lado certo, é ${alvo.pt.toUpperCase()} (${T.join(', ')}), um conjunto diferente`);
   } else if (k.pista.tipo === 'glifo') {
     check(k.pista.palavra === k.alvo, `a pista (${k.pista.descricao}) mostra o próprio glifo`);
   }
