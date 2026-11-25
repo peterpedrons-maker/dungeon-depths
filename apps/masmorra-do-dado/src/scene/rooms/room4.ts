@@ -67,7 +67,7 @@ export function buildRoom4(ctx: Ctx): Room {
     [-3.2, -3.5],
   ];
   for (const [x, z] of PILLARS) {
-    kit.box(0.9, H, 0.9, kit.brick([0.75, 4], 0.95, 100 + Math.abs(Math.round(z * 3))), x, H / 2, z);
+    kit.box(0.9, H, 0.9, kit.brick([1, 1], 0.95, 100 + Math.abs(Math.round(z * 3))), x, H / 2, z);
     kit.box(1.1, 0.25, 1.1, kit.stone, x, 0.125, z);
     kit.box(1.1, 0.25, 1.1, kit.stone, x, H - 0.125, z);
   }

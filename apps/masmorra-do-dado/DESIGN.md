@@ -576,3 +576,26 @@ Fonte: `PUZZLES_PROPOSTAS.md` (branch `claude/puzzles-design`) §2e, §2b (R2) e
 **Revisões:** a sala do Pano ganhou a **demonstração na entrada** (o trapo que pega fogo sozinho e mostra BRASEIRO talhado: epifania guiada, sem punição); Os Apelidos virou **rotunda** (`rooms/apelidos.ts`; o GRANDE no centro, os outros em cruz, as frases em placas na parede curva), com a mesma regra e a mesma solução. A versão retangular (`FIRE_APELIDOS`) fica em reserva.
 
 **O que NÃO entrou e por quê:** os atalhos dos respiros (o mundo ainda é uma fila de salas); a câmara secreta atrás do estandarte é um nicho, não uma sala; o "fazer" da Sala de Aula e os "apontar" do Museu dos Nomes dependem da Biblioteca, que não existe.
+
+## 43. Acabamento dos gráficos: alvenaria sem esticar, escadas de verdade, luz que define as formas (implementado; o desenho das salas não mudou)
+
+Pedido do Pedro: melhorar texturas, gráficos e a definição dos elementos 3D **sem alterar o design** (o exemplo era a escada da sala 4, com
+a "parede estranha"). Nada de posição, tamanho, regra ou caminho mudou; só como as coisas são desenhadas.
+- **O defeito principal:** toda caixa (`kit.box`) mostrava a textura INTEIRA em cada face, então um pilar de 7 m tinha tijolos de 2 m, um
+  degrau tinha tijolos de 3 cm e o balcão da sala 4 era uma mancha esticada. Agora `kit.box` dá UV **em metros** (1 ladrilho = 1,2 m, a
+  partir da posição na sala) sempre que o material repete sem escala própria (`worldBoxUV`); os pilares de todas as salas passaram a usar
+  esse material. Caixas vizinhas continuam o mesmo aparelho de tijolos.
+- **Texturas de alvenaria com o dobro de detalhe** (64 px por ladrilho em vez de 32; `textures.ts`): cada tijolo tem quina iluminada em cima
+  e sombra embaixo, face levemente abaulada, grão, poros, cantos lascados, rachaduras e manchas de umidade contínuas entre tijolos; a
+  argamassa tem areia. O piso tem lajes com quinas gastas, meio pisoteado e rachaduras. De longe o mipmap as reduz e o visual é o mesmo.
+- **Pedra lavrada** (`slabTexture`, `kit.slab`): lajes lisas e mais claras para pisos de degrau, capas de mureta, cornijas e peitoris; é ela
+  que faz uma escada "se ler" de longe.
+- **Escadas** (`shell.ts`: `stairs` e `slopedWall`): cada degrau é um bloco de alvenaria com um piso de pedra lavrada saliente na frente; a
+  mureta acompanha a inclinação e tem capa (antes era uma caixa reta do chão até acima do balcão, a tal parede estranha). Usadas na sala 4
+  (com pilastras de arremate e cornija na borda do balcão, que agora tem piso por cima e alvenaria nos lados), no pátio da cisterna e na
+  escadaria dos Banhos Secos.
+- **Luz** (`scene.ts`, `shapeLight`): a luz ambiente de cada sala (a mesma cor e força de sempre) é repartida em ambiente menor + luz de cima
+  (hemisférica: o que olha para cima é mais claro, o avesso das coisas mais escuro) + uma luz fraca de lado. Pisos, espelhos de degrau e as
+  duas paredes de um canto deixam de ter o mesmo tom: as formas se separam sem precisar de mais contorno.
+- Corrigido de passagem: na Ponte de Madeira, a tocha da C3 do lado da entrada ficava bem na frente dos olhos de quem chega ao patamar (uma
+  faixa marrom tapava a vista do fosso); foi para a ponta direita do gradil do patamar (a solução da C3 não muda).

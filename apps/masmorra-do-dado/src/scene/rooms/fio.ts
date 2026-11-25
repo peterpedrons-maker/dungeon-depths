@@ -10,11 +10,11 @@
 // UMA ignição (canto do fundo à direita) abre um nicho sob o balcão.
 
 import * as THREE from 'three';
-import { Kit, lambert, LAMP_OFF, T } from '../kit';
+import { Kit, lambert, LAMP_OFF } from '../kit';
 import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { FireGrid, makeFloorChannel, makeGemNiche, makeWallBoard, type GridEdge, type WallBoard } from '../firegrid';
-import { mkBox, roomShell, shotGate } from './shell';
+import { mkBox, roomShell, shotGate, slopedWall, stairs } from './shell';
 import type { Ctx, Rect, Room } from '../types';
 
 const BAL = 3; // altura do balcão
@@ -41,31 +41,37 @@ export function buildFio(ctx: Ctx): Room {
   const { X0, X1, Z0, Z1 } = S;
 
   // ── o balcão e as escadas ──
-  const brick = kit.brick([(X1 - X0) / T, BAL / T], 0.9, 44);
-  kit.box(X1 - X0, BAL, BZ0 - BZ1, brick, 0, BAL / 2, (BZ0 + BZ1) / 2);
-  kit.plane(X1 - X0, BZ0 - BZ1, lambert(floorTexture([(X1 - X0) / T, (BZ0 - BZ1) / T], 'ruin')), 0, BAL + 0.002, (BZ0 + BZ1) / 2, -Math.PI / 2);
+  // o bloco do balcão: alvenaria nas faces, o piso de lajes por cima (um material por face; tudo em metros, nada esticado)
+  const balFloor = lambert(floorTexture([1, 1], 'ruin'));
+  kit.box(X1 - X0, BAL, BZ0 - BZ1, [kit.stone, kit.stone, balFloor, kit.stone, kit.stone, kit.stone], 0, BAL / 2, (BZ0 + BZ1) / 2);
+  // uma cornija de pedra lavrada na borda do balcão (a quina de cima fica marcada) e um rodapé embaixo
+  for (const z of [BZ0, BZ1]) {
+    const s = z === BZ0 ? 1 : -1;
+    kit.box(X1 - X0, 0.16, 0.12, kit.slab, 0, BAL - 0.24, z + s * 0.06, false);
+    kit.box(X1 - X0, 0.22, 0.1, kit.slab, 0, 0.11, z + s * 0.05, false);
+  }
   S.boxes.push(mkBox(X0, 0, BZ1, X1, BAL, BZ0));
+  // parapeitos do balcão: alvenaria com capa de pedra lavrada
   const par = (x0: number, x1: number, z: number) => {
-    kit.box(x1 - x0, 1.0, 0.22, kit.stone, (x0 + x1) / 2, BAL + 0.5, z);
-    kit.box(x1 - x0 + 0.1, 0.1, 0.32, kit.stone, (x0 + x1) / 2, BAL + 1.03, z);
+    kit.box(x1 - x0, 0.92, 0.22, kit.stone, (x0 + x1) / 2, BAL + 0.46, z);
+    kit.box(x1 - x0 + 0.08, 0.1, 0.32, kit.slab, (x0 + x1) / 2, BAL + 0.97, z, false);
     S.boxes.push(mkBox(x0, BAL, z - 0.11, x1, BAL + 1.05, z + 0.11));
   };
   par(UP.x1, X1, BZ0 - 0.11);
   par(X0, DN.x0, BZ1 + 0.11);
-  const steps = (o: typeof UP, n: number, up: boolean) => {
-    const dz = (o.z1 - o.z0) / n;
-    for (let k = 0; k < n; k++) {
-      const top = (BAL * (k + 1)) / n;
-      const zc = o.z0 + dz * (k + 0.5);
-      kit.box(o.x1 - o.x0, top, Math.abs(dz) + 0.01, kit.stone, (o.x0 + o.x1) / 2, top / 2, up ? zc : o.z1 - dz * (k + 0.5));
-    }
-  };
-  steps(UP, 12, true);
-  steps(DN, 12, false);
-  // corrimão: um murinho do lado de dentro de cada escada
-  kit.box(0.16, BAL + 1, UP.z0 - UP.z1, kit.stone, UP.x1 + 0.08, (BAL + 1) / 2, (UP.z0 + UP.z1) / 2);
-  kit.box(0.16, BAL + 1, DN.z0 - DN.z1, kit.stone, DN.x0 - 0.08, (BAL + 1) / 2, (DN.z0 + DN.z1) / 2);
-  S.boxes.push(mkBox(UP.x1, 0, UP.z1, UP.x1 + 0.16, BAL + 1, UP.z0), mkBox(DN.x0 - 0.16, 0, DN.z1, DN.x0, BAL + 1, DN.z0));
+  // as duas escadas: degraus de alvenaria com piso de pedra lavrada
+  stairs(kit, { x0: UP.x0, x1: UP.x1, zLow: UP.z0, zHigh: UP.z1, yHigh: BAL, n: 12 }); // (o dado rola pela rampa de dieFloor, como antes)
+  stairs(kit, { x0: DN.x0, x1: DN.x1, zLow: DN.z1, zHigh: DN.z0, yHigh: BAL, n: 12 });
+  // a mureta do lado de dentro de cada escada: acompanha a subida (um corrimão de pedra a ~0,95 m dos degraus)
+  S.boxes.push(...slopedWall(kit, { x0: UP.x1, z0: UP.z1, x1: UP.x1 + 0.18, z1: UP.z0, top: (_x, z) => (BAL * (UP.z0 - z)) / (UP.z0 - UP.z1) + 0.95, segs: 6 }));
+  S.boxes.push(...slopedWall(kit, { x0: DN.x0 - 0.18, z0: DN.z1, x1: DN.x0, z1: DN.z0, top: (_x, z) => (BAL * (z - DN.z1)) / (DN.z0 - DN.z1) + 0.95, segs: 6 }));
+  // pilastras onde a mureta encontra o balcão e o chão (arremates)
+  for (const [px, pz, h] of [[UP.x1 + 0.09, UP.z0, 1.15], [UP.x1 + 0.09, UP.z1, BAL + 1.15], [DN.x0 - 0.09, DN.z1, 1.15], [DN.x0 - 0.09, DN.z0, BAL + 1.15]] as [number, number, number][]) {
+    kit.box(0.3, h, 0.3, kit.stone, px, h / 2, pz, false);
+    kit.box(0.38, 0.1, 0.38, kit.slab, px, h + 0.05, pz, false);
+    kit.rects.push([px - 0.17, pz - 0.17, px + 0.17, pz + 0.17, h + 0.1]);
+    S.boxes.push(mkBox(px - 0.15, 0, pz - 0.15, px + 0.15, h + 0.1, pz + 0.15));
+  }
 
   // ── o chão: 9 braseiros em grade, ligados por canaletas ──
   const GX = (c: number) => -0.6 + (c - 1) * 2.4;

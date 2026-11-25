@@ -289,8 +289,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   if (v === 2) {
     // o salão comprido: colunas dos dois lados
     for (const z of [-5, -9.5]) {
-      kit.box(0.8, H, 0.8, kit.brick([0.7, 3], 0.95, 50 + Math.abs(z)), X0 + 0.4, H / 2, z);
-      kit.box(0.8, H, 0.8, kit.brick([0.7, 3], 0.95, 52 + Math.abs(z)), X1 - 0.4, H / 2, z);
+      kit.box(0.8, H, 0.8, kit.brick([1, 1], 0.95, 50 + Math.abs(z)), X0 + 0.4, H / 2, z);
+      kit.box(0.8, H, 0.8, kit.brick([1, 1], 0.95, 52 + Math.abs(z)), X1 - 0.4, H / 2, z);
     }
   }
   kit.dust(X0, X1, Z0, Z1, 0, H);

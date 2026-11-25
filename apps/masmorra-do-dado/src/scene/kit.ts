@@ -17,6 +17,7 @@ import {
   puddleTexture,
   rugTexture,
   runeTexture,
+  slabTexture,
   stainTexture,
   vineTexture,
 } from './textures';
@@ -34,6 +35,38 @@ export function lambert(map: THREE.Texture | null, color = 0xffffff) {
 
 // Fonte de luz "virtual": o motor mantém só algumas PointLights de verdade e as empresta
 // aos emissores mais relevantes (perto e fortes). Menos luzes = shader bem mais leve.
+// A textura de um material repete sem escala própria (repeat 1×1)? Então a caixa recebe UV em metros e o tijolo tem sempre o mesmo tamanho,
+// num degrau, num pilar de 7 m ou num balcão (antes cada face mostrava a textura INTEIRA, esticada). Materiais com repeat próprio ou sem
+// repetição (placas, decalques) ficam como estão.
+function tiles(mat: THREE.Material | THREE.Material[]) {
+  const list = Array.isArray(mat) ? mat : [mat];
+  let any = false;
+  for (const m of list) {
+    const map = (m as THREE.MeshLambertMaterial).map;
+    if (!map) continue;
+    if (map.wrapS !== THREE.RepeatWrapping || map.repeat.x !== 1 || map.repeat.y !== 1) return false;
+    any = true;
+  }
+  return any;
+}
+// UV em metros (1 ladrilho = T) nas seis faces de uma caixa, a partir da posição na sala: caixas vizinhas continuam o mesmo aparelho de tijolos.
+export function worldBoxUV(geo: THREE.BufferGeometry, cx: number, cy: number, cz: number) {
+  const p = geo.attributes.position as THREE.BufferAttribute;
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
+  const n = geo.attributes.normal as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i) + cx;
+    const y = p.getY(i) + cy;
+    const z = p.getZ(i) + cz;
+    const ax = Math.abs(n.getX(i));
+    const ay = Math.abs(n.getY(i));
+    if (ax > 0.5) uv.setXY(i, (n.getX(i) > 0 ? -z : z) / T, y / T);
+    else if (ay > 0.5) uv.setXY(i, x / T, -z / T);
+    else uv.setXY(i, (n.getZ(i) > 0 ? x : -x) / T, y / T);
+  }
+  uv.needsUpdate = true;
+}
+
 export class Emitter {
   constructor(
     public pos: THREE.Vector3,
@@ -55,6 +88,7 @@ export class Kit {
   surfaces: THREE.Object3D[] = [];
   frames = flameFrames();
   stone: THREE.MeshLambertMaterial;
+  slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
   private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number }[] = [];
   private dustGeo: THREE.BufferGeometry | null = null;
   private dustH = 3;
@@ -63,6 +97,7 @@ export class Kit {
 
   constructor(public theme = 'crypt') {
     this.stone = lambert(brickTexture([1, 1], 0.9, 41, theme));
+    this.slab = lambert(slabTexture([1, 1], theme));
   }
 
   brick(repeat: [number, number], tint = 1, seed = 11) {
@@ -86,7 +121,9 @@ export class Kit {
   }
 
   box(w: number, h: number, d: number, mat: THREE.Material | THREE.Material[], x: number, y: number, z: number, mark = true) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    const geo = new THREE.BoxGeometry(w, h, d);
+    if (tiles(mat)) worldBoxUV(geo, x, y, z); // textura que repete: em metros, sem esticar
+    const m = new THREE.Mesh(geo, mat);
     m.position.set(x, y, z);
     if (!mark && !Array.isArray(mat)) m.userData.merge = true;
     return this.add(m, mark);
@@ -232,7 +269,7 @@ export class Kit {
     const dz = nz !== 0 ? 0.12 : w;
     const ox = nx * 0.06;
     const oz = nz * 0.06;
-    const m = this.mat('pilaster', () => lambert(brickTexture([0.4, 2], 1.05, 77, this.theme)));
+    const m = this.mat('pilaster', () => lambert(brickTexture([1, 1], 1.05, 77, this.theme)));
     this.box(dx, h - 0.5, dz, m, x + ox, h / 2, z + oz, false);
     this.box(nx !== 0 ? 0.16 : w + 0.1, 0.25, nz !== 0 ? 0.16 : w + 0.1, this.stone, x + nx * 0.08, 0.125, z + nz * 0.08, false);
     this.box(nx !== 0 ? 0.16 : w + 0.1, 0.25, nz !== 0 ? 0.16 : w + 0.1, this.stone, x + nx * 0.08, h - 0.25, z + nz * 0.08, false);

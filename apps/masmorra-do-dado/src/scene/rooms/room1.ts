@@ -38,7 +38,7 @@ export function buildRoom1(ctx: Ctx): Room {
   kit.plane(L, H, kit.brick([L / T, H / T], 1, 37), X1, H / 2, zm, 0, -Math.PI / 2);
 
   for (const [x, z] of PILLARS) {
-    const pillarMat = kit.brick([0.75, 2.7], 0.95, 50 + Math.abs(x * z));
+    const pillarMat = kit.brick([1, 1], 0.95, 50 + Math.abs(x * z));
     kit.box(0.9, H, 0.9, pillarMat, x, H / 2, z);
     kit.box(1.1, 0.25, 1.1, kit.stone, x, 0.125, z);
     kit.box(1.1, 0.25, 1.1, kit.stone, x, H - 0.125, z);

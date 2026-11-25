@@ -46,7 +46,7 @@ export function buildRoom3(ctx: Ctx): Room {
   kit.add(ceil);
 
   for (const [x, z] of PILLARS) {
-    kit.box(0.9, H, 0.9, kit.brick([0.75, 3.5], 0.95, 60 + Math.abs(Math.round(x * 10))), x, H / 2, z);
+    kit.box(0.9, H, 0.9, kit.brick([1, 1], 0.95, 60 + Math.abs(Math.round(x * 10))), x, H / 2, z);
     kit.box(1.1, 0.25, 1.1, kit.stone, x, 0.125, z);
     kit.box(1.1, 0.25, 1.1, kit.stone, x, H - 0.125, z);
   }

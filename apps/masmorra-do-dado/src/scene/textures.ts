@@ -116,87 +116,211 @@ export const THEMES: Record<string, Theme> = {
   },
 };
 
-function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number, th: Theme) {
-  const r = rng(seed);
-  rect(ctx, 0, 0, 32, 32, th.mortar);
-  for (let row = 0; row < 4; row++) {
-    const off = row % 2 ? 8 : 0;
-    for (let col = -1; col < 3; col++) {
-      const x0 = col * 16 + off;
-      const y0 = row * 8;
-      const base = th.stone[Math.floor(r() * th.stone.length)];
-      // cada tijolo tem o seu "tom": uns mais escuros, uns mais claros (bem mais variação que antes)
-      const roll = r();
-      const brickK = roll < 0.14 ? 0.74 : roll > 0.88 ? 1.22 : 0.88 + r() * 0.24;
-      const chip = [r() < 0.35, r() < 0.35, r() < 0.35, r() < 0.35]; // cantos lascados
-      for (let y = 0; y < 7; y++) {
-        for (let x = 0; x < 15; x++) {
-          let k = tint * brickK * (0.96 + r() * 0.08);
-          if (y === 0) k *= 1.22;
-          if (y === 6) k *= 0.72;
-          if (x === 0) k *= 1.1;
-          if (x === 14) k *= 0.8;
-          // sujeira que escorre: mais escura embaixo do tijolo
-          if (y >= 4) k *= 0.93;
-          const corner = (x < 2 && y < 2 && chip[0]) || (x > 12 && y < 2 && chip[1]) || (x < 2 && y > 4 && chip[2]) || (x > 12 && y > 4 && chip[3]);
-          px(ctx, x0 + x, y0 + y, corner ? th.mortar : shade(base, k));
-        }
-      }
-      // algumas rachaduras finas
-      if (r() < 0.22) {
-        let cx = x0 + 3 + Math.floor(r() * 9);
-        let cy = y0 + 1;
-        for (let i = 0; i < 5; i++) {
-          px(ctx, ((cx % 32) + 32) % 32, ((cy % 32) + 32) % 32, shade(base, 0.4));
-          cx += r() < 0.5 ? 0 : 1;
-          cy += 1;
-        }
-      }
-      // musgo no topo dos tijolos (só no tema úmido)
-      if (th === THEMES.moss && r() < 0.4) {
-        for (let x = 1; x < 14; x++) if (r() < 0.55) px(ctx, x0 + x, y0 + 1, shade(hex('#4a8a4e'), 0.8 + r() * 0.4));
-      }
-    }
+// ── as texturas de alvenaria (paredes, pisos, pedra lavrada) ─────────────────────────────────────────────────────────────────
+// 64 px por ladrilho de 1,2 m (antes 32): de longe o mipmap as reduz e o visual fica o mesmo; de perto (pilar, mureta, degrau) cada tijolo
+// tem quina iluminada, sombra embaixo, grão, poros, lascas e rachaduras, em vez de um bloco de cor. Desenhadas num buffer de pixels.
+const TS = 64;
+class Pix {
+  d: Uint8ClampedArray;
+  constructor(public w: number, public h: number) {
+    this.d = new Uint8ClampedArray(w * h * 4);
+  }
+  set(x: number, y: number, c: RGB, k = 1) {
+    x = ((x % this.w) + this.w) % this.w;
+    y = ((y % this.h) + this.h) % this.h;
+    const o = (y * this.w + x) * 4;
+    this.d[o] = c[0] * k;
+    this.d[o + 1] = c[1] * k;
+    this.d[o + 2] = c[2] * k;
+    this.d[o + 3] = 255;
+  }
+  mul(x: number, y: number, k: number) {
+    x = ((x % this.w) + this.w) % this.w;
+    y = ((y % this.h) + this.h) % this.h;
+    const o = (y * this.w + x) * 4;
+    this.d[o] *= k;
+    this.d[o + 1] *= k;
+    this.d[o + 2] *= k;
+  }
+  fill(c: RGB) {
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) this.set(x, y, c);
+  }
+  put(ctx: CanvasRenderingContext2D) {
+    ctx.putImageData(new ImageData(this.d as unknown as Uint8ClampedArray<ArrayBuffer>, this.w, this.h), 0, 0);
+  }
+}
+// ruído suave (valor interpolado) para manchas de umidade e desgaste, periódico no ladrilho
+function blotch(r: () => number, n = 8) {
+  const g = Array.from({ length: n * n }, () => r());
+  const at = (i: number, j: number) => g[(((j % n) + n) % n) * n + (((i % n) + n) % n)];
+  return (x: number, y: number) => {
+    const fx = (x / TS) * n;
+    const fy = (y / TS) * n;
+    const i = Math.floor(fx);
+    const j = Math.floor(fy);
+    const u = fx - i;
+    const v = fy - j;
+    const su = u * u * (3 - 2 * u);
+    const sv = v * v * (3 - 2 * v);
+    return (at(i, j) * (1 - su) + at(i + 1, j) * su) * (1 - sv) + (at(i, j + 1) * (1 - su) + at(i + 1, j + 1) * su) * sv;
+  };
+}
+// uma rachadura fina que anda de cima para baixo dentro de um retângulo
+function crack(p: Pix, r: () => number, x0: number, y0: number, len: number, k = 0.45) {
+  let x = x0;
+  let y = y0;
+  for (let i = 0; i < len; i++) {
+    p.mul(x, y, k);
+    if (r() < 0.35) p.mul(x + 1, y, 0.8); // a borda da rachadura pega um pouco de luz
+    y += 1;
+    x += r() < 0.3 ? (r() < 0.5 ? -1 : 1) : 0;
   }
 }
 
+function drawBricks(ctx: CanvasRenderingContext2D, tint: number, seed: number, th: Theme) {
+  const r = rng(seed);
+  const p = new Pix(TS, TS);
+  const mortar = hex(th.mortar);
+  p.fill(mortar);
+  // a argamassa também tem grão (areia) e fica mais escura funda no meio da junta
+  for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) p.set(x, y, mortar, 0.85 + r() * 0.4);
+  const damp = blotch(r, 4);
+  const BW = 32; // tijolo de 0,6 m
+  const BH = 16; // por 0,3 m
+  for (let row = 0; row < TS / BH; row++) {
+    const off = row % 2 ? BW / 2 : 0;
+    for (let col = -1; col < TS / BW + 1; col++) {
+      const x0 = col * BW + off;
+      const y0 = row * BH;
+      const base = th.stone[Math.floor(r() * th.stone.length)];
+      const roll = r();
+      const brickK = tint * (roll < 0.14 ? 0.74 : roll > 0.88 ? 1.2 : 0.88 + r() * 0.24);
+      const chip = [r() < 0.35, r() < 0.35, r() < 0.35, r() < 0.35]; // cantos lascados
+      const sag = r() < 0.3 ? 1 : 0; // alguns tijolos afundados: a quina de cima some na sombra
+      const W = BW - 2;
+      const H = BH - 2;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const cx = x0 + 1 + x;
+          const cy = y0 + 1 + y;
+          // cantos lascados: arredonda (a argamassa aparece)
+          const c0 = (x < 2 && y < 2 && chip[0] && x + y < 2) || (x > W - 3 && y < 2 && chip[1] && W - 1 - x + y < 2) || (x < 2 && y > H - 3 && chip[2]) || (x > W - 3 && y > H - 3 && chip[3]);
+          if (c0) continue;
+          let k = brickK * (0.93 + r() * 0.12);
+          // relevo: quina de cima e da esquerda iluminadas, de baixo e da direita na sombra
+          if (y === 0) k *= sag ? 1.02 : 1.3;
+          else if (y === 1) k *= sag ? 1 : 1.12;
+          if (y === H - 1) k *= 0.62;
+          else if (y === H - 2) k *= 0.82;
+          if (x === 0) k *= 1.12;
+          if (x === W - 1) k *= 0.74;
+          // a face do tijolo é levemente abaulada: mais clara no terço de cima
+          k *= 1.04 - (y / H) * 0.1;
+          // umidade/fuligem que escorre (manchas grandes, contínuas entre tijolos)
+          k *= 0.9 + damp(cx, cy) * 0.18;
+          // poros e grãos claros
+          const g = r();
+          if (g < 0.03) k *= 0.72;
+          else if (g > 0.985) k *= 1.2;
+          p.set(cx, cy, base, k);
+        }
+      }
+      if (r() < 0.25) crack(p, r, x0 + 4 + Math.floor(r() * (W - 8)), y0 + 1, 6 + Math.floor(r() * 7));
+      // musgo no topo dos tijolos (só no tema úmido)
+      if (th === THEMES.moss && r() < 0.45) {
+        for (let x = 2; x < W - 2; x++) if (r() < 0.55) p.set(x0 + 1 + x, y0 + 1 + (r() < 0.6 ? 0 : 1), hex('#4a8a4e'), 0.75 + r() * 0.45);
+      }
+    }
+  }
+  p.put(ctx);
+}
+
 export function brickTexture(repeat: [number, number], tint = 1, seed = 11, theme = 'crypt') {
-  const { c, ctx } = canvas(32);
+  const { c, ctx } = canvas(TS);
   drawBricks(ctx, tint, seed, THEMES[theme]);
   return toTexture(c, repeat);
 }
 
+// o piso: lajes de 0,6 m (2×2 por ladrilho), cada uma com o seu tom, quinas gastas, desgaste no meio, rachaduras e terra nas juntas
 export function floorTexture(repeat: [number, number], theme = 'crypt') {
-  const { c, ctx } = canvas(32);
+  const { c, ctx } = canvas(TS);
   const r = rng(5);
   const th = THEMES[theme];
-  const tones: RGB[] = th.floor;
-  rect(ctx, 0, 0, 32, 32, th.floorGap);
+  const p = new Pix(TS, TS);
+  const gap = hex(th.floorGap);
+  for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) p.set(x, y, gap, 0.85 + r() * 0.35);
+  const wear = blotch(r, 4);
+  const S = TS / 2;
   for (let ty = 0; ty < 2; ty++) {
     for (let tx = 0; tx < 2; tx++) {
-      const base = tones[Math.floor(r() * tones.length)];
-      const slabK = 0.82 + r() * 0.32; // cada laje com seu tom
-      const worn = r() < 0.4; // algumas lajes mais gastas no meio
-      for (let y = 0; y < 15; y++) {
-        for (let x = 0; x < 15; x++) {
-          let k = slabK * (0.95 + r() * 0.1);
-          if (y === 0 || x === 0) k *= 1.18;
-          if (y === 14 || x === 14) k *= 0.78;
-          if (worn && x > 3 && x < 11 && y > 3 && y < 11) k *= 1.08;
-          px(ctx, tx * 16 + x, ty * 16 + y, shade(base, k));
+      const base = th.floor[Math.floor(r() * th.floor.length)];
+      const slabK = 0.82 + r() * 0.3;
+      const worn = r() < 0.5;
+      const L = S - 2;
+      for (let y = 0; y < L; y++) {
+        for (let x = 0; x < L; x++) {
+          const corner = (x === 0 || x === L - 1) && (y === 0 || y === L - 1);
+          if (corner && r() < 0.7) continue;
+          const cx = tx * S + 1 + x;
+          const cy = ty * S + 1 + y;
+          let k = slabK * (0.94 + r() * 0.1);
+          if (y === 0) k *= 1.2;
+          if (x === 0) k *= 1.12;
+          if (y === L - 1) k *= 0.72;
+          if (x === L - 1) k *= 0.8;
+          // pisoteado: o meio da laje fica mais liso e claro
+          if (worn) {
+            const dx = (x - L / 2) / (L / 2);
+            const dy = (y - L / 2) / (L / 2);
+            k *= 1 + Math.max(0, 1 - dx * dx - dy * dy) * 0.1;
+          }
+          k *= 0.92 + wear(cx, cy) * 0.14;
+          const g = r();
+          if (g < 0.025) k *= 0.74;
+          else if (g > 0.988) k *= 1.18;
+          p.set(cx, cy, base, k);
         }
       }
-      if (r() < 0.3) {
-        let cx = tx * 16 + 3 + Math.floor(r() * 8);
-        let cy = ty * 16 + 2;
-        for (let i = 0; i < 9; i++) {
-          px(ctx, cx, cy, shade(base, 0.42));
-          cy += 1;
-          cx += r() < 0.4 ? (r() < 0.5 ? -1 : 1) : 0;
-        }
-      }
+      if (r() < 0.4) crack(p, r, tx * S + 5 + Math.floor(r() * (L - 10)), ty * S + 3, 10 + Math.floor(r() * 12), 0.5);
     }
   }
+  p.put(ctx);
+  return toTexture(c, repeat);
+}
+
+// PEDRA LAVRADA (pisos de degrau, capas de mureta, peitoris): lajes grandes e lisas, mais claras que o tijolo, com veios e poros.
+// Repete em metros (1 ladrilho = 1,2 m): duas fiadas de lajes por ladrilho, juntas finas.
+export function slabTexture(repeat: [number, number], theme = 'crypt') {
+  const { c, ctx } = canvas(TS);
+  const r = rng(29);
+  const th = THEMES[theme];
+  const p = new Pix(TS, TS);
+  p.fill(hex(th.mortar));
+  const cloud = blotch(r, 4);
+  const S = TS / 2;
+  for (let sy = 0; sy < 2; sy++) {
+    const base = th.stone[Math.floor(r() * th.stone.length)];
+    const k0 = 1.2 + r() * 0.12;
+    const off = sy ? 19 : 0;
+    for (let y = 0; y < S - 1; y++) {
+      for (let x = 0; x < TS; x++) {
+        if ((x + off) % TS === TS - 1) continue; // a junta entre lajes
+        let k = k0 * (0.95 + r() * 0.07);
+        if (y === 0) k *= 1.12;
+        if (y === S - 2) k *= 0.8;
+        k *= 0.92 + cloud(x, sy * S + y) * 0.16;
+        if (r() < 0.02) k *= 0.8;
+        p.set(x, sy * S + y, base, k);
+      }
+    }
+    // um veio fino e claro atravessando a laje
+    let vx = Math.floor(r() * TS);
+    for (let y = 3; y < S - 4; y++) {
+      if (r() < 0.7) p.mul(vx, sy * S + y, 1.14);
+      vx += r() < 0.5 ? 1 : 0;
+    }
+  }
+  p.put(ctx);
   return toTexture(c, repeat);
 }
 

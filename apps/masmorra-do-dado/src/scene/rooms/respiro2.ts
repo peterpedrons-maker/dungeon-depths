@@ -16,7 +16,7 @@ import { makeBrazier, type Brazier } from '../brazier';
 import { makeCloth, makeGemNiche } from '../firegrid';
 import { makePointAsk } from '../pointask';
 import { diary, diaryStore } from '../../story/diary';
-import { mkBox, wedge } from './shell';
+import { mkBox, slopedWall, stairs, wedge } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 
 const HALL = 1.2; // o chão do salão
@@ -111,25 +111,20 @@ export function buildRespiro2(ctx: Ctx): Room {
   // ── o patamar da entrada, a escadaria larga e os parapeitos ──
   kit.plane(X1 - X0, Z1 - LZ, lambert(floorTexture([(X1 - X0) / T, (Z1 - LZ) / T], 'ruin')), 0, EY, (Z1 + LZ) / 2, -Math.PI / 2);
   const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: CEIL - EY, y0: EY });
-  const NS = 9;
-  for (let k = 0; k < NS; k++) {
-    const za = LZ - ((LZ - SZ) * k) / NS;
-    const zb = LZ - ((LZ - SZ) * (k + 1)) / NS;
-    const top = stairY((za + zb) / 2) + 0.02;
-    kit.box(2 * SX, top - HALL, za - zb, kit.stone, 0, HALL + (top - HALL) / 2, (za + zb) / 2);
-  }
+  stairs(kit, { x0: -SX, x1: SX, zLow: SZ, zHigh: LZ, yLow: HALL, yHigh: EY, n: 9 });
   const stoneSide = kit.brick([1, 1], 0.9, 57);
   for (const s of [-1, 1]) {
     // mureta da escadaria (acompanha a descida)
     const xa = s < 0 ? -SX - 0.3 : SX;
-    kit.add(wedge(xa, SZ, xa + 0.3, LZ, (_x, z) => stairY(z) + 0.9, stoneSide, kit.stone, HALL));
+    slopedWall(kit, { x0: xa, z0: SZ, x1: xa + 0.3, z1: LZ, top: (_x, z) => stairY(z) + 0.9, y0: HALL });
     boxes.push(mkBox(xa, HALL, SZ, xa + 0.3, EY + 0.9, LZ));
     rects.push([xa, SZ, xa + 0.3, LZ]);
     // a frente do patamar (parede baixa) e o parapeito em cima
     const wx0 = s < 0 ? X0 : SX + 0.3;
     const wx1 = s < 0 ? -SX - 0.3 : X1;
     wallAt((wx0 + wx1) / 2, LZ, 0, -1, wx1 - wx0, EY - HALL, HALL, 21 + s, 0.85);
-    kit.box(wx1 - wx0, 0.9, 0.25, kit.stone, (wx0 + wx1) / 2, EY + 0.45, LZ + 0.125);
+    kit.box(wx1 - wx0, 0.82, 0.25, kit.stone, (wx0 + wx1) / 2, EY + 0.41, LZ + 0.125);
+    kit.box(wx1 - wx0, 0.09, 0.34, kit.slab, (wx0 + wx1) / 2, EY + 0.865, LZ + 0.125, false);
     boxes.push(mkBox(wx0, HALL, LZ, wx1, EY + 0.9, LZ + 0.25));
     rects.push([wx0, LZ, wx1, LZ + 0.25]);
   }
@@ -241,7 +236,7 @@ export function buildRespiro2(ctx: Ctx): Room {
 
   // ── colunas grossas ──
   for (const [cx, cz] of [[-5.9, -3.6], [5.9, -3.6], [-5.2, -22.6], [5.2, -21]] as [number, number][]) {
-    kit.box(1.1, HH, 1.1, kit.brick([0.9, HH / T], 0.95, 50 + Math.abs(cx * cz)), cx, HALL + HH / 2, cz);
+    kit.box(1.1, HH, 1.1, kit.brick([1, 1], 0.95, 50 + Math.abs(cx * cz)), cx, HALL + HH / 2, cz);
     kit.box(1.35, 0.3, 1.35, kit.stone, cx, HALL + 0.15, cz);
     kit.box(1.35, 0.3, 1.35, kit.stone, cx, CEIL - 0.15, cz);
     boxes.push(mkBox(cx - 0.55, HALL, cz - 0.55, cx + 0.55, CEIL, cz + 0.55));
@@ -250,7 +245,7 @@ export function buildRespiro2(ctx: Ctx): Room {
 
   // ── a fonte seca, no meio: uma parede de pedra com uma bica e a bacia vazia; no alto dela, o estandarte ──
   const FZ = -13;
-  solidBox(-1.7, HALL, FZ - 0.35, 1.7, HALL + 4.7, FZ + 0.35, kit.brick([3.4 / T, 4.7 / T], 1.0, 97));
+  solidBox(-1.7, HALL, FZ - 0.35, 1.7, HALL + 4.7, FZ + 0.35, kit.brick([1, 1], 1.0, 97));
   kit.box(3.7, 0.25, 0.95, kit.stone, 0, HALL + 4.82, FZ, false);
   // a bacia (do lado de quem chega)
   solidBox(-1.5, HALL, FZ + 1.35, 1.5, HALL + 0.55, FZ + 1.6);
@@ -268,7 +263,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   // ── as inscrições do mundo, cada uma numa estela com relevo ──
   // 1) na beira da piscina rasa: «CONTÁVEIS DIZER CONFIRMADO»: alguém falando, e um DADO pousado (de pedra, de verdade, numa prateleira)
   const stele = (cx: number, z: number, seed: number, draw: (g: CanvasRenderingContext2D) => void) => {
-    solidBox(cx - 1.45, HALL, z - 0.2, cx + 1.45, HALL + 2.25, z + 0.2, kit.brick([2.9 / T, 2.25 / T], 1.0, seed));
+    solidBox(cx - 1.45, HALL, z - 0.2, cx + 1.45, HALL + 2.25, z + 0.2, kit.brick([1, 1], 1.0, seed));
     kit.box(3.1, 0.14, 0.52, kit.stone, cx, HALL + 2.32, z, false);
     const t = canvasTex(128, 56, (g) => {
       g.fillStyle = '#7a7470';

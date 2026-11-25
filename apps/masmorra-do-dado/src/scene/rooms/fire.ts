@@ -243,7 +243,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const rects: ReturnType<Room['rects']> = [];
   for (const [px, pdz] of spec.pillars ?? []) {
     const pz = Z0 + pdz;
-    kit.box(0.9, H, 0.9, kit.brick([0.75, 3], 0.95, 50 + Math.abs(px * pz)), px, H / 2, pz);
+    kit.box(0.9, H, 0.9, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, H / 2, pz);
     kit.box(1.1, 0.25, 1.1, kit.stone, px, 0.125, pz);
     kit.box(1.1, 0.25, 1.1, kit.stone, px, H - 0.125, pz);
     kit.contact(px, pz, 2.1);

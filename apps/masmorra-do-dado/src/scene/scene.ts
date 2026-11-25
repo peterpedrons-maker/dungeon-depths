@@ -277,8 +277,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   postScene.add(postQuad);
   // ── sala e cena ─────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
+  // `ambient` é a luz ambiente "lógica" de cada sala (cor e força vêm da sala e da história). Na cena ela é repartida em três luzes que DEFINEM
+  // as formas: uma ambiente menor, uma luz de cima (o que olha para cima fica mais claro, o que olha para baixo, mais escuro: pisos de degrau
+  // claros, espelhos e o avesso das coisas mais escuros) e uma luz fraca de lado (paredes que se encontram num canto não ficam do mesmo tom).
   const ambient = new THREE.AmbientLight(0x7a78b8, 1.9);
-  scene.add(ambient);
+  const ambReal = new THREE.AmbientLight(0x7a78b8, 1.9);
+  const hemi = new THREE.HemisphereLight(0x7a78b8, 0x1e1c2a, 1);
+  const sideKey = new THREE.DirectionalLight(0xffffff, 0);
+  sideKey.position.set(0.55, 0.35, 0.75); // de cima, à direita, de quem entra (o mesmo em todas as salas)
+  scene.add(ambReal, hemi, sideKey);
+  const AMB_K = 0.56;
+  const HEMI_K = 0.62;
+  const SIDE_K = 0.16;
+  const shapeLight = () => {
+    ambReal.color.copy(ambient.color);
+    ambReal.intensity = ambient.intensity * AMB_K;
+    hemi.color.copy(ambient.color);
+    hemi.groundColor.copy(ambient.color).multiplyScalar(0.22);
+    hemi.intensity = ambient.intensity * HEMI_K;
+    sideKey.color.copy(ambient.color);
+    sideKey.intensity = ambient.intensity * SIDE_K;
+  };
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
   let yaw = 0;
   let pitch = -0.04;
@@ -2665,6 +2684,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     blendAtmosphere(dt);
+    shapeLight();
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     // sensação de velocidade: o campo de visão abre um pouquinho correndo
@@ -2995,6 +3015,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     (window as unknown as Record<string, unknown>).__mdd = {
       yaw: () => yaw,
       quiz: () => ({ ph: quizPh, ...quiz.debug() }),
+      pick: () => {
+        const rc = new THREE.Raycaster();
+        rc.setFromCamera(new THREE.Vector2(0, 0), camera);
+        return rc.intersectObjects(rooms[curRoom].group.children, true).slice(0, 4).map((h) => {
+          const m = h.object as THREE.Mesh;
+          const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.MeshLambertMaterial;
+          const lp = h.point.clone().sub(offs[curRoom]);
+          return { type: m.type, geo: m.geometry?.type, color: mat?.color?.getHexString?.(), op: mat?.opacity, tr: mat?.transparent, p: lp.toArray().map((v) => +v.toFixed(2)), d: +h.distance.toFixed(2) };
+        });
+      },
       quizAnswer: (i: number) => quiz.answer(i),
       feet: () => +(feetY - offs[curRoom].y).toFixed(2),
       surface: () => {

@@ -401,7 +401,7 @@ export function buildPonte(ctx: Ctx): Room {
     [-PX - PAR / 2, ZC, 1, 0, 3],
     [PX + PAR / 2, ZC, -1, 0, 5],
     [-PX - PAR / 2, PZ1 + PAR / 2, 1, 0, 6],
-    [0, ZN + PAR / 2, 0, -1, 7], // (esta fica no gradil do patamar, à frente de quem entra)
+    [LAND.x1 - 0.25, ZN + PAR / 2, 0, -1, 7], // (esta fica no gradil do patamar, na ponta direita: no meio, ela tapava a vista de quem entra)
     [PX + PAR / 2, PZ1 + PAR / 2, -1, 0, 8],
   ];
   const torches: Torch[] = [];

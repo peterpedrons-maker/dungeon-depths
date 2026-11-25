@@ -18,7 +18,7 @@ import { makeScribe } from '../scribe';
 import { diary, diaryStore } from '../../story/diary';
 import { drawGlyph } from '../../book/font';
 import { glyphsOf } from '../../story/lexicon';
-import { mkBox, shotGate } from './shell';
+import { mkBox, shotGate, slopedWall, stairs } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { makePointAsk } from '../pointask';
 import type { Inscription } from '../inscription';
@@ -325,17 +325,17 @@ export function buildRespiro1(ctx: Ctx): Room {
   // as galerias: blocos sólidos ao longo das paredes leste e oeste; em cima, o andar de cima; rampas no sul
   for (const s of [-1, 1]) {
     const gx = s * 6;
-    kit.box(2, GAL, 8, brick(8, GAL, 60 + s), gx, GAL / 2, -16);
-    kit.plane(2, 8, lambert(floorTexture([2 / T, 8 / T], 'ruin')), gx, GAL + 0.002, -16, -Math.PI / 2);
+    const galSide = kit.brick([1, 1], 0.95, 60 + s);
+    kit.box(2, GAL, 8, [galSide, galSide, lambert(floorTexture([1, 1], 'ruin')), galSide, galSide, galSide], gx, GAL / 2, -16);
+    kit.box(0.12, 0.14, 8, kit.slab, gx - s * 1.03, GAL - 0.2, -16, false); // a quina da galeria, em pedra lavrada
     boxes.push(mkBox(gx - 1, 0, -20, gx + 1, GAL, -12));
     // a rampa (degraus), do chão (perto da porta) até a galeria
-    for (let k = 0; k < 10; k++) {
-      const top = (GAL * (k + 1)) / 10;
-      kit.box(2, top, 0.56, kit.stone, gx, top / 2, -25.5 + 0.55 * (k + 0.5));
-    }
-    // parapeito da galeria (com um vão na ponta da rampa) e mureta da rampa
-    kit.box(0.14, 1.0, 8, kit.stone, gx - s * 1, GAL + 0.5, -16, false);
-    kit.box(0.14, GAL + 1, 5.5, kit.stone, gx - s * 1, (GAL + 1) / 2, -22.75, false);
+    stairs(kit, { x0: gx - 1, x1: gx + 1, zLow: -25.5, zHigh: -20, yHigh: GAL, n: 10 });
+    // parapeito da galeria (com um vão na ponta da rampa) e mureta da rampa, que acompanha a subida
+    const px = gx - s * 1;
+    kit.box(0.14, 0.92, 8, kit.stone, px, GAL + 0.46, -16, false);
+    kit.box(0.24, 0.09, 8.04, kit.slab, px, GAL + 0.965, -16, false);
+    slopedWall(kit, { x0: px - 0.07, z0: -25.5, x1: px + 0.07, z1: -20, top: (_x, z) => (GAL * (z + 25.5)) / 5.5 + 0.95 });
     rects.push(s < 0 ? [-5.15, -24.8, -4.85, -12, GAL + 1.2] : [4.85, -24.8, 5.15, -12, GAL + 1.2]);
   }
   // a câmara lateral (no alto, a leste): a folha arrancada nº 2

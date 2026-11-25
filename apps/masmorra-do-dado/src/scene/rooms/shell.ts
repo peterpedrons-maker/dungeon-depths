@@ -43,7 +43,7 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
     boxes,
     // coluna do chão ao teto
     pillar(px: number, pz: number, w = 0.9) {
-      kit.box(w, H, w, kit.brick([0.75, 3], 0.95, 50 + Math.abs(px * pz)), px, H / 2, pz);
+      kit.box(w, H, w, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, H / 2, pz);
       kit.box(w + 0.2, 0.25, w + 0.2, kit.stone, px, 0.125, pz);
       kit.box(w + 0.2, 0.25, w + 0.2, kit.stone, px, H - 0.125, pz);
       kit.contact(px, pz, w + 1.2);
@@ -126,3 +126,53 @@ export function wedge(x0: number, z0: number, x1: number, z1: number, yAt: (x: n
   return new THREE.Mesh(geo, [side, side, top, side, side, side]);
 }
 
+
+
+// ESCADA DE PEDRA, da borda baixa (zLow, yLow) à alta (zHigh, yHigh), entre x0 e x1, em n degraus. Cada degrau é um bloco de alvenaria
+// (o espelho, tijolo em metros) com um PISO de pedra lavrada clara por cima, saliente na frente (o focinho): a escada se lê de longe.
+// Devolve as caixas (para o dado). A sala continua dona do chão (groundY) e das colisões do jogador.
+export function stairs(kit: Kit, o: { x0: number; x1: number; zLow: number; zHigh: number; yLow?: number; yHigh: number; n: number }): Box[] {
+  const y0 = o.yLow ?? 0;
+  const dir = Math.sign(o.zHigh - o.zLow);
+  const TH = 0.07; // espessura do piso
+  const NOSE = 0.05; // quanto o piso avança sobre o degrau de baixo
+  const out: Box[] = [];
+  for (let k = 0; k < o.n; k++) {
+    const zA = o.zLow + ((o.zHigh - o.zLow) * k) / o.n;
+    const zB = o.zLow + ((o.zHigh - o.zLow) * (k + 1)) / o.n;
+    const top = y0 + ((o.yHigh - y0) * (k + 1)) / o.n;
+    const za = Math.min(zA, zB);
+    const zb = Math.max(zA, zB);
+    const bodyH = top - TH - y0;
+    kit.box(o.x1 - o.x0, bodyH, zb - za, kit.stone, (o.x0 + o.x1) / 2, y0 + bodyH / 2, (za + zb) / 2);
+    const ta = dir < 0 ? za : za - NOSE;
+    const tb = dir < 0 ? zb + NOSE : zb;
+    kit.box(o.x1 - o.x0, TH, tb - ta, kit.slab, (o.x0 + o.x1) / 2, top - TH / 2, (ta + tb) / 2);
+    out.push(mkBox(o.x0, y0, za, o.x1, top, zb));
+  }
+  return out;
+}
+
+// MURETA que acompanha uma rampa/escada: parede de tijolo de y0 até yAt(z) (ou yAt(x), se correr em x) e uma CAPA de pedra lavrada por cima,
+// um pouco mais larga. `thick` = espessura. Devolve as caixas do dado (em pedaços, seguindo a inclinação).
+export function slopedWall(kit: Kit, o: { x0: number; z0: number; x1: number; z1: number; top: (x: number, z: number) => number; y0?: number; segs?: number }): Box[] {
+  const y0 = o.y0 ?? 0;
+  const side = kit.stone;
+  kit.add(wedge(o.x0, o.z0, o.x1, o.z1, (x, z) => o.top(x, z) - 0.08, side, kit.slab, y0));
+  const alongX = o.x1 - o.x0 > o.z1 - o.z0;
+  const ex = alongX ? 0 : 0.04;
+  const ez = alongX ? 0.04 : 0;
+  kit.add(wedge(o.x0 - ex, o.z0 - ez, o.x1 + ex, o.z1 + ez, (x, z) => o.top(Math.min(o.x1, Math.max(o.x0, x)), Math.min(o.z1, Math.max(o.z0, z))), kit.slab, kit.slab, (x, z) => o.top(Math.min(o.x1, Math.max(o.x0, x)), Math.min(o.z1, Math.max(o.z0, z))) - 0.09));
+  const n = o.segs ?? 4;
+  const out: Box[] = [];
+  for (let k = 0; k < n; k++) {
+    const a = k / n;
+    const b = (k + 1) / n;
+    const xa = alongX ? o.x0 + (o.x1 - o.x0) * a : o.x0;
+    const xb = alongX ? o.x0 + (o.x1 - o.x0) * b : o.x1;
+    const za = alongX ? o.z0 : o.z0 + (o.z1 - o.z0) * a;
+    const zb = alongX ? o.z1 : o.z0 + (o.z1 - o.z0) * b;
+    out.push(mkBox(xa, y0, za, xb, Math.max(o.top(xa, za), o.top(xb, zb), o.top(xa, zb), o.top(xb, za)), zb));
+  }
+  return out;
+}
