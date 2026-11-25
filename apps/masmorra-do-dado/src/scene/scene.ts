@@ -566,6 +566,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // As falas da HISTÓRIA têm prioridade: enquanto uma está sendo escrita ou lida (`talkUntil`), a tradução por desenho e os comentários soltos esperam
   // (antes os dois disputavam o mesmo balão e um apagava o outro no meio da escrita).
   let talkUntil = 0;
+  // a boca mexe enquanto a fala está sendo ESCRITA no balão (o tempo real de escrita de cada fala)
+  let mouthUntil = 0;
+  let mouthId = -1;
+  const talkingNow = () => {
+    const ch = chatterStore.get();
+    if (ch && ch.id !== mouthId) {
+      mouthId = ch.id;
+      mouthUntil = performance.now() + lineMs(ch.glyphs, !!ch.pic);
+    }
+    return !!ch && performance.now() < mouthUntil;
+  };
   let forcedLook: { p: THREE.Vector3; until: number } | null = null;
   const saySay = (glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }) => {
     talkUntil = Math.max(talkUntil, performance.now() + (o?.delay ?? 0) * 1000 + 150 + lineMs(glyphs, !!o?.pic) + LINGER_MS);
@@ -743,8 +754,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       // o rosto que está à vista olha em volta: os olhos e as sobrancelhas acompanham o olhar do dado (só refaz a textura quando o olhar muda um pixel)
       if (rostoP[i] > 0.05 && rostos[i]) {
         const lk = life.out.look;
-        const q = { ex: Math.round(lk.x * 5), ey: Math.round(-lk.y * 4), by: Math.round(-lk.brow * 3), closed: lk.closed || eyesShut };
-        const key = `${q.ex},${q.ey},${q.by},${q.closed}`;
+        const q = {
+          ex: Math.round(lk.x * 5),
+          ey: Math.round(-lk.y * 4),
+          by: Math.round(-lk.brow * 3),
+          closed: lk.closed || eyesShut,
+          mo: eyesShut ? 0 : Math.round(lk.mouth * 4),
+          mx: Math.round(lk.mx * 2),
+          mw: Math.round(lk.mw * 3),
+          sq: Math.round(lk.squint * 3),
+          nose: lk.nose,
+        };
+        const key = `${q.ex},${q.ey},${q.by},${q.closed},${q.mo},${q.mx},${q.mw},${q.sq},${q.nose}`;
         if (rostoKey[i] !== key) {
           rostoKey[i] = key;
           rostos[i].setLook(q);
@@ -2184,7 +2205,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let dieBaseY = -0.2;
   let dieScaleBase = 0.17;
   // vindos das CONFIGURAÇÕES (story/config.ts)
-  let pixelLines = 200;
+  let pixelSize: 'fino' | 'medio' | 'grosso' = 'medio';
   let fovH = 95;
   let sensMouse = 1;
   let sensTouch = 1;
@@ -2196,7 +2217,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let shadowsOn = true;
   let diaryWas = false;
   const resize = () => {
-    // ~200 linhas na vertical: pixels bem visíveis, mas ainda legível (celular e PC).
+    // Linhas na vertical: no celular ~200 (pixel bem visível); no PC e telas grandes, mais (~360): com 200 linhas num monitor grande cada pixel
+    // virava um bloco de 5 a 7 e as coisas ficavam difíceis de entender (pedido do Pedro).
+    const big = window.innerHeight >= 600;
+    const pixelLines = big ? (pixelSize === 'fino' ? 480 : pixelSize === 'grosso' ? 240 : 360) : pixelSize === 'fino' ? 270 : pixelSize === 'grosso' ? 150 : 200;
     const scale = Math.max(2, Math.round(window.innerHeight / pixelLines));
     const w = Math.max(64, Math.ceil(window.innerWidth / scale));
     const h = Math.max(64, Math.ceil(window.innerHeight / scale));
@@ -2237,7 +2261,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     rooms.forEach((r) => {
       if (r.shadowLight && r.shadowLight.castShadow !== shadowsOn) r.shadowLight.castShadow = shadowsOn;
     });
-    pixelLines = c.pixel === 'fino' ? 270 : c.pixel === 'grosso' ? 150 : 200;
+    pixelSize = c.pixel;
     fovH = c.fov;
     sensMouse = c.mouseSens / 5;
     sensTouch = c.touchSens / 5;
@@ -2765,7 +2789,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // enquadramento do jogo novo, relativo ao ponto do dado (dieLie da sala 1): a câmera baixa, de quem acordou no chão, olhando o feixe do poço
   // nx/ny: onde o dado fica na tela (fração da meia-tela; a câmera é apontada para ele cair ali, à direita do menu e abaixo do logo)
   // (a câmera fica quase no chão, à esquerda do dado: atrás dele, o cone de luz do poço; no celular, um pouco mais longe para o dado não ficar enorme)
-  const TT = { cx: -1.0, cy: 0.18, cz: 0.9, nx: 0.3, nxNarrow: 0.38, ny: -0.5, far: 1.25 };
+  const TT = { cx: -1.0, cy: 0.18, cz: 0.9, nx: 0.3, nxNarrow: 0.38, ny: -0.5, far: 1.25, turn: -0.5 };
   // a sombra do dado no chão da sala (só na tela inicial)
   const titleShadow = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.5), new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
   titleShadow.rotation.x = -Math.PI / 2;
@@ -2846,7 +2870,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieInWorld = true;
     const x0 = titleFocus.x;
     const z0 = titleFocus.z;
-    let y = titleFocus.y + DIE_W * 0.62 + lo.dy * DIE_W * 3.4 + Math.sin(titleT * 0.9) * 0.002;
+    let y = titleFocus.y + DIE_W * 0.5 + Math.max(0, lo.dy) * DIE_W * 3.4; // reto no chão, apoiado numa face (só sai do chão nos pulinhos)
     let side = 0;
     // pulinho para fora do quadro (continuar): rola para a direita da câmera
     if (titleTr?.k === 'go' || titleTr?.k === 'out' || titleGone) {
@@ -2856,10 +2880,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     dieGroup.position.set(x0 + Math.cos(titleDieYaw) * side, y, z0 - Math.sin(titleDieYaw) * side);
     dieGroup.scale.setScalar(DIE_W * lo.scale);
-    dieGroup.quaternion.copy(titleQ.setFromAxisAngle(titleUp, titleDieYaw));
-    // de lado no chão: rolado e um pouco virado
-    tmpQ.setFromEuler(wobbleEuler.set(0.16, -0.38, 0.3));
-    dieHolder.quaternion.premultiply(tmpQ);
+    dieGroup.quaternion.copy(titleQ.setFromAxisAngle(titleUp, titleDieYaw + TT.turn)); // um pouco virado no chão: aparece a lateral e ele lê como cubo
+    // RETO no chão (pedido do Pedro): sem a inclinação da mão nem a "respiração" de girar; só o rosto e os olhos vivem
+    dieHolder.quaternion.copy(curQ);
     // as luzes do dado: a mesma direção de antes, só que relativa à câmera do mundo
     camera.updateMatrixWorld();
     for (const L of [key, fill, titleRim]) {
@@ -3593,7 +3616,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const lo =
       mode === 'title'
         ? life.update({ dt, t, idle: titleIdle > 1, target: lifeTarget(), busy: false, sleepAfter: 30, face: Math.max(...rostoP) })
-        : life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
+        : life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP), talking: talkingNow() });
     lifeGlow = lo.glow * (quizShake > 0.05 && !calmFx ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
     updateMats();
     computeTarget(face, spin);
@@ -3745,7 +3768,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sketch: (w = 'brasa') => showSketch(w, true),
       dieSay: (g: string[], pic?: string) => saySay(g, { pic }),
       opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, headW: topScribe && rooms[0].wellTop ? (topScribe.head.getWorldPosition(tmpV), [+(tmpV.x - wellWorld().x).toFixed(2), +(tmpV.y - wellWorld().y).toFixed(2), +(tmpV.z - wellWorld().z).toFixed(2)]) : null, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
-      lifeDbg: () => ({ look: { ...life.out.look }, rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
+      lifeDbg: () => ({ talking: talkingNow(), look: { ...life.out.look }, rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
       rostoSheet: () => {
         // prévia dos 6 rostos (face e brilho) em grande, só para avaliar o desenho
         const S = 6;

@@ -687,7 +687,7 @@ de texto novas, os ícones definitivos em 16×16/24×24 com a tecla no aviso de 
 é posto nesse ponto, no tamanho de um dado de verdade, e desenhado **com a câmera do mundo** (`dieInWorld`, `titlePose`), então tem a perspectiva
 e a profundidade da sala; continua na camada dele (luz própria, que gira junto com a câmera, nítido, sem o bloom da sala) e tem sombra no chão da sala. Nada é refeito à parte (o entulho falso do HUD saiu a pedido do Pedro). A câmera fica quase no chão
 (18 cm, de quem acordou deitado), à esquerda do dado, e é apontada para o dado cair um pouco à direita do centro (no celular, um pouco mais longe).
-O desfoque é uma **profundidade de campo de verdade e leve** (`uBlur` 0,9 + `uFocus`): o chão e o entulho em volta do dado ficam nítidos, o que
+O dado fica **reto no chão**, apoiado numa face e um pouco girado (aparece a lateral; o rosto vira para o lado do menu), sem a inclinação de antes. O desfoque é uma **profundidade de campo de verdade e leve** (`uBlur` 0,9 + `uFocus`): o chão e o entulho em volta do dado ficam nítidos, o que
 está mais longe ou bem perto da câmera fica um pouco borrado, sem achatar a sala (o Pedro achou que o fundo muito borrado parecia 2D). Atrás do dado, o cone de luz do poço com a poeira. No jogo novo, a câmera sobe de fato pelo poço até o
 branco. A câmera fica baixa e "respira" 1,5 cm; a luz respira (o brilho sobe e desce 3%). O **olho** segue o mouse no PC; com o
 teclado, olha para a opção marcada; no celular, para onde o dedo tocou e depois volta a vaguear; pisca; **cochila** depois de 30 s sem ninguém
@@ -805,3 +805,14 @@ abre no escuro; a luz volta, a moldura está lisa, a porta segue aberta. Repetí
   No léxico, PEGAR, ABRIR e LIVRO passam ao capítulo 1 (o dado já as mostra no Vestíbulo); a R5 entrou no `verify_vocabulario.mjs`.
 - **Interface:** "Caderno" no botão, na pausa, nas configurações e nas telas; o aviso de símbolo novo diz só "Anotado no caderno."; a face selada
   mostra "Selada." (sem tutorial). O quiz sem traduções; "cantos" virou "seis".
+
+## 51. O rosto vivo e o pixel no PC (pedidos do Pedro)
+- **O rosto do dado mexe tudo, mas a expressão é sempre NEUTRA** (`dielife.ts` → `RostoMove`; desenho em `tracos()` de `textures.ts`). A boca é sempre
+  uma linha **reta**: abre como fenda enquanto a fala está sendo escrita no balão (sílabas de 1 a 3 px, no ritmo da escrita: `talkingNow()` em
+  `scene.ts`), entreabre para respirar, aperta os lábios, desliza para um lado, abre grande só no **bocejo** (quando o sono chega). As pálpebras
+  de cima descem (foco quando ele quer muito ir a algum lugar, meio piscar, sono); o nariz dá fungadas; as sobrancelhas dão um lampejo de atenção
+  quando algo se abre. Nada de sorriso, tristeza ou raiva: nenhuma linha curva na boca, nada de sobrancelha torta. A boca usa aproximação
+  exponencial (estável com qualquer taxa de quadros).
+- **Menos pixelado no PC:** o jogo desenha ~360 linhas na vertical em telas com 600 px de altura ou mais (antes, ~200 em toda tela: num monitor
+  grande cada pixel virava um bloco de 5 a 7 e ficava difícil de entender). No celular continua ~200. A opção "Tamanho do pixel" vale nos dois
+  (PC: fino 480, médio 360, grosso 240; celular: 270, 200, 150).

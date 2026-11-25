@@ -646,6 +646,12 @@ export interface RostoLook {
   ey: number; // -3..3 (+ = para baixo)
   by: number; // sobrancelhas: -3..3 (+ = para baixo)
   closed: boolean; // olhos fechados (piscar, cochilo)
+  // o rosto vivo (sempre NEUTRO: a boca é sempre reta, nunca sorri nem entristece)
+  mo?: number; // abertura da boca em px: 0..4 (fenda reta)
+  mx?: number; // a boca desliza para o lado: -2..2 px
+  mw?: number; // largura: -3 (apertada) .. 1 (relaxada) px de cada lado
+  sq?: number; // pálpebra de cima descendo: 0..3 px
+  nose?: boolean; // narinas abertas
 }
 const NO_LOOK: RostoLook = { ex: 0, ey: 0, by: 0, closed: false };
 function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string, look: RostoLook = NO_LOOK) {
@@ -679,18 +685,30 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
       poly([[-6, 3], [6, 3]], lx, ly, 1, shade(hex('#f0c868'), glow ? 0.35 : 0.55)); // cílios de baixo, apagados
       return;
     }
-    poly(EYE_UP, lx, ly);
+    const sq = Math.max(0, Math.min(3, Math.round(look.sq ?? 0)));
+    // a pálpebra de cima desce sq px (só no meio; as pontas ficam presas no canto do olho)
+    const up = EYE_UP.map(([x, y]) => [x, y < 0 ? Math.min(-1, y + Math.round(sq * 1.5 * (1 - Math.abs(x) / 10))) : y]);
+    poly(up, lx, ly);
     poly(EYE_DN, lx, ly);
+    const lidAt = (x: number) => {
+      // altura da pálpebra de cima nesta coluna (interpolada)
+      for (let k = 1; k < up.length; k++) {
+        const [x0, y0] = up[k - 1];
+        const [x1, y1] = up[k];
+        if (x >= x0 && x <= x1) return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0 || 1);
+      }
+      return 0;
+    };
     const ix = lx + Math.max(-4, Math.min(4, look.ex - fx * 0.5 + Math.sign(look.ex) * 1));
     const iy = ly + Math.max(-1, Math.min(1, look.ey - fy));
     const r = 3;
     for (let y = -r; y <= r; y++)
       for (let x = -r; x <= r; x++) {
         const d = Math.abs(x) + Math.abs(y);
-        if (d <= r) px1(ix + x, iy + y, d === r ? eyeC : glow ? '#ffffff' : shade(base, 1.7));
+        if (d <= r && iy + y - ly > lidAt(ix + x - lx)) px1(ix + x, iy + y, d === r ? eyeC : glow ? '#ffffff' : shade(base, 1.7));
       }
-    if (!glow) px1(ix, iy, dark); // pupila
-    px1(ix - 1, iy - 1, glow ? '#ffffff' : '#fff4d8'); // brilho
+    if (!glow && iy - ly > lidAt(ix - lx)) px1(ix, iy, dark); // pupila
+    if (iy - 1 - ly > lidAt(ix - 1 - lx)) px1(ix - 1, iy - 1, glow ? '#ffffff' : '#fff4d8'); // brilho
   };
   // o número: n pontinhos na testa
   const x0t = 32 - ((n - 1) * 5) / 2;
@@ -712,19 +730,43 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   // nariz: a ponte desce do meio das sobrancelhas; a base com as narinas
   seg(32 + fx, 21 + fy, 32 + fx, 40 + fy);
   seg(30 + fx, 41 + fy, 34 + fx, 41 + fy);
-  px1(29 + fx, 42 + fy);
-  px1(35 + fx, 42 + fy);
+  if (look.nose) {
+    // fungada: as narinas abrem um pixel para fora e sobem
+    px1(28 + fx, 41 + fy);
+    px1(36 + fx, 41 + fy);
+    px1(28 + fx, 42 + fy);
+    px1(36 + fx, 42 + fy);
+  } else {
+    px1(29 + fx, 42 + fy);
+    px1(35 + fx, 42 + fy);
+  }
   // marcas nas maçãs do rosto (dois pontos, como uma inscrição)
   const faint = shade(hex('#f0c868'), glow ? 0.45 : 0.75);
   for (const x of [12, 52]) {
     px1(x + fx, 37 + fy, faint);
     px1(x + fx, 40 + fy, faint);
   }
-  // boca reta com as pontas marcadas, e o queixo
-  seg(24 + fx, 50 + fy, 40 + fx, 50 + fy);
-  px1(23 + fx, 51 + fy);
-  px1(41 + fx, 51 + fy);
-  seg(30 + fx, 54 + fy, 34 + fx, 54 + fy, 1, faint);
+  // boca RETA com as pontas marcadas, e o queixo. Ela mexe (abre como fenda, aperta, desliza para o lado), mas as linhas ficam sempre retas:
+  // a expressão nunca sai do neutro
+  const mo = Math.max(0, Math.min(4, Math.round(look.mo ?? 0)));
+  const mx = fx + Math.max(-2, Math.min(2, Math.round(look.mx ?? 0)));
+  const mw = Math.max(-3, Math.min(1, Math.round(look.mw ?? 0))) - (mo >= 3 ? 1 : 0); // aberta demais, ela estreita um pouco
+  const a = 24 - mw + mx;
+  const b = 40 + mw + mx;
+  const top = 50 + fy - (mo >= 2 ? 1 : 0); // o lábio de cima sobe um pouco quando a boca abre bem
+  const bot = top + mo + (mo > 0 ? 1 : 0); // sempre uma fresta escura entre os lábios
+  seg(a, top, b, top);
+  if (mo > 0) {
+    // o vão da boca (escuro) e o lábio de baixo
+    for (let y = top + 1; y < bot; y++) seg(a + 1, y, b - 1, y, 1, glow ? '#000' : '#05030a');
+    seg(a + 1, bot, b - 1, bot);
+    seg(a, top, a, bot);
+    seg(b, top, b, bot);
+  } else {
+    px1(a - 1, top + 1);
+    px1(b + 1, top + 1);
+  }
+  seg(30 + mx, 54 + fy + Math.max(0, mo - 2), 34 + mx, 54 + fy + Math.max(0, mo - 2), 1, faint); // o queixo desce com a boca bem aberta
 }
 
 // gira o conteúdo de uma face em múltiplos de 90° (sentido horário): as faces laterais do dado podem aparecer deitadas na tela, e o rosto precisa ficar de pé
