@@ -38,7 +38,7 @@ import { FIRE_FRASES, FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
-import { makeScribe } from './scribe';
+import { makeScribe, type ScribePose } from './scribe';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
@@ -815,41 +815,47 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let intro: null | { ph: number; t: number } = null;
   let burn: null | { t: number; dur: number } = null;
   let dropWatch: { t: number; cb: () => void } | null = null; // esperando o dado que caiu do poço parar no chão
-  // ── abertura (DESIGN.md §32): o barulho no poço, o jogador desconfia, ANDA até o poço, olha para cima e vê o Escrivão, que fala e JOGA o dado;
-  // a câmera acompanha a queda; olhando de novo, o Escrivão sumiu; a câmera volta para a frente e a cena fica travada até o jogador pegar o dado ──
+  // ── abertura (DESIGN.md §32–33): o barulho no poço, o jogador desconfia, ANDA até o poço e olha para cima; CORTE para fora: o Escrivão chega
+  // andando à boca do poço e se debruça; de baixo, ele fala; de lado, tira o dado de dentro do manto; close na mão; ele solta; a câmera desce
+  // POR BAIXO do dado que cai; o dado bate no chão; olhando de novo, ele sumiu; a câmera volta para a frente e a cena fica travada até pegar o dado ──
   let pinned = false; // cena travada esperando uma ação: não anda nem olha, mas interage
   let autoWalk: null | { x: number; z: number; speed: number } = null; // o personagem anda sozinho (cena) até um ponto fixo
-  let fovCine = 0; // > 0: campo de visão da cena (zoom para o alto do poço)
-  let scribeDrop: null | { ph: number; t: number; done: () => void; hold: number; thrown: boolean; arm: number } = null;
+  let fovCine = 0; // > 0: campo de visão da cena (zoom)
+  let cineCam: null | { pos: THREE.Vector3; look: THREE.Vector3 } = null; // câmera de cinema, solta do jogador
+  let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean } = null;
   let topScribe: ReturnType<typeof makeScribe> | null = null;
   let scribeDie: THREE.Object3D | null = null;
-  const SHAFT_LEDGE = 14.1; // altura (acima do teto) do parapeito onde o Escrivão se debruça
+  const outdoor = new THREE.DirectionalLight(0xd8dcf4, 0); // luz da madrugada lá fora (só acesa nos planos de fora)
+  scene.add(outdoor, outdoor.target);
   const shaftWorld = () => rooms[0].shaft!.clone().add(offs[0]).setY(rooms[0].shaft!.y - 2.5 + offs[0].y); // centro do furo no TETO
+  const wellWorld = () => rooms[0].wellTop!.clone().add(offs[0]); // a boca do poço, lá fora (nível do chão do pátio)
   const scribeHand = new THREE.Vector3();
+  const sPos = new THREE.Vector3();
+  const tmpV = new THREE.Vector3();
+  const tmpV2 = new THREE.Vector3();
+  const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
+  const SCRIBE_AT = new THREE.Vector3(0, 0, 1.6); // onde ele para, na borda, de frente para o furo
   const startScribeDrop = (done: () => void) => {
     const sh = shaftWorld();
     if (!topScribe) {
       topScribe = makeScribe();
-      topScribe.group.scale.setScalar(1.25);
-      // lá no alto, sem a névoa da sala e com o manto um pouco aceso: a silhueta (capuz, vazio do rosto, braço) se lê contra a luz do céu
+      // sem a névoa da sala e com o manto um pouco aceso: de baixo, a silhueta (capuz, vazio do rosto, braço) se lê contra o céu
       topScribe.group.traverse((o) => {
         const m = (o as THREE.Mesh).material as THREE.MeshLambertMaterial | undefined;
         if (!m) return;
         m.fog = false;
-        if (m.emissive && m.color) m.emissive.copy(m.color).multiplyScalar(0.42);
+        if (m.emissive && m.color) m.emissive.copy(m.color).multiplyScalar(0.3);
         m.needsUpdate = true;
       });
+      topScribe.group.scale.setScalar(1.3); // alto e curvado: o dado (grande) cabe na mão dele
       scene.add(topScribe.group);
       scribeDie = worldModel.clone();
       topScribe.hand.add(scribeDie);
-      scribeDie.position.set(0, -0.1, 0.04);
-      scribeDie.scale.setScalar(0.42 / 1.25);
+      scribeDie.position.set(0, -0.12, 0.05);
+      scribeDie.scale.setScalar(0.42 / 1.3);
     }
-    // na borda do poço, do lado oposto ao jogador, de frente para ele e debruçado sobre o vazio
-    topScribe.group.position.set(sh.x, sh.y + SHAFT_LEDGE, sh.z + 0.62);
-    topScribe.group.rotation.set(0.78, Math.PI, 0, 'YXZ'); // YXZ: inclina para a própria frente e depois vira para o jogador
-    topScribe.setAlpha(1);
-    scribeDie!.visible = true;
+    topScribe.setAlpha(0); // ainda não chegou
+    scribeDie!.visible = false; // o dado está guardado dentro do manto
     sfx.play('shaftRumble');
     ui.setBars(true);
     // um tranco curto da cabeça na direção do barulho (desconfiado), e fica parado um instante
@@ -858,39 +864,115 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const y1 = Math.atan2(-wx, -wz);
     const dy = Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw));
     camTween = { y0: yaw, p0: pitch, y1: yaw + Math.sign(dy || 1) * 0.32, p1: pitch + 0.12, t: 0, dur: 0.25 };
-    scribeDrop = { ph: 0, t: 0, done, hold: 0, thrown: false, arm: 0.35 };
+    scribeDrop = { ph: 0, t: 0, done, thrown: false, pose: {}, yaw: Math.PI, arrived: false };
   };
   const lookPitch = (wx: number, wy: number, wz: number) => Math.atan2(wy - pos.y, Math.hypot(wx - pos.x, wz - pos.z));
   const lookYaw = (wx: number, wz: number) => {
     const y1 = Math.atan2(-(wx - pos.x), -(wz - pos.z));
     return yaw + Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw));
   };
+  const setCine = (p: THREE.Vector3, l: THREE.Vector3) => {
+    if (!cineCam) cineCam = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
+    cineCam.pos.copy(p);
+    cineCam.look.copy(l);
+  };
+  const releaseDie = () => {
+    const S = scribeDrop!;
+    S.thrown = true;
+    scribeDie!.visible = false;
+    scribeDie!.getWorldPosition(scribeHand);
+    dieRoom = 0;
+    dieP.copy(scribeHand).sub(offs[0]);
+    {
+      // garante que ele cai por DENTRO da coluna do poço (senão bateria na borda)
+      const sl = rooms[0].shaft!;
+      const ox = dieP.x - sl.x;
+      const oz = dieP.z - sl.z;
+      const od = Math.hypot(ox, oz);
+      if (od > 0.68) {
+        dieP.x = sl.x + (ox / od) * 0.68;
+        dieP.z = sl.z + (oz / od) * 0.68;
+      }
+    }
+    dieV.set(0, -0.3, 0);
+    dieW.set(4, 2.5, -3.5);
+    worldDie.position.copy(dieP).add(offs[0]);
+    worldModel.scale.setScalar(0.42);
+    worldDie.visible = true;
+    thrownFace = 3;
+    dieThrown = true;
+    dieState = 'flying';
+    restTimer = 0;
+    sfx.play('shaftFall');
+    dropWatch = { t: 0, cb: () => scribeDrop && ((scribeDrop.ph = 9), (scribeDrop.t = 0)) };
+  };
   const updateScribeDrop = (dt: number, t: number) => {
     const S = scribeDrop;
     if (!S) return;
-    if (topScribe) {
-      topScribe.update(t, S.arm);
-      if (S.thrown && S.ph >= 5) {
-        // recua da borda e se desfaz (enquanto a câmera acompanha o dado)
-        S.hold += dt;
-        const k = Math.min(1, S.hold / 0.9);
-        topScribe.group.position.z = shaftWorld().z + 0.62 + k * 0.9;
-        topScribe.setAlpha(1 - k);
-      }
-    }
-    if (ui.blocked() || camTween) return; // espera a conversa e o movimento de câmera em curso
-    S.t += dt;
+    const W = wellWorld();
     const sh = shaftWorld();
-    const top = sh.y + SHAFT_LEDGE + 1.25; // onde a cabeça dele fica
     const go = (ph: number) => {
       S.ph = ph;
       S.t = 0;
     };
+    // ── o que acontece a cada quadro, mesmo durante conversas e movimentos de câmera ──
+    if (topScribe && S.ph >= 4) {
+      const P = S.pose;
+      if (S.ph === 4 && !S.arrived) {
+        // ele chega andando à boca do poço
+        const to = tmpV.copy(SCRIBE_AT).add(W);
+        const d = Math.hypot(to.x - sPos.x, to.z - sPos.z);
+        const sp = Math.min(0.85, d * 2.5 + 0.15);
+        if (d < 0.03) {
+          S.arrived = true;
+          P.walk = 0;
+        } else {
+          sPos.x += ((to.x - sPos.x) / d) * Math.min(d, sp * dt);
+          sPos.z += ((to.z - sPos.z) / d) * Math.min(d, sp * dt);
+          S.yaw = Math.atan2(to.x - sPos.x, to.z - sPos.z);
+          P.walk = sp;
+        }
+      }
+      if (S.arrived) S.yaw += Math.atan2(Math.sin(Math.PI - S.yaw), Math.cos(Math.PI - S.yaw)) * Math.min(1, dt * 3); // vira de frente para o furo
+      topScribe.group.position.copy(sPos);
+      topScribe.group.rotation.set(0, S.yaw, 0);
+      topScribe.animate(dt, t, P);
+    }
+    const outside = S.ph === 4 || S.ph === 6 || S.ph === 7;
+    if (outside !== outsideAtmo) {
+      outsideAtmo = outside;
+      blendAtmosphere(0, true); // corte: o ar muda na hora
+    }
+    outdoor.intensity = outside ? 1.9 : 0;
+    if (S.ph === 4 || S.ph === 6 || S.ph === 7) {
+      outdoor.position.set(W.x - 4, W.y + 9, W.z - 3);
+      outdoor.target.position.copy(W);
+    }
+    if (S.ph === 4) {
+      // plano geral, de fora: câmera baixa, empurrando devagar
+      const k = Math.min(1, S.t / 7);
+      setCine(tmpV.set(3.5 - 0.6 * k, 1.0 + 0.15 * k, 0.3 + 0.3 * k).add(W), new THREE.Vector3(-0.7 + 0.6 * k, 1.0, 1.7 - 0.3 * k).add(W)); // de lado: ele vem na direção da câmera
+    } else if (S.ph === 6) {
+      // de lado, mais perto: ele se endireita, leva a mão às costas e tira o dado de dentro do manto
+      setCine(tmpV.set(2.4, 1.2, 2.9).add(W), new THREE.Vector3(0, 0.95, 1.5).add(W));
+    } else if (S.ph === 7 && topScribe) {
+      // close na mão com o dado, sobre o poço
+      topScribe.hand.getWorldPosition(scribeHand);
+      setCine(tmpV.set(0.75, 0.95, 0.35).add(scribeHand), tmpV2.copy(scribeHand).add(new THREE.Vector3(0, -0.2, 0))); // de cima e de lado: a mão, o dado e a boca do poço embaixo
+    } else if (S.ph === 8) {
+      // a câmera desce POR BAIXO do dado: o dado em cima, contra a luz, e lá no alto a silhueta do Escrivão debruçado
+      const dw = worldDie.position;
+      const cx = clamp(dw.x + 0.28, sh.x - 0.6, sh.x + 0.6);
+      const cz = clamp(dw.z - 0.22, sh.z - 0.6, sh.z + 0.6);
+      setCine(tmpV.set(cx, dw.y - 1.6, cz), dw);
+    }
+
+    if (ui.blocked() || camTween) return; // as fases esperam a conversa e o movimento de câmera em curso
+    S.t += dt;
     switch (S.ph) {
       case 0: // parado, escutando
         if (S.t > 0.7) {
-          // vira devagar, desconfiado, para o poço
-          camTween = { y0: yaw, p0: pitch, y1: lookYaw(sh.x, sh.z), p1: 0.02, t: 0, dur: 1.7 };
+          camTween = { y0: yaw, p0: pitch, y1: lookYaw(sh.x, sh.z), p1: 0.02, t: 0, dur: 1.7 }; // vira devagar, desconfiado, para o poço
           go(1);
         }
         break;
@@ -898,21 +980,47 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         dialogue.say([{ who: 'thought', text: '…Tem alguém aí?' }], { block: true, onEnd: () => go(2) });
         S.ph = 1.5;
         break;
-      case 2: {
-        // anda até um ponto FIXO na beira da luz, do lado da porta: quem está mais perto da porta anda mais, quem está mais longe anda menos
-        autoWalk = { x: sh.x + 0.1, z: sh.z - 0.45, speed: 1.6 }; // quase embaixo do furo: só dali se vê o alto do poço
+      case 2:
+        // anda até um ponto FIXO quase embaixo do furo: quem está mais perto da porta anda mais, quem está mais longe anda menos
+        autoWalk = { x: sh.x + 0.1, z: sh.z - 0.45, speed: 1.6 };
         go(3);
         break;
-      }
       case 3:
         if (!autoWalk) {
-          // chegou: ergue os olhos devagar até o alto do poço (com zoom)
-          camTween = { y0: yaw, p0: pitch, y1: lookYaw(sh.x, sh.z), p1: lookPitch(sh.x, top, sh.z + 0.1), t: 0, dur: 2.2 };
+          // chegou: ergue os olhos devagar até a boca do poço (a luz, a trave, a corda)
+          camTween = { y0: yaw, p0: pitch, y1: lookYaw(W.x, W.z), p1: lookPitch(W.x, W.y + 1.6, W.z + 0.05), t: 0, dur: 2.2 };
+          fovCine = 32;
+          go(3.5);
+        }
+        break;
+      case 3.5:
+        if (S.t > 1.3) {
+          // CORTE: lá fora. O Escrivão vem andando por trás da mureta
+          sPos.copy(SCRIBE_FROM).add(W);
+          S.yaw = Math.atan2(SCRIBE_AT.x - SCRIBE_FROM.x, SCRIBE_AT.z - SCRIBE_FROM.z);
+          S.arrived = false;
+          S.pose = { walk: 0.8, lean: 0, headPitch: 0.1 };
+          topScribe!.setAlpha(1);
+          fovCine = 46;
           go(4);
         }
         break;
       case 4:
-        fovCine = 18;
+        if (S.arrived) {
+          // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
+          S.pose = { walk: 0, lean: 0.95, rest: 1, headPitch: 0.45 };
+          if (S.t > 6.2) {
+            // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
+            cineCam = null;
+            fovCine = 12;
+            topScribe!.head.getWorldPosition(tmpV);
+            yaw = lookYaw(tmpV.x, tmpV.z);
+            pitch = lookPitch(tmpV.x, tmpV.y, tmpV.z);
+            go(5);
+          }
+        }
+        break;
+      case 5:
         if (S.t > 0.9) {
           dialogue.say(
             [
@@ -920,75 +1028,62 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
               { who: 'escrivao', glyphs: ['eu', 'dar', 'dado'] },
               { who: 'escrivao', glyphs: ['voce', 'ler'] },
             ],
-            { block: true, onEnd: () => go(5) },
+            { block: true, onEnd: () => go(6) },
           );
-          S.ph = 4.5;
+          S.ph = 5.5;
         }
         break;
-      case 5: {
-        // ele estende o braço e SOLTA o dado lá de cima
-        S.arm = Math.min(1, 0.35 + S.t * 2.2);
-        if (!S.thrown && S.t > 0.35) {
-          S.thrown = true;
-          scribeDie!.visible = false;
-          scribeDie!.getWorldPosition(scribeHand);
-          dieRoom = 0;
-          dieP.copy(scribeHand).sub(offs[0]);
-          {
-            // garante que ele parte de DENTRO da coluna do poço (senão a sala o prenderia no teto)
-            const sl = rooms[0].shaft!;
-            const ox = dieP.x - sl.x;
-            const oz = dieP.z - sl.z;
-            const od = Math.hypot(ox, oz);
-            if (od > 0.4) {
-              dieP.x = sl.x + (ox / od) * 0.4;
-              dieP.z = sl.z + (oz / od) * 0.4;
-            }
-          }
-          dieV.set(0, -0.4, -0.15);
-          dieW.set(5, 3, -4);
-          worldDie.position.copy(dieP).add(offs[0]);
-          worldModel.scale.setScalar(0.42);
-          worldDie.visible = true;
-          thrownFace = 3;
-          dieThrown = true;
-          dieState = 'flying';
-          restTimer = 0;
-          sfx.play('shaftFall');
-          dropWatch = { t: 0, cb: () => go(6) };
-          go(5.5);
-        }
-        break;
-      }
-      case 5.5: {
-        S.arm += (0.2 - S.arm) * Math.min(1, dt * 3);
-        // o zoom se desfaz conforme o dado desce
-        const k = clamp((worldDie.position.y - pos.y) / Math.max(1, top - pos.y), 0, 1);
-        fovCine = fovBase + (18 - fovBase) * k;
-        break;
-      }
       case 6:
-        // o dado parou no chão: o olhar volta lá para cima… e ele não está mais lá
-        topScribe?.setAlpha(0);
-        camTween = { y0: yaw, p0: pitch, y1: lookYaw(sh.x, sh.z), p1: lookPitch(sh.x, top, sh.z + 0.1), t: 0, dur: 1.6 };
-        go(7);
+        // de lado: endireita-se um pouco, a mão direita vai às costas, para dentro do manto… e volta com o dado
+        fovCine = 40;
+        S.pose = { lean: 0.35, rest: 0.6, back: S.t < 1.25 ? 1 : 0, reach: S.t < 1.25 ? 0 : 0.45, headPitch: S.t < 1.25 ? 0.1 : 0.35, headYaw: S.t < 1.25 ? -0.35 : 0 };
+        if (S.t > 1.05) scribeDie!.visible = true;
+        if (S.t > 2.3) go(7);
         break;
       case 7:
-        fovCine = 18;
-        if (S.t > 1.5) {
-          dialogue.say([{ who: 'thought', text: 'Sumiu.' }], { block: true, onEnd: () => go(8) });
-          S.ph = 7.5;
+        // close na mão: ele estende o braço sobre o poço, segura um instante… e abre os dedos
+        fovCine = 38;
+        S.pose = { lean: 0.6, rest: 1, reach: 1, open: S.t > 1.9 ? 1 : 0, headPitch: 0.5 };
+        if (!S.thrown && S.t > 2.05) {
+          releaseDie();
+          go(8);
         }
         break;
-      case 8: {
+      case 8:
+        // caindo: quando ele chega perto do teto da sala, corta para o olhar do jogador, que o vê bater no chão
+        fovCine = 56;
+        S.pose = { lean: 0.95, rest: 1, reach: 0.2, open: 1, headPitch: 0.6 };
+        if (worldDie.position.y < sh.y + 1.4) {
+          cineCam = null;
+          const dw = worldDie.position;
+          yaw = lookYaw(dw.x, dw.z);
+          pitch = lookPitch(dw.x, dw.y, dw.z);
+          fovCine = 0;
+          topScribe?.setAlpha(0); // enquanto ninguém olha para cima, ele vai embora
+          go(8.5);
+        }
+        break;
+      case 9:
+        // o dado parou no chão: o olhar volta lá para cima… e ele não está mais lá
+        camTween = { y0: yaw, p0: pitch, y1: lookYaw(W.x, W.z), p1: lookPitch(W.x, W.y + 1.6, W.z + 0.05), t: 0, dur: 1.6 };
+        fovCine = 32;
+        go(9.5);
+        break;
+      case 9.5:
+        if (S.t > 1.3) {
+          dialogue.say([{ who: 'thought', text: 'Sumiu.' }], { block: true, onEnd: () => go(10) });
+          S.ph = 9.8;
+        }
+        break;
+      case 10: {
         // de volta para a frente, com o olhar um pouco baixo: o dado caído aparece no meio da tela
         fovCine = 0;
         const dw = worldDie.position;
         camTween = { y0: yaw, p0: pitch, y1: lookYaw(dw.x, dw.z), p1: clamp(lookPitch(dw.x, dw.y + 0.6, dw.z), -0.55, -0.15), t: 0, dur: 1.6 };
-        go(9);
+        go(11);
         break;
       }
-      case 9:
+      case 11:
         if (S.t > 0.2) {
           ui.setBars(false);
           scribeDrop = null;
@@ -1302,7 +1397,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const WARM_AMB = new THREE.Color(0xffc890);
   let stageK = progress.stage(); // suavizado: a mudança acontece ao longo de alguns segundos
   let inscGlow = 0;
+  let outsideAtmo = false; // abertura: os planos de FORA do poço têm o próprio ar (névoa pálida da madrugada, mais luz)
   const blendAtmosphere = (dt: number, snap = false) => {
+    if (outsideAtmo) {
+      const f = scene.fog as THREE.Fog;
+      f.color.set('#57556e');
+      f.near = 7;
+      f.far = 34;
+      ambient.color.setHex(0xa29fc6);
+      ambient.intensity = 1.55;
+      fogColor = '#' + f.color.getHexString();
+      return;
+    }
     const r = rooms[curRoom];
     const k = snap ? 1 : 1 - Math.exp(-dt * 2.2);
     stageK += (progress.stage() - stageK) * (snap ? 1 : Math.min(1, dt * 0.35));
@@ -2365,6 +2471,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     camera.position.set(pos.x, pos.y + bobY - introDrop, pos.z);
     camera.rotation.set(pitch, yaw, introRoll);
+    if (cineCam) {
+      // câmera de cinema (cena da abertura): solta do jogador
+      camera.position.copy(cineCam.pos);
+      camera.lookAt(cineCam.look);
+    }
 
     // ── dado no mundo ──
     if (dieState === 'flying') {
@@ -2646,7 +2757,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
-      opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
+      opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
       lifeDbg: () => ({ rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
       rostoSheet: () => {
         // prévia dos 6 rostos (face e brilho) em grande, só para avaliar o desenho

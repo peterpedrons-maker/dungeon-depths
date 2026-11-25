@@ -77,14 +77,86 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     (tube.material as THREE.MeshLambertMaterial).side = THREE.BackSide;
     tube.position.set(SHAFT.x, H + shaftH / 2, SHAFT.z);
     kit.group.add(tube);
-    const sky = new THREE.Mesh(new THREE.CircleGeometry(SHAFT.r * 1.2, 20), new THREE.MeshBasicMaterial({ color: 0xfff3d2, fog: false }));
-    sky.rotation.x = Math.PI / 2;
-    sky.position.set(SHAFT.x, H + shaftH, SHAFT.z);
-    kit.group.add(sky);
-    // lá no alto, um parapeito de pedra saindo da parede do poço: é dali que o Escrivão se debruça e joga o dado (abertura, DESIGN.md §32)
-    const ledge = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.16, 0.62), lambert(brickTexture([1, 0.5], 0.7, 43, D.theme)));
-    ledge.position.set(SHAFT.x, H + 14.1 - 0.08, SHAFT.z + SHAFT.r - 0.28);
-    kit.group.add(ledge);
+    // ── LÁ EM CIMA, do lado de fora (abertura, DESIGN.md §33): a boca do poço num pátio em ruínas, sob um céu pálido de madrugada ──
+    // Tudo acima do teto da sala: de dentro só se vê pelo poço (o céu, a trave e a corda em silhueta).
+    const TOP = H + shaftH;
+    const out = new THREE.Group();
+    out.position.set(SHAFT.x, TOP, SHAFT.z);
+    kit.group.add(out);
+    // céu: meia esfera (só a parte de cima, para nunca aparecer dentro das salas), degradê de escuro no horizonte a quase branco no alto
+    const skyCv = document.createElement('canvas');
+    skyCv.width = 4;
+    skyCv.height = 64;
+    {
+      const g = skyCv.getContext('2d')!;
+      const grd = g.createLinearGradient(0, 0, 0, 64);
+      grd.addColorStop(0, '#e8e4d6');
+      grd.addColorStop(0.45, '#b9b8c4');
+      grd.addColorStop(0.8, '#5c5a72');
+      grd.addColorStop(1, '#25243a');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, 4, 64);
+    }
+    const skyTex = new THREE.CanvasTexture(skyCv);
+    skyTex.colorSpace = THREE.SRGBColorSpace;
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(19, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), // cabe no alcance da câmera (40 m) visto lá de baixo
+      new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false }),
+    );
+    dome.position.y = -0.6;
+    dome.renderOrder = -1;
+    out.add(dome);
+    // chão do pátio (anel em volta do furo) e a mureta do poço
+    const ground = new THREE.Mesh(new THREE.RingGeometry(SHAFT.r, 30, 28, 1), lambert(floorTexture([18, 18], D.theme)));
+    ground.rotation.x = -Math.PI / 2;
+    out.add(ground);
+    const rimProf: [number, number][] = [[SHAFT.r, -0.05], [SHAFT.r, 0.72], [SHAFT.r + 0.05, 0.8], [1.33, 0.8], [1.38, 0.72], [1.38, 0]];
+    const rimGeo = new THREE.LatheGeometry(rimProf.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
+    const rimMesh = new THREE.Mesh(rimGeo, lambert(brickTexture([5, 0.7], 0.8, 47, D.theme)));
+    (rimMesh.material as THREE.MeshLambertMaterial).side = THREE.DoubleSide;
+    out.add(rimMesh);
+    // dois postes, a trave com o sarilho e a corda que desce pelo poço
+    const wood = new THREE.MeshLambertMaterial({ color: 0x5a4636, emissive: 0x1a120c });
+    for (const x of [-1.2, 1.2]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.15, 0.15), wood);
+      post.position.set(x, 1.07, 0);
+      post.rotation.z = x * -0.02;
+      out.add(post);
+    }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.13, 0.13), wood);
+    bar.position.set(0, 2.08, 0);
+    out.add(bar);
+    const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.9, 10), wood);
+    roll.rotation.z = Math.PI / 2;
+    roll.position.set(0, 1.86, 0);
+    out.add(roll);
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 4.6, 5), new THREE.MeshLambertMaterial({ color: 0x8a7656, emissive: 0x1e170e }));
+    rope.position.set(0.16, 1.86 - 2.3, 0.02);
+    out.add(rope);
+    // ruínas em volta: muretas quebradas, um pilar tombado, pedras; ao longe, torres escuras da Casa contra o céu
+    const ruin = (w: number, h: number, d: number, x: number, z: number, ry: number, seed: number) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lambert(brickTexture([w / T, h / T], 0.85, seed, D.theme)));
+      m.position.set(x, h / 2, z);
+      m.rotation.y = ry;
+      out.add(m);
+    };
+    ruin(3.2, 1.1, 0.5, -3.6, 2.4, 0.5, 51);
+    ruin(2.4, 1.7, 0.5, 3.9, -1.2, -0.9, 52);
+    ruin(0.6, 2.8, 0.6, -2.8, -2.6, 0.2, 53);
+    ruin(1.8, 0.7, 0.45, 2.6, 3.2, 0.25, 54);
+    for (const [x, z, sz] of [[1.9, 1.0, 0.22], [-1.7, -1.1, 0.3], [-2.2, 1.4, 0.18], [2.3, -2.4, 0.26]]) {
+      const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), kit.stone);
+      rk.position.set(x, sz * 0.6, z);
+      rk.rotation.set(x, z, 0);
+      out.add(rk);
+    }
+    const towerMat = new THREE.MeshBasicMaterial({ color: 0x1b1a2a, fog: false });
+    for (const [a, dist, h, w] of [[0.3, 13, 9, 2.6], [1.4, 15, 12, 3.4], [2.6, 12.5, 7, 4], [3.5, 14.5, 10, 2.6], [4.6, 13.5, 8, 5], [5.6, 15.5, 13, 3]]) {
+      const tw = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), towerMat);
+      tw.position.set(Math.sin(a) * dist, h / 2 - 0.5, Math.cos(a) * dist);
+      tw.rotation.y = a;
+      out.add(tw);
+    }
     // coluna de luz (translúcida) e mancha de luz no chão
     const beam = new THREE.Mesh(
       new THREE.CylinderGeometry(SHAFT.r * 0.95, SHAFT.r * 1.3, H, 20, 1, true),
@@ -304,6 +376,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     interactables,
     dieLie,
     shaft: v === 1 ? new THREE.Vector3(SHAFT.x, H + 2.5, SHAFT.z) : undefined,
+    wellTop: v === 1 ? new THREE.Vector3(SHAFT.x, H + 16, SHAFT.z) : undefined,
     doorZ: Z0,
     entranceZ: Z1,
     // 1ª sala: o jogador acorda perto da luz do poço, olhando pra ela

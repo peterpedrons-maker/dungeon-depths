@@ -98,6 +98,7 @@ export interface Room {
   interactables?: Interactable[];
   dieLie?: THREE.Vector3; // onde o dado está caído, no chão, antes de o jogador pegá-lo (só a 1ª sala)
   shaft?: THREE.Vector3; // poço de luz no teto (local): a câmera olha pra ele na cena de acordar
+  wellTop?: THREE.Vector3; // a boca do poço lá em cima, do lado de fora (local, no nível do chão do pátio): cena da abertura
   doorZ: number; // z (local) da parede do fundo, onde fica a porta
   entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)
