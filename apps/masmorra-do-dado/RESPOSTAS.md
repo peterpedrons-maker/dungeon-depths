@@ -19,11 +19,11 @@ Números = faces do dado: UM = 4 · DOIS = 0, 8 · TRÊS = 0, 4, 8 · QUATRO = 0
 
 ### Sala 1 — O Poço 📝 (já no jogo)
 Tentar a porta → o Escrivão joga o dado pelo poço → pegar o dado (E) → acender o único braseiro.
-- Cena do caderno: a luz revela o caderno → pegar (E) → o dado explica → abrir o diário (o ícone brilha) → anotar qualquer coisa em
-  ACENDER e em BRASEIRO → fechar → a porta abre.
 
 ### Sala 2 — O Vestíbulo 📝 (já no jogo)
 Acender exatamente **dois** dos três braseiros.
+- Cena do caderno (o diário do jogador): o 1º braseiro aceso revela o caderno → pegar (E) → abrir o diário (o ícone brilha) → escrever
+  qualquer coisa na página de BRASEIRO → fechar.
 
 ### Sala 3 — A Lousa ✅
 - Lousa 1: **0, 8** (DOIS). Lousa 2: **0, 4, 8** (TRÊS).
@@ -37,9 +37,9 @@ Acender exatamente **dois** dos três braseiros.
 - Porta (chão, «ACENDER DOIS», CINCO): fogo em **2** (canto do fundo à direita) e **6** (canto da frente à esquerda).
 - **S10 (gema, voltar depois do diário com «DIZER IGUAL FAZER»):** acender o soquete frio do balcão e pôr fogo **só em 2** → o chão escreve FAZER.
 
-### R1 — O Corredor dos Nichos 📝 (respiro)
-- Puzzle opcional: escrever **QUATRO (0, 2, 6, 8)** na lousa ao lado do nicho vazio → página de diário.
-- Mural ANTES · AGORA · DEPOIS (ensino, sem puzzle).
+### R1 — O Corredor dos Nichos e o Pátio da Cisterna 📝 (1ª área livre, grande)
+- Corredor: escrever **QUATRO (0, 2, 6, 8)** na lousa ao lado do nicho vazio → página arrancada.
+- Pátio (reflexo): acender os braseiros dos cantos **2 e 6** (a diagonal contrária); na água aparece DOIS → gema.
 - Semente: tapeçaria pequena num nicho → queimar depois da sala 8 → palavra talhada para o diário.
 - Atalho: grade para o balcão da sala 4.
 
@@ -61,10 +61,10 @@ Acender exatamente **dois** dos três braseiros.
 - Parte 1: escrever **QUATRO = 0, 2, 6, 8** na lousa (a frase CONFIRMADA); TRÊS é o boato.
 - Parte 2: acender as frases **«1 ANTES 3»**, **«4 DEPOIS 2»**, **«1 DEPOIS 4»** (as CONFIRMADAS); pilares **2, 4, 1, 3**.
 
-### R2 — O Pátio da Cisterna 📝 (respiro)
-- Puzzle opcional (reflexo): acender os braseiros dos cantos **2 e 6** (a diagonal contrária); na água aparece DOIS → gema.
-- Semente: estandarte de pano na galeria de cima → queimar depois da sala 8 → porta secreta (diário + gema).
-- Atalho: grade para o fundo da sala 6.
+### R2 — Os Banhos Secos 📝 (respiro)
+- Puzzle opcional: na piscina mais funda, acender **exatamente dois** braseiros (a frase CONFIRMADA) → gema.
+- Semente: estandarte de pano na parede da fonte → queimar depois da sala 8 → porta secreta (diário + gema).
+- Atalho: grade de uma câmara de banho para o fundo da sala 6.
 
 ### Sala 8 — O Pano ✅
 - Queimar o pano da **porta** (TODOS → DOIS) e o pano da **parede esquerda** (UM → TRÊS). O pano da direita é boato puro (pedra lisa).

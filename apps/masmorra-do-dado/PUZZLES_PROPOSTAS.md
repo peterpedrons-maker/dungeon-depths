@@ -63,8 +63,8 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 
 | # | Sala | Nível | O que o jogador descobre | Mecânica | Palavra nova |
 |---|---|---|---|---|---|
-| 1 | O Poço | 1 | o dado acende; **o caderno achado ensina o diário** (tutorial obrigatório) | (fica) + cena nova | ACENDER |
-| 2 | O Vestíbulo | 1 | o número é exato | (fica) | DOIS |
+| 1 | O Poço | 1 | o dado acende | (fica) | ACENDER |
+| 2 | O Vestíbulo | 1 | o número é exato; **o caderno achado vira o diário do jogador** (tutorial obrigatório) | (fica) + cena nova | DOIS |
 | 3 | **A Lousa** ✔ | 2 | acender em grade é **escrever**; os números são **as faces do dado** | M1 | TRÊS, QUATRO, BRASEIRO |
 | 4 | **O Fio de Fogo** ✔ | 3 | o fogo **corre**; «ACENDER UM» pode acender vários | M1+M2 | UM, CINCO |
 | 5 | **A Casa Escreve** ✔ | 3 | a Casa fala em fogo; **a lousa é um mapa** do salão | M9 + ordem | ORDEM |
@@ -265,7 +265,7 @@ Contáveis, quem passou por ali antes, o que é a Casa. Também é onde ficam os
 **Regras dos respiros:**
 - **Nada obrigatório.** A passagem para a frente está sempre aberta. Dá para atravessar em 1 minuto ou ficar 10.
 - **Nenhuma mecânica nova obrigatória**, nenhuma punição, nenhum tempo correndo.
-- Cada respiro tem **pelo menos um diário achado** (em português, de outros condenados), **uma inscrição do mundo** em glifos (só palavras
+- Cada respiro tem **pelo menos um diário achado ou uma página arrancada** do caderno de "a que veio antes" (em português), **uma inscrição do mundo** em glifos (só palavras
   conhecidas, no máximo uma nova, demonstrada) e **um pequeno puzzle opcional** (nível 1 a 3) com gema ou página de diário.
 - Cada respiro tem **uma coisa que só faz sentido depois** (semente da camada 2), para dar vontade de voltar.
 - Cada respiro abre um **atalho** para trás (uma grade que só abre deste lado), para a volta às salas antigas ser rápida.
@@ -277,7 +277,11 @@ Contáveis, quem passou por ali antes, o que é a Casa. Também é onde ficam os
 - **Tamanho (pedido do Pedro): os respiros podem e devem ser GRANDES**, com espaço de verdade para andar e explorar: câmaras laterais, andares, cantos escondidos. As descrições abaixo são o mínimo de cada um.
 Os respiros não entram na numeração dos puzzles deste documento (para não renumerar tudo); no jogo a numeração das salas é automática.
 
-### R1 · O Corredor dos Nichos (entre as salas 4 e 5)
+### R1 · O Corredor dos Nichos e o Pátio da Cisterna (entre as salas 4 e 5) — a primeira área livre, GRANDE
+Revisão: o corredor sozinho era pequeno demais para ser o primeiro respiro (o primeiro lugar aberto só chegava depois da sala 7). Agora o
+corredor **desemboca no pátio**: a primeira área livre do jogo é grande e chega logo depois da sala 4.
+
+**O Corredor dos Nichos (a entrada):**
 - **Forma:** corredor estreito que vira três vezes, com **nichos** nas paredes, cada um com um objeto velho (uma tigela, um giz gasto,
   uma corrente). Luz baixa de velas. Numa curva, uma **janela de grade** para uma galeria distante.
 - **O Escrivão de longe (2ª aparição):** pela janela, ele passa na galeria do outro lado, devagar, e some. Não dá para chegar lá (ainda).
@@ -287,29 +291,41 @@ Os respiros não entram na numeração dos puzzles deste documento (para não re
   cada cena, um glifo: **ANTES · AGORA · DEPOIS**. Os três são da mesma família (moldura aberta à esquerda) com o ponto à esquerda, no meio e à
   direita: a forma confirma o sentido. É o primeiro ensino forte de ANTES/DEPOIS, que a sala 7 vai exigir.
 - **Puzzle opcional (nível 1):** pela parede, **dados talhados** mostram as faces 1, 2, 3, (nicho vazio), 5. No fim do corredor, uma lousa
-  pequena ao lado do nicho vazio. **Solução:** escrever a face que falta, **QUATRO** (os quatro cantos). Abre o nicho: uma página de diário.
-- **Diário 1 (de "a que veio antes"):** *"Os pontos são números. Os números são dados. Eu já sabia disso antes de cair aqui, só não
-  sabia que sabia. Contei os nichos três vezes. Um está vazio. Tudo aqui está faltando um pedaço."*
+  pequena ao lado do nicho vazio. **Solução:** escrever a face que falta, **QUATRO** (os quatro cantos). Abre o nicho: uma **página arrancada**
+  do caderno de "a que veio antes", que se encaixa num buraco do diário do jogador.
 - **Semente (camada 2):** um nicho tem uma **tapeçaria pequena** com um glifo tecido. Na 1ª passagem não dá para fazer nada (o jogador nem
   sabe que pano queima). Depois da sala 8, queimada, mostra embaixo uma palavra talhada que vai para o diário.
-- **Atalho:** uma grade do lado direito abre para o balcão da sala 4.
 
-### R2 · O Pátio da Cisterna (entre as salas 7 e 8)
-- **Forma:** o **primeiro espaço aberto**. Um pátio quadrado alto, com galerias em volta em **dois andares** (escadas nos cantos) e, no
-  meio, uma **cisterna** redonda com água parada. Lá no alto, muito acima, um **buraco redondo** deixa entrar luz pálida (é um "ponto" do dado:
-  semente do S9, não comentada).
-- **Inscrições do mundo:** nas galerias, frases curtas sobre os Contáveis com as marcas que o jogador acabou de aprender, por exemplo
-  «CONTÁVEIS DIZER CONFIRMADO» e, gasta, «CONTÁVEIS MENTIR BOATO». (Palavras novas aparecem uma por frase e sem obrigação: são de história.)
+**O Pátio da Cisterna (o corredor se abre nele):**
+- **Forma:** o **primeiro espaço aberto**. Um pátio quadrado alto, com galerias em volta em **dois andares** (escadas nos cantos), câmaras
+  laterais pequenas e, no meio, uma **cisterna** redonda com água parada. Lá no alto, muito acima, um **buraco redondo** deixa entrar luz
+  pálida (é um "ponto" do dado: semente do S9, não comentada).
+- **Inscrições do mundo:** só com palavras que o jogador já sabe a esta altura (ACENDER, números, BRASEIRO) e **no máximo uma nova** por
+  frase, de história, com figura: por exemplo, sob um relevo de muitas pessoas em volta de um braseiro, «CONTÁVEIS ACENDER BRASEIRO».
 - **Puzzle opcional (nível 2):** na beira da cisterna há uma pedra com o glifo **DOIS** talhado (a diagonal do canto de cima à esquerda
   ao de baixo à direita) e quatro braseiros apagados nos cantos do pátio, que se refletem na água como os cantos de uma grade. A pedra
   pede que **o reflexo** escreva DOIS. Quem acende a diagonal "certa" vê, na água, a **outra** diagonal (o reflexo inverte de cima para
   baixo). **Solução:** acender os dois braseiros da diagonal contrária (o canto do fundo à direita e o da frente à esquerda); na água
   aparece o DOIS e sobe uma gema do fundo da cisterna. Prepara o "ver de outro ponto de vista" das constelações C3 e C4.
-- **Diário 2:** *"Aqui o que está talhado não mente. O que alguém só disse, mente às vezes. Eu acendi uma frase de boato e a Casa me
-  apagou como quem apaga uma vela. Acho que eles não gostavam de quem repete o que ouviu."*
-- **Semente (camada 2):** um **estandarte tecido** pendurado alto na galeria de cima, com a marca BOATO bordada. Na sala 8 o jogador
+- **Página arrancada nº 2 (dela):** *"Os pontos são números. Os números são dados. Eu já sabia disso antes de cair aqui, só não sabia que
+  sabia. Contei os nichos três vezes. Um está vazio. Tudo aqui está faltando um pedaço."*
+- **Atalho:** uma grade do corredor abre para o balcão da sala 4.
+
+### R2 · Os Banhos Secos (entre as salas 7 e 8)
+- **Forma:** um salão grande e **mais baixo que a porta de entrada**: o jogador desce degraus largos até um chão com **piscinas vazias** de
+  pedra, em **profundidades diferentes** (dá para descer numa, subir noutra), colunas grossas e uma **fonte seca** no meio. Câmaras de banho
+  laterais, pequenas, com bancos. É o oposto do pátio: fundo, abafado, com eco.
+- **Inscrições do mundo** (agora que o jogador conhece as marcas): na borda das piscinas, frases curtas sobre os Contáveis com
+  CONFIRMADO e BOATO, uma palavra nova de cada vez, cada uma junto de um relevo: «CONTÁVEIS DIZER CONFIRMADO» (relevo: alguém falando e um
+  dado pousado) e, gasta, «CONTÁVEIS MENTIR BOATO» (relevo: alguém cochichando).
+- **Puzzle opcional (nível 2, reprise das marcas):** na piscina mais funda, quatro braseiros e duas frases na parede: «ACENDER DOIS
+  CONFIRMADO» e «ACENDER UM BOATO». **Solução:** acender exatamente **dois** braseiros; sobe uma gema do ralo. (Acender um só não faz nada;
+  três, a Casa apaga.)
+- **Página arrancada nº 3 (dela):** *"Aqui o que está talhado não mente. O que alguém só disse, mente às vezes. Eu acendi uma frase de boato
+  e a Casa me apagou como quem apaga uma vela. Acho que eles não gostavam de quem repete o que ouviu."*
+- **Semente (camada 2):** um **estandarte tecido** pendurado alto na parede da fonte, com a marca BOATO bordada. Na sala 8 o jogador
   aprende que pano queima. Voltando, queima o estandarte: atrás dele, uma **porta secreta** para uma câmara com diário e gema.
-- **Atalho:** a galeria de baixo tem uma grade que dá para o fundo da sala 6 (a galeria comprida).
+- **Atalho:** uma das câmaras de banho tem uma grade que dá para o fundo da sala 6 (a galeria comprida).
 
 ### R3 · A Galeria dos Condenados (entre as salas 11 e 12)
 - **Forma:** galeria longa e alta, com **bancos de pedra** e, nas paredes, centenas de **marcas de contagem** riscadas a giz por outros
@@ -326,7 +342,7 @@ Os respiros não entram na numeração dos puzzles deste documento (para não re
 - **Diário 3 (que erra):** *"O símbolo com o ponto no meio e as duas barras do lado quer dizer UM, tenho certeza."* (é PEQUENO; quem fez a
   sala 9 sabe que ela errou: os diários nem sempre acertam.)
 - **Semente:** uma das marcas de giz é um **rosto** igual ao do dado, quase apagado (eco bem fraco do S11).
-- **Atalho:** escada lateral que desce até o pátio R2.
+- **Atalho:** escada lateral que desce até os Banhos Secos (R2).
 
 ### R4 · A Escadaria (entre as salas 14 e 15)
 - **Forma:** um poço vertical largo com uma **escada em espiral** subindo pelas paredes. Em cada volta, uma **janela** dá para uma sala já
@@ -470,53 +486,53 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 
 ## 5. As salas detalhadas
 
-### Sala 1 — O Poço: o caderno achado (tutorial do diário; pedido do Pedro)
+### Sala 2 — O Vestíbulo: o caderno achado, que vira o diário do jogador (tutorial; decisão do Pedro)
 
-**Por quê:** hoje o jogador pode passar o jogo inteiro sem saber que tem um diário onde anotar o que acha que cada símbolo quer dizer. Sem isso,
-decifrar a língua fica muito mais difícil. A cena ensina **que o diário existe, como abrir e como anotar**, e obriga o jogador a fazer isso uma vez.
+**A ideia (do Pedro):** o jogador **não começa com diário**. Ele o **acha na sala 2**, e é **o caderno de outra condenada** ("a que veio
+antes"), usado, gasto, com algumas anotações dela. A partir daí, é nele que o jogador escreve. Isso alivia a sala 1 (que volta a ser só
+acordar, o Escrivão, o dado e o primeiro braseiro) e dá um peso de história: ele continua o livro de alguém que não saiu dali.
 
-**Quando:** logo depois de o jogador acender o **primeiro braseiro** da sala 1 (e da comemoração do dado: VOCÊ ACENDER CONFIRMADO · EU SENTIR ALEGRIA).
-A porta ainda **não abre**: ela só abre no fim da cena.
+**Antes do caderno:** na sala 1 o jogador já vê símbolos (ACENDER, BRASEIRO e o que o dado e o Escrivão dizem). O jogo **guarda isso em
+silêncio**; o botão do diário ainda não existe. Quando o caderno é aberto pela primeira vez, esses símbolos aparecem como "avistados".
 
-**A cena, passo a passo:**
-1. **O fogo revela.** A luz do braseiro recém-aceso chega a um canto que antes estava no escuro, junto do entulho: um **caderno velho**, de capa de
-   couro, caído aberto. (Fogo = revelar: a primeira vez no jogo.) Câmera: o olhar desliza devagar até o caderno (`ctx.lookAt`, ~1 s).
-2. **O dado vê primeiro.** O dado da mão se inclina para o caderno (o olhar vivo da §23) e fala, em balão, com o **rabisco de um livro** na face de
-   cima (como o rabisco do braseiro; palavra nova no `SKETCH_WORDS`):
-   - «VOCÊ · VER · LIVRO» (o rabisco do livro aparece junto do glifo LIVRO)
-   - pausa
-   - «VOCÊ · PEGAR · LIVRO»
-3. **Pegar.** Aparece "E · Pegar o caderno" (AGIR no celular). O jogador **só pode** fazer isso (cena travada com `ctx.pin`: dá para olhar em volta,
-   não dá para sair). O caderno voa para a mão, como o dado.
-4. **O dado explica o que é**, uma frase por vez, com os rabiscos (cena de cinema, dado no centro da tela como na §29, passo 4):
-   - «ALGUÉM · ESCREVER · LIVRO» (rabisco: uma mão com giz escrevendo numa página)
-   - «ALGUÉM · LER · LIVRO»
-   - «VOCÊ · ESCREVER · LIVRO» (rabisco: o **mesmo** livro, com o desenho do **ícone do diário** do jogo)
-   - «VOCÊ · ABRIR · LIVRO» (rabisco: o livro abrindo)
-5. **O ícone do diário brilha.** Assim que o dado termina, o botão do diário (canto da tela; J no PC) **pulsa em dourado** e a tela escurece em
-   volta dele. O jogador **não consegue fazer mais nada** até abrir o diário (só olhar). Se demorar 8 s, o dado repete «VOCÊ ABRIR LIVRO», apontando
-   (inclinado) para o canto do ícone.
-6. **O diário abre direto numa página guiada.** O caderno achado virou as **primeiras páginas** do diário do jogador (na aba Textos: o caderno de
-   "a que veio antes"). A 1ª página dela, à mão, em português:
-   *"Acordei no chão. Tem um dado que fala desenhando. Ele me mostrou isto [glifo ACENDER, copiado a lápis] e depois o fogo pegou. Acho que quer
-   dizer 'acender'. Vou anotar tudo o que eu vir. Quem achar este caderno: anote você também. Ninguém aqui diz se você acertou."*
-   Ela aponta o caminho, mas a página é **dela**, não do jogador.
-7. **O livro vira sozinho para a aba Símbolos**, na página do glifo **ACENDER** (avistado na sala 1). O espaço "o que eu acho que significa"
-   **pulsa** e o cursor já está nele. O jogador **é obrigado a escrever alguma coisa** ali (pelo menos uma letra; no celular abre o teclado).
-   O diário **não corrige** (regra do jogo, §5): vale qualquer texto. O exemplo da outra condenada está a um toque, na página ao lado.
-8. **Depois, BRASEIRO.** O livro vira para a página do glifo **BRASEIRO** (que o dado mostrou com o rabisco) e pede a anotação do mesmo jeito.
-9. **Fechar.** Com as duas anotações feitas, o ícone de fechar (J/Esc, ou tocar fora) pulsa. Ao fechar, o dado reage: pulinho e «EU · SENTIR ·
-   ALEGRIA». **A porta abre** (a Casa lê a frase da porta, palavra por palavra). A cena acabou.
+**A cena, passo a passo (curta; o jogador no controle, sem câmera de cinema):**
+1. **O fogo revela.** O caderno está no chão, junto da base de uma coluna do Vestíbulo, **no escuro**. Quando o jogador acende o **primeiro
+   braseiro** da sala, a luz chega até ele: capa de couro, caído aberto.
+2. **O dado vê e fala** (balão; **uma palavra nova por frase**, regra do `LINGUA.md`, cada uma com o seu rabisco na face do dado):
+   - «VOCÊ · VER · LIVRO» (rabisco: um livro) — nova: LIVRO
+   - «VOCÊ · PEGAR · LIVRO» (rabisco: uma mão pegando) — nova: PEGAR
+3. **Pegar.** "E · Pegar o caderno" (AGIR no celular). A sala fica **travada** (`ctx.pin`: olhar em volta pode, sair não) até pegar.
+4. **O dado continua**, ainda em balão:
+   - «VOCÊ · ESCREVER · LIVRO» (rabisco: uma mão escrevendo, ao lado do **ícone do diário** do jogo) — nova: ESCREVER
+   - «VOCÊ · ABRIR · LIVRO» (rabisco: o livro abrindo) — nova: ABRIR
+5. **O ícone do diário aparece pela primeira vez** no canto da tela e **pulsa em dourado**, com a tela escurecida em volta. O jogador não pode
+   fazer mais nada até abrir (J no PC, o botão no celular). Se demorar 8 s, o dado repete «VOCÊ ABRIR LIVRO», inclinado para o ícone.
+6. **O caderno abre.** Ele **já é usado**:
+   - **Desgaste (só visual, sem significado):** palavras riscadas e reescritas, rasuras, borrões de tinta, manchas de fuligem e de dedo,
+     cantos dobrados, uma borda chamuscada, traços de lápis meio apagados, desenhos soltos nas margens (espirais, linhas, uma pedra, uma mão).
+     Varia de página para página. **Regra:** nenhum rabisco pode parecer glifo (nada de pontos em grade nem molduras retas; tudo curvo e de mão),
+     senão o jogador tenta ler o que não é língua.
+   - **As anotações dela**, numa **tinta diferente** (sépia, desbotada) da do jogador, e que **não podem ser apagadas**:
+     - ao lado de **ACENDER**: *"acho que é acender"*;
+     - em **BRASEIRO**: só um desenho torto de braseiro e um *"?"*.
+   - **Folhas arrancadas:** o caderno tem buracos; as **páginas arrancadas** dela estão espalhadas pelo jogo (respiros, câmaras secretas) e se
+     encaixam ao serem achadas. São **colecionáveis** (junto das gemas) e contam a história dela.
+   - As anotações dela **param de repente** no meio do caderno: foi onde ela parou. (Gancho de história.)
+7. **A primeira anotação do jogador (obrigatória).** O livro vira sozinho para a página de **BRASEIRO** (a do *"?"* dela). O campo "o que eu
+   acho que significa" **pulsa** com o cursor nele. O jogador **tem de escrever alguma coisa** (pelo menos uma letra; no celular abre o
+   teclado). O diário **não corrige** (§5): vale qualquer texto. A letra dele aparece em outra cor, embaixo do rabisco dela.
+8. **Fechar.** Com a anotação feita, o ícone de fechar (J/Esc, ou tocar fora) pulsa. Ao fechar, o dado dá um pulinho e diz «EU · SENTIR ·
+   ALEGRIA». O jogo segue: o puzzle da sala 2 (acender **exatamente dois** braseiros) continua igual.
 
-**O que ensina:** o diário existe; abre-se com J / o botão; os símbolos vistos entram lá sozinhos; **o jogador escreve o que acha**; ninguém
-confirma; os outros condenados também anotaram (e às vezes erram). Também ensina, de passagem, as palavras LIVRO, ESCREVER, LER, ABRIR, PEGAR,
-VER e ALGUÉM (todas de história, nenhuma exigida em puzzle por enquanto).
-**Depois da cena:** o caderno de "a que veio antes" ganha **páginas novas** pelo jogo (na sala 7, nos respiros, nas câmaras secretas), cada uma
-com um palpite dela. É ajuda, nunca a única fonte.
+**O que ensina:** que o diário existe, como abrir e como anotar; que outros condenados passaram por ali e anotaram (e às vezes erraram); que o
+jogador escreve **o que acha**, e ninguém confirma. As palavras LIVRO, PEGAR, ESCREVER e ABRIR são de história (nenhum puzzle as exige).
+**Notas dela mais adiante:** poucas, só das primeiras palavras, e **uma ou duas erradas** (por exemplo, numa página arrancada, PEQUENO = *"um?"*).
 
-**Motor:** caderno no chão revelado pela luz do braseiro; `ctx.pin` até pegar; rabiscos novos (LIVRO, mão escrevendo, livro abrindo); destaque
-pulsante no ícone do diário com a tela escurecida, bloqueando tudo menos abrir; modo guiado do diário (abre em Textos, vira para Símbolos >
-ACENDER, foco no campo de anotação, não deixa fechar antes de escrever; depois BRASEIRO); a porta da sala 1 passa a abrir só no fim da cena.
+**Motor:** botão do diário escondido até pegar o caderno; símbolos "avistados" guardados antes disso; caderno no chão revelado pela luz do
+braseiro; `ctx.pin` até pegar; rabiscos novos no dado (LIVRO, mão pegando, mão escrevendo com o ícone do diário, livro abrindo); destaque
+pulsante no ícone com a tela escurecida; modo guiado do diário (abre, vira para BRASEIRO, foco no campo, não fecha antes de escrever); camada
+de **desgaste** nas páginas (desenhada no próprio papel em pixel, `book/pages.ts`); anotações "dela" em tinta própria, não apagáveis;
+**páginas arrancadas** como buracos que se preenchem.
 
 ### Sala 3 — A Lousa (NÍVEL 2) · "acender em grade é escrever"
 
@@ -726,7 +742,7 @@ atraso e brasa visível andando (M2 com tempo); fumaça com vento e pano-parede 
 DEPOIS) em sete frases, e o jogador ainda não sabe ler nenhuma delas. Agora cada coisa vem no seu passo, e nenhuma chega sem ensino:
 - **ANTES/DEPOIS** já foram vistos com desenho no mural do respiro R1 (ANTES · AGORA · DEPOIS) e no mural da ordem da sala 5 («UM ANTES DOIS»);
 - **CONFIRMADO/BOATO** são ensinados aqui, na parte 1, numa lousa (o que o jogador já domina), por efeito;
-- o **caderno de "a que veio antes"** (achado na sala 1, ver a cena abaixo) ganha aqui uma página nova com os palpites dela sobre as marcas.
+- o **caderno de "a que veio antes"** (o diário do jogador, achado na sala 2) ganha aqui uma **página arrancada** dela com palpites sobre as marcas.
 
 **Forma:** duas câmaras ligadas por uma grade. A 1ª é pequena (a lousa); a 2ª é a sala média das frases (11×17 m), sem braseiros à vista:
 quatro rachaduras com brasa no chão.
@@ -738,7 +754,7 @@ embaixo da outra:
 Quem escreve **TRÊS** (acreditou na de baixo) vê a Casa **apagar a lousa** e o glifo BOATO **piscar**. Quem escreve **QUATRO** vê o glifo
 CONFIRMADO **acender** e a grade se abrir. As duas frases têm quatro glifos, três deles conhecidos: a única novidade é a marca do fim.
 (O verificador confere que escrever um nunca passa pelo outro no caminho: o efeito de cada marca é limpo.)
-Junto da grade, a página nova do caderno de "a que veio antes": *"Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo. Acho
+Junto da grade, uma **página arrancada** do caderno dela: *"Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo. Acho
 que o risquinho com o ponto em cima quer dizer 'é verdade'. O outro, 'dizem que'."*
 
 **Parte 2 — ANTES/DEPOIS (o puzzle).** Cinco frases curtas em dois parágrafos, cada uma com o soquete de brasa no começo:
@@ -764,7 +780,7 @@ boatos são falsos e acreditar neles dá contradição; a ordem não é 1-2-3-4 
 **Por que continua sendo nível 5:** o difícil agora é **pensar** (DEPOIS vira ao contrário duas vezes, a ordem não é a de leitura, o boato
 «UM ANTES QUATRO» parece natural e engana), não decifrar um muro de glifos. As cadeias longas (5 braseiros, nomes trocados) ficam para as salas 9 e 11.
 
-**Os boatos são todos falsos de propósito** (a sala 11 quebra esse hábito). **Sem segredo próprio** (o pátio R2 vem logo depois).
+**Os boatos são todos falsos de propósito** (a sala 11 quebra esse hábito). **Sem segredo próprio** (os Banhos Secos, R2, vêm logo depois).
 
 **Motor:** lousa de fogo com duas frases (aceita uma, recusa a outra e faz o glifo da marca piscar); `FIRE_FRASES` com o conteúdo novo
 (4 pilares, 5 frases, `seq` = 2, 4, 1, 3).
@@ -780,8 +796,8 @@ panos pendurados **alto** (só se alcançam **arremessando**), rachaduras frias 
 
 **Braseiros:** quatro, com número no pedestal (UM a QUATRO). Regra `order` com `hints: false`, penalidade 8 s.
 
-**Revisão (casar com o pátio R2 e ensinar sem punir):**
-- O jogador chega do **pátio R2**, onde viu um estandarte de pano com BOATO bordado, alto demais e sem nada a fazer, e leu no diário 2
+**Revisão (casar com os Banhos Secos, R2, e ensinar sem punir):**
+- O jogador chega dos **Banhos Secos (R2)**, onde viu um estandarte de pano com BOATO bordado, alto demais e sem nada a fazer, e leu na página arrancada nº 3
   *"o que está talhado não mente"*. A sala 8 é onde isso vira ferramenta.
 - **Demonstração na entrada (§22, sem punição):** logo depois da porta de entrada, a Casa deixou um **braseiro pequeno aceso** e, pendurado
   acima dele, um **trapo** com um glifo tecido. Enquanto o jogador olha, uma fagulha sobe, o trapo **pega fogo sozinho** e queima de baixo
