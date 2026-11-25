@@ -67,7 +67,7 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 | 3 | **A Lousa** ✔ | 2 | acender em grade é **escrever**; os números são **as faces do dado** | M1 | TRÊS, QUATRO, BRASEIRO |
 | 4 | **O Fio de Fogo** ✔ | 3 | o fogo **corre**; «ACENDER UM» pode acender vários | M1+M2 | UM, CINCO |
 | 5 | **A Casa Escreve** ✔ | 3 | a Casa fala em fogo; **a lousa é um mapa** do salão | M9 + ordem | ORDEM |
-| 6 | A Chama Curta | 4 | tempo e tamanho (a sala 5 atual, quase igual) | M7 | TEMPO |
+| 6 | **A Chama Curta** ✔ | 4 | tempo e tamanho; **uma canaleta longa é um pavio** (o fogo espera) | M7+M2 | TEMPO |
 | 7 | O Que a Casa Confirma | 5 | marcas; o dado acende frases (a sala 6 atual) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
 | 8 | **O Pano** | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
 | 9 | **Os Apelidos** ✔ | 6 | o mesmo braseiro tem dois nomes; o glifo engana | M8 | GRANDE, PEQUENO |
@@ -119,12 +119,11 @@ Segredo de voltar depois (S10): com UMA ignição, o chão escreve FAZER.
 (Detalhada na seção 5, com a constelação C1.) Salão de 9 colunas; a lousa da Casa acende uma posição de cada vez, em laço: é o **mapa** do
 salão. **Solução: acender os braseiros das colunas meio-direita, fundo-esquerda, frente-meio, fundo-direita.**
 
-### Sala 6 — A Chama Curta (nível 4) · a atual (tempo e tamanho), quase igual
-Mantém a solução de `PUZZLES.md` (grande → médio-grande → médio-pequeno → pequeno).
-- **Camada escondida para depois (S3, volta):** a fumaça do braseiro grande **entorta** sempre para a mesma parede, onde um trecho de
-  "pedra" **balança de leve** com o ar. É um **pano pintado como pedra** (só se entende depois da sala 8). Queimado, mostra um corredor
-  curto com um diário achado.
-- **Motor:** M4 (partículas de fumaça com vento por sala), pano-parede.
+### Sala 6 — A Chama Curta (nível 4) · "o fogo que espera" ✔ `tools/verify_chama_curta.mjs`
+(Detalhada na seção 5; **refaz** a sala 5 atual do jogo.) Antecâmara com um portão que só fica aberto enquanto a chama vive; depois, a
+galeria com quatro braseiros que se apagam. Os dois mínimos ficam um em cada ponta, longe demais para a mão: o labirinto talhado no chão
+perto da porta é um **pavio**. **Solução: acender o grande e o médio (o médio acende o pavio), voltar até o mínimo da entrada e acendê-lo
+quando o mínimo do fundo pegar fogo sozinho.** Segredo de voltar depois: S3 (pano-parede).
 
 ### Sala 7 — O Que a Casa Confirma (nível 5) · a atual
 Fica como está (ver `PUZZLES.md`). Ela ensina as marcas, e as salas 9, 11, 14, 16 e 17 dependem disso.
@@ -286,6 +285,18 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
   marca de confirmação** (`HISTORIA.md`). É a virada da história escondida no 1º cenário do jogo.
 - **S10 · «DIZER IGUAL FAZER» (sala 4, camada 2):** a plaquinha fria do balcão só se entende com o lema dos Contáveis, achado num diário
   bem depois. Com uma ignição, o chão da sala 4 escreve FAZER (ver a sala 4 na seção 5).
+- **S11 · O rosto do Boato (capítulo final; ideia do Pedro):** numa sala do último capítulo, a **saída fica no alto** (o jogador sobe
+  uma rampa ou escada até a porta). Lá embaixo, a sala está cheia de **ruínas**: colunas tombadas, rachaduras, entulho, dois braseiros.
+  **De um ponto exato perto da saída**, olhando para trás e para baixo, as ruínas formam **o rosto do dado**: as colunas tombadas são as
+  sobrancelhas e a boca, uma rachadura é o nariz, os dois braseiros são os olhos (o rosto só "liga" com os dois acesos). De qualquer
+  outro lugar, é só entulho. Não pode ser escancarado: quem está atento percebe.
+  - **Por que no fim e não antes:** a dica é forte demais. Quem vê o rosto entende que **a Casa é um dado** (S9), e isso explica tudo o
+    que vem depois. Perto do fim ela vira **confirmação**: quem já tinha percebido sente "eu sabia"; quem não tinha ganha a epifania a
+    tempo de entender o resto (os poços, as faces do mapa, o 4º final).
+  - **O rosto olha de volta:** o dado é o Boato, "o boato sobre você". Se a Casa tem o rosto dele, o jogador passou o jogo inteiro
+    **dentro do boato**. É uma virada de história, não só de puzzle.
+  - **Não entrega o 4º final:** ver o rosto dá o *entendimento*; o 4º final continua pedindo as palavras (LANÇAR, CASA) e as seis faces (§3d).
+  - **Eco opcional no capítulo 1:** dois pontos de luz num teto qualquer, que só parecem "olhos" depois de o jogador ter visto o rosto.
 - **S9 · A Casa é um dado (a maior epifania; a história já diz isso):** os **pontos de um dado são buracos**. **O poço do teto da sala 1
   é um ponto**: o jogador caiu pela face UM. O capítulo 1 é a face UM (um ponto só: o poço). O capítulo 2 tem **dois poços**, o 3 tem
   **três**, sempre na diagonal… Quem presta atenção percebe, no meio do jogo, que está **dentro de um dado gigante** e que cada capítulo é
@@ -455,6 +466,58 @@ frase em laço tem começo e fim (ORDEM). **Palavra nova:** ORDEM (usada depois 
 
 **Motor:** lousa animada (M9) com laço, tempo escuro e o 5º quadro a cada 3 voltas depois de resolvida; brilho de ORDEM no escuro; braseiros
 sem número; tochas de coluna com tempo de chama; rachaduras frias + braseiro `hidden`; câmara secreta.
+
+### Sala 6 — A Chama Curta (NÍVEL 4) · "o fogo que espera"
+
+**A ideia:** a sala antiga ensinava "o que dura mais, primeiro". Aqui entra o **tempo** (a palavra TEMPO) e ele se junta ao que a sala 4
+ensinou: o fogo corre por canaletas. A virada: **uma canaleta longa é um pavio**. O fogo leva segundos para atravessá-la, então ela
+**acende uma coisa mais tarde, sozinha, longe do jogador**. A sala é impossível só com as mãos.
+
+**Forma:** a sala antiga, galeria **comprida** (~27 m), escura, com colunas em zigue-zague. Na frente, uma **antecâmara** curta separada
+por um **portão de grade**.
+
+**1. Antecâmara (regra, sem punição):** um braseiro pequeno ao lado do portão. O portão **sobe enquanto a chama está viva** e **desce quando
+ela se apaga** (~4 s). Acender e passar. Se demorar, é só acender de novo. Ensina, pelo efeito, que **chama pequena dura pouco** e que o
+mundo reage **enquanto** algo queima. O glifo TEMPO, na frase da porta lá no fundo, pulsa quando uma chama está acabando.
+
+**2. A galeria:** a porta diz «ACENDER QUATRO BRASEIRO TEMPO» (os quatro acesos ao mesmo tempo; a porta então abre para sempre).
+| Braseiro | Onde (distância da entrada da galeria) | Dura |
+|---|---|---|
+| **grande** | meio da galeria, à esquerda (13 m) | 25 s |
+| **médio** | fundo, à direita, junto da porta (26 m) | 12 s |
+| **mínimo da entrada** (uma tigela de mão) | logo depois do portão, à direita (8 m) | 2,5 s |
+| **mínimo do fundo** | fundo, à esquerda, junto da porta (27 m) | 2,5 s |
+
+Entre o médio e o mínimo do fundo, o chão tem um **desenho de labirinto talhado** (uns 3 m de largura). Parece decoração. É uma **canaleta
+enrolada**: quando o médio acende, o fogo entra no labirinto, anda devagar pelas voltas (dá para ver a brasa caminhando) e acende o mínimo
+do fundo **6,5 s depois**.
+
+**Solução (passo a passo):**
+1. Acender o **grande** (no meio) e o **médio** (no fundo). Ao acender o médio, o fogo começa a andar pelo labirinto.
+2. **Voltar até o mínimo da entrada** (uns 19 m, ~5 s andando) e **esperar com o dado na mão, olhando para o fundo**.
+3. Quando o mínimo do fundo **pega fogo sozinho** (a chama aparece lá longe), acender o mínimo da entrada. Os quatro ficam acesos juntos
+   por um instante e a porta abre.
+- Também funcionam: médio → grande → mínimo da entrada, e médio → mínimo da entrada → grande (apertado). O que não muda: **o mínimo do
+  fundo tem de ser aceso pelo pavio**.
+
+**Por que a mão não chega** (`node tools/verify_chama_curta.mjs`, simulação de caminho com a velocidade real do motor e espera livre):
+- andando (4,2 m/s), chegando a 2 m de cada braseiro: **3 planos funcionam, e todos usam o pavio**;
+- acender os dois mínimos à mão: **nenhum plano funciona**, nem correndo (Shift do PC, 5,7 m/s) e arremessando de 5 m: de um mínimo ao
+  outro leva 3,2 s, e a chama mínima dura 2,5 s;
+- o hábito da sala antiga ("o que dura mais primeiro, tudo à mão") falha.
+
+**Epifania:** o jogador tenta, corre, erra por meio segundo, e então olha de novo para o "enfeite" do chão perto da porta. Ele já sabe que
+canaleta leva fogo (sala 4). Agora descobre que **canaleta também é tempo**.
+
+**Segredo S3 (camada 2, voltar depois da sala 8):** a fumaça do braseiro grande **entorta** sempre para o mesmo trecho da parede direita,
+que **balança de leve**. É um **pano pintado como pedra**. Depois que a sala 8 ensinar que pano queima, o jogador volta, atira o fogo no
+"muro" e acha um corredor curto com um diário achado.
+
+**O que ensina:** tamanho = duração; o mundo reage **enquanto** algo queima (o portão); uma canaleta longa é um **pavio** (atraso); planejar
+o caminho e **esperar** no lugar certo. **Palavras novas:** QUATRO (já vista na sala 3) e TEMPO.
+
+**Motor:** regra `together` com `burn` (já existe); portão que fica aberto só enquanto um braseiro queima (novo, pequeno); canaleta-pavio com
+atraso e brasa visível andando (M2 com tempo); fumaça com vento e pano-parede (S3).
 
 ### Sala 8 — O Pano (NÍVEL 5) · "o fogo queima o boato" + constelação C2
 
