@@ -604,11 +604,7 @@ a "parede estranha"). Nada de posição, tamanho, regra ou caminho mudou; só co
 
 Seguindo a ordem da §7 do documento de direção de arte. Capturas de antes em `docs/arte/`.
 
-**Mão e dado (§4.9):** o dado da mão ficou ~40% menor e mais baixo, no canto de baixo à direita, e agora é **segurado por uma mão** em pixel
-(`src/scene/hand.ts`): palma por baixo, quatro dedos subindo pelo lado esquerdo do dado, o polegar na quina direita (sem cobrir o rosto), pulso
-e manga de lã com punho dobrado. A mão não pula nem gira com o dado; balança com o passo, afunda um pouco quando o jogador para (mola) e,
-quando o dado está fora, baixa quase até sumir. O próprio dado ilumina de leve a mão (a cor da face). Na cena do dado (abertura, perguntas)
-a mão sai e o dado cresce até o tamanho de sempre. **O giz não aparece no capítulo 1** (nem em saves antigos; só na sala de teste).
+**Mão e dado (§4.9):** experimentei uma mão em pixel segurando um dado ~40% menor; o Pedro achou que ficou ruim e ela **saiu**: o dado da mão voltou ao tamanho e à posição de antes. Ficou só o giz fora do capítulo 1 (nem em saves antigos; só na sala de teste).
 
 **Interface (§4.11):** uma fonte só, **a do diário**, em todo texto: `tools/build_font.mjs` gera `public/fonts/mdd-pixel.otf` a partir da
 tabela de `src/book/font.ts` (cada pixel vira um quadrado; os acentos são os mesmos). Os tamanhos são múltiplos de 10 px (`--fs/--fm/--fl`,

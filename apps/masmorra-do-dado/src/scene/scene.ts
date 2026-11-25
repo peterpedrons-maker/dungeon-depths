@@ -36,7 +36,6 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
-import { makeHand } from './hand';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
@@ -371,9 +370,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const dieHolder = new THREE.Group();
   dieGroup.add(dieHolder);
   dieHolder.add(buildDie(handMats));
-  // a mão que segura o dado (DIRECAO_DE_ARTE.md §4.9): não gira nem pula com o dado; acompanha a posição de base dele
-  const hand = makeHand();
-  dieScene.add(hand.group);
 
   // dado arremessado: vive dentro da sala, com física própria
   const worldDie = new THREE.Group();
@@ -527,7 +523,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieNdc.copy(dieGroup.position).project(dieCam);
       x = ((dieNdc.x + 1) / 2) * 100;
       y = ((1 - dieNdc.y) / 2) * 100;
-      up = 11 + 23 * dieCine; // o balão sobe junto quando o dado cresce na cena
+      up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
     } else {
       dieNdc.copy(worldDie.position).project(camera);
       x = Math.max(14, Math.min(86, ((dieNdc.x + 1) / 2) * 100));
@@ -2054,10 +2050,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.aspect = aspect;
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
-    // o dado na mão é PEQUENO e fica BAIXO, no canto de baixo à direita (no máximo ~15% da altura da tela; DIRECAO_DE_ARTE.md §4.9)
-    dieScaleBase = Math.min(0.235, halfW * 0.56) * 0.6;
-    dieBaseY = aspect < 1 ? -0.15 : -0.2;
-    handX = Math.min(halfW * 0.6, 0.5);
+    dieScaleBase = Math.min(0.235, halfW * 0.56);
+    dieBaseY = aspect < 1 ? -0.1 : -0.14;
+    handX = Math.min(halfW * 0.4, 0.47);
     hudHalfW = halfW;
     soapBase.set(-handX, dieBaseY + 0.02, -1);
   };
@@ -2975,29 +2970,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieHolder.quaternion.copy(lifeQ).multiply(curQ).multiply(wobble);
     if (cn > 0.01 && (cineDroop > 0.01 || cineWig > 0.01)) dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(0.42 * cineDroop * cn, 0, Math.sin(t * 15) * 0.2 * cineWig * cn)));
     const du = ease(dieU);
-    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 1.92 * cn)); // (na cena ele cresce até o tamanho de sempre)
+    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 0.75 * cn));
     dieGroup.position.set(
       ((handX + (-handX - handX) * du) + lo.dx + Math.sin(t * 71) * 0.011 * quizShake) * (1 - cn), // na cena: exatamente no centro da tela
       (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
       -1,
     );
-    // a mão: na posição de base do dado (sem os pulos dele), com o balanço do passo; some na cena e com o livro na mão
-    hand.group.scale.setScalar(dieScaleBase * (1 - 0.38 * du));
-    hand.group.position.set(handX + (-handX - handX) * du, 0, -1);
-    hand.update(dt, t, {
-      hold: dieState === 'hand' ? 1 : 0,
-      walk: moving ? Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED) : 0,
-      bob: dieBaseY + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(t * 1.6) * 0.006,
-      away: Math.max(cn, hasDie ? 0 : 1, du > 0.5 ? 1 : 0),
-      glow: accentLight.color,
-    });
-    if (import.meta.env.DEV && (globalThis as Record<string, unknown>).__handZoom) {
-      const z = (globalThis as Record<string, unknown>).__handZoom as number;
-      hand.group.scale.setScalar(z);
-      hand.group.position.set(0, 0, -1);
-      dieGroup.scale.setScalar(z);
-      dieGroup.position.set(0, 0, -1);
-    }
     updateRostos(dt);
     publishDieScreen();
     dieCam.position.set(0, 0, 0);
@@ -3040,7 +3018,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       soapGroup.visible = hasChalk;
       const hide = book.update(dt, t);
       if (hide > 0) {
-        hand.group.position.y -= hide * 0.95;
         dieGroup.position.y -= hide * 0.95; // dado e giz saem da frente enquanto o livro está na mão
         soapGroup.position.y -= hide * 0.95;
       }
@@ -3077,7 +3054,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       yaw: () => yaw,
       quiz: () => ({ ph: quizPh, ...quiz.debug() }),
       dieShadow: () => ({ vis: dieShadow.visible, p: dieShadow.position.toArray().map((v) => +v.toFixed(2)), s: dieShadow.scale.x, o: dieShadowMat.opacity, die: worldDie.position.toArray().map((v) => +v.toFixed(2)) }),
-      hand: () => { const b = new THREE.Box3().setFromObject(hand.group); const p = (v: THREE.Vector3) => v.clone().project(dieCam).toArray().map((x) => +x.toFixed(2)); return { vis: hand.group.visible, min: p(b.min), max: p(b.max), pos: hand.group.position.toArray(), sc: hand.group.scale.x }; },
       pick: () => {
         const rc = new THREE.Raycaster();
         rc.setFromCamera(new THREE.Vector2(0, 0), camera);
