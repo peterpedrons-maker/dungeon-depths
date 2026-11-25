@@ -477,7 +477,7 @@ export function buildRespiro1(ctx: Ctx): Room {
 
   return {
     name: 'Os Nichos e a Cisterna',
-    subtitle: 'Nada aqui está trancado. Isso me assusta um pouco.',
+    subtitle: 'Nada trancado.',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

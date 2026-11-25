@@ -33,7 +33,7 @@ export function buildTribunal(ctx: Ctx): Room {
   ];
   const spec: FireSpec = {
     name: data.nome,
-    subtitle: 'Muitas frases. Todas falam de alguém.',
+    subtitle: 'Todas as frases falam de alguém.',
     hx: 6.2,
     z0: -16,
     h: 4,

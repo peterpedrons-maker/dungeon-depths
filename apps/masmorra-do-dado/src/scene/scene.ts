@@ -1958,14 +1958,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let introRoll = 0;
   const INTRO_LINES = {
     lying: [
-      { who: 'thought' as const, text: 'Dói tudo. Cheiro de pedra molhada e de poeira.' },
-      { who: 'thought' as const, text: 'Caí? Ou me jogaram? Não lembro de ter descido.' },
+      { who: 'thought' as const, text: 'Dói tudo.' },
+      { who: 'thought' as const, text: 'Caí? Ou me jogaram?' },
     ],
     shaft: [
-      { who: 'thought' as const, text: 'Um buraco redondo no teto. Lá em cima, luz.' },
-      { who: 'thought' as const, text: 'Alto demais. Daqui não dá para subir.' },
-      { who: 'thought' as const, text: 'Não tenho nada comigo. Nem lembro do que eu trazia.' },
-      { who: 'thought' as const, text: 'Se alguém me pôs aqui, deve haver uma porta.' },
+      { who: 'thought' as const, text: 'Luz, lá em cima. Alto demais.' },
+      { who: 'thought' as const, text: 'Preciso de uma porta.' },
     ],
   };
   const startIntro = () => {

@@ -320,26 +320,21 @@ export function createDiaryBook(env: BookEnv) {
   const PARTS: Part[] = ['dela', 'simbolos', 'faces', 'textos', 'mapa', 'notas'];
   const PART_NAME: Record<Part, string> = { dela: 'o que ela escreveu', simbolos: 'os símbolos', faces: 'os quadrados', textos: 'as folhas de frases', mapa: 'o desenho', notas: 'as folhas pautadas' };
   // a leitura do relato (as duas primeiras páginas, na letra dela)
-  const READ_RELATO = [
-    'Já tem coisa escrita. Uma letra apertada, que não é a minha.',
-    '"A Casa apagou tudo de novo." De novo.',
-    'Embaixo da luz. Eu também acordei embaixo da luz.',
-    '"Não acredite em tudo o que eu..." E para aí.',
-    'Onde ela está agora?',
-  ];
-  const AFTER_RELATO = ['Na frente, uma lista. Ela arrumou o caderno como quem pretende voltar.'];
+  // (o personagem fala POUCO: uma frase curta onde importa; nada de repetir o que a página já diz)
+  const READ_RELATO = ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'];
+  const AFTER_RELATO: string[] = [];
   const PART_THOUGHT: Record<Part, string[]> = {
     dela: [],
-    simbolos: ['Estes símbolos eu vi na parede, agora há pouco. Já estão aqui.'],
-    faces: ['Seis quadrados, como as faces de um dado. Quase todos lacrados.'],
-    textos: ['Folhas guardadas para frases inteiras. Quase vazias.'],
-    mapa: ['Um desenho da sala onde eu acordei. Eu não desenhei isso.'],
-    notas: ['Folhas pautadas, em branco. Agora são minhas.'],
+    simbolos: ['Os da parede. Já estão aqui.'],
+    faces: ['As faces do dado.'],
+    textos: ['Vazio, por enquanto.'],
+    mapa: ['A sala onde acordei.'],
+    notas: ['Em branco.'],
   };
-  const TORN_THOUGHT = ['As folhas seguintes foram arrancadas.'];
-  const WRITE_ASK = ['Embaixo de um deles, a letra dela: um desenho e um ponto de interrogação.', 'Ela também não sabia. E eu, o que acho que é?'];
-  const WRITE_DONE = ['Escrevi. Ninguém vai me dizer se está certo.'];
-  const ALL_DONE = ['Ela contava tudo. Talvez fosse o jeito de não esquecer.', 'Vou contar também.'];
+  const TORN_THOUGHT = ['Arrancadas.'];
+  const WRITE_ASK = ['Ela não sabia o que era. E eu?'];
+  const WRITE_DONE = ['Anotado.'];
+  const ALL_DONE = ['Vou anotar tudo, como ela.'];
   const tourSeen = new Set<Part>();
   let tornSeen = false;
   let writeAsked = false;
@@ -547,7 +542,8 @@ export function createDiaryBook(env: BookEnv) {
       if (!tourDone()) {
         const falta = PARTS.filter((p) => !tourSeen.has(p)).map((p) => PART_NAME[p]);
         const lista = falta.length > 1 ? `${falta.slice(0, -1).join(', ')} e ${falta[falta.length - 1]}` : falta[0];
-        if (!thinking()) thinkInBook([`Ainda não olhei ${lista}. Ela não deixaria nada sem olhar.`]);
+        void lista;
+        if (!thinking()) thinkInBook(['Falta ver o resto.']);
         stopEdit();
         guidedStep = 3;
         goTo(0);

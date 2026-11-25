@@ -323,7 +323,7 @@ export function buildLousa(ctx: Ctx): Room {
 
   return {
     name: 'A Lousa',
-    subtitle: 'Nove lampiões. Alguém ensinava a contar, aqui.',
+    subtitle: 'Nove lampiões.',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

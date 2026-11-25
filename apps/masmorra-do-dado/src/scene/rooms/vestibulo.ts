@@ -30,8 +30,8 @@ interface Dim {
 
 // tamanhos bem diferentes: pequena e abafada, um salão comprido, média, baixa e apertada
 const DIMS: Record<VestVariant, Dim> = {
-  1: { hx: 3.4, z0: -9, h: 3.2, theme: 'ruin', name: 'Sala 1 · O Poço', subtitle: 'Uma porta que não cede. Um braseiro frio.', fog: { color: '#090a11', near: 3, far: 15 }, ambient: { color: 0x6a72a4, intensity: 1.45 } },
-  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: 'Mais braseiros. A escrita mudou um pouco.', fog: { color: '#0a0a11', near: 3.5, far: 19 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
+  1: { hx: 3.4, z0: -9, h: 3.2, theme: 'ruin', name: 'Sala 1 · O Poço', subtitle: 'Uma porta. Um braseiro frio.', fog: { color: '#090a11', near: 3, far: 15 }, ambient: { color: 0x6a72a4, intensity: 1.45 } },
+  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: 'A escrita mudou.', fog: { color: '#0a0a11', near: 3.5, far: 19 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
   3: { hx: 3.7, z0: -11.5, h: 3.4, theme: 'ruin', name: 'Sala 3 · Os Quatro', subtitle: 'Quatro braseiros. Outro número.', fog: { color: '#0a0a11', near: 3.5, far: 17 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
   4: { hx: 3.3, z0: -8, h: 3.0, theme: 'crypt', name: 'Sala 5 · A Lacuna', subtitle: 'Falta uma palavra na frase.', fog: { color: '#0b0912', near: 3.5, far: 15 }, ambient: { color: 0x7a78b8, intensity: 1.7 } },
 };
@@ -372,7 +372,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         }
         tried = true;
         ctx.sfx('error');
-        ctx.say([{ who: 'thought', text: 'Trancada. Empurro, puxo… nada se mexe.' }], {
+        ctx.say([{ who: 'thought', text: 'Trancada.' }], {
           block: true,
           onEnd: () => {
             // um barulho lá em cima: algo cai pelo poço (a câmera vira para o buraco)
@@ -408,7 +408,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
             ctx.freeze(false);
             pickingUp = false;
             nudge = 0; // a partir daqui, se o jogador demorar a acender, o dado repete o pedido
-            ctx.say([{ who: 'thought', text: 'Pesa na mão como se me conhecesse. Conhece?' }], { block: true });
+            ctx.say([{ who: 'thought', text: 'Pesa como se me conhecesse.' }], { block: true });
           }, 1300 + ms);
         });
       },

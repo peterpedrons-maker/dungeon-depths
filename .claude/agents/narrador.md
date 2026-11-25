@@ -42,6 +42,12 @@ cada cena começa, respira e termina. Responda sempre em **português do Brasil*
   (idealmente até ~90 caracteres; no máximo 2 linhas por pensamento, 3 a 4 pensamentos seguidos no máximo).
 - Português natural, sem travessões longos decorativos, sem emojis; pontuação simples. Nada de nomes próprios novos sem combinar.
 
+## A REGRA DE OURO: falar pouco (pedido do Pedro)
+**O personagem fala pouco.** Só nos momentos críticos (acordar, a porta trancada, o dado, o caderno, uma virada da história), e em frases
+**curtas e assertivas** (de preferência até ~6 palavras, uma ideia por frase), **sem redundância**: não descreve o que a tela já mostra, não repete
+o que acabou de dizer, não explica. Na dúvida, corte; o silêncio também narra. Uma cena tem 1 a 3 pensamentos, não mais. Legendas de sala:
+2 a 5 palavras. Perguntas são raras.
+
 ## O TOM (decidido com o Pedro; vale para o jogo inteiro)
 **Ler sem entender.** Tudo o que o jogador lê ou pensa soa como alguém diante de algo que não compreende: **constata mais do que explica, e pergunta pouco**,
 para si mesmo. Nada de explicar o que as coisas são ("aqui ficam os símbolos que você viu"); em vez disso, o estranhamento ("Estes símbolos... eu

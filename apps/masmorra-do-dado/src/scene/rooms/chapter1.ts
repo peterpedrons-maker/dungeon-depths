@@ -132,7 +132,7 @@ function casaEscreveExtra(api: FireExtraApi): FireExtra {
 
 export const FIRE_CASA_ESCREVE: FireSpec = {
   name: 'A Casa Escreve',
-  subtitle: 'A Casa acende uma luz de cada vez, como quem mostra o caminho.',
+  subtitle: 'Uma luz de cada vez.',
   hx: 7,
   z0: -14,
   h: 5.6,
@@ -304,7 +304,7 @@ export const FIRE_PANO: FireSpec = {
 // Solução: TRÊS, GRANDE, QUATRO, DOIS, UM.
 export const FIRE_APELIDOS: FireSpec = {
   name: 'Os Apelidos',
-  subtitle: 'Cinco braseiros. Um deles não tem número.',
+  subtitle: 'Um braseiro sem número.',
   hx: 5.6,
   z0: -17,
   h: 3.8,
@@ -336,7 +336,7 @@ export const FIRE_APELIDOS: FireSpec = {
 const f = (a: string, rel: string, b: string, mark: string, extra: Partial<FireLine> = {}): FireLine => ({ words: [a, rel, b, mark], ...extra });
 export const FIRE_VERDADE: FireSpec = {
   name: 'O Boato Verdadeiro',
-  subtitle: 'Algumas frases já estão acesas. Não fui eu.',
+  subtitle: 'Algumas frases já acesas.',
   hx: 5.6,
   z0: -19,
   h: 3.8,
@@ -473,7 +473,7 @@ function confirmaExtra(api: FireExtraApi): FireExtra {
 const fc = (a: string, rel: string, b: string, mark: string, good = false): FireLine => ({ words: [a, rel, b, mark], good });
 export const FIRE_CONFIRMA: FireSpec = {
   name: 'O Que a Casa Confirma',
-  subtitle: 'Duas frases quase iguais. Qual delas é verdade?',
+  subtitle: 'Duas frases quase iguais.',
   hx: 5.5,
   z0: -22,
   h: 3.8,

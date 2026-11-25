@@ -76,3 +76,5 @@ um bom tempo; novas faces chegam por capítulo e nunca todas de uma vez (ver `DE
 O caderno começa pelo **relato de "a que veio antes"** (duas páginas logo depois do índice: data perdida, "a Casa apagou tudo de novo", "acordei
 embaixo da luz", "leram algo comprido para mim", "não acredite em tudo o que eu" — e para). Nada explica o jogo: nem o caderno, nem as legendas
 das salas, nem os pensamentos. O subagente `narrador` (`.claude/agents/narrador.md`) guarda essas regras.
+
+**Economia (decidido):** o personagem fala pouco, só nos momentos críticos, em frases curtas e assertivas, sem redundância.
