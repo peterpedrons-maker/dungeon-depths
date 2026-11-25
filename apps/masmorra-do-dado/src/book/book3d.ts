@@ -359,6 +359,10 @@ export function createDiaryBook(env: BookEnv) {
   const noteDone = () => !!(dState().notes[GUIDED_ID] ?? '').trim();
   const tourDone = () => PARTS.every((p) => tourSeen.has(p));
   const thinkInBook = (lines: string[], onEnd?: () => void) => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false, onEnd });
+  // os pensamentos de cada parte entram numa FILA: a parte conta como vista assim que o jogador chega nela, mesmo que ele vire a página
+  // enquanto outro pensamento ainda está na tela; o pensamento dela vem logo depois
+  const thoughtQ: { lines: string[]; onEnd?: () => void }[] = [];
+  const queueThought = (lines: string[], onEnd?: () => void) => thoughtQ.push({ lines, onEnd });
   // no modo guiado, só pode fechar depois de LER tudo e de ESCREVER sobre BRASEIRO
   const guidedOk = () => noteDone() && tourDone();
   // pede a anotação de BRASEIRO: vira até a página e abre o campo, embaixo do "?" dela
@@ -722,21 +726,26 @@ export function createDiaryBook(env: BookEnv) {
           });
         }
       }
-      if (guidedStep >= 3 && T >= 0.99 && !flip && !thinking()) {
+      if (guidedStep >= 3 && T >= 0.99 && !flip) {
         const part = partOf(view.spread);
         // as folhas arrancadas (logo depois do relato): uma pergunta a mais, sem obrigação
         if (!tornSeen && view.spread === layout(dState()).herAt + 1) {
           tornSeen = true;
-          thinkInBook(TORN_THOUGHT);
+          queueThought(TORN_THOUGHT);
         } else if (part && !tourSeen.has(part)) {
           tourSeen.add(part);
-          if (part === 'simbolos' && !noteDone()) thinkInBook(PART_THOUGHT[part], askWrite);
-          else thinkInBook(tourDone() && noteDone() ? [...PART_THOUGHT[part], ...ALL_DONE] : PART_THOUGHT[part]);
+          if (part === 'simbolos' && !noteDone()) queueThought(PART_THOUGHT[part], askWrite);
+          else queueThought(tourDone() && noteDone() ? [...PART_THOUGHT[part], ...ALL_DONE] : PART_THOUGHT[part]);
           ui.setGuidedNote(guidedOk());
         }
       }
+      if (guidedStep === 3 && !thinking() && thoughtQ.length) {
+        const q = thoughtQ.shift()!;
+        thinkInBook(q.lines, q.onEnd);
+      }
       if (guidedStep === 4) {
-        if (T >= 0.99 && !flip && view.spread === symbolSpread(GUIDED_ID, dState()) && !view.editing && !noteDone() && !thinking()) startEdit('note');
+        // (o campo abre assim que a página chega; o pensamento fica no alto e os outros esperam a anotação)
+        if (T >= 0.99 && !flip && view.spread === symbolSpread(GUIDED_ID, dState()) && !view.editing && !noteDone()) startEdit('note');
         const empty = !noteDone();
         const pulse = empty && Math.floor(t * 2.4) % 2 === 0;
         if (pulse !== !!view.pulse) {
@@ -749,7 +758,7 @@ export function createDiaryBook(env: BookEnv) {
           guidedStep = 3;
           view.pulse = false;
           ui.setGuidedNote(guidedOk());
-          thinkInBook(tourDone() ? [...WRITE_DONE, ...ALL_DONE] : WRITE_DONE, () => {
+          queueThought(tourDone() ? [...WRITE_DONE, ...ALL_DONE] : WRITE_DONE, () => {
             if (!tourDone()) goTo(0);
           });
         }
