@@ -813,6 +813,9 @@ abre no escuro; a luz volta, a moldura está lisa, a porta segue aberta. Repetí
   de cima descem (foco quando ele quer muito ir a algum lugar, meio piscar, sono); o nariz dá fungadas; as sobrancelhas dão um lampejo de atenção
   quando algo se abre. Nada de sorriso, tristeza ou raiva: nenhuma linha curva na boca, nada de sobrancelha torta. A boca usa aproximação
   exponencial (estável com qualquer taxa de quadros).
-- **Menos pixelado no PC:** o jogo desenha ~360 linhas na vertical em telas com 600 px de altura ou mais (antes, ~200 em toda tela: num monitor
-  grande cada pixel virava um bloco de 5 a 7 e ficava difícil de entender). No celular continua ~200. A opção "Tamanho do pixel" vale nos dois
-  (PC: fino 480, médio 360, grosso 240; celular: 270, 200, 150).
+- **Menos pixelado no PC (meio-termo):** o jogo desenha ~240 a 290 linhas na vertical em telas com 600 px de altura ou mais (alvo 280; 270 numa
+  tela 1080p). Antes eram ~200 em toda tela (num monitor grande cada pixel virava um bloco de 5 a 7 e ficava difícil de entender); 360 tirou o
+  pixel art demais. No celular continua ~200. A opção "Tamanho do pixel" vale nos dois (PC: fino 360, médio 280, grosso 200; celular: 270, 200, 150).
+- **A pergunta do dado não abre mais a pausa:** o jogo solta o mouse para as opções já na subida do dado (antes de a pergunta estar "ativa"), e
+  soltar o mouse no meio do jogo abre a pausa. Agora a pausa por mouse solto não vale quando foi o próprio jogo que soltou (pergunta do dado,
+  cena do dado ao centro, abertura, cena de queimar).

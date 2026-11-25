@@ -21,7 +21,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 ## Jogos atuais
 
 - `apps/masmorra-do-dado/` — (nome provisório) puzzle de masmorra 3D em primeira pessoa, visual
-  pixel art "crocante" (Three.js renderizando em ~200 linhas no celular e ~360 no PC, pós-processo com paleta fixa
+  pixel art "crocante" (Three.js renderizando em ~200 linhas no celular e ~270 no PC, pós-processo com paleta fixa
   de ~60 cores via LUT 3D + contorno por profundidade + brilho/bloom + dithering leve, texturas
   procedurais, sem arquivos de imagem; luzes das salas são "emissores" emprestados a um pool
   pequeno de PointLights reais, e só as salas vizinhas são desenhadas). O jogador segura um dado e escolhe a face (1–6) antes

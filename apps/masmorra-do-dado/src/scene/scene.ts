@@ -2217,10 +2217,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let shadowsOn = true;
   let diaryWas = false;
   const resize = () => {
-    // Linhas na vertical: no celular ~200 (pixel bem visível); no PC e telas grandes, mais (~360): com 200 linhas num monitor grande cada pixel
-    // virava um bloco de 5 a 7 e as coisas ficavam difíceis de entender (pedido do Pedro).
+    // Linhas na vertical: no celular ~200 (pixel bem visível); no PC e telas grandes, um meio-termo (~240 a 290): com 200 linhas num monitor
+    // grande cada pixel virava um bloco de 5 a 7 e ficava difícil de entender; com 360 o pixel art sumia demais (pedidos do Pedro).
     const big = window.innerHeight >= 600;
-    const pixelLines = big ? (pixelSize === 'fino' ? 480 : pixelSize === 'grosso' ? 240 : 360) : pixelSize === 'fino' ? 270 : pixelSize === 'grosso' ? 150 : 200;
+    const pixelLines = big ? (pixelSize === 'fino' ? 360 : pixelSize === 'grosso' ? 200 : 280) : pixelSize === 'fino' ? 270 : pixelSize === 'grosso' ? 150 : 200;
     const scale = Math.max(2, Math.round(window.innerHeight / pixelLines));
     const w = Math.max(64, Math.ceil(window.innerWidth / scale));
     const h = Math.max(64, Math.ceil(window.innerHeight / scale));
@@ -2348,8 +2348,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const onLockChange = () => {
     if (locked()) everLocked = true;
     opts.onLook?.(locked() ? 'locked' : 'free');
-    // o mouse foi solto no meio do jogo (Esc, trocar de janela): PAUSA
-    if (!locked() && mode === 'play' && !ui.diaryOpen() && !book.isOut() && !ui.blocked() && !complete) opts.onPause?.();
+    // o mouse foi solto no meio do jogo (Esc, trocar de janela): PAUSA. Mas não quando foi o PRÓPRIO jogo que soltou o mouse: a pergunta do dado
+    // solta o mouse para as opções (ainda na subida do dado, antes de a pergunta estar "ativa") e as cenas do dado ao centro também não pausam
+    const ownRelease = quizPh !== 'idle' || dieCineTarget > 0.5 || intro !== null || burn !== null;
+    if (!locked() && mode === 'play' && !ui.diaryOpen() && !book.isOut() && !ui.blocked() && !complete && !ownRelease) opts.onPause?.();
   };
   const requestLock = () => {
     if (locked() || lockFailed || window.matchMedia('(pointer: coarse)').matches) return;
