@@ -12,6 +12,8 @@ import { ui, uiStore } from './story/ui';
 import { BookIcon } from './ui/BookIcon';
 import { BoatoBubble } from './ui/BoatoBubble';
 import { DialogueBox } from './ui/DialogueBox';
+import { QuizPanel } from './ui/QuizPanel';
+import { quiz } from './story/quiz';
 import { WordGlyph } from './ui/Glyph';
 import { useUiScale } from './ui/scale';
 
@@ -77,7 +79,7 @@ export default function App() {
   const hasBookRef = useRef(hasBook);
   hasBookRef.current = hasBook;
   const toggleDiary = useCallback(() => {
-    if (dialogue.blocking || !hasBookRef.current) return;
+    if (dialogue.blocking || quiz.active() || !hasBookRef.current) return;
     if (!ui.diaryOpen() && ui.bookCall()) {
       // 1ª abertura do caderno: modo guiado (vira até BRASEIRO e pede uma anotação)
       ui.setBookCall(false);
@@ -225,6 +227,7 @@ export default function App() {
   const newGame = () => {
     progress.noSave();
     diary.noSave();
+    quiz.noSave();
     try {
       Object.keys(localStorage)
         .filter((k) => k.startsWith('mdd-') && k !== 'mdd-audio')
@@ -442,6 +445,7 @@ export default function App() {
       )}
 
       <DialogueBox onSound={sound} />
+      <QuizPanel onSound={sound} />
 
       {credits && (
         <div

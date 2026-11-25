@@ -577,7 +577,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
 // ── entrada de uma sala (liga com o corredor da sala anterior) ──────────────
 // Parede de frente (z = o.z, olhando pra dentro da sala, ou seja, -z) com a abertura em arco
 // no centro e um aro de pedra saindo pra dentro da sala.
-export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; h: number; theme?: string }) {
+export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number }) {
   const theme = o.theme ?? kit.theme;
   const wall = new THREE.Shape();
   wall.moveTo(o.x0, 0);
@@ -592,6 +592,7 @@ export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; 
   const wm = new THREE.Mesh(new THREE.ShapeGeometry(wall, 12), lambert(brickTexture([1 / T, 1 / T], 1, 25, theme)));
   wm.rotation.y = Math.PI; // de frente pra dentro da sala
   wm.position.z = o.z;
+  wm.position.y = o.y0 ?? 0;
   kit.add(wm);
 
   const R2 = DW + 0.3;
@@ -611,6 +612,7 @@ export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; 
   );
   rm.rotation.y = Math.PI;
   rm.position.z = o.z;
+  rm.position.y = o.y0 ?? 0;
   kit.add(rm);
 
   return {

@@ -19,26 +19,26 @@ export interface Brazier {
   update(t: number): void;
 }
 
-export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1): Brazier {
+export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1, y0 = 0): Brazier {
   const s = scale; // braseiros menores/maiores (o tamanho pode dizer quanto a chama dura)
-  kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, 0.4 * s, z);
+  kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, y0 + 0.4 * s, z);
   const bowlMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.32 * s, 0.3 * s, 8), lambert(null, 0x3a3a46));
-  bowlMesh.position.set(x, 0.95 * s, z);
+  bowlMesh.position.set(x, y0 + 0.95 * s, z);
   kit.add(bowlMesh);
-  const bowl = new THREE.Vector3(x, 1.15 * s, z);
+  const bowl = new THREE.Vector3(x, y0 + 1.15 * s, z);
   const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   flame.scale.set(0.75 * s, 0.6 * s, 1);
-  flame.position.set(x, 1.45 * s, z);
+  flame.position.set(x, y0 + 1.45 * s, z);
   flame.visible = false;
   kit.group.add(flame);
-  const lamp = kit.light(x - 0.3 * s, 1.9 * s, z + 0.4 * s, 0xff8a2a, 0);
+  const lamp = kit.light(x - 0.3 * s, y0 + 1.9 * s, z + 0.4 * s, 0xff8a2a, 0);
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
     const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11 * s), coalMat);
-    coal.position.set(x + Math.cos(i * 1.3) * 0.22 * s, (1.12 + (i % 2) * 0.05) * s, z + Math.sin(i * 1.3) * 0.22 * s);
+    coal.position.set(x + Math.cos(i * 1.3) * 0.22 * s, y0 + (1.12 + (i % 2) * 0.05) * s, z + Math.sin(i * 1.3) * 0.22 * s);
     kit.group.add(coal);
   }
-  kit.contact(x, z, 1.6 * s);
+  kit.contact(x, z, 1.6 * s, 1.6 * s, y0);
 
   const b: Brazier = {
     x,
@@ -47,10 +47,10 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     lit: false,
     flameK: 1,
     boxes: [
-      { min: new THREE.Vector3(x - 0.3 * s, 0, z - 0.3 * s), max: new THREE.Vector3(x + 0.3 * s, 0.8 * s, z + 0.3 * s) },
-      { min: new THREE.Vector3(x - 0.42 * s, 0.8 * s, z - 0.42 * s), max: new THREE.Vector3(x + 0.42 * s, 1.1 * s, z + 0.42 * s) }, // a tigela: o dado repousa em cima
+      { min: new THREE.Vector3(x - 0.3 * s, y0, z - 0.3 * s), max: new THREE.Vector3(x + 0.3 * s, y0 + 0.8 * s, z + 0.3 * s) },
+      { min: new THREE.Vector3(x - 0.42 * s, y0 + 0.8 * s, z - 0.42 * s), max: new THREE.Vector3(x + 0.42 * s, y0 + 1.1 * s, z + 0.42 * s) }, // a tigela: o dado repousa em cima
     ],
-    socket: { x, y: 1.1 * s, z, r: 0.6 * s },
+    socket: { x, y: y0 + 1.1 * s, z, r: 0.6 * s },
     rect: [x - 0.5 * s, z - 0.5 * s, x + 0.5 * s, z + 0.5 * s],
     touched() {
       const d = ctx.die;

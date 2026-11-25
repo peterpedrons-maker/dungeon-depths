@@ -31,7 +31,11 @@ export const HER_PAGES: HerPage[] = [
     where: 'O Que a Casa Confirma (junto da grade)',
     body: ['Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo.', 'Acho que o risquinho com o ponto em cima quer dizer "é verdade". O outro, "dizem que".'],
   },
-  { id: 'p4', where: '(ainda não está no jogo)', body: [] },
+  {
+    id: 'p4',
+    where: 'Os Banhos Secos (num banco da câmara de banho do oeste)',
+    body: ['Aqui o que está talhado não mente. O que alguém só disse, mente às vezes.', 'Eu acendi uma frase de boato e a Casa me apagou como quem apaga uma vela. Acho que eles não gostavam de quem repete o que ouviu.'],
+  },
   { id: 'p5', where: '(ainda não está no jogo)', body: [] },
   { id: 'p6', where: '(ainda não está no jogo)', body: [] },
   { id: 'p7', where: '(ainda não está no jogo)', body: [] },

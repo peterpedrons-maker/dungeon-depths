@@ -26,7 +26,8 @@ import { LEX } from '../story/lexicon';
 import { dialogue } from '../story/dialogue';
 import { ui } from '../story/ui';
 import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
-import { chatter } from '../story/chatter';
+import { chatter, chatterStore } from '../story/chatter';
+import { quiz, quizStore, type QuizDef } from '../story/quiz';
 import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
@@ -34,11 +35,14 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
-import { FIRE_APELIDOS, FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
+import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
 import { buildChamaCurta } from './rooms/chamaCurta';
 import { buildRespiro1 } from './rooms/respiro1';
+import { buildPonte } from './rooms/ponte';
+import { buildRespiro2 } from './rooms/respiro2';
+import { buildApelidos } from './rooms/apelidos';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
@@ -51,7 +55,7 @@ const LAB = new URLSearchParams(location.search).has('lab');
 const BUILDERS: RoomBuilder[] = LAB ? [buildLab] : MAIN_BUILDERS();
 function MAIN_BUILDERS(): RoomBuilder[] {
   // Capítulo 1 (só Fogo), curva da sessão de projeto de puzzles (PUZZLES_PROPOSTAS.md §2): da sala 3 em diante só sobe. Níveis: 1, 1, 2, 3, 3, 4, 5, 5, 6, 6 ... 10.
-  // Faltam (propostas ainda sem detalhe): A Ponte de Madeira, A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
+  // Faltam (propostas ainda sem detalhe): A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
   return [
     (c) => buildVestibulo(c, 1), // O Poço
     (c) => buildVestibulo(c, 2), // O Vestíbulo: o número é exato
@@ -61,8 +65,10 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     (c) => buildFireRoom(c, FIRE_CASA_ESCREVE), // NÍVEL 3. A CASA ESCREVE: a lousa da Casa é o mapa do salão (+ constelação C1)
     buildChamaCurta, // NÍVEL 4. TEMPO + PAVIO: as chamas se apagam; um labirinto no chão é um pavio que acende o mínimo do fundo sozinho
     (c) => buildFireRoom(c, FIRE_CONFIRMA), // NÍVEL 5. Duas partes: as marcas numa lousa (QUATRO CONFIRMADO × TRÊS BOATO); depois 3 frases confirmadas -> pilares -> 2, 4, 1, 3
+    buildRespiro2, // RESPIRO R2 (sem trava): Os Banhos Secos; piscinas vazias, a fonte seca, o estandarte; puzzle opcional (exatamente DOIS)
     (c) => buildFireRoom(c, FIRE_PANO), // NÍVEL 5. O PANO: o fogo queima o boato tecido e mostra a pedra (+ constelação C2)
-    (c) => buildFireRoom(c, FIRE_APELIDOS), // NÍVEL 6. GRANDE e PEQUENO: o mesmo braseiro tem dois nomes
+    buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
+    buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
     (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
     buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala 18)
     // Reserva (fora do jogo por ora): vestibulo.ts v3 (Os Quatro) e FIRE_ORDEM (A Ordem), que as novas 3 e 5 substituem; room1.ts (A Entrada, cena do
@@ -393,6 +399,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // para onde o dado olha agora: inscrição encarada > braseiro à frente > porta > nada (ele vagueia)
   const lifeTarget = (): LifeTarget | null => {
     if (dieCineTarget > 0.5) return { dx: 0, dy: 0, player: true }; // na cena, o dado olha DIRETO para o jogador
+    if (forcedLook && performance.now() < forcedLook.until) {
+      // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
+      dieNdc.copy(dieGroup.position).project(dieCam);
+      tgtNdc.copy(forcedLook.p).project(camera);
+      const fx = tgtNdc.x - dieNdc.x;
+      const fy = tgtNdc.y - dieNdc.y;
+      if (Number.isFinite(fx + fy)) return { dx: fx, dy: fy, eager: true, player: false };
+    }
     camera.getWorldDirection(lookDir);
     const pick = (p: THREE.Vector3, minCos: number, maxD: number): number => {
       toIns.copy(p).sub(camera.position);
@@ -439,6 +453,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // As falas da HISTÓRIA têm prioridade: enquanto uma está sendo escrita ou lida (`talkUntil`), a tradução por desenho e os comentários soltos esperam
   // (antes os dois disputavam o mesmo balão e um apagava o outro no meio da escrita).
   let talkUntil = 0;
+  let forcedLook: { p: THREE.Vector3; until: number } | null = null;
   const saySay = (glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }) => {
     talkUntil = Math.max(talkUntil, performance.now() + (o?.delay ?? 0) * 1000 + 150 + lineMs(glyphs, !!o?.pic) + LINGER_MS);
     window.setTimeout(() => {
@@ -1141,6 +1156,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   let dieCine = 0; // 0 = dado na mão de sempre, 1 = dado no centro da tela (cena)
   let dieCineTarget = 0;
+  // a pergunta do dado (quizTick): fase, tremor na mão, freio do jogador e o corpo do dado na cena (pulo, balanço, cabeça baixa)
+  let quizPh: 'idle' | 'shake' | 'rise' | 'glyph' | 'say' | 'ask' | 'react' = 'idle';
+  let quizShake = 0;
+  let walkK = 1;
+  let cineHop = 0;
+  let cineHopV = 0;
+  let cineWig = 0;
+  let cineDroop = 0;
   let pickup: (() => void) | null = null; // chamado quando o dado caído chega na mão
   let dieRoom = 0; // sala onde o dado está (a posição dieP é local a ela)
   let gems = 0;
@@ -1150,6 +1173,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   const makeCtx = (off: THREE.Vector3, idx: number): Ctx => {
     const lp = new THREE.Vector3();
+    const aimO = new THREE.Vector3();
+    const aimD = new THREE.Vector3();
     return {
       caption: (a, b, c) => caption(a, b, c),
       sfx: (n, key) => {
@@ -1230,6 +1255,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       },
       dieSay: (glyphs, o) => saySay(glyphs, o),
+      dieLook: (p, secs = 3) => {
+        forcedLook = { p: p.clone().add(off), until: performance.now() + secs * 1000 };
+      },
+      dieReact: (k) => life.react(k),
+      aim: () => {
+        camera.getWorldDirection(aimD);
+        return { o: aimO.copy(camera.position).sub(off), d: aimD };
+      },
       dieTalk: (lines, o) => talkSeq(lines, o),
       freeze: (on) => {
         holds = Math.max(0, holds + (on ? 1 : -1));
@@ -1282,6 +1315,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const room = build(makeCtx(off, i));
       room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
       if (i > 0) off.z = offs[i - 1].z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ;
+      if (i > 0) off.y = offs[i - 1].y + (rooms[i - 1].exitDy ?? 0) - (room.entranceY ?? 0); // salas que descem (fosso, banhos): a seguinte começa no nível da porta de saída
       room.group.position.copy(off);
       scene.add(room.group);
       rooms.push(room);
@@ -1528,7 +1562,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         ins.seeT += dt;
         if (ins.seeT > 0.6) {
           ins.read = true;
-          ins.words.forEach((id) => diary.markSeen(id, rooms[i].name));
+          ins.words.forEach((id) => {
+            diary.markSeen(id, rooms[i].name);
+            quiz.wordRead(id); // uma pergunta do dado que ficou sem resposta pode voltar
+          });
         }
       }
     });
@@ -1986,7 +2023,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const START_KEYS = new Set<string>();
   const keys = START_KEYS;
   const onKeyDown = (e: KeyboardEvent) => {
-    if (ui.blocked() || book.isOut()) return;
+    if (ui.blocked() || book.isOut() || quizPh !== 'idle') return;
     const k = e.key.toLowerCase();
     keys.add(k);
     if (e.repeat) return;
@@ -2262,7 +2299,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       fwd /= len;
       str /= len;
     }
-    const run = keys.has('shift') ? SPRINT : 1;
+    const run = (keys.has('shift') ? SPRINT : 1) * walkK;
     // A inércia é calculada NO REFERENCIAL DA CÂMERA (f = pra frente, s = pra direita). Antes era no
     // mundo: ao girar andando, a velocidade demorava a acompanhar e o personagem "escorregava".
     const cyw = Math.cos(yaw);
@@ -2311,7 +2348,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // gravidade: subir rampa gruda no chão; ladeira abaixo acompanha; beirada = queda
   const vertical = (dt: number) => {
     const ri = roomOfZ(pos.z);
-    const gy = rooms[ri].groundY(pos.x - offs[ri].x, pos.z - offs[ri].z) + offs[ri].y;
+    const gy = rooms[ri].groundY(pos.x - offs[ri].x, pos.z - offs[ri].z, feetY - offs[ri].y) + offs[ri].y;
     const diff = gy - feetY;
     if (diff >= 0 || (diff > -0.3 && vy === 0)) {
       feetY = gy;
@@ -2441,6 +2478,150 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     else if ((idleT += dt) > 75) {
       idleT = 0;
       chatFn('idle');
+    }
+  };
+
+  // ── AS PERGUNTAS DO DADO (DESIGN.md §42): num momento calmo (corredor entre salas, chegada a uma área livre) o dado treme na mão,
+  // vem grande ao centro da tela, mostra um glifo e pergunta «VOCÊ SABER ?». O painel (ui/QuizPanel) mostra as 5 opções; o dado reage. ──
+  let quizT = 0;
+  let quizDef: QuizDef | null = null;
+  let quizCool = 5; // segundos até poder perguntar de novo
+  let quizDur = 0;
+  let quizBeat = false;
+  const quizWhere = (): { room: string; at: 'after' | 'arrive' } | null => {
+    const r = rooms[curRoom];
+    const lx = pos.x - offs[curRoom].x;
+    const lz = pos.z - offs[curRoom].z;
+    const room = r.name.replace(/^Sala \d+ · /, '');
+    if (lz < r.doorZ - 0.6 && lz > r.doorZ - CORRIDOR + 0.4 && Math.abs(feetY - offs[curRoom].y - (r.exitDy ?? 0)) < 0.5) return { room, at: 'after' }; // (no chão do corredor: há salas com galeria por cima dele)
+    if (r.calm?.(lx, lz)) return { room, at: 'arrive' };
+    return null;
+  };
+  const quizCalm = () => hasDie && progress.has('caderno') && dieState === 'hand' && tool === 'die' && !busy() && !pinned && !autoWalk && !sketchOn && vy === 0 && chatterStore.get() === null && performance.now() > talkUntil + 400;
+  const quizTick = (dt: number) => {
+    // o corpo do dado na cena: pulo de alegria, cabeça baixa
+    cineHopV -= 30 * dt;
+    cineHop += cineHopV * dt;
+    if (cineHop < 0) {
+      cineHop = 0;
+      cineHopV = cineHopV < -2.5 ? -cineHopV * 0.42 : 0;
+    }
+    cineWig = Math.max(0, cineWig - dt * 0.8);
+    quizShake = Math.max(0, quizShake - dt * 3);
+    quizT += dt;
+    switch (quizPh) {
+      case 'idle': {
+        cineDroop = Math.max(0, cineDroop - dt * 2);
+        walkK = 1;
+        quizCool -= dt;
+        if (quizCool > 0) return;
+        quizCool = 0.3;
+        if (!quizCalm()) return;
+        const w = quizWhere();
+        const d = w && quiz.due(w.room, w.at);
+        if (!d) return;
+        quizDef = d;
+        quizPh = 'shake';
+        quizT = 0;
+        quizBeat = false;
+        life.react('shake');
+        sfx.play('rest', 0.5);
+        return;
+      }
+      case 'shake': // ~1 s: o dado treme na mão, as gemas piscam; quem anda é parado devagar
+        quizShake = 1;
+        walkK = Math.max(0, 1 - quizT / 0.7);
+        if (ui.blocked() || book.isOut() || dieState !== 'hand') {
+          quizPh = 'idle'; // outra coisa tomou a tela: fica para depois
+          quizCool = 4;
+          return;
+        }
+        if (!quizBeat && quizT > 0.5) {
+          quizBeat = true;
+          life.react('shake');
+          sfx.play('put', 0.45);
+        }
+        if (quizT < 1) return;
+        holds++;
+        dieCineTarget = 1;
+        ui.setBars(true);
+        life.react('perk');
+        handPop = 1;
+        sfx.play('catch');
+        camTween = { y0: yaw, p0: pitch, y1: yaw, p1: -0.04, t: 0, dur: 1.0 };
+        if (locked()) document.exitPointerLock(); // as opções precisam do mouse livre (as teclas 1 a 5 também servem)
+        quizPh = 'rise';
+        quizT = 0;
+        return;
+      case 'rise':
+        if (quizT < 1.05) return;
+        quiz.start(quizDef!); // o painel escreve o glifo, grande, traço a traço
+        sfx.play('write', 1);
+        quizPh = 'glyph';
+        quizT = 0;
+        return;
+      case 'glyph': {
+        if (quizT < 1.45) return;
+        const line = ['voce', 'saber', 'perg'];
+        chatter.say(line, undefined, true); // «VOCÊ SABER ?» fica à vista enquanto as opções estão na tela
+        handTalk = 1;
+        sfx.play('uiblip', 0.6);
+        quizDur = lineMs(line) / 1000 + 0.3;
+        talkUntil = performance.now() + quizDur * 1000 + 600;
+        quizPh = 'say';
+        quizT = 0;
+        return;
+      }
+      case 'say':
+        if (quizT < quizDur) return;
+        quiz.ask();
+        quizPh = 'ask';
+        quizT = 0;
+        return;
+      case 'ask': {
+        const q = quizStore.get();
+        if (!q) {
+          quizDur = 0; // (alguém encerrou a pergunta por fora)
+        } else if (q.phase !== 'done') return;
+        else if (q.result === 'ok') {
+          // certo: um pulo de alegria e só a marca CONFIRMADO
+          chatter.say(['conf']);
+          cineHopV = 3.6;
+          cineWig = 1;
+          life.react('joy');
+          sfx.play('piece');
+          handTalk = 1;
+          quizDur = 2.6;
+        } else if (q.result === 'bad') {
+          // errado: abatido, sem glifo, sem punição
+          chatter.clear();
+          cineDroop = 1;
+          life.react('sad');
+          sfx.play('burnout', 0.5);
+          quizDur = 2.2;
+        } else {
+          // "não sei": «EU ESPERAR», e não insiste
+          const line = ['eu', 'esperar'];
+          chatter.say(line);
+          handTalk = 1;
+          sfx.play('uiblip', 0.6);
+          quizDur = lineMs(line) / 1000 + 1.5;
+        }
+        talkUntil = performance.now() + quizDur * 1000 + 800;
+        quizPh = 'react';
+        quizT = 0;
+        return;
+      }
+      case 'react':
+        if (quizT < quizDur) return;
+        quiz.end();
+        dieCineTarget = 0;
+        ui.setBars(false);
+        holds = Math.max(0, holds - 1);
+        quizPh = 'idle';
+        quizCool = 20;
+        handPop = 0.6;
+        return;
     }
   };
   const onSkip = () => {
@@ -2632,6 +2813,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     updateBurn(dt, t);
     chatTick(dt, moving);
+    quizTick(dt);
     if (dieState !== emittedDie) {
       emittedDie = dieState;
       opts.onDie?.(dieState === 'returning' || dieState === 'placing' ? 'flying' : dieState);
@@ -2724,18 +2906,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const cn = dieCine * dieCine * (3 - 2 * dieCine);
     tiltNow.copy(idQ).slerp(tilt, 1 - cn);
     const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
-    lifeGlow = lo.glow;
+    lifeGlow = lo.glow * (quizShake > 0.05 ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
     updateMats();
     computeTarget(face, spin);
     curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
     wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012 * (1 - cn), 0, Math.sin(t * 0.8) * 0.012 * (1 - cn)));
     lifeQ.copy(lo.quat).slerp(idQ, cn);
     dieHolder.quaternion.copy(lifeQ).multiply(curQ).multiply(wobble);
+    if (cn > 0.01 && (cineDroop > 0.01 || cineWig > 0.01)) dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(0.42 * cineDroop * cn, 0, Math.sin(t * 15) * 0.2 * cineWig * cn)));
     const du = ease(dieU);
     dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 0.75 * cn));
     dieGroup.position.set(
-      ((handX + (-handX - handX) * du) + lo.dx) * (1 - cn), // na cena: exatamente no centro da tela
-      (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy) * (1 - cn),
+      ((handX + (-handX - handX) * du) + lo.dx + Math.sin(t * 71) * 0.011 * quizShake) * (1 - cn), // na cena: exatamente no centro da tela
+      (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
       -1,
     );
     updateRostos(dt);
@@ -2811,6 +2994,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__mdd = {
       yaw: () => yaw,
+      quiz: () => ({ ph: quizPh, ...quiz.debug() }),
+      quizAnswer: (i: number) => quiz.answer(i),
+      feet: () => +(feetY - offs[curRoom].y).toFixed(2),
       surface: () => {
         const sr = roomOfZ(pos.z);
         return rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone';

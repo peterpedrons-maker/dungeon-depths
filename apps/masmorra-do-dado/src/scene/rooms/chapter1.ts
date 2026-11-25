@@ -3,7 +3,8 @@
 
 import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireLine, FireSpec } from './fire';
-import { makeGemNiche, makeRiser, makeTorch, makeWallBoard, type Torch } from '../firegrid';
+import { makeCloth, makeGemNiche, makeRiser, makeTorch, makeWallBoard, type Torch } from '../firegrid';
+import { makeBrazier } from '../brazier';
 import { lambert } from '../kit';
 import type { Rect } from '../types';
 import { shotGate } from './shell';
@@ -205,9 +206,53 @@ function panoExtra(api: FireExtraApi): FireExtra {
   }
   const C = constellation(api, torches, cells, [1, 6, 8], [0, Z0 + 7], [X1 - 0.02, 1.25, Z0 + 9.3, -1, 0]);
   const litCell = (c: number) => torches[cells.indexOf(c)]?.lit ?? false;
+  // DEMONSTRAÇÃO NA ENTRADA (sem punição): um braseiro pequeno ACESO e, pendurado acima dele, um trapo com um glifo tecido. Enquanto o jogador olha,
+  // uma fagulha sobe, o trapo pega fogo SOZINHO e queima de baixo para cima; atrás dele, talhada na pedra, a palavra BRASEIRO.
+  // Ninguém explica nada: o jogador VÊ que pano queima e que embaixo há pedra escrita.
+  const DZ = 0.35; // perto da entrada, na parede esquerda
+  const demoB = makeBrazier(kit, ctx, X0 + 0.55, DZ, true, 0.55);
+  api.boxes.push(...demoB.boxes);
+  const carved = kit.inscribe({ words: ['brasa'], x: X0 + 0.025, y: 2.05, z: DZ, nx: 1, nz: 0, size: 0.46, age: 0.2, seed: 141, hidden: true });
+  const rag = makeCloth(kit, ctx, { x: X0 + 0.03, y: 2.05, z: DZ, nx: 1, nz: 0, words: ['fogo'], size: 0.46, color: '#8a5a2a', key: 'trapo', secs: 2.4 });
+  const spark = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false, color: 0xffd080 }));
+  spark.scale.set(0.16, 0.16, 1);
+  spark.visible = false;
+  kit.group.add(spark);
+  let ragGaze = 0;
+  let sparkT = -1;
+  let ragShown = false;
+  const ragAt = new THREE.Vector3(X0 + 0.1, 2.05, DZ);
+  const tmpV = new THREE.Vector3();
   return {
     update(dt, t) {
       C.update(dt, t);
+      demoB.update(t);
+      if (rag.k === 0 && !rag.burning && sparkT < 0) {
+        // o jogador olha para o trapo (ou já passou por ele): a fagulha sobe
+        const a = ctx.aim();
+        tmpV.copy(ragAt).sub(a.o);
+        const d = tmpV.length();
+        const looking = d < 7 && a.d.dot(tmpV.divideScalar(d)) > 0.86;
+        ragGaze = looking && !ctx.paused() ? ragGaze + dt : 0;
+        if (ragGaze > 0.7 || (ctx.player.pos.z < DZ - 2.4 && ctx.player.pos.z > Z0 && !ctx.paused())) sparkT = 0;
+      }
+      if (sparkT >= 0) {
+        sparkT += dt;
+        const k = Math.min(1, sparkT / 0.9);
+        spark.visible = k < 1;
+        spark.position.set(X0 + 0.5 - 0.35 * k, 0.9 + 0.75 * k + Math.sin(k * 9) * 0.03, DZ + Math.sin(k * 7) * 0.05);
+        spark.material.map = kit.frames[Math.floor(t * 12) % kit.frames.length];
+        if (k >= 1) {
+          sparkT = -1;
+          rag.ignite(true);
+          ctx.sfx('spread');
+        }
+      }
+      rag.update(dt, t);
+      if (!ragShown && rag.k > 0.45) {
+        ragShown = true;
+        carved.reveal(); // a pedra talhada aparece por trás do pano que queima
+      }
       for (const f of frieze) {
         const on = litCell(f.a) && litCell(f.b);
         f.k = on ? Math.min(1, f.k + dt / 1.2) : Math.max(0, f.k - dt / 0.6);
@@ -220,7 +265,7 @@ function panoExtra(api: FireExtraApi): FireExtra {
       for (const f of frieze) f.k = 0;
     },
     bonus: C.bonus,
-    rects: C.rect,
+    rects: () => [...C.rect(), demoB.rect],
     interactables: [C.niche.interactable],
   };
 }
@@ -253,6 +298,7 @@ export const FIRE_PANO: FireSpec = {
 };
 
 // ── SALA · OS APELIDOS (nível 6; tools/verify_apelidos.mjs) ─────────────────────────────────────────────────
+// (EM RESERVA: esta é a versão RETANGULAR. No jogo entra a rotunda de `apelidos.ts`, com a mesma regra e a mesma solução.)
 // O mesmo braseiro pode ser chamado pelo NÚMERO ou pelo TAMANHO. GRANDE (o do meio, sem número) e PEQUENO (o QUATRO, o menor).
 // Armadilha: o glifo PEQUENO parece UM numa moldura e o GRANDE parece QUATRO: quem lê pelo desenho cai em contradição.
 // Solução: TRÊS, GRANDE, QUATRO, DOIS, UM.

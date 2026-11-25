@@ -63,6 +63,8 @@ A primeira área livre: um **corredor que vira várias vezes**, com nichos (tige
 - **Semente (para depois):** num nicho do 1º trecho há uma **tapeçaria** pequena com um glifo tecido. Por ora não faz nada (a ideia é que, depois da sala do Pano, queimá-la mostre uma palavra talhada; ainda não implementado).
 - Também há o relevo «CONTÁVEIS ACENDER BRASEIRO» (gente em volta de um braseiro) no pátio.
 
+- **O dado pede para apontar (pátio):** quando você olha o relevo «CONTÁVEIS ACENDER BRASEIRO», o dado lê a frase e pergunta «**BRASEIRO ONDE ?**». **Resposta:** mire em **qualquer braseiro do pátio** e aperte **E / AGIR** (errar duas vezes: o dado se inclina para um e mostra). Depois ele pede «**VOCÊ ACENDER BRASEIRO ?**»: acenda qualquer um (isso não é a solução da cisterna).
+
 ## Sala 6 — A Casa Escreve  (ACENDER · BRASEIRO · ORDEM)  — NÍVEL 3 (a lousa é um MAPA)
 Salão quadrado amplo com **9 colunas em grade 3×3**, todas com uma **tocha apagada**, e mais três tochas apagadas nas paredes. **Quatro colunas** têm um **braseiro sem número** ao pé. Sobre a porta, a **lousa da Casa** (9 lampiões) com o glifo **PORTA** talhado na borda de cima. Ela **se acende sozinha, em laço**: um lampião por ~1,5 s, apaga, o próximo… quatro quadros e então ~2,5 s de **escuro**, quando o glifo **ORDEM** da frase pulsa (é o "ponto final" do laço).
 1. A lousa não mostra números (nenhum quadro é o ponto do meio): mostra **posições**. Ela tem a forma do salão (3×3, como as colunas) e o glifo PORTA diz que **o lado de cima da lousa é o lado da porta**. Cada ponto é uma coluna.
@@ -102,7 +104,17 @@ As chamas **se apagam sozinhas** e o tamanho do braseiro diz quanto duram. A por
 - **Por que é única** (`node tools/verify_confirma.mjs`): uma ordem só entre 24; sem qualquer confirmada sobram 4 a 6; os boatos são falsos e acreditar neles dá contradição; a ordem não é 1-2-3-4 nem a de leitura (1-3-4-2).
 - **Dificuldade: 5 de 10.**
 
-## Sala 9 — O Pano  (ACENDER · ▢ · BRASEIRO · CONFIRMADO)  — NÍVEL 5 (o fogo queima o BOATO)
+## Sala 9 — Os Banhos Secos  — RESPIRO R2 (área livre, sem trava; só segredos opcionais)
+Um salão grande e **mais baixo que a porta de entrada**: desce-se uma escadaria larga até um chão com **três piscinas vazias** de pedra, em profundidades diferentes (cai-se nelas pela borda; sai-se pela rampa de cada uma), colunas grossas, uma **fonte seca** no meio e duas **câmaras de banho** laterais com bancos. **A porta do fundo está sempre aberta**: dá para atravessar em um minuto. O que há para achar:
+- **Inscrições do mundo** (estelas com relevo): «CONTÁVEIS DIZER CONFIRMADO» (alguém falando e um **dado de pedra** pousado numa prateleira), na beira da piscina rasa; e, gasta, «CONTÁVEIS MENTIR BOATO» (alguém cochichando), logo atrás.
+- **O dado pede para apontar:** quando você olha a 1ª estela, o dado lê a frase e pergunta «**DADO ONDE ?**». **Resposta:** mire no **dado de pedra da prateleira** e aperte **E / AGIR**. (Errar duas vezes: o dado se inclina para ele e mostra.)
+- **A piscina mais funda (à direita, gema):** quatro braseiros e duas frases na parede do fundo dela: «ACENDER DOIS CONFIRMADO» e «ACENDER UM BOATO». **Solução: acenda exatamente DOIS braseiros** (quaisquer dois) e espere uns 3 s: uma **gema sobe do ralo**, no meio da piscina. Um só não faz nada; com três, a Casa apaga tudo e os braseiros ficam frios por 4 s. (A frase com a marca BOATO é só dizem-que.)
+- **Folha arrancada nº 3 (dela):** num **banco da câmara de banho da esquerda** (oeste). Vai para "Páginas dela" no diário.
+- **O estandarte (gema; a semente):** alto, na parede da fonte, há um **estandarte tecido** com BOATO bordado. **Arremesse o dado de Fogo nele:** ele queima e, atrás, abre-se um **nicho com uma gema** (olhe para cima, chegue perto da bacia e aperte E). O jogo só ensina que pano queima na sala seguinte; quem voltar depois acha.
+- A grade da câmara de banho da direita (o "atalho" da proposta) é só cenário por enquanto: o mundo ainda é uma fila de salas.
+
+## Sala 10 — O Pano  (ACENDER · ▢ · BRASEIRO · CONFIRMADO)  — NÍVEL 5 (o fogo queima o BOATO)
+**Demonstração na entrada (sem punição):** na parede da esquerda, logo depois da porta, há um **braseiro pequeno já aceso** e, pendurado acima dele, um **trapo** com um glifo tecido (FOGO, com a marca BOATO). Quando você olha para ele (ou passa por ele), uma fagulha sobe e o trapo **pega fogo sozinho**; atrás aparece, **talhada na pedra**, a palavra **BRASEIRO**. Não é puzzle: é a Casa mostrando que **pano queima** e que **embaixo há pedra escrita**.
 Capela alta e estreita (teto de 7 m), seis pilares com tocha (apagada), quatro braseiros com número no pedestal (UM a QUATRO). O que é **talhado** na pedra é da Casa; o que é **tecido** é de alguém: cada **pano** tem a marca **BOATO** bordada embaixo. O dado de **Fogo** queima um pano (de baixo para cima, ~2 s) e mostra a pedra; os panos **voltam quando você sai da sala**.
 | Onde | Pedra (talhado) | Pano por cima | Debaixo do pano |
 |---|---|---|---|
@@ -118,15 +130,29 @@ Capela alta e estreita (teto de 7 m), seis pilares com tocha (apagada), quatro b
 - **Constelação C2 (gema):** os **frisos de pedra do teto** ligam só três pilares num **triângulo** com a ponta no meio da fileira do fundo: é o glifo **ACENDER**. **Acenda as tochas do pilar do meio do fundo (lado da porta) e dos dois pilares dos cantos da frente (lado da entrada), e nenhuma outra** (há iscas: uma perto da porta e duas na parede da entrada). O fogo corre pelos frisos e desenha o triângulo no teto; um braseiro sobe das rachaduras frias no centro; **acenda-o**: um nicho abre na parede direita, perto da entrada, com uma gema. (`tools/verify_constelacoes.mjs`: 1 conjunto entre 512; só ACENDER tem as linhas dos frisos.)
 - **Dificuldade: 5 de 10.**
 
-## Sala 10 — Os Apelidos  (ACENDER · GRANDE · ANTES · PEQUENO · CONFIRMADO)  — NÍVEL 6
-Cinco braseiros: UM, DOIS, TRÊS e QUATRO com número no pedestal, e um **GRANDE**, no meio da sala, **sem número** (o pedestal mostra o glifo GRANDE). O **QUATRO é o menor** braseiro da sala (é o PEQUENO). Frases: parede esquerda «UM DEPOIS DOIS» e «GRANDE DEPOIS TRÊS»; parede direita «PEQUENO ANTES DOIS»; a porta: «ACENDER GRANDE ANTES PEQUENO» (todas confirmadas).
+## Sala 11 — Os Apelidos  (ACENDER · GRANDE · ANTES · PEQUENO · CONFIRMADO)  — NÍVEL 6, em ROTUNDA
+Sala **redonda** (~12 m). Cinco braseiros: o **GRANDE** no **centro**, **sem número** (o pedestal mostra o glifo GRANDE), e os outros quatro em volta, em cruz, de modo que não há começo óbvio de leitura. Vistos da entrada: **UM à esquerda, DOIS ao fundo** (perto da porta), **TRÊS à direita** e **QUATRO à frente, junto da entrada**; o **QUATRO é o menor** braseiro da sala (é o PEQUENO). As frases ficam em **três placas de pedra** na parede curva: à esquerda, do lado da porta, «UM DEPOIS DOIS»; à direita, do lado da porta, «PEQUENO ANTES DOIS»; à esquerda, do lado da entrada, «GRANDE DEPOIS TRÊS»; **sobre a porta**: «ACENDER GRANDE ANTES PEQUENO» (todas confirmadas).
 - **Armadilha:** o glifo PEQUENO parece UM numa moldura e o GRANDE parece QUATRO. Quem lê pelo desenho cai em **contradição** (nenhuma ordem fecha) e percebe que leu errado.
 - **Dedução:** GRANDE = o braseiro grande do meio; PEQUENO = o QUATRO (o menor). Porta: GRANDE antes do 4. «1 depois 2» → 2 antes de 1. «GRANDE depois 3» → 3 antes do GRANDE. «PEQUENO antes 2» → 4 antes de 2. Cadeia: 3 → GRANDE → 4 → 2 → 1.
 - **Solução: TRÊS, GRANDE, QUATRO, DOIS, UM.** Errar: tudo se apaga e os braseiros ficam frios por 10 s. Na frase da porta, GRANDE e PEQUENO brilham quando o braseiro deles está aceso.
 - **Por que é única** (`node tools/verify_apelidos.mjs`): uma ordem entre 120; sem qualquer frase sobram 5 a 10; ler pelo desenho dá 0 ordens; só com as frases de número sobram 60.
 - **Palavras novas:** GRANDE, PEQUENO. **Dificuldade: 6 de 10.**
 
-## Sala 11 — O Boato Verdadeiro  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 (boato não é mentira)
+## Sala 12 — A Ponte de Madeira  (ACENDER · DOIS + o glifo MAIS)  — NÍVEL 6 (o fogo destrói o próprio caminho; `tools/verify_ponte.mjs`)
+**O fosso.** Entra-se **por cima**, numa galeria em volta da boca do fosso (gradil vazado: dá para ver o fundo). Em frente à entrada há um **patamar**; dele parte uma **rampa em espiral** que desce colada às paredes (uma volta inteira, 8 m; passa por cima da porta numa ponte de pedra) e chega ao fundo por baixo do patamar. No fundo: **9 braseiros em grade** ligados por **canaletas** (os chevrons mostram o sentido), a **porta** (num vão sob a rampa) e, na frente da ponte de pedra, «ACENDER DOIS» e o glifo **MAIS** (uma cruz) com dois soquetes que contam as ignições.
+- **A novidade:** onde duas canaletas diagonais se cruzam (no bloco do canto do fundo à esquerda), uma passa **por baixo** de uma **calha de madeira** que leva a outra **por cima**. Quando o fogo passa por baixo, **a madeira queima e cai**, e a canaleta de cima fica **cortada**.
+- **Regras:** duas ignições; **enquanto há fogo correndo, a Casa recusa o fogo**. Se o desenho não for a cruz (ou assim que um canto acender, que não tem volta), tudo se apaga, **a Casa repõe a ponte** (uma calha nova desliza da parede) e os braseiros ficam frios por 6 s.
+- **Casas** (vendo a porta em cima): `0 1 2` na fileira da porta, `3 4 5` no meio, `6 7 8` na fileira da frente (lado de quem desce). Canaletas: 6→7, 0→3, 3→1, 2→1, 8→5, 4→5, 4→3, 7→4, 2→4, 2→5, 4→0. A 3→1 passa **por baixo** da madeira; a 4→0 passa **por cima**.
+- **Solução:**
+  1. A cruz pede 1, 3, 4, 5 e 7 (as quatro pontas e o centro) e **nenhum canto**.
+  2. O centro (4) espalha fogo para 5, 3 e **0 (um canto)**, pela canaleta que passa em cima da madeira. É preciso **cortar esse caminho antes**.
+  3. **1ª ignição: o braseiro do meio da borda ESQUERDA (casa 3).** Acende o 3 e o 1 (meio do fundo) e **queima a ponte de madeira**.
+  4. **2ª ignição: o braseiro do meio da FRENTE (casa 7).** O fogo sobe ao centro e vai ao 5 e ao 3; o caminho para o canto já caiu. Acesos: 1, 3, 4, 5, 7: **a cruz**. A porta abre.
+- **Por que é única** (`node tools/verify_ponte.mjs`): das 72 sequências de duas ignições, só **3 → 7**; a ordem contrária (7 → 3) acende também o canto 0; com uma ignição é impossível; sem a madeira não há resposta; nenhuma sequência com o centro resolve.
+- **Constelação C3 (gema):** com a cruz acesa lá embaixo, **os quatro cantos da grade ficam escuros**. Na boca do fosso há **8 tochas apagadas de pé no gradil**: uma em cada canto do fosso e uma no meio de cada lado (a do lado da entrada fica no gradil do patamar). Vistas do alto, caem sobre as casas da grade. **Acenda só as 4 tochas dos CANTOS do fosso, e nenhuma outra** (nem as dos meios, nem as 3 tochas-isca das paredes do fundo); elas duram 70 s, então dê a volta na galeria sem parar. Um **braseiro sobe no patamar do canto da rampa** (o canto do fundo à esquerda, a meia altura); **acenda-o**: abre-se um nicho com uma gema na parede ao lado dele. (1 conjunto aceito de 2048.)
+- **Palavra vista:** MAIS (só o desenho é exigido). **Dificuldade: 6 de 10.**
+
+## Sala 13 — O Boato Verdadeiro  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 (boato não é mentira)
 Como na Sala 8 (O Que a Casa Confirma), as frases da parede se acendem com o dado de Fogo e há quatro pilares escondidos sob o chão. Mas a porta diz «**ACENDER VERDADE**»: acenda **toda frase verdadeira, inclusive boatos verdadeiros, e nenhuma falsa**. Acender ou apagar frases **não pune**; tocar de novo numa frase acesa a **apaga** (para desfazer um engano). A Casa **só julga quando você acende a frase da porta** (ela também tem um soquete com brasa).
 0. **Demonstração** (parede esquerda, perto da entrada, **já acesa**): «UM ANTES DOIS CONFIRMADO» e «DOIS DEPOIS UM BOATO». Um boato aceso, porque diz o mesmo que a confirmada.
 1. Confirmadas: **1 antes de 2** (a demonstração), **1 depois de 3**, **4 depois de 2** → cadeia **3 → 1 → 2 → 4**.
@@ -137,7 +163,7 @@ Como na Sala 8 (O Que a Casa Confirma), as frases da parede se acendem com o dad
 - **Por que é única** (`node tools/verify_verdade.mjs`): dos 64 conjuntos de frases só um é consistente; as confirmadas dão uma ordem só.
 - **Palavra nova:** VERDADE. **Dificuldade: 6 de 10.**
 
-## Sala 12 — O Tribunal dos Rumores  — NÍVEL 10 (**provisório aqui**: a posição final é a sala 18, depois das salas da curva de `PUZZLES_PROPOSTAS.md` §2)
+## Sala 14 — O Tribunal dos Rumores  — NÍVEL 10 (**provisório aqui**: a posição final é a sala 18, depois das salas da curva de `PUZZLES_PROPOSTAS.md` §2)
 Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
 Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).
 
@@ -165,6 +191,22 @@ Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os brase
 - **Vocabulário que as salas anteriores precisam ensinar antes** (a fazer): ANTES e DEPOIS, GRANDE e PEQUENO (a Sala 5 pode rotular os braseiros por tamanho), TODOS, IGUAL, VERDADE e o conceito de BOATO × CONFIRMADO (marcas), além dos números 1 a 5 e ORDEM (já existem).
 - **Dificuldade: 9 a 10.** É o teto do capítulo de Fogo, não uma sala de início de jogo.
 
+
+## As perguntas do dado ("você sabe o que é isso?")
+De tempos em tempos, num momento calmo, o dado **treme** na mão, vem **grande ao centro da tela**, mostra um glifo e pergunta «VOCÊ SABER ?». Embaixo aparecem **5 opções** (4 significados embaralhados e "não sei"; clique/toque ou teclas **1 a 5**). Certo: ele pula e mostra CONFIRMADO. Errado: fica abatido, sem punição. "Não sei": «EU ESPERAR». A escolha (certa ou errada) é anotada na página daquele glifo no diário, abaixo do que já estava escrito; "não sei" não escreve nada. Quem errou ou não soube é perguntado de novo **só depois de ler aquela palavra outra vez em outro lugar** (no máximo 3 vezes).
+| # | Quando | Glifo | Resposta certa (as outras opções) |
+|---|---|---|---|
+| 1 | no corredor depois da Sala 3 (A Lousa) | ACENDER | **acender** (braseiro · fogo · dois) |
+| 2 | na chegada ao pátio da cisterna (Sala 5) | QUATRO | **quatro** (três · cinco · cantos) |
+| 3 | no corredor depois da Sala 6 (A Casa Escreve) | ANTES | **antes** (depois · agora · ordem) |
+| 4 | ao pé da escadaria dos Banhos Secos (Sala 9) | CONFIRMADO | **confirmado (é verdade)** (boato (dizem que) · pergunta · fim) |
+| 5 | no corredor depois da Sala 10 (O Pano); na proposta é na chegada à Biblioteca, que ainda não existe | BOATO | **boato (dizem que)** (mentira · confirmado (é verdade) · pano) |
+| 6 | no corredor depois da Sala 11 (Os Apelidos) | DEPOIS | **depois** (antes · longe · agora) |
+| 7 | no corredor depois da Sala 12 (A Ponte de Madeira) | PEQUENO | **pequeno** (um · grande · meio) |
+| 8 | no corredor depois da Sala 13 (O Boato Verdadeiro); na proposta é na Galeria dos Condenados, que ainda não existe | VERDADE | **verdade** (mentira · dúvida · boato) |
+| 9 | (Escadaria R4: ainda não existe; a pergunta está pronta, sem gatilho) | IGUAL | **igual** (dois · lei · mais) |
+| 10 | (sala 17, antes do Tribunal: ainda não existe; pronta, sem gatilho) | TODOS | **todos** (nove · muitos · nenhum) |
+Uma pergunta só acontece se o jogador **já viu** o glifo, tem o caderno, está com o dado na mão e nada mais ocupa a tela.
 
 ## RESERVA — salas fora do jogo por ora (voltam nos capítulos 2 e 3, usam Peso e/ou giz)
 > As soluções abaixo continuam valendo para o código guardado (`vestibulo.ts` v3 e v4, `FIRE_ORDEM`, `room1.ts`, `room2.ts`, `room3.ts`, `room4.ts`, `FIRE_SEGREDO`). Os números das seções são os antigos. Os Quatro e A Ordem saíram quando entraram A Lousa e A Casa Escreve (as ideias delas estão nas novas).

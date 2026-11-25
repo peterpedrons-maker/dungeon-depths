@@ -208,6 +208,7 @@ Decisão do Pedro: todos os canais, **diluídos**, nunca todos de uma vez. Ferra
 | **murais de encaixe** | 3 ou 4 desenhos com uma casa vazia cada; trocar blocos de glifo de lugar até **todos** baterem; só então o mural acende | um por capítulo (na Biblioteca no cap. 1) |
 | **contexto no diário** | o diário guarda, junto de cada glifo avistado, **a frase inteira** onde ele apareceu e a sala (sem tradução, sem imagem) | o jogo todo (é do motor) |
 | **diários dos condenados** | anotações em português, às vezes erradas | respiros e câmaras secretas |
+| **perguntas do dado** (§2e) | o dado pula no centro, mostra o glifo e pergunta o significado (4 opções + "não sei"); ou pede para apontar/fazer | ~10 no capítulo 1, em momentos calmos |
 
 **A ferramenta** confere, para cada palavra que um puzzle **exige**, se a sala a ensina por um canal forte (efeito, demonstração, rótulo, figura,
 dado, dedução guiada) ou se ela já apareceu **2 vezes antes, uma delas por canal forte**. Na 1ª rodada ela achou dois buracos, já corrigidos:
@@ -255,6 +256,70 @@ aula, escritório do Escrivão. Para o jogador, é um lugar enorme.
 
 **Puzzles da Biblioteca (cap. 1), todos opcionais:** a constelação das mesas (C-Bib), as três lousas da sala de aula, o mural de encaixe,
 os livros que mentem (Ala do Papel). Detalho um por um, com verificador, depois da sala 11 (para não quebrar a ordem das salas).
+
+## 2e. As perguntas do dado (ideia do Pedro): "você sabe o que é isso?"
+
+**Para que serve:** confirmar, de tempos em tempos, se o jogador **entendeu** uma palavra que um puzzle ensinou. Não é prova escolar: é o
+companheiro que, de repente, quer saber. E é o único lugar do jogo onde alguém diz se o jogador acertou (o diário continua sem corrigir).
+
+### A cena
+1. **O dado treme** na mão por ~1 s (gemas piscando, um tremor leve; som baixo de pedrinhas). Quem estiver andando é parado devagar.
+2. **Ele pula e aparece grande no centro da tela**, de frente, olhando para o jogador (a mesma cena da abertura: `ctx.dieCenter`, faixas de cinema).
+3. **Mostra o glifo**, grande, escrito traço a traço (§31), e pergunta em balão: «VOCÊ · SABER · ?» (SABER = VER + CONFIRMADO).
+4. **Embaixo aparecem 5 opções**, em português (a interface é traduzida, como o diário): **4 significados** e **"não sei"**. A ordem das 4 é
+   embaralhada a cada vez. No celular, 5 botões grandes; no PC, clique ou teclas 1 a 5.
+5. **O jogador escolhe uma.**
+   - **Certo:** o dado dá um pulo de alegria e mostra só a marca **CONFIRMADO** (que brilha).
+   - **Errado:** o dado fica abatido (a reação "triste" que já existe), sem glifo, sem punição.
+   - **"Não sei":** o dado diz «EU · ESPERAR» e não insiste.
+6. **A escolha vai direto para o diário**, na página daquele glifo, como anotação do jogador (na letra dele, **abaixo** do que ele já tinha
+   escrito, nunca apagando). Certa ou errada, entra do mesmo jeito: o diário não julga. "Não sei" não escreve nada.
+7. O dado **volta para a mão** e o jogo segue.
+
+**Regras:**
+- **Uma resposta por vez.** Errou ou disse "não sei": a mesma pergunta **volta mais tarde**, só depois de o jogador ver aquela palavra de novo em
+  outro lugar (no máximo 3 vezes no jogo; depois disso, o dado desiste dela).
+- **Opções erradas plausíveis:** sempre tiradas de palavras que o jogador viu **na mesma época** ou da mesma família de glifo, para não dar para
+  acertar por eliminação.
+- **Nunca** no meio de um puzzle, durante uma sala com tempo correndo, numa conversa, com o diário aberto ou numa cena. Sempre num momento calmo:
+  no corredor entre salas ou na chegada a um respiro.
+- **A 1ª pergunta é também o tutorial da cena** (o jogador não sabe o que está acontecendo; o tremor e o pulo explicam sozinhos).
+- **Gancho para mais tarde (a decidir):** o dado é o Boato. Numa pergunta tardia, ele pode **comemorar uma resposta errada** (mentir). Quem
+  já desconfia dele percebe pelo contexto.
+
+### As perguntas do capítulo 1 (10)
+| # | Quando (logo depois de…) | Glifo | Opções (a certa em **negrito**) |
+|---|---|---|---|
+| 1 | sala 3 (A Lousa), no corredor para a sala 4 — **tutorial da cena** | ACENDER | **acender** · braseiro · fogo · dois |
+| 2 | chegada ao pátio da cisterna (R1) | QUATRO | **quatro** · três · cinco · cantos |
+| 3 | sala 5 (A Casa Escreve), no corredor para a sala 6 | ANTES | **antes** · depois · agora · ordem |
+| 4 | chegada aos Banhos Secos (R2, depois da sala 7) | CONFIRMADO | **confirmado (é verdade)** · boato (dizem que) · pergunta · fim |
+| 5 | chegada à Biblioteca (depois da sala 8) | BOATO | **boato (dizem que)** · mentira · confirmado (é verdade) · pano |
+| 6 | sala 9 (Os Apelidos), no corredor para a sala 10 | DEPOIS | **depois** · antes · longe · agora |
+| 7 | sala 10 (A Ponte de Madeira), no corredor para a sala 11 | PEQUENO | **pequeno** · um · grande · meio |
+| 8 | chegada à Galeria dos Condenados (R3, depois da sala 11) | VERDADE | **verdade** · mentira · dúvida · boato |
+| 9 | chegada à Escadaria (R4, depois da sala 14) | IGUAL | **igual** · dois · lei · mais |
+| 10 | sala 17, antes do Tribunal | TODOS | **todos** · nove · muitos · nenhum |
+Notas: a 7ª usa de propósito a armadilha da sala 9 ("um", porque o glifo PEQUENO tem o ponto do meio). Na 4ª e na 5ª, "confirmado" e "boato" vêm
+com o sentido entre parênteses, para a pergunta ser sobre a ideia, não sobre o nome da marca.
+
+### O dado nas áreas livres: apontar e fazer (mais leve, sem tela cheia)
+Nas áreas livres e na Biblioteca, o dado **comenta as escritas**: ele se inclina para uma frase na parede, "lê" (o balão repete a frase) e
+pede alguma coisa. O jogador responde **com o mundo**, sem menu:
+- **Apontar:** «X · ONDE · ?». O jogador mira na coisa e aperta E/AGIR. Errou: o dado balança a cabeça; na 2ª vez erra de novo, ele se inclina
+  para a coisa certa (mostra). Ensina a palavra ONDE e a marca PERGUNTA.
+- **Fazer:** «VOCÊ · ACENDER · DOIS · ?». O jogador faz.
+
+| Onde | O que o dado lê | O que ele pede | Resposta |
+|---|---|---|---|
+| Pátio da cisterna (R1) | «CONTÁVEIS ACENDER BRASEIRO» | «BRASEIRO ONDE ?» | mirar num braseiro e apertar E |
+| Banhos Secos (R2) | «CONTÁVEIS DIZER CONFIRMADO» (o relevo tem um dado pousado) | «DADO ONDE ?» | mirar no dado do relevo (ensina DADO) |
+| Biblioteca, Museu dos Nomes | as etiquetas dos pedestais | «CHAVE ONDE ?» e, mais tarde, «LIVRO ONDE ?» | mirar na chave; no livro |
+| Biblioteca, Sala de Aula | a lousa de exercício (a) | «VOCÊ ACENDER QUATRO ?» | fazer o exercício (escrever QUATRO) |
+
+**Motor:** gatilhos por lugar (com as condições de calma acima); tremor do dado; `ctx.dieCenter` com um painel de 5 opções embaralhadas;
+gravar a escolha na anotação do glifo (acrescentando, nunca apagando); fila de perguntas pendentes que reaparecem depois de nova aparição
+da palavra; para apontar: o mesmo raio da mira que já existe, com a coisa-alvo marcada na sala.
 
 ## 2b. Respiros: lugares livres entre os puzzles (pedido do Pedro)
 

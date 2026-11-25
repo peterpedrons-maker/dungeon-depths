@@ -1,4 +1,5 @@
 import { dialogue } from './dialogue';
+import { quiz } from './quiz';
 import { createStore } from './store';
 
 // Estado das telas por cima do jogo. O motor 3D consulta `blocked()` para parar o jogador.
@@ -17,7 +18,7 @@ export const uiStore = createStore<{ diaryOpen: boolean; bookOut: boolean; bars:
 });
 
 export const ui = {
-  blocked: () => uiStore.get().diaryOpen || dialogue.blocking,
+  blocked: () => uiStore.get().diaryOpen || dialogue.blocking || quiz.active(), // (a pergunta do dado também para o jogador)
   diaryOpen: () => uiStore.get().diaryOpen,
   setDiary: (open: boolean) => uiStore.set((s) => (s.diaryOpen === open ? s : { ...s, diaryOpen: open })),
   setBars: (on: boolean) => uiStore.set((s) => (s.bars === on ? s : { ...s, bars: on })), // faixas de cinema (cenas)

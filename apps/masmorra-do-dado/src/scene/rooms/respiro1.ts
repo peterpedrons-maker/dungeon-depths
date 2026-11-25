@@ -20,6 +20,8 @@ import { drawGlyph } from '../../book/font';
 import { glyphsOf } from '../../story/lexicon';
 import { mkBox, shotGate } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { makePointAsk } from '../pointask';
+import type { Inscription } from '../inscription';
 
 const Z1 = 2;
 const Z0 = -26; // a porta (parede do fundo do pátio)
@@ -80,6 +82,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   const boxes: Box[] = [];
   const rects: Rect[] = [];
   const interactables: Interactable[] = [];
+  let reliefIns: Inscription | null = null; // «CONTÁVEIS ACENDER BRASEIRO», no pátio: o dado a lê e pergunta «BRASEIRO ONDE ?»
   const brick = (w: number, h: number, seed: number) => kit.brick([w / T, h / T], 0.95, seed);
   const floorM = lambert(floorTexture([1 / T, 1 / T], 'ruin'));
 
@@ -381,7 +384,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     m.position.set(-5 + 0.02, 1.9, -16);
     m.rotation.y = Math.PI / 2;
     kit.group.add(m);
-    kit.inscribe({ words: ['contaveis', 'acender', 'brasa'], x: -5 + 0.025, y: 0.95, z: -16, nx: 1, nz: 0, size: 0.34, age: 0.3, seed: 91, lead: true });
+    reliefIns = kit.inscribe({ words: ['contaveis', 'acender', 'brasa'], x: -5 + 0.025, y: 0.95, z: -16, nx: 1, nz: 0, size: 0.34, age: 0.3, seed: 91, lead: true });
     kit.torch(-5 + 0.1, 2.2, -13.6, 1, 0, 1.1);
   }
 
@@ -439,6 +442,18 @@ export function buildRespiro1(ctx: Ctx): Room {
     },
   });
 
+  // O DADO PEDE PARA APONTAR: lê o relevo e pergunta «BRASEIRO ONDE ?»; depois, «VOCÊ ACENDER BRASEIRO ?» (qualquer um do pátio)
+  const point = makePointAsk(ctx, {
+    id: 'r1-brasa',
+    ins: reliefIns!,
+    read: ['contaveis', 'acender', 'brasa'],
+    ask: ['brasa', 'onde', 'perg'],
+    targets: () => braz.map((b) => b.bowl),
+    radius: 0.7,
+    then: { ask: ['voce', 'acender', 'brasa', 'perg'], done: () => braz.some((b) => b.lit) },
+  });
+  interactables.push(point.interactable);
+
   // luz: velas no corredor (nos nichos), a luz do buraco e algumas tochas no pátio
   kit.torch(X1 - 0.1, 1.8, -24, -1, 0, 2.6);
   kit.torch(X0 + 0.1, 1.8, -24, 1, 0, 3.6);
@@ -447,7 +462,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   kit.aoSides(X0, X1, COURT.z0, COURT.z1, PH);
 
   if (import.meta.env.DEV) {
-    ((globalThis as Record<string, unknown>).__respiro = () => ({ board: board.grid.points(), boardDone, p1: p1Taken, p2: p2Taken, refl: reflSolved, lit: braz.map((b) => b.lit), bowls: braz.map((b) => b.bowl.toArray()), gem: gemTaken, scribe: +scribeT.toFixed(2), cell: (i: number) => board.cellPos(i).toArray().map((v) => +v.toFixed(2)) }));
+    ((globalThis as Record<string, unknown>).__respiro = () => ({ point: point.state(), board: board.grid.points(), boardDone, p1: p1Taken, p2: p2Taken, refl: reflSolved, lit: braz.map((b) => b.lit), bowls: braz.map((b) => b.bowl.toArray()), gem: gemTaken, scribe: +scribeT.toFixed(2), cell: (i: number) => board.cellPos(i).toArray().map((v) => +v.toFixed(2)) }));
   }
   kit.bake();
 
@@ -466,6 +481,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     emitters: kit.emitters,
     inscriptions: kit.inscriptions,
     interactables,
+    calm: (x, z) => z < COURT.z1 - 1.2 && z > COURT.z1 - 5 && Math.abs(x) < 4.5, // a chegada ao pátio: o dado pode fazer uma pergunta
     doorZ: Z0,
     entranceZ: Z1,
     start: new THREE.Vector3(0, 0, 1.2),
@@ -513,6 +529,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     update(dt, t) {
       kit.tick(dt, t);
       gate.tick();
+      point.update(dt);
       for (const c of candleLights) {
         c.s.material.map = kit.frames[Math.floor(t * 8 + c.ph) % kit.frames.length];
         c.e.intensity = 9 * (0.9 + 0.1 * Math.sin(t * 7 + c.ph));

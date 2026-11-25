@@ -40,6 +40,7 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
       }, shown === 0 ? 150 : durs[shown - 1]);
       return () => window.clearTimeout(t);
     }
+    if (c.hold) return; // fala que espera uma resposta: quem a apaga é a cena
     const t = window.setTimeout(() => chatter.clear(), (durs[durs.length - 1] ?? 0) + LINGER_MS); // o balão fica à vista por mais tempo depois do último símbolo
     return () => window.clearTimeout(t);
   }, [c, shown]);

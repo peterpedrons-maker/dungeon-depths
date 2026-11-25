@@ -58,6 +58,9 @@ export interface Ctx {
   dropDie(onLanded: () => void): void;
   dieCenter(on: boolean): void; // cena: o dado da mão vem pro centro da tela, maior, de frente, com faixas de cinema
   dieSay(glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }): void;
+  dieLook(p: THREE.Vector3, secs?: number): void; // o dado da mão se inclina para um ponto (local da sala) por alguns segundos: ele MOSTRA uma coisa
+  dieReact(kind: 'joy' | 'shake' | 'sad' | 'perk'): void; // o corpo do dado reage (sem som)
+  aim(): { o: THREE.Vector3; d: THREE.Vector3 }; // o raio da mira (origem e direção, locais da sala): para o jogador APONTAR uma coisa
   // uma conversa do dado em várias frases, uma depois da outra (cada uma só começa quando a anterior terminou de ser ESCRITA e foi lida); devolve a duração total (ms)
   dieTalk(lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }): number;
   paused(): boolean; // cena, conversa ou diário em andamento: cronômetros de puzzle devem esperar
@@ -100,6 +103,12 @@ export interface Room {
   dieLie?: THREE.Vector3; // onde o dado está caído, no chão, antes de o jogador pegá-lo (só a 1ª sala)
   shaft?: THREE.Vector3; // poço de luz no teto (local): a câmera olha pra ele na cena de acordar
   wellTop?: THREE.Vector3; // a boca do poço lá em cima, do lado de fora (local, no nível do chão do pátio): cena da abertura
+  // a sala seguinte começa mais baixa (ou mais alta) que esta: a porta de saída fica em y = exitDy (padrão 0)
+  exitDy?: number;
+  // a ENTRADA desta sala fica em y = entranceY (padrão 0): salas em que se entra por cima (o fosso) ou por um patamar alto
+  entranceY?: number;
+  // área livre: o jogador CHEGOU a um ponto calmo dela (o dado pode fazer uma pergunta aqui)
+  calm?(x: number, z: number): boolean;
   doorZ: number; // z (local) da parede do fundo, onde fica a porta
   entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)
@@ -111,7 +120,7 @@ export interface Room {
   rects(feetY: number): Rect[]; // obstáculos para o jogador
   clampPlayer?(pos: THREE.Vector3): void; // limites curvos (coordenadas da sala); retas são obstáculos em rects()
   clampDie(p: THREE.Vector3, v: THREE.Vector3, e: number, R: number): void;
-  groundY(x: number, z: number): number; // chão onde o jogador pisa
+  groundY(x: number, z: number, feetY?: number): number; // chão onde o jogador pisa (`feetY` = pés agora, local: salas com andares sobrepostos escolhem o piso)
   surfaceAt?(x: number, z: number): Surface; // piso nesse ponto (pedra por padrão)
   dieFloor(x: number, z: number): number; // chão "inclinado" (rampa) para o dado
   update(dt: number, t: number): void;

@@ -104,3 +104,25 @@ export function shotGate(die: { readonly state: string }) {
     },
   };
 }
+
+// Prisma de base retangular e topo inclinado (rampas, cunhas, corrimãos): o y de cada canto do topo é yAt(x, z); o fundo é y0 (número ou função).
+// UV em metros (use texturas com repeat [1, 1]).
+export function wedge(x0: number, z0: number, x1: number, z1: number, yAt: (x: number, z: number) => number, side: THREE.Material, top: THREE.Material, y0: number | ((x: number, z: number) => number) = 0) {
+  const geo = new THREE.BoxGeometry(x1 - x0, 1, z1 - z0);
+  geo.translate((x0 + x1) / 2, 0.5, (z0 + z1) / 2);
+  const p = geo.attributes.position as THREE.BufferAttribute;
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i);
+    const z = p.getZ(i);
+    const y = p.getY(i) > 0.5 ? yAt(x, z) : typeof y0 === 'number' ? y0 : y0(x, z);
+    p.setY(i, y);
+    const face = Math.floor(i / 4); // BoxGeometry: +x, -x, +y, -y, +z, -z (4 vértices cada)
+    if (face < 2) uv.setXY(i, z / T, y / T);
+    else if (face < 4) uv.setXY(i, x / T, z / T);
+    else uv.setXY(i, x / T, y / T);
+  }
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, [side, side, top, side, side, side]);
+}
+

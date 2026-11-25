@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { lambert, type Kit } from './kit';
 import { makeBrazier, type Brazier } from './brazier';
 import { drawGlyph } from '../book/font';
-import { LEX, type GlyphDef } from '../story/lexicon';
+import { glyphsOf, LEX, type GlyphDef } from '../story/lexicon';
 import type { Box, Ctx, Interactable } from './types';
 import type { Inscription } from './inscription';
 
@@ -66,6 +66,7 @@ export interface GridEdge {
 export class FireGrid {
   lit: boolean[] = Array(9).fill(false);
   burnt = new Set<string>();
+  cut = new Set<string>(); // canaletas CORTADAS (a ponte de madeira caiu): o fogo não entra mais nelas
   private runs: { e: GridEdge; u: number }[] = [];
   constructor(
     public nodes: (GridNodeVis | null)[],
@@ -79,7 +80,7 @@ export class FireGrid {
     this.lit[i] = true;
     this.nodes[i]!.set(true, quiet);
     for (const e of this.edges) {
-      if (e.a !== i || this.burnt.has(edgeKey(e.a, e.b)) || this.runs.some((r) => r.e === e)) continue;
+      if (e.a !== i || this.burnt.has(edgeKey(e.a, e.b)) || this.cut.has(edgeKey(e.a, e.b)) || this.runs.some((r) => r.e === e)) continue;
       this.runs.push({ e, u: 0 });
     }
   }
@@ -101,6 +102,11 @@ export class FireGrid {
   running() {
     return this.runs.length > 0;
   }
+  // até onde o fogo já correu na canaleta a→b (0..1; 1 = já queimou)
+  progress(a: number, b: number) {
+    if (this.burnt.has(edgeKey(a, b))) return 1;
+    return this.runs.find((r) => r.e.a === a && r.e.b === b)?.u ?? 0;
+  }
   points() {
     return this.lit.map((v, i) => (v ? i : -1)).filter((i) => i >= 0);
   }
@@ -110,6 +116,7 @@ export class FireGrid {
   clear(quiet = true) {
     this.runs = [];
     this.burnt.clear();
+    this.cut.clear();
     for (const e of this.edges) e.vis?.set(0, false);
     this.lit.forEach((v, i) => {
       if (v) this.nodes[i]?.set(false, quiet);
@@ -124,7 +131,7 @@ export class FireGrid {
 
 // ── texturas ──────────────────────────────────────────────────────────────
 let grooveTex: THREE.CanvasTexture | null = null;
-function grooveTexture() {
+export function grooveTexture() {
   // sulco escuro com chevrons claros apontando para +x (para onde o óleo escorre)
   if (grooveTex) return grooveTex;
   const [c, g] = canvas(32, 16);
@@ -142,7 +149,7 @@ function grooveTexture() {
   return grooveTex;
 }
 let oilTex: THREE.CanvasTexture | null = null;
-function burntTexture() {
+export function burntTexture() {
   if (oilTex) return oilTex;
   const [c, g] = canvas(32, 16);
   g.fillStyle = '#ff6a22';
@@ -464,8 +471,9 @@ export interface Torch {
   light(on: boolean, quiet?: boolean): void;
   update(dt: number, t: number, paused: boolean): void;
 }
-export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, life = 40): Torch {
-  kit.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, kit.stone, x, y - 0.05, z, false);
+// `stand`: tocha de pé (num corrimão, num pedestal), sem o suporte de parede
+export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, life = 40, stand = false): Torch {
+  if (!stand) kit.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, kit.stone, x, y - 0.05, z, false);
   kit.box(0.1, 0.6, 0.1, lambert(null, 0x5a3a24), x + nx * 0.16, y + 0.12, z + nz * 0.16, false);
   // a cabeça da tocha: pano enrolado (escuro quando apagada)
   kit.box(0.16, 0.14, 0.16, lambert(null, 0x2a2026), x + nx * 0.16, y + 0.45, z + nz * 0.16, false);
@@ -553,10 +561,10 @@ export interface Riser {
   reset(): void;
   rect(): [number, number, number, number] | null;
 }
-export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1): Riser {
+export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1, baseY = 0): Riser {
   const RISE = 2.7;
   const start = kit.group.children.length;
-  const br = makeBrazier(kit, ctx, x, z, false, scale);
+  const br = makeBrazier(kit, ctx, x, z, false, scale, baseY);
   const grp = new THREE.Group();
   for (const k of kit.group.children.slice(start)) grp.add(k);
   kit.group.add(grp);
@@ -568,7 +576,7 @@ export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1): 
     new THREE.MeshLambertMaterial({ map: coldCracks(77 + Math.round(x * 13 + z * 5)), emissive: 0xff7a2e, emissiveIntensity: 0, transparent: true, alphaTest: 0.05, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
   );
   cm.rotation.x = -Math.PI / 2;
-  cm.position.set(x, 0.014, z);
+  cm.position.set(x, baseY + 0.014, z);
   kit.group.add(cm);
   const r: Riser = {
     brazier: br,
@@ -765,4 +773,130 @@ export function serpentine(start: [number, number], end: [number, number], xa: n
   });
   pts.push(end);
   return pts;
+}
+
+// ── PANO solto (M3): tecido pendurado na parede, com palavras bordadas e (opcional) a marca BOATO embaixo. O Fogo o queima de baixo para cima
+// (~2 s). Serve para o trapo que pega fogo sozinho (sala do Pano), o estandarte dos Banhos Secos, tapeçarias-semente. ──
+export interface Cloth {
+  k: number; // 0 = inteiro, 1 = queimado
+  burning: boolean;
+  center: THREE.Vector3;
+  ignite(quiet?: boolean): void; // pega fogo (sozinho ou pelo dado)
+  restore(): void;
+  update(dt: number, t: number, byDie?: boolean): void; // `byDie` = o dado de Fogo pode queimá-lo (padrão: sim)
+}
+export function makeCloth(kit: Kit, ctx: Ctx, o: { x: number; y: number; z: number; nx: number; nz: number; words: string[]; size?: number; color?: string; mark?: boolean; tall?: number; key?: string; secs?: number }): Cloth {
+  const sz = o.size ?? 0.4;
+  const n = new THREE.Vector3(o.nx, 0, o.nz);
+  const right = new THREE.Vector3(n.z, 0, -n.x);
+  const glyphs = o.words.flatMap((w) => glyphsOf(w));
+  const w = Math.max(0.7, glyphs.length * sz * 1.25 + 0.35);
+  const h = sz * 1.25 + (o.mark === false ? 0.3 : 0.55) + (o.tall ?? 0);
+  const top = o.y + h / 2;
+  const PXM = 96 / sz;
+  const cw = Math.round(w * PXM * 0.5);
+  const chh = Math.round(h * PXM * 0.5);
+  const [cv, g] = canvas(cw, chh);
+  const base = o.color ?? '#8a3040';
+  g.fillStyle = base;
+  g.fillRect(0, 0, cw, chh - 6);
+  g.fillStyle = 'rgba(0,0,0,0.22)';
+  for (let y = 0; y < chh - 6; y += 2) g.fillRect(0, y, cw, 1);
+  g.fillStyle = 'rgba(255,255,255,0.06)';
+  for (let x = 0; x < cw; x += 3) g.fillRect(x, 0, 1, chh - 6);
+  g.fillStyle = '#c9a24a';
+  g.fillRect(0, 3, cw, 2);
+  g.fillRect(0, chh - 11, cw, 2);
+  for (let x = 1; x < cw; x += 3) {
+    g.fillStyle = base;
+    g.fillRect(x, chh - 6, 1, 4 + (x % 2) * 2);
+  }
+  const gs = (48 * 0.94) / 0.86;
+  let cx = cw / 2 - ((glyphs.length - 1) * gs * 1.12) / 2;
+  const cy = (sz * 0.7 + 0.12 + (o.tall ?? 0) * 0.5) * PXM * 0.5;
+  for (const gl of glyphs) {
+    drawGlyph(g, gl, Math.round(cx) + 1, Math.round(cy) + 1, gs, '#1a0c10');
+    drawGlyph(g, gl, Math.round(cx), Math.round(cy), gs, '#f0d488');
+    cx += gs * 1.12;
+  }
+  if (o.mark !== false) {
+    const bo = glyphsOf('boato')[0];
+    drawGlyph(g, bo, Math.round(cw / 2) + 1, chh - 24, gs * 0.42, '#1a0c10');
+    drawGlyph(g, bo, Math.round(cw / 2), chh - 25, gs * 0.42, '#f0d488');
+  }
+  const tx = tex(cv);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: tx, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }));
+  mesh.rotation.y = Math.atan2(n.x, n.z);
+  const cc = new THREE.Vector3(o.x, o.y, o.z).addScaledVector(n, 0.06);
+  mesh.position.copy(cc);
+  kit.group.add(mesh);
+  const rod = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, w + 0.2), lambert(null, 0x4a3020));
+  rod.rotation.y = Math.atan2(n.x, n.z) + Math.PI / 2;
+  rod.position.set(cc.x + n.x * 0.02, top + 0.02, cc.z + n.z * 0.02);
+  kit.group.add(rod);
+  // o jogador "lê" o pano como uma inscrição (as palavras bordadas vão para o diário)
+  const fake: Inscription = { words: [...o.words, ...(o.mark === false ? [] : ['boato'])], center: cc.clone(), normal: n.clone(), panels: [], read: false, seeT: 0, hidden: false, setReveal() {}, extras: [], setGlow() {}, reveal() {} };
+  kit.inscriptions.push(fake);
+  const flames = [0, 1, 2].map(() => {
+    const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+    f.scale.set(0.42, 0.36, 1);
+    f.visible = false;
+    kit.group.add(f);
+    return f;
+  });
+  const lamp = kit.light(cc.x + n.x * 0.5, o.y, cc.z + n.z * 0.5, 0xff7a2e, 0);
+  const tmp = new THREE.Vector3();
+  const secs = o.secs ?? 2;
+  const c: Cloth = {
+    k: 0,
+    burning: false,
+    center: cc,
+    ignite(quiet = false) {
+      if (c.burning || c.k > 0) return;
+      c.burning = true;
+      if (!quiet) ctx.sfx('ignite', o.key ?? 'pano');
+    },
+    restore() {
+      c.k = 0;
+      c.burning = false;
+      mesh.visible = true;
+      mesh.scale.y = 1;
+      mesh.position.y = o.y;
+      tx.repeat.y = 1;
+      tx.offset.y = 0;
+      fake.hidden = false;
+      flames.forEach((f) => (f.visible = false));
+      lamp.intensity = 0;
+    },
+    update(dt, t, byDie = true) {
+      const d = ctx.die;
+      if (byDie && !c.burning && c.k === 0 && d.face === 3 && (d.state === 'flying' || d.state === 'rest')) {
+        tmp.copy(d.pos).sub(cc);
+        if (Math.abs(tmp.dot(n)) < 0.5 && Math.abs(tmp.dot(right)) < w / 2 + 0.15 && Math.abs(tmp.y) < h / 2 + 0.2) c.ignite();
+      }
+      if (!c.burning) return;
+      c.k = Math.min(1, c.k + dt / secs);
+      const rest = 1 - c.k;
+      mesh.scale.y = Math.max(0.001, rest);
+      mesh.position.y = top - (h * rest) / 2;
+      tx.repeat.y = Math.max(0.001, rest);
+      tx.offset.y = c.k;
+      const by = top - h * rest;
+      flames.forEach((f, k) => {
+        f.visible = rest > 0.02;
+        f.position.copy(cc).addScaledVector(right, (k - 1) * w * 0.33).addScaledVector(n, 0.08);
+        f.position.y = by + 0.12;
+        f.material.map = kit.frames[Math.floor(t * 10 + k * 2) % kit.frames.length];
+      });
+      lamp.intensity = rest > 0.02 ? 30 : 0;
+      if (c.k >= 1) {
+        c.burning = false;
+        mesh.visible = false;
+        fake.hidden = true;
+        flames.forEach((f) => (f.visible = false));
+        lamp.intensity = 0;
+      }
+    },
+  };
+  return c;
 }
