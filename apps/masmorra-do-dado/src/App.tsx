@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool } from './scene/scene';
 import { startMapDemo } from './book/mapdemo';
 import { LAB_WORDS } from './scene/rooms/lab';
@@ -8,7 +8,6 @@ import { dialogue, dialogueStore } from './story/dialogue';
 import { chatterStore } from './story/chatter';
 import { useStore } from './story/store';
 import { ui, uiStore } from './story/ui';
-import { BookIcon } from './ui/BookIcon';
 import { PixelIcon } from './ui/PixelIcon';
 import { BoatoBubble } from './ui/BoatoBubble';
 import { DialogueBox } from './ui/DialogueBox';
@@ -16,14 +15,38 @@ import { QuizPanel } from './ui/QuizPanel';
 import { quiz } from './story/quiz';
 import { WordGlyph } from './ui/Glyph';
 import { useUiScale } from './ui/scale';
-import { Credits, PauseMenu, SaveIndicator, TitleScreen } from './ui/Menus';
+import { Credits, PauseMenu, SaveIndicator, TitleScreen, type TitleApi } from './ui/Menus';
 import { saves } from './story/save';
-import { configStore } from './story/config';
+import { configStore, keyName } from './story/config';
+import type { IconName } from './ui/PixelIcon';
+
+// o ícone de cada aviso de ação (pelo verbo do texto)
+const actionIcon = (label: string | null): IconName =>
+  !label ? 'agir' : /^Pegar/i.test(label) ? 'pegar' : /abrir/i.test(label) ? 'abrir' : /^(Ler|Olhar)/i.test(label) ? 'ler' : 'agir';
 
 // TELA INICIAL ao abrir a página (INTERFACE.md §3.1); não aparece logo depois de escolher um espaço (a página recarrega já no jogo)
 // nem nas pré-visualizações e testes (?demo, ?lab, ?intro=0, ?titulo=0)
 const Q = new URLSearchParams(location.search);
 const PLAY_NOW = saves.consumePlay();
+// as transições que atravessam o recarregar: jogo novo (o branco do feixe vira o preto) e outro espaço (aparece em pontilhado do preto)
+const take = (k: string) => {
+  try {
+    const v = sessionStorage.getItem(k);
+    sessionStorage.removeItem(k);
+    return v === '1';
+  } catch {
+    return false;
+  }
+};
+const FROM_WHITE = take('mdd-white');
+const FROM_DIS = take('mdd-dis');
+const mark = (k: string) => {
+  try {
+    sessionStorage.setItem(k, '1');
+  } catch {
+    /* ok */
+  }
+};
 const SHOW_TITLE = !PLAY_NOW && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
 
 const STICK_R = 46;
@@ -203,6 +226,7 @@ export default function App() {
       },
     });
     sceneRef.current = scene;
+    if (FROM_DIS) scene.fadeInFromBlack();
     return () => {
       scene.dispose();
     };
@@ -222,6 +246,29 @@ export default function App() {
   };
 
   const inMenu = uis.menu !== null;
+  const cfg = useStore(configStore);
+  const [whiteIn, setWhiteIn] = useState(FROM_WHITE);
+  const titleApi = useMemo<TitleApi>(
+    () => ({
+      look: (x, y) => sceneRef.current?.titleLook(x, y),
+      mood: (m) => sceneRef.current?.titleMood(m),
+      credits: (on) => sceneRef.current?.titleCredits(on),
+      newGame: (slot) =>
+        sceneRef.current?.titleNew(() => {
+          mark('mdd-white');
+          saves.newGame(slot);
+        }),
+      play: (slot) => {
+        if (slot === saves.active()) sceneRef.current?.titleGo();
+        else
+          sceneRef.current?.titleGo(() => {
+            mark('mdd-dis');
+            saves.play(slot);
+          }, true);
+      },
+    }),
+    [],
+  );
 
   return (
     <div className="stage">
@@ -241,13 +288,13 @@ export default function App() {
         <div className="hudbtns">
           {hasBook && (coarse || uis.bookCall) && !uis.bookOut && (
             <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
-              <BookIcon />
+              <PixelIcon name="diario" size={32} />
               {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
             </button>
           )}
           {coarse && !uis.bookOut && (
             <button onClick={openPause} aria-label="Pausa">
-              <PixelIcon name="pausa" />
+              <PixelIcon name="pausa" size={32} />
             </button>
           )}
         </div>
@@ -273,10 +320,12 @@ export default function App() {
         </div>
       )}
 
+      {/* AVISO DE AÇÃO (INTERFACE.md §4): a TECLA (de pedra, com a letra na fonte do jogo) + o ÍCONE da ação + o texto curto */}
       {prompt && !speaking && !inMenu && (
         <div className="prompt">
-          <b className="hint-pc">E</b>
-          {prompt}
+          <span className="keycap-hud hint-pc">{keyName(cfg.keys.agir)}</span>
+          <PixelIcon name={actionIcon(prompt)} size={32} />
+          <span>{prompt}</span>
         </div>
       )}
       <BoatoBubble onSound={sound} />
@@ -299,7 +348,7 @@ export default function App() {
       {!complete && !inMenu && !inv.die && prompt && !speaking && (
         <div className="touchbtns">
           <button className="btn-throw" onPointerDown={(e) => { e.preventDefault(); sceneRef.current?.action(); }} aria-label={prompt}>
-            <span className="ico"><PixelIcon name="agir" /></span>
+            <span className="ico"><PixelIcon name={actionIcon(prompt)} size={32} /></span>
             <span>AGIR</span>
           </button>
         </div>
@@ -315,7 +364,7 @@ export default function App() {
             }}
             aria-label="Girar o dado"
           >
-            <span className="ico"><PixelIcon name="girar" /></span>
+            <span className="ico"><PixelIcon name="girar" size={32} /></span>
             <span>GIRAR</span>
           </button>
           {!dieOut && (
@@ -327,7 +376,7 @@ export default function App() {
               }}
               aria-label="Posicionar o dado onde a mira aponta"
             >
-              <span className="ico"><PixelIcon name="posicionar" /></span>
+              <span className="ico"><PixelIcon name="posicionar" size={32} /></span>
               <span>POSICIONAR</span>
             </button>
           )}
@@ -339,7 +388,7 @@ export default function App() {
             }}
             aria-label={dieOut ? 'Recolher o dado' : 'Arremessar o dado'}
           >
-            <span className="ico"><PixelIcon name={prompt ? 'agir' : dieOut ? 'recolher' : 'arremessar'} /></span>
+            <span className="ico"><PixelIcon name={prompt ? actionIcon(prompt) : dieOut ? 'recolher' : 'arremessar'} size={32} /></span>
             <span>{prompt ? 'AGIR' : dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
           </button>
         </div>
@@ -355,16 +404,16 @@ export default function App() {
               sceneRef.current?.swapTool();
             }}
           >
-            <span className="ico"><PixelIcon name={tool === 'die' ? 'giz' : 'dado'} size={20} /></span>
+            <span className="ico"><PixelIcon name={tool === 'die' ? 'giz' : 'dado'} size={16} /></span>
             <span>{tool === 'die' ? 'GIZ' : 'DADO'}</span>
           </button>
           {tool === 'chalk' && (
             <>
               {(
                 [
-                  ['draw', 'giz', 'Desenhar'],
+                  ['draw', 'desenhar', 'Desenhar'],
                   ['erase', 'apagar', 'Apagar'],
-                ] as [ChalkMode, 'giz' | 'apagar', string][]
+                ] as [ChalkMode, 'desenhar' | 'apagar', string][]
               ).map(([m, ico, label]) => (
                 <button
                   key={m}
@@ -375,7 +424,7 @@ export default function App() {
                     pickMode(m);
                   }}
                 >
-                  <span className="ico"><PixelIcon name={ico} size={20} /></span>
+                  <span className="ico"><PixelIcon name={ico} size={16} /></span>
                   <span>{label.toUpperCase()}</span>
                 </button>
               ))}
@@ -387,7 +436,7 @@ export default function App() {
                   sceneRef.current?.clearChalk();
                 }}
               >
-                <span className="ico"><PixelIcon name="limpar" size={20} /></span>
+                <span className="ico"><PixelIcon name="limpar" size={16} /></span>
                 <span>LIMPAR</span>
               </button>
             </>
@@ -397,7 +446,7 @@ export default function App() {
 
       {tool === 'chalk' && !complete && (
         <div className="lookzone" aria-hidden="true">
-          <span><PixelIcon name="olhar" /></span>
+          <span><PixelIcon name="olhar" size={32} /></span>
           <span>OLHAR</span>
         </div>
       )}
@@ -412,7 +461,8 @@ export default function App() {
       <DialogueBox onSound={sound} />
       <QuizPanel onSound={sound} />
 
-      {uis.menu === 'title' && <TitleScreen onBegin={() => sceneRef.current?.begin()} snd={sound} />}
+      {uis.menu === 'title' && <TitleScreen api={titleApi} snd={sound} />}
+      {whiteIn && <div className="white-in" onAnimationEnd={() => setWhiteIn(false)} />}
       {uis.menu === 'pause' && (
         <PauseMenu
           hasBook={hasBook}

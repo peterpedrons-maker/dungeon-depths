@@ -678,3 +678,48 @@ diário só aparece no momento em que o caderno é achado (a tela escurece e ele
 só o botão de pausa (e o do diário, depois do caderno). O ▼ da caixa de conversa virou um triângulo de ouro desenhado; o ✦ do fim saiu.
 *Ainda não feito (passos 4 a 6 do `INTERFACE.md` e partes do 2):* controle (gamepad) e seus botões, tamanho/posição dos botões de toque, as caixas
 de texto novas, os ícones definitivos em 16×16/24×24 com a tecla no aviso de ação, o logo e o ícone do app.
+
+
+## 46. Interface de lançamento, passos 4 a 6 e a tela inicial do dado caído (implementado; `INTERFACE.md` revisado, da branch `claude/puzzles-design`)
+
+**A tela inicial (§3.1).** É a sala 1, o Poço, no instante em que o dado caiu. O dado (o do HUD, que tem o rosto e a vida de `dielife.ts`) fica
+**deitado de lado no entulho**, perto da câmera e um pouco à direita do centro, com o rosto para a câmera; o entulho em volta também é do HUD, então
+dado e pedras ficam nítidos e a sala atrás fica **desfocada** (o pós-processo ganhou `uBlur`, que só borra a sala, não o HUD). Atrás, o feixe do
+poço com a poeira. A câmera fica baixa e "respira" 1,5 cm; a luz respira (o brilho sobe e desce 3%). O **olho** segue o mouse no PC; com o
+teclado, olha para a opção marcada; no celular, para onde o dedo tocou e depois volta a vaguear; pisca; **cochila** depois de 30 s sem ninguém
+mexer (`LifeInput.sleepAfter`) e acorda num pulo; dá um **pulinho** quando a opção marcada é "Novo jogo" (e fica **abatido** em "Sair", que só
+existe fora da web). **Transições sem tela de carregamento:** *Novo jogo*: o dado pisca devagar, a câmera **sobe pelo feixe** (o entulho e o dado
+ficam para baixo) até o **branco**; a página recarrega já no jogo novo e o branco vira o preto da cena de acordar. *Continuar* (no mesmo espaço):
+o dado dá um **pulinho para fora do quadro** e a imagem se desfaz **em pontilhado** (a ordem de Bayer do próprio dithering; `uDis` + uma cópia do
+último quadro, `rtSnap`) para o lugar salvo. *Outro espaço*: o mesmo pulinho, o pontilhado vai para o preto, recarrega e volta do preto em
+pontilhado. *Créditos*: os nomes sobem devagar à esquerda enquanto a câmera **gira em volta do dado**. *Depois do capítulo 1* (marco `cap1`, posto
+no fim da demonstração): o fundo passa a ser o último lugar salvo.
+
+**Passo 4, caixas de texto (§5).** As molduras de pedra são uma imagem de 24 × 24 em **9 pedaços** (`border-image`, borda de 8 pixels, cantos
+lascados, quina de cima clara e de baixo escura), geradas pixel a pixel por `tools/build_frames.py` (`src/ui/frames.css`); o tamanho do pixel na
+tela é `--px` (`ui/scale.ts`). O **mundo** fala numa tábua de pedra com a placa do nome embutida; a do **Escrivão** tem a moldura de **ouro** do
+manto. O **pensamento** do jogador é uma **tira de papel** rasgada nas pontas, com a tinta do diário (os parênteses de antes saíram: o papel já diz
+que é pensamento). A **pergunta do dado**: o glifo numa tábua de pedra e **5 plaquinhas de pedra**; "não sei" numa plaquinha lisa, sem talho. Os
+**avisos** (avistado, gema) e o dadinho de salvar ficam numa plaquinha pequena de pedra no canto de cima. O balão do dado continua como era.
+
+**Passo 5, ícones (§6).** Todos redesenhados pixel a pixel em `tools/build_icons.py` (gera `src/ui/icons.ts`): **16 × 16** no HUD e **24 × 24**
+nos menus, traço de ouro de 1 pixel, pintado só no que se coleta (gema, página), só ouro e brasa além da pedra. Seguindo a revisão da folha:
+pegar = a mão com ponto; abrir = porta em ARCO entreaberta (não as duas barras); ler/olhar = olho em AMÊNDOA (não o losango); arremessar = arco com
+seta curva; posicionar = o dadinho descendo numa curva até um chão ondulado; girar = setas curvas em volta de um ponto; desenhar = toco de giz
+deixando uma linha ondulada (não a diagonal solta); apagar = mancha pontilhada com o giz deitado (não o X); diário = livro só em traço; fechar = uma
+tampa de pedra descendo; confirmar = ✓ assimétrico de braço esquerdo curto e curvo; voltar = arco curvo para a esquerda; configurações = engrenagem
+de pontos e um anel; abas: sino (áudio), janela em arco com sol e morro (imagem), controle de mão (controles), pessoa de braços abertos
+(acessibilidade), balão de fala com escrita ondulada (idioma). **Pausa = uma ampulheta** de bulbos redondos: as duas barras do símbolo de pausa
+comum são a palavra ABRIR. O **dado** é desenhado em perspectiva, sem pontos (pontos numa face são os números da língua), e os dadinhos dos ícones
+de ação são pintados, sem o ponto no meio (um quadrado com ponto no meio é UM). O **aviso de ação** agora é uma plaquinha de pedra embaixo, perto do
+centro: a **tecla** (de pedra, a letra na fonte do jogo, a que estiver configurada) + o **ícone da ação** (pelo verbo: pegar, abrir, ler, agir) +
+o texto; no celular, sem a tecla. A mira vira um pequeno anel de ouro quando há algo a fazer.
+
+**Passo 6, logo e ícone do app (§7).** `tools/build_logo.py` desenha o logo «SENTENÇA» numa grade de 11 linhas, hastes de 2 pixels, o **Ç com a
+cedilha desenhada à mão**, e o último A é o **glifo ACENDER de verdade**: três linhas da grossura das hastes ligando um ponto em cada vértice, a
+**brasa** no de cima, nada dentro nem solto. A tela inicial o pinta em pedra talhada (luz em cima, sombra embaixo, contorno e sombra projetada).
+O **ícone do app** (`public/icons/*.png`, 192, 512, 512 mascarável e 180 para o iPhone) é a face do dado: pedra escura, moldura e cantoneiras de
+ouro, o triângulo ACENDER no meio com a brasa em cima. *Não mudei o nome do app no manifesto* ("Masmorra do Dado"): o `INTERFACE.md` pede para
+conferir antes se «Sentença» está livre na Steam e nas lojas.
+*Ainda não feito:* os botões do controle (gamepad), o vetor limpo do logo (para loja e cartaz) e a aba do mapa no diário com o ícone novo (o diário
+desenha as próprias abas no papel).

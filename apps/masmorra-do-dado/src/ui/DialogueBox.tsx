@@ -87,7 +87,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
   if (!c || !line) return null;
   const thought = line.who === 'thought';
   return (
-    <div key={c.id} className={`dlg ${thought ? 'thought' : 'world'}${block ? '' : ' free'}`} role="dialog" aria-live="polite">
+    <div key={c.id} className={`dlg ${thought ? 'thought' : `world who-${line.who}`}${block ? '' : ' free'}`} role="dialog" aria-live="polite">
       {!thought && (
         <div className="dlg-plate">
           <WordGlyph id={SPEAKER_WORD[line.who as Exclude<typeof line.who, 'thought'>]} size={Math.round(38 * k)} color="#ffd36b" />
@@ -104,10 +104,9 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
           </div>
         ) : (
           <p data-done={done ? '' : undefined}>
-            {shown > 0 ? '(' : ''}
+            {/* (a tira de papel já diz que é pensamento: sem os parênteses de antes) */}
             {(line.text ?? '').slice(0, shown)}
             <span className="ghost">{(line.text ?? '').slice(shown)}</span>
-            <span className={done ? undefined : 'ghost'}>)</span>
           </p>
         )}
       </div>

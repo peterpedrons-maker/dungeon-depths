@@ -12,6 +12,7 @@ const apply = () => {
   // tamanhos da fonte de pixels (múltiplos de 10px: cada pixel da letra vira 1, 2, 3 ou 4 pixels da tela, sem borrar)
   const st = document.documentElement.style;
   st.setProperty('--fs', `${10 * Math.max(1, Math.round(f))}px`);
+  st.setProperty('--px', `${Math.max(1, Math.round(f))}px`); // 1 pixel das molduras de pedra (frames.css) na tela
   const c = configStore.get();
   document.documentElement.dataset.contrast = c.highContrast ? '1' : '0';
   document.documentElement.dataset.cross = c.crosshair ? '1' : '0';

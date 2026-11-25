@@ -32,10 +32,24 @@
 
 ## 3. As telas
 
-### 3.1 Tela inicial
-Fundo: o poço, de baixo, com a luz lá em cima (a cena já existe), e o logo «SENTENÇA» com o triângulo (§7).
-Opções, em plaquinhas de pedra, uma embaixo da outra: **Continuar** (só se houver jogo salvo) · **Novo jogo** · **Carregar** (os três espaços) ·
-**Configurações** · **Créditos** · **Sair** (não aparece na web).
+### 3.1 Tela inicial: o dado caído (ideia do Pedro)
+**A cena:** a **sala 1, o Poço**, no instante em que o dado caiu (antes de o jogador pegá-lo). O dado está **caído de lado no entulho**, bem perto
+da câmera, um pouco à direita do centro; o rosto virado para a câmera. Atrás, a sala **desfocada** (profundidade de campo), com a **luz do poço**
+descendo em feixe e poeira **só dentro do feixe**. Movimento lento e constante: a luz respira, partículas sobem, a câmera "respira" 1 a 2 cm.
+**À esquerda:** o título **«SENTENÇA»** grande, em cima (a versão em pixel do logo, §7), e embaixo as opções em plaquinhas de pedra:
+**Continuar** (só se houver jogo salvo) · **Novo jogo** · **Carregar** · **Configurações** · **Créditos** · **Sair** (não aparece na web).
+**O dado está vivo** (tudo já existe em `dielife.ts`, só muda o alvo do olhar):
+- **no PC, o olho segue o mouse**;
+- **com teclado ou controle, olha para a opção marcada**;
+- **no celular, olha para onde o dedo tocou** e, parado, vagueia o olhar;
+- pisca; **cochila** se ninguém mexer por ~30 s e **acorda assustado** quando o mouse ou o dedo se mexe;
+- **fica abatido** com o cursor em "Sair"; dá um **pulinho** com o cursor em "Novo jogo".
+**As transições (sem tela de carregamento):**
+- **Novo jogo:** o dado pisca devagar, a câmera **sobe pelo feixe de luz** até o branco, e o branco vira o preto da cena de acordar.
+- **Continuar / Carregar:** o dado dá um pulinho para fora do quadro e a imagem se desfaz em pontilhado para o lugar salvo.
+**Depois do capítulo 1:** o fundo passa a ser **o último lugar onde o jogador parou** (a sala do último save), com o dado caído ali: um retrato
+do progresso. O dado só fica no Poço até o jogador terminar o 1º capítulo.
+**Créditos:** a câmera gira devagar em volta do dado enquanto os nomes sobem.
 
 ### 3.2 Pausa (Esc / Start / botão de pausa no celular)
 O jogo escurece e fica parado; uma tábua de pedra no centro: **Continuar** · **Diário** · **Configurações** · **Voltar à tela inicial** (salva
@@ -101,6 +115,57 @@ tela cheia → aba Imagem · todos os emojis.
 
 ### Para depois (quando a mecânica existir)
 faces do dado novas (Peso, Eco, Troca, Deslizar, Atravessar: o glifo do efeito, que o jogo já desenha nas faces) · carimbo do mapa · conquistas (Steam).
+
+### Formas proibidas em ícones (vêm do léxico)
+**Regra:** os glifos são **retos e geométricos** (pontos e retas numa grade 3×3). Os ícones são **figurativos e curvos** (mão, olho, porta,
+giz, engrenagem). Nenhum ícone pode ser feito só de retas ligando pontos de uma grade 3×3, porque aí ele **vira uma palavra** e ensina errado.
+Formas que já são palavras (conferido em `src/story/lexicon.json`):
+| Forma | Palavra |
+|---|---|
+| **X** (duas diagonais) | EM VEZ DE |
+| **+** (cruz reta) | JULGAR |
+| **seta reta →** | ENTÃO / SEGUIR |
+| **seta reta ←** | VOLTAR |
+| **seta reta ↑** | IR |
+| **seta reta ↓** | VIR |
+| **=** (duas horizontais) | IGUAL |
+| **duas barras verticais** (nas pontas) | ABRIR (na do meio e na da direita: FECHAR; esquerda e meio: CONTAR) |
+| **losango** (com ou sem ponto no meio) | VER |
+| **uma diagonal solta** | ESCREVER |
+| **V simétrico** (dos cantos de cima ao meio de baixo) | PEGAR |
+| **triângulo** com ponto nos cantos | ACENDER (**permitido**: é o ícone do fogo e o logo) |
+| **Z** | DE NOVO |
+| **T** (horizontal no meio e vertical descendo) | COLOCAR |
+| **linha horizontal com um ponto** no meio / em cima / embaixo; **com dois pontos em cima** | as marcas CONFIRMADO / BOATO / MEMÓRIA / PERGUNTA |
+| **pontos soltos em grade** (1 no meio, a diagonal, os 4 cantos, 5, 9, a cruz de pontos, a fileira do meio) | os números e TODOS, MAIS, MENOS |
+**Setas** só **curvas** (arco com ponta). **Fechar** não é X: é uma tampa de pedra descendo ou um arco que se fecha. **Voltar** é um arco curvo para a esquerda.
+
+### Revisão da 1ª folha de ícones (enviada pelo Pedro)
+O estilo está certo (pedra escura, moldura de ouro, traço fino). Por ícone:
+| Ícone da folha | Veredito | O que fazer |
+|---|---|---|
+| mão com ponto (pegar) | ✓ | manter |
+| duas barras (abrir) | ✗ é ABRIR | porta em arco entreaberta |
+| losango com olho (olhar/ler) | ✗ é VER | olho em amêndoa, pálpebra curva, sem cantos retos |
+| arco com seta (arremessar) | ✓ | manter (seta curva) |
+| ponto sobre linha com traço (posicionar) | ✗ parece "!" e a marca BOATO/COLOCAR | dado pequeno descendo numa curva até um chão ondulado |
+| setas em volta de um ponto (girar a face) | ✓ | manter |
+| quadrados trocando (trocar dado/giz) | ✓ | manter (só depois do capítulo 2) |
+| diagonal com ponto (desenhar) | ✗ é ESCREVER | toco de giz inclinado deixando uma linha ondulada |
+| X (apagar) | ✗ é EM VEZ DE | mancha borrada com o toco de giz deitado |
+| livro (diário) | ~ | redesenhar só em traço (sem preenchimento) |
+| mapa (mapa) | ~ | só em traço |
+| alto-falantes, mudo, recomeçar, informação, tela cheia, instalar | sai | não existem mais (Configurações / sem recomeçar / sem instalar) |
+| X (fechar) | ✗ é EM VEZ DE | tampa de pedra descendo |
+| ✓ (confirmar) | ~ parece PEGAR | bem assimétrico, braço esquerdo curto e curvo |
+| gema | ✓ | manter pintada (objeto coletável) |
+| página rasgada | ✓ | manter pintada (objeto coletável) |
+| tecla de pedra | ~ | só em traço; a letra por cima, na fonte do jogo |
+| triângulo do fogo | ✓ | **certo** (pontos nos vértices) |
+**Faltam:** pausa · configurações (engrenagem de pontos e arcos) · voltar (arco curvo) · salvando (dadinho girando) · as abas de
+configuração (áudio, imagem, controles, acessibilidade, idioma) · os botões do controle no estilo do jogo.
+**Regras de estilo que a folha mostrou:** **traço para ações e menus; pintado só para o que se coleta** (gema, página). Fundos **sem os
+pontinhos laranja aleatórios** (ruído). A mesma grossura de traço em todos.
 
 **Tamanho:** desenhar em **16×16** (HUD) e **24×24** (menus), pixel a pixel, mesma grossura de traço em todos; o ouro e o laranja da brasa
 são as únicas cores além da pedra.

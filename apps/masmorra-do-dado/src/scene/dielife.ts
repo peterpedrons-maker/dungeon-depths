@@ -19,6 +19,7 @@ export interface LifeInput {
   idle: boolean; // jogador parado e sem fazer nada
   target: LifeTarget | null;
   busy: boolean; // cena, conversa ou diário: fica quieto e atento
+  sleepAfter?: number; // segundos parado até cochilar (padrão 40; na tela inicial, 30)
   face?: number; // 0..1: quanto um ROSTO está virado para o jogador. Com o rosto à vista, o DADO fica quieto e quem se mexe são os olhos e o rosto
 }
 
@@ -139,7 +140,7 @@ export class DieLife {
       if (this.sleep > 0.6 && !i.idle) this.hopV = Math.max(this.hopV, 2.2); // acordou com o movimento
       this.idleT = 0;
     }
-    const sleepGoal = this.idleT > 40 ? 1 : 0;
+    const sleepGoal = this.idleT > (i.sleepAfter ?? 40) ? 1 : 0;
     this.sleep += (sleepGoal - this.sleep) * Math.min(1, dt * (sleepGoal ? 0.6 : 5));
 
     // ── para onde olhar ──
@@ -149,7 +150,7 @@ export class DieLife {
     if (this.sleep > 0.5) {
       ty = 0;
       tp = -0.3; // de cabeça baixa
-    } else if (i.target && (!this.lookPlayer || this.holdT <= 0)) {
+    } else if (i.target && Number.isFinite(i.target.dx + i.target.dy) && (!this.lookPlayer || this.holdT <= 0)) {
       ty = clamp(i.target.dx * 0.55, -0.55, 0.55);
       tp = -clamp(i.target.dy * 0.5, -0.4, 0.4);
       eager = !!i.target.eager;
@@ -263,7 +264,7 @@ export class DieLife {
     this.out.look.brow = clamp(this.boost * 0.9 + this.lean * 0.8 + this.out.look.y * 0.5 - this.sleep * 0.8 - this.droop, -1, 1);
     this.out.look.closed = this.blink > 0.5 || this.sleep > 0.6;
     // rede de segurança: se algum número virar NaN, a vida reinicia em vez de contaminar o resto
-    if (!Number.isFinite(this.out.dx + this.out.dy + this.out.scale + this.out.glow + this.q.x + this.q.y + this.q.z + this.q.w)) {
+    if (!Number.isFinite(this.out.dx + this.out.dy + this.out.scale + this.out.glow + this.q.x + this.q.y + this.q.z + this.q.w + this.eyeX + this.eyeY + this.out.look.brow)) {
       this.eyeX = this.eyeY = this.eyeVX = this.eyeVY = 0;
       this.gy = this.gp = this.vy = this.vp = this.hopY = this.hopV = this.shake = this.squash = this.boost = this.droop = this.wiggle = this.lean = 0;
       this.q.identity();

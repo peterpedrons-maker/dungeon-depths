@@ -1,0 +1,5 @@
+/* molduras de pedra em 9 pedaços (24 x 24, borda de 8 px; geradas por um script, pixel a pixel) */
+:root {
+  --frame-stone: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAkklEQVR42mNggAJWFq7/1MQMyAAkMGtSG1Ux3BJaGA7CWmoaEEuQLQgPivvv4x6EgskRAxmO1QJyDUQXw2sBNSwhaAEI83ELkYSR9RJtgZWpI1GYaAuQvQyzgIEAgFlAciSTagHJkUyOBSRHMjkWkBzJVLVgNJLJimSqZjSaFxWjxTXBSIZJUAuj1Ms0M5zWzRYAvbVobAfjza8AAAAASUVORK5CYII=");
+  --frame-gold: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAk0lEQVR42mNggAJWFq7/1MQMyAAk8P9BF1Ux3BJaGA7CWQEqEEuQLTi5OOr/ihY7FEyOGMhwrBaQayC6GF4LqGEJQQtAmI9biCSMrJdoC7ysZIjCRFuA7GWYBQwEAMwCkiOZVAtIjmRyLCA5ksmxgORIpqoFo5FMViRTNaPRvKgYLa4JRjJMgloYpV6mmeG0brYAAOyoIw5sz3yuAAAAAElFTkSuQmCC");
+}

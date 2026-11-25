@@ -127,6 +127,12 @@ export interface SceneApi {
   clearChalk(): void; // apaga tudo (pede confirmação: aperte de novo)
   reset(): void; // reinicia a sala atual
   restart(): void; // volta pra primeira sala
+  titleLook(x: number, y: number): void;
+  titleMood(m: 'new' | 'quit' | null): void;
+  titleCredits(on: boolean): void;
+  titleNew(done: () => void): void;
+  titleGo(done?: () => void, reload?: boolean): void;
+  fadeInFromBlack(): void;
   begin(): void; // sai da tela inicial: continua do último ponto salvo do espaço ativo (ou acorda, num jogo novo)
   toTitle(): void; // salva e volta à tela inicial
   saveNow(): void; // salva agora (pausa, sair)
@@ -166,6 +172,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     magFilter: THREE.NearestFilter,
     type: THREE.HalfFloatType,
   });
+  // a última imagem pronta, guardada para as transições em pontilhado (tela inicial → jogo)
+  const rtSnap = new THREE.WebGLRenderTarget(64, 64, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
   const CAM_NEAR = 0.15;
   const CAM_FAR = 40;
 
@@ -241,6 +249,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uBloom: { value: 1 },
       uBright: { value: 1 },
       uGlowK: { value: 0.16 },
+      uBlur: { value: 0 },
+      tSnap: { value: rtSnap.texture },
+      uDis: { value: -1 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
@@ -250,6 +261,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uBloom;
       uniform float uBright;
       uniform float uGlowK;
+      uniform float uBlur; // profundidade de campo da tela inicial: a sala atrás do dado desfocada (o dado e o entulho do HUD ficam nítidos)
+      uniform sampler2D tSnap;
+      uniform float uDis; // transição em pontilhado: < 0 desligada; 0..1 = quanto da imagem nova já apareceu
       varying vec2 vUv;
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
@@ -264,11 +278,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       void main(){
         vec2 o = 1.0 / uRes;
         vec4 hud = texture2D(tHud, vUv);
-        vec3 c = hud.a > 0.5 ? hud.rgb : texture2D(tRoom, vUv).rgb;
+        vec3 room = texture2D(tRoom, vUv).rgb;
+        if (uBlur > 0.01 && hud.a < 0.5) {
+          vec3 acc = room;
+          for (int k = 0; k < 14; k++) {
+            float a = float(k) * 2.39996;
+            float r = (0.6 + float(k) * 0.16) * uBlur;
+            acc += texture2D(tRoom, vUv + vec2(cos(a), sin(a)) * o * r).rgb;
+          }
+          room = acc / 15.0;
+        }
+        vec3 c = hud.a > 0.5 ? hud.rgb : room;
         float ic = invZ(vUv);
         float lx = invZ(vUv - vec2(o.x, 0.0)) + invZ(vUv + vec2(o.x, 0.0)) - 2.0 * ic;
         float ly = invZ(vUv - vec2(0.0, o.y)) + invZ(vUv + vec2(0.0, o.y)) - 2.0 * ic;
-        float edge = step(0.1 * ic + 0.025, max(lx, ly));
+        float edge = step(0.1 * ic + 0.025, max(lx, ly)) * (hud.a > 0.5 ? 1.0 : 1.0 - min(1.0, uBlur * 0.5));
         // brilho (bloom barato): luz forte "vaza" pros pixels vizinhos
         if (hud.a < 0.5 && uBloom > 0.5) {
           vec3 glow = vec3(0.0);
@@ -286,6 +310,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         c *= mix(1.0, 0.32, edge);
         c += (bayer4(floor(vUv * uRes)) - 0.47) * 0.035;
         gl_FragColor = vec4(texture(tLut, clamp(c, 0.0, 1.0)).rgb, 1.0);
+        if (uDis >= 0.0 && bayer4(floor(vUv * uRes)) >= uDis * 1.0) gl_FragColor = texture2D(tSnap, vUv);
       }`,
     depthTest: false,
     depthWrite: false,
@@ -382,6 +407,40 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const dieHolder = new THREE.Group();
   dieGroup.add(dieHolder);
   dieHolder.add(buildDie(handMats));
+  // TELA INICIAL: o entulho em volta do dado caído (no HUD, nítido como ele; a sala atrás fica desfocada) e uma luz fria de trás (o feixe do poço)
+  const titleProps = new THREE.Group();
+  titleProps.visible = false;
+  dieScene.add(titleProps);
+  {
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x5a566c, flatShading: true });
+    const darkMat = new THREE.MeshLambertMaterial({ color: 0x3a3748, flatShading: true });
+    // [x, y, z, tamanho, giro] em unidades do dado (o dado tem 1 de lado)
+    const rocks: [number, number, number, number, number, THREE.Material][] = [
+      [-0.78, -0.42, 0.25, 0.34, 0.4, stoneMat],
+      [0.72, -0.48, 0.35, 0.28, 1.3, darkMat],
+      [-0.25, -0.58, 0.62, 0.22, 2.1, stoneMat],
+      [0.38, -0.6, 0.66, 0.17, 0.9, stoneMat],
+      [1.05, -0.5, -0.35, 0.36, 2.6, stoneMat],
+      [-1.15, -0.55, -0.4, 0.3, 1.7, darkMat],
+      [0.05, -0.62, -0.7, 0.4, 0.2, darkMat],
+      [-0.62, -0.66, 0.8, 0.12, 1.1, darkMat],
+      [0.95, -0.66, 0.72, 0.1, 2.4, stoneMat],
+    ];
+    for (const [x, y, z, sz, rot, m] of rocks) {
+      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), m);
+      r.position.set(x, y, z);
+      r.rotation.set(rot, rot * 1.7, rot * 0.6);
+      r.scale.y = 0.7;
+      titleProps.add(r);
+    }
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.9), new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, opacity: 0.9 }));
+    sh.rotation.x = -Math.PI / 2;
+    sh.position.y = -0.62;
+    titleProps.add(sh);
+  }
+  const titleRim = new THREE.DirectionalLight(0xc8d6ff, 0);
+  titleRim.position.set(-0.4, 1.2, -1.6);
+  dieScene.add(titleRim);
 
   // dado arremessado: vive dentro da sala, com física própria
   const worldDie = new THREE.Group();
@@ -446,6 +505,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let handTalk = 0; // o dado da mão pulsa quando fala
   // ── o dado vivo: olha, pisca, se assusta, cochila (ver dielife.ts) ──
   const rostoP = [0, 0, 0, 0, 0, 0]; // 0..1: quanto cada face é rosto agora
+  let eyesShut = false; // (tela inicial: o piscar lento antes do jogo novo)
   const life = new DieLife();
   let lifeGlow = 1; // multiplicador do brilho das gemas vindo da "vida"
   const dieNdc = new THREE.Vector3();
@@ -453,7 +513,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const lookedPos = new THREE.Vector3(); // última inscrição que o jogador encarou
   let lookedT = 99; // há quanto tempo
   // para onde o dado olha agora: inscrição encarada > braseiro à frente > porta > nada (ele vagueia)
+  let titleTarget: LifeTarget | null = null; // tela inicial: para onde o olho do dado vai (o mouse, a opção marcada, o dedo)
   const lifeTarget = (): LifeTarget | null => {
+    if (mode === 'title') return titleTarget;
     if (dieCineTarget > 0.5) return { dx: 0, dy: 0, player: true }; // na cena, o dado olha DIRETO para o jogador
     if (forcedLook && performance.now() < forcedLook.until) {
       // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
@@ -685,7 +747,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       // o rosto que está à vista olha em volta: os olhos e as sobrancelhas acompanham o olhar do dado (só refaz a textura quando o olhar muda um pixel)
       if (rostoP[i] > 0.05 && rostos[i]) {
         const lk = life.out.look;
-        const q = { ex: Math.round(lk.x * 5), ey: Math.round(-lk.y * 4), by: Math.round(-lk.brow * 3), closed: lk.closed };
+        const q = { ex: Math.round(lk.x * 5), ey: Math.round(-lk.y * 4), by: Math.round(-lk.brow * 3), closed: lk.closed || eyesShut };
         const key = `${q.ex},${q.ey},${q.by},${q.closed}`;
         if (rostoKey[i] !== key) {
           rostoKey[i] = key;
@@ -2065,6 +2127,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     renderer.setSize(w, h, false);
     rt.setSize(w, h);
     rtHud.setSize(w, h);
+    rtSnap.setSize(w, h);
     if (rt.depthTexture) {
       rt.depthTexture.image.width = w;
       rt.depthTexture.image.height = h;
@@ -2598,28 +2661,214 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   document.addEventListener('visibilitychange', onHide);
   window.addEventListener('pagehide', onHide);
 
-  // TELA INICIAL: o poço visto de baixo, a luz lá em cima (o jogo espera o begin())
+  // ── TELA INICIAL (INTERFACE.md §3.1): o dado caído no entulho do Poço, no instante em que caiu ──
+  // O dado é o do HUD (tem o rosto e a vida de dielife.ts), deitado de lado um pouco à direita do centro, com o entulho em volta; atrás, a sala 1
+  // desfocada (uBlur), o feixe do poço com a poeira. A câmera respira. O olho segue o mouse, a opção marcada ou o dedo; cochila em 30 s.
+  // Depois do capítulo 1, o fundo é o último lugar salvo.
   let mode: 'title' | 'play' = 'play';
   let titleT = 0;
+  let titleIdle = 0;
+  let titleGone = false; // o dado saiu do quadro (transição)
+  let titleOrbit = 0; // créditos: a câmera gira em volta do dado
+  let titleCreditsOn = false;
+  let titleMood: 'new' | 'quit' | null = null;
+  let titleTr: { k: 'new' | 'go' | 'out'; t: number; done?: () => void; snapped?: boolean } | null = null;
+  let disT = -1; // transição em pontilhado em curso (0..1)
+  let disDir = 1; // 1 = a imagem nova aparece; -1 = some para o preto
+  let disDone: (() => void) | null = null;
+  let snapWant: 'frame' | 'black' | null = null;
+  const titlePlace = (): { room: number; x: number; z: number; yaw: number } | null => {
+    const m = saves.meta();
+    if (!progress.has('cap1') || !m || m.room < 0 || m.room >= rooms.length) return null;
+    return { room: m.room, x: m.x, z: m.z, yaw: m.yaw };
+  };
+  const titleBase = new THREE.Vector3();
+  const titleLookAt = new THREE.Vector3();
   const titleCam = () => {
-    const sh = rooms[0].shaft;
-    if (!sh) return;
-    const tc = (import.meta.env.DEV && ((globalThis as Record<string, unknown>).__titleCam as { d: number; up: number; dp: number; h: number; dy: number; ox: number } | undefined)) || { d: 1.2, up: 6, dp: 0, h: -0.6, dy: 0, ox: 0 };
-    const c = sh.clone().add(offs[0]);
-    feetY = offs[0].y;
-    pos.set(c.x + tc.ox, feetY + EYE + tc.h, c.z + tc.d);
-    const top = shaftWorld().setY(sh.y + tc.up + offs[0].y);
-    top.x += tc.ox;
-    yaw = Math.atan2(-(top.x - pos.x), -(top.z - pos.z)) + tc.dy + Math.sin(titleT * 0.11) * 0.04;
-    pitch = clamp(Math.atan2(top.y - pos.y, Math.hypot(top.x - pos.x, top.z - pos.z)), -0.2, 1.4) + tc.dp + Math.sin(titleT * 0.08) * 0.02;
-    curRoom = 0;
+    const place = titlePlace();
+    const breath = Math.sin(titleT * 0.9) * 0.015; // a câmera "respira" 1 a 2 cm
+    if (place) {
+      // depois do capítulo 1: baixo, no lugar salvo, olhando para onde o jogador olhava
+      curRoom = place.room;
+      feetY = offs[place.room].y + rooms[place.room].groundY(place.x, place.z, 0);
+      titleBase.set(offs[place.room].x + place.x, feetY + 0.62, offs[place.room].z + place.z);
+      titleLookAt.set(titleBase.x - Math.sin(place.yaw) * 3, feetY + 1.1, titleBase.z - Math.cos(place.yaw) * 3);
+    } else {
+      const sh = rooms[0].shaft;
+      if (!sh) return;
+      const c = sh.clone().add(offs[0]);
+      curRoom = 0;
+      feetY = offs[0].y;
+      // baixo, do lado de quem acordou, olhando o feixe do poço (o dado caído fica entre a câmera e o feixe)
+      titleBase.set(c.x + 0.55, feetY + 0.62, c.z + 3.2);
+      titleLookAt.set(c.x - 0.1, feetY + 1.05, c.z);
+    }
+    // créditos: a câmera gira devagar em volta do ponto do dado
+    if (titleOrbit !== 0) {
+      const px = titleBase.x + (titleLookAt.x - titleBase.x) * 0.25;
+      const pz = titleBase.z + (titleLookAt.z - titleBase.z) * 0.25;
+      const dx = titleBase.x - px;
+      const dz = titleBase.z - pz;
+      const ca = Math.cos(titleOrbit);
+      const sa = Math.sin(titleOrbit);
+      titleBase.x = px + dx * ca - dz * sa;
+      titleBase.z = pz + dx * sa + dz * ca;
+      const lx = titleLookAt.x - px;
+      const lz = titleLookAt.z - pz;
+      titleLookAt.x = px + lx * ca - lz * sa;
+      titleLookAt.z = pz + lx * sa + lz * ca;
+    }
+    pos.copy(titleBase);
+    pos.y += breath;
+    yaw = Math.atan2(-(titleLookAt.x - pos.x), -(titleLookAt.z - pos.z)) + Math.sin(titleT * 0.11) * 0.015;
+    pitch = Math.atan2(titleLookAt.y - pos.y, Math.hypot(titleLookAt.x - pos.x, titleLookAt.z - pos.z)) + Math.sin(titleT * 0.08) * 0.01;
+    // jogo novo: a câmera sobe pelo feixe de luz até o branco
+    if (titleTr?.k === 'new' && titleTr.t > 0.9) {
+      const u = clamp((titleTr.t - 0.9) / 2.2, 0, 1);
+      const e = u * u * (3 - 2 * u);
+      const sh = rooms[0].shaft;
+      if (sh) {
+        const c = sh.clone().add(offs[0]);
+        const a = clamp(e * 1.8, 0, 1);
+        pos.x += (c.x - pos.x) * a;
+        pos.z += (c.z - pos.z) * a;
+        pos.y += e * e * (rooms[0].wellTop ? rooms[0].wellTop.y - 4 : 12);
+        pitch += (1.5 - pitch) * clamp(e * 1.6, 0, 1);
+      }
+      fadeMat.color.setHex(0xffffff);
+      fadeQuad.visible = true;
+      fadeMat.opacity = clamp((u - 0.45) / 0.5, 0, 1);
+    }
+  };
+  // o dado da tela inicial: deitado de lado, um pouco à direita, no entulho
+  const titlePose = (dt: number, lo: { dx: number; dy: number; scale: number }) => {
+    const halfW = Math.tan((45 * Math.PI) / 360) * dieCam.aspect;
+    const narrow = dieCam.aspect < 1.5;
+    const s = narrow ? 0.2 : 0.235;
+    let x = halfW * (narrow ? 0.38 : 0.3);
+    const baseY = -0.17;
+    let drop = 0;
+    if (titleTr?.k === 'new' && titleTr.t > 0.9) drop = Math.pow(clamp((titleTr.t - 0.9) / 1.4, 0, 1), 2) * 1.2; // o chão fica para trás quando a câmera sobe
+    let y = baseY - drop + lo.dy * 0.9 + Math.sin(titleT * 0.9) * 0.003;
+    // pulinho para fora do quadro (continuar) / desce com o chão (a câmera sobe)
+    if (titleTr?.k === 'go' || titleTr?.k === 'out' || titleGone) {
+      const u = clamp((titleTr?.t ?? 1) / 0.5, 0, 1);
+      x += u * u * (halfW + 0.6);
+      y += Math.sin(Math.PI * Math.min(1, u * 1.3)) * 0.12;
+    }
+    dieGroup.position.set(x, y, -1);
+    dieGroup.scale.setScalar(s * lo.scale);
+    // de lado no chão: rolado e um pouco virado; nos créditos, gira junto com a câmera
+    tmpQ.setFromEuler(wobbleEuler.set(0.16, -0.38 - titleOrbit, 0.3));
+    dieHolder.quaternion.premultiply(tmpQ);
+    titleProps.visible = mode === 'title' && !titleGone;
+    titleProps.position.set(halfW * (narrow ? 0.38 : 0.3), baseY - drop, -1);
+    titleProps.scale.setScalar(s);
+    titleProps.rotation.y = -titleOrbit;
+    void dt;
   };
   const enterTitle = () => {
     mode = 'title';
     ui.setMenu('title');
-    spawnIn(0);
+    const place = titlePlace();
+    if (place) {
+      for (let i = 0; i < place.room; i++) rooms[i].skip?.();
+      spawnIn(place.room);
+    } else spawnIn(0);
+    dieCineTarget = 1; // o rosto de frente, sem a inclinação da mão
     blendAtmosphere(0, true);
     titleCam();
+  };
+  // a vida do olho: mouse, toque e teclado acordam e dizem para onde olhar
+  const titleInput = (cx: number, cy: number) => {
+    titleIdle = 0;
+    dieNdc.copy(dieGroup.position).project(dieCam);
+    const nx = (cx / window.innerWidth) * 2 - 1;
+    const ny = -((cy / window.innerHeight) * 2 - 1);
+    // (antes do 1º quadro o dado ainda não tem lugar na tela: usa o lugar dele de sempre)
+    const ox = Number.isFinite(dieNdc.x) && dieGroup.position.z < 0 ? dieNdc.x : 0.3;
+    const oy = Number.isFinite(dieNdc.y) && dieGroup.position.z < 0 ? dieNdc.y : -0.4;
+    titleTarget = { dx: (nx - ox) * 1.4, dy: (ny - oy) * 1.4 };
+  };
+  let touchLookT = 0;
+  const onTitleMove = (e: PointerEvent) => {
+    if (mode !== 'title' || e.pointerType === 'touch') return;
+    titleInput(e.clientX, e.clientY);
+  };
+  const onTitleDown = (e: PointerEvent) => {
+    if (mode !== 'title') return;
+    titleInput(e.clientX, e.clientY);
+    if (e.pointerType === 'touch') touchLookT = 2.5; // no celular, olha para onde o dedo tocou e depois volta a vaguear
+  };
+  const onTitleKey = () => {
+    if (mode === 'title') titleIdle = 0;
+  };
+  window.addEventListener('pointermove', onTitleMove);
+  window.addEventListener('pointerdown', onTitleDown);
+  window.addEventListener('keydown', onTitleKey);
+  const titleTick = (dt: number) => {
+    titleT += dt;
+    titleIdle += dt;
+    if (touchLookT > 0) {
+      touchLookT -= dt;
+      if (touchLookT <= 0) titleTarget = null;
+    }
+    if (titleCreditsOn) titleOrbit += dt * 0.12;
+    else if (titleOrbit !== 0) {
+      // volta para o lugar pelo caminho mais curto
+      const a = ((titleOrbit % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+      titleOrbit = Math.abs(a) < 0.002 ? 0 : a * (1 - Math.min(1, dt * 1.5));
+    }
+    // a luz do poço "respira"
+    postMat.uniforms.uBright.value = (1 + configStore.get().brightness * 0.07) * (1 + Math.sin(titleT * 0.7) * 0.03);
+    postMat.uniforms.uBlur.value = titleTr?.k === 'new' ? Math.max(0, 2.6 - titleTr.t * 1.6) : 2.6;
+    titleRim.intensity = 1.6;
+    if (titleTr) {
+      titleTr.t += dt;
+      if (titleTr.k === 'new') {
+        eyesShut = titleTr.t > 0.15 && titleTr.t < 0.95; // pisca devagar
+        if (titleTr.t > 3.2 && titleTr.done) {
+          const d = titleTr.done;
+          titleTr.done = undefined;
+          d();
+        }
+      } else if (titleTr.t > 0.5 && !titleTr.snapped) {
+        titleTr.snapped = true;
+        titleGone = true;
+        if (titleTr.k === 'go') {
+          // continuar no mesmo espaço: guarda a imagem, entra no jogo e desfaz o quadro em pontilhado para o lugar salvo
+          snapWant = 'frame';
+          const done = titleTr.done;
+          window.setTimeout(() => {
+            titleTr = null;
+            titleGone = false;
+            begin();
+            disT = 0;
+            disDir = 1;
+            done?.();
+          }, 0);
+        } else {
+          // outro espaço: some em pontilhado para o preto e recarrega
+          snapWant = 'black';
+          disT = 0;
+          disDir = -1;
+          disDone = titleTr.done ?? null;
+        }
+      }
+    }
+  };
+  const disTick = (dt: number) => {
+    if (disT < 0) return;
+    disT = Math.min(1, disT + dt / 0.9);
+    postMat.uniforms.uDis.value = disDir > 0 ? disT : 1 - disT;
+    if (disT >= 1) {
+      postMat.uniforms.uDis.value = -1;
+      disT = -1;
+      if (disDir < 0) postMat.uniforms.uDis.value = 0; // fica no preto até recarregar
+      const d = disDone;
+      disDone = null;
+      d?.();
+    }
   };
   // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo)
   let begun = false;
@@ -2628,6 +2877,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     begun = true;
     mode = 'play';
     ui.setMenu(null);
+    dieCineTarget = 0;
+    dieCine = 0;
+    titleProps.visible = false;
+    titleRim.intensity = 0;
+    postMat.uniforms.uBlur.value = 0;
+    postMat.uniforms.uBright.value = 1 + configStore.get().brightness * 0.07;
+    fadeMat.color.setHex(0x000000);
+    eyesShut = false;
     hasDie = progress.has('dado');
     hasChalk = CHALK_OK && progress.has('giz');
     const m = saves.meta();
@@ -2897,8 +3154,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const dt = paused ? 0 : Math.min(0.05, (now - last) / 1000) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
     last = now;
     t += dt;
+    disTick(Math.min(0.05, (now - last + 16) / 1000));
     if (mode === 'title') {
-      titleT += dt;
+      titleTick(dt);
       titleCam();
     } else if (!paused) {
       playTime += dt;
@@ -3104,6 +3362,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       complete = true;
       sfx.play('fanfare');
       gems = rooms.filter((r) => r.bonus?.()).length;
+      progress.set('cap1'); // fim do capítulo 1: a tela inicial passa a mostrar o último lugar salvo
+      saveIn = 0.5;
       opts.onComplete?.({ gem: gems > 0 });
     }
 
@@ -3180,7 +3440,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCine += (dieCineTarget - dieCine) * Math.min(1, dt * 2.6);
     const cn = dieCine * dieCine * (3 - 2 * dieCine);
     tiltNow.copy(idQ).slerp(tilt, 1 - cn);
-    const lo = life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
+    const lo =
+      mode === 'title'
+        ? life.update({ dt, t, idle: titleIdle > 1, target: lifeTarget(), busy: false, sleepAfter: 30, face: Math.max(...rostoP) })
+        : life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP) });
     lifeGlow = lo.glow * (quizShake > 0.05 && !calmFx ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
     updateMats();
     computeTarget(face, spin);
@@ -3196,6 +3459,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake * (calmFx ? 0.25 : 1)) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
       -1,
     );
+    if (mode === 'title' || titleTr) titlePose(dt, lo);
     updateRostos(dt);
     publishDieScreen();
     dieCam.position.set(0, 0, 0);
@@ -3234,7 +3498,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = hasDie && dieState === 'hand' && mode === 'play'; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
+      dieGroup.visible = (hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new'; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
       const hide = book.update(dt, t);
       if (hide > 0) {
@@ -3265,6 +3529,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     if (bookOut) bookRenderer.render(bookScene, dieCam);
     if (thumbWant) captureThumb(); // (logo depois de desenhar: a imagem ainda está no canvas)
+    if (snapWant) {
+      // guarda a imagem (ou o preto) para a transição em pontilhado
+      const u = postMat.uniforms.uDis.value;
+      postMat.uniforms.uDis.value = -1;
+      renderer.setRenderTarget(rtSnap);
+      if (snapWant === 'black') {
+        renderer.setClearColor(0x0b0912, 1);
+        renderer.clear();
+      } else renderer.render(postScene, postCam);
+      renderer.setRenderTarget(null);
+      postMat.uniforms.uDis.value = u;
+      snapWant = null;
+    }
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
@@ -3360,6 +3637,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
       save: () => saveGame(),
+      prompt: (l: string | null) => opts.onPrompt?.(l), // (testes: mostra um aviso de ação)
       meta: () => saves.meta(),
       solved: () => rooms.map((r) => r.isSolved?.() ?? null),
       tool: (tl: Tool) => setTool(tl),
@@ -3418,6 +3696,36 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     reset,
     restart,
     begin,
+    // tela inicial: para onde o olho do dado vai (coordenadas da janela), e o humor (pulinho em "Novo jogo", abatido em "Sair")
+    titleLook: (x: number, y: number) => titleInput(x, y),
+    titleMood: (m: 'new' | 'quit' | null) => {
+      if (m === titleMood) return;
+      titleMood = m;
+      if (m === 'new') life.react('perk');
+      else if (m === 'quit') life.react('sad');
+    },
+    titleCredits: (on: boolean) => {
+      titleCreditsOn = on;
+    },
+    // as transições: jogo novo (sobe pelo feixe até o branco), continuar (pulinho e pontilhado para o lugar salvo), outro espaço (pontilhado para o preto)
+    titleNew: (done: () => void) => {
+      if (titleTr) return;
+      titleTr = { k: 'new', t: 0, done };
+      sfx.play('room', 0.6);
+    },
+    titleGo: (done?: () => void, reload = false) => {
+      if (titleTr) return;
+      requestLock(); // (ainda dentro do clique)
+      life.react('joy');
+      titleTr = { k: reload ? 'out' : 'go', t: 0, done };
+      sfx.play('throw', 0.4);
+    },
+    // ao abrir a página logo depois de escolher outro espaço: aparece em pontilhado a partir do preto
+    fadeInFromBlack: () => {
+      snapWant = 'black';
+      disT = 0;
+      disDir = 1;
+    },
     toTitle: () => saveGame(() => location.replace(location.pathname + location.search)),
     saveNow: () => saveGame(),
     lock: requestLock,
@@ -3429,6 +3737,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       window.removeEventListener('keydown', onSkip);
       book.dispose();
       unsubConfig();
+      window.removeEventListener('pointermove', onTitleMove);
+      window.removeEventListener('pointerdown', onTitleDown);
+      window.removeEventListener('keydown', onTitleKey);
       document.removeEventListener('visibilitychange', onHide);
       window.removeEventListener('pagehide', onHide);
       window.removeEventListener('resize', resize);

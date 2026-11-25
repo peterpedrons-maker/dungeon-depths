@@ -95,3 +95,53 @@
 .quiz-opts.answered button { opacity: 0.18; cursor: default; }
 .quiz-opts.answered button.picked { opacity: 1; border-color: #f2e6c9; }
 @media (max-height: 520px) { .quiz-opts button { font-size: var(--fm); min-height: 44px; } .quiz-opts { bottom: 1.5vh; } }
+
+/* ── CAIXAS DE TEXTO (INTERFACE.md §5) ───────────────────────────────────────────────────────
+   o MUNDO fala numa tábua de pedra (moldura em 9 pedaços, frames.css, estica sem deformar), com a placa do nome em pedra; a do Escrivão
+   tem a borda dourada do manto dele. O JOGADOR pensa numa tira de papel, com a tinta do diário. */
+.dlg.world { background: #1d1922; background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px);
+  background-size: 7px 7px, 5px 5px; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent;
+  border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch; image-rendering: pixelated; box-shadow: 5px 5px 0 rgba(5, 4, 10, 0.8);
+  padding: calc(6px * var(--ui, 1)) calc(12px * var(--ui, 1)) calc(6px * var(--ui, 1)) calc(6px * var(--ui, 1)); }
+.dlg.world.who-escrivao { border-image-source: var(--frame-gold); }
+/* a placa do nome: uma plaquinha de pedra embutida, mais escura */
+.dlg.world .dlg-plate { background: #14111a; border: 3px solid; border-color: #0e0b12 #5a5460 #6e6862 #0e0b12; box-shadow: inset 0 0 0 1px #05040a; }
+.dlg.world.who-escrivao .dlg-plate { border-color: #0e0b12 #8a6a30 #c9a35a #0e0b12; }
+/* o pensamento: tira de papel rasgada nas pontas, letra do diário em tinta */
+.dlg.thought { background: #e6d8b0; background-image: radial-gradient(rgba(120, 90, 40, 0.12) 1px, transparent 1px); background-size: 6px 6px; border: none;
+  box-shadow: 4px 4px 0 rgba(5, 4, 10, 0.75); padding: calc(8px * var(--ui, 1)) calc(26px * var(--ui, 1));
+  clip-path: polygon(0 6%, 2% 0, 98% 4%, 100% 12%, 99% 30%, 100% 52%, 98.6% 74%, 100% 94%, 97% 100%, 3% 96%, 0 100%, 1.2% 78%, 0 56%, 1% 34%); }
+.dlg.thought p { color: #3a2614; text-shadow: none; }
+.dlg.thought .dlg-next, .dlg.thought ~ .dlg-next { border-top-color: #7a5030; }
+.dlg.thought .dlg-next { filter: none; }
+
+/* a pergunta do dado: 5 plaquinhas de pedra; "não sei" lisa, sem talho */
+.quiz-opts button { background: #26212c; border: 3px solid; border-color: #9a9286 #3e3a38 #2a2628 #6e6862;
+  box-shadow: inset 0 0 0 2px #0e0b12, 3px 3px 0 #05040a; color: #efe6d0; text-shadow: 2px 2px 0 #05040a;
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)); }
+.quiz-opts button:hover:not(:disabled) { border-color: #ffd36b #c9a35a #6a5024 #c9a35a; background: #2e2733; }
+.quiz-opts button.idk { background: #1b1820; border-color: #4e4844 #2e2a2a #221e20 #403a38; box-shadow: 3px 3px 0 #05040a; color: #cfc6b4; clip-path: none; }
+.quiz-opts button i { border: none; padding: 0; color: #c9a35a; }
+.quiz-opts.answered button.picked { border-color: #ffe08a #c9a35a #8a6a30 #c9a35a; }
+.quiz-glyph { background: #1d1922; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent;
+  border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch; image-rendering: pixelated; box-shadow: 5px 5px 0 rgba(5, 4, 10, 0.8); }
+.quiz-glyph.ok { border-image-source: var(--frame-gold); }
+
+/* avisos (avistado, gema): plaquinha pequena de pedra no canto de cima, um de cada vez */
+.toast { left: 12px; top: 12px; transform: none; background: #1d1922; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent;
+  border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch; image-rendering: pixelated; box-shadow: 4px 4px 0 rgba(5, 4, 10, 0.75); padding: 2px 8px 2px 4px;
+  animation-name: toast2; }
+@keyframes toast2 { 0% { opacity: 0; transform: translateY(-10px); } 8%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+/* o aviso de ação: plaquinha de pedra embaixo, perto do centro: a tecla de pedra + o ícone + o texto */
+.prompt { display: flex; align-items: center; gap: calc(8px * var(--ui, 1)); bottom: 15%; padding: 2px 12px 2px 6px; color: #efe6d0; font-size: var(--fm);
+  background: #1d1922; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent; border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch;
+  image-rendering: pixelated; box-shadow: 4px 4px 0 rgba(5, 4, 10, 0.7); text-shadow: 2px 2px 0 #05040a; white-space: nowrap; }
+.prompt b { display: none; }
+.keycap-hud { min-width: 1.6em; padding: 2px 6px 4px; text-align: center; font-size: var(--fm); color: #fff6dc; background: #2a2530; border: 3px solid;
+  border-color: #9a9286 #3e3a38 #2a2628 #6e6862; box-shadow: 0 3px 0 #05040a; }
+@media (pointer: coarse) { .prompt { bottom: 22%; } }
+/* botões de toque: ícone (16 x 16 em dobro) ao lado do texto nos botões baixos */
+.btn-place { flex-direction: row !important; gap: 6px !important; }
+.touchbtns .btn-place span:last-child, .touchbtns .btn-rotate span:last-child { font-size: var(--fs); }
+.touchbtns .btn-place, .touchbtns .btn-rotate { width: auto; min-width: 92px; padding: 0 8px; }

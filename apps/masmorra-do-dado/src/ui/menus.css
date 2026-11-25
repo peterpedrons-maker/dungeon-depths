@@ -68,11 +68,8 @@
   background: linear-gradient(90deg, rgba(5, 4, 10, 0.78) 0%, rgba(5, 4, 10, 0.45) 45%, rgba(5, 4, 10, 0) 75%); }
 .title-col { display: flex; flex-direction: column; align-items: center; gap: calc(18px * var(--ui)); margin-left: 8vw; animation: board-in 0.6s steps(6); }
 @media (max-width: 700px) { .title-col { margin-left: 4vw; } }
-.logo { display: flex; align-items: flex-end; gap: 0; font-size: calc(var(--fl) * 2); line-height: 1; color: #d9d0bc; letter-spacing: 0.1em;
-  /* talhado: luz de cima, sombra embaixo */
-  text-shadow: 0 -3px 0 #f6eedc, 4px 4px 0 #2a2232, 6px 6px 0 #05040a; }
-.logo svg { height: 0.84em; width: auto; margin-left: 0.08em; margin-bottom: 0.02em; overflow: visible; }
-@media (max-height: 520px) { .logo { font-size: calc(var(--fl) * 1.5); } }
+.logo { display: flex; line-height: 0; }
+.logo svg { display: block; overflow: visible; }
 
 /* ── ESPAÇOS ── */
 .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(12px * var(--ui)); }
@@ -98,7 +95,7 @@
 /* ── CONFIGURAÇÕES ── */
 .settings { text-align: left; }
 .tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: calc(10px * var(--ui)); }
-.tab { font: inherit; font-size: var(--fm); color: var(--chalk); cursor: pointer; padding: 4px 12px; outline: none; text-shadow: 2px 2px 0 #05040a;
+.tab { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--fm); color: var(--chalk); cursor: pointer; padding: 4px 12px; outline: none; text-shadow: 2px 2px 0 #05040a;
   background: #17141b; border: 3px solid; border-color: var(--st-lo) var(--st-dark) #1a1718 #34302e; }
 .tab.on { color: var(--gold); background: #2a2430; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); }
 .tab:focus, .tab:hover { border-color: var(--gold) var(--gold-old) #6a5024 #c9a35a; }
@@ -165,3 +162,24 @@
 /* letras um pouco maiores no PC; no celular baixo, as abas cabem numa linha */
 @media (min-height: 600px) { .chip, .keycap, .adj-v { font-size: var(--fm); } }
 @media (max-height: 520px) { .tab { font-size: var(--fs); padding: 3px 8px; } .tabs { flex-wrap: nowrap; } }
+
+/* tela inicial: as opções somem quando a transição começa */
+.title-scr { transition: opacity 0.35s steps(4); }
+.title-scr.leaving { opacity: 0; pointer-events: none; }
+.title-scr.rolling { background: linear-gradient(90deg, rgba(5, 4, 10, 0.7) 0%, rgba(5, 4, 10, 0.35) 50%, rgba(5, 4, 10, 0) 80%); }
+/* créditos que sobem (a câmera gira em volta do dado) */
+.credits-roll { position: absolute; left: 6vw; top: 0; bottom: 0; width: min(calc(440px * var(--ui)), 60vw); display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; gap: 12px; padding-bottom: 4vh; z-index: 41; }
+.roll-win { position: relative; flex: 1; width: 100%; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 80%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 80%, transparent 100%); }
+.roll-txt { position: absolute; left: 0; right: 0; top: 100%; text-align: center; animation: roll 34s linear infinite; text-shadow: 2px 2px 0 #05040a; }
+.roll-txt .logo { justify-content: center; margin-bottom: 30px; }
+.roll-txt h3 { margin: 26px 0 8px; font-size: var(--fl); font-weight: normal; color: var(--gold); }
+.roll-txt p { margin: 0 0 6px; font-size: var(--fm); line-height: 1.4; }
+@keyframes roll { from { transform: translateY(0); } to { transform: translateY(calc(-100% - 90vh)); } }
+/* jogo novo: o branco do feixe vira o preto da cena de acordar */
+.white-in { position: absolute; inset: 0; z-index: 60; background: #f4f2ff; pointer-events: none; animation: whitein 1.1s steps(8) forwards; }
+@keyframes whitein { 0% { opacity: 1; background: #f4f2ff; } 45% { opacity: 1; background: #0b0912; } 100% { opacity: 0; background: #0b0912; } }
+/* o dadinho girando também numa plaquinha de pedra (os avisos são todos assim; INTERFACE.md §5) */
+.saving { box-sizing: content-box; padding: 2px; background: #1d1922; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent;
+  border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch; image-rendering: pixelated; }

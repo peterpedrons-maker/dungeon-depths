@@ -3,6 +3,9 @@ import { SLOTS, occupied, readMeta, saveStore, saves, type SlotMeta } from '../s
 import { ACTION_LABEL, DEFAULT_KEYS, config, configStore, keyName, type Action, type Config } from '../story/config';
 import { useStore } from '../story/store';
 import { PixelIcon } from './PixelIcon';
+import { LOGO } from './logo';
+import { uiScaleStore } from './scale';
+import type React from 'react';
 import './menus.css';
 
 // AS TELAS DE MENU (INTERFACE.md §3): tela inicial, espaços de jogo, pausa, configurações e créditos.
@@ -51,10 +54,11 @@ function useMenuKeys(active: boolean, root: React.RefObject<HTMLElement | null>,
 }
 
 // plaquinha de pedra (botão)
-function Plaque({ children, onClick, disabled, tone, small, snd }: { children: ReactNode; onClick: () => void; disabled?: boolean; tone?: 'gold' | 'danger' | 'plain'; small?: boolean; snd: UiSound }) {
+function Plaque({ children, onClick, disabled, tone, small, snd, onFocus }: { children: ReactNode; onClick: () => void; disabled?: boolean; tone?: 'gold' | 'danger' | 'plain'; small?: boolean; snd: UiSound; onFocus?: (el: HTMLElement) => void }) {
   return (
     <button
       data-nav
+      onFocus={(e) => onFocus?.(e.currentTarget)}
       className={`plq${tone ? ` plq-${tone}` : ''}${small ? ' plq-s' : ''}`}
       disabled={disabled}
       onMouseEnter={(e) => {
@@ -70,29 +74,40 @@ function Plaque({ children, onClick, disabled, tone, small, snd }: { children: R
   );
 }
 
-// ── o logo provisório: SENTENÇ + o triângulo ACENDER no lugar do último A (INTERFACE.md §7; o logo definitivo é o passo 6) ──
-export function Logo() {
+// ── o LOGO «SENTENÇA» em pixel, em pedra talhada (INTERFACE.md §7; a grade vem de tools/build_logo.py) ──
+// As letras: luz em cima, sombra embaixo, contorno escuro e sombra projetada. O último A é o glifo ACENDER (ouro), com a brasa no vértice de cima.
+const LOGO_COL: Record<string, string> = { g: '#c9a35a', y: '#ffd36b', r: '#ff8a3a' };
+export function Logo({ px }: { px?: number }) {
+  const k = useStore(uiScaleStore);
+  const p = px ?? Math.max(3, Math.round(4 * k));
+  const W = LOGO[0].length;
+  const Hh = LOGO.length;
+  const at = (x: number, y: number) => (y >= 0 && y < Hh && x >= 0 && x < W ? LOGO[y][x] : '.');
+  const rects: React.ReactElement[] = [];
+  // sombra projetada (2 pixels) e contorno
+  LOGO.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c === '.') return;
+      rects.push(<rect key={`d${x}-${y}`} x={x + 1} y={y + 2} width={1} height={1} fill="#05040a" />);
+      rects.push(<rect key={`e${x}-${y}`} x={x + 1} y={y + 1} width={1} height={1} fill="#2a2232" />);
+    }),
+  );
+  LOGO.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c === '.') return;
+      let fill = LOGO_COL[c];
+      if (!fill) fill = at(x, y - 1) === '.' ? '#f6eedc' : at(x, y + 1) === '.' ? '#8a8278' : at(x - 1, y) === '.' ? '#e8dfca' : '#cfc6b2';
+      rects.push(<rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={fill} />);
+    }),
+  );
   return (
-    <div className="logo" aria-label="Sentença">
-      <span>SENTENÇ</span>
-      {/* ACENDER: um ponto em cada vértice (o de cima é a brasa), ligados por três linhas */}
-      <svg viewBox="0 0 12 10" shapeRendering="crispEdges" aria-hidden="true">
-        <g fill="#05040a" transform="translate(0.6 0.6)">
-          <TriPixels />
-        </g>
-        <TriPixels />
+    <div className="logo" aria-label="Sentença" role="img">
+      <svg viewBox={`0 0 ${W + 2} ${Hh + 2}`} width={(W + 2) * p} height={(Hh + 2) * p} shapeRendering="crispEdges" aria-hidden="true">
+        {/* o brilho da brasa */}
+        <circle cx={W - 6} cy={1.5} r={2.6} fill="#ff8a3a" opacity={0.12} />
+        {rects}
       </svg>
     </div>
-  );
-}
-function TriPixels() {
-  // grade 12 × 10: linhas de ouro velho e os três pontos (a brasa em cima)
-  const rows = ['.....rr.....', '.....rr.....', '....b..b....', '....b..b....', '...b....b...', '...b....b...', '..b......b..', 'oo........oo', 'oobbbbbbbboo', '............'];
-  const col: Record<string, string> = { r: '#ff8a3a', b: '#c9a35a', o: '#ffd36b' };
-  return (
-    <>
-      {rows.flatMap((row, y) => [...row].map((c, x) => (c === '.' ? null : <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={col[c]} />)))}
-    </>
   );
 }
 
@@ -159,7 +174,7 @@ const fmtDate = (ms: number) => {
 };
 const roomLabel = (m: SlotMeta | null) => (m ? m.roomName.replace(/\s*·\s*/, ' - ') : 'O começo');
 
-function Slots({ purpose, onBack, onPlay, snd }: { purpose: 'load' | 'new'; onBack: () => void; onPlay: (slot: number) => void; snd: UiSound }) {
+function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new'; onBack: () => void; onPlay: (slot: number) => void; onNew: (slot: number) => void; snd: UiSound }) {
   const ref = useRef<HTMLDivElement>(null);
   const [, force] = useState(0);
   const [ask, setAsk] = useState<{ slot: number; step: 'new' | 'erase1' | 'erase2' } | null>(null);
@@ -184,7 +199,7 @@ function Slots({ purpose, onBack, onPlay, snd }: { purpose: 'load' | 'new'; onBa
                       Capítulo {m?.chapter ?? 1} - {fmtTime(m?.time ?? 0)}
                     </li>
                     <li className="gems">
-                      <PixelIcon name="gema" size={12} /> {m?.bonus.length ?? 0} {m?.bonus.length === 1 ? 'gema' : 'gemas'}
+                      <PixelIcon name="gema" size={16} /> {m?.bonus.length ?? 0} {m?.bonus.length === 1 ? 'gema' : 'gemas'}
                     </li>
                     <li className="dim">{m ? fmtDate(m.at) : ''}</li>
                   </ul>
@@ -204,7 +219,7 @@ function Slots({ purpose, onBack, onPlay, snd }: { purpose: 'load' | 'new'; onBa
                       </Plaque>
                     </>
                   ) : (
-                    <Plaque small tone="gold" onClick={() => (occ ? setAsk({ slot: s, step: 'new' }) : saves.newGame(s))} snd={snd}>
+                    <Plaque small tone="gold" onClick={() => (occ ? setAsk({ slot: s, step: 'new' }) : onNew(s))} snd={snd}>
                       {occ ? 'Usar este' : 'Começar aqui'}
                     </Plaque>
                   )}
@@ -219,7 +234,7 @@ function Slots({ purpose, onBack, onPlay, snd }: { purpose: 'load' | 'new'; onBa
           </Plaque>
         </div>
       </div>
-      {ask?.step === 'new' && <Confirm text="Apagar este jogo e começar outro?" sub={`Espaço ${ask.slot}`} yes="Apagar e começar" onYes={() => saves.newGame(ask.slot)} onNo={() => setAsk(null)} snd={snd} />}
+      {ask?.step === 'new' && <Confirm text="Apagar este jogo e começar outro?" sub={`Espaço ${ask.slot}`} yes="Apagar e começar" onYes={() => onNew(ask.slot)} onNo={() => setAsk(null)} snd={snd} />}
       {ask?.step === 'erase1' && <Confirm text="Apagar este jogo?" sub={`Espaço ${ask.slot}: ${roomLabel(readMeta(ask.slot))}`} yes="Apagar" onYes={() => setAsk({ slot: ask.slot, step: 'erase2' })} onNo={() => setAsk(null)} snd={snd} />}
       {ask?.step === 'erase2' && (
         <Confirm
@@ -314,12 +329,12 @@ const yesNo = [
 ];
 
 type Tab = 'audio' | 'imagem' | 'controles' | 'acess' | 'idioma';
-const TABS: [Tab, string][] = [
-  ['audio', 'Áudio'],
-  ['imagem', 'Imagem'],
-  ['controles', 'Controles'],
-  ['acess', 'Acessibilidade'],
-  ['idioma', 'Idioma'],
+const TABS: [Tab, string, 'audio' | 'imagem' | 'controles' | 'acess' | 'idioma'][] = [
+  ['audio', 'Áudio', 'audio'],
+  ['imagem', 'Imagem', 'imagem'],
+  ['controles', 'Controles', 'controles'],
+  ['acess', 'Acessibilidade', 'acess'],
+  ['idioma', 'Idioma', 'idioma'],
 ];
 
 function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
@@ -365,10 +380,10 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
     <div className="mnu-veil">
       <div ref={ref} className="board board-w settings">
         <h2>
-          <PixelIcon name="config" size={24} /> Configurações
+          <PixelIcon name="config" size={48} /> Configurações
         </h2>
         <div className="tabs" role="tablist">
-          {TABS.map(([t, label]) => (
+          {TABS.map(([t, label, ico]) => (
             <button
               key={t}
               data-nav
@@ -380,6 +395,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
                 setTab(t);
               }}
             >
+              <PixelIcon name={ico} size={24} />
               {label}
             </button>
           ))}
@@ -523,9 +539,35 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
 }
 
 // ── créditos (os sons CC0 e o soundfont CC BY pedem crédito) ──
-export function Credits({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
+export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSound; roll?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useMenuKeys(true, ref, onBack, snd);
+  if (roll)
+    // na tela inicial: os nomes sobem devagar enquanto a câmera gira em volta do dado (INTERFACE.md §3.1)
+    return (
+      <div ref={ref} className="credits-roll">
+        <div className="roll-win">
+          <div className="roll-txt">
+            <Logo />
+            <h3>Instrumentos</h3>
+            <p>Amostras reais do soundfont FluidR3_GM, de Frank Wen (CC BY 3.0)</p>
+            <p>violoncelo, cordas, coro, harpa, celesta, glockenspiel, flauta, tímpano e sinos tubulares</p>
+            <h3>Efeitos</h3>
+            <p>CC0, via OpenGameArt.org</p>
+            <p>Kenney (RPG Sound Pack)</p>
+            <p>rubberduck (100 CC0 SFX)</p>
+            <p>Fantozzi (passos)</p>
+            <p>qubodup (bola rolando)</p>
+            <p>gravações de giz, borracha, porta de pedra, arrastos, chama, lareira e vapor</p>
+            <h3>Letra</h3>
+            <p>a letra do diário, desenhada pixel a pixel para o jogo</p>
+          </div>
+        </div>
+        <Plaque onClick={onBack} snd={snd}>
+          Voltar
+        </Plaque>
+      </div>
+    );
   return (
     <div className="mnu-veil top">
       <div ref={ref} className="board board-w credits-b">
@@ -571,44 +613,66 @@ const continueSlot = (): number | null => {
 type Sub = 'main' | 'load' | 'new' | 'settings' | 'credits' | 'askTitle';
 
 // ── TELA INICIAL ──
-export function TitleScreen({ onBegin, snd }: { onBegin: () => void; snd: UiSound }) {
+// O que a tela inicial pede ao motor (o dado caído, o olho, as transições; scene.ts)
+export interface TitleApi {
+  look(x: number, y: number): void;
+  mood(m: 'new' | 'quit' | null): void;
+  credits(on: boolean): void;
+  newGame(slot: number): void; // o dado pisca, a câmera sobe pelo feixe até o branco
+  play(slot: number): void; // o dado pula para fora e a imagem se desfaz em pontilhado
+}
+export function TitleScreen({ api, snd }: { api: TitleApi; snd: UiSound }) {
   const ref = useRef<HTMLDivElement>(null);
   const [sub, setSub] = useState<Sub>('main');
+  const [leaving, setLeaving] = useState(false);
   const cont = continueSlot();
-  useMenuKeys(sub === 'main', ref, null, snd);
-  const play = (slot: number) => {
-    if (slot === saves.active()) onBegin();
-    else saves.play(slot);
+  useMenuKeys(sub === 'main' && !leaving, ref, null, snd);
+  useEffect(() => api.credits(sub === 'credits'), [sub, api]);
+  const go = (slot: number) => {
+    setLeaving(true);
+    setSub('main');
+    api.play(slot);
+  };
+  const fresh = (slot: number) => {
+    setLeaving(true);
+    setSub('main');
+    api.newGame(slot);
+  };
+  // a opção marcada pelo teclado: o olho do dado vai até ela
+  const focusLook = (mood: 'new' | 'quit' | null) => (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    api.look(r.left + r.width / 2, r.top + r.height / 2);
+    api.mood(mood);
   };
   const anySaved = Array.from({ length: SLOTS }, (_, i) => occupied(i + 1)).some(Boolean);
   return (
-    <div className="title-scr">
-      <div ref={ref} className="title-col" style={sub !== 'main' ? { visibility: 'hidden' } : undefined}>
+    <div className={`title-scr${leaving ? ' leaving' : ''}${sub === 'credits' ? ' rolling' : ''}`}>
+      <div ref={ref} className="title-col" style={sub !== 'main' ? { visibility: 'hidden' } : undefined} onMouseLeave={() => api.mood(null)}>
         <Logo />
         <div className="title-list">
           {cont !== null && (
-            <Plaque tone="gold" onClick={() => play(cont)} snd={snd}>
+            <Plaque tone="gold" onClick={() => go(cont)} snd={snd} onFocus={focusLook(null)}>
               Continuar
             </Plaque>
           )}
-          <Plaque onClick={() => setSub('new')} snd={snd}>
+          <Plaque onClick={() => setSub('new')} snd={snd} onFocus={focusLook('new')}>
             Novo jogo
           </Plaque>
-          <Plaque disabled={!anySaved} onClick={() => setSub('load')} snd={snd}>
+          <Plaque disabled={!anySaved} onClick={() => setSub('load')} snd={snd} onFocus={focusLook(null)}>
             Carregar
           </Plaque>
-          <Plaque onClick={() => setSub('settings')} snd={snd}>
+          <Plaque onClick={() => setSub('settings')} snd={snd} onFocus={focusLook(null)}>
             Configurações
           </Plaque>
-          <Plaque onClick={() => setSub('credits')} snd={snd}>
+          <Plaque onClick={() => setSub('credits')} snd={snd} onFocus={focusLook(null)}>
             Créditos
           </Plaque>
-          {/* Sair: só nas versões instaladas pelas lojas (na web, fecha-se a aba) */}
+          {/* Sair: só nas versões instaladas pelas lojas (na web, fecha-se a aba); com o cursor nele, o dado fica abatido (api.mood('quit')) */}
         </div>
       </div>
-      {(sub === 'load' || sub === 'new') && <Slots purpose={sub} onBack={() => setSub('main')} onPlay={play} snd={snd} />}
+      {(sub === 'load' || sub === 'new') && <Slots purpose={sub} onBack={() => setSub('main')} onPlay={go} onNew={fresh} snd={snd} />}
       {sub === 'settings' && <Settings onBack={() => setSub('main')} snd={snd} />}
-      {sub === 'credits' && <Credits onBack={() => setSub('main')} snd={snd} />}
+      {sub === 'credits' && <Credits roll onBack={() => setSub('main')} snd={snd} />}
     </div>
   );
 }
@@ -622,7 +686,7 @@ export function PauseMenu({ onResume, onDiary, onResetRoom, onTitle, hasBook, sn
     <div className="mnu-veil pause">
       <div ref={ref} className="board board-s" style={sub !== 'main' ? { visibility: 'hidden' } : undefined}>
         <h2>
-          <PixelIcon name="pausa" size={24} /> Pausa
+          <PixelIcon name="pausa" size={48} /> Pausa
         </h2>
         <div className="title-list">
           <Plaque tone="gold" onClick={onResume} snd={snd}>
