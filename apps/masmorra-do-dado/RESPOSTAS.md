@@ -37,10 +37,12 @@ Acender exatamente **dois** dos três braseiros.
 
 ### R1 — O Corredor dos Nichos 📝 (respiro)
 - Puzzle opcional: escrever **QUATRO (0, 2, 6, 8)** na lousa ao lado do nicho vazio → página de diário.
+- Mural ANTES · AGORA · DEPOIS (ensino, sem puzzle).
 - Semente: tapeçaria pequena num nicho → queimar depois da sala 8 → palavra talhada para o diário.
 - Atalho: grade para o balcão da sala 4.
 
 ### Sala 5 — A Casa Escreve ✅
+- Mural da ordem ao lado da lousa: «UM ANTES DOIS» (ensino, sem puzzle).
 - Laço da lousa (começa depois do escuro): **meio-direita, fundo-esquerda, frente-meio, fundo-direita** = casas **5, 0, 7, 2**.
 - Acender os braseiros ao pé dessas colunas nessa ordem.
 - **C1 (gema + diário):** depois de a porta abrir, o laço mostra CINCO → acender as tochas das colunas **0, 2, 4, 6, 8** (nenhuma outra,
@@ -70,7 +72,15 @@ Acender exatamente **dois** dos três braseiros.
 - GRANDE = o braseiro sem número (glifo GRANDE no pedestal); PEQUENO = o **QUATRO**.
 - Ordem: **TRÊS, GRANDE, QUATRO, DOIS, UM**.
 
-### Sala 10 — A Ponte de Madeira ⏳
+### A Biblioteca (térreo, cap. 1) ⏳ (respiro grande; puzzles opcionais a fechar)
+- Caminho: atravessar o átrio até a porta da sala 9 (sempre aberta).
+- Lousas da sala de aula: (a) **QUATRO = 0, 2, 6, 8**; (b) **DOIS = 0, 8**; (c) trancada até voltar depois da sala 9.
+- Mural de encaixe nº 1: pôr em cada desenho o bloco com o nome dele (PORTA, LIVRO, CHAVE, SINO; os nomes estão no Museu).
+- Ala do Papel: queimar só livros com a marca BOATO na lombada; nunca os cadernos dos condenados.
+
+### Sala 10 — A Ponte de Madeira ✅
+- Fogo no **3** (meio da borda esquerda; queima a ponte) e **depois** no **7** (meio da frente) → a cruz (MAIS = 1, 3, 4, 5, 7). A ordem contrária falha.
+- **C3 (gema):** de cima, acender só as **4 tochas da borda sobre os cantos (0, 2, 6, 8)** → grade inteira vista do alto → braseiro sobe na rampa.
 ### Sala 11 — O Boato Verdadeiro ✅
 - Acender **«1 DEPOIS 3»**, **«4 DEPOIS 2»** (confirmadas), **«3 ANTES 4»**, **«2 DEPOIS 3»** (boatos verdadeiros); depois acender a frase da porta.
 - Pilares: **3, 1, 2, 4**.

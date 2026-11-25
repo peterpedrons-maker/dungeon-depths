@@ -72,7 +72,7 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 | 7 | **O Que a Casa Confirma** ✔ | 5 | marcas; o dado acende frases; cadeia de ANTES/DEPOIS com 5 pilares (a sala 6 atual, revisada) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
 | 8 | **O Pano** | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
 | 9 | **Os Apelidos** ✔ | 6 | o mesmo braseiro tem dois nomes; o glifo engana | M8 | GRANDE, PEQUENO |
-| 10 | **A Ponte de Madeira** | 6 | o fogo **destrói o próprio caminho**: a ordem das ignições importa | M2+M3 | (nenhuma) |
+| 10 | **A Ponte de Madeira** ✔ | 6 | o fogo **destrói o próprio caminho**: a ordem das ignições importa | M2+M3 | (nenhuma) |
 | 11 | **O Boato Verdadeiro** ✔ | 6 | boato não é mentira; acender o que é VERDADE | M8 | VERDADE |
 | 12 | **A Sombra** | 7 | a luz escreve pela sombra | M5 | (nenhuma) |
 | 13 | **O Escuro** | 7 | **errar de propósito**: o escuro da Casa tem escrita | M6 | ESCURO |
@@ -138,13 +138,10 @@ mostram a pedra. **Solução: queimar o pano da porta (TODOS → DOIS) e o pano 
 (Detalhada na seção 5.) Cinco braseiros, um GRANDE sem número e o QUATRO pequeno; o glifo PEQUENO parece UM numa moldura e
 o GRANDE parece QUATRO: quem lê pelo desenho cai em contradição. **Solução: TRÊS, GRANDE, QUATRO, DOIS, UM.**
 
-### Sala 10 — A Ponte de Madeira (nível 6) · "o fogo destrói o próprio caminho"
-**Sala:** grade de 9 braseiros no chão com canaletas (M2). Algumas canaletas passam **por baixo de pranchas de madeira** que servem de
-ponte para **outras** canaletas cruzando por cima. Quando o fogo passa por baixo, **a prancha queima e cai**, e a canaleta de cima é cortada.
-- A porta pede um glifo com **duas ignições**. Com a ordem A depois B o fogo de B ainda atravessa a ponte; com B depois A a ponte já caiu.
-- A ideia: **a ordem das ignições** muda o resultado. Só uma ordem de um só par escreve o glifo.
-- **Solução:** a definir com o verificador (busca em pares ordenados × posições de pontes), como fiz na sala 4.
-- **Motor:** prancha que queima quando o fogo passa embaixo e desliga a canaleta de cima.
+### Sala 10 — A Ponte de Madeira (nível 6) · "o fogo destrói o próprio caminho" ✔ `tools/verify_ponte.mjs`
+(Detalhada na seção 5.) O fosso: desce-se em espiral até 9 braseiros com canaletas; uma canaleta passa por baixo de uma **ponte de madeira** que
+leva outra por cima. **Solução: fogo no 3 (meio da borda esquerda) e DEPOIS no 7 (meio da frente): a cruz (MAIS).** Segredo C3: completar a
+grade, vista do alto, com as tochas da borda sobre os quatro cantos.
 
 ### Sala 11 — O Boato Verdadeiro (nível 6) ✔ `tools/verify_verdade.mjs`
 (Detalhada na seção 5.) A porta diz «ACENDER VERDADE»: acender as frases verdadeiras, inclusive **boatos verdadeiros**, e a Casa só
@@ -197,6 +194,68 @@ Como está (`PUZZLES.md`, `tools/verify_tribunal.mjs`).
 
 ---
 
+## 2c. Como o jogador aprende a língua (canais, diluídos pelo jogo)
+Decisão do Pedro: todos os canais, **diluídos**, nunca todos de uma vez. Ferramenta de garantia: `tools/verify_vocabulario.mjs`.
+
+| Canal | O que é | Onde aparece |
+|---|---|---|
+| **o glifo reage** (efeito) | a palavra brilha quando o que ela diz acontece | todas as salas (já existe, §24) |
+| **demonstração** | a Casa mostra, sem punir (o trapo que queima, as frases já acesas da sala 11) | 1ª vez de cada mecânica |
+| **murais com figura** | cena talhada + a frase em glifos embaixo | 1 ou 2 por respiro; a Biblioteca |
+| **objetos com o nome** | o glifo do nome talhado no próprio objeto | o Museu da Biblioteca; alguns respiros |
+| **o dado traduz** | o rabisco na face do dado | palavras concretas, uma nova de vez em quando (já existe, §22) |
+| **sala de aula do Escrivão** | lousas de exercício: completar a frase acendendo os pontos; acertou, a lousa brilha | a Biblioteca |
+| **murais de encaixe** | 3 ou 4 desenhos com uma casa vazia cada; trocar blocos de glifo de lugar até **todos** baterem; só então o mural acende | um por capítulo (na Biblioteca no cap. 1) |
+| **contexto no diário** | o diário guarda, junto de cada glifo avistado, **a frase inteira** onde ele apareceu e a sala (sem tradução, sem imagem) | o jogo todo (é do motor) |
+| **diários dos condenados** | anotações em português, às vezes erradas | respiros e câmaras secretas |
+
+**A ferramenta** confere, para cada palavra que um puzzle **exige**, se a sala a ensina por um canal forte (efeito, demonstração, rótulo, figura,
+dado, dedução guiada) ou se ela já apareceu **2 vezes antes, uma delas por canal forte**. Na 1ª rodada ela achou dois buracos, já corrigidos:
+**ANTES/DEPOIS** chegavam à sala 7 vistos uma vez só (agora há também o mural da ordem na sala 5) e **PEQUENO** chegava à sala 16 visto uma vez só
+(agora há o desenho a giz do respiro R3). Resultado: 16 palavras exigidas no capítulo 1, nenhuma sem ensino. (As salas 12 a 17 ainda são esboço:
+a ferramenta roda de novo quando elas forem fechadas.)
+
+## 2d. A Biblioteca (O Arquivo das Sentenças) — a grande área aberta
+**O que é na história:** onde os Contáveis guardavam **tudo o que foi dito e julgado**. As **tábuas de pedra** são o que a Casa confirmou; os
+**livros e rolos de papel** são cópias, comentários, boatos. O **Escrivão trabalha aqui**: é onde as sentenças são escritas. Em algum lugar,
+lá em cima, está **a sentença do jogador**.
+
+**Como entra no jogo:** logo depois da sala 8 (o jogador já sabe que pano e papel queimam e já conhece CONFIRMADO/BOATO). O **caminho principal
+por dentro dela é curto** (atravessar o átrio até a porta da sala 9, sempre aberta); todo o resto é opcional. Ela **volta ao longo do jogo
+inteiro** (estilo Metroidvania), e isso dilui tudo:
+- **Capítulo 1: só o térreo.** As escadas para cima estão desabadas; vê-se o 2º e o 3º andar pelo vão do átrio.
+- **Capítulo 2: o 2º andar**, por um **elevador de contrapeso** que só o **Peso** move. É aqui que o Escrivão aparece **de perto** e deixa o
+  **giz** (proposta; o plano antigo punha a cena numa sala própria).
+- **Capítulo final: o 3º andar**, com a **sentença do jogador**: o pergaminho **sem a marca de confirmação** (a virada do meio do jogo, `HISTORIA.md`).
+
+**No motor:** não é uma sala gigante. São **5 ou 6 módulos ligados** (o jogo só desenha as salas vizinhas): átrio, duas alas, museu, sala de
+aula, escritório do Escrivão. Para o jogador, é um lugar enorme.
+
+**O térreo (capítulo 1):**
+1. **O Átrio.** Três andares de altura, uma **luz redonda lá no alto** (outro "ponto" do dado), passarelas vazias em cima, **nove mesas de
+   leitura em grade 3×3**, cada uma com uma lamparina apagada, e lamparinas nas paredes. (As mesas são uma constelação: §3, C-Bib, a fechar.)
+2. **A Ala das Pedras.** Corredores de estantes de **tábuas talhadas**: frases da lei dos Contáveis, sempre com CONFIRMADO. **Murais com figura**
+   ensinam palavras de história (ESCREVER, LER, ESCRIVÃO, SENTENÇA). Uma tábua do índice diz «CONDENADO · CRIME · ?»: **o crime termina em
+   PERGUNTA**. Nem a Casa sabe qual foi. (Gancho de história.)
+3. **A Ala do Papel.** Estantes de livros e rolos. Alguns têm a marca **BOATO** na lombada: queimados, mostram atrás deles **tábuas de pedra**
+   escondidas. Mas **nem todo papel é boato**: os cadernos dos condenados (em português, sem marca) **não** devem ser queimados. Quem queima um
+   perde aquela página até sair da ala (ela volta). Ensina **cuidado com o fogo**: a primeira vez que queimar pode custar alguma coisa.
+4. **O Museu dos Nomes.** Objetos em pedestais, cada um com o **nome talhado**: PORTA, CHAVE, LIVRO, MESA, SINO, GIZ, um dado (DADO). Um pedestal
+   está **vazio, só com o nome**: o objeto está em outra parte da Biblioteca (achá-lo e trazê-lo? fica para o capítulo 2, com o Peso).
+5. **A Sala de Aula do Escrivão.** Bancos, e três **lousas de exercício** de fogo, cada uma ao lado de um **mural com figura**, com uma frase e uma
+   casa vazia: (a) o mural mostra **quatro** braseiros → «ACENDER ▢ BRASEIRO» → QUATRO; (b) o mural mostra uma mão acendendo o 2 depois o 1 →
+   «▢ ANTES UM» → DOIS; (c) o mural mostra um braseiro grande ao lado de um pequeno (prepara a sala 9 sem estragar a armadilha: o mural mostra
+   **tamanho**, não número) → completar com GRANDE? Não: no cap. 1 a lousa só escreve números e verbos; esta fica **trancada** até o jogador
+   ter visto GRANDE na sala 9 e voltar (camada 2). Cada lousa certa dá uma **página da cartilha** no diário (figura + frase).
+   **Mural de encaixe nº 1:** quatro desenhos (porta, livro, chave, sino) e, numa prateleira, blocos de pedra com glifos; o jogador **troca
+   blocos de lugar** (E/AGIR num bloco e depois noutro) até cada desenho ter o seu nome; só quando os quatro estão certos o mural acende
+   (gema). Os nomes estão no Museu, na sala ao lado.
+6. **O Escritório do Escrivão** (trancado no cap. 1). Visto por uma **grade**: a mesa, uma página pela metade, o toco de giz, a lamparina acesa.
+   **3ª aparição de longe:** ele está lá, escrevendo, de costas; quando o jogador chega perto da grade, a lamparina apaga e ele não está mais.
+
+**Puzzles da Biblioteca (cap. 1), todos opcionais:** a constelação das mesas (C-Bib), as três lousas da sala de aula, o mural de encaixe,
+os livros que mentem (Ala do Papel). Detalho um por um, com verificador, depois da sala 11 (para não quebrar a ordem das salas).
+
 ## 2b. Respiros: lugares livres entre os puzzles (pedido do Pedro)
 
 O jogo não pode ser só "sala, puzzle, porta, sala, puzzle". De tempos em tempos o jogador entra num lugar **sem porta trancada**, onde ele
@@ -214,7 +273,8 @@ Contáveis, quem passou por ali antes, o que é a Casa. Também é onde ficam os
 - No motor, um respiro é uma sala da lista como outra qualquer (a numeração e o mapa continuam automáticos), só que **sem trava na porta**,
   e pode ter **câmaras laterais** (§20, opção a).
 
-**Ritmo do capítulo 1** (puzzle = P, respiro = R): P1 P2 P3 P4 · **R1** · P5 P6 P7 · **R2** · P8 P9 P10 P11 · **R3** · P12 P13 P14 · **R4** · P15 P16 P17 · P18 (Tribunal).
+**Ritmo do capítulo 1** (puzzle = P, respiro = R): P1 P2 P3 P4 · **R1** · P5 P6 P7 · **R2** · P8 · **A BIBLIOTECA** (§2d) · P9 P10 P11 · **R3** · P12 P13 P14 · **R4** · P15 P16 P17 · P18 (Tribunal).
+- **Tamanho (pedido do Pedro): os respiros podem e devem ser GRANDES**, com espaço de verdade para andar e explorar: câmaras laterais, andares, cantos escondidos. As descrições abaixo são o mínimo de cada um.
 Os respiros não entram na numeração dos puzzles deste documento (para não renumerar tudo); no jogo a numeração das salas é automática.
 
 ### R1 · O Corredor dos Nichos (entre as salas 4 e 5)
@@ -223,6 +283,9 @@ Os respiros não entram na numeração dos puzzles deste documento (para não re
 - **O Escrivão de longe (2ª aparição):** pela janela, ele passa na galeria do outro lado, devagar, e some. Não dá para chegar lá (ainda).
 - **Inscrição do mundo:** «ACENDER BRASEIRO» repetida acima de cada nicho, mas num nicho só aparece «ACENDER» e o resto está **quebrado**
   (a pedra caiu): a Casa é velha, as frases se gastam.
+- **Mural com figura (vocabulário):** três cenas talhadas lado a lado: um braseiro **apagado**, uma mão **acendendo**, o braseiro **aceso**. Embaixo de
+  cada cena, um glifo: **ANTES · AGORA · DEPOIS**. Os três são da mesma família (moldura aberta à esquerda) com o ponto à esquerda, no meio e à
+  direita: a forma confirma o sentido. É o primeiro ensino forte de ANTES/DEPOIS, que a sala 7 vai exigir.
 - **Puzzle opcional (nível 1):** pela parede, **dados talhados** mostram as faces 1, 2, 3, (nicho vazio), 5. No fim do corredor, uma lousa
   pequena ao lado do nicho vazio. **Solução:** escrever a face que falta, **QUATRO** (os quatro cantos). Abre o nicho: uma página de diário.
 - **Diário 1 (de "a que veio antes"):** *"Os pontos são números. Os números são dados. Eu já sabia disso antes de cair aqui, só não
@@ -251,13 +314,15 @@ Os respiros não entram na numeração dos puzzles deste documento (para não re
 ### R3 · A Galeria dos Condenados (entre as salas 11 e 12)
 - **Forma:** galeria longa e alta, com **bancos de pedra** e, nas paredes, centenas de **marcas de contagem** riscadas a giz por outros
   condenados (dias? tentativas?). Algumas paredes têm desenhos de giz de outras pessoas: um braseiro, uma porta, um rosto apagado.
-- **O Escrivão de longe (3ª aparição):** sentado no fim da galeria, escrevendo. Quando o jogador se aproxima, ele se levanta e some
+- **O Escrivão de longe (4ª aparição):** sentado no fim da galeria, escrevendo. Quando o jogador se aproxima, ele se levanta e some
   numa porta que não estava lá. Deixa no banco uma marca de giz fresca.
 - **Inscrição do mundo:** a frase «CONDENADO LER SENTENÇA» talhada sobre a porta de saída (CONDENADO e SENTENÇA já foram vistas: o dado diz
   VOCÊ CONDENADO na sala 1). Primeira vez que o jogador vê a palavra SENTENÇA na pedra.
 - **Puzzle opcional (nível 3):** quatro frases riscadas a giz por condenados (boatos, porque giz não é pedra) sobre "qual braseiro
   acender primeiro" numa câmara lateral com três braseiros; uma frase talhada (confirmada) diz quantos dos boatos são verdade. É a 1ª
   vez que o jogador vê uma **lei da contagem**, sem obrigação (prepara a sala 14). Solução a fechar com verificador quando chegarmos lá.
+- **Desenho a giz de um condenado (vocabulário):** um braseiro **enorme** e um **minúsculo**, com os glifos GRANDE e PEQUENO embaixo de cada um.
+  Fica a três passos do diário 3, que diz o contrário: quem compara percebe que a autora errou.
 - **Diário 3 (que erra):** *"O símbolo com o ponto no meio e as duas barras do lado quer dizer UM, tenho certeza."* (é PEQUENO; quem fez a
   sala 9 sabe que ela errou: os diários nem sempre acertam.)
 - **Semente:** uma das marcas de giz é um **rosto** igual ao do dado, quase apagado (eco bem fraco do S11).
@@ -302,7 +367,7 @@ algumas salas. Para não virar chute:
 |---|---|---|---|---|
 | C1 | Sala 5, salão de 9 colunas (todas com tocha + 3 de parede) | depois de a porta abrir, a lousa da Casa mostra às vezes um 5º glifo, **CINCO**, que não é de braseiro nenhum | CINCO | ensina que constelações existem; nasce do "será que resolvi?" |
 | C2 | Sala 8, capela de 6 pilares | os 6 pilares têm tocha; os **frisos do teto** só ligam três posições num **triângulo** | ACENDER | 1º verbo; olhar para cima |
-| C3 | Sala 10, o fosso | tochas no **alto** (na borda) e no **fundo**: só **de cima, olhando para baixo**, elas caem na grade | (número do fosso) | perspectiva: a grade só existe de um ponto de vista |
+| C3 | Sala 10, o fosso | depois de resolvida, a cruz acesa lá embaixo deixa os **quatro cantos escuros**; as 8 tochas da **borda** caem, vistas do alto, sobre as casas da grade | completar TODOS (as 4 da borda sobre os cantos) | perspectiva + "o que falta no desenho" ✔ |
 | C4 | Sala 12, A Sombra | não há tochas na grade: a **sombra das colunas** que a tela projeta é que cai nas casas | (a definir) | a constelação é de sombra, não de fogo |
 | C5 | Sala 13 em diante | a palavra da constelação de cada sala **só aparece no escuro** (S5): errar de propósito diz o que desenhar | (uma por sala) | junta as constelações com o escuro |
 | C6 | Salas 15 e 16 | um verbo **atravessa a porta**: metade das tochas numa sala, metade na outra, ligadas pelo friso do corredor | DE NOVO | o glifo maior que uma sala |
@@ -540,6 +605,10 @@ nenhuma outra** (há 9 colunas com tocha e 3 tochas de parede): as rachaduras fr
 **câmara secreta** (gema + diário). Verificado em `tools/verify_constelacoes.mjs`: 1 conjunto aceito entre 4096. As tochas se apagam
 sozinhas em ~40 s, então é preciso planejar o caminho entre as cinco colunas.
 
+**Mural da ordem (vocabulário, achado pela ferramenta `verify_vocabulario.mjs`):** ao lado da lousa, um mural com dois braseiros numerados e uma
+mão que acende primeiro o UM e depois o DOIS, em duas cenas; embaixo, «UM ANTES DOIS» e «DOIS DEPOIS UM». É o 2º ensino forte de
+ANTES/DEPOIS antes da sala 7 (sem ele, a sala 7 exigiria palavras vistas uma vez só). Combina com o tema da sala (ordem).
+
 **O que ensina:** a Casa fala em fogo; uma lousa pode ser um **mapa**; a sala inteira é uma grade (prepara todas as constelações); uma
 frase em laço tem começo e fim (ORDEM). **Palavra nova:** ORDEM (usada depois no Tribunal).
 
@@ -746,6 +815,47 @@ export const FIRE_APELIDOS: FireSpec = {
 (PEQUENO = UM e/ou GRANDE = QUATRO) dá 0 ordens; só com as frases de número sobram 60.
 **Como ensina sem explicar:** GRANDE está no pedestal do braseiro maior; PEQUENO por contraste; na porta, GRANDE e PEQUENO brilham com o
 braseiro deles aceso. **Motor:** `mark: 'grande'` e o brilho de GRANDE já funcionam; falta mapear o brilho de `pequeno` para o braseiro de menor `scale`.
+
+### Sala 10 — A Ponte de Madeira (NÍVEL 6) · "o fogo destrói o próprio caminho" + constelação C3
+
+**A ideia:** na sala 4 o fogo corria pelas canaletas; aqui ele **também queima a madeira** por onde passa. Onde duas canaletas diagonais se cruzam,
+uma passa **por baixo de uma ponte de madeira** que leva a outra **por cima**. Quando o fogo passa por baixo, a ponte queima e cai, e a canaleta
+de cima fica **cortada**. Então **a ordem das ignições muda o desenho**: o primeiro fogo pode destruir o caminho do segundo.
+
+**Forma:** o **fosso**. Entra-se pela **borda, lá em cima**; uma **rampa em espiral** desce colada às paredes até o fundo (uns 8 m). Enquanto desce,
+o jogador vê a grade lá embaixo **de ângulos diferentes** (a espiral gira): tem de manter na cabeça qual lado é a porta. No fundo, **9 braseiros em
+grade** com canaletas (chevrons mostram o sentido), a **ponte de madeira** no bloco do canto do fundo à esquerda, e a porta com «ACENDER DOIS» e o
+glifo **MAIS** (uma cruz) talhado. Na borda, lá em cima, **8 tochas**; nas paredes do fundo, mais **3**.
+
+**Regras:** como na sala 4 (duas ignições, contador na porta), mais uma: **enquanto há fogo correndo, a Casa recusa o fogo** (uma ignição de cada
+vez). Errado: quando o fogo para, tudo se apaga, **a Casa repõe a ponte** (uma prancha nova desliza da parede) e os braseiros ficam frios por 6 s.
+
+**Canaletas** (casa 0 = canto do fundo à esquerda, vendo a porta em cima): 6→7, 0→3, 3→1, 2→1, 8→5, 4→5, 4→3, 7→4, 2→4, 2→5, 4→0.
+A **ponte**: a canaleta **3→1** passa **por baixo**; a canaleta **4→0** passa **por cima**, na madeira.
+
+**Solução (passo a passo):**
+1. Olhar de cima: a cruz pede 1, 3, 4, 5 e 7 (as quatro pontas e o centro), e **nenhum canto**.
+2. Perceber o problema: o centro (4) espalha fogo para 5, 3 e **0 (um canto!)**, pela canaleta que passa **em cima da ponte**.
+3. Perceber a saída: a canaleta 3→1 passa **por baixo** da ponte. Se o fogo passar por ela **antes**, a ponte queima e cai, e o caminho 4→0 deixa de existir.
+4. **Fogo no 3** (meio da borda esquerda): acende o 3 e o 1, e **queima a ponte**.
+5. **Depois, fogo no 7** (meio da frente): o fogo sobe ao centro e vai ao 5 e ao 3; o caminho para o canto 0 já caiu. Acesos: 1, 3, 4, 5, 7: **a cruz**.
+
+**Por que é única** (`node tools/verify_ponte.mjs`): das 72 sequências de duas ignições, **só 3→7** escreve a cruz; a **ordem contrária** (7→3) acende
+também o canto 0; com uma ignição é impossível; **sem a ponte** (se madeira não queimasse) **não há resposta nenhuma**: a ponte é a chave; e nenhuma
+sequência com o centro resolve (a lição "comece pelo meio" da sala 4 engana de novo).
+
+**"Resolvi… mas será que resolvi?" → constelação C3 (só Fogo):** de volta lá em cima (a rampa leva de volta à borda, ou o jogador sobe para ver), a
+cruz acesa no fundo deixa **os quatro cantos escuros**. Olhando bem do alto, as **8 tochas da borda** caem, vistas de cima, sobre as casas da grade:
+4 sobre os cantos, 4 sobre os meios das bordas. **Acender só as 4 da borda que caem sobre os cantos** (as dos meios cairiam em cima de braseiros
+já acesos; as 3 do fundo são iscas): visto do alto, a grade fica **inteira** acesa (TODOS); um braseiro sobe numa plataforma no meio da rampa e
+abre a câmara. Verificado: 1 conjunto aceito de 2048. É a constelação de **perspectiva**: a grade só existe de um ponto de vista, e a pista é
+**o que falta** no desenho que o jogador acabou de fazer.
+
+**O que ensina:** madeira queima e **corta** caminhos; a **ordem** das ignições importa; planejar vendo de cima e girando; ler a falta (o
+complemento de um desenho). **Palavra vista:** MAIS (só o desenho é exigido).
+
+**Motor:** fosso com rampa em espiral; canaletas da sala 4 + **ponte de madeira** que queima quando o fogo passa por baixo e corta a canaleta de
+cima (e volta no erro); "uma ignição de cada vez"; tochas na borda com posição projetada na grade; braseiro que sobe na rampa.
 
 ### Sala 11 — O Boato Verdadeiro (NÍVEL 6) · ensina VERDADE (e que boato ≠ mentira)
 
