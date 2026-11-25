@@ -1,17 +1,18 @@
 // O caderno de "a que veio antes" (HISTORIA.md): outra condenada, que não saiu dali. O jogador acha o caderno dela na sala 2 e continua escrevendo nele.
 // Algumas folhas foram ARRANCADAS e estão espalhadas pela Casa; achadas, voltam para o lugar. Em português, na voz dela (às vezes certa, às vezes não).
 
+// (cada folha: no máximo 13 linhas de 16 letras na página; o que passa disso é cortado)
 export interface HerPage {
   id: string;
   where: string; // onde se acha (para o autor; o jogo não mostra)
   body: string[];
 }
 
-// a última página que ela escreveu, ainda no caderno: para no meio da frase
-export const HER_LAST: string[] = [
-  'Hoje a Casa apagou tudo de novo.',
-  'Contei os passos até a porta, contei os braseiros, contei as vezes que o dado me olhou.',
-  'Se alguém achar isto, não acredite em tudo o que eu',
+// O RELATO dela: as duas primeiras páginas do caderno, logo depois do índice (é a primeira coisa que o jogador lê). Ela não sabe o que está
+// acontecendo; conta o que vê e para no meio da frase. Cada página tem no máximo 13 linhas de 16 letras (a página é estreita).
+export const HER_RELATO: string[][] = [
+  ['Não sei mais que dia é.', 'A Casa apagou tudo de novo.', 'Acordei embaixo da luz. Sempre embaixo da luz.', 'Leram algo comprido para mim.'],
+  ['Conto tudo. Os passos, os braseiros, as vezes que o dado me olha.', 'Se alguém achar isto, não acredite em tudo o que eu'],
 ];
 
 // as folhas arrancadas, na ordem do caderno (os buracos ficam no lugar delas até serem achadas)
@@ -24,7 +25,7 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p2',
     where: 'Pátio da Cisterna (numa câmara lateral)',
-    body: ['Os pontos são números. Os números são dados. Eu já sabia disso antes de cair aqui, só não sabia que sabia.', 'Contei os nichos três vezes. Um está vazio. Tudo aqui está faltando um pedaço.'],
+    body: ['Os pontos são números. Eu já sabia disso antes de cair aqui?', 'Contei os nichos três vezes. Um está vazio. Aqui tudo falta um pedaço. Eu também?'],
   },
   {
     id: 'p3',
@@ -34,7 +35,7 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p4',
     where: 'Os Banhos Secos (num banco da câmara de banho do oeste)',
-    body: ['Aqui o que está talhado não mente. O que alguém só disse, mente às vezes.', 'Eu acendi uma frase de boato e a Casa me apagou como quem apaga uma vela. Acho que eles não gostavam de quem repete o que ouviu.'],
+    body: ['O que está talhado não mente. O que alguém só disse, às vezes mente.', 'Acendi uma frase de boato e a Casa me apagou, como a uma vela.'],
   },
   { id: 'p5', where: '(ainda não está no jogo)', body: [] },
   { id: 'p6', where: '(ainda não está no jogo)', body: [] },

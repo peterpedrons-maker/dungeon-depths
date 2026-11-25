@@ -118,7 +118,7 @@ export function buildApelidos(ctx: Ctx): Room {
   const PR = 0.75; // quem anda fica um pouco longe da parede curva (as placas saem dela)
   return {
     name: 'Os Apelidos',
-    subtitle: 'Cinco braseiros. Um deles não tem número.',
+    subtitle: 'Cinco braseiros. Um deles não tem número. Tem nome?',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

@@ -4,7 +4,7 @@ import { TEXTS } from '../story/texts';
 import { ADV, drawCentered, drawGlyph, drawText, drawWord, LINE, plot, textWidth, wrap } from './font';
 import { CELL_H, CELL_W, getWorld, shortRoom, type MapRoom } from '../story/worldmap';
 import { glyphsOf, LEX } from '../story/lexicon';
-import { HER_LAST, HER_NOTES, HER_PAGES } from '../story/herpages';
+import { HER_NOTES, HER_PAGES, HER_RELATO } from '../story/herpages';
 
 // Páginas do diário, desenhadas em pixels no próprio papel (nada de interface por cima do livro).
 export const PW = 132;
@@ -76,27 +76,30 @@ export interface Layout {
   facesAt: number;
   textsAt: number;
   textsN: number;
-  herAt: number; // as páginas dela (a última que ela escreveu e as folhas arrancadas)
+  herAt: number; // as páginas dela: o RELATO (logo depois do índice, é o que se lê primeiro) e as folhas arrancadas
   herN: number;
+  dictAt: number; // os símbolos
   mapAt: number;
   notesAt: number;
 }
 
 export function layout(d: DiaryState): Layout {
+  // a ordem do caderno é a dela: o índice, o RELATO e as folhas que ela escreveu, os símbolos, as faces, os textos, o mapa e as notas
+  const herAt = 1;
+  const herN = Math.ceil((HER_RELATO.length + HER_PAGES.length) / 2);
+  const dictAt = herAt + herN;
   const dictN = Math.max(1, Math.ceil(d.order.length / PER_PAGE));
-  const facesAt = 1 + dictN;
+  const facesAt = dictAt + dictN;
   const textsAt = facesAt + 1;
   const textsN = Math.max(1, d.texts.length);
-  const herAt = textsAt + textsN;
-  const herN = Math.ceil((1 + HER_PAGES.length) / 2);
-  const mapAt = herAt + herN;
+  const mapAt = textsAt + textsN;
   const notesAt = mapAt + 1;
-  return { total: notesAt + 1, dictN, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt };
+  return { total: notesAt + 1, dictN, dictAt, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt };
 }
 // em que folha (spread) do dicionário fica um símbolo
 export function symbolSpread(id: string, d: DiaryState): number {
   const i = d.order.indexOf(id);
-  return 1 + Math.max(0, Math.floor(i / PER_PAGE));
+  return layout(d).dictAt + Math.max(0, Math.floor(i / PER_PAGE));
 }
 
 // ── papel envelhecido (desenhado uma vez por lado) ──────────────────────
@@ -605,8 +608,9 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     return regions;
   }
   ctx.drawImage(paper(side, s === 0 ? 0 : (s * 5 + (side === 'L' ? 0 : 2)) % 4), 0, 0); // cada folha com a sua marca de uso (ou nenhuma)
-  const hk = s >= lay.herAt && s < lay.mapAt ? (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1) : -1;
-  const torn = hk >= 1 && hk - 1 < HER_PAGES.length && !(d.pages ?? []).includes(HER_PAGES[hk - 1].id);
+  const HR = HER_RELATO.length;
+  const hk = s >= lay.herAt && s < lay.dictAt ? (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1) : -1;
+  const torn = hk >= HR && hk - HR < HER_PAGES.length && !(d.pages ?? []).includes(HER_PAGES[hk - HR].id);
   if (!torn && s > 0) wear(ctx, side, s); // o caderno é usado: rasuras, fuligem, cantos dobrados, lápis apagado
   chrome(ctx, side, view.spread, lay, regions, torn);
 
@@ -615,17 +619,18 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       drawCentered(ctx, 'ÍNDICE', PW / 2 + 4, 18, INK, 2);
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 8, 40, CW - 16, 1);
-      const rows: [string, string, number][] = [
-        ['Símbolos', `${d.order.length}`, 1],
-        ['Faces', `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt],
-        ['Textos', `${d.texts.length}`, lay.textsAt],
-        ['Páginas dela', `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt],
-        ['Mapa', `${d.rooms.length}`, lay.mapAt],
-        ['Notas', '', lay.notesAt],
+      // [rótulo, contagem, folha, ícone]
+      const rows: [string, string, number, number][] = [
+        ['Páginas dela', `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
+        ['Símbolos', `${d.order.length}`, lay.dictAt, 0],
+        ['Faces', `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt, 1],
+        ['Textos', `${d.texts.length}`, lay.textsAt, 2],
+        ['Mapa', `${d.rooms.length}`, lay.mapAt, 4],
+        ['Notas', '', lay.notesAt, 5],
       ];
-      rows.forEach(([label, n, to], i) => {
+      rows.forEach(([label, n, to, ico], i) => {
         const y = 50 + i * 14;
-        indexIcon(ctx, i, x0 + 1, y);
+        indexIcon(ctx, ico, x0 + 1, y);
         drawText(ctx, label, x0 + 12, y, INK);
         if (n) drawText(ctx, n, x0 + CW - textWidth(n) - 2, y, INK2);
         // pontilhado
@@ -640,14 +645,14 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       drawCentered(ctx, 'Guardar o livro', x0 + CW / 2, 141, INK2);
       regions.push({ x: x0, y: 139, w: CW, h: 13, id: 'close' });
     }
-  } else if (s >= 1 && s < lay.facesAt) {
-    const page = s - 1;
+  } else if (s >= lay.dictAt && s < lay.facesAt) {
+    const page = s - lay.dictAt;
     const items = d.order.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
     const cur = view.sel && d.seen[view.sel] ? view.sel : (d.order[0] ?? null);
     if (side === 'L') {
       heading(ctx, 'SÍMBOLOS', side);
       if (!items.length) {
-        lines(ctx, wrap('Nada ainda. Quando você vir um símbolo, ele entra aqui sozinho.', CH), x0, 44, INK2, 10);
+        lines(ctx, wrap('o que eu vi', CH), x0, 44, SEPIA, 10); // (a letra dela: o caderno não explica nada)
       } else {
         items.forEach((id, i) => {
           const cx = x0 + (i % 3) * 35;
@@ -704,11 +709,12 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       }
       const note = d.notes[cur] ?? '';
       const txt = note + (editing && view.caret ? '_' : '');
-      if (!note && !editing) drawText(ctx, 'toque e escreva…', x0 + 1, by, INK2);
+      if (!note && !editing) drawText(ctx, 'o que eu acho…', x0 + 1, by, INK2);
       lines(ctx, wrap(txt, CH), x0 + 1, by, INK, nl);
       regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: nl * LINE + 4, id: 'edit:note' });
     } else {
-      lines(ctx, wrap('Os símbolos que você vir pelo caminho ficam guardados aqui, com um espaço para anotar o que acha que significam.', CH), x0, 30, INK2, 12);
+      lines(ctx, wrap('o que eu vi.', CH), x0, 30, SEPIA, 2);
+      lines(ctx, wrap('o que eu acho.', CH), x0, 44, SEPIA, 2);
     }
   } else if (s === lay.facesAt) {
     heading(ctx, side === 'L' ? 'FACES DO DADO' : 'FACES SELADAS', side);
@@ -719,24 +725,24 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       drawText(ctx, f.unlocked ? f.name : '???', x0 + 22, y + 1, f.unlocked ? INK : INK2);
       lines(ctx, wrap(f.unlocked ? (SHORT[f.n] ?? f.desc) : 'Selada.', 13), x0 + 22, y + 12, INK2, 2);
     });
-  } else if (s >= lay.herAt && s < lay.mapAt) {
-    // as páginas DELA: a última que ela escreveu (para no meio da frase) e, depois, as folhas arrancadas (buracos até serem achadas)
+  } else if (s >= lay.herAt && s < lay.dictAt) {
+    // as páginas DELA: o relato (as duas primeiras, para no meio da frase) e, depois, as folhas arrancadas (buracos até serem achadas)
     const k = (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1);
-    if (k === 0) {
-      lines(ctx, HER_LAST.flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
-    } else if (k - 1 < HER_PAGES.length) {
-      const pg = HER_PAGES[k - 1];
+    if (k < HER_RELATO.length) {
+      lines(ctx, HER_RELATO[k].flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
+    } else if (k - HER_RELATO.length < HER_PAGES.length) {
+      const pg = HER_PAGES[k - HER_RELATO.length];
       if ((d.pages ?? []).includes(pg.id)) {
         tape(ctx, side);
         lines(ctx, pg.body.flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
       } else tornPage(ctx, side, k);
     }
-  } else if (s >= lay.textsAt && s < lay.herAt) {
+  } else if (s >= lay.textsAt && s < lay.mapAt) {
     const entry = d.texts.length ? TEXTS[d.texts[s - lay.textsAt]] : null;
     if (!entry) {
       if (side === 'L') {
         heading(ctx, 'TEXTOS', side);
-        lines(ctx, wrap('Nada ainda. Diários, bilhetes e páginas soltas que você achar ficam guardados aqui.', CH), x0, 44, INK2, 10);
+        lines(ctx, wrap('frases inteiras, quando eu achar', CH), x0, 44, SEPIA, 10);
       }
     } else {
       const all = [entry.title, `de ${entry.by}`, '', ...entry.body.flatMap((p) => ['', ...wrap(p, CH)])];
@@ -751,7 +757,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     const all = wrap(d.free + (editing && view.caret ? '_' : ''), CH);
     if (side === 'L') {
       heading(ctx, 'ANOTAÇÕES', side);
-      lines(ctx, all.length || editing ? all : wrap('Espaço livre. Toque e escreva o que quiser lembrar.', CH), x0, 34, all.length || editing ? INK : INK2, 12);
+      lines(ctx, all.length || editing ? all : wrap('...', CH), x0, 34, all.length || editing ? INK : INK2, 12);
       for (let i = 0; i < 12; i++) {
         ctx.fillStyle = 'rgba(122,80,48,0.28)';
         ctx.fillRect(x0, 34 + i * LINE + 9, CW, 1);

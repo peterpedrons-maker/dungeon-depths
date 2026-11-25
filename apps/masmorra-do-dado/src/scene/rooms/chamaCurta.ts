@@ -130,7 +130,7 @@ export function buildChamaCurta(ctx: Ctx): Room {
 
   return {
     name: 'A Chama Curta',
-    subtitle: 'Quatro braseiros. O tempo manda.',
+    subtitle: 'As chamas não duram. E eu, tenho quanto tempo?',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

@@ -750,3 +750,22 @@ volta a ser a de sempre (o rosto da mão é o do dado do HUD).
 é aquilo ("Parece um mapa. As salas por onde eu passei...", "Esta letra não é minha...", "Faltam folhas. Alguém arrancou."). Tentar guardar o
 caderno antes diz o que falta ("Ainda não olhei as faces, o mapa e as notas.") e volta ao índice. No fim: "Pronto: vi tudo... Posso guardar o
 caderno." Com o caderno aberto, os pensamentos aparecem no alto da tela, numa tira mais baixa (o rodapé das páginas tem as ferramentas do mapa).
+
+
+## 48. A leitura do caderno e o tom de "ler sem entender" (implementado; tom decidido com o Pedro, ver HISTORIA.md)
+
+**A ordem do caderno** agora é a dela: o índice, o **relato** (duas páginas) e as folhas arrancadas, os símbolos, as faces, os textos, o mapa e as
+notas (`layout` em `src/book/pages.ts` ganhou `dictAt`; o índice lista "Páginas dela" primeiro). O relato estava numa página só e passava do
+limite (16 letras × 13 linhas): justamente a frase final, "não acredite em tudo o que eu", era cortada. Agora são duas páginas (`HER_RELATO` em
+`src/story/herpages.ts`), e duas folhas arrancadas que passavam do limite foram reescritas para caber.
+**A leitura guiada** (`book3d.ts`): o caderno abre e vira sozinho até o relato; o jogador lê e pensa em perguntas ("De novo? Quantas vezes ela
+acordou aqui?", "Embaixo da luz. Eu também acordei embaixo da luz.", "'Não acredite em tudo o que eu...' O quê? Por que ela parou?", "Onde ela está
+agora?"); o caderno volta ao índice ("Ela arrumou o caderno como quem pretende voltar."). Ele passa por todas as partes, e em cada uma, na 1ª vez,
+pergunta a si mesmo o que é aquilo (os símbolos: "eu vi na parede. Como já estão aqui?"; o mapa: "Eu não desenhei isso. O caderno sabe por onde
+eu andei?"; as folhas pautadas: "As últimas dela? Ou as primeiras minhas?"; as folhas arrancadas: "Por ela? Ou por alguém que não queria que
+fossem lidas?"). Nos símbolos, o caderno vira até BRASEIRO: "Embaixo de um deles, a letra dela: um desenho e um ponto de interrogação. Ela
+também não sabia. E eu? O que eu acho que é?" e o campo abre. Tentar guardar antes de ver tudo: "Ainda não olhei os quadrados e o desenho. Ela não
+deixaria nada sem olhar." No fim: "Ela contava tudo. Talvez fosse o jeito de não esquecer. Vou contar também."
+**Sem voz de sistema no caderno:** os textos de instrução das páginas vazias viraram a letra dela ("o que eu vi", "o que eu acho",
+"frases inteiras, quando eu achar"). **O mesmo tom no resto:** pensamentos da abertura e da porta ("Caí? Ou me jogaram?", "Continua trancada. Por
+fora ou por dentro?", "Pesa na mão como se me conhecesse. Conhece?") e as legendas das salas (uma observação e uma pergunta, sem entregar puzzle).

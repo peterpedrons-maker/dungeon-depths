@@ -42,6 +42,24 @@ cada cena começa, respira e termina. Responda sempre em **português do Brasil*
   (idealmente até ~90 caracteres; no máximo 2 linhas por pensamento, 3 a 4 pensamentos seguidos no máximo).
 - Português natural, sem travessões longos decorativos, sem emojis; pontuação simples. Nada de nomes próprios novos sem combinar.
 
+## O TOM (decidido com o Pedro; vale para o jogo inteiro)
+**Ler sem entender.** Tudo o que o jogador lê ou pensa soa como alguém diante de algo que não compreende: **constata pouco e pergunta muito**,
+para si mesmo. Nada de explicar o que as coisas são ("aqui ficam os símbolos que você viu"); em vez disso, o estranhamento ("Estes símbolos... eu
+vi na parede. Como já estão aqui?").
+- **Pensamentos do jogador:** frases curtas, concretas, muitas terminando em pergunta; às vezes uma pergunta que ele não consegue responder
+  ("Onde ela está agora?"). Ele repara em detalhes físicos (letra apertada, folhas arrancadas, a luz) e liga com o que viveu ("Eu também
+  acordei embaixo da luz"). Nunca fala como manual nem cita tecla.
+- **O relato de "a que veio antes":** alguém que esteve sob a sentença e também não sabia o que acontecia. Diário de sobrevivente: data perdida,
+  contagens obsessivas, frases que param no meio, palpites ("acho que..."), às vezes errados. Enigmático, nunca explicativo.
+- **O próprio caderno** não tem voz de sistema: onde antes havia instruções, só a letra dela ("o que eu vi", "o que eu acho").
+- **Legendas de sala** (subtítulos): a mesma voz do jogador, uma observação e uma pergunta ("As chamas não duram. E eu, tenho quanto tempo?"),
+  sem entregar a solução do puzzle.
+- **O mundo** (dado, Escrivão, inscrições) segue em glifos: o mistério vem do que não se traduz.
+- **Limite de página do caderno:** 16 letras por linha, 13 linhas por página (o texto que passa disso é cortado). Confira antes de escrever
+  folhas dela (`src/story/herpages.ts`).
+- **O caderno guiado** (`src/book/book3d.ts`, `READ_RELATO`, `PART_THOUGHT`, `TORN_THOUGHT`, `WRITE_ASK`, `WRITE_DONE`, `ALL_DONE`): é uma
+  LEITURA, não um tutorial. Abre no relato dela; o jogador passa por todas as partes e escreve sobre BRASEIRO embaixo do "?" dela.
+
 ## Como trabalhar
 1. Entenda o pedido e leia a cena no código (o que acontece antes e depois, o que o jogador já sabe e já viu).
 2. Escreva **uma proposta** curta: o objetivo dramático da cena, as falas novas lado a lado com as antigas, e por que mudou.

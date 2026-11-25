@@ -70,3 +70,9 @@ Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidad
 ## Duração e ritmo
 O jogo deve durar **algumas horas** (meta 4 a 6 h), não 20 minutos. O dado começa com **só Fogo e Peso** e fica com eles por
 um bom tempo; novas faces chegam por capítulo e nunca todas de uma vez (ver `DESIGN.md` §13).
+
+## O tom da narração (decidido)
+**Ler sem entender.** O jogador lê e pensa como quem está diante de algo que não compreende: constata pouco e **pergunta muito**, para si mesmo.
+O caderno começa pelo **relato de "a que veio antes"** (duas páginas logo depois do índice: data perdida, "a Casa apagou tudo de novo", "acordei
+embaixo da luz", "leram algo comprido para mim", "não acredite em tudo o que eu" — e para). Nada explica o jogo: nem o caderno, nem as legendas
+das salas, nem os pensamentos. O subagente `narrador` (`.claude/agents/narrador.md`) guarda essas regras.
