@@ -85,3 +85,5 @@ das salas, nem os pensamentos. O subagente `narrador` (`.claude/agents/narrador.
 - **CONFIRMADO nas portas** só depois de a sala 8 (O Que a Casa Confirma) ensinar a marca; as portas antes dela não a têm.
 - **O quiz** não traduz: as opções são só palavras ("confirmado", "boato"), sem a explicação entre parênteses.
 - **O objeto é o "caderno"** em todo texto do jogo e da interface (nunca "diário" ou "livro" na tela).
+- **A R5 (A Antecâmara Fria) fica no capítulo 1, entre as salas 16 e 17:** ela existe para ensinar o que a sala 17 pede (soquete frio → escuro → a
+  moldura vazia mostra em cal uma frase CONFIRMADA e a Casa obedece). Enquanto as salas 15 a 17 não existem, fica logo antes do Tribunal.

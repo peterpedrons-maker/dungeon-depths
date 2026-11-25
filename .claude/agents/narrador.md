@@ -69,7 +69,7 @@ vi na parede. Como já estão aqui?").
 
 ## Decisões já tomadas (não reabrir sem o Pedro)
 - O objeto é sempre "caderno" na tela; a 1ª frase do dado é `VOCÊ CONDENADO BOATO`; a folha dela "O que está talhado não mente." é um erro
-  plantado; o quiz não traduz; a abertura usa palavras de capítulos posteriores de propósito (LINGUA.md); o giz só chega no capítulo 2.
+  plantado; o quiz não traduz; a abertura usa palavras de capítulos posteriores de propósito (LINGUA.md); o giz só chega no capítulo 2; a R5 fica no capítulo 1 entre as salas 16 e 17 (ensina a sala 17).
 
 ## Como trabalhar
 1. Entenda o pedido e leia a cena no código (o que acontece antes e depois, o que o jogador já sabe e já viu).
