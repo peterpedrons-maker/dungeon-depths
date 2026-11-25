@@ -632,3 +632,8 @@ pousado** (que tem a sua, maior e mais fraca quanto mais alto ele está).
 Regras que saem da sala 3 para as outras (atualizar `DIRECAO_DE_ARTE.md` quando passarem pela lista da §5): uma luz com sombra por sala, no
 ponto que o puzzle quer mostrar; pedra lavrada em tudo que é "feito" (arcos, colunas, batentes, molduras de escrita); fuligem acima de toda
 chama; poeira só em feixes; nada flutua sem sombra de contato.
+
+**A presilha do diário** (`book3d.ts`): era uma tira solta que só aparecia com o livro aberto. Agora é uma presilha de verdade: costurada na
+capa de trás, dá a volta na borda das folhas e, por cima da capa da frente, a fivela de latão prende num pino. Ao abrir o diário, o livro
+sobe fechado, a fivela solta do pino com um clique e a aba se afasta; só então a capa abre. Ao guardar, a capa fecha, a aba volta e prende
+(outro clique) e o livro desce. A abertura ficou um pouco mais longa (1,15 s; fechar, 0,85 s) para caber esse tempo.

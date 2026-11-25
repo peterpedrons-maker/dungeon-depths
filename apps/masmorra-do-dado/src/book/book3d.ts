@@ -256,24 +256,56 @@ export function createDiaryBook(env: BookEnv) {
   rib2.scale.y = 0.8;
   ribbon.add(rib1, rib2);
   inner.add(ribbon);
-  // a presilha: uma tira de couro solta na beirada da capa de trás, com a fivela de latão na ponta
+  // A PRESILHA: uma tira de couro presa na capa de trás que dá a volta na borda do livro (o lado das folhas) e, por cima da capa da frente,
+  // prende a fivela de latão num pino. Abrir o diário: a fivela solta do pino e a aba se afasta (um clique); só então a capa abre.
+  // Fechar: a capa fecha primeiro e a aba volta e prende de novo.
+  const SW = 0.06; // largura da tira
+  const ST = 0.006; // espessura
+  const ZB = 0.074; // de fora das capas (o livro fechado tem as capas em z = ±0.07)
+  const FL = 0.15; // comprimento da aba por cima da capa da frente
   const strap = new THREE.Group();
-  const band = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, 0.007), leather);
-  band.position.set(0.055, 0, 0);
-  strap.add(band);
-  const fr = (w: number, h: number, x: number, y: number) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.012), brass);
-    m.position.set(x, y, 0.002);
-    strap.add(m);
-  };
-  fr(0.008, 0.074, 0.11, 0);
-  fr(0.008, 0.074, 0.142, 0);
-  fr(0.04, 0.008, 0.126, 0.033);
-  fr(0.04, 0.008, 0.126, -0.033);
-  fr(0.03, 0.005, 0.124, 0); // a lingueta
-  strap.position.set(BW - 0.01, -0.06, -0.072);
-  strap.rotation.z = -0.18;
   inner.add(strap);
+  // o pedaço fixo: por fora da capa de trás e pela borda das folhas
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.13, SW, ST), leather);
+  back.position.set(BW - 0.065 + 0.004, 0, -ZB);
+  const edgeBand = new THREE.Mesh(new THREE.BoxGeometry(ST, SW, 2 * ZB + ST), leather);
+  edgeBand.position.set(BW + 0.004, 0, 0);
+  strap.add(back, edgeBand);
+  // os pontos de costura: duas fileiras de pontinhos claros
+  const stitch = new THREE.MeshLambertMaterial({ color: 0xd8c098, emissive: 0x5a4020, emissiveIntensity: 0.5 });
+  for (let k = 0; k < 5; k++)
+    for (const sy of [1, -1]) {
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.004, 0.002), stitch);
+      st.position.set(BW - 0.11 + k * 0.022, sy * (SW / 2 - 0.007), -ZB - ST / 2 - 0.001);
+      strap.add(st);
+    }
+  // a aba: articula na quina de cima da borda; fechada, deita sobre a capa da frente apontando para o lombo
+  const flap = new THREE.Group();
+  flap.position.set(BW + 0.004, 0, ZB);
+  strap.add(flap);
+  const flapBand = new THREE.Mesh(new THREE.BoxGeometry(FL, SW, ST), leather);
+  flapBand.position.set(-FL / 2, 0, 0);
+  flap.add(flapBand);
+  // a fivela na ponta da aba: moldura de latão com a lingueta
+  const fb = (w: number, h: number, x: number, y: number, d = 0.01) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), brass);
+    m.position.set(x, y, 0.003);
+    flap.add(m);
+    return m;
+  };
+  fb(0.008, SW + 0.016, -FL + 0.012, 0);
+  fb(0.008, SW + 0.016, -FL + 0.046, 0);
+  fb(0.042, 0.008, -FL + 0.029, SW / 2 + 0.004);
+  fb(0.042, 0.008, -FL + 0.029, -SW / 2 - 0.004);
+  const tongue = fb(0.03, 0.005, -FL + 0.03, 0, 0.006);
+  // o pino de latão na capa da frente (gira com ela): a fivela prende nele
+  const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.013, 0.008, 8), brass);
+  stud.rotation.x = Math.PI / 2;
+  stud.position.set(-(BW - FL + 0.03), 0, -0.071 - 0.004);
+  leftPivot.add(stud);
+  const CLASP_OPEN = Math.PI + 0.32; // aberta: a aba pende para fora, ao lado do livro
+  let claspK = 0;
+  let claspPrev = 0;
 
   // ── modo guiado: a 1ª abertura do caderno vira sozinha até BRASEIRO e pede uma anotação ──
   const GUIDED_ID = 'brasa';
@@ -625,7 +657,7 @@ export function createDiaryBook(env: BookEnv) {
       const dir = want - T;
       if (Math.abs(dir) > 1e-4) {
         const was = T;
-        T = Math.min(1, Math.max(0, T + Math.sign(dir) * dt * (want ? 1 / 0.95 : 1 / 0.7)));
+        T = Math.min(1, Math.max(0, T + Math.sign(dir) * dt * (want ? 1 / 1.15 : 1 / 0.85)));
         if (want && was < 0.001) refresh();
         if (!want && T < 0.0005) T = 0;
       }
@@ -642,7 +674,7 @@ export function createDiaryBook(env: BookEnv) {
       }
       const rise = ease(clamp01(T / 0.45));
       const frame = ease(clamp01((T - 0.25) / 0.5));
-      open = ease(clamp01((T - 0.45) / 0.55));
+      open = ease(clamp01((T - 0.6) / 0.4));
       leftPivot.rotation.y = Math.PI * (1 - open); // a capa gira pela frente (como num livro de verdade), não por trás
       // a lombada acompanha: aberto, é a meia-cana atrás do dobra; fechado, vira a lateral redonda que une as duas capas
       setSpine(leftPivot.rotation.y);
@@ -655,7 +687,13 @@ export function createDiaryBook(env: BookEnv) {
       root.rotation.set(f('rx') + sway, f('ry'), f('rz'));
       root.scale.setScalar(mx(mx(POSE.start.s, POSE.mid.s, rise), endS, frame));
       ribbon.visible = open > 0.8;
-      strap.visible = open > 0.3;
+      // a presilha solta ANTES de a capa abrir e prende DEPOIS de ela fechar (T entre 0,42 e 0,58: o livro já está diante dos olhos, fechado)
+      claspK = ease(clamp01((T - 0.42) / 0.16));
+      flap.rotation.y = CLASP_OPEN * claspK;
+      tongue.visible = claspK < 0.05; // presa: a lingueta passa pelo pino
+      if (claspPrev < 0.04 && claspK >= 0.04) env.sound('uiblip'); // soltou
+      if (claspPrev > 0.04 && claspK <= 0.04) env.sound('uiblip'); // prendeu
+      claspPrev = claspK;
 
       // virada de página
       if (ready() && !flip && view.spread !== target) {
