@@ -319,7 +319,7 @@ Contáveis, quem passou por ali antes, o que é a Casa. Também é onde ficam os
 - No motor, um respiro é uma sala da lista como outra qualquer (a numeração e o mapa continuam automáticos), só que **sem trava na porta**,
   e pode ter **câmaras laterais** (§20, opção a).
 
-**Ritmo do capítulo 1** (puzzle = P, respiro = R): P1 P2 P3 P4 · **R1** · P5 P6 P7 · **R2** · P8 · **A BIBLIOTECA** (§2d) · P9 P10 P11 · **R3** · P12 P13 P14 · **R4** · P15 P16 P17 · P18 (Tribunal).
+**Ritmo do capítulo 1** (puzzle = P, respiro = R): P1 P2 P3 P4 · **R1** · P5 P6 P7 · **R2** · P8 · **A BIBLIOTECA** (§2d) · P9 P10 P11 · **R3** · P12 P13 P14 · **R4** · P15 P16 · **R5** (pequeno) · P17 · P18 (Tribunal).
 - **Tamanho (pedido do Pedro): os respiros podem e devem ser GRANDES**, com espaço de verdade para andar e explorar: câmaras laterais, andares, cantos escondidos. As descrições abaixo são o mínimo de cada um.
 Os respiros não entram na numeração dos puzzles deste documento (para não renumerar tudo); no jogo a numeração das salas é automática.
 
@@ -400,6 +400,22 @@ corredor **desemboca no pátio**: a primeira área livre do jogo é grande e che
   de alguma coisa que eu conheço. Não consigo lembrar do quê."* (dica suave do S9.)
 - **Semente:** no topo, uma porta com **seis** pontinhos de bronze (a face seis, que a língua não tem): só se abre num capítulo posterior.
 - **Atalho:** a escada desce até a Galeria R3.
+
+### R5 · A Antecâmara Fria (entre as salas 16 e 17) — pequena, no caminho obrigatório (ideia do Pedro)
+**Para quê:** na sala 17, uma confirmada só aparece acendendo um **soquete frio**, e até aqui o soquete frio só existiu em segredos opcionais.
+Esta câmara ensina isso **sem ser puzzle**, para a 17 continuar igual e difícil só pela lógica.
+- **Forma:** câmara pequena e baixa (4×6 m, teto 2,4), quase um corredor, depois do claustro aberto da 16 (o contraste: do céu para o aperto).
+  A porta de saída está **fechada** e não tem frase.
+- **O que há:** na parede do fundo, ao lado da porta, uma **moldura de frase vazia** (lisa, com o lugar da marca), **idêntica** à do anexo C da
+  sala 17. Embaixo dela, um **soquete frio** (a tigela de bronze rachada, sem brasa), bem na linha de visão de quem entra. É a **única coisa
+  acendível** da sala. O dado da mão olha para o soquete ao entrar (ele já olha para braseiros e portas).
+- **Como passa:** acender o soquete com o Fogo. A Casa apaga tudo (o escuro de 4 s) e, na moldura, aparece em cal **«ABRIR PORTA CONFIRMADO»**.
+  Ainda no escuro, a porta se abre (o som dela no escuro). A luz volta, a moldura está lisa de novo, a porta continua aberta.
+- **Por que não é puzzle:** só há uma coisa a fazer, como o braseiro da sala 1. Ninguém trava.
+- **O que ensina, numa cena só:** (1) o soquete frio acende, mesmo sem a Casa anunciar; (2) acendê-lo traz o escuro; (3) no escuro, a moldura
+  vazia mostra uma frase **confirmada**, e a Casa obedece a ela. Na 17, a mesma moldura com o mesmo soquete: o jogador já sabe o que fazer.
+- **Palavras:** ABRIR (o dado, sala 2) e PORTA (rótulo, sala 5), já conhecidas; o efeito (a porta abre) confirma o sentido de ABRIR.
+- **Depois de resolvida:** voltar e acender de novo repete a cena (a porta já está aberta). Sem gema, sem diário: é um corredor que ensina.
 
 ## 3. Constelações: tochas que escrevem (ideia do Pedro) ✔ `tools/verify_constelacoes.mjs`
 
@@ -549,13 +565,14 @@ de madeira, a rotunda, as perguntas do dado (`quiz.ts`, `pointask.ts`) e os lamp
 | 7 | **R4 A Escadaria** (entre 14 e 15) | escada em espiral (rampa do `ponte.ts`) | janelas que mostram salas já feitas (pode ser pintura, não render real) |
 | 8 | **Sala 15 O Fogo que Corre** | `makeFloorChannel`, `burn`, `makeTorch` | atraso por canaleta; braseiro que queima **uma vez** por tentativa; plataformas em degraus |
 | 9 | **Sala 16 Os Que Dizem o Mesmo** | `makeCloth` (estandartes) + regra `order`; C6 como C2 | o estandarte queimado **sai da conta**; queimar um 2º devolve todos |
+| 9b | **R5 A Antecâmara Fria** (entre 16 e 17) | soquete frio do `firegrid` + o escuro (1) | nenhuma: soquete → escuro 4 s → cal na moldura → a porta abre |
 | 10 | **Sala 17 A Memória da Casa** | hub redondo (`apelidos.ts`) + 3 anexos curtos; soquete frio do `firegrid` | soquete que dispara o escuro (1) e um quadro vazio com cal |
 | 11 | **Mover o Tribunal** para depois da 17 | lista `MAIN_BUILDERS` | nenhuma |
 
 ### Ficha 1 · O escuro da punição (M6)
 - **Quando:** toda punição de toda sala de fogo (o `cold` atual) chama `ctx.blackout(2.5)`. Ambiente e emissores caem a ~8% em 0,15 s, ficam 2,5 s e
   voltam em 0,6 s. As salas 1 e 2 não punem: não mudam.
-  **Exceção (Pedro, 25/11): na sala 13 o escuro dura 4 s** (`ctx.blackout(4)`), para dar tempo de ler o teto com calma.
+  **Exceção (Pedro, 25/11): na sala 13 e na R5 o escuro dura 4 s** (`ctx.blackout(4)`), para dar tempo de ler com calma.
 - **Cal:** um material verde-limão pálido (`#c8f0a0`), sem luz própria fora do escuro: opacidade = 1 − nível de luz da sala, só abaixo de 25%.
   Não precisa calcular luz real; basta seguir o próprio `blackout`.
 - **Onde há cal no capítulo 1:** teto da sala 13 (3 frases + ESCURO sobre a porta), teto da sala 15 (glifo MENOS, C5), quadro da sala 17,
@@ -615,6 +632,11 @@ de madeira, a rotunda, as perguntas do dado (`quiz.ts`, `pointask.ts`) e os lamp
 - **Regra:** `order` com `seq` = [UM, CINCO, DOIS, TRÊS, QUATRO], mas a porta só aceita se **exatamente um** estandarte estiver queimado e for
   «DOIS ANTES QUATRO». Queimar um 2º: todos voltam pendurados (cena curta: os panos sobem do chão).
 - C6: tochas nas 9, frisos do fundo e da frente e a viga diagonal; alvo = colunas 0, 2, 6, 8.
+
+### Ficha 9b · R5 A Antecâmara Fria
+- Câmara 4×6 m, teto 2,4, porta fechada sem frase. Moldura vazia (a mesma peça do anexo C da sala 17) e soquete frio embaixo, de frente para a entrada.
+- Acender o soquete: `ctx.blackout(4)`; cal «ABRIR PORTA CONFIRMADO» na moldura; a porta abre durante o escuro. Repetível.
+- **Teste:** entrar e, sem ler nada, a única coisa que reage ao Fogo é o soquete; o dado olha para ele.
 
 ### Ficha 10 · Sala 17 A Memória da Casa
 - Hub redondo (como a rotunda da sala 9) com 4 braseiros e a porta; 3 anexos curtos (A pedra, B paredes gastas, C a lei + quadro vazio).
@@ -1319,7 +1341,7 @@ se explica. Errar: escuro e frios por 12 s.
 **Por que é única** (`node tools/verify_lei.mjs`): uma ordem só; cada pista é necessária, **inclusive a do escuro**; só com as confirmadas sobram 8
 ordens; "todos os boatos falsos" dá 1 ordem errada; "todos verdadeiros", nenhuma.
 
-**O que ensina:** juntar tudo; o soquete frio esconde escrita (prepara o segredo do poço, S8). **Palavra nova:** TODOS (por efeito).
+**O que ensina:** juntar tudo; o soquete frio esconde escrita (ensinado na R5, logo antes; prepara o segredo do poço, S8). **Palavra nova:** TODOS (por efeito).
 **Motor:** hub + anexos (§20, opção a); quadro vazio com texto fosforescente e soquete frio que dispara o escuro.
 
 ### R3 · A Galeria dos Condenados — o puzzle opcional (nível 3) ✔ `tools/verify_lei.mjs`

@@ -121,6 +121,9 @@ Acender exatamente **dois** dos três braseiros.
 - Queimar **só** o estandarte **«2 ANTES 4»**; acender **1, 5, 2, 3, 4**.
 - **C6 (gema):** frisos + viga em Z = DE NOVO → tochas das **quatro colunas dos cantos (0, 2, 6, 8)**.
 
+### R5 — A Antecâmara Fria 📝 (respiro pequeno, sem puzzle)
+- Acender o **soquete frio** sob a moldura vazia → escuro de 4 s → «ABRIR PORTA CONFIRMADO» em cal → a porta abre. Ensina o soquete da sala 17.
+
 ### Sala 17 — A Memória da Casa ✅
 - Anexo C: acender o **soquete frio** sob o quadro vazio → no escuro: «1 DEPOIS 4» (confirmada).
 - O par «4 DEPOIS 3» = «GRANDE ANTES PEQUENO» é falso; verdadeiros: «1 ANTES GRANDE» e «3 ANTES 2».
