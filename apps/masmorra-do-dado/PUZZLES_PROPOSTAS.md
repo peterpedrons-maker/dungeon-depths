@@ -195,8 +195,7 @@ Decisão do Pedro: todos os canais, **diluídos**, nunca todos de uma vez. Ferra
 **A ferramenta** confere, para cada palavra que um puzzle **exige**, se a sala a ensina por um canal forte (efeito, demonstração, rótulo, figura,
 dado, dedução guiada) ou se ela já apareceu **2 vezes antes, uma delas por canal forte**. Na 1ª rodada ela achou dois buracos, já corrigidos:
 **ANTES/DEPOIS** chegavam à sala 7 vistos uma vez só (agora há também o mural da ordem na sala 5) e **PEQUENO** chegava à sala 16 visto uma vez só
-(agora há o desenho a giz do respiro R3). Resultado: 16 palavras exigidas no capítulo 1, nenhuma sem ensino. (As salas 12 a 17 ainda são esboço:
-a ferramenta roda de novo quando elas forem fechadas.)
+(agora há o desenho a giz do respiro R3). Resultado: 16 palavras exigidas no capítulo 1, nenhuma sem ensino. (Com as salas 12 a 17 fechadas, a ferramenta achou mais um buraco, ORDEM antes da sala 16, corrigido pondo ORDEM nas portas da sala 13 e da câmara do R3.)
 
 ## 2d. A Biblioteca (O Arquivo das Sentenças) — a grande área aberta
 **O que é na história:** onde os Contáveis guardavam **tudo o que foi dito e julgado**. As **tábuas de pedra** são o que a Casa confirmou; os
@@ -216,7 +215,7 @@ aula, escritório do Escrivão. Para o jogador, é um lugar enorme.
 
 **O térreo (capítulo 1):**
 1. **O Átrio.** Três andares de altura, uma **luz redonda lá no alto** (outro "ponto" do dado), passarelas vazias em cima, **nove mesas de
-   leitura em grade 3×3**, cada uma com uma lamparina apagada, e lamparinas nas paredes. (As mesas são uma constelação: §3, C-Bib, a fechar.)
+   leitura em grade 3×3**, cada uma com uma lamparina apagada, e lamparinas nas paredes. (As mesas são uma constelação: §3, C-Bib, resolvida na seção 5.)
 2. **A Ala das Pedras.** Corredores de estantes de **tábuas talhadas**: frases da lei dos Contáveis, sempre com CONFIRMADO. **Murais com figura**
    ensinam palavras de história (ESCREVER, LER, ESCRIVÃO, SENTENÇA). Uma tábua do índice diz «CONDENADO · CRIME · ?»: **o crime termina em
    PERGUNTA**. Nem a Casa sabe qual foi. (Gancho de história.)
@@ -383,7 +382,7 @@ corredor **desemboca no pátio**: a primeira área livre do jogo é grande e che
   VOCÊ CONDENADO na sala 1). Primeira vez que o jogador vê a palavra SENTENÇA na pedra.
 - **Puzzle opcional (nível 3):** quatro frases riscadas a giz por condenados (boatos, porque giz não é pedra) sobre "qual braseiro
   acender primeiro" numa câmara lateral com três braseiros; uma frase talhada (confirmada) diz quantos dos boatos são verdade. É a 1ª
-  vez que o jogador vê uma **lei da contagem**, sem obrigação (prepara a sala 14). Solução a fechar com verificador quando chegarmos lá.
+  vez que o jogador vê uma **lei da contagem**, sem obrigação (prepara a sala 14). Solução e verificador: seção 5 (R3), `tools/verify_lei.mjs`.
 - **Desenho a giz de um condenado (vocabulário):** um braseiro **enorme** e um **minúsculo**, com os glifos GRANDE e PEQUENO embaixo de cada um.
   Fica a três passos do diário 3, que diz o contrário: quem compara percebe que a autora errou.
 - **Diário 3 (que erra):** *"O símbolo com o ponto no meio e as duas barras do lado quer dizer UM, tenho certeza."* (é PEQUENO; quem fez a
