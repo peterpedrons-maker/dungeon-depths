@@ -424,8 +424,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     return null;
   };
-  // fala do dado (balão): da mão ou, antes de pegá-lo, do dado caído no chão
+  // fala do dado (balão): da mão ou, antes de pegá-lo, do dado caído no chão.
+  // As falas da HISTÓRIA têm prioridade: enquanto uma está sendo escrita ou lida (`talkUntil`), a tradução por desenho e os comentários soltos esperam
+  // (antes os dois disputavam o mesmo balão e um apagava o outro no meio da escrita).
+  let talkUntil = 0;
   const saySay = (glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }) => {
+    talkUntil = Math.max(talkUntil, performance.now() + (o?.delay ?? 0) * 1000 + 150 + lineMs(glyphs, !!o?.pic) + LINGER_MS);
     window.setTimeout(() => {
       if (!hasDie && !worldDie.visible) return;
       chatter.say(glyphs, o?.pic);
@@ -515,6 +519,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const showSketch = (word: string, force = false) => {
     const kind = SKETCH_WORDS[word];
     if (!kind || sketchOn) return;
+    if (!force && performance.now() < talkUntil) return; // o dado está no meio de uma fala da história
     if (!force) {
       if ((sketchCount[word] ?? 0) >= SKETCH_MAX) return;
       sketchCount[word] = (sketchCount[word] ?? 0) + 1;
@@ -2395,7 +2400,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let idleT = 0;
   let chatN = 0;
   chatFn = (key: string) => {
-    if (!hasDie || chatCool > 0 || busy() || dieState === 'returning') return;
+    if (!hasDie || chatCool > 0 || busy() || dieState === 'returning' || performance.now() < talkUntil) return;
     const lines = CHAT[key];
     if (!lines) return;
     chatter.say(lines[chatN++ % lines.length]);
@@ -2645,8 +2650,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (!sketchOn.spoke && sketchOn.age >= SK_IN1) {
         // o dado FALA: o glifo da palavra e o desenho dela, juntos (fala sincera: as gemas ficam firmes e quentes)
         sketchOn.spoke = true;
-        chatter.say([sketchOn.word], sketchOn.kind);
-        sfx.play('uiblip', 0.6);
+        if (performance.now() >= talkUntil) {
+          // (se o dado está no meio de uma fala da história, o desenho aparece na face mas ele não fala por cima)
+          chatter.say([sketchOn.word], sketchOn.kind);
+          sfx.play('uiblip', 0.6);
+        }
       }
       let dsp = (SKETCH_SPIN - spin) % (Math.PI * 2);
       if (dsp > Math.PI) dsp -= Math.PI * 2;
@@ -2785,6 +2793,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
+      dieSay: (g: string[], pic?: string) => saySay(g, { pic }),
       opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
       lifeDbg: () => ({ rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
       rostoSheet: () => {

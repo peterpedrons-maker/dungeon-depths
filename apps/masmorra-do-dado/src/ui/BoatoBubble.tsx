@@ -57,8 +57,8 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
           <SketchPic kind={c.pic as SketchKind} size={Math.round(34 * k)} />
         </span>
       )}
-      {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, k) => (
-        <span className="dlg-tile" key={`${c.id}-${k}`}>
+      {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, i) => (
+        <span className="dlg-tile" key={`${c.id}-${i}`}>
           <WordGlyph id={id} size={Math.round(26 * k)} draw={PART_MS - 100} />
         </span>
       ))}

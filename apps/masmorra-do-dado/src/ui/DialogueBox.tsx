@@ -96,8 +96,8 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
       <div className="dlg-body">
         {line.glyphs ? (
           <div className="dlg-glyphs">
-            {line.glyphs.slice(0, shown).map((id, k) => (
-              <span className="dlg-tile" key={`${key}-${k}`}>
+            {line.glyphs.slice(0, shown).map((id, i) => (
+              <span className="dlg-tile" key={`${key}-${i}`}>
                 <WordGlyph id={id} size={Math.round(50 * k)} draw={skipped ? 0 : PART_MS - 100} />
               </span>
             ))}
