@@ -272,7 +272,7 @@ function panoExtra(api: FireExtraApi): FireExtra {
 
 export const FIRE_PANO: FireSpec = {
   name: 'O Pano',
-  subtitle: 'O que é tecido não é talhado.',
+  subtitle: 'Panos sobre a pedra.',
   hx: 4,
   z0: -12,
   h: 7,
@@ -473,7 +473,7 @@ function confirmaExtra(api: FireExtraApi): FireExtra {
 const fc = (a: string, rel: string, b: string, mark: string, good = false): FireLine => ({ words: [a, rel, b, mark], good });
 export const FIRE_CONFIRMA: FireSpec = {
   name: 'O Que a Casa Confirma',
-  subtitle: 'Duas frases quase iguais.',
+  subtitle: 'Uma lousa. Uma grade.',
   hx: 5.5,
   z0: -22,
   h: 3.8,

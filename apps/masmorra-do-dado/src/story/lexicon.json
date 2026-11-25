@@ -800,7 +800,7 @@
   "pt": "pegar",
   "en": "take",
   "fam": "verbo",
-  "cap": 4,
+  "cap": 1,
   "lote": 1,
   "g": {
    "F": "",
@@ -861,7 +861,7 @@
   "pt": "abrir",
   "en": "open",
   "fam": "verbo",
-  "cap": 6,
+  "cap": 1,
   "lote": 1,
   "g": {
    "F": "",
@@ -1501,7 +1501,7 @@
   "pt": "livro",
   "en": "book",
   "fam": "coisa",
-  "cap": 3,
+  "cap": 1,
   "lote": 1,
   "g": {
    "F": "full",

@@ -380,7 +380,8 @@ export function buildPonte(ctx: Ctx): Room {
 
   // ── a frase da porta, na frente da ponte de pedra (vê-se do fundo e da galeria): «ACENDER DOIS» e a cruz MAIS; dois soquetes contam as ignições ──
   const FZ = ZS + 0.025;
-  const sign = kit.inscribe({ words: ['acender', 'n2'], x: -1.25, y: 4.3, z: FZ, nx: 0, nz: 1, size: 0.4, age: 0.25, seed: 9, lead: true });
+  // (CONFIRMADO: a sala 8 já ensinou a marca; as portas depois dela terminam nela)
+  const sign = kit.inscribe({ words: ['acender', 'n2', 'conf'], x: -1.55, y: 4.3, z: FZ, nx: 0, nz: 1, size: 0.4, age: 0.25, seed: 9, lead: true });
   const cross = kit.inscribe({ words: ['mais'], x: 0.75, y: 4.1, z: FZ, nx: 0, nz: 1, size: 0.86, age: 0.2, frame: true, seed: 13 });
   const sockMats: THREE.MeshBasicMaterial[] = [];
   for (const sx of [-1.55, -0.95]) {
@@ -471,7 +472,7 @@ export function buildPonte(ctx: Ctx): Room {
 
   return {
     name: 'A Ponte de Madeira',
-    subtitle: 'O fogo queima o próprio caminho.',
+    subtitle: 'Madeira sobre o fosso.',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

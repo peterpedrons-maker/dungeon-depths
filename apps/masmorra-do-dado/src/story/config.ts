@@ -28,7 +28,7 @@ export const ACTION_LABEL: Record<Action, string> = {
   correr: 'Correr',
   agir: 'Agir / recolher o dado',
   posicionar: 'Posicionar o dado',
-  diario: 'Abrir o diário',
+  diario: 'Abrir o caderno',
   reiniciar: 'Reiniciar a sala',
 };
 

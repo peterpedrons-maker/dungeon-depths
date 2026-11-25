@@ -318,17 +318,16 @@ export function createDiaryBook(env: BookEnv) {
   let guidedStep = 0;
   type Part = 'dela' | 'simbolos' | 'faces' | 'textos' | 'mapa' | 'notas';
   const PARTS: Part[] = ['dela', 'simbolos', 'faces', 'textos', 'mapa', 'notas'];
-  const PART_NAME: Record<Part, string> = { dela: 'o que ela escreveu', simbolos: 'os símbolos', faces: 'os quadrados', textos: 'as folhas de frases', mapa: 'o desenho', notas: 'as folhas pautadas' };
   // a leitura do relato (as duas primeiras páginas, na letra dela)
   // (o personagem fala POUCO: uma frase curta onde importa; nada de repetir o que a página já diz)
   const READ_RELATO = ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'];
   const AFTER_RELATO: string[] = [];
   const PART_THOUGHT: Record<Part, string[]> = {
     dela: [],
-    simbolos: ['Os da parede. Já estão aqui.'],
+    simbolos: ['Os que eu vi. Já estão aqui.'],
     faces: ['As faces do dado.'],
-    textos: ['Vazio, por enquanto.'],
-    mapa: ['A sala onde acordei.'],
+    textos: ['Ela não achou nenhuma.'],
+    mapa: ['Onde acordei. E aqui.'],
     notas: ['Em branco.'],
   };
   const TORN_THOUGHT = ['Arrancadas.'];
@@ -411,7 +410,7 @@ export function createDiaryBook(env: BookEnv) {
   ta.setAttribute('autocomplete', 'off');
   ta.setAttribute('autocapitalize', 'sentences');
   ta.setAttribute('spellcheck', 'false');
-  ta.setAttribute('aria-label', 'Anotação do diário');
+  ta.setAttribute('aria-label', 'Anotação do caderno');
   ta.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0;border:0;padding:0;resize:none;z-index:-1;';
   document.body.appendChild(ta);
   const stopEdit = () => {
@@ -540,9 +539,6 @@ export function createDiaryBook(env: BookEnv) {
       env.sound('uiblip');
       if (guidedStep < 3) return; // ainda lendo o relato
       if (!tourDone()) {
-        const falta = PARTS.filter((p) => !tourSeen.has(p)).map((p) => PART_NAME[p]);
-        const lista = falta.length > 1 ? `${falta.slice(0, -1).join(', ')} e ${falta[falta.length - 1]}` : falta[0];
-        void lista;
         if (!thinking()) thinkInBook(['Falta ver o resto.']);
         stopEdit();
         guidedStep = 3;

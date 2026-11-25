@@ -30,11 +30,12 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p3',
     where: 'O Que a Casa Confirma (junto da grade)',
-    body: ['Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo.', 'Acho que o risquinho com o ponto em cima quer dizer "é verdade". O outro, "dizem que".'],
+    body: ['Quase a mesma frase, duas vezes. A Casa fez uma e apagou a outra.', 'Acho que o risquinho com o ponto em cima quer dizer "é verdade". O outro, "dizem que".'],
   },
   {
     id: 'p4',
     where: 'Os Banhos Secos (num banco da câmara de banho do oeste)',
+    // (ERRO PLANTADO, decidido: ela está enganada; O Boato Verdadeiro e o Tribunal mostram que o talhado também pode ser boato)
     body: ['O que está talhado não mente. O que alguém só disse, às vezes mente.', 'Acendi uma frase de boato e a Casa me apagou, como a uma vela.'],
   },
   { id: 'p5', where: '(ainda não está no jogo)', body: [] },

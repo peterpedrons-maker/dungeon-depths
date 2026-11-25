@@ -227,7 +227,7 @@ Solução, ao implementar, vai para `PUZZLES.md` (convenção do projeto).
 
 **Abertura (só na 1ª vez, `scene.ts`):** preto, um baque; a vista volta devagar com o personagem **deitado** (câmera baixa e
 torta); dois pensamentos; ele **levanta**; a câmera sobe até o **poço de luz** no teto; o Boato fala em glifos
-(VOCÊ · CONDENADO · BOATO, sem tradução); último pensamento (giz e dado); olhos descem e o jogo começa. O poço
+(VOCÊ · CONDENADO · BOATO, sem tradução); último pensamento; olhos descem e o jogo começa. O poço
 (buraco redondo, tubo de tijolo até uma luz distante, coluna de luz e mancha no chão) é o mesmo lugar por onde o jogador chega ao veredito no final.
 
 **Cenas curtas** usam `ctx.freeze`, `ctx.lookAt` e `ctx.say`: a câmera vira sozinha, o jogador fica parado. **Dado queimando** (acender com o Fogo): ≤ 1,5 s, câmera parada,
@@ -418,7 +418,7 @@ O dado **não está mais no chão ao acordar**. Sequência (tudo em glifos e bem
 1. **Porta trancada** ("E · Tentar abrir"): o jogador pensa "Trancada…" e, na hora, **um barulho lá em cima** (duas batidas no poço); a **câmera vira para o buraco** (jogador parado, `freeze`).
 2. **O dado despenca** pelo poço (`ctx.dropDie`, física do dado), bate no chão e para; **a câmera o acompanha na queda** (do buraco até o chão). Marco `caiu` guardado: se o jogador recarregar, o dado já está no chão.
 3. Depois de parar: pensamento "Caiu alguma coisa. Um dado… e ele brilha." e o dado fala (`EU CAIR`, `VOCÊ AJUDAR EU ?`). **O jogador toma o controle** enquanto o dado **pulsa e murmura** (`AJUDAR EU`, `VOCÊ VIR`, `EU ESPERAR`, a cada ~9 s).
-4. **"Pegar o dado" (E/AGIR)**: o dado voa para a mão e vem para o **centro da tela, maior, de frente** (faixas de cinema, `ctx.dieCenter`, olhos do jogador sobem do chão; o rosto aparece) e **explica**, uma frase por vez: `VOCÊ CONDENADO` · `EU BOATO` · `EU AJUDAR VOCÊ` · `ACENDER BRASEIRO` (+ desenho do braseiro). Depois volta para a mão e o jogador retoma o controle; a comemoração do 1º braseiro (§27) continua igual.
+4. **"Pegar o dado" (E/AGIR)**: o dado voa para a mão e vem para o **centro da tela, maior, de frente** (faixas de cinema, `ctx.dieCenter`, olhos do jogador sobem do chão; o rosto aparece) e **explica**, uma frase por vez: `VOCÊ CONDENADO BOATO` · `EU AJUDAR VOCÊ` · `ACENDER BRASEIRO` (+ desenho do braseiro). Depois volta para a mão e o jogador retoma o controle; a comemoração do 1º braseiro (§27) continua igual.
 - Novos: `Ctx.dropDie`, `Ctx.dieCenter`, `ui.setBars` (faixas, `.bars` em `story.css`), flag `caiu`, `--die-up` (altura do balão do dado). **Som da queda** (`shaftRumble` e `shaftFall` em `audio.ts`, só gravações já existentes, mais graves e com muito eco): um estrondo surdo de tímpano, a porta de pedra pitchada para baixo, duas batidas e um arrastar quando o barulho começa; um assobio de ar e a pancada grave no chão quando o dado despenca. Pendente: um tremor do dado de lá de cima antes de cair.
 
 ### O rosto olha sem mexer o dado (implementado em `dielife.ts`/`textures.ts`)
@@ -785,3 +785,19 @@ batente ocupa ±1,6 m: para a moldura caber ao lado da porta a câmara ficou mai
 embaixo; o dado da mão olha para ele. Acender: escuro de 4 s, a cal «ABRIR PORTA CONFIRMADO» na moldura (as palavras vão para o caderno), a porta
 abre no escuro; a luz volta, a moldura está lisa, a porta segue aberta. Repetível. Fica antes do Tribunal até as salas 15 a 17 existirem.
 **Salvamento:** com uma sala nova no meio da lista, o jogo procura a sala salva pelo **nome** (os índices mudam).
+
+
+## 50. Revisão de coerência dos textos (feita pelo subagente `narrador`, aplicada com as decisões do Pedro)
+- **Caderno:** a página das faces sem descrições de manual (o nome das que o dado tem; "?" em sépia nas outras; título só "FACES"); "VI EM" no
+  lugar de "AVISTADO EM"; mapa e bandeja vazios com "..." em sépia; "Guardar" no índice; a etiqueta da capa diz "CADERNO"; o índice conta só as
+  folhas dela que já existem no jogo (4, não 7). Pensamentos corrigidos para baterem com a tela: "Os que eu vi. Já estão aqui." (os símbolos vêm
+  também das falas), "Ela não achou nenhuma." (textos), "Onde acordei. E aqui." (o mapa já tem duas salas).
+- **Glifos:** «BRASEIRO ONDE» e «DADO ONDE» sem a pergunta dobrada (ONDE já pergunta); o dado começa por EU quando fala de si («EU SENTIR FOGO»,
+  «VOCÊ AJUDAR EU ?»); ao achar o caderno o dado diz «LIVRO» (com o desenho do livro) e «VOCÊ PEGAR LIVRO» (uma palavra nova por frase) e, depois, «VOCÊ ABRIR LIVRO»; a 1ª frase dele é «VOCÊ CONDENADO BOATO».
+  A porta da Ponte termina em CONFIRMADO (a 1ª depois da sala 8).
+- **Legendas:** O Pano "Panos sobre a pedra."; A Ponte "Madeira sobre o fosso." (não entregam o puzzle). A sala 8 diz "Uma lousa. Uma grade." (a folha 3 dela já
+  fala das duas frases). As legendas de acerto e erro não dão regra nem dica: "Igual ao da parede.", "Não era isso.", "Apagou tudo.", "Pilares.";
+  a gema da R2 diz "Fria na mão." (não confirma o erro plantado da folha 4); as faces dizem só "Pesa." / "Queima."; "Longe demais" sem tutorial.
+  No léxico, PEGAR, ABRIR e LIVRO passam ao capítulo 1 (o dado já as mostra no Vestíbulo); a R5 entrou no `verify_vocabulario.mjs`.
+- **Interface:** "Caderno" no botão, na pausa, nas configurações e nas telas; o aviso de símbolo novo diz só "Anotado no caderno."; a face selada
+  mostra "Selada." (sem tutorial). O quiz sem traduções; "cantos" virou "seis".

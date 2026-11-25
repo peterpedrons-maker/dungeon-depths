@@ -450,7 +450,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     id: 'r1-brasa',
     ins: reliefIns!,
     read: ['contaveis', 'acender', 'brasa'],
-    ask: ['brasa', 'onde', 'perg'],
+    ask: ['brasa', 'onde'], // (ONDE já é LUGAR + PERGUNTA)
     targets: () => braz.map((b) => b.bowl),
     radius: 0.7,
     then: { ask: ['voce', 'acender', 'brasa', 'perg'], done: () => braz.some((b) => b.lit) },

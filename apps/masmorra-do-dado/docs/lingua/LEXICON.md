@@ -52,9 +52,9 @@ Capítulo = quando a palavra começa a aparecer (provisório).
 | escrever | escrever | write | 2 | puzzle | símbolo próprio |
 | ir | ir | go | 5 | puzzle | símbolo próprio |
 | vir | vir | come | 5 | puzzle | símbolo próprio |
-| pegar | pegar | take | 4 | puzzle | símbolo próprio |
+| pegar | pegar | take | 1 | puzzle | símbolo próprio |
 | colocar | colocar | place | 2 | puzzle | símbolo próprio |
-| abrir | abrir | open | 6 | puzzle | símbolo próprio |
+| abrir | abrir | open | 1 | puzzle | símbolo próprio |
 | fechar | fechar | close | 6 | puzzle | símbolo próprio |
 | quebrar | quebrar | break | 6 | puzzle | símbolo próprio |
 | prender | prender | bind | 7 | história | símbolo próprio |
@@ -104,7 +104,7 @@ Capítulo = quando a palavra começa a aparecer (provisório).
 | pedra | pedra | stone | 2 | puzzle | símbolo próprio |
 | fogo | fogo | fire | 1 | puzzle | símbolo próprio |
 | luz | luz | light | 1 | puzzle | símbolo próprio |
-| livro | livro | book | 3 | puzzle | símbolo próprio |
+| livro | livro | book | 1 | puzzle | símbolo próprio |
 | mesa | mesa | table | 4 | puzzle | símbolo próprio |
 | espelho | espelho | mirror | 4 | puzzle | símbolo próprio |
 | chave | chave | key | 4 | puzzle | símbolo próprio |

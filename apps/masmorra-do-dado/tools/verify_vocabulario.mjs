@@ -35,6 +35,7 @@ const CAP1 = [
   { sala: 'R4 A Escadaria', mostra: [...m('pergunta', 'igual'), ...m('frase', 'casa')], exige: [] },
   { sala: '15 O Fogo que Corre (esboço)', mostra: [...m('frase', 'acender', 'n2')], exige: ['n2'] },
   { sala: '16 Os Que Dizem o Mesmo (esboço)', mostra: [...m('frase', 'grande', 'pequeno', 'igual', 'verdade', 'boato', 'conf')], exige: ['grande', 'pequeno', 'igual', 'verdade', 'boato', 'conf'] },
+  { sala: 'R5 A Antecâmara Fria', mostra: [...m('efeito', 'abrir', 'porta', 'conf')], exige: [] },
   { sala: '17 A Memória da Casa (esboço)', mostra: [...m('efeito', 'todos', 'ordem'), ...m('frase', 'grande', 'pequeno', 'igual', 'verdade')], exige: ['todos', 'ordem', 'grande', 'pequeno', 'igual', 'verdade'] },
   { sala: '18 O Tribunal', mostra: [...m('pergunta', 'todos'), ...m('frase', 'acender', 'todos', 'brasa', 'ordem', 'conf', 'boato', 'igual', 'verdade', 'antes', 'depois', 'grande', 'pequeno')], exige: ['todos', 'ordem', 'conf', 'boato', 'igual', 'verdade', 'antes', 'depois', 'grande', 'pequeno', 'n1', 'n2', 'n3', 'n4', 'n5'] },
 ];

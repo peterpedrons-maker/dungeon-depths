@@ -362,7 +362,7 @@ export function buildRespiro2(ctx: Ctx): Room {
       gem.visible = false;
       gemLight.intensity = 0;
       ctx.sfx('gem');
-      ctx.caption('Uma gema', 'O que está talhado não mente.', '#7ad8ff');
+      ctx.caption('Uma gema', 'Fria na mão.', '#7ad8ff');
     },
   });
 
@@ -388,7 +388,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   });
 
   // ── o dado pede para APONTAR: lê «CONTÁVEIS DIZER CONFIRMADO» e pergunta «DADO ONDE ?» ──
-  const point = makePointAsk(ctx, { id: 'r2-dado', ins: confIns, read: ['contaveis', 'dizer', 'conf'], ask: ['dado', 'onde', 'perg'], targets: () => [diePos], radius: 0.4, near: 6.5 });
+  const point = makePointAsk(ctx, { id: 'r2-dado', ins: confIns, read: ['contaveis', 'dizer', 'conf'], ask: ['dado', 'onde'], targets: () => [diePos], radius: 0.4, near: 6.5 });
   interactables.push(point.interactable, niche.interactable);
 
   // luz: poucas tochas (fundo, abafado)

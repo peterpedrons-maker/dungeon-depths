@@ -360,11 +360,11 @@ export function buildLousa(ctx: Ctx): Room {
       updateCopy(L1, dt, () => {
         grateUp = true;
         ctx.sfx('door');
-        ctx.caption('A grade subiu', 'O desenho era o que estava talhado ao lado.', '#ffd36b');
+        ctx.caption('A grade subiu', 'Igual ao da parede.', '#ffd36b');
       });
       updateCopy(L2, dt, () => {
         DB.setDim(1);
-        ctx.caption('A porta acordou', 'Os pontinhos da porta também acendem.', '#ffd36b');
+        ctx.caption('A porta acordou', '', '#ffd36b');
       });
       updateCopy(secret, dt, () => {
         niche.open();
@@ -404,7 +404,7 @@ export function buildLousa(ctx: Ctx): Room {
             // a Casa lê e não aceita: a frase é falsa
             DB.grid.clear();
             ctx.sfx('error');
-            ctx.caption('A Casa não aceitou', 'A frase tem de ser verdade.', '#cfc6e8');
+            ctx.caption('A Casa não aceitou', 'Não era isso.', '#cfc6e8');
             rejectT = 1.2;
             doorIdle = 0;
           }

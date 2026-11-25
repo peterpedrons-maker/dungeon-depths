@@ -29,7 +29,7 @@ cada cena começa, respira e termina. Responda sempre em **português do Brasil*
   ao lado dele, nunca ponha legenda em português numa fala do mundo, e o diário **nunca corrige** o jogador.
 - **Regras de fala dos glifos** (LINGUA.md): inscrições e ordens começam pelo **verbo** ("ACENDER QUATRO BRASEIRO"); gente começa pelo
   **sujeito** (EU... / VOCÊ...); pergunta termina com a marca PERGUNTA (`perg`); frases de até ~6 símbolos; **no máximo UMA palavra
-  desconhecida por frase** (deduzível pelo contexto); toda frase de porta termina numa marca (CONFIRMADO).
+  desconhecida por frase** (deduzível pelo contexto); toda frase de porta DEPOIS da sala 8 termina numa marca (CONFIRMADO; antes dela, a marca ainda não foi ensinada).
 - **Só use palavras que existem** no léxico e que o jogador já pode ter visto naquele ponto (respeite o capítulo de cada palavra). Se uma cena
   PRECISA de uma palavra nova, proponha-a (forma, sentido, capítulo) em vez de inventá-la em silêncio, e rode
   `node tools/verify_vocabulario.mjs` (em `apps/masmorra-do-dado/`) depois de mexer em frases de glifos.
@@ -66,6 +66,10 @@ vi na parede. Como já estão aqui?").
   folhas dela (`src/story/herpages.ts`).
 - **O caderno guiado** (`src/book/book3d.ts`, `READ_RELATO`, `PART_THOUGHT`, `TORN_THOUGHT`, `WRITE_ASK`, `WRITE_DONE`, `ALL_DONE`): é uma
   LEITURA, não um tutorial. Abre no relato dela; o jogador passa por todas as partes e escreve sobre BRASEIRO embaixo do "?" dela.
+
+## Decisões já tomadas (não reabrir sem o Pedro)
+- O objeto é sempre "caderno" na tela; a 1ª frase do dado é `VOCÊ CONDENADO BOATO`; a folha dela "O que está talhado não mente." é um erro
+  plantado; o quiz não traduz; a abertura usa palavras de capítulos posteriores de propósito (LINGUA.md); o giz só chega no capítulo 2.
 
 ## Como trabalhar
 1. Entenda o pedido e leia a cena no código (o que acontece antes e depois, o que o jogador já sabe e já viu).

@@ -2122,7 +2122,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (dieState !== 'hand' || busy()) return;
     const a = aimPoint();
     if (!a) {
-      caption('Longe demais', 'Aponte para o chão ou uma superfície mais perto.', '#cfc6e8');
+      caption('Longe demais', '', '#cfc6e8');
       return;
     }
     thrownFace = face;
@@ -2170,7 +2170,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const f = FACES[n - 1];
     if (!f) return;
     if (!f.unlocked) {
-      caption(`${n} · ???`, 'Face selada — descubra como libertá-la.', '#8f86a8');
+      caption(`${n} · ?`, 'Selada.', '#8f86a8');
       sfx.play('locked');
       return;
     }
@@ -3053,7 +3053,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // ── o dado fala (raro, curto, nunca atrapalha): balão pequeno com 2–4 símbolos ──
   const CHAT: Record<string, string[][]> = {
-    burn: [['eu', 'ter', 'medo'], ['fogo', 'eu', 'sentir']],
+    burn: [['eu', 'ter', 'medo'], ['eu', 'sentir', 'fogo']],
     idle: [['eu', 'esperar'], ['voce', 'esperar', 'perg'], ['eu', 'querer', 'pousar'], ['voce', 'ajudar', 'eu', 'perg']],
     plate: [['eu', 'pousar', 'conf']],
     door: [['voce', 'poder', 'conf'], ['eu', 'ver', 'voce']],

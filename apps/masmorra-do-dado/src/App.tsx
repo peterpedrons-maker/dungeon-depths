@@ -183,9 +183,9 @@ export default function App() {
     const t = window.setTimeout(
       () =>
         dialogue.say([
-          { who: 'thought', text: 'Ele fala sem voz. Os símbolos aparecem no ar, como se alguém os escrevesse.' },
+          { who: 'thought', text: 'Fala sem voz.' },
           { who: 'escrivao', glyphs: ['voce', 'poder', 'ajudar', 'eu', 'perg'] },
-          { who: 'thought', text: 'Parece uma pergunta. Vou anotar no diário o que eu acho que significa.' },
+          { who: 'thought', text: 'Uma pergunta, acho.' },
         ]),
       1400,
     );
@@ -289,7 +289,7 @@ export default function App() {
       {!inMenu && !complete && (
         <div className="hudbtns">
           {hasBook && (coarse || uis.bookCall) && !uis.bookOut && (
-            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
+            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Caderno" title="Caderno (J)">
               <PixelIcon name="diario" size={32} />
               {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
             </button>
@@ -309,7 +309,7 @@ export default function App() {
       {caption && !speaking && !toast && !uis.bookOut && !inMenu && (
         <div key={caption.id} className="caption" style={{ '--accent': caption.color } as CSSProperties}>
           <b>{caption.title}</b>
-          <span>{caption.sub}</span>
+          {caption.sub && <span>{caption.sub}</span>}
         </div>
       )}
 
@@ -317,7 +317,7 @@ export default function App() {
         <div key={toast.n} className="toast">
           <WordGlyph id={toast.id} size={Math.round(30 * uiK)} />
           <span>
-            <b>AVISTADO</b> · anotado no diário (J)
+            Anotado no caderno.
           </span>
         </div>
       )}
@@ -337,7 +337,7 @@ export default function App() {
           <span className="hint-pc">
             WASD anda · clique arremessa · G posiciona
             <br />
-            1-6 trocam a face · E age · J diário
+            1-6 trocam a face · E age · J caderno
           </span>
           <span className="hint-touch">
             esquerda: andar · direita: olhar

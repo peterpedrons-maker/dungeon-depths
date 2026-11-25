@@ -839,7 +839,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   lockCold = lk.penalty ?? 10;
                   ctx.sfx('error');
                   ctx.blackout(spec.blackout ?? 2.5); // a punição: a Casa apaga tudo
-                  ctx.caption('A Casa apagou as frases', 'Nem toda frase acesa era verdade.', '#cfc6e8');
+                  ctx.caption('A Casa apagou as frases', 'Apagou tudo.', '#cfc6e8');
                 }
               } else if (best.lit) {
                 best.lit = false;
@@ -859,7 +859,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                 if (litLines.filter((l) => l.lit).length >= needed) {
                   risen = true;
                   ctx.sfx('door');
-                  ctx.caption('Algo se move sob o chão', 'Os pilares de fogo subiram. O puzzle está liberado.', '#ffd36b');
+                  ctx.caption('Algo se move sob o chão', 'Pilares.', '#ffd36b');
                 } else ctx.caption('A frase acendeu', 'A Casa aceitou esta.', '#ff9a3c');
               } else {
                 litLines.forEach((l) => (l.lit = false));
@@ -867,7 +867,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                 lockCold = lk.penalty ?? 4;
                 ctx.sfx('error');
                 ctx.blackout(spec.blackout ?? 2.5);
-                ctx.caption('A Casa apagou as frases', 'Aquela não era a certa. Leia as marcas.', '#cfc6e8');
+                ctx.caption('A Casa apagou as frases', 'Apagou tudo.', '#cfc6e8');
               }
             }
           }

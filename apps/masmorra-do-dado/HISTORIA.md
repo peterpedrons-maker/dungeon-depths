@@ -12,7 +12,7 @@ Você foi **lançado, como um dado**, dentro de uma Casa que é ao mesmo tempo o
 
 ## Quem é você
 - **Sem nome.** Lembra de duas coisas: de ter sido **lançado** (de cair, não de ter sido carregado) e de uma voz lendo algo comprido, numa língua que não entendeu. **Não lembra do crime.**
-- Tem na mão um **giz** (todo condenado recebe um) e um **dado**.
+- Ganha um **dado** logo no começo (o Escrivão o joga pelo poço). O **giz** (todo condenado recebe um) só chega no capítulo 2, com o Escrivão.
 
 ## O dado: o Boato
 - É **o boato sobre você**: a acusação que ninguém confirmou. Por isso te segue para todo lado: ele é *sobre* você.
@@ -78,3 +78,10 @@ embaixo da luz", "leram algo comprido para mim", "não acredite em tudo o que eu
 das salas, nem os pensamentos. O subagente `narrador` (`.claude/agents/narrador.md`) guarda essas regras.
 
 **Economia (decidido):** o personagem fala pouco, só nos momentos críticos, em frases curtas e assertivas, sem redundância.
+
+## Decisões da revisão de coerência (narrador, com o Pedro)
+- **A primeira frase do dado** é uma só: `VOCÊ · CONDENADO · BOATO` ("dizem que você está condenado"), ilegível no começo, legível no fim.
+- **Ela erra:** a folha "O que está talhado não mente." é um erro plantado; O Boato Verdadeiro e o Tribunal mostram que o talhado também pode ser boato.
+- **CONFIRMADO nas portas** só depois de a sala 8 (O Que a Casa Confirma) ensinar a marca; as portas antes dela não a têm.
+- **O quiz** não traduz: as opções são só palavras ("confirmado", "boato"), sem a explicação entre parênteses.
+- **O objeto é o "caderno"** em todo texto do jogo e da interface (nunca "diário" ou "livro" na tela).

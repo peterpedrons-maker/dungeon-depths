@@ -4,7 +4,9 @@ import { TEXTS } from '../story/texts';
 import { ADV, drawCentered, drawGlyph, drawText, drawWord, LINE, plot, textWidth, wrap } from './font';
 import { CELL_H, CELL_W, getWorld, shortRoom, type MapRoom } from '../story/worldmap';
 import { glyphsOf, LEX } from '../story/lexicon';
-import { HER_NOTES, HER_PAGES, HER_RELATO } from '../story/herpages';
+import { HER_NOTES, HER_PAGES as HER_ALL, HER_RELATO } from '../story/herpages';
+// (só as folhas que já existem no jogo: as que ainda não foram escritas não aparecem como buracos nem contam no índice)
+const HER_PAGES = HER_ALL.filter((p) => p.body.length > 0);
 
 // Páginas do diário, desenhadas em pixels no próprio papel (nada de interface por cima do livro).
 export const PW = 132;
@@ -18,8 +20,6 @@ const HILITE = '#f6d9a0';
 const SEPIA = '#8a5a34'; // a tinta DELA (a que veio antes): sépia desbotada
 const PENCIL = 'rgba(70,58,48,0.2)';
 const PER_PAGE = 12;
-// descrições curtas para caber no livro (as faces ainda vão mudar)
-const SHORT: Record<number, string> = { 1: 'Quica nas paredes.', 2: 'Aperta placas.', 3: 'Acende o fogo.', 4: 'Troca de lugar.', 5: 'Desliza reto.', 6: 'Atravessa.' };
 export const NOTE_MAX = 58;
 // canetas do mapa (escrita livre); a última é a borracha
 export const PENS = [
@@ -588,7 +588,7 @@ function endpaper(ctx: CanvasRenderingContext2D) {
     ctx.fillRect(x, ly + lh - 6, 1, 1);
   }
   const cx = lx + lw / 2;
-  drawCentered(ctx, 'DIÁRIO', cx, ly + 12, INK, 2);
+  drawCentered(ctx, 'CADERNO', cx, ly + 12, INK, 2);
   rule(ctx, Math.round(cx), ly + 36, 32);
   drawGlyph(ctx, LEX.dado.g!, Math.round(cx), ly + 70, 50, INK);
   drawCentered(ctx, 'O que eu vi.', cx, ly + 102, INK2);
@@ -642,7 +642,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       });
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 8, 137, CW - 16, 1);
-      drawCentered(ctx, 'Guardar o livro', x0 + CW / 2, 141, INK2);
+      drawCentered(ctx, 'Guardar', x0 + CW / 2, 141, INK2);
       regions.push({ x: x0, y: 139, w: CW, h: 13, id: 'close' });
     }
   } else if (s >= lay.dictAt && s < lay.facesAt) {
@@ -678,7 +678,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     } else if (cur) {
       const cx = x0 + CW / 2;
       drawWord(ctx, cur, x0 + 8, 14, CW - 16, 36, INK); // o símbolo direto no papel, sem caixa
-      heading(ctx, 'AVISTADO EM', side, 54);
+      heading(ctx, 'VI EM', side, 54);
       drawCentered(ctx, shortRoom(d.seen[cur].room || 'um lugar'), cx, 71, INK);
       drawCentered(ctx, 'O QUE EU ACHO QUE', cx, 85, INK);
       drawCentered(ctx, 'SIGNIFICA', cx, 95, INK);
@@ -717,13 +717,13 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       lines(ctx, wrap('o que eu acho.', CH), x0, 44, SEPIA, 2);
     }
   } else if (s === lay.facesAt) {
-    heading(ctx, side === 'L' ? 'FACES DO DADO' : 'FACES SELADAS', side);
+    // as faces, sem explicação: o nome das que o dado já tem; nas outras, só o "?" dela
+    if (side === 'L') heading(ctx, 'FACES', side);
     const list = side === 'L' ? FACES.slice(0, 3) : FACES.slice(3, 6);
     list.forEach((f, i) => {
       const y = 32 + i * 40;
       dieFace(ctx, x0, y, f.n, f.unlocked);
-      drawText(ctx, f.unlocked ? f.name : '???', x0 + 22, y + 1, f.unlocked ? INK : INK2);
-      lines(ctx, wrap(f.unlocked ? (SHORT[f.n] ?? f.desc) : 'Selada.', 13), x0 + 22, y + 12, INK2, 2);
+      drawText(ctx, f.unlocked ? f.name : '?', x0 + 22, y + 1, f.unlocked ? INK : SEPIA);
     });
   } else if (s >= lay.herAt && s < lay.dictAt) {
     // as páginas DELA: o relato (as duas primeiras, para no meio da frase) e, depois, as folhas arrancadas (buracos até serem achadas)
@@ -932,7 +932,7 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     }
   }
   for (const r of roomsHere) if (visited(r.key)) drawRoom(cx, r, ox, oy, !!d.here && named(r.key, [d.here]));
-  if (!roomsHere.some((r) => visited(r.key))) drawCentered(cx, 'Nada explorado neste andar.', PW, 78, INK2);
+  if (!roomsHere.some((r) => visited(r.key))) drawCentered(cx, '...', PW, 78, SEPIA);
 
   // o que o jogador escreveu à mão
   d.strokes.forEach((st) => st.f === fl && drawStroke(cx, st));
@@ -980,7 +980,7 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     // bandeja: só os símbolos que o jogador já avistou (◄ quatro de cada vez ►)
     const n = d.order.length;
     if (!n) {
-      drawText(cx, 'Nenhum símbolo avistado.', PW + 14, PH - 22, INK2);
+      drawText(cx, '...', PW + 14, PH - 22, SEPIA);
     } else {
       const first = trayStart(view, d);
       const sel = stampChoice(view, d);

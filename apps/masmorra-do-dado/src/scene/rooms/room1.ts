@@ -230,7 +230,7 @@ export function buildRoom1(ctx: Ctx): Room {
           ctx.say(
             [
               { who: 'thought', text: 'O giz do Escrivão. Ele o deixou cair… ou deixou para mim.' },
-              { who: 'thought', text: 'Com ele posso escrever nas paredes e no chão. Tab troca entre o dado e o giz.' },
+              { who: 'thought', text: 'Escreve na pedra.' },
             ],
             { block: true },
           );
@@ -306,7 +306,7 @@ export function buildRoom1(ctx: Ctx): Room {
       if (sc.ph === 0 && ctx.player.pos.z < -4.0 && ctx.player.pos.z > Z0 + 0.5 && ctx.player.pos.x > X0 + 0.5) {
         sc.ph = 1;
         ctx.freeze(true);
-        ctx.say([{ who: 'thought', text: 'Tem alguém na parede da esquerda. Está escrevendo, e os símbolos acendem um a um.' }], {
+        ctx.say([{ who: 'thought', text: 'Alguém escreve na parede.' }], {
           block: true,
           onEnd: () => {
             sc.ph = 2;

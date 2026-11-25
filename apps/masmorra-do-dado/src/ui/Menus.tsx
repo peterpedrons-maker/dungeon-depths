@@ -248,7 +248,7 @@ function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new
       {ask?.step === 'erase2' && (
         <Confirm
           text="Tem certeza? Não dá para desfazer."
-          sub="O progresso, o diário e o mapa deste espaço somem."
+          sub="O progresso, o caderno e o mapa deste espaço somem."
           yes="Sim, apagar"
           onYes={() => {
             const wasActive = ask.slot === saves.active();
@@ -533,7 +533,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
                 onChange={set('lang')}
                 snd={snd}
               />
-              <p className="opt-note">O idioma muda o diário, os pensamentos e a interface. Os glifos não mudam.</p>
+              <p className="opt-note">O idioma muda o caderno, os pensamentos e a interface. Os glifos não mudam.</p>
             </>
           )}
         </div>
@@ -569,7 +569,7 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             <p>qubodup (bola rolando)</p>
             <p>gravações de giz, borracha, porta de pedra, arrastos, chama, lareira e vapor</p>
             <h3>Letra</h3>
-            <p>a letra do diário, desenhada pixel a pixel para o jogo</p>
+            <p>a letra do caderno, desenhada pixel a pixel para o jogo</p>
           </div>
         </div>
         <Plaque onClick={onBack} snd={snd}>
@@ -591,7 +591,7 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             giz, borracha, porta de pedra, arrastos, chama, lareira e vapor.
           </p>
           <p>
-            <b>Fonte</b>: a letra do diário, desenhada pixel a pixel para o jogo.
+            <b>Fonte</b>: a letra do caderno, desenhada pixel a pixel para o jogo.
           </p>
         </div>
         <div className="row-btns">
@@ -706,7 +706,7 @@ export function PauseMenu({ onResume, onDiary, onResetRoom, onTitle, hasBook, sn
           </Plaque>
           {hasBook && (
             <Plaque onClick={onDiary} snd={snd}>
-              Diário
+              Caderno
             </Plaque>
           )}
           <Plaque onClick={() => setSub('settings')} snd={snd}>

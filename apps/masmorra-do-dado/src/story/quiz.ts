@@ -20,11 +20,11 @@ export interface QuizDef {
 // As 10 perguntas do capítulo 1 (PUZZLES_PROPOSTAS.md §2e). As opções erradas são palavras da mesma época ou da mesma família de glifo.
 export const QUIZ: QuizDef[] = [
   { id: 'q1', word: 'acender', right: 'acender', wrong: ['braseiro', 'fogo', 'dois'], when: { room: 'A Lousa', at: 'after' } },
-  { id: 'q2', word: 'n4', right: 'quatro', wrong: ['três', 'cinco', 'cantos'], when: { room: 'Os Nichos e a Cisterna', at: 'arrive' } },
+  { id: 'q2', word: 'n4', right: 'quatro', wrong: ['três', 'cinco', 'seis'], when: { room: 'Os Nichos e a Cisterna', at: 'arrive' } },
   { id: 'q3', word: 'antes', right: 'antes', wrong: ['depois', 'agora', 'ordem'], when: { room: 'A Casa Escreve', at: 'after' } },
-  { id: 'q4', word: 'conf', right: 'confirmado (é verdade)', wrong: ['boato (dizem que)', 'pergunta', 'fim'], when: { room: 'Os Banhos Secos', at: 'arrive' } },
+  { id: 'q4', word: 'conf', right: 'confirmado', wrong: ['boato', 'pergunta', 'fim'], when: { room: 'Os Banhos Secos', at: 'arrive' } },
   // a 5ª é na chegada à Biblioteca, que ainda não existe: por enquanto, no corredor depois do Pano
-  { id: 'q5', word: 'boato', right: 'boato (dizem que)', wrong: ['mentira', 'confirmado (é verdade)', 'pano'], when: { room: 'O Pano', at: 'after' } },
+  { id: 'q5', word: 'boato', right: 'boato', wrong: ['mentira', 'confirmado', 'pano'], when: { room: 'O Pano', at: 'after' } },
   { id: 'q6', word: 'depois', right: 'depois', wrong: ['antes', 'longe', 'agora'], when: { room: 'Os Apelidos', at: 'after' } },
   { id: 'q7', word: 'pequeno', right: 'pequeno', wrong: ['um', 'grande', 'meio'], when: { room: 'A Ponte de Madeira', at: 'after' } },
   // a 8ª é na chegada à Galeria dos Condenados (R3), que ainda não existe: por enquanto, no corredor depois do Boato Verdadeiro

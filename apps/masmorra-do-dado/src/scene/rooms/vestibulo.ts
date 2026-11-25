@@ -358,7 +358,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   let murmurT = 0;
   let murmurN = 0;
   // o que o dado murmura enquanto espera ajuda: bem curto, em glifos
-  const MURMURS: string[][] = [['ajudar', 'eu'], ['voce', 'vir'], ['eu', 'esperar']];
+  const MURMURS: string[][] = [['voce', 'ajudar', 'eu', 'perg'], ['voce', 'vir'], ['eu', 'esperar']];
   if (v === 1 && dieLie) {
     interactables.push({
       pos: doorPos,
@@ -402,7 +402,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         ctx.giveDie(() => {
           // o dado está na mão: cinema (faixas, dado grande no centro) e a explicação, uma frase curta por vez
           ctx.dieCenter(true);
-          const ms = ctx.dieTalk([{ glyphs: ['voce', 'condenado'] }, { glyphs: ['eu', 'boato'] }, { glyphs: ['eu', 'ajudar', 'voce'] }, { glyphs: ['acender', 'brasa'], pic: 'braseiro' }], { delay: 1.3 });
+          const ms = ctx.dieTalk([{ glyphs: ['voce', 'condenado', 'boato'] }, { glyphs: ['eu', 'ajudar', 'voce'] }, { glyphs: ['acender', 'brasa'], pic: 'braseiro' }], { delay: 1.3 }); // (a 1ª frase: «dizem que você está condenado»; só se lê no fim)
           window.setTimeout(() => {
             ctx.dieCenter(false);
             ctx.freeze(false);
@@ -465,7 +465,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         diary.markSeen('acender');
         diary.markSeen('brasa');
         ctx.freeze(true);
-        const ms = ctx.dieTalk([{ glyphs: ['voce', 'escrever', 'livro'], pic: 'escrever' }, { glyphs: ['voce', 'abrir', 'livro'], pic: 'abrir' }], { delay: 0.6 });
+        const ms = ctx.dieTalk([{ glyphs: ['voce', 'abrir', 'livro'], pic: 'abrir' }], { delay: 0.6 });
         window.setTimeout(() => {
           nb = 'call';
           nbT = 0;
@@ -488,7 +488,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         ctx.lookAt(nbPos, 0.9);
         // enquanto o dado fala do caderno, o olhar fica nele (a cena trava; o jogador ainda pode pegar o caderno)
         ctx.pin(true);
-        const ms = ctx.dieTalk([{ glyphs: ['voce', 'ver', 'livro'], pic: 'livro' }, { glyphs: ['voce', 'pegar', 'livro'], pic: 'pegar' }], { delay: 0.5 });
+        const ms = ctx.dieTalk([{ glyphs: ['livro'], pic: 'livro' }, { glyphs: ['voce', 'pegar', 'livro'], pic: 'pegar' }], { delay: 0.5 });
         window.setTimeout(() => ctx.pin(false), ms + 900);
       }
     }

@@ -74,6 +74,12 @@ O vocabulário completo, com português, inglês e capítulo, está em `docs/lin
 - Cada NPC tem uma **abertura fixa** (um "tique"), que o jogador aprende a reconhecer.
 - Frases curtas (até ~6 símbolos) e **no máximo uma palavra desconhecida por frase**, para dar para deduzir pelo contexto.
 
+## A abertura é ilegível de propósito (decidido)
+As falas do capítulo 1 que vêm antes de o jogador ter como entender (a abertura do Escrivão e do dado: EU, CAIR, CONDENADO, DAR, VIVER...)
+usam palavras de capítulos posteriores **de propósito**: o jogador ouve a sentença sem entender, como ouviu a voz comprida que leu para ele.
+Elas vão para o caderno como "avistadas" e só se leem no fim (o final "Repetir"). As regras de "uma palavra desconhecida por frase" valem
+para as frases que o jogo **espera** que o jogador leia (puzzles, portas, pistas), não para essas.
+
 ## Próximos passos da língua
 1. Revisar os símbolos (alguns são parecidos entre si e precisam ser testados com jogadores).
 2. Escrever as frases de cada região e checar que só usam palavras já introduzidas.
