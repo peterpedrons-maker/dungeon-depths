@@ -541,8 +541,8 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   const poly = (pts: number[][], ox: number, oy: number, th = 1, color = gold) => {
     for (let i = 1; i < pts.length; i++) seg(ox + pts[i - 1][0], oy + pts[i - 1][1], ox + pts[i][0], oy + pts[i][1], th, color);
   };
-  const fx = Math.round(look.ex / 2); // o nariz, a boca e as pálpebras acompanham o olhar menos que as íris (o rosto "vira")
-  const fy = Math.round(look.ey / 2);
+  const fx = Math.round(look.ex * 0.55); // o nariz, a boca e as pálpebras acompanham o olhar menos que as íris (o rosto "vira")
+  const fy = Math.round(look.ey * 0.55);
   // OLHO: pálpebras em amêndoa (traços de ouro, presas ao rosto) e, dentro, a íris-losango da cor da face, com pupila; a íris se move dentro das pálpebras
   const EYE_UP = [[-8, 0], [-6, -3], [-3, -5], [3, -5], [6, -3], [8, 0]];
   const EYE_DN = [[-8, 0], [-6, 2], [-3, 4], [3, 4], [6, 2], [8, 0]];
@@ -557,8 +557,8 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
     }
     poly(EYE_UP, lx, ly);
     poly(EYE_DN, lx, ly);
-    const ix = cx + Math.max(-3, Math.min(3, look.ex));
-    const iy = cy + Math.max(-1, Math.min(1, look.ey));
+    const ix = lx + Math.max(-4, Math.min(4, look.ex - fx * 0.5 + Math.sign(look.ex) * 1));
+    const iy = ly + Math.max(-1, Math.min(1, look.ey - fy));
     const r = 3;
     for (let y = -r; y <= r; y++)
       for (let x = -r; x <= r; x++) {

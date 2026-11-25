@@ -62,6 +62,20 @@ export class DieLife {
   private sleep = 0;
   private lean = 0;
   private time = 0;
+  // OS OLHOS DO ROSTO têm vida própria (por cima do olhar do dado): pequenos saltos (sacadas), olhadelas para longe do alvo e de volta,
+  // e uma mola rápida (olho anda depressa e para; o dado se vira devagar)
+  private sacX = 0;
+  private sacY = 0;
+  private sacT = 0.6;
+  private glX = 0;
+  private glY = 0;
+  private glT = 2.5; // até a próxima olhadela
+  private glOn = 0; // > 0: olhando de relance para outro lado
+  private eyeX = 0;
+  private eyeY = 0;
+  private eyeVX = 0;
+  private eyeVY = 0;
+  private dbl = -1; // segundo piscar logo depois do primeiro
   private q = new THREE.Quaternion();
   private e = new THREE.Euler();
   out: LifeOut = { quat: this.q, dx: 0, dy: 0, scale: 1, glow: 1, look: { x: 0, y: 0, brow: 0, closed: false } };
@@ -150,10 +164,13 @@ export class DieLife {
       if (this.wanderT <= 0) {
         this.lookPlayer = Math.random() < 0.3;
         const f = i.face ?? 0;
-        this.wanderT = (2.2 + Math.random() * 3.6) * (1 - 0.55 * f); // com o rosto à vista, os olhos passeiam mais depressa
-        this.wy = this.lookPlayer ? 0 : (Math.random() - 0.5) * (0.9 + 0.5 * f);
-        this.wp = this.lookPlayer ? 0.1 : (Math.random() - 0.5) * (0.5 + 0.3 * f);
-        if (Math.random() < 0.18) this.blinkT = 0; // um piscar junto com a mudança de olhar
+        this.wanderT = (1.6 + Math.random() * 2.6) * (1 - 0.5 * f); // com o rosto à vista, os olhos passeiam mais depressa
+        // às vezes uma "segunda olhada": vira para um lado e logo em seguida para o outro
+        if (!this.lookPlayer && Math.random() < 0.22) this.wanderT = 0.35 + Math.random() * 0.3;
+        const side = Math.sign(this.wy) || 1;
+        this.wy = this.lookPlayer ? 0 : -side * (0.2 + Math.random() * 0.45) * (1 + 0.4 * f);
+        this.wp = this.lookPlayer ? 0.1 : (Math.random() - 0.45) * (0.55 + 0.35 * f);
+        if (Math.random() < 0.25) this.blinkT = 0; // um piscar junto com a mudança de olhar
       }
       ty = this.wy;
       tp = this.wp;
@@ -181,9 +198,47 @@ export class DieLife {
     this.blinkT -= dt;
     if (this.blinkT <= 0) {
       this.blink = 1;
-      this.blinkT = 3 + Math.random() * 5;
+      this.blinkT = 2.2 + Math.random() * 3.8;
+      if (Math.random() < 0.2) this.dbl = 0.28; // às vezes pisca duas vezes
+    }
+    if (this.dbl >= 0) {
+      this.dbl -= dt;
+      if (this.dbl < 0) this.blink = 1;
     }
     this.blink = Math.max(0, this.blink - dt * 7);
+
+    // ── os olhos: sacadas e olhadelas ──
+    const awake = this.sleep < 0.5 && !this.shake;
+    const f = i.face ?? 0;
+    this.sacT -= dt;
+    if (this.sacT <= 0) {
+      // um saltinho do olho em volta do ponto que ele olha (olho vivo nunca fica parado)
+      this.sacT = 0.3 + Math.random() * (i.busy ? 1.4 : 0.9);
+      this.sacX = awake ? (Math.random() - 0.5) * 0.45 : 0;
+      this.sacY = awake ? (Math.random() - 0.5) * 0.35 : 0;
+    }
+    this.glT -= dt;
+    if (this.glT <= 0 && awake) {
+      // olhadela: de relance para outro lado (para cima, para o lado, para baixo) e de volta, mesmo com algo interessante à frente
+      this.glT = (1.4 + Math.random() * 2.4) * (i.busy ? 1.8 : 1);
+      this.glOn = 0.3 + Math.random() * 0.55;
+      const a = Math.random() * Math.PI * 2;
+      this.glX = Math.cos(a) * (0.55 + Math.random() * 0.35);
+      this.glY = Math.sin(a) * (0.35 + Math.random() * 0.35);
+    }
+    if (this.glOn > 0) this.glOn -= dt;
+    const gx = this.glOn > 0 ? this.glX : 0;
+    const gyy = this.glOn > 0 ? this.glY : 0;
+    // alvo dos olhos = olhar do dado + sacada + olhadela; mola rápida
+    const tx = clamp(this.gy / 0.7 + this.sacX + gx, -1, 1);
+    const tyy = clamp(-this.gp / 0.45 + this.sacY + gyy, -1, 1);
+    const ke = 260;
+    const ce = 30;
+    this.eyeVX += ((tx - this.eyeX) * ke - this.eyeVX * ce) * dt;
+    this.eyeVY += ((tyy - this.eyeY) * ke - this.eyeVY * ce) * dt;
+    this.eyeX += this.eyeVX * dt;
+    this.eyeY += this.eyeVY * dt;
+    void f;
 
     // ── resultado ──
     const sh = this.shake;
@@ -191,7 +246,7 @@ export class DieLife {
     const roll = tr * 0.12 + Math.sin(this.time * 17) * this.wiggle * 0.35;
     this.e.set(this.gp + Math.sin(this.time * 47) * sh * 0.05, this.gy + Math.sin(this.time * 53) * sh * 0.06 + (this.wiggle * Math.sin(this.time * 14) * 0.25), roll);
     // o rosto à vista: o dado quase não se inclina nem anda; só os olhos e o rosto olham em volta
-    const calm = 1 - 0.9 * Math.min(1, i.face ?? 0);
+    const calm = 1 - 0.72 * Math.min(1, i.face ?? 0); // (um pouco do olhar ainda vira o dado inteiro: a cabeça acompanha os olhos)
     this.e.x *= calm;
     this.e.y *= calm;
     this.q.setFromEuler(this.e);
@@ -203,12 +258,13 @@ export class DieLife {
     const eyelid = 1 - 0.85 * this.blink;
     this.out.glow = Math.max(0.05, (1 + this.boost + eagerPulse) * eyelid * (1 - 0.55 * this.sleep));
     // o olhar do rosto: os olhos acompanham o alvo; as sobrancelhas sobem com interesse, alegria e susto e descem com o cansaço
-    this.out.look.x = clamp(this.gy / 0.5, -1, 1);
-    this.out.look.y = clamp(-this.gp / 0.35, -1, 1);
+    this.out.look.x = clamp(this.eyeX, -1, 1);
+    this.out.look.y = clamp(this.eyeY, -1, 1);
     this.out.look.brow = clamp(this.boost * 0.9 + this.lean * 0.8 + this.out.look.y * 0.5 - this.sleep * 0.8 - this.droop, -1, 1);
     this.out.look.closed = this.blink > 0.5 || this.sleep > 0.6;
     // rede de segurança: se algum número virar NaN, a vida reinicia em vez de contaminar o resto
     if (!Number.isFinite(this.out.dx + this.out.dy + this.out.scale + this.out.glow + this.q.x + this.q.y + this.q.z + this.q.w)) {
+      this.eyeX = this.eyeY = this.eyeVX = this.eyeVY = 0;
       this.gy = this.gp = this.vy = this.vp = this.hopY = this.hopV = this.shake = this.squash = this.boost = this.droop = this.wiggle = this.lean = 0;
       this.q.identity();
       this.out.dx = this.out.dy = 0;

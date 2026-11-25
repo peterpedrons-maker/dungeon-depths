@@ -525,3 +525,12 @@ Peças novas do motor:
 - `?intro=0` + `__mdd.goto(i)` levam direto a cada sala; ganchos de teste `__lousa()`, `__fio()`, `__fires['A Casa Escreve']()`.
 Formas: A Lousa é pequena e baixa (grade de ferro na entrada, nicho alto com o 4º braseiro sobre o arco da entrada, dado de pedra meio enterrado); O Fio de Fogo tem **balcão a 3 m** (sobe-se pela escada da esquerda e desce-se pela da direita; as salas continuam com entrada e porta no chão, porque o motor liga as salas em fila no mesmo nível); A Casa Escreve é um salão de 9 colunas (um pouco fora do centro, para a lousa sobre a porta aparecer entre elas); O Pano é uma capela alta (7 m) com panos no alto e frisos no teto.
 **Ficou de fora por ora:** o diário achado das câmaras secretas (a gema já vem; o texto fica para quando houver os diários de vocabulário), a fumaça e o pano-parede da Chama Curta (S3), o escuro fosforescente (S5) e o lema «DIZER IGUAL FAZER» (o segredo S10 do Fio de Fogo já funciona, mas só se entende com esse diário).
+
+## 39. O rosto do dado mais vivo (implementado; completa a §23)
+Pedido do Pedro: o rosto não precisa mostrar sentimentos, mas tem de **se mexer** e olhar em volta. Em `dielife.ts`, os olhos ganharam vida própria por cima do olhar do dado:
+- **sacadas**: a cada 0,3–1,2 s o olho dá um saltinho em volta do ponto que olha (olho vivo nunca fica parado);
+- **olhadelas**: a cada ~1,4–3,8 s ele olha de relance para outro lado (cima, lado, baixo) por 0,3–0,85 s e volta, **mesmo quando há algo interessante à frente**;
+- o vaguear sem alvo ficou mais frequente e mais largo, às vezes com uma "segunda olhada" (um lado, logo o outro);
+- os olhos andam numa **mola rápida** (andam depressa e param), o dado inteiro vira devagar; com o rosto à vista, ainda se inclina um pouco para onde olha (a cabeça acompanha os olhos);
+- **piscar** a cada 2–6 s, às vezes duas vezes seguidas.
+No desenho (`textures.ts`, `tracos`): a íris anda até 4 px para os lados dentro das pálpebras, e o rosto inteiro (pálpebras, nariz, boca, sobrancelhas) acompanha até 3 px para os lados e 2 px para cima e para baixo, então se vê o rosto "virar". Continua a mesma afeição neutra em todos os números.

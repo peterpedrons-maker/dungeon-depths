@@ -612,7 +612,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       // o rosto que está à vista olha em volta: os olhos e as sobrancelhas acompanham o olhar do dado (só refaz a textura quando o olhar muda um pixel)
       if (rostoP[i] > 0.05 && rostos[i]) {
         const lk = life.out.look;
-        const q = { ex: Math.round(lk.x * 4), ey: Math.round(-lk.y * 3), by: Math.round(-lk.brow * 3), closed: lk.closed };
+        const q = { ex: Math.round(lk.x * 5), ey: Math.round(-lk.y * 4), by: Math.round(-lk.brow * 3), closed: lk.closed };
         const key = `${q.ex},${q.ey},${q.by},${q.closed}`;
         if (rostoKey[i] !== key) {
           rostoKey[i] = key;
@@ -2831,7 +2831,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sketch: (w = 'brasa') => showSketch(w, true),
       dieSay: (g: string[], pic?: string) => saySay(g, { pic }),
       opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, headW: topScribe && rooms[0].wellTop ? (topScribe.head.getWorldPosition(tmpV), [+(tmpV.x - wellWorld().x).toFixed(2), +(tmpV.y - wellWorld().y).toFixed(2), +(tmpV.z - wellWorld().z).toFixed(2)]) : null, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
-      lifeDbg: () => ({ rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
+      lifeDbg: () => ({ look: { ...life.out.look }, rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
       rostoSheet: () => {
         // prévia dos 6 rostos (face e brilho) em grande, só para avaliar o desenho
         const S = 6;
