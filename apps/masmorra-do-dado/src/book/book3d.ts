@@ -361,8 +361,8 @@ export function createDiaryBook(env: BookEnv) {
   const thinkInBook = (lines: string[], onEnd?: () => void) => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false, onEnd });
   // os pensamentos de cada parte entram numa FILA: a parte conta como vista assim que o jogador chega nela, mesmo que ele vire a página
   // enquanto outro pensamento ainda está na tela; o pensamento dela vem logo depois
-  const thoughtQ: { lines: string[]; onEnd?: () => void }[] = [];
-  const queueThought = (lines: string[], onEnd?: () => void) => thoughtQ.push({ lines, onEnd });
+  const thoughtQ: { lines: string[]; onEnd?: () => void; part?: Part | 'torn' }[] = [];
+  const queueThought = (lines: string[], onEnd?: () => void, part?: Part | 'torn') => thoughtQ.push({ lines, onEnd, part });
   // no modo guiado, só pode fechar depois de LER tudo e de ESCREVER sobre BRASEIRO
   const guidedOk = () => noteDone() && tourDone();
   // pede a anotação de BRASEIRO: vira até a página e abre o campo, embaixo do "?" dela
@@ -731,16 +731,19 @@ export function createDiaryBook(env: BookEnv) {
         // as folhas arrancadas (logo depois do relato): uma pergunta a mais, sem obrigação
         if (!tornSeen && view.spread === layout(dState()).herAt + 1) {
           tornSeen = true;
-          queueThought(TORN_THOUGHT);
+          queueThought(TORN_THOUGHT, undefined, 'torn');
         } else if (part && !tourSeen.has(part)) {
           tourSeen.add(part);
-          if (part === 'simbolos' && !noteDone()) queueThought(PART_THOUGHT[part], askWrite);
-          else queueThought(tourDone() && noteDone() ? [...PART_THOUGHT[part], ...ALL_DONE] : PART_THOUGHT[part]);
+          if (part === 'simbolos' && !noteDone()) queueThought(PART_THOUGHT[part], askWrite, part);
+          else queueThought(tourDone() && noteDone() ? [...PART_THOUGHT[part], ...ALL_DONE] : PART_THOUGHT[part], undefined, part);
           ui.setGuidedNote(guidedOk());
         }
       }
       if (guidedStep === 3 && !thinking() && thoughtQ.length) {
-        const q = thoughtQ.shift()!;
+        // o pensamento da página que está aberta passa na frente (os outros vêm depois, como lembrança)
+        const here = view.spread === layout(dState()).herAt + 1 ? 'torn' : partOf(view.spread);
+        const k = Math.max(0, thoughtQ.findIndex((q) => q.part === here));
+        const [q] = thoughtQ.splice(k, 1);
         thinkInBook(q.lines, q.onEnd);
       }
       if (guidedStep === 4) {
