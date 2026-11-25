@@ -102,6 +102,11 @@ Acender exatamente **dois** dos três braseiros.
 
 ---
 
+## Perguntas do dado (capítulo 1)
+1 ACENDER = **acender** · 2 QUATRO = **quatro** · 3 ANTES = **antes** · 4 CONFIRMADO = **confirmado (é verdade)** · 5 BOATO = **boato (dizem que)** ·
+6 DEPOIS = **depois** · 7 PEQUENO = **pequeno** (não "um") · 8 VERDADE = **verdade** · 9 IGUAL = **igual** · 10 TODOS = **todos**.
+Apontar: pátio → um braseiro · Banhos → o dado do relevo · Museu → a chave, depois o livro · Sala de Aula → escrever QUATRO.
+
 ## Segredos grandes e finais
 - **S5 · A frase do escuro ⏳:** cada sala da 2 à 17 tem uma palavra fosforescente que só aparece no escuro da punição (errar de propósito).
   Juntas formam uma frase que manda voltar ao poço (texto final a escrever).
