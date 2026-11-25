@@ -474,7 +474,7 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
   quem decide o veredito passa a ser o dado, como os Contáveis faziam. O jogador sai pelo poço e vê, de fora, o dado gigante rolar e pousar.
 - É um final de **conhecimento e coleção juntos**: quem fez 100% mas não entendeu não sabe escrever a frase; quem entendeu mas não
   juntou as faces escreve e nada acontece.
-- **A decidir:** o que o dado pousado mostra (uma face fixa ou acaso de verdade), e se o 4º final destrava algo (o "Repetir" com tudo entendido?).
+- **Decidido (25/11):** o dado pousa mostrando **SEIS**, a face que a língua não tem (ver §6, item 3). O 4º final não destrava nada além de uma última página do diário.
 
 ## 3b. Mapa dos segredos (três camadas, como em *Animal Well* / *Fez*)
 
@@ -530,25 +530,96 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 
 ---
 
-## 4. O que a sessão principal precisa construir (resumo)
+## 4. O que a sessão principal precisa construir (fichas de montagem)
 
-**Já no jogo** (conferido na branch do site): lousa de fogo, canaletas, lousa animada, pano queimável, `lock.judge`/`preLit`, tochas de coluna e
-rachaduras frias (C1, C2), o caderno-diário, o pavio da Chama Curta, O Que a Casa Confirma em duas partes, o respiro R1.
+**Já no jogo** (conferido na branch do site em 25/11): salas 1 a 11, R1 e R2, e o Tribunal (fora do lugar). Isso inclui a lousa de fogo, as
+canaletas, a lousa animada, o pano queimável, `lock.judge`/`preLit`, as tochas e rachaduras frias (C1, C2, C3), o caderno-diário, o pavio, a ponte
+de madeira, a rotunda, as perguntas do dado (`quiz.ts`, `pointask.ts`) e os lampiões de bronze.
 
-**Falta, na ordem em que o capítulo precisa:**
-| Prioridade | Peça | Para quê |
-|---|---|---|
-| 1 | **O escuro da punição** (M6): toda punição apaga também a luz ambiente por ~2,5 s; **cal fosforescente** que só aparece abaixo de um limite de luz | salas 13, 15 (C5), 17; S5 nas salas 2, 7, 11; S8 no poço |
-| 1 | **Perguntas do dado** (§2e) e o dado apontando/pedindo nas áreas livres | todo o capítulo |
-| 1 | **Ponte de madeira** que queima e corta a canaleta de cima; "uma ignição de cada vez"; tochas na borda com posição projetada | sala 10, C3 |
-| 2 | **Sombra calculada** (M5): tela com furos, manchas na moldura; julgamento "número da moldura = número de acesos" | sala 12 |
-| 2 | **Três lousas julgadas juntas** | sala 13 |
-| 2 | **Sala de dois níveis com rampa** | salas 10 (fosso em espiral), 14 (mezanino) |
-| 2 | **Canaletas com atraso** e braseiro que **queima uma vez** por tentativa e reabastece; plataformas | sala 15 |
-| 2 | **Estandartes que saem da conta** da lei ao queimar; "um só" | sala 16 |
-| 2 | **Hub com anexos** (§20, opção a); **soquete frio** que dispara o escuro; **quadro vazio** com texto fosforescente | sala 17, S8 |
-| 3 | **Respiros** R2 (Banhos Secos), R3 (Galeria), R4 (Escadaria) e **a Biblioteca** (5 ou 6 módulos) | ritmo do capítulo |
-| 3 | Rotunda (sala 9), sala em L (sala 11), claustro com céu (sala 16), fumaça com vento (S3), friso/viga com fogo correndo (C6) | forma das salas e segredos |
+**Falta, nesta ordem** (a ordem do capítulo, exceto onde uma peça depende de outra):
+
+| # | O que | Base no motor | Peça nova |
+|---|---|---|---|
+| 1 | **O escuro da punição** (todas as salas) | `cold`/`penalty` do `fire.ts` | `ctx.blackout(s)`: luz ambiente e emissores a ~8% por `s` segundos; **cal**: malha que só aparece (fade) durante o escuro |
+| 2 | **Biblioteca, térreo** (entre 8 e 9) | `makeTorch`, `makeWallBoard`, `makeCloth`, `makeGemNiche`, nicho do `kit` | módulos ligados sem porta trancada; mural de encaixe (trocar 2 blocos) |
+| 3 | **R3 Galeria dos Condenados** (entre 11 e 12) | `respiro2.ts` como molde; regra `order` na câmara | nenhuma |
+| 4 | **Sala 12 A Sombra** | `buildFireRoom` + `extra` | projeção calculada (manchas numa moldura 3×3) e o julgamento "número na moldura = acesos" |
+| 5 | **Sala 13 O Escuro** | `makeWallBoard` ×3 + o escuro (1) | as três lousas julgadas juntas |
+| 6 | **Sala 14 A Lei Pequena** | `room4.ts` (O Mirante: dois níveis com rampa) + regra `order` | nenhuma |
+| 7 | **R4 A Escadaria** (entre 14 e 15) | escada em espiral (rampa do `ponte.ts`) | janelas que mostram salas já feitas (pode ser pintura, não render real) |
+| 8 | **Sala 15 O Fogo que Corre** | `makeFloorChannel`, `burn`, `makeTorch` | atraso por canaleta; braseiro que queima **uma vez** por tentativa; plataformas em degraus |
+| 9 | **Sala 16 Os Que Dizem o Mesmo** | `makeCloth` (estandartes) + regra `order`; C6 como C2 | o estandarte queimado **sai da conta**; queimar um 2º devolve todos |
+| 10 | **Sala 17 A Memória da Casa** | hub redondo (`apelidos.ts`) + 3 anexos curtos; soquete frio do `firegrid` | soquete que dispara o escuro (1) e um quadro vazio com cal |
+| 11 | **Mover o Tribunal** para depois da 17 | lista `MAIN_BUILDERS` | nenhuma |
+
+### Ficha 1 · O escuro da punição (M6)
+- **Quando:** toda punição de toda sala de fogo (o `cold` atual) chama `ctx.blackout(2.5)`. Ambiente e emissores caem a ~8% em 0,15 s, ficam 2,5 s e
+  voltam em 0,6 s. As salas 1 e 2 não punem: não mudam.
+- **Cal:** um material verde-limão pálido (`#c8f0a0`), sem luz própria fora do escuro: opacidade = 1 − nível de luz da sala, só abaixo de 25%.
+  Não precisa calcular luz real; basta seguir o próprio `blackout`.
+- **Onde há cal no capítulo 1:** teto da sala 13 (3 frases + ESCURO sobre a porta), teto da sala 15 (glifo MENOS, C5), quadro da sala 17,
+  palavras S5 nas salas 2, 7 e 11, e o fundo do poço da sala 1 (S8).
+- **Cuidado:** o escuro não pode cortar falas, legendas nem o balão do dado (DESIGN §30); se uma conversa está aberta, ele espera.
+- **Teste:** errar na sala 7 e ver a palavra S5 aparecer e sumir; o cronômetro de punição não conta durante o diário (`ctx.paused`).
+
+### Ficha 2 · A Biblioteca (térreo)
+- **Módulos** (cada um uma `Room` pequena, todos com portas sempre abertas): Átrio (passagem principal, curta, até a porta da sala 9) · Ala das Pedras ·
+  Ala do Papel · Museu dos Nomes · Sala de Aula · grade do Escritório (vista de fora; trancado). Detalhes em §2d; puzzles em §5 (A Biblioteca).
+- **Puzzles:** C-Bib (lamparinas 0, 2, 7; regra igual à de C1/C2), lousas da sala de aula (`makeWallBoard` com casa vazia, como na sala 3: QUATRO,
+  DOIS e a trancada PEQUENO = QUATRO), livros que mentem (`makeCloth` com forma de lombada; o de pedra não queima), mural de encaixe.
+- **Cena:** o Escrivão escrevendo no escritório, de costas; ao chegar perto da grade, a lamparina apaga e ele some (3ª aparição).
+- **Teste:** atravessar só o Átrio em menos de 40 s (o caminho principal é curto); nenhuma porta trancada no caminho.
+
+### Ficha 3 · R3 A Galeria dos Condenados
+- Galeria longa e alta, bancos, marcas de contagem a giz (decalque), desenho a giz GRANDE/PEQUENO perto do diário 3 (§2b).
+- Câmara lateral: 3 braseiros, regra `order` com `seq` = [DOIS, TRÊS, UM], 3 frases riscadas a giz (boatos) e a lei talhada (§5, R3). Gema ao abrir.
+- Página arrancada nº 4 no banco do fundo (a pista da sala 13). Atalho para R2. Escrivão sentado no fim (4ª aparição).
+
+### Ficha 4 · Sala 12 A Sombra
+- `buildFireRoom` com 5 braseiros (F, BD, AE, BC, BE; AE num pedestal alto) e `extra` para a tela de pedra e a moldura 3×3 na frase da porta.
+- **Manchas** (tabela em §5): cada braseiro aceso acende casas fixas da moldura; desenhar a moldura como uma `makeWallBoard` sem lampiões (só as
+  manchas). Não usar sombra real.
+- **Julgamento:** a cada mudança, se as casas acesas formam um número (UM a CINCO) → se o número = quantidade de braseiros acesos, abre; se não,
+  após 3 s, pune (escuro + frios 6 s). Outro desenho: nada.
+- **Teste:** F+AE pune; BD+AE pune; F+BD+AE abre.
+
+### Ficha 5 · Sala 13 O Escuro
+- Sala baixa (6×9, teto 2,6), 4 braseiros dos cantos `lit` e fora do puzzle; três `makeWallBoard` lado a lado na porta, cada uma escreve um número.
+- **Julgamento:** quando as três mostram um número completo: certo (DOIS, CINCO, UM) abre; senão escuro 2,5 s e limpa as três.
+- **Cal no teto:** as três frases e as marcas (§5), espalhadas ao longo da sala para que 2,5 s não bastem para ler tudo; ESCURO sobre a porta.
+- **Teste:** quem não erra nunca vê o teto; três erros bastam para ler tudo.
+
+### Ficha 6 · Sala 14 A Lei Pequena
+- Molde do Mirante: térreo (2 confirmadas + mural da balança), rampa larga contornando a sala (3 boatos), mezanino (4 braseiros, a lei, a porta).
+- Do mezanino as frases de baixo **não** devem ser legíveis (distância ou parapeito).
+- Regra `order`, `seq` = [UM, QUATRO, DOIS, TRÊS], `hints: false`, `penalty: 10` (com o escuro).
+
+### Ficha 7 · R4 A Escadaria
+- Poço vertical largo, escada em espiral. Janelas para salas já feitas: uma imagem fixa (vista de cima) basta.
+- A janela da sala 5 mostra as 9 colunas em grade (e a câmara de C1 acesa se já foi feita). Diário 4 no meio. Porta de **seis** pontos no topo
+  (fechada). Atalho para R3.
+
+### Ficha 8 · Sala 15 O Fogo que Corre
+- 9 plataformas em grade 3×3 em alturas diferentes, um braseiro em cada (`burn: 4`), canaletas com atraso (lista e segundos em §5); o sentido é
+  sempre da plataforma mais alta para a mais baixa.
+- **Uma vez por tentativa:** um braseiro que se apagou não reacende (o óleo acabou: mostrar o pote vazio). Quando tudo se apaga sem acertar: escuro
+  + reabastece.
+- **Porta:** abre se, num instante, os acesos forem exatamente 0, 2, 6, 8.
+- C5: tochas nos 9 postes + 3 na parede; o glifo MENOS em cal no teto; alvo = postes 3, 4, 5.
+- **Teste:** centro e, 3 s depois, canto 6 → abre. Acender os dois juntos falha. O cronômetro para durante o diário.
+
+### Ficha 9 · Sala 16 Os Que Dizem o Mesmo
+- Claustro: pátio quadrado sem teto (céu pálido como o do pátio da abertura), 8 colunas da galeria, fonte no meio. 5 braseiros no pátio.
+- Confirmadas talhadas nas galerias; 5 estandartes (`makeCloth`) com os boatos; a lei na fonte.
+- **Regra:** `order` com `seq` = [UM, CINCO, DOIS, TRÊS, QUATRO], mas a porta só aceita se **exatamente um** estandarte estiver queimado e for
+  «DOIS ANTES QUATRO». Queimar um 2º: todos voltam pendurados (cena curta: os panos sobem do chão).
+- C6: tochas nas 9, frisos do fundo e da frente e a viga diagonal; alvo = colunas 0, 2, 6, 8.
+
+### Ficha 10 · Sala 17 A Memória da Casa
+- Hub redondo (como a rotunda da sala 9) com 4 braseiros e a porta; 3 anexos curtos (A pedra, B paredes gastas, C a lei + quadro vazio).
+- O glifo TODOS da porta enche ponto a ponto conforme os braseiros acendem.
+- **Soquete frio** sob o quadro vazio: acendê-lo dispara o escuro (2,5 s) e mostra «UM DEPOIS QUATRO» CONFIRMADO em cal. Pode ser repetido.
+- Regra `order`, `seq` = [QUATRO, UM, TRÊS, DOIS], `penalty: 12`.
 
 ---
 
@@ -1081,7 +1152,7 @@ nada" pode mudar a verdade. **Sem constelação** (a sala inteira já é de proj
 
 **A ideia:** desde a sala 2, toda vez que o jogador erra, a Casa apaga tudo. Aqui **não há pista nenhuma à vista**: o que é preciso saber está
 escrito no teto, em **cal fosforescente**, que só aparece **no escuro total**. E o único jeito de ter escuro é **errar**. Errar vira ferramenta.
-(Depende da decisão do §6: a punição passa a apagar também a luz ambiente por ~2,5 s, em todas as salas.)
+(Decidido no §6: a punição apaga também a luz ambiente por 2,5 s, em todas as salas; ficha 1 no §4.)
 
 **Forma:** pequena, baixa e opressiva (6×9 m, teto 2,6). Quatro braseiros **já acesos pela Casa** nos cantos (só luz; não fazem parte do puzzle).
 Na porta, **três lousas lado a lado** e a frase «ACENDER ▢ ▢ ▢ ORDEM» (uma lista de números é uma ordem, como na sala 4).
@@ -1277,10 +1348,19 @@ brilhando no teto."* (a pista da sala 13).
 **Já decididas pelo Pedro:** a Casa (o jogo todo) é **um dado** (S9); constelações do capítulo 1 só com Fogo, e com as ferramentas novas
 a partir do capítulo 2; sempre tochas a mais; gemas (100%), diários com vocabulário e um **4º final que se acumula** (§3d).
 
-**Ainda em aberto:**
-1. **Errar de propósito** (o escuro da punição esconde escrita): **agora é necessário** para as salas 13, 15 (C5) e 17 e para os segredos S5 e S8.
-   Exige que a punição de **todas** as salas apague também a luz ambiente por ~2,5 s. Se o Pedro não quiser, as salas 13 e 17 precisam ser refeitas.
-2. **Pedra = CONFIRMADO, pano = BOATO, o fogo queima o boato** como regra do mundo (as salas 8 e 16 dependem disso; já estão no jogo/no documento).
-3. O 4º final «LANÇAR CASA»: o que o dado mostra ao pousar?
-4. Formas das salas: quais o motor faz já e quais pedem trabalho (fosso em espiral, claustro com céu, sala em L, rotunda). Pergunta para a sessão principal.
-5. A posição do Tribunal: a lista do jogo o põe logo depois da sala 11; o lugar dele é o fim do capítulo (sala 18), depois das salas 12 a 17.
+**Fechadas em 25/11** (o Pedro pediu "ajuste tudo que falta"; cada uma pode ser revertida, e o que muda se ele reverter está dito):
+1. **Errar de propósito: SIM.** Toda punição apaga também a luz ambiente por 2,5 s (ficha 1, §4). É a forma mais barata: a cal só segue o próprio
+   escuro, sem calcular luz. *Se reverter:* a sala 13 vira "teto que se lê com o dado de Fogo na mão, de perto" (perde a epifania), a 17 troca o
+   escuro por uma frase sob pano, e C5, S5 e S8 saem.
+2. **Pedra = CONFIRMADO, pano e papel = BOATO, o fogo queima o boato: SIM,** como regra do mundo inteiro. Já vale nas salas 8, 16 e na Biblioteca.
+   Exceção única e de propósito: os cadernos dos condenados (papel sem marca) não são boato, e queimá-los custa uma página (§2d).
+3. **O que o dado gigante mostra no 4º final: a face SEIS, sempre.** É o número que a língua dos Contáveis não tem (não há glifo de SEIS; a porta de
+   seis pontos da R4 é a semente). O veredito cai fora da língua da sentença: ninguém pode lê-lo, então não há sentença. Fixo, não sorteado, para
+   que o final seja um só e possa ser antecipado por quem reparar na porta. Não destrava nada além de uma última página no diário.
+4. **Formas das salas:** a sessão principal já fez a rotunda (9) e o fosso em espiral (10). Para o resto, a base mais barata está nas fichas do §4:
+   mezanino = molde do Mirante (`room4.ts`); claustro = pátio sem teto com o céu da abertura; hub = rotunda + 3 corredores curtos; plataformas =
+   degraus largos. A sala em L da 11 ficou como está no jogo (não muda o puzzle).
+5. **O Tribunal vai para depois da sala 17** (sala 18), como no §2. Até as salas 12 a 17 existirem no jogo, ele pode ficar onde está.
+
+**Ainda do Pedro (não é design):** conferir se o nome **"Sentença"** (e "Sentence", em inglês) está livre nas lojas (Steam, App Store, Google Play)
+antes de registrar o logo.

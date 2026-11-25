@@ -155,4 +155,5 @@ C1 sala 5: colunas 0, 2, 4, 6, 8 · C2 sala 8: pilares 1, 6, 8 · C-Bib: mesas 0
 C5 sala 15: postes 3, 4, 5 · C6 sala 16: colunas 0, 2, 6, 8.
 - **S11 · O rosto do Boato (capítulo final) ⏳:** do ponto certo perto da saída alta, as ruínas formam o rosto do dado (com os dois braseiros-olhos acesos).
 - **4º final ⏳:** escrever **«LANÇAR CASA»** no veredito. Exige: as palavras LANÇAR e CASA (diários das câmaras secretas), entender que a
-  Casa é um dado, e as seis faces completas no mapa (todas as gemas).
+  Casa é um dado, e as seis faces completas no mapa (todas as gemas). O dado gigante pousa mostrando **SEIS** (a face que a língua não tem: o veredito
+  não pode ser lido, então não há sentença).
