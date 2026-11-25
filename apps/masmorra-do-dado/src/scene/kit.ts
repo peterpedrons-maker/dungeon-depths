@@ -402,7 +402,7 @@ export class Kit {
     add(0.15, h, D, this.slab, -w / 2 - 0.075, h / 2, D / 2);
     add(0.15, h, D, this.slab, w / 2 + 0.075, h / 2, D / 2);
     add(w + 0.3, 0.16, D, this.slab, 0, h + 0.08, D / 2); // verga
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(w, h), lambert(null, 0x16121a));
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x0c0910 })); // o fundo do nicho, na sombra funda
     back.position.set(0, h / 2, 0.012);
     g.add(back);
     // o "teto" e os lados de dentro, na sombra

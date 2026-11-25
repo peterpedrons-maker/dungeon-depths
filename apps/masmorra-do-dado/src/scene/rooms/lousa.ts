@@ -166,7 +166,7 @@ export function buildLousa(ctx: Ctx): Room {
   // RISCOS DE GIZ: um condenado contou os dias aqui, ao lado da 1ª lousa (baixo, como quem está sentado no chão)
   {
     const t = tallyTexture(23);
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.36), new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.36), new THREE.MeshBasicMaterial({ map: t, color: 0x9a948a, transparent: true, alphaTest: 0.3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
     m.position.set(X1 - 0.022, 0.72, -0.95);
     m.rotation.y = -Math.PI / 2;
     kit.group.add(m);
@@ -175,22 +175,22 @@ export function buildLousa(ctx: Ctx): Room {
   {
     const g = kit.niche(X0, 1.0, -0.9, 1, 0);
     const clay = lambert(null, 0x7a4e34);
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.07, 0.07, 8, 1, true), clay);
-    bowl.position.set(-0.12, 0.035, 0.15);
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.09, 0.1, 8, 1, true), clay);
+    bowl.position.set(-0.12, 0.05, 0.15);
     g.add(bowl);
-    const bowlIn = new THREE.Mesh(new THREE.CircleGeometry(0.1, 8), lambert(null, 0x2a1a12));
+    const bowlIn = new THREE.Mesh(new THREE.CircleGeometry(0.14, 8), lambert(null, 0x2a1a12));
     bowlIn.rotation.x = -Math.PI / 2;
-    bowlIn.position.set(-0.12, 0.05, 0.15);
+    bowlIn.position.set(-0.12, 0.08, 0.15);
     g.add(bowlIn);
     const wax = lambert(null, 0xd8ccb0);
-    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.09, 6), wax);
-    candle.position.set(0.16, 0.045, 0.13);
+    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, 0.14, 6), wax);
+    candle.position.set(0.16, 0.07, 0.13);
     g.add(candle);
     const drip = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.015, 7), wax);
     drip.position.set(0.17, 0.008, 0.14);
     g.add(drip);
     const wick = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.025, 0.008), lambert(null, 0x111111));
-    wick.position.set(0.16, 0.1, 0.13);
+    wick.position.set(0.16, 0.15, 0.13);
     g.add(wick);
   }
   // o caminho GASTO de quem passou: da entrada até a porta, desviando das colunas
