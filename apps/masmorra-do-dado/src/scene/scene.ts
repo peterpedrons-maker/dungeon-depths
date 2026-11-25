@@ -254,6 +254,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uBright: { value: 1 },
       uGlowK: { value: 0.16 },
       uBlur: { value: 0 },
+      uFocus: { value: 1 },
       tSnap: { value: rtSnap.texture },
       uDis: { value: -1 },
     },
@@ -265,7 +266,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uBloom;
       uniform float uBright;
       uniform float uGlowK;
-      uniform float uBlur; // profundidade de campo da tela inicial: a sala atrás do dado desfocada (o dado e o entulho do HUD ficam nítidos)
+      uniform float uBlur; // profundidade de campo da tela inicial: o chão em volta do dado nítido, o resto da sala desfocado
+      uniform float uFocus; // a distância (m) em que está o dado (o plano em foco)
       uniform sampler2D tSnap;
       uniform float uDis; // transição em pontilhado: < 0 desligada; 0..1 = quanto da imagem nova já apareceu
       varying vec2 vUv;
@@ -283,11 +285,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         vec2 o = 1.0 / uRes;
         vec4 hud = texture2D(tHud, vUv);
         vec3 room = texture2D(tRoom, vUv).rgb;
-        if (uBlur > 0.01 && hud.a < 0.5) {
+        float coc = 0.0; // círculo de confusão: 0 no plano do dado, 1 longe dele
+        if (uBlur > 0.01) {
+          float dz = texture2D(tDepth, vUv).r;
+          float zl = uNear * uFar / (uFar - dz * (uFar - uNear));
+          coc = clamp(abs(zl - uFocus) / max(zl, 0.05) * 1.7 - 0.08, 0.0, 1.0);
+        }
+        if (uBlur > 0.01 && hud.a < 0.5 && coc > 0.02) {
           vec3 acc = room;
           for (int k = 0; k < 14; k++) {
             float a = float(k) * 2.39996;
-            float r = (0.6 + float(k) * 0.16) * uBlur;
+            float r = (0.6 + float(k) * 0.16) * uBlur * coc;
             acc += texture2D(tRoom, vUv + vec2(cos(a), sin(a)) * o * r).rgb;
           }
           room = acc / 15.0;
@@ -296,7 +304,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         float ic = invZ(vUv);
         float lx = invZ(vUv - vec2(o.x, 0.0)) + invZ(vUv + vec2(o.x, 0.0)) - 2.0 * ic;
         float ly = invZ(vUv - vec2(0.0, o.y)) + invZ(vUv + vec2(0.0, o.y)) - 2.0 * ic;
-        float edge = step(0.1 * ic + 0.025, max(lx, ly)) * (hud.a > 0.5 ? 1.0 : 1.0 - min(1.0, uBlur * 0.5));
+        float edge = step(0.1 * ic + 0.025, max(lx, ly)) * (hud.a > 0.5 ? 1.0 : 1.0 - min(1.0, uBlur * 0.5 * coc));
         // brilho (bloom barato): luz forte "vaza" pros pixels vizinhos
         if (hud.a < 0.5 && uBloom > 0.5) {
           vec3 glow = vec3(0.0);
@@ -417,37 +425,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const dieHolder = new THREE.Group();
   dieGroup.add(dieHolder);
   dieHolder.add(buildDie(handMats));
-  // TELA INICIAL: o entulho em volta do dado caído (no HUD, nítido como ele; a sala atrás fica desfocada) e uma luz fria de trás (o feixe do poço)
-  const titleProps = new THREE.Group();
-  titleProps.visible = false;
-  dieScene.add(titleProps);
-  {
-    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x5a566c, flatShading: true });
-    const darkMat = new THREE.MeshLambertMaterial({ color: 0x3a3748, flatShading: true });
-    // [x, y, z, tamanho, giro] em unidades do dado (o dado tem 1 de lado)
-    const rocks: [number, number, number, number, number, THREE.Material][] = [
-      [-0.78, -0.42, 0.25, 0.34, 0.4, stoneMat],
-      [0.72, -0.48, 0.35, 0.28, 1.3, darkMat],
-      [-0.25, -0.58, 0.62, 0.22, 2.1, stoneMat],
-      [0.38, -0.6, 0.66, 0.17, 0.9, stoneMat],
-      [1.05, -0.5, -0.35, 0.36, 2.6, stoneMat],
-      [-1.15, -0.55, -0.4, 0.3, 1.7, darkMat],
-      [0.05, -0.62, -0.7, 0.4, 0.2, darkMat],
-      [-0.62, -0.66, 0.8, 0.12, 1.1, darkMat],
-      [0.95, -0.66, 0.72, 0.1, 2.4, stoneMat],
-    ];
-    for (const [x, y, z, sz, rot, m] of rocks) {
-      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), m);
-      r.position.set(x, y, z);
-      r.rotation.set(rot, rot * 1.7, rot * 0.6);
-      r.scale.y = 0.7;
-      titleProps.add(r);
-    }
-    const sh = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.9), new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, opacity: 0.9 }));
-    sh.rotation.x = -Math.PI / 2;
-    sh.position.y = -0.62;
-    titleProps.add(sh);
-  }
+  // TELA INICIAL: uma luz fria de trás no dado do HUD (o feixe do poço). O chão e o entulho em volta dele são os DA SALA (ver titlePose)
   const titleRim = new THREE.DirectionalLight(0xc8d6ff, 0);
   titleRim.position.set(-0.4, 1.2, -1.6);
   dieScene.add(titleRim);
@@ -2774,45 +2752,60 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return { room: m.room, x: m.x, z: m.z, yaw: m.yaw };
   };
   const titleBase = new THREE.Vector3();
-  const titleLookAt = new THREE.Vector3();
+  // onde o dado está caído NO CHÃO DA SALA (o dado é o do HUD, desenhado por cima exatamente nesse ponto, no tamanho certo para a distância)
+  const titleFocus = new THREE.Vector3();
+  let titleY = EYE;
+  // enquadramento do jogo novo, relativo ao ponto do dado (dieLie da sala 1): a câmera baixa, de quem acordou no chão, olhando o feixe do poço
+  // nx/ny: onde o dado fica na tela (fração da meia-tela; a câmera é apontada para ele cair ali, à direita do menu e abaixo do logo)
+  // (a câmera fica quase no chão, à esquerda do dado: atrás dele, o cone de luz do poço; no celular, um pouco mais longe para o dado não ficar enorme)
+  const TT = { cx: -1.0, cy: 0.18, cz: 0.9, nx: 0.3, nxNarrow: 0.38, ny: -0.5, far: 1.25 };
+  // a sombra do dado no chão da sala (só na tela inicial)
+  const titleShadow = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.5), new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
+  titleShadow.rotation.x = -Math.PI / 2;
+  titleShadow.visible = false;
+  scene.add(titleShadow);
   const titleCam = () => {
     const place = titlePlace();
     const breath = Math.sin(titleT * 0.9) * 0.015; // a câmera "respira" 1 a 2 cm
     if (place) {
-      // depois do capítulo 1: baixo, no lugar salvo, olhando para onde o jogador olhava
+      // depois do capítulo 1: baixo, no lugar salvo, olhando para onde o jogador olhava; o dado no chão, um pouco à frente e à direita
       curRoom = place.room;
       feetY = offs[place.room].y + rooms[place.room].groundY(place.x, place.z, 0);
       titleBase.set(offs[place.room].x + place.x, feetY + 0.62, offs[place.room].z + place.z);
-      titleLookAt.set(titleBase.x - Math.sin(place.yaw) * 3, feetY + 1.1, titleBase.z - Math.cos(place.yaw) * 3);
+      const fx = place.x - Math.sin(place.yaw) * 1.25 + Math.cos(place.yaw) * 0.35;
+      const fz = place.z - Math.cos(place.yaw) * 1.25 - Math.sin(place.yaw) * 0.35;
+      titleFocus.set(offs[place.room].x + fx, offs[place.room].y + rooms[place.room].groundY(fx, fz, 0), offs[place.room].z + fz);
     } else {
-      const sh = rooms[0].shaft;
-      if (!sh) return;
-      const c = sh.clone().add(offs[0]);
+      const lie = rooms[0].dieLie;
+      if (!lie) return;
       curRoom = 0;
       feetY = offs[0].y;
-      // baixo, do lado de quem acordou, olhando o feixe do poço (o dado caído fica entre a câmera e o feixe)
-      titleBase.set(c.x + 0.55, feetY + 0.62, c.z + 3.2);
-      titleLookAt.set(c.x - 0.1, feetY + 1.05, c.z);
+      // o ponto em que o dado cai na abertura, no meio do entulho de verdade embaixo do poço
+      titleFocus.copy(lie).add(offs[0]);
+      const k = camera.aspect < 1.5 || window.innerHeight < 500 ? TT.far : 1;
+      titleBase.set(titleFocus.x + TT.cx * k, titleFocus.y + TT.cy, titleFocus.z + TT.cz * k);
     }
-    // créditos: a câmera gira devagar em volta do ponto do dado
+    // créditos: a câmera gira devagar em volta do dado
     if (titleOrbit !== 0) {
-      const px = titleBase.x + (titleLookAt.x - titleBase.x) * 0.25;
-      const pz = titleBase.z + (titleLookAt.z - titleBase.z) * 0.25;
+      const px = titleFocus.x;
+      const pz = titleFocus.z;
       const dx = titleBase.x - px;
       const dz = titleBase.z - pz;
       const ca = Math.cos(titleOrbit);
       const sa = Math.sin(titleOrbit);
       titleBase.x = px + dx * ca - dz * sa;
-      titleBase.z = pz + dx * sa + dz * ca;
-      const lx = titleLookAt.x - px;
-      const lz = titleLookAt.z - pz;
-      titleLookAt.x = px + lx * ca - lz * sa;
-      titleLookAt.z = pz + lx * sa + lz * ca;
+      titleBase.z = pz + dx * sa + dz * ca;      titleBase.y += 0.3 * Math.min(1, Math.abs(Math.sin(titleOrbit / 2)) * 4); // sobe um pouco para não roçar o entulho
     }
     pos.copy(titleBase);
     pos.y += breath;
-    yaw = Math.atan2(-(titleLookAt.x - pos.x), -(titleLookAt.z - pos.z)) + Math.sin(titleT * 0.11) * 0.015;
-    pitch = Math.atan2(titleLookAt.y - pos.y, Math.hypot(titleLookAt.x - pos.x, titleLookAt.z - pos.z)) + Math.sin(titleT * 0.08) * 0.01;
+    // aponta a câmera para o dado e desvia o olhar o bastante para ele cair no lugar dele na composição
+    const tf = Math.tan((camera.fov * Math.PI) / 360);
+    const nx = camera.aspect < 1.5 ? TT.nxNarrow : TT.nx;
+    const fx = titleFocus.x - pos.x;
+    const fy = titleFocus.y + 0.26 - pos.y;
+    const fz = titleFocus.z - pos.z;
+    yaw = Math.atan2(-fx, -fz) + Math.atan(nx * tf * camera.aspect) + Math.sin(titleT * 0.11) * 0.015;
+    pitch = Math.atan2(fy, Math.hypot(fx, fz)) - Math.atan(TT.ny * tf) + Math.sin(titleT * 0.08) * 0.01;
     // jogo novo: a câmera sobe pelo feixe de luz até o branco
     if (titleTr?.k === 'new' && titleTr.t > 0.9) {
       const u = clamp((titleTr.t - 0.9) / 2.2, 0, 1);
@@ -2830,18 +2823,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       fadeQuad.visible = true;
       fadeMat.opacity = clamp((u - 0.45) / 0.5, 0, 1);
     }
+    titleY = pos.y;
   };
-  // o dado da tela inicial: deitado de lado, um pouco à direita, no entulho
+  // o dado da tela inicial: deitado de lado NO CHÃO DA SALA. O ponto do chão é projetado pela câmera do mundo e o dado do HUD é posto
+  // exatamente ali, no tamanho que um dado de verdade teria àquela distância; a profundidade de campo foca nessa distância.
+  const titleV = new THREE.Vector3();
   const titlePose = (dt: number, lo: { dx: number; dy: number; scale: number }) => {
     const halfW = Math.tan((45 * Math.PI) / 360) * dieCam.aspect;
-    const narrow = dieCam.aspect < 1.5;
-    const s = narrow ? 0.2 : 0.235;
-    let x = halfW * (narrow ? 0.38 : 0.3);
-    const baseY = -0.17;
-    let drop = 0;
-    if (titleTr?.k === 'new' && titleTr.t > 0.9) drop = Math.pow(clamp((titleTr.t - 0.9) / 1.4, 0, 1), 2) * 1.2; // o chão fica para trás quando a câmera sobe
-    let y = baseY - drop + lo.dy * 0.9 + Math.sin(titleT * 0.9) * 0.003;
-    // pulinho para fora do quadro (continuar) / desce com o chão (a câmera sobe)
+    const kHud = Math.tan((45 * Math.PI) / 360) / Math.tan((camera.fov * Math.PI) / 360);
+    camera.updateMatrixWorld();
+    const DIE = 0.42; // o lado do dado de verdade (worldModel)
+    titleV.set(titleFocus.x, titleFocus.y + DIE * 0.62, titleFocus.z).applyMatrix4(camera.matrixWorldInverse);
+    const dz = Math.max(0.05, -titleV.z);
+    const s = (DIE * kHud) / dz;
+    let x = (titleV.x / dz) * kHud;
+    let y = (titleV.y / dz) * kHud + lo.dy * 0.9 * s * 4 + Math.sin(titleT * 0.9) * 0.003;
+    // pulinho para fora do quadro (continuar)
     if (titleTr?.k === 'go' || titleTr?.k === 'out' || titleGone) {
       const u = clamp((titleTr?.t ?? 1) / 0.5, 0, 1);
       x += u * u * (halfW + 0.6);
@@ -2852,10 +2849,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // de lado no chão: rolado e um pouco virado; nos créditos, gira junto com a câmera
     tmpQ.setFromEuler(wobbleEuler.set(0.16, -0.38 - titleOrbit, 0.3));
     dieHolder.quaternion.premultiply(tmpQ);
-    titleProps.visible = mode === 'title' && !titleGone;
-    titleProps.position.set(halfW * (narrow ? 0.38 : 0.3), baseY - drop, -1);
-    titleProps.scale.setScalar(s);
-    titleProps.rotation.y = -titleOrbit;
+    // foco: no dado (a sala atrás e o que está bem perto da câmera ficam desfocados)
+    postMat.uniforms.uFocus.value = dz;
+    titleShadow.visible = mode === 'title' && !titleGone && -titleV.z > 0.05;
+    titleShadow.position.set(titleFocus.x + 0.02, titleFocus.y + 0.012, titleFocus.z + 0.03);
     void dt;
   };
   const enterTitle = () => {
@@ -2970,7 +2967,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     ui.setMenu(null);
     dieCineTarget = 0;
     dieCine = 0;
-    titleProps.visible = false;
+    titleShadow.visible = false;
     titleRim.intensity = 0;
     postMat.uniforms.uBlur.value = 0;
     postMat.uniforms.uBright.value = 1 + configStore.get().brightness * 0.07;
@@ -3326,7 +3323,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
-    pos.y = feetY + EYE;
+    pos.y = mode === 'title' ? titleY : feetY + EYE; // tela inicial: a câmera fica na altura que titleCam escolheu (baixa, no chão)
     updateIntro(dt);
     updateScribeDrop(dt, t);
     if (camTween) {
@@ -3767,6 +3764,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       goto: (i: number) => spawnIn(i),
       save: () => saveGame(),
       darkLevel: () => darkK,
+      titleTune: (o: Partial<typeof TT>) => Object.assign(TT, o),
+      titleDbg: () => ({ focus: titleFocus.toArray(), cam: camera.position.toArray(), fov: camera.fov, die: dieGroup.position.toArray(), s: dieGroup.scale.x, vis: dieGroup.visible, focusZ: postMat.uniforms.uFocus.value, mode }),
       noHud: (v = true) => {
         devNoHud = v;
       },

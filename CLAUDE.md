@@ -76,7 +76,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **configurações** em abas (Áudio, Imagem, Controles com remapear teclas, Acessibilidade, Idioma; valem para o aparelho, `src/story/config.ts`).
   Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
   no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
-  **Tela inicial do dado caído** (`DESIGN.md` §46): o dado do HUD deitado no entulho do Poço, a sala desfocada atrás (`uBlur`), o olho seguindo o
+  **Tela inicial do dado caído** (`DESIGN.md` §46): o dado deitado no chão DE VERDADE do Poço, no meio do entulho da própria sala (o dado do HUD é projetado no ponto `dieLie`), profundidade de campo com foco no dado (`uBlur`/`uFocus`), o olho seguindo o
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em
   pontilhado (`uDis`/`rtSnap`); créditos com a câmera girando. **Caixas** em pedra de 9 pedaços (`tools/build_frames.py` → `src/ui/frames.css`),
   ouro no Escrivão, pensamento em tira de papel. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
