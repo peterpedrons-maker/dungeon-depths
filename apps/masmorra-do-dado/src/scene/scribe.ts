@@ -1,404 +1,367 @@
-// O Escrivão: uma criatura encapuzada e decrépita, de rosto coberto (só o vazio do capuz, com dois brilhos fracos que piscam).
-// Feito à mão com formas simples, no mesmo estilo do resto do jogo (nada de arquivos de modelo), mas com um ESQUELETO de verdade:
-// pés que pisam, quadril que sobe e desce, coluna curvada que se inclina e respira, cabeça que olha, braços com cotovelo e dedos.
-// Origem nos pés; a frente é +z. `animate` recebe a pose desejada e o corpo chega nela com suavidade (peso, atraso, respiração).
+// O Escrivão: um ser FANTASMAGÓRICO, sem membros. Um manto só, fluido, que se alarga e se espalha pelo chão e se desfaz em névoa embaixo;
+// um capuz com um vazio preto e dois brilhos fracos; duas mangas longas e vazias (nenhuma mão) feitas de pano simulado, que pendem, ondulam
+// e se esticam. O que ele segura flutua na boca da manga. Transparência em PONTILHADO (`alphaHash`), o mesmo pontilhado do resto do jogo.
+// Origem no chão; a frente é +z. `animate` recebe a pose desejada e o corpo chega nela com atraso (peso de pano, não de osso).
 
 import * as THREE from 'three';
 
 export interface ScribePose {
-  walk?: number; // velocidade de caminhada (m/s); 0 = parado
-  lean?: number; // 0 de pé (corcunda) … 1 debruçado (sobre o poço)
-  headYaw?: number; // para onde a cabeça vira (rad, + = para a esquerda dele)
+  walk?: number; // velocidade com que desliza (m/s); 0 = parado
+  lean?: number; // 0 de pé (curvado) … 1 debruçado (o corpo dobra como pano)
+  headYaw?: number; // para onde o capuz vira (rad, + = para a esquerda dele)
   headPitch?: number; // + = olha para baixo
-  reach?: number; // 0..1 braço direito estendido para a frente (oferecendo / soltando)
-  back?: number; // 0..1 mão direita vai às costas, dentro do manto
-  open?: number; // 0..1 dedos da mão direita abertos (soltar)
-  rest?: number; // 0..1 mão esquerda apoiada à frente (na borda do poço)
-  raise?: number; // 0..1 braço direito erguido ALTO, à frente e acima da cabeça (para soltar o dado de cima, sem encostar na borda)
+  reach?: number; // 0..1 manga direita estendida à frente
+  back?: number; // 0..1 manga direita volta para dentro do manto (de onde sai o dado)
+  open?: number; // 0..1 a manga se abre e solta o que segura
+  rest?: number; // 0..1 manga esquerda pousada à frente (na borda do poço)
+  raise?: number; // 0..1 manga direita erguida ALTO, à frente e acima do capuz
 }
 
 export interface Scribe {
   group: THREE.Group;
   setAlpha(v: number): void;
-  // compatível com a cena antiga (A Entrada): t = tempo; arm: 0 braço caído … 1 braço erguido escrevendo
+  // compatível com a cena antiga (A Entrada): t = tempo; arm: 0 manga caída … 1 manga erguida escrevendo
   update(t: number, arm: number): void;
   animate(dt: number, t: number, pose: ScribePose): void;
-  hand: THREE.Object3D; // a palma da mão direita (onde o dado fica preso)
+  hand: THREE.Object3D; // a boca da manga direita (onde o dado flutua)
   head: THREE.Object3D; // o capuz (para a câmera mirar)
 }
 
-function rng(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+const H_BODY = 1.42; // altura do manto até a base do capuz
+const HEM = 0.7; // raio da barra espalhada no chão
+
+// gradiente vertical da opacidade: a barra é quase névoa, o peito é quase sólido
+function fadeTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 2;
+  cv.height = 32;
+  const g = cv.getContext('2d')!;
+  for (let y = 0; y < 32; y++) {
+    const v = 1 - y / 31; // UV: v=0 embaixo (a barra), v=1 em cima
+    const a = Math.min(1, 0.12 + Math.pow(v, 0.7) * 1.05);
+    const c = Math.round(a * 255);
+    g.fillStyle = `rgb(${c},${c},${c})`;
+    g.fillRect(0, y, 2, 1);
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.magFilter = THREE.NearestFilter;
+  return t;
+}
+
+// textura da névoa (blocos de pixel com transparência em pontilhado)
+function wispTexture() {
+  const N = 24;
+  const cv = document.createElement('canvas');
+  cv.width = N;
+  cv.height = N;
+  const g = cv.getContext('2d')!;
+  const img = g.createImageData(N, N);
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const d = Math.max(0, 1 - Math.hypot(x / N - 0.5, (y / N - 0.5) * 1.5) / 0.45);
+      const on = d > (BAYER[(y % 4) * 4 + (x % 4)] / 16) * 0.85 + 0.08;
+      const o = (y * N + x) * 4;
+      img.data[o] = 200;
+      img.data[o + 1] = 198;
+      img.data[o + 2] = 220;
+      img.data[o + 3] = on ? Math.round(40 + d * 80) : 0;
+    }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 export function makeScribe(): Scribe {
   const group = new THREE.Group();
-  const mats: THREE.Material[] = [];
-  const cloth = (color: number, emissive = 0x120d18) => {
-    const m = new THREE.MeshLambertMaterial({ color, emissive, transparent: true, side: THREE.DoubleSide });
-    mats.push(m);
+  const mats: { m: THREE.Material; base: number }[] = [];
+  const fade = fadeTexture();
+  const ghost = (color: number, emissive: number, opacity: number, fadeMap = false) => {
+    const m = new THREE.MeshLambertMaterial({ color, emissive, transparent: false, alphaHash: true, opacity, side: THREE.DoubleSide, alphaMap: fadeMap ? fade : null });
+    mats.push({ m, base: opacity });
     return m;
   };
-  const robeMat = cloth(0x4a4256, 0x1c1626);
-  const robeDark = cloth(0x3a3346, 0x15101d);
-  const hoodMat = cloth(0x3b3446, 0x16111f);
-  const boneMat = cloth(0xb9b09b, 0x1e1a14);
-  const bootMat = cloth(0x262029, 0x0c090e);
-  const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true });
-  mats.push(voidMat);
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, fog: false });
-  mats.push(eyeMat);
-  const r = rng(11);
+  const robeMat = ghost(0x726c8c, 0x2a2338, 0.92, true);
+  const mantleMat = ghost(0x5c5674, 0x221c30, 0.95);
+  const hoodMat = ghost(0x5a5472, 0x201a2c, 0.97);
+  const sleeveMat = ghost(0x6a6484, 0x261f34, 0.9);
+  const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  mats.push({ m: voidMat, base: 1 });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffd98a, fog: false });
+  mats.push({ m: eyeMat, base: 1 });
 
-  // ── pés (aparecem sob a barra quando ele anda) ──
-  const mkFoot = (x: number) => {
-    const f = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.24), bootMat);
-    f.position.set(x, 0.035, 0.03);
-    group.add(f);
-    return f;
+  // ── o MANTO: um só pano, do chão ao capuz. Os vértices guardam a forma em repouso e a cada quadro ondulam e se dobram ──
+  const radiusAt = (y: number) => {
+    // barra larga e rasa no chão → cintura → peito → ombros caídos
+    if (y < 0.12) return HEM - (y / 0.12) * 0.16;
+    if (y < 0.75) return 0.54 - ((y - 0.12) / 0.63) * 0.24;
+    if (y < 1.2) return 0.3 + Math.sin(((y - 0.75) / 0.45) * Math.PI) * 0.03;
+    return 0.3 - ((y - 1.2) / (H_BODY - 1.2)) * 0.18;
   };
-  const footL = mkFoot(0.11);
-  const footR = mkFoot(-0.11);
-
-  // ── quadril: a saia do manto (barra rasgada) e as tiras de pano ──
-  const hips = new THREE.Group();
-  group.add(hips);
-  const skirtProf: [number, number][] = [[0.0, 0.04], [0.44, 0.04], [0.42, 0.16], [0.35, 0.52], [0.28, 0.88], [0.24, 1.0], [0.0, 1.0]];
-  const skirtGeo = new THREE.LatheGeometry(skirtProf.map(([rr, y]) => new THREE.Vector2(rr, y)), 16);
-  const sp = skirtGeo.attributes.position;
-  for (let i = 0; i < sp.count; i++) {
-    const y = sp.getY(i);
-    if (y < 0.2) {
-      sp.setY(i, y + r() * 0.16); // barra rasgada: pontas e falhas
-      sp.setX(i, sp.getX(i) * (0.92 + r() * 0.16));
-    }
+  const prof: THREE.Vector2[] = [];
+  for (let i = 0; i <= 22; i++) {
+    const y = (i / 22) * H_BODY;
+    prof.push(new THREE.Vector2(radiusAt(y), y));
   }
-  skirtGeo.computeVertexNormals();
-  const skirt = new THREE.Mesh(skirtGeo, robeMat);
-  hips.add(skirt);
-  const rags: THREE.Mesh[] = [];
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.1 + r() * 0.06, 0.3 + r() * 0.25), robeDark);
-    m.geometry.translate(0, -0.12, 0);
-    m.position.set(Math.sin(a) * 0.44, 0.2, Math.cos(a) * 0.44);
-    m.rotation.y = a;
-    hips.add(m);
-    rags.push(m);
+  const robeGeo = new THREE.LatheGeometry(prof, 28);
+  const robe = new THREE.Mesh(robeGeo, robeMat);
+  group.add(robe);
+  const rp = robeGeo.attributes.position as THREE.BufferAttribute;
+  const rest = Float32Array.from(rp.array as Float32Array);
+
+  // capa curta sobre os ombros, com a barra em farrapos
+  const mantleProf: THREE.Vector2[] = [];
+  for (let i = 0; i <= 8; i++) {
+    const k = i / 8;
+    mantleProf.push(new THREE.Vector2(0.42 - k * 0.3, 0.98 + k * 0.42));
   }
-  // cinto de corda
-  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 5, 14), robeDark);
-  belt.rotation.x = Math.PI / 2;
-  belt.position.y = 0.9;
-  hips.add(belt);
-  // bolsa de couro no cinto (onde ele guarda o giz… e o dado) e a ponta da corda com borla
-  const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.15, 0.07), cloth(0x3f2f24, 0x120c08));
-  pouch.position.set(0.2, 0.8, 0.17);
-  pouch.rotation.y = 0.6;
-  hips.add(pouch);
-  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.05, 0.075), cloth(0x4b382b, 0x150e0a));
-  flap.position.set(0.2, 0.86, 0.175);
-  flap.rotation.y = 0.6;
-  hips.add(flap);
-  const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.34, 4), robeDark);
-  cord.geometry.translate(0, -0.17, 0);
-  cord.position.set(-0.18, 0.9, 0.2);
-  hips.add(cord);
-  const tassel = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.08, 5), robeDark);
-  tassel.position.set(0, -0.37, 0);
-  cord.add(tassel);
+  const mantleGeo = new THREE.LatheGeometry(mantleProf, 24);
+  const mantle = new THREE.Mesh(mantleGeo, mantleMat);
+  group.add(mantle);
+  const mp = mantleGeo.attributes.position as THREE.BufferAttribute;
+  const mRest = Float32Array.from(mp.array as Float32Array);
+  const mRag = new Float32Array(mp.count).map((_, i) => ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1);
 
-  // ── coluna (corcunda): tronco, ombros e cabeça penduram dela ──
-  const spine = new THREE.Group();
-  spine.position.set(0, 0.92, 0);
-  hips.add(spine);
-  const torsoProf: [number, number][] = [[0.0, 0.0], [0.25, 0.0], [0.28, 0.16], [0.27, 0.36], [0.2, 0.52], [0.0, 0.58]];
-  const torso = new THREE.Mesh(new THREE.LatheGeometry(torsoProf.map(([rr, y]) => new THREE.Vector2(rr, y)), 14), robeMat);
-  torso.scale.set(1, 1, 0.9);
-  spine.add(torso);
-  // a corcova nas costas
-  const hump = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), robeMat);
-  hump.position.set(0, 0.4, -0.12);
-  hump.scale.set(1.15, 0.9, 0.8);
-  spine.add(hump);
-
-  // manto curto sobre os ombros (uma capa por cima do tronco), com a barra rasgada
-  const mantleProf: [number, number][] = [[0.0, 0.62], [0.16, 0.6], [0.3, 0.48], [0.36, 0.3], [0.37, 0.22]];
-  const mantleGeo = new THREE.LatheGeometry(mantleProf.map(([rr, y]) => new THREE.Vector2(rr, y)), 14);
-  const mp = mantleGeo.attributes.position;
-  for (let i = 0; i < mp.count; i++) if (mp.getY(i) < 0.25) mp.setY(i, mp.getY(i) - r() * 0.07);
-  mantleGeo.computeVertexNormals();
-  const mantle = new THREE.Mesh(mantleGeo, robeDark);
-  mantle.scale.set(1, 1, 0.92);
-  spine.add(mantle);
-  // capuz: casca alongada com ponta caída para trás; o "rosto" é um vazio preto com dois brilhos fracos
-  const neck = new THREE.Group();
-  neck.position.set(0, 0.5, 0.07);
-  spine.add(neck);
+  // ── o capuz ──
+  const head = new THREE.Group();
+  group.add(head);
   const hood = new THREE.Group();
-  hood.position.set(0, 0.13, 0.02);
-  neck.add(hood);
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 12), hoodMat);
-  shell.scale.set(1, 1.2, 1.05);
+  head.add(hood);
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), hoodMat);
+  shell.scale.set(1, 1.25, 1.08);
   hood.add(shell);
-  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 10), hoodMat);
-  tip.position.set(0, 0.2, -0.15);
-  tip.rotation.x = -0.9;
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.42, 10), hoodMat);
+  tip.position.set(0, 0.22, -0.17);
+  tip.rotation.x = -1.0;
   hood.add(tip);
-  const hole = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), voidMat);
-  hole.scale.set(0.92, 1.12, 0.65);
-  hole.position.set(0, -0.01, 0.15);
+  const hole = new THREE.Mesh(new THREE.SphereGeometry(0.155, 12, 10), voidMat);
+  hole.scale.set(0.92, 1.15, 0.65);
+  hole.position.set(0, -0.02, 0.16);
   hood.add(hole);
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 6, 14), hoodMat);
-  rim.scale.set(0.95, 1.2, 1);
-  rim.position.set(0, -0.01, 0.2);
-  hood.add(rim);
-  // a dobra do capuz caindo sobre a testa (deixa o vazio mais fundo)
-  const brim = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.45), hoodMat);
-  brim.scale.set(1.05, 0.55, 1.0);
-  brim.position.set(0, 0.08, 0.12);
-  brim.rotation.x = 0.5;
+  const brim = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 6, 16), hoodMat);
+  brim.scale.set(0.95, 1.22, 1);
+  brim.position.set(0, -0.02, 0.21);
   hood.add(brim);
   const eyes: THREE.Mesh[] = [];
-  for (const x of [-0.045, 0.045]) {
-    const e = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.012, 0.01), eyeMat);
-    e.position.set(x, 0.01, 0.24);
+  for (const x of [-0.048, 0.048]) {
+    const e = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.013, 0.01), eyeMat);
+    e.position.set(x, 0.0, 0.245);
     hood.add(e);
     eyes.push(e);
   }
 
-  // ── A MÃO: a parte mais bem feita dele. Ossuda e comprida: palma com os nós dos dedos e as cristas dos metacarpos no dorso,
-  // quatro dedos de TRÊS falanges (cada junta com o seu nó), unhas escuras e pontudas, polegar opositor de duas falanges,
-  // punho enfaixado. Cada junta dobra (a ponta dobra mais) e, parada, os dedos mexem de leve.
-  const knuckleMat = cloth(0xa39a85, 0x1a1610);
-  const nailMat = cloth(0x3a3022, 0x0c0905);
-  const wrapMat = cloth(0x8c8170, 0x18140f);
-  const bone = (len: number, r0: number, r1: number) => {
-    const g = new THREE.CylinderGeometry(r1, r0, len, 6);
-    g.translate(0, -len / 2, 0);
-    return new THREE.Mesh(g, boneMat);
-  };
-  const knob = (rad: number) => new THREE.Mesh(new THREE.SphereGeometry(rad, 6, 5), knuckleMat);
-  interface Finger {
-    base: THREE.Group;
-    j: THREE.Group[]; // as três juntas (base, meio, ponta)
-    phase: number;
+  // ── as MANGAS: corda de pano (verlet), presa no ombro; vazia na ponta (sem mão) ──
+  const SEG = 7;
+  interface Sleeve {
+    side: 1 | -1;
+    p: THREE.Vector3[];
+    q: THREE.Vector3[]; // posições anteriores
+    parts: THREE.Mesh[];
+    cuff: THREE.Mesh;
+    inner: THREE.Mesh;
   }
-  const buildHand = (side: 1 | -1) => {
-    const root = new THREE.Group();
-    // punho enfaixado (tiras de pano gasto)
-    for (let i = 0; i < 3; i++) {
-      const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.036 - i * 0.002, 0.009, 4, 10), wrapMat);
-      wrap.rotation.x = Math.PI / 2 + (i - 1) * 0.15;
-      wrap.position.y = 0.01 - i * 0.017;
-      root.add(wrap);
+  const mkSleeve = (side: 1 | -1): Sleeve => {
+    const p: THREE.Vector3[] = [];
+    const q: THREE.Vector3[] = [];
+    for (let i = 0; i <= SEG; i++) {
+      p.push(new THREE.Vector3(side * 0.3, 1.25 - i * 0.12, 0.05));
+      q.push(p[i].clone());
     }
-    const wristKnob = knob(0.014);
-    wristKnob.position.set(side * 0.03, -0.035, -0.004);
-    root.add(wristKnob);
-    // palma: afina para o punho; o dorso (−z) tem as cristas dos metacarpos
-    const palmGeo = new THREE.CylinderGeometry(0.045, 0.032, 0.085, 4, 1);
-    palmGeo.rotateY(Math.PI / 4);
-    palmGeo.scale(1, 1, 0.42);
-    palmGeo.translate(0, -0.085, 0);
-    const palm = new THREE.Mesh(palmGeo, boneMat);
-    root.add(palm);
-    const fingers: Finger[] = [];
-    // indicador → mínimo: posição na palma, comprimentos das três falanges
-    const specs: [number, number[]][] = [
-      [0.026, [0.05, 0.034, 0.026]],
-      [0.009, [0.056, 0.038, 0.028]],
-      [-0.009, [0.052, 0.035, 0.026]],
-      [-0.025, [0.042, 0.028, 0.022]],
-    ];
-    specs.forEach(([x, lens], fi) => {
-      const fx = -side * x; // o indicador fica do lado do polegar
-      // crista do metacarpo no dorso, até o nó
-      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.07, 0.006), knuckleMat);
-      ridge.position.set(fx * 0.8, -0.085, -0.012);
-      ridge.rotation.z = fx * 1.4;
-      root.add(ridge);
-      const base = new THREE.Group();
-      base.position.set(fx, -0.128, 0);
-      base.rotation.z = fx * 1.6; // os dedos se abrem em leque
-      root.add(base);
-      const k0 = knob(0.0105);
-      base.add(k0);
-      const joints: THREE.Group[] = [];
-      let parent: THREE.Object3D = base;
-      lens.forEach((len, k) => {
-        const j = new THREE.Group();
-        if (k > 0) j.position.y = -lens[k - 1];
-        parent.add(j);
-        const rad = 0.0085 - k * 0.0018;
-        j.add(bone(len, rad, rad * 0.8));
-        if (k > 0) j.add(knob(rad * 1.12));
-        if (k === 2) {
-          // unha escura e pontuda, um pouco curva para dentro
-          const nail = new THREE.Mesh(new THREE.ConeGeometry(0.0055, 0.022, 4), nailMat);
-          nail.position.set(0, -len - 0.008, 0.002);
-          nail.rotation.x = Math.PI + 0.25;
-          j.add(nail);
-        }
-        joints.push(j);
-        parent = j;
-      });
-      fingers.push({ base, j: joints, phase: fi * 1.7 + (side > 0 ? 0.5 : 0) });
-    });
-    // polegar: sai da lateral da palma, virado para a frente (opositor), duas falanges e unha
-    const thumb = new THREE.Group();
-    thumb.position.set(side * 0.036, -0.045, 0.01);
-    thumb.rotation.set(-0.5, 0, side * 0.75);
-    root.add(thumb);
-    const tj: THREE.Group[] = [];
-    let tp: THREE.Object3D = thumb;
-    [0.04, 0.03, 0.024].forEach((len, k) => {
-      const j = new THREE.Group();
-      if (k > 0) j.position.y = -[0.04, 0.03][k - 1];
-      tp.add(j);
-      const rad = 0.0105 - k * 0.0022;
-      j.add(bone(len, rad, rad * 0.8));
-      j.add(knob(rad * 1.1));
-      if (k === 2) {
-        const nail = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.02, 4), nailMat);
-        nail.position.set(0, -len - 0.007, 0.002);
-        nail.rotation.x = Math.PI + 0.25;
-        j.add(nail);
-      }
-      tj.push(j);
-      tp = j;
-    });
-    return { root, fingers, thumb: tj, side };
+    const parts: THREE.Mesh[] = [];
+    for (let i = 0; i < SEG; i++) {
+      const r0 = 0.075 + (i / SEG) * 0.06;
+      const r1 = 0.075 + ((i + 1) / SEG) * 0.06;
+      const g = new THREE.CylinderGeometry(r0, r1, 1, 8, 1, true);
+      g.translate(0, -0.5, 0);
+      const m = new THREE.Mesh(g, sleeveMat);
+      group.add(m);
+      parts.push(m);
+    }
+    // a boca da manga: um sino de pano, e dentro só escuro (nenhuma mão)
+    const cuffGeo = new THREE.CylinderGeometry(0.135, 0.2, 0.16, 10, 1, true);
+    cuffGeo.translate(0, -0.08, 0);
+    const cuff = new THREE.Mesh(cuffGeo, sleeveMat);
+    group.add(cuff);
+    const inner = new THREE.Mesh(new THREE.CircleGeometry(0.15, 10), voidMat);
+    group.add(inner);
+    return { side, p, q, parts, cuff, inner };
   };
-  type Hand = ReturnType<typeof buildHand>;
-  // fecha (curl 1) ou abre (curl −0.2) a mão: as juntas da ponta dobram mais; parada, os dedos tremem de leve, um de cada vez
-  const poseHand = (h: Hand, curl: number, t: number) => {
-    h.fingers.forEach((f, i) => {
-      const twitch = Math.sin(t * 1.3 + f.phase) * 0.06 + Math.max(0, Math.sin(t * 0.37 + f.phase * 2.1)) ** 8 * 0.25;
-      const c = curl + twitch * (1 - Math.abs(curl - 0.4));
-      // dobrar = girar para a palma (+z): rotação negativa em x
-      f.j[0].rotation.x = -(c * 0.95 + i * 0.04);
-      f.j[1].rotation.x = -c * 1.25;
-      f.j[2].rotation.x = -(c * 1.05 + 0.08);
-    });
-    h.thumb[0].rotation.x = -curl * 0.35;
-    h.thumb[1].rotation.x = -curl * 0.7;
-    h.thumb[2].rotation.x = -curl * 0.6;
-  };
+  const sleeveR = mkSleeve(-1);
+  const sleeveL = mkSleeve(1);
 
-  // braços: ombro → manga de cima → cotovelo → manga de baixo → mão
-  const mkArm = (side: 1 | -1) => {
-    const shoulder = new THREE.Group();
-    shoulder.position.set(side * 0.27, 0.42, 0.02);
-    spine.add(shoulder);
-    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.36, 8), robeMat);
-    upper.position.y = -0.17;
-    shoulder.add(upper);
-    const elbow = new THREE.Group();
-    elbow.position.y = -0.34;
-    shoulder.add(elbow);
-    const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.075, 0.32, 8), robeMat); // a manga alarga no punho
-    lower.position.y = -0.15;
-    elbow.add(lower);
-    const wrist = new THREE.Group();
-    wrist.position.y = -0.33;
-    elbow.add(wrist);
-    const hand = buildHand(side);
-    hand.root.scale.setScalar(1.4); // mãos compridas e ossudas: grandes de propósito
-    wrist.add(hand.root);
-    // punho da manga esfiapado
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2 + side;
-      const rag = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.09 + r() * 0.06), robeDark);
-      rag.geometry.translate(0, -0.04, 0);
-      rag.position.set(Math.sin(a) * 0.1, -0.3, Math.cos(a) * 0.1);
-      rag.rotation.y = a;
-      elbow.add(rag);
-    }
-    return { shoulder, elbow, wrist, hand };
-  };
-  const armL = mkArm(1);
-  const armR = mkArm(-1);
-  // toco de giz na mão esquerda (ele é o Escrivão)
-  const chalkMat = new THREE.MeshBasicMaterial({ color: 0xf1ebd9, transparent: true });
-  mats.push(chalkMat);
-  const chalk = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.09), chalkMat);
-  chalk.position.set(0, -0.1, 0.04);
-  armL.wrist.add(chalk);
-  // ponto onde o dado fica preso na palma direita
-  // o dado fica APOIADO NA PALMA (lado +z da mão), com os dedos fechando em volta dele
+  // o ponto onde o dado flutua: na boca da manga direita
   const hand = new THREE.Group();
-  hand.position.set(0, -0.15, 0.2);
-  armR.wrist.add(hand);
+  group.add(hand);
 
-  // ── estado animado (cada valor persegue o alvo com atraso, como um corpo com peso) ──
+  // ── névoa em volta da barra e pó de giz caindo dele ──
+  const wTex = wispTexture();
+  const wisps: { s: THREE.Sprite; a: number; r: number; ph: number }[] = [];
+  for (let i = 0; i < 7; i++) {
+    const m = new THREE.SpriteMaterial({ map: wTex, transparent: true, depthWrite: false, opacity: 0.85 });
+    mats.push({ m, base: 0.85 });
+    const s = new THREE.Sprite(m);
+    s.scale.set(0.9, 0.45, 1);
+    group.add(s);
+    wisps.push({ s, a: (i / 7) * Math.PI * 2, r: 0.55 + (i % 3) * 0.12, ph: i * 1.3 });
+  }
+  const DUST = 40;
+  const dustGeo = new THREE.BufferGeometry();
+  const dustPos = new Float32Array(DUST * 3);
+  const dustLife = new Float32Array(DUST);
+  for (let i = 0; i < DUST; i++) dustLife[i] = Math.random();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = new THREE.PointsMaterial({ color: 0xe8e2d0, size: 0.03, transparent: true, opacity: 0.8, depthWrite: false });
+  mats.push({ m: dustMat, base: 0.8 });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  group.add(dust);
+
+  // ── estado animado ──
   const cur = { walk: 0, lean: 0, headYaw: 0, headPitch: 0, reach: 0, back: 0, open: 0, rest: 0, raise: 0 };
-  let phase = 0;
+  const follow = (k: keyof typeof cur, target: number, rate: number, dt: number) => {
+    cur[k] += (target - cur[k]) * (1 - Math.exp(-dt * rate));
+  };
+  const mix = (a: number, b: number, k: number) => a + (b - a) * k;
   let blinkT = 1.5;
   let blink = 0;
   let glanceT = 2;
   let glance = 0;
   let glanceTo = 0;
-  const follow = (k: keyof typeof cur, target: number, rate: number, dt: number) => {
-    cur[k] += (target - cur[k]) * (1 - Math.exp(-dt * rate));
+
+  // o corpo dobra como pano: acima da cintura, cada altura se desloca para a frente (e desce um pouco) conforme a inclinação
+  const BEND0 = 0.55;
+  const bendAt = (y: number, lean: number, out: THREE.Vector3) => {
+    const k = Math.max(0, (y - BEND0) / (H_BODY - BEND0));
+    const fwd = (0.12 + lean * 0.95) * k * k; // 0,12: sempre um pouco curvado
+    out.set(0, y - lean * 0.38 * k * k, fwd);
+    return out;
   };
-  const mix = (a: number, b: number, k: number) => a + (b - a) * k;
+  const tmp = new THREE.Vector3();
+  const tmp2 = new THREE.Vector3();
+  const UP = new THREE.Vector3(0, 1, 0);
+  const DOWN = new THREE.Vector3(0, -1, 0);
+  const BACKZ = new THREE.Vector3(0, 0, -1);
 
+  const stepSleeve = (sl: Sleeve, dt: number, t: number, anchor: THREE.Vector3, target: THREE.Vector3 | null, pull: number, len: number) => {
+    const n = SEG;
+    const segL = len / n;
+    const damp = 0.9;
+    const g = -2.2 * dt * dt * (1 - pull * 0.8); // pano leve: cai devagar
+    for (let i = 1; i <= n; i++) {
+      const p = sl.p[i];
+      const q = sl.q[i];
+      const vx = (p.x - q.x) * damp;
+      const vy = (p.y - q.y) * damp;
+      const vz = (p.z - q.z) * damp;
+      q.copy(p);
+      p.x += vx + Math.sin(t * 1.3 + i * 0.7 + sl.side) * 0.0006;
+      p.y += vy + g;
+      p.z += vz + Math.cos(t * 1.1 + i * 0.5) * 0.0005;
+    }
+    sl.p[0].copy(anchor);
+    if (target && pull > 0.001) sl.p[n].lerp(target, Math.min(1, dt * 5 * pull)); // a ponta é puxada para o alvo (com atraso: é pano)
+    for (let it = 0; it < 6; it++) {
+      sl.p[0].copy(anchor);
+      for (let i = 0; i < n; i++) {
+        const a = sl.p[i];
+        const b = sl.p[i + 1];
+        tmp.subVectors(b, a);
+        const d = tmp.length() || 1e-6;
+        const diff = (d - segL) / d;
+        if (i === 0) b.addScaledVector(tmp, -diff);
+        else {
+          a.addScaledVector(tmp, diff * 0.5);
+          b.addScaledVector(tmp, -diff * 0.5);
+        }
+      }
+      for (let i = 1; i <= n; i++) if (sl.p[i].y < 0.05) sl.p[i].y = 0.05; // não atravessa o chão
+    }
+    // malha: cada pedaço vai de p[i] a p[i+1]
+    for (let i = 0; i < n; i++) {
+      const a = sl.p[i];
+      const b = sl.p[i + 1];
+      tmp.subVectors(b, a);
+      const d = tmp.length();
+      const m = sl.parts[i];
+      m.position.copy(a);
+      m.quaternion.setFromUnitVectors(DOWN, tmp.normalize());
+      m.scale.set(1, d, 1);
+    }
+    // a boca: continua a direção do último pedaço
+    const last = sl.p[n];
+    tmp.subVectors(last, sl.p[n - 1]).normalize();
+    sl.cuff.position.copy(last);
+    sl.cuff.quaternion.setFromUnitVectors(DOWN, tmp);
+    sl.cuff.scale.setScalar(1 + cur.open * (sl.side < 0 ? 0.35 : 0));
+    sl.inner.position.copy(last).addScaledVector(tmp, 0.1);
+    sl.inner.quaternion.setFromUnitVectors(BACKZ, tmp);
+    return tmp;
+  };
+
+  let bob = 0;
   const animate = (dt: number, t: number, P: ScribePose) => {
-    follow('walk', P.walk ?? 0, 6, dt);
-    follow('lean', P.lean ?? 0, 2.6, dt);
-    follow('headYaw', P.headYaw ?? 0, 3.5, dt);
-    follow('headPitch', P.headPitch ?? 0, 3.5, dt);
-    follow('reach', P.reach ?? 0, 4.2, dt);
-    follow('back', P.back ?? 0, 4.5, dt);
-    follow('open', P.open ?? 0, 9, dt);
-    follow('rest', P.rest ?? 0, 3, dt);
-    follow('raise', P.raise ?? 0, 3.2, dt);
-    const w = Math.min(1, cur.walk / 0.8); // quanto está andando
-    phase += dt * (cur.walk / 0.95) * Math.PI; // um passo a cada ~0,95 m
-    const s = Math.sin(phase);
-    const c = Math.cos(phase);
-    const breathe = Math.sin(t * 1.25);
+    dt = Math.min(dt, 0.05);
+    follow('walk', P.walk ?? 0, 4, dt);
+    follow('lean', P.lean ?? 0, 2.2, dt);
+    follow('headYaw', P.headYaw ?? 0, 3, dt);
+    follow('headPitch', P.headPitch ?? 0, 3, dt);
+    follow('reach', P.reach ?? 0, 3.5, dt);
+    follow('back', P.back ?? 0, 3.5, dt);
+    follow('open', P.open ?? 0, 8, dt);
+    follow('rest', P.rest ?? 0, 2.5, dt);
+    follow('raise', P.raise ?? 0, 2.8, dt);
+    const w = Math.min(1, cur.walk / 0.8);
+    bob += dt * (1.2 + w * 1.6);
+    const lift = 0.04 + Math.sin(bob) * 0.025; // flutua rente ao chão, respirando
 
-    // pés: um de cada vez, levantando a ponta
-    footL.position.z = 0.03 + s * 0.17 * w;
-    footL.position.y = 0.035 + Math.max(0, c) * 0.07 * w;
-    footL.rotation.x = -Math.max(0, c) * 0.35 * w;
-    footR.position.z = 0.03 - s * 0.17 * w;
-    footR.position.y = 0.035 + Math.max(0, -c) * 0.07 * w;
-    footR.rotation.x = -Math.max(0, -c) * 0.35 * w;
-    // quadril: sobe e desce a cada passo, balança de um lado para o outro (o peso passa de um pé ao outro)
-    hips.position.y = Math.abs(s) * 0.035 * w - 0.02 * w + breathe * 0.004;
-    hips.rotation.z = s * 0.05 * w;
-    hips.rotation.y = s * 0.07 * w;
-    skirt.rotation.x = Math.sin(phase * 2) * 0.03 * w;
-    cord.rotation.x = Math.sin(t * 1.7) * 0.08 + Math.sin(phase) * 0.35 * w;
-    cord.rotation.z = Math.sin(t * 1.1) * 0.05;
-    rags.forEach((m, i) => (m.rotation.x = Math.sin(t * 1.4 + i * 1.7) * 0.07 + Math.sin(phase + i) * 0.2 * w));
+    // manto: ondas que descem pelo pano; a barra se espalha e ondula no chão; deslizando, a barra fica para trás
+    const arr = rp.array as Float32Array;
+    for (let i = 0; i < rp.count; i++) {
+      const x0 = rest[i * 3];
+      const y0 = rest[i * 3 + 1];
+      const z0 = rest[i * 3 + 2];
+      const ang = Math.atan2(x0, z0);
+      const low = 1 - Math.min(1, y0 / 0.8);
+      const wave = Math.sin(ang * 3 + t * 1.6 - y0 * 5) * 0.025 * (0.4 + low) + Math.sin(ang * 7 - t * 2.3) * 0.05 * low * low;
+      const rad = Math.hypot(x0, z0) || 1e-6;
+      const rr = rad + wave + low * low * 0.06 * Math.sin(t * 0.9 + ang * 2);
+      bendAt(y0, cur.lean, tmp2);
+      arr[i * 3] = (x0 / rad) * rr;
+      arr[i * 3 + 1] = tmp2.y + lift * (1 - low);
+      arr[i * 3 + 2] = (z0 / rad) * rr + tmp2.z - low * low * w * 0.25;
+    }
+    rp.needsUpdate = true;
+    robeGeo.computeVertexNormals();
+    // capa: segue a dobra do corpo e balança os farrapos
+    const ma = mp.array as Float32Array;
+    for (let i = 0; i < mp.count; i++) {
+      const x0 = mRest[i * 3];
+      const y0 = mRest[i * 3 + 1];
+      const z0 = mRest[i * 3 + 2];
+      const ang = Math.atan2(x0, z0);
+      bendAt(y0, cur.lean, tmp2);
+      const tear = y0 < 1.0 ? -mRag[i] * 0.09 : 0; // pontas rasgadas
+      const sway = 1 + Math.sin(ang * 5 + t * 2 + y0 * 3) * 0.04;
+      ma[i * 3] = x0 * sway;
+      ma[i * 3 + 1] = tmp2.y + tear + lift + Math.sin(ang * 6 + t * 2.4) * 0.012;
+      ma[i * 3 + 2] = z0 * sway + tmp2.z;
+    }
+    mp.needsUpdate = true;
+    mantleGeo.computeVertexNormals();
 
-    // coluna: corcunda, respira, inclina ao andar e ao se debruçar; gira um pouco quando a mão vai às costas
-    spine.rotation.x = 0.3 + cur.lean * 0.8 + w * 0.1 + breathe * 0.02;
-    spine.rotation.z = -hips.rotation.z * 0.7;
-    spine.rotation.y = -hips.rotation.y * 0.6 - cur.back * 0.35;
-    spine.scale.y = 1 + breathe * 0.012;
-
-    // cabeça: segue o alvo e, parada, dá olhadas curtas para os lados (está viva, atenta)
+    // capuz: no topo do corpo dobrado; olha para o alvo, dá olhadas curtas; os brilhos piscam
+    bendAt(H_BODY, cur.lean, tmp2);
+    head.position.set(0, tmp2.y + 0.16 + lift, tmp2.z + 0.04);
     glanceT -= dt;
     if (glanceT < 0) {
       glanceT = 2 + Math.random() * 3.5;
       glanceTo = (Math.random() - 0.5) * 0.7 * (1 - cur.lean * 0.7);
     }
-    glance += (glanceTo - glance) * (1 - Math.exp(-dt * 5));
-    neck.rotation.y = cur.headYaw + glance * (1 - w * 0.6) + Math.sin(t * 0.7) * 0.03;
-    neck.rotation.x = cur.headPitch + cur.lean * 0.35 - 0.12 + Math.sin(t * 0.9) * 0.025 + Math.abs(s) * 0.03 * w;
-    neck.rotation.z = Math.sin(t * 0.5) * 0.04;
-    // os brilhos no fundo do capuz piscam
+    glance += (glanceTo - glance) * (1 - Math.exp(-dt * 4));
+    head.rotation.set(cur.headPitch + cur.lean * 0.9 + 0.1 + Math.sin(t * 0.9) * 0.03, cur.headYaw + glance + Math.sin(t * 0.6) * 0.04, Math.sin(t * 0.5) * 0.05, 'YXZ');
     blinkT -= dt;
     if (blinkT < 0) {
       blinkT = 2.2 + Math.random() * 3;
@@ -408,54 +371,74 @@ export function makeScribe(): Scribe {
     const eyeH = 1 - Math.sin(Math.min(1, blink) * Math.PI);
     eyes.forEach((e) => (e.scale.y = Math.max(0.05, eyeH)));
 
-    // braço esquerdo: balança ao andar; com `rest` apoia a mão à frente (na borda)
-    armL.shoulder.rotation.x = mix(-s * 0.32 * w + 0.05, -0.9, cur.rest);
-    armL.shoulder.rotation.z = mix(0.08, 0.15, cur.rest);
-    armL.elbow.rotation.x = mix(-0.35 - Math.max(0, s) * 0.3 * w, -0.5, cur.rest);
-    poseHand(armL.hand, mix(0.75, 0.35, cur.rest), t);
+    // mangas: presas nos ombros do corpo dobrado
+    bendAt(1.24, cur.lean, tmp2);
+    const shR = new THREE.Vector3(-0.28, tmp2.y + lift, tmp2.z + 0.02);
+    const shL = new THREE.Vector3(0.28, tmp2.y + lift, tmp2.z + 0.02);
+    // alvos da ponta (no espaço do corpo): para dentro do manto, à frente, erguida alto, pousada na borda
+    const top = bendAt(H_BODY, cur.lean, new THREE.Vector3());
+    let tgtR: THREE.Vector3 | null = null;
+    let pullR = 0;
+    if (cur.back > 0.02) {
+      tgtR = new THREE.Vector3(-0.02, 0.95 + lift, bendAt(0.95, cur.lean, new THREE.Vector3()).z + 0.28);
+      pullR = cur.back;
+    }
+    if (cur.reach > 0.02) {
+      tgtR = new THREE.Vector3(-0.15, 1.15, top.z + 0.95);
+      pullR = Math.max(pullR, cur.reach);
+    }
+    if (cur.raise > 0.02) {
+      tgtR = new THREE.Vector3(-0.05, top.y + 0.9, top.z + 0.85);
+      pullR = Math.max(pullR, cur.raise);
+    }
+    const lenR = mix(0.95, 1.65, Math.max(cur.reach, cur.raise)); // fantasma: a manga se ESTICA
+    const dirR = stepSleeve(sleeveR, dt, t, shR, tgtR, pullR, lenR);
+    hand.position.copy(sleeveR.p[SEG]).addScaledVector(dirR, 0.46 + Math.sin(t * 2.2) * 0.035); // o dado FLUTUA um pouco além da boca da manga
+    hand.quaternion.setFromUnitVectors(UP, UP);
+    const tgtL = cur.rest > 0.02 ? new THREE.Vector3(0.22, 0.85, top.z + 0.65) : null;
+    stepSleeve(sleeveL, dt, t, shL, tgtL, cur.rest, mix(0.95, 1.2, cur.rest));
 
-    // braço direito: balança; vai às costas (dentro do manto); estende-se para a frente; os dedos fecham/abrem
-    let sx = s * 0.32 * w + 0.05;
-    let sz = -0.08;
-    let ex = -0.35 - Math.max(0, -s) * 0.3 * w;
-    sx = mix(sx, 0.85, cur.back);
-    sz = mix(sz, -0.45, cur.back);
-    ex = mix(ex, -1.5, cur.back);
-    sx = mix(sx, -1.35, cur.reach);
-    sz = mix(sz, -0.05, cur.reach);
-    ex = mix(ex, -0.12, cur.reach);
-    sx = mix(sx, -2.9 - cur.lean * 0.3, cur.raise); // erguido alto, à frente e acima da cabeça (compensa o tronco inclinado)
-    sz = mix(sz, 0.08, cur.raise);
-    ex = mix(ex, -0.3, cur.raise);
-    armR.shoulder.rotation.set(sx + Math.sin(t * 1.1) * 0.02, 0, sz);
-    armR.elbow.rotation.x = ex;
-    // erguido: a palma vira para CIMA (o dado em cima dela, acima da cabeça); `open` inclina a mão para a frente e o dado escorrega
-    armR.wrist.rotation.x = mix(mix(0.1, 0.5, cur.reach), 0.9, cur.raise) - cur.open * 1.7;
-    poseHand(armR.hand, mix(mix(0.85, 0.62, cur.raise), -0.2, cur.open), t); // erguido: os dedos sobem pelos lados do dado
+    // névoa em volta da barra
+    for (const wp of wisps) {
+      wp.a += dt * (0.15 + w * 0.4);
+      wp.s.position.set(Math.sin(wp.a) * wp.r, 0.12 + Math.sin(t * 0.8 + wp.ph) * 0.06, Math.cos(wp.a) * wp.r - w * 0.3);
+    }
+    // pó de giz: cai do manto e some
+    const dp = dustGeo.attributes.position as THREE.BufferAttribute;
+    const da = dp.array as Float32Array;
+    for (let i = 0; i < DUST; i++) {
+      dustLife[i] += dt * 0.35;
+      if (dustLife[i] > 1) dustLife[i] -= 1;
+      const L = dustLife[i];
+      const a = i * 2.399;
+      const r0 = 0.22 + (i % 5) * 0.05;
+      bendAt(1.1 - (i % 4) * 0.15, cur.lean, tmp2);
+      da[i * 3] = Math.sin(a) * r0 + Math.sin(t + i) * 0.03;
+      da[i * 3 + 1] = tmp2.y - L * 1.1;
+      da[i * 3 + 2] = Math.cos(a) * r0 + tmp2.z;
+    }
+    dp.needsUpdate = true;
   };
 
   let lastT = -1;
-  let alpha = 1;
   return {
     group,
     hand,
-    head: hood,
+    head,
     animate,
     setAlpha(v) {
-      alpha = Math.max(0, Math.min(1, v));
-      group.visible = alpha > 0.01;
-      for (const m of mats) {
-        m.opacity = alpha;
-        m.depthWrite = alpha > 0.98;
+      const a = Math.max(0, Math.min(1, v));
+      group.visible = a > 0.01;
+      for (const { m, base } of mats) {
+        m.opacity = base * a;
+        if (m instanceof THREE.MeshBasicMaterial) m.transparent = a < 0.99;
       }
     },
     update(t, arm) {
-      // a cena antiga (A Entrada): parado, com o braço direito erguido escrevendo na parede
+      // a cena antiga (A Entrada): parado, com a manga direita erguida escrevendo na parede
       const dt = lastT < 0 ? 0.016 : Math.min(0.1, Math.max(0, t - lastT));
       lastT = t;
-      animate(dt, t, { reach: arm * 0.75, open: 0 });
-      armR.elbow.rotation.x += Math.sin(t * 9) * 0.1 * arm; // traços curtos
-      void alpha;
+      animate(dt, t, { reach: arm * 0.8 });
     },
   };
 }

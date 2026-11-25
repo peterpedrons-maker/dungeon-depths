@@ -842,7 +842,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
-  const SCRIBE_AT = new THREE.Vector3(0, 0, 1.95); // longe o bastante da mureta (raio 1,38): o corpo nunca a atravessa // onde ele para, na borda, de frente para o furo
+  const SCRIBE_AT = new THREE.Vector3(0, 0, 2.35); // longe o bastante da mureta (raio 1,38): a barra do manto, espalhada no chão, nunca a atravessa // onde ele para, na borda, de frente para o furo
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
   const talkSeq = (lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }) => {
     let at = (o?.delay ?? 0) * 1000;
@@ -978,8 +978,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (S.ph === 7 && topScribe) {
       // close na mão com o dado, sobre o poço
       topScribe.hand.getWorldPosition(scribeHand);
-      scribeLook.copy(scribeHand).setY(scribeHand.y - 0.24); // mira a MÃO (os dedos em volta do dado), não o dado
-      setCine(tmpV.set(0.85, -0.5, -0.9).add(scribeHand), scribeLook); // de frente e de baixo, mais afastada: a mão, o braço e o capuz contra o céu // de frente e um pouco de baixo: a mão ossuda com o dado na palma, contra o céu
+      scribeLook.copy(scribeHand).setY(scribeHand.y - 0.15); // a boca da manga com o dado flutuando, contra o céu
+      setCine(tmpV.set(1.35, -0.2, -1.15).add(scribeHand), scribeLook); // de frente e de baixo, mais afastada: a mão, o braço e o capuz contra o céu // de frente e um pouco de baixo: a mão ossuda com o dado na palma, contra o céu
     } else if (S.ph === 8) {
       // a câmera desce POR BAIXO do dado: o dado em cima, contra a luz, e lá no alto a silhueta do Escrivão debruçado
       const dw = worldDie.position;
