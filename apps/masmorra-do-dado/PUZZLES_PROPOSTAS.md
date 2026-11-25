@@ -111,25 +111,9 @@ A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemp
 Um deles está num nicho atrás do jogador. **Solução: lousa 1 = diagonal curta (0, 8); lousa 2 = diagonal (0, 4, 8); porta = QUATRO, os quatro cantos.**
 
 ### Sala 4 — O Fio de Fogo (nível 3) · "o fogo corre" ✔ `tools/verify_fio.mjs`
-**Sala:** fileira de 3 lousas com **canaletas** (M2) e, no chão do fundo, **9 braseiros em grade 3×3** ligados por canaletas grandes.
-1. **Lousa 1 (demonstração):** dois lampiões e uma canaleta. Acender o de cima: o fogo desce e acende o de baixo.
-2. **Lousa 2:** plaquinha «ACENDER UM» e o glifo **TRÊS**. Canaletas: do centro para os dois cantos da diagonal, e outras que vêm de fora
-   (da casa 6 para o centro e para a 7; da 3 para o canto 0 e para a 1; da 7 para o canto 8; da 5 para a 2).
-   **Solução: pôr fogo no centro (4).** O fogo desce para 0 e 8 e escreve TRÊS. Armadilhas: começar pelo canto 0 (o "começo da leitura")
-   só acende ele; pôr fogo na 6 acende o TRÊS **e** a 7 (sobra fogo, a Casa apaga).
-3. **Lousa 3 (linhas, a ensinar para as constelações):** na parede, talhado, o glifo **ACENDER** (o triângulo que o jogador vê desde a
-   sala 1). A lousa tem canaletas **só** nos três lados do triângulo, em roda (1→6, 6→8, 8→1). Pôr fogo em qualquer ponta: o fogo corre
-   e **desenha as linhas**. O glifo talhado brilha. Ensina que **linha de glifo = fogo correndo entre dois pontos** (o friso do teto da
-   constelação C2 é isso em tamanho de sala). Sem armadilha: é demonstração.
-4. **Porta (o chão):** «ACENDER DOIS» e o glifo **CINCO** (talhado como um dado de cinco pontos). Canaletas: 2→4, 4→0, 4→8, 1→2, 5→8, 3→7, 7→6.
-   **Solução: pôr fogo na 2 (canto de cima à direita) e na 6 (canto de baixo à esquerda).** Da 2 o fogo desce ao centro e dali aos cantos
-   0 e 8; a 6 não tem canaleta que chegue nela de dentro do glifo, então precisa da 2ª ignição.
-   **A primeira impressão engana:** a lição da lousa 2 era "comece pelo meio", e aqui o meio só acende 0, 4 e 8 e sobra uma ignição para
-   dois cantos. Começar por 1, 3, 5 ou 7 acende uma casa de fora do glifo.
-- **Por que é única:** o verificador testa todas as 9 ignições simples (lousa 2) e os 36 pares (porta): só {4} e {2, 6} escrevem
-  exatamente o glifo; com uma ignição a porta é impossível; qualquer par com o centro falha.
-- **Palavra nova:** UM aparece na plaquinha (é a face 1: o ponto do meio), CINCO no glifo talhado.
-- **Motor:** M2 (propagação por canaletas dirigidas, ~0,6 s por canaleta, para o jogador VER o fogo correr), contador de ignições.
+(Detalhada na seção 5.) Balcão alto com três lousas de canaletas; embaixo, 9 braseiros no chão ligados por canaletas.
+**Solução: lousa 2 = fogo no centro; lousa 3 = fogo em qualquer ponta do triângulo; porta (CINCO com duas ignições) = canto de cima à direita e canto de baixo à esquerda.**
+Segredo de voltar depois (S10): com UMA ignição, o chão escreve FAZER.
 
 ### Sala 5 — A Casa Escreve (nível 3) · "a lousa é um mapa" ✔ `tools/verify_casa_escreve.mjs`
 (Detalhada na seção 5, com a constelação C1.) Salão de 9 colunas; a lousa da Casa acende uma posição de cada vez, em laço: é o **mapa** do
@@ -300,6 +284,8 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 - **S8 · O poço no escuro:** na sala 1, pôr fogo no soquete frio **e** errar de propósito (a Casa apaga tudo, inclusive a luz do poço).
   No escuro, as paredes do tubo do poço mostram, em cal fosforescente, **o texto do Escrivão**: a frase da sentença do jogador **sem a
   marca de confirmação** (`HISTORIA.md`). É a virada da história escondida no 1º cenário do jogo.
+- **S10 · «DIZER IGUAL FAZER» (sala 4, camada 2):** a plaquinha fria do balcão só se entende com o lema dos Contáveis, achado num diário
+  bem depois. Com uma ignição, o chão da sala 4 escreve FAZER (ver a sala 4 na seção 5).
 - **S9 · A Casa é um dado (a maior epifania; a história já diz isso):** os **pontos de um dado são buracos**. **O poço do teto da sala 1
   é um ponto**: o jogador caiu pela face UM. O capítulo 1 é a face UM (um ponto só: o poço). O capítulo 2 tem **dois poços**, o 3 tem
   **três**, sempre na diagonal… Quem presta atenção percebe, no meio do jogo, que está **dentro de um dado gigante** e que cada capítulo é
@@ -372,6 +358,59 @@ faces do dado (a base de toda escrita com fogo e da ideia "a Casa é um dado"); 
 
 **Motor:** lousa de fogo (M1: alvo pela mira, comparação com glifo, apagar depois de 5 s parado); porta-lousa com casa lisa que espelha;
 o dado de pedra (cenário); braseiros pré-acesos (`lit: true`), um num nicho alto.
+
+### Sala 4 — O Fio de Fogo (NÍVEL 3) · "o fogo corre"
+
+**A ideia:** o fogo não fica parado onde o dado o pôs: ele **corre** por canaletas de óleo e acende o que está mais abaixo. Com isso,
+«ACENDER UM» deixa de querer dizer "um braseiro" e passa a querer dizer **"uma ignição"**. O jogador precisa **prever** por onde o fogo
+vai antes de acender. E as **linhas de fogo** (canaletas queimadas) também são escrita: os verbos têm linhas.
+
+**Forma:** a sala **desce**. A entrada dá num **balcão alto** (3 m acima do chão), com parapeito. Do balcão se vê o chão inteiro lá
+embaixo: **9 braseiros em grade** (2,4 m entre eles) ligados por canaletas talhadas no piso. Uma **escada** desce junto da parede
+esquerda. A porta fica embaixo, no fundo, com o glifo **CINCO** talhado (como um dado de cinco pontos) e a plaquinha **«ACENDER DOIS»**.
+Embaixo, no meio dos braseiros, não se vê mais a grade inteira: **planeja-se de cima, faz-se embaixo** (ou arremessando do balcão).
+- **Canaletas com sentido:** o fundo de cada canaleta tem **chevrons talhados** apontando para onde o óleo escorre, e a canaleta é mais
+  funda na ponta de baixo. O fogo corre ~0,6 s por canaleta, devagar o bastante para se **ver** o caminho.
+- **Ignições:** dois soquetes ao lado da porta acendem um a um, conforme o jogador gasta as ignições. Quando o fogo para de correr por 2 s:
+  se o desenho é o pedido, a porta abre; senão, depois de 3 s tudo se apaga, os soquetes voltam e os braseiros ficam **frios por 4 s**.
+- **Como a Casa lê:** pontos = o que está aceso; linhas = canaletas queimadas. Glifo **sem linhas** (número) é lido só pelos pontos;
+  glifo **com linhas** (verbo) tem de bater nos dois.
+
+**No balcão, três lousas em fileira (regra → torção → reprise):**
+1. **Lousa 1 (demonstração):** dois lampiões e uma canaleta entre eles. Fogo no de cima: o fogo desce e acende o de baixo.
+2. **Lousa 2:** «ACENDER UM» e o glifo **TRÊS** talhado ao lado. Canaletas: do centro para os dois cantos da diagonal, e outras que
+   vêm de fora (da casa 6 para o centro e para a 7; da 3 para o canto 0 e para a 1; da 7 para o canto 8; da 5 para a 2).
+   **Solução: fogo no centro.** Armadilhas: o canto de cima à esquerda (o "começo da leitura") só acende ele mesmo; a casa 6 acende o TRÊS
+   **e** a 7 (sobra fogo).
+3. **Lousa 3 (linhas):** o glifo **ACENDER** (o triângulo) talhado ao lado; canaletas **só** nos três lados do triângulo, em roda.
+   Fogo em qualquer ponta: o fogo corre e **desenha as linhas** do glifo. Ensina que **linha = fogo correndo**. Sem armadilha.
+
+**A porta (o chão):** «ACENDER DOIS» + **CINCO**. Canaletas (de → para): 2→4, 4→0, 4→8, 1→2, 5→8, 3→7, 7→6 (casa 0 = canto do fundo à esquerda,
+olhando do balcão para a porta).
+**Solução: fogo no canto do fundo à direita (2) e no canto da frente à esquerda (6).** Da 2 o fogo desce ao centro e dali aos cantos 0 e 8;
+a 6 não recebe fogo de dentro do glifo, então precisa da 2ª ignição.
+**A primeira impressão engana:** a lição da lousa 2 foi "comece pelo meio", mas aqui o meio acende 0, 4 e 8 e sobra uma ignição para dois
+cantos. Começar pelas casas do meio das bordas (1, 3, 5 ou 7) acende uma casa de fora do glifo.
+
+**Por que é única** (`node tools/verify_fio.mjs`): na lousa 2, das 9 ignições só o centro escreve TRÊS; na porta, dos 36 pares só
+{2, 6} escreve CINCO, com uma ignição é impossível, e qualquer par com o centro falha; no chão, toda canaleta liga braseiros vizinhos.
+
+**Segredo S10 (camada 2, voltar depois):** no parapeito do balcão há uma plaquinha com **soquete frio** e a frase «DIZER IGUAL ▢»
+mais «ACENDER UM». Na sala 4 o jogador não conhece DIZER nem IGUAL. Bem mais tarde, um diário achado mostra o lema dos Contáveis,
+**«DIZER IGUAL FAZER»** ("dizer é fazer"), com o glifo FAZER anotado. Quem volta e lê a plaquinha precisa escrever **FAZER** no chão
+com **uma** ignição, olhando as canaletas do balcão. **Solução: acender o soquete frio e pôr fogo só no canto do fundo à direita (2):** o
+fogo desce ao centro e dali aos cantos 0 e 8, e as canaletas queimadas desenham as três linhas de FAZER. Abre um nicho sob o balcão (gema).
+- O verificador prova que, com uma ignição, a grade só escreve duas palavras: FAZER (casa 2) e TRÊS (casa 4). Só FAZER é verbo e completa
+  «DIZER IGUAL ▢». FAZER não abre a porta.
+- **O arrepio:** quem resolveu a porta acendendo a 2 primeiro **já escreveu FAZER** na primeira visita, sem saber. A palavra estava no
+  chão desde o começo.
+
+**O que ensina:** o fogo corre e precisa ser previsto; «ACENDER N» = N ignições; linhas de fogo são escrita (base dos frisos da C2);
+ver de cima e agir embaixo. **Palavras novas:** UM (na plaquinha: o ponto do meio) e CINCO (o glifo da porta).
+
+**Motor:** canaletas dirigidas com fogo visível correndo; contador de ignições na porta; leitura da grade por pontos e linhas; balcão com
+escada (dois níveis: já existe um precedente em O Mirante); o dado pode ser arremessado do balcão para os braseiros do chão; plaquinha
+com soquete frio que só funciona com o lema do diário.
 
 ### Sala 5 — A Casa Escreve (NÍVEL 3) · "a lousa é um mapa" + constelação C1
 
