@@ -40,7 +40,8 @@ export interface Socket {
 export interface Ctx {
   caption(title: string, sub: string, color: string): void;
   // `key` identifica o braseiro em 'ignite': a cena do dado queimando só toca inteira na 1ª vez de cada um
-  sfx(name: 'ignite' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout', key?: string): void;
+  // 'spread' = o fogo que CORRE (canaleta, friso) acende algo sozinho: só o som, sem a cena do dado queimando
+  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout', key?: string): void;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa

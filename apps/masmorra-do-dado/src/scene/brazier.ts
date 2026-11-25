@@ -26,7 +26,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   bowlMesh.position.set(x, 0.95 * s, z);
   kit.add(bowlMesh);
   const bowl = new THREE.Vector3(x, 1.15 * s, z);
-  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: null, fog: false, alphaTest: 0.5, depthWrite: false }));
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   flame.scale.set(0.75 * s, 0.6 * s, 1);
   flame.position.set(x, 1.45 * s, z);
   flame.visible = false;

@@ -1,0 +1,328 @@
+// SALA · O FIO DE FOGO (nível 3; PUZZLES_PROPOSTAS.md §5, verificador tools/verify_fio.mjs).
+// O fogo CORRE por canaletas de óleo (chevrons mostram para onde) e acende o que está do outro lado. «ACENDER N» passa a querer dizer N IGNIÇÕES.
+// A sala: entra-se embaixo, SOBE-SE uma escada até um balcão alto (de onde se lê a grade inteira de cima) e desce-se pelo outro lado até o chão,
+// onde há 9 braseiros em grade ligados por canaletas. Planeja-se de cima, faz-se embaixo.
+//  · Balcão, lousa 1: demonstração (fogo no de cima desce para o de baixo).
+//  · Balcão, lousa 2: «ACENDER UM» + TRÊS: uma ignição só → fogo no CENTRO.
+//  · Balcão, lousa 3: ACENDER (o triângulo): fogo em qualquer ponta desenha as LINHAS do glifo (linha = fogo que correu).
+//  · Porta: «ACENDER DOIS» + CINCO: duas ignições → canto do fundo à direita (2) e canto da frente à esquerda (6).
+// Segredo S10 (para depois, com o lema «DIZER IGUAL FAZER» de um diário): acender o soquete frio da plaquinha do balcão e escrever FAZER com
+// UMA ignição (canto do fundo à direita) abre um nicho sob o balcão.
+
+import * as THREE from 'three';
+import { Kit, lambert, LAMP_OFF, T } from '../kit';
+import { floorTexture } from '../textures';
+import { makeBrazier, type Brazier } from '../brazier';
+import { FireGrid, makeFloorChannel, makeGemNiche, makeWallBoard, type GridEdge, type WallBoard } from '../firegrid';
+import { mkBox, roomShell, shotGate } from './shell';
+import type { Ctx, Rect, Room } from '../types';
+
+const BAL = 3; // altura do balcão
+const BZ0 = -2.6; // borda do balcão do lado da entrada
+const BZ1 = -7.6; // borda do lado do chão (parapeito)
+const UP = { x0: -6.5, x1: -5, z0: 1.2, z1: BZ0 }; // escada que sobe (encostada na parede esquerda)
+const DN = { x0: 5, x1: 6.5, z0: BZ1, z1: -11.6 }; // escada que desce (parede direita)
+const FLOOR_EDGES: [number, number][] = [[2, 4], [4, 0], [4, 8], [1, 2], [5, 8], [3, 7], [7, 6]];
+
+function stairY(x: number, z: number) {
+  if (x < UP.x1 && z < UP.z0 && z > UP.z1) return (BAL * (UP.z0 - z)) / (UP.z0 - UP.z1);
+  if (x > DN.x0 && z < DN.z0 && z > DN.z1) return (BAL * (z - DN.z1)) / (DN.z0 - DN.z1);
+  return -1;
+}
+function levelY(x: number, z: number) {
+  if (z <= BZ0 && z >= BZ1) return BAL;
+  const s = stairY(x, z);
+  return s >= 0 ? s : 0;
+}
+
+export function buildFio(ctx: Ctx): Room {
+  const kit = new Kit('ruin');
+  const S = roomShell(kit, { hx: 6.5, z0: -21.5, h: 7, lamps: 2 });
+  const { X0, X1, Z0, Z1 } = S;
+
+  // ── o balcão e as escadas ──
+  const brick = kit.brick([(X1 - X0) / T, BAL / T], 0.9, 44);
+  kit.box(X1 - X0, BAL, BZ0 - BZ1, brick, 0, BAL / 2, (BZ0 + BZ1) / 2);
+  kit.plane(X1 - X0, BZ0 - BZ1, lambert(floorTexture([(X1 - X0) / T, (BZ0 - BZ1) / T], 'ruin')), 0, BAL + 0.002, (BZ0 + BZ1) / 2, -Math.PI / 2);
+  S.boxes.push(mkBox(X0, 0, BZ1, X1, BAL, BZ0));
+  const par = (x0: number, x1: number, z: number) => {
+    kit.box(x1 - x0, 1.0, 0.22, kit.stone, (x0 + x1) / 2, BAL + 0.5, z);
+    kit.box(x1 - x0 + 0.1, 0.1, 0.32, kit.stone, (x0 + x1) / 2, BAL + 1.03, z);
+    S.boxes.push(mkBox(x0, BAL, z - 0.11, x1, BAL + 1.05, z + 0.11));
+  };
+  par(UP.x1, X1, BZ0 - 0.11);
+  par(X0, DN.x0, BZ1 + 0.11);
+  const steps = (o: typeof UP, n: number, up: boolean) => {
+    const dz = (o.z1 - o.z0) / n;
+    for (let k = 0; k < n; k++) {
+      const top = (BAL * (k + 1)) / n;
+      const zc = o.z0 + dz * (k + 0.5);
+      kit.box(o.x1 - o.x0, top, Math.abs(dz) + 0.01, kit.stone, (o.x0 + o.x1) / 2, top / 2, up ? zc : o.z1 - dz * (k + 0.5));
+    }
+  };
+  steps(UP, 12, true);
+  steps(DN, 12, false);
+  // corrimão: um murinho do lado de dentro de cada escada
+  kit.box(0.16, BAL + 1, UP.z0 - UP.z1, kit.stone, UP.x1 + 0.08, (BAL + 1) / 2, (UP.z0 + UP.z1) / 2);
+  kit.box(0.16, BAL + 1, DN.z0 - DN.z1, kit.stone, DN.x0 - 0.08, (BAL + 1) / 2, (DN.z0 + DN.z1) / 2);
+  S.boxes.push(mkBox(UP.x1, 0, UP.z1, UP.x1 + 0.16, BAL + 1, UP.z0), mkBox(DN.x0 - 0.16, 0, DN.z1, DN.x0, BAL + 1, DN.z0));
+
+  // ── o chão: 9 braseiros em grade, ligados por canaletas ──
+  const GX = (c: number) => -0.6 + (c - 1) * 2.4;
+  const GZ = (r: number) => -15.5 + (r - 1) * 2.4;
+  const braz: Brazier[] = [];
+  for (let i = 0; i < 9; i++) {
+    const b = makeBrazier(kit, ctx, GX(i % 3), GZ(Math.floor(i / 3)), false);
+    braz.push(b);
+    S.boxes.push(...b.boxes);
+  }
+  const fEdges: GridEdge[] = FLOOR_EDGES.map(([a, b]) => ({ a, b, vis: makeFloorChannel(kit, GX(a % 3), GZ(Math.floor(a / 3)), GX(b % 3), GZ(Math.floor(b / 3)), 0.55) }));
+  const floor = new FireGrid(
+    braz.map((b) => ({ set: (on: boolean, q: boolean) => b.light(on, q), update: (_dt: number, t: number) => b.update(t) })),
+    fEdges,
+    0.6,
+    () => ctx.sfx('spread'),
+  );
+
+  // ── a porta: «ACENDER DOIS» e o CINCO talhado grande em cima; dois soquetes contam as ignições ──
+  const sign = kit.inscribe({ words: ['acender', 'n2'], x: -3.6, y: 1.7, z: Z0 + 0.025, nx: 0, nz: 1, size: 0.5, age: 0.25, seed: 9, lead: true });
+  const five = kit.inscribe({ words: ['n5'], x: 0, y: 4.1, z: Z0 + 0.025, nx: 0, nz: 1, size: 0.95, age: 0.2, frame: true, seed: 13 });
+  const sockMats: THREE.MeshBasicMaterial[] = [];
+  for (const sx of [2.0, 2.6]) {
+    kit.box(0.34, 0.34, 0.16, kit.stone, sx, 1.7, Z0 + 0.08, false);
+    const m = new THREE.MeshBasicMaterial({ color: 0x2a1a14, fog: false });
+    sockMats.push(m);
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.09, 6), m);
+    dot.position.set(sx, 1.7, Z0 + 0.165);
+    kit.group.add(dot);
+  }
+
+  // ── as lousas do balcão ──
+  const BY = BAL + 1.55;
+  const L1 = makeWallBoard(kit, ctx, { x: X0 + 0.02, y: BY, z: -3.7, nx: 1, nz: 0, cells: [1, 4], edges: [[1, 4]], step: 0.42, key: 'fio1' });
+  const L2 = makeWallBoard(kit, ctx, { x: X0 + 0.02, y: BY, z: -5.9, nx: 1, nz: 0, step: 0.42, edges: [[4, 0], [4, 8], [6, 4], [6, 7], [7, 8], [3, 0], [3, 1], [5, 2]], key: 'fio2' });
+  const L3 = makeWallBoard(kit, ctx, { x: X1 - 0.02, y: BY, z: -5.3, nx: -1, nz: 0, step: 0.42, cells: [1, 6, 8], edges: [[1, 6], [6, 8], [8, 1]], key: 'fio3' });
+  kit.inscribe({ words: ['acender', 'n1'], x: X0 + 0.025, y: BY + 1.0, z: -5.9, nx: 1, nz: 0, size: 0.34, age: 0.2, seed: 31 });
+  const g2 = kit.inscribe({ words: ['n3'], x: X0 + 0.025, y: BY, z: -6.95, nx: 1, nz: 0, size: 0.36, age: 0.15, frame: true, seed: 33 });
+  const g3 = kit.inscribe({ words: ['acender'], x: X1 - 0.025, y: BY, z: -4.25, nx: -1, nz: 0, size: 0.36, age: 0.15, frame: true, seed: 35 });
+  const boards: { b: WallBoard; target: string | null; key: string; ins: ReturnType<typeof kit.inscribe> | null; used: boolean; done: boolean; stop: number }[] = [
+    { b: L1, target: null, key: 'fio1', ins: null, used: false, done: false, stop: 0 },
+    { b: L2, target: 'n3', key: 'fio2', ins: g2, used: false, done: false, stop: 0 },
+    { b: L3, target: 'acender', key: 'fio3', ins: g3, used: false, done: false, stop: 0 },
+  ];
+
+  // ── a plaquinha do segredo (S10): «DIZER IGUAL ▢» · «ACENDER UM», com um soquete frio, no parapeito ──
+  const PX = -5.0;
+  const PZ = BZ1 + 0.36;
+  kit.box(1.5, 0.95, 0.12, kit.stone, PX, BAL + 1.6, BZ1 + 0.28, false);
+  kit.inscribe({ words: ['dizer', 'igual', null], x: PX, y: BAL + 1.82, z: BZ1 + 0.345, nx: 0, nz: 1, size: 0.26, age: 0.35, seed: 41 });
+  kit.inscribe({ words: ['acender', 'n1'], x: PX, y: BAL + 1.38, z: BZ1 + 0.345, nx: 0, nz: 1, size: 0.22, age: 0.35, seed: 43 });
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.11, 0.12, 6), lambert(null, 0x3a3a46));
+  cup.position.set(PX + 1.0, BAL + 1.14, PZ - 0.2);
+  kit.add(cup);
+  const sockFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+  sockFlame.scale.set(0.3, 0.26, 1);
+  sockFlame.position.set(PX + 1.0, BAL + 1.36, PZ - 0.2);
+  sockFlame.visible = false;
+  kit.group.add(sockFlame);
+  const sockPos = new THREE.Vector3(PX + 1.0, BAL + 1.25, PZ - 0.2);
+  let secretOn = false;
+  let bonus = false;
+  const niche = makeGemNiche(kit, ctx, -3.2, 1.25, BZ1, 0, -1, () => (bonus = true));
+
+  // luz: tochas no balcão e embaixo
+  kit.torch(X0 + 0.1, BAL + 1.6, -4.8, 1, 0, 0.4);
+  kit.torch(X1 - 0.1, BAL + 1.6, -6.9, -1, 0, 1.2);
+  kit.torch(X1 - 0.1, 1.8, 0.4, -1, 0, 2.2);
+  kit.torch(X0 + 0.1, 1.8, -12.5, 1, 0, 3.1);
+  kit.torch(X0 + 0.1, 1.8, -19.0, 1, 0, 3.7);
+  kit.torch(X1 - 0.1, 1.8, -15.5, -1, 0, 4.4);
+  kit.torch(-4.8, 1.8, Z0 + 0.1, 0, 1, 5.1);
+  S.decorate();
+
+  // ── a regra ──
+  let used = 0; // ignições gastas
+  let stopT = 0; // há quanto tempo o fogo parou de correr
+  let failT = -1;
+  let coldT = 0;
+  let solved = false;
+  let doorOpen = 0;
+  let prevWant = 0;
+  let readT = 0;
+  const gate = shotGate(ctx.die);
+  const allowed = () => (secretOn ? 1 : 2);
+
+  const reset = () => {
+    floor.clear();
+    for (const b of boards) {
+      b.b.grid.clear();
+      b.used = b.done = false;
+      b.stop = 0;
+      if (b.ins) for (const p of b.ins.panels) p.fire = 0;
+    }
+    used = 0;
+    stopT = 0;
+    failT = -1;
+    coldT = 0;
+    solved = false;
+    secretOn = false;
+    sockFlame.visible = false;
+    doorOpen = 0;
+    prevWant = 0;
+    readT = 0;
+    niche.reset();
+    S.door.setOpen(0);
+    S.door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
+    for (const p of [...sign.panels, ...five.panels]) p.fire = 0;
+  };
+
+  if (import.meta.env.DEV) {
+    ((globalThis as Record<string, unknown>).__fio = () => ({ lit: floor.points(), burnt: [...floor.burnt], used, solved, cold: +coldT.toFixed(1), secret: secretOn, boards: boards.map((b) => [b.b.grid.points(), [...b.b.grid.burnt], b.done]), bowls: braz.map((b) => b.bowl.toArray()), cells: (k: number) => [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => boards[k].b.cellPos(i).toArray().map((v) => +v.toFixed(2))), sock: sockPos.toArray() }));
+  }
+  kit.bake();
+
+  return {
+    name: 'O Fio de Fogo',
+    subtitle: 'O fogo não fica onde você o põe.',
+    group: kit.group,
+    surfaces: kit.surfaces,
+    emitters: kit.emitters,
+    inscriptions: kit.inscriptions,
+    interactables: [niche.interactable],
+    doorZ: Z0,
+    entranceZ: Z1,
+    start: new THREE.Vector3(0, 0, 1.2),
+    startYaw: 0,
+    fog: { color: '#0a0a11', near: 5, far: 30 },
+    ambient: { color: 0x7a78b8, intensity: 1.8 },
+    boxes: [...S.boxes, ...kit.boxes],
+    sockets: braz.map((b) => b.socket),
+    rects() {
+      const r: Rect[] = S.rects(doorOpen);
+      r.push(...braz.map((b) => b.rect));
+      r.push([UP.x1, UP.z1, UP.x1 + 0.16, UP.z0, BAL + 1.2]); // murinho da escada que sobe
+      r.push([UP.x1, BZ0 - 0.22, X1 + 1, BZ0, BAL + 1.2]); // frente do balcão (embaixo: a parede; em cima: o parapeito)
+      r.push([X0 - 1, BZ1, DN.x0, BZ1 + 0.22, BAL + 1.2]); // fundo do balcão (o parapeito sobre o chão)
+      r.push([DN.x0 - 0.16, DN.z1, DN.x0, DN.z0, BAL + 1.2]); // murinho da escada que desce
+      return r;
+    },
+    clampDie: S.clampDie,
+    groundY: levelY,
+    surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    dieFloor: (x, z) => (stairY(x, z) >= 0 ? stairY(x, z) : 0),
+    holdsDie: () => false,
+    update(dt, t) {
+      kit.tick(dt, t);
+      gate.tick();
+      niche.update(dt, t);
+      // lousas do balcão: uma ignição cada; quando o fogo para, ou escreveu o glifo (fica acesa) ou se apaga em 3 s
+      for (const b of boards) {
+        b.b.update(dt, t);
+        if (b.done) continue;
+        const i = b.b.hit();
+        if (i >= 0 && gate.take()) {
+          if (!b.used && !b.b.grid.lit[i]) {
+            b.used = true;
+            b.b.grid.ignite(i);
+            ctx.sfx('ignite', b.key);
+          } else ctx.sfx('error');
+        }
+        if (b.used && !b.b.grid.running()) {
+          b.stop += dt;
+          if (b.target && b.b.grid.writes(b.target)) {
+            b.done = true;
+            ctx.sfx('piece');
+          } else if (b.stop > (b.target ? 3 : 4)) {
+            b.b.grid.clear();
+            b.used = false;
+            b.stop = 0;
+          }
+        } else b.stop = 0;
+        if (b.ins) for (const p of b.ins.panels) p.fire = (p.fire ?? 0) + ((b.done ? 1 : 0) - (p.fire ?? 0)) * Math.min(1, dt * 4);
+      }
+      // o soquete frio da plaquinha: o dado de Fogo o acende (modo do segredo: UMA ignição, a Casa espera FAZER)
+      if (!secretOn && !solved && ctx.die.face === 3 && (ctx.die.state === 'flying' || ctx.die.state === 'rest') && ctx.die.pos.distanceTo(sockPos) < 0.5) {
+        secretOn = true;
+        sockFlame.visible = true;
+        ctx.sfx('ignite', 'fioS');
+        if (used) {
+          floor.clear();
+          used = 0;
+        }
+      }
+      if (sockFlame.visible) sockFlame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+
+      // ── o chão ──
+      floor.update(dt, t);
+      if (failT >= 0) {
+        failT -= dt;
+        if (failT < 0) {
+          floor.clear(false);
+          used = 0;
+          coldT = 4;
+          if (secretOn) {
+            secretOn = false;
+            sockFlame.visible = false;
+          }
+        }
+      } else if (coldT > 0) {
+        coldT -= ctx.paused() ? 0 : dt;
+        if (braz.some((b) => b.touched()) && gate.take()) ctx.sfx('error');
+      } else if (!solved) {
+        braz.forEach((b, i) => {
+          if (!b.touched() || !gate.take()) return;
+          if (used >= allowed()) {
+            ctx.sfx('error'); // as ignições acabaram: espere a Casa ler
+            return;
+          }
+          used++;
+          floor.ignite(i);
+          ctx.sfx('ignite', 'fio');
+        });
+        if (used > 0 && !floor.running()) {
+          stopT += ctx.paused() ? 0 : dt;
+          const target = secretOn ? 'fazer' : 'n5';
+          if (stopT > 2 && floor.writes(target)) {
+            if (secretOn) {
+              secretOn = false;
+              sockFlame.visible = false;
+              niche.open();
+              ctx.sfx('piece');
+              ctx.caption('Algo se abriu sob o balcão', 'Dizer é fazer.', '#7ad8ff');
+              used = 0;
+              stopT = 0;
+              floor.clear();
+            } else {
+              solved = true;
+              ctx.sfx('piece');
+              S.door.lampMats.forEach((m) => m.color.setHex(0xff7a2e));
+            }
+          } else if (stopT > 2 && used >= allowed()) {
+            // não escreveu o glifo: em 3 s a Casa apaga tudo, e os braseiros ficam frios
+            failT = 3;
+            stopT = 0;
+            ctx.sfx('error');
+          }
+        } else stopT = 0;
+      }
+      sockMats.forEach((m, k) => m.color.setHex(k < used || solved ? 0xffb048 : 0x2a1a14));
+      if (!solved) S.door.lampMats.forEach((m, k) => m.color.setHex(k < used ? 0x7a4a2a : LAMP_OFF));
+      // a frase: ACENDER brilha com fogo no chão, o DOIS enche com as ignições; ao abrir, a Casa lê e o CINCO acende
+      readT = solved ? readT + dt : 0;
+      const anyLit = floor.points().length > 0;
+      sign.panels.forEach((p, k) => {
+        const on = solved ? (readT > 0.2 + k * 0.45 ? 1 : 0) : p.id === 'acender' ? (anyLit ? 0.7 : 0) : p.id === 'n2' ? used / 2 : 0;
+        p.fire = (p.fire ?? 0) + (on - (p.fire ?? 0)) * Math.min(1, dt * 6);
+      });
+      for (const p of five.panels) p.fire = (p.fire ?? 0) + ((solved && readT > 1.1 ? 1 : 0) - (p.fire ?? 0)) * Math.min(1, dt * 3);
+      const want = solved && readT > 1.4 ? 1 : 0;
+      if (want && !prevWant) ctx.sfx('door');
+      prevWant = want;
+      doorOpen += (want - doorOpen) * Math.min(1, dt * 2.4);
+      S.door.setOpen(doorOpen);
+    },
+    reset,
+    bonus: () => bonus,
+    dispose() {},
+  };
+}

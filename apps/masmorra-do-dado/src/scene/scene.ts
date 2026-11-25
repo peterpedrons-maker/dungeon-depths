@@ -34,7 +34,10 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
-import { FIRE_FRASES, FIRE_ORDEM, FIRE_TEMPO } from './rooms/fireRooms';
+import { FIRE_FRASES, FIRE_TEMPO } from './rooms/fireRooms';
+import { FIRE_APELIDOS, FIRE_CASA_ESCREVE, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
+import { buildLousa } from './rooms/lousa';
+import { buildFio } from './rooms/fio';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
@@ -46,17 +49,23 @@ const FOG = '#0b0912';
 const LAB = new URLSearchParams(location.search).has('lab');
 const BUILDERS: RoomBuilder[] = LAB ? [buildLab] : MAIN_BUILDERS();
 function MAIN_BUILDERS(): RoomBuilder[] {
-  // Capítulo 1 (só Fogo). Níveis: 1, 1, 1-2, 2, 4, 5, ... 10. Faltam as salas de nível 6 a 9 entre a 6 e o Tribunal (ver DESIGN.md §21).
+  // Capítulo 1 (só Fogo), curva da sessão de projeto de puzzles (PUZZLES_PROPOSTAS.md §2): da sala 3 em diante só sobe. Níveis: 1, 1, 2, 3, 3, 4, 5, 5, 6, 6 ... 10.
+  // Faltam (propostas ainda sem detalhe): A Ponte de Madeira, A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
   return [
-    (c) => buildVestibulo(c, 1),
-    (c) => buildVestibulo(c, 2),
-    (c) => buildVestibulo(c, 3),
-    (c) => buildFireRoom(c, FIRE_ORDEM), // ORDEM: a sequência na frase é a ordem de acender
-    (c) => buildFireRoom(c, FIRE_TEMPO), // NÍVEL 4. TEMPO: 4 braseiros, as chamas se apagam; o maior dura mais; todos acesos ao mesmo tempo
-    (c) => buildFireRoom(c, FIRE_FRASES), // NÍVEL 5. Acende as frases CONFIRMADAS com o Fogo -> os pilares sobem do chão -> ordem dada por ANTES/DEPOIS
-    buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala ~16, depois das salas de ensino e dos níveis 6 a 9)
-    // Reserva (fora do jogo por ora; usam Peso e giz, que só chegam nos capítulos 2 e 3): room1.ts (A Entrada, cena do Escrivão que dá o giz), vestibulo.ts v4 (A Lacuna),
-    // room2.ts (O Selo), room3.ts (O Salão das Brasas), room4.ts (O Mirante); FIRE_SEGREDO (A Confirmação, Mastermind) em fireRooms.ts; lab.ts (A Placa que Julga).
+    (c) => buildVestibulo(c, 1), // O Poço
+    (c) => buildVestibulo(c, 2), // O Vestíbulo: o número é exato
+    buildLousa, // NÍVEL 2. A LOUSA: acender em grade é escrever; os números são as faces do dado (porta = QUATRO)
+    buildFio, // NÍVEL 3. O FIO DE FOGO: o fogo corre por canaletas; «ACENDER DOIS» = duas ignições
+    (c) => buildFireRoom(c, FIRE_CASA_ESCREVE), // NÍVEL 3. A CASA ESCREVE: a lousa da Casa é o mapa do salão (+ constelação C1)
+    (c) => buildFireRoom(c, FIRE_TEMPO), // NÍVEL 4. TEMPO: as chamas se apagam; o maior dura mais; todos acesos ao mesmo tempo
+    (c) => buildFireRoom(c, FIRE_FRASES), // NÍVEL 5. Acende as frases CONFIRMADAS -> os pilares sobem -> ordem por ANTES/DEPOIS
+    (c) => buildFireRoom(c, FIRE_PANO), // NÍVEL 5. O PANO: o fogo queima o boato tecido e mostra a pedra (+ constelação C2)
+    (c) => buildFireRoom(c, FIRE_APELIDOS), // NÍVEL 6. GRANDE e PEQUENO: o mesmo braseiro tem dois nomes
+    (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
+    buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala 18)
+    // Reserva (fora do jogo por ora): vestibulo.ts v3 (Os Quatro) e FIRE_ORDEM (A Ordem), que as novas 3 e 5 substituem; room1.ts (A Entrada, cena do
+    // Escrivão que dá o giz), vestibulo.ts v4 (A Lacuna), room2.ts (O Selo), room3.ts (O Salão das Brasas), room4.ts (O Mirante); FIRE_SEGREDO
+    // (A Confirmação, Mastermind) em fireRooms.ts; lab.ts (A Placa que Julga). Usam Peso e giz, que só chegam nos capítulos 2 e 3.
   ];
 }
 
@@ -1142,6 +1151,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return {
       caption: (a, b, c) => caption(a, b, c),
       sfx: (n, key) => {
+        if (n === 'spread') {
+          sfx.play('ignite', 0.45);
+          return;
+        }
         sfx.play(n);
         // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
         if (n === 'ignite') {
@@ -1844,7 +1857,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // só dá pra posicionar dentro do salão (não no corredor, que é só passagem)
     const ri = roomOfZ(hit.point.z);
     const lz = hit.point.z - offs[ri].z;
-    if (lz < rooms[ri].doorZ + 0.15 || lz > rooms[ri].entranceZ - 0.15) return null;
+    if (lz < rooms[ri].doorZ - 0.1 || lz > rooms[ri].entranceZ - 0.15) return null; // (a própria porta conta: há portas que são lousas)
     const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
     if (n.dot(ray.ray.direction) > 0) n.negate();
     return { p: hit.point, n, room: ri };
