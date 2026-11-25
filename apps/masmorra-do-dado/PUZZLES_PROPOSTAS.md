@@ -3,6 +3,7 @@
 > Arquivo da sessão de **projeto de puzzles**. Nada aqui está no jogo ainda: são propostas para o Pedro aprovar e para a
 > sessão principal implementar. Quando uma sala for aprovada e implementada, a solução passa para `PUZZLES.md`.
 > Toda sala com lógica combinatória ganha um verificador em `tools/verify_<nome>.mjs` que prova por força bruta que a solução é única.
+> **As respostas, curtas, ficam também em `RESPOSTAS.md`** (o gabarito do Pedro), atualizado a cada sala.
 >
 > **v2 (pedido do Pedro):** repensar o capítulo 1 inteiro, da sala 3 em diante (as salas 1 e 2 ficam: são as do "descobrir que acende").
 > Meta: puzzles inteligentes e difíceis, uma mecânica só (o fogo) levada ao máximo, epifanias, camadas escondidas e puzzles secretos,
