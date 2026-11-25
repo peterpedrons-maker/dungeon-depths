@@ -422,6 +422,19 @@ export function dieFaceCanvas(n: number, accent: string, locked = false, gems = 
     px(ctx, lo - 3, t, shade(gold, 0.8), 3, 1);
     px(ctx, hi + 1, t, shade(gold, 0.8), 3, 1);
   }
+  // moldura interna ENTALHADA (pontilhada) e cantoneiras: mais detalhe na pedra, sem disputar com o rosto
+  for (let i = 15; i <= 48; i += 2) {
+    px(ctx, i, 14, shade(body, 1.55));
+    px(ctx, i, 49, shade(body, 0.6));
+    px(ctx, 14, i, shade(body, 1.4));
+    px(ctx, 49, i, shade(body, 0.65));
+  }
+  for (const [cx, cy, sx, sy] of [[14, 14, 1, 1], [49, 14, -1, 1], [14, 49, 1, -1], [49, 49, -1, -1]] as [number, number, number, number][]) {
+    for (let k = 0; k < 4; k++) {
+      px(ctx, cx + sx * k, cy, shade(gold, 0.75));
+      px(ctx, cx, cy + sy * k, shade(gold, 0.75));
+    }
+  }
   // runas fininhas entre o filete e as gemas
   for (let i = 0; i < 10; i++) {
     const x = 14 + Math.floor(r() * 36);
@@ -525,38 +538,35 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
       px(ctx, x, y, color, 1, th);
     }
   };
-  // olho: ponto-losango da cor da face, com um núcleo mais claro
-  const eye = (cx: number, cy: number, r = 4) => {
+  const poly = (pts: number[][], ox: number, oy: number, th = 1, color = gold) => {
+    for (let i = 1; i < pts.length; i++) seg(ox + pts[i - 1][0], oy + pts[i - 1][1], ox + pts[i][0], oy + pts[i][1], th, color);
+  };
+  const fx = Math.round(look.ex / 2); // o nariz, a boca e as pálpebras acompanham o olhar menos que as íris (o rosto "vira")
+  const fy = Math.round(look.ey / 2);
+  // OLHO: pálpebras em amêndoa (traços de ouro, presas ao rosto) e, dentro, a íris-losango da cor da face, com pupila; a íris se move dentro das pálpebras
+  const EYE_UP = [[-8, 0], [-6, -3], [-3, -5], [3, -5], [6, -3], [8, 0]];
+  const EYE_DN = [[-8, 0], [-6, 2], [-3, 4], [3, 4], [6, 2], [8, 0]];
+  const EYE_SHUT = [[-8, 0], [-5, 1], [5, 1], [8, 0]];
+  const eye = (cx: number, cy: number) => {
+    const lx = cx + fx;
+    const ly = cy + fy;
     if (look.closed) {
-      // olho fechado: um traço
-      seg(cx - r, cy + 1, cx + r, cy + 1, 2);
+      poly(EYE_SHUT, lx, ly, 1);
+      poly([[-6, 3], [6, 3]], lx, ly, 1, shade(hex('#f0c868'), glow ? 0.35 : 0.55)); // cílios de baixo, apagados
       return;
     }
+    poly(EYE_UP, lx, ly);
+    poly(EYE_DN, lx, ly);
+    const ix = cx + Math.max(-3, Math.min(3, look.ex));
+    const iy = cy + Math.max(-1, Math.min(1, look.ey));
+    const r = 3;
     for (let y = -r; y <= r; y++)
       for (let x = -r; x <= r; x++) {
         const d = Math.abs(x) + Math.abs(y);
-        if (d <= r + 1) px1(cx + x, cy + y, d > r ? dark : d <= r - 2 ? (glow ? '#ffffff' : shade(base, 1.7)) : eyeC);
+        if (d <= r) px1(ix + x, iy + y, d === r ? eyeC : glow ? '#ffffff' : shade(base, 1.7));
       }
-  };
-  const brow = (x0: number, y0: number, x1: number, y1: number, th = 1) => seg(x0, y0, x1, y1, th);
-  // sobrancelhas esquerda (ponta interna à direita) e direita
-  const browL = (tilt: number, y = 17, th = 1) => brow(12 + Math.round(look.ex / 2), y + look.by, 27 + Math.round(look.ex / 2), y + look.by + Math.round(tilt), th);
-  const browR = (tilt: number, y = 17, th = 1) => brow(37 + Math.round(look.ex / 2), y + look.by + Math.round(tilt), 52 + Math.round(look.ex / 2), y + look.by, th);
-  const fx = Math.round(look.ex / 2); // o nariz e a boca acompanham o olhar um pouco menos que os olhos (o rosto "vira")
-  const fy = Math.round(look.ey / 2);
-  const nose = (foot = false) => {
-    seg(32 + fx, 28 + fy, 32 + fx, 41 + fy);
-    if (foot) seg(32 + fx, 41 + fy, 28 + fx, 41 + fy);
-  };
-  const mouth = (x0: number, x1: number, y: number, drop = 0, th = 1) => {
-    x0 += fx;
-    x1 += fx;
-    y += fy;
-    seg(x0, y, x1, y, th);
-    if (drop) {
-      seg(x0, y, x0, y + drop);
-      seg(x1, y, x1, y + drop);
-    }
+    if (!glow) px1(ix, iy, dark); // pupila
+    px1(ix - 1, iy - 1, glow ? '#ffffff' : '#fff4d8'); // brilho
   };
   // o número: n pontinhos na testa
   const x0t = 32 - ((n - 1) * 5) / 2;
@@ -566,14 +576,31 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
     px1(x0t + i * 5, 10);
     px1(x0t + i * 5 + 1, 10);
   }
-  // TODOS os rostos têm a MESMA afeição neutra (decisão do jogador): olhos na mesma altura, sobrancelhas retas, nariz reto, boca reta.
-  // O que muda de um número para outro é só a cor dos olhos e os pontinhos na testa.
-  eye(20 + look.ex, 29 + look.ey);
-  eye(44 + look.ex, 29 + look.ey);
-  browL(0, 17);
-  browR(0, 17);
-  nose();
-  mouth(22, 42, 51);
+  // TODOS os rostos têm a MESMA afeição neutra (decisão do jogador): o que muda de um número para outro é só a cor das íris e os pontinhos na testa.
+  eye(20, 29);
+  eye(44, 29);
+  // sobrancelhas: um arco leve, com um risquinho na ponta de dentro (como a serifa de um glifo)
+  const by = look.by;
+  poly([[0, 3], [3, 1], [6, 0], [15, 0]], 11 + fx, 16 + by);
+  px1(26 + fx, 17 + by);
+  poly([[0, 0], [9, 0], [12, 1], [15, 3]], 38 + fx, 16 + by);
+  px1(38 + fx, 17 + by);
+  // nariz: a ponte desce do meio das sobrancelhas; a base com as narinas
+  seg(32 + fx, 21 + fy, 32 + fx, 40 + fy);
+  seg(30 + fx, 41 + fy, 34 + fx, 41 + fy);
+  px1(29 + fx, 42 + fy);
+  px1(35 + fx, 42 + fy);
+  // marcas nas maçãs do rosto (dois pontos, como uma inscrição)
+  const faint = shade(hex('#f0c868'), glow ? 0.45 : 0.75);
+  for (const x of [12, 52]) {
+    px1(x + fx, 37 + fy, faint);
+    px1(x + fx, 40 + fy, faint);
+  }
+  // boca reta com as pontas marcadas, e o queixo
+  seg(24 + fx, 50 + fy, 40 + fx, 50 + fy);
+  px1(23 + fx, 51 + fy);
+  px1(41 + fx, 51 + fy);
+  seg(30 + fx, 54 + fy, 34 + fx, 54 + fy, 1, faint);
 }
 
 // gira o conteúdo de uma face em múltiplos de 90° (sentido horário): as faces laterais do dado podem aparecer deitadas na tela, e o rosto precisa ficar de pé

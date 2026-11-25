@@ -327,10 +327,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
             // o jogador desconfia, anda até o poço e vê o Escrivão lá no alto, que fala e JOGA o dado (o motor conduz a cena: scene.ts, startScribeDrop)
             ctx.freeze(true);
             ctx.dropDie(() => {
-              // a câmera voltou para a frente, com o dado caído à vista: ele fala (balão) e a cena fica TRAVADA até o jogador pegá-lo
+              // a cena acabou com o dado caído à vista (ele já falou, ainda na cena): fica TRAVADA até o jogador pegá-lo
               ctx.pin(true);
               ctx.freeze(false);
-              ctx.dieTalk([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0.5 });
             });
           },
         });
@@ -430,7 +429,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         ctx.dieGlow(0.5 + 0.35 * Math.sin(t * 2.4));
         if (!pickingUp && !ctx.paused()) {
           murmurT += dt;
-          if (murmurT > 9) {
+          if (murmurT > 25) { // raro: enquanto ele fala o "Pegar o dado" some (nada se sobrepõe), então ele quase não interrompe
             murmurT = 0;
             ctx.dieSay(MURMURS[murmurN++ % MURMURS.length]); // o dado fala por balão, nunca pela caixa de conversa
           }

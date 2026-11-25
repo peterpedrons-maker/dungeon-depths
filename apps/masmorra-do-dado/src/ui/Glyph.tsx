@@ -47,8 +47,10 @@ export function Glyph({ g, size = 64, color = '#f2e6c9', draw = 0, delay = 0 }: 
     cursor += durF + GAP;
     const at = delay + draw * startF;
     const dur = Math.max(50, draw * durF);
+    // comprimento REAL do traço (sem `pathLength`, que o Safari do iPhone ignora em retângulos e círculos: lá os traços sumiam)
+    const L = Math.ceil(len) + 2;
     return kind === 'line'
-      ? { strokeDasharray: 1, strokeDashoffset: 1, animation: `gdraw ${dur}ms cubic-bezier(0.45, 0, 0.55, 1) ${at}ms forwards` }
+      ? { strokeDasharray: `${L} ${L}`, strokeDashoffset: L, animation: `gdraw ${dur}ms cubic-bezier(0.45, 0, 0.55, 1) ${at}ms forwards` }
       : { opacity: 0, transformBox: 'fill-box', transformOrigin: 'center', animation: `gdot ${dur}ms ease-out ${at}ms forwards` };
   };
   let fi = 0;
@@ -56,18 +58,18 @@ export function Glyph({ g, size = 64, color = '#f2e6c9', draw = 0, delay = 0 }: 
   let ri = 0;
   return (
     <svg viewBox="0 0 150 130" width={Math.round((size * 150) / 130)} height={size} shapeRendering="crispEdges" aria-hidden="true">
-      {g.F === 'full' && <rect x={x0} y={y0} width={2 * H} height={2 * H} rx={4} pathLength={1} {...frame} style={anim('line', frameLens[fi++])} />}
+      {g.F === 'full' && <rect x={x0} y={y0} width={2 * H} height={2 * H} rx={4} {...frame} style={anim('line', frameLens[fi++])} />}
       {g.F === 'V' && (
         <>
-          <polyline points={`${x0},${y0} ${x0},${y1}`} pathLength={1} {...frame} style={anim('line', frameLens[fi++])} />
-          <polyline points={`${x1},${y0} ${x1},${y1}`} pathLength={1} {...frame} style={anim('line', frameLens[fi++])} />
+          <polyline points={`${x0},${y0} ${x0},${y1}`} {...frame} style={anim('line', frameLens[fi++])} />
+          <polyline points={`${x1},${y0} ${x1},${y1}`} {...frame} style={anim('line', frameLens[fi++])} />
         </>
       )}
-      {g.F && poly[g.F] && <polyline points={poly[g.F]} pathLength={1} {...frame} style={anim('line', frameLens[fi++])} />}
+      {g.F && poly[g.F] && <polyline points={poly[g.F]} {...frame} style={anim('line', frameLens[fi++])} />}
       {g.l.map(([a, b], k) => {
         const [xa, ya] = pt(a);
         const [xb, yb] = pt(b);
-        return <line key={k} x1={xa} y1={ya} x2={xb} y2={yb} pathLength={1} stroke={color} strokeWidth={lw} strokeLinecap="round" style={anim('line', linkLens[li++])} />;
+        return <line key={k} x1={xa} y1={ya} x2={xb} y2={yb} stroke={color} strokeWidth={lw} strokeLinecap="round" style={anim('line', linkLens[li++])} />;
       })}
       {g.p.map((i) => {
         const [x, y] = pt(i);
@@ -75,7 +77,7 @@ export function Glyph({ g, size = 64, color = '#f2e6c9', draw = 0, delay = 0 }: 
       })}
       {g.ring.map((i) => {
         const [x, y] = pt(i);
-        return <circle key={`r${i}`} cx={x} cy={y} r={10} fill="none" stroke={color} strokeWidth={4} pathLength={1} style={anim('line', ringLens[ri++])} />;
+        return <circle key={`r${i}`} cx={x} cy={y} r={10} fill="none" stroke={color} strokeWidth={4} style={anim('line', ringLens[ri++])} />;
       })}
     </svg>
   );

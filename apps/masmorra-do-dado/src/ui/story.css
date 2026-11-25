@@ -60,5 +60,5 @@
 .bars.on i { transform: none; }
 
 /* símbolos que se formam: traço a traço e depois os pontos */
-@keyframes gdraw { 0% { stroke-dashoffset: 1; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes gdraw { to { stroke-dashoffset: 0; } } /* parte do valor do próprio traço (comprimento real, no estilo) */
 @keyframes gdot { 0% { opacity: 0; transform: scale(0.2); } 100% { opacity: 1; transform: scale(1); } }

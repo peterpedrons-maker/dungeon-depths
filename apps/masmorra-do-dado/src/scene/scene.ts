@@ -344,7 +344,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   scene.add(ghost);
 
   // visto de cima e de frente, girando devagar em torno do eixo vertical
-  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.8, 0, 0));
+  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.42, 0, 0)); // pouca inclinação: o rosto da frente fica reto para o jogador, e ainda se vê um pouco da face de cima
   const targetQ = new THREE.Quaternion();
   const curQ = new THREE.Quaternion();
   const wobble = new THREE.Quaternion();
@@ -646,7 +646,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const unsubDiaryFaces = diaryStore.subscribe(refreshFaces);
   buildRostos();
   curQ.copy(targetQ);
-  let spin = 0;
+  let spin = Math.PI; // começa com uma face lateral bem de frente
+  let spinTo: number | null = null; // o próximo quarto de volta (o dado vira em PASSOS, não sem parar)
+  let spinHold = 9;
+  const spinSnap = (x: number) => Math.PI + Math.round((x - Math.PI) / (Math.PI / 2)) * (Math.PI / 2);
 
 
   // ── pedra-sabão (giz) ───────────────────────────────────────────────────
@@ -835,6 +838,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const tmpV2 = new THREE.Vector3();
   const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
   const SCRIBE_AT = new THREE.Vector3(0, 0, 1.6); // onde ele para, na borda, de frente para o furo
+  // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
+  const talkSeq = (lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }) => {
+    let at = (o?.delay ?? 0) * 1000;
+    const gap = (o?.gap ?? 1.7) * 1000; // respiro entre uma frase e a seguinte (a anterior fica à vista, completa)
+    lines.forEach((l, i) => {
+      saySay(l.glyphs, { pic: l.pic, joy: l.joy, delay: at / 1000 });
+      at += 150 + lineMs(l.glyphs, !!l.pic) + (i < lines.length - 1 ? gap : LINGER_MS);
+    });
+    return at - (o?.delay ?? 0) * 1000;
+  };
   const startScribeDrop = (done: () => void) => {
     const sh = shaftWorld();
     if (!topScribe) {
@@ -1084,7 +1097,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         break;
       }
       case 11:
-        if (S.t > 0.2) {
+        // ainda na cena (faixas): o dado caído fala; só quando ele termina a cena acaba e aparece o "Pegar o dado"
+        if (S.t > 0.3) {
+          const ms = talkSeq([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0 });
+          go(11.5);
+          S.t = -ms / 1000;
+        }
+        break;
+      case 11.5:
+        if (S.t > 0.1) {
           ui.setBars(false);
           scribeDrop = null;
           progress.set('caiu');
@@ -1180,15 +1201,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       },
       dieSay: (glyphs, o) => saySay(glyphs, o),
-      dieTalk: (lines, o) => {
-        let at = (o?.delay ?? 0) * 1000;
-        const gap = (o?.gap ?? 1.7) * 1000; // respiro entre uma frase e a seguinte (a anterior fica à vista, completa)
-        lines.forEach((l, i) => {
-          saySay(l.glyphs, { pic: l.pic, joy: l.joy, delay: at / 1000 });
-          at += 150 + lineMs(l.glyphs, !!l.pic) + (i < lines.length - 1 ? gap : LINGER_MS);
-        });
-        return at - (o?.delay ?? 0) * 1000;
-      },
+      dieTalk: (lines, o) => talkSeq(lines, o),
       freeze: (on) => {
         holds = Math.max(0, holds + (on ? 1 : -1));
       },
@@ -2635,6 +2648,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (dsp > Math.PI) dsp -= Math.PI * 2;
       if (dsp < -Math.PI) dsp += Math.PI * 2;
       spin += dsp * Math.min(1, dt * 5);
+      spinTo = null;
       if (sketchOn.age >= SK_LIFE) endSketch();
     } else if (dieCine > 0.3) {
       // na cena, o dado para de girar com uma face de frente para o jogador (o rosto aparece)
@@ -2642,7 +2656,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (dsp > Math.PI) dsp -= Math.PI * 2;
       if (dsp < -Math.PI) dsp += Math.PI * 2;
       spin += dsp * Math.min(1, dt * 3);
-    } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) spin += dt * 0.4; // gira devagar (metade do que girava)
+      spinTo = null;
+    } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) {
+      // na mão: fica um bom tempo com UMA face (o rosto) reta para o jogador e, de vez em quando, vira devagar um quarto de volta
+      if (spinTo === null) spinTo = spinSnap(spin);
+      spinHold -= dt;
+      if (spinHold <= 0) {
+        spinHold = 11 + Math.random() * 6;
+        spinTo = spinSnap(spinTo) + Math.PI / 2;
+      }
+      spin += (spinTo - spin) * (1 - Math.exp(-dt * 1.6));
+    }
     else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
     handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
     lookedT += dt;
