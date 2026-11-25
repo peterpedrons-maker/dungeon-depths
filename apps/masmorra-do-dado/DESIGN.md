@@ -683,12 +683,12 @@ de texto novas, os ícones definitivos em 16×16/24×24 com a tecla no aviso de 
 ## 46. Interface de lançamento, passos 4 a 6 e a tela inicial do dado caído (implementado; `INTERFACE.md` revisado, da branch `claude/puzzles-design`)
 
 **A tela inicial (§3.1).** É a sala 1, o Poço, no instante em que o dado caiu. O dado (o do HUD, que tem o rosto e a vida de `dielife.ts`) fica
-**deitado de lado no chão de verdade da sala 1**, no ponto em que ele cai na abertura (`dieLie`), no meio do entulho da própria sala: o ponto do
-chão é projetado pela câmera do mundo e o dado do HUD é desenhado exatamente ali, no tamanho que um dado de verdade teria àquela distância
-(`titlePose`), com uma sombra no chão da sala. Nada é refeito à parte (o entulho falso do HUD saiu a pedido do Pedro). A câmera fica quase no chão
+**deitado de lado no chão de verdade da sala 1**, no ponto em que ele cai na abertura (`dieLie`), no meio do entulho da própria sala: o dado da mão
+é posto nesse ponto, no tamanho de um dado de verdade, e desenhado **com a câmera do mundo** (`dieInWorld`, `titlePose`), então tem a perspectiva
+e a profundidade da sala; continua na camada dele (luz própria, que gira junto com a câmera, nítido, sem o bloom da sala) e tem sombra no chão da sala. Nada é refeito à parte (o entulho falso do HUD saiu a pedido do Pedro). A câmera fica quase no chão
 (18 cm, de quem acordou deitado), à esquerda do dado, e é apontada para o dado cair um pouco à direita do centro (no celular, um pouco mais longe).
-O desfoque é uma **profundidade de campo de verdade** (`uBlur` + `uFocus`): o chão e o entulho em volta do dado ficam nítidos, o que está mais
-longe ou bem perto da câmera fica borrado. Atrás do dado, o cone de luz do poço com a poeira. No jogo novo, a câmera sobe de fato pelo poço até o
+O desfoque é uma **profundidade de campo de verdade e leve** (`uBlur` 0,9 + `uFocus`): o chão e o entulho em volta do dado ficam nítidos, o que
+está mais longe ou bem perto da câmera fica um pouco borrado, sem achatar a sala (o Pedro achou que o fundo muito borrado parecia 2D). Atrás do dado, o cone de luz do poço com a poeira. No jogo novo, a câmera sobe de fato pelo poço até o
 branco. A câmera fica baixa e "respira" 1,5 cm; a luz respira (o brilho sobe e desce 3%). O **olho** segue o mouse no PC; com o
 teclado, olha para a opção marcada; no celular, para onde o dedo tocou e depois volta a vaguear; pisca; **cochila** depois de 30 s sem ninguém
 mexer (`LifeInput.sleepAfter`) e acorda num pulo; dá um **pulinho** quando a opção marcada é "Novo jogo" (e fica **abatido** em "Sair", que só

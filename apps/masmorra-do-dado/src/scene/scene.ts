@@ -289,7 +289,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (uBlur > 0.01) {
           float dz = texture2D(tDepth, vUv).r;
           float zl = uNear * uFar / (uFar - dz * (uFar - uNear));
-          coc = clamp(abs(zl - uFocus) / max(zl, 0.05) * 1.7 - 0.08, 0.0, 1.0);
+          coc = clamp(abs(zl - uFocus) / max(zl, 0.05) * 1.5 - 0.22, 0.0, 1.0);
         }
         if (uBlur > 0.01 && hud.a < 0.5 && coc > 0.02) {
           vec3 acc = room;
@@ -425,6 +425,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const dieHolder = new THREE.Group();
   dieGroup.add(dieHolder);
   dieHolder.add(buildDie(handMats));
+  // tela inicial: quanto a sala desfoca
+  const TB = { blur: 0.9 };
+  // Na tela inicial o dado da mão é desenhado com a CÂMERA DO MUNDO, no ponto do chão da sala em que ele caiu (perspectiva e profundidade da
+  // sala), mas continua na camada dele (luz própria, nítido, sem o bloom da sala). No jogo, com a câmera do HUD.
+  let dieInWorld = false;
+  // onde o dado da mão está na tela (NDC)
+  const dieOnScreen = (out: THREE.Vector3) => out.copy(dieGroup.position).project(dieInWorld ? camera : dieCam);
   // TELA INICIAL: uma luz fria de trás no dado do HUD (o feixe do poço). O chão e o entulho em volta dele são os DA SALA (ver titlePose)
   const titleRim = new THREE.DirectionalLight(0xc8d6ff, 0);
   titleRim.position.set(-0.4, 1.2, -1.6);
@@ -507,7 +514,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (dieCineTarget > 0.5) return { dx: 0, dy: 0, player: true }; // na cena, o dado olha DIRETO para o jogador
     if (forcedLook && performance.now() < forcedLook.until) {
       // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
-      dieNdc.copy(dieGroup.position).project(dieCam);
+      dieOnScreen(dieNdc);
       tgtNdc.copy(forcedLook.p).project(camera);
       const fx = tgtNdc.x - dieNdc.x;
       const fy = tgtNdc.y - dieNdc.y;
@@ -523,7 +530,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       return c > minCos ? c : -1;
     };
     const ndcOf = (p: THREE.Vector3, eager = false, player = false): LifeTarget | null => {
-      dieNdc.copy(dieGroup.position).project(dieCam);
+      dieOnScreen(dieNdc);
       tgtNdc.copy(p).project(camera);
       const dx = tgtNdc.x - dieNdc.x;
       const dy = tgtNdc.y - dieNdc.y;
@@ -582,7 +589,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     let y: number;
     let up: number;
     if (dieGroup.visible || !worldDie.visible) {
-      dieNdc.copy(dieGroup.position).project(dieCam);
+      dieOnScreen(dieNdc);
       x = ((dieNdc.x + 1) / 2) * 100;
       y = ((1 - dieNdc.y) / 2) * 100;
       up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
@@ -675,7 +682,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const updateMats = () => {
     DIE_FACES.forEach((n, i) => {
-      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1) * lifeGlow * (1 + 0.7 * rostoP[i]);
+      handMats[i].emissiveIntensity = (n === face ? 1.6 : 0.5) * (1 - 0.65 * handDim) * (1 + 1.6 * handTalk) * (sketchOn && sketchOn.i === i ? 1 + 0.5 * sketchP() : 1) * (sketchOn && sketchOn.age < SK_IN0 ? 1 - 0.6 * (sketchOn.age / SK_IN0) : 1) * lifeGlow * (1 + 0.7 * rostoP[i])
       handMats[i].color.setScalar(1 - 0.5 * handDim);
       dieMats[i].emissiveIntensity = (n === thrownFace ? 1.4 : 0.5) * (1 + 2.2 * burnHeat + 2.4 * talkGlow);
     });
@@ -2785,6 +2792,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const k = camera.aspect < 1.5 || window.innerHeight < 500 ? TT.far : 1;
       titleBase.set(titleFocus.x + TT.cx * k, titleFocus.y + TT.cy, titleFocus.z + TT.cz * k);
     }
+    titleDieYaw = Math.atan2(titleBase.x - titleFocus.x, titleBase.z - titleFocus.z); // o rosto do dado para a câmera
     // créditos: a câmera gira devagar em volta do dado
     if (titleOrbit !== 0) {
       const px = titleFocus.x;
@@ -2825,35 +2833,57 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     titleY = pos.y;
   };
-  // o dado da tela inicial: deitado de lado NO CHÃO DA SALA. O ponto do chão é projetado pela câmera do mundo e o dado do HUD é posto
-  // exatamente ali, no tamanho que um dado de verdade teria àquela distância; a profundidade de campo foca nessa distância.
+  // o dado da tela inicial: deitado de lado NO CHÃO DA SALA, no meio do entulho de verdade. É o dado da mão (com o rosto e a vida de dielife.ts),
+  // desenhado com a câmera do mundo no ponto do chão em que ele caiu; as luzes dele (chave, preenchimento, contraluz do poço) andam junto com a
+  // câmera, para ele ser iluminado como antes. A orientação é presa ao giro da câmera SEM os créditos: nos créditos a câmera gira em volta dele.
   const titleV = new THREE.Vector3();
+  const titleQ = new THREE.Quaternion();
+  const titleUp = new THREE.Vector3(0, 1, 0);
+  let titleDieYaw = 0;
+  const DIE_W = 0.42; // o lado do dado de verdade (worldModel)
+  const lightHome = new Map<THREE.DirectionalLight, THREE.Vector3>();
   const titlePose = (dt: number, lo: { dx: number; dy: number; scale: number }) => {
-    const halfW = Math.tan((45 * Math.PI) / 360) * dieCam.aspect;
-    const kHud = Math.tan((45 * Math.PI) / 360) / Math.tan((camera.fov * Math.PI) / 360);
-    camera.updateMatrixWorld();
-    const DIE = 0.42; // o lado do dado de verdade (worldModel)
-    titleV.set(titleFocus.x, titleFocus.y + DIE * 0.62, titleFocus.z).applyMatrix4(camera.matrixWorldInverse);
-    const dz = Math.max(0.05, -titleV.z);
-    const s = (DIE * kHud) / dz;
-    let x = (titleV.x / dz) * kHud;
-    let y = (titleV.y / dz) * kHud + lo.dy * 0.9 * s * 4 + Math.sin(titleT * 0.9) * 0.003;
-    // pulinho para fora do quadro (continuar)
+    dieInWorld = true;
+    const x0 = titleFocus.x;
+    const z0 = titleFocus.z;
+    let y = titleFocus.y + DIE_W * 0.62 + lo.dy * DIE_W * 3.4 + Math.sin(titleT * 0.9) * 0.002;
+    let side = 0;
+    // pulinho para fora do quadro (continuar): rola para a direita da câmera
     if (titleTr?.k === 'go' || titleTr?.k === 'out' || titleGone) {
       const u = clamp((titleTr?.t ?? 1) / 0.5, 0, 1);
-      x += u * u * (halfW + 0.6);
-      y += Math.sin(Math.PI * Math.min(1, u * 1.3)) * 0.12;
+      side = u * u * 2.2;
+      y += Math.sin(Math.PI * Math.min(1, u * 1.3)) * 0.35;
     }
-    dieGroup.position.set(x, y, -1);
-    dieGroup.scale.setScalar(s * lo.scale);
-    // de lado no chão: rolado e um pouco virado; nos créditos, gira junto com a câmera
-    tmpQ.setFromEuler(wobbleEuler.set(0.16, -0.38 - titleOrbit, 0.3));
+    dieGroup.position.set(x0 + Math.cos(titleDieYaw) * side, y, z0 - Math.sin(titleDieYaw) * side);
+    dieGroup.scale.setScalar(DIE_W * lo.scale);
+    dieGroup.quaternion.copy(titleQ.setFromAxisAngle(titleUp, titleDieYaw));
+    // de lado no chão: rolado e um pouco virado
+    tmpQ.setFromEuler(wobbleEuler.set(0.16, -0.38, 0.3));
     dieHolder.quaternion.premultiply(tmpQ);
-    // foco: no dado (a sala atrás e o que está bem perto da câmera ficam desfocados)
-    postMat.uniforms.uFocus.value = dz;
-    titleShadow.visible = mode === 'title' && !titleGone && -titleV.z > 0.05;
+    // as luzes do dado: a mesma direção de antes, só que relativa à câmera do mundo
+    camera.updateMatrixWorld();
+    for (const L of [key, fill, titleRim]) {
+      if (!lightHome.has(L)) lightHome.set(L, L.position.clone());
+      L.position.copy(lightHome.get(L)!).applyQuaternion(camera.quaternion).add(dieGroup.position);
+      L.target.position.copy(dieGroup.position);
+      L.target.updateMatrixWorld();
+    }
+    // foco: no dado (o que está longe dele fica desfocado)
+    titleV.copy(dieGroup.position).applyMatrix4(camera.matrixWorldInverse);
+    postMat.uniforms.uFocus.value = Math.max(0.05, -titleV.z);
+    titleShadow.visible = mode === 'title' && !titleGone;
     titleShadow.position.set(titleFocus.x + 0.02, titleFocus.y + 0.012, titleFocus.z + 0.03);
     void dt;
+  };
+  // de volta ao HUD (o jogo começou)
+  const titleDieHome = () => {
+    dieInWorld = false;
+    dieGroup.quaternion.identity();
+    for (const [L, p] of lightHome) {
+      L.position.copy(p);
+      L.target.position.set(0, 0, 0);
+      L.target.updateMatrixWorld();
+    }
   };
   const enterTitle = () => {
     mode = 'title';
@@ -2870,12 +2900,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // a vida do olho: mouse, toque e teclado acordam e dizem para onde olhar
   const titleInput = (cx: number, cy: number) => {
     titleIdle = 0;
-    dieNdc.copy(dieGroup.position).project(dieCam);
+    dieOnScreen(dieNdc);
     const nx = (cx / window.innerWidth) * 2 - 1;
     const ny = -((cy / window.innerHeight) * 2 - 1);
     // (antes do 1º quadro o dado ainda não tem lugar na tela: usa o lugar dele de sempre)
-    const ox = Number.isFinite(dieNdc.x) && dieGroup.position.z < 0 ? dieNdc.x : 0.3;
-    const oy = Number.isFinite(dieNdc.y) && dieGroup.position.z < 0 ? dieNdc.y : -0.4;
+    const ok = Number.isFinite(dieNdc.x + dieNdc.y) && Math.abs(dieNdc.x) < 1.5 && Math.abs(dieNdc.y) < 1.5;
+    const ox = ok ? dieNdc.x : 0.3;
+    const oy = ok ? dieNdc.y : -0.4;
     titleTarget = { dx: (nx - ox) * 1.4, dy: (ny - oy) * 1.4 };
   };
   let touchLookT = 0;
@@ -2909,7 +2940,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     // a luz do poço "respira"
     postMat.uniforms.uBright.value = (1 + configStore.get().brightness * 0.07) * (1 + Math.sin(titleT * 0.7) * 0.03);
-    postMat.uniforms.uBlur.value = titleTr?.k === 'new' ? Math.max(0, 2.6 - titleTr.t * 1.6) : 2.6;
+    postMat.uniforms.uBlur.value = titleTr?.k === 'new' ? Math.max(0, TB.blur - titleTr.t * 1.6) : TB.blur;
     titleRim.intensity = 1.6;
     if (titleTr) {
       titleTr.t += dt;
@@ -2968,6 +2999,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCineTarget = 0;
     dieCine = 0;
     titleShadow.visible = false;
+    titleDieHome();
     titleRim.intensity = 0;
     postMat.uniforms.uBlur.value = 0;
     postMat.uniforms.uBright.value = 1 + configStore.get().brightness * 0.07;
@@ -3637,7 +3669,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     renderer.setRenderTarget(rtHud);
     renderer.setClearColor(0x000000, 0);
     renderer.clear();
-    renderer.render(dieScene, dieCam);
+    renderer.render(dieScene, dieInWorld ? camera : dieCam);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
     const bookOut = book.isOut();
@@ -3764,7 +3796,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       goto: (i: number) => spawnIn(i),
       save: () => saveGame(),
       darkLevel: () => darkK,
-      titleTune: (o: Partial<typeof TT>) => Object.assign(TT, o),
+      titleTune: (o: Partial<typeof TT> & { blur?: number }) => { if (o.blur !== undefined) TB.blur = o.blur; Object.assign(TT, o); },
       titleDbg: () => ({ focus: titleFocus.toArray(), cam: camera.position.toArray(), fov: camera.fov, die: dieGroup.position.toArray(), s: dieGroup.scale.x, vis: dieGroup.visible, focusZ: postMat.uniforms.uFocus.value, mode }),
       noHud: (v = true) => {
         devNoHud = v;
