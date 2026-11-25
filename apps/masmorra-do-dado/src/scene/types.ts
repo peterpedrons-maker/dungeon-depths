@@ -60,6 +60,8 @@ export interface Ctx {
   // uma conversa do dado em várias frases, uma depois da outra (cada uma só começa quando a anterior terminou de ser ESCRITA e foi lida); devolve a duração total (ms)
   dieTalk(lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }): number;
   paused(): boolean; // cena, conversa ou diário em andamento: cronômetros de puzzle devem esperar
+  // a cena fica TRAVADA esperando o jogador agir: ele não anda nem olha em volta, mas pode interagir (E/AGIR) com o que está na frente
+  pin(on: boolean): void;
   freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
   lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)
   die: {

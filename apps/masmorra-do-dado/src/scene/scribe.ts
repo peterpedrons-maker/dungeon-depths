@@ -9,6 +9,7 @@ export interface Scribe {
   setAlpha(v: number): void;
   // t: tempo; arm: 0 braço caído … 1 braço erguido escrevendo; look: 0..1 quanto o capuz acompanha o jogador
   update(t: number, arm: number): void;
+  hand: THREE.Object3D; // a mão do braço direito (para segurar coisas, como o dado na abertura)
 }
 
 function rng(seed: number) {
@@ -130,6 +131,7 @@ export function makeScribe(): Scribe {
   let alpha = 1;
   return {
     group,
+    hand: handR,
     setAlpha(v) {
       alpha = Math.max(0, Math.min(1, v));
       group.visible = alpha > 0.01;

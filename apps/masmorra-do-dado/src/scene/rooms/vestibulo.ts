@@ -81,6 +81,10 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     sky.rotation.x = Math.PI / 2;
     sky.position.set(SHAFT.x, H + shaftH, SHAFT.z);
     kit.group.add(sky);
+    // lá no alto, um parapeito de pedra saindo da parede do poço: é dali que o Escrivão se debruça e joga o dado (abertura, DESIGN.md §32)
+    const ledge = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.16, 0.62), lambert(brickTexture([1, 0.5], 0.7, 43, D.theme)));
+    ledge.position.set(SHAFT.x, H + 14.1 - 0.08, SHAFT.z + SHAFT.r - 0.28);
+    kit.group.add(ledge);
     // coluna de luz (translúcida) e mancha de luz no chão
     const beam = new THREE.Mesh(
       new THREE.CylinderGeometry(SHAFT.r * 0.95, SHAFT.r * 1.3, H, 20, 1, true),
@@ -248,16 +252,13 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
           block: true,
           onEnd: () => {
             // um barulho lá em cima: algo cai pelo poço (a câmera vira para o buraco)
+            // o jogador desconfia, anda até o poço e vê o Escrivão lá no alto, que fala e JOGA o dado (o motor conduz a cena: scene.ts, startScribeDrop)
             ctx.freeze(true);
             ctx.dropDie(() => {
-              // o jogador pensa (caixa de conversa); o DADO fala só por balão, em glifos curtos
-              ctx.say([{ who: 'thought', text: 'Caiu alguma coisa. Um dado… e ele brilha.' }], {
-                block: true,
-                onEnd: () => {
-                  const ms = ctx.dieTalk([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0.4 });
-                  window.setTimeout(() => ctx.freeze(false), 400 + ms - 1500);
-                },
-              });
+              // a câmera voltou para a frente, com o dado caído à vista: ele fala (balão) e a cena fica TRAVADA até o jogador pegá-lo
+              ctx.pin(true);
+              ctx.freeze(false);
+              ctx.dieTalk([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0.5 });
             });
           },
         });
@@ -266,12 +267,13 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     // pegar o dado do chão (depois de ele ter caído): ele vai para a mão, vem para o CENTRO da tela e explica, em glifos
     interactables.push({
       pos: diePos,
-      r: 1.9,
+      r: 2.6,
       label: 'Pegar o dado',
       enabled: () => ctx.flag('caiu') && !ctx.have().die && ctx.die.state === 'rest' && !pickingUp,
       use: () => {
         pickingUp = true;
         ctx.freeze(true);
+        ctx.pin(false); // sai da trava da abertura (o resto da cena segue com freeze)
         ctx.dieGlow(1);
         ctx.lookAt(diePos, 0.6);
         ctx.giveDie(() => {
@@ -323,7 +325,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       return r;
     },
     clampDie(p, vel, e, R) {
-      if (p.y > H - R) {
+      const inShaft = v === 1 && Math.hypot(p.x - SHAFT.x, p.z - SHAFT.z) < SHAFT.r - R; // dentro do poço o "teto" é lá em cima
+      if (p.y > H - R && !inShaft) {
         p.y = H - R;
         if (vel.y > 0) vel.y = -vel.y * e;
       }
