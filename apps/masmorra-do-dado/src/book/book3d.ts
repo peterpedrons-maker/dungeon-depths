@@ -140,7 +140,7 @@ export function createDiaryBook(env: BookEnv) {
     const p = leafGeo.attributes.position;
     for (let i = 0; i < p.count; i++) {
       const u = leafBase[i * 3] / PWD;
-      const phi = theta - lag * u;
+      const phi = Math.min(Math.PI, Math.max(0, theta - lag * u)); // a folha encurva, mas nunca desce para dentro das páginas de baixo
       p.setXYZ(i, GAP + u * PWD * Math.cos(phi), leafBase[i * 3 + 1], 0.003 + u * PWD * Math.sin(phi) + curve(u) * Math.abs(Math.cos(theta)) ** 3);
     }
     p.needsUpdate = true;
@@ -166,9 +166,13 @@ export function createDiaryBook(env: BookEnv) {
   spineGeo.setAttribute('uv', new THREE.BufferAttribute(spineUv, 2));
   spineGeo.setIndex(spineIdx);
   const spineMap = diarySpineArt();
-  const spine = new THREE.Mesh(spineGeo, new THREE.MeshLambertMaterial({ map: spineMap, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: spineMap, emissiveIntensity: 0.22 }));
+  // por fora: o couro com as nervuras e o ouro; por dentro (o avesso, que aparece por um instante quando a capa está em pé): couro escuro e liso
+  const spine = new THREE.Mesh(spineGeo, new THREE.MeshLambertMaterial({ map: spineMap, side: THREE.FrontSide, emissive: 0xffffff, emissiveMap: spineMap, emissiveIntensity: 0.22 }));
   spine.frustumCulled = false;
   inner.add(spine);
+  const spineIn = new THREE.Mesh(spineGeo, new THREE.MeshLambertMaterial({ color: 0x2a0e08, side: THREE.BackSide }));
+  spineIn.frustumCulled = false;
+  inner.add(spineIn);
   const ZO = -0.07; // face de fora da capa
   const setSpine = (ang: number) => {
     // P1: beirada da capa de trás (fixa); P2: beirada da capa da frente, girada com ela; I: um ponto "dentro" do livro (para saber para que lado a lombada estufa)
