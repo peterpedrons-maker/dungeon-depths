@@ -834,10 +834,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const wellWorld = () => rooms[0].wellTop!.clone().add(offs[0]); // a boca do poço, lá fora (nível do chão do pátio)
   const scribeHand = new THREE.Vector3();
   const sPos = new THREE.Vector3();
+  const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
-  const tmpV2 = new THREE.Vector3();
   const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
-  const SCRIBE_AT = new THREE.Vector3(0, 0, 1.6); // onde ele para, na borda, de frente para o furo
+  const SCRIBE_AT = new THREE.Vector3(0, 0, 1.95); // longe o bastante da mureta (raio 1,38): o corpo nunca a atravessa // onde ele para, na borda, de frente para o furo
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
   const talkSeq = (lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }) => {
     let at = (o?.delay ?? 0) * 1000;
@@ -864,7 +864,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       scene.add(topScribe.group);
       scribeDie = worldModel.clone();
       topScribe.hand.add(scribeDie);
-      scribeDie.position.set(0, -0.12, 0.05);
+      scribeDie.position.set(0, 0, 0);
       scribeDie.scale.setScalar(0.42 / 1.3);
     }
     topScribe.setAlpha(0); // ainda não chegou
@@ -902,9 +902,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const ox = dieP.x - sl.x;
       const oz = dieP.z - sl.z;
       const od = Math.hypot(ox, oz);
-      if (od > 0.68) {
-        dieP.x = sl.x + (ox / od) * 0.68;
-        dieP.z = sl.z + (oz / od) * 0.68;
+      if (od > 0.9) {
+        // (só por segurança) nunca fora da boca do poço; normalmente ele já sai da mão por cima do furo e cai guiado para o meio
+        dieP.x = sl.x + (ox / od) * 0.9;
+        dieP.z = sl.z + (oz / od) * 0.9;
       }
     }
     dieV.set(0, -0.3, 0);
@@ -967,11 +968,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       setCine(tmpV.set(3.5 - 0.6 * k, 1.0 + 0.15 * k, 0.3 + 0.3 * k).add(W), new THREE.Vector3(-0.7 + 0.6 * k, 1.0, 1.7 - 0.3 * k).add(W)); // de lado: ele vem na direção da câmera
     } else if (S.ph === 6) {
       // de lado, mais perto: ele se endireita, leva a mão às costas e tira o dado de dentro do manto
-      setCine(tmpV.set(2.4, 1.2, 2.9).add(W), new THREE.Vector3(0, 0.95, 1.5).add(W));
+      const up = clamp((S.t - 1.2) / 1.2, 0, 1); // a câmera sobe junto com o braço erguido
+      setCine(tmpV.set(2.6, 1.2 + 0.4 * up, 3.2).add(W), new THREE.Vector3(0, 0.95 + 1.1 * up, 1.6).add(W));
     } else if (S.ph === 7 && topScribe) {
       // close na mão com o dado, sobre o poço
       topScribe.hand.getWorldPosition(scribeHand);
-      setCine(tmpV.set(0.75, 0.95, 0.35).add(scribeHand), tmpV2.copy(scribeHand).add(new THREE.Vector3(0, -0.2, 0))); // de cima e de lado: a mão, o dado e a boca do poço embaixo
+      scribeLook.copy(scribeHand).setY(scribeHand.y - 0.24); // mira a MÃO (os dedos em volta do dado), não o dado
+      setCine(tmpV.set(0.85, -0.5, -0.9).add(scribeHand), scribeLook); // de frente e de baixo, mais afastada: a mão, o braço e o capuz contra o céu // de frente e um pouco de baixo: a mão ossuda com o dado na palma, contra o céu
     } else if (S.ph === 8) {
       // a câmera desce POR BAIXO do dado: o dado em cima, contra a luz, e lá no alto a silhueta do Escrivão debruçado
       const dw = worldDie.position;
@@ -1021,11 +1024,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 4:
         if (S.arrived) {
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
-          S.pose = { walk: 0, lean: 0.95, rest: 1, headPitch: 0.45 };
+          S.pose = { walk: 0, lean: 1.15, rest: 1, headPitch: 0.45 }; // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           if (S.t > 6.2) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
-            fovCine = 12;
+            fovCine = 8;
             topScribe!.head.getWorldPosition(tmpV);
             yaw = lookYaw(tmpV.x, tmpV.z);
             pitch = lookPitch(tmpV.x, tmpV.y, tmpV.z);
@@ -1049,15 +1052,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 6:
         // de lado: endireita-se um pouco, a mão direita vai às costas, para dentro do manto… e volta com o dado
         fovCine = 40;
-        S.pose = { lean: 0.35, rest: 0.6, back: S.t < 1.25 ? 1 : 0, reach: S.t < 1.25 ? 0 : 0.45, headPitch: S.t < 1.25 ? 0.1 : 0.35, headYaw: S.t < 1.25 ? -0.35 : 0 };
+        // depois ERGUE o dado bem alto, na palma virada para cima, acima da cabeça e sobre a boca do poço (nada atravessa a mureta)
+        S.pose = { lean: 0.3, rest: 0.6, back: S.t < 1.25 ? 1 : 0, raise: S.t < 1.25 ? 0 : 1, headPitch: S.t < 1.25 ? 0.1 : -0.2, headYaw: S.t < 1.25 ? -0.35 : 0 };
         if (S.t > 1.05) scribeDie!.visible = true;
-        if (S.t > 2.3) go(7);
+        if (S.t > 2.7) go(7);
         break;
       case 7:
         // close na mão: ele estende o braço sobre o poço, segura um instante… e abre os dedos
         fovCine = 38;
-        S.pose = { lean: 0.6, rest: 1, reach: 1, open: S.t > 1.9 ? 1 : 0, headPitch: 0.5 };
-        if (!S.thrown && S.t > 2.05) {
+        S.pose = { lean: 0.3, rest: 1, raise: 1, open: S.t > 1.9 ? 1 : 0, headPitch: 0.1 };
+        if (!S.thrown && S.t > 2.2) {
           releaseDie();
           go(8);
         }
@@ -1065,7 +1069,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 8:
         // caindo: quando ele chega perto do teto da sala, corta para o olhar do jogador, que o vê bater no chão
         fovCine = 56;
-        S.pose = { lean: 0.95, rest: 1, reach: 0.2, open: 1, headPitch: 0.6 };
+        S.pose = { lean: 0.9, rest: 1, raise: 0.4, open: 1, headPitch: 0.6 };
         if (worldDie.position.y < sh.y + 1.4) {
           cineCam = null;
           const dw = worldDie.position;
@@ -1414,9 +1418,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const blendAtmosphere = (dt: number, snap = false) => {
     if (outsideAtmo) {
       const f = scene.fog as THREE.Fog;
-      f.color.set('#57556e');
-      f.near = 7;
-      f.far = 34;
+      f.color.set('#5d5b74');
+      f.near = 3;
+      f.far = 21; // ar grosso de madrugada: ao longe tudo vira silhueta na névoa
       ambient.color.setHex(0xa29fc6);
       ambient.intensity = 1.55;
       fogColor = '#' + f.color.getHexString();

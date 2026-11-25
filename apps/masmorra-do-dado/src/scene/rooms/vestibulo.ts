@@ -51,6 +51,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const L = Z1 - Z0;
   const zm = (Z0 + Z1) / 2;
   const SHAFT = { x: 0, z: Z0 + 5.4, r: 0.95 };
+  // névoa mística do pátio lá fora (sala 1): manchas de névoa PIXELADAS que passeiam devagar em volta do poço
+  const mist: { s: THREE.Sprite; a: number; r: number; y: number; sp: number; ph: number; base: number }[] = [];
 
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], D.theme)), 0, 0, zm, -Math.PI / 2);
   // teto (o primeiro tem o poço)
@@ -149,6 +151,50 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       rk.position.set(x, sz * 0.6, z);
       rk.rotation.set(x, z, 0);
       out.add(rk);
+    }
+    // névoa: textura de nuvem em blocos de pixel, com a transparência em PONTILHADO (o mesmo pontilhado do resto do jogo)
+    const mistTex = (() => {
+      const N = 48;
+      const cv = document.createElement('canvas');
+      cv.width = N;
+      cv.height = N;
+      const g = cv.getContext('2d')!;
+      const img = g.createImageData(N, N);
+      const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+      const blobs = [[0.5, 0.55, 0.36], [0.3, 0.6, 0.22], [0.7, 0.58, 0.24], [0.45, 0.42, 0.2], [0.62, 0.45, 0.18]];
+      for (let y = 0; y < N; y++)
+        for (let x = 0; x < N; x++) {
+          let d = 0;
+          for (const [bx, by, br] of blobs) d = Math.max(d, 1 - Math.hypot(x / N - bx, (y / N - by) * 1.6) / br);
+          d = Math.max(0, Math.min(1, d * 1.3));
+          const level = Math.floor(d * 3.999); // 0..3 degraus
+          const th = BAYER[(y % 4) * 4 + (x % 4)] / 16;
+          const on = d > th * 0.9 + 0.05;
+          const o = (y * N + x) * 4;
+          img.data[o] = 176;
+          img.data[o + 1] = 174;
+          img.data[o + 2] = 196;
+          img.data[o + 3] = on ? [0, 40, 66, 92][level] : 0;
+        }
+      g.putImageData(img, 0, 0);
+      const t = new THREE.CanvasTexture(cv);
+      t.magFilter = THREE.NearestFilter;
+      t.minFilter = THREE.NearestFilter;
+      t.generateMipmaps = false;
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    })();
+    const rnd = (k: number) => {
+      const x = Math.sin(k * 127.1 + 311.7) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    for (let i = 0; i < 18; i++) {
+      const m = new THREE.SpriteMaterial({ map: mistTex, transparent: true, depthWrite: false, fog: true, opacity: 0.8 });
+      const sp = new THREE.Sprite(m);
+      const sz = 2.4 + rnd(i) * 3.6;
+      sp.scale.set(sz * 1.6, sz, 1);
+      mist.push({ s: sp, a: rnd(i + 9) * Math.PI * 2, r: 1.9 + rnd(i + 3) * 7.5, y: 0.25 + rnd(i + 5) * 2.4, sp: (rnd(i + 7) - 0.5) * 0.06, ph: rnd(i + 11) * 6, base: 0.4 + rnd(i + 13) * 0.35 });
+      out.add(sp);
     }
     const towerMat = new THREE.MeshBasicMaterial({ color: 0x1b1a2a, fog: false });
     for (const [a, dist, h, w] of [[0.3, 13, 9, 2.6], [1.4, 15, 12, 3.4], [2.6, 12.5, 7, 4], [3.5, 14.5, 10, 2.6], [4.6, 13.5, 8, 5], [5.6, 15.5, 13, 3]]) {
@@ -398,7 +444,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     },
     clampDie(p, vel, e, R) {
       const inShaft = v === 1 && Math.hypot(p.x - SHAFT.x, p.z - SHAFT.z) < SHAFT.r - R; // dentro do poço o "teto" é lá em cima
-      if (p.y > H - R && !inShaft) {
+      if (p.y > H - R && p.y < H + 0.6 && !inShaft) { // o teto só existe na altura do teto (lá em cima, no pátio, o dado cai livre)
         p.y = H - R;
         if (vel.y > 0) vel.y = -vel.y * e;
       }
@@ -422,6 +468,12 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {
+      // a névoa do pátio gira devagar em volta do poço, sobe e desce, engrossa e afina
+      for (const m of mist) {
+        m.a += m.sp * dt;
+        m.s.position.set(Math.sin(m.a) * m.r, m.y + Math.sin(t * 0.3 + m.ph) * 0.25, Math.cos(m.a) * m.r);
+        (m.s.material as THREE.SpriteMaterial).opacity = m.base * (0.75 + 0.25 * Math.sin(t * 0.21 + m.ph));
+      }
       kit.tick(dt, t);
       if (v === 1 && ctx.flag('caiu') && !ctx.have().die) {
         // o dado no chão pede ajuda: pulsa e murmura, enquanto o jogador não o pega
