@@ -236,9 +236,11 @@ Os respiros não entram na numeração dos puzzles deste documento (para não re
   semente do S9, não comentada).
 - **Inscrições do mundo:** nas galerias, frases curtas sobre os Contáveis com as marcas que o jogador acabou de aprender, por exemplo
   «CONTÁVEIS DIZER CONFIRMADO» e, gasta, «CONTÁVEIS MENTIR BOATO». (Palavras novas aparecem uma por frase e sem obrigação: são de história.)
-- **Puzzle opcional (nível 2):** na beira da cisterna, **reflexos**: quatro braseiros apagados nos cantos do pátio se refletem na água
-  como pontos numa grade. Acender os que fazem o **reflexo** formar TRÊS (lembrando que o reflexo **inverte**: a diagonal que se vê na água
-  é a outra). Sobe uma gema do fundo da cisterna.
+- **Puzzle opcional (nível 2):** na beira da cisterna há uma pedra com o glifo **DOIS** talhado (a diagonal do canto de cima à esquerda
+  ao de baixo à direita) e quatro braseiros apagados nos cantos do pátio, que se refletem na água como os cantos de uma grade. A pedra
+  pede que **o reflexo** escreva DOIS. Quem acende a diagonal "certa" vê, na água, a **outra** diagonal (o reflexo inverte de cima para
+  baixo). **Solução:** acender os dois braseiros da diagonal contrária (o canto do fundo à direita e o da frente à esquerda); na água
+  aparece o DOIS e sobe uma gema do fundo da cisterna. Prepara o "ver de outro ponto de vista" das constelações C3 e C4.
 - **Diário 2:** *"Aqui o que está talhado não mente. O que alguém só disse, mente às vezes. Eu acendi uma frase de boato e a Casa me
   apagou como quem apaga uma vela. Acho que eles não gostavam de quem repete o que ouviu."*
 - **Semente (camada 2):** um **estandarte tecido** pendurado alto na galeria de cima, com a marca BOATO bordada. Na sala 8 o jogador
