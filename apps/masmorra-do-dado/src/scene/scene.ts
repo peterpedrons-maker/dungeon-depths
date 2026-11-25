@@ -24,7 +24,7 @@ import { CORRIDOR, dbg } from './kit';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { LEX } from '../story/lexicon';
-import { dialogue } from '../story/dialogue';
+import { dialogue, dialogueStore } from '../story/dialogue';
 import { ui } from '../story/ui';
 import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress';
 import { chatter, chatterStore } from '../story/chatter';
@@ -33,6 +33,7 @@ import { saves, slotKey, type SlotMeta } from '../story/save';
 import { layoutWorld, setWorld } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
+import { buildRespiro5 } from './rooms/respiro5';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
@@ -74,6 +75,7 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
     buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
     (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
+    buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (no plano: entre as salas 16 e 17)
     buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala 18)
     // Reserva (fora do jogo por ora): vestibulo.ts v3 (Os Quatro) e FIRE_ORDEM (A Ordem), que as novas 3 e 5 substituem; room1.ts (A Entrada, cena do
     // Escrivão que dá o giz), vestibulo.ts v4 (A Lacuna), room2.ts (O Selo), room3.ts (O Salão das Brasas), room4.ts (O Mirante); FIRE_SEGREDO
@@ -334,14 +336,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const AMB_K = 0.56;
   const HEMI_K = 0.62;
   const SIDE_K = 0.16;
+  // ── O ESCURO da Casa (ctx.blackout): a luz cai a ~8% ──
+  let darkK = 0; // 0 = luz normal, 1 = escuro
+  let darkHold = 0; // segundos de escuro que faltam
+  let darkQ: { secs: number; onDark?: () => void } | null = null; // pedido esperando a conversa acabar
+  let darkCb: (() => void) | null = null;
+  const lightScale = () => 1 - 0.92 * darkK;
   const shapeLight = () => {
     ambReal.color.copy(ambient.color);
-    ambReal.intensity = ambient.intensity * AMB_K;
+    ambReal.intensity = ambient.intensity * AMB_K * lightScale();
     hemi.color.copy(ambient.color);
     hemi.groundColor.copy(ambient.color).multiplyScalar(0.22);
-    hemi.intensity = ambient.intensity * HEMI_K;
+    hemi.intensity = ambient.intensity * HEMI_K * lightScale();
     sideKey.color.copy(ambient.color);
-    sideKey.intensity = ambient.intensity * SIDE_K;
+    sideKey.intensity = ambient.intensity * SIDE_K * lightScale();
   };
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
   let yaw = 0;
@@ -1471,6 +1479,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       freeze: (on) => {
         holds = Math.max(0, holds + (on ? 1 : -1));
       },
+      blackout: (secs, onDark) => {
+        darkQ = { secs, onDark };
+      },
+      dark: () => darkK,
       lookAt: (p, dur = 0.9) => {
         camera.updateMatrixWorld();
         const wx = p.x + off.x - pos.x;
@@ -1615,7 +1627,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sl.w = Math.min(1, sl.w);
       sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
       sl.light.color.setHex(sl.em.color);
-      sl.light.intensity = sl.em.intensity * sl.w;
+      sl.light.intensity = sl.em.intensity * sl.w * lightScale();
       fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
     }
     sfx.fire(fireNear);
@@ -2967,6 +2979,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     hasDie = progress.has('dado');
     hasChalk = CHALK_OK && progress.has('giz');
     const m = saves.meta();
+    if (m) {
+      // a lista de salas pode ter mudado (uma sala nova no meio): procura a sala salva pelo NOME
+      const bare = (n: string) => n.replace(/^Sala \d+ · /, '');
+      if (rooms[m.room] && bare(rooms[m.room].name) !== bare(m.roomName)) {
+        const k = rooms.findIndex((r) => bare(r.name) === bare(m.roomName));
+        if (k >= 0) m.room = k;
+      }
+    }
     if (m && progress.has('intro') && m.room >= 0 && m.room < rooms.length && saves.saving()) {
       for (let i = 0; i < m.room; i++) rooms[i].skip?.();
       if (m.solvedHere) rooms[m.room].skip?.();
@@ -3266,6 +3286,24 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     blendAtmosphere(dt);
+    // o escuro: espera a conversa e o balão do dado; cai em 0,15 s, fica, volta em 0,6 s
+    if (darkQ && !dialogueStore.get() && !chatterStore.get()) {
+      darkHold = Math.max(darkHold, darkQ.secs);
+      darkCb = darkQ.onDark ?? null;
+      darkQ = null;
+      sfx.play('burnout', 0.7);
+    }
+    if (darkHold > 0) {
+      darkK = Math.min(1, darkK + dt / 0.15);
+      if (darkK >= 1) {
+        if (darkCb) {
+          const f = darkCb;
+          darkCb = null;
+          f();
+        }
+        darkHold -= dt;
+      }
+    } else darkK = Math.max(0, darkK - dt / 0.6);
     shapeLight();
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
@@ -3728,6 +3766,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
       save: () => saveGame(),
+      darkLevel: () => darkK,
       noHud: (v = true) => {
         devNoHud = v;
       },

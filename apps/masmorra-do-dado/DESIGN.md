@@ -773,3 +773,15 @@ fora ou por dentro?", "Pesa na mão como se me conhecesse. Conhece?") e as legen
 *Ajuste (pedido do Pedro): menos indagações.* O personagem constata mais e pergunta pouco: no relato ficou uma pergunta só ("Onde ela está agora?"), cada parte do caderno tem um pensamento curto sem pergunta, e as legendas e pensamentos da abertura voltaram quase todos a afirmações; ficaram poucas perguntas pontuais ("E eu, o que acho que é?", "Caí? Ou me jogaram?", "Conhece?", "E eu, tenho quanto tempo?", "Qual delas é verdade?").
 
 *Ajuste 2 (pedido do Pedro): falar pouco.* O problema não era perguntar, era falar demais. O personagem agora fala só nos momentos críticos, em frases curtas e assertivas, sem repetir o que a tela já mostra: o relato tem 3 pensamentos ("A letra não é minha.", "Ela também acordou embaixo da luz.", "E parou no meio."), cada parte do caderno uma frase de 2 a 5 palavras ("Os da parede. Já estão aqui.", "A sala onde acordei.", "Arrancadas."), a anotação "Ela não sabia o que era. E eu?"; a abertura tem 4 linhas ("Dói tudo.", "Caí? Ou me jogaram?", "Luz, lá em cima. Alto demais.", "Preciso de uma porta.") e as legendas das salas têm 2 a 5 palavras. A regra está no topo do subagente `narrador`.
+
+
+## 49. O escuro da Casa e a R5 A Antecâmara Fria (implementado; PUZZLES_PROPOSTAS.md Ficha 1 e Ficha 9b)
+**O escuro** (`ctx.blackout(segundos, aoEscurecer?)` e `ctx.dark()`): a luz ambiente e as luzes emprestadas caem a 8% em 0,15 s, ficam o tempo
+pedido e voltam em 0,6 s; se há conversa ou o balão do dado na tela, o escuro espera. As **punições das salas de fogo** (`fire.ts`: frases
+apagadas, placa que abafa, ordem errada com penalidade) agora trazem o escuro de **2,5 s** (`FireSpec.blackout` muda; a futura sala 13 "O Escuro"
+usará 4 s). A **cal**: glifos verde-limão pálidos que só aparecem com a luz abaixo de 25% (opacidade = 1 − luz).
+**R5 A Antecâmara Fria** (`src/scene/rooms/respiro5.ts`): 6 × 6 m, teto 3 m (a Ficha pede 4 × 6 e 2,4 m, mas a porta do jogo tem 2,65 m e o
+batente ocupa ±1,6 m: para a moldura caber ao lado da porta a câmara ficou mais larga). Moldura vazia com o lugar da marca e um soquete frio
+embaixo; o dado da mão olha para ele. Acender: escuro de 4 s, a cal «ABRIR PORTA CONFIRMADO» na moldura (as palavras vão para o caderno), a porta
+abre no escuro; a luz volta, a moldura está lisa, a porta segue aberta. Repetível. Fica antes do Tribunal até as salas 15 a 17 existirem.
+**Salvamento:** com uma sala nova no meio da lista, o jogo procura a sala salva pelo **nome** (os índices mudam).

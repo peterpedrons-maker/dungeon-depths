@@ -101,6 +101,7 @@ export interface FireExtra {
 
 export interface FireSpec {
   name: string; // sem o "Sala N ·": a numeração é automática
+  blackout?: number; // segundos do ESCURO da punição (PUZZLES_PROPOSTAS Ficha 1: 2,5 s; a sala 13 "O Escuro" usará 4 s)
   subtitle: string;
   hx: number; // meia-largura
   z0: number; // parede do fundo (a da frente é sempre z = 2)
@@ -837,6 +838,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   litLines.forEach((l) => (l.lit = l.preLit));
                   lockCold = lk.penalty ?? 10;
                   ctx.sfx('error');
+                  ctx.blackout(spec.blackout ?? 2.5); // a punição: a Casa apaga tudo
                   ctx.caption('A Casa apagou as frases', 'Nem toda frase acesa era verdade.', '#cfc6e8');
                 }
               } else if (best.lit) {
@@ -864,6 +866,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                 lockProg = 0;
                 lockCold = lk.penalty ?? 4;
                 ctx.sfx('error');
+                ctx.blackout(spec.blackout ?? 2.5);
                 ctx.caption('A Casa apagou as frases', 'Aquela não era a certa. Leia as marcas.', '#cfc6e8');
               }
             }
@@ -965,6 +968,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             braziers.forEach((b) => b.light(false));
             progress = 0;
             coldT = rule.penalty ?? 0;
+            if (coldT > 0) ctx.blackout(spec.blackout ?? 2.5);
             door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
           }
         } else if (coldT > 0) {
@@ -1019,6 +1023,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             braziers.forEach((b) => b.light(false, true));
             coldT = rule.penalty ?? 6;
             ctx.sfx('error');
+            ctx.blackout(spec.blackout ?? 2.5);
             ctx.caption('A placa abafou o fogo', 'A Casa não aceitou estas chamas.', '#cfc6e8');
           }
         }

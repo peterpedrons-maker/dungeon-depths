@@ -67,6 +67,10 @@ export interface Ctx {
   // a cena fica TRAVADA esperando o jogador agir: ele não anda nem olha em volta, mas pode interagir (E/AGIR) com o que está na frente
   pin(on: boolean): void;
   freeze(on: boolean): void; // segura o jogador parado durante uma cena (chame com false pra soltar)
+  // O ESCURO (PUZZLES_PROPOSTAS §4, Ficha 1): a Casa apaga tudo por `secs` segundos (ambiente e luzes a ~8%; cai em 0,15 s, volta em 0,6 s).
+  // Se há uma conversa ou o balão do dado na tela, ele espera. `onDark` é chamado quando já está escuro (a porta da R5 abre nele).
+  blackout(secs: number, onDark?: () => void): void;
+  dark(): number; // 0 = luz normal, 1 = escuro total (para a CAL: só aparece no escuro)
   lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)
   die: {
     readonly state: DieState;

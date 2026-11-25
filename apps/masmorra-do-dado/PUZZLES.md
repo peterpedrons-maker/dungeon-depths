@@ -315,3 +315,10 @@ e que nenhuma pista é descartável.
    braseiros ficam **frios por 6 s**: chutar não compensa. Para recomeçar, recolha o dado (`E`).
 
 > **Convenção de escrita (atualizada):** as frases das portas das salas 1 a 6 mostram **só as palavras que a sala ensina** (uma nova por sala; ver `DESIGN.md` §24); a marca final (CONFIRMADO) volta a fechar as frases do Tribunal e da sala de teste. Os glifos **brilham** quando o que eles dizem acontece. As soluções não mudam.
+
+
+## R5 · A Antecâmara Fria (respiro, sem puzzle; PUZZLES_PROPOSTAS.md §2b "R5" e Ficha 9b)
+Câmara pequena, porta fechada sem frase. Na parede do fundo, à direita da porta, uma moldura de frase vazia e, embaixo, um soquete frio (tigela
+de bronze rachada): a única coisa acendível. **Como passar:** acender o soquete com o dado de Fogo (face 3). A Casa apaga tudo por 4 s; no escuro,
+a moldura mostra em cal «ABRIR PORTA CONFIRMADO» e a porta abre. Repetível (o soquete esfria quando a luz volta). Hoje fica logo antes do
+Tribunal (o plano a põe entre as salas 16 e 17, que ainda não existem).
