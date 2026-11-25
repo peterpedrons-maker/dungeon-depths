@@ -19,6 +19,8 @@ Números = faces do dado: UM = 4 · DOIS = 0, 8 · TRÊS = 0, 4, 8 · QUATRO = 0
 
 ### Sala 1 — O Poço 📝 (já no jogo)
 Tentar a porta → o Escrivão joga o dado pelo poço → pegar o dado (E) → acender o único braseiro.
+- Cena do caderno: a luz revela o caderno → pegar (E) → o dado explica → abrir o diário (o ícone brilha) → anotar qualquer coisa em
+  ACENDER e em BRASEIRO → fechar → a porta abre.
 
 ### Sala 2 — O Vestíbulo 📝 (já no jogo)
 Acender exatamente **dois** dos três braseiros.
@@ -50,13 +52,14 @@ Acender exatamente **dois** dos três braseiros.
 
 ### Sala 6 — A Chama Curta ✅
 - Antecâmara: acender o braseiro pequeno e passar pelo portão enquanto ele queima.
-- Galeria: acender o **grande** e o **médio** (o médio acende o pavio/labirinto), voltar ao **mínimo da entrada** e acendê-lo **quando o mínimo
+- Galeria: o pavio certo é o labirinto do **médio** (setinhas apontando para o mínimo); o do grande corre ao contrário.
+- Acender o **grande** e o **médio** (o médio acende o pavio), voltar ao **mínimo da entrada** e acendê-lo **quando o mínimo
   do fundo pegar fogo sozinho**. (Também vale: médio → grande → mínimo da entrada.) O mínimo do fundo **nunca** à mão.
 - **S3 (diário, voltar depois da sala 8):** a fumaça do grande entorta para um "muro" que balança → queimar o pano-parede → corredor com diário.
 
-### Sala 7 — O Que a Casa Confirma ✅
-- Passo 1: acender as frases **«2 DEPOIS 5»**, **«3 DEPOIS 2»**, **«1 DEPOIS 4»**, **«1 ANTES 5»** (as CONFIRMADAS).
-- Passo 2: pilares **4, 1, 5, 2, 3**.
+### Sala 7 — O Que a Casa Confirma ✅ (refeita)
+- Parte 1: escrever **QUATRO = 0, 2, 6, 8** na lousa (a frase CONFIRMADA); TRÊS é o boato.
+- Parte 2: acender as frases **«1 ANTES 3»**, **«4 DEPOIS 2»**, **«1 DEPOIS 4»** (as CONFIRMADAS); pilares **2, 4, 1, 3**.
 
 ### R2 — O Pátio da Cisterna 📝 (respiro)
 - Puzzle opcional (reflexo): acender os braseiros dos cantos **2 e 6** (a diagonal contrária); na água aparece DOIS → gema.

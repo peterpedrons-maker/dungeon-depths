@@ -63,13 +63,13 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 
 | # | Sala | Nível | O que o jogador descobre | Mecânica | Palavra nova |
 |---|---|---|---|---|---|
-| 1 | O Poço | 1 | o dado acende | (fica) | ACENDER |
+| 1 | O Poço | 1 | o dado acende; **o caderno achado ensina o diário** (tutorial obrigatório) | (fica) + cena nova | ACENDER |
 | 2 | O Vestíbulo | 1 | o número é exato | (fica) | DOIS |
 | 3 | **A Lousa** ✔ | 2 | acender em grade é **escrever**; os números são **as faces do dado** | M1 | TRÊS, QUATRO, BRASEIRO |
 | 4 | **O Fio de Fogo** ✔ | 3 | o fogo **corre**; «ACENDER UM» pode acender vários | M1+M2 | UM, CINCO |
 | 5 | **A Casa Escreve** ✔ | 3 | a Casa fala em fogo; **a lousa é um mapa** do salão | M9 + ordem | ORDEM |
 | 6 | **A Chama Curta** ✔ | 4 | tempo e tamanho; **uma canaleta longa é um pavio** (o fogo espera) | M7+M2 | TEMPO |
-| 7 | **O Que a Casa Confirma** ✔ | 5 | marcas; o dado acende frases; cadeia de ANTES/DEPOIS com 5 pilares (a sala 6 atual, revisada) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
+| 7 | **O Que a Casa Confirma** ✔ | 5 | marcas (numa lousa) e depois uma cadeia curta de ANTES/DEPOIS (refeita: menos glifos de uma vez) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
 | 8 | **O Pano** | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
 | 9 | **Os Apelidos** ✔ | 6 | o mesmo braseiro tem dois nomes; o glifo engana | M8 | GRANDE, PEQUENO |
 | 10 | **A Ponte de Madeira** ✔ | 6 | o fogo **destrói o próprio caminho**: a ordem das ignições importa | M2+M3 | (nenhuma) |
@@ -126,9 +126,9 @@ galeria com quatro braseiros que se apagam. Os dois mínimos ficam um em cada po
 perto da porta é um **pavio**. **Solução: acender o grande e o médio (o médio acende o pavio), voltar até o mínimo da entrada e acendê-lo
 quando o mínimo do fundo pegar fogo sozinho.** Segredo de voltar depois: S3 (pano-parede).
 
-### Sala 7 — O Que a Casa Confirma (nível 5) · revisada ✔ `tools/verify_confirma.mjs`
-(Detalhada na seção 5.) A sala 6 atual do jogo, com **5 pilares** em vez de 4 (na versão antiga uma frase confirmada sobrava).
-**Solução: acender as quatro frases CONFIRMADAS; os pilares sobem; acender QUATRO, UM, CINCO, DOIS, TRÊS.**
+### Sala 7 — O Que a Casa Confirma (nível 5) · refeita em duas partes ✔ `tools/verify_confirma.mjs`
+(Detalhada na seção 5.) A versão do jogo tinha glifos demais de uma vez. Agora: parte 1, as marcas numa lousa; parte 2, cinco frases curtas e
+quatro pilares. **Solução: escrever QUATRO na lousa; acender as frases CONFIRMADAS; pilares DOIS, QUATRO, UM, TRÊS.**
 
 ### Sala 8 — O Pano (nível 5) · "o fogo queima o boato" ✔ `tools/verify_pano.mjs`
 (Detalhada na seção 5, com a constelação C2.) Panos tecidos (marca BOATO bordada) cobrem partes de frases talhadas. Queimados com o dado,
@@ -470,6 +470,54 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 
 ## 5. As salas detalhadas
 
+### Sala 1 — O Poço: o caderno achado (tutorial do diário; pedido do Pedro)
+
+**Por quê:** hoje o jogador pode passar o jogo inteiro sem saber que tem um diário onde anotar o que acha que cada símbolo quer dizer. Sem isso,
+decifrar a língua fica muito mais difícil. A cena ensina **que o diário existe, como abrir e como anotar**, e obriga o jogador a fazer isso uma vez.
+
+**Quando:** logo depois de o jogador acender o **primeiro braseiro** da sala 1 (e da comemoração do dado: VOCÊ ACENDER CONFIRMADO · EU SENTIR ALEGRIA).
+A porta ainda **não abre**: ela só abre no fim da cena.
+
+**A cena, passo a passo:**
+1. **O fogo revela.** A luz do braseiro recém-aceso chega a um canto que antes estava no escuro, junto do entulho: um **caderno velho**, de capa de
+   couro, caído aberto. (Fogo = revelar: a primeira vez no jogo.) Câmera: o olhar desliza devagar até o caderno (`ctx.lookAt`, ~1 s).
+2. **O dado vê primeiro.** O dado da mão se inclina para o caderno (o olhar vivo da §23) e fala, em balão, com o **rabisco de um livro** na face de
+   cima (como o rabisco do braseiro; palavra nova no `SKETCH_WORDS`):
+   - «VOCÊ · VER · LIVRO» (o rabisco do livro aparece junto do glifo LIVRO)
+   - pausa
+   - «VOCÊ · PEGAR · LIVRO»
+3. **Pegar.** Aparece "E · Pegar o caderno" (AGIR no celular). O jogador **só pode** fazer isso (cena travada com `ctx.pin`: dá para olhar em volta,
+   não dá para sair). O caderno voa para a mão, como o dado.
+4. **O dado explica o que é**, uma frase por vez, com os rabiscos (cena de cinema, dado no centro da tela como na §29, passo 4):
+   - «ALGUÉM · ESCREVER · LIVRO» (rabisco: uma mão com giz escrevendo numa página)
+   - «ALGUÉM · LER · LIVRO»
+   - «VOCÊ · ESCREVER · LIVRO» (rabisco: o **mesmo** livro, com o desenho do **ícone do diário** do jogo)
+   - «VOCÊ · ABRIR · LIVRO» (rabisco: o livro abrindo)
+5. **O ícone do diário brilha.** Assim que o dado termina, o botão do diário (canto da tela; J no PC) **pulsa em dourado** e a tela escurece em
+   volta dele. O jogador **não consegue fazer mais nada** até abrir o diário (só olhar). Se demorar 8 s, o dado repete «VOCÊ ABRIR LIVRO», apontando
+   (inclinado) para o canto do ícone.
+6. **O diário abre direto numa página guiada.** O caderno achado virou as **primeiras páginas** do diário do jogador (na aba Textos: o caderno de
+   "a que veio antes"). A 1ª página dela, à mão, em português:
+   *"Acordei no chão. Tem um dado que fala desenhando. Ele me mostrou isto [glifo ACENDER, copiado a lápis] e depois o fogo pegou. Acho que quer
+   dizer 'acender'. Vou anotar tudo o que eu vir. Quem achar este caderno: anote você também. Ninguém aqui diz se você acertou."*
+   Ela aponta o caminho, mas a página é **dela**, não do jogador.
+7. **O livro vira sozinho para a aba Símbolos**, na página do glifo **ACENDER** (avistado na sala 1). O espaço "o que eu acho que significa"
+   **pulsa** e o cursor já está nele. O jogador **é obrigado a escrever alguma coisa** ali (pelo menos uma letra; no celular abre o teclado).
+   O diário **não corrige** (regra do jogo, §5): vale qualquer texto. O exemplo da outra condenada está a um toque, na página ao lado.
+8. **Depois, BRASEIRO.** O livro vira para a página do glifo **BRASEIRO** (que o dado mostrou com o rabisco) e pede a anotação do mesmo jeito.
+9. **Fechar.** Com as duas anotações feitas, o ícone de fechar (J/Esc, ou tocar fora) pulsa. Ao fechar, o dado reage: pulinho e «EU · SENTIR ·
+   ALEGRIA». **A porta abre** (a Casa lê a frase da porta, palavra por palavra). A cena acabou.
+
+**O que ensina:** o diário existe; abre-se com J / o botão; os símbolos vistos entram lá sozinhos; **o jogador escreve o que acha**; ninguém
+confirma; os outros condenados também anotaram (e às vezes erram). Também ensina, de passagem, as palavras LIVRO, ESCREVER, LER, ABRIR, PEGAR,
+VER e ALGUÉM (todas de história, nenhuma exigida em puzzle por enquanto).
+**Depois da cena:** o caderno de "a que veio antes" ganha **páginas novas** pelo jogo (na sala 7, nos respiros, nas câmaras secretas), cada uma
+com um palpite dela. É ajuda, nunca a única fonte.
+
+**Motor:** caderno no chão revelado pela luz do braseiro; `ctx.pin` até pegar; rabiscos novos (LIVRO, mão escrevendo, livro abrindo); destaque
+pulsante no ícone do diário com a tela escurecida, bloqueando tudo menos abrir; modo guiado do diário (abre em Textos, vira para Símbolos >
+ACENDER, foco no campo de anotação, não deixa fechar antes de escrever; depois BRASEIRO); a porta da sala 1 passa a abrir só no fim da cena.
+
 ### Sala 3 — A Lousa (NÍVEL 2) · "acender em grade é escrever"
 
 **A ideia:** a 1ª sala de **escrever com fogo**. Três passos (regra → torção → reprise): copiar, copiar com um ponto a mais, e escrever
@@ -640,6 +688,11 @@ Entre o médio e o mínimo do fundo, o chão tem um **desenho de labirinto talha
 enrolada**: quando o médio acende, o fogo entra no labirinto, anda devagar pelas voltas (dá para ver a brasa caminhando) e acende o mínimo
 do fundo **6,5 s depois**.
 
+**Dois labirintos (pedido do Pedro: usar o que já foi aprendido):** há **outro** labirinto igual no chão, entre o **grande** e o mínimo do fundo, que
+parece o pavio mais óbvio (o grande é o primeiro que todo mundo acende). Mas as **setinhas talhadas** dentro dele (os chevrons da sala 4)
+apontam **do mínimo para o grande**: o óleo corre ao contrário, e acender o grande não leva fogo a lugar nenhum. Só o labirinto do **médio** tem
+as setinhas apontando para o mínimo. O jogador tem de **ler o sentido das canaletas**, como na sala 4, para escolher o pavio certo.
+
 **Solução (passo a passo):**
 1. Acender o **grande** (no meio) e o **médio** (no fundo). Ao acender o médio, o fogo começa a andar pelo labirinto.
 2. **Voltar até o mínimo da entrada** (uns 19 m, ~5 s andando) e **esperar com o dado na mão, olhando para o fundo**.
@@ -649,7 +702,7 @@ do fundo **6,5 s depois**.
   fundo tem de ser aceso pelo pavio**.
 
 **Por que a mão não chega** (`node tools/verify_chama_curta.mjs`, simulação de caminho com a velocidade real do motor e espera livre):
-- andando (4,2 m/s), chegando a 2 m de cada braseiro: **3 planos funcionam, e todos usam o pavio**;
+- andando (4,2 m/s), chegando a 2 m de cada braseiro: **3 planos funcionam, e todos usam o pavio do médio**; o labirinto do grande corre ao contrário;
 - acender os dois mínimos à mão: **nenhum plano funciona**, nem correndo (Shift do PC, 5,7 m/s) e arremessando de 5 m: de um mínimo ao
   outro leva 3,2 s, e a chama mínima dura 2,5 s;
 - o hábito da sala antiga ("o que dura mais primeiro, tudo à mão") falha.
@@ -667,53 +720,54 @@ o caminho e **esperar** no lugar certo. **Palavras novas:** QUATRO (já vista na
 **Motor:** regra `together` com `burn` (já existe); portão que fica aberto só enquanto um braseiro queima (novo, pequeno); canaleta-pavio com
 atraso e brasa visível andando (M2 com tempo); fumaça com vento e pano-parede (S3).
 
-### Sala 7 — O Que a Casa Confirma (NÍVEL 5) · revisada
+### Sala 7 — O Que a Casa Confirma (NÍVEL 5) · refeita em duas partes
 
-**O que muda da versão atual (sala 6 do jogo, `FIRE_FRASES`):** a ideia e as duas etapas ficam; muda o conteúdo. Na versão atual, a 4ª
-frase confirmada («DOIS DEPOIS UM») **sobra**: as outras três já dão a ordem. Pela regra do projeto, nenhuma pista pode ser descartável.
-Com **cinco** pilares (CINCO o jogador já escreveu na sala 4), quatro confirmadas viram exatamente o necessário.
+**Por que refazer (o Pedro jogou):** a versão do jogo (`FIRE_FRASES`) despeja quatro palavras abstratas ao mesmo tempo (CONFIRMADO, BOATO, ANTES,
+DEPOIS) em sete frases, e o jogador ainda não sabe ler nenhuma delas. Agora cada coisa vem no seu passo, e nenhuma chega sem ensino:
+- **ANTES/DEPOIS** já foram vistos com desenho no mural do respiro R1 (ANTES · AGORA · DEPOIS) e no mural da ordem da sala 5 («UM ANTES DOIS»);
+- **CONFIRMADO/BOATO** são ensinados aqui, na parte 1, numa lousa (o que o jogador já domina), por efeito;
+- o **caderno de "a que veio antes"** (achado na sala 1, ver a cena abaixo) ganha aqui uma página nova com os palpites dela sobre as marcas.
 
-**A ideia:** a marca no fim da frase **muda o que ela vale**. CONFIRMADO (com moldura talhada) vale; BOATO (gasto) não. As frases com
-ANTES/DEPOIS dão uma **ordem**, e ela não está na ordem de leitura.
+**Forma:** duas câmaras ligadas por uma grade. A 1ª é pequena (a lousa); a 2ª é a sala média das frases (11×17 m), sem braseiros à vista:
+quatro rachaduras com brasa no chão.
 
-**Forma:** retangular média (11×20 m), como a atual. Sem braseiros à vista: **cinco rachaduras com brasa** no chão, onde os pilares vão subir.
-Três parágrafos pequenos nas paredes, cada frase com o **soquete de brasa** no começo (o símbolo de "isto se acende", §25).
+**Parte 1 — as marcas (ensino, quase sem punição).** Na parede da 1ª câmara, uma **lousa de fogo** e, acima dela, duas frases curtas, uma
+embaixo da outra:
+- «ACENDER QUATRO **CONFIRMADO**» (talhada, com moldura)
+- «ACENDER TRÊS **BOATO**» (gasta)
+Quem escreve **TRÊS** (acreditou na de baixo) vê a Casa **apagar a lousa** e o glifo BOATO **piscar**. Quem escreve **QUATRO** vê o glifo
+CONFIRMADO **acender** e a grade se abrir. As duas frases têm quatro glifos, três deles conhecidos: a única novidade é a marca do fim.
+(O verificador confere que escrever um nunca passa pelo outro no caminho: o efeito de cada marca é limpo.)
+Junto da grade, a página nova do caderno de "a que veio antes": *"Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo. Acho
+que o risquinho com o ponto em cima quer dizer 'é verdade'. O outro, 'dizem que'."*
 
-**Frases:**
-| Parede | Linha | Marca |
+**Parte 2 — ANTES/DEPOIS (o puzzle).** Cinco frases curtas em dois parágrafos, cada uma com o soquete de brasa no começo:
+| Parede | Frase | Marca |
 |---|---|---|
-| esquerda, perto da entrada | «DOIS DEPOIS CINCO» | CONFIRMADO |
-| | «CINCO ANTES UM» | boato |
-| esquerda, perto da porta | «TRÊS DEPOIS DOIS» | CONFIRMADO |
-| | «TRÊS ANTES QUATRO» | boato |
-| direita | «UM DEPOIS QUATRO» | CONFIRMADO |
-| | «DOIS DEPOIS TRÊS» | boato |
-| | «UM ANTES CINCO» | CONFIRMADO |
+| esquerda | «UM ANTES TRÊS» | CONFIRMADO |
+| | «TRÊS ANTES DOIS» | boato |
+| direita | «QUATRO DEPOIS DOIS» | CONFIRMADO |
+| | «UM ANTES QUATRO» | boato |
+| | «UM DEPOIS QUATRO» | CONFIRMADO |
 A porta: «ACENDER CONFIRMADO».
 
 **Solução (passo a passo):**
-1. **Ensino (passo 1):** com o Fogo, acender as frases **CONFIRMADAS** (o dado junto da frase, na parede). Uma frase de BOATO **apaga as acesas**
-   e a Casa recusa o fogo por 4 s. É aqui que a marca se explica pelo efeito; por isso a resposta frase a frase continua (é ensino, não o puzzle).
-2. Com as quatro confirmadas acesas, ouve-se um estrondo e **cinco pilares sobem** (UM a CINCO), cada um com seu número.
-3. **O puzzle (passo 2):** montar a cadeia com as quatro frases acesas:
-   - «UM DEPOIS QUATRO» → 4 antes de 1;
-   - «UM ANTES CINCO» → 1 antes de 5;
-   - «DOIS DEPOIS CINCO» → 5 antes de 2;
-   - «TRÊS DEPOIS DOIS» → 2 antes de 3.
-   Cadeia: **4 → 1 → 5 → 2 → 3**.
-4. **Acender QUATRO, UM, CINCO, DOIS, TRÊS.** Errar apaga tudo e deixa os pilares **frios por 8 s** (sem gema por passo).
+1. Escrever **QUATRO** na lousa da 1ª câmara (os quatro cantos). A grade abre.
+2. Acender com o Fogo as **três frases CONFIRMADAS** (o dado junto da frase). Um boato apaga as acesas e a Casa recusa o fogo por 4 s.
+3. Os **quatro pilares** sobem (UM a QUATRO).
+4. Montar a cadeia: «QUATRO DEPOIS DOIS» → 2 antes de 4; «UM DEPOIS QUATRO» → 4 antes de 1; «UM ANTES TRÊS» → 1 antes de 3. Cadeia **2 → 4 → 1 → 3**.
+5. **Acender DOIS, QUATRO, UM, TRÊS.** Errar apaga tudo e deixa os pilares frios por 8 s.
 
-**Por que é única** (`node tools/verify_confirma.mjs`): uma ordem só entre 120; sem qualquer uma das quatro confirmadas sobram 5 a 10
-ordens (todas são necessárias); os três boatos são falsos e, se alguém acreditar neles, cai em contradição; a ordem não é 1-2-3-4-5 nem a
-ordem em que os números aparecem lidos nas frases (2-5-3-1-4).
+**Por que é única** (`node tools/verify_confirma.mjs`): uma ordem só entre 24; sem qualquer uma das três confirmadas sobram 4 a 6 ordens; os dois
+boatos são falsos e acreditar neles dá contradição; a ordem não é 1-2-3-4 nem a de leitura das frases (1-3-4-2).
 
-**Por que todos os boatos são falsos aqui:** de propósito. O jogador sai desta sala achando que "boato = mentira". A sala 11 (O Boato
-Verdadeiro) quebra esse hábito. É a "primeira impressão que engana" em duas salas.
+**Por que continua sendo nível 5:** o difícil agora é **pensar** (DEPOIS vira ao contrário duas vezes, a ordem não é a de leitura, o boato
+«UM ANTES QUATRO» parece natural e engana), não decifrar um muro de glifos. As cadeias longas (5 braseiros, nomes trocados) ficam para as salas 9 e 11.
 
-**Sem segredo próprio:** nem toda sala precisa ter (o respiro R2 vem logo depois, cheio de coisas para achar).
+**Os boatos são todos falsos de propósito** (a sala 11 quebra esse hábito). **Sem segredo próprio** (o pátio R2 vem logo depois).
 
-**O que ensina:** CONFIRMADO × BOATO; ANTES/DEPOIS formam uma cadeia; a ordem certa não é a de leitura; o dado de Fogo também acende escrita.
-**Motor:** já existe quase tudo (`FIRE_FRASES`, tablete `lit`, `lock`, `hidden`); muda só o conteúdo (5 pilares, as frases acima, `seq` = 4, 1, 5, 2, 3).
+**Motor:** lousa de fogo com duas frases (aceita uma, recusa a outra e faz o glifo da marca piscar); `FIRE_FRASES` com o conteúdo novo
+(4 pilares, 5 frases, `seq` = 2, 4, 1, 3).
 
 ### Sala 8 — O Pano (NÍVEL 5) · "o fogo queima o boato" + constelação C2
 

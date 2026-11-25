@@ -15,7 +15,10 @@ const B = {
   P1: { nome: 'mínimo da entrada', s: 8, x: 3, dura: 2.5 },
   P2: { nome: 'mínimo do fundo', s: 27, x: -2, dura: 2.5 },
 };
-const PAVIO = { de: 'M', para: 'P2', atraso: 6.5 };
+// Dois labirintos no chão. O de verdade leva fogo do médio ao mínimo do fundo (as setinhas talhadas apontam do médio para o mínimo). O outro,
+// entre o grande e o mínimo do fundo, tem as setinhas AO CONTRÁRIO: o fogo só correria do mínimo para o grande, o que não ajuda em nada.
+const PAVIOS = [{ de: 'M', para: 'P2', atraso: 6.5 }, { de: 'P2', para: 'G', atraso: 7 }];
+const PAVIO = PAVIOS[0];
 const INICIO = { s: 7.5, x: 0 }; // o jogador entra pelo portão da antecâmara
 const ANDANDO = { v: 4.2, alcance: 2, acao: 0.8 };
 const CORRENDO = { v: 4.2 * 1.35, alcance: 5, acao: 0.6 };
@@ -39,7 +42,12 @@ function funciona(ordem, cfg) {
       t += viagem[i] + esperas[i];
       acende[k] = t;
     });
-    if (acende[PAVIO.de] != null && acende[PAVIO.para] == null) acende[PAVIO.para] = acende[PAVIO.de] + PAVIO.atraso;
+    for (let ch = true; ch; ) {
+      ch = false;
+      for (const pv of PAVIOS) if (acende[pv.de] != null && (acende[pv.para] == null || acende[pv.para] > acende[pv.de] + pv.atraso)) {
+        if (acende[pv.para] == null) { acende[pv.para] = acende[pv.de] + pv.atraso; ch = true; }
+      }
+    }
     if (Object.keys(acende).length < 4) return false;
     const ini = Math.max(...Object.values(acende));
     const fim = Math.min(...Object.entries(acende).map(([k, t0]) => t0 + B[k].dura));
@@ -78,5 +86,7 @@ const habito = { o: ['G', 'M', 'P2', 'P1'], usaPavio: false }; // do que dura ma
 check(!funciona(habito.o, CORRENDO), `o hábito da sala antiga (${txt(habito)}) falha`);
 const t = (Math.max(0, dist(B.P1, B.P2) - CORRENDO.alcance) / CORRENDO.v + CORRENDO.acao).toFixed(1);
 console.log(`   (de um mínimo ao outro, correndo e arremessando de longe: ${t} s; a chama mínima dura ${B.P1.dura} s)`);
-console.log(ok ? '\nOK: a sala só se resolve usando o pavio.' : '\nFALHOU.');
+// o labirinto falso: quem acha que ele leva fogo do grande ao mínimo do fundo (lendo as setinhas ao contrário) não resolve
+check(PAVIOS[1].de === 'P2' && PAVIOS[1].para === 'G', 'o labirinto falso corre do mínimo para o grande (setinhas ao contrário): acender o grande não acende o mínimo do fundo');
+console.log(ok ? '\nOK: a sala só se resolve usando o pavio certo.' : '\nFALHOU.');
 process.exit(ok ? 0 : 1);

@@ -13,14 +13,14 @@ const FORTES = new Set(['efeito', 'demo', 'rotulo', 'figura', 'dado', 'deducao']
 const m = (canal, ...ws) => ws.map((w) => ({ w, canal }));
 
 const CAP1 = [
-  { sala: '1 O Poço', mostra: [...m('efeito', 'acender'), ...m('dado', 'brasa'), ...m('fala', 'voce', 'condenado', 'eu', 'boato', 'ajudar', 'viver', 'perg', 'dar', 'dado', 'ler')], exige: ['acender'] },
+  { sala: '1 O Poço', mostra: [...m('efeito', 'acender'), ...m('dado', 'brasa', 'livro'), ...m('fala', 'ver', 'pegar', 'alguem', 'escrever', 'abrir'), ...m('diario', 'acender'), ...m('fala', 'voce', 'condenado', 'eu', 'boato', 'ajudar', 'viver', 'perg', 'dar', 'dado', 'ler')], exige: ['acender'] },
   { sala: '2 O Vestíbulo', mostra: [...m('efeito', 'acender', 'n2')], exige: ['n2'] },
   { sala: '3 A Lousa', mostra: [...m('figura', 'n1', 'n2', 'n3'), ...m('efeito', 'n3', 'brasa'), ...m('deducao', 'n4'), ...m('frase', 'acender')], exige: ['n4'] },
   { sala: '4 O Fio de Fogo', mostra: [...m('deducao', 'n1', 'n5'), ...m('efeito', 'acender', 'n3'), ...m('frase', 'n2')], exige: ['n1', 'n2'] },
   { sala: 'R1 O Corredor dos Nichos', mostra: [...m('figura', 'antes', 'agora', 'depois', 'brasa'), ...m('figura', 'n1', 'n2', 'n3', 'n5'), ...m('frase', 'acender', 'brasa')], exige: [] },
   { sala: '5 A Casa Escreve', mostra: [...m('figura', 'antes', 'depois', 'n1', 'n2'), ...m('efeito', 'ordem'), ...m('rotulo', 'porta'), ...m('frase', 'acender', 'brasa')], exige: [] },
   { sala: '6 A Chama Curta', mostra: [...m('efeito', 'tempo', 'n4'), ...m('frase', 'acender', 'brasa')], exige: ['n4'] },
-  { sala: '7 O Que a Casa Confirma', mostra: [...m('efeito', 'conf', 'boato'), ...m('frase', 'antes', 'depois', 'n1', 'n2', 'n3', 'n4', 'n5')], exige: ['conf', 'boato', 'antes', 'depois', 'n1', 'n2', 'n3', 'n4', 'n5'] },
+  { sala: '7 O Que a Casa Confirma', mostra: [...m('efeito', 'conf', 'boato'), ...m('diario', 'conf', 'boato'), ...m('frase', 'acender', 'n3', 'n4', 'antes', 'depois', 'n1', 'n2')], exige: ['conf', 'boato', 'antes', 'depois', 'n1', 'n2', 'n3', 'n4'] },
   { sala: 'R2 O Pátio da Cisterna', mostra: [...m('frase', 'contaveis', 'dizer', 'conf', 'mentir', 'boato'), ...m('figura', 'n2')], exige: [] },
   { sala: '8 O Pano', mostra: [...m('demo', 'brasa'), ...m('frase', 'todos', 'n2', 'n3', 'n4', 'antes', 'conf', 'boato')], exige: ['n2', 'n3', 'n4', 'antes', 'conf', 'boato'] },
   { sala: 'Biblioteca (térreo)', mostra: [...m('rotulo', 'livro', 'mesa', 'chave', 'sino', 'porta', 'giz'), ...m('figura', 'escrever', 'ler', 'escrivao', 'sentenca', 'todos', 'mais', 'menos'), ...m('frase', 'condenado', 'julgar')], exige: [] },
