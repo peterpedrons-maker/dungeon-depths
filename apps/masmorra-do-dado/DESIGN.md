@@ -769,3 +769,5 @@ deixaria nada sem olhar." No fim: "Ela contava tudo. Talvez fosse o jeito de nã
 **Sem voz de sistema no caderno:** os textos de instrução das páginas vazias viraram a letra dela ("o que eu vi", "o que eu acho",
 "frases inteiras, quando eu achar"). **O mesmo tom no resto:** pensamentos da abertura e da porta ("Caí? Ou me jogaram?", "Continua trancada. Por
 fora ou por dentro?", "Pesa na mão como se me conhecesse. Conhece?") e as legendas das salas (uma observação e uma pergunta, sem entregar puzzle).
+
+*Ajuste (pedido do Pedro): menos indagações.* O personagem constata mais e pergunta pouco: no relato ficou uma pergunta só ("Onde ela está agora?"), cada parte do caderno tem um pensamento curto sem pergunta, e as legendas e pensamentos da abertura voltaram quase todos a afirmações; ficaram poucas perguntas pontuais ("E eu, o que acho que é?", "Caí? Ou me jogaram?", "Conhece?", "E eu, tenho quanto tempo?", "Qual delas é verdade?").

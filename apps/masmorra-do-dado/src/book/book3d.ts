@@ -322,24 +322,23 @@ export function createDiaryBook(env: BookEnv) {
   // a leitura do relato (as duas primeiras páginas, na letra dela)
   const READ_RELATO = [
     'Já tem coisa escrita. Uma letra apertada, que não é a minha.',
-    '"A Casa apagou tudo de novo." De novo? Quantas vezes ela acordou aqui?',
+    '"A Casa apagou tudo de novo." De novo.',
     'Embaixo da luz. Eu também acordei embaixo da luz.',
-    'Leram algo para ela. Eu lembro de uma voz assim. Comprida.',
-    '"Não acredite em tudo o que eu..." O quê? Por que ela parou?',
+    '"Não acredite em tudo o que eu..." E para aí.',
     'Onde ela está agora?',
   ];
   const AFTER_RELATO = ['Na frente, uma lista. Ela arrumou o caderno como quem pretende voltar.'];
   const PART_THOUGHT: Record<Part, string[]> = {
     dela: [],
-    simbolos: ['Estes símbolos... eu vi na parede. Agora há pouco.', 'Como já estão aqui? Eu não escrevi nada.'],
-    faces: ['Seis quadrados, como as faces de um dado. Quase todos lacrados.', 'Lacrados por quem? E por que o fogo não?'],
-    textos: ['Folhas guardadas para frases inteiras. Quase vazias.', 'Frases de onde? Das paredes? De gente?'],
-    mapa: ['Um desenho. É a sala onde eu acordei.', 'Eu não desenhei isso. O caderno sabe por onde eu andei?'],
-    notas: ['Folhas pautadas, em branco.', 'As últimas dela? Ou as primeiras minhas?'],
+    simbolos: ['Estes símbolos eu vi na parede, agora há pouco. Já estão aqui.'],
+    faces: ['Seis quadrados, como as faces de um dado. Quase todos lacrados.'],
+    textos: ['Folhas guardadas para frases inteiras. Quase vazias.'],
+    mapa: ['Um desenho da sala onde eu acordei. Eu não desenhei isso.'],
+    notas: ['Folhas pautadas, em branco. Agora são minhas.'],
   };
-  const TORN_THOUGHT = ['As folhas seguintes foram arrancadas.', 'Por ela? Ou por alguém que não queria que fossem lidas?'];
-  const WRITE_ASK = ['Embaixo de um deles, a letra dela: um desenho e um ponto de interrogação.', 'Ela também não sabia. E eu? O que eu acho que é?'];
-  const WRITE_DONE = ['Escrevi. Ninguém vai me dizer se está certo.', 'Era assim que ela fazia?'];
+  const TORN_THOUGHT = ['As folhas seguintes foram arrancadas.'];
+  const WRITE_ASK = ['Embaixo de um deles, a letra dela: um desenho e um ponto de interrogação.', 'Ela também não sabia. E eu, o que acho que é?'];
+  const WRITE_DONE = ['Escrevi. Ninguém vai me dizer se está certo.'];
   const ALL_DONE = ['Ela contava tudo. Talvez fosse o jeito de não esquecer.', 'Vou contar também.'];
   const tourSeen = new Set<Part>();
   let tornSeen = false;

@@ -43,16 +43,17 @@ cada cena começa, respira e termina. Responda sempre em **português do Brasil*
 - Português natural, sem travessões longos decorativos, sem emojis; pontuação simples. Nada de nomes próprios novos sem combinar.
 
 ## O TOM (decidido com o Pedro; vale para o jogo inteiro)
-**Ler sem entender.** Tudo o que o jogador lê ou pensa soa como alguém diante de algo que não compreende: **constata pouco e pergunta muito**,
+**Ler sem entender.** Tudo o que o jogador lê ou pensa soa como alguém diante de algo que não compreende: **constata mais do que explica, e pergunta pouco**,
 para si mesmo. Nada de explicar o que as coisas são ("aqui ficam os símbolos que você viu"); em vez disso, o estranhamento ("Estes símbolos... eu
 vi na parede. Como já estão aqui?").
-- **Pensamentos do jogador:** frases curtas, concretas, muitas terminando em pergunta; às vezes uma pergunta que ele não consegue responder
+- **Pensamentos do jogador:** frases curtas e concretas, quase sempre afirmações; uma pergunta só de vez em quando, nos momentos que pedem (no máximo uma por
+  cena ou leitura, sem encadear perguntas), por exemplo
   ("Onde ela está agora?"). Ele repara em detalhes físicos (letra apertada, folhas arrancadas, a luz) e liga com o que viveu ("Eu também
   acordei embaixo da luz"). Nunca fala como manual nem cita tecla.
 - **O relato de "a que veio antes":** alguém que esteve sob a sentença e também não sabia o que acontecia. Diário de sobrevivente: data perdida,
   contagens obsessivas, frases que param no meio, palpites ("acho que..."), às vezes errados. Enigmático, nunca explicativo.
 - **O próprio caderno** não tem voz de sistema: onde antes havia instruções, só a letra dela ("o que eu vi", "o que eu acho").
-- **Legendas de sala** (subtítulos): a mesma voz do jogador, uma observação e uma pergunta ("As chamas não duram. E eu, tenho quanto tempo?"),
+- **Legendas de sala** (subtítulos): a mesma voz do jogador, uma observação curta, raramente uma pergunta ("As chamas não duram. E eu, tenho quanto tempo?" é a exceção, não a regra),
   sem entregar a solução do puzzle.
 - **O mundo** (dado, Escrivão, inscrições) segue em glifos: o mistério vem do que não se traduz.
 - **Limite de página do caderno:** 16 letras por linha, 13 linhas por página (o texto que passa disso é cortado). Confira antes de escrever

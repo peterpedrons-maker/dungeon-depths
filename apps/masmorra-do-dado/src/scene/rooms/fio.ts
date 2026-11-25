@@ -190,7 +190,7 @@ export function buildFio(ctx: Ctx): Room {
 
   return {
     name: 'O Fio de Fogo',
-    subtitle: 'O fogo não fica onde eu o ponho. Para onde ele vai?',
+    subtitle: 'O fogo não fica onde eu o ponho.',
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

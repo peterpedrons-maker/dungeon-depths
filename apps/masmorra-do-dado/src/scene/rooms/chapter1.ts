@@ -132,7 +132,7 @@ function casaEscreveExtra(api: FireExtraApi): FireExtra {
 
 export const FIRE_CASA_ESCREVE: FireSpec = {
   name: 'A Casa Escreve',
-  subtitle: 'A Casa acende uma luz de cada vez. Está me mostrando alguma coisa?',
+  subtitle: 'A Casa acende uma luz de cada vez, como quem mostra o caminho.',
   hx: 7,
   z0: -14,
   h: 5.6,
@@ -336,7 +336,7 @@ export const FIRE_APELIDOS: FireSpec = {
 const f = (a: string, rel: string, b: string, mark: string, extra: Partial<FireLine> = {}): FireLine => ({ words: [a, rel, b, mark], ...extra });
 export const FIRE_VERDADE: FireSpec = {
   name: 'O Boato Verdadeiro',
-  subtitle: 'Algumas frases já estão acesas. Quem acendeu?',
+  subtitle: 'Algumas frases já estão acesas. Não fui eu.',
   hx: 5.6,
   z0: -19,
   h: 3.8,

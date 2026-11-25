@@ -1963,9 +1963,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     ],
     shaft: [
       { who: 'thought' as const, text: 'Um buraco redondo no teto. Lá em cima, luz.' },
-      { who: 'thought' as const, text: 'Alto demais. Quem passou por ali... desceu como?' },
-      { who: 'thought' as const, text: 'Não tenho nada comigo. Eu trazia alguma coisa? Não lembro.' },
-      { who: 'thought' as const, text: 'Se alguém me pôs aqui, deixou uma porta. Ou não?' },
+      { who: 'thought' as const, text: 'Alto demais. Daqui não dá para subir.' },
+      { who: 'thought' as const, text: 'Não tenho nada comigo. Nem lembro do que eu trazia.' },
+      { who: 'thought' as const, text: 'Se alguém me pôs aqui, deve haver uma porta.' },
     ],
   };
   const startIntro = () => {
