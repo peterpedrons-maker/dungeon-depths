@@ -13,6 +13,7 @@ import { BookIcon } from './ui/BookIcon';
 import { BoatoBubble } from './ui/BoatoBubble';
 import { DialogueBox } from './ui/DialogueBox';
 import { WordGlyph } from './ui/Glyph';
+import { useUiScale } from './ui/scale';
 
 const STICK_R = 46;
 
@@ -28,6 +29,7 @@ interface Caption {
 }
 
 export default function App() {
+  const uiK = useUiScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<SceneApi | null>(null);
   const [stickOn, setStickOn] = useState(false);
@@ -87,7 +89,7 @@ export default function App() {
   }, [toggleDiary]);
 
   // a dica de controles some 9 s depois de aparecer (só conta o tempo em que ela está visível)
-  const hintShown = inv.die && hint && !speaking && !toast && !caption;
+  const hintShown = inv.die && hint && !speaking && !toast && !caption && !uis.bookOut;
   useEffect(() => {
     if (!hintShown) return;
     const t = window.setTimeout(() => setHint(false), 9000);
@@ -102,14 +104,14 @@ export default function App() {
     setToastQ((q) => (q.some((x) => x.n === l.n) ? q : [...q, l].slice(-3)));
   }, [dry.last]);
   useEffect(() => {
-    if (speaking || toast || !toastQ.length) return;
+    if (speaking || uis.bookOut || toast || !toastQ.length) return;
     const [next, ...rest] = toastQ;
     setToastQ(rest);
     setToast(next);
     sound('uinew');
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 3200);
-  }, [speaking, toast, toastQ, sound]);
+  }, [speaking, uis.bookOut, toast, toastQ, sound]);
 
   // ?demo=1: pré-visualização do diário e da conversa (não grava nada no aparelho)
   useEffect(() => {
@@ -278,16 +280,16 @@ export default function App() {
         <div ref={thumbRef} className="thumb" />
       </div>
 
-      {caption && !speaking && !toast && (
+      {caption && !speaking && !toast && !uis.bookOut && (
         <div key={caption.id} className="caption" style={{ '--accent': caption.color } as CSSProperties}>
           <b>{caption.title}</b>
           <span>{caption.sub}</span>
         </div>
       )}
 
-      {toast && !speaking && (
+      {toast && !speaking && !uis.bookOut && (
         <div key={toast.n} className="toast">
-          <WordGlyph id={toast.id} size={30} />
+          <WordGlyph id={toast.id} size={Math.round(30 * uiK)} />
           <span>
             <b>AVISTADO</b> · anotado no diário (J)
           </span>

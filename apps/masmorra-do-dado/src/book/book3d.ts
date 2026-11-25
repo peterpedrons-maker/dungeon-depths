@@ -25,7 +25,7 @@ export interface BookEnv {
 const POSE = {
   start: { x: 0.62, y: -1.0, rx: -1.0, ry: -0.55, rz: 0.45, s: 0.62 },
   mid: { x: 0.3, y: -0.3, rx: -0.8, ry: -0.35, rz: 0.22, s: 0.8 },
-  end: { x: 0, y: 0.0, rx: -0.15, ry: 0, rz: 0, s: 1.13 },
+  end: { x: 0, y: 0.0, rx: -0.15, ry: 0, rz: 0, s: 1.2 }, // aberto: ocupa quase a tela toda (mais espaço para ler)
 };
 
 const clamp01 = (u: number) => Math.min(1, Math.max(0, u));

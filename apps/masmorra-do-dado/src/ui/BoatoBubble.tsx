@@ -3,6 +3,7 @@ import { diary, diaryStore } from '../story/diary';
 import { chatter, chatterStore } from '../story/chatter';
 import { useStore } from '../story/store';
 import { WordGlyph } from './Glyph';
+import { useUiScale } from './scale';
 import { LINGER_MS, PART_MS, PIC_MS, scribbleFor, wordMs } from '../story/writing';
 import { sketchCanvas, type SketchKind } from '../scene/sketch';
 
@@ -24,6 +25,7 @@ function SketchPic({ kind, size }: { kind: SketchKind; size: number }) {
 // Cada símbolo que ele "diz" vai para o diário como avistado.
 export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number) => void }) {
   const c = useStore(chatterStore);
+  const k = useUiScale();
   const [shown, setShown] = useState(0);
 
   useEffect(() => setShown(0), [c?.id]);
@@ -52,12 +54,12 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
     <div className="boato" aria-hidden="true">
       {c.pic && shown >= 1 && (
         <span className="dlg-tile" key={`${c.id}-pic`}>
-          <SketchPic kind={c.pic as SketchKind} size={34} />
+          <SketchPic kind={c.pic as SketchKind} size={Math.round(34 * k)} />
         </span>
       )}
       {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, k) => (
         <span className="dlg-tile" key={`${c.id}-${k}`}>
-          <WordGlyph id={id} size={26} draw={PART_MS - 100} />
+          <WordGlyph id={id} size={Math.round(26 * k)} draw={PART_MS - 100} />
         </span>
       ))}
     </div>

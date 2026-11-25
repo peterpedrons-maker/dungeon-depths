@@ -3,6 +3,7 @@ import { diary, diaryStore } from '../story/diary';
 import { dialogue, dialogueStore, SPEAKER_WORD } from '../story/dialogue';
 import { useStore } from '../story/store';
 import { WordGlyph } from './Glyph';
+import { useUiScale } from './scale';
 import { PART_MS, scribbleFor, wordMs } from '../story/writing';
 import './story.css';
 
@@ -10,6 +11,7 @@ import './story.css';
 // os pensamentos do jogador vêm em português, letra a letra.
 export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' | 'write', v?: number) => void }) {
   const c = useStore(dialogueStore);
+  const k = useUiScale();
   const line = c ? c.lines[c.i] : null;
   const total = line ? (line.glyphs ? line.glyphs.length : (line.text?.length ?? 0)) : 0;
   const key = c ? `${c.id}:${c.i}` : '';
@@ -88,7 +90,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
     <div key={c.id} className={`dlg ${thought ? 'thought' : 'world'}${block ? '' : ' free'}`} role="dialog" aria-live="polite">
       {!thought && (
         <div className="dlg-plate">
-          <WordGlyph id={SPEAKER_WORD[line.who as Exclude<typeof line.who, 'thought'>]} size={38} color="#ffd36b" />
+          <WordGlyph id={SPEAKER_WORD[line.who as Exclude<typeof line.who, 'thought'>]} size={Math.round(38 * k)} color="#ffd36b" />
         </div>
       )}
       <div className="dlg-body">
@@ -96,7 +98,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
           <div className="dlg-glyphs">
             {line.glyphs.slice(0, shown).map((id, k) => (
               <span className="dlg-tile" key={`${key}-${k}`}>
-                <WordGlyph id={id} size={50} draw={skipped ? 0 : PART_MS - 100} />
+                <WordGlyph id={id} size={Math.round(50 * k)} draw={skipped ? 0 : PART_MS - 100} />
               </span>
             ))}
           </div>

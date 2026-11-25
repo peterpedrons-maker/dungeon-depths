@@ -688,7 +688,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // ── o diário: livro de verdade (src/book/) ──
   let hudHalfW = 0.7;
-  const book = createDiaryBook({ scene: dieScene, cam: dieCam, dom: canvas, sound: (n) => sfx.play(n), halfW: () => hudHalfW });
+  // o DIÁRIO tem o seu próprio canvas, em resolução cheia, por cima do jogo: as páginas continuam em pixel art, mas cada pixel do papel vira
+  // vários pixels de tela, nítidos (no canvas do jogo, de ~200 linhas, as letras se desmanchavam). Cliques seguem pelo canvas do jogo (mesmo lugar).
+  const bookCanvas = document.createElement('canvas');
+  bookCanvas.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;display:none;image-rendering:pixelated';
+  canvas.insertAdjacentElement('afterend', bookCanvas);
+  const bookRenderer = new THREE.WebGLRenderer({ canvas: bookCanvas, alpha: true, antialias: false, powerPreference: 'high-performance' });
+  bookRenderer.setClearColor(0x000000, 0);
+  const bookScene = new THREE.Scene();
+  bookScene.add(new THREE.AmbientLight(0x9a8aa8, 1.6), key.clone(), fill.clone());
+  const sizeBook = () => {
+    bookRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    bookRenderer.setSize(window.innerWidth, window.innerHeight, false);
+  };
+  sizeBook();
+  window.addEventListener('resize', sizeBook);
+  let bookShown = false;
+  const book = createDiaryBook({ scene: bookScene, cam: dieCam, dom: canvas, sound: (n) => sfx.play(n), halfW: () => hudHalfW });
 
   let tool: Tool = 'die';
   let dieU = 0; // 0 = dado na mão principal, 1 = na auxiliar
@@ -2596,6 +2612,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     renderer.render(dieScene, dieCam);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCam);
+    const bookOut = book.isOut();
+    if (bookOut !== bookShown) {
+      bookShown = bookOut;
+      bookCanvas.style.display = bookOut ? 'block' : 'none';
+    }
+    if (bookOut) bookRenderer.render(bookScene, dieCam);
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
@@ -2753,6 +2775,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       canvas.removeEventListener('pointercancel', onUp);
       renderer.dispose();
       rt.dispose();
+      window.removeEventListener('resize', sizeBook);
+      bookRenderer.dispose();
+      bookCanvas.remove();
       rtHud.dispose();
     },
   };
