@@ -555,6 +555,7 @@ de madeira, a rotunda, as perguntas do dado (`quiz.ts`, `pointask.ts`) e os lamp
 ### Ficha 1 · O escuro da punição (M6)
 - **Quando:** toda punição de toda sala de fogo (o `cold` atual) chama `ctx.blackout(2.5)`. Ambiente e emissores caem a ~8% em 0,15 s, ficam 2,5 s e
   voltam em 0,6 s. As salas 1 e 2 não punem: não mudam.
+  **Exceção (Pedro, 25/11): na sala 13 o escuro dura 4 s** (`ctx.blackout(4)`), para dar tempo de ler o teto com calma.
 - **Cal:** um material verde-limão pálido (`#c8f0a0`), sem luz própria fora do escuro: opacidade = 1 − nível de luz da sala, só abaixo de 25%.
   Não precisa calcular luz real; basta seguir o próprio `blackout`.
 - **Onde há cal no capítulo 1:** teto da sala 13 (3 frases + ESCURO sobre a porta), teto da sala 15 (glifo MENOS, C5), quadro da sala 17,
@@ -585,8 +586,8 @@ de madeira, a rotunda, as perguntas do dado (`quiz.ts`, `pointask.ts`) e os lamp
 
 ### Ficha 5 · Sala 13 O Escuro
 - Sala baixa (6×9, teto 2,6), 4 braseiros dos cantos `lit` e fora do puzzle; três `makeWallBoard` lado a lado na porta, cada uma escreve um número.
-- **Julgamento:** quando as três mostram um número completo: certo (DOIS, CINCO, UM) abre; senão escuro 2,5 s e limpa as três.
-- **Cal no teto:** as três frases e as marcas (§5), espalhadas ao longo da sala para que 2,5 s não bastem para ler tudo; ESCURO sobre a porta.
+- **Julgamento:** quando as três mostram um número completo: certo (DOIS, CINCO, UM) abre; senão escuro de **4 s** e limpa as três.
+- **Cal no teto:** as três frases e as marcas (§5), espalhadas ao longo da sala (de um lugar só não se vê todas): em 4 s lê-se uma ou duas com calma, e dois erros bastam para ler tudo; ESCURO sobre a porta.
 - **Teste:** quem não erra nunca vê o teto; três erros bastam para ler tudo.
 
 ### Ficha 6 · Sala 14 A Lei Pequena
@@ -1160,7 +1161,7 @@ Na porta, **três lousas lado a lado** e a frase «ACENDER ▢ ▢ ▢ ORDEM» (
 **A pista antes:** no respiro R3, logo antes, uma página arrancada dela: *"Quando eu erro, a Casa apaga tudo. Por um instante, no escuro, eu juro
 que vi alguma coisa brilhando no teto."*
 
-**Regras:** a Casa julga quando **as três lousas** mostram um número completo. Errado: apaga tudo, inclusive a luz ambiente, por 2,5 s, e
+**Regras:** a Casa julga quando **as três lousas** mostram um número completo. Errado: apaga tudo, inclusive a luz ambiente, por **4 s** (só nesta sala; nas outras são 2,5 s), e
 limpa as lousas. Nesse escuro aparecem, no teto, três frases fosforescentes (e, sobre a porta, a palavra **ESCURO**, que só existe no escuro:
 é como a palavra se ensina):
 | Posição no teto | Frase | Marca |
@@ -1172,7 +1173,7 @@ limpa as lousas. Nesse escuro aparecem, no teto, três frases fosforescentes (e,
 **Solução (passo a passo):**
 1. Perceber que não há nada para ler. Lembrar da página dela (ou do próprio escuro das salas anteriores).
 2. **Errar de propósito:** escrever quaisquer três números nas lousas. Escuro. **Olhar para cima.**
-3. 2,5 s não dão para ler tudo: errar mais uma ou duas vezes, olhando partes diferentes do teto, e **anotar no diário**.
+3. As frases estão espalhadas pelo teto: em 4 s dá para ler uma ou duas. Errar mais uma vez, olhando a outra parte do teto, e **anotar no diário**.
 4. Confirmadas: 5 antes de 1, 2 antes de 5 → **2, 5, 1**. O boato «UM ANTES DOIS» é falso (e contradiz as confirmadas).
 5. Escrever **DOIS, CINCO, UM** nas três lousas. A porta abre.
 

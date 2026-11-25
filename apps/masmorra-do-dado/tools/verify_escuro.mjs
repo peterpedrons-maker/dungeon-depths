@@ -1,7 +1,7 @@
 // Verifica «O Escuro» (sala 13, nível 7; ver PUZZLES_PROPOSTAS.md §5).
 // A porta tem TRÊS lousas lado a lado e a frase «ACENDER ▢ ▢ ▢» (uma lista de números = ordem, como na sala 4). Nada na sala diz quais números.
 // No teto, em cal fosforescente que só aparece no ESCURO total, há três frases. O escuro só vem quando a Casa pune um erro (escrever números
-// errados nas três lousas): o jogador tem de ERRAR DE PROPÓSITO para ler o teto (e anotar no diário, porque o escuro dura 2,5 s).
+// errados nas três lousas): o jogador tem de ERRAR DE PROPÓSITO para ler o teto (e anotar no diário, porque o escuro dura só 4 s).
 // Prova: 1) as frases do teto citam exatamente três números (um para cada lousa); 2) as confirmadas dão UMA ordem; 3) o boato é falso e,
 // se alguém acreditar nele, cai em contradição; 4) a ordem não é a crescente nem a ordem em que os números aparecem no teto.
 // Uso: node tools/verify_escuro.mjs
