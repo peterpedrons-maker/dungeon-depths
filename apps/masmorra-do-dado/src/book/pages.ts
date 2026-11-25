@@ -621,7 +621,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       ctx.fillRect(x0 + 8, 40, CW - 16, 1);
       // [rótulo, contagem, folha, ícone]
       const rows: [string, string, number, number][] = [
-        ['Páginas dela', `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
+        ['Dela', `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
         ['Símbolos', `${d.order.length}`, lay.dictAt, 0],
         ['Faces', `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt, 1],
         ['Textos', `${d.texts.length}`, lay.textsAt, 2],
