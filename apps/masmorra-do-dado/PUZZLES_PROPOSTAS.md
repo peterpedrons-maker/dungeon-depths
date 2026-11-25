@@ -83,6 +83,29 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 
 ✔ = detalhada e com verificador. As outras têm solução descrita abaixo e ganham verificador quando forem detalhadas (uma por vez).
 
+### A forma de cada sala (nenhuma igual à anterior)
+O motor liga as salas em fila, mas **dentro** de cada módulo a forma é livre (O Mirante já tem dois níveis e rampa; O Salão das Brasas já é redondo).
+A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemplo, o óleo das canaletas **desce**, então a altura mostra para onde o fogo corre.
+
+| # | Sala | Forma e tamanho | Por que essa forma |
+|---|---|---|---|
+| 3 | A Lousa | **pequena e baixa** (6×9 m, teto 2,8): um corredor íntimo com as lousas na parede | concentra o olhar nos painéis |
+| 4 | O Fio de Fogo | entra-se por um **balcão alto** e **desce-se** uma escada até um chão com 9 braseiros | do balcão se **lê a grade inteira de cima**; embaixo se perde a visão de conjunto |
+| 5 | A Casa Escreve | **salão quadrado amplo** (14×14, teto 5) com **9 colunas em grade** | a grade de colunas é a 1ª constelação (§3) |
+| 6 | A Chama Curta | **galeria comprida** (27 m), opção: **um declive suave** (descer é rápido, voltar é lento) | o declive vira parte do cálculo de tempo |
+| 7 | O Que a Casa Confirma | retangular média (como está) | — |
+| 8 | O Pano | **capela alta e estreita** (8×14, teto 7), panos pendurados lá no alto, 6 pilares | panos altos exigem **arremessar**; frisos do teto = constelação |
+| 9 | Os Apelidos | **rotunda** (redonda, ~12 m) com o GRANDE no centro | sala redonda não tem "começo" óbvio de leitura |
+| 10 | A Ponte de Madeira | **fosso**: entra-se pelo alto, uma **rampa em espiral desce** pelas paredes até o fundo; pontes de madeira cruzam o vão | o fogo nas pontes se vê de cima; a ordem se planeja descendo |
+| 11 | O Boato Verdadeiro | **sala em L** (duas alas) | as frases ficam em alas diferentes: não se vê tudo de um ponto |
+| 12 | A Sombra | **salão escuro e amplo**, teto alto, a tela de pedra no centro | a luz projetada só se lê com escuro em volta |
+| 13 | O Escuro | **pequena, baixa e opressiva** | o escuro total tem que assustar um pouco |
+| 14 | A Lei Pequena | **sobe**: rampa até um **mezanino**; frases embaixo, lousa lá em cima | o jogador tem de **lembrar** (ou anotar) o que leu embaixo |
+| 15 | O Fogo que Corre | **salão aberto** (20×20) em **plataformas de alturas diferentes** | a altura diz a direção do óleo |
+| 16 | Os Que Dizem o Mesmo | **claustro**: pátio interno **a céu aberto** com galerias em volta | a sala mais aberta do capítulo, um respiro antes do fim |
+| 17 | A Memória da Casa | **hub com três anexos** (§20, opção a) | a informação fica espalhada em câmaras |
+| 18 | O Tribunal | (como está) | — |
+
 ### Sala 3 — A Lousa (nível 2) · "acender em grade é escrever"
 **Sala:** pequena, três **lousas de fogo** (M1) na parede direita, em fileira, e a porta no fundo.
 1. **Lousa 1:** ao lado dela está talhado o glifo **DOIS** (o jogador já o viu na sala 2). Acender os dois lampiões da diagonal
@@ -218,7 +241,46 @@ Como está (`PUZZLES.md`, `tools/verify_tribunal.mjs`).
 
 ---
 
-## 3. Mapa dos segredos (três camadas, como em *Animal Well* / *Fez*)
+## 3. Constelações: tochas que escrevem (ideia do Pedro) ✔ `tools/verify_constelacoes.mjs`
+
+**A regra.** Algumas salas têm pilares com tochas. **Vistas de cima**, as posições caem numa grade 3×3 (a mesma das lousas). Acender
+**exatamente** as tochas que formam um glifo, e nenhuma outra, faz **subir um braseiro no centro** (pelas mesmas rachaduras de brasa da
+sala das marcas, só que **frias**). Acendê-lo abre uma **porta secreta**: uma câmara com uma **gema** (o colecionável dos 100%) e, às
+vezes, um **diário** que ensina vocabulário de história. Os **verbos** têm linhas: elas aparecem como **frisos de pedra no teto**
+entre os pilares, e quando as tochas das pontas acendem, o fogo corre pelo friso e **desenha a linha** (é a canaleta M2, no alto).
+
+**Por que não é demais:** nunca é obrigatória, usa a mesma língua do resto do jogo (o jogador já escreveu nas lousas), e só aparece em
+algumas salas. Para não virar chute:
+- **o conjunto é exato** (acender todas as tochas não resolve, e há tochas-isca nas paredes, fora da grade);
+- as **tochas se apagam sozinhas** depois de uns 40 s: chutar custa caminhar e esperar, ler é mais rápido;
+- **toda constelação tem uma pista que aponta para UMA palavra** (o verificador confere isso);
+- o **sinal** é sempre o mesmo: **rachaduras frias** no chão do centro (sem brasa). Depois da 1ª vez, o jogador reconhece.
+
+**Escalada (cada uma com uma pista mais escondida):**
+
+| # | Onde | A pista | Glifo | Camada |
+|---|---|---|---|---|
+| C1 | Sala 5, salão de 9 colunas | só **3 colunas** têm suporte de tocha (pedra clara, a mesma das lousas), na diagonal | TRÊS | ensina que constelações existem |
+| C2 | Sala 8, capela de 6 pilares | os 6 pilares têm tocha; os **frisos do teto** só ligam três posições num **triângulo** | ACENDER | 1º verbo; olhar para cima |
+| C3 | Sala 10, o fosso | tochas no **alto** (na borda) e no **fundo**: só **de cima, olhando para baixo**, elas caem na grade | (número do fosso) | perspectiva: a grade só existe de um ponto de vista |
+| C4 | Sala 12, A Sombra | não há tochas na grade: a **sombra das colunas** que a tela projeta é que cai nas casas | (a definir) | a constelação é de sombra, não de fogo |
+| C5 | Sala 13 em diante | a palavra da constelação de cada sala **só aparece no escuro** (S5): errar de propósito diz o que desenhar | (uma por sala) | junta as constelações com o escuro |
+| C6 | Salas 15 e 16 | um verbo **atravessa a porta**: metade das tochas numa sala, metade na outra, ligadas pelo friso do corredor | DE NOVO | o glifo maior que uma sala |
+| C7 | Volta às salas 1 a 4 | as **colunas do Vestíbulo** (sala 2) sempre tiveram suportes vazios: tochas que o jogador nunca acendeu | (a frase do escuro) | a grande volta ao começo |
+
+Detalhadas e verificadas: **C1** (só as tochas da diagonal estão na grade, mais 2 iscas: 1 conjunto aceito de 32) e **C2** (6 tochas
+na grade + 3 iscas: 1 de 512; as tochas conseguem escrever 11 palavras, mas **só ACENDER tem as linhas dos frisos**).
+
+**Como resolver C1:** acenda as tochas das três colunas com suporte claro (diagonal, de um canto ao outro passando pelo centro) e
+nenhuma tocha de parede. As rachaduras frias do chão se abrem, um braseiro sobe; acenda-o; a parede do fundo abre a câmara da gema.
+**Como resolver C2:** olhe o teto: os frisos formam um triângulo com a ponta no meio da fileira do fundo (o glifo ACENDER, a 1ª palavra
+do jogo). Acenda a tocha do pilar do meio do fundo e as dos dois pilares dos cantos da frente; o fogo corre pelos frisos e desenha o
+triângulo; o braseiro sobe no centro.
+
+**Motor:** tocha de parede/pilar acendível pelo dado (com tempo de chama), "grade de constelação" por sala (que tocha é qual casa),
+rachaduras frias + braseiro que sobe (já existe: `hidden`), friso no teto com fogo correndo (M2), porta secreta com câmara.
+
+## 3b. Mapa dos segredos (três camadas, como em *Animal Well* / *Fez*)
 
 | Camada | Como se acha | Segredos | Recompensa |
 |---|---|---|---|
@@ -233,7 +295,14 @@ Como está (`PUZZLES.md`, `tools/verify_tribunal.mjs`).
 - **S8 · O poço no escuro:** na sala 1, pôr fogo no soquete frio **e** errar de propósito (a Casa apaga tudo, inclusive a luz do poço).
   No escuro, as paredes do tubo do poço mostram, em cal fosforescente, **o texto do Escrivão**: a frase da sentença do jogador **sem a
   marca de confirmação** (`HISTORIA.md`). É a virada da história escondida no 1º cenário do jogo.
-- **Ideias guardadas para depois:** (a) o **mapa do diário** como lousa: as salas onde o jogador achou segredos formam um glifo no mapa
+- **S9 · A Casa é um dado (a maior epifania; a história já diz isso):** os **pontos de um dado são buracos**. **O poço do teto da sala 1
+  é um ponto**: o jogador caiu pela face UM. O capítulo 1 é a face UM (um ponto só: o poço). O capítulo 2 tem **dois poços**, o 3 tem
+  **três**, sempre na diagonal… Quem presta atenção percebe, no meio do jogo, que está **dentro de um dado gigante** e que cada capítulo é
+  uma face. As gemas reforçam: no mapa do diário, as câmaras secretas de cada capítulo ficam nas posições dos pontos daquela face, então
+  um capítulo 100% desenha a sua face do dado no mapa. No fim, o mapa dobra num cubo.
+- **Ideias guardadas para depois:**
+  - (c) **a sala é a moldura**: nos capítulos seguintes, a **forma da sala** dá a família do glifo: sala fechada = coisa,
+    sala em U aberta em cima = ser… (as constelações passam a escrever palavras com moldura). (a) o **mapa do diário** como lousa: as salas onde o jogador achou segredos formam um glifo no mapa
   (exige pôr as salas nas posições certas); (b) **SEIS não existe**: o dado tem seis faces, a língua é em base 6 («10» = UM ZERO); num
   capítulo posterior, duas lousas lado a lado sob um dado de seis pontos pedem UM e ZERO (o ZERO é um lampião dentro de um anel de pedra).
 
@@ -333,5 +402,7 @@ confirmada (só se provam pela cadeia). **Motor:** `lock.judge: 'door'`, `FireLi
 1. **Lousa de fogo e canaletas** viram o eixo do capítulo 1 (escrever com fogo)?
 2. **Pedra = CONFIRMADO, pano = BOATO, o fogo queima o boato**: aprovar como regra do mundo?
 3. **Errar de propósito** (o escuro da punição esconde escrita desde a sala 2): aprovar? Exige mudar a punição das salas 2 a 7 (apagar também a luz ambiente por ~2,5 s).
-4. A recompensa dos segredos: só história (diários, a frase do poço) ou também um **4º final** escondido?
+4. A recompensa dos segredos: gemas (100%) e diários com vocabulário (decidido pelo Pedro). Falta decidir se, além disso, há um **4º final** escondido.
+6. **A Casa é um dado** (S9): o poço é um ponto, e cada capítulo tem tantos poços quanto a sua face. Aprovar? Mexe na arte dos capítulos seguintes.
+7. Formas das salas (tabela da seção 2): quais o motor consegue fazer já e quais pedem trabalho (fosso em espiral, claustro aberto, sala em L)?
 5. As salas atuais 3 (Os Quatro) e 4 (A Ordem) saem; as ideias delas entram nas novas 3 (TRÊS, BRASEIRO) e 5 (ordem). A 5 e a 6 atuais viram 6 e 7.
