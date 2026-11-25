@@ -112,9 +112,10 @@ A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemp
    (cantos de cima à esquerda e de baixo à direita) faz o glifo talhado brilhar e abre uma grade. *Demonstração sem punição:* se o
    desenho não bate, nada acontece; os lampiões se apagam sozinhos depois de uns segundos.
 2. **Lousa 2:** ao lado, o glifo **TRÊS** (novo, mas é o DOIS com o ponto do meio). Acender a diagonal inteira.
-3. **A porta:** «ACENDER ▢ BRASEIRO». A casa lisa **copia ao vivo** o que está aceso na lousa 3 (epifania: "eu estou escrevendo na
-   porta"). Na sala há **quatro braseiros já acesos pela Casa**, um em cada canto. É preciso escrever QUATRO, que o jogador **nunca viu**.
-   Dedução: o DOIS e o TRÊS eram faces do dado. A face 4 do dado tem os **quatro cantos**. Acender os quatro cantos.
+3. **A porta é a lousa** (ideia do Pedro): a própria porta tem **9 pontinhos de bronze** embutidos em grade, apagados. Acima dela,
+   «ACENDER ▢ BRASEIRO»; a casa lisa da frase **copia ao vivo** o que está aceso na porta (epifania: "eu estou escrevendo na porta").
+   Na sala há **quatro braseiros já acesos pela Casa**, um em cada canto. É preciso escrever QUATRO, que o jogador **nunca viu**.
+   Dedução: o DOIS e o TRÊS eram faces do dado. A face 4 do dado tem os **quatro cantos**. Acender, um por um, os quatro pontinhos dos cantos.
 - **Solução:** lousa 1 = cantos 0 e 8; lousa 2 = 0, 4, 8; porta = 0, 2, 6, 8.
 - **Camada escondida (S1):** atrás de uma coluna há uma 4ª lousa com **soquete frio** e, talhado acima dela, **um dado com cinco pontos**.
   Escrever o quincunce (0, 2, 4, 6, 8) abre um nicho com uma gema. É CINCO antes de alguém ensinar CINCO: só quem entendeu "número = face do dado".
@@ -127,7 +128,11 @@ A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemp
    (da casa 6 para o centro e para a 7; da 3 para o canto 0 e para a 1; da 7 para o canto 8; da 5 para a 2).
    **Solução: pôr fogo no centro (4).** O fogo desce para 0 e 8 e escreve TRÊS. Armadilhas: começar pelo canto 0 (o "começo da leitura")
    só acende ele; pôr fogo na 6 acende o TRÊS **e** a 7 (sobra fogo, a Casa apaga).
-3. **Porta (o chão):** «ACENDER DOIS» e o glifo **CINCO** (talhado como um dado de cinco pontos). Canaletas: 2→4, 4→0, 4→8, 1→2, 5→8, 3→7, 7→6.
+3. **Lousa 3 (linhas, a ensinar para as constelações):** na parede, talhado, o glifo **ACENDER** (o triângulo que o jogador vê desde a
+   sala 1). A lousa tem canaletas **só** nos três lados do triângulo, em roda (1→6, 6→8, 8→1). Pôr fogo em qualquer ponta: o fogo corre
+   e **desenha as linhas**. O glifo talhado brilha. Ensina que **linha de glifo = fogo correndo entre dois pontos** (o friso do teto da
+   constelação C2 é isso em tamanho de sala). Sem armadilha: é demonstração.
+4. **Porta (o chão):** «ACENDER DOIS» e o glifo **CINCO** (talhado como um dado de cinco pontos). Canaletas: 2→4, 4→0, 4→8, 1→2, 5→8, 3→7, 7→6.
    **Solução: pôr fogo na 2 (canto de cima à direita) e na 6 (canto de baixo à esquerda).** Da 2 o fogo desce ao centro e dali aos cantos
    0 e 8; a 6 não tem canaleta que chegue nela de dentro do glifo, então precisa da 2ª ignição.
    **A primeira impressão engana:** a lição da lousa 2 era "comece pelo meio", e aqui o meio só acende 0, 4 e 8 e sobra uma ignição para
@@ -138,18 +143,20 @@ A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemp
 - **Motor:** M2 (propagação por canaletas dirigidas, ~0,6 s por canaleta, para o jogador VER o fogo correr), contador de ignições.
 
 ### Sala 5 — A Casa Escreve (nível 3) · "a Casa fala em fogo"
-**Sala:** quatro braseiros com número no pedestal (UM a QUATRO) e, sobre a porta, uma lousa (M9) que **se acende sozinha em laço**:
+**Sala:** salão quadrado com **9 colunas em grade**, todas com tocha (apagadas), e três tochas de parede. Quatro braseiros com número no
+pedestal (UM a QUATRO) e, sobre a porta, uma lousa (M9) que **se acende sozinha em laço**:
 mostra um glifo de número por 2 s, apaga, mostra o próximo… e um tempo escuro no fim do laço.
 - O laço mostra **DOIS · QUATRO · UM · TRÊS** (escuro) e repete. A frase talhada da porta é só «ACENDER BRASEIRO»: a ordem não está na
   pedra, está no fogo.
 - **Solução:** acender DOIS, QUATRO, UM, TRÊS. Errar apaga tudo (frios por 6 s).
 - **Torção:** o laço não começa quando o jogador entra; começa no meio. É preciso perceber **onde ele começa** (o tempo escuro é o
   "ponto final"; depois dele vem o primeiro).
-- **"Será que resolvi?" (S2):** com a porta aberta, a lousa continua em laço, mas agora **a cada três voltas** aparece um 5º glifo
-  (CINCO) antes do escuro. Não há quinto braseiro… à vista. Um alçapão de grade no chão, com **soquete frio**, esconde um pequeno
-  braseiro embaixo. Acender a sequência com o CINCO no fim (o dado cai pela grade e acende o de baixo) abre um nicho: uma página de
-  diário de "a que veio antes".
-- **Motor:** M9 (lousa animada pelo motor), alçapão com braseiro embaixo da grade.
+- **"Será que resolvi?" → a 1ª constelação (C1):** com a porta aberta, a lousa continua em laço, mas agora **a cada três voltas**
+  aparece um 5º glifo, **CINCO**, antes do escuro. Não há quinto braseiro. No centro do salão, **rachaduras frias** no chão. As 9
+  colunas são uma grade: acender as tochas das **quatro colunas dos cantos e a do centro** (e nenhuma outra, nem as de parede) escreve
+  CINCO com as colunas. Um braseiro sobe das rachaduras; acendê-lo abre a câmara secreta (gema + diário). Verificado: 12 tochas,
+  1 conjunto aceito de 4096 (`tools/verify_constelacoes.mjs`).
+- **Motor:** M9 (lousa animada pelo motor), tochas de coluna, rachaduras frias + braseiro que sobe, câmara secreta.
 
 ### Sala 6 — A Chama Curta (nível 4) · a atual (tempo e tamanho), quase igual
 Mantém a solução de `PUZZLES.md` (grande → médio-grande → médio-pequeno → pequeno).
@@ -161,22 +168,9 @@ Mantém a solução de `PUZZLES.md` (grande → médio-grande → médio-pequeno
 ### Sala 7 — O Que a Casa Confirma (nível 5) · a atual
 Fica como está (ver `PUZZLES.md`). Ela ensina as marcas, e as salas 9, 11, 14, 16 e 17 dependem disso.
 
-### Sala 8 — O Pano (nível 5) · "o fogo queima o boato"
-**Sala:** quatro braseiros com número (UM a QUATRO). Na porta, a frase «ACENDER ▢ BRASEIRO CONFIRMADO» tem, pendurado sobre a casa do
-meio, um **pano tecido** com o glifo **TODOS** e, bordado embaixo, a marca **BOATO**. Há outros dois panos na sala, nas paredes.
-1. Acender os quatro (fazer "TODOS") → a Casa apaga tudo. A frase não aceita.
-2. **Epifania:** o pano é de pano; a frase em volta é de pedra. O pano **tem a marca BOATO**. Atirar o dado de Fogo **no pano**: ele
-   queima de baixo para cima (bonito, lento, 2 s) e mostra **o glifo talhado embaixo: DOIS**. A frase verdadeira é
-   «ACENDER DOIS BRASEIRO CONFIRMADO». Mas quais dois?
-3. Os panos das paredes também são boatos (marca bordada): um diz «TRÊS ANTES UM», o outro «QUATRO DEPOIS DOIS». Queimados, mostram as
-   frases talhadas por baixo: **«UM QUATRO CONFIRMADO»** (a dupla) numa parede, e na outra nada (pedra lisa: o boato não escondia nada).
-- **Solução:** queimar o pano da porta e o pano certo da parede; acender o UM e o QUATRO.
-- **Por que é nível 5:** a regra é simples, mas exige a ideia que ninguém deu: **atirar o dado em algo que não é braseiro**, e ler a
-  diferença pano × pedra pela marca. Quem queima tudo sem ler também resolve, mas perde a camada S4.
-- **Camada escondida (S4):** o pano liso da parede (o que não escondia nada) **não** devia ser queimado: atrás dele, olhando de perto
-  antes de queimar, a luz do braseiro atravessa o tecido e mostra uma silhueta de glifo (ESCURO) **ao contrário**. Queimado, perde-se
-  nesta visita (volta ao sair). É a primeira pista da sala 13.
-- **Motor:** M3 (pano queimável com revelação por baixo; restaura ao sair), luz atravessando pano (opcional).
+### Sala 8 — O Pano (nível 5) · "o fogo queima o boato" ✔ `tools/verify_pano.mjs`
+(Detalhada na seção 5, com a constelação C2.) Panos tecidos (marca BOATO bordada) cobrem partes de frases talhadas. Queimados com o dado,
+mostram a pedra. **Solução: queimar o pano da porta (TODOS → DOIS) e o pano da parede esquerda (UM → TRÊS); acender TRÊS e depois QUATRO.**
 
 ### Sala 9 — Os Apelidos (nível 6) ✔ `tools/verify_apelidos.mjs`
 (Detalhada na seção 5.) Cinco braseiros, um GRANDE sem número e o QUATRO pequeno; o glifo PEQUENO parece UM numa moldura e
@@ -249,6 +243,13 @@ sala das marcas, só que **frias**). Acendê-lo abre uma **porta secreta**: uma 
 vezes, um **diário** que ensina vocabulário de história. Os **verbos** têm linhas: elas aparecem como **frisos de pedra no teto**
 entre os pilares, e quando as tochas das pontas acendem, o fogo corre pelo friso e **desenha a linha** (é a canaleta M2, no alto).
 
+**Decisões do Pedro:**
+- **No capítulo 1, toda constelação se resolve só com o Fogo** (acender tochas; o glifo pode ser um número ou o verbo ACENDER). A partir
+  do capítulo 2, as constelações passam a pedir as ferramentas novas, **em paralelo** com os puzzles principais (§3c).
+- **Sempre tochas a mais.** Nunca só as tochas do glifo: a sala tem tochas em **todos** os pilares e colunas, mais tochas nas paredes.
+  O verificador exige pelo menos tantas tochas sobrando quanto tochas no glifo. O que diz quais acender é a **pista**, nunca a quantidade.
+- **Gemas, diários e um 4º final**, mas o 4º final **se acumula**: não se ganha numa sala secreta, ele muda o fim do jogo (§3d).
+
 **Por que não é demais:** nunca é obrigatória, usa a mesma língua do resto do jogo (o jogador já escreveu nas lousas), e só aparece em
 algumas salas. Para não virar chute:
 - **o conjunto é exato** (acender todas as tochas não resolve, e há tochas-isca nas paredes, fora da grade);
@@ -260,7 +261,7 @@ algumas salas. Para não virar chute:
 
 | # | Onde | A pista | Glifo | Camada |
 |---|---|---|---|---|
-| C1 | Sala 5, salão de 9 colunas | só **3 colunas** têm suporte de tocha (pedra clara, a mesma das lousas), na diagonal | TRÊS | ensina que constelações existem |
+| C1 | Sala 5, salão de 9 colunas (todas com tocha + 3 de parede) | depois de a porta abrir, a lousa da Casa mostra às vezes um 5º glifo, **CINCO**, que não é de braseiro nenhum | CINCO | ensina que constelações existem; nasce do "será que resolvi?" |
 | C2 | Sala 8, capela de 6 pilares | os 6 pilares têm tocha; os **frisos do teto** só ligam três posições num **triângulo** | ACENDER | 1º verbo; olhar para cima |
 | C3 | Sala 10, o fosso | tochas no **alto** (na borda) e no **fundo**: só **de cima, olhando para baixo**, elas caem na grade | (número do fosso) | perspectiva: a grade só existe de um ponto de vista |
 | C4 | Sala 12, A Sombra | não há tochas na grade: a **sombra das colunas** que a tela projeta é que cai nas casas | (a definir) | a constelação é de sombra, não de fogo |
@@ -268,11 +269,12 @@ algumas salas. Para não virar chute:
 | C6 | Salas 15 e 16 | um verbo **atravessa a porta**: metade das tochas numa sala, metade na outra, ligadas pelo friso do corredor | DE NOVO | o glifo maior que uma sala |
 | C7 | Volta às salas 1 a 4 | as **colunas do Vestíbulo** (sala 2) sempre tiveram suportes vazios: tochas que o jogador nunca acendeu | (a frase do escuro) | a grande volta ao começo |
 
-Detalhadas e verificadas: **C1** (só as tochas da diagonal estão na grade, mais 2 iscas: 1 conjunto aceito de 32) e **C2** (6 tochas
-na grade + 3 iscas: 1 de 512; as tochas conseguem escrever 11 palavras, mas **só ACENDER tem as linhas dos frisos**).
+Detalhadas e verificadas: **C1** (9 tochas de coluna + 3 de parede: 1 conjunto aceito de 4096; as colunas escrevem 38 palavras,
+a pista mostra uma) e **C2** (6 tochas de pilar + 3 iscas: 1 de 512; as tochas conseguem escrever 11 palavras, mas **só ACENDER tem as
+linhas dos frisos**).
 
-**Como resolver C1:** acenda as tochas das três colunas com suporte claro (diagonal, de um canto ao outro passando pelo centro) e
-nenhuma tocha de parede. As rachaduras frias do chão se abrem, um braseiro sobe; acenda-o; a parede do fundo abre a câmara da gema.
+**Como resolver C1:** depois de abrir a porta, espere o laço da lousa: aparece CINCO (os quatro cantos e o centro). Acenda as tochas das
+quatro colunas dos cantos e da coluna do centro, nenhuma outra. Um braseiro sobe das rachaduras frias; acenda-o; a câmara abre.
 **Como resolver C2:** olhe o teto: os frisos formam um triângulo com a ponta no meio da fileira do fundo (o glifo ACENDER, a 1ª palavra
 do jogo). Acenda a tocha do pilar do meio do fundo e as dos dois pilares dos cantos da frente; o fogo corre pelos frisos e desenha o
 triângulo; o braseiro sobe no centro.
@@ -280,11 +282,37 @@ triângulo; o braseiro sobe no centro.
 **Motor:** tocha de parede/pilar acendível pelo dado (com tempo de chama), "grade de constelação" por sala (que tocha é qual casa),
 rachaduras frias + braseiro que sobe (já existe: `hidden`), friso no teto com fogo correndo (M2), porta secreta com câmara.
 
+## 3c. Constelações e ferramentas evoluem juntas (por capítulo)
+Cada face nova muda **o puzzle principal e a constelação ao mesmo tempo**. A constelação de um capítulo usa tudo o que o jogador já tem.
+
+| Cap. | Face nova | Puzzles principais | Constelações |
+|---|---|---|---|
+| 1 | Fogo (ACENDER) | lousas, canaletas, panos, sombra, escuro, frases | **só acender tochas**; pistas: lousa, frisos, perspectiva, sombra, escuro, glifo que atravessa a porta |
+| 2 | Peso (IGUAL) | placas que pesam o número da face, balanças | uma tocha só **conta** quando está na altura da grade: pilares com **contrapeso** sobem e descem com o Peso; e **placas como pontos** (o glifo é feito de placas, e cada uma pede um peso) |
+| 2–3 | giz | escrever em lacunas; o giz **lê** (esfregar mostra o liso) | **linhas de giz** no chão entre tochas fazem o papel do friso: o jogador desenha a linha que falta |
+| 3 | Eco (DE NOVO) | repetir a última ação | o glifo tem que ser **traçado na ordem de escrita** (moldura → ligações → pontos, como `writing.ts`); o Eco repete um traço longe |
+| 4 | Troca (EM VEZ DE) | trocar estados ou palavras | uma tocha **presa** fora do lugar: trocar o estado dela com o de uma tocha da grade |
+| 5 | Deslizar (ENTÃO) | sequências, trilhos | o fogo **desliza** por trilhos de tocha em tocha; a constelação vira um caminho com começo e fim |
+| 6 | Atravessar (NÃO) | negar, apagar | **a constelação em negativo**: o glifo é o das tochas **apagadas** numa sala toda acesa ("NÃO acender") |
+
+## 3d. O 4º final: o que se acumula
+Os três finais já nascem da gramática (`HISTORIA.md`: cumprir, absolver, repetir), escritos na sala do veredito. O 4º segue a mesma
+regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue escrever se tiver juntado, ao longo do jogo, três coisas:
+1. **As palavras:** **LANÇAR** e **CASA** (as duas existem no léxico) só aparecem nos **diários das câmaras secretas**. Sem elas não há como escrever a frase.
+2. **O entendimento:** que **a Casa é um dado** (S9). Ninguém diz isso; o jogador junta os poços e as faces no mapa.
+3. **O dado inteiro:** as gemas de cada capítulo desenham aquela **face** no mapa (S9). Com as seis faces completas, a Casa está
+   "inteira", e um dado inteiro pode ser lançado. Com face faltando, a frase é escrita, mas a Casa não responde.
+- **O 4º final: «LANÇAR CASA».** Em vez de cumprir, negar ou repetir a sentença que nunca foi lançada, o jogador **lança a Casa inteira**:
+  quem decide o veredito passa a ser o dado, como os Contáveis faziam. O jogador sai pelo poço e vê, de fora, o dado gigante rolar e pousar.
+- É um final de **conhecimento e coleção juntos**: quem fez 100% mas não entendeu não sabe escrever a frase; quem entendeu mas não
+  juntou as faces escreve e nada acontece.
+- **A decidir:** o que o dado pousado mostra (uma face fixa ou acaso de verdade), e se o 4º final destrava algo (o "Repetir" com tudo entendido?).
+
 ## 3b. Mapa dos segredos (três camadas, como em *Animal Well* / *Fez*)
 
 | Camada | Como se acha | Segredos | Recompensa |
 |---|---|---|---|
-| **1 · Notar** | na mesma visita, olhando de novo | S1 (sala 3, o CINCO antes da hora), S2 (sala 5, o 5º glifo do laço), S4 (sala 8, o pano liso) | gemas, páginas de diário |
+| **1 · Notar** | na mesma visita, olhando de novo | S1 (sala 3, o CINCO antes da hora) e as constelações C1 e C2 (§3) | gemas, páginas de diário |
 | **2 · Voltar** | entendeu algo depois e volta | S3 (sala 6, pano-parede, depois da sala 8), S5 (o escuro de cada sala, depois da 13) | diários, a frase escondida |
 | **3 · Meta** | junta tudo | S6, S7, S8 | o porquê da história |
 
@@ -323,6 +351,51 @@ rachaduras frias + braseiro que sobe (já existe: `hidden`), friso no teto com f
 ---
 
 ## 5. As salas detalhadas
+
+### Sala 8 — O Pano (NÍVEL 5) · "o fogo queima o boato" + constelação C2
+
+**A ideia:** o que é **talhado** é da Casa; o que é **tecido** é boato (cada pano tem a marca BOATO bordada embaixo). O jogador nunca
+atirou o dado em nada que não fosse braseiro ou frase; aqui precisa atirar **no pano**. O fogo queima o pano de baixo para cima (~2 s) e
+mostra a pedra. O pano volta quando o jogador sai da sala.
+
+**Forma:** capela alta e estreita (8×14 m, teto 7), seis pilares em duas fileiras de três (todos com tocha), três tochas de parede,
+panos pendurados **alto** (só se alcançam **arremessando**), rachaduras frias no centro do chão e frisos de pedra no teto.
+
+**Braseiros:** quatro, com número no pedestal (UM a QUATRO). Regra `order` com `hints: false`, penalidade 8 s.
+
+**Frases:**
+| Onde | Pedra (talhado) | Pano por cima (tecido, com BOATO) | Debaixo do pano |
+|---|---|---|---|
+| porta | «ACENDER ▢ BRASEIRO CONFIRMADO» | **TODOS** sobre a casa do meio | **DOIS** |
+| parede esquerda, alto | «▢ ANTES QUATRO CONFIRMADO» | **UM** sobre a 1ª palavra | **TRÊS** |
+| parede direita, alto | (nada) | «DOIS ANTES UM» inteiro | pedra **lisa** |
+
+**Solução (passo a passo):**
+1. Lendo os panos: acender TODOS, com o UM antes do QUATRO e o DOIS antes do UM. O jogador tenta; a Casa apaga tudo e os braseiros ficam frios.
+2. Repara que as palavras de pano têm a marca **BOATO** bordada e que **o pano é outro material**. Atira o dado de Fogo no pano da porta:
+   ele queima e mostra **DOIS** talhado. A ordem da porta é «ACENDER DOIS BRASEIRO».
+3. Atira no pano alto da parede esquerda: debaixo do UM tecido está **TRÊS** talhado: «TRÊS ANTES QUATRO».
+4. **Acende TRÊS e depois QUATRO.** A porta abre.
+- O pano da parede direita é **boato puro**: queimado, mostra pedra lisa. Quem acreditar nele junto com a pedra cai em contradição
+  (pede o DOIS e o UM, mas só dois braseiros, que já são o TRÊS e o QUATRO).
+
+**Por que é única** (`node tools/verify_pano.mjs`, as 64 respostas possíveis: qualquer sequência de 1 a 4 braseiros):
+- lendo a pedra: **uma** resposta, 3 → 4;
+- acreditando nos panos: 4 ordens possíveis, nenhuma aceita;
+- queimar **só** o pano da porta leva a 1 → 4 (errada); queimar **só** o da parede deixa 12 ordens de quatro, nenhuma aceita: **os dois panos são necessários**;
+- pedra + pano direito: 0 respostas (contradição).
+
+**Constelação C2 (camada escondida, só Fogo):** os frisos de pedra do teto ligam só três pilares num **triângulo** (a ponta no meio da
+fileira do fundo). É o glifo **ACENDER**, a 1ª palavra do jogo; a lousa 3 da sala 4 ensinou que linha = fogo correndo. Acender as tochas
+do **pilar do meio do fundo** e dos **dois pilares dos cantos da frente**, nenhuma outra: o fogo corre pelos frisos e desenha o
+triângulo no teto; um braseiro sobe das rachaduras; acendê-lo abre a câmara (gema + diário). Verificado: 9 tochas, 1 conjunto de 512, e
+os frisos só batem com ACENDER entre as 11 palavras que essas tochas conseguem escrever.
+
+**O que ensina:** atirar o fogo em coisas que não são braseiro; **material diz a marca** (pedra = confirmado, pano = boato); ler a
+frase inteira, não só a parte à vista. Prepara a sala 16 (queimar um boato muda a conta).
+
+**Motor:** pano queimável (M3) com a pedra embaixo, que volta ao sair; acertar pano alto com o dado arremessado; constelação (tochas de
+pilar com tempo, frisos com fogo correndo, rachaduras frias + braseiro `hidden`, câmara secreta).
 
 ### Sala 9 — Os Apelidos (NÍVEL 6) · ensina GRANDE e PEQUENO
 
@@ -398,11 +471,14 @@ confirmada (só se provam pela cadeia). **Motor:** `lock.judge: 'door'`, `FireLi
 
 ---
 
-## 6. Decisões para o Pedro
-1. **Lousa de fogo e canaletas** viram o eixo do capítulo 1 (escrever com fogo)?
-2. **Pedra = CONFIRMADO, pano = BOATO, o fogo queima o boato**: aprovar como regra do mundo?
-3. **Errar de propósito** (o escuro da punição esconde escrita desde a sala 2): aprovar? Exige mudar a punição das salas 2 a 7 (apagar também a luz ambiente por ~2,5 s).
-4. A recompensa dos segredos: gemas (100%) e diários com vocabulário (decidido pelo Pedro). Falta decidir se, além disso, há um **4º final** escondido.
-6. **A Casa é um dado** (S9): o poço é um ponto, e cada capítulo tem tantos poços quanto a sua face. Aprovar? Mexe na arte dos capítulos seguintes.
-7. Formas das salas (tabela da seção 2): quais o motor consegue fazer já e quais pedem trabalho (fosso em espiral, claustro aberto, sala em L)?
-5. As salas atuais 3 (Os Quatro) e 4 (A Ordem) saem; as ideias delas entram nas novas 3 (TRÊS, BRASEIRO) e 5 (ordem). A 5 e a 6 atuais viram 6 e 7.
+## 6. Decisões
+**Já decididas pelo Pedro:** a Casa (o jogo todo) é **um dado** (S9); constelações do capítulo 1 só com Fogo, e com as ferramentas novas
+a partir do capítulo 2; sempre tochas a mais; gemas (100%), diários com vocabulário e um **4º final que se acumula** (§3d).
+
+**Ainda em aberto:**
+1. **Lousa de fogo e canaletas** viram o eixo do capítulo 1 (escrever com fogo)? (O Pedro gostou; falta o "sim" formal.)
+2. **Pedra = CONFIRMADO, pano = BOATO, o fogo queima o boato** como regra do mundo?
+3. **Errar de propósito** (o escuro da punição esconde escrita desde a sala 2)? Exige mudar a punição das salas 2 a 7 (apagar também a luz ambiente por ~2,5 s).
+4. O 4º final «LANÇAR CASA»: o que o dado mostra ao pousar?
+5. Formas das salas (seção 2): quais o motor faz já e quais pedem trabalho (fosso em espiral, claustro aberto, sala em L)? Pergunta para a sessão principal.
+6. As salas atuais 3 (Os Quatro) e 4 (A Ordem) saem; as ideias delas entram nas novas 3 e 5. A 5 e a 6 atuais viram 6 e 7.

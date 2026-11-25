@@ -20,14 +20,14 @@ const linhas = (w) => (w.g.l || []).map(([a, b]) => [Math.min(a, b), Math.max(a,
 const CONSTELACOES = [
   {
     sala: 'Sala 5 · A Casa Escreve (salão de 9 colunas em grade)',
-    nota: 'a 1ª constelação: só 3 colunas têm suporte de tocha (de pedra clara, igual à das lousas). Ensina que constelações existem.',
+    nota: 'a 1ª constelação: TODAS as 9 colunas têm tocha, mais 3 tochas de parede. A pista é o glifo a mais que a lousa da Casa mostra depois que a porta abre.',
     tochas: [
-      { id: 'c0', casa: 0 }, { id: 'c4', casa: 4 }, { id: 'c8', casa: 8 },
-      { id: 'parede-esq', casa: null }, { id: 'parede-dir', casa: null }, // iscas: tochas comuns nas paredes
+      ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => ({ id: `coluna${c}`, casa: c })),
+      { id: 'parede-esq', casa: null }, { id: 'parede-dir', casa: null }, { id: 'porta', casa: null }, // iscas
     ],
     frisos: [], // sem linhas: é um número
-    alvo: 'n3',
-    pista: { tipo: 'suportes', descricao: 'só a diagonal tem suportes de tocha nas colunas' },
+    alvo: 'n5',
+    pista: { tipo: 'glifo', palavra: 'n5', descricao: 'depois de a porta abrir, a lousa da Casa às vezes mostra um 5º glifo (CINCO) que não corresponde a braseiro nenhum' },
   },
   {
     sala: 'Sala 8 · O Pano (capela alta, 6 pilares em duas fileiras)',
@@ -69,9 +69,11 @@ for (const k of CONSTELACOES) {
     const fr = k.frisos.map(([a, b]) => [Math.min(a, b), Math.max(a, b)].join('-')).sort().join();
     const batem = formaveis.filter((w) => linhas(w).join() === fr);
     check(batem.length === 1 && batem[0].id === k.alvo, `a pista (${k.pista.descricao}) aponta para uma palavra só: ${batem.map((w) => w.pt.toUpperCase()).join(', ')}`);
-  } else {
-    check(casas.length === T.length, `a pista (${k.pista.descricao}): as tochas da grade são exatamente as do glifo`);
+  } else if (k.pista.tipo === 'glifo') {
+    check(k.pista.palavra === k.alvo, `a pista (${k.pista.descricao}) mostra o próprio glifo`);
   }
+  const iscas = k.tochas.length - T.length;
+  check(iscas >= T.length, `há tochas a mais para não dar na cara: ${k.tochas.length} tochas para um glifo de ${T.length} (${iscas} sobram)`);
   check(!(k.tochas.every((t) => t.casa != null) && k.tochas.length === T.length), 'acender TODAS as tochas da sala não resolve (há iscas)');
 }
 console.log(ok ? '\nOK: cada constelação tem um conjunto só e uma pista que aponta para ele.' : '\nFALHOU.');
