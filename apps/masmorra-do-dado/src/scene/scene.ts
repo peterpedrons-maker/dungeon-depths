@@ -2459,7 +2459,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let aimTick = 0;
   let aimCache: ReturnType<typeof aimPoint> = null;
   const loop = (now: number) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.min(0.05, (now - last) / 1000) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
     last = now;
     t += dt;
 

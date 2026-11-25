@@ -148,10 +148,67 @@ export function createDiaryBook(env: BookEnv) {
   };
 
   // a lombada: meia-cana de couro atrás do dobra, com as nervuras e o ouro
-  const spineGeo = new THREE.CylinderGeometry(0.04, 0.04, BH, 14, 1, true, Math.PI / 2, Math.PI);
-  const spine = new THREE.Mesh(spineGeo, new THREE.MeshLambertMaterial({ map: diarySpineArt(), side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: diarySpineArt(), emissiveIntensity: 0.22 }));
-  spine.position.set(0, 0, -0.055);
+  // a lombada: uma faixa de couro curva que liga as beiradas das duas capas. É refeita a cada quadro: aberto, quase some atrás do dobra;
+  // fechando, vira a lateral redonda do livro (meia-cana entre as duas capas), sempre presa nelas
+  const SPN = 12;
+  const spineGeo = new THREE.BufferGeometry();
+  const spinePos = new Float32Array((SPN + 1) * 2 * 3);
+  const spineUv = new Float32Array((SPN + 1) * 2 * 2);
+  const spineIdx: number[] = [];
+  for (let k = 0; k <= SPN; k++) {
+    spineUv.set([k / SPN, 1, k / SPN, 0], k * 4);
+    if (k < SPN) {
+      const a0 = k * 2;
+      spineIdx.push(a0, a0 + 1, a0 + 2, a0 + 1, a0 + 3, a0 + 2);
+    }
+  }
+  spineGeo.setAttribute('position', new THREE.BufferAttribute(spinePos, 3));
+  spineGeo.setAttribute('uv', new THREE.BufferAttribute(spineUv, 2));
+  spineGeo.setIndex(spineIdx);
+  const spineMap = diarySpineArt();
+  const spine = new THREE.Mesh(spineGeo, new THREE.MeshLambertMaterial({ map: spineMap, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: spineMap, emissiveIntensity: 0.22 }));
+  spine.frustumCulled = false;
   inner.add(spine);
+  const ZO = -0.07; // face de fora da capa
+  const setSpine = (ang: number) => {
+    // P1: beirada da capa de trás (fixa); P2: beirada da capa da frente, girada com ela; I: um ponto "dentro" do livro (para saber para que lado a lombada estufa)
+    const c = Math.cos(ang);
+    const sn = Math.sin(ang);
+    const p1x = 0;
+    const p1z = ZO;
+    const p2x = sn * ZO;
+    const p2z = c * ZO;
+    const ix = 0.12; // (perto das folhas)
+    const iz = (p1z + p2z) / 2 + 0.0001;
+    const cx = (p1x + p2x) / 2;
+    const cz = (p1z + p2z) / 2;
+    let chx = p2x - p1x;
+    let chz = p2z - p1z;
+    const len = Math.hypot(chx, chz);
+    const r = Math.max(0.004, len / 2);
+    if (len > 1e-6) {
+      chx /= len;
+      chz /= len;
+    } else {
+      chx = 1;
+      chz = 0;
+    }
+    let ox = -chz;
+    let oz = chx;
+    if (ox * (ix - cx) + oz * (iz - cz) > 0) {
+      ox = -ox;
+      oz = -oz;
+    }
+    for (let k = 0; k <= SPN; k++) {
+      const t = (k / SPN) * Math.PI;
+      const x = cx - Math.cos(t) * r * chx + Math.sin(t) * r * ox;
+      const z = cz - Math.cos(t) * r * chz + Math.sin(t) * r * oz;
+      spinePos.set([x, BH / 2, z, x, -BH / 2, z], k * 6);
+    }
+    spineGeo.attributes.position.needsUpdate = true;
+    spineGeo.computeVertexNormals();
+  };
+  setSpine(0);
   // cabeceado: o cordão listrado no alto e embaixo do miolo, junto do lombo
   const hbTex = (() => {
     const c = document.createElement('canvas');
@@ -543,11 +600,9 @@ export function createDiaryBook(env: BookEnv) {
       const rise = ease(clamp01(T / 0.45));
       const frame = ease(clamp01((T - 0.25) / 0.5));
       open = ease(clamp01((T - 0.45) / 0.55));
-      leftPivot.rotation.y = -Math.PI * (1 - open);
+      leftPivot.rotation.y = Math.PI * (1 - open); // a capa gira pela frente (como num livro de verdade), não por trás
       // a lombada acompanha: aberto, é a meia-cana atrás do dobra; fechado, vira a lateral redonda que une as duas capas
-      spine.rotation.y = (Math.PI / 2) * (1 - open);
-      spine.position.z = -0.055 * open;
-      spine.scale.x = spine.scale.z = 1 + 0.8 * (1 - open);
+      setSpine(leftPivot.rotation.y);
       inner.position.x = (-BW / 2) * (1 - open);
       const mx = (a: number, b: number, k: number) => a + (b - a) * k;
       const f = (key: 'x' | 'y' | 'rx' | 'ry' | 'rz' | 's') => mx(mx(POSE.start[key], POSE.mid[key], rise), POSE.end[key], frame);

@@ -394,27 +394,26 @@ function indexIcon(ctx: CanvasRenderingContext2D, i: number, x: number, y: numbe
     P([[5, 1], [6, 2], [4, 2], [6, 3], [3, 3], [5, 4], [2, 4], [4, 5]]);
   }
 }
-// guarda marmorizada (o avesso da capa) com a etiqueta do dono: DIÁRIO, o dado e as duas linhas
+// guarda (o avesso da capa): papel vinho escuro, liso, com um padrão miúdo e apagado de losangos e pontinhos dourados,
+// e a etiqueta do dono colada: DIÁRIO, o dado e as duas linhas
 function endpaper(ctx: CanvasRenderingContext2D) {
   const img = ctx.createImageData(PW, PH);
   const n = smooth(77, 18);
-  const m = smooth(78, 6);
+  const rr = rngf(79);
   for (let y = 0; y < PH; y++)
     for (let x = 0; x < PW; x++) {
-      // veios: o seno de uma coordenada torcida pelo ruído (como tinta penteada na água)
-      const t = Math.sin(x * 0.16 + y * 0.09 + n(x, y) * 10 + m(x, y) * 3);
-      const u = Math.sin(x * 0.07 - y * 0.13 + n(y, x) * 8);
-      let col: [number, number, number];
-      if (t > 0.9) col = [182, 140, 80]; // veio de ouro velho
-      else if (t > 0.55) col = [112, 42, 32]; // vinho
-      else if (u > 0.5) col = [44, 58, 86]; // azul
-      else col = [30, 28, 42];
       const dSpine = PW - 1 - x;
-      const k = (dSpine < 16 ? 0.55 + (0.45 * dSpine) / 16 : 1) * (0.9 + 0.1 * m(x * 2, y * 2));
+      let k = (0.88 + 0.12 * n(x, y) + (rr() - 0.5) * 0.05) * (dSpine < 18 ? 0.6 + (0.4 * dSpine) / 18 : 1);
+      // o padrão: a cada 12 px um losango vazado, e um ponto no meio de cada vão
+      const gx = ((x % 12) + 12) % 12;
+      const gy = ((y % 12) + 12) % 12;
+      const dd = Math.abs(gx - 6) + Math.abs(gy - 6);
+      const gold = dd === 3 || (gx === 0 && gy === 0);
       const o = (y * PW + x) * 4;
-      img.data[o] = col[0] * k;
-      img.data[o + 1] = col[1] * k;
-      img.data[o + 2] = col[2] * k;
+      if (gold) k *= 1;
+      img.data[o] = (gold ? 150 : 88) * k;
+      img.data[o + 1] = (gold ? 108 : 34) * k;
+      img.data[o + 2] = (gold ? 62 : 28) * k;
       img.data[o + 3] = 255;
     }
   ctx.putImageData(img, 0, 0);
