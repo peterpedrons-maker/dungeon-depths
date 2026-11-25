@@ -842,7 +842,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
-  const SCRIBE_AT = new THREE.Vector3(0, 0, 2.35); // longe o bastante da mureta (raio 1,38): a barra do manto, espalhada no chão, nunca a atravessa // onde ele para, na borda, de frente para o furo
+  const SCRIBE_AT = new THREE.Vector3(0, 0, 1.76); // longe o bastante da mureta (raio 1,38): a barra do manto, espalhada no chão, nunca a atravessa // onde ele para, na borda, de frente para o furo
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
   const talkSeq = (lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }) => {
     let at = (o?.delay ?? 0) * 1000;
@@ -861,16 +861,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       topScribe.group.traverse((o) => {
         const m = (o as THREE.Mesh).material as THREE.MeshLambertMaterial | undefined;
         if (!m) return;
-        m.fog = false;
-        if (m.emissive && m.color) m.emissive.copy(m.color).multiplyScalar(0.3);
+        m.fog = false; // lá em cima ele se lê nítido contra a névoa (as cores dele já vêm do modelo)
         m.needsUpdate = true;
       });
-      topScribe.group.scale.setScalar(1.3); // alto e curvado: o dado (grande) cabe na mão dele
+      topScribe.group.scale.setScalar(1.0); // ~2,2 m com o capuz pontudo
       scene.add(topScribe.group);
       scribeDie = worldModel.clone();
       topScribe.hand.add(scribeDie);
       scribeDie.position.set(0, 0, 0);
-      scribeDie.scale.setScalar(0.42 / 1.3);
+      scribeDie.scale.setScalar(0.42);
     }
     topScribe.setAlpha(0); // ainda não chegou
     scribeDie!.visible = false; // o dado está guardado dentro do manto
@@ -979,7 +978,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       // close na mão com o dado, sobre o poço
       topScribe.hand.getWorldPosition(scribeHand);
       scribeLook.copy(scribeHand).setY(scribeHand.y - 0.15); // a boca da manga com o dado flutuando, contra o céu
-      setCine(tmpV.set(1.35, -0.2, -1.15).add(scribeHand), scribeLook); // de frente e de baixo, mais afastada: a mão, o braço e o capuz contra o céu // de frente e um pouco de baixo: a mão ossuda com o dado na palma, contra o céu
+      setCine(tmpV.set(0.7, -0.3, -1.37).add(scribeHand), scribeLook); // entre os postes e sob a trave: nada na frente // de frente e de baixo, mais afastada: a mão, o braço e o capuz contra o céu // de frente e um pouco de baixo: a mão ossuda com o dado na palma, contra o céu
     } else if (S.ph === 8) {
       // a câmera desce POR BAIXO do dado: o dado em cima, contra a luz, e lá no alto a silhueta do Escrivão debruçado
       const dw = worldDie.position;
@@ -1029,7 +1028,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 4:
         if (S.arrived) {
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
-          S.pose = { walk: 0, lean: 1.15, rest: 1, headPitch: 0.45 }; // debruçado por cima da mureta (o corpo fica do lado de fora dela)
+          S.pose = { walk: 0, lean: 1.45, rest: 1, headPitch: -0.15 }; // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           if (S.t > 6.2) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
@@ -1058,15 +1057,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         // de lado: endireita-se um pouco, a mão direita vai às costas, para dentro do manto… e volta com o dado
         fovCine = 40;
         // depois ERGUE o dado bem alto, na palma virada para cima, acima da cabeça e sobre a boca do poço (nada atravessa a mureta)
-        S.pose = { lean: 0.3, rest: 0.6, back: S.t < 1.25 ? 1 : 0, raise: S.t < 1.25 ? 0 : 1, headPitch: S.t < 1.25 ? 0.1 : -0.2, headYaw: S.t < 1.25 ? -0.35 : 0 };
+        S.pose = { lean: 0.45, rest: 0.6, back: S.t < 1.25 ? 1 : 0, raise: S.t < 1.25 ? 0 : 1, headPitch: S.t < 1.25 ? 0.1 : -0.2, headYaw: S.t < 1.25 ? -0.35 : 0 };
         if (S.t > 1.05) scribeDie!.visible = true;
         if (S.t > 2.7) go(7);
         break;
       case 7:
         // close na mão: ele estende o braço sobre o poço, segura um instante… e abre os dedos
         fovCine = 38;
-        S.pose = { lean: 0.3, rest: 1, raise: 1, open: S.t > 1.9 ? 1 : 0, headPitch: 0.1 };
-        if (!S.thrown && S.t > 2.2) {
+        S.pose = { lean: 0.5, rest: 1, raise: 1, open: S.t > 1.9 ? 1 : 0, headPitch: 0.3 };
+        if (!S.thrown && S.t > 1.98) {
           releaseDie();
           go(8);
         }

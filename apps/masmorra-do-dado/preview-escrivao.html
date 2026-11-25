@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Escrivão (prévia)</title>
+<style>html,body{margin:0;background:#1a1220;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<!-- Ferramenta de desenvolvimento: o Escrivão sozinho, de frente, de lado e de costas (para comparar com a folha de referência). Não entra no build. -->
+<script type="module">
+import * as THREE from 'three';
+import { makeScribe } from '/src/scene/scribe.ts';
+const W = 1536, H = 1024;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(W, H);
+renderer.setScissorTest(true);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1220);
+scene.add(new THREE.AmbientLight(0xb8a8d0, 1.6));
+const key = new THREE.DirectionalLight(0xfff0e0, 2.0);
+key.position.set(1.5, 3, 4);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x8a70c0, 1.0);
+rim.position.set(-3, 2, -3);
+scene.add(rim);
+const q = new URLSearchParams(location.search);
+const views = [0, -Math.PI / 2, Math.PI];
+const figs = views.map((ry) => {
+  const s = makeScribe();
+  s.group.rotation.y = ry;
+  return s;
+});
+const pose = q.get('pose') ? JSON.parse(q.get('pose')) : {};
+const cams = views.map(() => { const c = new THREE.PerspectiveCamera(30, (W / 3) / H, 0.1, 50); c.position.set(0, 1.0, 4.2); c.lookAt(0, 0.98, 0); return c; });
+let t = 0;
+function frame() {
+  t += 1 / 60;
+  figs.forEach((f, i) => {
+    scene.add(f.group);
+    f.animate(1 / 60, t, pose);
+  });
+  for (let i = 0; i < 3; i++) {
+    figs.forEach((f, j) => (f.group.visible = j === i));
+    renderer.setViewport((i * W) / 3, 0, W / 3, H);
+    renderer.setScissor((i * W) / 3, 0, W / 3, H);
+    renderer.render(scene, cams[i]);
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+window.__ready = true;
+</script>
+</body>
+</html>
