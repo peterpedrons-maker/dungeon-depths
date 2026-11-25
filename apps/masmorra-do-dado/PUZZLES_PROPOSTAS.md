@@ -64,9 +64,9 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 |---|---|---|---|---|---|
 | 1 | O Poço | 1 | o dado acende | (fica) | ACENDER |
 | 2 | O Vestíbulo | 1 | o número é exato | (fica) | DOIS |
-| 3 | **A Lousa** | 2 | acender em grade é **escrever**; os números são **as faces do dado** | M1 | TRÊS, QUATRO, BRASEIRO |
+| 3 | **A Lousa** ✔ | 2 | acender em grade é **escrever**; os números são **as faces do dado** | M1 | TRÊS, QUATRO, BRASEIRO |
 | 4 | **O Fio de Fogo** ✔ | 3 | o fogo **corre**; «ACENDER UM» pode acender vários | M1+M2 | UM, CINCO |
-| 5 | **A Casa Escreve** | 3 | a Casa fala em fogo; a ordem é lida numa lousa que pisca | M9 + ordem | (ORDEM implícita) |
+| 5 | **A Casa Escreve** ✔ | 3 | a Casa fala em fogo; **a lousa é um mapa** do salão | M9 + ordem | ORDEM |
 | 6 | A Chama Curta | 4 | tempo e tamanho (a sala 5 atual, quase igual) | M7 | TEMPO |
 | 7 | O Que a Casa Confirma | 5 | marcas; o dado acende frases (a sala 6 atual) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
 | 8 | **O Pano** | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
@@ -106,20 +106,9 @@ A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemp
 | 17 | A Memória da Casa | **hub com três anexos** (§20, opção a) | a informação fica espalhada em câmaras |
 | 18 | O Tribunal | (como está) | — |
 
-### Sala 3 — A Lousa (nível 2) · "acender em grade é escrever"
-**Sala:** pequena, três **lousas de fogo** (M1) na parede direita, em fileira, e a porta no fundo.
-1. **Lousa 1:** ao lado dela está talhado o glifo **DOIS** (o jogador já o viu na sala 2). Acender os dois lampiões da diagonal
-   (cantos de cima à esquerda e de baixo à direita) faz o glifo talhado brilhar e abre uma grade. *Demonstração sem punição:* se o
-   desenho não bate, nada acontece; os lampiões se apagam sozinhos depois de uns segundos.
-2. **Lousa 2:** ao lado, o glifo **TRÊS** (novo, mas é o DOIS com o ponto do meio). Acender a diagonal inteira.
-3. **A porta é a lousa** (ideia do Pedro): a própria porta tem **9 pontinhos de bronze** embutidos em grade, apagados. Acima dela,
-   «ACENDER ▢ BRASEIRO»; a casa lisa da frase **copia ao vivo** o que está aceso na porta (epifania: "eu estou escrevendo na porta").
-   Na sala há **quatro braseiros já acesos pela Casa**, um em cada canto. É preciso escrever QUATRO, que o jogador **nunca viu**.
-   Dedução: o DOIS e o TRÊS eram faces do dado. A face 4 do dado tem os **quatro cantos**. Acender, um por um, os quatro pontinhos dos cantos.
-- **Solução:** lousa 1 = cantos 0 e 8; lousa 2 = 0, 4, 8; porta = 0, 2, 6, 8.
-- **Camada escondida (S1):** atrás de uma coluna há uma 4ª lousa com **soquete frio** e, talhado acima dela, **um dado com cinco pontos**.
-  Escrever o quincunce (0, 2, 4, 6, 8) abre um nicho com uma gema. É CINCO antes de alguém ensinar CINCO: só quem entendeu "número = face do dado".
-- **Motor:** M1 (lampião = alvo pela mira; o painel compara o conjunto aceso com o glifo), casa lisa que espelha a lousa.
+### Sala 3 — A Lousa (nível 2) · "acender em grade é escrever" ✔ `tools/verify_lousa.mjs`
+(Detalhada na seção 5.) Duas lousas de copiar (DOIS, TRÊS) e a **porta-lousa**: escrever na porta quantos braseiros estão acesos.
+Um deles está num nicho atrás do jogador. **Solução: lousa 1 = diagonal curta (0, 8); lousa 2 = diagonal (0, 4, 8); porta = QUATRO, os quatro cantos.**
 
 ### Sala 4 — O Fio de Fogo (nível 3) · "o fogo corre" ✔ `tools/verify_fio.mjs`
 **Sala:** fileira de 3 lousas com **canaletas** (M2) e, no chão do fundo, **9 braseiros em grade 3×3** ligados por canaletas grandes.
@@ -142,21 +131,9 @@ A forma não é enfeite: em várias salas ela **faz parte do puzzle**. Por exemp
 - **Palavra nova:** UM aparece na plaquinha (é a face 1: o ponto do meio), CINCO no glifo talhado.
 - **Motor:** M2 (propagação por canaletas dirigidas, ~0,6 s por canaleta, para o jogador VER o fogo correr), contador de ignições.
 
-### Sala 5 — A Casa Escreve (nível 3) · "a Casa fala em fogo"
-**Sala:** salão quadrado com **9 colunas em grade**, todas com tocha (apagadas), e três tochas de parede. Quatro braseiros com número no
-pedestal (UM a QUATRO) e, sobre a porta, uma lousa (M9) que **se acende sozinha em laço**:
-mostra um glifo de número por 2 s, apaga, mostra o próximo… e um tempo escuro no fim do laço.
-- O laço mostra **DOIS · QUATRO · UM · TRÊS** (escuro) e repete. A frase talhada da porta é só «ACENDER BRASEIRO»: a ordem não está na
-  pedra, está no fogo.
-- **Solução:** acender DOIS, QUATRO, UM, TRÊS. Errar apaga tudo (frios por 6 s).
-- **Torção:** o laço não começa quando o jogador entra; começa no meio. É preciso perceber **onde ele começa** (o tempo escuro é o
-  "ponto final"; depois dele vem o primeiro).
-- **"Será que resolvi?" → a 1ª constelação (C1):** com a porta aberta, a lousa continua em laço, mas agora **a cada três voltas**
-  aparece um 5º glifo, **CINCO**, antes do escuro. Não há quinto braseiro. No centro do salão, **rachaduras frias** no chão. As 9
-  colunas são uma grade: acender as tochas das **quatro colunas dos cantos e a do centro** (e nenhuma outra, nem as de parede) escreve
-  CINCO com as colunas. Um braseiro sobe das rachaduras; acendê-lo abre a câmara secreta (gema + diário). Verificado: 12 tochas,
-  1 conjunto aceito de 4096 (`tools/verify_constelacoes.mjs`).
-- **Motor:** M9 (lousa animada pelo motor), tochas de coluna, rachaduras frias + braseiro que sobe, câmara secreta.
+### Sala 5 — A Casa Escreve (nível 3) · "a lousa é um mapa" ✔ `tools/verify_casa_escreve.mjs`
+(Detalhada na seção 5, com a constelação C1.) Salão de 9 colunas; a lousa da Casa acende uma posição de cada vez, em laço: é o **mapa** do
+salão. **Solução: acender os braseiros das colunas meio-direita, fundo-esquerda, frente-meio, fundo-direita.**
 
 ### Sala 6 — A Chama Curta (nível 4) · a atual (tempo e tamanho), quase igual
 Mantém a solução de `PUZZLES.md` (grande → médio-grande → médio-pequeno → pequeno).
@@ -351,6 +328,94 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 ---
 
 ## 5. As salas detalhadas
+
+### Sala 3 — A Lousa (NÍVEL 2) · "acender em grade é escrever"
+
+**A ideia:** a 1ª sala de **escrever com fogo**. Três passos (regra → torção → reprise): copiar, copiar com um ponto a mais, e escrever
+uma palavra que o jogador **nunca viu**, deduzida de uma coisa que todo mundo conhece: **os números da língua são as faces do dado**.
+
+**Forma:** pequena e baixa (6×10 m, teto 2,8): um corredor íntimo. Duas colunas no meio. Entrada ao sul, porta ao norte.
+- Parede direita: **lousa 1** (9 lampiões em grade, num quadro de pedra clara) com o glifo **DOIS** talhado ao lado; **lousa 2** com **TRÊS** talhado ao lado.
+- Canto esquerdo, perto da porta: um **dado de pedra enorme, meio enterrado**, mostrando três faces: UM em cima, DOIS e TRÊS dos lados
+  (cenário; é a pista de que os glifos de número são faces de dado).
+- **A porta é a lousa:** 9 pontinhos de bronze embutidos nela, em grade. Acima: «ACENDER ▢ BRASEIRO», com a casa lisa copiando ao vivo
+  o que está aceso na porta.
+- **Quatro braseiros acesos pela Casa:** à esquerda da porta, à direita da porta, no meio da parede esquerda e **um num nicho alto em cima
+  do arco da entrada** (atrás do jogador quando ele entra; a luz dele joga a **sombra do jogador para a frente**, pista de que há fogo atrás).
+- Atrás da coluna esquerda: a **lousa secreta (S1)**, com **soquete frio** e um dado de **cinco pontos** talhado acima.
+
+**Como funciona uma lousa:** o dado (posicionar ou arremessar, alvo pela mira) acende o lampião mirado. Os acesos ficam acesos. Quando o
+conjunto aceso é **exatamente** o glifo, o glifo talhado ao lado brilha e a lousa trava acesa. Se passam 5 s sem lampião novo e o desenho
+não bate, todos se apagam, **sem pena** (é sala de ensino).
+
+**Solução (passo a passo):**
+1. **Lousa 1:** acenda os lampiões dos cantos de cima à esquerda e de baixo à direita (o DOIS talhado ao lado). Abre-se uma grade baixa
+   na parede (passagem para a parte da frente da sala).
+2. **Lousa 2:** acenda a diagonal inteira, canto, centro, canto (o TRÊS).
+3. **A porta:** a frase pede um número, e ela tem de ficar **verdadeira**: quantos braseiros estão acesos? Quem conta só os da frente
+   escreve TRÊS (que já sabe): a porta não aceita, e os pontinhos se apagam. Olhando em volta (ou reparando na própria sombra), acha o
+   **quarto braseiro, no nicho em cima da entrada**. A resposta é QUATRO, que ninguém ensinou. O DOIS e o TRÊS eram faces do dado; o dado
+   de pedra mostra isso. **A face quatro de um dado são os quatro cantos.** Acenda os quatro pontinhos dos cantos da porta. A casa lisa da
+   frase mostra QUATRO, a Casa lê a frase (as palavras acendem uma a uma) e a porta abre.
+- **Segredo S1:** na lousa atrás da coluna, escreva a face **cinco** (os quatro cantos e o centro). Um nicho abre: uma **gema**.
+
+**Por que é única** (`node tools/verify_lousa.mjs`):
+- os números do léxico **são** as faces de um dado comum (UM a CINCO), então a dedução do jogador está certa, não é coincidência;
+- cada lousa aceita **um** desenho entre 512;
+- a frase só fica verdadeira com QUATRO (há 4 braseiros acesos); contar só os da frente (TRÊS) é recusado;
+- chutar "quatro pontos quaisquer" são 126 desenhos: só a face do dado serve;
+- acender os cantos um por um não abre nada antes do quarto (os passos do meio, como o DOIS, não disparam nada).
+
+**O que ensina:** acender em grade **escreve**; uma frase com uma casa lisa pede que o jogador a **torne verdadeira**; os números são as
+faces do dado (a base de toda escrita com fogo e da ideia "a Casa é um dado"); olhar a sala inteira, inclusive para trás.
+**Palavras novas:** TRÊS, QUATRO (e BRASEIRO, na frase da porta; o glifo BRASEIRO pisca quando o jogador olha um braseiro aceso).
+
+**Motor:** lousa de fogo (M1: alvo pela mira, comparação com glifo, apagar depois de 5 s parado); porta-lousa com casa lisa que espelha;
+o dado de pedra (cenário); braseiros pré-acesos (`lit: true`), um num nicho alto.
+
+### Sala 5 — A Casa Escreve (NÍVEL 3) · "a lousa é um mapa" + constelação C1
+
+**A ideia:** até aqui a escrita estava parada (talhada) ou era do jogador. Aqui **a Casa escreve com fogo**, numa lousa que se acende
+sozinha. E a lousa não mostra números: mostra **posições**. Ela é o **mapa do salão**, que tem 9 colunas em grade. É a ponte para as
+constelações: "a sala inteira é uma grade".
+
+**Forma:** salão quadrado amplo (14×14 m, teto 5), **9 colunas** em grade 3×3 (todas com tocha apagada), três tochas de parede.
+Quatro colunas têm um **braseiro ao pé** (sem número): **meio-direita, fundo-esquerda, frente-meio, fundo-direita** ("fundo" = lado da porta).
+Na parede da porta, acima dela, a **lousa da Casa** (9 lampiões), com um pequeno glifo **PORTA** talhado na borda de cima da moldura.
+No centro do chão, **rachaduras frias** (sem brasa).
+
+**A lousa em laço:** acende um lampião por 1,5 s, apaga, acende o próximo… quatro quadros e então **2,5 s de escuro**; repete. O laço
+já está rodando quando o jogador entra (ele chega no meio). A frase da porta é **«ACENDER BRASEIRO ORDEM»**, e o glifo **ORDEM** pulsa
+**no tempo escuro**: é o "ponto final" do laço.
+- Quadros, do primeiro ao último: **meio-direita · fundo-esquerda · frente-meio · fundo-direita** · (escuro).
+
+**Solução (passo a passo):**
+1. Ver que a lousa acende **um ponto de cada vez** e que os pontos não são números (nenhum é o ponto do meio; um ponto no canto não é palavra).
+2. Perceber que a lousa tem a **forma do salão**: 3×3, como as colunas. O glifo PORTA na borda de cima diz que o **lado de cima da
+   lousa é o lado da porta**. Cada ponto é uma coluna.
+3. Achar o começo: o laço termina no escuro (quando ORDEM pulsa). O primeiro quadro é o que vem logo depois do escuro.
+4. **Acender os braseiros ao pé das colunas: meio-direita, fundo-esquerda, frente-meio, fundo-direita.** Errar a ordem apaga tudo e
+   deixa os braseiros **frios por 6 s**.
+
+**A primeira impressão engana, e se denuncia:** quem lê a lousa de cabeça para baixo (com a entrada em cima), espelhada ou girada, manda
+pelo menos um quadro para uma **coluna sem braseiro**, e percebe sozinho que leu errado.
+
+**Por que é única** (`node tools/verify_casa_escreve.mjs`): lida como mapa, todo quadro cai num braseiro e há **uma** ordem entre 24;
+de cabeça para baixo, 3 quadros caem em colunas vazias; espelhada, 1; girada, 4; começar o laço no meio dá ordens erradas; a ordem não é
+a de leitura (esquerda para direita, cima para baixo).
+
+**"Resolvi… mas será que resolvi?" → constelação C1 (só Fogo):** com a porta aberta, a lousa continua em laço, e **a cada três voltas**
+aparece um 5º quadro antes do escuro: **cinco pontos de uma vez**, os quatro cantos e o centro (CINCO). Não há quinto braseiro.
+Lido como mapa (a lição da sala), são **cinco colunas**: as quatro dos cantos e a do centro. **Acender as tochas dessas cinco colunas, e
+nenhuma outra** (há 9 colunas com tocha e 3 tochas de parede): as rachaduras frias se abrem, um braseiro sobe no centro; acendê-lo abre a
+**câmara secreta** (gema + diário). Verificado em `tools/verify_constelacoes.mjs`: 1 conjunto aceito entre 4096. As tochas se apagam
+sozinhas em ~40 s, então é preciso planejar o caminho entre as cinco colunas.
+
+**O que ensina:** a Casa fala em fogo; uma lousa pode ser um **mapa**; a sala inteira é uma grade (prepara todas as constelações); uma
+frase em laço tem começo e fim (ORDEM). **Palavra nova:** ORDEM (usada depois no Tribunal).
+
+**Motor:** lousa animada (M9) com laço, tempo escuro e o 5º quadro a cada 3 voltas depois de resolvida; brilho de ORDEM no escuro; braseiros
+sem número; tochas de coluna com tempo de chama; rachaduras frias + braseiro `hidden`; câmara secreta.
 
 ### Sala 8 — O Pano (NÍVEL 5) · "o fogo queima o boato" + constelação C2
 
