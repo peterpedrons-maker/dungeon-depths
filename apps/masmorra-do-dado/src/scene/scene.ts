@@ -37,6 +37,7 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
+import { layout as bookLayout } from '../book/pages';
 import { config, configStore } from '../story/config';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { buildLousa } from './rooms/lousa';
@@ -113,7 +114,8 @@ export interface SceneOptions {
   onPrompt?: (label: string | null) => void; // algo ao alcance para interagir ("Tentar abrir")
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
-  onPause?: () => void; // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
+  onPause?: () => void;
+  onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
 }
 
 export interface SceneApi {
@@ -599,10 +601,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       y = ((1 - dieNdc.y) / 2) * 100;
       up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
     } else {
-      dieNdc.copy(worldDie.position).project(camera);
+      // a ponta do balão no TOPO do dado (com o zoom da abertura ele fica grande: o balão não cobre o rosto)
+      dieNdc.copy(worldDie.position).setY(worldDie.position.y + 0.42 * worldModel.scale.x + 0.05).project(camera);
       x = Math.max(14, Math.min(86, ((dieNdc.x + 1) / 2) * 100));
       y = Math.max(26, Math.min(92, ((1 - dieNdc.y) / 2) * 100));
-      up = 7;
+      up = 2;
     }
     if (Math.abs(x - dieCssX) > 0.15 || Math.abs(y - dieCssY) > 0.15) {
       dieCssX = x;
@@ -1002,6 +1005,38 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     });
     return at - (o?.delay ?? 0) * 1000;
   };
+  // ── o ROSTO do dado caído (abertura): cai com o rosto para o jogador, de olhos fechados; acorda antes de falar ──
+  let worldRosto: { i: number; b: ReturnType<typeof dieRostoBlend>; map: THREE.Texture | null; em: THREE.Texture | null } | null = null;
+  const wakeFace = (i: number, q: THREE.Quaternion) => {
+    endWorldRosto();
+    const n = DIE_FACES[i];
+    const f = FACES[n - 1];
+    // quantos quartos de volta para o rosto ficar de pé (mesma conta do dado da mão, com a orientação em que ele vai parar)
+    const nw = FACE_N_LOCAL[i].clone().applyQuaternion(q);
+    const up = FACE_UP[i].clone().applyQuaternion(q);
+    up.applyAxisAngle(Y_AXIS, -Math.atan2(nw.x, nw.z));
+    const k = Math.round(Math.atan2(up.x, up.y) / (Math.PI / 2));
+    const turn = (4 - (((k % 4) + 4) % 4)) % 4;
+    const b = dieRostoBlend(n, f.color, !f.unlocked, turn);
+    const m = dieMats[i];
+    worldRosto = { i, b, map: m.map, em: m.emissiveMap };
+    m.map = b.map;
+    m.emissiveMap = b.glow;
+    m.needsUpdate = true;
+    b.set(1);
+    b.setLook({ ex: 0, ey: 1, by: 1, closed: true });
+  };
+  const endWorldRosto = () => {
+    if (!worldRosto) return;
+    const m = dieMats[worldRosto.i];
+    m.map = worldRosto.map;
+    m.emissiveMap = worldRosto.em;
+    m.needsUpdate = true;
+    worldRosto.b.dispose();
+    worldRosto = null;
+  };
+  let wakeHop = 0;
+  let wakeHopV = 0;
   const startScribeDrop = (done: () => void) => {
     const sh = shaftWorld();
     if (!topScribe) {
@@ -1069,6 +1104,30 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     thrownFace = 3;
     // onde ele vai parar: a face do Fogo para cima, de frente para o jogador (o giro da queda vai se acomodando nessa posição)
     landQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)).multiply(faceQ(thrownFace));
+    // ...e com uma face LATERAL virada exatamente para o jogador: nela, o ROSTO, de olhos fechados (ele cai "desmaiado" e só acorda depois)
+    {
+      const sl0 = rooms[0].shaft!;
+      const landX = sl0.x + 0.05 + offs[0].x;
+      const landZ = sl0.z + 0.3 + offs[0].z;
+      const aP = Math.atan2(pos.x - landX, pos.z - landZ);
+      let best = -1;
+      let bestA = 0;
+      FACE_N_LOCAL.forEach((n, i) => {
+        const nw = n.clone().applyQuaternion(landQ!);
+        if (Math.abs(nw.y) > 0.5) return;
+        const a = Math.atan2(nw.x, nw.z);
+        const d = Math.abs(Math.atan2(Math.sin(aP - a), Math.cos(aP - a)));
+        if (best < 0 || d < bestA) {
+          best = i;
+          bestA = d;
+        }
+      });
+      if (best >= 0) {
+        const nw = FACE_N_LOCAL[best].clone().applyQuaternion(landQ);
+        landQ.premultiply(new THREE.Quaternion().setFromAxisAngle(Y_AXIS, aP - Math.atan2(nw.x, nw.z)));
+        wakeFace(best, landQ);
+      }
+    }
     dieThrown = true;
     dieState = 'flying';
     restTimer = 0;
@@ -1249,16 +1308,32 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         break;
       case 10: {
-        // de volta para a frente, com o olhar um pouco baixo: o dado caído aparece no meio da tela
-        fovCine = 0;
+        // de volta para a frente, com o olhar um pouco baixo: o dado caído aparece no meio da tela, de perto (zoom: dá para ver o rosto
+        // dormindo e o acordar)
+        fovCine = 20;
         const dw = worldDie.position;
-        camTween = { y0: yaw, p0: pitch, y1: lookYaw(dw.x, dw.z), p1: clamp(lookPitch(dw.x, dw.y + 0.6, dw.z), -0.55, -0.15), t: 0, dur: 1.6 };
+        camTween = { y0: yaw, p0: pitch, y1: lookYaw(dw.x, dw.z), p1: lookPitch(dw.x, dw.y + 0.05, dw.z), t: 0, dur: 1.6 };
         go(11);
         break;
       }
       case 11:
-        // ainda na cena (faixas): o dado caído fala; só quando ele termina a cena acaba e aparece o "Pegar o dado"
-        if (S.t > 0.3) {
+        // ainda na cena (faixas): o dado caído ACORDA (abre os olhos, se assusta, olha em volta, olha para o jogador) e só então fala;
+        // quando ele termina, a cena acaba e aparece o "Pegar o dado"
+        if (worldRosto) {
+          const r = worldRosto.b;
+          if (S.t > 0.5 && S.t - dt <= 0.5) r.setLook({ ex: 0, ey: 1, by: 0, closed: false }); // abre os olhos, devagar
+          if (S.t > 0.8 && S.t - dt <= 0.8) r.setLook({ ex: 0, ey: 1, by: 1, closed: true }); // pisca
+          if (S.t > 0.95 && S.t - dt <= 0.95) {
+            r.setLook({ ex: 0, ey: -1, by: -3, closed: false }); // ACORDA: sobrancelhas lá em cima
+            wakeHopV = 2.6;
+            talkGlow = 0.6;
+            sfx.play('put', 0.5);
+          }
+          if (S.t > 1.5 && S.t - dt <= 1.5) r.setLook({ ex: -4, ey: 0, by: -1, closed: false }); // olha para um lado
+          if (S.t > 1.95 && S.t - dt <= 1.95) r.setLook({ ex: 4, ey: 0, by: -1, closed: false }); // e para o outro
+          if (S.t > 2.4 && S.t - dt <= 2.4) r.setLook({ ex: 0, ey: 0, by: -2, closed: false }); // e para o jogador
+        }
+        if (S.t > (worldRosto ? 2.8 : 0.3)) {
           const ms = talkSeq([{ glyphs: ['eu', 'cair'] }, { glyphs: ['voce', 'ajudar', 'eu', 'perg'] }], { delay: 0 });
           go(11.5);
           S.t = -ms / 1000;
@@ -1266,6 +1341,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         break;
       case 11.5:
         if (S.t > 0.1) {
+          fovCine = 0;
           ui.setBars(false);
           scribeDrop = null;
           progress.set('caiu');
@@ -1349,6 +1425,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           return;
         }
         pickup = onDone ?? (() => {});
+        endWorldRosto(); // (o rosto do dado caído volta a ser a face de sempre: na mão, quem faz o rosto é o dado do HUD)
         recall(); // o dado caído voa até a mão
       },
       giveChalk: () => {
@@ -1809,6 +1886,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.play('recall');
   };
 
+  // nas CENAS o jogador não olha em volta (a câmera é da cena) e a mira some: abertura, o dado falando no centro, cenas travadas, o caderno achado
+  const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall();
+  let cineWas = false;
   const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null; // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
 
   // ── marcos da história ──
@@ -2117,6 +2197,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let fpsCap = 0;
   let calmFx = false; // reduzir tremores e clarões
   let lastDraw = 0;
+  let devNoHud = false; // (testes: capturas sem o dado da mão)
   let shadowsOn = true;
   let diaryWas = false;
   const resize = () => {
@@ -2337,8 +2418,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     capture(e.pointerId);
   };
   const onMove = (e: PointerEvent) => {
-    if (pinned && e.pointerId !== brush.id) {
-      // cena travada: o olhar não se mexe
+    if (lookLocked() && e.pointerId !== brush.id) {
+      // cena (abertura, o dado falando, o caderno achado): o olhar não se mexe
     } else if (e.pointerType === 'mouse' && locked()) {
       yaw -= e.movementX * 0.0022 * sensMouse;
       pitch = clamp(pitch - e.movementY * 0.0022 * sensMouse * invY, -1.2, 1.5);
@@ -3229,6 +3310,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
 
     // ── dado no mundo ──
+    wakeHopV -= 22 * dt;
+    wakeHop = Math.max(0, wakeHop + wakeHopV * dt);
+    if (wakeHop === 0 && wakeHopV < 0) wakeHopV = 0;
+    worldModel.position.y = wakeHop * 0.4;
     if (dieState === 'flying') {
       const n = Math.max(1, Math.ceil(dt / (1 / 120)));
       if (dropWatch && scribeDrop) {
@@ -3384,7 +3469,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     const aim = dieState === 'hand' && tool === 'die' ? aimCache : null;
     // some quando o ponto está colado na câmera (o fantasma tamparia a tela toda)
-    ghost.visible = !!aim && aim.p.distanceTo(camera.position) > 1.1;
+    ghost.visible = !!aim && aim.p.distanceTo(camera.position) > 1.1 && !devNoHud;
     if (aim) {
       ghost.position.copy(aim.p).addScaledVector(aim.n, R + 0.02);
       ghost.rotation.y = t * 0.8;
@@ -3498,7 +3583,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = (hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new'; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
+      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new') && !devNoHud; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
       const hide = book.update(dt, t);
       if (hide > 0) {
@@ -3528,6 +3613,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       bookCanvas.style.display = bookOut ? 'block' : 'none';
     }
     if (bookOut) bookRenderer.render(bookScene, dieCam);
+    {
+      const c = mode === 'play' && lookLocked();
+      if (c !== cineWas) {
+        cineWas = c;
+        opts.onCine?.(c);
+      }
+    }
     if (thumbWant) captureThumb(); // (logo depois de desenhar: a imagem ainda está no canvas)
     if (snapWant) {
       // guarda a imagem (ou o preto) para a transição em pontilhado
@@ -3573,6 +3665,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       seen: (id: string) => diary.markSeen(id, rooms[curRoom]?.name),
       visit: (name: string) => diary.visitRoom(name),
       bookClick: (id: string) => book.click(id),
+      bookLayout: () => bookLayout(diaryStore.get()),
       strokes: () => diaryStore.get().strokes.length,
       stamps: () => diaryStore.get().stamps.length,
       inv: () => ({ die: hasDie, chalk: hasChalk, prompt: promptLabel }),
@@ -3637,6 +3730,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
       save: () => saveGame(),
+      noHud: (v = true) => {
+        devNoHud = v;
+      },
       prompt: (l: string | null) => opts.onPrompt?.(l), // (testes: mostra um aviso de ação)
       meta: () => saves.meta(),
       solved: () => rooms.map((r) => r.isSolved?.() ?? null),
@@ -3659,6 +3755,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         if (k === 'noao') scene.traverse((o) => { if (o.renderOrder === 2 || o.renderOrder === 3) o.visible = false; });
         if (k === 'nobloom') postMat.uniforms.uBloom.value = 0;
+        if (k === 'noadd') scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m && !Array.isArray(m) && m.blending === THREE.AdditiveBlending) o.visible = false; });
+        if (k === 'noshadow') renderer.shadowMap.enabled = false;
+        if (k === 'notrans') scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m && !Array.isArray(m) && m.transparent) o.visible = false; });
+        if (k === 'nokey') rooms.forEach((r) => { if (r.shadowLight) r.shadowLight.intensity = 0; });
         if (k === 'nolights') scene.traverse((o) => { if ((o as THREE.Light).isLight && !(o as THREE.AmbientLight).isAmbientLight) o.visible = false; });
         if (k === 'half') { renderer.setSize(200, 90, false); rt.setSize(200, 90); rtHud.setSize(200, 90); postMat.uniforms.uRes.value.set(200, 90); }
       },

@@ -64,9 +64,12 @@
 .row-btns .plq { min-width: calc(150px * var(--ui)); }
 
 /* ── TELA INICIAL ── */
-.title-scr { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: flex-start;
+.title-scr { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
   background: linear-gradient(90deg, rgba(5, 4, 10, 0.78) 0%, rgba(5, 4, 10, 0.45) 45%, rgba(5, 4, 10, 0) 75%); }
-.title-col { display: flex; flex-direction: column; align-items: center; gap: calc(18px * var(--ui)); margin-left: 8vw; animation: board-in 0.6s steps(6); }
+.title-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-left: 8vw; padding-bottom: 3vh; animation: board-in 0.6s steps(6); }
+.title-logo { align-self: stretch; display: flex; justify-content: center; padding-top: 5vh; pointer-events: none; animation: board-in 0.8s steps(6);
+  background: linear-gradient(180deg, rgba(5, 4, 10, 0.55), rgba(5, 4, 10, 0)); }
+@media (max-height: 520px) { .title-logo { padding-top: 3vh; } .title-list { gap: 5px; } .title-list .plq { padding-top: 3px; padding-bottom: 3px; } }
 @media (max-width: 700px) { .title-col { margin-left: 4vw; } }
 .logo { display: flex; line-height: 0; }
 .logo svg { display: block; overflow: visible; }

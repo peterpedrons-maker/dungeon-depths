@@ -230,35 +230,58 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
   const n = new THREE.Vector3(o.nx, 0, o.nz).normalize();
   const right = new THREE.Vector3(n.z, 0, -n.x); // a direita de quem lê
   const ry = Math.atan2(o.nx, o.nz);
+  // A lousa é uma LAJE de verdade, com espessura, afastada 2,5 cm da parede (antes era um plano a 1 cm, com polygonOffset: de longe e no
+  // celular a parede brigava com ela e a placa sumia, ficando só os buracos). O grupo inteiro anda 2,5 cm para fora; a laje vai até a parede.
+  const OUT = 0.025;
   const g = new THREE.Group();
-  g.position.set(o.x, o.y, o.z);
+  g.position.set(o.x + n.x * OUT, o.y, o.z + n.z * OUT);
   g.rotation.y = ry;
   (o.parent ?? kit.group).add(g);
   const size = step * 3 + 0.2;
-  const plate = new THREE.Mesh(
-    new THREE.PlaneGeometry(size, size),
-    new THREE.MeshLambertMaterial({ map: boardTexture(cells, !!o.bronze, !!o.cold), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
-  );
-  plate.position.z = 0.012;
+  const edgeMat = lambert(null, o.bronze ? 0x3a2a1e : 0x5a5450);
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(size, size, OUT + 0.012), [
+    edgeMat,
+    edgeMat,
+    edgeMat,
+    edgeMat,
+    new THREE.MeshLambertMaterial({ map: boardTexture(cells, !!o.bronze, !!o.cold) }),
+    edgeMat,
+  ]);
+  plate.position.z = (0.012 - OUT) / 2; // de dentro da parede (-OUT) até 1,2 cm à frente do grupo
   g.add(plate);
   kit.surfaces.push(plate); // dá para posicionar o dado mirando a lousa
   const local = (i: number) => new THREE.Vector3(((i % 3) - 1) * step, (1 - Math.floor(i / 3)) * step, 0);
-  const cupMat = lambert(null, o.bronze ? 0x8a6034 : 0x5a4a3a);
+  // LAMPIÕES: tigelinhas de bronze com um filete de luz na borda (lê-se "isto se acende"); apagados, o óleo escuro no fundo
+  const cupMat = lambert(null, o.bronze ? 0x9a6a38 : 0x7a5a34);
+  const rimMat = new THREE.MeshBasicMaterial({ color: 0xc89a58, fog: true });
   const glowMats: THREE.MeshBasicMaterial[] = [];
   let dim = 1;
   const nodes: (GridNodeVis | null)[] = Array(9).fill(null);
   const flames: (THREE.Sprite | null)[] = Array(9).fill(null);
   for (const i of cells) {
     const p = local(i);
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.055, 0.07, 6), cupMat);
-    cup.rotation.x = Math.PI / 2;
-    cup.position.set(p.x, p.y - 0.02, 0.05);
+    // a tigela: bojo de bronze virado para quem lê, com um pezinho preso à laje
+    const cup = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), cupMat);
+    cup.rotation.x = Math.PI / 2; // o bojo para a parede, a boca para quem lê
+    cup.position.set(p.x, p.y - 0.02, 0.085);
     g.add(cup);
-    const gm = new THREE.MeshBasicMaterial({ color: 0x2a1a14, fog: false });
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.07, 8), cupMat);
+    foot.rotation.x = Math.PI / 2;
+    foot.position.set(p.x, p.y - 0.02, 0.045);
+    g.add(foot);
+    // a borda: um aro fino que pega luz (sempre um pouco claro)
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.072, 0.011, 4, 14), rimMat);
+    rim.position.set(p.x, p.y - 0.02, 0.087);
+    g.add(rim);
+    const gm = new THREE.MeshBasicMaterial({ color: 0x241810, fog: true });
     glowMats.push(gm);
-    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.045, 6), gm);
-    dot.position.set(p.x, p.y - 0.02, 0.087);
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(0.06, 12), gm);
+    dot.position.set(p.x, p.y - 0.02, 0.083);
     g.add(dot);
+    // um brilho de óleo no fundo (fica de lado, como reflexo)
+    const glint = new THREE.Mesh(new THREE.CircleGeometry(0.014, 6), new THREE.MeshBasicMaterial({ color: 0x8a6a40, fog: true }));
+    glint.position.set(p.x - 0.022, p.y + 0.0, 0.084);
+    g.add(glint);
     const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
     fl.scale.set(0.24, 0.2, 1);
     fl.position.set(p.x, p.y + 0.07, 0.1);
@@ -268,7 +291,7 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
     nodes[i] = {
       set(on) {
         fl.visible = on;
-        gm.color.setHex(on ? 0xffb048 : 0x2a1a14);
+        gm.color.setHex(on ? 0xffb048 : 0x241810);
       },
       update(_dt, t) {
         if (fl.visible) fl.material.map = kit.frames[Math.floor(t * 9 + i * 1.7) % kit.frames.length];
@@ -368,7 +391,8 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
     },
     setDim(v) {
       dim = v;
-      cupMat.color.setHex(v > 0.5 ? (o.bronze ? 0x8a6034 : 0x5a4a3a) : 0x2c2630);
+      cupMat.color.setHex(v > 0.5 ? (o.bronze ? 0x9a6a38 : 0x7a5a34) : 0x2c2630);
+      rimMat.color.setHex(v > 0.5 ? 0xc89a58 : 0x4a4048);
     },
   };
   return board;

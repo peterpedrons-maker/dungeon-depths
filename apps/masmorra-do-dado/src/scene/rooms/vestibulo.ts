@@ -486,7 +486,10 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       if (nb === 'shown' && nbT > 1.4 && !ctx.paused()) {
         nb = 'talked';
         ctx.lookAt(nbPos, 0.9);
-        ctx.dieTalk([{ glyphs: ['voce', 'ver', 'livro'], pic: 'livro' }, { glyphs: ['voce', 'pegar', 'livro'], pic: 'pegar' }], { delay: 0.5 });
+        // enquanto o dado fala do caderno, o olhar fica nele (a cena trava; o jogador ainda pode pegar o caderno)
+        ctx.pin(true);
+        const ms = ctx.dieTalk([{ glyphs: ['voce', 'ver', 'livro'], pic: 'livro' }, { glyphs: ['voce', 'pegar', 'livro'], pic: 'pegar' }], { delay: 0.5 });
+        window.setTimeout(() => ctx.pin(false), ms + 900);
       }
     }
     if (nb === 'call') {

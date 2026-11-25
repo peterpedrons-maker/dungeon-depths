@@ -80,6 +80,7 @@ export default function App() {
   const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
   const captionTimer = useRef(0);
   const completeRef = useRef(false);
+  const [cine, setCine] = useState(false); // cena em curso (a mira some)
   const openPauseRef = useRef<() => void>(() => {});
   const dry = useStore(diaryStore);
   const talking = useStore(dialogueStore) !== null;
@@ -212,6 +213,7 @@ export default function App() {
         setComplete(c);
       },
       title: SHOW_TITLE,
+      onCine: setCine,
       onPause: () => openPauseRef.current(),
       onDie: (st) => setDieOut(st !== 'hand'),
       onTool: setTool,
@@ -271,14 +273,14 @@ export default function App() {
   );
 
   return (
-    <div className="stage">
+    <div className={`stage${uis.bookOut ? ' book-out' : ''}`}>
       <canvas ref={canvasRef} />
       <div className="vignette" />
       <div className={`bars${uis.bars ? ' on' : ''}`} aria-hidden="true">
         <i />
         <i />
       </div>
-      {!inMenu && <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />}
+      {!inMenu && !cine && !uis.bars && !uis.bookCall && <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />}
       {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
       <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 

@@ -723,3 +723,30 @@ ouro, o triângulo ACENDER no meio com a brasa em cima. *Não mudei o nome do ap
 conferir antes se «Sentença» está livre na Steam e nas lojas.
 *Ainda não feito:* os botões do controle (gamepad), o vetor limpo do logo (para loja e cartaz) e a aba do mapa no diário com o ícone novo (o diário
 desenha as próprias abas no papel).
+
+
+## 47. Correções vistas pelo Pedro no celular e ajustes de cena (implementado)
+
+**Decalques.** A poça de luz (`kit.lightPool`) e o desgaste (`kit.wear`) vazavam por cima da base dos objetos e das paredes vistas em ângulo
+baixo: o `polygonOffset` era alto (-3/-4). Agora o offset é no máximo -1/-1 e o plano fica 3 cm (poça) e 1,5 cm (desgaste) acima do chão; a poça
+tem névoa como o resto. O braseiro aceita o raio da poça (`makeBrazier(..., poolR)`): na sala 3, o da direita da porta tem poça menor.
+**Lousa de parede** (`firegrid.ts`). Era um plano a 1 cm da parede, e a moldura de pedra lavrada da sala 3 (6 cm de espessura) ficava NA FRENTE
+dele: de longe e no celular a lousa sumia e ficavam só os buracos. Agora a lousa é uma laje com espessura, afastada 2,5 cm da parede, e a moldura
+da sala 3 é fina e fica atrás. **Lampiões apagados** viraram tigelinhas de bronze (bojo, pezinho, um aro claro na borda e um brilho de óleo no
+fundo): lê-se "isto se acende", não "buraco de bala". **O dado de pedra da sala 3** saiu de perto do braseiro (a face de cima não estoura mais em
+laranja; a pedra ficou um pouco mais escura) e os pontos viraram discos que não recebem luz, redondos, com um aro de pedra clara: UM em cima,
+DOIS virado para o meio da sala, TRÊS virado para quem vem da entrada, legíveis de longe e no celular.
+
+**Tela inicial.** O título «SENTENÇA» ficou grande (cerca de 60% da largura) e centralizado no alto; as opções ficam embaixo, à esquerda.
+
+**Cenas.** Na abertura, nas cenas travadas, com o dado no centro da tela e quando o caderno é achado (inclusive enquanto o dado fala do caderno)
+o jogador **não olha em volta** (`lookLocked` em `scene.ts`) e a **mira some** (`onCine`). **O dado caído** (abertura) para com uma face lateral
+virada exatamente para o jogador e, nela, o **rosto de olhos fechados**; a câmera volta para ele com zoom; ele abre os olhos devagar, pisca,
+**acorda** num pulinho com as sobrancelhas lá em cima, olha para um lado e para o outro, olha para o jogador, e só então fala. Ao pegá-lo, a face
+volta a ser a de sempre (o rosto da mão é o do dado do HUD).
+
+**O tutorial do caderno** (`book3d.ts`). Depois de escrever a 1ª anotação (BRASEIRO), o caderno vira até o índice e o jogador tem de passar por
+**todas as partes** (símbolos, faces, textos, páginas dela, mapa, notas); ao chegar a cada uma pela 1ª vez, o personagem **pensa alto** sobre o que
+é aquilo ("Parece um mapa. As salas por onde eu passei...", "Esta letra não é minha...", "Faltam folhas. Alguém arrancou."). Tentar guardar o
+caderno antes diz o que falta ("Ainda não olhei as faces, o mapa e as notas.") e volta ao índice. No fim: "Pronto: vi tudo... Posso guardar o
+caderno." Com o caderno aberto, os pensamentos aparecem no alto da tela, numa tira mais baixa (o rodapé das páginas tem as ferramentas do mapa).

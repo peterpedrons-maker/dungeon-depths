@@ -2,6 +2,7 @@ import { configStore } from '../story/config';
 import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
+import { dialogue } from '../story/dialogue';
 import { diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt } from './bookart';
 import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
 
@@ -310,7 +311,36 @@ export function createDiaryBook(env: BookEnv) {
 
   // ── modo guiado: a 1ª abertura do caderno vira sozinha até BRASEIRO e pede uma anotação ──
   const GUIDED_ID = 'brasa';
-  let guidedStep = 0; // 0 = nada; 1 = virando até a página; 2 = esperando o jogador escrever
+  let guidedStep = 0; // 0 = nada; 1 = virando até a página; 2 = esperando o jogador escrever; 3 = o passeio pelo caderno
+  // O PASSEIO (depois da 1ª anotação): o jogador tem de passar por cada parte do caderno; ao chegar a cada uma pela 1ª vez, o personagem
+  // pensa alto sobre o que é aquilo. Só depois de ver tudo o caderno fecha.
+  type Part = 'simbolos' | 'faces' | 'textos' | 'dela' | 'mapa' | 'notas';
+  const PARTS: Part[] = ['simbolos', 'faces', 'textos', 'dela', 'mapa', 'notas'];
+  const PART_NAME: Record<Part, string> = { simbolos: 'os símbolos', faces: 'as faces', textos: 'os textos', dela: 'as páginas dela', mapa: 'o mapa', notas: 'as notas' };
+  const PART_THOUGHT: Record<Part, string[]> = {
+    simbolos: ['Os símbolos que eu já vi. Cada um tem um espaço embaixo para eu escrever o que acho que ele quer dizer.'],
+    faces: ['As faces do dado. Seis. A do fogo eu já conheço; quase todas ainda estão seladas.'],
+    textos: ['Frases inteiras, copiadas das paredes. Ficam aqui para eu reler quando quiser.'],
+    dela: ['Esta letra não é minha. Ela escrevia aqui antes de mim.', 'Faltam folhas. Alguém arrancou. Talvez estejam por aí.'],
+    mapa: ['Parece um mapa. As salas por onde eu passei, desenhadas sozinhas.', 'Dá para riscar por cima e marcar os símbolos onde eu quiser.'],
+    notas: ['Folhas em branco. Para o que eu quiser anotar.'],
+  };
+  const tourSeen = new Set<Part>();
+  let tourNote = 0; // segundos até poder pensar de novo (os pensamentos não se atropelam)
+  const partOf = (spread: number): Part | null => {
+    const lay = layout(dState());
+    if (spread <= 0) return null;
+    if (spread < lay.facesAt) return 'simbolos';
+    if (spread < lay.textsAt) return 'faces';
+    if (spread < lay.herAt) return 'textos';
+    if (spread < lay.mapAt) return 'dela';
+    if (spread < lay.notesAt) return 'mapa';
+    return 'notas';
+  };
+  const tourDone = () => PARTS.every((p) => tourSeen.has(p));
+  const thinkInBook = (lines: string[]) => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false });
+  // no modo guiado, só pode fechar depois de ESCREVER sobre BRASEIRO e de VER todas as partes
+  const guidedOk = () => !!(dState().notes[GUIDED_ID] ?? '').trim() && tourDone();
 
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
@@ -379,7 +409,7 @@ export function createDiaryBook(env: BookEnv) {
   ta.addEventListener('input', () => {
     if (view.editing === 'note' && view.sel) diary.setNote(view.sel, ta.value.replace(/\n/g, ' '));
     else if (view.editing === 'free') diary.setFree(ta.value);
-    if (ui.guided()) ui.setGuidedNote(!!(dState().notes[GUIDED_ID] ?? '').trim());
+    if (ui.guided()) ui.setGuidedNote(guidedOk());
   });
   ta.addEventListener('blur', () => {
     if (view.editing) {
@@ -480,6 +510,17 @@ export function createDiaryBook(env: BookEnv) {
     if (ui.guided() && !(dState().notes[GUIDED_ID] ?? '').trim()) {
       env.sound('uiblip');
       if (view.spread === symbolSpread(GUIDED_ID, dState())) startEdit('note');
+      return;
+    }
+    // ...e de passar por todas as partes do caderno (o personagem diz o que falta e o caderno volta ao índice)
+    if (ui.guided() && !tourDone()) {
+      env.sound('uiblip');
+      const falta = PARTS.filter((p) => !tourSeen.has(p)).map((p) => PART_NAME[p]);
+      const lista = falta.length > 1 ? `${falta.slice(0, -1).join(', ')} e ${falta[falta.length - 1]}` : falta[0];
+      thinkInBook([`Ainda não olhei ${lista}.`]);
+      tourNote = 2.5;
+      stopEdit();
+      goTo(0);
       return;
     }
     stopEdit();
@@ -652,6 +693,28 @@ export function createDiaryBook(env: BookEnv) {
         if (pulse !== !!view.pulse) {
           view.pulse = pulse;
           refresh();
+        }
+        // escreveu e saiu do campo: começa o passeio pelo caderno (vira até o índice)
+        if (!empty && !view.editing) {
+          guidedStep = 3;
+          view.pulse = false;
+          tourSeen.add('simbolos');
+          thinkInBook(['Pronto. Escrevi o que eu acho que é. Ninguém vai me dizer se acertei.', 'O caderno tem mais coisa. Um índice. Vou olhar tudo.']);
+          tourNote = 5;
+          window.setTimeout(() => {
+            if (guidedStep === 3) goTo(0);
+          }, 1400);
+        }
+      }
+      if (guidedStep === 3 && T >= 0.99 && !flip) {
+        tourNote = Math.max(0, tourNote - dt);
+        const part = partOf(view.spread);
+        if (part && !tourSeen.has(part) && tourNote <= 0) {
+          tourSeen.add(part);
+          const done = tourDone();
+          thinkInBook(done ? [...PART_THOUGHT[part], 'Pronto: vi tudo. Ela anotava tudo, então eu também vou anotar. Posso guardar o caderno.'] : PART_THOUGHT[part]);
+          tourNote = 2.6 + PART_THOUGHT[part].length * 1.6;
+          ui.setGuidedNote(guidedOk());
         }
       }
       if (!want && view.editing) stopEdit();

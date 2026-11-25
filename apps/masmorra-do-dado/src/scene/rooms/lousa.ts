@@ -15,6 +15,8 @@ import { mkBox, roomShell, shotGate } from './shell';
 import type { Ctx, Room } from '../types';
 
 function dieFaceTex(points: number[]) {
+  // face do dado de PEDRA: pedra clara com a moldura gasta e os PONTOS talhados: cavidades REDONDAS, fundas (escuras), com a borda de baixo
+  // clara (a luz pega no lábio de baixo) — precisam ler de longe: é a pista do puzzle (UM em cima, DOIS e TRÊS dos lados).
   const N = 48;
   const c = document.createElement('canvas');
   c.width = c.height = N;
@@ -32,13 +34,18 @@ function dieFaceTex(points: number[]) {
   g.fillRect(0, N - 2, N, 2);
   g.fillRect(0, 0, 2, N);
   g.fillRect(N - 2, 0, 2, N);
+  const disc = (cx: number, cy: number, r: number, col: string) => {
+    g.fillStyle = col;
+    for (let y = -r; y <= r; y++)
+      for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) g.fillRect(cx + x, cy + y, 1, 1);
+  };
   for (const i of points) {
-    const cx = 10 + (i % 3) * 14;
-    const cy = 10 + Math.floor(i / 3) * 14;
-    g.fillStyle = '#15110f';
-    g.fillRect(cx - 4, cy - 4, 8, 8);
-    g.fillStyle = '#2a2420';
-    g.fillRect(cx - 2, cy - 2, 4, 4);
+    const cx = 11 + (i % 3) * 13;
+    const cy = 11 + Math.floor(i / 3) * 13;
+    disc(cx, cy, 7, '#4a4440'); // o talho em volta (escuro: separa o ponto da pedra)
+    disc(cx, cy + 1, 6, '#e2dcd0'); // o lábio de baixo, claro
+    disc(cx, cy, 5, '#0c0a08'); // a cavidade funda, quase preta (a luz quente não a acende)
+    disc(cx - 1, cy - 2, 1, '#2a2420');
   }
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
@@ -66,7 +73,7 @@ export function buildLousa(ctx: Ctx): Room {
   // ── os quatro braseiros acesos pela Casa ──
   const bz = [
     makeBrazier(kit, ctx, -2.5, Z0 + 0.95, true), // à esquerda da porta
-    makeBrazier(kit, ctx, 2.5, Z0 + 0.95, true), // à direita da porta
+    makeBrazier(kit, ctx, 2.5, Z0 + 0.95, true, 1, 0, 1.3), // à direita da porta (poça menor: o dado de pedra está perto)
     makeBrazier(kit, ctx, -3.0, -6.3, true), // meio da parede esquerda
   ];
   for (const b of bz) S.boxes.push(...b.boxes);
@@ -99,17 +106,46 @@ export function buildLousa(ctx: Ctx): Room {
   kit.beamDust(0, 0.4, 1.0, 0.3, 3.2, 30, 0xffe0b0); // poeira só no feixe da chama alta
 
   // ── o dado de pedra, meio enterrado (UM em cima, DOIS e TRÊS dos lados) ──
+  // (mais longe do braseiro da direita: a poça e a luz dele não passam mais por cima do dado)
+  const DX = 2.75;
+  const DZ = -6.6;
   {
+    // (as faces à vista: UM em cima, DOIS virado para o meio da sala (-x), TRÊS virado para quem vem da entrada (+z); a de cima é mais escura
+    // na textura porque a chama alta e o braseiro batem direto nela, e antes ela estourava em laranja)
     const blank = lambert(dieFaceTex([]));
-    const mats = [blank, lambert(dieFaceTex([0, 8])), lambert(dieFaceTex([4])), blank, lambert(dieFaceTex([0, 4, 8])), blank];
+    const top = lambert(dieFaceTex([]), 0x8a8682);
+    blank.color.setHex(0xb8b2ac); // (a pedra um pouco mais escura: o braseiro ao lado não a estoura)
+    const mats = [blank, blank, top, blank, blank, blank]; // (os pontos são discos à parte, logo abaixo)
     const d = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), mats);
-    d.position.set(2.55, 0.36, -7.1);
+    d.position.set(DX, 0.36, DZ);
     d.rotation.set(-0.07, 0.12, 0.1);
+    // os PONTOS de verdade: discos que não recebem luz (a chama alta e o braseiro do lado deixavam as cavidades da textura marrons), com um
+    // aro claro de pedra lavrada em volta; legíveis de longe e no celular
+    const pipMat = new THREE.MeshBasicMaterial({ color: 0x0a0808, fog: true });
+    const lipMat = new THREE.MeshBasicMaterial({ color: 0x8a8478, fog: true });
+    const pip = (n: THREE.Vector3, u: THREE.Vector3, v: THREE.Vector3, cells: number[]) => {
+      for (const c of cells) {
+        const a = ((c % 3) - 1) * 0.3;
+        const b = (1 - Math.floor(c / 3)) * 0.3;
+        const at = n.clone().multiplyScalar(0.553).addScaledVector(u, a).addScaledVector(v, b);
+        for (const [r, m, k] of [[0.115, lipMat, 0], [0.085, pipMat, 0.008]] as [number, THREE.Material, number][]) {
+          const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 14), m);
+          disc.position.copy(at).addScaledVector(n, k);
+          disc.lookAt(at.clone().add(n));
+          d.add(disc);
+        }
+      }
+    };
+    pip(new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, -1), [4]); // UM em cima
+    pip(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 1, 0), [0, 8]); // DOIS para o meio da sala
+    pip(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), [0, 4, 8]); // TRÊS para quem vem da entrada
     kit.add(d);
-    kit.contact(2.55, -7.1, 2.0);
+    kit.contact(DX, DZ, 2.0);
     // o chão em volta se partiu quando ele afundou: lascas de laje e pedrinhas
     const chip = lambert(null, 0x5e5752);
-    for (const [cx, cz, sz, ry] of [[1.85, -6.6, 0.2, 0.3], [2.0, -7.75, 0.15, 1.1], [3.25, -6.75, 0.17, 2.0], [2.4, -6.35, 0.11, 0.7], [3.1, -7.75, 0.12, 1.6]] as [number, number, number, number][]) {
+    for (const [cx0, cz0, sz, ry] of [[1.85, -6.6, 0.2, 0.3], [2.0, -7.75, 0.15, 1.1], [3.25, -6.75, 0.17, 2.0], [2.4, -6.35, 0.11, 0.7], [3.1, -7.75, 0.12, 1.6]] as [number, number, number, number][]) {
+      const cx = Math.min(3.45, cx0 + DX - 2.55);
+      const cz = cz0 + DZ + 7.1;
       const m = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), chip);
       m.position.set(cx, sz * 0.35, cz);
       m.rotation.set(ry, ry * 1.7, ry * 0.4);
@@ -117,8 +153,8 @@ export function buildLousa(ctx: Ctx): Room {
       kit.add(m, false);
       kit.contact(cx, cz, sz * 3.4);
     }
-    S.boxes.push(mkBox(2.0, 0, -7.65, 3.1, 0.9, -6.55));
-    kit.rects.push([2.0, -7.65, 3.1, -6.55]);
+    S.boxes.push(mkBox(DX - 0.55, 0, DZ - 0.55, DX + 0.55, 0.9, DZ + 0.55));
+    kit.rects.push([DX - 0.55, DZ - 0.55, DX + 0.55, DZ + 0.55]);
   }
 
   // ── a grade de ferro (sobe quando a lousa 1 é escrita) ──
@@ -162,7 +198,7 @@ export function buildLousa(ctx: Ctx): Room {
   kit.soot(2.5, 1.55, Z0, 0, 1, 1.0, 1.9);
   kit.soot(X0, 1.55, -6.3, 1, 0, 1.0, 1.4);
   // a pedra lavrada em volta das duas lousas (a moldura talhada)
-  for (const z of [0.1, -4.3]) kit.box(0.06, 1.95, 1.95, kit.slab, X1 - 0.03, 1.45, z, false);
+  for (const z of [0.1, -4.3]) kit.box(0.016, 1.95, 1.95, kit.slab, X1 - 0.008, 1.45, z, false); // (fina e atrás da lousa: a lousa fica 3 cm à frente dela)
   // RISCOS DE GIZ: um condenado contou os dias aqui, ao lado da 1ª lousa (baixo, como quem está sentado no chão)
   {
     const t = tallyTexture(23);

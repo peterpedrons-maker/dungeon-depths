@@ -77,9 +77,18 @@ function Plaque({ children, onClick, disabled, tone, small, snd, onFocus }: { ch
 // ── o LOGO «SENTENÇA» em pixel, em pedra talhada (INTERFACE.md §7; a grade vem de tools/build_logo.py) ──
 // As letras: luz em cima, sombra embaixo, contorno escuro e sombra projetada. O último A é o glifo ACENDER (ouro), com a brasa no vértice de cima.
 const LOGO_COL: Record<string, string> = { g: '#c9a35a', y: '#ffd36b', r: '#ff8a3a' };
-export function Logo({ px }: { px?: number }) {
+export function Logo({ px, big }: { px?: number; big?: boolean }) {
   const k = useStore(uiScaleStore);
-  const p = px ?? Math.max(3, Math.round(4 * k));
+  const [vw, setVw] = useState(() => [window.innerWidth, window.innerHeight]);
+  useEffect(() => {
+    if (!big) return;
+    const f = () => setVw([window.innerWidth, window.innerHeight]);
+    window.addEventListener('resize', f);
+    return () => window.removeEventListener('resize', f);
+  }, [big]);
+  // grande, na tela inicial: ~62% da largura (pixel inteiro, para ficar nítido), sem passar de um quarto da altura
+  const bigPx = Math.max(3, Math.floor(Math.min((vw[0] * 0.62) / (LOGO[0].length + 2), (vw[1] * 0.26) / (LOGO.length + 2))));
+  const p = px ?? (big ? bigPx : Math.max(3, Math.round(4 * k)));
   const W = LOGO[0].length;
   const Hh = LOGO.length;
   const at = (x: number, y: number) => (y >= 0 && y < Hh && x >= 0 && x < W ? LOGO[y][x] : '.');
@@ -647,8 +656,11 @@ export function TitleScreen({ api, snd }: { api: TitleApi; snd: UiSound }) {
   const anySaved = Array.from({ length: SLOTS }, (_, i) => occupied(i + 1)).some(Boolean);
   return (
     <div className={`title-scr${leaving ? ' leaving' : ''}${sub === 'credits' ? ' rolling' : ''}`}>
+      {/* o título grande, centralizado no alto (não em cima dos botões) */}
+      <div className="title-logo" style={sub !== 'main' ? { visibility: 'hidden' } : undefined}>
+        <Logo big />
+      </div>
       <div ref={ref} className="title-col" style={sub !== 'main' ? { visibility: 'hidden' } : undefined} onMouseLeave={() => api.mood(null)}>
-        <Logo />
         <div className="title-list">
           {cont !== null && (
             <Plaque tone="gold" onClick={() => go(cont)} snd={snd} onFocus={focusLook(null)}>

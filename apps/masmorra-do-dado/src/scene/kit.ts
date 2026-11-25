@@ -350,24 +350,26 @@ export class Kit {
   }
   // POÇA DE LUZ no chão (aditiva), embaixo de uma chama; devolve o material para a chama controlar o brilho
   lightPool(x: number, z: number, r = 1.6, y = 0, color = 0xffb060) {
-    const mat = new THREE.MeshBasicMaterial({ map: this.poolTex ?? (this.poolTex = lightPoolTexture()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: 0.32, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -4 });
+    // (decalque: o plano fica 3 cm ACIMA do chão e o polygonOffset é mínimo; offset alto fazia a poça vazar por cima da base dos objetos e das
+    // paredes vistas de longe ou em ângulo baixo. Com névoa, como o resto.)
+    const mat = new THREE.MeshBasicMaterial({ map: this.poolTex ?? (this.poolTex = lightPoolTexture()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, opacity: 0.32, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     const p = new THREE.Mesh(new THREE.PlaneGeometry(2 * r, 2 * r), mat);
     p.rotation.x = -Math.PI / 2;
-    p.position.set(x, y + 0.02, z);
+    p.position.set(x, y + 0.03, z);
     p.renderOrder = 4;
     this.group.add(p);
     return mat;
   }
   // DESGASTE do chão no caminho de quem passa (uma faixa, ponto a ponto)
   wear(points: [number, number][], width = 1.3, y = 0) {
-    const m = this.mat('wear', () => new THREE.MeshBasicMaterial({ map: wearTexture(), color: 0x3a3228, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+    const m = this.mat('wear', () => new THREE.MeshBasicMaterial({ map: wearTexture(), color: 0x3a3228, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
     for (let i = 0; i + 1 < points.length; i++) {
       const [ax, az] = points[i];
       const [bx, bz] = points[i + 1];
       const len = Math.hypot(bx - ax, bz - az);
       const p = new THREE.Mesh(new THREE.PlaneGeometry(width, len + 0.3), m);
       p.rotation.set(-Math.PI / 2, 0, Math.atan2(bx - ax, -(bz - az)));
-      p.position.set((ax + bx) / 2, y + 0.006, (az + bz) / 2);
+      p.position.set((ax + bx) / 2, y + 0.015, (az + bz) / 2); // (1,5 cm acima do chão, em vez de depender do offset)
       p.renderOrder = 1;
       this.group.add(p);
     }

@@ -82,6 +82,9 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   ouro no Escrivão, pensamento em tira de papel. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).
+  **Cenas** travam o olhar e escondem a mira (`lookLocked`/`onCine`); o dado caído da abertura chega de rosto para o jogador, de olhos fechados, e
+  acorda antes de falar; o **tutorial do caderno** obriga a passar por todas as partes, com pensamentos do personagem (`DESIGN.md` §47). Lousas de
+  parede são lajes afastadas 2,5 cm da parede; decalques com offset -1 e plano acima do chão.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; a instalação fica com o navegador).

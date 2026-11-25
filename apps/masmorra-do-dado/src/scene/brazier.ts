@@ -19,7 +19,7 @@ export interface Brazier {
   update(t: number): void;
 }
 
-export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1, y0 = 0): Brazier {
+export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1, y0 = 0, poolR = 1.9): Brazier {
   const s = scale; // braseiros menores/maiores (o tamanho pode dizer quanto a chama dura)
   kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, y0 + 0.4 * s, z);
   const bowlMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.32 * s, 0.3 * s, 8), lambert(null, 0x3a3a46));
@@ -40,7 +40,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   }
   kit.contact(x, z, 1.6 * s, 1.6 * s, y0);
   // a POÇA DE LUZ no chão (só acesa) e as BRASAS subindo da chama (DIRECAO_DE_ARTE.md §4.2 e §4.8)
-  const pool = kit.lightPool(x, z, 1.9 * s, y0);
+  const pool = kit.lightPool(x, z, poolR * s, y0); // (poolR menor quando há algo perto: a poça não passa por baixo dos objetos)
   pool.visible = false;
   const EN = 7;
   const emberPos = new Float32Array(EN * 3);
