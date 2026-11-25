@@ -789,6 +789,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let restReturn = 0;
   let handPop = 0;
   const restQ = new THREE.Quaternion();
+  let landQ: THREE.Quaternion | null = null; // abertura: a posição em que o dado que o Escrivão soltou vai PARAR (já com a face certa para cima)
   const tmpC = new THREE.Vector3();
   const tmpN = new THREE.Vector3();
   const tmpQ = new THREE.Quaternion();
@@ -843,7 +844,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const tmpV = new THREE.Vector3();
   const DIE_IN_HAND = 0.22;
   const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
-  const SCRIBE_AT = new THREE.Vector3(0, 0, 1.76); // longe o bastante da mureta (raio 1,38): a barra do manto, espalhada no chão, nunca a atravessa // onde ele para, na borda, de frente para o furo
+  const RIM_OUT = 1.63; // raio de fora da mureta do poço (vestibulo.ts: SHAFT.r + 0,43)
+  const SCRIBE_AT = new THREE.Vector3(0, 0, RIM_OUT + 0.12); // encostado na mureta: abaixo da borda o pano se achata contra ela (`press`)
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
   const talkSeq = (lines: { glyphs: string[]; pic?: string; joy?: boolean }[], o?: { delay?: number; gap?: number }) => {
     let at = (o?.delay ?? 0) * 1000;
@@ -919,6 +921,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     worldModel.scale.setScalar(DIE_IN_HAND); // sai da mão no tamanho da mão; cresce enquanto cai (parece só a perspectiva: ele vem na direção da câmera)
     worldDie.visible = true;
     thrownFace = 3;
+    // onde ele vai parar: a face do Fogo para cima, de frente para o jogador (o giro da queda vai se acomodando nessa posição)
+    landQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)).multiply(faceQ(thrownFace));
     dieThrown = true;
     dieState = 'flying';
     restTimer = 0;
@@ -955,7 +959,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (S.arrived) S.yaw += Math.atan2(Math.sin(Math.PI - S.yaw), Math.cos(Math.PI - S.yaw)) * Math.min(1, dt * 3); // vira de frente para o furo
       topScribe.group.position.copy(sPos);
       topScribe.group.rotation.set(0, S.yaw, 0);
-      topScribe.animate(dt, t, P);
+      topScribe.animate(dt, t, S.arrived ? { ...P, press: SCRIBE_AT.z - RIM_OUT - 0.01 } : P);
     }
     const outside = S.ph === 4 || S.ph === 6 || S.ph === 7;
     if (outside !== outsideAtmo) {
@@ -1030,7 +1034,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 4:
         if (S.arrived) {
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
-          S.pose = { walk: 0, lean: 1.0, rest: 1, headPitch: 0.3 }; // a cabeça vai à frente, por cima do poço, e o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
+          S.pose = { walk: 0, lean: 1.3, rest: 1, headPitch: -0.1 }; // debruçado por cima da mureta: a cabeça fica sobre a boca do poço, o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           if (S.t > 6.2) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
@@ -1593,8 +1597,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieState = 'rest';
       dieV.set(0, 0, 0);
       restReturn = 0;
-      const yawQ = tmpQ.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
-      restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(thrownFace));
+      if (landQ) {
+        restQ.copy(landQ); // o dado da abertura já chegou assim: nada de se debater no chão
+        landQ = null;
+      } else {
+        const yawQ = tmpQ.setFromAxisAngle(tmpAxis.set(0, 1, 0), Math.random() * Math.PI * 2);
+        restQ.copy(yawQ).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0))).multiply(faceQ(thrownFace));
+      }
       room.onDieRest?.();
       sfx.play('rest');
       dieRoll = 0;
@@ -2524,6 +2533,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (w > 1e-4) {
         tmpQ.setFromAxisAngle(tmpAxis.copy(dieW).normalize(), w * dt);
         worldDie.quaternion.premultiply(tmpQ);
+      }
+      if (landQ && dropWatch) {
+        // nos últimos metros da queda o giro se acomoda: o dado chega ao chão já com a face certa para cima
+        const ceil = rooms[0].shaft!.y - 2.5;
+        if (dieP.y < ceil + 3.5) {
+          const k = 1 - clamp(dieP.y / (ceil + 3.5), 0, 1);
+          worldDie.quaternion.slerp(landQ, 1 - Math.exp(-dt * (3 + 10 * k)));
+          dieW.multiplyScalar(Math.exp(-dt * 6));
+        }
       }
     } else if (dieState === 'placing') {
       animT += dt / 0.36;

@@ -21,6 +21,7 @@ export interface ScribePose {
   back?: number; // 0..1 mão direita vai para dentro do manto (de onde sai o dado)
   open?: number; // 0..1 a mão se abre e solta o que segura
   rest?: number; // 0..1 mão esquerda pousada à frente (na borda do poço)
+  press?: number; // encostado num muro baixo (a mureta do poço) a esta distância à frente (m, local): abaixo de 0,85 m o pano se ACHATA contra ele em vez de atravessá-lo
   raise?: number; // 0..1 braço direito erguido ALTO, à frente e acima do capuz
 }
 
@@ -375,12 +376,6 @@ export function makeScribe(): Scribe {
   const neck = new THREE.Group();
   neck.position.set(0, 0.45, 0.0);
   torso.add(neck);
-  // o pano que liga os ombros ao capuz quando ele projeta a cabeça para a frente (o capuz se estica como tecido)
-  const drapeGeo = new THREE.CylinderGeometry(0.15, 0.2, 1, 10, 1, true);
-  drapeGeo.translate(0, 0.5, 0);
-  const drape = new THREE.Mesh(facet(drapeGeo), purpleMat);
-  drape.visible = false;
-  torso.add(drape);
   const hood = new THREE.Group();
   hood.scale.setScalar(1.16); // capuz grande, como na referência
   neck.add(hood);
@@ -573,14 +568,18 @@ export function makeScribe(): Scribe {
     const breathe = Math.sin(t * 1.2);
 
     // passos: os sapatos aparecem e somem sob a barra; o corpo sobe e desce e balança
-    shoeL.position.z = 0.16 + s * 0.16 * w;
+    shoeL.position.z = Math.min(0.16 + s * 0.16 * w, (P.press ?? 9) - 0.14);
     shoeL.position.y = 0.04 + Math.max(0, c) * 0.05 * w;
-    shoeR.position.z = 0.16 - s * 0.16 * w;
+    shoeR.position.z = Math.min(0.16 - s * 0.16 * w, (P.press ?? 9) - 0.14);
     shoeR.position.y = 0.04 + Math.max(0, -c) * 0.05 * w;
     hips.position.y = Math.abs(s) * 0.025 * w + breathe * 0.004;
     hips.rotation.z = s * 0.035 * w;
     hips.rotation.y = s * 0.05 * w;
     // os panos balançam (mais na barra) e, andando, a barra fica um pouco para trás
+    const press = P.press;
+    // debruçado numa mureta, o quadril avança por cima dela (ela é mais baixa que o quadril); o pano de baixo continua achatado contra ela
+    hips.position.z = press !== undefined ? Math.min(0.32, Math.max(0, cur.lean - 0.3) * 0.32) : 0;
+    const pressL = press !== undefined ? press - hips.position.z : undefined;
     for (const d of dyn) {
       const pa = d.geo.attributes.position as THREE.BufferAttribute;
       const arr = pa.array as Float32Array;
@@ -592,11 +591,22 @@ export function makeScribe(): Scribe {
         const a = Math.atan2(x0, z0);
         const k = 1 + Math.sin(a * 5 + t * 1.3 + y0 * 3) * 0.018 * low + Math.sin(phase * 2 + a) * 0.035 * low * w;
         arr[i * 3] = x0 * k;
-        arr[i * 3 + 2] = z0 * k - (d.top > 0.5 ? low * low * 0.07 * w : 0);
+        let z = z0 * k - (d.top > 0.5 ? low * low * 0.07 * w : 0);
+        if (pressL !== undefined && d.top > 0.5 && y0 < 0.85 && z > pressL) {
+          // encostado na mureta: o pano se achata contra ela (com uma ruga leve), nunca a atravessa
+          z = pressL - 0.012 * (1 + Math.sin(i * 1.7));
+          arr[i * 3] = x0 * k * 1.06;
+        }
+        arr[i * 3 + 2] = z;
       }
       pa.needsUpdate = true;
     }
     stoleFL.rotation.x = -0.215 + Math.sin(t * 1.5) * 0.012 - s * 0.05 * w;
+    if (press !== undefined) {
+      // a estola (de 1,03 m até 0,41 m de altura) também encosta: inclina para trás até a ponta não passar do muro
+      const need = Math.asin(Math.max(-1, Math.min(1, (0.3 - (press - hips.position.z - 0.02)) / 0.62)));
+      stoleFL.rotation.x = Math.max(stoleFL.rotation.x, need);
+    }
     keyG.rotation.x = Math.sin(t * 1.9) * 0.05 + s * 0.25 * w;
 
     // tronco: curvado de leve, respira, inclina ao se debruçar; gira um pouco quando a mão vai ao manto
@@ -610,20 +620,7 @@ export function makeScribe(): Scribe {
       glanceTo = (Math.random() - 0.5) * 0.7 * (1 - cur.lean * 0.7);
     }
     glance += (glanceTo - glance) * (1 - Math.exp(-dt * 5));
-    // debruçado, ele projeta a cabeça para a FRENTE na horizontal (por cima do poço), sem baixá-la: no espaço do tronco inclinado (θ),
-    // o deslocamento (0, d·sen θ, d·cos θ) vira, no mundo, d metros para a frente na mesma altura
-    const th = torso.rotation.x;
-    const d = Math.max(0, cur.lean - 0.6) * 1.3;
-    neck.position.set(0, 0.45 + d * Math.sin(th), d * Math.cos(th));
-    drape.visible = d > 0.03;
-    if (drape.visible) {
-      const from = new THREE.Vector3(0, 0.36, -0.02);
-      const to = new THREE.Vector3(0, neck.position.y + 0.12, neck.position.z - 0.02);
-      const dir = to.clone().sub(from);
-      drape.position.copy(from);
-      drape.quaternion.setFromUnitVectors(Y, dir.clone().normalize());
-      drape.scale.set(1, dir.length(), 1);
-    }
+    neck.position.set(0, 0.45, 0);
     neck.rotation.set(cur.headPitch + cur.lean * 0.4 + Math.sin(t * 0.9) * 0.02, cur.headYaw + glance + Math.sin(t * 0.6) * 0.03, Math.sin(t * 0.5) * 0.03, 'YXZ');
     blinkT -= dt;
     if (blinkT < 0) {

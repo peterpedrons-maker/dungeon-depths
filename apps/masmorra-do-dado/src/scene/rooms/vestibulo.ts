@@ -50,7 +50,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const W = X1 - X0;
   const L = Z1 - Z0;
   const zm = (Z0 + Z1) / 2;
-  const SHAFT = { x: 0, z: Z0 + 5.4, r: 0.95 };
+  const SHAFT = { x: 0, z: Z0 + 5.4, r: 1.2 }; // boca larga o bastante para, de baixo, se ver o Escrivão debruçado sobre ela
   // névoa mística do pátio lá fora (sala 1): manchas de névoa PIXELADAS que passeiam devagar em volta do poço
   const mist: { s: THREE.Sprite; a: number; r: number; y: number; sp: number; ph: number; base: number }[] = [];
 
@@ -112,20 +112,21 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     const ground = new THREE.Mesh(new THREE.RingGeometry(SHAFT.r, 30, 28, 1), lambert(floorTexture([18, 18], D.theme)));
     ground.rotation.x = -Math.PI / 2;
     out.add(ground);
-    const rimProf: [number, number][] = [[SHAFT.r, -0.05], [SHAFT.r, 0.72], [SHAFT.r + 0.05, 0.8], [1.33, 0.8], [1.38, 0.72], [1.38, 0]];
+    const RIM = SHAFT.r + 0.43; // raio de fora da mureta (scene.ts: RIM_OUT)
+    const rimProf: [number, number][] = [[SHAFT.r, -0.05], [SHAFT.r, 0.72], [SHAFT.r + 0.05, 0.8], [RIM - 0.05, 0.8], [RIM, 0.72], [RIM, 0]];
     const rimGeo = new THREE.LatheGeometry(rimProf.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
     const rimMesh = new THREE.Mesh(rimGeo, lambert(brickTexture([5, 0.7], 0.8, 47, D.theme)));
     (rimMesh.material as THREE.MeshLambertMaterial).side = THREE.DoubleSide;
     out.add(rimMesh);
     // dois postes, a trave com o sarilho e a corda que desce pelo poço
     const wood = new THREE.MeshLambertMaterial({ color: 0x5a4636, emissive: 0x1a120c });
-    for (const x of [-1.2, 1.2]) {
+    for (const x of [-(RIM + 0.05), RIM + 0.05]) {
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.15, 0.15), wood);
       post.position.set(x, 1.07, 0);
       post.rotation.z = x * -0.02;
       out.add(post);
     }
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.13, 0.13), wood);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2 * RIM + 0.5, 0.13, 0.13), wood);
     bar.position.set(0, 2.08, 0);
     out.add(bar);
     const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.9, 10), wood);
