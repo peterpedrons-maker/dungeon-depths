@@ -6,6 +6,8 @@ import type { FireExtra, FireExtraApi, FireLine, FireSpec } from './fire';
 import { makeGemNiche, makeRiser, makeTorch, makeWallBoard, type Torch } from '../firegrid';
 import { lambert } from '../kit';
 import type { Rect } from '../types';
+import { shotGate } from './shell';
+import { diary, diaryStore } from '../../story/diary';
 
 // ── constelação: tochas que escrevem (§3) ─────────────────────────────────
 // `cells[i]` = casa da grade da tocha i (null = isca, fora da grade). Acender EXATAMENTE as tochas do alvo, nenhuma outra, faz o braseiro
@@ -309,4 +311,140 @@ export const FIRE_VERDADE: FireSpec = {
   ],
   fog: { color: '#0a0a11', near: 5, far: 28 },
   ambient: { color: 0x7a78b8, intensity: 1.9 },
+};
+
+// ── SALA · O QUE A CASA CONFIRMA, refeita em duas partes (nível 5; PUZZLES_PROPOSTAS.md §5 sala 7, tools/verify_confirma.mjs) ─────────
+// PARTE 1 (as marcas, numa lousa): «ACENDER QUATRO CONFIRMADO» (talhada, com moldura) e «ACENDER TRÊS BOATO» (gasta). Escrever QUATRO abre a
+// grade e o glifo CONFIRMADO acende; escrever TRÊS faz a Casa apagar a lousa e o glifo BOATO piscar. Junto da grade, uma folha arrancada dela.
+// PARTE 2 (ANTES/DEPOIS): cinco frases; acender as três CONFIRMADAS (um boato apaga as acesas e a Casa recusa o fogo por 4 s); os quatro pilares
+// sobem; a cadeia «4 DEPOIS 2», «1 DEPOIS 4», «1 ANTES 3» dá 2 → 4 → 1 → 3.
+const CONF_GRATE_DZ = 15.5; // a grade entre as duas câmaras (distância do fundo)
+function confirmaExtra(api: FireExtraApi): FireExtra {
+  const { kit, ctx, X0, X1, Z0, H, boxes } = api;
+  const GZ = Z0 + CONF_GRATE_DZ;
+  const bz = GZ + 2.4; // a lousa e as frases, na parede esquerda da 1ª câmara
+  const board = makeWallBoard(kit, ctx, { x: X0 + 0.02, y: 1.25, z: bz, nx: 1, nz: 0, key: 'confirma' });
+  const conf = kit.inscribe({ words: ['acender', 'n4', 'conf'], x: X0 + 0.025, y: 3.2, z: bz, nx: 1, nz: 0, size: 0.36, age: 0.15, seed: 61, plaque: true });
+  const boato = kit.inscribe({ words: ['acender', 'n3', 'boato'], x: X0 + 0.025, y: 2.5, z: bz, nx: 1, nz: 0, size: 0.36, age: 0.75, seed: 63 });
+  kit.torch(X0 + 0.1, 2.3, bz - 1.25, 1, 0, 0.5); // luz para ler as duas frases
+  // a grade
+  const grate = new THREE.Group();
+  kit.group.add(grate);
+  const iron = lambert(null, 0x2a2a30);
+  for (let x = X0 + 0.15; x < X1; x += 0.28) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.05, H, 0.05), iron);
+    b.position.set(x, H / 2, GZ);
+    grate.add(b);
+  }
+  for (const y of [0.35, 1.4, 2.5, 3.5]) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(X1 - X0, 0.07, 0.08), iron);
+    b.position.set(0, y, GZ);
+    grate.add(b);
+  }
+  const gBox = { min: new THREE.Vector3(X0, 0, GZ - 0.1), max: new THREE.Vector3(X1, H, GZ + 0.1) };
+  boxes.push(gBox);
+  // a folha arrancada dela, no chão junto da grade
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.004, 0.3), lambert(null, 0xd8b880));
+  leaf.position.set(X1 - 1.1, 0.01, GZ + 0.6);
+  leaf.rotation.y = 0.5;
+  kit.group.add(leaf);
+  const leafPos = leaf.position.clone();
+  let leafTaken = (diaryStore.get().pages ?? []).includes('p3');
+  leaf.visible = !leafTaken;
+  const takeLeaf = {
+    pos: leafPos,
+    r: 1.8,
+    label: 'Pegar a folha',
+    enabled: () => !leafTaken,
+    use: () => {
+      leafTaken = true;
+      leaf.visible = false;
+      diary.addPage('p3');
+      ctx.sfx('gem');
+      ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
+    },
+  };
+  let solved = false;
+  let gateK = 0;
+  let idle = 0;
+  let boatoT = 0; // o glifo BOATO pisca
+  let rejectT = -1;
+  const gate = shotGate(ctx.die);
+  return {
+    update(dt, t) {
+      gate.tick();
+      board.update(dt, t);
+      if (!solved && rejectT < 0) {
+        const i = board.hit();
+        if (i >= 0 && gate.take() && !board.grid.lit[i]) {
+          board.grid.ignite(i);
+          ctx.sfx('ignite', 'confirma');
+          idle = 0;
+        }
+        const pts = board.grid.points();
+        if (pts.length && board.grid.writes('n4')) {
+          solved = true;
+          ctx.sfx('piece');
+          ctx.sfx('door');
+        } else if (pts.length && board.grid.writes('n3')) {
+          rejectT = 0.9; // a Casa lê o TRÊS... e apaga (era boato)
+        } else if (pts.length) {
+          idle += ctx.paused() ? 0 : dt;
+          if (idle > 5) {
+            board.grid.clear();
+            ctx.sfx('burnout');
+            idle = 0;
+          }
+        }
+      }
+      if (rejectT >= 0) {
+        rejectT -= dt;
+        if (rejectT < 0) {
+          board.grid.clear(false);
+          ctx.sfx('error');
+          boatoT = 1.8;
+        }
+      }
+      boatoT = Math.max(0, boatoT - dt);
+      for (const p of boato.panels) if (p.id === 'boato') p.fire = boatoT > 0 ? (Math.floor(boatoT * 6) % 2 ? 1 : 0.1) : 0;
+      for (const p of conf.panels) p.fire = (p.fire ?? 0) + ((solved ? 1 : 0) - (p.fire ?? 0)) * Math.min(1, dt * 4);
+      gateK += ((solved ? 1 : 0) - gateK) * Math.min(1, dt * 1.5);
+      grate.position.y = gateK * (H - 0.3);
+      gBox.min.y = gateK * (H - 0.3);
+    },
+    reset() {
+      solved = false;
+      gateK = 0;
+      idle = 0;
+      boatoT = 0;
+      rejectT = -1;
+      board.grid.clear();
+    },
+    rects: () => (gateK < 0.75 ? [[X0 - 1, GZ - 0.12, X1 + 1, GZ + 0.12]] : []),
+    interactables: [takeLeaf],
+  };
+}
+const fc = (a: string, rel: string, b: string, mark: string, good = false): FireLine => ({ words: [a, rel, b, mark], good });
+export const FIRE_CONFIRMA: FireSpec = {
+  name: 'O Que a Casa Confirma',
+  subtitle: 'Duas frases quase iguais.',
+  hx: 5.5,
+  z0: -22,
+  h: 3.8,
+  braziers: [
+    { x: -3.2, dz: 6, mark: 'n1', hidden: true },
+    { x: 3.4, dz: 13.5, mark: 'n2', hidden: true },
+    { x: -3.0, dz: 12.5, mark: 'n3', hidden: true },
+    { x: 3.2, dz: 4.5, mark: 'n4', hidden: true },
+  ],
+  rule: { kind: 'order', seq: [1, 3, 0, 2], hints: false, penalty: 8 }, // DOIS, QUATRO, UM, TRÊS
+  lock: { penalty: 4 },
+  words: ['acender', 'conf'],
+  tablets: [
+    { lines: [fc('n1', 'antes', 'n3', 'conf', true), fc('n3', 'antes', 'n2', 'boato')], wall: 'left', dz: 9, size: 0.45, lit: true },
+    { lines: [fc('n4', 'depois', 'n2', 'conf', true), fc('n1', 'antes', 'n4', 'boato'), fc('n1', 'depois', 'n4', 'conf', true)], wall: 'right', dz: 9, size: 0.45, lit: true },
+  ],
+  fog: { color: '#0a0a11', near: 5, far: 26 },
+  ambient: { color: 0x7a78b8, intensity: 1.9 },
+  extra: confirmaExtra,
 };

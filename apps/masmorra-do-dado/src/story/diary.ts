@@ -34,6 +34,7 @@ export interface DiaryState {
   notes: Record<string, string>; // "o que eu acho que significa"
   free: string; // anotações livres
   texts: string[]; // textos de lore achados
+  pages: string[]; // páginas arrancadas do caderno dela que o jogador achou e encaixou de volta
   rooms: string[]; // salas visitadas (para o mapa)
   strokes: Stroke[]; // o que o jogador escreveu à mão no mapa
   stamps: Stamp[]; // símbolos já avistados que o jogador carimbou no mapa
@@ -42,7 +43,7 @@ export interface DiaryState {
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
 }
 
-const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
+const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], pages: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
 
 function load(): DiaryState {
   try {
@@ -86,6 +87,10 @@ export const diary = {
   addText(id: string) {
     if (diaryStore.get().texts.includes(id)) return;
     diaryStore.set((s) => ({ ...s, texts: [...s.texts, id], unread: s.unread + 1 }));
+  },
+  addPage(id: string) {
+    if (diaryStore.get().pages.includes(id)) return;
+    diaryStore.set((s) => ({ ...s, pages: [...s.pages, id], unread: s.unread + 1 }));
   },
   visitRoom(name: string) {
     diaryStore.set((s) => ({ ...s, here: name, rooms: s.rooms.includes(name) ? s.rooms : [...s.rooms, name] }));
@@ -146,6 +151,7 @@ export const diary = {
       order: ids,
       notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
       texts: ['demo-pagina'],
+      pages: ['p2'],
       unread: 0,
     }));
   },

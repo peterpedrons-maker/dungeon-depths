@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
 import { diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt } from './bookart';
-import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, TRAY_N, trayStart, type Region, type View } from './pages';
+import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -275,6 +275,10 @@ export function createDiaryBook(env: BookEnv) {
   strap.rotation.z = -0.18;
   inner.add(strap);
 
+  // ── modo guiado: a 1ª abertura do caderno vira sozinha até BRASEIRO e pede uma anotação ──
+  const GUIDED_ID = 'brasa';
+  let guidedStep = 0; // 0 = nada; 1 = virando até a página; 2 = esperando o jogador escrever
+
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
   let open = 0;
@@ -342,6 +346,7 @@ export function createDiaryBook(env: BookEnv) {
   ta.addEventListener('input', () => {
     if (view.editing === 'note' && view.sel) diary.setNote(view.sel, ta.value.replace(/\n/g, ' '));
     else if (view.editing === 'free') diary.setFree(ta.value);
+    if (ui.guided()) ui.setGuidedNote(!!(dState().notes[GUIDED_ID] ?? '').trim());
   });
   ta.addEventListener('blur', () => {
     if (view.editing) {
@@ -438,6 +443,12 @@ export function createDiaryBook(env: BookEnv) {
     void lay;
   };
   const close = () => {
+    // modo guiado (1ª abertura do caderno): só fecha depois de o jogador escrever alguma coisa sobre BRASEIRO
+    if (ui.guided() && !(dState().notes[GUIDED_ID] ?? '').trim()) {
+      env.sound('uiblip');
+      if (view.spread === symbolSpread(GUIDED_ID, dState())) startEdit('note');
+      return;
+    }
     stopEdit();
     ui.setDiary(false);
   };
@@ -581,6 +592,34 @@ export function createDiaryBook(env: BookEnv) {
       if (want !== lastWant) {
         lastWant = want;
         env.sound(want ? 'uiopen' : 'uiclose');
+        if (want && ui.guided()) {
+          // o caderno abre já virando para a página de BRASEIRO (a do "?" dela)
+          diary.markSeen(GUIDED_ID);
+          view.sel = GUIDED_ID;
+          view.spread = 0;
+          guidedStep = 1;
+        }
+      }
+      if (!want && ui.guided() && ui.uiGuidedOk()) ui.setGuided(false); // fechou depois de escrever: o tutorial acabou
+      if (guidedStep && !ui.guided()) {
+        guidedStep = 0;
+        view.pulse = false;
+      }
+      if (guidedStep === 1 && T >= 0.99) {
+        target = symbolSpread(GUIDED_ID, dState());
+        if (view.spread === target && !flip) {
+          guidedStep = 2;
+          view.sel = GUIDED_ID;
+          startEdit('note');
+        }
+      }
+      if (guidedStep === 2) {
+        const empty = !(dState().notes[GUIDED_ID] ?? '').trim();
+        const pulse = empty && Math.floor(t * 2.4) % 2 === 0;
+        if (pulse !== !!view.pulse) {
+          view.pulse = pulse;
+          refresh();
+        }
       }
       if (!want && view.editing) stopEdit();
       const dir = want - T;

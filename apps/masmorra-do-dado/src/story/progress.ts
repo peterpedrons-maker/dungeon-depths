@@ -7,7 +7,7 @@ const KEY = 'mdd-progress-v1';
 
 // Em ordem: cada marco alcançado sobe um "estágio" da Casa.
 export const STAGE_FLAGS = ['fogo', 'dois', 'tres', 'escrivao', 'selo', 'brasas'] as const;
-export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco' | 'dado' | 'giz' | 'caiu';
+export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco' | 'dado' | 'giz' | 'caiu' | 'caderno';
 export const MAX_STAGE = STAGE_FLAGS.length;
 
 interface State {
@@ -20,7 +20,10 @@ function load(): State {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const j = JSON.parse(raw);
-      return { flags: j.flags ?? {}, burned: j.burned ?? {} };
+      const flags = j.flags ?? {};
+      // quem já tinha passado da sala 2 antes de o caderno existir continua com o diário
+      if (STAGE_FLAGS.slice(1).some((f) => flags[f])) flags.caderno = true;
+      return { flags, burned: j.burned ?? {} };
     }
   } catch {
     /* sem armazenamento: começa do zero */

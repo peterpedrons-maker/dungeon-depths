@@ -11,6 +11,8 @@ import { floorTexture, brickTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
+import { diary } from '../../story/diary';
+import { ui } from '../../story/ui';
 import type { Box, Ctx, Room } from '../types';
 
 export type VestVariant = 1 | 2 | 3 | 4;
@@ -410,6 +412,95 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     });
   }
 
+  // ── sala 2: o CADERNO ACHADO (PUZZLES_PROPOSTAS.md §5, sala 2). No chão, junto da base da coluna esquerda, no escuro; a luz do 1º braseiro
+  // o revela. É o caderno de "a que veio antes", que vira o diário do jogador. Até pegá-lo, a porta não abre (a sala fica "travada").
+  type NbState = 'dark' | 'shown' | 'talked' | 'taken' | 'call' | 'done';
+  let nb: NbState = ctx.flag('caderno') ? 'done' : 'dark';
+  let nbT = 0;
+  const nbPos = new THREE.Vector3(X0 + 1.15, 0.05, -4.1);
+  const nbGroup = new THREE.Group();
+  const nbMats: THREE.MeshLambertMaterial[] = [];
+  if (v === 2) {
+    const cover = new THREE.MeshLambertMaterial({ color: 0x5a2216 });
+    const paperM = new THREE.MeshLambertMaterial({ color: 0xd8b880 });
+    nbMats.push(cover, paperM);
+    // caído aberto, de bruços torto: duas metades de capa, as folhas e uma folha solta levantada
+    for (const sgn of [-1, 1]) {
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.012, 0.28), cover);
+      c.position.set(sgn * 0.1, 0.006, 0);
+      c.rotation.z = sgn * 0.08;
+      nbGroup.add(c);
+      const pg = new THREE.Mesh(new THREE.BoxGeometry(0.185, 0.022, 0.26), paperM);
+      pg.position.set(sgn * 0.097, 0.022, 0);
+      pg.rotation.z = sgn * 0.08;
+      nbGroup.add(pg);
+    }
+    const loose = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.003, 0.24), paperM);
+    loose.position.set(0.07, 0.06, 0.01);
+    loose.rotation.z = -0.5;
+    nbGroup.add(loose);
+    nbGroup.position.copy(nbPos);
+    nbGroup.rotation.y = 0.6;
+    nbGroup.scale.setScalar(1.45);
+    nbGroup.visible = nb !== 'done';
+    kit.group.add(nbGroup);
+    kit.contact(nbPos.x, nbPos.z, 0.7);
+    const setDark = (k: number) => nbMats.forEach((m, i) => m.color.setHex(i === 0 ? 0x5a2216 : 0xd8b880).multiplyScalar(0.12 + 0.88 * k));
+    setDark(0);
+    (nbGroup.userData as { setDark: (k: number) => void }).setDark = setDark;
+    interactables.push({
+      pos: nbPos,
+      r: 2.3,
+      label: 'Pegar o caderno',
+      enabled: () => nb === 'shown' || nb === 'talked',
+      use: () => {
+        nb = 'taken';
+        nbGroup.visible = false;
+        ctx.sfx('gem');
+        ctx.milestone('caderno');
+        // o que o jogador já viu (sala 1 e esta) entra no caderno como "avistado"
+        diary.markSeen('acender');
+        diary.markSeen('brasa');
+        ctx.freeze(true);
+        const ms = ctx.dieTalk([{ glyphs: ['voce', 'escrever', 'livro'], pic: 'escrever' }, { glyphs: ['voce', 'abrir', 'livro'], pic: 'abrir' }], { delay: 0.6 });
+        window.setTimeout(() => {
+          nb = 'call';
+          nbT = 0;
+          ui.setBookCall(true); // o botão do diário aparece pela 1ª vez, pulsando; a tela escurece em volta
+        }, ms + 600);
+      },
+    });
+  }
+  const updateNotebook = (dt: number, nLit: number) => {
+    if (v !== 2 || nb === 'done') return;
+    if (nb === 'dark' && nLit > 0) {
+      nb = 'shown';
+      nbT = 0;
+    }
+    if (nb === 'shown' || nb === 'talked') {
+      nbT += dt;
+      (nbGroup.userData as { setDark: (k: number) => void }).setDark(Math.min(1, nbT / 1.2));
+      if (nb === 'shown' && nbT > 1.4 && !ctx.paused()) {
+        nb = 'talked';
+        ctx.lookAt(nbPos, 0.9);
+        ctx.dieTalk([{ glyphs: ['voce', 'ver', 'livro'], pic: 'livro' }, { glyphs: ['voce', 'pegar', 'livro'], pic: 'pegar' }], { delay: 0.5 });
+      }
+    }
+    if (nb === 'call') {
+      if (ui.bookCall() && !ui.diaryOpen()) {
+        nbT += dt;
+        if (nbT > 8) {
+          nbT = 0;
+          ctx.dieSay(['voce', 'abrir', 'livro'], { pic: 'abrir' }); // demorou: o dado repete, olhando para o canto
+        }
+      } else if (!ui.bookCall() && !ui.guided() && !ui.diaryOpen()) {
+        nb = 'done';
+        ctx.freeze(false);
+        ctx.dieTalk([{ glyphs: ['eu', 'sentir', 'alegria'], joy: true }], { delay: 0.6 });
+      }
+    }
+  };
+
   kit.bake();
 
   return {
@@ -497,6 +588,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         b.update(t);
       }
       const nLit = braziers.filter((b) => b.lit).length;
+      updateNotebook(dt, nLit);
       if (v === 1) {
         if (nudge >= 0 && nLit === 0 && !ctx.paused()) {
           nudge += dt;
@@ -519,7 +611,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       else if (v === 2 || v === 3) {
         // o número tem que ser EXATO: com mais braseiros do que o pedido, a Casa apaga tudo
         const need = v === 2 ? 2 : 3;
-        want = nLit === need ? 1 : 0;
+        want = nLit === need && (v !== 2 || nb === 'done' || ctx.flag('caderno')) ? 1 : 0; // sala 2: sem o caderno, a porta não abre
         if (nLit > need) {
           overlit += dt;
           if (overlit > 1.6) {

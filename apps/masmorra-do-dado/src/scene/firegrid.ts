@@ -608,7 +608,8 @@ export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1): 
 
 // ── nicho secreto com a gema ────────────────────────────────────────────────
 // Na parede (x, z), olhando para (nx, nz). Fechado é uma laje lisa; aberto, a laje desce e mostra uma gema que brilha.
-export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, onTake?: () => void) {
+// `page`: em vez da gema, uma FOLHA ARRANCADA do caderno dela (o id em story/herpages.ts), que volta para o diário
+export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, onTake?: () => void, page?: string) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.rotation.y = Math.atan2(nx, nz);
@@ -629,7 +630,7 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
   back.position.z = 0.01;
   g.add(back);
   const gemMat = new THREE.MeshLambertMaterial({ color: 0x7af0ff, emissive: 0x2ab8e0, emissiveIntensity: 0.7, flatShading: true });
-  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.13), gemMat);
+  const gem: THREE.Mesh = page ? new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.01), lambert(null, 0xd8b880)) : new THREE.Mesh(new THREE.OctahedronGeometry(0.13), gemMat);
   gem.position.set(0, -0.05, 0.16);
   g.add(gem);
   const ped = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.2), frame);
@@ -638,21 +639,22 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
   const slab = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.86, 0.12), kit.stone);
   slab.position.set(0, 0, 0.37);
   g.add(slab);
-  const light = kit.light(x + nx * 0.5, y, z + nz * 0.5, 0x7ad8ff, 0);
+  const light = kit.light(x + nx * 0.5, y, z + nz * 0.5, page ? 0xffd8a0 : 0x7ad8ff, 0);
   let open = 0;
   let opening = false;
   let taken = false;
   const it: Interactable = {
     pos: new THREE.Vector3(x + nx * 0.6, y, z + nz * 0.6),
     r: 1.8,
-    label: 'Pegar a gema',
+    label: page ? 'Pegar a folha' : 'Pegar a gema',
     enabled: () => open > 0.95 && !taken,
     use() {
       taken = true;
       gem.visible = false;
       light.intensity = 0;
       ctx.sfx('gem');
-      ctx.caption('Uma gema', 'Escondida pela Casa. Nem toda porta é a da frente.', '#7ad8ff');
+      if (page) ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
+      else ctx.caption('Uma gema', 'Escondida pela Casa. Nem toda porta é a da frente.', '#7ad8ff');
       onTake?.();
     },
   };
@@ -670,7 +672,7 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
       if (opening && open < 1) open = Math.min(1, open + dt / 1.8);
       slab.position.y = -open * 0.95;
       slab.visible = open < 0.99;
-      gem.rotation.y = t * 1.4;
+      gem.rotation.y = page ? Math.sin(t * 0.8) * 0.3 : t * 1.4;
       gem.position.y = -0.05 + Math.sin(t * 2) * 0.03;
       if (!taken) light.intensity = open * (8 + 2 * Math.sin(t * 3));
     },
@@ -681,4 +683,86 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
       open = 0;
     },
   };
+}
+
+// ── PAVIO (M2 com tempo): uma canaleta longa e enrolada no chão (um "labirinto" talhado). O fogo anda por ela devagar (a brasa se vê caminhando)
+// e acende o que está no fim. `pts` = o caminho no chão (x, z); os chevrons apontam do primeiro ponto para o último (para onde o óleo corre).
+export interface Fuse {
+  set(k: number): void; // 0..1: até onde o fogo já correu
+  length: number;
+}
+export function makeFuse(kit: Kit, pts: [number, number][], width = 0.2): Fuse {
+  const segs: { ax: number; az: number; len: number; ux: number; uz: number; burn: THREE.Mesh; mat: THREE.MeshBasicMaterial; at: number }[] = [];
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, az] = pts[i - 1];
+    const [bx, bz] = pts[i];
+    const dx = bx - ax;
+    const dz = bz - az;
+    const len = Math.hypot(dx, dz);
+    if (len < 1e-3) continue;
+    const yaw = Math.atan2(-dz, dx);
+    const mk = (w: number, mat: THREE.Material, y: number, ext: number) => {
+      const geo = new THREE.PlaneGeometry(len + ext, w);
+      geo.rotateX(-Math.PI / 2);
+      geo.translate((len + ext) / 2 - ext / 2, 0, 0);
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(ax, y, az);
+      m.rotation.y = yaw;
+      kit.group.add(m);
+      return m;
+    };
+    const gt = grooveTexture().clone();
+    gt.needsUpdate = true;
+    gt.repeat.set((len + width) / 0.26, 1);
+    mk(width + 0.1, new THREE.MeshLambertMaterial({ color: 0x3a3236, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }), 0.006, width + 0.1); // a borda talhada
+    mk(width, new THREE.MeshLambertMaterial({ map: gt, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }), 0.008, width);
+    const bt = burntTexture().clone();
+    bt.needsUpdate = true;
+    bt.repeat.set(len / 0.26, 1);
+    const mat = new THREE.MeshBasicMaterial({ map: bt, fog: false, transparent: true, depthWrite: false });
+    const burn = mk(width * 0.6, mat, 0.012, 0);
+    burn.scale.x = 0.0001;
+    burn.visible = false;
+    segs.push({ ax, az, len, ux: dx / len, uz: dz / len, burn, mat, at: total });
+    total += len;
+  }
+  const front = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+  front.scale.set(0.34, 0.3, 1);
+  front.visible = false;
+  kit.group.add(front);
+  const lamp = kit.light(pts[0][0], 0.5, pts[0][1], 0xff7a2e, 0);
+  return {
+    length: total,
+    set(k) {
+      const d = Math.max(0, Math.min(1, k)) * total;
+      let fx = 0;
+      let fz = 0;
+      for (const s of segs) {
+        const u = Math.max(0, Math.min(1, (d - s.at) / s.len));
+        s.burn.visible = u > 0.001;
+        s.burn.scale.x = Math.max(0.0001, u);
+        s.mat.color.setScalar(k >= 1 ? 0.7 : 1);
+        if (u > 0 && u < 1) {
+          fx = s.ax + s.ux * s.len * u;
+          fz = s.az + s.uz * s.len * u;
+        }
+      }
+      front.visible = k > 0.001 && k < 1;
+      front.position.set(fx, 0.16, fz);
+      front.material.map = kit.frames[Math.floor(performance.now() / 110) % kit.frames.length];
+      lamp.pos.set(fx, 0.5, fz);
+      lamp.intensity = front.visible ? 14 : 0;
+    },
+  };
+}
+// um labirinto em zigue-zague (serpentina) entre dois pontos, ocupando uma faixa: devolve o caminho
+export function serpentine(start: [number, number], end: [number, number], xa: number, xb: number, rows: number[]): [number, number][] {
+  const pts: [number, number][] = [start];
+  rows.forEach((z, i) => {
+    const [p, q] = i % 2 === 0 ? [xb, xa] : [xa, xb];
+    pts.push([p, z], [q, z]);
+  });
+  pts.push(end);
+  return pts;
 }

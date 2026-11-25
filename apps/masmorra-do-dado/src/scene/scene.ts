@@ -34,10 +34,11 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
-import { FIRE_FRASES, FIRE_TEMPO } from './rooms/fireRooms';
-import { FIRE_APELIDOS, FIRE_CASA_ESCREVE, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
+import { FIRE_APELIDOS, FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
+import { buildChamaCurta } from './rooms/chamaCurta';
+import { buildRespiro1 } from './rooms/respiro1';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
@@ -56,9 +57,10 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     (c) => buildVestibulo(c, 2), // O Vestíbulo: o número é exato
     buildLousa, // NÍVEL 2. A LOUSA: acender em grade é escrever; os números são as faces do dado (porta = QUATRO)
     buildFio, // NÍVEL 3. O FIO DE FOGO: o fogo corre por canaletas; «ACENDER DOIS» = duas ignições
+    buildRespiro1, // RESPIRO R1 (sem trava): o Corredor dos Nichos e o Pátio da Cisterna; segredos opcionais (folhas dela, o reflexo)
     (c) => buildFireRoom(c, FIRE_CASA_ESCREVE), // NÍVEL 3. A CASA ESCREVE: a lousa da Casa é o mapa do salão (+ constelação C1)
-    (c) => buildFireRoom(c, FIRE_TEMPO), // NÍVEL 4. TEMPO: as chamas se apagam; o maior dura mais; todos acesos ao mesmo tempo
-    (c) => buildFireRoom(c, FIRE_FRASES), // NÍVEL 5. Acende as frases CONFIRMADAS -> os pilares sobem -> ordem por ANTES/DEPOIS
+    buildChamaCurta, // NÍVEL 4. TEMPO + PAVIO: as chamas se apagam; um labirinto no chão é um pavio que acende o mínimo do fundo sozinho
+    (c) => buildFireRoom(c, FIRE_CONFIRMA), // NÍVEL 5. Duas partes: as marcas numa lousa (QUATRO CONFIRMADO × TRÊS BOATO); depois 3 frases confirmadas -> pilares -> 2, 4, 1, 3
     (c) => buildFireRoom(c, FIRE_PANO), // NÍVEL 5. O PANO: o fogo queima o boato tecido e mostra a pedra (+ constelação C2)
     (c) => buildFireRoom(c, FIRE_APELIDOS), // NÍVEL 6. GRANDE e PEQUENO: o mesmo braseiro tem dois nomes
     (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
@@ -2822,6 +2824,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       stamps: () => diaryStore.get().stamps.length,
       inv: () => ({ die: hasDie, chalk: hasChalk, prompt: promptLabel }),
       interact: () => interact(),
+      interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: [+(camera.position.x - offs[curRoom].x).toFixed(2), +(camera.position.z - offs[curRoom].z).toFixed(2)] })),
       chat: (k: string) => { chatCool = 0; chatFn(k); },
       rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1) })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),

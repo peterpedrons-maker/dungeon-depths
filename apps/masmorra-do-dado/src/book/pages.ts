@@ -4,6 +4,7 @@ import { TEXTS } from '../story/texts';
 import { ADV, drawCentered, drawGlyph, drawText, drawWord, LINE, plot, textWidth, wrap } from './font';
 import { CELL_H, CELL_W, getWorld, shortRoom, type MapRoom } from '../story/worldmap';
 import { glyphsOf, LEX } from '../story/lexicon';
+import { HER_LAST, HER_NOTES, HER_PAGES } from '../story/herpages';
 
 // Páginas do diário, desenhadas em pixels no próprio papel (nada de interface por cima do livro).
 export const PW = 132;
@@ -14,6 +15,8 @@ const RED = '#a8321a';
 const GOLD = '#a87a28';
 const STAMP_BLUE = '#2c4a7a';
 const HILITE = '#f6d9a0';
+const SEPIA = '#8a5a34'; // a tinta DELA (a que veio antes): sépia desbotada
+const PENCIL = 'rgba(70,58,48,0.2)';
 const PER_PAGE = 12;
 // descrições curtas para caber no livro (as faces ainda vão mudar)
 const SHORT: Record<number, string> = { 1: 'Quica nas paredes.', 2: 'Aperta placas.', 3: 'Acende o fogo.', 4: 'Troca de lugar.', 5: 'Desliza reto.', 6: 'Atravessa.' };
@@ -64,6 +67,7 @@ export interface View {
   editing: 'note' | 'free' | null;
   hover: string | null;
   caret: boolean;
+  pulse?: boolean; // modo guiado: o campo de anotação pisca, pedindo uma palavra
 }
 
 export interface Layout {
@@ -72,6 +76,8 @@ export interface Layout {
   facesAt: number;
   textsAt: number;
   textsN: number;
+  herAt: number; // as páginas dela (a última que ela escreveu e as folhas arrancadas)
+  herN: number;
   mapAt: number;
   notesAt: number;
 }
@@ -81,9 +87,16 @@ export function layout(d: DiaryState): Layout {
   const facesAt = 1 + dictN;
   const textsAt = facesAt + 1;
   const textsN = Math.max(1, d.texts.length);
-  const mapAt = textsAt + textsN;
+  const herAt = textsAt + textsN;
+  const herN = Math.ceil((1 + HER_PAGES.length) / 2);
+  const mapAt = herAt + herN;
   const notesAt = mapAt + 1;
-  return { total: notesAt + 1, dictN, facesAt, textsAt, textsN, mapAt, notesAt };
+  return { total: notesAt + 1, dictN, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt };
+}
+// em que folha (spread) do dicionário fica um símbolo
+export function symbolSpread(id: string, d: DiaryState): number {
+  const i = d.order.indexOf(id);
+  return 1 + Math.max(0, Math.floor(i / PER_PAGE));
 }
 
 // ── papel envelhecido (desenhado uma vez por lado) ──────────────────────
@@ -308,15 +321,17 @@ function rule(ctx: CanvasRenderingContext2D, cx: number, y: number, half: number
   ctx.fillRect(cx + 6, y, 1, 1);
 }
 
-function chrome(ctx: CanvasRenderingContext2D, side: 'L' | 'R', spread: number, lay: Layout, out: Region[]) {
-  frame(ctx, side);
-  const num = String(2 * spread + (side === 'L' ? 1 : 2));
-  const ncx = PW / 2 + (side === 'L' ? -3 : 3);
-  drawCentered(ctx, num, ncx, PH - 20, INK2);
-  const nw = textWidth(num) / 2 + 4;
-  ctx.fillStyle = INK2;
-  ctx.fillRect(Math.round(ncx - nw - 3), PH - 15, 3, 1);
-  ctx.fillRect(Math.round(ncx + nw), PH - 15, 3, 1);
+function chrome(ctx: CanvasRenderingContext2D, side: 'L' | 'R', spread: number, lay: Layout, out: Region[], torn = false) {
+  if (!torn) {
+    frame(ctx, side);
+    const num = String(2 * spread + (side === 'L' ? 1 : 2));
+    const ncx = PW / 2 + (side === 'L' ? -3 : 3);
+    drawCentered(ctx, num, ncx, PH - 20, INK2);
+    const nw = textWidth(num) / 2 + 4;
+    ctx.fillStyle = INK2;
+    ctx.fillRect(Math.round(ncx - nw - 3), PH - 15, 3, 1);
+    ctx.fillRect(Math.round(ncx + nw), PH - 15, 3, 1);
+  }
   if (side === 'L' && spread > 0) {
     arrow(ctx, 14, PH - 19, -1, INK);
     out.push({ x: 8, y: PH - 24, w: 16, h: 14, id: 'prev' });
@@ -334,6 +349,127 @@ function chrome(ctx: CanvasRenderingContext2D, side: 'L' | 'R', spread: number, 
 const lines = (ctx: CanvasRenderingContext2D, ls: string[], x: number, y: number, color: string, max: number) => {
   ls.slice(0, max).forEach((l, i) => drawText(ctx, l, x, y + i * LINE, color));
 };
+
+// o rabisco torto de braseiro que ela fez ao lado de BRASEIRO (sépia, mão tremida)
+function herBrazier(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.fillStyle = SEPIA;
+  plot(ctx, x + 6, y + 18, x + 7, y + 11, 1);
+  plot(ctx, x + 7, y + 11, x + 13, y + 10, 1);
+  plot(ctx, x + 13, y + 10, x + 14, y + 18, 1);
+  plot(ctx, x + 2, y + 6, x + 6, y + 11, 1);
+  plot(ctx, x + 6, y + 11, x + 15, y + 10, 1);
+  plot(ctx, x + 15, y + 10, x + 19, y + 5, 1);
+  plot(ctx, x + 19, y + 5, x + 3, y + 6, 1);
+  plot(ctx, x + 8, y + 5, x + 9, y + 1, 1);
+  plot(ctx, x + 9, y + 1, x + 11, y + 4, 1);
+  plot(ctx, x + 11, y + 4, x + 13, y, 1);
+  plot(ctx, x + 13, y, x + 14, y + 5, 1);
+}
+// fita adesiva velha prendendo uma folha que voltou para o lugar
+function tape(ctx: CanvasRenderingContext2D, side: 'L' | 'R') {
+  const x = side === 'L' ? PW - 22 : 6;
+  for (const y of [10, PH - 20]) {
+    ctx.fillStyle = 'rgba(232,210,140,0.55)';
+    ctx.fillRect(x, y, 16, 7);
+    ctx.fillStyle = 'rgba(150,110,50,0.35)';
+    ctx.fillRect(x, y, 16, 1);
+    ctx.fillRect(x, y + 6, 16, 1);
+  }
+}
+// uma folha arrancada: só sobrou um toco rasgado junto do lombo; o resto é a folha de baixo, na sombra
+function tornPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', k: number) {
+  const r = rngf(500 + k);
+  ctx.fillStyle = 'rgba(70,40,20,0.3)';
+  ctx.fillRect(0, 0, PW, PH);
+  // o toco: papel claro com a beirada rasgada
+  let w = 8;
+  for (let y = 0; y < PH; y++) {
+    w = Math.max(4, Math.min(13, w + (r() < 0.5 ? -1 : 1) * (r() < 0.6 ? 1 : 0)));
+    const x0 = side === 'L' ? PW - w : 0;
+    ctx.drawImage(paper(side), x0, y, w, 1, x0, y, w, 1);
+    ctx.fillStyle = 'rgba(255,240,200,0.5)'; // a fibra branca do rasgo
+    ctx.fillRect(side === 'L' ? x0 : w - 1, y, 1, 1);
+    ctx.fillStyle = 'rgba(40,20,8,0.35)'; // a sombra do toco na folha de baixo
+    ctx.fillRect(side === 'L' ? x0 - 1 : w, y, 1, 1);
+  }
+}
+// DESGASTE (só visual, sem significado): cada folha tem um pouco de uso. Nada parece glifo: tudo curvo e de mão, nada de pontos em grade ou
+// molduras retas. Fica nas beiradas e nos cantos de fora, longe do texto.
+function wear(ctx: CanvasRenderingContext2D, side: 'L' | 'R', spread: number) {
+  const r = rngf(900 + spread * 13 + (side === 'L' ? 1 : 2));
+  const outX = (dx: number) => (side === 'L' ? dx : PW - 1 - dx); // x a partir da beirada de fora
+  // borda chamuscada (escura e irregular) na beirada de fora
+  if (r() < 0.22) {
+    for (let y = 0; y < PH; y++) {
+      const d = 1 + Math.floor(2.5 * (0.5 + 0.5 * Math.sin(y * 0.21 + spread)) + r() * 2);
+      for (let i = 0; i < d; i++) {
+        ctx.fillStyle = `rgba(40,20,8,${0.55 - i * 0.12})`;
+        ctx.fillRect(outX(i), y, 1, 1);
+      }
+    }
+  }
+  // canto dobrado (em cima ou embaixo, na beirada de fora)
+  if (r() < 0.3) {
+    const top = r() < 0.5;
+    const S = 9;
+    for (let j = 0; j < S; j++)
+      for (let i = 0; i < S - j; i++) {
+        const y = top ? j : PH - 1 - j;
+        ctx.fillStyle = i + j === S - 1 ? 'rgba(90,55,25,0.6)' : 'rgba(110,70,35,0.22)';
+        ctx.fillRect(outX(i), y, 1, 1);
+      }
+  }
+  // fuligem: uma mancha larga e fraca
+  if (r() < 0.35) {
+    const cx = outX(4 + r() * 8); // junto da beirada de fora (longe do texto)
+    const cy = 30 + r() * (PH - 60);
+    const R = 8 + r() * 8;
+    for (let k = 0; k < 140; k++) {
+      const a = r() * Math.PI * 2;
+      const d = Math.sqrt(r()) * R;
+      ctx.fillStyle = 'rgba(40,30,25,0.06)';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d * 0.7), 2, 2);
+    }
+  }
+  // dedo sujo: arcos concêntricos fracos perto da beirada de baixo, do lado de fora
+  if (r() < 0.25) {
+    const cx = outX(14 + Math.floor(r() * 8));
+    const cy = PH - 34 - Math.floor(r() * 30);
+    for (let ring = 2; ring < 6; ring++)
+      for (let a = 0.3; a < Math.PI * 1.7; a += 0.35) {
+        ctx.fillStyle = 'rgba(80,55,35,0.1)';
+        ctx.fillRect(Math.round(cx + Math.cos(a) * ring), Math.round(cy + Math.sin(a) * ring * 1.3), 1, 1);
+      }
+  }
+  // um rabisco a lápis no canto de cima de fora: espiral, onda, uma pedra ou uma mão (ou uma palavra riscada)
+  const pick = r();
+  const ox = side === 'L' ? 11 : PW - 25;
+  const oy = 11;
+  ctx.fillStyle = PENCIL;
+  const curve = (pts: [number, number][]) => {
+    for (let i = 1; i < pts.length; i++) plot(ctx, ox + pts[i - 1][0], oy + pts[i - 1][1], ox + pts[i][0], oy + pts[i][1], 1);
+  };
+  if (pick < 0.18) {
+    const pts: [number, number][] = [];
+    for (let a = 0; a < Math.PI * 5; a += 0.5) pts.push([7 + Math.cos(a) * a * 0.45, 6 + Math.sin(a) * a * 0.45]);
+    curve(pts);
+  } else if (pick < 0.34) {
+    const pts: [number, number][] = [];
+    for (let x = 0; x <= 14; x += 1) pts.push([x, 5 + Math.sin(x * 0.9) * 2.5]);
+    curve(pts);
+  } else if (pick < 0.48) {
+    curve([[2, 9], [1, 5], [4, 2], [9, 1], [13, 4], [13, 9], [9, 11], [4, 11], [2, 9]]); // uma pedra
+  } else if (pick < 0.6) {
+    curve([[3, 13], [2, 7], [3, 3], [4, 7], [5, 1], [6, 7], [7, 1], [8, 7], [9, 2], [10, 8], [12, 6], [11, 11], [8, 14], [3, 13]]); // uma mão
+  } else if (pick < 0.78) {
+    // uma "palavra" escrita à mão e riscada (só curvas, não é glifo)
+    ctx.fillStyle = 'rgba(122,80,48,0.32)';
+    const pts: [number, number][] = [];
+    for (let x = 0; x <= 14; x++) pts.push([x, 6 + Math.sin(x * 1.7) * 1.6 + (x % 4 === 0 ? -1 : 0)]);
+    curve(pts);
+    curve([[-1, 7], [15, 5]]);
+  }
+}
 
 // um dadinho desenhado (cantos arredondados, os pontos da face); selada = tracejado e um "?" no meio
 const PIPS: Record<number, [number, number][]> = {
@@ -383,6 +519,11 @@ function indexIcon(ctx: CanvasRenderingContext2D, i: number, x: number, y: numbe
     for (let k = 2; k < 7; k++) P([[1, k], [5, k - 1]]);
     P([[2, 3], [3, 3], [2, 5], [4, 5]]);
   } else if (i === 3) {
+    // folha arrancada: a beirada rasgada
+    P([[1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [2, 7], [3, 7], [5, 2], [6, 3], [5, 4], [6, 5], [5, 6], [4, 7]]);
+    ctx.fillStyle = SEPIA;
+    P([[3, 3], [3, 5]]);
+  } else if (i === 4) {
     // mapa dobrado com um X
     P([[0, 1], [0, 7], [2, 2], [2, 8], [4, 1], [4, 7], [6, 2], [6, 8], [1, 1], [3, 2], [5, 1], [1, 7], [3, 8], [5, 7]]);
     for (let k = 2; k < 7; k++) P([[0, k], [6, k + 1]]);
@@ -464,22 +605,26 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     return regions;
   }
   ctx.drawImage(paper(side, s === 0 ? 0 : (s * 5 + (side === 'L' ? 0 : 2)) % 4), 0, 0); // cada folha com a sua marca de uso (ou nenhuma)
-  chrome(ctx, side, view.spread, lay, regions);
+  const hk = s >= lay.herAt && s < lay.mapAt ? (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1) : -1;
+  const torn = hk >= 1 && hk - 1 < HER_PAGES.length && !(d.pages ?? []).includes(HER_PAGES[hk - 1].id);
+  if (!torn && s > 0) wear(ctx, side, s); // o caderno é usado: rasuras, fuligem, cantos dobrados, lápis apagado
+  chrome(ctx, side, view.spread, lay, regions, torn);
 
   if (s === 0) {
     {
-      drawCentered(ctx, 'ÍNDICE', PW / 2 + 4, 22, INK, 2);
+      drawCentered(ctx, 'ÍNDICE', PW / 2 + 4, 18, INK, 2);
       ctx.fillStyle = INK2;
-      ctx.fillRect(x0 + 8, 44, CW - 16, 1);
+      ctx.fillRect(x0 + 8, 40, CW - 16, 1);
       const rows: [string, string, number][] = [
         ['Símbolos', `${d.order.length}`, 1],
         ['Faces', `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt],
         ['Textos', `${d.texts.length}`, lay.textsAt],
+        ['Páginas dela', `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt],
         ['Mapa', `${d.rooms.length}`, lay.mapAt],
         ['Notas', '', lay.notesAt],
       ];
       rows.forEach(([label, n, to], i) => {
-        const y = 54 + i * 17;
+        const y = 50 + i * 14;
         indexIcon(ctx, i, x0 + 1, y);
         drawText(ctx, label, x0 + 12, y, INK);
         if (n) drawText(ctx, n, x0 + CW - textWidth(n) - 2, y, INK2);
@@ -488,12 +633,12 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         const a = x0 + 12 + textWidth(label) + 4;
         const b = x0 + CW - textWidth(n) - 6;
         for (let px = a; px < b; px += 3) ctx.fillRect(px, y + 9, 1, 1);
-        regions.push({ x: x0 - 2, y: y - 3, w: CW + 4, h: 16, id: `goto:${to}` });
+        regions.push({ x: x0 - 2, y: y - 2, w: CW + 4, h: 14, id: `goto:${to}` });
       });
       ctx.fillStyle = INK2;
-      ctx.fillRect(x0 + 8, 134, CW - 16, 1);
-      drawCentered(ctx, 'Guardar o livro', x0 + CW / 2, 139, INK2);
-      regions.push({ x: x0, y: 136, w: CW, h: 14, id: 'close' });
+      ctx.fillRect(x0 + 8, 137, CW - 16, 1);
+      drawCentered(ctx, 'Guardar o livro', x0 + CW / 2, 141, INK2);
+      regions.push({ x: x0, y: 139, w: CW, h: 13, id: 'close' });
     }
   } else if (s >= 1 && s < lay.facesAt) {
     const page = s - 1;
@@ -535,16 +680,33 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 10, 106, CW - 20, 1);
       ctx.fillRect(Math.round(cx) - 1, 105, 3, 3);
-      // área de anotação pautada (4 linhas)
-      const by = 110;
+      // a anotação DELA (tinta sépia, não se apaga): a 1ª linha, com o rabisco ao lado
+      const her = HER_NOTES[cur];
+      let by = 110;
+      let nl = 4;
+      if (her) {
+        drawText(ctx, her.text, x0 + 1, by, SEPIA);
+        if (her.doodle === 'brasa') herBrazier(ctx, x0 + CW - 26, by - 4);
+        by += LINE + 4;
+        nl = 3;
+      }
+      // área de anotação pautada (a do jogador)
       const editing = view.editing === 'note';
       ctx.fillStyle = editing ? RED : 'rgba(122,80,48,0.45)';
-      for (let i = 0; i < 4; i++) ctx.fillRect(x0, by + i * LINE + 9, CW, 1);
+      for (let i = 0; i < nl; i++) ctx.fillRect(x0, by + i * LINE + 9, CW, 1);
+      if (view.pulse) {
+        // modo guiado: o campo pisca em dourado pedindo uma palavra
+        ctx.fillStyle = GOLD;
+        ctx.fillRect(x0 - 2, by - 3, CW + 4, 1);
+        ctx.fillRect(x0 - 2, by + nl * LINE + 2, CW + 4, 1);
+        ctx.fillRect(x0 - 2, by - 3, 1, nl * LINE + 6);
+        ctx.fillRect(x0 + CW + 1, by - 3, 1, nl * LINE + 6);
+      }
       const note = d.notes[cur] ?? '';
       const txt = note + (editing && view.caret ? '_' : '');
       if (!note && !editing) drawText(ctx, 'toque e escreva…', x0 + 1, by, INK2);
-      lines(ctx, wrap(txt, CH), x0 + 1, by, INK, 4);
-      regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: 44, id: 'edit:note' });
+      lines(ctx, wrap(txt, CH), x0 + 1, by, INK, nl);
+      regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: nl * LINE + 4, id: 'edit:note' });
     } else {
       lines(ctx, wrap('Os símbolos que você vir pelo caminho ficam guardados aqui, com um espaço para anotar o que acha que significam.', CH), x0, 30, INK2, 12);
     }
@@ -557,7 +719,19 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       drawText(ctx, f.unlocked ? f.name : '???', x0 + 22, y + 1, f.unlocked ? INK : INK2);
       lines(ctx, wrap(f.unlocked ? (SHORT[f.n] ?? f.desc) : 'Selada.', 13), x0 + 22, y + 12, INK2, 2);
     });
-  } else if (s >= lay.textsAt && s < lay.mapAt) {
+  } else if (s >= lay.herAt && s < lay.mapAt) {
+    // as páginas DELA: a última que ela escreveu (para no meio da frase) e, depois, as folhas arrancadas (buracos até serem achadas)
+    const k = (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1);
+    if (k === 0) {
+      lines(ctx, HER_LAST.flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
+    } else if (k - 1 < HER_PAGES.length) {
+      const pg = HER_PAGES[k - 1];
+      if ((d.pages ?? []).includes(pg.id)) {
+        tape(ctx, side);
+        lines(ctx, pg.body.flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
+      } else tornPage(ctx, side, k);
+    }
+  } else if (s >= lay.textsAt && s < lay.herAt) {
     const entry = d.texts.length ? TEXTS[d.texts[s - lay.textsAt]] : null;
     if (!entry) {
       if (side === 'L') {

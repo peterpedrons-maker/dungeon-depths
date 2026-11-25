@@ -1,0 +1,44 @@
+// O caderno de "a que veio antes" (HISTORIA.md): outra condenada, que não saiu dali. O jogador acha o caderno dela na sala 2 e continua escrevendo nele.
+// Algumas folhas foram ARRANCADAS e estão espalhadas pela Casa; achadas, voltam para o lugar. Em português, na voz dela (às vezes certa, às vezes não).
+
+export interface HerPage {
+  id: string;
+  where: string; // onde se acha (para o autor; o jogo não mostra)
+  body: string[];
+}
+
+// a última página que ela escreveu, ainda no caderno: para no meio da frase
+export const HER_LAST: string[] = [
+  'Hoje a Casa apagou tudo de novo.',
+  'Contei os passos até a porta, contei os braseiros, contei as vezes que o dado me olhou.',
+  'Se alguém achar isto, não acredite em tudo o que eu',
+];
+
+// as folhas arrancadas, na ordem do caderno (os buracos ficam no lugar delas até serem achadas)
+export const HER_PAGES: HerPage[] = [
+  {
+    id: 'p1',
+    where: 'Corredor dos Nichos (o nicho vazio, depois de escrever QUATRO)',
+    body: ['O dado me olha quando eu erro. Não sei se é pena ou se é conta.', 'Hoje acendi quatro e a Casa ficou quieta. Quando ela fica quieta, acho que é porque acertei.'],
+  },
+  {
+    id: 'p2',
+    where: 'Pátio da Cisterna (numa câmara lateral)',
+    body: ['Os pontos são números. Os números são dados. Eu já sabia disso antes de cair aqui, só não sabia que sabia.', 'Contei os nichos três vezes. Um está vazio. Tudo aqui está faltando um pedaço.'],
+  },
+  {
+    id: 'p3',
+    where: 'O Que a Casa Confirma (junto da grade)',
+    body: ['Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo.', 'Acho que o risquinho com o ponto em cima quer dizer "é verdade". O outro, "dizem que".'],
+  },
+  { id: 'p4', where: '(ainda não está no jogo)', body: [] },
+  { id: 'p5', where: '(ainda não está no jogo)', body: [] },
+  { id: 'p6', where: '(ainda não está no jogo)', body: [] },
+  { id: 'p7', where: '(ainda não está no jogo)', body: [] },
+];
+
+// as anotações dela no dicionário de símbolos (tinta sépia, desbotada; o jogador não apaga)
+export const HER_NOTES: Record<string, { text: string; doodle?: 'brasa' }> = {
+  acender: { text: 'acho que é acender' },
+  brasa: { text: '?', doodle: 'brasa' },
+};

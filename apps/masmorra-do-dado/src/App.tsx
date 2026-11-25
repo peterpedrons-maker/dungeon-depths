@@ -4,7 +4,7 @@ import { createScene, type ChalkMode, type SceneApi, type StickState, type Tool 
 import { startMapDemo } from './book/mapdemo';
 import { LAB_WORDS } from './scene/rooms/lab';
 import { diary, diaryStore } from './story/diary';
-import { progress } from './story/progress';
+import { progress, progressStore } from './story/progress';
 import { dialogue, dialogueStore } from './story/dialogue';
 import { chatterStore } from './story/chatter';
 import { useStore } from './story/store';
@@ -63,6 +63,9 @@ export default function App() {
   const talking = useStore(dialogueStore) !== null;
   const dieTalking = useStore(chatterStore) !== null; // o balão do dado
   const uis = useStore(uiStore);
+  const prog = useStore(progressStore);
+  // o diário só existe depois que o jogador acha o caderno (sala 2); a demonstração e a sala de teste já começam com ele
+  const hasBook = !!prog.flags.caderno || /[?&](demo|lab)=/.test(location.search);
   // REGRA: nada se sobrepõe na tela. Enquanto alguém fala (caixa de conversa, balão do dado) ou há cena (faixas), avisos, legendas, dicas e botões esperam ou somem.
   const speaking = talking || dieTalking || uis.bars;
   const diaryOpen = uis.diaryOpen;
@@ -71,8 +74,16 @@ export default function App() {
   const toastTimer = useRef(0);
 
   const sound = useCallback((name: 'uiblip' | 'uiopen' | 'uiclose' | 'uinew' | 'write', v?: number) => sceneRef.current?.playUi(name, v), []);
+  const hasBookRef = useRef(hasBook);
+  hasBookRef.current = hasBook;
   const toggleDiary = useCallback(() => {
-    if (dialogue.blocking) return;
+    if (dialogue.blocking || !hasBookRef.current) return;
+    if (!ui.diaryOpen() && ui.bookCall()) {
+      // 1ª abertura do caderno: modo guiado (vira até BRASEIRO e pede uma anotação)
+      ui.setBookCall(false);
+      ui.setGuided(true);
+    }
+    if (ui.diaryOpen() && ui.guided() && !ui.uiGuidedOk()) return; // no modo guiado, só fecha depois de escrever alguma coisa
     ui.setDiary(!ui.diaryOpen()); // o livro (src/book) cuida da animação e dos sons
   }, []);
 
@@ -99,19 +110,19 @@ export default function App() {
   // símbolo novo: aviso rápido no topo
   // (os avisos entram numa fila e só aparecem DEPOIS da conversa; no máximo os 3 mais recentes)
   useEffect(() => {
-    if (!dry.last) return;
+    if (!dry.last || !hasBookRef.current) return; // sem o caderno, o jogo guarda os símbolos em silêncio
     const l = dry.last;
     setToastQ((q) => (q.some((x) => x.n === l.n) ? q : [...q, l].slice(-3)));
   }, [dry.last]);
   useEffect(() => {
-    if (speaking || uis.bookOut || toast || !toastQ.length) return;
+    if (speaking || uis.bookOut || uis.bookCall || toast || !toastQ.length) return;
     const [next, ...rest] = toastQ;
     setToastQ(rest);
     setToast(next);
     sound('uinew');
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 3200);
-  }, [speaking, uis.bookOut, toast, toastQ, sound]);
+  }, [speaking, uis.bookOut, uis.bookCall, toast, toastQ, sound]);
 
   // ?demo=1: pré-visualização do diário e da conversa (não grava nada no aparelho)
   useEffect(() => {
@@ -245,12 +256,16 @@ export default function App() {
         <i />
       </div>
       <div className="crosshair" />
+      {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
+      <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 
       <div className="corner">
-        <button className="diary-btn" onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
-          <BookIcon />
-          {dry.unread > 0 && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
-        </button>
+        {hasBook && (
+          <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Diário" title="Diário (J)">
+            <BookIcon />
+            {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
+          </button>
+        )}
         <button
           onClick={() => setAudio(((audio + 1) % 3) as AudioMode)}
           aria-label="Som"

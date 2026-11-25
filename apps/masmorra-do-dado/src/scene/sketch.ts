@@ -2,7 +2,7 @@
 // Ficam claramente "feitos à mão": traço tremido, falhas, sulco escuro com um fio claro por cima, sem cor viva.
 
 
-export type SketchKind = 'braseiro' | 'chama' | 'porta' | 'placa';
+export type SketchKind = 'braseiro' | 'chama' | 'porta' | 'placa' | 'livro' | 'pegar' | 'escrever' | 'abrir';
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -190,6 +190,47 @@ function drawSimple(kind: SketchKind, seed: number, N: number): HTMLCanvasElemen
     line([[14, 78], [86, 78], [76, 94], [24, 94], [14, 78]], PALE, 5);
     line([[50, 10], [50, 56]], OCRE, 6);
     line([[34, 42], [50, 60], [66, 42]], OCRE, 6);
+  }
+  if (kind === 'livro') {
+    // um livro fechado, de pé, com a lombada e a fita
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[28, 14], [72, 14], [76, 86], [32, 86], [28, 14]], PALE, 5);
+    line([[36, 14], [38, 86]], PALE, 3);
+    line([[46, 34], [64, 34]], OCRE, 4);
+    line([[60, 86], [62, 98]], OCRE, 4);
+  }
+  if (kind === 'pegar') {
+    // uma mão fechando em volta de um livro pequeno
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[34, 30], [66, 30], [68, 62], [36, 62], [34, 30]], OCRE, 4);
+    line([[14, 70], [30, 58], [40, 46], [46, 50], [40, 64], [54, 66], [70, 70], [84, 84], [60, 94], [30, 92], [14, 84]], PALE, 5);
+    line([[44, 52], [50, 40]], PALE, 4);
+  }
+  if (kind === 'escrever') {
+    // uma mão com a pena escrevendo numa página (e o livrinho do diário ao lado)
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[10, 70], [56, 70], [62, 94], [14, 94], [10, 70]], PALE, 4);
+    line([[18, 80], [24, 77], [30, 82], [38, 78], [46, 82]], OCRE, 3);
+    line([[46, 78], [72, 20]], OCRE, 4);
+    line([[72, 20], [80, 12], [76, 26], [72, 20]], OCRE, 3);
+    line([[52, 62], [60, 52], [70, 56], [66, 68], [56, 70]], PALE, 5);
+    line([[78, 64], [94, 64], [94, 86], [78, 86], [78, 64]], PALE, 3);
+    line([[86, 64], [86, 86]], PALE, 2);
+  }
+  if (kind === 'abrir') {
+    // um livro se abrindo: duas páginas em V e as linhas do texto
+    const PALE = '#e4d8b8';
+    const OCRE = '#f0a850';
+    line([[50, 30], [50, 84]], PALE, 4);
+    line([[50, 30], [16, 22], [12, 76], [50, 84]], PALE, 5);
+    line([[50, 30], [84, 22], [88, 76], [50, 84]], PALE, 5);
+    for (const y of [38, 50, 62]) {
+      line([[22, y - 4], [42, y]], OCRE, 3);
+      line([[58, y], [78, y - 4]], OCRE, 3);
+    }
   }
   return c;
 }
