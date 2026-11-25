@@ -32,7 +32,8 @@ const figs = views.map((ry) => {
   return s;
 });
 const pose = q.get('pose') ? JSON.parse(q.get('pose')) : {};
-const cams = views.map(() => { const c = new THREE.PerspectiveCamera(30, (W / 3) / H, 0.1, 50); c.position.set(0, 1.0, 4.2); c.lookAt(0, 0.98, 0); return c; });
+const camQ = q.get('cam') ? q.get('cam').split(',').map(Number) : null; // cam=x,y,z,tx,ty,tz: câmera de perto (para ver a mão, o capuz)
+const cams = views.map(() => { const c = new THREE.PerspectiveCamera(30, (W / 3) / H, 0.1, 50); if (camQ) { c.position.set(camQ[0], camQ[1], camQ[2]); c.lookAt(camQ[3], camQ[4], camQ[5]); } else { c.position.set(0, 1.08, 4.9); c.lookAt(0, 1.05, 0); } return c; });
 let t = 0;
 function frame() {
   t += 1 / 60;

@@ -977,8 +977,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (S.ph === 7 && topScribe) {
       // close na mão com o dado, sobre o poço
       topScribe.hand.getWorldPosition(scribeHand);
-      scribeLook.copy(scribeHand).setY(scribeHand.y - 0.15); // a boca da manga com o dado flutuando, contra o céu
-      setCine(tmpV.set(0.7, -0.3, -1.37).add(scribeHand), scribeLook); // entre os postes e sob a trave: nada na frente // de frente e de baixo, mais afastada: a mão, o braço e o capuz contra o céu // de frente e um pouco de baixo: a mão ossuda com o dado na palma, contra o céu
+      // por cima do ombro direito dele, olhando para baixo: a manga, a luva com o dado na palma e a boca escura do poço embaixo
+      scribeLook.copy(scribeHand).setY(scribeHand.y - 0.12);
+      setCine(tmpV.set(0.8, 1.15, 0.85).add(scribeHand), scribeLook);
     } else if (S.ph === 8) {
       // a câmera desce POR BAIXO do dado: o dado em cima, contra a luz, e lá no alto a silhueta do Escrivão debruçado
       const dw = worldDie.position;
@@ -1057,14 +1058,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         // de lado: endireita-se um pouco, a mão direita vai às costas, para dentro do manto… e volta com o dado
         fovCine = 40;
         // depois ERGUE o dado bem alto, na palma virada para cima, acima da cabeça e sobre a boca do poço (nada atravessa a mureta)
-        S.pose = { lean: 0.45, rest: 0.6, back: S.t < 1.25 ? 1 : 0, raise: S.t < 1.25 ? 0 : 1, headPitch: S.t < 1.25 ? 0.1 : -0.2, headYaw: S.t < 1.25 ? -0.35 : 0 };
+        S.pose = { lean: S.t < 1.25 ? 0.45 : 0.8, rest: 0.6, back: S.t < 1.25 ? 1 : 0, raise: S.t < 1.25 ? 0 : 1, headPitch: S.t < 1.25 ? 0.1 : -0.2, headYaw: S.t < 1.25 ? -0.35 : 0 };
         if (S.t > 1.05) scribeDie!.visible = true;
         if (S.t > 2.7) go(7);
         break;
       case 7:
         // close na mão: ele estende o braço sobre o poço, segura um instante… e abre os dedos
         fovCine = 38;
-        S.pose = { lean: 0.5, rest: 1, raise: 1, open: S.t > 1.9 ? 1 : 0, headPitch: 0.3 };
+        S.pose = { lean: 0.9, rest: 1, raise: 1, open: S.t > 1.9 ? 1 : 0, headPitch: -0.2 };
         if (!S.thrown && S.t > 1.98) {
           releaseDie();
           go(8);
