@@ -135,7 +135,6 @@ export function buildRoom2(ctx: Ctx): Room {
   kit.torch(X1 - 0.1, 1.9, -11.0, -1, 0, 3.1, tc, 40);
   kit.torch(-1.95, 1.9, Z0 + 0.1, 0, 1, 4.4, tc, 40);
   kit.torch(1.95, 1.9, Z0 + 0.1, 0, 1, 5.2, tc, 40);
-  kit.dust(X0, X1, Z0, Z1, 0, H);
 
   const boxes: Box[] = [];
   for (const [x, z] of PILLARS) {

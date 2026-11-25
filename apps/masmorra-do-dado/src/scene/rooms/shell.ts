@@ -42,14 +42,67 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
     door,
     boxes,
     // coluna do chão ao teto
-    pillar(px: number, pz: number, w = 0.9) {
-      kit.box(w, H, w, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, H / 2, pz);
-      kit.box(w + 0.2, 0.25, w + 0.2, kit.stone, px, 0.125, pz);
-      kit.box(w + 0.2, 0.25, w + 0.2, kit.stone, px, H - 0.125, pz);
-      kit.contact(px, pz, w + 1.2);
+    // COLUNA com base e capitel (DIRECAO_DE_ARTE.md §4.5): plinto de pedra lavrada, um toro mais estreito, o fuste de tijolo, e em cima o
+    // colarinho e o ábaco (a laje larga que recebe a abóbada). `top` = onde ela encosta no teto (padrão: H).
+    pillar(px: number, pz: number, w = 0.9, top = H) {
+      const fust = top - 0.62;
+      kit.box(w, fust, w, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, 0.32 + fust / 2, pz);
+      kit.box(w + 0.34, 0.16, w + 0.34, kit.slab, px, 0.08, pz); // plinto
+      kit.box(w + 0.18, 0.16, w + 0.18, kit.slab, px, 0.24, pz); // toro
+      kit.box(w + 0.14, 0.12, w + 0.14, kit.slab, px, top - 0.24, pz); // colarinho
+      kit.box(w + 0.36, 0.18, w + 0.36, kit.slab, px, top - 0.09, pz); // ábaco
+      kit.contact(px, pz, w + 1.3);
       const hw = w / 2;
-      boxes.push(mkBox(px - hw, 0, pz - hw, px + hw, H, pz + hw), mkBox(px - hw - 0.1, 0, pz - hw - 0.1, px + hw + 0.1, 0.25, pz + hw + 0.1));
-      pillarRects.push([px - hw - 0.1, pz - hw - 0.1, px + hw + 0.1, pz + hw + 0.1]);
+      boxes.push(mkBox(px - hw, 0, pz - hw, px + hw, top, pz + hw), mkBox(px - hw - 0.17, 0, pz - hw - 0.17, px + hw + 0.17, 0.32, pz + hw + 0.17));
+      pillarRects.push([px - hw - 0.17, pz - hw - 0.17, px + hw + 0.17, pz + hw + 0.17]);
+    },
+    // ABÓBADA de berço baixa (DIRECAO_DE_ARTE.md §4.5): nasce em `spring` nas paredes laterais e sobe até `crown` no meio; arcos de reforço
+    // (pedra lavrada) a cada `ribEvery` m e uma imposta ao longo das paredes. Devolve a altura da abóbada em x.
+    vault(spring: number, crown: number, ribEvery = 2.6) {
+      const hx = (X1 - X0) / 2;
+      const rise = crown - spring;
+      const r = (hx * hx + rise * rise) / (2 * rise);
+      const cy = crown - r;
+      const a = Math.asin(hx / r);
+      const N = 16;
+      const pos: number[] = [];
+      const uv: number[] = [];
+      const idx: number[] = [];
+      for (let i = 0; i <= N; i++) {
+        const phi = -a + (2 * a * i) / N;
+        const x = r * Math.sin(phi);
+        const y = cy + r * Math.cos(phi);
+        const arc = r * (phi + a);
+        for (const z of [Z0, Z1]) {
+          pos.push(x, y, z);
+          uv.push(arc / T, z / T);
+        }
+      }
+      for (let i = 0; i < N; i++) {
+        const k = i * 2;
+        idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      const vm = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: kit.brick([1, 1], 0.62, 23).map, side: THREE.DoubleSide }));
+      kit.add(vm);
+      // arcos de reforço: um setor de anel extrudado, rente à abóbada
+      const n = Math.max(1, Math.round((Z1 - Z0) / ribEvery));
+      for (let k = 1; k < n; k++) {
+        const z = Z0 + ((Z1 - Z0) * k) / n;
+        const sh = new THREE.Shape();
+        sh.absarc(0, cy, r + 0.02, Math.PI / 2 - a, Math.PI / 2 + a, false);
+        sh.absarc(0, cy, r - 0.14, Math.PI / 2 + a, Math.PI / 2 - a, true);
+        const rib = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.26, bevelEnabled: false, curveSegments: 16 }), kit.slab);
+        rib.position.z = z - 0.13;
+        kit.add(rib);
+      }
+      // a imposta: a faixa de pedra onde a abóbada nasce, nas duas paredes
+      for (const [x, sgn] of [[X0, 1], [X1, -1]] as [number, number][]) kit.box(0.14, 0.16, Z1 - Z0, kit.slab, x + sgn * 0.07, spring - 0.04, (Z0 + Z1) / 2, false);
+      return (x: number) => cy + Math.sqrt(Math.max(0, r * r - x * x));
     },
     decorate() {
       kit.damp(X0, 1.0, Z0 + L * 0.4, 1, 0, 1.9);
@@ -57,7 +110,6 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
       kit.skirting(X0, X1, Z0, Z1, 1.3);
       kit.aoSides(X0, X1, Z0, Z1, H);
       kit.cornice(X0, X1, Z0, Z1, H);
-      kit.dust(X0, X1, Z0, Z1, 0, H);
     },
     // obstáculos de sempre: colunas, paredes, entrada e porta
     rects(doorOpen: number): Rect[] {

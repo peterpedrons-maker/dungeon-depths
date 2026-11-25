@@ -147,7 +147,6 @@ export function buildRoom1(ctx: Ctx): Room {
   kit.torch(X0 + 0.1, 1.8, -7.6, 1, 0, 3.1);
   kit.torch(-1.95, 1.8, Z0 + 0.1, 0, 1, 4.4);
   kit.torch(1.95, 1.8, Z0 + 0.1, 0, 1, 5.2);
-  kit.dust(X0, X1, Z0, Z1, 0, H);
 
   // sólidos pro dado
   const boxes: Box[] = [];

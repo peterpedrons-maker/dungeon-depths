@@ -39,6 +39,18 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     kit.group.add(coal);
   }
   kit.contact(x, z, 1.6 * s, 1.6 * s, y0);
+  // a POÇA DE LUZ no chão (só acesa) e as BRASAS subindo da chama (DIRECAO_DE_ARTE.md §4.2 e §4.8)
+  const pool = kit.lightPool(x, z, 1.9 * s, y0);
+  pool.visible = false;
+  const EN = 7;
+  const emberPos = new Float32Array(EN * 3);
+  const embers = new THREE.Points(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(emberPos, 3)),
+    new THREE.PointsMaterial({ color: 0xffb02e, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.95, fog: false, depthWrite: false }),
+  );
+  embers.frustumCulled = false;
+  embers.visible = false;
+  kit.group.add(embers);
 
   const b: Brazier = {
     x,
@@ -61,6 +73,8 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
       b.lit = on;
       b.flameK = 1;
       flame.visible = on;
+      pool.visible = on;
+      embers.visible = on;
       if (!on) lamp.intensity = 0;
       if (!quiet) ctx.sfx(on ? 'ignite' : 'burnout', `${Math.round(x * 10)},${Math.round(z * 10)}`);
     },
@@ -70,6 +84,15 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
       flame.scale.set(0.75 * s * k, 0.6 * s * k, 1); // a chama encolhe quando está acabando
       flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
       lamp.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + x) + 0.012 * Math.sin(t * 11));
+      pool.opacity = 0.3 * k * (0.92 + 0.08 * Math.sin(t * 6 + z));
+      // as brasas: sobem da chama, balançando, e somem no alto (cada uma no seu tempo)
+      for (let i = 0; i < EN; i++) {
+        const ph = (t * (0.45 + (i % 3) * 0.12) + i * 0.143) % 1;
+        emberPos[i * 3] = x + Math.sin(t * 1.7 + i * 2.1) * 0.12 * s + Math.sin(i * 5.3) * 0.15 * s;
+        emberPos[i * 3 + 1] = y0 + (1.35 + ph * 1.5 * k) * s;
+        emberPos[i * 3 + 2] = z + Math.cos(t * 1.3 + i * 1.7) * 0.12 * s + Math.cos(i * 3.7) * 0.15 * s;
+      }
+      embers.geometry.attributes.position.needsUpdate = true;
     },
   };
   if (startLit) b.light(true, true);

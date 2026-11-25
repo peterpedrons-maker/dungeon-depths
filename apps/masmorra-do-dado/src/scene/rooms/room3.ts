@@ -101,7 +101,6 @@ export function buildRoom3(ctx: Ctx): Room {
     const r = R - 0.15;
     kit.torch(r * Math.cos(a), 2.0, r * Math.sin(a), -Math.cos(a), -Math.sin(a), i * 1.7, tc, 38);
   });
-  kit.dust(-R * 0.8, R * 0.8, -R * 0.8, R * 0.8, 0, H);
 
   const boxes: Box[] = [];
   for (const [x, z] of PILLARS) {

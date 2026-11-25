@@ -238,6 +238,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   for (const [cx, cz] of [[-5.9, -3.6], [5.9, -3.6], [-5.2, -22.6], [5.2, -21]] as [number, number][]) {
     kit.box(1.1, HH, 1.1, kit.brick([1, 1], 0.95, 50 + Math.abs(cx * cz)), cx, HALL + HH / 2, cz);
     kit.box(1.35, 0.3, 1.35, kit.stone, cx, HALL + 0.15, cz);
+    kit.contact(cx, cz, 2.3, 2.3, HALL);
     kit.box(1.35, 0.3, 1.35, kit.stone, cx, CEIL - 0.15, cz);
     boxes.push(mkBox(cx - 0.55, HALL, cz - 0.55, cx + 0.55, CEIL, cz + 0.55));
     rects.push([cx - 0.68, cz - 0.68, cx + 0.68, cz + 0.68]);
@@ -246,6 +247,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   // ── a fonte seca, no meio: uma parede de pedra com uma bica e a bacia vazia; no alto dela, o estandarte ──
   const FZ = -13;
   solidBox(-1.7, HALL, FZ - 0.35, 1.7, HALL + 4.7, FZ + 0.35, kit.brick([1, 1], 1.0, 97));
+  kit.contact(0, FZ + 0.9, 4.2, 2.6, HALL);
   kit.box(3.7, 0.25, 0.95, kit.stone, 0, HALL + 4.82, FZ, false);
   // a bacia (do lado de quem chega)
   solidBox(-1.5, HALL, FZ + 1.35, 1.5, HALL + 0.55, FZ + 1.6);
@@ -264,6 +266,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   // 1) na beira da piscina rasa: «CONTÁVEIS DIZER CONFIRMADO»: alguém falando, e um DADO pousado (de pedra, de verdade, numa prateleira)
   const stele = (cx: number, z: number, seed: number, draw: (g: CanvasRenderingContext2D) => void) => {
     solidBox(cx - 1.45, HALL, z - 0.2, cx + 1.45, HALL + 2.25, z + 0.2, kit.brick([1, 1], 1.0, seed));
+    kit.contact(cx, z + 0.25, 3.4, 1.0, HALL);
     kit.box(3.1, 0.14, 0.52, kit.stone, cx, HALL + 2.32, z, false);
     const t = canvasTex(128, 56, (g) => {
       g.fillStyle = '#7a7470';
@@ -398,7 +401,6 @@ export function buildRespiro2(ctx: Ctx): Room {
   kit.torch(-3.2, HALL + 2.1, Z0 + 0.1, 0, 1, 4.7);
   kit.torch(3.2, HALL + 2.1, Z0 + 0.1, 0, 1, 5.4);
   kit.torch(-1.2, HALL + 1.9, FZ - 0.36, 0, -1, 6.1);
-  kit.dust(X0, X1, Z0, Z1, HALL, CEIL);
   kit.aoSides(X0, X1, Z0, LZ, HH, HALL);
 
   if (import.meta.env.DEV) {

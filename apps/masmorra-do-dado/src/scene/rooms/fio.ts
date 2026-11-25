@@ -68,6 +68,7 @@ export function buildFio(ctx: Ctx): Room {
   // pilastras onde a mureta encontra o balcão e o chão (arremates)
   for (const [px, pz, h] of [[UP.x1 + 0.09, UP.z0, 1.15], [UP.x1 + 0.09, UP.z1, BAL + 1.15], [DN.x0 - 0.09, DN.z1, 1.15], [DN.x0 - 0.09, DN.z0, BAL + 1.15]] as [number, number, number][]) {
     kit.box(0.3, h, 0.3, kit.stone, px, h / 2, pz, false);
+    if (h < 2) kit.contact(px, pz, 0.8);
     kit.box(0.38, 0.1, 0.38, kit.slab, px, h + 0.05, pz, false);
     kit.rects.push([px - 0.17, pz - 0.17, px + 0.17, pz + 0.17, h + 0.1]);
     S.boxes.push(mkBox(px - 0.15, 0, pz - 0.15, px + 0.15, h + 0.1, pz + 0.15));

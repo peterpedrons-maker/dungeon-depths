@@ -1230,17 +1230,22 @@ export function aoStripTexture() {
 }
 
 // Mancha redonda de sombra sob objetos (pilares, caixas, barris, braseiros).
+// SOMBRA DE CONTATO (DIRECAO_DE_ARTE.md §4.2): disco escuro PONTILHADO embaixo de tudo que toca o chão. O miolo é cheio; para fora, os pixels
+// rareiam num pontilhado ordenado (Bayer 4×4), sem degradê suave: combina com o pixel do jogo e "pousa" as coisas no chão.
 export function blobShadowTexture() {
   const { c, ctx } = canvas(32);
+  const B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   for (let y = 0; y < 32; y++) {
     for (let x = 0; x < 32; x++) {
       const d = Math.hypot(x - 15.5, y - 15.5) / 15.5;
-      const a = Math.max(0, 1 - d);
-      ctx.fillStyle = `rgba(4,3,10,${(Math.round(a * 5) / 5) * 0.6})`;
+      if (d >= 1) continue;
+      const cover = Math.min(1, (1 - d) * 1.9); // quanto do disco está coberto aqui (1 no miolo)
+      if ((B[(y % 4) * 4 + (x % 4)] + 0.5) / 16 >= cover) continue;
+      ctx.fillStyle = d < 0.45 ? 'rgba(3,2,8,0.82)' : 'rgba(3,2,8,0.62)';
       ctx.fillRect(x, y, 1, 1);
     }
   }
-  return toTexture(c, undefined, false, true);
+  return toTexture(c, undefined, false, false);
 }
 
 // Anel de sombra junto à parede curva (sala redonda): escuro na borda, some pra dentro.
@@ -1343,4 +1348,89 @@ export function diaryPageTexture(left: boolean) {
   rect(ctx, bx, 2, W - 7, 1, '#403e56');
   rect(ctx, bx, H - 3, W - 7, 1, '#403e56');
   return toTexture(c, undefined, false);
+}
+
+
+// ── decalques do quadro de estilo (DIRECAO_DE_ARTE.md §4.4): cada um tem um porquê ─────────────────────────────────────────────────
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const dith = (x: number, y: number) => (BAYER4[(y % 4) * 4 + (x % 4)] + 0.5) / 16;
+
+// FULIGEM: a fumaça de uma chama sobe e enegrece a parede acima dela (mais escura embaixo, rala e larga em cima), pontilhada
+export function sootTexture() {
+  const { c, ctx } = canvas(32, 48);
+  const r = rng(43);
+  for (let y = 0; y < 48; y++) {
+    const v = y / 47; // 0 em cima, 1 embaixo
+    const half = 15 * (1 - v * 0.55);
+    for (let x = 0; x < 32; x++) {
+      const dx = Math.abs(x - 15.5) / half;
+      if (dx >= 1) continue;
+      const k = (1 - dx * dx) * (0.25 + 0.75 * v) * (0.85 + r() * 0.3);
+      if (dith(x, y) >= k) continue;
+      ctx.fillStyle = k > 0.7 ? 'rgba(6,4,6,0.85)' : 'rgba(10,8,10,0.6)';
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  return toTexture(c, undefined, false, false);
+}
+
+// POÇA DE LUZ: o chão clareado embaixo de uma chama (aditivo): forte no meio, some rápido, em degraus pontilhados
+export function lightPoolTexture() {
+  const { c, ctx } = canvas(32);
+  for (let y = 0; y < 32; y++)
+    for (let x = 0; x < 32; x++) {
+      const d = Math.hypot(x - 15.5, y - 15.5) / 15.5;
+      if (d >= 1) continue;
+      const k = (1 - d) ** 1.6;
+      const lvl = Math.floor(k * 4 + dith(x, y)) / 4; // 4 degraus, com pontilhado entre eles
+      if (lvl <= 0) continue;
+      ctx.fillStyle = `rgba(255,${Math.round(150 + 60 * lvl)},${Math.round(70 + 40 * lvl)},${lvl})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  return toTexture(c, undefined, false, false);
+}
+
+// DESGASTE: o caminho de quem anda da entrada até a porta, mais liso e claro; as bordas se desfazem em pontilhado
+export function wearTexture() {
+  // sem pontilhado próprio (o pós-processo já pontilha): um véu claro e suave, aditivo, mais forte no meio do caminho
+  const { c, ctx } = canvas(16, 64);
+  for (let y = 0; y < 64; y++)
+    for (let x = 0; x < 16; x++) {
+      const dx = Math.abs(x - 7.5) / 7.5;
+      const k = Math.max(0, 1 - dx * dx) * (0.8 + 0.2 * Math.sin(y * 0.35 + 1));
+      ctx.fillStyle = `rgba(255,236,205,${(k * 0.55).toFixed(3)})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  const t = toTexture(c, undefined, false, true);
+  t.magFilter = THREE.LinearFilter;
+  return t;
+}
+
+// RISCOS DE GIZ de um condenado contando dias: grupos de quatro tracinhos cortados por um quinto, tortos, em fileiras; o último grupo incompleto.
+// (Contagem, não escrita: nunca parecido com um glifo.)
+export function tallyTexture(days = 23) {
+  const { c, ctx } = canvas(64, 32);
+  const r = rng(days * 7);
+  const chalk = (x: number, y: number) => {
+    ctx.fillStyle = r() < 0.25 ? 'rgba(235,232,220,0.55)' : 'rgba(240,238,228,0.9)';
+    ctx.fillRect(x, y, 1, 1);
+  };
+  let n = 0;
+  for (let row = 0; row < 3 && n < days; row++) {
+    for (let g = 0; g < 4 && n < days; g++) {
+      const gx = 3 + g * 15 + Math.round((r() - 0.5) * 2);
+      const gy = 2 + row * 10;
+      for (let k = 0; k < 4 && n < days; k++, n++) {
+        const x = gx + k * 3;
+        const lean = r() < 0.5 ? 0 : 1;
+        for (let y = 0; y < 7; y++) if (r() < 0.9) chalk(x + (y > 3 ? lean : 0), gy + y);
+      }
+      if (n < days) {
+        // o quinto risco, atravessado
+        for (let i = 0; i < 12; i++) if (r() < 0.85) chalk(gx - 1 + i, gy + 5 - Math.round(i * 0.4));
+        n++;
+      }
+    }
+  }
+  return toTexture(c, undefined, false, false);
 }

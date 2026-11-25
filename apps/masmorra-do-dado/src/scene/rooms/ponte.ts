@@ -433,7 +433,6 @@ export function buildPonte(ctx: Ctx): Room {
   kit.torch(0, 1.9, PZ1 - 0.1, 0, -1, 4.1); // no vão sob o patamar
   kit.torch(-BAY + 0.02, 1.9, -11.15, 1, 0, 3.4); // no vão da porta
   kit.torch(BAY - 0.02, 1.9, -11.15, -1, 0, 5.1);
-  kit.dust(-PX, PX, PZ0, PZ1, 0, TOP + 2);
   kit.aoSides(-OX, OX, OZ0, Z1, HG, TOP);
 
   // ── a regra ──

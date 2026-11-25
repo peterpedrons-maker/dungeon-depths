@@ -321,6 +321,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     tube.position.set(CIST.x, PH + 0.75, CIST.z);
     kit.group.add(tube);
     kit.light(CIST.x, PH - 1, CIST.z, 0xc8d8ff, 34);
+    kit.beamDust(CIST.x, CIST.z, 1.4, 0.7, PH - 0.3, 46, 0xe8eeff); // poeira só no feixe que desce do buraco
   }
   // as galerias: blocos sólidos ao longo das paredes leste e oeste; em cima, o andar de cima; rampas no sul
   for (const s of [-1, 1]) {
@@ -404,6 +405,8 @@ export function buildRespiro1(ctx: Ctx): Room {
   rects.push([CIST.x - CIST.r - 0.35, CIST.z - CIST.r - 0.35, CIST.x + CIST.r + 0.35, CIST.z + CIST.r + 0.35]);
   const stoneZ = CIST.z + CIST.r + 0.7;
   kit.box(0.9, 0.8, 0.3, kit.stone, 0, 0.4, stoneZ);
+  kit.contact(0, stoneZ, 1.4, 0.8);
+  kit.contact(CIST.x, CIST.z, (CIST.r + 0.9) * 2);
   boxes.push(mkBox(-0.45, 0, stoneZ - 0.15, 0.45, 0.8, stoneZ + 0.15));
   rects.push([-0.45, stoneZ - 0.15, 0.45, stoneZ + 0.15]);
   const twoIns = kit.inscribe({ words: ['n2'], x: 0, y: 0.48, z: stoneZ + 0.155, nx: 0, nz: 1, size: 0.4, age: 0.2, frame: true, seed: 95 });
@@ -458,7 +461,6 @@ export function buildRespiro1(ctx: Ctx): Room {
   kit.torch(X1 - 0.1, 1.8, -24, -1, 0, 2.6);
   kit.torch(X0 + 0.1, 1.8, -24, 1, 0, 3.6);
   kit.torch(0.95 + 0.2, 1.8, cz(2) + 0.4, -1, 0, 0.4);
-  kit.dust(X0, X1, COURT.z0, COURT.z1, 0, PH);
   kit.aoSides(X0, X1, COURT.z0, COURT.z1, PH);
 
   if (import.meta.env.DEV) {

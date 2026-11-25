@@ -105,6 +105,8 @@ export interface Room {
   wellTop?: THREE.Vector3; // a boca do poço lá em cima, do lado de fora (local, no nível do chão do pátio): cena da abertura
   // a sala seguinte começa mais baixa (ou mais alta) que esta: a porta de saída fica em y = exitDy (padrão 0)
   exitDy?: number;
+  // a LUZ PRINCIPAL da sala, que projeta sombra de verdade (DIRECAO_DE_ARTE.md §4.2): o motor só atualiza o mapa de sombra quando o jogador está nela
+  shadowLight?: THREE.SpotLight;
   // a ENTRADA desta sala fica em y = entranceY (padrão 0): salas em que se entra por cima (o fosso) ou por um patamar alto
   entranceY?: number;
   // área livre: o jogador CHEGOU a um ponto calmo dela (o dado pode fazer uma pergunta aqui)

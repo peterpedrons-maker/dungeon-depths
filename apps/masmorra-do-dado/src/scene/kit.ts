@@ -18,6 +18,9 @@ import {
   rugTexture,
   runeTexture,
   slabTexture,
+  sootTexture,
+  lightPoolTexture,
+  wearTexture,
   stainTexture,
   vineTexture,
 } from './textures';
@@ -90,9 +93,8 @@ export class Kit {
   stone: THREE.MeshLambertMaterial;
   slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
   private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number }[] = [];
-  private dustGeo: THREE.BufferGeometry | null = null;
-  private dustH = 3;
-  private dustN = 0;
+  private poolTex: THREE.Texture | null = null;
+  private beams: { geo: THREE.BufferGeometry; cx: number; cz: number; r: number; y0: number; y1: number; seed: number[] }[] = [];
   private flicker = true;
 
   constructor(public theme = 'crypt') {
@@ -335,6 +337,83 @@ export class Kit {
     }
   }
 
+  // ── peças do quadro de estilo (DIRECAO_DE_ARTE.md §4.2, §4.4, §4.5) ──
+  // FULIGEM acima de uma chama encostada numa parede: (x, y, z) = a base da mancha (a altura da chama), (nx, nz) = para onde a parede olha
+  soot(x: number, y: number, z: number, nx: number, nz: number, w = 0.9, h = 1.5) {
+    const m = this.mat('soot', () => new THREE.MeshBasicMaterial({ map: sootTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    p.position.set(x + nx * 0.012, y + h / 2, z + nz * 0.012);
+    p.rotation.y = Math.atan2(nx, nz);
+    p.renderOrder = 2;
+    this.group.add(p);
+    return p;
+  }
+  // POÇA DE LUZ no chão (aditiva), embaixo de uma chama; devolve o material para a chama controlar o brilho
+  lightPool(x: number, z: number, r = 1.6, y = 0, color = 0xffb060) {
+    const mat = new THREE.MeshBasicMaterial({ map: this.poolTex ?? (this.poolTex = lightPoolTexture()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: 0.32, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -4 });
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(2 * r, 2 * r), mat);
+    p.rotation.x = -Math.PI / 2;
+    p.position.set(x, y + 0.02, z);
+    p.renderOrder = 4;
+    this.group.add(p);
+    return mat;
+  }
+  // DESGASTE do chão no caminho de quem passa (uma faixa, ponto a ponto)
+  wear(points: [number, number][], width = 1.3, y = 0) {
+    const m = this.mat('wear', () => new THREE.MeshBasicMaterial({ map: wearTexture(), color: 0x3a3228, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+    for (let i = 0; i + 1 < points.length; i++) {
+      const [ax, az] = points[i];
+      const [bx, bz] = points[i + 1];
+      const len = Math.hypot(bx - ax, bz - az);
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(width, len + 0.3), m);
+      p.rotation.set(-Math.PI / 2, 0, Math.atan2(bx - ax, -(bz - az)));
+      p.position.set((ax + bx) / 2, y + 0.006, (az + bz) / 2);
+      p.renderOrder = 1;
+      this.group.add(p);
+    }
+  }
+  // BATENTE GROSSO numa passagem em arco (a parede tem espessura): duas ombreiras de pedra lavrada com impostas e a SOLEIRA no chão.
+  // (cx, z) = o meio da passagem na parede; `dir` = para que lado (z) fica a sala (+1 ou -1)
+  batente(cx: number, z: number, dir: number, y0 = 0) {
+    for (const s of [-1, 1]) {
+      const x = cx + s * (DW + 0.48);
+      this.box(0.34, DH + 0.1, 0.34, this.slab, x, y0 + (DH + 0.1) / 2, z + dir * 0.17, false);
+      this.box(0.44, 0.14, 0.42, this.slab, x, y0 + DH + 0.17, z + dir * 0.19, false); // a imposta
+      this.box(0.44, 0.1, 0.42, this.slab, x, y0 + 0.05, z + dir * 0.19, false); // o pé
+      this.rects.push([x - 0.22, Math.min(z, z + dir * 0.42), x + 0.22, Math.max(z, z + dir * 0.42), y0 + 2]);
+    }
+    this.box(2 * DW + 0.5, 0.04, 0.5, this.slab, cx, y0 + 0.02, z + dir * 0.2, false); // a soleira, gasta no meio
+  }
+  // NICHO na parede: moldura de pedra lavrada com arco reto, fundo escuro e uma prateleira; (x, y, z) = o meio da base, (nx, nz) = para onde olha.
+  // Devolve um grupo alinhado ao nicho (x para a direita de quem olha, y para cima, z para fora) para pôr objetos dentro.
+  niche(x: number, y: number, z: number, nx: number, nz: number, w = 0.62, h = 0.72) {
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+    g.rotation.y = Math.atan2(nx, nz);
+    this.group.add(g);
+    const add = (bw: number, bh: number, bd: number, m: THREE.Material, px: number, py: number, pz: number) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m);
+      b.position.set(px, py, pz);
+      g.add(b);
+      this.surfaces.push(b);
+    };
+    const D = 0.3;
+    add(w + 0.3, 0.12, D, this.slab, 0, -0.06, D / 2); // peitoril (a prateleira)
+    add(0.15, h, D, this.slab, -w / 2 - 0.075, h / 2, D / 2);
+    add(0.15, h, D, this.slab, w / 2 + 0.075, h / 2, D / 2);
+    add(w + 0.3, 0.16, D, this.slab, 0, h + 0.08, D / 2); // verga
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(w, h), lambert(null, 0x16121a));
+    back.position.set(0, h / 2, 0.012);
+    g.add(back);
+    // o "teto" e os lados de dentro, na sombra
+    add(w, 0.02, D, this.mat('nicheIn', () => lambert(null, 0x221c24)), 0, h - 0.01, D / 2);
+    const cx = x + nx * D * 0.5;
+    const cz = z + nz * D * 0.5;
+    const hw = (w + 0.3) / 2;
+    this.rects.push(Math.abs(nx) > 0.5 ? [cx - D / 2, cz - hw, cx + D / 2, cz + hw, y + h + 0.3] : [cx - hw, cz - D / 2, cx + hw, cz + D / 2, y + h + 0.3]);
+    return g;
+  }
+
   moss(x: number, y: number, z: number, nx: number, nz: number, size = 1.4) {
     return this.decal(size, size, 'moss', () => stainTexture('moss'), x + nx * 0.015, y, z + nz * 0.015, 0, Math.atan2(nx, nz));
   }
@@ -358,23 +437,23 @@ export class Kit {
     return e;
   }
 
-  dust(x0: number, x1: number, z0: number, z1: number, y0: number, y1: number, n = 70) {
+  // POEIRA SÓ DENTRO DE UM FEIXE DE LUZ (DIRECAO_DE_ARTE.md §4.8): grãos que flutuam num cilindro de luz (o poço, o buraco do pátio, a luz do
+  // nicho alto). Antes havia poeira na sala inteira, igual em toda parte: saiu. Pode haver vários feixes por sala.
+  beamDust(cx: number, cz: number, r: number, y0: number, y1: number, n = 36, color = 0xf0e4c8) {
     const pos = new Float32Array(n * 3);
+    const seed: number[] = [];
     for (let i = 0; i < n; i++) {
-      pos[i * 3] = x0 + 0.3 + Math.random() * (x1 - x0 - 0.6);
+      const a = Math.random() * Math.PI * 2;
+      const rr = Math.sqrt(Math.random()) * r * 0.9;
+      pos[i * 3] = cx + Math.cos(a) * rr;
       pos[i * 3 + 1] = y0 + Math.random() * (y1 - y0);
-      pos[i * 3 + 2] = z0 + 0.3 + Math.random() * (z1 - z0 - 0.6);
+      pos[i * 3 + 2] = cz + Math.sin(a) * rr;
+      seed.push(Math.random() * 10);
     }
-    this.dustGeo = new THREE.BufferGeometry();
-    this.dustGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.dustH = y1;
-    this.dustN = n;
-    this.group.add(
-      new THREE.Points(
-        this.dustGeo,
-        new THREE.PointsMaterial({ color: 0xe0cfa8, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.6, fog: false, depthWrite: false }),
-      ),
-    );
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.beams.push({ geo, cx, cz, r, y0, y1, seed });
+    this.group.add(new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.75, fog: false, depthWrite: false })));
   }
 
   // Junta as caixas decorativas que usam o mesmo material numa única malha (menos chamadas de
@@ -439,14 +518,25 @@ export class Kit {
       tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
       tc.sprite.material.map = this.frames[Math.floor(t * 8 + i) % this.frames.length];
     });
-    if (this.dustGeo) {
-      const arr = this.dustGeo.attributes.position.array as Float32Array;
-      for (let i = 0; i < this.dustN; i++) {
-        arr[i * 3 + 1] += dt * (0.03 + (i % 5) * 0.012);
-        arr[i * 3] += Math.sin(t * 0.4 + i) * dt * 0.03;
-        if (arr[i * 3 + 1] > this.dustH) arr[i * 3 + 1] = 0;
+    for (const b of this.beams) {
+      // descem devagar, rodopiando (a luz de cima as faz brilhar); quem sai do feixe volta para o alto dele
+      const arr = b.geo.attributes.position.array as Float32Array;
+      for (let i = 0; i < b.seed.length; i++) {
+        const k = b.seed[i];
+        arr[i * 3] += Math.sin(t * 0.5 + k) * dt * 0.05;
+        arr[i * 3 + 2] += Math.cos(t * 0.43 + k * 1.7) * dt * 0.05;
+        arr[i * 3 + 1] -= dt * (0.03 + (k % 1) * 0.04);
+        const dx = arr[i * 3] - b.cx;
+        const dz = arr[i * 3 + 2] - b.cz;
+        if (arr[i * 3 + 1] < b.y0 || dx * dx + dz * dz > b.r * b.r) {
+          const a = k * 2.3 + t;
+          const rr = Math.sqrt((k * 0.37) % 1) * b.r * 0.85;
+          arr[i * 3] = b.cx + Math.cos(a) * rr;
+          arr[i * 3 + 1] = b.y1 - Math.random() * 0.3;
+          arr[i * 3 + 2] = b.cz + Math.sin(a) * rr;
+        }
       }
-      this.dustGeo.attributes.position.needsUpdate = true;
+      b.geo.attributes.position.needsUpdate = true;
     }
     void this.flicker;
   }

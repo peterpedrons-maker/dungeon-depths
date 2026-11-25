@@ -133,7 +133,6 @@ export function buildRoom4(ctx: Ctx): Room {
   kit.torch(X0 + 0.1, LEVEL + 2.0, -8.0, 1, 0, 4.4, tc, 40);
   kit.torch(-1.95, LEVEL + 1.9, Z0 + 0.1, 0, 1, 5.2, tc, 40);
   kit.torch(1.95, LEVEL + 1.9, Z0 + 0.1, 0, 1, 6.0, tc, 40);
-  kit.dust(X0, X1, Z0, Z1, 0, H);
 
   const boxes: Box[] = [mkBox(X0, 0, Z0, X1, LEVEL, STAGE_Z)];
   for (const [x, z] of PILLARS) {

@@ -221,6 +221,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     pool.position.set(SHAFT.x, 0.02, SHAFT.z);
     kit.group.add(pool);
     kit.light(SHAFT.x, H - 0.3, SHAFT.z, 0xcfdcff, 70);
+    kit.beamDust(SHAFT.x, SHAFT.z, SHAFT.r * 1.05, 0.2, H - 0.2, 44, 0xe8eeff); // poeira só no feixe do poço
   } else {
     kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 17 + v), 0, H, zm, Math.PI / 2);
   }
@@ -291,9 +292,10 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     for (const z of [-5, -9.5]) {
       kit.box(0.8, H, 0.8, kit.brick([1, 1], 0.95, 50 + Math.abs(z)), X0 + 0.4, H / 2, z);
       kit.box(0.8, H, 0.8, kit.brick([1, 1], 0.95, 52 + Math.abs(z)), X1 - 0.4, H / 2, z);
+      kit.contact(X0 + 0.4, z, 1.7);
+      kit.contact(X1 - 0.4, z, 1.7);
     }
   }
-  kit.dust(X0, X1, Z0, Z1, 0, H);
 
   // lacuna (v4): como dividir a placa em 3×3 para ler o que o jogador riscou
   const gapMesh = ins.gap;

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
 import {
+  blobShadowTexture,
   dieFaceTexture,
   dieSketchBlend,
   dieRostoBlend,
@@ -35,6 +36,7 @@ import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
+import { makeHand } from './hand';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
@@ -139,6 +141,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   renderer.info.autoReset = false; // contamos as chamadas do quadro inteiro (cena + HUD + pós)
   renderer.setPixelRatio(1);
   renderer.setClearColor(FOG, 1);
+  // sombras: só a luz principal de algumas salas projeta (mapa pequeno e filtro duro, que combina com o pixel); o motor liga a atualização
+  // do mapa só na sala dela (Room.shadowLight)
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.BasicShadowMap;
+  renderer.shadowMap.autoUpdate = false;
 
   // sala (com textura de profundidade, usada pro contorno) e dado/pedra do HUD
   const rt = new THREE.WebGLRenderTarget(64, 64, {
@@ -364,6 +371,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const dieHolder = new THREE.Group();
   dieGroup.add(dieHolder);
   dieHolder.add(buildDie(handMats));
+  // a mão que segura o dado (DIRECAO_DE_ARTE.md §4.9): não gira nem pula com o dado; acompanha a posição de base dele
+  const hand = makeHand();
+  dieScene.add(hand.group);
 
   // dado arremessado: vive dentro da sala, com física própria
   const worldDie = new THREE.Group();
@@ -372,6 +382,25 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   worldDie.add(worldModel);
   worldDie.visible = false;
   scene.add(worldDie);
+  // sombra de contato do dado no mundo (pontilhada): embaixo dele no chão; maior e mais fraca quanto mais alto ele está
+  const dieShadowMat = new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 });
+  const dieShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), dieShadowMat);
+  dieShadow.rotation.x = -Math.PI / 2;
+  dieShadow.renderOrder = 3;
+  dieShadow.visible = false;
+  scene.add(dieShadow);
+  // o CORPO do jogador para as sombras: invisível (não pinta nada), mas projeta a sombra dele quando há uma luz que projeta sombra
+  const bodyMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+  const body = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 1.3, 8), bodyMat);
+  torso.position.y = 0.75;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), bodyMat);
+  head.position.y = 1.55;
+  for (const m of [torso, head]) {
+    m.castShadow = true;
+    body.add(m);
+  }
+  scene.add(body);
   // "fantasma" do dado: mostra onde ele ficaria se for posicionado
   const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false, fog: false });
   const ghost = new THREE.Mesh(dieGeo, ghostMat);
@@ -498,7 +527,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieNdc.copy(dieGroup.position).project(dieCam);
       x = ((dieNdc.x + 1) / 2) * 100;
       y = ((1 - dieNdc.y) / 2) * 100;
-      up = 19 + 15 * dieCine; // o balão sobe junto quando o dado cresce na cena
+      up = 11 + 23 * dieCine; // o balão sobe junto quando o dado cresce na cena
     } else {
       dieNdc.copy(worldDie.position).project(camera);
       x = Math.max(14, Math.min(86, ((dieNdc.x + 1) / 2) * 100));
@@ -863,7 +892,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let holds = 0;
   // o jogador começa SEM NADA nas mãos: o dado e o giz são achados (progresso salvo)
   let hasDie = progress.has('dado');
-  let hasChalk = progress.has('giz');
+  // o GIZ só existe a partir do capítulo 2 (DIRECAO_DE_ARTE.md §4.9): no capítulo 1 ele não aparece nem em saves antigos; só na sala de teste
+  const CHALK_OK = LAB;
+  let hasChalk = CHALK_OK && progress.has('giz');
 
   let camTween: null | { y0: number; p0: number; y1: number; p1: number; t: number; dur: number } = null;
   let intro: null | { ph: number; t: number } = null;
@@ -2023,9 +2054,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCam.aspect = aspect;
     dieCam.updateProjectionMatrix();
     const halfW = Math.tan((45 * Math.PI) / 360) * aspect;
-    dieScaleBase = Math.min(0.235, halfW * 0.56);
-    dieBaseY = aspect < 1 ? -0.1 : -0.14;
-    handX = Math.min(halfW * 0.4, 0.47);
+    // o dado na mão é PEQUENO e fica BAIXO, no canto de baixo à direita (no máximo ~15% da altura da tela; DIRECAO_DE_ARTE.md §4.9)
+    dieScaleBase = Math.min(0.235, halfW * 0.56) * 0.6;
+    dieBaseY = aspect < 1 ? -0.15 : -0.2;
+    handX = Math.min(halfW * 0.6, 0.5);
     hudHalfW = halfW;
     soapBase.set(-handX, dieBaseY + 0.02, -1);
   };
@@ -2424,7 +2456,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
     }
     hasDie = progress.has('dado');
-    hasChalk = progress.has('giz');
+    hasChalk = CHALK_OK && progress.has('giz');
   }
   spawnIn(0);
   blendAtmosphere(0, true);
@@ -2831,6 +2863,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         f();
       }
     }
+    if (worldDie.visible && rooms[dieRoom]) {
+      const fy = rooms[dieRoom].dieFloor(dieP.x, dieP.z);
+      const hgt = Math.max(0, dieP.y - R - fy);
+      dieShadow.visible = hgt < 3;
+      dieShadow.position.set(dieP.x, fy + 0.015, dieP.z).add(offs[dieRoom]);
+      dieShadow.scale.setScalar(0.62 + hgt * 0.25);
+      dieShadowMat.opacity = Math.max(0, 1 - hgt / 3);
+    } else dieShadow.visible = false;
     updateBurn(dt, t);
     chatTick(dt, moving);
     quizTick(dt);
@@ -2935,12 +2975,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieHolder.quaternion.copy(lifeQ).multiply(curQ).multiply(wobble);
     if (cn > 0.01 && (cineDroop > 0.01 || cineWig > 0.01)) dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(0.42 * cineDroop * cn, 0, Math.sin(t * 15) * 0.2 * cineWig * cn)));
     const du = ease(dieU);
-    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 0.75 * cn));
+    dieGroup.scale.setScalar(dieScaleBase * (1 + handPop * 0.3) * (1 - 0.38 * du) * lo.scale * (1 + 1.92 * cn)); // (na cena ele cresce até o tamanho de sempre)
     dieGroup.position.set(
       ((handX + (-handX - handX) * du) + lo.dx + Math.sin(t * 71) * 0.011 * quizShake) * (1 - cn), // na cena: exatamente no centro da tela
       (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
       -1,
     );
+    // a mão: na posição de base do dado (sem os pulos dele), com o balanço do passo; some na cena e com o livro na mão
+    hand.group.scale.setScalar(dieScaleBase * (1 - 0.38 * du));
+    hand.group.position.set(handX + (-handX - handX) * du, 0, -1);
+    hand.update(dt, t, {
+      hold: dieState === 'hand' ? 1 : 0,
+      walk: moving ? Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED) : 0,
+      bob: dieBaseY + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(t * 1.6) * 0.006,
+      away: Math.max(cn, hasDie ? 0 : 1, du > 0.5 ? 1 : 0),
+      glow: accentLight.color,
+    });
+    if (import.meta.env.DEV && (globalThis as Record<string, unknown>).__handZoom) {
+      const z = (globalThis as Record<string, unknown>).__handZoom as number;
+      hand.group.scale.setScalar(z);
+      hand.group.position.set(0, 0, -1);
+      dieGroup.scale.setScalar(z);
+      dieGroup.position.set(0, 0, -1);
+    }
     updateRostos(dt);
     publishDieScreen();
     dieCam.position.set(0, 0, 0);
@@ -2983,11 +3040,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       soapGroup.visible = hasChalk;
       const hide = book.update(dt, t);
       if (hide > 0) {
+        hand.group.position.y -= hide * 0.95;
         dieGroup.position.y -= hide * 0.95; // dado e giz saem da frente enquanto o livro está na mão
         soapGroup.position.y -= hide * 0.95;
       }
     }
 
+    body.position.set(pos.x, feetY, pos.z);
+    body.rotation.y = yaw;
+    renderer.shadowMap.needsUpdate = !!rooms[curRoom]?.shadowLight;
     renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
@@ -3015,6 +3076,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     (window as unknown as Record<string, unknown>).__mdd = {
       yaw: () => yaw,
       quiz: () => ({ ph: quizPh, ...quiz.debug() }),
+      dieShadow: () => ({ vis: dieShadow.visible, p: dieShadow.position.toArray().map((v) => +v.toFixed(2)), s: dieShadow.scale.x, o: dieShadowMat.opacity, die: worldDie.position.toArray().map((v) => +v.toFixed(2)) }),
+      hand: () => { const b = new THREE.Box3().setFromObject(hand.group); const p = (v: THREE.Vector3) => v.clone().project(dieCam).toArray().map((x) => +x.toFixed(2)); return { vis: hand.group.visible, min: p(b.min), max: p(b.max), pos: hand.group.position.toArray(), sc: hand.group.scale.x }; },
       pick: () => {
         const rc = new THREE.Raycaster();
         rc.setFromCamera(new THREE.Vector2(0, 0), camera);

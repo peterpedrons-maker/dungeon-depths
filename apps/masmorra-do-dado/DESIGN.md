@@ -599,3 +599,40 @@ a "parede estranha"). Nada de posição, tamanho, regra ou caminho mudou; só co
   duas paredes de um canto deixam de ter o mesmo tom: as formas se separam sem precisar de mais contorno.
 - Corrigido de passagem: na Ponte de Madeira, a tocha da C3 do lado da entrada ficava bem na frente dos olhos de quem chega ao patamar (uma
   faixa marrom tapava a vista do fosso); foi para a ponta direita do gradil do patamar (a solução da C3 não muda).
+
+## 44. Direção de arte, primeira leva (implementado; `DIRECAO_DE_ARTE.md`, da branch `claude/puzzles-design`)
+
+Seguindo a ordem da §7 do documento de direção de arte. Capturas de antes em `docs/arte/`.
+
+**Mão e dado (§4.9):** o dado da mão ficou ~40% menor e mais baixo, no canto de baixo à direita, e agora é **segurado por uma mão** em pixel
+(`src/scene/hand.ts`): palma por baixo, quatro dedos subindo pelo lado esquerdo do dado, o polegar na quina direita (sem cobrir o rosto), pulso
+e manga de lã com punho dobrado. A mão não pula nem gira com o dado; balança com o passo, afunda um pouco quando o jogador para (mola) e,
+quando o dado está fora, baixa quase até sumir. O próprio dado ilumina de leve a mão (a cor da face). Na cena do dado (abertura, perguntas)
+a mão sai e o dado cresce até o tamanho de sempre. **O giz não aparece no capítulo 1** (nem em saves antigos; só na sala de teste).
+
+**Interface (§4.11):** uma fonte só, **a do diário**, em todo texto: `tools/build_font.mjs` gera `public/fonts/mdd-pixel.otf` a partir da
+tabela de `src/book/font.ts` (cada pixel vira um quadrado; os acentos são os mesmos). Os tamanhos são múltiplos de 10 px (`--fs/--fm/--fl`,
+escolhidos em `ui/scale.ts`) para a letra cair em pixels inteiros. **Ícones desenhados à mão** (`src/ui/PixelIcon.tsx`, grades de 12×12 em
+texto) no lugar dos símbolos do navegador, com moldura de pedra nos botões do canto. A dica de controles ficou em duas linhas.
+
+**Poeira e sombra (§4.2, §4.8):** saiu a poeira uniforme de todas as salas; `kit.beamDust` põe grãos **só dentro de feixes de luz** (o poço da
+sala 1, o buraco do pátio da cisterna, a chama do nicho alto da sala 3). Os braseiros acesos soltam **brasas** que sobem e acendem uma **poça
+de luz** no chão. A sombra de contato (`kit.contact`) virou um disco **pontilhado** (Bayer), e está em colunas, pedras, estelas e no **dado
+pousado** (que tem a sua, maior e mais fraca quanto mais alto ele está).
+
+**Quadro de estilo: a sala 3 (§6).** "Um corredor baixo onde alguém ensinava a contar." Nada do puzzle mudou.
+- **Arquitetura:** abóbada de berço baixa com arcos de reforço e imposta (`shell.vault`), colunas com plinto, toro, colarinho e ábaco
+  (`shell.pillar`, vale para todas as salas que usam o casco), batentes grossos com impostas e soleira na entrada e na porta (`kit.batente`),
+  um nicho na parede esquerda (`kit.niche`).
+- **Materiais:** tijolo nas paredes e na abóbada, lajes no chão, **pedra lavrada** nos arcos, colunas, batentes e na moldura das lousas.
+- **Luz:** a chama do nicho alto é a **luz principal com sombra de verdade** (um `SpotLight`, mapa de 512, filtro duro; `Room.shadowLight`;
+  o motor só atualiza o mapa de sombra nessa sala). O jogador tem um **corpo invisível que projeta sombra**: quem entra vê a própria sombra
+  jogada para a frente, a pista de que há um braseiro atrás dele. Poças de luz, ambiente mais escuro ("escuro de verdade" entre as luzes).
+- **Decalques (cada um com um porquê):** fuligem acima dos quatro braseiros e das tochas (`kit.soot`), o caminho gasto da entrada à porta
+  (`kit.wear`), os **riscos de giz** de um condenado contando 23 dias, baixos, ao lado da 1ª lousa (contagem, não escrita).
+- **Objetos:** uma tigela e um toco de vela apagado no nicho; o dado de pedra meio enterrado com lascas de laje em volta.
+- **Partículas:** brasas nos braseiros; poeira só no feixe da chama alta.
+
+Regras que saem da sala 3 para as outras (atualizar `DIRECAO_DE_ARTE.md` quando passarem pela lista da §5): uma luz com sombra por sala, no
+ponto que o puzzle quer mostrar; pedra lavrada em tudo que é "feito" (arcos, colunas, batentes, molduras de escrita); fuligem acima de toda
+chama; poeira só em feixes; nada flutua sem sombra de contato.

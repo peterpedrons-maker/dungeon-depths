@@ -87,7 +87,6 @@ export function buildApelidos(ctx: Ctx): Room {
   plaque(-0.55, 0.835, ['grande', 'depois', 'n3', 'conf'], 35); // «GRANDE DEPOIS TRÊS»
   kit.torch(0.55 * (R - 0.14), 2.2, 0.835 * (R - 0.14), -0.55, -0.835, 2.9, 0xffb070, 34);
   kit.aoRing(R, H);
-  kit.dust(-R * 0.8, R * 0.8, -R * 0.8, R * 0.8, 0, H);
 
   // ── a regra: ordem exata, sem pistas ──
   let progress = 0;

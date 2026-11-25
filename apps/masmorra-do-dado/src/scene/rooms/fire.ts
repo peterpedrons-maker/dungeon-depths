@@ -659,7 +659,6 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     if (k % 2 === 0) wallTorch('right', z, 1.8, 1.3 + k);
     else wallTorch('left', z, 1.8, 3.1 + k);
   }
-  kit.dust(X0, X1, Z0, Z1, 0, H);
 
   // placa de pressão (regra `commit`)
   const PL = spec.plate ? { x: spec.plate.x, z: Z0 + spec.plate.dz, half: 0.7, top: 0.07 } : null;

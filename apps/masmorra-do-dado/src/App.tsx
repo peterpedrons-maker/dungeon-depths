@@ -10,6 +10,7 @@ import { chatterStore } from './story/chatter';
 import { useStore } from './story/store';
 import { ui, uiStore } from './story/ui';
 import { BookIcon } from './ui/BookIcon';
+import { PixelIcon } from './ui/PixelIcon';
 import { BoatoBubble } from './ui/BoatoBubble';
 import { DialogueBox } from './ui/DialogueBox';
 import { QuizPanel } from './ui/QuizPanel';
@@ -274,22 +275,22 @@ export default function App() {
           aria-label="Som"
           title={['Som: música e efeitos', 'Som: só efeitos', 'Som: mudo'][audio]}
         >
-          {['♫', '♪', '∅'][audio]}
+          <PixelIcon name={(['musica', 'efeitos', 'mudo'] as const)[audio]} />
         </button>
         <button onClick={reset} aria-label="Reiniciar sala" title="Reiniciar sala (R)">
-          ↺
+          <PixelIcon name="reiniciar" />
         </button>
         <button onClick={() => setCredits(true)} aria-label="Informações e recomeçar" title="Créditos dos sons e recomeçar o jogo">
-          ⓘ
+          <PixelIcon name="info" />
         </button>
         {installEvt && (
           <button onClick={install} aria-label="Instalar o jogo" title="Instalar o jogo">
-            ⤓
+            <PixelIcon name="instalar" />
           </button>
         )}
         {document.fullscreenEnabled && (
           <button onClick={fullscreen} aria-label="Tela cheia" title="Tela cheia">
-            ⛶
+            <PixelIcon name="tela" />
           </button>
         )}
       </div>
@@ -325,16 +326,22 @@ export default function App() {
       {hintShown && (
         <div className="hint">
           <span className="hint-pc">
-            clique: capturar o mouse · esq.: arremessar · dir./G: posicionar · Tab: trocar dado ↔ giz · J: diário · com o giz: segure esq. p/ desenhar, dir. p/ apagar, X limpa tudo · WASD
+            WASD anda · clique arremessa · G posiciona
+            <br />
+            1-6 trocam a face · E age · J diário
           </span>
-          <span className="hint-touch">à direita: arremessar, posicionar, girar · esquerda: andar · GIZ no canto (com o giz, a borda direita gira a câmera)</span>
+          <span className="hint-touch">
+            esquerda: andar · direita: olhar
+            <br />
+            botões: arremessar, posicionar, girar
+          </span>
         </div>
       )}
 
       {!complete && !inv.die && prompt && !speaking && (
         <div className="touchbtns">
           <button className="btn-throw" onPointerDown={(e) => { e.preventDefault(); sceneRef.current?.action(); }} aria-label={prompt}>
-            <span className="ico">✋</span>
+            <span className="ico"><PixelIcon name="agir" /></span>
             <span>AGIR</span>
           </button>
         </div>
@@ -350,7 +357,7 @@ export default function App() {
             }}
             aria-label="Girar o dado"
           >
-            <span className="ico">↻</span>
+            <span className="ico"><PixelIcon name="girar" /></span>
             <span>GIRAR</span>
           </button>
           {!dieOut && (
@@ -362,7 +369,7 @@ export default function App() {
               }}
               aria-label="Posicionar o dado onde a mira aponta"
             >
-              <span className="ico">⌖</span>
+              <span className="ico"><PixelIcon name="posicionar" /></span>
               <span>POSICIONAR</span>
             </button>
           )}
@@ -374,7 +381,7 @@ export default function App() {
             }}
             aria-label={dieOut ? 'Recolher o dado' : 'Arremessar o dado'}
           >
-            <span className="ico">{prompt ? '✋' : dieOut ? '↩' : '⤴'}</span>
+            <span className="ico"><PixelIcon name={prompt ? 'agir' : dieOut ? 'recolher' : 'arremessar'} /></span>
             <span>{prompt ? 'AGIR' : dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
           </button>
         </div>
@@ -390,16 +397,16 @@ export default function App() {
               sceneRef.current?.swapTool();
             }}
           >
-            <span className="ico">{tool === 'die' ? '✎' : '⚀'}</span>
+            <span className="ico"><PixelIcon name={tool === 'die' ? 'giz' : 'dado'} size={20} /></span>
             <span>{tool === 'die' ? 'GIZ' : 'DADO'}</span>
           </button>
           {tool === 'chalk' && (
             <>
               {(
                 [
-                  ['draw', '✎', 'Desenhar'],
-                  ['erase', '⌫', 'Apagar'],
-                ] as [ChalkMode, string, string][]
+                  ['draw', 'giz', 'Desenhar'],
+                  ['erase', 'apagar', 'Apagar'],
+                ] as [ChalkMode, 'giz' | 'apagar', string][]
               ).map(([m, ico, label]) => (
                 <button
                   key={m}
@@ -410,7 +417,7 @@ export default function App() {
                     pickMode(m);
                   }}
                 >
-                  <span className="ico">{ico}</span>
+                  <span className="ico"><PixelIcon name={ico} size={20} /></span>
                   <span>{label.toUpperCase()}</span>
                 </button>
               ))}
@@ -422,7 +429,7 @@ export default function App() {
                   sceneRef.current?.clearChalk();
                 }}
               >
-                <span className="ico">⌧</span>
+                <span className="ico"><PixelIcon name="limpar" size={20} /></span>
                 <span>LIMPAR</span>
               </button>
             </>
@@ -432,7 +439,7 @@ export default function App() {
 
       {tool === 'chalk' && !complete && (
         <div className="lookzone" aria-hidden="true">
-          <span>◉</span>
+          <span><PixelIcon name="olhar" /></span>
           <span>OLHAR</span>
         </div>
       )}

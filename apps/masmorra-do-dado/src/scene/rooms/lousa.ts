@@ -8,6 +8,7 @@
 
 import * as THREE from 'three';
 import { Kit, lambert, LAMP_OFF } from '../kit';
+import { tallyTexture } from '../textures';
 import { makeBrazier } from '../brazier';
 import { makeGemNiche, makeLivePanel, makeWallBoard, type WallBoard } from '../firegrid';
 import { mkBox, roomShell, shotGate } from './shell';
@@ -52,9 +53,15 @@ export function buildLousa(ctx: Ctx): Room {
   const { X0, X1, Z0, Z1, H } = S;
   const GRATE_Z = -1.5;
 
+  // QUADRO DE ESTILO (DIRECAO_DE_ARTE.md §6: "um corredor baixo onde alguém ensinava a contar"): abóbada baixa com arcos de reforço,
+  // colunas com base e capitel, batentes grossos, um nicho, três pedras (tijolo, laje do chão, pedra lavrada), a luz do nicho alto com
+  // sombra de verdade, poças de luz, fuligem, o caminho gasto, os riscos de um condenado contando os dias.
+  const vaultY = S.vault(3.0, H - 0.03, 2.9);
   // colunas: a da esquerda esconde a lousa secreta de quem vem da grade
-  S.pillar(-2.2, -3.0, 0.8);
-  S.pillar(1.8, -5.6, 0.8);
+  S.pillar(-2.2, -3.0, 0.8, vaultY(-2.2));
+  S.pillar(1.8, -5.6, 0.8, vaultY(1.8));
+  kit.batente(0, Z1, -1);
+  kit.batente(0, Z0, 1);
 
   // ── os quatro braseiros acesos pela Casa ──
   const bz = [
@@ -75,7 +82,21 @@ export function buildLousa(ctx: Ctx): Room {
   nFlame.scale.set(0.5, 0.42, 1);
   nFlame.position.set(0, NY + 0.48, NZ);
   kit.group.add(nFlame);
-  const nLight = kit.light(0, NY + 0.4, NZ - 0.5, 0xff8a2a, 36);
+  const nLight = kit.light(0, NY + 0.4, NZ - 0.5, 0xff8a2a, 14);
+  kit.soot(0, NY + 0.35, Z1, 0, -1, 0.8, 0.42);
+  // a LUZ PRINCIPAL da sala: a chama do nicho alto projeta sombra (é ela que joga a sombra do jogador para a frente, quando ele entra:
+  // a pista de que há um braseiro atrás dele). Mapa pequeno, filtro duro.
+  const keyLight = new THREE.SpotLight(0xffa050, 46, 12.5, 1.2, 0, 1.15);
+  keyLight.position.set(0, NY + 0.43, NZ - 0.36);
+  keyLight.target.position.set(0, 0, -5.5);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(512, 512);
+  keyLight.shadow.camera.near = 0.3;
+  keyLight.shadow.camera.far = 15;
+  keyLight.shadow.bias = -0.003;
+  kit.group.add(keyLight, keyLight.target);
+  kit.lightPool(0, 0.2, 2.6, 0, 0xffa050).opacity = 0.18;
+  kit.beamDust(0, 0.4, 1.0, 0.3, 3.2, 30, 0xffe0b0); // poeira só no feixe da chama alta
 
   // ── o dado de pedra, meio enterrado (UM em cima, DOIS e TRÊS dos lados) ──
   {
@@ -85,7 +106,17 @@ export function buildLousa(ctx: Ctx): Room {
     d.position.set(2.55, 0.36, -7.1);
     d.rotation.set(-0.07, 0.12, 0.1);
     kit.add(d);
-    kit.contact(2.55, -7.1, 1.8);
+    kit.contact(2.55, -7.1, 2.0);
+    // o chão em volta se partiu quando ele afundou: lascas de laje e pedrinhas
+    const chip = lambert(null, 0x5e5752);
+    for (const [cx, cz, sz, ry] of [[1.85, -6.6, 0.2, 0.3], [2.0, -7.75, 0.15, 1.1], [3.25, -6.75, 0.17, 2.0], [2.4, -6.35, 0.11, 0.7], [3.1, -7.75, 0.12, 1.6]] as [number, number, number, number][]) {
+      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), chip);
+      m.position.set(cx, sz * 0.35, cz);
+      m.rotation.set(ry, ry * 1.7, ry * 0.4);
+      m.scale.y = 0.55;
+      kit.add(m, false);
+      kit.contact(cx, cz, sz * 3.4);
+    }
     S.boxes.push(mkBox(2.0, 0, -7.65, 3.1, 0.9, -6.55));
     kit.rects.push([2.0, -7.65, 3.1, -6.55]);
   }
@@ -122,6 +153,48 @@ export function buildLousa(ctx: Ctx): Room {
   const L2 = mkCopy(-4.3, 'n3', 'lousa2');
   kit.torch(X0 + 0.1, 1.9, 0.2, 1, 0, 0.7);
   kit.torch(X1 - 0.1, 1.9, -2.6, -1, 0, 1.9);
+  kit.soot(X0, 2.4, 0.2, 1, 0, 0.6, 1.1);
+  kit.soot(X1, 2.4, -2.6, -1, 0, 0.6, 1.1);
+  kit.lightPool(X0 + 0.7, 0.2, 1.4, 0, 0xff9a3c).opacity = 0.2;
+  kit.lightPool(X1 - 0.7, -2.6, 1.4, 0, 0xff9a3c).opacity = 0.2;
+  // fuligem acima dos três braseiros do chão (os da porta enegrecem a parede do fundo; o do meio, a parede esquerda)
+  kit.soot(-2.5, 1.55, Z0, 0, 1, 1.0, 1.9);
+  kit.soot(2.5, 1.55, Z0, 0, 1, 1.0, 1.9);
+  kit.soot(X0, 1.55, -6.3, 1, 0, 1.0, 1.4);
+  // a pedra lavrada em volta das duas lousas (a moldura talhada)
+  for (const z of [0.1, -4.3]) kit.box(0.06, 1.95, 1.95, kit.slab, X1 - 0.03, 1.45, z, false);
+  // RISCOS DE GIZ: um condenado contou os dias aqui, ao lado da 1ª lousa (baixo, como quem está sentado no chão)
+  {
+    const t = tallyTexture(23);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.36), new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
+    m.position.set(X1 - 0.022, 0.72, -0.95);
+    m.rotation.y = -Math.PI / 2;
+    kit.group.add(m);
+  }
+  // o NICHO da parede esquerda: uma tigela e um toco de vela apagado (alguém morou aqui)
+  {
+    const g = kit.niche(X0, 1.0, -0.9, 1, 0);
+    const clay = lambert(null, 0x7a4e34);
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.07, 0.07, 8, 1, true), clay);
+    bowl.position.set(-0.12, 0.035, 0.15);
+    g.add(bowl);
+    const bowlIn = new THREE.Mesh(new THREE.CircleGeometry(0.1, 8), lambert(null, 0x2a1a12));
+    bowlIn.rotation.x = -Math.PI / 2;
+    bowlIn.position.set(-0.12, 0.05, 0.15);
+    g.add(bowlIn);
+    const wax = lambert(null, 0xd8ccb0);
+    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.09, 6), wax);
+    candle.position.set(0.16, 0.045, 0.13);
+    g.add(candle);
+    const drip = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.015, 7), wax);
+    drip.position.set(0.17, 0.008, 0.14);
+    g.add(drip);
+    const wick = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.025, 0.008), lambert(null, 0x111111));
+    wick.position.set(0.16, 0.1, 0.13);
+    g.add(wick);
+  }
+  // o caminho GASTO de quem passou: da entrada até a porta, desviando das colunas
+  kit.wear([[0, 1.7], [0.25, -1.2], [-0.15, -4.3], [0.1, -7.2], [0, -9.1]], 1.25);
 
   // a lousa secreta (S1): parede esquerda, atrás da coluna; soquete frio, um dado de cinco pontos talhado acima
   const SZ = -3.95;
@@ -199,6 +272,18 @@ export function buildLousa(ctx: Ctx): Room {
     ((globalThis as Record<string, unknown>).__lousa = () => ({ l1: L1.solved, l2: L2.solved, s1: secret.solved, door: DB.grid.points(), solved, grate: +grateK.toFixed(2), cells: (k: number) => [L1.b, L2.b, DB, SB][k] && [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => [L1.b, L2.b, DB, SB][k].cellPos(i).toArray().map((v) => +v.toFixed(2))) }));
   }
   kit.bake();
+  // sombras: a luz do nicho alto bate em tudo; projetam as coisas sólidas (não os decalques, as chamas nem o próprio nicho alto)
+  kit.group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.Material;
+    if (mat.transparent || (mat as THREE.MeshBasicMaterial).isMeshBasicMaterial) return;
+    m.receiveShadow = true;
+    const p = new THREE.Vector3();
+    m.getWorldPosition(p);
+    if (p.y > NY - 0.2 && Math.abs(p.z - NZ) < 0.6) m.castShadow = false; // o nicho alto não faz sombra na própria luz
+    else if (m.geometry.type !== 'PlaneGeometry' && m.geometry.type !== 'ShapeGeometry') m.castShadow = true;
+  });
 
   return {
     name: 'A Lousa',
@@ -213,7 +298,8 @@ export function buildLousa(ctx: Ctx): Room {
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0a0a11', near: 3.5, far: 16 },
-    ambient: { color: 0x706ea8, intensity: 1.6 },
+    ambient: { color: 0x6a68a0, intensity: 1.15 }, // escuro de verdade entre as poças de luz
+    shadowLight: keyLight,
     boxes: [...S.boxes, ...kit.boxes],
     sockets: bz.map((b) => b.socket),
     rects() {
@@ -232,7 +318,8 @@ export function buildLousa(ctx: Ctx): Room {
       gate.tick();
       for (const b of bz) b.update(t);
       nFlame.material.map = kit.frames[Math.floor(t * 8 + 3) % kit.frames.length];
-      nLight.intensity = 36 * (0.97 + 0.03 * Math.sin(t * 5));
+      nLight.intensity = 14 * (0.97 + 0.03 * Math.sin(t * 5));
+      keyLight.intensity = 46 * (0.96 + 0.03 * Math.sin(t * 5) + 0.015 * Math.sin(t * 11.3));
       for (const b of boards) b.update(dt, t);
       updateCopy(L1, dt, () => {
         grateUp = true;
