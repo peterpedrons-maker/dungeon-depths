@@ -63,26 +63,26 @@ Curva: 1 e 2 ficam; da 3 em diante **só sobe**. Ficam **18 salas** no capítulo
 
 | # | Sala | Nível | O que o jogador descobre | Mecânica | Palavra nova |
 |---|---|---|---|---|---|
-| 1 | O Poço | 1 | o dado acende | (fica) | ACENDER |
+| 1 | O Poço | 1 | o dado acende (e, sem ninguém notar, o anel POÇO e um soquete frio embaixo do poço: o segredo S8 do fim) | (fica) | ACENDER |
 | 2 | O Vestíbulo | 1 | o número é exato; **o caderno achado vira o diário do jogador** (tutorial obrigatório) | (fica) + cena nova | DOIS |
 | 3 | **A Lousa** ✔ | 2 | acender em grade é **escrever**; os números são **as faces do dado** | M1 | TRÊS, QUATRO, BRASEIRO |
 | 4 | **O Fio de Fogo** ✔ | 3 | o fogo **corre**; «ACENDER UM» pode acender vários | M1+M2 | UM, CINCO |
 | 5 | **A Casa Escreve** ✔ | 3 | a Casa fala em fogo; **a lousa é um mapa** do salão | M9 + ordem | ORDEM |
 | 6 | **A Chama Curta** ✔ | 4 | tempo e tamanho; **uma canaleta longa é um pavio** (o fogo espera) | M7+M2 | TEMPO |
 | 7 | **O Que a Casa Confirma** ✔ | 5 | marcas (numa lousa) e depois uma cadeia curta de ANTES/DEPOIS (refeita: menos glifos de uma vez) | M8 | CONFIRMADO, BOATO, ANTES, DEPOIS |
-| 8 | **O Pano** | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
+| 8 | **O Pano** ✔ | 5 | **o fogo queima o boato**: o pano tecido mente, a pedra embaixo diz a verdade | M3 | (nenhuma) |
 | 9 | **Os Apelidos** ✔ | 6 | o mesmo braseiro tem dois nomes; o glifo engana | M8 | GRANDE, PEQUENO |
-| 10 | **A Ponte de Madeira** ✔ | 6 | o fogo **destrói o próprio caminho**: a ordem das ignições importa | M2+M3 | (nenhuma) |
+| 10 | **A Ponte de Madeira** ✔ | 6 | o fogo **destrói o próprio caminho**: a ordem das ignições importa | M2+M3 | (MAIS, só o desenho) |
 | 11 | **O Boato Verdadeiro** ✔ | 6 | boato não é mentira; acender o que é VERDADE | M8 | VERDADE |
-| 12 | **A Sombra** | 7 | a luz escreve pela sombra | M5 | (nenhuma) |
-| 13 | **O Escuro** | 7 | **errar de propósito**: o escuro da Casa tem escrita | M6 | ESCURO |
-| 14 | **A Lei Pequena** | 8 | 1ª lei da contagem; a resposta é escrita na lousa | M8+M1 | IGUAL |
-| 15 | **O Fogo que Corre** | 8 | canaletas com tempo: dois fogos que se encontram se apagam | M2+M7 | (nenhuma) |
-| 16 | **Os Que Dizem o Mesmo** | 9 | lei + boatos equivalentes + **queimar um boato muda a conta** | M8+M3 | (nenhuma) |
-| 17 | **A Memória da Casa** | 9 | ensaio do Tribunal; uma pista só existe no diário (vista no escuro de outra sala) | tudo | TODOS, ORDEM |
-| 18 | O Tribunal dos Rumores | 10 | (já existe) | M8 | — |
+| 12 | **A Sombra** ✔ | 7 | **a luz escreve pela sombra**, e a frase tem de ser verdadeira: um braseiro que não muda o desenho muda a verdade | M5 | (nenhuma) |
+| 13 | **O Escuro** ✔ | 7 | **errar de propósito**: o escuro da Casa tem escrita | M6 | ESCURO |
+| 14 | **A Lei Pequena** ✔ | 8 | 1ª lei da contagem; dois boatos que dizem o mesmo valem juntos | M8 | IGUAL |
+| 15 | **O Fogo que Corre** ✔ | 8 | o desenho existe **num instante**: chamas que se apagam também escrevem | M2+M7 | (nenhuma) |
+| 16 | **Os Que Dizem o Mesmo** ✔ | 9 | **queimar um boato muda a conta** da lei ("dizer é fazer") | M8+M3 | (nenhuma) |
+| 17 | **A Memória da Casa** ✔ | 9 | ensaio do Tribunal; uma confirmada só existe **no escuro** | tudo | TODOS |
+| 18 | O Tribunal dos Rumores ✔ | 10 | (já existe) | M8 | — |
 
-✔ = detalhada e com verificador. As outras têm solução descrita abaixo e ganham verificador quando forem detalhadas (uma por vez).
+✔ = detalhada e com verificador. **O capítulo 1 está completo**: todas as salas têm solução, verificador e resposta no `RESPOSTAS.md`.
 
 ### A forma de cada sala (nenhuma igual à anterior)
 O motor liga as salas em fila, mas **dentro** de cada módulo a forma é livre (O Mirante já tem dois níveis e rampa; O Salão das Brasas já é redondo).
@@ -148,49 +148,31 @@ grade, vista do alto, com as tochas da borda sobre os quatro cantos.
 julga quando o jogador acende a frase da porta. **Solução: as frases «1 DEPOIS 3», «4 DEPOIS 2», «3 ANTES 4» e «2 DEPOIS 3»; depois os
 pilares TRÊS, UM, DOIS, QUATRO.**
 
-### Sala 12 — A Sombra (nível 7) · "a luz escreve pela sombra"
-**Sala:** no meio, uma **tela de pedra furada** (uns 5 furos). Em volta dela, 4 braseiros em posições diferentes. Na parede do fundo, uma
-**moldura 3×3** talhada vazia. Cada braseiro aceso projeta os furos como **pontos de luz** dentro da moldura, deslocados conforme o lado
-de onde vem a luz (o da esquerda joga os pontos para a direita etc.). Com dois braseiros acesos, as duas projeções se somam.
-- A porta pede um glifo (ex.: QUATRO). Nenhum braseiro sozinho o forma; um par certo forma exatamente QUATRO dentro da moldura (os pontos
-  que caem fora não contam).
-- **Epifania:** o jogador vê os pontos de luz na parede ao acender o primeiro braseiro e percebe que **a luz escreve**, não o braseiro.
-- **Solução:** a definir com o verificador (cada braseiro = um deslocamento da máscara de furos; busca nos pares).
-- **Motor:** M5. Não precisa de sombra real: o motor calcula os pontos (máscara deslocada) e desenha manchas de luz na moldura.
+### Sala 12 — A Sombra (nível 7) · "a luz escreve, e a frase tem de ser verdade" ✔ `tools/verify_sombra.mjs`
+(Detalhada na seção 5.) Uma pedra com dois furos projeta manchas de luz numa moldura que é a casa vazia da frase «ACENDER ▢ BRASEIRO».
+Dois braseiros já escrevem TRÊS, mas a frase mentiria. **Solução: acender o da frente, o baixo à direita e o alto à esquerda: a luz escreve
+TRÊS com três acesos.**
 
-### Sala 13 — O Escuro (nível 7) · "errar de propósito"
-**Sala:** já começa com **todos os braseiros acesos pela Casa** e uma porta com a frase «ACENDER ▢ BRASEIRO» (lousa M1 ao lado).
-Não há informação suficiente na sala para saber o que escrever.
-- **Epifania:** toda vez que o jogador errou desde a sala 2, a Casa apagou tudo por um segundo. Aqui, se ele **errar de propósito**
-  (acender um lampião a mais), a sala fica no **escuro total** por uns segundos e aparece, na cal fosforescente do teto, o glifo pedido.
-  Errar vira ferramenta.
-- **Solução:** errar uma vez, ler o glifo no teto (ex.: CINCO), escrever na lousa.
-- **Camada retroativa (S5, a grande):** desde a sala 2, **toda sala tem uma palavra fosforescente** escondida, que só aparece no escuro
-  da punição. Ninguém percebe na 1ª vez (dura 1 s e o jogador está olhando para o braseiro). Depois da sala 13, voltar e errar de
-  propósito em cada sala revela uma palavra por sala. Juntas formam **uma frase** (ver S7).
-- **Palavra nova:** ESCURO (a do pano da sala 8, agora no lugar certo).
-- **Motor:** M6 (material que só aparece quando a luz da sala cai abaixo de um limite; a punição apaga também a luz ambiente por 2,5 s).
+### Sala 13 — O Escuro (nível 7) · "errar de propósito" ✔ `tools/verify_escuro.mjs`
+(Detalhada na seção 5.) Três lousas na porta e nada na sala diz o que escrever. As frases estão no teto, em cal que só aparece no escuro da
+punição. **Solução: errar de propósito, ler o teto no escuro, escrever DOIS, CINCO, UM.**
 
-### Sala 14 — A Lei Pequena (nível 8) · 1ª lei da contagem
-Quatro braseiros, duas confirmadas, três boatos e a lei «UM BOATO = VERDADE» (exatamente um boato é verdade). A resposta não é uma ordem:
-é **o número** do braseiro que vem primeiro, escrito **na lousa** (junta M8 e M1). Ensina IGUAL. Verificador a fazer.
+### Sala 14 — A Lei Pequena (nível 8) · 1ª lei da contagem ✔ `tools/verify_lei.mjs`
+(Detalhada na seção 5.) Frases embaixo, rampa com boatos, braseiros no mezanino. «UM BOATO IGUAL VERDADE». **Solução: 1, 4, 2, 3.**
 
-### Sala 15 — O Fogo que Corre (nível 8) · canaletas com tempo
-Grade com canaletas longas e curtas (o fogo leva 1 a 3 s em cada). **Dois fogos que se encontram numa canaleta se apagam** (o óleo
-já queimou). Com duas ignições em momentos diferentes, o encontro acontece num ponto ou noutro e corta ramos diferentes. Escrever o glifo
-pedindo **quando** acender cada um (o segundo depois de o primeiro chegar a um certo lampião). Verificador = simulação em passos de tempo.
+### Sala 15 — O Fogo que Corre (nível 8) · "o desenho existe num instante" ✔ `tools/verify_fogo_corre.mjs`
+(Detalhada na seção 5.) Canaletas com tempo, chamas de 4 s que só queimam uma vez. A porta quer os quatro cantos acesos **ao mesmo tempo, e
+nada mais**. **Solução: fogo no centro; 2 a 5 s depois, no canto da frente à esquerda.** Constelação C5 (no escuro).
 
-### Sala 16 — Os Que Dizem o Mesmo (nível 9) · "dizer é fazer"
-Lei + boatos, como no Tribunal, mas os **boatos estão em panos** (M3). Com todos os panos, a lei não tem solução (contradição).
-**Queimar um boato tira ele da conta.** Só queimando **o** boato certo (um que diz o mesmo que outro com outro nome: número × apelido) a
-lei passa a ter **uma** solução. O jogador edita as provas. Verificador: busca em (boato queimado × ordem).
+### Sala 16 — Os Que Dizem o Mesmo (nível 9) · "dizer é fazer" ✔ `tools/verify_dizem_mesmo.mjs`
+(Detalhada na seção 5.) Claustro aberto; boatos em estandartes; a lei não fecha com todos. **Solução: queimar o estandarte «DOIS ANTES
+QUATRO»; acender 1, 5, 2, 3, 4.** Constelação C6 (os frisos em Z: DE NOVO).
 
-### Sala 17 — A Memória da Casa (nível 9) · ensaio do Tribunal
-Cinco braseiros, apelidos, lei «DOIS BOATO = VERDADE», e uma das confirmadas **não está nesta sala**: está escrita no escuro (S5) de uma
-sala anterior. O diário guarda (o jogador copiou ou carimbou). Porta: «ACENDER TODOS BRASEIRO ORDEM CONFIRMADO» (TODOS, ORDEM). Verificador a fazer.
+### Sala 17 — A Memória da Casa (nível 9) · ensaio do Tribunal ✔ `tools/verify_lei.mjs`
+(Detalhada na seção 5.) Um hub com três anexos; uma confirmada só aparece no escuro, sob um soquete frio. **Solução: 4, 1, 3, 2.**
 
-### Sala 18 — O Tribunal dos Rumores (nível 10)
-Como está (`PUZZLES.md`, `tools/verify_tribunal.mjs`).
+### Sala 18 — O Tribunal dos Rumores (nível 10) ✔ `tools/verify_tribunal.mjs`
+Como está (`PUZZLES.md`). Agora todas as palavras dele foram ensinadas antes (a ferramenta de vocabulário confere).
 
 ---
 
@@ -446,13 +428,15 @@ algumas salas. Para não virar chute:
 
 | # | Onde | A pista | Glifo | Camada |
 |---|---|---|---|---|
-| C1 | Sala 5, salão de 9 colunas (todas com tocha + 3 de parede) | depois de a porta abrir, a lousa da Casa mostra às vezes um 5º glifo, **CINCO**, que não é de braseiro nenhum | CINCO | ensina que constelações existem; nasce do "será que resolvi?" |
-| C2 | Sala 8, capela de 6 pilares | os 6 pilares têm tocha; os **frisos do teto** só ligam três posições num **triângulo** | ACENDER | 1º verbo; olhar para cima |
+| C1 | Sala 5, salão de 9 colunas (todas com tocha + 3 de parede) | depois de a porta abrir, a lousa da Casa mostra às vezes um 5º glifo, **CINCO**, que não é de braseiro nenhum | CINCO (0, 2, 4, 6, 8) | ensina que constelações existem; nasce do "será que resolvi?" ✔ |
+| C2 | Sala 8, capela de 6 pilares (+3 iscas) | os **frisos do teto** só ligam três posições num **triângulo** | ACENDER (1, 6, 8) | 1º verbo; olhar para cima ✔ |
+| C-Bib | Biblioteca, 9 mesas de leitura (+4 iscas) | a **página na mesa do Escrivão**, vista **de cabeça para baixo** pela grade | PEGAR (0, 2, 7); a armadilha é ACENDER | ler do lado certo ✔ |
 | C3 | Sala 10, o fosso | depois de resolvida, a cruz acesa lá embaixo deixa os **quatro cantos escuros**; as 8 tochas da **borda** caem, vistas do alto, sobre as casas da grade | completar TODOS (as 4 da borda sobre os cantos) | perspectiva + "o que falta no desenho" ✔ |
-| C4 | Sala 12, A Sombra | não há tochas na grade: a **sombra das colunas** que a tela projeta é que cai nas casas | (a definir) | a constelação é de sombra, não de fogo |
-| C5 | Sala 13 em diante | a palavra da constelação de cada sala **só aparece no escuro** (S5): errar de propósito diz o que desenhar | (uma por sala) | junta as constelações com o escuro |
-| C6 | Salas 15 e 16 | um verbo **atravessa a porta**: metade das tochas numa sala, metade na outra, ligadas pelo friso do corredor | DE NOVO | o glifo maior que uma sala |
-| C7 | Volta às salas 1 a 4 | as **colunas do Vestíbulo** (sala 2) sempre tiveram suportes vazios: tochas que o jogador nunca acendeu | (a frase do escuro) | a grande volta ao começo |
+| C5 | Sala 15, as plataformas (9 postes com tocha + 3 iscas) | o glifo aparece no **teto, no escuro** de uma tentativa que falhou | MENOS (3, 4, 5) | a constelação que só se vê errando ✔ |
+| C6 | Sala 16, o claustro (8 colunas + a fonte, +3 iscas) | **frisos** das galerias e uma **viga** que cruza o pátio na diagonal: um Z | DE NOVO (0, 2, 6, 8 com as linhas 0-2, 2-6, 6-8) | o verbo do tamanho de um pátio ✔ |
+- **C4 cancelada:** a sala 12 (A Sombra) já é inteira de projeção; uma constelação de sombra ali repetiria a sala. **C7 passa para o capítulo 2**
+  (as colunas do Vestíbulo, com o Peso).
+- Total do capítulo 1: **6 constelações** (C1, C2, C-Bib, C3, C5, C6), cada uma com gema e, as maiores, diário.
 
 Detalhadas e verificadas: **C1** (9 tochas de coluna + 3 de parede: 1 conjunto aceito de 4096; as colunas escrevem 38 palavras,
 a pista mostra uma) e **C2** (6 tochas de pilar + 3 iscas: 1 de 512; as tochas conseguem escrever 11 palavras, mas **só ACENDER tem as
@@ -497,17 +481,28 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 
 | Camada | Como se acha | Segredos | Recompensa |
 |---|---|---|---|
-| **1 · Notar** | na mesma visita, olhando de novo | S1 (sala 3, o CINCO antes da hora) e as constelações C1 e C2 (§3) | gemas, páginas de diário |
-| **2 · Voltar** | entendeu algo depois e volta | S3 (sala 6, pano-parede, depois da sala 8), S5 (o escuro de cada sala, depois da 13) | diários, a frase escondida |
-| **3 · Meta** | junta tudo | S6, S7, S8 | o porquê da história |
+| **1 · Notar** | na mesma visita, olhando de novo | S1 (sala 3, o CINCO antes da hora), as 6 constelações (§3), os puzzles opcionais dos respiros e da Biblioteca | gemas, páginas de diário |
+| **2 · Voltar** | entendeu algo depois e volta | S3 (sala 6, pano-parede), S10 (sala 4, FAZER), S5 (as palavras do escuro), as tapeçarias e o estandarte dos respiros, a lousa (c) da Biblioteca | diários, páginas dela, a frase escondida |
+| **3 · Meta** | junta tudo | S6 e S8 (o poço), com a frase S5 | o porquê da história |
 
-- **S6 · O soquete frio do poço (sala 1):** desde o começo há, embaixo do poço, um **soquete frio** (sem brasa). Não reage a nada na
-  1ª vez (o jogador não tem o dado; depois, acender ali "não faz nada"… no claro).
-- **S7 · A frase do escuro:** as palavras fosforescentes das salas 2 a 17, na ordem das salas, formam uma frase em glifos (proposta:
-  algo como **«VOCÊ ACENDER POÇO ESCURO»**; o texto final eu escrevo com o léxico quando o Pedro aprovar). Ela manda voltar ao poço.
-- **S8 · O poço no escuro:** na sala 1, pôr fogo no soquete frio **e** errar de propósito (a Casa apaga tudo, inclusive a luz do poço).
-  No escuro, as paredes do tubo do poço mostram, em cal fosforescente, **o texto do Escrivão**: a frase da sentença do jogador **sem a
-  marca de confirmação** (`HISTORIA.md`). É a virada da história escondida no 1º cenário do jogo.
+- **S5 · As palavras do escuro (camada 2, depois da sala 13):** três salas têm uma palavra em **cal fosforescente no teto**, que só aparece no escuro
+  da punição. Na 1ª passagem o jogador vê o escuro por um instante, olhando para o braseiro, e não percebe nada. Depois que a sala 13 ensina a
+  errar de propósito, voltando e errando ele as lê:
+  | Sala | Onde | Palavra | Como errar ali |
+  |---|---|---|---|
+  | 2 · O Vestíbulo | teto, entre as colunas | **ACENDER** | acender o 3º braseiro |
+  | 7 · O Que a Casa Confirma | teto da 2ª câmara | **POÇO** | acender uma frase de boato |
+  | 11 · O Boato Verdadeiro | teto da ala do fundo | **ESCURO** | julgar errado na frase da porta |
+  Juntas, na ordem das salas: **«ACENDER POÇO ESCURO»**. Manda voltar ao poço e acender alguma coisa no escuro.
+  (POÇO se ensina na própria sala 1: está **talhado no chão**, num anel de pedra embaixo do poço: rótulo. ESCURO se ensina na sala 13.)
+- **S6 · O soquete frio do poço (sala 1):** no meio do anel de pedra com a palavra POÇO, embaixo da luz, há um **soquete frio** (sem brasa). Na 1ª
+  visita o jogador nem tem o dado quando passa por ele; depois, acender ali parece não fazer nada… no claro.
+- **S8 · O poço no escuro (camada 3):** com a frase do escuro na mão (e a lição da sala 17: soquete frio = escrita escondida), o jogador volta à
+  sala 1 e acende o soquete frio. A Casa pune (não foi pedido): apaga tudo, **inclusive a luz do poço** (uma sombra fecha a boca lá em cima). No
+  escuro, as paredes do tubo do poço mostram, em cal fosforescente, a **sentença do jogador**: «VOCÊ · CONDENADO», e depois dela, no lugar onde
+  toda frase termina com a sua marca, **um quadro vazio**. Nenhuma marca. Ninguém confirmou. (A virada do meio do jogo, `HISTORIA.md`, escondida
+  no primeiro cenário.) Ao voltar a luz, no chão, a **última página arrancada** dela: *"Eu também vi. Não tem marca. Então ninguém lançou o dado
+  por mim. Então quem é que me prendeu aqui?"* É a última página do caderno dela: o buraco que faltava no fim.
 - **S10 · «DIZER IGUAL FAZER» (sala 4, camada 2):** a plaquinha fria do balcão só se entende com o lema dos Contáveis, achado num diário
   bem depois. Com uma ignição, o chão da sala 4 escreve FAZER (ver a sala 4 na seção 5).
 - **S11 · O rosto do Boato (capítulo final; ideia do Pedro):** numa sala do último capítulo, a **saída fica no alto** (o jogador sobe
@@ -525,8 +520,9 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 - **S9 · A Casa é um dado (a maior epifania; a história já diz isso):** os **pontos de um dado são buracos**. **O poço do teto da sala 1
   é um ponto**: o jogador caiu pela face UM. O capítulo 1 é a face UM (um ponto só: o poço). O capítulo 2 tem **dois poços**, o 3 tem
   **três**, sempre na diagonal… Quem presta atenção percebe, no meio do jogo, que está **dentro de um dado gigante** e que cada capítulo é
-  uma face. As gemas reforçam: no mapa do diário, as câmaras secretas de cada capítulo ficam nas posições dos pontos daquela face, então
-  um capítulo 100% desenha a sua face do dado no mapa. No fim, o mapa dobra num cubo.
+  uma face. As gemas reforçam: quando o jogador junta **todas as gemas de um capítulo**, o mapa do diário acende **os pontos daquela face**
+  sobre as salas certas. No capítulo 1, a face UM tem um ponto só, no centro do mapa: **a Biblioteca** (por isso ela fica no meio do capítulo).
+  No fim, o mapa dobra num cubo.
 - **Ideias guardadas para depois:**
   - (c) **a sala é a moldura**: nos capítulos seguintes, a **forma da sala** dá a família do glifo: sala fechada = coisa,
     sala em U aberta em cima = ser… (as constelações passam a escrever palavras com moldura). (a) o **mapa do diário** como lousa: as salas onde o jogador achou segredos formam um glifo no mapa
@@ -537,15 +533,23 @@ regra: **é uma frase que o jogador escreve no fim**, mas que ele só consegue e
 
 ## 4. O que a sessão principal precisa construir (resumo)
 
-| Prioridade | Peça | Para que salas |
+**Já no jogo** (conferido na branch do site): lousa de fogo, canaletas, lousa animada, pano queimável, `lock.judge`/`preLit`, tochas de coluna e
+rachaduras frias (C1, C2), o caderno-diário, o pavio da Chama Curta, O Que a Casa Confirma em duas partes, o respiro R1.
+
+**Falta, na ordem em que o capítulo precisa:**
+| Prioridade | Peça | Para quê |
 |---|---|---|
-| 1 | **Lousa de fogo** (M1): painel 3×3, alvo pela mira, comparação com glifo, casa lisa que espelha | 3, 4, 5, 13, 14 |
-| 1 | **Canaletas** (M2): propagação dirigida e visível, contador de ignições | 4, 10, 15 |
-| 2 | **Pano queimável** (M3) que revela pedra talhada e volta ao sair; pano-parede | 6, 8, 16 |
-| 2 | **Escuro e cal fosforescente** (M6): a punição apaga também a luz ambiente; material que só aparece no escuro | 2–17 (S5), 13 |
-| 3 | **Lousa animada da Casa** (M9) | 5 |
-| 3 | `lock.judge: 'door'`, `FireLine.preLit`, brilho de PEQUENO | 9, 11 |
-| 3 | Sombra calculada (M5), pranchas que queimam, tempo nas canaletas, fumaça com vento | 10, 12, 15, 6 |
+| 1 | **O escuro da punição** (M6): toda punição apaga também a luz ambiente por ~2,5 s; **cal fosforescente** que só aparece abaixo de um limite de luz | salas 13, 15 (C5), 17; S5 nas salas 2, 7, 11; S8 no poço |
+| 1 | **Perguntas do dado** (§2e) e o dado apontando/pedindo nas áreas livres | todo o capítulo |
+| 1 | **Ponte de madeira** que queima e corta a canaleta de cima; "uma ignição de cada vez"; tochas na borda com posição projetada | sala 10, C3 |
+| 2 | **Sombra calculada** (M5): tela com furos, manchas na moldura; julgamento "número da moldura = número de acesos" | sala 12 |
+| 2 | **Três lousas julgadas juntas** | sala 13 |
+| 2 | **Sala de dois níveis com rampa** | salas 10 (fosso em espiral), 14 (mezanino) |
+| 2 | **Canaletas com atraso** e braseiro que **queima uma vez** por tentativa e reabastece; plataformas | sala 15 |
+| 2 | **Estandartes que saem da conta** da lei ao queimar; "um só" | sala 16 |
+| 2 | **Hub com anexos** (§20, opção a); **soquete frio** que dispara o escuro; **quadro vazio** com texto fosforescente | sala 17, S8 |
+| 3 | **Respiros** R2 (Banhos Secos), R3 (Galeria), R4 (Escadaria) e **a Biblioteca** (5 ou 6 módulos) | ritmo do capítulo |
+| 3 | Rotunda (sala 9), sala em L (sala 11), claustro com céu (sala 16), fumaça com vento (S3), friso/viga com fogo correndo (C6) | forma das salas e segredos |
 
 ---
 
@@ -1031,14 +1035,253 @@ confirmada (só se provam pela cadeia). **Motor:** `lock.judge: 'door'`, `FireLi
 
 ---
 
+### Sala 11 — revisão na curva nova
+- **Forma em L** (tabela da seção 2): a demonstração (as duas frases já acesas) fica na quina, à vista de quem entra; um parágrafo em cada ala;
+  a porta no fim da ala do fundo. Do meio de uma ala não se vê a outra: o jogador tem de **andar e lembrar** (ou anotar).
+- **Segredo S5 (camada 2):** no escuro da punição, o teto da ala do fundo mostra a palavra fosforescente **ESCURO** (ver S5).
+- O resto fica como está (a solução não muda).
+
+### Sala 12 — A Sombra (NÍVEL 7) · "a luz escreve, e a frase tem de ser verdade"
+
+**A ideia:** até aqui quem escrevia era o fogo, ponto por ponto. Agora quem escreve é **a luz**, passando por furos. E volta uma regra da sala 3
+que o jogador talvez tenha esquecido: **a frase da porta tem de ficar verdadeira**. A virada: dá para escrever o número certo com o número
+**errado** de braseiros, e a Casa não aceita a mentira. É preciso acender um braseiro que **não muda o desenho**, só a verdade.
+
+**Forma:** salão escuro e amplo (14×16 m, teto 6). No meio, uma **tela de pedra** em pé com **nove "olhos"** em grade 3×3; só **dois** são furos de
+verdade (o de cima à esquerda e o do centro; os outros sete são cegos, só uma cavidade). Na parede do fundo, a frase «ACENDER ▢ BRASEIRO»
+talhada **grande**, e a casa ▢ é uma **moldura 3×3** de pedra clara: a luz cai dentro dela. Cinco braseiros em volta da tela:
+| Braseiro | Onde | Manchas de luz na moldura (casas) |
+|---|---|---|
+| **F** | na frente da tela, meia altura | 0 e 4 |
+| **BD** | baixo, à direita | 0 |
+| **AE** | alto, à esquerda (num pedestal alto) | 4 e 8 |
+| **BC** | baixo, no centro (no chão) | 1 |
+| **BE** | baixo, à esquerda | 2 |
+(Casa 0 = canto de cima à esquerda da moldura. O motor não precisa de sombra real: calcula as manchas e as desenha.)
+
+**Regras:** os braseiros ficam acesos (sem tempo). Quando a moldura mostra um **número** e o número de acesos **bate**, a Casa lê a frase e a porta
+abre. Se mostra um número e **não bate** (a frase mentiria), depois de 3 s a Casa pune: apaga tudo (com o escuro, ver §6) e os braseiros ficam
+frios por 6 s. Qualquer outro desenho: nada acontece (pode-se testar um braseiro de cada vez, olhando a moldura).
+
+**Solução (passo a passo):**
+1. Acender um braseiro e **olhar a parede**: aparecem manchas na moldura (a epifania: "a luz escreve na frase").
+2. Testar os outros e anotar o que cada um projeta (tabela acima).
+3. Achar o TRÊS (a diagonal 0, 4, 8): **F + AE** já fazem a diagonal, mas são **dois** acesos: a frase diria "acender TRÊS braseiro" com dois.
+   A Casa pune. (**BD + AE** também fazem a diagonal com dois: a mesma mentira.)
+4. A saída: acender **F, AE e BD**. O BD projeta só a casa 0, que **já estava acesa**: o desenho não muda, mas agora são **três** braseiros.
+   A frase fica verdadeira e a porta abre.
+
+**Por que é única** (`node tools/verify_sombra.mjs`): dos 31 conjuntos possíveis, só **F+BD+AE** escreve um número com o mesmo número de
+braseiros; dois pares escrevem TRÊS mentindo (a armadilha); nenhum braseiro sozinho escreve UM.
+
+**O que ensina:** a luz escreve (sombra/projeção); **dizer é fazer**: a frase só vale se for verdade (retoma a sala 3); um gesto que "não muda
+nada" pode mudar a verdade. **Sem constelação** (a sala inteira já é de projeção). **Motor:** tela com furos e moldura calculada (M5); julgamento
+"número na moldura = número de acesos".
+
+### Sala 13 — O Escuro (NÍVEL 7) · "errar de propósito"
+
+**A ideia:** desde a sala 2, toda vez que o jogador erra, a Casa apaga tudo. Aqui **não há pista nenhuma à vista**: o que é preciso saber está
+escrito no teto, em **cal fosforescente**, que só aparece **no escuro total**. E o único jeito de ter escuro é **errar**. Errar vira ferramenta.
+(Depende da decisão do §6: a punição passa a apagar também a luz ambiente por ~2,5 s, em todas as salas.)
+
+**Forma:** pequena, baixa e opressiva (6×9 m, teto 2,6). Quatro braseiros **já acesos pela Casa** nos cantos (só luz; não fazem parte do puzzle).
+Na porta, **três lousas lado a lado** e a frase «ACENDER ▢ ▢ ▢ ORDEM» (uma lista de números é uma ordem, como na sala 4).
+
+**A pista antes:** no respiro R3, logo antes, uma página arrancada dela: *"Quando eu erro, a Casa apaga tudo. Por um instante, no escuro, eu juro
+que vi alguma coisa brilhando no teto."*
+
+**Regras:** a Casa julga quando **as três lousas** mostram um número completo. Errado: apaga tudo, inclusive a luz ambiente, por 2,5 s, e
+limpa as lousas. Nesse escuro aparecem, no teto, três frases fosforescentes (e, sobre a porta, a palavra **ESCURO**, que só existe no escuro:
+é como a palavra se ensina):
+| Posição no teto | Frase | Marca |
+|---|---|---|
+| perto da porta | «CINCO ANTES UM» | CONFIRMADO |
+| no meio | «UM ANTES DOIS» | boato (gasta) |
+| no fundo | «DOIS ANTES CINCO» | CONFIRMADO |
+
+**Solução (passo a passo):**
+1. Perceber que não há nada para ler. Lembrar da página dela (ou do próprio escuro das salas anteriores).
+2. **Errar de propósito:** escrever quaisquer três números nas lousas. Escuro. **Olhar para cima.**
+3. 2,5 s não dão para ler tudo: errar mais uma ou duas vezes, olhando partes diferentes do teto, e **anotar no diário**.
+4. Confirmadas: 5 antes de 1, 2 antes de 5 → **2, 5, 1**. O boato «UM ANTES DOIS» é falso (e contradiz as confirmadas).
+5. Escrever **DOIS, CINCO, UM** nas três lousas. A porta abre.
+
+**Por que é única** (`node tools/verify_escuro.mjs`): o teto cita exatamente três números; as duas confirmadas dão uma ordem só e são ambas
+necessárias; acreditar no boato dá contradição; a ordem não é a crescente nem a de leitura do teto.
+
+**O que ensina:** **errar é uma ferramenta**; o escuro tem escrita (abre o segredo S5 em todas as salas anteriores); anotar no diário o que
+some rápido. **Palavra nova:** ESCURO. **Motor:** M6 (cal fosforescente visível só abaixo de um limite de luz; a punição apaga a luz
+ambiente); três lousas julgadas juntas.
+
+### Sala 14 — A Lei Pequena (NÍVEL 8) · a primeira lei da contagem
+
+**A ideia:** até aqui, boato verdadeiro ou falso se decidia pela cadeia das confirmadas. Agora as confirmadas **não bastam**, e uma **lei** diz
+**quantos** boatos são verdade: «UM BOATO IGUAL VERDADE» (exatamente um). E aparece o truque que o Tribunal vai exigir: **dois boatos que dizem
+a mesma coisa** com palavras diferentes são verdadeiros juntos ou falsos juntos.
+
+**Forma:** a sala **sobe**. Térreo: as frases confirmadas e um **mural com figura** (uma balança com DOIS de cada lado, «DOIS IGUAL DOIS
+CONFIRMADO»: IGUAL é o sinal "=" de duas barras, e a balança o confirma). Uma **rampa** larga contorna a sala subindo; nas paredes da rampa, os
+três boatos (gastos). No **mezanino**, os quatro braseiros (UM a QUATRO), a lei e a porta. Do mezanino não se leem as frases de baixo:
+**lembrar ou anotar**.
+
+**Frases:**
+| Onde | Frase | Marca |
+|---|---|---|
+| térreo | «QUATRO DEPOIS UM» | CONFIRMADO |
+| térreo | «DOIS ANTES TRÊS» | CONFIRMADO |
+| rampa | «DOIS ANTES UM» | boato |
+| rampa | «UM DEPOIS DOIS» | boato |
+| rampa | «DOIS DEPOIS QUATRO» | boato |
+| mezanino | «UM BOATO IGUAL VERDADE» (a lei) | CONFIRMADO |
+Porta: «ACENDER QUATRO BRASEIRO ORDEM CONFIRMADO». Errar: escuro e braseiros frios por 10 s, sem gema por passo.
+
+**Solução (passo a passo):**
+1. Perceber que «DOIS ANTES UM» e «UM DEPOIS DOIS» **dizem a mesma coisa**: os dois são verdade ou os dois são mentira.
+2. A lei diz que **só um** boato é verdade. Então esses dois **não podem** ser verdade (seriam dois). São mentira: o **1 vem antes do 2**.
+3. O verdadeiro é o terceiro: «DOIS DEPOIS QUATRO» → 4 antes de 2.
+4. Juntar com as confirmadas (1 antes de 4; 2 antes de 3): **1, 4, 2, 3**.
+5. Subir e acender **UM, QUATRO, DOIS, TRÊS**.
+
+**Por que é única** (`node tools/verify_lei.mjs`): uma ordem só entre 24; cada uma das duas confirmadas e cada um dos três boatos é necessário;
+só com as confirmadas sobram 6 ordens; ler "todos os boatos falsos" dá 2 ordens e "todos verdadeiros", nenhuma.
+
+**O que ensina:** a lei da contagem; IGUAL; equivalência entre frases; carregar informação de um andar para o outro. **Prepara:** as salas 16
+e 17 e o Tribunal. **Motor:** sala de dois níveis com rampa (precedente: O Mirante); regra `order` com 4 pilares.
+
+### Sala 15 — O Fogo que Corre (NÍVEL 8) · "o desenho existe num instante"
+
+**A ideia:** o fogo corre (sala 4), as chamas se apagam (sala 6), e agora as duas coisas juntas: cada braseiro queima **só 4 s** e **só uma vez**
+por tentativa (o óleo acaba). A porta quer um desenho que exista **num instante**: um braseiro que já se apagou **também ajuda a escrever**,
+porque some do desenho.
+
+**Forma:** salão aberto (20×20 m) com **nove plataformas** em alturas diferentes, em grade 3×3, cada uma com um braseiro; **canaletas descem**
+de uma plataforma para outra (a altura mostra o sentido). Canaleta reta e curta: o fogo leva 1 s; média, 2 s; longa e sinuosa, 3 s. Ao lado de
+cada braseiro, um **poste com tocha** apagada (constelação C5) e três tochas nas paredes.
+**Canaletas** (de → para, segundos; casa 0 = canto do fundo à esquerda, vendo a porta em cima): 4→2 (3), 4→8 (2), 4→0 (2), 6→4 (2), 6→7 (3),
+7→4 (3), 7→8 (1), 5→8 (1), 5→1 (1), 1→0 (1), 3→0 (2), 3→7 (3).
+**Porta:** «ACENDER DOIS BRASEIRO TEMPO» e o glifo **QUATRO** talhado. Aceita se, em algum instante, os acesos forem **exatamente** os quatro
+cantos. Quando tudo se apaga sem acertar, a Casa pune (escuro) e reabastece o óleo.
+
+**Solução (passo a passo):**
+1. Ver que o centro alimenta três cantos (0 e 8 em 2 s, o 2 em 3 s) e **se apaga aos 4 s** e não reacende (o óleo acabou).
+2. Falta o canto da frente à esquerda (6), que nenhuma canaleta alimenta a partir do centro: **2ª ignição, à mão**.
+3. Mas o 6 tem uma canaleta para o 7 (3 s), e o 7 não pode estar aceso no instante certo. Se o 6 for aceso cedo demais, o 7 acende antes de o
+   centro se apagar.
+4. **Fogo no centro; esperar ~3 s; fogo no canto da frente à esquerda.** Por volta dos 4 s o centro se apaga e, por um instante, só os quatro
+   cantos estão acesos: a porta abre. (Janela confortável: de 1,5 s a 5,5 s entre as duas ignições.)
+
+**Por que é única** (`node tools/verify_fogo_corre.mjs`): uma ignição só nunca basta; de todos os pares ordenados, **só centro → canto 6**
+funciona, com a janela de 1,5 a 5,5 s; acender os dois juntos falha.
+
+**Constelação C5 (camada 2, só Fogo):** quando uma tentativa falha, o escuro mostra, no teto, o glifo **MENOS** (a fileira do meio, três pontos).
+Acender as tochas dos **postes das três plataformas do meio** (casas 3, 4, 5), nenhuma outra: o braseiro secreto sobe na plataforma central
+(gema + diário). 1 conjunto aceito entre 4096.
+
+**O que ensina:** escrever com o **tempo**: apagar também é escrever; planejar a espera. **Motor:** M2 com atraso por canaleta; braseiro que
+queima uma vez por tentativa e reabastece; plataformas; tochas nos postes.
+
+### Sala 16 — Os Que Dizem o Mesmo (NÍVEL 9) · "dizer é fazer"
+
+**A ideia:** o jogador sabe que o fogo queima o boato (sala 8) e que a lei conta os boatos (sala 14). Aqui as duas coisas se encontram: os boatos
+estão em **estandartes de pano**, a lei conta **os boatos que existem**, e com todos eles **a lei não tem solução**. A porta manda: «ACENDER UM
+BOATO». **Queimar um estandarte tira aquele boato da conta.** O jogador **edita as provas**: escolhe o que deixa de ter sido dito.
+
+**Forma:** **claustro a céu aberto**, a sala mais aberta do capítulo: um pátio quadrado com galerias em volta (8 colunas: 4 nos cantos, 4 no meio
+dos lados) e uma **fonte** no centro. Cinco braseiros no pátio: UM, DOIS, TRÊS (o **GRANDE**), QUATRO e CINCO (o **PEQUENO**).
+**Frases:** confirmadas, talhadas nas paredes das galerias; boatos, em **estandartes** pendurados entre as colunas; a lei, na fonte.
+| Onde | Frase | Marca |
+|---|---|---|
+| galerias (pedra) | «PEQUENO ANTES TRÊS» · «UM ANTES CINCO» · «CINCO ANTES DOIS» | CONFIRMADO |
+| estandartes (pano) | «DOIS ANTES QUATRO» · «GRANDE DEPOIS DOIS» · «DOIS ANTES TRÊS» · «TRÊS ANTES UM» · «TRÊS DEPOIS QUATRO» | BOATO |
+| fonte | «DOIS BOATO IGUAL VERDADE» | CONFIRMADO |
+Porta: «ACENDER UM BOATO» e «ACENDER TODOS BRASEIRO ORDEM». Queimar um **2º** estandarte: a Casa pendura todos de volta (recomeça).
+
+**Solução (passo a passo):**
+1. Das confirmadas: **1** é o primeiro; depois **5**; o 5 vem antes do 2 e do 3.
+2. «TRÊS ANTES UM» é **sempre falso** (o UM é o primeiro).
+3. «GRANDE DEPOIS DOIS» e «DOIS ANTES TRÊS» dizem **a mesma coisa** (GRANDE é o 3): valem juntos. Com os cinco estandartes, a conta não fecha:
+   - se o par for **verdade**, já são dois verdadeiros; então «DOIS ANTES QUATRO» e «TRÊS DEPOIS QUATRO» são mentira: 4 antes de 2 e 3 antes de 4,
+     o que dá 2 antes de 3 antes de 4 antes de 2: **contradição**;
+   - se o par for **mentira**, os dois verdadeiros teriam de ser «DOIS ANTES QUATRO» e «TRÊS DEPOIS QUATRO»: 2 antes de 4 antes de 3, mas o par
+     falso diz 3 antes de 2: **contradição**.
+   É por isso que a porta manda queimar um boato.
+4. Testar cada estandarte ("e se este não existisse?"): só **sem «DOIS ANTES QUATRO»** sobra uma resposta. Sem ele, o par é verdade (2 antes de 3),
+   «TRÊS ANTES UM» é falso, e a lei exige que «TRÊS DEPOIS QUATRO» seja falso: 3 antes de 4. (Sem «TRÊS DEPOIS QUATRO», por exemplo, o 4 poderia
+   ficar em três lugares.) **Queimar «DOIS ANTES QUATRO».**
+5. Ordem: **1, 5, 2, 3, 4**. Acender.
+
+**Por que é única** (`node tools/verify_dizem_mesmo.mjs`): com os cinco estandartes, nenhuma ordem; queimando cada um: «DOIS ANTES QUATRO» → 1 ordem;
+«GRANDE DEPOIS DOIS» → 4; «DOIS ANTES TRÊS» → 4; «TRÊS ANTES UM» → 0; «TRÊS DEPOIS QUATRO» → 3. As três confirmadas são necessárias.
+
+**Constelação C6 (camada 1, só Fogo):** as 8 colunas da galeria e a fonte formam uma grade 3×3, todas com tocha, mais 3 tochas nas paredes. Os
+**frisos** de pedra: o da galeria do fundo (de canto a canto), uma **viga de pedra que cruza o pátio na diagonal** (do canto do fundo à direita
+ao da frente à esquerda) e o da galeria da frente. Formam um **Z**: as linhas de **DE NOVO**. Acender as tochas das **quatro colunas dos cantos**,
+nenhuma outra: o fogo corre pelos frisos e pela viga, desenha o Z, e a fonte se abre (gema + diário). 1 conjunto de 4096; dos 11 verbos que essas
+tochas conseguiriam escrever, só DE NOVO tem essas linhas.
+
+**O que ensina:** a lei conta o que **existe**; queimar é **desdizer**; testar hipóteses ("e se este não existisse?"). **Motor:** estandartes
+queimáveis que saem da conta (M3); "um só"; claustro aberto com céu.
+
+### Sala 17 — A Memória da Casa (NÍVEL 9) · ensaio do Tribunal
+
+**A ideia:** tudo junto, menor que o Tribunal: apelidos, lei de dois, um par equivalente (número × apelido), e **uma confirmada que só existe no
+escuro**. Desta vez o escuro não vem de errar o puzzle: vem de um **soquete frio** (o sinal de "acendível que a Casa não anuncia").
+
+**Forma:** um **hub** redondo com os quatro braseiros (UM, DOIS, TRÊS = **GRANDE**, QUATRO = **PEQUENO**) e a porta; **três anexos** em volta:
+- **Anexo A (pedra):** «PEQUENO ANTES DOIS» CONFIRMADO.
+- **Anexo B (paredes gastas):** os quatro boatos: «UM ANTES GRANDE» · «QUATRO DEPOIS TRÊS» · «GRANDE ANTES PEQUENO» · «TRÊS ANTES DOIS».
+- **Anexo C:** a lei «DOIS BOATO IGUAL VERDADE» e, ao lado, um **quadro de frase vazio** (moldura talhada, liso, com o lugar da marca) com um
+  **soquete frio** embaixo. Acender o soquete faz a Casa punir (não foi pedido): escuro de 2,5 s, e no quadro aparece, fosforescente,
+  **«UM DEPOIS QUATRO» CONFIRMADO**.
+Porta do hub: «ACENDER TODOS BRASEIRO ORDEM CONFIRMADO». O glifo **TODOS** (os nove pontos) enche conforme os braseiros acendem: é como a palavra
+se explica. Errar: escuro e frios por 12 s.
+
+**Solução (passo a passo):**
+1. Achar a confirmada escondida: o quadro vazio + o soquete frio → acender → escuro → **UM DEPOIS QUATRO** (4 antes de 1). Anotar.
+2. Confirmadas: 4 antes de 2 (PEQUENO = 4) e 4 antes de 1.
+3. «QUATRO DEPOIS TRÊS» e «GRANDE ANTES PEQUENO» **dizem a mesma coisa** (3 antes de 4). Se fossem verdade, já seriam os dois verdadeiros da lei,
+   e os outros dois boatos seriam mentira: «UM ANTES GRANDE» falso → 3 antes de 1; «TRÊS ANTES DOIS» falso → 2 antes de 3. Com 3 antes de 4 e 4
+   antes de 2, isso dá 3 antes de 4 antes de 2 antes de 3: **contradição**. Então o par é mentira: **4 antes de 3**.
+4. A lei pede dois verdadeiros: os outros dois, «UM ANTES GRANDE» (1 antes de 3) e «TRÊS ANTES DOIS» (3 antes de 2).
+5. Ordem: **4, 1, 3, 2** (QUATRO, UM, TRÊS, DOIS). Acender.
+
+**Por que é única** (`node tools/verify_lei.mjs`): uma ordem só; cada pista é necessária, **inclusive a do escuro**; só com as confirmadas sobram 8
+ordens; "todos os boatos falsos" dá 1 ordem errada; "todos verdadeiros", nenhuma.
+
+**O que ensina:** juntar tudo; o soquete frio esconde escrita (prepara o segredo do poço, S8). **Palavra nova:** TODOS (por efeito).
+**Motor:** hub + anexos (§20, opção a); quadro vazio com texto fosforescente e soquete frio que dispara o escuro.
+
+### R3 · A Galeria dos Condenados — o puzzle opcional (nível 3) ✔ `tools/verify_lei.mjs`
+Numa câmara lateral, três braseiros (UM, DOIS, TRÊS), um **mural com figura** (a mesma balança da sala 14: «DOIS IGUAL DOIS»), e na parede, riscadas
+a **giz** por outros condenados (giz não é pedra: são boatos), três frases: «TRÊS ANTES UM», «TRÊS ANTES DOIS», «DOIS DEPOIS TRÊS». Talhada, a lei
+«UM BOATO IGUAL VERDADE». Porta da câmara: «ACENDER BRASEIRO ORDEM».
+**Solução:** «TRÊS ANTES DOIS» e «DOIS DEPOIS TRÊS» dizem o mesmo; não podem ser os dois verdade (a lei diz um só); então são falsos (2 antes de 3), e
+o verdadeiro é «TRÊS ANTES UM». Ordem **2, 3, 1** → gema. É a prévia, leve e opcional, da sala 14.
+**Página arrancada nº 4 (dela),** no banco do fundo: *"Quando eu erro, a Casa apaga tudo. Por um instante, no escuro, eu juro que vi alguma coisa
+brilhando no teto."* (a pista da sala 13).
+
+### A Biblioteca — os puzzles opcionais do térreo
+- **Constelação das mesas (C-Bib, só Fogo)** ✔ `tools/verify_constelacoes.mjs`: nove mesas de leitura em grade, cada uma com lamparina, mais quatro
+  lamparinas de parede. A pista é a **página na mesa do Escrivão**, vista pela grade do escritório. A mesa está virada para a cadeira dele, do outro
+  lado: o jogador vê a página **de cabeça para baixo**. Copiada como se vê, dá os pontos do triângulo de ACENDER (o jogador conhece bem): a
+  armadilha. A outra linha da página tem glifos que o jogador conhece (BRASEIRO, DOIS) **de cabeça para baixo**, e isso denuncia o lado. Lida do
+  lado certo, é **PEGAR** (dois cantos de cima e o meio de baixo). **Solução:** acender as lamparinas das mesas **0, 2 e 7** (os dois cantos do
+  fundo e a do meio da frente, vendo o escritório em cima). 1 conjunto aceito entre 8192.
+- **Lousas da sala de aula:** (a) QUATRO; (b) DOIS; (c) **camada 2**: trancada até o jogador voltar depois da sala 14: o mural mostra um braseiro
+  pequeno com o número QUATRO e a frase «PEQUENO IGUAL ▢» → escrever **QUATRO** (o pequeno é o 4).
+- **Mural de encaixe nº 1:** trocar os blocos de lugar até cada desenho ter o seu nome (PORTA, LIVRO, CHAVE, SINO: os nomes estão no Museu).
+- **Os livros que mentem:** uma estante com seis livros: três com **BOATO** na lombada, dois **cadernos de condenados** (sem marca, em português), um
+  com **CONFIRMADO** (encadernado em pedra: não queima). Queimar os três de boato: atrás do terceiro, uma gema. Queimar um caderno: a página se
+  perde até sair da ala.
+
 ## 6. Decisões
 **Já decididas pelo Pedro:** a Casa (o jogo todo) é **um dado** (S9); constelações do capítulo 1 só com Fogo, e com as ferramentas novas
 a partir do capítulo 2; sempre tochas a mais; gemas (100%), diários com vocabulário e um **4º final que se acumula** (§3d).
 
 **Ainda em aberto:**
-1. **Lousa de fogo e canaletas** viram o eixo do capítulo 1 (escrever com fogo)? (O Pedro gostou; falta o "sim" formal.)
-2. **Pedra = CONFIRMADO, pano = BOATO, o fogo queima o boato** como regra do mundo?
-3. **Errar de propósito** (o escuro da punição esconde escrita desde a sala 2)? Exige mudar a punição das salas 2 a 7 (apagar também a luz ambiente por ~2,5 s).
-4. O 4º final «LANÇAR CASA»: o que o dado mostra ao pousar?
-5. Formas das salas (seção 2): quais o motor faz já e quais pedem trabalho (fosso em espiral, claustro aberto, sala em L)? Pergunta para a sessão principal.
-6. As salas atuais 3 (Os Quatro) e 4 (A Ordem) saem; as ideias delas entram nas novas 3 e 5. A 5 e a 6 atuais viram 6 e 7.
+1. **Errar de propósito** (o escuro da punição esconde escrita): **agora é necessário** para as salas 13, 15 (C5) e 17 e para os segredos S5 e S8.
+   Exige que a punição de **todas** as salas apague também a luz ambiente por ~2,5 s. Se o Pedro não quiser, as salas 13 e 17 precisam ser refeitas.
+2. **Pedra = CONFIRMADO, pano = BOATO, o fogo queima o boato** como regra do mundo (as salas 8 e 16 dependem disso; já estão no jogo/no documento).
+3. O 4º final «LANÇAR CASA»: o que o dado mostra ao pousar?
+4. Formas das salas: quais o motor faz já e quais pedem trabalho (fosso em espiral, claustro com céu, sala em L, rotunda). Pergunta para a sessão principal.
+5. A posição do Tribunal: a lista do jogo o põe logo depois da sala 11; o lugar dele é o fim do capítulo (sala 18), depois das salas 12 a 17.
