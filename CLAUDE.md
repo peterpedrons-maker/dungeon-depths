@@ -89,6 +89,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; a instalação fica com o navegador).
 
+## Subagentes do projeto
+
+- **`narrador`** (`.claude/agents/narrador.md`): roteirista/narrador da masmorra-do-dado. Use para escrever e revisar pensamentos do jogador,
+  falas do dado e do Escrivão em glifos, o diário de "a que veio antes", textos de parede e o arco da história, seguindo `HISTORIA.md`,
+  `LINGUA.md` e o léxico. Só mexe em texto (não em puzzles, tempos de cena ou gráficos).
+
 ## Convenção para puzzles (masmorra-do-dado)
 
 Sempre que criar ou alterar um puzzle: **explique ao usuário como resolvê-lo** na resposta e
