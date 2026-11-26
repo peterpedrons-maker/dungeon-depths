@@ -228,6 +228,10 @@ Como aplicar (para todo capítulo novo):
   construídos (4) → rocha polida e fendas (5 e 6) → liso (7). Para isso, `arch.ts` ganha, quando o capítulo 3 chegar, um gerador de **rocha bruta**
   (paredes irregulares, teto de caverna, chão com desnível) no mesmo pixel e com o mesmo relevo das peças de hoje.
 - **A luz de fora some aos poucos**: no capítulo 1 os furos são a luz principal de várias salas; no 3 em diante, não há mais furo nenhum.
+- **Os 21 furos (decidido pelo Pedro, `HISTORIA.md` e `DESIGN.md` §69):** em todo o jogo há **exatamente 21 furos REDONDOS de luz nos tetos**, os
+  pontos do dado (1+2+3+4+5+6), e o **Poço** do começo é o do UM. Só os redondos contam: frestas, pátios, janelas e o claustro não. Todos com a mesma
+  cara (um buraco redondo no teto, com luz lá em cima), para o jogador saber o que contar. Pela regra de cima, quase todos ficam nos capítulos 1 e 2.
+  Quem mexer numa sala com furo redondo atualiza a contagem.
 - **Os objetos rareiam** (§4.7 continua valendo: só o dia a dia, nada de RPG): a borda foi habitada; o centro, nunca.
 - O que é **gramática de puzzle** (frases, braseiros, lousas, soquetes, tochas das constelações) mantém a mesma cara em todos os capítulos, para o
   jogador nunca ter de reaprender a ler.

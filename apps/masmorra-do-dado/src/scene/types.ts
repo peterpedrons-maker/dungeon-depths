@@ -55,6 +55,9 @@ export interface Ctx {
   sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout' | 'rise', key?: string): void;
   // a luz que escreve uma frase acesa passou pelo símbolo i de n (`at` = onde ele está, local da sala): a nota que acompanha a onda (§60)
   glyphLight?(i: number, n: number, at: THREE.Vector3): void;
+  // pegou a gema `id` (story/gems.ts) que estava em `at` (local da sala): toca a cena da gema e ela vai para o fundo do caderno; `cap` = a
+  // legenda que aparece depois da cena
+  gem(id: string, at: THREE.Vector3, cap?: [string, string, string]): void;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa

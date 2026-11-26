@@ -17,6 +17,7 @@ import { drawGlyph } from '../book/font';
 import { glyphsOf, LEX, type GlyphDef } from '../story/lexicon';
 import type { Box, Ctx, Interactable } from './types';
 import type { Inscription } from './inscription';
+import { diary, diaryStore } from '../story/diary';
 
 export const edgeKey = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
 
@@ -656,10 +657,13 @@ export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1, b
   return r;
 }
 
-// ── nicho secreto com a gema ────────────────────────────────────────────────
-// Na parede (x, z), olhando para (nx, nz). Fechado é uma laje lisa; aberto, a laje desce e mostra uma gema que brilha.
-// `page`: em vez da gema, uma FOLHA ARRANCADA do caderno dela (o id em story/herpages.ts), que volta para o diário
-export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, onTake?: () => void, page?: string) {
+// ── nicho secreto com a gema (ou com uma folha dela) ───────────────────────
+// Na parede (x, z), olhando para (nx, nz). Fechado é uma laje lisa; aberto, a laje desce e mostra o que guarda.
+// `prize`: o id de uma GEMA (story/gems.ts: vai para o fundo do caderno com a cena da gema, DESIGN.md §69) ou de uma FOLHA ARRANCADA do caderno
+// dela ('p1', 'p2'... em story/herpages.ts), que volta para o caderno. Se o jogador já pegou, o nicho abre vazio.
+export const isPage = (id: string) => /^p\d+$/.test(id);
+export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, onTake: (() => void) | undefined, prize: string) {
+  const page = isPage(prize) ? prize : undefined;
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.rotation.y = Math.atan2(nx, nz);
@@ -692,7 +696,8 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
   const light = kit.light(x + nx * 0.5, y, z + nz * 0.5, page ? 0xffd8a0 : 0x7ad8ff, 0);
   let open = 0;
   let opening = false;
-  let taken = false;
+  let taken = page ? (diaryStore.get().pages ?? []).includes(page) : diary.hasGem(prize);
+  if (taken) gem.visible = false;
   const it: Interactable = {
     pos: new THREE.Vector3(x + nx * 0.6, y, z + nz * 0.6),
     r: 1.8,
@@ -702,9 +707,11 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
       taken = true;
       gem.visible = false;
       light.intensity = 0;
-      ctx.sfx('gem');
-      if (page) ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
-      else ctx.caption('Uma gema', 'Escondida pela Casa. Nem toda porta é a da frente.', '#7ad8ff');
+      if (page) {
+        ctx.sfx('gem');
+        diary.addPage(page);
+        ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
+      } else ctx.gem(prize, new THREE.Vector3(x + nx * 0.16, y - 0.05, z + nz * 0.16), ['Uma gema', 'Escondida pela Casa. Nem toda porta é a da frente.', '#7ad8ff']);
       onTake?.();
     },
   };

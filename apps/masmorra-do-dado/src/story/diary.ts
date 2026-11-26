@@ -36,6 +36,7 @@ export interface DiaryState {
   free: string; // anotações livres
   texts: string[]; // textos de lore achados
   pages: string[]; // páginas arrancadas do caderno dela que o jogador achou e encaixou de volta
+  gems: string[]; // as gemas, na ordem em que foram achadas (cada uma num furo do dado do fundo do caderno; story/gems.ts)
   rooms: string[]; // salas visitadas (para o mapa)
   strokes: Stroke[]; // o que o jogador escreveu à mão no mapa
   stamps: Stamp[]; // símbolos já avistados que o jogador carimbou no mapa
@@ -44,7 +45,7 @@ export interface DiaryState {
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
 }
 
-const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], pages: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
+const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], pages: [], gems: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
 
 function load(): DiaryState {
   try {
@@ -93,6 +94,13 @@ export const diary = {
     if (diaryStore.get().pages.includes(id)) return;
     diaryStore.set((s) => ({ ...s, pages: [...s.pages, id], unread: s.unread + 1 }));
   },
+  // true se a gema é nova (vai para o próximo furo do fundo do caderno)
+  addGem(id: string): boolean {
+    if ((diaryStore.get().gems ?? []).includes(id)) return false;
+    diaryStore.set((s) => ({ ...s, gems: [...(s.gems ?? []), id] }));
+    return true;
+  },
+  hasGem: (id: string) => (diaryStore.get().gems ?? []).includes(id),
   visitRoom(name: string) {
     diaryStore.set((s) => ({ ...s, here: name, rooms: s.rooms.includes(name) ? s.rooms : [...s.rooms, name] }));
   },
@@ -153,6 +161,7 @@ export const diary = {
       notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
       texts: ['demo-pagina'],
       pages: ['p2'],
+      gems: ['cisterna', 'papel', 'c6', 'demo4'],
       unread: 0,
     }));
   },

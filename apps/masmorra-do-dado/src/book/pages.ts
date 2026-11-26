@@ -81,6 +81,7 @@ export interface Layout {
   dictAt: number; // os símbolos
   mapAt: number;
   notesAt: number;
+  gemsAt: number; // o FIM do caderno: a guarda solta à esquerda e, à direita, a parte dura da capa de trás com o dado aberto (as gemas)
 }
 
 export function layout(d: DiaryState): Layout {
@@ -94,7 +95,8 @@ export function layout(d: DiaryState): Layout {
   const textsN = Math.max(1, d.texts.length);
   const mapAt = textsAt + textsN;
   const notesAt = mapAt + 1;
-  return { total: notesAt + 1, dictN, dictAt, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt };
+  const gemsAt = notesAt + 1;
+  return { total: gemsAt + 1, dictN, dictAt, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt, gemsAt };
 }
 // em que folha (spread) do dicionário fica um símbolo
 export function symbolSpread(id: string, d: DiaryState): number {
@@ -532,6 +534,11 @@ function indexIcon(ctx: CanvasRenderingContext2D, i: number, x: number, y: numbe
     for (let k = 2; k < 7; k++) P([[0, k], [6, k + 1]]);
     ctx.fillStyle = RED;
     P([[2, 4], [4, 6], [3, 5], [4, 4], [2, 6]]);
+  } else if (i === 6) {
+    // gema lapidada (a coroa e a ponta; nada de losango)
+    P([[1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [0, 2], [6, 2], [0, 3], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [6, 3], [1, 4], [5, 4], [2, 5], [4, 5], [3, 6]]);
+    ctx.fillStyle = '#2a7a9a';
+    P([[2, 2], [3, 4], [3, 5]]);
   } else {
     // pena
     for (let k = 0; k < 7; k++) P([[6 - k, 1 + k]]);
@@ -540,7 +547,7 @@ function indexIcon(ctx: CanvasRenderingContext2D, i: number, x: number, y: numbe
 }
 // guarda (o avesso da capa): papel vinho escuro, liso, com um padrão miúdo e apagado de losangos e pontinhos dourados,
 // e a etiqueta do dono colada: DIÁRIO, o dado e as duas linhas
-function endpaper(ctx: CanvasRenderingContext2D) {
+function endpaper(ctx: CanvasRenderingContext2D, label = true) {
   const img = ctx.createImageData(PW, PH);
   const n = smooth(77, 18);
   const rr = rngf(79);
@@ -569,6 +576,7 @@ function endpaper(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = 'rgba(255,190,150,0.25)';
   ctx.fillRect(4, 4, PW - 4, 1);
   ctx.fillRect(4, 4, 1, PH - 8);
+  if (!label) return;
   // a etiqueta colada (papel claro, moldura dupla, levemente torta não: reta e limpa, para ler)
   const lx = 17;
   const ly = 22;
@@ -607,6 +615,24 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     endpaper(ctx);
     return regions;
   }
+  if (s === lay.gemsAt) {
+    // o fim do caderno: à esquerda a guarda solta (o mesmo papel vinho, sem etiqueta), com a seta e o índice em ouro gasto para voltar;
+    // à direita, a parte dura da capa de trás (desenhada à parte: book/bookart.ts, drawGemBoard)
+    endpaper(ctx, false);
+    if (side === 'L') {
+      arrow(ctx, 14, PH - 19, -1, GOLD);
+      regions.push({ x: 8, y: PH - 24, w: 16, h: 14, id: 'prev' });
+      ctx.fillStyle = GOLD;
+      for (let i = 0; i < 3; i++) ctx.fillRect(30, PH - 19 + i * 2, 7, 1);
+      regions.push({ x: 26, y: PH - 24, w: 16, h: 14, id: 'goto:0' });
+      const hv = regions.find((r) => r.id === view.hover);
+      if (hv) {
+        ctx.fillStyle = HILITE;
+        ctx.fillRect(hv.x, hv.y + hv.h - 1, hv.w, 1);
+      }
+    }
+    return regions;
+  }
   ctx.drawImage(paper(side, s === 0 ? 0 : (s * 5 + (side === 'L' ? 0 : 2)) % 4), 0, 0); // cada folha com a sua marca de uso (ou nenhuma)
   const HR = HER_RELATO.length;
   const hk = s >= lay.herAt && s < lay.dictAt ? (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1) : -1;
@@ -627,9 +653,10 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         ['Textos', `${d.texts.length}`, lay.textsAt, 2],
         ['Mapa', `${d.rooms.length}`, lay.mapAt, 4],
         ['Notas', '', lay.notesAt, 5],
+        ['Gemas', `${(d.gems ?? []).length}/21`, lay.gemsAt, 6],
       ];
       rows.forEach(([label, n, to, ico], i) => {
-        const y = 50 + i * 14;
+        const y = 46 + i * 12;
         indexIcon(ctx, ico, x0 + 1, y);
         drawText(ctx, label, x0 + 12, y, INK);
         if (n) drawText(ctx, n, x0 + CW - textWidth(n) - 2, y, INK2);
@@ -638,7 +665,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         const a = x0 + 12 + textWidth(label) + 4;
         const b = x0 + CW - textWidth(n) - 6;
         for (let px = a; px < b; px += 3) ctx.fillRect(px, y + 9, 1, 1);
-        regions.push({ x: x0 - 2, y: y - 2, w: CW + 4, h: 14, id: `goto:${to}` });
+        regions.push({ x: x0 - 2, y: y - 2, w: CW + 4, h: 12, id: `goto:${to}` });
       });
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 8, 137, CW - 16, 1);

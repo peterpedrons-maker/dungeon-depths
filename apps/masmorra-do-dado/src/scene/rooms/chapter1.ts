@@ -13,12 +13,13 @@ import { diary, diaryStore } from '../../story/diary';
 // ── constelação: tochas que escrevem (§3) ─────────────────────────────────
 // `cells[i]` = casa da grade da tocha i (null = isca, fora da grade). Acender EXATAMENTE as tochas do alvo, nenhuma outra, faz o braseiro
 // subir das rachaduras frias; acendê-lo abre o nicho da gema. As tochas se apagam sozinhas em ~40 s.
-export function constellation(api: FireExtraApi, torches: Torch[], cells: (number | null)[], target: number[], riserAt: [number, number], niche: [number, number, number, number, number], riserY = 0) {
+// `prize`: o que o nicho guarda: uma das 21 gemas (só a C6) ou uma folha dela (as outras; DESIGN.md §69)
+export function constellation(api: FireExtraApi, torches: Torch[], cells: (number | null)[], target: number[], riserAt: [number, number], niche: [number, number, number, number, number], prize: string, riserY = 0) {
   const { kit, ctx } = api;
   const riser = makeRiser(kit, ctx, riserAt[0], riserAt[1], 1, riserY);
   api.boxes.push(...riser.boxes);
   let bonus = false;
-  const nic = makeGemNiche(kit, ctx, niche[0], niche[1], niche[2], niche[3], niche[4], () => (bonus = true));
+  const nic = makeGemNiche(kit, ctx, niche[0], niche[1], niche[2], niche[3], niche[4], () => (bonus = true), prize);
   const want = new Set(target);
   return {
     riser,
@@ -96,7 +97,7 @@ function casaEscreveExtra(api: FireExtraApi): FireExtra {
   }
   torches.push(makeTorch(kit, ctx, X0 + 0.1, 2.1, Z0 + 7.5, 1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.1, Z0 + 7.5, -1, 0), makeTorch(kit, ctx, 3.4, 2.1, Z0 + 0.1, 0, 1));
   cells.push(null, null, null);
-  const C = constellation(api, torches, cells, [0, 2, 4, 6, 8], [0.6, Z0 + 9.5], [X0 + 0.02, 1.25, Z0 + 12.5, 1, 0]);
+  const C = constellation(api, torches, cells, [0, 2, 4, 6, 8], [0.6, Z0 + 9.5], [X0 + 0.02, 1.25, Z0 + 12.5, 1, 0], 'p10');
   let lt = 0;
   let loops = 0;
   return {
@@ -204,7 +205,7 @@ function panoExtra(api: FireExtraApi): FireExtra {
     const [x, dz] = panoCell(c);
     kit.box(0.08, H - 2.9, 0.05, lambert(null, 0x1a1418), x, (H + 2.9) / 2, Z0 + dz + 0.47, false);
   }
-  const C = constellation(api, torches, cells, [1, 6, 8], [0, Z0 + 7], [X1 - 0.02, 1.25, Z0 + 9.3, -1, 0]);
+  const C = constellation(api, torches, cells, [1, 6, 8], [0, Z0 + 7], [X1 - 0.02, 1.25, Z0 + 9.3, -1, 0], 'p13');
   const litCell = (c: number) => torches[cells.indexOf(c)]?.lit ?? false;
   // DEMONSTRAÇÃO NA ENTRADA (sem punição): um braseiro pequeno ACESO e, pendurado acima dele, um trapo com um glifo tecido. Enquanto o jogador olha,
   // uma fagulha sobe, o trapo pega fogo SOZINHO e queima de baixo para cima; atrás dele, talhada na pedra, a palavra BRASEIRO.

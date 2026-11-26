@@ -265,7 +265,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   for (const bx of [-0.62, 0.62]) kit.box(0.06, 0.06, 0.5, lambert(null, 0x4a3020), bx, HALL + 4.16, FZ + 0.6, false); // os braços que seguram a vara
   const banner = makeCloth(kit, ctx, { x: 0, y: HALL + 3.35, z: FZ + 0.8, nx: 0, nz: 1, words: ['boato'], size: 0.62, color: '#a03a48', mark: false, tall: 0.5, key: 'estandarte' });
   let bonusBanner = false;
-  const niche = makeGemNiche(kit, ctx, 0, HALL + 3.3, FZ + 0.35, 0, 1, () => (bonusBanner = true));
+  const niche = makeGemNiche(kit, ctx, 0, HALL + 3.3, FZ + 0.35, 0, 1, () => (bonusBanner = true), 'p12'); // (era uma gema; agora uma folha dela: DESIGN.md §69)
 
   // ── as inscrições do mundo, cada uma numa estela com relevo ──
   // 1) na beira da piscina rasa: «CONTÁVEIS DIZER CONFIRMADO»: alguém falando, e um DADO pousado (de pedra, de verdade, numa prateleira)
@@ -346,28 +346,30 @@ export function buildRespiro2(ctx: Ctx): Room {
     m.position.set(DR.x, 0.01, DR.z);
     kit.group.add(m);
   }
-  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshLambertMaterial({ color: 0x7af0ff, emissive: 0x2ab8e0, emissiveIntensity: 0.8, flatShading: true }));
+  // (era uma gema; agora sobe do ralo uma FOLHA dela, a p11: DESIGN.md §69. Os nomes "gem" ficaram)
+  const gem = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.01), new THREE.MeshLambertMaterial({ color: 0xd8b880, emissive: 0x3a2a14 }));
   gem.position.set(DR.x, -0.3, DR.z);
   gem.visible = false;
   kit.group.add(gem);
-  const gemLight = kit.light(DR.x, 1.0, DR.z, 0x7ad8ff, 0);
+  const gemLight = kit.light(DR.x, 1.0, DR.z, 0xffd8a0, 0);
   let solved = false;
   let gemK = 0;
-  let gemTaken = false;
+  let gemTaken = (diaryStore.get().pages ?? []).includes('p11');
   let stable = 0;
   let over = 0;
   let cold = 0;
   interactables.push({
     pos: new THREE.Vector3(DR.x, 0.9, DR.z),
     r: 1.7,
-    label: 'Pegar a gema',
+    label: 'Pegar a folha',
     enabled: () => solved && gemK > 0.95 && !gemTaken,
     use: () => {
       gemTaken = true;
       gem.visible = false;
       gemLight.intensity = 0;
       ctx.sfx('gem');
-      ctx.caption('Uma gema', 'Fria na mão.', '#7ad8ff');
+      diary.addPage('p11');
+      ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
     },
   });
 
@@ -496,7 +498,7 @@ export function buildRespiro2(ctx: Ctx): Room {
       for (const p of two.panels) p.fire = (p.fire ?? 0) + ((solved ? 1 : 0) - (p.fire ?? 0)) * Math.min(1, dt * 3);
       if (solved && gemK < 1) gemK = Math.min(1, gemK + dt / 2.5);
       gem.position.y = -0.3 + 1.4 * gemK + Math.sin(t * 2) * 0.04 * gemK;
-      gem.rotation.y = t * 1.4;
+      gem.rotation.y = Math.sin(t * 0.8) * 0.3;
       if (solved && !gemTaken) gemLight.intensity = 10 * gemK;
     },
     reset() {

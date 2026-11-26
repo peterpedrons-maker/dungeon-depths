@@ -58,14 +58,55 @@ O jogador não precisa de tudo, só de poucas palavras logo de início. Elas vir
 - **Absolver (negar, com NÃO).** A frase é falsa. A Casa se desfaz. A acusação some, e o dado vira um dado comum, que pousa.
 - **Repetir (DE NOVO).** O julgamento é lançado outra vez. O jogador **cai pelo poço de novo**, agora sabendo ler: a primeira frase do dado, que antes era ilegível, passa a ser legível.
 
+## O epílogo: o dado das 21 gemas (decidido pelo Pedro)
+**Não é um quarto final.** A gramática continua decidindo só entre Cumprir, Absolver e Repetir. O epílogo vem **depois de qualquer um dos três**, e só
+para quem achou **as 21 gemas**.
+- **As gemas.** São 21 no jogo todo, a soma das faces de um dado (1+2+3+4+5+6): **3, 3, 3, 4, 4, 4** por capítulo. Cada uma vai para um furo do
+  **dado aberto em cruz** talhado no fundo do caderno (a parte dura de dentro da capa de trás). Elas enchem o dado **em ordem**, não por sala: a 1ª
+  fecha a face 1; a 2ª e a 3ª, a face 2; da 4ª à 6ª, a face 3; e assim até a 21ª (`src/story/gems.ts`). No capítulo 1 são três: a da Cisterna (sala 5),
+  a da Ala do Papel (sala 11) e a da constelação C6 (sala 21). Os outros 11 segredos do capítulo guardam **folhas arrancadas dela** (p8 a p18).
+- **Os furos.** Em todo o jogo há exatamente **21 furos redondos de luz** nos tetos: os pontos do dado. **Só os redondos contam** (frestas, pátios e o
+  claustro não). A Casa fica dentro do dado e o capítulo 1 é a borda (`DIRECAO_DE_ARTE.md` §9), então quase todos ficam nos capítulos 1 e 2; o **Poço**
+  do começo é o furo do UM. Ninguém diz isso no jogo. Só as folhas dela, de leve: ela anota os furos, "só os redondos" (p8), e um dia para de contar (p18).
+- **A cena.** O dado montado no fundo do caderno sai do livro: a cruz se dobra e vira um cubo. Zoom: ele está rachando, e a luz vaza pelos 21 furos.
+  Ele rola e para no UM. O furo do UM é o Poço do começo: a câmera entra nele com a luz brilhando, tudo fica branco, e o jogador se vê caindo dentro do
+  poço de novo. Um laço: **a Casa fica dentro do dado**.
+- **Não é o Repetir.** O Repetir também volta ao poço, mas é o **julgamento recomeçando** (a sentença lançada outra vez, a primeira frase do dado
+  agora legível). O epílogo é a **revelação da escala**: a mesma queda, vista de fora. Por isso alguma coisa tem de estar diferente na volta.
+  **Decidido (Pedro): a boca do poço vazia.** A queda e o acordar são os mesmos, mas lá em cima não há ninguém: nem o Escrivão na mureta, nem
+  `VOCÊ VIVER ?`, nem o dado caindo. Ninguém lança o julgamento; o jogador veio de fora e caiu sozinho. É a diferença mais clara para o Repetir (em
+  que alguém joga o dado de novo), não precisa de palavra nenhuma e custa pouco (a abertura sem a cena do Escrivão). Fecha na luz redonda lá em cima,
+  em silêncio. (As outras propostas do `narrador`, guardadas: ele acordar no ponto exato onde o dado caiu; uma sombra passando pela luz do furo.)
+  - **Não:** a primeira frase do dado ficar legível (é o que o Repetir já faz) nem uma frase nova que diga a escala em glifos (o dado explicaria o
+    que a cena acabou de mostrar).
+- **Depois do epílogo (para bem depois, quando os finais existirem):** a ideia do Pedro é um **New Game Plus** com outras coisas, para qualquer
+  final. Também fica para lá decidir a ordem com o Repetir, que também termina numa queda (o epílogo no lugar da queda do Repetir ou depois dela,
+  com os créditos no meio).
+
+## As folhas dela no capítulo 1
+- São **18**: p1 a p7 e, nos segredos que não guardam gema, p8 a p18 (`src/story/herpages.ts`). A ordem do caderno é a do caminho da Casa, da sala 3
+  à sala 20: ela escrevia por onde passava.
+- **Fios que atravessam as folhas**, sempre de leve e sem resolver nada: os furos redondos do teto (p7, p8, p18), uma pedra que brilha e não serve em
+  porta nenhuma (p10), o corpo que não sente sede nem fome (p11), o sonho dentro de uma mão fechada (p13), "o de capuz" que escreve "sobre mim" (p14,
+  sem dizer se é bom), a lembrança de cair de muito mais alto, com a luz redonda ficando pequena (p16).
+- **Erros plantados** (além da p4, "o que está talhado não mente", e da p6, PEQUENO = UM):
+  - p12, "Ele nunca mentiu para mim": pavio longo; vira engano quando o dado mentir pela primeira vez.
+  - p15, "aqui o seis não existe": nenhuma parede escreve o seis num glifo só, mas ele existe (a portinha dos seis pontos da Escadaria; na base 6 do
+    Contador, UM ZERO).
+  - p17, "um boato é igual à verdade": ela lê o UM de «UM BOATO IGUAL VERDADE» como artigo; é o número (exatamente um boato é verdade, como a câmara
+    onde a folha está acabou de mostrar). Somado ao erro da p4, ela conclui que o que leram para ela é verdade, e para no meio da frase.
+- O relato (as duas páginas do começo) é a última coisa que ela escreveu, depois que "a Casa apagou tudo de novo": por isso ali ela volta a "contar
+  tudo", depois de ter parado na p18.
+
 ## Segredos opcionais (para depois)
-Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidade é opcional: salas secretas, a língua inteira, os diários completos, o passado do Escrivão. Quem só passa correndo acha um final. Quem lê tudo acha o porquê.
+Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidade é opcional: salas secretas, a língua inteira, os diários completos, o passado do Escrivão. Quem só passa correndo acha um final. Quem lê tudo acha o porquê. Quem acha as 21 gemas vê o epílogo.
 
 ## Decisões em aberto
 1. ~~O poço é a abertura?~~ **Sim** (decidido).
 2. **O dado mente.** Pode ser que o jogador só descubra isso no meio? Ou desde o começo?
 3. **O Escrivão traiu ou protegeu?** Ele deixou a sentença sem confirmação por maldade ou porque não acreditou na acusação? Recomendo deixar **ambíguo**.
 4. **Quem são os outros 2 NPCs?** (o Contador e o Juiz são proposta; "a que veio antes" é a diarista)
+5. ~~O que muda na volta do epílogo?~~ **A boca do poço vazia** (decidido). Para depois: o New Game Plus e a ordem com a queda do Repetir.
 
 ## Duração e ritmo
 O jogo deve durar **algumas horas** (meta 4 a 6 h), não 20 minutos. O dado começa com **só Fogo e Peso** e fica com eles por

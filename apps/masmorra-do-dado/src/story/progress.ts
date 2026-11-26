@@ -8,7 +8,7 @@ const KEY = slotKey('progress'); // (no espaço de jogo ativo: story/save.ts)
 
 // Em ordem: cada marco alcançado sobe um "estágio" da Casa.
 export const STAGE_FLAGS = ['fogo', 'dois', 'tres', 'escrivao', 'selo', 'brasas'] as const;
-export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco' | 'dado' | 'giz' | 'caiu' | 'caderno' | 'cap1'; // cap1: terminou o capítulo 1 (a tela inicial passa a mostrar o último lugar salvo)
+export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco' | 'dado' | 'giz' | 'caiu' | 'caderno' | 'cap1' | 'gema'; // gema: já viu a cena inteira da gema (as outras são curtas) // cap1: terminou o capítulo 1 (a tela inicial passa a mostrar o último lugar salvo)
 export const MAX_STAGE = STAGE_FLAGS.length;
 
 interface State {

@@ -610,7 +610,7 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
   }
   torches.push(makeTorch(kit, ctx, X0 + 0.1, 2.4, Z0 + 6.7, 1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.4, Z0 + 11.7, -1, 0), makeTorch(kit, ctx, X0 + 0.1, 2.4, Z0 + 16.5, 1, 0));
   cells.push(null, null, null);
-  const C = constellation(api, torches, cells, [3, 4, 5], [2.5, Z0 + 11.7], [X1 - 0.02, 1.25, Z0 + 3.0, -1, 0]);
+  const C = constellation(api, torches, cells, [3, 4, 5], [2.5, Z0 + 11.7], [X1 - 0.02, 1.25, Z0 + 3.0, -1, 0], 'p18');
   const cal = makeCal(kit, ctx, { words: ['menos'], x: 0, y: H - 0.02, z: Z0 + 9.2, ceil: true, size: 1.6, seed: 173 });
   // luz alta e fria para o salão; os braseiros fazem o resto
   for (const [x, z] of [[X0 + 0.1, Z0 + 2.5], [X1 - 0.1, Z0 + 7.5], [X0 + 0.1, Z0 + 12], [X1 - 0.1, Z0 + 17]] as [number, number][]) kit.torch(x, 4.6, z, x < 0 ? 1 : -1, 0, x + z, 0xb8c4f0, 24);
@@ -810,7 +810,7 @@ function dizemExtra(api: FireExtraApi): FireExtra {
   }
   torches.push(makeTorch(kit, ctx, X0 + 0.1, 2.3, Z0 + 2.2, 1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.3, Z0 + 16, -1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.3, Z0 + 2.2, -1, 0));
   cells.push(null, null, null);
-  const C = constellation(api, torches, cells, [0, 2, 6, 8], [fx + 2.2, fz + 2.0], [X0 + 0.02, 1.25, Z0 + 15.5, 1, 0]);
+  const C = constellation(api, torches, cells, [0, 2, 6, 8], [fx + 2.2, fz + 2.0], [X0 + 0.02, 1.25, Z0 + 15.5, 1, 0], 'c6'); // (uma das 21 gemas: DESIGN.md §69)
   const litCell = (c: number) => torches[cells.indexOf(c)]?.lit ?? false;
   // luz das galerias (o pátio já tem o céu)
   for (const [x, z] of [[X0 + 0.1, Z0 + 6], [X0 + 0.1, Z0 + 12], [X1 - 0.1, Z0 + 6], [X1 - 0.1, Z0 + 12]] as [number, number][]) kit.torch(x, 3.0, z, x < 0 ? 1 : -1, 0, x + z, 0xffa860, 22);
