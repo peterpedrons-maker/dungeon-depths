@@ -878,3 +878,17 @@ iguais) e era difícil acertar (mirava-se o soquete, de 15 cm, e o toque só val
   escrita (~0,75 m mais altas); entre dois parágrafos só há tocha se couber a essa distância dos dois.
 - **Subagente `cenografo`** (`.claude/agents/cenografo.md`): level design e arte, com as regras deste documento e da `DIRECAO_DE_ARTE.md`, a
   gramática visual do jogo (o que cada brilho significa) e a regra de ouro de não quebrar puzzles.
+
+## 55. O fogo novo em todo glifo que acende
+- O fogo das frases acendíveis (o traço em brasa correndo na ordem da escrita, as línguas de fogo, as brasas que sobem, o halo) agora vale para
+  **qualquer palavra talhada que acende com fogo**: a frase da porta que acende junto com os braseiros, a Casa lendo a frase da porta quando
+  ela abre (palavra por palavra), as lousas, os rótulos que acendem quando o puzzle é resolvido, o CONFIRMADO/BOATO da Confirma, a Ponte, os
+  Apelidos, o Vestíbulo...
+- Como: `inscription.ts` cria, na 1ª vez que o `fire` de uma palavra passa de 0,2, o fogo dela (`makeWordFire` em `src/scene/firefx.ts`) e o
+  atualiza a cada quadro (`setGlow`, chamado pelo motor nas salas ativas). Nenhuma sala precisou mudar: todas já acendiam escrevendo `p.fire`.
+- Valores parciais continuam valendo: palavras que **pulsam** ou acendem **pela metade** (o TEMPO que pulsa, a contagem n/4, o BOATO que pisca)
+  pulsam com o fogo junto; a palavra só "apaga" depois de 0,4 s abaixo de 0,05 (um piscar rápido não recomeça o fogo). Ao apagar, o traço esfria
+  de laranja a vermelho-escuro e some.
+- Apagadas, essas palavras **continuam de cal** (são textos para ler); só as frases ACENDÍVEIS (tabletes `lit`) são fissuras na pedra (§54).
+- As peças do fogo (shaders das chamas e brasas, o traço em brasa, a mancha macia) moram em `firefx.ts` e são as mesmas das frases acendíveis
+  (`burnline.ts`); as medidas da célula de um glifo, em `glyphcell.ts`.

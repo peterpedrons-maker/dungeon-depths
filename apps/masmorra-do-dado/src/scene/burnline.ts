@@ -10,38 +10,15 @@
 import * as THREE from 'three';
 import { drawGlyphPart, glyphSamples, plot } from '../book/font';
 import { glyphsOf } from '../story/lexicon';
-import { CELL, GLYPH_SIZE, PAD, type Inscription } from './inscription';
+import { CELL, GLYPH_SIZE, PAD } from './glyphcell';
+import type { Inscription } from './inscription';
 import type { Kit } from './kit';
+import { canvasTexture, drawFireGlyph, emberStrokeMaterial, flamePoints, PER_GLYPH, rng, softCapsule, sparkPoints } from './firefx';
 
 const SOOT = new THREE.Color(0.25, 0.22, 0.21); // a pedra da fissura, enegrecida
-const PER_GLYPH = 0.24; // segundos para o fogo escrever um símbolo
 const WORD_GAP = 0.35; // (em símbolos) o fogo leva esse tempo para pular de uma palavra para a outra
 const SOOT_S = 2.0; // quanto dura a fuligem
 
-let capsuleTex: THREE.CanvasTexture | null = null;
-// mancha macia em cápsula (halo e fuligem): branca, a cor vem do material
-function softCapsule() {
-  if (capsuleTex) return capsuleTex;
-  const W = 128;
-  const H = 32;
-  const c = document.createElement('canvas');
-  c.width = W;
-  c.height = H;
-  const g = c.getContext('2d')!;
-  const img = g.createImageData(W, H);
-  for (let y = 0; y < H; y++)
-    for (let x = 0; x < W; x++) {
-      const dx = Math.max(0, Math.abs(x + 0.5 - W / 2) - (W / 2 - H / 2));
-      const d = Math.hypot(dx, y + 0.5 - H / 2) / (H / 2);
-      const a = Math.max(0, 1 - d) ** 1.6;
-      const o = (y * W + x) * 4;
-      img.data[o] = img.data[o + 1] = img.data[o + 2] = 255;
-      img.data[o + 3] = Math.round(a * 255);
-    }
-  g.putImageData(img, 0, 0);
-  capsuleTex = new THREE.CanvasTexture(c);
-  return capsuleTex;
-}
 let glintTex: THREE.CanvasTexture | null = null;
 function glintTexture() {
   if (glintTex) return glintTex;
@@ -58,84 +35,6 @@ function glintTexture() {
   glintTex.minFilter = THREE.NearestFilter;
   return glintTex;
 }
-
-function rng(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// ── as LÍNGUAS DE FOGO: um ponto por chama, desenhado no shader (uma silhueta de gota que tremula e balança; base branca-amarela, ponta
-// vermelha). A chama nasce quando o fogo que corre chega ao ponto (aUnit). Um só desenho por frase. ──
-const FLAME_VS = /* glsl */ `
-attribute float aUnit;
-attribute float aPhase;
-attribute float aSize;
-uniform float uT;
-uniform float uRun;
-uniform float uShow;
-uniform float uViewH;
-varying float vA;
-varying float vPh;
-void main() {
-  float on = clamp((uRun - aUnit) * 4.0, 0.0, 1.0) * uShow;
-  float fl = 0.82 + 0.22 * sin(uT * 11.0 + aPhase * 6.2831) + 0.12 * sin(uT * 23.0 + aPhase * 17.0);
-  float s = aSize * fl * on;
-  vec4 mv = modelViewMatrix * vec4(position + vec3(0.0, s * 0.42, 0.0), 1.0); // a base da chama fica no traço
-  vA = on;
-  vPh = aPhase;
-  gl_Position = projectionMatrix * mv;
-  gl_PointSize = s * projectionMatrix[1][1] * uViewH * 0.5 / max(0.05, -mv.z);
-}`;
-const FLAME_FS = /* glsl */ `
-uniform float uT;
-varying float vA;
-varying float vPh;
-void main() {
-  if (vA <= 0.01) discard;
-  float y = 1.0 - gl_PointCoord.y; // 0 = base, 1 = ponta
-  float x = gl_PointCoord.x * 2.0 - 1.0;
-  float sway = 0.28 * sin(uT * 7.0 + vPh * 9.0 + y * 3.2) * y;
-  float w = pow(max(0.0, 1.0 - y), 0.75) * (0.6 + 0.12 * sin(uT * 13.0 + vPh * 5.0));
-  w *= mix(0.7, 1.0, smoothstep(0.0, 0.2, y)); // a base é redonda
-  float d = abs(x - sway) / max(w, 0.001);
-  if (d > 1.0 || y > 0.97) discard;
-  float k = y + d * 0.3;
-  vec3 c = mix(vec3(1.0, 0.98, 0.78), vec3(1.0, 0.66, 0.18), smoothstep(0.08, 0.45, k));
-  c = mix(c, vec3(0.9, 0.26, 0.06), smoothstep(0.5, 0.95, k));
-  gl_FragColor = vec4(c * 1.6, 1.0);
-}`;
-// ── as BRASAS que sobem: cada uma nasce num ponto de um traço aceso, sobe uns 40 cm balançando e se apaga ──
-const SPARK_VS = /* glsl */ `
-attribute float aUnit;
-attribute float aPhase;
-attribute float aSpeed;
-uniform float uT;
-uniform float uRun;
-uniform float uShow;
-uniform float uViewH;
-uniform vec3 uAlong;
-uniform vec3 uN;
-varying float vA;
-void main() {
-  float life = fract(uT * aSpeed + aPhase);
-  float on = step(aUnit, uRun) * uShow;
-  vec3 p = position + vec3(0.0, life * 0.42, 0.0) + uAlong * sin(life * 6.0 + aPhase * 20.0) * 0.05 + uN * (0.03 + life * 0.08);
-  vec4 mv = modelViewMatrix * vec4(p, 1.0);
-  vA = on * (1.0 - life) * smoothstep(0.0, 0.12, life);
-  gl_Position = projectionMatrix * mv;
-  gl_PointSize = max(1.5, 0.028 * projectionMatrix[1][1] * uViewH * 0.5 / max(0.05, -mv.z)) * step(0.01, vA);
-}`;
-const SPARK_FS = /* glsl */ `
-varying float vA;
-void main() {
-  if (vA <= 0.01) discard;
-  gl_FragColor = vec4(vec3(1.0, 0.68, 0.22) * 1.8 * vA, 1.0);
-}`;
 
 export interface BurnLine {
   readonly start: THREE.Vector3; // começo da frase (lado do soquete), local da sala, na face da parede
@@ -238,25 +137,8 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     canvas.width = W;
     canvas.height = H;
     const g2 = canvas.getContext('2d')!;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.LinearMipmapLinearFilter;
-    tex.generateMipmaps = true;
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 });
-    // brasa VIVA: o brilho do traço ondula ao longo dele, como carvão em brasa
-    mat.onBeforeCompile = (sh) => {
-      sh.uniforms.uT = uT;
-      sh.fragmentShader =
-        'uniform float uT;\n' +
-        sh.fragmentShader.replace(
-          '#include <map_fragment>',
-          `#include <map_fragment>
-          float fl = 0.5 + 0.5 * sin(vMapUv.x * 70.0 + uT * 8.0 + sin(vMapUv.y * 37.0 - uT * 5.0) * 2.0);
-          fl *= 0.55 + 0.45 * sin(vMapUv.x * 17.0 - uT * 5.5 + vMapUv.y * 9.0);
-          diffuseColor.rgb *= 0.62 + 0.8 * fl;`,
-        );
-    };
+    const tex = canvasTexture(canvas);
+    const mat = emberStrokeMaterial(tex, uT); // brasa VIVA: o brilho do traço ondula ao longo dele
     const m = new THREE.Mesh((p.mesh.geometry as THREE.PlaneGeometry).clone(), mat);
     m.position.copy(p.mesh.position).addScaledVector(n, 0.004);
     m.rotation.copy(p.mesh.rotation);
@@ -290,22 +172,9 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
   const hPanel = (first.mesh.geometry as THREE.PlaneGeometry).parameters.height;
 
   // ── as chamas e as brasas (um desenho cada, por frase) ──
-  const viewH = { value: 400 };
-  const setViewH = (renderer: THREE.WebGLRenderer) => {
-    const rt = renderer.getRenderTarget();
-    viewH.value = rt ? rt.height : renderer.domElement.height;
-  };
   const uRun = { value: 0 };
   const uShow = { value: 0 };
-  const fgeo = new THREE.BufferGeometry();
-  fgeo.setAttribute('position', new THREE.Float32BufferAttribute(flamePts, 3));
-  fgeo.setAttribute('aUnit', new THREE.Float32BufferAttribute(flameUnit, 1));
-  fgeo.setAttribute('aPhase', new THREE.Float32BufferAttribute(flamePh, 1));
-  fgeo.setAttribute('aSize', new THREE.Float32BufferAttribute(flameSz, 1));
-  const flames = new THREE.Points(fgeo, new THREE.ShaderMaterial({ vertexShader: FLAME_VS, fragmentShader: FLAME_FS, uniforms: { uT, uRun, uShow, uViewH: viewH }, transparent: true, depthWrite: false }));
-  flames.frustumCulled = false;
-  flames.renderOrder = 5;
-  flames.onBeforeRender = (renderer) => setViewH(renderer);
+  const flames = flamePoints({ pts: flamePts, unit: flameUnit, phase: flamePh, size: flameSz, uT, uRun, uShow });
   kit.group.add(flames);
   const NS = Math.max(8, Math.round(len * 6));
   const sPts: number[] = [];
@@ -319,26 +188,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     sPh.push(r());
     sSp.push(0.6 + r() * 0.5);
   }
-  const sgeo = new THREE.BufferGeometry();
-  sgeo.setAttribute('position', new THREE.Float32BufferAttribute(sPts, 3));
-  sgeo.setAttribute('aUnit', new THREE.Float32BufferAttribute(sUnit, 1));
-  sgeo.setAttribute('aPhase', new THREE.Float32BufferAttribute(sPh, 1));
-  sgeo.setAttribute('aSpeed', new THREE.Float32BufferAttribute(sSp, 1));
-  const sparks = new THREE.Points(
-    sgeo,
-    new THREE.ShaderMaterial({
-      vertexShader: SPARK_VS,
-      fragmentShader: SPARK_FS,
-      uniforms: { uT, uRun, uShow, uViewH: viewH, uAlong: { value: along.clone() }, uN: { value: n.clone() } },
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }),
-  );
-  sparks.frustumCulled = false;
-  sparks.renderOrder = 6;
-  sparks.onBeforeRender = (renderer) => setViewH(renderer);
-  kit.group.add(sparks);
+  kit.group.add(sparkPoints({ pts: sPts, unit: sUnit, phase: sPh, speed: sSp, along, n, uT, uRun, uShow }));
 
   // o halo quente (somado à parede), a fuligem (escurece), a fuligem VELHA (fixa, acima da frase) e o contorno de mira
   const plane = (w: number, h: number, mat: THREE.Material, off: number, order: number, up = 0) => {
@@ -408,12 +258,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
       const cx = PAD + CELL * (gl.idx + 0.5);
       const cy = PAD + CELL / 2;
       const def = P.defs[gl.idx];
-      // a brasa dentro da fissura: larga e clara (de longe, quem aparece são as camadas largas)
-      drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#b8300a', gl.f, 11);
-      drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ff6a14', gl.f, 8);
-      drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ffae36', gl.f, 5);
-      drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ffe290', gl.f, 2);
-      drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#fffbe6', gl.f, 0);
+      drawFireGlyph(g, def, cx, cy, gl.f); // a brasa dentro da fissura
     }
     P.tex.needsUpdate = true;
     P.dirty = false;
