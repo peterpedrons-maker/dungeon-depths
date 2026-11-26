@@ -1,6 +1,7 @@
 // FRASE ACENDÍVEL (tabletes `lit` do construtor fire.ts): o que o jogador vê de uma frase que o dado de Fogo acende. DESIGN.md §53, §54 e §56.
-//  · APAGADA: de verdade, SEM BRILHO nenhum: são FISSURAS na pedra (sulco escuro, a borda lascada pegando a luz da sala, rachaduras finas saindo
-//    dos traços). Lê-se de perto. A pedra só lembra, sem brilhar, que ali já houve fogo: uma mancha velha de FULIGEM acima da frase.
+//  · APAGADA: SEM BRILHO nenhum, mas legível: o sulco talhado preenchido de um branco MEIO AMARELADO (marfim), fosco, diferente do branco da
+//    cal das escritas comuns (que brilha um pouco). Antes era fissura preta: confundia com o rejunte dos tijolos. A pedra só lembra, sem
+//    brilhar, que ali já houve fogo: uma mancha velha de FULIGEM acima da frase.
 //  · ACESA: o glifo continua NÍTIDO, no desenho exato, e BRILHA numa luz dourada meio mágica: a luz corre pelos sulcos do soquete até o fim da
 //    frase, traço por traço (a ordem da escrita), e depois respira devagar, com um reflexo correndo ao longo dos traços; halo dourado na parede e
 //    luz de verdade. (Antes havia chamas por cima das letras: deformavam o glifo e confundiam.)
@@ -8,14 +9,16 @@
 //  · REALCE DE MIRA: um contorno dourado em volta da frase, enquanto a mira (com a face de Fogo) está sobre ela.
 // De longe dá para contar quantas frases estão acesas: a luz e o halo ignoram a névoa.
 import * as THREE from 'three';
-import { drawGlyphPart, glyphSamples, plot } from '../book/font';
+import { drawGlyphPart, glyphSamples } from '../book/font';
 import { glyphsOf } from '../story/lexicon';
 import { CELL, GLYPH_SIZE, PAD } from './glyphcell';
 import type { Inscription } from './inscription';
 import type { Kit } from './kit';
-import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, PER_GLYPH, rng, softCapsule } from './firefx';
+import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, HALO_K, PER_GLYPH, rng, softCapsule } from './firefx';
 
-const SOOT = new THREE.Color(0.25, 0.22, 0.21); // a pedra da fissura, enegrecida
+const SOOT = new THREE.Color(0.25, 0.22, 0.21); // a escrita apagada pela Casa, enegrecida
+const IVORY = '#ddd3b8'; // o branco meio amarelado (osso, pálido) da escrita que ainda não foi acesa
+const MATTE = new THREE.Color(0.78, 0.77, 0.75); // fosco: sob luz quente ela não pode parecer acesa
 const WORD_GAP = 0.35; // (em símbolos) a luz leva esse tempo para pular de uma palavra para a outra
 const SOOT_S = 2.0; // quanto dura a fuligem
 
@@ -63,7 +66,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     const parts = Math.max(1, defs.length);
     const W = parts * CELL + PAD * 2;
     const H = CELL + PAD * 2;
-    // ── a pedra: FISSURAS no lugar da cal (a textura da palavra é trocada) ──
+    // ── a pedra: o sulco com o preenchimento MARFIM, fosco, no lugar da cal (a textura da palavra é trocada) ──
     const fc = document.createElement('canvas');
     fc.width = W;
     fc.height = H;
@@ -71,34 +74,19 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     defs.forEach((def, j) => {
       const cx = PAD + CELL * (j + 0.5);
       const cy = PAD + CELL / 2;
-      drawGlyphPart(fg, def, cx - 2, cy - 2, GLYPH_SIZE, 'rgba(206,190,166,0.5)', 1, 6); // a borda de cima, lascada, pega a luz
-      drawGlyphPart(fg, def, cx + 1, cy + 1, GLYPH_SIZE, '#0b0807', 1, 6); // o fundo da fissura
-      drawGlyphPart(fg, def, cx, cy, GLYPH_SIZE, '#060404', 1, 3);
-      // rachaduras finas que saem dos traços
-      const sm = glyphSamples(def, cx, cy, GLYPH_SIZE, 26);
-      fg.fillStyle = 'rgba(12,9,8,0.85)';
-      for (let q = 0; q < 4 && sm.length; q++) {
-        const s0 = sm[Math.floor(r() * sm.length)];
-        let x = s0.x;
-        let y = s0.y;
-        let a = r() * Math.PI * 2;
-        for (let k = 0; k < 3; k++) {
-          const l = 4 + r() * 7;
-          const nx = x + Math.cos(a) * l;
-          const ny = y + Math.sin(a) * l;
-          plot(fg, x, y, nx, ny, 1);
-          x = nx;
-          y = ny;
-          a += (r() - 0.5) * 1.4;
-        }
-      }
+      drawGlyphPart(fg, def, cx, cy, GLYPH_SIZE, '#15110f', 1, 10); // o sulco (o contorno escuro separa a escrita da parede)
+      drawGlyphPart(fg, def, cx, cy, GLYPH_SIZE, IVORY, 1, 5); // o preenchimento marfim
+      // gasto: alguns pontinhos onde o marfim descascou (só textura; não muda o desenho)
+      const sm = glyphSamples(def, cx, cy, GLYPH_SIZE, 9);
+      fg.fillStyle = '#9c8a62';
+      for (const q of sm) if (r() < 0.25) fg.fillRect(Math.round(q.x + (r() - 0.5) * 3), Math.round(q.y + (r() - 0.5) * 3), 2, 2);
     });
     const ftex = canvasTexture(fc);
     ftex.anisotropy = 4;
     p.mat.map = ftex;
     p.mat.emissiveMap = null;
     p.mat.emissiveIntensity = 0;
-    p.mat.color.setRGB(1, 1, 1);
+    p.mat.color.copy(MATTE);
     p.mat.needsUpdate = true;
     // ── a luz que corre: o traço aceso (desenhado aos poucos) por cima da fissura ──
     const canvas = document.createElement('canvas');
@@ -240,13 +228,13 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
       for (const P of ps) {
         P.mat.opacity = Math.min(1, show * 1.3);
         glowColor(P.mat.color, lit ? 1 : show * show);
-        P.base.color.setRGB(1, 1, 1).lerp(SOOT, soot);
+        P.base.color.copy(MATTE).lerp(SOOT, soot);
         P.base.emissiveIntensity = 0;
       }
       const grow = Math.min(1, 0.2 + run / total);
-      haloMat.opacity = 0.5 * show * breathe * grow;
+      haloMat.opacity = HALO_K * 0.5 * show * breathe * grow;
       sootMat.opacity = 0.72 * soot;
-      em.intensity = 11 * show * breathe * grow;
+      em.intensity = 4 * show * breathe * grow; // (fraca: a luz não pode dourar as frases apagadas vizinhas)
       // realce de mira
       hl += ((hlWant ? 1 : 0) - hl) * Math.min(1, dt * 14);
       hlWant = false;

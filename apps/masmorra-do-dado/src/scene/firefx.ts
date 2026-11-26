@@ -48,7 +48,22 @@ export function softCapsule() {
 
 // o símbolo ACESO, até a fração `f` da escrita: o traço no desenho exato do glifo (só um pouco mais largo que o sulco), luz dourada com o miolo
 // quase branco
+// EM TESTE (`?glifo=suave` no endereço): sem a faixa de luz (halo) atrás da frase; o brilho fica SÓ no desenho do glifo, um brilho macio
+// que acompanha o traço (camadas cada vez mais largas e mais fracas em volta dele)
+export const GLOW_SOFT = typeof location !== 'undefined' && new URLSearchParams(location.search).get('glifo') === 'suave';
+export const HALO_K = GLOW_SOFT ? 0 : 1; // quanto do halo retangular aparece
 export function drawGlowGlyph(g: CanvasRenderingContext2D, def: GlyphDef, cx: number, cy: number, f: number) {
+  if (GLOW_SOFT) {
+    // o brilho em volta do traço: 4 camadas, da mais larga e fraca à mais estreita (cabe na margem PAD da célula)
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,200,110,0.06)', f, 22);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,205,120,0.08)', f, 17);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,210,130,0.11)', f, 13);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,215,140,0.16)', f, 10);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ffd060', f, 6); // (no modo suave, o traço em si é dourado até a borda, sem o laranja)
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ffeeb8', f, 3);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#fffdf2', f, 0);
+    return;
+  }
   drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,170,60,0.55)', f, 8); // a borda da luz, macia
   drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ffc24a', f, 5);
   drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, '#ffe9a8', f, 2);
@@ -174,7 +189,7 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
       const k = on ? Math.max(0.15, inten) : 1; // acesa pela metade (ou pulsando): a luz acompanha
       mat.opacity = Math.min(1, show * 1.3) * Math.min(1, k * 1.25);
       glowColor(mat.color, on ? 1 : show * show);
-      haloMat.opacity = 0.45 * show * k * Math.min(1, 0.25 + run / total);
+      haloMat.opacity = HALO_K * 0.45 * show * k * Math.min(1, 0.25 + run / total);
     },
   };
 }

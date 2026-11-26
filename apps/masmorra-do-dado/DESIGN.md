@@ -904,7 +904,14 @@ O fogo de verdade nas letras (§54–§55) deformava o glifo: as chamas por cima
 - Vale para as frases acendíveis (`burnline.ts`) e para **toda palavra talhada que acende** (`makeWordGlow` em `firefx.ts`, via `p.fire`;
   palavras de cal continuam de cal quando apagadas). Saíram as chamas e as brasas (os `Points` com shader).
 
-## 57. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
+## 57. Frase acendível apagada em marfim (pedido do Pedro)
+A fissura preta da frase apagada (§54) confundia com a parede (o rejunte dos tijolos também é escuro). Agora a frase que ainda não foi acesa é
+o sulco talhado preenchido de **marfim**: um branco meio amarelado, pálido (cor de osso), **fosco** e sem brilho nenhum, diferente do branco
+da cal das escritas comuns (que brilha um pouco). São três tons que não se confundem: **branco** (texto para ler), **marfim** (frase que pode
+ser acesa), **dourado luminoso** (acesa). Para a luz quente não "acender" o marfim, ele é um pouco menos claro que a cal e a luz de verdade que
+a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A moldura do tablete acendível é do mesmo marfim, sem brilho.
+
+## 58. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
 O Pedro pediu um nível "AAA" de ambientação, **sempre em pixel art**, com uma foto de referência (cripta de colunas redondas e abóbadas de
 aresta, tochas, escuro de verdade) e quis ver primeiro uma sala pronta. A sala 2 (O Vestíbulo) virou o mockup. **Nada do puzzle mudou**: os três
 braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugares; a sala ainda se resolve com exatamente dois acesos.

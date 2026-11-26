@@ -62,7 +62,8 @@ Estes sinais têm significado no jogo; **nunca os use como enfeite**:
 - **rachaduras com brasas no chão** = algo escondido vai subir dali;
 - **soquete frio** (pedra sem brasa) = acendível, mas algo falta;
 - **cal verde-limão** = só aparece no ESCURO da Casa;
-- **fissuras com fuligem velha acima** (sem brilho) = frase acendível apagada; **glifos brilhando em dourado** = escrita acesa pela Casa/pelo
+- **escrita marfim fosca** (branco meio amarelado, sem brilho) com fuligem velha acima = frase acendível apagada (a cal das escritas
+  comuns é branca); **glifos brilhando em dourado** = escrita acesa pela Casa/pelo
   Fogo (não use dourado luminoso em escrita decorativa);
 - **tocha num poste/parede em sala de constelação** = pode contar para o puzzle (não acrescente tochas acendíveis ali);
 - **moldura talhada em volta da frase** = confirmada; **frase gasta** = boato.
