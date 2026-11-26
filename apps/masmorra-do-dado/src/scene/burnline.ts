@@ -14,7 +14,7 @@ import { glyphsOf } from '../story/lexicon';
 import { CELL, GLYPH_SIZE, PAD } from './glyphcell';
 import type { Inscription } from './inscription';
 import type { Kit } from './kit';
-import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, PER_GLYPH, rng, softCapsule } from './firefx';
+import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, HALO_K, PER_GLYPH, rng, softCapsule } from './firefx';
 
 const SOOT = new THREE.Color(0.25, 0.22, 0.21); // a escrita apagada pela Casa, enegrecida
 const IVORY = '#ddd3b8'; // o branco meio amarelado (osso, pálido) da escrita que ainda não foi acesa
@@ -232,7 +232,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
         P.base.emissiveIntensity = 0;
       }
       const grow = Math.min(1, 0.2 + run / total);
-      haloMat.opacity = 0.5 * show * breathe * grow;
+      haloMat.opacity = HALO_K * 0.5 * show * breathe * grow;
       sootMat.opacity = 0.72 * soot;
       em.intensity = 4 * show * breathe * grow; // (fraca: a luz não pode dourar as frases apagadas vizinhas)
       // realce de mira
