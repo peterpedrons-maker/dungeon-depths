@@ -86,22 +86,22 @@ export function canvasTexture(c: HTMLCanvasElement) {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-// O PULSO (EM TESTE, `?pulso=1` no endereço): no instante em que a luz termina de escrever a frase/palavra, um clarão curto que segue o
-// desenho (o traço fica bem mais claro e o bloom o abre um pouco) e depois assenta no brilho contido. Devolve a sensação de recompensa sem
-// deformar o glifo: dura pouco e não deixa nada atrás da escrita.
-export const PULSE_ON = typeof location !== 'undefined' && new URLSearchParams(location.search).get('pulso') === '1';
-export const PULSE_S = 0.75; // duração do pulso (s)
-// 0..1: a força do pulso `t` segundos depois de a escrita terminar (sobe em 0,06 s e cai suave)
+// O PULSO (DESIGN.md §59): o clarão ANDA com a escrita, da esquerda para a direita: cada símbolo clareia no instante em que a luz chega nele e
+// assenta no brilho contido em ~0,75 s (uma onda que acompanha a luz). Não deforma o glifo e não deixa nada atrás da escrita.
+export const PULSE_S = 0.75; // quanto o clarão de cada ponto dura (s)
+// 0..1: a força do clarão `t` segundos depois de a luz passar (sobe em 0,06 s e cai suave)
 export function pulseK(t: number) {
-  if (!PULSE_ON || t < 0 || t > PULSE_S) return 0;
+  if (t < 0 || t > PULSE_S) return 0;
   const up = Math.min(1, t / 0.06);
   const down = 1 - (t - 0.06) / (PULSE_S - 0.06);
   return t < 0.06 ? up : Math.max(0, down) ** 2;
 }
+const f1 = (v: number) => (Number.isInteger(v) ? v.toFixed(1) : String(v));
 
-// o CLARÃO do pulso: uma camada de luz no formato exato dos traços (só um pouco mais larga e macia que eles), somada por cima, que acende e
-// some. Desenhada uma vez por palavra; só aparece se o pulso estiver ligado.
-export function makeFlashMesh(geo: THREE.PlaneGeometry, defs: GlyphDef[], W: number, H: number) {
+// o CLARÃO: uma camada de luz no formato exato dos traços (só um pouco mais larga e macia que eles), somada por cima. Desenhada uma vez por
+// palavra; o shader acende cada ponto quando a luz passa por ele: `uRunV` = quantos símbolos a luz já percorreu desde que começou a escrever
+// (continua contando depois do fim, para o clarão do último símbolo assentar), `base` = em que símbolo esta palavra começa.
+export function makeFlashMesh(geo: THREE.PlaneGeometry, defs: GlyphDef[], W: number, H: number, uRunV: { value: number }, base: number) {
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
@@ -114,11 +114,32 @@ export function makeFlashMesh(geo: THREE.PlaneGeometry, defs: GlyphDef[], W: num
     drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,236,190,0.55)', 1, 7);
     drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,250,232,0.9)', 1, 3);
   });
-  const mat = new THREE.MeshBasicMaterial({ map: canvasTexture(c), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 });
+  const mat = new THREE.MeshBasicMaterial({ map: canvasTexture(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 });
+  const parts = Math.max(1, defs.length);
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uRunV = uRunV;
+    sh.fragmentShader =
+      `uniform float uRunV;
+      float pulseAt(float s) {
+        if (s < 0.0 || s > ${f1(PULSE_S)}) return 0.0;
+        if (s < 0.06) return s / 0.06;
+        float d = 1.0 - (s - 0.06) / ${f1(PULSE_S - 0.06)};
+        return d * d;
+      }
+` +
+      sh.fragmentShader.replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        float gx = (vMapUv.x * ${f1(W)} - ${f1(PAD)}) / ${f1(CELL)};
+        float u = ${f1(base)} + clamp(gx, 0.0, ${f1(parts)});
+        diffuseColor.a *= pulseAt((uRunV - u) * ${f1(PER_GLYPH)});`,
+      );
+  };
   const m = new THREE.Mesh(geo.clone(), mat);
   m.renderOrder = 4;
   m.visible = false;
-  return { mesh: m, set(k: number) { mat.opacity = k; m.visible = k > 0.005; } };
+  // visível só enquanto a onda passa por esta palavra
+  return { mesh: m, update(on: boolean) { m.visible = on && uRunV.value > base - 0.1 && uRunV.value < base + parts + PULSE_S / PER_GLYPH + 0.1; } };
 }
 
 // a cor do traço: acesa = dourado luminoso (só um pouco acima de 1: o bloom dá um brilho leve, sem borrar o desenho); esfriando = âmbar apagado
@@ -152,12 +173,11 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
   over.rotation.copy(mesh.rotation);
   over.renderOrder = 3;
   parent.add(over);
-  const flash = PULSE_ON ? makeFlashMesh(geo, defs, W, H) : null;
-  if (flash) {
-    flash.mesh.position.copy(mesh.position).addScaledVector(n, 0.006);
-    flash.mesh.rotation.copy(mesh.rotation);
-    parent.add(flash.mesh);
-  }
+  const uRunV = { value: 1e6 };
+  const flash = makeFlashMesh(geo, defs, W, H, uRunV, 0);
+  flash.mesh.position.copy(mesh.position).addScaledVector(n, 0.006);
+  flash.mesh.rotation.copy(mesh.rotation);
+  parent.add(flash.mesh);
 
   const total = parts;
   const fs = defs.map(() => 0);
@@ -166,7 +186,7 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
   let run = 0;
   let show = 0;
   let inten = 0;
-  let pulseT = -1;
+  let runV = 1e6; // símbolos percorridos pela luz desde que ela começou a escrever (o clarão; 1e6 = nenhum)
   const sync = () => {
     let dirty = false;
     defs.forEach((_, j) => {
@@ -193,11 +213,12 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
       }
       inten += (Math.min(1, fire) - inten) * Math.min(1, dt * 20);
       if (on) {
+        if (run === 0 && show === 0) runV = 0; // começou a escrever: começa a onda
         if (run < total) {
           run = Math.min(total, run + dt / PER_GLYPH);
           sync();
-          if (run >= total) pulseT = 0; // terminou de escrever: o pulso
         }
+        runV += dt / PER_GLYPH;
         show = 1;
       } else if (show > 0) {
         show = Math.max(0, show - dt / 0.6);
@@ -208,13 +229,12 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
       }
       const vis = visible && show > 0;
       over.visible = vis;
+      uRunV.value = runV;
+      flash.update(on && vis);
       if (!vis) return;
       const k = on ? Math.max(0.15, inten) : 1; // acesa pela metade (ou pulsando): a luz acompanha
       mat.opacity = Math.min(1, show * 1.3) * Math.min(1, k * 1.25);
-      if (pulseT >= 0) pulseT += dt;
-      const pk = pulseK(pulseT);
-      glowColor(mat.color, on ? 1 : show * show, 1 + 0.5 * pk);
-      flash?.set(pk * (visible ? 1 : 0));
+      glowColor(mat.color, on ? 1 : show * show);
     },
   };
 }

@@ -15,7 +15,7 @@ import { glyphsOf } from '../story/lexicon';
 import { CELL, GLYPH_SIZE, PAD } from './glyphcell';
 import type { Inscription } from './inscription';
 import type { Kit } from './kit';
-import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, makeFlashMesh, PER_GLYPH, PULSE_ON, pulseK, rng, softCapsule } from './firefx';
+import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, makeFlashMesh, PER_GLYPH, pulseK, rng, softCapsule } from './firefx';
 
 const SOOT = new THREE.Color(0.25, 0.22, 0.21); // a escrita apagada pela Casa, enegrecida
 const IVORY = '#ddd3b8'; // o branco meio amarelado (osso, pálido) da escrita que ainda não foi acesa
@@ -57,10 +57,11 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     base: THREE.MeshLambertMaterial;
     defs: ReturnType<typeof glyphsOf>;
     dirty: boolean;
-    flash: ReturnType<typeof makeFlashMesh> | null;
+    flash: ReturnType<typeof makeFlashMesh>;
   }
   const ps: P[] = [];
   const uT = { value: 0 };
+  const uRunV = { value: 1e6 }; // símbolos percorridos pela luz desde que ela começou a escrever (o clarão; 1e6 = nenhum)
   const phase = r() * 6.28;
   let unit = 0;
   panels.forEach((p, pi) => {
@@ -102,12 +103,11 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     m.rotation.copy(p.mesh.rotation);
     m.renderOrder = 3;
     kit.group.add(m);
-    const flash = PULSE_ON ? makeFlashMesh(p.mesh.geometry as THREE.PlaneGeometry, defs, W, H) : null;
-    if (flash) {
-      flash.mesh.position.copy(p.mesh.position).addScaledVector(n, 0.006);
-      flash.mesh.rotation.copy(p.mesh.rotation);
-      kit.group.add(flash.mesh);
-    }
+    // o clarão que anda com a escrita (esta palavra começa no símbolo `unit` da frase)
+    const flash = makeFlashMesh(p.mesh.geometry as THREE.PlaneGeometry, defs, W, H, uRunV, unit);
+    flash.mesh.position.copy(p.mesh.position).addScaledVector(n, 0.006);
+    flash.mesh.rotation.copy(p.mesh.rotation);
+    kit.group.add(flash.mesh);
     defs.forEach((_, j) => {
       glyphs.push({ panel: pi, idx: j, t0: unit, f: 0 });
       unit += 1;
@@ -171,7 +171,8 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
   let run = 0; // símbolos já percorridos pela luz
   let show = 0; // 0..1 o traço aceso visível (esmaece ao apagar)
   let sootT = 0;
-  let pulseT = -1; // segundos desde que a luz terminou de escrever (o pulso); -1 = nenhum
+  let runV = 1e6; // (ver uRunV)
+  const emPos = new THREE.Vector3(); // onde a luz da frase está (anda com a escrita)
   let hlWant = false;
   let hl = 0;
 
@@ -203,8 +204,10 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     set(on, instant = false) {
       if (on === lit && !instant) return;
       if (!on && lit && show > 0.3 && !instant) sootT = SOOT_S; // apagou: fica a fuligem
+      if (on && !lit && !instant && show === 0) runV = 0; // começou a escrever: começa a onda
       lit = on;
       if (instant) {
+        runV = 1e6;
         run = on ? total : 0;
         show = on ? 1 : 0;
         sootT = 0;
@@ -220,8 +223,8 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
         if (run < total) {
           run = Math.min(total, run + dt / PER_GLYPH);
           sync();
-          if (run >= total) pulseT = 0; // terminou de escrever: o pulso
         }
+        runV += dt / PER_GLYPH;
         show = 1;
       } else if (show > 0) {
         show = Math.max(0, show - dt / 0.6);
@@ -233,18 +236,24 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
       if (sootT > 0 && !o.hold?.()) sootT = Math.max(0, sootT - dt);
       const soot = Math.min(1, sootT / 0.7); // segura escura e clareia no fim
       const breathe = 0.92 + 0.08 * Math.sin(t * 1.9 + phase);
-      if (pulseT >= 0) pulseT += dt;
-      const pk = pulseK(pulseT);
+      uRunV.value = runV;
       for (const P of ps) {
         P.mat.opacity = Math.min(1, show * 1.3);
-        glowColor(P.mat.color, lit ? 1 : show * show, 1 + 0.5 * pk);
-        P.flash?.set(pk);
+        glowColor(P.mat.color, lit ? 1 : show * show);
+        P.flash.update(lit);
         P.base.color.copy(MATTE).lerp(SOOT, soot);
         P.base.emissiveIntensity = 0;
       }
       const grow = Math.min(1, 0.2 + run / total);
       sootMat.opacity = 0.72 * soot;
-      em.intensity = (4 + 16 * pk) * show * breathe * grow; // (fraca: a luz não pode dourar as frases apagadas vizinhas; no pulso, um clarão)
+      // a luz da frase: fraca (não pode dourar as frases apagadas vizinhas); enquanto a onda passa, um clarão que ANDA com ela, da esquerda para a
+      // direita, e depois volta devagar para o meio da frase
+      const waveS = (runV - total) * PER_GLYPH; // segundos desde que a luz chegou ao fim
+      const wave = lit && runV < 1e5 ? (run < total ? 1 : pulseK(waveS + 0.06)) : 0;
+      const head = start.clone().lerp(end, Math.min(1, run / total));
+      emPos.copy(wave > 0.02 || (lit && run < total) ? head : mid);
+      em.pos.lerp(emPos.addScaledVector(n, 0.7), Math.min(1, dt * (wave > 0.02 ? 14 : 2)));
+      em.intensity = (4 + 7 * wave) * show * breathe * grow; // (o clarão da parede é contido: a frase apagada vizinha não pode parecer acesa)
       // realce de mira
       hl += ((hlWant ? 1 : 0) - hl) * Math.min(1, dt * 14);
       hlWant = false;
