@@ -863,3 +863,18 @@ iguais) e era difícil acertar (mirava-se o soquete, de 15 cm, e o toque só val
 - Testado (Playwright, PC 1280×720 e celular emulado com toque, 844×390): no Confirma, as três confirmadas acendem na 1ª tentativa de 2, 2,5 e
   3 m (uma delas mirando 0,6 m fora do centro); o boato pune e deixa a fuligem; posicionar na prateleira acende; em O Boato Verdadeiro as quatro
   certas e a da porta acendem e a Casa aceita. Não testado num celular de verdade.
+
+## 54. Fogo de verdade, fissuras na pedra, tochas longe da escrita (pedido do Pedro)
+- **Acesa = fogo de verdade** (`burnline.ts`): além do sulco em brasa viva (o brilho ondula ao longo do traço, shader), **línguas de fogo**
+  dançam em cima dos traços (um `THREE.Points` por frase: cada chama é uma gota desenhada no shader, que tremula e balança; nasce quando o fogo
+  que corre chega àquele ponto, `glyphSamples` em `book/font.ts`) e **brasas sobem** (outro `Points`). Ao apagar, as chamas encolhem e o sulco
+  esfria de laranja a vermelho-escuro antes da fuligem. A chama do soquete ficou pequena (o fogo de verdade está na frase).
+- **Apagada = fissuras na pedra**, não cal: sulco escuro, a borda de cima lascada pegando a luz, rachaduras finas saindo dos traços; legível de
+  perto, quase some de longe. A moldura dos tabletes acendíveis também é só talho (sem cal, sem brilho).
+- **A pista sem dica** (sutil, nunca escrachada): uma mancha velha de **fuligem acima** de cada frase acendível (ali já queimou; a fumaça sobe) e,
+  de tempos em tempos (4 a 10 s), uma **brasa adormecida** que reluz no fundo de uma fissura e se apaga (só enquanto a frase espera o fogo e a
+  Casa aceita fogo). Junto com a brasa pulsando na prateleira, o jogador sente que aquilo pode queimar.
+- **Tochas longe das escritas** (`fire.ts`): as tochas de leitura dos parágrafos ficam a **1,6 m** da moldura (e da prateleira) e **acima** da
+  escrita (~0,75 m mais altas); entre dois parágrafos só há tocha se couber a essa distância dos dois.
+- **Subagente `cenografo`** (`.claude/agents/cenografo.md`): level design e arte, com as regras deste documento e da `DIRECAO_DE_ARTE.md`, a
+  gramática visual do jogo (o que cada brilho significa) e a regra de ouro de não quebrar puzzles.

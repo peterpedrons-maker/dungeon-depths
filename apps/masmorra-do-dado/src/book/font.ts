@@ -265,6 +265,44 @@ export function drawGlyphPart(ctx: CanvasRenderingContext2D, g: GlyphDef, cx: nu
   }
 }
 
+// Pontos AO LONGO dos traços de um símbolo (px do canvas), a cada `step` px, na ordem da escrita, com `u` = fração da escrita (0..1) em que
+// o traço passa ali. As chamas e as brasas de uma frase acesa nascem nesses pontos (scene/burnline.ts).
+export function glyphSamples(g: GlyphDef, cx: number, cy: number, size: number, step: number): { x: number; y: number; u: number }[] {
+  const k = size / 130;
+  const S = 34 * k;
+  const cell = (i: number): [number, number] => [cx + ((i % 3) - 1) * S, cy + (Math.floor(i / 3) - 1) * S];
+  const h = 56 * k;
+  const L = cx - h;
+  const R = cx + h;
+  const T = cy - h;
+  const B = cy + h;
+  const segs: [number, number, number, number][] = [];
+  if (g.F === 'full') segs.push([L, T, R, T], [R, T, R, B], [R, B, L, B], [L, B, L, T]);
+  else if (g.F === 'U') segs.push([L, T, L, B], [L, B, R, B], [R, B, R, T]);
+  else if (g.F === 'N') segs.push([L, B, L, T], [L, T, R, T], [R, T, R, B]);
+  else if (g.F === 'R') segs.push([R, T, L, T], [L, T, L, B], [L, B, R, B]);
+  else if (g.F === 'L') segs.push([L, T, R, T], [R, T, R, B], [R, B, L, B]);
+  else if (g.F === 'V') segs.push([L, T, L, B], [R, T, R, B]);
+  for (const [a, b] of g.l) segs.push([...cell(a), ...cell(b)]);
+  const items: ({ s: [number, number, number, number] } | { p: [number, number] })[] = [...segs.map((s) => ({ s })), ...g.p.map((i) => ({ p: cell(i) })), ...g.ring.map((i) => ({ p: cell(i) }))];
+  const len = (it: (typeof items)[number]) => ('s' in it ? Math.hypot(it.s[2] - it.s[0], it.s[3] - it.s[1]) : S * 0.6);
+  const total = items.reduce((a, it) => a + len(it), 0) || 1;
+  const out: { x: number; y: number; u: number }[] = [];
+  let acc = 0;
+  for (const it of items) {
+    const l = len(it);
+    if ('s' in it) {
+      const n = Math.max(1, Math.round(l / step));
+      for (let j = 0; j < n; j++) {
+        const f = (j + 0.5) / n;
+        out.push({ x: it.s[0] + (it.s[2] - it.s[0]) * f, y: it.s[1] + (it.s[3] - it.s[1]) * f, u: (acc + l * f) / total });
+      }
+    } else out.push({ x: it.p[0], y: it.p[1], u: (acc + l * 0.5) / total });
+    acc += l;
+  }
+  return out;
+}
+
 // uma palavra inteira (as compostas viram uma sequência de símbolos) dentro de uma caixa w x h
 export function drawWord(ctx: CanvasRenderingContext2D, id: string, x: number, y: number, w: number, h: number, color: string) {
   const parts = glyphsOf(id);

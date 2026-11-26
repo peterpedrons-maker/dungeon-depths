@@ -473,14 +473,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           const fz = zc + dir * (-Wb / 2 - sz * 0.9);
           const sp = shelf(left ? X0 : X1, left ? 1 : -1, 0, fy, fz);
           const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-          flame.position.set(sp.x, sp.y + 0.22, sp.z);
+          flame.position.set(sp.x, sp.y + 0.14, sp.z);
           flame.visible = false;
           kit.group.add(flame);
           const emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, depthWrite: false, transparent: true }));
           emb.scale.set(0.2, 0.2, 1);
           emb.position.set(sp.x, sp.y + 0.06, sp.z);
           kit.group.add(emb);
-          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3 });
+          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3, idle: () => !risen && lockCold <= 0 });
           if (ln.preLit) burn.set(true, true);
           litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: !!ln.preLit, fire: ln.preLit ? 1 : 0, flame, emb, key: `L${litLines.length}`, preLit: !!ln.preLit, door: false, axis: 'z', burn, gap: n > 1 ? lh / 2 : 0.45, nx: left ? 1 : -1, nz: 0 });
         }
@@ -506,9 +506,17 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         g.fillRect(x - th / 2, y - th / 2, th, hh + th);
         g.fillRect(x + ww - th / 2, y - th / 2, th, hh + th);
       };
-      rect(10, 10, cw - 20, ch - 20, 12, '#15110f');
-      rect(10, 10, cw - 20, ch - 20, 5, '#f1ebd9');
-      rect(26, 26, cw - 52, ch - 52, 4, '#f1ebd9');
+      if (t.lit) {
+        // tablete ACENDÍVEL: a moldura também é só talho na pedra (sem cal), como as fissuras das frases (burnline.ts)
+        rect(8, 8, cw - 20, ch - 20, 7, 'rgba(206,190,166,0.45)');
+        rect(10, 10, cw - 20, ch - 20, 6, '#0b0807');
+        rect(24, 24, cw - 52, ch - 52, 3, 'rgba(206,190,166,0.35)');
+        rect(26, 26, cw - 52, ch - 52, 3, '#0b0807');
+      } else {
+        rect(10, 10, cw - 20, ch - 20, 12, '#15110f');
+        rect(10, 10, cw - 20, ch - 20, 5, '#f1ebd9');
+        rect(26, 26, cw - 52, ch - 52, 4, '#f1ebd9');
+      }
       const ft = new THREE.CanvasTexture(cv);
       ft.magFilter = THREE.NearestFilter;
       ft.minFilter = THREE.LinearMipmapLinearFilter;
@@ -532,8 +540,9 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       fmesh.rotation.y = left ? Math.PI / 2 : -Math.PI / 2;
       fmesh.renderOrder = 0;
       kit.group.add(fmesh);
-      first[0].extras.push(fm); // acompanha o brilho da escrita
-      blocks[left ? 'left' : 'right'].push([zc - FW / 2, zc + FW / 2]);
+      if (!t.lit) first[0].extras.push(fm); // acompanha o brilho da escrita (a do tablete acendível não brilha: é pedra)
+      const shelfM = t.lit ? sz * 0.9 + 0.3 - sz * 0.45 : 0; // (a prateleira sai um pouco além da moldura, no começo da leitura)
+      blocks[left ? 'left' : 'right'].push(dir < 0 ? [zc - FW / 2, zc + FW / 2 + shelfM] : [zc - FW / 2 - shelfM, zc + FW / 2]);
       blockY[left ? 'left' : 'right'].push(yc);
       return;
     }
@@ -554,16 +563,19 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     }
   });
 
-  // tochas para dar para ler os parágrafos: uma em cada ponta, e UMA SÓ entre dois parágrafos vizinhos (nunca duas coladas)
+  // tochas para dar para ler os parágrafos: uma em cada ponta e UMA SÓ entre dois parágrafos vizinhos, LONGE da escrita (a 1,6 m da moldura e da
+  // prateleira, e acima dela): a tocha colada ofuscava as frases e roubava o brilho das acesas. Sem espaço entre dois parágrafos, não há tocha ali.
+  const TD = 1.6;
+  const inRoom = (z: number) => z > Z0 + 0.6 && z < Z1 - 0.6;
   for (const side of fewTorches ? [] : (['left', 'right'] as const)) {
-    const ty = blockY[side].length ? Math.max(...blockY[side]) + 0.05 : 1.9;
+    const ty = Math.min(H - 1.05, blockY[side].length ? Math.max(...blockY[side]) + 0.75 : 2.3);
     const bl = blocks[side].sort((m, n) => m[0] - n[0]);
     bl.forEach(([z0b, z1b], i) => {
-      if (i === 0) wallTorch(side, z0b - 0.6, ty, 0.9 + i, 0);
+      if (i === 0 && inRoom(z0b - TD)) wallTorch(side, z0b - TD, ty, 0.9 + i, 0);
       const next = bl[i + 1];
       if (next) {
-        if (next[0] - z1b > 0.9) wallTorch(side, (z1b + next[0]) / 2, ty, 1.7 + i, 0);
-      } else wallTorch(side, z1b + 0.6, ty, 2.3 + i, 0);
+        if (next[0] - z1b >= 2 * TD) wallTorch(side, (z1b + next[0]) / 2, ty, 1.7 + i, 0);
+      } else if (inRoom(z1b + TD)) wallTorch(side, z1b + TD, ty, 2.3 + i, 0);
     });
     // frases soltas (sem parágrafo): uma tocha entre cada duas
     const solo = (spec.tablets ?? []).filter((t) => t.wall === side && !t.lines).sort((m, n) => (m.dz ?? 8) - (n.dz ?? 8));
@@ -584,7 +596,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     emb.scale.set(0.2, 0.2, 1);
     emb.position.set(sp.x, sp.y + 0.06, sp.z);
     kit.group.add(emb);
-    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3 });
+    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3, idle: () => !risen && lockCold <= 0 });
     litLines.push({ ins, x: cx, y: 1.6, z: Z0 + 0.025, hw, good: false, ord: -1, lit: false, fire: 0, flame, emb, key: 'porta', preLit: false, door: true, axis: 'x', burn, gap: 0.45, nx: 0, nz: 1 });
   }
 
@@ -1058,7 +1070,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           l.flame.visible = l.fire > 0.05;
           if (l.flame.visible) {
             l.flame.material.map = kit.frames[Math.floor(t * 8 + l.z) % kit.frames.length];
-            l.flame.scale.set(0.5 * l.fire, 0.44 * l.fire, 1); // (a chama do soquete marca, de longe, cada frase acesa)
+            l.flame.scale.set(0.3 * l.fire, 0.27 * l.fire, 1); // (uma chaminha no soquete: o fogo de verdade está na frase)
           }
         }
       }
