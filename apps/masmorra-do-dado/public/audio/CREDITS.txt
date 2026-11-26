@@ -32,3 +32,8 @@ Modelo 3D (public/models/braseiro.glb)
     de Amarveer (https://sketchfab.com/amarveer), licença CC BY 4.0
     (http://creativecommons.org/licenses/by/4.0/). Adaptado para o jogo: sem a chama
     original, texturas reduzidas a 128 px, materiais trocados (tools/braseiro_glb.py).
+
+Objetos 3D (public/models/props_q.glb e props_t.glb; prévias)
+  - Fantasy Props MegaKit (Standard) — Quaternius (quaternius.com), CC0 1.0.
+  - Medieval Tavern Props Pack — System G6 / Qoma (opengameart.org/content/medieval-tavern-props-pack), CC0.
+  Adaptados para o jogo: texturas reduzidas e com cor ajustada, materiais trocados.

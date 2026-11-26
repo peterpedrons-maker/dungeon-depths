@@ -39,6 +39,7 @@ import { buildRespiro3 } from './rooms/respiro3';
 import { buildBiblioteca } from './rooms/biblioteca';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
+import { buildVitrine } from './rooms/vitrine';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
 import { layout as bookLayout } from '../book/pages';
@@ -61,7 +62,9 @@ const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
 // ?lab=1: sala de teste isolada (só a sala nova, com todas as ferramentas e nada salvo no aparelho)
 const LAB = new URLSearchParams(location.search).has('lab');
-const BUILDERS: RoomBuilder[] = LAB ? [buildLab] : MAIN_BUILDERS();
+// ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
+const VITRINE = new URLSearchParams(location.search).has('vitrine');
+const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
 function MAIN_BUILDERS(): RoomBuilder[] {
   // Capítulo 1 (só Fogo), curva da sessão de projeto de puzzles (PUZZLES_PROPOSTAS.md §2): da sala 3 em diante só sobe. Níveis: 1, 1, 2, 3, 3, 4, 5, 5, 6, 6 ... 10.
   // Faltam (propostas ainda sem detalhe): A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
@@ -2769,11 +2772,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   {
     // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
     const q = new URLSearchParams(location.search);
-    if (q.has('demo') || q.has('lab') || q.get('intro') === '0') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
+    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
     if (q.has('demo')) {
       progress.noSave();
       for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz'] as const) progress.set(f);
-    } else if (q.has('lab')) {
+    } else if (q.has('lab') || q.has('vitrine')) {
       progress.noSave();
       for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
     } else if (q.get('intro') === '0') {
@@ -2794,7 +2797,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const thumbCanvas = document.createElement('canvas');
   thumbCanvas.width = 192;
   thumbCanvas.height = 108;
-  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB;
+  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB && !VITRINE;
   const writeSave = (thumb?: string) => {
     if (!canSave()) return;
     rooms.forEach((r, i) => r.bonus?.() && bonusSet.add(i));

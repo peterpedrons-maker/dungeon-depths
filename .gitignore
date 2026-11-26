@@ -29,3 +29,4 @@ dist-ssr
 *.sw?
 dist-artifact/
 apps/*/dist-artifact/
+apps/masmorra-do-dado/public/models/_vitrine/

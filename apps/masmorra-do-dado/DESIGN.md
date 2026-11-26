@@ -944,3 +944,22 @@ vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS
   e o carvão foram ajustados à cesta, que é menor que a tigela antiga.
 - **Ainda é prévia**: só entra com `?braseiro=novo` (carrega o arquivo e troca o pé e a tigela de todos os braseiros). Para virar o padrão falta
   carregar o modelo antes de montar as salas e conferir todas as salas com braseiro.
+
+## 60. Objetos de cena em modelo 3D: dois packs CC0, a vitrine e a Galeria com objetos (prévias, pedido do Pedro)
+O Pedro pediu objetos de verdade para as salas. Achei e baixei dois packs gratuitos **CC0** (podem entrar no jogo, até vendido, sem crédito
+obrigatório; o crédito está em `public/audio/CREDITS.txt`): **Fantasy Props MegaKit (Standard)**, de Quaternius (94 objetos em glTF, quatro texturas
+"trim sheet" compartilhadas), e **Medieval Tavern Props Pack**, de System G6 (19 objetos num arquivo do Blender, exportados para .glb pelo Blender
+instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado). Descartados: KayKit e RgsDev (cartoon de cores chapadas).
+- **Tratamento**: texturas reduzidas (256 px nas "trim sheets" da Quaternius, 128 px nas do System G6), filtro "nearest", materiais Lambert com o
+  relevo do mapa de normais; nas da Quaternius, **menos saturação** e o **metal bem mais escuro** (eram feitas para material metálico e saíam
+  brancas como giz). Malhas quantizadas. `src/scene/props.ts` carrega os packs, troca os materiais, normaliza cada objeto (pé em y = 0; o pack do
+  System G6 não tem escala real, então cada objeto tem a sua altura em `T_HEIGHT`) e os põe nas salas sem esperar (`placeProp`).
+- **A vitrine** (`?vitrine=1`, `rooms/vitrine.ts`): sala isolada, sem salvar, com os 113 objetos em 38 baias, cada uma diante de um muro com duas
+  tochas com sombra. Usa o pack inteiro da Quaternius (`public/models/_vitrine/`, 5,7 MB, fora do repositório: só para escolher).
+- **A Galeria dos Condenados com objetos** (`?objetos=1`, `rooms/respiro3.ts`): a vida de quem esperou ali. Barril, saco de palha, caixote e balde na
+  entrada; a mesa dos condenados com banqueta, castiçal, livros, caneca e prato; velas acesas nos bancos (uma é a do Escrivão); uma prateleira com
+  garrafas embaixo das marcas de giz; pote quebrado e inteiro; correntes no chão; um candelabro velho pendurado no meio; barris num suporte junto da
+  porta. Tudo encostado nas paredes, fora do caminho, da passagem da câmara lateral, das folhas dela e dos desenhos; as tochas ganham sombra de
+  verdade. Na branch ficam só os objetos usados (`public/models/props_q.glb`, 1,1 MB, e `props_t.glb`, 0,5 MB).
+- Ainda é prévia: o jogo normal não muda. Antes de virar padrão: escolher os objetos, carregar os packs antes de montar as salas e passar a sala pela
+  mesma arquitetura nova do Vestíbulo.

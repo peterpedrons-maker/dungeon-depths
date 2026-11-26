@@ -16,6 +16,10 @@ import { makeScribe } from '../scribe';
 import { mkBox, Z1 } from './shell';
 import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { placeProp, T_HEIGHT } from '../props';
+
+// PRÉVIA (?objetos=1, DESIGN.md §60): a galeria com os objetos dos condenados (modelos 3D dos packs) e as tochas com sombra de verdade
+const PROPS_ON = typeof location !== 'undefined' && new URLSearchParams(location.search).has('objetos');
 
 const X0 = -3.5;
 const X1 = 3.5;
@@ -218,13 +222,86 @@ export function buildRespiro3(ctx: Ctx): Room {
   let solved = false;
 
   // luz: tochas baixas ao longo da galeria
+  const e0 = kit.emitters.length;
   for (const [x, nx, z] of [[X1, -1, -1], [X0, 1, -10], [X1, -1, -15.5], [X0, 1, -24.5], [X1, -1, -21]] as [number, number, number][]) kit.torch(x + nx * 0.1, 2.3, z, nx, 0, z, 0xffa860, 30);
+  // ── PRÉVIA: os objetos de quem viveu aqui esperando (encostados nas paredes, longe do caminho, da passagem da câmara, das folhas e dos desenhos) ──
+  const candles: THREE.Sprite[] = [];
+  if (PROPS_ON) {
+    kit.lively = true;
+    kit.emitters.slice(e0).forEach((e) => (e.shadow = true));
+    const T = (n: string) => T_HEIGHT[n];
+    // [pack, nome, x, y, z, giro, altura (pack t), raio de colisão no chão (0 = em cima do banco / pequeno)]
+    const list: [string, string, number, number, number, number, number | undefined, number][] = [
+      ['t', 'barrel', 2.85, 0, -0.9, 0.3, T('barrel'), 0.4], // na entrada: um barril e um saco de palha
+      ['t', 'sack_2', 2.15, 0, -1.4, 1.2, T('sack_2'), 0.3],
+      ['t', 'tankard_wood', 3.05, 0.45, -3.2, 2.0, T('tankard_wood'), 0], // a caneca no banco (a folha nº 6 fica em -4,4)
+      ['t', 'bucket_wood', 2.5, 0, -2.6, 0.4, T('bucket_wood'), 0.25],
+      ['q', 'Book_Stack_1', -3.05, 0.45, -5.7, 0.4, undefined, 0], // alguém anotava (banco da esquerda)
+      ['t', 'candle_plate', -3.1, 0.45, -4.3, 0, T('candle_plate'), 0],
+      ['t', 'basket', 2.6, 0, -11.7, 0.8, T('basket'), 0.32],
+      ['t', 'plate_wood', 3.05, 0.45, -9.4, 0.3, T('plate_wood'), 0],
+      ['q', 'Vase_Rubble_Medium', -2.7, 0, -16.1, 0.9, undefined, 0], // um pote quebrado e um inteiro
+      ['q', 'Vase_4', -3.0, 0, -16.9, 0.2, undefined, 0.22],
+      ['q', 'Bucket_Metal', 2.75, 0, -15.0, 2.4, undefined, 0.25],
+      ['q', 'Chain_Coil', 2.65, 0, -18.7, 0.6, undefined, 0], // correntes no chão, junto da parede
+      ['t', 'candle_plate', -3.05, 0.45, -21.4, 0, T('candle_plate'), 0], // a vela do Escrivão, que escrevia aqui
+      ['q', 'Scroll_1', -3.0, 0.45, -18.9, 1.1, undefined, 0],
+      ['t', 'barrel', -2.85, 0, -25.2, 1.1, T('barrel'), 0.4],
+      ['q', 'Crate_Wooden', -2.85, 0, -0.95, 0.15, undefined, 0.6], // um caixote na entrada, do outro lado
+      // A MESA DOS CONDENADOS: encostada na parede esquerda, entre o banco e a passagem da câmara; banqueta, caneca, pratos, livros e velas
+      ['t', 'table_wood', -2.85, 0, -8.45, Math.PI / 2, T('table_wood'), 0],
+      ['q', 'Stool', -1.9, 0, -7.9, 0.5, undefined, 0.25],
+      ['q', 'CandleStick_Triple', -3.1, 0.8, -9.3, 1.4, undefined, 0],
+      ['q', 'Book_Stack_2', -2.95, 0.8, -7.6, 0.3, undefined, 0],
+      ['q', 'Mug', -2.6, 0.8, -8.3, 0.9, undefined, 0],
+      ['q', 'Table_Plate', -2.75, 0.8, -8.85, 0, undefined, 0],
+      // uma prateleira na parede direita (embaixo das marcas de giz), com garrafas e um vaso
+      ['q', 'Shelf_Simple', 3.36, 1.35, -13.1, -Math.PI / 2, undefined, 0],
+      ['q', 'Bottle_1', 3.3, 1.66, -12.7, 0, undefined, 0],
+      ['q', 'SmallBottles_1', 3.3, 1.66, -13.3, -Math.PI / 2, undefined, 0],
+      ['q', 'Vase_4', 3.3, 1.66, -13.75, 0.4, undefined, 0],
+      // um suporte com dois barris junto da porta, à direita
+      ['q', 'Barrel_Holder', 2.6, 0, -25.2, 0, undefined, 0],
+    ];
+    rects.push([-3.45, -9.95, -2.25, -6.95, 0.85]); // a mesa
+    boxes.push(mkBox(-3.45, 0, -9.95, -2.25, 0.8, -6.95));
+    rects.push([1.9, -25.7, 3.3, -24.7, 1.3]); // o suporte dos barris
+    // o candelabro velho, apagado, pendurado no meio da galeria por uma corrente
+    placeProp(kit.group, 'q', 'Chandelier', 0, 4.2, -12, 0.3);
+    const chainM = new THREE.MeshLambertMaterial({ color: 0x2a2622 });
+    const chain = new THREE.Mesh(new THREE.BoxGeometry(0.04, H - 5.6, 0.04), chainM);
+    chain.position.set(0, (H + 5.6) / 2, -12);
+    kit.group.add(chain);
+    for (const [pk, n, x, y, z, ry, h, r] of list) {
+      placeProp(kit.group, pk, n, x, y, z, ry, h);
+      if (r > 0) {
+        rects.push([x - r, z - r, x + r, z + r, 1.0]);
+        boxes.push(mkBox(x - r, 0, z - r, x + r, 0.9, z + r));
+      }
+      if (n === 'candle_plate') {
+        // a chama da vela (o mesmo desenho das tochas, pequenininha) e uma luz fraca
+        const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+        f.scale.set(0.07, 0.1, 1);
+        f.position.set(x, y + 0.2, z);
+        kit.group.add(f);
+        candles.push(f);
+        kit.light(x + 0.2, y + 0.45, z, 0xffb060, 5);
+      }
+    }
+  }
   kit.light(0, H - 1, -12, 0x8a94c8, 10);
   kit.skirting(X0, X1, Z0, Z1, 1.3);
   kit.aoSides(X0, X1, Z0, Z1, H);
   kit.cornice(X0, X1, Z0, Z1, H);
   kit.wear([[0, 1.5], [0.3, -8], [-0.2, -18], [0, -25]], 1.2);
   kit.bake();
+  if (PROPS_ON)
+    kit.group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.receiveShadow = true;
+      if (m.material === kit.slab) m.castShadow = true; // os bancos de pedra também fazem sombra
+    });
 
   return {
     name: 'A Galeria dos Condenados',
@@ -287,6 +364,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     holdsDie: () => false,
     update(dt, t) {
       kit.tick(dt, t);
+      candles.forEach((f, i) => (f.material.map = kit.frames[Math.floor(t * 9 + i * 3) % kit.frames.length]));
       // o Escrivão: escreve, sentado; quando o jogador chega perto, levanta e some, e fica uma marca de giz fresca no banco
       if (!scribeGone) {
         const pz = ctx.player.pos.z;
