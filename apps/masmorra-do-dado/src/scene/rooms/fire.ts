@@ -12,7 +12,7 @@ import { drawGlyph } from '../../book/font';
 import { shotGate } from './shell';
 import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
-import type { Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
+import type { Ambience, Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
 
 // ── a regra que abre a porta ──
 export type FireRule =
@@ -140,6 +140,7 @@ export interface FireSpec {
   ambient?: { color: number; intensity: number };
   doorY?: number; // a porta de saída fica num andar alto (mezanino): a sala seguinte começa nessa altura
   sky?: boolean; // sem teto: um pátio a céu aberto (céu pálido, como o do pátio da abertura)
+  ambience?: Ambience; // o som do lugar: vento, gotas, tamanho (DESIGN.md §60)
 }
 
 // brasa fraca (um pontinho laranja) para o soquete das frases acendíveis
@@ -480,7 +481,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           emb.scale.set(0.2, 0.2, 1);
           emb.position.set(sp.x, sp.y + 0.06, sp.z);
           kit.group.add(emb);
-          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3 });
+          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3, onGlyph: (i, n, at) => ctx.glyphLight?.(i, n, at) });
           if (ln.preLit) burn.set(true, true);
           litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: !!ln.preLit, fire: ln.preLit ? 1 : 0, flame, emb, key: `L${litLines.length}`, preLit: !!ln.preLit, door: false, axis: 'z', burn, gap: n > 1 ? lh / 2 : 0.45, nx: left ? 1 : -1, nz: 0 });
         }
@@ -595,7 +596,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     emb.scale.set(0.2, 0.2, 1);
     emb.position.set(sp.x, sp.y + 0.06, sp.z);
     kit.group.add(emb);
-    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3 });
+    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3, onGlyph: (i, n, at) => ctx.glyphLight?.(i, n, at) });
     litLines.push({ ins, x: cx, y: 1.6, z: Z0 + 0.025, hw, good: false, ord: -1, lit: false, fire: 0, flame, emb, key: 'porta', preLit: false, door: true, axis: 'x', burn, gap: 0.45, nx: 0, nz: 1 });
   }
 
@@ -955,6 +956,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     },
     groundY: (x, z, feet) => extra.floorY?.(x, z, feet ?? 0) ?? 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    ambience: spec.ambience,
     dieFloor: (x, z) => extra.dieFloor?.(x, z) ?? 0,
     holdsDie: () => plateDown,
     onDieRest() {
@@ -1010,7 +1012,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   best.lit = true;
                   risen = true;
                   ctx.sfx('ignite', best.key);
-                  ctx.sfx('door');
+                  ctx.sfx('rise');
                   ctx.caption('A Casa leu', 'Os pilares de fogo subiram.', '#ffd36b');
                 } else {
                   litLines.forEach((l) => (l.lit = l.preLit));
@@ -1036,7 +1038,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                 ctx.sfx('ignite', best.key);
                 if (litLines.filter((l) => l.lit).length >= needed) {
                   risen = true;
-                  ctx.sfx('door');
+                  ctx.sfx('rise');
                   ctx.caption('Algo se move sob o chão', 'Pilares.', '#ffd36b');
                 } else ctx.caption('A frase acendeu', 'A Casa aceitou esta.', '#ff9a3c');
               } else {

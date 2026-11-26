@@ -149,7 +149,7 @@ export class Kit {
 
   // tocha de parede: (nx, nz) = para onde a parede "olha" (de onde vem a luz)
   torch(x: number, y: number, z: number, nx: number, nz: number, phase: number, color = 0xff9a3c, intensity = 42) {
-    // a tocha de parede em modelo 3D (DESIGN.md §65); se o arquivo falhar, o suporte e o cabo de caixas de antes. Nenhum dos dois faz sombra
+    // a tocha de parede em modelo 3D (DESIGN.md §66); se o arquivo falhar, o suporte e o cabo de caixas de antes. Nenhum dos dois faz sombra
     // (a própria chama ficaria com uma barra preta embaixo, na parede)
     wallTorch(this.group, x, y, z, nx, nz, (h) => {
       for (const [w, hh, d, mat, px, py, pz] of [

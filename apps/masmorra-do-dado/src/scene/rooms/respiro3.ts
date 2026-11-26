@@ -21,7 +21,7 @@ import { beamMotes, flagstones, floorPlane, groinVault, masonry, reliefMat, reli
 const X0 = -3.5;
 const X1 = 3.5;
 const Z0 = -26;
-// A SALA-MODELO (DESIGN.md §64): a galeria ganha abóbadas de aresta em cinco tramos, nascendo a 5,2 m (acima das marcas de giz e das tochas)
+// A SALA-MODELO (DESIGN.md §65): a galeria ganha abóbadas de aresta em cinco tramos, nascendo a 5,2 m (acima das marcas de giz e das tochas)
 // de arcos apoiados em mísulas; paredes de cantaria com espessura; duas frestas altas nas lunetas
 const SPRING = 5.2;
 const RISE = 2.4;
@@ -277,7 +277,7 @@ export function buildRespiro3(ctx: Ctx): Room {
   let failT = -1;
   let solved = false;
 
-  // luz: tochas baixas ao longo da galeria (cada uma com a sua luz e a sua sombra; DESIGN.md §63)
+  // luz: tochas baixas ao longo da galeria (cada uma com a sua luz e a sua sombra; DESIGN.md §64)
   kit.lively = true;
   const e0 = kit.emitters.length;
   for (const [x, nx, z] of [[X1, -1, -1], [X0, 1, -10], [X1, -1, -15.5], [X0, 1, -24.5], [X1, -1, -21]] as [number, number, number][]) kit.torch(x + nx * 0.1, 2.3, z, nx, 0, z, 0xffa860, 30);
@@ -310,7 +310,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     kit.group.add(moon, moon.target);
     lifeFx.push(beamMotes(kit.group, moon.position.clone(), moon.target.position.clone(), 52));
   }
-  // ── OS OBJETOS DE QUEM VIVEU AQUI ESPERANDO (DESIGN.md §64): pequenas cenas encostadas nas paredes, nunca no caminho, longe da passagem da
+  // ── OS OBJETOS DE QUEM VIVEU AQUI ESPERANDO (DESIGN.md §65): pequenas cenas encostadas nas paredes, nunca no caminho, longe da passagem da
   // câmara, das folhas, dos desenhos e do banco do Escrivão. Só coisas do dia a dia (nada de RPG, DIRECAO_DE_ARTE.md §4.7) ──
   const candles: THREE.Sprite[] = [];
   const TH = (n: string) => T_HEIGHT[n];
@@ -457,7 +457,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0a0a11', near: 6, far: 26 },
-    ambient: { color: 0x5c5c8a, intensity: 0.68 }, // (menos luz de enchimento: as sombras das chamas ficam fundas, DESIGN.md §65)
+    ambient: { color: 0x5c5c8a, intensity: 0.68 }, // (menos luz de enchimento: as sombras das chamas ficam fundas, DESIGN.md §66)
     boxes: [...boxes, ...kit.boxes],
     shadowLight: moon,
     sockets: braz.map((b) => b.socket),

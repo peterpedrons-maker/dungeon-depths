@@ -504,7 +504,7 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
     // a cabeça da tocha: pano enrolado (escuro quando apagada)
     add(0.16, 0.14, 0.16, lambert(null, 0x2a2026), x + nx * 0.16, y + 0.45, z + nz * 0.16);
   };
-  // na parede: a tocha em modelo 3D (DESIGN.md §65), com a gaiola de ferro exatamente embaixo do ponto onde o dado acende; em pé: a de antes
+  // na parede: a tocha em modelo 3D (DESIGN.md §66), com a gaiola de ferro exatamente embaixo do ponto onde o dado acende; em pé: a de antes
   if (!stand)
     wallTorch(kit.group, x, y, z, nx, nz, (holder) =>
       oldTorch((w, h, d, m, px, py, pz) => {
@@ -624,7 +624,7 @@ export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1, b
     raise() {
       if (r.up) return;
       r.up = true;
-      ctx.sfx('door');
+      ctx.sfx('rise'); // o pilar sobe do chão (som próprio, DESIGN.md §60)
     },
     update(dt, t) {
       if (r.up && r.k < 1) r.k = Math.min(1, r.k + dt / 2.2);

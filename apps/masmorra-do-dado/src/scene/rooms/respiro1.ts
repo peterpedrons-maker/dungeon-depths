@@ -21,6 +21,7 @@ import { glyphsOf } from '../../story/lexicon';
 import { mkBox, shotGate, slopedWall, stairs } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { makePointAsk } from '../pointask';
+import { windNear } from '../ambience';
 import type { Inscription } from '../inscription';
 
 const Z1 = 2;
@@ -532,6 +533,19 @@ export function buildRespiro1(ctx: Ctx): Room {
     },
     groundY: levelY,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    // o som do lugar (§60): o corredor é estreito e abafado; o pátio é alto e ecoa, venta (mais forte embaixo do buraco de luz) e pinga na
+    // cisterna
+    ambience: {
+      size: (_x, z) => (z < COURT.z1 + 0.5 ? 0.9 : 0.25),
+      wind: windNear([
+        { x: 0, z: (COURT.z0 + COURT.z1) / 2, hx: COURT.x1, hz: (COURT.z1 - COURT.z0) / 2, r: 3.5, k: 0.3 },
+        { x: CIST.x, z: CIST.z, r: 8, k: 0.6 },
+      ]),
+      drips: [
+        { x: CIST.x + 0.7, y: 0.3, z: CIST.z - 0.5 },
+        { x: COURT.x0 + 0.4, y: 0.2, z: COURT.z0 + 1.5 },
+      ],
+    },
     dieFloor: (x, z) => (z <= GZ && z > SZ && Math.abs(x) > 5 && Math.abs(x) < 7 ? levelY(x, z) : 0),
     holdsDie: () => false,
     update(dt, t) {

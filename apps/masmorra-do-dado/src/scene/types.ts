@@ -4,8 +4,18 @@ import type { Emitter } from './kit';
 import type { Inscription } from './inscription';
 import type { Flag } from '../story/progress';
 
-// tipo de piso sob os pés (muda o som dos passos)
-export type Surface = 'stone' | 'rug' | 'plate' | 'water';
+// tipo de piso sob os pés (muda o som dos passos). Degrau não é piso: o motor percebe sozinho quando o passo subiu ou desceu.
+export type Surface = 'stone' | 'rug' | 'plate' | 'water' | 'rubble';
+
+// SOM DO LUGAR (DESIGN.md §60), opcional; coordenadas locais da sala. Sem isto, a sala soa como pedra fechada, com o "ar" de fundo.
+export interface Ambience {
+  // 0 = cubículo abafado .. 1 = salão enorme (reverberação); um número ou, em salas com partes muito diferentes (corredor + pátio), uma
+  // função do ponto. Sem isto, o motor estima pelo volume da sala.
+  size?: number | ((x: number, z: number, feetY: number) => number);
+  // quanto venta neste ponto (0..1): cresce perto das aberturas (céu, boca de poço, janelas). Use `windNear` (ambience.ts) para montar.
+  wind?(x: number, z: number, feetY: number): number;
+  drips?: { x: number; y: number; z: number }[]; // onde pinga (umidade); ouvem-se até ~9 m
+}
 
 export type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
 
@@ -41,7 +51,10 @@ export interface Ctx {
   caption(title: string, sub: string, color: string): void;
   // `key` identifica o braseiro em 'ignite': a cena do dado queimando só toca inteira na 1ª vez de cada um
   // 'spread' = o fogo que CORRE (canaleta, friso) acende algo sozinho: só o som, sem a cena do dado queimando
-  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout', key?: string): void;
+  // 'rise' = pilar subindo do chão (2,2 s)
+  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout' | 'rise', key?: string): void;
+  // a luz que escreve uma frase acesa passou pelo símbolo i de n (`at` = onde ele está, local da sala): a nota que acompanha a onda (§60)
+  glyphLight?(i: number, n: number, at: THREE.Vector3): void;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa
@@ -134,6 +147,7 @@ export interface Room {
   clampDie(p: THREE.Vector3, v: THREE.Vector3, e: number, R: number): void;
   groundY(x: number, z: number, feetY?: number): number; // chão onde o jogador pisa (`feetY` = pés agora, local: salas com andares sobrepostos escolhem o piso)
   surfaceAt?(x: number, z: number): Surface; // piso nesse ponto (pedra por padrão)
+  ambience?: Ambience; // vento, gotas e o tamanho do som da sala (§60)
   dieFloor(x: number, z: number): number; // chão "inclinado" (rampa) para o dado
   update(dt: number, t: number): void;
   holdsDie(): boolean; // true = não recolhe o dado sozinho (ex.: placa apertada)

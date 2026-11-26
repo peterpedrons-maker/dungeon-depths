@@ -578,9 +578,12 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             <p>Kenney (RPG Sound Pack)</p>
             <p>rubberduck (100 CC0 SFX)</p>
             <p>Fantozzi (passos)</p>
-            <p>qubodup (bola rolando)</p>
-            <p>gravações de giz, borracha, porta de pedra, arrastos, chama, lareira e vapor</p>
-            <h3>Modelo 3D</h3>
+            <p>qubodup (bola rolando, gotas)</p>
+            <p>LEGIT Audio (fogo)</p>
+            <p>Tsorthan Grove (vento)</p>
+            <p>NenadSimic (tambor ao longe)</p>
+            <p>gravações de giz, borracha, porta de pedra, arrastos, pedras, estalos e vapor</p>
+            <h3>Modelos 3D</h3>
             <p>braseiro: Stone Column Brazier, de Amarveer (Sketchfab, CC BY 4.0), adaptado para o pixel</p>
             <p>tocha de parede: Medieval Wall Torch, de Kigha (Sketchfab, CC BY 4.0), adaptada para o pixel</p>
             <h3>Letra</h3>
@@ -602,8 +605,8 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             celesta, glockenspiel, flauta, tímpano e sinos tubulares.
           </p>
           <p>
-            <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi (passos), qubodup (bola rolando), e gravações de
-            giz, borracha, porta de pedra, arrastos, chama, lareira e vapor.
+            <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi (passos), qubodup (bola rolando, gotas),
+            LEGIT Audio (fogo), Tsorthan Grove (vento), NenadSimic (tambor ao longe), e gravações de giz, borracha, porta de pedra, arrastos, pedras, estalos e vapor.
           </p>
           <p>
             <b>Modelos 3D</b>: o braseiro é baseado em <i>Stone Column Brazier</i>, de Amarveer (sketchfab.com/amarveer), licença CC BY 4.0; adaptado para o

@@ -40,7 +40,7 @@ export interface Config {
   volSfx: number;
   // imagem
   quality: Quality;
-  shadows: ShadowLevel; // sombras de verdade nas chamas (DESIGN.md §65): quantas, de que tamanho, com borda suave ou dura
+  shadows: ShadowLevel; // sombras de verdade nas chamas (DESIGN.md §66): quantas, de que tamanho, com borda suave ou dura
   pixel: PixelSize;
   brightness: number; // -5 a 5
   fov: number; // campo de visão horizontal, em graus

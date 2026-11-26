@@ -19,7 +19,7 @@ import {
   soapWrapTexture,
 } from './textures';
 import { Chalk } from './chalk';
-import { Sfx, type AudioMode } from './audio';
+import { Sfx, type AudioMode, type StepKind } from './audio';
 import { CORRIDOR, dbg, lightEnv } from './kit';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
@@ -307,7 +307,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return uNear * uFar / (uFar - d * (uFar - uNear));
       }
       vec3 viewP(vec2 uv){ float z = linZ(uv); return vec3((uv * 2.0 - 1.0) * uTan * z, -z); }
-      // OCLUSÃO DE AMBIENTE (DESIGN.md §65): a luz que vem "de todo lado" chega menos nos cantos, embaixo dos objetos, entre as pedras e onde
+      // OCLUSÃO DE AMBIENTE (DESIGN.md §66): a luz que vem "de todo lado" chega menos nos cantos, embaixo dos objetos, entre as pedras e onde
       // um objeto encosta no outro. Oito amostras num disco de ~0,5 m em volta do ponto (girado pelo pontilhado: o ruído vira dither da paleta).
       float ambientOccK(vec2 uv, vec2 o, float k);
       float ambientOcc(vec2 uv, vec2 o){ return ambientOccK(uv, o, uAO); }
@@ -1446,6 +1446,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const announced = new Set<number>();
   const FAR = new THREE.Vector3(0, -99, 0);
 
+  // de que lado (-1 esquerda .. 1 direita) está um ponto do mundo, para quem olha na direção `yaw` (som espacial: fogo, gotas, a escrita)
+  const panOf = (wx: number, wz: number) => {
+    const dx = wx - pos.x;
+    const dz = wz - pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 0.3) return 0;
+    return Math.max(-1, Math.min(1, (dx * Math.cos(yaw) - dz * Math.sin(yaw)) / d)) * Math.min(1, d / 1.5);
+  };
+
   const makeCtx = (off: THREE.Vector3, idx: number): Ctx => {
     const lp = new THREE.Vector3();
     const aimO = new THREE.Vector3();
@@ -1457,7 +1466,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           sfx.play('ignite', 0.45);
           return;
         }
-        sfx.play(n);
+        sfx.play(n, 1, key);
         // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
         if (n === 'ignite') {
           const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
@@ -1467,7 +1476,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         } else if (n === 'plate') {
           life.react('thump');
           chatFn('plate');
-        } else if (n === 'door') {
+        } else if (n === 'door' || n === 'rise') {
+          // (o pilar que sobe soava como a porta; ganhou som próprio, mas o dado reage igual)
           life.react('perk');
           chatFn('door');
           saveIn = Math.min(saveIn, 1.4); // puzzle resolvido: salva quando a porta terminar de abrir
@@ -1487,6 +1497,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         },
       },
       feetY: () => feetY - off.y,
+      glyphLight: (i, n, at) => sfx.glyph(i, n, panOf(at.x + off.x, at.z + off.z)),
       say: (lines, o) => dialogue.say(lines, o),
       seen: (id) => diary.markSeen(id, rooms[idx]?.name),
       milestone: (f) => {
@@ -1614,7 +1625,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     });
   };
 
-  // SOMBRAS EM TODA SALA (DESIGN.md §63): tudo que é sólido recebe sombra; projeta o que tem volume (caixas, colunas, pedestais, objetos);
+  // SOMBRAS EM TODA SALA (DESIGN.md §64): tudo que é sólido recebe sombra; projeta o que tem volume (caixas, colunas, pedestais, objetos);
   // não projetam os planos (paredes antigas, chão, decalques, escritas), o que é transparente ou "aceso" (MeshBasic) e o que pediu `noShadow`
   function applyShadowFlags(g: THREE.Object3D) {
     const FLAT = new Set(['PlaneGeometry', 'ShapeGeometry', 'CircleGeometry', 'RingGeometry']);
@@ -1655,7 +1666,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const nearSurfaces = () => surfCache;
 
-  // ── O MOTOR DE LUZ (DESIGN.md §63): luzes reais emprestadas às chamas mais relevantes (perto e fortes). Toda chama perto do jogador acende
+  // ── O MOTOR DE LUZ (DESIGN.md §64): luzes reais emprestadas às chamas mais relevantes (perto e fortes). Toda chama perto do jogador acende
   // o próprio pedaço da sala; as mais perto ganham SOMBRA de verdade (mapa pequeno, filtro duro, combina com o pixel); as longe ficam com um
   // brilho barato na parede (o kit apaga esse brilho quando a luz de verdade chega: `Emitter.lit`). Quantas luzes e sombras: a qualidade escolhe.
   // O número de luzes só muda quando a qualidade muda (assim os shaders não recompilam ao trocar de sala).
@@ -1671,7 +1682,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     media: { pool: 10 },
     baixa: { pool: 6 },
   };
-  // AS SOMBRAS (Configurações → Imagem → Sombras; DESIGN.md §65): quantas chamas fazem sombra, o tamanho do mapa (nitidez), a borda (suave =
+  // AS SOMBRAS (Configurações → Imagem → Sombras; DESIGN.md §66): quantas chamas fazem sombra, o tamanho do mapa (nitidez), a borda (suave =
   // PCF, que o pontilhado do pós-processo transforma numa penumbra de pixel; dura = o filtro básico) e o mapa da luz principal da sala
   // (a fresta da lua, a chama do nicho). `perFrame`: quantos mapas podem ser refeitos por quadro quando o jogador se mexe.
   // `ao`: a força da oclusão de ambiente no pós-processo (os cantos e o pé dos objetos mais escuros; barata, porque a imagem é pequena)
@@ -1778,6 +1789,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     let fireNear = 0;
+    let panSum = 0;
+    let kSum = 0;
+    // o fogo que se ouve: só as luzes de FOGO (laranja: braseiros, tochas, panos, canaletas) crepitam; céu, porta e a luz mágica das frases não
+    const hearFire = (sl: Slot) => {
+      const c = sl.em!.color;
+      if (((c >> 16) & 255) < 0xf0 || ((c >> 8) & 255) > 0xa8) return;
+      const k = sl.w * Math.min(1, sl.em!.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position))));
+      fireNear = Math.max(fireNear, k);
+      // o lado do som: a média dos fogos, pesada pelo quanto cada um se ouve (dois iguais, um de cada lado, soam no meio)
+      panSum += k * k * panOf(sl.light.position.x, sl.light.position.z);
+      kSum += k * k;
+    };
     lightEnv.scale = lightScale();
     // quanto cada chama já tem de luz de verdade (o kit esconde o brilho falso dela na mesma medida)
     activeRooms.forEach((i) => {
@@ -1801,7 +1824,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sl.light.distance = sl.em.range;
       sl.light.intensity = sl.em.intensity * sl.w * lightScale();
       sl.em.lit = Math.max(sl.em.lit, sl.w);
-      fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
+      hearFire(sl);
     }
     // as luzes com sombra: só se movem (o tremor da chama) quando o mapa delas é refeito, para a sombra nunca "descolar" da luz.
     // Rodízio: `perFrame` mapas por quadro (os recém-chegados na hora)
@@ -1836,9 +1859,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sl.light.distance = sl.em.range;
       sl.light.intensity = sl.em.intensity * sl.w * lightScale();
       sl.em.lit = Math.max(sl.em.lit, sl.w);
-      fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
+      hearFire(sl);
     });
-    sfx.fire(fireNear);
+    sfx.fire(fireNear * lightScale(), kSum > 0 ? panSum / kSum : 0); // (no escuro da Casa o fogo também cala)
   };
 
   // o dado caído no chão da 1ª sala (antes de o jogador pegá-lo)
@@ -3551,6 +3574,45 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let bob = 0;
   let bobAmp = 0;
   let lastStepIdx = 0;
+  let lastStepY = 0; // altura dos pés no passo anterior (degrau)
+
+  // ── o SOM DO LUGAR (DESIGN.md §60): vento perto das aberturas, gotas, o tamanho da sala, e se é um momento calmo ──
+  const roomSize: number[] = [];
+  const sizeOf = (i: number, x: number, z: number, f: number) => {
+    const sz = rooms[i].ambience?.size;
+    if (typeof sz === 'function') return sz(x, z, f);
+    if (sz !== undefined) return sz;
+    if (roomSize[i] === undefined) {
+      // sem `ambience.size`: pelo volume da caixa da sala (200 m³ ou menos = abafado; 5000 m³ = salão enorme)
+      const b = new THREE.Box3().setFromObject(rooms[i].group);
+      const v = b.isEmpty() ? 300 : Math.max(1, (b.max.x - b.min.x) * (b.max.y - b.min.y) * (b.max.z - b.min.z));
+      roomSize[i] = Math.max(0, Math.min(1, (Math.log10(v) - 2.3) / 1.4));
+    }
+    return roomSize[i];
+  };
+  const ambientSound = (paused: boolean) => {
+    const i = curRoom;
+    const r = rooms[i];
+    if (!r) return;
+    const o = offs[i];
+    const lx = pos.x - o.x;
+    const lz = pos.z - o.z;
+    const lf = feetY - o.y;
+    const a = r.ambience;
+    const wind = a?.wind ? Math.max(0, Math.min(1, a.wind(lx, lz, lf))) : 0;
+    let drip = 0;
+    let dripPan = 0;
+    for (const d of a?.drips ?? []) {
+      const dist = Math.hypot(d.x - lx, d.y - (lf + EYE), d.z - lz);
+      const k = Math.max(0, 1 - dist / 9) ** 2;
+      if (k > drip) {
+        drip = k;
+        dripPan = panOf(d.x + o.x, d.z + o.z);
+      }
+    }
+    const calm = mode === 'play' && !paused && !busy() && !cineCam && darkK === 0 && !dialogueStore.get() && !chatterStore.get();
+    sfx.ambient({ wind, size: Math.max(0, Math.min(1, sizeOf(i, lx, lz, lf))), drip, dripPan, calm, paused });
+  };
   let lastRev = 0;
   let emittedDie: DieState | null = null;
   let aimTick = 0;
@@ -3603,7 +3665,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       darkHold = Math.max(darkHold, darkQ.secs);
       darkCb = darkQ.onDark ?? null;
       darkQ = null;
-      sfx.play('burnout', 0.7);
+      sfx.play('dark');
     }
     if (darkHold > 0) {
       darkK = Math.min(1, darkK + dt / 0.15);
@@ -3631,11 +3693,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const walkSpeed = Math.hypot(moveVel.x, moveVel.z);
     bob += dt * Math.PI * (walkSpeed / STRIDE);
     const stepIdx = Math.floor(bob / Math.PI);
+    if (speedFrac <= 0.12) lastStepY = feetY;
     if (stepIdx !== lastStepIdx) {
       lastStepIdx = stepIdx;
       if (speedFrac > 0.12 && vy === 0) {
         const sr = roomOfZ(pos.z);
-        sfx.step(rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone');
+        let kind: StepKind = rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone';
+        // o passo subiu ou desceu (escada, rampa): o degrau, com o peso do corpo
+        if (kind === 'stone' && Math.abs(feetY - lastStepY) > 0.12) kind = 'stair';
+        lastStepY = feetY;
+        sfx.step(kind);
       }
     }
     const bobY = dbg.bob ? Math.sin(bob) * 0.026 * bobAmp - landKick * 0.18 : 0;
@@ -3821,6 +3888,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.scratch(brush.active && tool === 'chalk' && rv !== lastRev ? 1 : 0, brush.erase);
     lastRev = rv;
     sfx.roll(dieState === 'flying' ? dieRoll : 0);
+    ambientSound(paused);
     sfx.tick(dt);
 
     // fantasma de onde o dado seria posicionado
@@ -4066,10 +4134,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       life: (k: string) => { if (k === 'sleep') life.sleepNow(); else life.react(k as never); },
       glyphFire: (ri: number) => (rooms[ri]?.inscriptions ?? []).map((ins) => ins.panels.filter((p) => p.id).map((p) => `${p.id}:${(p.fire ?? 0).toFixed(2)}`).join(' ')),
       sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },
-      sfxStep: (s: 'stone' | 'rug' | 'plate' | 'water') => sfx.step(s),
+      sfxStep: (s: StepKind) => sfx.step(s),
+      sfxPlay: (n: Parameters<Sfx['play']>[0], v = 1, key?: string) => sfx.play(n, v, key), // (testes)
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
-      audio: () => ({ state: sfx.state, played: sfx.played, steps: sfx.steps, loaded: sfx.ready }),
+      audio: () => ({ state: sfx.state, played: sfx.played, steps: sfx.steps, loaded: sfx.ready, log: sfx.log.slice(-60), logN: sfx.logN, amb: sfx.debug() }),
       state: () => ({
         room: curRoom,
         dieState,

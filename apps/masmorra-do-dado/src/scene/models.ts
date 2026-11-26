@@ -1,4 +1,4 @@
-// MODELOS 3D de fora (DESIGN.md §61 e §65). O braseiro, a partir de "Stone Column Brazier" de Amarveer (Sketchfab, CC BY 4.0: o
+// MODELOS 3D de fora (DESIGN.md §62 e §66). O braseiro, a partir de "Stone Column Brazier" de Amarveer (Sketchfab, CC BY 4.0: o
 // crédito está na tela de Créditos). O arquivo do jogo (`public/models/braseiro.glb`) já vem tratado para o pixel: sem a chama de foto
 // (o jogo usa a própria chama), texturas reduzidas a 128 px (a densidade de pixel do resto) e filtro "nearest"; aqui os materiais viram
 // Lambert (o mesmo das paredes) com o relevo do mapa de normais.
@@ -68,7 +68,7 @@ export function onBrazierModel(cb: (m: BrazierModel) => void) {
   else waiting.push(cb);
 }
 
-// ── A TOCHA DE PAREDE (DESIGN.md §65): "Medieval Wall Torch", de Kigha (Sketchfab, CC BY 4.0; crédito na tela de Créditos), tratada por
+// ── A TOCHA DE PAREDE (DESIGN.md §66): "Medieval Wall Torch", de Kigha (Sketchfab, CC BY 4.0; crédito na tela de Créditos), tratada por
 // `tools/tocha_glb.py` (texturas de 128 px com a oclusão do próprio modelo, filtro "nearest"). Entra em TODA tocha de parede, no lugar do
 // suporte e do cabo de caixas. O modelo é normalizado assim: a placa de trás na parede em x = 0 (a frente da tocha é +x), o alto da gaiola
 // de ferro em y = 0, e a escala que põe o meio da gaiola a 0,26 m da parede, isto é, exatamente embaixo da chama de sempre (o ponto onde o

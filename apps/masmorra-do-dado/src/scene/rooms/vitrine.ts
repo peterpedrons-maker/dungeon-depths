@@ -9,7 +9,7 @@ import type { Ctx, Room } from '../types';
 
 // [pack, nome] por baia (agrupados por tipo)
 const BAYS: [string, string[]][] = [
-  // só objetos do dia a dia (DESIGN.md §62): nada de armas, poções, equipamento, tesouro, chaves, boneco de treino, ferramentas de ofício,
+  // só objetos do dia a dia (DESIGN.md §63): nada de armas, poções, equipamento, tesouro, chaves, boneco de treino, ferramentas de ofício,
   // comida e feira; nem o que imita a gramática dos puzzles: tochas e lanternas (chama na parede pode contar para um puzzle), estandartes e
   // panos pendurados (pano queima e revela o boato), lenha em brasa
   ['qv', ['Bench', 'Stool', 'Chair_1', 'Table_Large', 'Nightstand_Shelf', 'Cabinet']],

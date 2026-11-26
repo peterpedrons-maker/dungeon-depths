@@ -105,7 +105,7 @@ Poucos, com motivo, ligados à história dos condenados:
 - uma pilha de dados de pedra quebrados.
 Nada de esqueletos nem sangue (o tom é melancólico, não de terror).
 **Nada de RPG**: o jogo não tem inventário nem combate. Sem armas, escudos, poções, equipamento, moedas, tesouro, chaves soltas, boneco de treino
-ou ferramentas de ofício. Só objetos do dia a dia de quem esperou na Casa (ver `DESIGN.md` §62).
+ou ferramentas de ofício. Só objetos do dia a dia de quem esperou na Casa (ver `DESIGN.md` §63).
 
 ### 4.8 Partículas
 - **Só com motivo:**

@@ -928,11 +928,45 @@ a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A
   a luz passa, por `uRunV`, os símbolos já percorridos). A luz de verdade da frase também anda com a onda (esquenta a parede por onde ela passa,
   de leve, para não dourar a frase apagada vizinha) e depois volta devagar para o meio. Não deixa nada atrás da escrita nem deforma o glifo.
   (Na 1ª versão o clarão vinha todo de uma vez no fim e a luz ficava no meio da frase: parecia pulsar só no centro.)
-- **Pulso** (EM TESTE, só com `?pulso=1` no endereço; `PULSE_ON` em `firefx.ts`): no instante em que a luz termina de escrever a frase ou a
-  palavra, um clarão de ~0,75 s no formato exato dos traços (uma camada de luz somada, só um pouco mais larga que eles; `makeFlashMesh`), a luz
-  da frase esquenta a parede por um instante, e tudo assenta no brilho contido (§58). Não deixa nada atrás da escrita nem deforma o glifo.
 
-## 60. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
+## 60. Som: passos, fogo, pedra e o AMBIENTE (pedido do Pedro; feito pelo subagente `sonoplasta`)
+Continua tudo com **gravações reais** (CC0 do OpenGameArt e os instrumentos do FluidR3_GM); só se recorta, filtra, sobrepõe, inverte e emenda
+(`tools/build_audio.py`, downloads em `tools/fetch_audio.sh`, créditos em `public/audio/CREDITS.txt`). Efeitos: 0,39 → 0,58 MB; áudio
+total (com os instrumentos): ~2,2 → ~2,4 MB.
+- **Passos** (um som FIXO por piso, decisão do Pedro; pé esquerdo e direito alternam sempre na mesma ordem e recomeçam no esquerdo depois de
+  parar): **pedra** = sapato de couro em pedra (Fantozzi), no lugar da bota abafada; **degrau** = o mesmo sapato com o peso do corpo (o baque da
+  bota em concreto por baixo), que o motor escolhe sozinho quando o passo sobe ou desce mais de 12 cm (escadas e rampas; nenhuma sala precisa
+  marcar); **entulho** = o passo com pedrinhas soltas (`Kit.zone('rubble')`, hoje no entulho embaixo da boca do Poço). Tapete, placa e poça
+  ficam como estavam. Não há piso de madeira no capítulo 1 (a madeira da Ponte é a calha do fogo, não se pisa nela).
+- **Fogo**: acender = a chama pegando ("fff") de um bastão de fogo de verdade (LEGIT Audio), com o tímpano por baixo; **tocha** (`key` com
+  "tocha") e **pano/estandarte** (`key` "pano"/"dm…") têm gravações próprias (menor; lufada que estala). **Chama apagando** = a lufada ao
+  contrário (o fogo é "sugado") e um chiado curto de brasa. **Fogo por perto**: o laço da chama (só das luzes LARANJA: braseiros, tochas,
+  panos, canaletas; céu, porta e a luz mágica das frases não crepitam) vem **do lado em que está** (a média dos fogos próximos) e abafa com a
+  distância; por cima, **estalos soltos** tirados ao acaso de gravações de faíscas, mais frequentes perto: o fogo nunca se repete igual.
+- **Pedra**: porta que **sobe** = arrasto grave, raspar, o baque ao travar e pó/pedrinhas caindo; porta que **desce** = raspar acelerando e o
+  baque pesado; **pilar subindo** (`ctx.sfx('rise')`, antes era o som da porta) = arrasto mais lento e grave, pedrinhas e o baque no fim.
+- **A frase que acende** (`Ctx.glyphLight`, `makeBurnLine({ onGlyph })`): a cada símbolo que a luz escreve, da esquerda para a direita, uma
+  nota de celesta que sobe (harpa por baixo), do lado em que está a frase; no último, a harpa assenta num acorde (a Casa leu).
+- **O escuro da Casa** (`'dark'`): a chama sugada e um grave abafado e distante (o tambor de tronco). Porta, pilar, erro, peça e o escuro
+  **abaixam o ambiente** por ~1,6 s (nada cobre o que o jogador precisa ouvir); a pausa também abaixa.
+- **AMBIENTE** (`Room.ambience`, opcional; ajudas em `src/scene/ambience.ts`):
+  - **vento** (`wind(x, z, pésY)`, montado com `windNear` a partir das aberturas): um trecho calmo da tempestade Arwen em laço de 16 s, mais
+    forte e mais claro perto da abertura, abafado longe, com **rajadas** de vez em quando onde venta de verdade. Onde: o **Poço** (desce pela
+    boca), o **pátio da Cisterna** (o pátio todo, mais forte sob o buraco de luz), a **boca do fosso** da Ponte (mais fraco lá embaixo), a
+    **Escadaria** (pelas janelas de grade e mais quanto mais alto), o **claustro** de «Os Que Dizem o Mesmo» (forte no pátio, entra pouco nas
+    galerias) e um ar leve sob o óculo da Biblioteca;
+  - **gotas** (`drips`): espaçadas (2 a 6,5 s), com eco de pedra, do lado em que pingam, até ~9 m: no Poço, na cisterna, no fundo do fosso,
+    ao pé da Escadaria e num canto da Antecâmara Fria;
+  - o **ar da sala**: o mesmo vento, mais lento e só o grave, bem baixo, sempre; e a **reverberação muda com o tamanho** (`size`, ou
+    estimada pelo volume da sala): corredor e câmara pequena abafam (sala curta), salão alto e o fosso ecoam (sala longa). O corredor da
+    Cisterna é curto e o pátio, longo;
+  - **a Casa respira**: de 1 a 2,5 min, só num momento calmo (sem conversa, cena, escuro ou pausa), um grave distante com um suspiro de
+    violoncelo, ou pedra rangendo longe, ou os dois; nunca o mesmo duas vezes seguidas.
+- Desempenho: poucos laços compartilhados (fogo, vento, ar, dado rolando), o volume muda e a fonte não se recria; volumes e filtros mudam ~10
+  vezes por segundo; tudo é decodificado no `unlock()`. Tudo vai pelo canal de **efeitos** (Configurações → Áudio).
+- Testes (dev): `__mdd.audio()` traz `log` (o que tocou) e `amb` (vento, tamanho, fogo e lado, gotas, calma); `__mdd.sfxPlay(nome, v, key)`.
+
+## 61. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
 O Pedro pediu um nível "AAA" de ambientação, **sempre em pixel art**, com uma foto de referência (cripta de colunas redondas e abóbadas de
 aresta, tochas, escuro de verdade) e quis ver primeiro uma sala pronta. A sala 2 (O Vestíbulo) virou o mockup. **Nada do puzzle mudou**: os três
 braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugares; a sala ainda se resolve com exatamente dois acesos.
@@ -954,7 +988,7 @@ braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugar
   `wallMat`, `uvScale`): vistas de trás não somem mais e a laje da porta sobe para dentro da parede.
 - Desempenho: ~500 chamadas de desenho com os braseiros acesos (antes ~350). Testado com Playwright (PC e celular emulado); não testado num celular real.
 
-## 61. O braseiro em modelo 3D (prévia, pedido do Pedro)
+## 62. O braseiro em modelo 3D (prévia, pedido do Pedro)
 O Pedro achou o braseiro feio e mandou um modelo do Sketchfab: **"Stone Column Brazier", de Amarveer, CC BY 4.0** (pode entrar no jogo, inclusive
 vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS.txt`). É o primeiro arquivo de modelo do jogo (até aqui tudo era código).
 - **Tratamento** (`tools/braseiro_glb.py` → `public/models/braseiro.glb`, 240 KB; o original tinha 28 MB): sai a chama "de foto" (o jogo usa a
@@ -966,7 +1000,7 @@ vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS
 - **Ainda é prévia**: só entra com `?braseiro=novo` (carrega o arquivo e troca o pé e a tigela de todos os braseiros). Para virar o padrão falta
   carregar o modelo antes de montar as salas e conferir todas as salas com braseiro.
 
-## 62. Objetos de cena em modelo 3D: dois packs CC0, a vitrine e a Galeria com objetos (prévias, pedido do Pedro)
+## 63. Objetos de cena em modelo 3D: dois packs CC0, a vitrine e a Galeria com objetos (prévias, pedido do Pedro)
 O Pedro pediu objetos de verdade para as salas. Achei e baixei dois packs gratuitos **CC0** (podem entrar no jogo, até vendido, sem crédito
 obrigatório; o crédito está em `public/audio/CREDITS.txt`): **Fantasy Props MegaKit (Standard)**, de Quaternius (94 objetos em glTF, quatro texturas
 "trim sheet" compartilhadas), e **Medieval Tavern Props Pack**, de System G6 (19 objetos num arquivo do Blender, exportados para .glb pelo Blender
@@ -982,7 +1016,7 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
   garrafas embaixo das marcas de giz; pote quebrado e inteiro; correntes no chão; um candelabro velho pendurado no meio; barris num suporte junto da
   porta. Tudo encostado nas paredes, fora do caminho, da passagem da câmara lateral, das folhas dela e dos desenhos; as tochas ganham sombra de
   verdade. Na branch ficam só os objetos usados (`public/models/props_q.glb`, 1,1 MB, e `props_t.glb`, 0,5 MB).
-- Era prévia (`?objetos=1`); **virou padrão na Galeria em §64**, com os objetos refeitos em pequenas cenas e a arquitetura nova.
+- Era prévia (`?objetos=1`); **virou padrão na Galeria em §65**, com os objetos refeitos em pequenas cenas e a arquitetura nova.
 - **O que entra (decisão do Pedro: o jogo não é RPG)**: só objetos do dia a dia de quem viveu e esperou na Casa: móveis (bancos, banquetas,
   cadeiras, mesas, armários, estantes, camas), barris, caixotes, cestos, sacos, baldes, potes e vasos (inteiros e quebrados), canecas, pratos e
   talheres, velas e castiçais, candelabro, livros e pergaminhos, cordas, correntes e gaiola. **Fora**: armas, escudos, poções e garrafinhas,
@@ -990,7 +1024,7 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
   caldeirão, comida e barraca de feira; e o que imita a gramática dos puzzles: tochas e lanternas, estandartes e panos pendurados, lenha em brasa.
   Na Galeria, a prateleira trocou as garrafas por caneca, prato e pote.
 
-## 63. O motor de luz: toda chama acende o seu pedaço da sala (pedido do Pedro: "a iluminação é o cerne")
+## 64. O motor de luz: toda chama acende o seu pedaço da sala (pedido do Pedro: "a iluminação é o cerne")
 - **Mais luzes de verdade**, pela qualidade (Configurações → Imagem): alta 12 luzes + 4 com sombra; média 10 + 2; baixa 6 + 0 (`BUDGET` em
   `scene.ts`; o número de luzes só muda quando a qualidade muda, então os shaders não recompilam ao trocar de sala). Cada luz tem alcance
   (`Emitter.range`, 11 m) e some suave até ele.
@@ -1005,8 +1039,8 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
 - **O brilho de longe**: cada tocha tem uma mancha de luz na parede que só aparece enquanto ela está sem luz de verdade (`Emitter.lit`, escrito pelo
   motor) e apaga no escuro da Casa (`lightEnv.scale`): nenhuma tocha parece morta de longe, e a cal continua visível no escuro.
 
-## 64. A Galeria dos Condenados como sala-modelo completa (cenógrafo, pedido do Pedro)
-A sala 15 (`rooms/respiro3.ts`) é a primeira sala inteira na direção de arte nova (§60), com o motor de luz (§63) e os objetos (§62). Nada do
+## 65. A Galeria dos Condenados como sala-modelo completa (cenógrafo, pedido do Pedro)
+A sala 15 (`rooms/respiro3.ts`) é a primeira sala inteira na direção de arte nova (§61), com o motor de luz (§64) e os objetos (§63). Nada do
 que o jogador precisa ver, alcançar ou acertar mudou: a câmara lateral (formato, frases a giz, lei talhada, braseiros, nicho), a passagem e a
 inscrição sobre ela, as folhas 5 e 6 nos bancos, o Escrivão e a marca de giz, os desenhos (tamanhos, rosto, porta), as marcas de contagem, os
 bancos, as tochas e a frase da porta ficam onde estavam. Testado: DOIS, TRÊS, UM abre o nicho da gema; o Escrivão some quando o jogador passa
@@ -1035,7 +1069,7 @@ do meio da galeria e deixa a marca de giz.
   antiga: ~290 / ~235 / ~340; o Vestíbulo novo passa de 700). `props_q.glb` ganhou cama, sacola, corda, pote, vela e balde de madeira (1,4 MB).
 - Não testado em celular de verdade (só no navegador do computador em tamanho de celular).
 
-## 65. Sombras mais realistas, a opção "Sombras" e a tocha em modelo 3D (cenógrafo, pedido do Pedro)
+## 66. Sombras mais realistas, a opção "Sombras" e a tocha em modelo 3D (cenógrafo, pedido do Pedro)
 O Pedro pediu "caprichar mais nas sombras, dar ainda mais realismo", com uma opção no menu para diminuí-las se pesar no celular; e mandou um
 modelo 3D para as tochas.
 - **Configurações → Imagem → Sombras** (`Config.shadows`, separada da Qualidade, que continua cuidando de quantas luzes e do brilho):

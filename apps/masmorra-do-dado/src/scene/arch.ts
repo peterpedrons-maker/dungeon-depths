@@ -1,4 +1,4 @@
-// ARQUITETURA DE VERDADE (DESIGN.md §60): as peças do salão de colunas da direção de arte nova (referência do Pedro: cripta de colunas
+// ARQUITETURA DE VERDADE (DESIGN.md §61): as peças do salão de colunas da direção de arte nova (referência do Pedro: cripta de colunas
 // redondas e abóbadas de aresta, luz de tocha, escuro de verdade), sempre em pixel art.
 //  · CANTARIA com RELEVO: blocos grandes de pedra desenhados pixel a pixel, com um mapa de altura junto (bumpMap): a quina de cada bloco
 //    pega a luz da tocha de verdade, de qualquer lado, e a junta fica funda. Nada de luz "pintada" na textura.
