@@ -932,3 +932,15 @@ braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugar
 - **Bugs de passagem corrigidos nesta sala**: a parede da porta e a da entrada têm espessura (`buildDoor`/`buildEntrance` ganharam `thick`,
   `wallMat`, `uvScale`): vistas de trás não somem mais e a laje da porta sobe para dentro da parede.
 - Desempenho: ~500 chamadas de desenho com os braseiros acesos (antes ~350). Testado com Playwright (PC e celular emulado); não testado num celular real.
+
+## 59. O braseiro em modelo 3D (prévia, pedido do Pedro)
+O Pedro achou o braseiro feio e mandou um modelo do Sketchfab: **"Stone Column Brazier", de Amarveer, CC BY 4.0** (pode entrar no jogo, inclusive
+vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS.txt`). É o primeiro arquivo de modelo do jogo (até aqui tudo era código).
+- **Tratamento** (`tools/braseiro_glb.py` → `public/models/braseiro.glb`, 240 KB; o original tinha 28 MB): sai a chama "de foto" (o jogo usa a
+  própria chama em pixel, as brasas e a luz), as texturas de 2048 px viram 128 px (a densidade de pixel das paredes; 256 px não mudava nada na
+  tela), musgo menos saturado, filtro "nearest", materiais Lambert com o relevo do mapa de normais. ~1.500 triângulos.
+- **Medidas do puzzle intocadas** (`brazier.ts`): o topo da cesta fica em 1,1 m × escala (onde a tigela sempre esteve), as caixas de colisão, o
+  soquete, o ponto de acender e a escala por tamanho (GRANDE/PEQUENO) são os mesmos; a base da coluna tem os mesmos 0,6 m do pé antigo. A chama
+  e o carvão foram ajustados à cesta, que é menor que a tigela antiga.
+- **Ainda é prévia**: só entra com `?braseiro=novo` (carrega o arquivo e troca o pé e a tigela de todos os braseiros). Para virar o padrão falta
+  carregar o modelo antes de montar as salas e conferir todas as salas com braseiro.

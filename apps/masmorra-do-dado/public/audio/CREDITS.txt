@@ -26,3 +26,9 @@ EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
 
 Os arquivos foram recortados, normalizados e convertidos para MP3 mono pelo
 script tools/build_audio.py.
+
+Modelo 3D (public/models/braseiro.glb)
+  - "Stone Column Brazier" (https://sketchfab.com/3d-models/stone-column-brazier-c820670f8cc64049878c89f2a668e78b)
+    de Amarveer (https://sketchfab.com/amarveer), licença CC BY 4.0
+    (http://creativecommons.org/licenses/by/4.0/). Adaptado para o jogo: sem a chama
+    original, texturas reduzidas a 128 px, materiais trocados (tools/braseiro_glb.py).

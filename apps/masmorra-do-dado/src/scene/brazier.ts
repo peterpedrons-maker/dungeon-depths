@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { lambert, type Kit } from './kit';
 import type { Box, Ctx, Socket } from './types';
+import { brazierModelMode, onBrazierModel } from './models';
 
 export interface Brazier {
   x: number;
@@ -21,21 +22,35 @@ export interface Brazier {
 
 export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1, y0 = 0, poolR = 1.9): Brazier {
   const s = scale; // braseiros menores/maiores (o tamanho pode dizer quanto a chama dura)
-  kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, y0 + 0.4 * s, z);
-  const bowlMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.32 * s, 0.3 * s, 8), lambert(null, 0x3a3a46));
-  bowlMesh.position.set(x, y0 + 0.95 * s, z);
-  kit.add(bowlMesh);
+  const useModel = !!brazierModelMode;
+  // (prévia, ?braseiro=…) o modelo da coluna com a cesta de ferro (models.ts) no lugar do pé e da tigela; as medidas do puzzle são as mesmas
+  let flameW = 0.75 * s;
+  let coalR = 0.22 * s;
+  if (useModel) {
+    const holder = new THREE.Group();
+    holder.position.set(x, y0, z);
+    holder.scale.setScalar(s);
+    kit.group.add(holder);
+    flameW = 0.5 * s;
+    coalR = 0.09 * s;
+    onBrazierModel((m) => holder.add(m.group.clone()));
+  } else {
+    kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, y0 + 0.4 * s, z);
+    const bowlMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.32 * s, 0.3 * s, 8), lambert(null, 0x3a3a46));
+    bowlMesh.position.set(x, y0 + 0.95 * s, z);
+    kit.add(bowlMesh);
+  }
   const bowl = new THREE.Vector3(x, y0 + 1.15 * s, z);
   const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-  flame.scale.set(0.75 * s, 0.6 * s, 1);
+  flame.scale.set(flameW, 0.6 * s, 1);
   flame.position.set(x, y0 + 1.45 * s, z);
   flame.visible = false;
   kit.group.add(flame);
   const lamp = kit.light(x - 0.3 * s, y0 + 1.9 * s, z + 0.4 * s, 0xff8a2a, 0);
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
-    const coal = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11 * s), coalMat);
-    coal.position.set(x + Math.cos(i * 1.3) * 0.22 * s, y0 + (1.12 + (i % 2) * 0.05) * s, z + Math.sin(i * 1.3) * 0.22 * s);
+    const coal = new THREE.Mesh(new THREE.DodecahedronGeometry((useModel ? 0.06 : 0.11) * s), coalMat);
+    coal.position.set(x + Math.cos(i * 1.3) * coalR, y0 + ((useModel ? 1.06 : 1.12) + (i % 2) * 0.04) * s, z + Math.sin(i * 1.3) * coalR);
     kit.group.add(coal);
   }
   kit.contact(x, z, 1.6 * s, 1.6 * s, y0);
@@ -81,7 +96,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     update(t) {
       if (!b.lit) return;
       const k = Math.max(0.15, b.flameK);
-      flame.scale.set(0.75 * s * k, 0.6 * s * k, 1); // a chama encolhe quando está acabando
+      flame.scale.set(flameW * k, 0.6 * s * k, 1); // a chama encolhe quando está acabando
       flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
       if (kit.lively) {
         // chama viva: a luz oscila e o ponto de luz treme (com sombra, as sombras dançam)

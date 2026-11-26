@@ -568,6 +568,8 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             <p>Fantozzi (passos)</p>
             <p>qubodup (bola rolando)</p>
             <p>gravações de giz, borracha, porta de pedra, arrastos, chama, lareira e vapor</p>
+            <h3>Modelo 3D</h3>
+            <p>braseiro: Stone Column Brazier, de Amarveer (Sketchfab, CC BY 4.0), adaptado para o pixel</p>
             <h3>Letra</h3>
             <p>a letra do caderno, desenhada pixel a pixel para o jogo</p>
           </div>
@@ -589,6 +591,10 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
           <p>
             <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi (passos), qubodup (bola rolando), e gravações de
             giz, borracha, porta de pedra, arrastos, chama, lareira e vapor.
+          </p>
+          <p>
+            <b>Modelo 3D</b>: o braseiro é baseado em <i>Stone Column Brazier</i>, de Amarveer (sketchfab.com/amarveer), licença CC BY 4.0; adaptado para o
+            pixel (sem a chama original, texturas reduzidas).
           </p>
           <p>
             <b>Fonte</b>: a letra do caderno, desenhada pixel a pixel para o jogo.
