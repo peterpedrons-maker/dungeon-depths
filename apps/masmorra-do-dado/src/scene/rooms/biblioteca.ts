@@ -130,9 +130,11 @@ export function buildBiblioteca(ctx: Ctx): Room {
     kit.light(0, H - 1, -12, 0xc8d8ff, 40);
     kit.beamDust(0, -12, 1.5, 0.5, H - 0.3, 50, 0xe8eeff);
   }
-  // as paredes do Átrio, com as passagens (2 m) para as alas
-  const wall = (side: number, z0: number, z1: number, y0 = 0, h = H) =>
-    kit.plane(z1 - z0, h, kit.brick([(z1 - z0) / T, h / T], 0.95, 33 + Math.round(z0) + side), side * AX, y0 + h / 2, (z0 + z1) / 2, 0, side < 0 ? Math.PI / 2 : -Math.PI / 2);
+  // as paredes do Átrio, com as passagens (2 m) para as alas. São de pedra COM ESPESSURA (30 cm, para o lado das alas): antes eram folhas de uma
+  // face só, viradas para o Átrio, e de dentro de uma ala a parede sumia (via-se o Átrio através dela, com o batente da passagem boiando)
+  const atrioWallM = kit.brick([1, 1], 0.95, 33);
+  const WT = 0.3;
+  const wall = (side: number, z0: number, z1: number, y0 = 0, h = H) => kit.box(WT, h, z1 - z0, atrioWallM, side * (AX + WT / 2), y0 + h / 2, (z0 + z1) / 2);
   for (const side of [-1, 1]) {
     const gaps = side < 0 ? [WINGS.pedras, WINGS.papel] : [WINGS.museu, WINGS.aula];
     const mids = gaps.map(([a, b]) => (a + b) / 2);
@@ -183,7 +185,9 @@ export function buildBiblioteca(ctx: Ctx): Room {
   interactables.push(C.niche.interactable);
 
   // ══ as ALAS (câmaras baixas ao lado do Átrio) ══
-  const wing = (side: number, z0: number, z1: number, seed: number) => {
+  // `torch`: onde fica a tocha da ala [x, z, nx] (sem: no meio da parede de fora). As alas do Papel e da Aula têm a tocha na parede do lado do
+  // Átrio, longe dos livros e das lousas (antes ela ficava colada nas escritas; DESIGN.md §67)
+  const wing = (side: number, z0: number, z1: number, seed: number, torch?: [number, number, number]) => {
     const x0 = side < 0 ? -WX : AX;
     const x1 = side < 0 ? -AX : WX;
     const w = x1 - x0;
@@ -197,7 +201,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
     kit.plane(w, WH, kit.brick([w / T, WH / T], 0.95, seed + 3), cx, WH / 2, z1, 0, Math.PI);
     rects.push(side < 0 ? [-WX - 2, z0, -WX, z1] : [WX, z0, WX + 2, z1], [x0, z0 - 2, x1, z0], [x0, z1, x1, z1 + 2]);
     kit.aoSides(x0, x1, z0, z1, WH);
-    kit.torch(side * (WX - 0.1), 2.4, cz, -side, 0, seed, 0xffa860, 24);
+    if (torch) kit.torch(torch[0], 2.4, torch[1], torch[2], 0, seed, 0xffa860, 24);
+    else kit.torch(side * (WX - 0.1), 2.4, cz, -side, 0, seed, 0xffa860, 24);
     return { x0, x1, z0, z1, cx, cz };
   };
   const inWing = (x: number, z: number) => {
@@ -216,10 +221,11 @@ export function buildBiblioteca(ctx: Ctx): Room {
     kit.inscribe({ words: ['condenado', 'crime', 'perg'], x: W.cx, y: 2.0, z: W.z1 - 0.025, nx: 0, nz: -1, size: 0.34, age: 0.15, seed: 305, plaque: true });
     // murais com figura: ESCREVER, LER, ESCRIVÃO, SENTENÇA (a figura em cima, a palavra embaixo)
     const murals: [string, () => THREE.Texture, number][] = [
-      ['escrever', () => { const c = sketchCanvas('escrever', 8, 40); const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; return t; }, -9.8],
-      ['ler', () => relief('ler'), -8.2],
-      ['escrivao', () => relief('escrivao'), -6.6],
-      ['sentenca', () => relief('sentenca'), -5.0],
+      // (dois de cada lado da tocha da ala, a 1,6 m ou mais dela: antes a tocha ficava em cima do mural do Escrivão)
+      ['escrever', () => { const c = sketchCanvas('escrever', 8, 40); const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; return t; }, -10.0],
+      ['ler', () => relief('ler'), -8.6],
+      ['escrivao', () => relief('escrivao'), -5.4],
+      ['sentenca', () => relief('sentenca'), -4.0],
     ];
     for (const [word, texFn, z] of murals) {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshLambertMaterial({ map: texFn(), transparent: true, alphaTest: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
@@ -228,12 +234,14 @@ export function buildBiblioteca(ctx: Ctx): Room {
       kit.group.add(m);
       kit.inscribe({ words: [word], x: -WX + 0.025, y: 1.6, z, nx: 1, nz: 0, size: 0.32, age: 0.12, seed: 311 + Math.round(z * 3), frame: true });
     }
-    // estantes de tábuas (blocos de pedra com riscos), no meio da ala
-    for (const z of [-9, -5]) {
-      kit.box(0.5, 2.2, 1.8, kit.stone, -9.2, 1.1, z);
-      boxes.push(mkBox(-9.45, 0, z - 0.9, -8.95, 2.2, z + 0.9));
-      rects.push([-9.45, z - 0.9, -8.95, z + 0.9]);
-      for (let y = 0.5; y < 2.1; y += 0.45) kit.box(0.54, 0.05, 1.84, kit.slab, -9.2, y, z, false);
+    // estantes de tábuas (blocos de pedra com riscos), uma de cada lado da passagem (no meio da ala, elas tapavam as placas das paredes do fundo)
+    for (const z of [-9.6, -4.4]) {
+      const ex = -7.5;
+      kit.box(0.5, 2.2, 1.8, kit.stone, ex, 1.1, z);
+      boxes.push(mkBox(ex - 0.25, 0, z - 0.9, ex + 0.25, 2.2, z + 0.9));
+      rects.push([ex - 0.25, z - 0.9, ex + 0.25, z + 0.9]);
+      for (let y = 0.5; y < 2.1; y += 0.45) kit.box(0.54, 0.05, 1.84, kit.slab, ex, y, z, false);
+      kit.contact(ex, z, 0.9, 2.2);
     }
   }
 
@@ -248,7 +256,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   }
   const books: Book[] = [];
   {
-    const W = wing(-1, WINGS.papel[0], WINGS.papel[1], 81);
+    const W = wing(-1, WINGS.papel[0], WINGS.papel[1], 81, [-AX - 0.4, -19.6, -1]);
     // estantes de livros nas paredes (prateleiras com lombadas coloridas)
     const spines = canvasTex(64, 48, (g) => {
       g.fillStyle = '#2a1e18';
@@ -319,10 +327,11 @@ export function buildBiblioteca(ctx: Ctx): Room {
   // ── A SALA DE AULA: três lousas e o mural de encaixe ──
   const aula: { board: ReturnType<typeof makeWallBoard>; want: string; done: boolean; locked: () => boolean; mural: THREE.MeshLambertMaterial }[] = [];
   let aulaGem = false;
-  const aulaNiche = makeGemNiche(kit, ctx, WX - 0.02, 1.25, -14.2, -1, 0, () => (aulaGem = true));
+  // o nicho da Aula: na parede do lado do Átrio, de frente para a lousa (c) que o abre (antes ele ficava no MESMO lugar da lousa, por cima dela)
+  const aulaNiche = makeGemNiche(kit, ctx, AX + 0.32, 1.25, -14.4, 1, 0, () => (aulaGem = true));
   interactables.push(aulaNiche.interactable);
   {
-    const W = wing(1, WINGS.aula[0], WINGS.aula[1], 101);
+    const W = wing(1, WINGS.aula[0], WINGS.aula[1], 101, [AX + 0.4, -19.6, 1]);
     // bancos
     for (const z of [-18.5, -15.5]) {
       kit.box(3.2, 0.45, 0.5, kit.slab, 8.6, 0.225, z);
