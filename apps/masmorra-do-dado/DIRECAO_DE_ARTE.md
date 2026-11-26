@@ -57,7 +57,7 @@
 - **A LUT pode mudar por capítulo**, mas não por sala. Dentro do capítulo, varia a luz, não a paleta.
 
 ### 4.2 Luz e sombra
-- **Uma luz principal por sala projeta sombra de verdade**: em geral o braseiro principal ou a luz do poço. Basta uma sombra de baixa resolução (mapa pequeno, filtro duro, que combina com o pixel). As outras luzes do pool continuam sem sombra.
+- **Toda chama acende o seu pedaço da sala e faz sombra** (`DESIGN.md` §64 e §66): as chamas mais perto do jogador ganham luz com sombra de verdade; a luz principal da sala (a fresta da lua, a chama do nicho) também. A oclusão de ambiente escurece cantos, o pé dos objetos e o vão embaixo de mesas e camas.
 - **Sombra de contato em tudo que toca o chão**: braseiros, colunas, pedras, o dado pousado. Pode ser um disco escuro pontilhado embaixo do objeto. Sem isso, as coisas flutuam.
 - **Escuro de verdade.** Entre as poças de luz, o fundo cai quase no preto da paleta. A névoa serve para **profundidade**, não para clarear tudo.
 - **Poça de luz no chão** embaixo de cada tocha e braseiro (decalque aditivo suave), mais forte perto e sumindo rápido.
@@ -192,7 +192,7 @@ Depois que a sala 3 passar, as regras que saírem dela entram aqui (atualizando 
 ---
 
 ## 8. Notas técnicas (para o motor atual: Three.js, LUT, contorno, pontilhado)
-- **Sombra:** uma `DirectionalLight` ou `SpotLight` por sala, com `castShadow` e mapa pequeno (256 a 512), filtro `BasicShadowMap` (duro, combina com o pixel). Os `PointLight` do pool continuam sem sombra.
+- **Sombra:** (atualizado, `DESIGN.md` §64 e §66) toda tocha e braseiro pode ter sombra; as mais perto ganham luz com sombra de verdade, quantas e com que nitidez a opção **Sombras** decide (Altas: 4 chamas, mapa 512, borda suave; Médias: 2; Baixas: 1, borda dura; Desligadas). A luz principal de algumas salas (a fresta da lua, a chama do nicho) também faz sombra. Mais a **oclusão de ambiente** no pós-processo.
 - **Sombra de contato:** um plano com textura de disco pontilhado embaixo de cada objeto (barato, sem custo de luz).
 - **Decalques:** planos finos encostados na superfície com `polygonOffset`, ou uma segunda camada de textura por parede (`decals` por sala, posições à mão no módulo da sala).
 - **Densidade de texel:** calcular o `repeat` das texturas pelo tamanho real da superfície (`metros × 32 px`), em vez de um repeat fixo.
@@ -200,3 +200,34 @@ Depois que a sala 3 passar, as regras que saírem dela entram aqui (atualizando 
 - **Kit de arquitetura:** funções no `Kit` (`kit.rodape`, `kit.arco`, `kit.batente`, `kit.coluna({base, capitel})`, `kit.nicho`, `kit.abobada`), usadas por todas as salas e pelo construtor `fire.ts`.
 - **LUT por capítulo**, a luz e a névoa por sala.
 - **Desempenho:** tudo isso cabe no celular se a sombra for de uma luz só, os decalques forem poucos e as partículas, locais.
+
+---
+
+## 9. Da borda ao centro do dado: o caminho visual dos capítulos
+**Decidido pelo Pedro:** a Casa fica DENTRO do dado. No capítulo 1 o jogador está na **borda**, perto da superfície: por isso há
+catacumbas construídas e **buracos que dão para fora** (os furos das faces, os pontos do dado: o Poço do começo é um deles). A cada
+capítulo ele desce **rumo ao centro**, e o lugar fica **mais cru, com cara de caverna**, menos catacumba. (A história e os nomes ficam com o
+`narrador`; aqui é só o que se VÊ.)
+
+A regra que atravessa todos: **quanto mais fundo, menos mão humana e menos luz de fora.** A borda foi construída e usada; o centro nunca foi.
+
+| Capítulo (face) | Onde, no dado | Arquitetura | Materiais e cor | Luz | Objetos e sinais de gente |
+|---|---|---|---|---|---|
+| **1 · Fogo** (hoje) | a borda, logo abaixo da face | catacumba construída: cantaria, abóbadas de aresta, arcos, colunas, nichos, portas com batente | pedra cinza fria e marrom dessaturado; o laranja da chama e da escrita | tochas e braseiros; **luz de fora** caindo pelos furos (o Poço, frestas, o pátio da cisterna, o claustro) | muitos: bancos, mesas, camas, marcas de giz, os que esperaram |
+| **2 · Peso** | ainda perto da borda | construída, mais pesada e mais baixa: pilares grossos, vigas de pedra, rampas e plataformas (o peso desce) | pedra mais escura e úmida; segunda cor: o cinza-azulado do ferro e das correntes | ainda há furos, mais estreitos e raros; mais tochas | menos móveis; ferragens, contrapesos, correntes |
+| **3 · Eco** | meio caminho | a construção começa a ceder: paredes **meio talhadas na rocha**, galerias longas e altas (para o eco), escadas escavadas | metade cantaria, metade rocha bruta; o azul-escuro do vazio | quase nenhuma luz de fora; o que chega vem refletido, fraco | poucos; o que ficou está quebrado ou caído |
+| **4 · Troca** | abaixo do meio | **cavernas** com trechos construídos isolados (um arco, um piso de lajes no meio da rocha) | rocha bruta, veios minerais; uma cor estranha de apoio (o verde-cobre das trocas) | só fogo que o jogador acende e brilhos minerais | quase nada: só o que alguém trouxe de muito longe |
+| **5 · Deslizar** | perto do centro | caverna lisa, gasta por algo que escorrega: rampas naturais, poços, lâminas de pedra polida | pedra polida e escura, quase espelho; reflexos frios | muito escura; a luz desliza junto (poças, reflexos) | nenhum móvel; só marcas de giz e as folhas dela |
+| **6 · Atravessar** | a casca do centro | fendas, paredes finas que se atravessam, formas que não foram feitas por mão nenhuma | rocha quase sem textura, poucas cores; o branco da escrita volta a mandar | quase nenhuma; a escrita é a luz | nenhum |
+| **7 · O veredito** | o centro | a sala do Juiz: **parede lisa, sem ajuda**, nada construído e nada escavado; de lá o jogador sobe pela **mesma luz do poço** do começo | liso, sem paleta de pedra | uma luz só, a do poço | nenhum |
+
+Como aplicar (para todo capítulo novo):
+- **A LUT muda por capítulo** (§4.1): a paleta fica mais curta e mais escura conforme se desce; o laranja do fogo continua o mesmo em todas (é a
+  chama que o jogador carrega).
+- **O kit de arquitetura vai trocando de peças**: cantaria e abóbada (cap. 1 e 2) → cantaria que se mistura com rocha (3) → rocha com trechos
+  construídos (4) → rocha polida e fendas (5 e 6) → liso (7). Para isso, `arch.ts` ganha, quando o capítulo 3 chegar, um gerador de **rocha bruta**
+  (paredes irregulares, teto de caverna, chão com desnível) no mesmo pixel e com o mesmo relevo das peças de hoje.
+- **A luz de fora some aos poucos**: no capítulo 1 os furos são a luz principal de várias salas; no 3 em diante, não há mais furo nenhum.
+- **Os objetos rareiam** (§4.7 continua valendo: só o dia a dia, nada de RPG): a borda foi habitada; o centro, nunca.
+- O que é **gramática de puzzle** (frases, braseiros, lousas, soquetes, tochas das constelações) mantém a mesma cara em todos os capítulos, para o
+  jogador nunca ter de reaprender a ler.

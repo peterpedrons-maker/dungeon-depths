@@ -746,6 +746,9 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
     zEnd,
     setOpen(v: number) {
       slabG.position.y = v * (ARCH_TOP + 0.2);
+      // aberta de todo, a laje some: lá em cima ela fica atrás da parede e acima do teto do corredor, e em parede fina ou mais baixa que
+      // ela (5,5 m) ela aparecia por cima, "dentro" da parede (varredura do cenógrafo, DESIGN.md §67)
+      slabG.visible = v < 0.98;
       rune.visible = v < 0.5;
       corridorLight.intensity = v * 28;
     },

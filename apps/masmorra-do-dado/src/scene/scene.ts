@@ -4106,7 +4106,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       interact: () => interact(),
       interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: [+(camera.position.x - offs[curRoom].x).toFixed(2), +(camera.position.z - offs[curRoom].z).toFixed(2)] })),
       chat: (k: string) => { chatCool = 0; chatFn(k); },
-      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1), door: r.doorZ, dy: r.exitDy ?? 0 })),
+      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1), x: +offs[i].x.toFixed(2), y: +offs[i].y.toFixed(2), door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
