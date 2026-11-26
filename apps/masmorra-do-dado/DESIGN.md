@@ -1196,8 +1196,8 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   enquanto).
 - **O epílogo** das 21 (depois de qualquer um dos três finais; volta ao poço com a boca VAZIA lá em cima, decidido pelo Pedro; um New Game Plus fica
   para bem depois) e os **21 furos redondos** nos tetos estão no `HISTORIA.md`. A regra dos furos para a
-  arte está no `DIRECAO_DE_ARTE.md` §9: só contam os furos REDONDOS de luz no teto; precisam ser exatamente 21 no jogo todo. Ainda não foram
-  contados nem espalhados (tarefa do `cenografo`).
+  arte está no `DIRECAO_DE_ARTE.md` §9: só contam os furos REDONDOS de luz no teto; precisam ser exatamente 21 no jogo todo. Espalhados pelo
+  `cenografo` no §72 (seis salas, uma face cada; as faces 5 e 6 ficam para o capítulo 2).
 - **Teste**: `window.__mdd.gem(id, primeira)` toca a cena com uma gema à frente dos olhos; `window.__mdd.gemState()`.
 
 ## 70. O Escrivão animado (cenógrafo, animações do Pedro no Mixamo)
@@ -1243,3 +1243,28 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   constelação, as lousas, os livros que queimam); uma vela acesa ali seria uma pista falsa. As velas e o candelabro do escritório estão apagados.
 - Estantes: 1,9 m de altura, o fundo achatado para 45 cm (o modelo tem 70), com colisão para o jogador e o dado. A madeira, muito escura, ganhou
   um pouco de cor e um brilho próprio fraco, para se ler no canto escuro do Átrio. Todos os objetos viram poucas malhas (`bakeProps`).
+
+## 72. Os 21 furos espalhados (cenógrafo; tarefa do §69)
+
+- **A regra** (decidida pelo Pedro, `HISTORIA.md` e `DIRECAO_DE_ARTE.md` §9): exatamente 21 furos REDONDOS de luz nos tetos do jogo, os pontos do
+  dado; o Poço é o do UM; quase todos nos capítulos 1 e 2, nenhum do 3 em diante. Frestas, janelas, pátios e o claustro não contam.
+- **Como ficaram: seis salas, cada uma com os furos no desenho de uma face** (1+2+3+4+5+6 = 21). Casa com a folha p7 dela ("buracos redondos no
+  teto, sempre um, dois...") sem mudar texto nenhum, e o jogador atento pode notar o padrão:
+
+  | Face | Furos | Sala | Onde |
+  |---|---|---|---|
+  | 1 | 1 | O Poço (sala 1) | o próprio poço |
+  | 2 | 2 | A Biblioteca (sala 11) | em diagonal, cada um em cima de um cruzamento dos corredores entre as mesas (antes era um óculo só, no meio) |
+  | 3 | 3 | Os Nichos e a Cisterna (sala 5) | em diagonal, o do meio em cima da cisterna (antes era só esse) |
+  | 4 | 4 | Os Banhos Secos (sala 9) | em quadrado, na metade oeste, em cima do corredor entre a piscina rasa e a média (antes não havia) |
+  | 5 e 6 | 11 | capítulo 2 | ainda não existe ("furos mais estreitos e raros") |
+
+- **Puzzles**: nenhum furo ilumina o que é de puzzle.
+  - Na Biblioteca, a luz cai igual entre quatro mesas, porque as mesas são as casas da constelação C-Bib.
+  - Nos Banhos, os furos ficam longe da piscina funda: os quatro braseiros de lá, em quadrado, são o puzzle de "exatamente DOIS", e quatro luzes ao
+    lado deles seriam uma pista falsa.
+  - Na Cisterna, os dos lados ficam a mais de 2 m dos braseiros dos cantos.
+- **A mesma cara** (`src/scene/skyhole.ts`): o furo redondo (raio 1,2 m, o do Poço) com um aro de pedra lavrada, um tubo curto de alvenaria, o céu
+  claro lá em cima, uma luz fria e a poeira caindo no facho. O Poço ganhou o mesmo aro (`holeRim`). O cone de luz aditivo do Poço não foi copiado:
+  com o teto alto e visto de lado, ele virava uma coluna cinza sólida no pixel.
+- **Quem mexer** numa sala com furo, ou fizer as do capítulo 2, atualiza esta tabela e o comentário do topo de `skyhole.ts`.

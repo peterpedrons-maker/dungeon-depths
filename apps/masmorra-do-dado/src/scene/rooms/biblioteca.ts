@@ -28,6 +28,7 @@ import { mkBox, shotGate, Z1 } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { windNear } from '../ambience';
 import { bakeProps, loadPack, placeProp } from '../props';
+import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
 const Z0 = -26;
@@ -107,30 +108,11 @@ export function buildBiblioteca(ctx: Ctx): Room {
   door.setOpen(1);
   door.lampMats[0].color.setHex(0xff7a2e);
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, 2.65, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, 2.65, Z0 + 0.3));
-  // o teto, com a luz redonda no alto
-  {
-    const sh = new THREE.Shape();
-    sh.moveTo(-AX, -Z0);
-    sh.lineTo(AX, -Z0);
-    sh.lineTo(AX, -Z1);
-    sh.lineTo(-AX, -Z1);
-    sh.closePath();
-    const hole = new THREE.Path();
-    hole.absarc(0, 12, 1.6, 0, Math.PI * 2, true);
-    sh.holes.push(hole);
-    const cm = kit.brick([1, 1], 0.6, 19);
-    cm.side = THREE.DoubleSide;
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 24), cm);
-    m.rotation.x = -Math.PI / 2;
-    m.position.y = H;
-    kit.group.add(m);
-    const sky = new THREE.Mesh(new THREE.CircleGeometry(1.7, 24), new THREE.MeshBasicMaterial({ color: 0xdfe6f0, fog: false }));
-    sky.rotation.x = Math.PI / 2;
-    sky.position.set(0, H + 1.4, -12);
-    kit.group.add(sky);
-    kit.light(0, H - 1, -12, 0xc8d8ff, 40);
-    kit.beamDust(0, -12, 1.5, 0.5, H - 0.3, 50, 0xe8eeff);
-  }
+  // o teto, com DOIS furos redondos de luz em diagonal (a face 2 dos 21 furos: DESIGN.md §72). Cada um em cima de um CRUZAMENTO dos corredores
+  // entre as mesas: a luz cai igual em quatro mesas, sem destacar nenhuma (as mesas são as casas da constelação C-Bib)
+  const HOLES: [number, number][] = [[-1.6, -10.75], [1.6, -16.25]];
+  kit.group.add(ceilingWithHoles(-AX, AX, Z0, Z1, H, HOLES, holeCeilingMat(kit, 0.6)));
+  for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, H, { light: 34 });
   // as paredes do Átrio, com as passagens (2 m) para as alas. São de pedra COM ESPESSURA (30 cm, para o lado das alas): antes eram folhas de uma
   // face só, viradas para o Átrio, e de dentro de uma ala a parede sumia (via-se o Átrio através dela, com o batente da passagem boiando)
   const atrioWallM = kit.brick([1, 1], 0.95, 33);
@@ -670,8 +652,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
     },
     groundY: floorOf,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
-    // o som do lugar (§60): um ar leve desce pelo óculo do Átrio
-    ambience: { wind: windNear([{ x: 0, z: -12, r: 5, k: 0.22 }]) },
+    // o som do lugar (§60): um ar leve desce pelos dois furos do Átrio
+    ambience: { wind: windNear([{ x: -1.6, z: -10.75, r: 4.5, k: 0.18 }, { x: 1.6, z: -16.25, r: 4.5, k: 0.18 }]) },
     dieFloor: floorOf,
     holdsDie: () => false,
     update(dt, t) {

@@ -232,6 +232,9 @@ Como aplicar (para todo capítulo novo):
   pontos do dado (1+2+3+4+5+6), e o **Poço** do começo é o do UM. Só os redondos contam: frestas, pátios, janelas e o claustro não. Todos com a mesma
   cara (um buraco redondo no teto, com luz lá em cima), para o jogador saber o que contar. Pela regra de cima, quase todos ficam nos capítulos 1 e 2.
   Quem mexer numa sala com furo redondo atualiza a contagem.
+  **Como estão espalhados** (`DESIGN.md` §72, `src/scene/skyhole.ts`): seis salas, cada uma com os furos no desenho de uma face do dado: o Poço
+  (1), a Biblioteca (2, em diagonal), a Cisterna (3, em diagonal), os Banhos Secos (4, em quadrado); as faces 5 e 6 (11 furos) ficam para o
+  capítulo 2. Todos com o mesmo aro de pedra lavrada, o tubo curto e o céu claro; nenhum ilumina o que é de puzzle.
 - **Os objetos rareiam** (§4.7 continua valendo: só o dia a dia, nada de RPG): a borda foi habitada; o centro, nunca.
 - O que é **gramática de puzzle** (frases, braseiros, lousas, soquetes, tochas das constelações) mantém a mesma cara em todos os capítulos, para o
   jogador nunca ter de reaprender a ler.

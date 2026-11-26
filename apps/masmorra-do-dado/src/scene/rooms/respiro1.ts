@@ -15,6 +15,7 @@ import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { makeGemNiche, makeWallBoard } from '../firegrid';
 import { makeScribeRig } from '../scribeRig';
+import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import { adoptLayers } from '../models';
 import { diary, diaryStore } from '../../story/diary';
 import { drawGlyph } from '../../book/font';
@@ -304,34 +305,13 @@ export function buildRespiro1(ctx: Ctx): Room {
   door.setOpen(1);
   door.lampMats[0].color.setHex(0xff7a2e);
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, 2.65, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, 2.65, Z0 + 0.3));
-  // o teto, muito alto, com o BURACO redondo de luz (um "ponto" do dado)
+  // o teto, muito alto, com TRÊS furos redondos de luz em diagonal, o do meio em cima da cisterna (a face 3 dos 21 furos: DESIGN.md §72). Os dos
+  // lados ficam a mais de 2 m dos braseiros dos cantos
   {
-    const sh = new THREE.Shape();
-    // (a forma é desenhada em (x, -z) e deitada com -90° em x, que leva y para -z)
-    sh.moveTo(X0, -COURT.z0);
-    sh.lineTo(X1, -COURT.z0);
-    sh.lineTo(X1, -COURT.z1);
-    sh.lineTo(X0, -COURT.z1);
-    sh.closePath();
-    const hole = new THREE.Path();
-    hole.absarc(CIST.x, -CIST.z, 1.5, 0, Math.PI * 2, true);
-    sh.holes.push(hole);
-    // (a ShapeGeometry tem UV em metros: a repetição é por metro, como a do chão; com brick(W, L) os tijolos saíam minúsculos; §67)
-    const cm = kit.brick([1 / T, 1 / T], 0.95, 19);
-    cm.side = THREE.DoubleSide;
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 24), cm);
-    m.rotation.x = -Math.PI / 2;
-    m.position.y = PH;
-    kit.group.add(m);
-    const sky = new THREE.Mesh(new THREE.CircleGeometry(1.6, 24), new THREE.MeshBasicMaterial({ color: 0xdfe6f0, fog: false }));
-    sky.rotation.x = Math.PI / 2;
-    sky.position.set(CIST.x, PH + 1.5, CIST.z);
-    kit.group.add(sky);
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.5, 24, 1, true), new THREE.MeshLambertMaterial({ map: brick(10, 1.5, 58).map, side: THREE.BackSide }));
-    tube.position.set(CIST.x, PH + 0.75, CIST.z);
-    kit.group.add(tube);
-    kit.light(CIST.x, PH - 1, CIST.z, 0xc8d8ff, 34);
-    kit.beamDust(CIST.x, CIST.z, 1.4, 0.7, PH - 0.3, 46, 0xe8eeff); // poeira só no feixe que desce do buraco
+    const HOLES: [number, number][] = [[4.4, -15.4], [CIST.x, CIST.z], [-4.4, -22.6]];
+    // (a ShapeGeometry tem UV em metros: a repetição é por metro, como a do chão; §67)
+    kit.group.add(ceilingWithHoles(X0, X1, COURT.z0, COURT.z1, PH, HOLES, holeCeilingMat(kit, 0.95)));
+    for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, PH, { light: hx === CIST.x ? 34 : 24 });
   }
   // as galerias: blocos sólidos ao longo das paredes leste e oeste; em cima, o andar de cima; rampas no sul
   for (const s of [-1, 1]) {

@@ -7,6 +7,7 @@
 // Cada sala tem um tamanho diferente.
 
 import * as THREE from 'three';
+import { holeRim } from '../skyhole';
 import { floorTexture, brickTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
 import { makeBrazier, type Brazier } from '../brazier';
@@ -90,6 +91,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     (tube.material as THREE.MeshLambertMaterial).side = THREE.BackSide;
     tube.position.set(SHAFT.x, H + shaftH / 2, SHAFT.z);
     kit.group.add(tube);
+    holeRim(kit, SHAFT.x, SHAFT.z, H, SHAFT.r); // o aro de pedra lavrada: o poço é o furo do UM, e os 21 furos têm a mesma cara (DESIGN.md §72)
     // ── LÁ EM CIMA, do lado de fora (abertura, DESIGN.md §33): a boca do poço num pátio em ruínas, sob um céu pálido de madrugada ──
     // Tudo acima do teto da sala: de dentro só se vê pelo poço (o céu, a trave e a corda em silhueta).
     const TOP = H + shaftH;

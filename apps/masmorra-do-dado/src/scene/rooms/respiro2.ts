@@ -17,6 +17,7 @@ import { makeCloth, makeGemNiche } from '../firegrid';
 import { makePointAsk } from '../pointask';
 import { diary, diaryStore } from '../../story/diary';
 import { mkBox, slopedWall, stairs, wedge } from './shell';
+import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 
 const HALL = 1.2; // o chão do salão
@@ -153,7 +154,14 @@ export function buildRespiro2(ctx: Ctx): Room {
     kit.add(m);
     // o chão sob a escadaria (entre as muretas) é tapado pelos degraus
   }
-  kit.plane(X1 - X0, Z1 - Z0, brick(X1 - X0, Z1 - Z0, 19, 0.6), 0, CEIL, (Z1 + Z0) / 2, Math.PI / 2);
+  // o teto, com QUATRO furos redondos de luz em quadrado (a face 4 dos 21 furos: DESIGN.md §72), na metade oeste: em cima do corredor entre a
+  // piscina rasa e a média, de frente para a câmara de banho. Longe da piscina funda: os quatro braseiros de lá são o puzzle de "exatamente
+  // DOIS", e quatro luzes ao lado deles seriam uma pista falsa
+  {
+    const HOLES: [number, number][] = [[-7.0, -11.7], [-3.4, -11.7], [-7.0, -15.3], [-3.4, -15.3]];
+    kit.group.add(ceilingWithHoles(X0, X1, Z0, Z1, CEIL, HOLES, holeCeilingMat(kit, 0.6)));
+    for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, CEIL, { floorY: groundY(hx, hz), light: 18 });
+  }
   const HH = CEIL - HALL;
   // paredes laterais, com o vão de cada câmara de banho
   const sideWall = (x: number, nx: number, c: typeof WEST, seed: number) => {
