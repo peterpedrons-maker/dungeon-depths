@@ -114,7 +114,7 @@ Acender exatamente **dois** dos três braseiros.
 - Pergunta do dado nº 9 (IGUAL) na chegada.
 
 ### Sala 15 — O Fogo que Corre ✅
-- Fogo no **centro (4)**; esperar **~3 s** (vale de 1,5 a 5,5 s); fogo no **canto da frente à esquerda (6)**. Aos ~4 s, só os quatro cantos estão acesos.
+- Fogo no **centro (4)**; esperar **4 a 5 s** (vale de 3 a 7 s); fogo no **canto da frente à esquerda (6)**. Aos 5,5 s, só os quatro cantos estão acesos.
 - **C5 (gema):** numa tentativa que falha, o teto mostra MENOS no escuro → tochas dos postes **3, 4, 5** (as plataformas do meio).
 
 ### Sala 16 — Os Que Dizem o Mesmo ✅

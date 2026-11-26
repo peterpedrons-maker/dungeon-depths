@@ -162,7 +162,7 @@ punição. **Solução: errar de propósito, ler o teto no escuro, escrever DOIS
 
 ### Sala 15 — O Fogo que Corre (nível 8) · "o desenho existe num instante" ✔ `tools/verify_fogo_corre.mjs`
 (Detalhada na seção 5.) Canaletas com tempo, chamas de 4 s que só queimam uma vez. A porta quer os quatro cantos acesos **ao mesmo tempo, e
-nada mais**. **Solução: fogo no centro; 2 a 5 s depois, no canto da frente à esquerda.** Constelação C5 (no escuro).
+nada mais**. **Solução: fogo no centro; 3 a 7 s depois (o ideal: 4 a 5 s), no canto da frente à esquerda.** Constelação C5 (no escuro).
 
 ### Sala 16 — Os Que Dizem o Mesmo (nível 9) · "dizer é fazer" ✔ `tools/verify_dizem_mesmo.mjs`
 (Detalhada na seção 5.) Claustro aberto; boatos em estandartes; a lei não fecha com todos. **Solução: queimar o estandarte «DOIS ANTES
@@ -620,7 +620,7 @@ de madeira, a rotunda, as perguntas do dado (`quiz.ts`, `pointask.ts`) e os lamp
   (fechada). Atalho para R3.
 
 ### Ficha 8 · Sala 15 O Fogo que Corre
-- 9 plataformas em grade 3×3 em alturas diferentes, um braseiro em cada (`burn: 4`), canaletas com atraso (lista e segundos em §5); o sentido é
+- 9 plataformas em grade 3×3 em alturas diferentes, um braseiro em cada (`burn: 5.5`; era 4, a sessão principal subiu porque o dado leva 3 a 4 s para voltar à mão), canaletas com atraso (lista e segundos em §5); o sentido é
   sempre da plataforma mais alta para a mais baixa.
 - **Uma vez por tentativa:** um braseiro que se apagou não reacende (o óleo acabou: mostrar o pote vazio). Quando tudo se apaga sem acertar: escuro
   + reabastece.
@@ -1246,7 +1246,7 @@ e 17 e o Tribunal. **Motor:** sala de dois níveis com rampa (precedente: O Mira
 
 ### Sala 15 — O Fogo que Corre (NÍVEL 8) · "o desenho existe num instante"
 
-**A ideia:** o fogo corre (sala 4), as chamas se apagam (sala 6), e agora as duas coisas juntas: cada braseiro queima **só 4 s** e **só uma vez**
+**A ideia:** o fogo corre (sala 4), as chamas se apagam (sala 6), e agora as duas coisas juntas: cada braseiro queima **só 5,5 s** (era 4; ver a nota abaixo) e **só uma vez**
 por tentativa (o óleo acaba). A porta quer um desenho que exista **num instante**: um braseiro que já se apagou **também ajuda a escrever**,
 porque some do desenho.
 
@@ -1259,15 +1259,17 @@ cada braseiro, um **poste com tocha** apagada (constelação C5) e três tochas 
 cantos. Quando tudo se apaga sem acertar, a Casa pune (escuro) e reabastece o óleo.
 
 **Solução (passo a passo):**
-1. Ver que o centro alimenta três cantos (0 e 8 em 2 s, o 2 em 3 s) e **se apaga aos 4 s** e não reacende (o óleo acabou).
+1. Ver que o centro alimenta três cantos (0 e 8 em 2 s, o 2 em 3 s) e **se apaga aos 5,5 s** e não reacende (o óleo acabou).
 2. Falta o canto da frente à esquerda (6), que nenhuma canaleta alimenta a partir do centro: **2ª ignição, à mão**.
 3. Mas o 6 tem uma canaleta para o 7 (3 s), e o 7 não pode estar aceso no instante certo. Se o 6 for aceso cedo demais, o 7 acende antes de o
    centro se apagar.
-4. **Fogo no centro; esperar ~3 s; fogo no canto da frente à esquerda.** Por volta dos 4 s o centro se apaga e, por um instante, só os quatro
-   cantos estão acesos: a porta abre. (Janela confortável: de 1,5 s a 5,5 s entre as duas ignições.)
+4. **Fogo no centro; esperar 4 a 5 s; fogo no canto da frente à esquerda.** Aos 5,5 s o centro se apaga e, por um instante, só os quatro
+   cantos estão acesos: a porta abre. (Janela: de 3 s a 7 s entre as duas ignições.)
+   *Nota (26/11):* no jogo a chama dura 5,5 s, não 4, porque o dado leva 3 a 4 s para voltar à mão; o verificador foi refeito com 5,5 s e a
+   solução continua única (só centro → canto 6), com a janela de 3 a 7 s, que agora cabe no tempo de o dado voltar.
 
 **Por que é única** (`node tools/verify_fogo_corre.mjs`): uma ignição só nunca basta; de todos os pares ordenados, **só centro → canto 6**
-funciona, com a janela de 1,5 a 5,5 s; acender os dois juntos falha.
+funciona, com a janela de 3 a 7 s; acender os dois juntos falha.
 
 **Constelação C5 (camada 2, só Fogo):** quando uma tentativa falha, o escuro mostra, no teto, o glifo **MENOS** (a fileira do meio, três pontos).
 Acender as tochas dos **postes das três plataformas do meio** (casas 3, 4, 5), nenhuma outra: o braseiro secreto sobe na plataforma central
