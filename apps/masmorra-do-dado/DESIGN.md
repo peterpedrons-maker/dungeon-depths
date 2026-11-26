@@ -922,6 +922,12 @@ a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A
 ## 59. A luz espera a cena do dado; o pulso (em teste)
 - **A frase acendível só começa a ser escrita depois da cena do dado queimando** (`ctx.paused()`): antes a luz escrevia por trás do dado em
   chamas e o jogador perdia a escrita traço a traço. Agora ela acontece à vista. (Vale para o jogo, já.)
+- **Pulso** (aprovado pelo Pedro; vale para as frases acendíveis e para toda palavra que acende): o clarão **anda com a escrita, da esquerda
+  para a direita**: cada símbolo clareia no instante em que a luz chega nele e assenta no brilho contido (§58) em ~0,75 s, numa onda que segue
+  o ritmo da luz acendendo. É uma camada de luz no formato exato dos traços (`makeFlashMesh` em `firefx.ts`; o shader acende cada ponto quando
+  a luz passa, por `uRunV`, os símbolos já percorridos). A luz de verdade da frase também anda com a onda (esquenta a parede por onde ela passa,
+  de leve, para não dourar a frase apagada vizinha) e depois volta devagar para o meio. Não deixa nada atrás da escrita nem deforma o glifo.
+  (Na 1ª versão o clarão vinha todo de uma vez no fim e a luz ficava no meio da frase: parecia pulsar só no centro.)
 - **Pulso** (EM TESTE, só com `?pulso=1` no endereço; `PULSE_ON` em `firefx.ts`): no instante em que a luz termina de escrever a frase ou a
   palavra, um clarão de ~0,75 s no formato exato dos traços (uma camada de luz somada, só um pouco mais larga que eles; `makeFlashMesh`), a luz
   da frase esquenta a parede por um instante, e tudo assenta no brilho contido (§58). Não deixa nada atrás da escrita nem deforma o glifo.
