@@ -1223,3 +1223,23 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
 - **Prévia**: `?vitrine=escrivao` mostra os dois lado a lado (parado, andando, debruçado, erguendo o dado, e os dois girando). Para testar a cena do
   poço: `?titulo=0&intro=poco` (pula o acordar, sem o dado) e tentar abrir a porta.
 - **Créditos**: tela de Créditos e `public/audio/CREDITS.txt` (Mixamo, Adobe).
+
+## 71. Os móveis da Biblioteca (cenógrafo; o Pedro pediu que o cenógrafo escolhesse)
+
+- **Escolhidos na vitrine** (`?vitrine=bib`): as estantes com livros velhos (Paul Wortmann, CC0; as 4 versões), o atril, os livros, a pilha e o
+  pergaminho da Quaternius (CC0), as velas da AnyRPG (CC0) e o candelabro de chão de Marco Antonio Meireles Carvalho (domínio público, com o crédito
+  pedido). Ficaram de fora a estante e a prateleira em arco da Quaternius (outro estilo) e os lustres. Arquivo: `public/models/props_bib.glb`
+  (590 KB), montado por `tools/biblioteca_glb.mjs` (sem os mapas de relevo, texturas WebP de até 256 px).
+- **Onde ficaram:**
+  - **Ala do Papel**: duas estantes em cada parede dos lados, no lugar das lombadas pintadas. A parede do fundo continua só com os seis livros que
+    mentem e o nicho;
+  - **Átrio**: em cada parede, dois pares de estantes entre as passagens, com um atril no meio (embaixo da tocha alta), longe das lamparinas de
+    parede da constelação;
+  - **mesas de leitura**: um objeto pequeno em CADA uma (pilha, livro fechado ou pergaminho), na ponta longe da lamparina. Nenhuma mesa se destaca,
+    porque as mesas são as casas da constelação C-Bib;
+  - **escritório do Escrivão** (atrás da grade): uma estante, o candelabro num canto, uma pilha de livros e velas na mesa e na estante onde ele
+    escreve.
+- **O que não entrou, de propósito:** chama nova fora do escritório. No Átrio, na Aula e na Ala do Papel, acender é o puzzle (as lamparinas da
+  constelação, as lousas, os livros que queimam); uma vela acesa ali seria uma pista falsa. As velas e o candelabro do escritório estão apagados.
+- Estantes: 1,9 m de altura, o fundo achatado para 45 cm (o modelo tem 70), com colisão para o jogador e o dado. A madeira, muito escura, ganhou
+  um pouco de cor e um brilho próprio fraco, para se ler no canto escuro do Átrio. Todos os objetos viram poucas malhas (`bakeProps`).

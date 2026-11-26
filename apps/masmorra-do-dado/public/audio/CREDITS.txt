@@ -59,5 +59,15 @@ O Escrivão animado (public/models/escrivao.glb)
 
 Objetos 3D (public/models/props_q.glb e props_t.glb; prévias)
   - Fantasy Props MegaKit (Standard) — Quaternius (quaternius.com), CC0 1.0.
+
+Objetos da Biblioteca (public/models/props_bib.glb; tools/biblioteca_glb.mjs)
+  - Estantes com livros velhos ("bookshelf with old books") — Paul Wortmann (OpenGameArt), CC0;
+    derivadas do Medieval Props Pack de System G6 e do Mini Library de yd, ambos CC0.
+  - Velas medievais — AnyRPG (OpenGameArt), CC0.
+  - Candelabro ("Candelabrum") — Marco Antonio Meireles Carvalho, domínio público; feito para o jogo
+    Radya: Visions From The Past (https://marco-antonio.itch.io/radya-visions-from-the-past;
+    https://marcoantoniomeirelescarvalho.artstation.com/). O autor pede o crédito com o link do jogo.
+  - Atril, livros, pilha de livros e pergaminho — Fantasy Props MegaKit, Quaternius, CC0 1.0.
+  Adaptados: sem os mapas de relevo, texturas em WebP de até 256 px, materiais trocados.
   - Medieval Tavern Props Pack — System G6 / Qoma (opengameart.org/content/medieval-tavern-props-pack), CC0.
   Adaptados para o jogo: texturas reduzidas e com cor ajustada, materiais trocados.

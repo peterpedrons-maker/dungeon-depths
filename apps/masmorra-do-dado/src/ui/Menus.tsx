@@ -587,6 +587,7 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             <p>braseiro: Stone Column Brazier, de Amarveer (Sketchfab, CC BY 4.0), adaptado para o pixel</p>
             <p>tocha de parede: Medieval Wall Torch, de Kigha (Sketchfab, CC BY 4.0), adaptada para o pixel</p>
             <p>animações do Escrivão: esqueleto e movimentos do Mixamo (Adobe)</p>
+            <p>Biblioteca: estantes de Paul Wortmann, velas da AnyRPG e livros da Quaternius (CC0); candelabro de Marco Antonio Meireles Carvalho, do jogo Radya: Visions From The Past</p>
             <h3>Letra</h3>
             <p>a letra do caderno, desenhada pixel a pixel para o jogo</p>
           </div>
@@ -613,7 +614,9 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             <b>Modelos 3D</b>: o braseiro é baseado em <i>Stone Column Brazier</i>, de Amarveer (sketchfab.com/amarveer), licença CC BY 4.0; adaptado para o
             pixel (sem a chama original, texturas reduzidas). A tocha de parede é baseada em <i>Medieval Wall Torch</i>, de Kigha (sketchfab.com/Kigha),
             licença CC BY 4.0; adaptada para o pixel (texturas reduzidas, com a oclusão do modelo na cor). O esqueleto e as animações do Escrivão
-            (andar e olhar para baixo) foram feitos no Mixamo (mixamo.com, Adobe).
+            (andar e olhar para baixo) foram feitos no Mixamo (mixamo.com, Adobe). Na Biblioteca: estantes de Paul Wortmann, velas da AnyRPG, atril e
+            livros da Quaternius (todos CC0) e o candelabro de Marco Antonio Meireles Carvalho, feito para o jogo <i>Radya: Visions From The Past</i>
+            (marco-antonio.itch.io/radya-visions-from-the-past), domínio público.
           </p>
           <p>
             <b>Fonte</b>: a letra do caderno, desenhada pixel a pixel para o jogo.

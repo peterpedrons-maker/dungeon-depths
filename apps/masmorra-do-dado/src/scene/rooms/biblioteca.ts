@@ -27,6 +27,7 @@ import type { FireExtraApi } from './fire';
 import { mkBox, shotGate, Z1 } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { windNear } from '../ambience';
+import { bakeProps, loadPack, placeProp } from '../props';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
 const Z0 = -26;
@@ -257,27 +258,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
   const books: Book[] = [];
   {
     const W = wing(-1, WINGS.papel[0], WINGS.papel[1], 81, [-AX - 0.4, -19.6, -1]);
-    // estantes de livros nas paredes (prateleiras com lombadas coloridas)
-    const spines = canvasTex(64, 48, (g) => {
-      g.fillStyle = '#2a1e18';
-      g.fillRect(0, 0, 64, 48);
-      const cols = ['#6a3a2a', '#3a4a6a', '#5a5a2a', '#4a2a4a', '#7a5a3a', '#2a4a3a'];
-      for (let row = 0; row < 3; row++)
-        for (let x = 1; x < 63; ) {
-          const w = 2 + ((x * 7 + row * 3) % 3);
-          g.fillStyle = cols[(x + row) % cols.length];
-          g.fillRect(x, row * 16 + 3, w, 12);
-          x += w + 1;
-        }
-    });
-    spines.wrapS = THREE.RepeatWrapping;
-    spines.repeat.set(3, 1);
-    for (const z of [W.z0 + 0.02, W.z1 - 0.02]) {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(W.x1 - W.x0 - 0.6, 2.6), new THREE.MeshLambertMaterial({ map: spines }));
-      m.position.set(W.cx, 1.5, z);
-      m.rotation.y = z < W.cz ? 0 : Math.PI;
-      kit.group.add(m);
-    }
+    // (as paredes dos lados têm estantes de livros de verdade: ver "os móveis", mais abaixo)
+    void W;
     // a estante dos SEIS livros (parede do fundo da ala): três de boato, dois cadernos, um de pedra
     const order: Book['kind'][] = ['boato', 'caderno', 'boato', 'pedra', 'caderno', 'boato'];
     order.forEach((kind, k) => {
@@ -553,6 +535,71 @@ export function buildBiblioteca(ctx: Ctx): Room {
   kit.group.add(scribe.group);
   let scribeGone = false;
 
+  // ══ OS MÓVEIS (DESIGN.md §71): estantes com livros, atris, livros nas mesas; velas e candelabro só no escritório, atrás da grade e APAGADOS ══
+  // Nada disso é de puzzle, e nada imita o que é: nenhuma chama nova no Átrio, na Aula ou na Ala do Papel (lá, acender é o puzzle: as lamparinas
+  // da constelação, as lousas, os livros que queimam); toda mesa recebe um objeto (nenhuma se destaca: as mesas são as casas da constelação);
+  // as estantes ficam longe das lamparinas de parede, dos livros que mentem, do nicho e das passagens.
+  {
+    const placed: THREE.Object3D[] = [];
+    const put = (n: string, x: number, y: number, z: number, ry = 0, h?: number) => {
+      const o = placeProp(kit.group, 'bib', n, x, y, z, ry, h);
+      placed.push(o);
+      return o;
+    };
+    const SH = 1.9; // as estantes: 1,9 m de altura (e quase isso de largura), com o fundo achatado para 45 cm (o modelo tem 70)
+    const SD = 0.45;
+    let sk = 0;
+    // uma estante encostada numa parede: (x, z) = o meio da face encostada; (nx, nz) = para onde ela olha
+    const shelf = (x: number, z: number, nx: number, nz: number) => {
+      const o = put(`Estante_Livros_${(sk++ % 4) + 1}`, x + nx * (SD / 2), 0, z + nz * (SD / 2), Math.atan2(nx, nz), SH);
+      o.scale.z = SD / 0.7;
+      const hw = 0.95;
+      const [x0, x1, z0, z1] = nz !== 0 ? [x - hw, x + hw, Math.min(z, z + nz * SD), Math.max(z, z + nz * SD)] : [Math.min(x, x + nx * SD), Math.max(x, x + nx * SD), z - hw, z + hw];
+      boxes.push(mkBox(x0, 0, z0, x1, SH, z1));
+      rects.push([x0, z0, x1, z1]);
+      kit.contact((x0 + x1) / 2, (z0 + z1) / 2, (x1 - x0) * 1.2, (z1 - z0) * 1.6);
+    };
+    // a Ala do Papel: duas estantes em cada parede dos lados (a do fundo é a dos seis livros e do nicho)
+    for (const x of [-10.15, -7.4]) {
+      shelf(x, WINGS.papel[0], 0, 1);
+      shelf(x, WINGS.papel[1], 0, -1);
+    }
+    // o Átrio: dois pares de estantes em cada parede, entre as passagens, com um atril no meio (embaixo da tocha alta da esquerda)
+    for (const side of [-1, 1]) {
+      for (const z of [-13.3, -9.7]) shelf(side * AX, z, -side, 0);
+      put('BookStand', side * (AX - 0.75), 0, -11.5, Math.atan2(-side, 0));
+      boxes.push(mkBox(side * (AX - 0.75) - 0.26, 0, -11.76, side * (AX - 0.75) + 0.26, 1.3, -11.24));
+      rects.push([side * (AX - 0.75) - 0.26, -11.76, side * (AX - 0.75) + 0.26, -11.24]);
+    }
+    // as mesas de leitura: um objeto em cada uma, na ponta longe da lamparina (nenhuma se destaca)
+    const onTable = ['Book_Stack_1', 'Scroll_2', 'Book_7'];
+    for (let i = 0; i < 9; i++) {
+      const [x, z] = tableAt(i);
+      put(onTable[(i * 2 + Math.floor(i / 3)) % 3], x - 0.66, 0.82, z - 0.26, ((i * 37) % 11) * 0.25 - 1.2);
+    }
+    // o escritório do Escrivão (atrás da grade): uma estante na parede da direita, o candelabro num canto, livros e velas APAGADAS
+    shelf(AX, -24.6, -1, 0);
+    put('Candelabro', 2.8, 0, -25.5, 0.4, 1.75);
+    put('Book_Stack_1', DX + 0.55, 0.84, DZ - 0.27, 0.5);
+    put('Vela_Pires', DX + 0.62, 0.84, DZ + 0.22, 0, 0.2);
+    put('Vela_Alta', DX + 0.25, 1.2, Z0 + 0.3, 0, 0.42);
+    put('Vela_Curta', DX + 0.95, 1.2, Z0 + 0.25, 0, 0.24);
+    bakeProps(kit.group, placed, ['bib']);
+    // a madeira das estantes é muito escura: no canto do Átrio elas viravam manchas pretas. Um pouco mais de cor e um brilho próprio fraco
+    // (como o pano do Escrivão), para a silhueta e as lombadas se lerem no escuro
+    void loadPack('bib').then((pk) =>
+      pk.get('Estante_Livros_1')?.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.MeshLambertMaterial | undefined;
+        if (!m || !m.isMeshLambertMaterial || m.userData.lit) return;
+        m.userData.lit = true;
+        m.color.setScalar(1.35);
+        m.emissive.setHex(0xffffff);
+        m.emissiveMap = m.map;
+        m.emissiveIntensity = 0.16;
+        m.needsUpdate = true;
+      }),
+    );
+  }
   // luz geral do Átrio (velas nas mesas não acendem sozinhas)
   for (const [x, z] of [[-AX + 0.1, -11], [AX - 0.1, -6.5], [-AX + 0.1, -18.6], [AX - 0.1, -22]] as [number, number][]) kit.torch(x, 3.2, z, x < 0 ? 1 : -1, 0, x + z, 0xb8c4f0, 20);
   kit.skirting(-AX, AX, Z0, Z1, 1.3);
