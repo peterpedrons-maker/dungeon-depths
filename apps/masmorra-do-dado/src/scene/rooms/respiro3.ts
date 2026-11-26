@@ -255,10 +255,10 @@ export function buildRespiro3(ctx: Ctx): Room {
       ['q', 'Book_Stack_2', -2.95, 0.8, -7.6, 0.3, undefined, 0],
       ['q', 'Mug', -2.6, 0.8, -8.3, 0.9, undefined, 0],
       ['q', 'Table_Plate', -2.75, 0.8, -8.85, 0, undefined, 0],
-      // uma prateleira na parede direita (embaixo das marcas de giz), com garrafas e um vaso
+      // uma prateleira na parede direita (embaixo das marcas de giz), com o que sobrou de quem comia aqui: caneca, prato e um pote
       ['q', 'Shelf_Simple', 3.36, 1.35, -13.1, -Math.PI / 2, undefined, 0],
-      ['q', 'Bottle_1', 3.3, 1.66, -12.7, 0, undefined, 0],
-      ['q', 'SmallBottles_1', 3.3, 1.66, -13.3, -Math.PI / 2, undefined, 0],
+      ['t', 'tankard_wood', 3.3, 1.66, -12.7, 0.6, T('tankard_wood'), 0],
+      ['t', 'plate_wood', 3.3, 1.66, -13.25, 0, T('plate_wood'), 0],
       ['q', 'Vase_4', 3.3, 1.66, -13.75, 0.4, undefined, 0],
       // um suporte com dois barris junto da porta, à direita
       ['q', 'Barrel_Holder', 2.6, 0, -25.2, 0, undefined, 0],

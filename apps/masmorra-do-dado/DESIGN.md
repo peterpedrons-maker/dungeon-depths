@@ -978,3 +978,9 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
   verdade. Na branch ficam só os objetos usados (`public/models/props_q.glb`, 1,1 MB, e `props_t.glb`, 0,5 MB).
 - Ainda é prévia: o jogo normal não muda. Antes de virar padrão: escolher os objetos, carregar os packs antes de montar as salas e passar a sala pela
   mesma arquitetura nova do Vestíbulo.
+- **O que entra (decisão do Pedro: o jogo não é RPG)**: só objetos do dia a dia de quem viveu e esperou na Casa: móveis (bancos, banquetas,
+  cadeiras, mesas, armários, estantes, camas), barris, caixotes, cestos, sacos, baldes, potes e vasos (inteiros e quebrados), canecas, pratos e
+  talheres, velas e castiçais, candelabro, livros e pergaminhos, cordas, correntes e gaiola. **Fora**: armas, escudos, poções e garrafinhas,
+  equipamento, boneco de treino, moedas, bolsas de dinheiro e baús de tesouro, chaves, ferramentas de ofício (bigorna, bancada, pedra de afiar),
+  caldeirão, comida e barraca de feira; e o que imita a gramática dos puzzles: tochas e lanternas, estandartes e panos pendurados, lenha em brasa.
+  Na Galeria, a prateleira trocou as garrafas por caneca, prato e pote.

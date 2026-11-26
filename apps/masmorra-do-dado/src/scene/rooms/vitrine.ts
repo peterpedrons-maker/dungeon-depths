@@ -9,26 +9,22 @@ import type { Ctx, Room } from '../types';
 
 // [pack, nome] por baia (agrupados por tipo)
 const BAYS: [string, string[]][] = [
+  // só objetos do dia a dia (DESIGN.md §62): nada de armas, poções, equipamento, tesouro, chaves, boneco de treino, ferramentas de ofício,
+  // comida e feira; nem o que imita a gramática dos puzzles: tochas e lanternas (chama na parede pode contar para um puzzle), estandartes e
+  // panos pendurados (pano queima e revela o boato), lenha em brasa
   ['qv', ['Bench', 'Stool', 'Chair_1', 'Table_Large', 'Nightstand_Shelf', 'Cabinet']],
-  ['qv', ['Bookcase_2', 'Shelf_Arch', 'Shelf_Simple', 'Shelf_Small_Bottles', 'BookStand', 'Peg_Rack']],
-  ['qv', ['Bed_Twin1', 'Bed_Twin2', 'Chest_Wood', 'Crate_Wooden', 'Crate_Metal', 'Barrel']],
-  ['qv', ['Barrel_Apples', 'Barrel_Holder', 'FarmCrate_Empty', 'FarmCrate_Apple', 'FarmCrate_Carrot', 'Bag']],
+  ['qv', ['Bookcase_2', 'Shelf_Arch', 'Shelf_Simple', 'BookStand', 'Peg_Rack']],
+  ['qv', ['Bed_Twin1', 'Bed_Twin2', 'Crate_Wooden', 'Crate_Metal', 'Barrel', 'Barrel_Holder']],
+  ['qv', ['FarmCrate_Empty', 'Bag', 'Cage_Small', 'Chain_Coil']],
   ['qv', ['Candle_1', 'Candle_2', 'CandleStick', 'CandleStick_Triple', 'CandleStick_Stand', 'Chandelier']],
-  ['qv', ['Lantern_Wall', 'Torch_Metal', 'Cauldron', 'Pot_1', 'Pot_1_Lid', 'Bucket_Metal']],
-  ['qv', ['Bucket_Wooden_1', 'Mug', 'Chalice', 'Table_Plate', 'Table_Fork', 'Table_Knife', 'Table_Spoon']],
+  ['qv', ['Pot_1', 'Pot_1_Lid', 'Bucket_Metal', 'Bucket_Wooden_1', 'Mug', 'Chalice']],
+  ['qv', ['Table_Plate', 'Table_Fork', 'Table_Knife', 'Table_Spoon']],
   ['qv', ['Book_5', 'Book_7', 'Book_Simplified_Single', 'Book_Stack_1', 'Book_Stack_2', 'Scroll_1', 'Scroll_2']],
   ['qv', ['BookGroup_Small_1', 'BookGroup_Small_2', 'BookGroup_Small_3', 'BookGroup_Medium_1', 'BookGroup_Medium_2', 'BookGroup_Medium_3']],
-  ['qv', ['Bottle_1', 'SmallBottle', 'SmallBottles_1', 'Potion_1', 'Potion_2', 'Potion_4']],
-  ['qv', ['Vase_2', 'Vase_4', 'Vase_Rubble_Medium', 'Pouch_Large', 'Coin_Pile', 'Coin_Pile_2', 'Key_Metal', 'Key_Gold']],
-  ['qv', ['Chain_Coil', 'Rope_1', 'Rope_2', 'Rope_3', 'Cage_Small']],
-  ['qv', ['Banner_1', 'Banner_1_Cloth', 'Banner_2', 'Banner_2_Cloth', 'Shield_Wooden']],
-  ['qv', ['Anvil', 'Anvil_Log', 'Whetstone', 'Workbench', 'Workbench_Drawers']],
-  ['qv', ['Axe_Bronze', 'Pickaxe_Bronze', 'Sword_Bronze', 'WeaponStand', 'Dummy']],
-  ['qv', ['Stall_Empty', 'Stall_Cart_Empty', 'Carrot', 'Coin']],
+  ['qv', ['Vase_2', 'Vase_4', 'Vase_Rubble_Medium', 'Rope_1', 'Rope_2', 'Rope_3']],
   ['t', ['barrel', 'basket', 'bucket_wood', 'sack', 'sack_2', 'chair_wood_2']],
   ['t', ['table_wood', 'table_wood_round', 'chair_wood', 'shelf_wood', 'bar_counter']],
-  ['t', ['candle_plate', 'lamp_wood', 'torch_2', 'plate_wood', 'tankard_wood', 'firewood', 'firewood_burning']],
-  ['t', ['fireplace_2']],
+  ['t', ['candle_plate', 'plate_wood', 'tankard_wood']],
 ];
 // no máximo 4 objetos por baia (para a câmera chegar perto)
 const CHUNKS: [string, string[]][] = BAYS.flatMap(([pk, ns]) => {
