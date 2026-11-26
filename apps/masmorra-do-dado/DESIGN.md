@@ -1101,3 +1101,37 @@ modelo 3D para as tochas.
   aparecia como um retângulo branco. Agora o passo do relógio nunca é negativo e toda chama usa `kit.frame(n)`, que nunca dá índice negativo.
 - **Conserto: objetos que chegam depois** (modelos carregados à parte) entram na mesma camada de desenho da sala (`adoptLayers`); antes, eles
   continuavam sendo desenhados com a sala longe.
+
+## 67. Varredura do cenógrafo na Biblioteca e nas portas
+
+- **As paredes do Átrio** eram folhas de uma face só: vistas de dentro das alas, a parede sumia e o batente da passagem ficava boiando. Agora são
+  pedra com 30 cm de espessura.
+- **O nicho da gema da Sala de Aula** estava no mesmo lugar da lousa (c). Foi para a parede do lado do Átrio, de frente para ela. O segredo e a
+  solução são os mesmos.
+- **Tochas longe das escritas**: nas alas do Papel e da Aula, as tochas ficam na parede do lado do Átrio. Na Ala das Pedras, os murais abrem
+  espaço para a tocha e as estantes ficam dos lados da passagem, sem tapar as placas do fundo.
+- **A laje da porta some quando a porta abre de todo** (`buildDoor`, `kit.ts`). Lá em cima ela fica atrás da parede, mas aparecia por cima de
+  paredes finas ou mais baixas que 5,5 m.
+- **O roteiro visual dos capítulos**, da borda ao centro do dado, está em `DIRECAO_DE_ARTE.md` §9.
+- **Ferramentas fora do jogo**: a prévia `?vitrine=bib` (estantes, velas, candelabro e candidatos a Escrivão animados; os modelos CC0 ficam em
+  `public/models/_vitrine/`, fora do repositório) e a exportação do Escrivão para o Mixamo (`tools/escrivao_mixamo.ts` e `.py`).
+
+## 68. O mouse no PC e o monitor ultrawide (pedido do Pedro, 3440×1440)
+
+- **O mouse não ficava preso.** No PC, o olhar segue o mouse sem clicar porque o jogo pede ao navegador para prender o cursor (pointer lock).
+  O navegador só aceita esse pedido logo depois de um clique ou tecla. O fim da transição de "Novo jogo" pedia sem clique, o navegador recusava,
+  e o jogo tratava essa 1ª recusa como "este navegador não deixa": ficava no modo segurar e arrastar, com o cursor à vista, até recarregar a
+  página.
+- **Agora:**
+  - uma recusa só mostra o aviso "Clique para jogar", e o próximo clique pede de novo;
+  - "Novo jogo" já pede dentro do próprio clique;
+  - o jogo só desiste depois de 3 recusas seguidas a cliques do jogador, se o mouse nunca chegou a ficar preso; se já ficou preso alguma vez,
+    nunca desiste;
+  - a mesma recusa chega duas vezes (pela promessa e pelo evento `pointerlockerror`) e conta uma vez só (`askLock` em `scene.ts`).
+- **A tela larga dava zoom.** O campo de visão era fixo na horizontal (95°), então numa tela 21:9 a imagem ficava mais "perto": 49° na vertical,
+  contra 63° numa tela 16:9.
+  - Agora a vertical é a mesma de uma tela 16:9, e a tela larga mostra MAIS dos lados (Hor+): 63° na vertical e 111° na horizontal em 21:9.
+  - Para não distorcer as bordas, a horizontal tem limite de 125° (32:9 fica com 57° na vertical).
+  - No 16:9 e no celular nada muda.
+- **A resolução** continua sendo a do pixel (cerca de 280 linhas no PC, `pixelLines`): a 1440 px de altura são 288 linhas, a mesma densidade de
+  uma tela 1080p. Quem quiser mais definição usa Configurações → Imagem → Tamanho do pixel → Fino (360 linhas).

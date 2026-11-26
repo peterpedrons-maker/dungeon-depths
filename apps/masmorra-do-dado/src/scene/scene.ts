@@ -2465,8 +2465,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     postMat.uniforms.uRes.value.set(w, h);
     const aspect = w / h;
-    const vFromH = (hDeg: number) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / aspect) * 180) / Math.PI;
-    fovBase = aspect >= 1 ? Math.min(66 * (fovH / 95), vFromH(fovH)) : Math.min(100, Math.max(66, vFromH(82 * (fovH / 95))));
+    const vFromH = (hDeg: number, a = aspect) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / a) * 180) / Math.PI;
+    // telas mais largas que 16:9 (ultrawide 21:9, 32:9) veem MAIS dos lados com a mesma altura de visão (o campo de visão escolhido vale para
+    // 16:9). Antes o campo horizontal ficava fixo e, num monitor 3440×1440, a imagem parecia um "zoom": tudo grande e os pixels gordos.
+    // (o horizontal não passa de ~125°, para não distorcer nas bordas)
+    const aRef = Math.min(aspect, 16 / 9);
+    fovBase = aspect >= 1 ? Math.min(66 * (fovH / 95), vFromH(fovH, aRef), vFromH(125)) : Math.min(100, Math.max(66, vFromH(82 * (fovH / 95))));
     camera.fov = fovBase;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
@@ -2574,21 +2578,43 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const LOOK_EDGE = 0.78; // com o giz no celular: x ≥ 78% da tela = olhar
   const emitStick = (active: boolean) => opts.onStick?.({ active, ox: stickOx, oy: stickOy, x: stickX, y: stickY });
 
+  // PC: o mouse fica PRESO no jogo (pointer lock) e o olhar segue o mouse sem clicar. Uma recusa do navegador NÃO desliga isso para sempre:
+  // antes, a 1ª tentativa sem clique (o fim da transição de "Novo jogo", que pede a captura sem gesto do jogador) falhava e o jogo passava ao
+  // modo "segurar e arrastar" com o cursor à vista até recarregar. Agora o próximo clique tenta de novo; só depois de 3 recusas seguidas a
+  // um CLIQUE do jogador é que o jogo desiste (navegador que não deixa prender o mouse) e fica no arrastar.
   let lockFailed = !canvas.requestPointerLock;
   let lockClick = false;
   const locked = () => document.pointerLockElement === canvas;
   let everLocked = false;
+  let clickRefusals = 0;
+  let lastLockByClick = false;
+  let lockReq = 0; // nº do pedido de captura (a MESMA recusa chega duas vezes: pela promessa e pelo evento; conta uma vez só)
+  let lockErr = -1;
+  const askLock = (byClick: boolean) => {
+    lastLockByClick = byClick;
+    lockReq++;
+    try {
+      Promise.resolve(canvas.requestPointerLock()).catch(onLockError);
+    } catch {
+      onLockError();
+    }
+  };
   const onLockError = () => {
-    // depois de soltar com Esc, o navegador recusa capturar de novo por ~1 s: não é "negado", é só cedo demais
-    if (everLocked) {
-      opts.onLook?.('free');
+    if (lockErr === lockReq) return;
+    lockErr = lockReq;
+    if (lastLockByClick && !everLocked && ++clickRefusals >= 3) {
+      lockFailed = true;
+      opts.onLook?.('denied');
       return;
     }
-    lockFailed = true;
-    opts.onLook?.('denied');
+    // (depois de soltar com Esc o navegador recusa capturar de novo por ~1 s; e sem um clique ele também recusa: o próximo clique tenta outra vez)
+    opts.onLook?.('free');
   };
   const onLockChange = () => {
-    if (locked()) everLocked = true;
+    if (locked()) {
+      everLocked = true;
+      clickRefusals = 0;
+    }
     opts.onLook?.(locked() ? 'locked' : 'free');
     // o mouse foi solto no meio do jogo (Esc, trocar de janela): PAUSA. Mas não quando foi o PRÓPRIO jogo que soltou o mouse: a pergunta do dado
     // solta o mouse para as opções (ainda na subida do dado, antes de a pergunta estar "ativa") e as cenas do dado ao centro também não pausam
@@ -2597,11 +2623,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const requestLock = () => {
     if (locked() || lockFailed || window.matchMedia('(pointer: coarse)').matches) return;
-    try {
-      Promise.resolve(canvas.requestPointerLock()).catch(onLockError);
-    } catch {
-      onLockError();
-    }
+    askLock(false);
   };
   document.addEventListener('pointerlockerror', onLockError);
   document.addEventListener('pointerlockchange', onLockChange);
@@ -2628,11 +2650,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // PC: o primeiro clique captura o mouse
     if (mouse && e.button === 0 && !locked() && !lockFailed) {
       lockClick = true;
-      try {
-        Promise.resolve(canvas.requestPointerLock()).catch(onLockError);
-      } catch {
-        onLockError();
-      }
+      askLock(true);
     }
     if (mouse && e.button === 2) {
       if (tool === 'chalk') {
@@ -4253,6 +4271,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // as transições: jogo novo (sobe pelo feixe até o branco), continuar (pulinho e pontilhado para o lugar salvo), outro espaço (pontilhado para o preto)
     titleNew: (done: () => void) => {
       if (titleTr) return;
+      requestLock(); // (ainda dentro do clique: sem gesto do jogador o navegador recusa prender o mouse)
       titleTr = { k: 'new', t: 0, done };
       sfx.play('room', 0.6);
     },

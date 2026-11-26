@@ -72,6 +72,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **Regra de tela**: nada se sobrepõe (avisos "avistado" esperam o fim de toda conversa; legendas, prompts e dicas somem enquanto alguém fala) e **o dado só fala por balão** (`DESIGN.md` §30).
   **Escrita dos símbolos**: todo glifo em conversa/balão é ESCRITO traço a traço, um traço de cada vez (moldura, ligações, pontos; `src/story/writing.ts`, ~0,95 s por símbolo, `ctx.dieTalk` espaça as falas do dado pelo tempo real de escrita); dado arremessado ou posicionado NÃO fica na mão (`DESIGN.md` §30–31).
   **Interface no PC**: `ui/scale.ts` (variável CSS `--ui`) aumenta glifos, balões, avisos e textos em telas grandes (1 no celular, até 2,1).
+  O mouse fica preso no jogo (pointer lock); uma recusa do navegador só mostra "Clique para jogar" e o próximo clique tenta de novo; tela larga
+  (21:9, 32:9) vê mais dos lados com a mesma vertical do 16:9 (Hor+, horizontal até 125°; `DESIGN.md` §68).
   **Interface de lançamento** (`INTERFACE.md`, da branch `claude/puzzles-design`; `DESIGN.md` §45): **tela inicial** (o poço visto de baixo, logo provisório
   «SENTENÇ» + triângulo ACENDER; Continuar, Novo jogo, Carregar, Configurações, Créditos; `?titulo=0` pula), **três espaços de jogo** com
   **salvamento automático** (ao entrar numa sala, ao resolver um puzzle, ao fechar o diário, ao pausar e ao sair da página; dadinho girando no
