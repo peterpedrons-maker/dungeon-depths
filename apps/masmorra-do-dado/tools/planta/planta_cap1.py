@@ -46,7 +46,7 @@ HOLES = {
     1: ((10.0, 104.0), 1),
     4: ((33.0, 67.0), 2), 3: ((22.2, 77.8), 2),
     5: ((24.0, 24.0), 3), 11: ((54.0, 54.0), 3), 9: ((84.0, 84.0), 3),
-    20: ((74.0, 97.5), 4), 22: ((74.0, 122.5), 4), 23: ((49.0, 122.5), 4), 24: ((49.0, 97.5), 4),
+    # (a face 4 fica para o capítulo 2; a 5 para o 3 e a 6 para o 4: DESIGN.md §73)
 }
 # a passarela alta da Biblioteca (a Escadaria sai nela; ela leva, por uma ponte, ao Fogo que Corre)
 WALK = [(44.7, 33.9), (44.7, 62.0)]
@@ -212,6 +212,6 @@ for col, t in items:
     g.text((x + 30, ly), t, fill=INK, font=F)
     x += 70 + int(g.textlength(t, font=F))
 g.text((30, ly + 34), 'O caminho segue os números. 13: o fosso desce do térreo ao subsolo. 19: a Escadaria sobe e sai na passarela alta da Biblioteca; dali uma ponte leva às salas 20 a 24, em volta do claustro (21).', fill=INK, font=F)
-g.text((30, ly + 58), 'Cada furo fica no teto de uma sala, solto. Só no mapa, juntando as salas, eles formam as faces: 1 (o Poço), 2, 3 e 4. As faces 5 e 6 ficam para o capítulo 2.', fill=INK, font=F)
+g.text((30, ly + 58), 'Cada furo fica no teto de uma sala, solto. Só no mapa, juntando as salas, eles formam as faces 1 (o Poço), 2 e 3. A 4 fica no capítulo 2, a 5 no 3 e a 6 no 4.', fill=INK, font=F)
 im.save(OUT)
 print('ok', W, H)

@@ -1268,6 +1268,8 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   claro lá em cima, uma luz fria e a poeira caindo no facho. O Poço ganhou o mesmo aro (`holeRim`). O cone de luz aditivo do Poço não foi copiado:
   com o teto alto e visto de lado, ele virava uma coluna cinza sólida no pixel.
 - **Quem mexer** numa sala com furo, ou fizer as do capítulo 2, atualiza esta tabela e o comentário do topo de `skyhole.ts`.
+- **Substituído pelo §73** (decidido com o Pedro): os desenhos de face no teto de uma sala só entregam fácil demais que a Casa fica dentro de um
+  dado. No §73 cada furo fica solto, num teto de uma sala, e as faces só aparecem no mapa. O código de hoje segue este §72 até o passo 4 do §73.
 
 ## 73. O level design novo: a planta do capítulo 1 (proposta, Etapa 1; pedido do Pedro)
 
@@ -1292,18 +1294,22 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   - **desvios opcionais:** dois lugares para salas pequenas de segredo, um ao norte da Chama Curta e outro no subsolo, ao lado da Galeria.
     Continuam os desvios que já existem dentro das salas (alas e escritório da Biblioteca, câmaras dos Banhos, galeria da Cisterna, anexos da
     Memória, câmara da Galeria).
-- **Os furos** (substitui o desenho por sala do §72): 21 no total, um por sala, soltos no teto. No mapa, os de cada grupo formam uma face:
+- **Os furos** (substitui o desenho por sala do §72): 21 no total, um por sala, soltos no teto. No mapa, os de cada grupo formam uma face. A
+  divisão pelos capítulos foi decidida com o Pedro: o código atravessa o jogo inteiro (5 ou mais capítulos, 6 a 8 horas), um desenho novo por
+  capítulo depois do primeiro:
 
-  | Face | Furos | Salas | Desenho no mapa |
+  | Capítulo | Faces | Furos | Onde (no capítulo 1) |
   |---|---|---|---|
-  | 1 | 1 | o Poço | sozinho |
-  | 2 | 2 | o Fio e a Lousa | diagonal curta |
-  | 3 | 3 | a Cisterna, a Biblioteca e os Banhos | diagonal longa, com a Biblioteca no meio |
-  | 4 | 4 | Fogo que Corre, Antecâmara, Memória e Tribunal | um em cada canto do claustro |
-  | 5 e 6 | 11 | capítulo 2 | — |
+  | 1 | 1, 2 e 3 | 6 | 1: o Poço; 2: o Fio e a Lousa (diagonal curta); 3: a Cisterna, a Biblioteca e os Banhos (diagonal longa, a Biblioteca no meio) |
+  | 2 | 4 | 4 | |
+  | 3 | 5 | 5 | |
+  | 4 | 6 | 6 | |
+  | 5 em diante (o centro) | — | 0 | |
 
-  - O subsolo não tem furo.
-  - Nas salas com cal (que só aparece no escuro de punição), o céu do furo tem de escurecer junto com o escuro (Etapa 4).
+  - O capítulo 1 ensina: quem olha o mapa vê "1, 2, 3". Cada capítulo seguinte traz um desenho a mais, maior e mais difícil de enxergar.
+  - Nos capítulos fundos, o furo continua redondo, com o mesmo aro, mas vira um poço comprido e estreito, com um céu pequeno lá em cima (menos
+    luz de fora, como pede a descida para o centro do dado).
+  - No capítulo 1, o subsolo e as salas do claustro não têm furo. Assim, nenhuma sala com cal (que só aparece no escuro de punição) tem céu claro.
 - **As etapas:**
   1. esta planta;
   2. o motor (salas com posição e giro, portas que dizem para onde levam, sala achada pela posição no plano, mapa gerado do 3D, salvamento

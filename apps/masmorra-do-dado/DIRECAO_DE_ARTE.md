@@ -215,7 +215,7 @@ A regra que atravessa todos: **quanto mais fundo, menos mão humana e menos luz 
 |---|---|---|---|---|---|
 | **1 · Fogo** (hoje) | a borda, logo abaixo da face | catacumba construída: cantaria, abóbadas de aresta, arcos, colunas, nichos, portas com batente | pedra cinza fria e marrom dessaturado; o laranja da chama e da escrita | tochas e braseiros; **luz de fora** caindo pelos furos (o Poço, frestas, o pátio da cisterna, o claustro) | muitos: bancos, mesas, camas, marcas de giz, os que esperaram |
 | **2 · Peso** | ainda perto da borda | construída, mais pesada e mais baixa: pilares grossos, vigas de pedra, rampas e plataformas (o peso desce) | pedra mais escura e úmida; segunda cor: o cinza-azulado do ferro e das correntes | ainda há furos, mais estreitos e raros; mais tochas | menos móveis; ferragens, contrapesos, correntes |
-| **3 · Eco** | meio caminho | a construção começa a ceder: paredes **meio talhadas na rocha**, galerias longas e altas (para o eco), escadas escavadas | metade cantaria, metade rocha bruta; o azul-escuro do vazio | quase nenhuma luz de fora; o que chega vem refletido, fraco | poucos; o que ficou está quebrado ou caído |
+| **3 · Eco** | meio caminho | a construção começa a ceder: paredes **meio talhadas na rocha**, galerias longas e altas (para o eco), escadas escavadas | metade cantaria, metade rocha bruta; o azul-escuro do vazio | quase nenhuma luz de fora: os furos viram poços compridos e estreitos, com um céu pequeno lá em cima | poucos; o que ficou está quebrado ou caído |
 | **4 · Troca** | abaixo do meio | **cavernas** com trechos construídos isolados (um arco, um piso de lajes no meio da rocha) | rocha bruta, veios minerais; uma cor estranha de apoio (o verde-cobre das trocas) | só fogo que o jogador acende e brilhos minerais | quase nada: só o que alguém trouxe de muito longe |
 | **5 · Deslizar** | perto do centro | caverna lisa, gasta por algo que escorrega: rampas naturais, poços, lâminas de pedra polida | pedra polida e escura, quase espelho; reflexos frios | muito escura; a luz desliza junto (poças, reflexos) | nenhum móvel; só marcas de giz e as folhas dela |
 | **6 · Atravessar** | a casca do centro | fendas, paredes finas que se atravessam, formas que não foram feitas por mão nenhuma | rocha quase sem textura, poucas cores; o branco da escrita volta a mandar | quase nenhuma; a escrita é a luz | nenhum |
@@ -227,14 +227,16 @@ Como aplicar (para todo capítulo novo):
 - **O kit de arquitetura vai trocando de peças**: cantaria e abóbada (cap. 1 e 2) → cantaria que se mistura com rocha (3) → rocha com trechos
   construídos (4) → rocha polida e fendas (5 e 6) → liso (7). Para isso, `arch.ts` ganha, quando o capítulo 3 chegar, um gerador de **rocha bruta**
   (paredes irregulares, teto de caverna, chão com desnível) no mesmo pixel e com o mesmo relevo das peças de hoje.
-- **A luz de fora some aos poucos**: no capítulo 1 os furos são a luz principal de várias salas; no 3 em diante, não há mais furo nenhum.
+- **A luz de fora some aos poucos**: no capítulo 1 os furos são a luz principal de várias salas; do 2 ao 4 eles ficam mais raros, mais
+  estreitos e mais compridos (um céu cada vez menor lá em cima); do 5 em diante (o centro), não há furo nenhum.
 - **Os 21 furos (decidido pelo Pedro, `HISTORIA.md` e `DESIGN.md` §69):** em todo o jogo há **exatamente 21 furos REDONDOS de luz nos tetos**, os
   pontos do dado (1+2+3+4+5+6), e o **Poço** do começo é o do UM. Só os redondos contam: frestas, pátios, janelas e o claustro não. Todos com a mesma
-  cara (um buraco redondo no teto, com luz lá em cima), para o jogador saber o que contar. Pela regra de cima, quase todos ficam nos capítulos 1 e 2.
+  cara (um buraco redondo no teto, com luz lá em cima), para o jogador saber o que contar. Divisão (decidida com o Pedro, `DESIGN.md` §73):
+  capítulo 1 = faces 1, 2 e 3 (6 furos); capítulo 2 = face 4; capítulo 3 = face 5; capítulo 4 = face 6; do 5 em diante, nenhum.
   Quem mexer numa sala com furo redondo atualiza a contagem.
-  **Como estão espalhados** (`DESIGN.md` §72, `src/scene/skyhole.ts`): seis salas, cada uma com os furos no desenho de uma face do dado: o Poço
-  (1), a Biblioteca (2, em diagonal), a Cisterna (3, em diagonal), os Banhos Secos (4, em quadrado); as faces 5 e 6 (11 furos) ficam para o
-  capítulo 2. Todos com o mesmo aro de pedra lavrada, o tubo curto e o céu claro; nenhum ilumina o que é de puzzle.
+  **Como ficam** (`DESIGN.md` §73): um furo por sala, solto no teto, e as faces só aparecem no MAPA, juntando as salas de cada grupo (no teto
+  de uma sala só, o desenho entregava fácil demais o dado). Todos com o mesmo aro de pedra lavrada (`src/scene/skyhole.ts`); nenhum ilumina o
+  que é de puzzle.
 - **Os objetos rareiam** (§4.7 continua valendo: só o dia a dia, nada de RPG): a borda foi habitada; o centro, nunca.
 - O que é **gramática de puzzle** (frases, braseiros, lousas, soquetes, tochas das constelações) mantém a mesma cara em todos os capítulos, para o
   jogador nunca ter de reaprender a ler.
