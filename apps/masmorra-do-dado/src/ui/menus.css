@@ -158,6 +158,11 @@
 /* acessibilidade: mira só quando há algo a fazer (se o jogador quiser) */
 :root[data-cross='0'] .crosshair:not(.on) { display: none; }
 .crosshair.on { width: 8px; height: 8px; margin: -4px 0 0 -4px; background: transparent; border: 2px solid #ffd36b; box-sizing: border-box; box-shadow: 0 0 0 1px #0b0912; }
+/* MIRA DE FOGO: sobre uma frase que o Fogo acende, a mira vira o ícone de acender (pulsando de leve) */
+.crosshair.fire { width: calc(44px * var(--ui, 1)); height: calc(44px * var(--ui, 1)); margin: calc(-22px * var(--ui, 1)) 0 0 calc(-22px * var(--ui, 1));
+  border: 0; background: transparent; box-shadow: none; opacity: 1; animation: crossFire 0.9s ease-in-out infinite alternate; }
+.crosshair.fire svg { width: 100%; height: 100%; display: block; }
+@keyframes crossFire { from { filter: drop-shadow(0 0 2px #ff8a3a); } to { filter: drop-shadow(0 0 6px #ffb048); } }
 
 /* acessibilidade: glifos da interface com mais contraste */
 :root[data-contrast='1'] .dlg-glyphs svg, :root[data-contrast='1'] .toast svg, :root[data-contrast='1'] .quiz svg { filter: brightness(1.35) contrast(1.4); }

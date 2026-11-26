@@ -127,6 +127,7 @@ export interface SceneOptions {
   onTool?: (tool: Tool) => void;
   onLook?: (s: 'locked' | 'free' | 'denied') => void; // mouse capturado, solto ou negado (PC)
   onPrompt?: (label: string | null) => void; // algo ao alcance para interagir ("Tentar abrir")
+  onFireAim?: (on: boolean) => void; // a mira (face de Fogo) está sobre algo que o Fogo acende: a mira vira o ícone de acender
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
   onPause?: () => void;
@@ -1524,6 +1525,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         get pos() {
           return dieRoom === idx ? dieP : FAR;
         },
+        get vel() {
+          return dieV;
+        },
         get R() {
           return R;
         },
@@ -2109,6 +2113,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieV.copy(fwdV).multiplyScalar(ph.speed);
     dieV.y += ph.up * ph.speed;
     dieV.addScaledVector(moveVel, 0.6); // herda um pouco do movimento de quem arremessa
+    if (face === 3 && fireAimOn) {
+      // MIRA DE FOGO: o dado vai até o ponto da frase realçada
+      const v = arcTo(dieP, tmpV.copy(fireAimPt).sub(offs[dieRoom]), ph.speed, ph.g);
+      if (v) dieV.copy(v);
+    }
     dieW.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
     worldDie.position.copy(dieP).add(offs[dieRoom]);
     worldModel.scale.setScalar(0.42);
@@ -3110,6 +3119,45 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       opts.onPrompt?.(label);
     }
   };
+  // ── MIRA DE FOGO: com a face de Fogo na mão, a mira sobre uma frase acendível ao alcance a realça (a sala desenha o contorno) e vira o ícone
+  // de acender; o arremesso feito assim vai até o ponto da mira (o arco é calculado: sem isso o dado cairia ~0,5 m abaixo, na frase de baixo) ──
+  const fireAimPt = new THREE.Vector3(); // (mundo)
+  let fireAimOn = false;
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
+  const aimO = new THREE.Vector3();
+  const scanFireAim = () => {
+    let on = false;
+    if (hasDie && tool === 'die' && dieState === 'hand' && face === 3 && !busy() && !lookLocked()) {
+      const r = rooms[curRoom];
+      if (r.fireAim) {
+        camera.getWorldDirection(lookDir);
+        const p = r.fireAim(aimO.copy(camera.position).sub(offs[curRoom]), lookDir);
+        if (p) {
+          fireAimPt.copy(p).add(offs[curRoom]);
+          on = true;
+        }
+      }
+    }
+    if (on !== fireAimOn) {
+      fireAimOn = on;
+      opts.onFireAim?.(on);
+    }
+  };
+  // a velocidade de lançamento (rapidez `speed`, gravidade `g`) para o dado sair de `a` e passar por `b` (arco baixo); null = não alcança
+  const arcTo = (a: THREE.Vector3, b: THREE.Vector3, speed: number, g: number): THREE.Vector3 | null => {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const dy = b.y - a.y;
+    const X = Math.hypot(dx, dz);
+    if (X < 0.05) return null;
+    const v2 = speed * speed;
+    const disc = v2 * v2 - g * (g * X * X + 2 * dy * v2);
+    if (disc < 0) return null;
+    const th = Math.atan((v2 - Math.sqrt(disc)) / (g * X));
+    const h = speed * Math.cos(th);
+    return new THREE.Vector3((dx / X) * h, speed * Math.sin(th), (dz / X) * h);
+  };
+
   const interact = (): boolean => {
     if (!nearest || busy()) return false;
     const it = nearest;
@@ -3435,6 +3483,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         const kk = clamp((dieP.y - (sh0.y - 2.5)) / (topY - (sh0.y - 2.5)), 0, 1);
         worldModel.scale.setScalar(0.42 + (DIE_IN_HAND - 0.42) * kk * kk);
       }
+      if (thrownFace === 3 && dieThrown && !dropWatch) {
+        // AJUDA DE MIRA: um arremesso de Fogo que passa a ~0,5 m (0,75 m no celular) de uma frase acendível se curva até ela
+        const near = rooms[dieRoom].fireNear?.(dieP, coarse ? 0.75 : 0.5);
+        if (near) {
+          tmpV.copy(near).sub(dieP);
+          const dist = tmpV.length();
+          if (dist > 0.02 && tmpV.dot(dieV) > 0) {
+            tmpV.multiplyScalar(Math.max(5, dieV.length()) / dist);
+            dieV.lerp(tmpV, 1 - Math.exp(-dt * 14));
+          }
+        }
+      }
       for (let i = 0; i < n && dieState === 'flying'; i++) stepDie(dt / n);
       worldDie.position.copy(dieP).add(offs[dieRoom]);
       const w = dieW.length();
@@ -3545,6 +3605,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     activeRooms.forEach((i) => rooms[i].update(dt, t));
     readInscriptions(dt);
     scanInteract();
+    scanFireAim();
     updateLights(dt);
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {

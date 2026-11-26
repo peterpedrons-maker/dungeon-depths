@@ -90,7 +90,8 @@ As chamas **se apagam sozinhas** e o tamanho do braseiro diz quanto duram. A por
 
 ## Sala 8 — O Que a Casa Confirma  (ACENDER · CONFIRMADO)  — NÍVEL 5, refeita em duas partes (`tools/verify_confirma.mjs`)
 **Parte 1 — as marcas (numa lousa).** Na 1ª câmara, uma lousa de fogo e, acima dela, duas frases: «ACENDER QUATRO **CONFIRMADO**» (talhada, com moldura) e «ACENDER TRÊS **BOATO**» (gasta). Quem escreve **TRÊS** vê a Casa **apagar a lousa** e o glifo BOATO **piscar**. **Solução: escreva QUATRO (os quatro cantos)**: o glifo CONFIRMADO acende e a **grade** se abre. Junto da grade, no chão, uma **folha arrancada** dela ("Acho que o risquinho com o ponto em cima quer dizer 'é verdade'. O outro, 'dizem que'.").
-**Parte 2 — ANTES/DEPOIS.** Cinco frases curtas, cada uma com o soquete de brasa no começo:
+**Parte 2 — ANTES/DEPOIS.** Cinco frases curtas, cada uma com o soquete de brasa (uma prateleirinha) no começo, todas entre 1,3 m e 2,0 m de altura. Na parede direita são dois tabletes: «QUATRO DEPOIS DOIS» e «UM ANTES QUATRO» juntos, e «UM DEPOIS QUATRO» sozinho, mais perto da grade.
+**Como acender uma frase** (vale para todas as salas com frases acendíveis): com a face de **Fogo**, ponha a mira sobre a frase (ela ganha um contorno dourado e a mira vira o ícone de acender) e arremesse; ou **posicione** o dado na prateleira do começo dela. Acesa, o fogo corre pelos glifos e eles ficam laranja-dourado; apagada pela Casa, ela fica com fuligem por uns 2 s.
 | Parede | Frase | Marca |
 |---|---|---|
 | esquerda | UM ANTES TRÊS | CONFIRMADO |
@@ -98,7 +99,7 @@ As chamas **se apagam sozinhas** e o tamanho do braseiro diz quanto duram. A por
 | direita | QUATRO DEPOIS DOIS | CONFIRMADO |
 | | UM ANTES QUATRO | boato |
 | | UM DEPOIS QUATRO | CONFIRMADO |
-1. Acenda com o Fogo as **três frases CONFIRMADAS** (o dado junto da frase). Um boato apaga as acesas e a Casa recusa o fogo por 4 s.
+1. Acenda com o Fogo as **três frases CONFIRMADAS**. Um boato apaga as acesas e a Casa recusa o fogo por 4 s.
 2. Os **quatro pilares** sobem (UM a QUATRO).
 3. Cadeia: «QUATRO DEPOIS DOIS» → 2 antes de 4; «UM DEPOIS QUATRO» → 4 antes de 1; «UM ANTES TRÊS» → 1 antes de 3. **Acenda DOIS, QUATRO, UM, TRÊS.** Errar apaga tudo e deixa os pilares frios por 8 s.
 - **Por que é única** (`node tools/verify_confirma.mjs`): uma ordem só entre 24; sem qualquer confirmada sobram 4 a 6; os boatos são falsos e acreditar neles dá contradição; a ordem não é 1-2-3-4 nem a de leitura (1-3-4-2).

@@ -205,6 +205,66 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, g: GlyphDef, cx: number
   }
 }
 
+// O MESMO símbolo, só até a fração `f` (0..1) da escrita: os traços na ordem em que se escrevem (moldura, ligações, pontos, anéis), cada um do
+// começo ao fim; o tempo de cada traço é proporcional ao comprimento (um ponto vale um traço curto). `thick` engorda tudo (px).
+// Usado pelo FOGO que corre pelos sulcos de uma frase acesa (scene/burnline.ts).
+export function drawGlyphPart(ctx: CanvasRenderingContext2D, g: GlyphDef, cx: number, cy: number, size: number, color: string, f: number, thick = 0) {
+  if (f <= 0) return;
+  const k = size / 130;
+  const S = 34 * k;
+  const cell = (i: number): [number, number] => [cx + ((i % 3) - 1) * S, cy + (Math.floor(i / 3) - 1) * S];
+  const lw = Math.max(1, Math.round(5 * k * 0.62)) + thick;
+  const fw = Math.max(1, Math.round(4 * k * 0.62)) + thick;
+  const h = 56 * k;
+  const L = cx - h;
+  const R = cx + h;
+  const T = cy - h;
+  const B = cy + h;
+  type St = { a: [number, number]; b: [number, number]; w: number } | { dot: [number, number]; d: number } | { ring: [number, number]; d: number };
+  const st: St[] = [];
+  const seg = (x0: number, y0: number, x1: number, y1: number, w: number) => st.push({ a: [x0, y0], b: [x1, y1], w });
+  if (g.F === 'full') (seg(L, T, R, T, fw), seg(R, T, R, B, fw), seg(R, B, L, B, fw), seg(L, B, L, T, fw));
+  else if (g.F === 'U') (seg(L, T, L, B, fw), seg(L, B, R, B, fw), seg(R, B, R, T, fw));
+  else if (g.F === 'N') (seg(L, B, L, T, fw), seg(L, T, R, T, fw), seg(R, T, R, B, fw));
+  else if (g.F === 'R') (seg(R, T, L, T, fw), seg(L, T, L, B, fw), seg(L, B, R, B, fw));
+  else if (g.F === 'L') (seg(L, T, R, T, fw), seg(R, T, R, B, fw), seg(R, B, L, B, fw));
+  else if (g.F === 'V') (seg(L, T, L, B, fw), seg(R, T, R, B, fw));
+  for (const [a, b] of g.l) {
+    const [xa, ya] = cell(a);
+    const [xb, yb] = cell(b);
+    seg(xa, ya, xb, yb, lw);
+  }
+  const rp = (g.s ? 4.2 : 7) * k;
+  for (const i of g.p) st.push({ dot: cell(i), d: Math.max(2, Math.round((g.big.includes(i) ? 10 * k : rp) * 2)) + thick });
+  for (const i of g.ring) st.push({ ring: cell(i), d: Math.max(4, Math.round(20 * k)) + thick });
+  const len = (s: St) => ('a' in s ? Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]) : 'dot' in s ? S * 0.6 : S * 1.2);
+  const total = st.reduce((a, s) => a + len(s), 0);
+  let left = f * total;
+  ctx.fillStyle = color;
+  for (const s of st) {
+    if (left <= 0) break;
+    const l = len(s);
+    const u = Math.min(1, left / l);
+    left -= l;
+    if ('a' in s) plot(ctx, s.a[0], s.a[1], s.a[0] + (s.b[0] - s.a[0]) * u, s.a[1] + (s.b[1] - s.a[1]) * u, s.w);
+    else if ('dot' in s) {
+      const d = Math.max(1, Math.round(s.d * Math.min(1, u * 1.6)));
+      ctx.fillRect(Math.round(s.dot[0] - d / 2), Math.round(s.dot[1] - d / 2), d, d);
+    } else {
+      const d = s.d;
+      const x0 = Math.round(s.ring[0] - d / 2);
+      const y0 = Math.round(s.ring[1] - d / 2);
+      const t = Math.max(1, 1 + Math.round(thick / 2));
+      // o anel se fecha no sentido horário
+      const p4 = u * 4;
+      if (p4 > 0) ctx.fillRect(x0, y0, Math.round(d * Math.min(1, p4)), t);
+      if (p4 > 1) ctx.fillRect(x0 + d - t, y0, t, Math.round(d * Math.min(1, p4 - 1)));
+      if (p4 > 2) ctx.fillRect(x0 + d - Math.round(d * Math.min(1, p4 - 2)), y0 + d - t, Math.round(d * Math.min(1, p4 - 2)), t);
+      if (p4 > 3) ctx.fillRect(x0, y0 + d - Math.round(d * Math.min(1, p4 - 3)), t, Math.round(d * Math.min(1, p4 - 3)));
+    }
+  }
+}
+
 // uma palavra inteira (as compostas viram uma sequência de símbolos) dentro de uma caixa w x h
 export function drawWord(ctx: CanvasRenderingContext2D, id: string, x: number, y: number, w: number, h: number, color: string) {
   const parts = glyphsOf(id);

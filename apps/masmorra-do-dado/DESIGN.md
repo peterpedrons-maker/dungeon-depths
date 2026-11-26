@@ -393,7 +393,7 @@ O dado da mão **olha, reage, pisca e cochila** (tudo sutil: inclinação, pulin
 - Ainda não: boca que se mexe junto com o balão. Dev: `__mdd.rostoSheet()` devolve uma prévia dos 6 rostos em PNG; `__mdd.freezeSpin(rad)` congela o giro.
 
 ## 25. Dicas visuais da mecânica "o dado acende frases" (implementado em `fire.ts`)
-- **Soquete com brasa**: no começo de cada frase acendível há um soquete de pedra com uma **brasa fraca pulsando**. É o símbolo fixo do jogo para "isto pode ser aceso". A brasa some quando a frase acende (ou quando os pilares sobem).
+- **Soquete com brasa** (hoje uma **prateleirinha**, §53): no começo de cada frase acendível há um soquete de pedra com uma **brasa fraca pulsando**. É o símbolo fixo do jogo para "isto pode ser aceso". A brasa some quando a frase acende (ou quando os pilares sobem).
 - **Rachaduras no chão** onde cada pilar vai subir: anel de pedra quebrada com **brasas nas frestas** pulsando. Ao liberar a trava elas se acendem forte enquanto o pilar sobe e depois ficam só as frestas. O jogador vê, antes de resolver, que há algo escondido.
 - **A Casa lê a frase da porta**: quando a porta abre, as palavras da frase acendem uma a uma, da esquerda para a direita (salas do construtor e do vestíbulo). Ensina "escrita que acende = aprovação" e reforça a ordem de leitura.
 - Verificado (números, `__mdd.glyphFire`): na Sala 4 acender o braseiro do DOIS acende ACENDER e o glifo DOIS; na Sala 5 acender um braseiro acende ACENDER, o número enche e TEMPO pulsa. A Sala 6 foi vista em imagem (soquetes, rachaduras e pilares subindo).
@@ -838,3 +838,28 @@ Apelidos), a R5 entre a 16 e a 17 do plano e o Tribunal no fim. Soluções em `P
 - **As folhas dela** 5, 6 e 7 ganharam texto (Galeria: a pista do Escuro e o erro sobre PEQUENO; Escadaria: "a forma de alguma coisa que eu conheço").
 - **Ainda fora:** os segredos que dependem de voltar (S5, as palavras do escuro nas salas 2, 7 e 11; S8, o soquete do poço), os atalhos dos respiros e a
   cena da página do Escrivão que some ao voltar; o pedestal vazio do Museu fica para o capítulo 2.
+
+## 53. Frases acendíveis: apagada × acesa e fácil de acertar (pedido do Pedro, jogando)
+Dois problemas: a frase apagada era cal branca e brilhava com a luz da sala (acender só punha uma chaminha no soquete: apagada e acesa pareciam
+iguais) e era difícil acertar (mirava-se o soquete, de 15 cm, e o toque só valia com |dy| < 0,4 m e a menos de 1,1 m da parede, sem nada dizendo isso).
+- **O fogo da frase** (`src/scene/burnline.ts`, usado pelos tabletes `lit` e pela frase da porta em `judge: 'door'`):
+  - **apagada** = pedra: sulcos escuros e a cal fraca e fosca (a inscrição fica `burnable` e não pega o brilho geral da cal); lê-se de perto;
+  - **acesa** = o fogo CORRE pelos sulcos do soquete até o fim da frase, **traço por traço**, na ordem da escrita (`drawGlyphPart` em
+    `book/font.ts`; ~0,24 s por símbolo, uma chaminha corre na frente); glifos laranja-dourado com cor > 1 (o bloom pega), **halo quente** na
+    parede (sem névoa) e uma luz de verdade (emissor), e a **chama na prateleira** marca cada frase acesa de longe;
+  - **ao apagar** (erro, punição): **fuligem** escura por ~2 s **depois que a luz volta** (no escuro da punição ela não começa a sumir), e volta a
+    ser pedra.
+- **Acertar:**
+  - **realce de mira**: com a face de Fogo na mão e a mira sobre uma frase acendível (até 12 m), contorno dourado na frase e a mira vira o
+    ícone de acender (`Room.fireAim`; `onFireAim` no App);
+  - o arremesso feito assim **vai até o ponto da mira** (o arco é calculado: antes o dado chegava ~0,5 m abaixo, na frase de baixo);
+  - **ajuda de mira**: um arremesso de Fogo que passa a 0,5 m (0,75 m no celular) de uma frase acendível se curva até ela (`Room.fireNear`);
+  - **mais folga**: na vertical, metade do espaço até a frase vizinha; até 1,5 m da parede; ao longo, a frase inteira e a prateleira. O dado em
+    voo conta pelo ponto onde **vai bater** na parede (sem isso, num arco, ele entrava na faixa ainda subindo e acendia a frase de baixo);
+  - **um toque por arremesso** em todas as salas (o dado que quica numa frase e cai pela de baixo não a acende);
+  - o **soquete é uma prateleirinha**: posicionar o dado nela (botão direito / G / POSICIONAR) acende a frase (é um ponto de encaixe);
+  - **altura**: toda frase acendível fica entre **1,3 m e 2,0 m**. Duas linhas por tablete no tamanho normal; com mais, as linhas se apertam e as
+    letras encolhem. Por isso o tablete de três linhas da direita do Confirma virou dois (duas linhas em dz 5,5 e a terceira em dz 12).
+- Testado (Playwright, PC 1280×720 e celular emulado com toque, 844×390): no Confirma, as três confirmadas acendem na 1ª tentativa de 2, 2,5 e
+  3 m (uma delas mirando 0,6 m fora do centro); o boato pune e deixa a fuligem; posicionar na prateleira acende; em O Boato Verdadeiro as quatro
+  certas e a da porta acendem e a Casa aceita. Não testado num celular de verdade.

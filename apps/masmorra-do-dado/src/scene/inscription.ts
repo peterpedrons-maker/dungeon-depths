@@ -7,8 +7,9 @@ import * as THREE from 'three';
 import { drawGlyph } from '../book/font';
 import { glyphsOf } from '../story/lexicon';
 
-const CELL = 96; // pixels por símbolo
-const PAD = 14;
+export const CELL = 96; // pixels por símbolo
+export const PAD = 14;
+export const GLYPH_SIZE = (CELL / 0.86) * 0.94; // o `size` de drawGlyph dentro de uma célula
 const CAL = '#f1ebd9';
 const SULCO = '#15110f';
 
@@ -47,6 +48,7 @@ export interface Inscription {
   setReveal(i: number, v: number): void; // v 0..1 do painel i
   extras: THREE.MeshLambertMaterial[]; // molduras (acompanham o brilho)
   setGlow(v: number): void; // brilho da cal (cresce conforme o jogador aprende)
+  burnable?: boolean; // frase ACENDÍVEL: quem cuida da cor e do brilho das palavras é o fogo dela (scene/burnline.ts), não o brilho da cal
   reveal(): void; // mostra tudo
 }
 
@@ -78,7 +80,7 @@ function wordCanvas(id: string, age: number, seed: number, frame = false): { c: 
   c.width = parts * CELL + PAD * 2;
   c.height = CELL + PAD * 2;
   const ctx = c.getContext('2d', { willReadFrequently: true })!;
-  const size = (CELL / 0.86) * 0.94;
+  const size = GLYPH_SIZE;
   const draw = (dx: number, dy: number, color: string) =>
     glyphs.forEach((g, i) => drawGlyph(ctx, g, Math.round(PAD + CELL * (i + 0.5) + dx), Math.round(PAD + CELL / 2 + dy), size, color));
   // sulco: o traço engordado em volta (bem grosso: a escrita precisa aparecer a 5 m, na tela de ~200 linhas)
@@ -284,6 +286,7 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
     },
     extras: [...(plaqueMat ? [plaqueMat] : []), ...(leadMat ? [leadMat] : [])],
     setGlow(v) {
+      if (!ins.burnable)
       for (const p of panels) {
         if (!p.id) continue;
         const f = p.fire ?? 0;

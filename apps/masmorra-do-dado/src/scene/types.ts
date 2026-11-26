@@ -77,6 +77,7 @@ export interface Ctx {
     readonly face: number; // face do dado que está lá fora
     readonly thrown: boolean; // false = foi posicionado
     readonly pos: THREE.Vector3;
+    readonly vel: THREE.Vector3; // velocidade (m/s), enquanto voa
     readonly R: number;
   };
   chalk: {
@@ -123,6 +124,11 @@ export interface Room {
   ambient: { color: number; intensity: number };
   boxes: Box[]; // sólidos para o dado
   sockets?: Socket[]; // pontos de encaixe ao posicionar o dado
+  // MIRA DE FOGO (frases acendíveis): com a face de Fogo na mão, o motor pergunta a cada quadro se a mira (raio em coordenadas da sala) está
+  // sobre algo que o Fogo acende. A sala realça o alvo e devolve o ponto (local) aonde o arremesso deve ir; null = nada.
+  fireAim?(o: THREE.Vector3, d: THREE.Vector3): THREE.Vector3 | null;
+  // AJUDA DE MIRA: o ponto (local) do alvo de Fogo mais perto de `p`, se estiver a menos de `r` metros (o dado em voo se curva até ele)
+  fireNear?(p: THREE.Vector3, r: number): THREE.Vector3 | null;
   rects(feetY: number): Rect[]; // obstáculos para o jogador
   clampPlayer?(pos: THREE.Vector3): void; // limites curvos (coordenadas da sala); retas são obstáculos em rects()
   clampDie(p: THREE.Vector3, v: THREE.Vector3, e: number, R: number): void;

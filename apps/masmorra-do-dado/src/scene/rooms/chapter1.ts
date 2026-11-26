@@ -488,7 +488,9 @@ export const FIRE_CONFIRMA: FireSpec = {
   words: ['acender', 'conf'],
   tablets: [
     { lines: [fc('n1', 'antes', 'n3', 'conf', true), fc('n3', 'antes', 'n2', 'boato')], wall: 'left', dz: 9, size: 0.45, lit: true },
-    { lines: [fc('n4', 'depois', 'n2', 'conf', true), fc('n1', 'antes', 'n4', 'boato'), fc('n1', 'depois', 'n4', 'conf', true)], wall: 'right', dz: 9, size: 0.45, lit: true },
+    // (frases acendíveis ficam entre 1,3 m e 2,0 m de altura: na direita, duas linhas num tablete e a terceira noutro, mais perto da grade)
+    { lines: [fc('n4', 'depois', 'n2', 'conf', true), fc('n1', 'antes', 'n4', 'boato')], wall: 'right', dz: 5.5, size: 0.45, lit: true },
+    { lines: [fc('n1', 'depois', 'n4', 'conf', true)], wall: 'right', dz: 12, size: 0.45, lit: true },
   ],
   fog: { color: '#0a0a11', near: 5, far: 26 },
   ambient: { color: 0x7a78b8, intensity: 1.9 },

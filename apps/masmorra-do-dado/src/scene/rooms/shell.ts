@@ -154,6 +154,7 @@ export function shotGate(die: { readonly state: string }) {
       armed = false;
       return true;
     },
+    ready: () => armed, // este arremesso ainda não tocou nada
   };
 }
 

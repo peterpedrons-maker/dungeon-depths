@@ -10,8 +10,9 @@ import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
 import { drawGlyph } from '../../book/font';
 import { shotGate } from './shell';
+import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
-import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import type { Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
 
 // ── a regra que abre a porta ──
 export type FireRule =
@@ -402,18 +403,49 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     preLit: boolean;
     door: boolean; // a frase da porta (modo `judge: 'door'`)
     axis: 'x' | 'z'; // ao longo de que eixo a frase corre (parede lateral = z; fundo = x)
+    burn: BurnLine; // o fogo que corre pelos sulcos (scene/burnline.ts)
+    gap: number; // folga vertical do toque: metade do espaço até a frase de cima/de baixo
+    nx: number; // para onde a parede olha
+    nz: number;
   }
+  // as PRATELEIRAS dos soquetes: posicionar o dado nelas acende a frase (são pontos de encaixe do "posicionar")
+  const shelves: Socket[] = [];
+  const SHELF_D = 0.46; // quanto a prateleira sai da parede
+  // o tampo fica 0,24 m abaixo da frase: o dado (meia altura 0,22) pousado nele fica com o centro na altura da frase
+  const shelf = (wx: number, nx: number, nz: number, y: number, at: number) => {
+    const top = y - 0.24;
+    if (nz === 0) {
+      kit.box(SHELF_D, 0.07, 0.5, kit.slab, wx + (nx * SHELF_D) / 2, top - 0.035, at, false);
+      kit.box(0.22, 0.22, 0.3, kit.stone, wx + nx * 0.11, top - 0.18, at, false); // a mísula
+      boxes.push(mkBox(Math.min(wx, wx + nx * SHELF_D), top - 0.07, at - 0.25, Math.max(wx, wx + nx * SHELF_D), top, at + 0.25));
+      shelves.push({ x: wx + (nx * SHELF_D) / 2, y: top, z: at, r: 0.6 });
+      return new THREE.Vector3(wx + nx * 0.2, top, at);
+    }
+    kit.box(0.5, 0.07, SHELF_D, kit.slab, at, top - 0.035, wx + (nz * SHELF_D) / 2, false);
+    kit.box(0.3, 0.22, 0.22, kit.stone, at, top - 0.18, wx + nz * 0.11, false);
+    boxes.push(mkBox(at - 0.25, top - 0.07, Math.min(wx, wx + nz * SHELF_D), at + 0.25, top, Math.max(wx, wx + nz * SHELF_D)));
+    shelves.push({ x: at, y: top, z: wx + (nz * SHELF_D) / 2, r: 0.6 });
+    return new THREE.Vector3(at, top, wx + nz * 0.2);
+  };
   const litLines: LitLine[] = []
   // largura exata de uma frase (m): cada símbolo ocupa (n + 0,29) alturas, e o espaço entre palavras é 0,55
   const lineW = (words: string[], sz: number) => words.reduce((a, w) => a + (Math.max(1, glyphsOf(w).length) + 0.2917) * sz, 0) + 0.55 * sz * (words.length - 1);
   (spec.tablets ?? []).forEach((t, i) => {
     if (t.lines && (t.wall === 'left' || t.wall === 'right')) {
       // ── parágrafo: linhas alinhadas à esquerda, de cima para baixo ──
-      const sz = t.size ?? 0.4;
-      const lh = sz * 1.55; // altura de uma linha
+      let sz = t.size ?? 0.4;
+      let lh = sz * 1.55; // altura de uma linha
       const n = t.lines.length;
+      // frases ACENDÍVEIS: todas entre 1,3 m e 2,0 m de altura (mira-se de pé, sem olhar para cima nem para baixo). Mais de duas linhas não
+      // cabem nessa faixa no tamanho normal: as linhas se apertam e as letras encolhem (melhor dividir o parágrafo em dois tabletes)
+      const LIT_LO = 1.3;
+      const LIT_HI = 2.0;
+      if (t.lit && n > 1 && (n - 1) * lh > LIT_HI - LIT_LO) {
+        lh = (LIT_HI - LIT_LO) / (n - 1);
+        sz = Math.min(sz, lh / 1.25);
+      }
       const Wb = Math.max(...t.lines.map((l) => lineW(l.words, sz)));
-      const yc = t.y ?? 1.85;
+      const yc = t.lit ? Math.min(LIT_HI - ((n - 1) * lh) / 2, Math.max(LIT_LO + ((n - 1) * lh) / 2, t.y ?? (LIT_LO + LIT_HI) / 2)) : t.y ?? 1.85;
       const left = t.wall === 'left';
       const zc = Z0 + (t.dz ?? 9);
       const wx = left ? X0 + 0.025 : X1 - 0.025;
@@ -435,20 +467,22 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         });
         first.push(li);
         if (t.lit) {
-          const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-          flame.scale.set(0.5, 0.42, 1);
           const fy = yc + ((n - 1) / 2 - k) * lh;
-          flame.position.set(left ? X0 + 0.14 : X1 - 0.14, fy + 0.04, zc + dir * (-Wb / 2 - sz * 0.9));
+          // DICA VISUAL (DESIGN.md §25): no começo da frase, um SOQUETE que é uma prateleirinha de pedra, com uma brasa fraca pulsando, diz
+          // "isto pode ser aceso"; quando a frase acende, uma chama fica nele. Posicionar o dado na prateleira também acende a frase.
+          const fz = zc + dir * (-Wb / 2 - sz * 0.9);
+          const sp = shelf(left ? X0 : X1, left ? 1 : -1, 0, fy, fz);
+          const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+          flame.position.set(sp.x, sp.y + 0.22, sp.z);
           flame.visible = false;
           kit.group.add(flame);
-          // DICA VISUAL (DESIGN.md §25): um soquete de pedra com uma brasa fraca pulsando no começo da frase diz "isto pode ser aceso"
-          const fz = zc + dir * (-Wb / 2 - sz * 0.9);
-          kit.box(0.16, 0.3, 0.26, kit.stone, left ? X0 + 0.08 : X1 - 0.08, fy, fz, false);
           const emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, depthWrite: false, transparent: true }));
           emb.scale.set(0.2, 0.2, 1);
-          emb.position.set(left ? X0 + 0.19 : X1 - 0.19, fy, fz);
+          emb.position.set(sp.x, sp.y + 0.06, sp.z);
           kit.group.add(emb);
-          litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: !!ln.preLit, fire: ln.preLit ? 1 : 0, flame, emb, key: `L${litLines.length}`, preLit: !!ln.preLit, door: false, axis: 'z' });
+          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3 });
+          if (ln.preLit) burn.set(true, true);
+          litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: !!ln.preLit, fire: ln.preLit ? 1 : 0, flame, emb, key: `L${litLines.length}`, preLit: !!ln.preLit, door: false, axis: 'z', burn, gap: n > 1 ? lh / 2 : 0.45, nx: left ? 1 : -1, nz: 0 });
         }
         if (ln.rub) {
           li.panels.forEach((_, q) => li.setReveal(q, 0));
@@ -540,17 +574,18 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   if (spec.lock?.judge === 'door' && sign === 'back') {
     const cx = -(spec.hx + 1.25) / 2;
     const hw = (units * size) / 2;
-    const fx = cx - hw - size * 0.5;
+    const fx = cx - hw - size * 0.5 - 0.1;
+    const sp = shelf(Z0, 0, 1, 1.6, fx);
     const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-    flame.position.set(fx, 1.64, Z0 + 0.14);
+    flame.position.set(sp.x, sp.y + 0.17, sp.z);
     flame.visible = false;
     kit.group.add(flame);
-    kit.box(0.26, 0.3, 0.16, kit.stone, fx, 1.6, Z0 + 0.08, false);
     const emb = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, depthWrite: false, transparent: true }));
     emb.scale.set(0.2, 0.2, 1);
-    emb.position.set(fx, 1.6, Z0 + 0.19);
+    emb.position.set(sp.x, sp.y + 0.06, sp.z);
     kit.group.add(emb);
-    litLines.push({ ins, x: cx, y: 1.6, z: Z0 + 0.025, hw, good: false, ord: -1, lit: false, fire: 0, flame, emb, key: 'porta', preLit: false, door: true, axis: 'x' });
+    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3 });
+    litLines.push({ ins, x: cx, y: 1.6, z: Z0 + 0.025, hw, good: false, ord: -1, lit: false, fire: 0, flame, emb, key: 'porta', preLit: false, door: true, axis: 'x', burn, gap: 0.45, nx: 0, nz: 1 });
   }
 
   // ── panos (boatos tecidos sobre a pedra) ──
@@ -740,6 +775,15 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const judgeDoor = spec.lock?.judge === 'door';
   const needed = litLines.filter((l) => (spec.lock?.ordered ? l.ord >= 0 : l.good)).length;
   const gate = shotGate(ctx.die);
+  // MIRA DE FOGO: a frase acendível sob a mira (o motor pergunta a cada quadro, com a face de Fogo na mão)
+  let aimLine: LitLine | null = null;
+  let aimMark = false;
+  const canLight = (l: LitLine) => !risen && lockCold <= 0 && !l.preLit && (!l.lit || judgeDoor);
+  // o ponto da frase, na altura dela, afastado 0,25 m da parede, `a` metros do centro ao longo dela
+  const linePoint = (l: LitLine, a: number) => {
+    const c = Math.max(-l.hw, Math.min(l.hw, a));
+    return l.axis === 'z' ? new THREE.Vector3(l.x + l.nx * 0.25, l.y, l.z + c) : new THREE.Vector3(l.x + c, l.y, l.z + l.nz * 0.25);
+  };
 
   // peças extras da sala
   const extra: FireExtra = spec.extra
@@ -780,7 +824,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       l.lit = l.preLit;
       l.fire = l.preLit ? 1 : 0;
       l.flame.visible = l.preLit;
-      l.ins.panels.forEach((p) => (p.fire = l.fire));
+      l.burn.set(l.preLit, true);
     });
     restoreCloths();
     extra.reset?.();
@@ -827,7 +871,47 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     fog: spec.fog ?? { color: '#0a0a11', near: 3.5, far: 18 },
     ambient: spec.ambient ?? { color: 0x706ea8, intensity: 1.6 },
     boxes: [...boxes, ...kit.boxes],
-    sockets: braziers.map((b) => b.socket),
+    sockets: [...braziers.map((b) => b.socket), ...shelves],
+    fireAim(o, d) {
+      if (!spec.lock) return null;
+      let best: LitLine | null = null;
+      let bt = Infinity;
+      let ba = 0;
+      for (const l of litLines) {
+        if (!canLight(l)) continue;
+        const den = l.axis === 'z' ? d.x : d.z;
+        if (Math.abs(den) < 1e-4) continue;
+        const tt = l.axis === 'z' ? (l.x - o.x) / den : (l.z - o.z) / den;
+        if (!(tt > 0.3 && tt < 12)) continue;
+        const py = o.y + d.y * tt;
+        const a = l.axis === 'z' ? o.z + d.z * tt - l.z : o.x + d.x * tt - l.x;
+        if (Math.abs(a) > l.hw + 0.65 || Math.abs(py - l.y) > l.gap) continue;
+        if (tt < bt) {
+          bt = tt;
+          best = l;
+          ba = a;
+        }
+      }
+      if (!best) return null;
+      aimLine = best;
+      aimMark = true;
+      return linePoint(best, ba);
+    },
+    fireNear(p, r) {
+      if (!spec.lock || !gate.ready()) return null; // (o dado que já acendeu uma frase não é puxado para outra)
+      let best: THREE.Vector3 | null = null;
+      let bd = r;
+      for (const l of litLines) {
+        if (!canLight(l)) continue;
+        const q = linePoint(l, l.axis === 'z' ? p.z - l.z : p.x - l.x);
+        const dd = q.distanceTo(p);
+        if (dd < bd) {
+          bd = dd;
+          best = q;
+        }
+      }
+      return best;
+    },
     rects() {
       const r: ReturnType<Room['rects']> = [...rects, ...braziers.filter((_, i) => !risers[i] || riseK >= 1).map((b) => b.rect), ...kit.rects, ...entrance.rects()];
       r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
@@ -883,15 +967,29 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             let bd = Infinity;
             for (const l of litLines) {
               if (l.preLit || (l.lit && !judgeDoor)) continue;
-              const along = Math.abs(l.axis === 'z' ? d.pos.z - l.z : d.pos.x - l.x);
+              // a folga do toque: ao longo, a frase inteira e a prateleira; na vertical, até a metade do caminho para a frase vizinha; afastado
+              // da parede, até 1,5 m (o dado que passa perto conta)
+              let along = Math.abs(l.axis === 'z' ? d.pos.z - l.z : d.pos.x - l.x);
               const across = Math.abs(l.axis === 'z' ? d.pos.x - l.x : d.pos.z - l.z);
-              const dy = Math.abs(d.pos.y - l.y);
-              if (along < l.hw + 0.45 && dy < 0.4 && across < (l.axis === 'z' ? 1.1 : 0.6) && dy + along * 0.2 < bd) {
+              let dy = Math.abs(d.pos.y - l.y);
+              // o dado em VOO rumo à parede conta pelo ponto onde VAI BATER (senão, num arco, ele entra na faixa de 1,5 m ainda subindo, na altura
+              // da frase de baixo, e acende a errada)
+              if (d.state === 'flying') {
+                const vt = -(l.axis === 'z' ? d.vel.x * l.nx : d.vel.z * l.nz);
+                if (vt > 0.5) {
+                  const tw = Math.max(0, across - d.R) / vt;
+                  if (tw < 0.5) {
+                    dy = Math.abs(d.pos.y + d.vel.y * tw - 8 * tw * tw - l.y);
+                    along = Math.abs(l.axis === 'z' ? d.pos.z + d.vel.z * tw - l.z : d.pos.x + d.vel.x * tw - l.x);
+                  }
+                }
+              }
+              if (along < l.hw + 0.65 && dy < l.gap && across < 1.5 && dy + along * 0.2 < bd) {
                 bd = dy + along * 0.2;
                 best = l;
               }
             }
-            if (best && judgeDoor && !gate.take()) best = null; // um toque por arremesso
+            if (best && !gate.take()) best = null; // um toque por arremesso (o dado que quica numa frase e cai pela de baixo não a acende)
             if (best && judgeDoor) {
               if (best.door) {
                 // a Casa julga o conjunto aceso
@@ -946,17 +1044,21 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         // rachaduras no chão: brasas fracas pulsando; ao liberar, acendem forte enquanto o pilar sobe e depois só ficam as frestas
         const pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
         for (const c of cracks) (c.material as THREE.MeshLambertMaterial).emissiveIntensity = risen ? (riseK < 1 ? 1.8 : 0.25) : 0.35 + 0.45 * pulse;
+        const aimed = aimMark ? aimLine : null; // a frase sob a mira (o motor perguntou com fireAim neste quadro ou no anterior)
+        aimMark = false;
         for (const l of litLines) {
           // a brasa fraca do soquete pulsa enquanto a frase espera
-          l.emb.visible = !risen && l.fire < 0.15 && (!judgeDoor || lockCold <= 0);
+          l.emb.visible = !risen && !l.lit && l.fire < 0.15 && lockCold <= 0;
           const es = 0.17 + 0.07 * (0.5 + 0.5 * Math.sin(t * 3 + l.z));
           l.emb.scale.set(es, es, 1);
-          l.fire += ((l.lit ? 1 : 0) - l.fire) * Math.min(1, dt * 6);
-          l.ins.panels.forEach((p) => (p.fire = l.fire));
+          l.burn.set(l.lit);
+          l.burn.highlight(l === aimed);
+          l.burn.update(dt, t);
+          l.fire = l.burn.level();
           l.flame.visible = l.fire > 0.05;
           if (l.flame.visible) {
             l.flame.material.map = kit.frames[Math.floor(t * 8 + l.z) % kit.frames.length];
-            l.flame.scale.set(0.5 * l.fire, 0.42 * l.fire, 1);
+            l.flame.scale.set(0.5 * l.fire, 0.44 * l.fire, 1); // (a chama do soquete marca, de longe, cada frase acesa)
           }
         }
       }

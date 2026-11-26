@@ -72,6 +72,7 @@ export default function App() {
   // o que o jogador já tem nas mãos (começa sem nada) e o que está ao alcance pra interagir
   const [inv, setInv] = useState({ die: false, chalk: false });
   const [prompt, setPrompt] = useState<string | null>(null);
+  const [fireAim, setFireAim] = useState(false); // a mira está sobre uma frase que o Fogo acende
   const [tool, setTool] = useState<Tool>('die');
   const [chalkMode, setChalkMode] = useState<ChalkMode>('draw');
   const [credits, setCredits] = useState(false); // créditos no fim da demonstração
@@ -219,6 +220,7 @@ export default function App() {
       onTool: setTool,
       onLook: setLook,
       onPrompt: setPrompt,
+      onFireAim: setFireAim,
       onInventory: (i) => {
         setInv(i);
         // ganhou o dado: mostra de novo as dicas de controle
@@ -280,7 +282,14 @@ export default function App() {
         <i />
         <i />
       </div>
-      {!inMenu && !cine && !uis.bars && !uis.bookCall && <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />}
+      {!inMenu && !cine && !uis.bars && !uis.bookCall &&
+        (fireAim && !speaking ? (
+          <div className="crosshair fire on" aria-hidden="true">
+            <PixelIcon name="fogo" size={32} />
+          </div>
+        ) : (
+          <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />
+        ))}
       {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
       <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 
