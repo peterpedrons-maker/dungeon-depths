@@ -44,7 +44,7 @@ const BIB_BAYS: [string, string[]][] = [
 ];
 // alturas em metros (os modelos desses packs não têm escala de verdade)
 const BIB_H: Record<string, number> = { Estante_Livros_1: 2.1, Estante_Livros_2: 2.1, Estante_Livros_3: 2.1, Estante_Livros_4: 2.2, Vela_Pires: 0.2, Vela_Curta: 0.24, Vela_Alta: 0.42, Candelabro: 1.75 };
-// ?vitrine=escrivao: o Escrivão de código ao lado do ANIMADO (DESIGN.md §69): parado, andando, debruçado, erguendo o dado, e os dois girando
+// ?vitrine=escrivao: o Escrivão de código ao lado do ANIMADO (DESIGN.md §70): parado, andando, debruçado, erguendo o dado, e os dois girando
 const ESC_BAYS: [string, string[]][] = [
   ['*', ['scribe:parado', 'rig:parado', 'rig:andando', 'rig:debrucado']],
   ['*', ['scribe:gira', 'rig:gira', 'rig:ergue']],

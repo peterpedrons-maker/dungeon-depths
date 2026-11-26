@@ -1,4 +1,4 @@
-// O Escrivão ANIMADO (DESIGN.md §69). É o mesmo Escrivão de `scribe.ts`, assado numa malha só (`tools/escrivao_mixamo.ts`), com esqueleto e
+// O Escrivão ANIMADO (DESIGN.md §70). É o mesmo Escrivão de `scribe.ts`, assado numa malha só (`tools/escrivao_mixamo.ts`), com esqueleto e
 // animações feitos no Mixamo pelo Pedro: "Start Walking" (andar) e "Standing Torch Inspect Downward" (olhar para baixo). Arquivo:
 // `public/models/escrivao.glb` (gerado por `tools/escrivao_glb.py`).
 //
@@ -32,7 +32,7 @@ export function preloadScribeRig() {
   return rigP;
 }
 
-// ── os recortes das animações (medidos no arquivo; ver DESIGN.md §69) ──
+// ── os recortes das animações (medidos no arquivo; ver DESIGN.md §70) ──
 const WALK_A = 1.15; // o ciclo de passos estável: 1,15 s … 2,48 s do "Start Walking"
 const WALK_L = 1.333;
 const SEAM = 0.3; // os últimos 0,3 s do ciclo se fundem com o começo dele (a volta não dá pulo)

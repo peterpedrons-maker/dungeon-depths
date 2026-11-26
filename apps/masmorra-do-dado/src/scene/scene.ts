@@ -1067,7 +1067,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let cineCam: null | { pos: THREE.Vector3; look: THREE.Vector3 } = null; // câmera de cinema, solta do jogador
   let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean } = null;
   let topScribe: ReturnType<typeof makeScribeRig> | null = null;
-  void preloadScribeRig(); // o Escrivão animado (DESIGN.md §69) começa a baixar já: a cena do poço vem logo
+  void preloadScribeRig(); // o Escrivão animado (DESIGN.md §70) começa a baixar já: a cena do poço vem logo
   let scribeDie: THREE.Object3D | null = null;
   const outdoor = new THREE.DirectionalLight(0xd8dcf4, 0); // luz da madrugada lá fora (só acesa nos planos de fora)
   scene.add(outdoor, outdoor.target);

@@ -1,4 +1,4 @@
-"""O Escrivão ANIMADO (DESIGN.md §69): junta as animações do Mixamo num .glb para o jogo (public/models/escrivao.glb).
+"""O Escrivão ANIMADO (DESIGN.md §70): junta as animações do Mixamo num .glb para o jogo (public/models/escrivao.glb).
 
 O caminho todo:
   1. tools/escrivao_mixamo.ts exporta o Escrivão de código em pose A, numa malha só com a textura assada (Escrivao_cor.png),

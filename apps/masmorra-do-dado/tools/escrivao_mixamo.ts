@@ -78,7 +78,7 @@ function bakeToAtlas(root: THREE.Object3D) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
       } else {
         // triângulo sem mapeamento (todos os cantos no mesmo ponto da textura, como a tampa de trás do capuz): a cor daquele ponto da
-        // textura na casa inteira (antes era branco, e a tampa saía cinza; DESIGN.md §69)
+        // textura na casa inteira (antes era branco, e a tampa saía cinza; DESIGN.md §70)
         const sx = Math.min(t.iw - 1, Math.max(0, Math.floor(s0.x)));
         const sy = Math.min(t.ih - 1, Math.max(0, Math.floor(s0.y)));
         ctx.drawImage(t.img, sx, sy, 1, 1, cx, cy, cell, cell);

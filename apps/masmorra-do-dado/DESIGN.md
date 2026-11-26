@@ -1199,3 +1199,27 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   arte está no `DIRECAO_DE_ARTE.md` §9: só contam os furos REDONDOS de luz no teto; precisam ser exatamente 21 no jogo todo. Ainda não foram
   contados nem espalhados (tarefa do `cenografo`).
 - **Teste**: `window.__mdd.gem(id, primeira)` toca a cena com uma gema à frente dos olhos; `window.__mdd.gemState()`.
+
+## 70. O Escrivão animado (cenógrafo, animações do Pedro no Mixamo)
+
+- **O que é.** O mesmo Escrivão de `scribe.ts`, assado numa malha só (`tools/escrivao_mixamo.ts`), com o esqueleto e as animações que o Pedro fez no
+  Mixamo: *Start Walking* (andar) e *Standing Torch Inspect Downward* (olhar para baixo). Arquivo: `public/models/escrivao.glb` (424 KB), refeito por
+  `tools/escrivao_glb.py`. Código: `src/scene/scribeRig.ts`, com a mesma interface do de código (`Scribe`): as cenas não mudaram.
+- **Onde aparece.** Na cena do poço (ele chega andando, se debruça na mureta, tira o dado do manto, estende o braço sobre o furo e solta) e na
+  galeria vista pela janela de grade dos Nichos. Sentado na Galeria dos Condenados e no escritório da Biblioteca continua o de código (não há
+  animação de sentar). `?escrivao=antigo` volta ao de código em tudo; enquanto o arquivo não chega, aparece o de código.
+- **Como as animações viram a pose do jogo:**
+  - **andar**: o *Start Walking* é a partida (parado → dois passos). O jogo recorta o ciclo estável (1,15 s a 2,48 s), costura o fim no começo
+    (0,3 s) e tira o avanço da raiz (quem move o Escrivão é o jogo); o passo acompanha a velocidade pedida;
+  - **debruçar**: a inclinação escolhe o quadro do *olhar para baixo* (0 = de pé, 1 = debruçado aos 1,78 s); parado debruçado, um vaivém lento
+    até 2,35 s. A animação original segura uma tocha na mão esquerda: aqui essa mão fica sempre por código (junto do corpo, ou pousada na borda);
+  - **mão direita** (às costas, para dentro do manto; estendida sobre o meio do poço, a 1 m do corpo e 1,5 m do chão, de onde o dado cai) e
+    **cabeça** (giro somado) por código, com dois ossos (braço e antebraço);
+  - **olhos**: os dois quadrados acesos e o halo, presos ao osso da cabeça, nas mesmas medidas do de código;
+  - **pano**: Lambert com o brilho próprio de ~25% da cor, como o de código.
+- **Consertos no caminho.** A tampa de trás do capuz saía cinza: no Escrivão de código ela não tem mapeamento de textura e o assado a pintava de
+  branco. A textura foi repintada e a ferramenta não repete o erro. O mixer do three só reescreve um osso quando a animação muda: numa pose parada,
+  o giro somado por código se acumulava (a cabeça virava para trás); agora os ossos mexidos voltam à pose da animação a cada quadro.
+- **Prévia**: `?vitrine=escrivao` mostra os dois lado a lado (parado, andando, debruçado, erguendo o dado, e os dois girando). Para testar a cena do
+  poço: `?titulo=0&intro=poco` (pula o acordar, sem o dado) e tentar abrir a porta.
+- **Créditos**: tela de Créditos e `public/audio/CREDITS.txt` (Mixamo, Adobe).

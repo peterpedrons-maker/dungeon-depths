@@ -89,7 +89,9 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **Tela inicial do dado caído** (`DESIGN.md` §46): o dado reto no chão DE VERDADE do Poço (desenhado com a câmera da sala), no meio do entulho da própria sala (o dado do HUD é projetado no ponto `dieLie`), profundidade de campo com foco no dado (`uBlur`/`uFocus`), o olho seguindo o
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em
   pontilhado (`uDis`/`rtSnap`); créditos com a câmera girando. **Caixas** em pedra de 9 pedaços (`tools/build_frames.py` → `src/ui/frames.css`),
-  ouro no Escrivão, pensamento em tira de papel. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
+  ouro no Escrivão, pensamento em tira de papel. **O Escrivão animado** (`src/scene/scribeRig.ts`, `public/models/escrivao.glb`, `DESIGN.md` §70):
+  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos; mãos e
+  cabeça por código; `?escrivao=antigo` volta ao de código; prévia `?vitrine=escrivao`; `?intro=poco` testa a cena do poço. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).
   **Cenas** travam o olhar e escondem a mira (`lookLocked`/`onCine`); o dado caído da abertura chega de rosto para o jogador, de olhos fechados, e
