@@ -1268,3 +1268,46 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   claro lá em cima, uma luz fria e a poeira caindo no facho. O Poço ganhou o mesmo aro (`holeRim`). O cone de luz aditivo do Poço não foi copiado:
   com o teto alto e visto de lado, ele virava uma coluna cinza sólida no pixel.
 - **Quem mexer** numa sala com furo, ou fizer as do capítulo 2, atualiza esta tabela e o comentário do topo de `skyhole.ts`.
+
+## 73. O level design novo: a planta do capítulo 1 (proposta, Etapa 1; pedido do Pedro)
+
+- **O problema** (Pedro): o mundo era uma fila. Toda sala tinha a entrada na frente e a porta no meio do fundo, a próxima ficava logo atrás e o
+  jogador "sempre ia para a frente": sem virar, sem porta de lado, sem bifurcação, sem atalho de volta. O mapa do caderno era uma "cobra"
+  automática, com as salas do mesmo tamanho.
+- **O que fica:** o caminho continua sendo uma progressão só, na ordem da história (nada de escolher a ordem das salas). O que muda é a FORMA:
+  - o caminho vira, sobe e desce;
+  - as salas são giradas e algumas portas e entradas vão para as paredes dos lados;
+  - os corredores têm cotovelo;
+  - há desvios opcionais e atalhos secretos de volta (fechados agora, para abrir depois);
+  - o mapa segue o 3D exatamente (ele vai sair das posições reais das salas).
+- **A planta proposta** (`tools/planta/planta_cap1.py`; dados de cada sala em `tools/planta/salas.json`):
+  - **térreo:** uma espiral em volta da Biblioteca, que vira o centro. Começa no Poço (sudoeste), sobe pelo oeste (Vestíbulo, Lousa, Fio),
+    passa pela Cisterna (noroeste), corre pelo norte (Casa Escreve, Chama Curta), desce pelo leste (Confirma, Banhos) e entra no centro (Pano,
+    Biblioteca). Os Apelidos e a Ponte ficam no miolo do leste; a Ponte desce o fosso até o subsolo;
+  - **subsolo** (8 m abaixo): outra volta, por baixo (Boato Verdadeiro, Galeria, Sombra, Escuro, Lei Pequena), até a Escadaria;
+  - **o reencontro:** a Escadaria sai na passarela alta do Átrio da Biblioteca, aquela "sem acesso: as escadas desabaram". O jogador vê de cima
+    onde já esteve, e uma ponte alta leva às últimas salas;
+  - **as últimas salas** (2,5 m acima do térreo), em cata-vento em volta do claustro (21): Fogo que Corre, Antecâmara, Memória, Tribunal;
+  - **atalho:** do Tribunal ao Poço (secreto, fechado);
+  - **desvios opcionais:** dois lugares para salas pequenas de segredo, um ao norte da Chama Curta e outro no subsolo, ao lado da Galeria.
+    Continuam os desvios que já existem dentro das salas (alas e escritório da Biblioteca, câmaras dos Banhos, galeria da Cisterna, anexos da
+    Memória, câmara da Galeria).
+- **Os furos** (substitui o desenho por sala do §72): 21 no total, um por sala, soltos no teto. No mapa, os de cada grupo formam uma face:
+
+  | Face | Furos | Salas | Desenho no mapa |
+  |---|---|---|---|
+  | 1 | 1 | o Poço | sozinho |
+  | 2 | 2 | o Fio e a Lousa | diagonal curta |
+  | 3 | 3 | a Cisterna, a Biblioteca e os Banhos | diagonal longa, com a Biblioteca no meio |
+  | 4 | 4 | Fogo que Corre, Antecâmara, Memória e Tribunal | um em cada canto do claustro |
+  | 5 e 6 | 11 | capítulo 2 | — |
+
+  - O subsolo não tem furo.
+  - Nas salas com cal (que só aparece no escuro de punição), o céu do furo tem de escurecer junto com o escuro (Etapa 4).
+- **As etapas:**
+  1. esta planta;
+  2. o motor (salas com posição e giro, portas que dizem para onde levam, sala achada pela posição no plano, mapa gerado do 3D, salvamento
+     pelo nome da sala);
+  3. as portas de lado e os corredores com cotovelo e escada, mexendo em puzzle só onde for preciso, com verificador e `PUZZLES.md`;
+  4. os furos;
+  5. o teste completo.

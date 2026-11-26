@@ -4151,6 +4151,26 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       interact: () => interact(),
       interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: [+(camera.position.x - offs[curRoom].x).toFixed(2), +(camera.position.z - offs[curRoom].z).toFixed(2)] })),
       chat: (k: string) => { chatCool = 0; chatFn(k); },
+      // (para o desenho do mapa, DESIGN.md §73: a planta de cada sala no chão, em coordenadas da sala, sem o corredor da porta e sem o que fica lá fora)
+      footprints: () =>
+        rooms.map((r, i) => {
+          const box = new THREE.Box3();
+          const b = new THREE.Box3();
+          const inv = r.group.matrixWorld.clone().invert();
+          r.group.updateMatrixWorld(true);
+          r.group.traverse((o) => {
+            const m = o as THREE.Mesh;
+            if (!m.isMesh || !m.geometry) return;
+            if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+            b.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld).applyMatrix4(inv);
+            const c = b.getCenter(new THREE.Vector3());
+            const sz = b.getSize(new THREE.Vector3());
+            if (c.y > 14 || c.y < -12 || sz.x > 60 || sz.z > 80) return; // (o pátio lá fora do Poço, céus)
+            if (c.z < r.doorZ - 0.6 || c.z > r.entranceZ + 0.6) return; // (o corredor da porta e o de fora da entrada)
+            box.union(b);
+          });
+          return { i, n: r.name, x0: +box.min.x.toFixed(1), x1: +box.max.x.toFixed(1), z0: +box.min.z.toFixed(1), z1: +box.max.z.toFixed(1), y0: +box.min.y.toFixed(1), y1: +box.max.y.toFixed(1), door: r.doorZ, ent: r.entranceZ, entY: r.entranceY ?? 0, exitDy: r.exitDy ?? 0, offY: +offs[i].y.toFixed(1) };
+        }),
       rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1), x: +offs[i].x.toFixed(2), y: +offs[i].y.toFixed(2), door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
