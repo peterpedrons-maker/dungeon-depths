@@ -8,7 +8,7 @@ import { drawGlyph } from '../book/font';
 import { glyphsOf } from '../story/lexicon';
 
 import { CELL, GLYPH_SIZE, PAD } from './glyphcell';
-import { makeWordFire, type WordFire } from './firefx';
+import { makeWordGlow, type WordGlow } from './firefx';
 export { CELL, GLYPH_SIZE, PAD };
 const CAL = '#f1ebd9';
 const SULCO = '#15110f';
@@ -34,7 +34,7 @@ export interface InscriptionPanel {
   mesh: THREE.Mesh;
   mat: THREE.MeshLambertMaterial;
   fire?: number; // 0..1: a palavra foi acesa pelo Fogo (o fogo corre pelos sulcos e chamas dançam nela; valores parciais = brilho parcial)
-  wf?: WordFire; // o fogo desta palavra (criado na 1ª vez que ela acende; firefx.ts)
+  wf?: WordGlow; // a luz desta palavra (criada na 1ª vez que ela acende; firefx.ts)
 }
 
 export interface Inscription {
@@ -288,8 +288,8 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
     },
     extras: [...(plaqueMat ? [plaqueMat] : []), ...(leadMat ? [leadMat] : [])],
     setGlow(v) {
-      // (chamado a cada quadro pelo motor, nas salas ativas) a palavra ACESA ganha o fogo de verdade: ele corre pelos sulcos, traço por traço,
-      // e chamas dançam sobre ela (o mesmo fogo das frases acendíveis, DESIGN.md §55)
+      // (chamado a cada quadro pelo motor, nas salas ativas) a palavra ACESA brilha numa luz dourada: ela corre pelos sulcos, traço por traço,
+      // e depois fica, respirando (a mesma luz das frases acendíveis; DESIGN.md §55–§56)
       const now = performance.now() / 1000;
       const dt = Math.min(0.1, Math.max(0, now - lastT));
       lastT = now;
@@ -297,9 +297,9 @@ export function makeInscription(group: THREE.Group, o: InscribeOpts, surfaces: T
         panels.forEach((p, k) => {
           if (!p.id) return;
           const f = p.fire ?? 0;
-          p.mat.emissive.setRGB(1, 1 - 0.3 * f, 1 - 0.55 * f); // a cal em volta esquenta um pouco
+          p.mat.emissive.setRGB(1, 1 - 0.2 * f, 1 - 0.45 * f); // a cal em volta pega um pouco do dourado
           p.mat.emissiveIntensity = v + 0.35 * f;
-          if (f > 0.2 && !p.wf) p.wf = makeWordFire(p.mesh, p.id, normal, seed * 7 + k * 13);
+          if (f > 0.2 && !p.wf) p.wf = makeWordGlow(p.mesh, p.id, normal, seed * 7 + k * 13);
           p.wf?.update(f, p.mesh.visible, dt, now);
         });
       for (const m of ins.extras) m.emissiveIntensity = v;

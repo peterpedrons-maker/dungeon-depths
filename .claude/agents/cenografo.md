@@ -39,7 +39,8 @@ resolva o puzzle no navegador e atualize `PUZZLES.md`.
 - **`rooms/shell.ts`**: `roomShell`, `stairs` (escada em z), `stairsX` (em x), `slopedWall` (mureta que acompanha a subida), `wedge` (rampas,
   cunhas), `mkBox`, `shotGate`.
 - **`firegrid.ts`**: `makeWallBoard`, `makeFloorChannel`, `makeTorch` (tochas que se apagam), `makeRiser`, `makeGemNiche`, `makeFuse`,
-  `makeCloth`; **`brazier.ts`** (`makeBrazier`); **`cal.ts`** (`makeCal`, escrita que só aparece no escuro); **`burnline.ts`** (frase acendível).
+  `makeCloth`; **`brazier.ts`** (`makeBrazier`); **`cal.ts`** (`makeCal`, escrita que só aparece no escuro); **`burnline.ts`** (frase acendível);
+  **`firefx.ts`** (a luz dourada de qualquer palavra talhada que acende).
 - **`FireSpec`** (`rooms/fire.ts`): `pillars`, `tablets`, `cloths`, `torches: 'few'`, `sky`, `doorY`, `fog`, `ambient`, e o gancho `extra`
   (onde a sala põe a sua arquitetura e o seu cenário próprios).
 - Texturas são **procedurais** (canvas; `src/scene/textures.ts`), sem arquivos de imagem.
@@ -61,7 +62,8 @@ Estes sinais têm significado no jogo; **nunca os use como enfeite**:
 - **rachaduras com brasas no chão** = algo escondido vai subir dali;
 - **soquete frio** (pedra sem brasa) = acendível, mas algo falta;
 - **cal verde-limão** = só aparece no ESCURO da Casa;
-- **fissuras com fuligem velha acima** = frase acendível apagada; **glifos em fogo** = frase acesa;
+- **fissuras com fuligem velha acima** (sem brilho) = frase acendível apagada; **glifos brilhando em dourado** = escrita acesa pela Casa/pelo
+  Fogo (não use dourado luminoso em escrita decorativa);
 - **tocha num poste/parede em sala de constelação** = pode contar para o puzzle (não acrescente tochas acendíveis ali);
 - **moldura talhada em volta da frase** = confirmada; **frase gasta** = boato.
 Tochas de decoração ficam **a 1,6 m ou mais de qualquer escrita** e acima dela (não ofuscam nem competem). Nada brilhante perto de um alvo

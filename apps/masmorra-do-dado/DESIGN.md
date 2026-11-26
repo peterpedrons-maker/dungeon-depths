@@ -892,3 +892,14 @@ iguais) e era difícil acertar (mirava-se o soquete, de 15 cm, e o toque só val
 - Apagadas, essas palavras **continuam de cal** (são textos para ler); só as frases ACENDÍVEIS (tabletes `lit`) são fissuras na pedra (§54).
 - As peças do fogo (shaders das chamas e brasas, o traço em brasa, a mancha macia) moram em `firefx.ts` e são as mesmas das frases acendíveis
   (`burnline.ts`); as medidas da célula de um glifo, em `glyphcell.ts`.
+
+## 56. Luz no lugar do fogo nos glifos (pedido do Pedro)
+O fogo de verdade nas letras (§54–§55) deformava o glifo: as chamas por cima mudavam o desenho e confundiam a leitura. Trocado por **luz**:
+- **Acesa:** o glifo continua **nítido**, no desenho exato (o traço aceso é só um pouco mais largo que o sulco), e **brilha num dourado meio
+  mágico**: miolo quase branco, borda dourada, cor > 1 (o bloom faz o brilho). A luz aparece **traço por traço**, na ordem da escrita (0,2 s por
+  símbolo), e depois fica: **respira** devagar e um **reflexo corre** ao longo dos traços. Halo dourado macio na pedra e uma luz de verdade.
+- **Apagada (frases dos puzzles):** fissura na pedra **sem brilho nenhum**. Saiu a "brasa adormecida" que reluzia de vez em quando; fica só a
+  mancha velha de fuligem acima (não brilha) e a brasa do soquete/prateleira (o sinal de "isto pode ser aceso", §25).
+- **Ao apagar:** a luz esmaece em âmbar e some; na punição, a fuligem de ~2 s continua.
+- Vale para as frases acendíveis (`burnline.ts`) e para **toda palavra talhada que acende** (`makeWordGlow` em `firefx.ts`, via `p.fire`;
+  palavras de cal continuam de cal quando apagadas). Saíram as chamas e as brasas (os `Points` com shader).
