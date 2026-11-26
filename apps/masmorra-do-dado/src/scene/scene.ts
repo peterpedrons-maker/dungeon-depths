@@ -56,7 +56,8 @@ import { buildApelidos } from './rooms/apelidos';
 import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
-import { makeScribe, type ScribePose } from './scribe';
+import { type ScribePose } from './scribe';
+import { makeScribeRig, preloadScribeRig } from './scribeRig';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
@@ -1060,7 +1061,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let fovCine = 0; // > 0: campo de visão da cena (zoom)
   let cineCam: null | { pos: THREE.Vector3; look: THREE.Vector3 } = null; // câmera de cinema, solta do jogador
   let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean } = null;
-  let topScribe: ReturnType<typeof makeScribe> | null = null;
+  let topScribe: ReturnType<typeof makeScribeRig> | null = null;
+  void preloadScribeRig(); // o Escrivão animado (DESIGN.md §69) começa a baixar já: a cena do poço vem logo
   let scribeDie: THREE.Object3D | null = null;
   const outdoor = new THREE.DirectionalLight(0xd8dcf4, 0); // luz da madrugada lá fora (só acesa nos planos de fora)
   scene.add(outdoor, outdoor.target);
@@ -1119,7 +1121,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const startScribeDrop = (done: () => void) => {
     const sh = shaftWorld();
     if (!topScribe) {
-      topScribe = makeScribe();
+      topScribe = makeScribeRig({ fog: false });
       // sem a névoa da sala e com o manto um pouco aceso: de baixo, a silhueta (capuz, vazio do rosto, braço) se lê contra o céu
       topScribe.group.traverse((o) => {
         const m = (o as THREE.Mesh).material as THREE.MeshLambertMaterial | undefined;
@@ -2941,7 +2943,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   {
     // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
     const q = new URLSearchParams(location.search);
-    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
+    // (?intro=poco: pula o acordar, mas sem o dado: para testar a cena do poço, que começa ao tentar abrir a porta)
+    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0' || q.get('intro') === 'poco') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
     if (q.has('demo')) {
       progress.noSave();
       for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz'] as const) progress.set(f);
@@ -2951,6 +2954,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (q.get('intro') === '0') {
       progress.noSave();
       for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
+    } else if (q.get('intro') === 'poco') {
+      progress.noSave();
+      progress.set('intro');
     }
     hasDie = progress.has('dado');
     hasChalk = CHALK_OK && progress.has('giz');

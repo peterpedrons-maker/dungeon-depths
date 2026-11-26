@@ -51,6 +51,12 @@ Modelo 3D (public/models/tocha.glb)
     a 128 px, com a oclusão do próprio modelo multiplicada na cor, materiais trocados
     (tools/tocha_glb.py).
 
+O Escrivão animado (public/models/escrivao.glb)
+  - O modelo é o Escrivão do próprio jogo (src/scene/scribe.ts), assado numa malha só
+    (tools/escrivao_mixamo.ts). Esqueleto e animações ("Start Walking" e "Standing Torch
+    Inspect Downward") feitos no Mixamo (mixamo.com, Adobe), cujos termos permitem o uso
+    em jogos. Montagem: tools/escrivao_glb.py.
+
 Objetos 3D (public/models/props_q.glb e props_t.glb; prévias)
   - Fantasy Props MegaKit (Standard) — Quaternius (quaternius.com), CC0 1.0.
   - Medieval Tavern Props Pack — System G6 / Qoma (opengameart.org/content/medieval-tavern-props-pack), CC0.

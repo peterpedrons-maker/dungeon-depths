@@ -6,8 +6,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Kit } from '../kit';
 import { makeScribe } from '../scribe';
+import { makeScribeRig } from '../scribeRig';
 import { flagstones, floorPlane, masonry, reliefMat, ST, stoneBox } from '../arch';
 import { loadPack, propInstance, T_HEIGHT } from '../props';
+import { adoptLayers } from '../models';
 import type { Ctx, Room } from '../types';
 
 // [pack, nome] por baia (agrupados por tipo)
@@ -42,8 +44,13 @@ const BIB_BAYS: [string, string[]][] = [
 ];
 // alturas em metros (os modelos desses packs não têm escala de verdade)
 const BIB_H: Record<string, number> = { Estante_Livros_1: 2.1, Estante_Livros_2: 2.1, Estante_Livros_3: 2.1, Estante_Livros_4: 2.2, Vela_Pires: 0.2, Vela_Curta: 0.24, Vela_Alta: 0.42, Candelabro: 1.75 };
+// ?vitrine=escrivao: o Escrivão de código ao lado do ANIMADO (DESIGN.md §69): parado, andando, debruçado, erguendo o dado, e os dois girando
+const ESC_BAYS: [string, string[]][] = [
+  ['*', ['scribe:parado', 'rig:parado', 'rig:andando', 'rig:debrucado']],
+  ['*', ['scribe:gira', 'rig:gira', 'rig:ergue']],
+];
 const MODE = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('vitrine') : null;
-const ALL_BAYS = MODE === 'bib' ? BIB_BAYS : BAYS;
+const ALL_BAYS = MODE === 'bib' ? BIB_BAYS : MODE === 'escrivao' ? ESC_BAYS : BAYS;
 
 // um personagem animado (cópia com esqueleto próprio), na altura de uma pessoa, com o material Lambert do jogo (nearest)
 const EYE_Y = Number(new URLSearchParams(location.search).get('oy') ?? 0.42);
@@ -146,9 +153,28 @@ export function buildVitrine(_ctx: Ctx): Room {
       const [pk, nm, clip] = pack === '*' ? (n.split(':') as [string, string, string?]) : [pack, n];
       if (pk === 'scribe') {
         const sc = makeScribe();
-        sc.group.scale.setScalar(0.92);
-        anims.push((dt, t) => sc.animate(dt, t, { walk: 0, lean: 0.1, headPitch: 0.1, reach: 0 }));
-        return { n: 'Escrivão atual', obj: sc.group as THREE.Group, size: new THREE.Vector3(0.9, 1.8, 0.6) };
+        if (MODE !== 'escrivao') sc.group.scale.setScalar(0.92);
+        const spin = nm === 'gira';
+        anims.push((dt, t) => {
+          sc.animate(dt, t, { walk: 0, lean: MODE === 'escrivao' ? 0 : 0.1, headPitch: 0.1, reach: 0 });
+          if (spin) sc.group.rotation.y = t * 0.6;
+        });
+        return { n: 'Escrivão de código', obj: sc.group as THREE.Group, size: new THREE.Vector3(0.9, MODE === 'escrivao' ? 2.25 : 1.8, 0.6) };
+      }
+      if (pk === 'rig') {
+        const sc = makeScribeRig();
+        const holder = new THREE.Group();
+        holder.add(sc.group);
+        void sc.ready.then((ok) => ok && adoptLayers(kit.group, sc.group));
+        anims.push((dt, t) => {
+          const k = (t * 0.25) % 1;
+          if (nm === 'andando') sc.animate(dt, t, { walk: 0.8 });
+          else if (nm === 'debrucado') sc.animate(dt, t, { lean: 1, rest: 1, headPitch: 0 });
+          else if (nm === 'ergue') sc.animate(dt, t, { lean: 0.8, rest: 0.6, raise: k > 0.5 ? 1 : 0, back: k < 0.25 ? 1 : 0 });
+          else sc.animate(dt, t, { walk: 0, headPitch: 0.1 });
+          if (nm === 'gira') sc.group.rotation.y = t * 0.6;
+        });
+        return { n: `Escrivão animado · ${nm}`, obj: holder, size: new THREE.Vector3(0.9, 2.25, 0.6) };
       }
       if (pk === 'char') {
         const src = await loadChar(nm);

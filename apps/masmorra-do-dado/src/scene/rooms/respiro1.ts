@@ -14,7 +14,8 @@ import { buildDoor, buildEntrance, Kit, lambert, T } from '../kit';
 import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { makeGemNiche, makeWallBoard } from '../firegrid';
-import { makeScribe } from '../scribe';
+import { makeScribeRig } from '../scribeRig';
+import { adoptLayers } from '../models';
 import { diary, diaryStore } from '../../story/diary';
 import { drawGlyph } from '../../book/font';
 import { glyphsOf } from '../../story/lexicon';
@@ -276,7 +277,8 @@ export function buildRespiro1(ctx: Ctx): Room {
     kit.plane(7.5, 14, brick(7.5, 14, 48), -10.75, 3.6, wz, Math.PI / 2, 0, false);
     for (const dz of [-4, 0, 4]) kit.torch(-14.4, 1.8, wz + dz, 1, 0, dz);
   }
-  const scribe = makeScribe();
+  const scribe = makeScribeRig(); // (o animado, DESIGN.md §69; chega depois da sala montada: entra na camada dela)
+  void scribe.ready.then((ok) => ok && adoptLayers(kit.group, scribe.group));
   scribe.group.position.set(-13, 0.2, cz(4) + 4);
   scribe.group.rotation.y = Math.PI; // anda para -z
   scribe.group.visible = false;
@@ -595,7 +597,7 @@ export function buildRespiro1(ctx: Ctx): Room {
       } else {
         scribeT += dt / 9;
         scribe.group.position.z = cz(4) + 4 - 8 * scribeT;
-        scribe.animate(dt, t, { walk: 1.1, headYaw: Math.sin(scribeT * 6) * 0.2 });
+        scribe.animate(dt, t, { walk: 8 / 9, headYaw: Math.sin(scribeT * 6) * 0.2 }); // (a velocidade de verdade: 8 m em 9 s)
         scribe.setAlpha(Math.min(1, Math.min(scribeT, 1 - scribeT) * 8));
         if (scribeT >= 1) {
           scribeT = -1;
