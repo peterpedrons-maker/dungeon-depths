@@ -85,7 +85,7 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     (c) => buildFireRoom(c, FIRE_ESCURO), // NÍVEL 7. O ESCURO: errar de propósito; no escuro de 4 s, a cal no teto dá a ordem
     (c) => buildFireRoom(c, FIRE_LEI), // NÍVEL 8. A LEI PEQUENA: a sala sobe; «UM BOATO IGUAL VERDADE», dois boatos que dizem o mesmo
     buildRespiro4, // RESPIRO R4 A ESCADARIA: o poço com três lances; janelas para salas já feitas; a porta dos seis pontos (fechada)
-    (c) => buildFireRoom(c, FIRE_FOGO_CORRE), // NÍVEL 8. O FOGO QUE CORRE: 4 s de chama, uma vez; canaletas com tempo; os quatro cantos num instante (+ C5)
+    (c) => buildFireRoom(c, FIRE_FOGO_CORRE), // NÍVEL 8. O FOGO QUE CORRE: 5,5 s de chama, uma vez; canaletas com tempo; os quatro cantos num instante (+ C5)
     (c) => buildFireRoom(c, FIRE_DIZEM), // NÍVEL 9. OS QUE DIZEM O MESMO: claustro; queimar UM estandarte (o boato sai da conta) e acender na ordem (+ C6)
     buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (ensina a sala seguinte)
     (c) => buildFireRoom(c, FIRE_MEMORIA), // NÍVEL 9. A MEMÓRIA DA CASA: hub + três anexos; a confirmada escondida no quadro vazio (soquete frio → escuro)

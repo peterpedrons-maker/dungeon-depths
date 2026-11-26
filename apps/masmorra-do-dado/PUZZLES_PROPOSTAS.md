@@ -1266,6 +1266,8 @@ cantos. Quando tudo se apaga sem acertar, a Casa pune (escuro) e reabastece o ó
 **Por que é única** (`node tools/verify_fogo_corre.mjs`): uma ignição só nunca basta; de todos os pares ordenados, **só centro → canto 6**
 funciona, com a janela de 1,5 a 5,5 s; acender os dois juntos falha.
 
+> **No jogo:** a chama passou de 4 s para **5,5 s**, e a janela foi para **3 a 7 s**. Com 4 s, a janela terminava antes de o dado voltar à mão e ser arremessado de novo (uns 3 a 4 s). A solução continua única (`tools/verify_fogo_corre.mjs`).
+
 **Constelação C5 (camada 2, só Fogo):** quando uma tentativa falha, o escuro mostra, no teto, o glifo **MENOS** (a fileira do meio, três pontos).
 Acender as tochas dos **postes das três plataformas do meio** (casas 3, 4, 5), nenhuma outra: o braseiro secreto sobe na plataforma central
 (gema + diário). 1 conjunto aceito entre 4096.

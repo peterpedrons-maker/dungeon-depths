@@ -475,13 +475,13 @@ export const FIRE_LEI: FireSpec = {
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 // SALA 15 · O FOGO QUE CORRE (nível 8; tools/verify_fogo_corre.mjs; Ficha 8)
 // Salão aberto com nove plataformas em grade 3×3, em alturas diferentes, um braseiro em cada. Canaletas descem de uma plataforma a outra (a altura
-// mostra o sentido) e cada uma leva um TEMPO (reta e curta 1 s; com uma volta 2 s; em zigue-zague 3 s). Cada braseiro queima SÓ 4 s e SÓ UMA VEZ por
+// mostra o sentido) e cada uma leva um TEMPO (reta e curta 1 s; com uma volta 2 s; em zigue-zague 3 s). Cada braseiro queima SÓ 5,5 s e SÓ UMA VEZ por
 // tentativa (o óleo acaba: o pote fica vazio). A porta («ACENDER DOIS BRASEIRO TEMPO» + QUATRO talhado) abre se, num instante, os acesos forem
-// EXATAMENTE os quatro cantos. Quando tudo se apaga sem acertar: escuro e a Casa reabastece. Solução: fogo no centro; ~3 s depois, no canto da
-// frente à esquerda (janela de 1,5 a 5,5 s).
+// EXATAMENTE os quatro cantos. Quando tudo se apaga sem acertar: escuro e a Casa reabastece. Solução: fogo no centro; ~4 a 5 s depois, no canto da
+// frente à esquerda (janela de 3 a 7 s: o dado leva uns 3 a 4 s para voltar à mão e ser arremessado de novo, então a janela fica no meio desse tempo).
 // C5: tochas nos nove postes + 3 de parede; no escuro de uma tentativa que falhou, MENOS em cal no teto; acender os postes do meio (3, 4, 5).
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-const FC = { hx: 9, z0: -18, h: 9, burn: 4 };
+const FC = { hx: 9, z0: -18, h: 9, burn: 5.5 };
 const FC_X = [-5, 0, 5];
 const FC_DZ = [4.2, 9.2, 14.2]; // linha 0 = a do fundo (perto da porta)
 const FC_HY = [0.25, 0.55, 0.25, 1.85, 1.0, 1.0, 1.85, 1.4, 0.25]; // altura de cada plataforma (o fogo só desce)
@@ -614,7 +614,7 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
   // luz alta e fria para o salão; os braseiros fazem o resto
   for (const [x, z] of [[X0 + 0.1, Z0 + 2.5], [X1 - 0.1, Z0 + 7.5], [X0 + 0.1, Z0 + 12], [X1 - 0.1, Z0 + 17]] as [number, number][]) kit.torch(x, 4.6, z, x < 0 ? 1 : -1, 0, x + z, 0xb8c4f0, 24);
 
-  // ── a regra: queima 4 s, uma vez; o fogo corre; os quatro cantos sozinhos num instante ──
+  // ── a regra: queima 5,5 s, uma vez; o fogo corre; os quatro cantos sozinhos num instante ──
   const used = Array(9).fill(false);
   const left = Array(9).fill(0);
   let refill = -1;
@@ -644,7 +644,7 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
       const p = ctx.paused();
       const step = p ? 0 : dt;
       if (!api.solved() && refill < 0) for (let i = 0; i < 9; i++) if (braziers[i].touched() && !used[i]) ignite(i);
-      // o óleo: 4 s de chama; a chama encolhe no último segundo e meio
+      // o óleo: 5,5 s de chama; a chama encolhe no último segundo e meio
       for (let i = 0; i < 9; i++) {
         if (!braziers[i].lit) continue;
         left[i] -= step;
