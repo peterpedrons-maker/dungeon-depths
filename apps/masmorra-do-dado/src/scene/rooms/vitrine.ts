@@ -2,7 +2,10 @@
 // Vestíbulo (tochas com sombra de verdade, chão de lajes, cantaria com relevo). Cada "baia" é uma fileira de objetos diante de um muro;
 // `window.__vitrine()` devolve onde pôr a câmera em cada baia (para as capturas). Nada é salvo.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Kit } from '../kit';
+import { makeScribe } from '../scribe';
 import { flagstones, floorPlane, masonry, reliefMat, ST, stoneBox } from '../arch';
 import { loadPack, propInstance, T_HEIGHT } from '../props';
 import type { Ctx, Room } from '../types';
@@ -26,8 +29,83 @@ const BAYS: [string, string[]][] = [
   ['t', ['table_wood', 'table_wood_round', 'chair_wood', 'shelf_wood', 'bar_counter']],
   ['t', ['candle_plate', 'plate_wood', 'tankard_wood']],
 ];
+// ?vitrine=bib: a prévia da BIBLIOTECA (pedido do Pedro): estantes com livros, livros, velas e candelabros, e os candidatos a Escrivão em
+// modelo 3D com animação. Os nomes com "pack:" escolhem o pack de cada objeto; "char:arquivo:animação" é um personagem animado
+const BIB_BAYS: [string, string[]][] = [
+  ['*', ['bib:Estante_Livros_1', 'bib:Estante_Livros_2', 'bib:Estante_Livros_3', 'bib:Estante_Livros_4']],
+  ['*', ['qv:Bookcase_2', 'qv:Shelf_Arch', 'qv:BookStand', 'qv:Table_Large']],
+  ['*', ['qv:BookGroup_Medium_1', 'qv:BookGroup_Medium_3', 'qv:Book_Stack_1', 'qv:Book_7', 'qv:Scroll_2']],
+  ['*', ['bib:Vela_Pires', 'bib:Vela_Curta', 'bib:Vela_Alta', 'qv:Candle_1', 'qv:Candle_2', 'qv:CandleStick']],
+  ['*', ['bib:Candelabro', 'qv:CandleStick_Stand', 'qv:CandleStick_Triple', 'qv:Chandelier']],
+  ['*', ['scribe:atual', 'char:escrivao_rogue:Idle', 'char:escrivao_rogue:Walk', 'char:rpg_wizard:Idle']],
+  ['*', ['char:escrivao_rogue:PickUp', 'char:escrivao_rogue:Run', 'char:rpg_wizard:Spell1', 'char:rpg_wizard:Walk']],
+];
+// alturas em metros (os modelos desses packs não têm escala de verdade)
+const BIB_H: Record<string, number> = { Estante_Livros_1: 2.1, Estante_Livros_2: 2.1, Estante_Livros_3: 2.1, Estante_Livros_4: 2.2, Vela_Pires: 0.2, Vela_Curta: 0.24, Vela_Alta: 0.42, Candelabro: 1.75 };
+const MODE = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('vitrine') : null;
+const ALL_BAYS = MODE === 'bib' ? BIB_BAYS : BAYS;
+
+// um personagem animado (cópia com esqueleto próprio), na altura de uma pessoa, com o material Lambert do jogo (nearest)
+const EYE_Y = Number(new URLSearchParams(location.search).get('oy') ?? 0.42);
+const EYE_Z = Number(new URLSearchParams(location.search).get('oz') ?? 0.22);
+const charCache = new Map<string, Promise<{ scene: THREE.Group; clips: THREE.AnimationClip[] }>>();
+function loadChar(file: string) {
+  let p = charCache.get(file);
+  if (!p) {
+    const base = (import.meta as unknown as { env: { BASE_URL: string } }).env.BASE_URL;
+    p = new Promise((res, rej) => new GLTFLoader().load(`${base}models/_vitrine/${file}.glb`, (g) => res({ scene: g.scene, clips: g.animations }), undefined, rej));
+    charCache.set(file, p);
+  }
+  return p;
+}
+function charInstance(src: THREE.Group, file: string) {
+  const c = cloneSkinned(src) as THREE.Group;
+  c.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const sm = m.material as THREE.MeshStandardMaterial;
+    if (sm.map) {
+      sm.map.magFilter = THREE.NearestFilter;
+      sm.map.minFilter = THREE.NearestMipmapNearestFilter;
+    }
+    m.material = new THREE.MeshLambertMaterial({ map: sm.map, side: THREE.DoubleSide });
+    m.castShadow = true;
+    m.receiveShadow = true;
+    m.frustumCulled = false;
+  });
+  c.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(c);
+  // o Escrivão: dois olhos quadrados acesos dentro do capuz, presos ao osso da cabeça (seguem a animação)
+  if (file.startsWith('escrivao')) {
+    let head: THREE.Bone | null = null;
+    c.traverse((o) => {
+      if ((o as THREE.Bone).isBone && /^head$/i.test(o.name)) head = o as THREE.Bone;
+    });
+    const face = c.getObjectByName('Face');
+    if (head && face) {
+      const fb = new THREE.Box3().setFromObject(face);
+      const eyeM = new THREE.MeshBasicMaterial({ color: 0xffe9a0, fog: false });
+      const hb = head as THREE.Bone;
+      const s = (fb.max.y - fb.min.y) * 0.075;
+      for (const sx of [-1, 1]) {
+        const e = new THREE.Mesh(new THREE.BoxGeometry(s, s, s * 0.4), eyeM);
+        const wp = new THREE.Vector3((fb.min.x + fb.max.x) / 2 + sx * s * 1.1, fb.min.y + (fb.max.y - fb.min.y) * EYE_Y, fb.max.z - (fb.max.z - fb.min.z) * EYE_Z);
+        hb.add(e);
+        e.position.copy(hb.worldToLocal(wp));
+        e.scale.divide(hb.getWorldScale(new THREE.Vector3()));
+      }
+    }
+  }
+  const k = 1.8 / Math.max(0.01, box.max.y - box.min.y);
+  c.scale.multiplyScalar(k);
+  const g = new THREE.Group();
+  c.position.y = -box.min.y * k;
+  g.add(c);
+  return { obj: g, root: c, size: new THREE.Vector3((box.max.x - box.min.x) * k, 1.8, (box.max.z - box.min.z) * k) };
+}
+
 // no máximo 4 objetos por baia (para a câmera chegar perto)
-const CHUNKS: [string, string[]][] = BAYS.flatMap(([pk, ns]) => {
+const CHUNKS: [string, string[]][] = ALL_BAYS.flatMap(([pk, ns]) => {
   const out: [string, string[]][] = [];
   const n = Math.ceil(ns.length / 4);
   const per = Math.ceil(ns.length / n);
@@ -39,6 +117,7 @@ export const VITRINE_BAYS = CHUNKS;
 export function buildVitrine(_ctx: Ctx): Room {
   const kit = new Kit('ruin');
   kit.lively = true;
+  const anims: ((dt: number, t: number) => void)[] = []; // (os personagens animados)
   const GAP = 14;
   const N = CHUNKS.length;
   const Z1 = 14;
@@ -53,7 +132,7 @@ export function buildVitrine(_ctx: Ctx): Room {
   ceil.rotation.x = Math.PI; // (olhando para baixo)
   ceil.position.set(0, 10, Z0 + Z1);
   kit.add(ceil);
-  const info: { bay: number; names: string[]; cam: [number, number, number, number] }[] = [];
+  const info: { bay: number; names: string[]; cam: [number, number, number, number]; xs: number[]; z: number }[] = [];
   CHUNKS.forEach(([pack, names], i) => {
     const z = -2 - i * GAP;
     // o muro de fundo da baia (esconde as outras), duas tochas com sombra e uma luz de frente fraca
@@ -63,12 +142,29 @@ export function buildVitrine(_ctx: Ctx): Room {
     kit.torch(3.6, 2.0, z - 1.65, 0, 1, i * 0.7 + 1.3);
     kit.emitters.slice(e0).forEach((e) => (e.shadow = true));
     kit.light(0, 2.6, z + 2.2, 0xffd2a0, 14);
-    loadPack(pack).then((p) => {
-      const items = names.map((n) => {
-        const tpl = p.get(n);
-        if (!tpl) return null;
-        return { n, ...propInstance(tpl, pack === 't' ? T_HEIGHT[n] : undefined) };
-      });
+    const one = async (n: string): Promise<{ n: string; obj: THREE.Group; size: THREE.Vector3 } | null> => {
+      const [pk, nm, clip] = pack === '*' ? (n.split(':') as [string, string, string?]) : [pack, n];
+      if (pk === 'scribe') {
+        const sc = makeScribe();
+        sc.group.scale.setScalar(0.92);
+        anims.push((dt, t) => sc.animate(dt, t, { walk: 0, lean: 0.1, headPitch: 0.1, reach: 0 }));
+        return { n: 'Escrivão atual', obj: sc.group as THREE.Group, size: new THREE.Vector3(0.9, 1.8, 0.6) };
+      }
+      if (pk === 'char') {
+        const src = await loadChar(nm);
+        const inst = charInstance(src.scene, nm);
+        const mixer = new THREE.AnimationMixer(inst.root);
+        const c = src.clips.find((x) => x.name === clip) ?? src.clips[0];
+        if (c) mixer.clipAction(c).play();
+        anims.push((dt) => mixer.update(dt));
+        return { n: `${nm} · ${clip}`, obj: inst.obj, size: inst.size };
+      }
+      const p = await loadPack(pk);
+      const tpl = p.get(nm);
+      if (!tpl) return null;
+      return { n: nm, ...propInstance(tpl, pk === 't' ? T_HEIGHT[nm] : BIB_H[nm]) };
+    };
+    Promise.all(names.map(one)).then((items) => {
       const ok = items.filter((x) => x) as { n: string; obj: THREE.Group; size: THREE.Vector3 }[];
       const maxH = Math.max(...ok.map((x) => x.size.y));
       const gap = Math.max(0.25, ok.reduce((a, x) => a + x.size.x, 0) * 0.12);
@@ -77,14 +173,16 @@ export function buildVitrine(_ctx: Ctx): Room {
       const lift = maxH < 0.5 ? 0.8 : 0;
       if (lift) kit.add(stoneBox(W + 0.8, lift, 1.4, plinthM, 0, lift / 2, z));
       let x = -W / 2;
+      const xs: number[] = [];
       for (const it of ok) {
         it.obj.position.set(x + it.size.x / 2, lift, z);
+        xs.push(+(x + it.size.x / 2).toFixed(2));
         kit.group.add(it.obj);
         x += it.size.x + gap;
       }
       const cy = lift + maxH / 2;
       const dist = Math.min(GAP - 3, Math.max(1.5, (W / 2) / 0.78, maxH * 1.25));
-      info[i] = { bay: i, names: ok.map((o) => o.n), cam: [0, z + dist, 0, Math.atan2(cy - 1.55, dist)] };
+      info[i] = { bay: i, names: ok.map((o) => o.n), cam: [0, z + dist, 0, Math.atan2(cy - 1.55, dist)], xs, z };
     });
   });
   (window as unknown as { __vitrine: () => unknown }).__vitrine = () => info;
@@ -118,6 +216,7 @@ export function buildVitrine(_ctx: Ctx): Room {
     holdsDie: () => false,
     update(dt, t) {
       kit.tick(dt, t);
+      for (const a of anims) a(dt, t);
     },
     reset() {},
     dispose() {},

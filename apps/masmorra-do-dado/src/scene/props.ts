@@ -14,6 +14,7 @@ export const PACK_URL: Record<string, string> = {
   q: 'models/props_q.glb',
   t: 'models/props_t.glb',
   qv: 'models/_vitrine/props_q.glb',
+  bib: 'models/_vitrine/bib.glb', // (prévia da biblioteca: estantes com livros, velas, candelabro; fora do repositório)
 };
 
 type Pack = Map<string, THREE.Object3D>;
