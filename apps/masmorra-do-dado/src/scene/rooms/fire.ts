@@ -28,7 +28,9 @@ export type FireRule =
   | { kind: 'secret'; seq: number[] }
   // CONFIRMAR NA PLACA: o jogador acende os braseiros que quiser (ficam acesos) e então pesa a placa com o Peso. A placa avalia o conjunto
   // aceso: se for exatamente `lit` (índices em `braziers`), a porta abre; senão ela ABAFA o fogo (apaga todos) e os braseiros ficam frios um tempo.
-  | { kind: 'commit'; lit: number[]; penalty?: number };
+  | { kind: 'commit'; lit: number[]; penalty?: number }
+  // a SALA decide (peças `extra`): o construtor não acende nem julga nada; o `extra` usa `api.markSolved()` e `api.punish()`
+  | { kind: 'custom'; lamps?: number };
 
 export interface FireBrazier {
   x: number; // a partir do centro da sala
@@ -38,6 +40,7 @@ export interface FireBrazier {
   scale?: number; // tamanho do braseiro (maior = chama que dura mais, quando a sala usa `burn`)
   burn?: number; // segundos que a chama dura (sem isso, fica acesa)
   hidden?: boolean; // pilar escondido sob o chão: só sobe quando a trava (`FireSpec.lock`) é resolvida
+  y?: number; // altura do chão sob o braseiro (mezanino, pedestal, plataforma)
 }
 
 // uma linha de um parágrafo (uma frase completa, que termina numa marca: CONFIRMADO, BOATO...)
@@ -90,6 +93,11 @@ export interface FireExtraApi {
   braziers: Brazier[];
   solved(): boolean; // a porta já abriu?
   glow(id: string, target: number, dt: number): void; // brilho de uma palavra da frase da porta
+  markSolved(): void; // (regra `custom`) a porta abre
+  punish(cold?: number): void; // (regra `custom`) a Casa pune: apaga os braseiros, ESCURO, e eles ficam frios `cold` segundos
+  cold(): number; // segundos de frio que ainda faltam
+  lamps: THREE.MeshBasicMaterial[]; // os lampiões da porta
+  cloths: { burned(): boolean[]; burning(): boolean[]; restore(): void }; // os panos do construtor (`spec.cloths`)
 }
 export interface FireExtra {
   update?(dt: number, t: number): void;
@@ -97,6 +105,10 @@ export interface FireExtra {
   bonus?(): boolean;
   rects?(): Rect[];
   interactables?: Interactable[];
+  accept?(): boolean; // (regra `order`) no último braseiro certo, a sala ainda aceita? (senão é erro, como um braseiro fora de ordem)
+  floorY?(x: number, z: number, feet: number): number; // chão com alturas (plataformas, rampa)
+  dieFloor?(x: number, z: number): number;
+  clampDie?(p: THREE.Vector3, vel: THREE.Vector3, e: number, R: number): void;
 }
 
 export interface FireSpec {
@@ -125,6 +137,7 @@ export interface FireSpec {
   extra?: (api: FireExtraApi) => FireExtra;
   fog?: { color: string; near: number; far: number };
   ambient?: { color: number; intensity: number };
+  doorY?: number; // a porta de saída fica num andar alto (mezanino): a sala seguinte começa nessa altura
 }
 
 // brasa fraca (um pontinho laranja) para o soquete das frases acendíveis
@@ -236,8 +249,9 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const wallL = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
   const wallR = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
 
-  const steps = spec.rule.kind === 'commit' ? 1 : spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: Math.min(5, steps), connected: true, theme });
+  const steps = spec.rule.kind === 'custom' ? (spec.rule.lamps ?? 1) : spec.rule.kind === 'commit' ? 1 : spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
+  const DY = spec.doorY ?? 0;
+  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: DY, h: H - DY, lamps: Math.min(5, steps), connected: true, theme });
 
   // colunas (também seguram o dado)
   const boxes: Box[] = [];
@@ -257,9 +271,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const units = phraseUnits(spec.words) + LEAD_UNITS;
   const avail = sign === 'back' ? spec.hx - 1.5 : L - 3;
   const size = Math.min(0.5, avail / units);
-  const ins =
-    sign === 'back'
-      ? kit.inscribe({ words: spec.words, x: -(spec.hx + 1.25) / 2, y: 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.3, seed: 9, lead: true })
+  const noSign = spec.words.length === 0; // a sala escreve a própria frase (peças `extra`)
+  const ins: Inscription = noSign
+    ? { words: [], center: new THREE.Vector3(0, 1.6, Z0), normal: new THREE.Vector3(0, 0, 1), panels: [], read: true, seeT: 0, hidden: true, setReveal() {}, extras: [], setGlow() {}, reveal() {} }
+    : sign === 'back'
+      ? kit.inscribe({ words: spec.words, x: -(spec.hx + 1.25) / 2, y: (spec.doorY ?? 0) + 1.6, z: Z0 + 0.025, nx: 0, nz: 1, size, age: 0.3, seed: 9, lead: true })
       : sign === 'left'
         ? kit.inscribe({ words: spec.words, x: X0 + 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: 1, nz: 0, size, age: 0.3, seed: 9, lead: true })
         : kit.inscribe({ words: spec.words, x: X1 - 0.025, y: 1.6, z: Z0 + L / 2 - 0.5, nx: -1, nz: 0, size, age: 0.3, seed: 9, lead: true });
@@ -286,11 +302,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const cracks: THREE.Mesh[] = [];
   const braziers: Brazier[] = spec.braziers.map((b) => {
     const start = kit.group.children.length;
-    const br = makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit, b.scale ?? 1);
+    const br = makeBrazier(kit, ctx, b.x, Z0 + b.dz, !!b.lit, b.scale ?? 1, b.y ?? 0);
     let label: ReturnType<typeof kit.inscribe> | undefined;
     if (b.mark) {
       const sc = b.scale ?? 1;
-      label = kit.inscribe({ words: [b.mark], x: b.x, y: 0.45 * sc, z: Z0 + b.dz + 0.305 * sc, nx: 0, nz: 1, size: 0.5 * Math.min(1, sc), age: 0.12, frame: true, seed: 21 + Math.round(b.x * 7) });
+      label = kit.inscribe({ words: [b.mark], x: b.x, y: (b.y ?? 0) + 0.45 * sc, z: Z0 + b.dz + 0.305 * sc, nx: 0, nz: 1, size: 0.5 * Math.min(1, sc), age: 0.12, frame: true, seed: 21 + Math.round(b.x * 7) });
     }
     if (b.hidden && spec.lock) {
       const grp = new THREE.Group();
@@ -677,7 +693,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   };
   let plateDown = false;
 
-  boxes.push(mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3), mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
+  boxes.push(mkBox(-1.25, DY, Z0, -0.95, DY + ARCH_TOP, Z0 + 0.3), mkBox(0.95, DY, Z0, 1.25, DY + ARCH_TOP, Z0 + 0.3), mkBox(-1.25, DY + ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
   braziers.forEach((b) => boxes.push(...b.boxes));
 
   // ── a regra ──
@@ -704,7 +720,35 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   // peças extras da sala
   const extra: FireExtra = spec.extra
-    ? spec.extra({ kit, ctx, X0, X1, Z0, H, boxes, sign: ins, braziers, solved: () => solved, glow })
+    ? spec.extra({
+        kit,
+        ctx,
+        X0,
+        X1,
+        Z0,
+        H,
+        boxes,
+        sign: ins,
+        braziers,
+        solved: () => solved,
+        glow,
+        markSolved() {
+          if (solved) return;
+          solved = true;
+          door.lampMats.forEach((m) => m.color.setHex(0xff7a2e));
+          ctx.sfx('piece');
+        },
+        punish(cold = 6) {
+          braziers.forEach((b) => b.light(false, true));
+          coldT = cold;
+          ctx.sfx('error');
+          ctx.blackout(spec.blackout ?? 2.5);
+          door.lampMats.forEach((m) => m.color.setHex(LAMP_OFF));
+        },
+        cold: () => coldT,
+        lamps: door.lampMats,
+        cloths: { burned: () => cloths.map((c) => c.k >= 1), burning: () => cloths.map((c) => c.burning || c.k > 0), restore: () => restoreCloths() },
+      })
     : {};
 
   const reset = () => {
@@ -754,6 +798,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     inscriptions: kit.inscriptions,
     doorZ: Z0,
     entranceZ: Z1,
+    exitDy: spec.doorY,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: spec.fog ?? { color: '#0a0a11', near: 3.5, far: 18 },
@@ -770,6 +815,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     interactables: extra.interactables,
     bonus: extra.bonus,
     clampDie(p, vel, e, R) {
+      extra.clampDie?.(p, vel, e, R);
       if (p.y > H - R) {
         p.y = H - R;
         if (vel.y > 0) vel.y = -vel.y * e;
@@ -789,9 +835,9 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         if (vel.z > 0) vel.z = -vel.z * e;
       }
     },
-    groundY: () => 0,
+    groundY: (x, z, feet) => extra.floorY?.(x, z, feet ?? 0) ?? 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
-    dieFloor: () => 0,
+    dieFloor: (x, z) => extra.dieFloor?.(x, z) ?? 0,
     holdsDie: () => plateDown,
     onDieRest() {
       if (PL && onPlate() && ctx.die.face !== 2) ctx.caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
@@ -986,13 +1032,26 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             if (i === rule.seq[progress]) {
               if (rule.hints !== false) door.lampMats[Math.min(progress, door.lampMats.length - 1)].color.setHex(0xff7a2e);
               progress++;
-              if (progress >= rule.seq.length) {
+              if (progress >= rule.seq.length && extra.accept && !extra.accept()) {
+                failT = 1.3; // a ordem estava certa, mas a sala não aceita (ex.: o pano errado queimado)
+              } else if (progress >= rule.seq.length) {
                 solved = true;
                 door.lampMats.forEach((m) => m.color.setHex(0xff7a2e));
                 ctx.sfx('piece');
               }
             } else failT = 1.3;
           });
+        }
+        want = solved ? 1 : 0;
+      }
+      if (rule.kind === 'custom') {
+        if (coldT > 0) {
+          coldT -= ctx.paused() ? 0 : dt;
+          coldBeep -= dt;
+          if (coldBeep <= 0 && braziers.some((b) => b.touched())) {
+            ctx.sfx('error');
+            coldBeep = 0.9;
+          }
         }
         want = solved ? 1 : 0;
       }

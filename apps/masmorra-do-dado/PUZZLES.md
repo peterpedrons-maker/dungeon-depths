@@ -163,6 +163,38 @@ Como na Sala 8 (O Que a Casa Confirma), as frases da parede se acendem com o dad
 - **Por que é única** (`node tools/verify_verdade.mjs`): dos 64 conjuntos de frases só um é consistente; as confirmadas dão uma ordem só.
 - **Palavra nova:** VERDADE. **Dificuldade: 6 de 10.**
 
+## A Sombra  (ACENDER · [moldura] · BRASEIRO)  — NÍVEL 7 ("a luz escreve, e a frase tem de ser verdade"; `tools/verify_sombra.mjs`)
+Salão escuro. No meio, uma **tela de pedra** com nove "olhos" em grade 3×3: só **dois** são furos de verdade (o de cima à esquerda e o do centro). Na parede
+do fundo, sobre a porta, «ACENDER ▢ BRASEIRO» talhada grande, e a casa ▢ é uma **moldura 3×3** de pedra clara: a luz de cada braseiro passa pelos furos
+e cai em casas fixas da moldura. Cinco braseiros em volta da tela:
+| Braseiro | Onde | Casas que acende na moldura |
+|---|---|---|
+| **F** | na frente da tela, num pedestal baixo | 0 e 4 |
+| **BD** | baixo, à direita | 0 |
+| **AE** | alto, à esquerda (pedestal alto) | 4 e 8 |
+| **BC** | baixo, no centro | 1 |
+| **BE** | baixo, à esquerda, perto da parede | 2 |
+Os braseiros ficam acesos. Quando a moldura mostra um **número** e o número de braseiros acesos **bate**, a frase é verdade e a porta abre. Se mostra um
+número e **não bate**, depois de 3 s a Casa pune: escuro e braseiros frios por 6 s. Outro desenho: nada (dá para testar um de cada vez, olhando a moldura).
+1. Acender um braseiro e olhar a parede: aparecem manchas de luz na moldura.
+2. Testar os outros e anotar o que cada um projeta.
+3. O TRÊS é a diagonal 0, 4, 8: **F + AE** fazem a diagonal, mas são **dois** acesos ("acender TRÊS braseiro" com dois): a Casa pune. (BD + AE também.)
+4. **Solução: F, AE e BD.** O BD só reacende a casa 0, que já estava acesa: o desenho não muda, mas agora são três. A frase fica verdadeira.
+- **Por que é única:** dos 31 conjuntos só F+BD+AE escreve um número com o mesmo número de braseiros. **Dificuldade: 7 de 10.**
+
+## O Escuro  (ACENDER · ▢ · ▢ · ▢ · ORDEM)  — NÍVEL 7 ("errar de propósito"; `tools/verify_escuro.mjs`)
+Sala pequena e baixa (6×11 m, teto 3 m). Quatro braseiros já acesos nos cantos (só luz). Na parede esquerda, junto da porta: «ACENDER ▢ ▢ ▢ ORDEM»,
+três lousas pequenas lado a lado. **Não há pista nenhuma à vista.**
+- A Casa julga quando **as três lousas mostram um número completo** e ficam assim por 3 s (o glifo ORDEM pulsa enquanto isso). Certo: a porta abre.
+  Errado: **escuro de 4 s** (os braseiros dos cantos também se apagam) e as lousas se limpam. Uma lousa com pontos que não formam número se apaga sozinha em 7 s.
+- No escuro aparece, no **teto**, em **cal** (verde-pálida), três frases espalhadas, e **ESCURO** na parede da porta:
+  perto da porta «CINCO ANTES UM CONFIRMADO»; no meio «UM ANTES DOIS BOATO»; perto da entrada «DOIS ANTES CINCO CONFIRMADO».
+1. Errar de propósito (escrever quaisquer três números) e **olhar para cima** no escuro. Em 4 s lê-se uma ou duas; errar de novo, olhando a outra parte.
+2. Confirmadas: 5 antes de 1, 2 antes de 5 → **2, 5, 1**. O boato contradiz as confirmadas.
+3. **Solução: DOIS, CINCO, UM** nas três lousas (da esquerda para a direita, olhando a parede): DOIS = cantos 0 e 8; CINCO = cantos e centro; UM = centro.
+- **Por que é única:** o teto cita só três números; as duas confirmadas dão uma ordem e ambas são necessárias. **Palavra nova:** ESCURO (só existe no escuro).
+  **Dificuldade: 7 de 10.**
+
 ## Sala 14 — O Tribunal dos Rumores  — NÍVEL 10 (**provisório aqui**: a posição final é a sala 18, depois das salas da curva de `PUZZLES_PROPOSTAS.md` §2)
 Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
 Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).

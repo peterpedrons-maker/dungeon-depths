@@ -6,7 +6,7 @@
 // Pergunta do dado (§2e): 'pergunta' conta como canal FORTE porque o dado diz se o jogador acertou (vem depois do ensino; reforça).
 // Canais fortes: 'efeito' (o glifo brilha quando o significado acontece), 'demo' (demonstração), 'rotulo' (o nome talhado no próprio objeto),
 // 'figura' (mural com desenho + frase), 'dado' (o dado mostra o rabisco), 'deducao' (a sala guia a dedução). Fracos: 'frase', 'diario', 'fala'.
-// Uso: node tools/verify_vocabulario.mjs        (as salas 12 a 17 ainda são esboço: os dados delas são provisórios)
+// Uso: node tools/verify_vocabulario.mjs
 import { readFileSync } from 'node:fs';
 const LEX = JSON.parse(readFileSync(new URL('../src/story/lexicon.json', import.meta.url)));
 const IDS = new Set((Array.isArray(LEX) ? LEX : Object.values(LEX)).map((w) => w.id));
@@ -28,15 +28,15 @@ const CAP1 = [
   { sala: '9 Os Apelidos', mostra: [...m('efeito', 'grande', 'pequeno'), ...m('rotulo', 'grande'), ...m('frase', 'antes', 'depois', 'conf')], exige: ['grande', 'pequeno', 'antes', 'depois'] },
   { sala: '10 A Ponte de Madeira', mostra: [...m('pergunta', 'depois'), ...m('frase', 'acender', 'n2', 'mais')], exige: ['n2'] },
   { sala: '11 O Boato Verdadeiro', mostra: [...m('pergunta', 'pequeno'), ...m('demo', 'verdade'), ...m('efeito', 'verdade'), ...m('frase', 'antes', 'depois', 'conf', 'boato')], exige: ['verdade', 'antes', 'depois', 'conf', 'boato'] },
-  { sala: 'R3 A Galeria dos Condenados', mostra: [...m('pergunta', 'verdade'), ...m('frase', 'condenado', 'ler', 'sentenca'), ...m('figura', 'igual', 'grande', 'pequeno'), ...m('diario', 'pequeno')], exige: [] },
-  { sala: '12 A Sombra (esboço)', mostra: [...m('frase', 'acender', 'n4')], exige: ['n4'] },
-  { sala: '13 O Escuro (esboço)', mostra: [...m('efeito', 'escuro'), ...m('frase', 'acender', 'brasa')], exige: [] },
-  { sala: '14 A Lei Pequena (esboço)', mostra: [...m('deducao', 'igual'), ...m('frase', 'n1', 'boato', 'verdade', 'antes', 'depois')], exige: ['igual', 'n1', 'boato', 'verdade'] },
+  { sala: 'R3 A Galeria dos Condenados', mostra: [...m('frase', 'ordem', 'igual', 'boato', 'verdade', 'antes', 'depois'), ...m('pergunta', 'verdade'), ...m('frase', 'condenado', 'ler', 'sentenca'), ...m('figura', 'igual', 'grande', 'pequeno'), ...m('diario', 'pequeno')], exige: [] },
+  { sala: '12 A Sombra', mostra: [...m('frase', 'acender', 'brasa'), ...m('efeito', 'n3')], exige: ['n3'] },
+  { sala: '13 O Escuro', mostra: [...m('efeito', 'escuro'), ...m('frase', 'acender', 'ordem', 'n1', 'n2', 'n5', 'antes', 'conf', 'boato')], exige: ['n1', 'n2', 'n5', 'antes', 'conf', 'boato'] },
+  { sala: '14 A Lei Pequena', mostra: [...m('figura', 'igual'), ...m('frase', 'n1', 'n2', 'n3', 'n4', 'antes', 'depois', 'conf', 'boato', 'igual', 'verdade')], exige: ['igual', 'verdade', 'boato', 'conf', 'antes', 'depois', 'n1', 'n2', 'n3', 'n4'] },
   { sala: 'R4 A Escadaria', mostra: [...m('pergunta', 'igual'), ...m('frase', 'casa')], exige: [] },
-  { sala: '15 O Fogo que Corre (esboço)', mostra: [...m('frase', 'acender', 'n2')], exige: ['n2'] },
-  { sala: '16 Os Que Dizem o Mesmo (esboço)', mostra: [...m('frase', 'grande', 'pequeno', 'igual', 'verdade', 'boato', 'conf')], exige: ['grande', 'pequeno', 'igual', 'verdade', 'boato', 'conf'] },
-  { sala: 'R5 A Antecâmara Fria', mostra: [...m('efeito', 'abrir', 'porta', 'conf')], exige: [] },
-  { sala: '17 A Memória da Casa (esboço)', mostra: [...m('efeito', 'todos', 'ordem'), ...m('frase', 'grande', 'pequeno', 'igual', 'verdade')], exige: ['todos', 'ordem', 'grande', 'pequeno', 'igual', 'verdade'] },
+  { sala: '15 O Fogo que Corre', mostra: [...m('efeito', 'tempo'), ...m('frase', 'acender', 'n2', 'n4', 'menos')], exige: ['n2', 'n4'] },
+  { sala: '16 Os Que Dizem o Mesmo', mostra: [...m('frase', 'grande', 'pequeno', 'igual', 'verdade', 'boato', 'conf', 'antes', 'depois', 'todos', 'ordem', 'acender', 'n1')], exige: ['grande', 'pequeno', 'igual', 'verdade', 'boato', 'conf', 'antes', 'depois', 'todos', 'ordem', 'n1'] },
+  { sala: 'R5 A Antecâmara Fria', mostra: [...m('efeito', 'abrir', 'escuro'), ...m('frase', 'porta', 'conf')], exige: [] },
+  { sala: '17 A Memória da Casa', mostra: [...m('efeito', 'todos', 'ordem'), ...m('frase', 'grande', 'pequeno', 'igual', 'verdade', 'antes', 'depois', 'conf', 'boato')], exige: ['todos', 'ordem', 'grande', 'pequeno', 'igual', 'verdade', 'antes', 'depois', 'conf', 'boato'] },
   { sala: '18 O Tribunal', mostra: [...m('pergunta', 'todos'), ...m('frase', 'acender', 'todos', 'brasa', 'ordem', 'conf', 'boato', 'igual', 'verdade', 'antes', 'depois', 'grande', 'pequeno')], exige: ['todos', 'ordem', 'conf', 'boato', 'igual', 'verdade', 'antes', 'depois', 'grande', 'pequeno', 'n1', 'n2', 'n3', 'n4', 'n5'] },
 ];
 

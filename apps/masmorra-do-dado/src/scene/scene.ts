@@ -41,6 +41,7 @@ import { DieLife, type LifeTarget } from './dielife';
 import { layout as bookLayout } from '../book/pages';
 import { config, configStore } from '../story/config';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
+import { FIRE_ESCURO, FIRE_SOMBRA } from './rooms/chapter1b';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
 import { buildChamaCurta } from './rooms/chamaCurta';
@@ -75,6 +76,8 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
     buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
     (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
+    (c) => buildFireRoom(c, FIRE_SOMBRA), // NÍVEL 7. A SOMBRA: a luz escreve na moldura da frase; a frase tem de ser verdade (o número de acesos)
+    (c) => buildFireRoom(c, FIRE_ESCURO), // NÍVEL 7. O ESCURO: errar de propósito; no escuro de 4 s, a cal no teto dá a ordem
     buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (no plano: entre as salas 16 e 17)
     buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala 18)
     // Reserva (fora do jogo por ora): vestibulo.ts v3 (Os Quatro) e FIRE_ORDEM (A Ordem), que as novas 3 e 5 substituem; room1.ts (A Entrada, cena do
@@ -3358,6 +3361,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         darkHold -= dt;
       }
     } else darkK = Math.max(0, darkK - dt / 0.6);
+    accentLight.intensity = 5 * lightScale(); // a luz que o dado da mão carrega também apaga (numa sala baixa ela acendia o teto)
     shapeLight();
     landKick = Math.max(0, landKick - dt * 4);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
@@ -3559,7 +3563,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     const aim = dieState === 'hand' && tool === 'die' ? aimCache : null;
     // some quando o ponto está colado na câmera (o fantasma tamparia a tela toda)
-    ghost.visible = !!aim && aim.p.distanceTo(camera.position) > 1.1 && !devNoHud;
+    ghost.visible = !!aim && aim.p.distanceTo(camera.position) > 1.1 && !devNoHud && darkK < 0.3; // (no escuro, a marca some: não cobre a cal)
     if (aim) {
       ghost.position.copy(aim.p).addScaledVector(aim.n, R + 0.02);
       ghost.rotation.y = t * 0.8;
@@ -3821,6 +3825,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       goto: (i: number) => spawnIn(i),
       save: () => saveGame(),
       darkLevel: () => darkK,
+      blackout: (s: number) => (darkQ = { secs: s }),
       titleTune: (o: Partial<typeof TT> & { blur?: number }) => { if (o.blur !== undefined) TB.blur = o.blur; Object.assign(TT, o); },
       titleDbg: () => ({ focus: titleFocus.toArray(), cam: camera.position.toArray(), fov: camera.fov, die: dieGroup.position.toArray(), s: dieGroup.scale.x, vis: dieGroup.visible, focusZ: postMat.uniforms.uFocus.value, mode }),
       noHud: (v = true) => {
