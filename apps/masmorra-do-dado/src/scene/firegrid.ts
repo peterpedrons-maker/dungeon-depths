@@ -610,7 +610,7 @@ export function makeRiser(kit: Kit, ctx: Ctx, x: number, z: number, scale = 1, b
     raise() {
       if (r.up) return;
       r.up = true;
-      ctx.sfx('door');
+      ctx.sfx('rise'); // o pilar sobe do chão (som próprio, DESIGN.md §60)
     },
     update(dt, t) {
       if (r.up && r.k < 1) r.k = Math.min(1, r.k + dt / 2.2);

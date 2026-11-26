@@ -26,6 +26,7 @@ import { constellation } from './chapter1';
 import type { FireExtraApi } from './fire';
 import { mkBox, shotGate, Z1 } from './shell';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { windNear } from '../ambience';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
 const Z0 = -26;
@@ -613,6 +614,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
     },
     groundY: floorOf,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    // o som do lugar (§60): um ar leve desce pelo óculo do Átrio
+    ambience: { wind: windNear([{ x: 0, z: -12, r: 5, k: 0.22 }]) },
     dieFloor: floorOf,
     holdsDie: () => false,
     update(dt, t) {

@@ -9,6 +9,7 @@ import { lambert } from '../kit';
 import { makeCal, type CalText } from '../cal';
 import { shotGate, slopedWall, wedge } from './shell';
 import type { Box, Rect } from '../types';
+import { windNear } from '../ambience';
 
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
@@ -864,6 +865,11 @@ export const FIRE_DIZEM: FireSpec = {
   z0: DM.z0,
   h: DM.h,
   sky: true,
+  // o som do lugar (§60): o vento corre no pátio aberto e entra um pouco nas galerias cobertas; o céu aberto ecoa pouco
+  ambience: {
+    size: 0.45,
+    wind: windNear([{ x: 0, z: DM.z0 + DM.gz[1], hx: DM.gx, hz: (DM.gz[2] - DM.gz[0]) / 2, r: 4.5, k: 0.75 }], 0.1),
+  },
   braziers: [
     { x: -2.4, dz: 6.6, mark: 'n1' },
     { x: 2.5, dz: 6.4, mark: 'n2' },

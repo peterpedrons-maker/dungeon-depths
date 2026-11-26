@@ -45,7 +45,11 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   soundfont FluidR3_GM (CC BY 3.0 — por isso há a tela de Créditos, na tela inicial e no fim); a música é composta em tempo
   real tocando essas notas gravadas e é uma só pro jogo todo (não muda por sala). Os arquivos são gerados
   por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Os passos têm UM som fixo por tipo
-  de piso (pedra, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`), sem variação aleatória. Volumes
+  de piso (pedra, entulho, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`; o degrau o motor percebe sozinho quando o passo sobe ou
+  desce), pé esquerdo e direito alternando sempre na mesma ordem, sem variação aleatória. **Ambiente** (`Room.ambience`, `src/scene/ambience.ts`,
+  `DESIGN.md` §60): vento perto das aberturas (Poço, pátio da Cisterna, boca do fosso, Escadaria, claustro) com rajadas, gotas, o "ar" e a
+  reverberação conforme o tamanho da sala, o fogo crepitando do lado em que está e, raro, a Casa respirando; a frase que acende soa símbolo a
+  símbolo (celesta e harpa). Volumes
   (geral, música, efeitos) na aba Áudio das Configurações; o áudio só liga após o 1º toque/tecla.
   **Abertura e progressão** (`DESIGN.md` §12): o jogo começa com uma cena de acordar (deitado, poço de luz no teto; só na 1ª vez,
   `?intro=0` pula); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o

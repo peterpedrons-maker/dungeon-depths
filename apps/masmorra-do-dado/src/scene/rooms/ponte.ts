@@ -16,6 +16,7 @@ import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { burntTexture, edgeKey, FireGrid, grooveTexture, makeFloorChannel, makeGemNiche, makeRiser, makeTorch, type GridEdge, type GridEdgeVis, type Torch } from '../firegrid';
 import { mkBox, shotGate, wedge } from './shell';
+import { windNear } from '../ambience';
 import type { Box, Ctx, Rect, Room } from '../types';
 
 const TOP = 8; // a galeria (boca do fosso), acima do fundo
@@ -532,6 +533,16 @@ export function buildPonte(ctx: Ctx): Room {
     },
     groundY,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    // o som do lugar (§60): o fosso é fundo e ecoa muito; na boca dele, lá em cima, corre um ar que sobe do fundo (mais forte na beira, mais
+    // fraco e abafado lá embaixo); no fundo, pinga
+    ambience: {
+      size: 0.9,
+      wind: windNear([{ x: 0, z: ZC, hx: PX, hz: (PZ1 - PZ0) / 2, y: TOP, r: 7, k: 0.5 }], 0.04),
+      drips: [
+        { x: -3.4, y: 0.1, z: -9.4 },
+        { x: 4.6, y: 0.1, z: -2.2 },
+      ],
+    },
     dieFloor: (x, z) => (!inPit(x, z) ? TOP : inInner(x, z) || onLanding(x, z) || onBridge(x, z) ? 0 : rampY(x, z)),
     holdsDie: () => false,
     update(dt, t) {

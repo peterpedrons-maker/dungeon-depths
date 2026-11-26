@@ -13,16 +13,27 @@ INSTRUMENTOS (música e sinos/notas dos efeitos)
 EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
   - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro, facada, trinco.
   - 100 CC0 SFX e 100 CC0 SFX #2 — rubberduck: gongo, sinos, vidro, pancadas,
-    pedras, interruptores, ar, madeira.
-  - Metal footsteps on concrete: passos de bota em piso de pedra/concreto.
+    pedras, interruptores, ar, madeira; o baque da porta de pedra travando.
+  - 75 CC0 breaking / falling / hit sfx — rubberduck: pedrinhas e pó caindo
+    (porta, pilar, passos no entulho).
+  - Metal footsteps on concrete: o peso do passo no degrau (bota em concreto).
+  - Fantozzi's Footsteps (Grass/Sand & Stone) — Fantozzi, recortados por
+    qubodup: os passos em pedra, degrau e entulho (sapato em pedra).
   - Drawing with chalk: giz riscando pedra.
   - Pencil sounds: borracha.
-  - Stone door: porta de pedra.
-  - Scrapes (Stendhal): arrastos de pedra.
-  - Catching Fire: chama acendendo.
-  - Fireplace Sound Loop: fogo estalando (laço).
-  - Steam Release Sounds: chiado de vapor.
+  - Stone door — bonebrah: a porta de pedra e o pilar arrastando.
+  - Scrapes (Stendhal) — AntumDeluge: arrastos de pedra; a pedra rangendo longe.
+  - Moving Boulder — themightyglider: pedregulho batendo e arrastando.
+  - Fire Staff Sound Effects — LEGIT Audio: a chama pegando (braseiro, tocha,
+    pano), a chama sugada ao apagar, o fogo aceso (laço) e as faíscas.
+  - Fire Crackling — AntumDeluge: estalos de lareira.
+  - Steam Release Sounds: o chiado curto da brasa que apaga.
+  - Storm Arwen 2022 — Tsorthan Grove: o vento e as rajadas.
+  - Dripping water loop — qubodup: as gotas.
+  - Muffled Distant Explosion — NenadSimic (um tambor de tronco ao longe):
+    a Casa respirando e o grave do escuro.
   - qubodup — Bowling ball rolling: bola rolando (dado rolando).
 
-Os arquivos foram recortados, normalizados e convertidos para MP3 mono pelo
-script tools/build_audio.py.
+Os arquivos foram recortados, filtrados, sobrepostos, emendados em laço,
+normalizados e convertidos para MP3 mono pelo script tools/build_audio.py
+(os downloads estão em tools/fetch_audio.sh).

@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { floorTexture } from '../textures';
 import { buildDoor, buildEntrance, Kit, lambert, T } from '../kit';
 import { mkBox, slopedWall, stairs, wedge, Z1 } from './shell';
+import { windNear } from '../ambience';
 import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 
@@ -293,6 +294,20 @@ export function buildRespiro4(ctx: Ctx): Room {
     },
     groundY,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    // o som do lugar (§60): um poço alto de pedra, que ecoa muito; o ar corre pelas janelas de grade e venta mais quanto mais alto se sobe;
+    // embaixo, junto da mancha de umidade, pinga
+    ambience: {
+      size: 0.85,
+      wind: (() => {
+        const win = windNear([
+          { x: X0, y: hB(-4) + 1.75, z: -4, r: 3.5, k: 0.32 },
+          { x: 1.2, y: L1 + 1.75, z: Z0, r: 3.5, k: 0.32 },
+          { x: X1, y: hC(-4) + 1.75, z: -4, r: 3.5, k: 0.32 },
+        ]);
+        return (x: number, z: number, f: number) => Math.max(win(x, z, f), 0.05 + 0.27 * Math.min(1, Math.max(0, f / L3)));
+      })(),
+      drips: [{ x: X0 + 0.3, y: 0.1, z: -6 }],
+    },
     dieFloor,
     holdsDie: () => false,
     update(dt, t) {

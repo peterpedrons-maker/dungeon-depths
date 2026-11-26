@@ -34,7 +34,8 @@ export interface BurnLine {
 }
 
 // `hold`: enquanto devolver true (o ESCURO da punição), a fuligem não começa a sumir: ela tem de ser vista quando a luz volta.
-export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold?: () => boolean; seed?: number }): BurnLine {
+// `onGlyph`: a luz que escreve chegou ao símbolo i de n (`at` = onde ele está, local da sala): o som que acompanha a onda (DESIGN.md §60)
+export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold?: () => boolean; seed?: number; onGlyph?: (i: number, n: number, at: THREE.Vector3) => void }): BurnLine {
   ins.burnable = true;
   const n = ins.normal.clone().normalize();
   const ry = Math.atan2(n.x, n.z);
@@ -221,7 +222,12 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
       uT.value = t;
       if (lit) {
         if (run < total) {
+          const before = run;
           run = Math.min(total, run + dt / PER_GLYPH);
+          if (o.onGlyph && dt > 0)
+            glyphs.forEach((gl, k) => {
+              if (gl.t0 >= before && gl.t0 < run) o.onGlyph!(k, glyphs.length, start.clone().lerp(end, (gl.t0 + 0.5) / total));
+            });
           sync();
         }
         runV += dt / PER_GLYPH;

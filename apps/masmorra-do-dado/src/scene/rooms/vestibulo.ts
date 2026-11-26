@@ -14,6 +14,7 @@ import { glyphsOf } from '../../story/lexicon';
 import { diary } from '../../story/diary';
 import { ui } from '../../story/ui';
 import type { Box, Ctx, Room } from '../types';
+import { windNear } from '../ambience';
 
 export type VestVariant = 1 | 2 | 3 | 4;
 
@@ -269,6 +270,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       m.rotation.set(rot, rot * 1.7, 0);
       kit.group.add(m);
     }
+    kit.zone('rubble', (x, z) => (x - SHAFT.x) ** 2 + (z - SHAFT.z) ** 2 < 1.8 ** 2); // os passos no entulho (som, §60)
     dieLie = new THREE.Vector3(SHAFT.x - 0.15, 0.0, SHAFT.z + 1.05); // no chão, à beira da mancha de luz
     kit.crate(X0 + 0.7, Z1 - 1.8, 0.7, 0.5); // restos de caixa
     kit.web(X0, H - 0.45, Z1 - 0.45, 1, 0);
@@ -563,6 +565,18 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     },
     groundY: () => 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    // o som do lugar (§60): no Poço, o vento lá de fora desce pela boca do poço e uma gota cai lá de cima no entulho; a sala é pequena e abafada
+    ambience:
+      v === 1
+        ? {
+            size: 0.3,
+            wind: windNear([{ x: SHAFT.x, z: SHAFT.z, y: H, r: 6, k: 0.5 }], 0.05),
+            drips: [
+              { x: SHAFT.x + 0.5, y: 0.1, z: SHAFT.z - 0.4 },
+              { x: X0 + 0.2, y: 0.1, z: Z0 + 4.4 },
+            ],
+          }
+        : undefined,
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {

@@ -928,3 +928,40 @@ a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A
   a luz passa, por `uRunV`, os símbolos já percorridos). A luz de verdade da frase também anda com a onda (esquenta a parede por onde ela passa,
   de leve, para não dourar a frase apagada vizinha) e depois volta devagar para o meio. Não deixa nada atrás da escrita nem deforma o glifo.
   (Na 1ª versão o clarão vinha todo de uma vez no fim e a luz ficava no meio da frase: parecia pulsar só no centro.)
+
+## 60. Som: passos, fogo, pedra e o AMBIENTE (pedido do Pedro; feito pelo subagente `sonoplasta`)
+Continua tudo com **gravações reais** (CC0 do OpenGameArt e os instrumentos do FluidR3_GM); só se recorta, filtra, sobrepõe, inverte e emenda
+(`tools/build_audio.py`, downloads em `tools/fetch_audio.sh`, créditos em `public/audio/CREDITS.txt`). Efeitos: 0,39 → 0,58 MB; áudio
+total (com os instrumentos): ~2,2 → ~2,4 MB.
+- **Passos** (um som FIXO por piso, decisão do Pedro; pé esquerdo e direito alternam sempre na mesma ordem e recomeçam no esquerdo depois de
+  parar): **pedra** = sapato de couro em pedra (Fantozzi), no lugar da bota abafada; **degrau** = o mesmo sapato com o peso do corpo (o baque da
+  bota em concreto por baixo), que o motor escolhe sozinho quando o passo sobe ou desce mais de 12 cm (escadas e rampas; nenhuma sala precisa
+  marcar); **entulho** = o passo com pedrinhas soltas (`Kit.zone('rubble')`, hoje no entulho embaixo da boca do Poço). Tapete, placa e poça
+  ficam como estavam. Não há piso de madeira no capítulo 1 (a madeira da Ponte é a calha do fogo, não se pisa nela).
+- **Fogo**: acender = a chama pegando ("fff") de um bastão de fogo de verdade (LEGIT Audio), com o tímpano por baixo; **tocha** (`key` com
+  "tocha") e **pano/estandarte** (`key` "pano"/"dm…") têm gravações próprias (menor; lufada que estala). **Chama apagando** = a lufada ao
+  contrário (o fogo é "sugado") e um chiado curto de brasa. **Fogo por perto**: o laço da chama (só das luzes LARANJA: braseiros, tochas,
+  panos, canaletas; céu, porta e a luz mágica das frases não crepitam) vem **do lado em que está** (a média dos fogos próximos) e abafa com a
+  distância; por cima, **estalos soltos** tirados ao acaso de gravações de faíscas, mais frequentes perto: o fogo nunca se repete igual.
+- **Pedra**: porta que **sobe** = arrasto grave, raspar, o baque ao travar e pó/pedrinhas caindo; porta que **desce** = raspar acelerando e o
+  baque pesado; **pilar subindo** (`ctx.sfx('rise')`, antes era o som da porta) = arrasto mais lento e grave, pedrinhas e o baque no fim.
+- **A frase que acende** (`Ctx.glyphLight`, `makeBurnLine({ onGlyph })`): a cada símbolo que a luz escreve, da esquerda para a direita, uma
+  nota de celesta que sobe (harpa por baixo), do lado em que está a frase; no último, a harpa assenta num acorde (a Casa leu).
+- **O escuro da Casa** (`'dark'`): a chama sugada e um grave abafado e distante (o tambor de tronco). Porta, pilar, erro, peça e o escuro
+  **abaixam o ambiente** por ~1,6 s (nada cobre o que o jogador precisa ouvir); a pausa também abaixa.
+- **AMBIENTE** (`Room.ambience`, opcional; ajudas em `src/scene/ambience.ts`):
+  - **vento** (`wind(x, z, pésY)`, montado com `windNear` a partir das aberturas): um trecho calmo da tempestade Arwen em laço de 16 s, mais
+    forte e mais claro perto da abertura, abafado longe, com **rajadas** de vez em quando onde venta de verdade. Onde: o **Poço** (desce pela
+    boca), o **pátio da Cisterna** (o pátio todo, mais forte sob o buraco de luz), a **boca do fosso** da Ponte (mais fraco lá embaixo), a
+    **Escadaria** (pelas janelas de grade e mais quanto mais alto), o **claustro** de «Os Que Dizem o Mesmo» (forte no pátio, entra pouco nas
+    galerias) e um ar leve sob o óculo da Biblioteca;
+  - **gotas** (`drips`): espaçadas (2 a 6,5 s), com eco de pedra, do lado em que pingam, até ~9 m: no Poço, na cisterna, no fundo do fosso,
+    ao pé da Escadaria e num canto da Antecâmara Fria;
+  - o **ar da sala**: o mesmo vento, mais lento e só o grave, bem baixo, sempre; e a **reverberação muda com o tamanho** (`size`, ou
+    estimada pelo volume da sala): corredor e câmara pequena abafam (sala curta), salão alto e o fosso ecoam (sala longa). O corredor da
+    Cisterna é curto e o pátio, longo;
+  - **a Casa respira**: de 1 a 2,5 min, só num momento calmo (sem conversa, cena, escuro ou pausa), um grave distante com um suspiro de
+    violoncelo, ou pedra rangendo longe, ou os dois; nunca o mesmo duas vezes seguidas.
+- Desempenho: poucos laços compartilhados (fogo, vento, ar, dado rolando), o volume muda e a fonte não se recria; volumes e filtros mudam ~10
+  vezes por segundo; tudo é decodificado no `unlock()`. Tudo vai pelo canal de **efeitos** (Configurações → Áudio).
+- Testes (dev): `__mdd.audio()` traz `log` (o que tocou) e `amb` (vento, tamanho, fogo e lado, gotas, calma); `__mdd.sfxPlay(nome, v, key)`.
