@@ -480,7 +480,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           emb.scale.set(0.2, 0.2, 1);
           emb.position.set(sp.x, sp.y + 0.06, sp.z);
           kit.group.add(emb);
-          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3, idle: () => !risen && lockCold <= 0 });
+          const burn = makeBurnLine(kit, li, { size: sz, hold: () => ctx.dark() > 0.3 });
           if (ln.preLit) burn.set(true, true);
           litLines.push({ ins: li, x: wx, y: fy, z: zc + dir * u, hw: w / 2, good: !!ln.good, ord: ln.ord ?? -1, lit: !!ln.preLit, fire: ln.preLit ? 1 : 0, flame, emb, key: `L${litLines.length}`, preLit: !!ln.preLit, door: false, axis: 'z', burn, gap: n > 1 ? lh / 2 : 0.45, nx: left ? 1 : -1, nz: 0 });
         }
@@ -596,7 +596,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     emb.scale.set(0.2, 0.2, 1);
     emb.position.set(sp.x, sp.y + 0.06, sp.z);
     kit.group.add(emb);
-    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3, idle: () => !risen && lockCold <= 0 });
+    const burn = makeBurnLine(kit, ins, { size, hold: () => ctx.dark() > 0.3 });
     litLines.push({ ins, x: cx, y: 1.6, z: Z0 + 0.025, hw, good: false, ord: -1, lit: false, fire: 0, flame, emb, key: 'porta', preLit: false, door: true, axis: 'x', burn, gap: 0.45, nx: 0, nz: 1 });
   }
 
