@@ -508,6 +508,7 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
   sprite.visible = false;
   kit.group.add(sprite);
   const light = kit.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, 0xff9a3c, 0);
+  light.shadow = true;
   let left = 0;
   const tc: Torch = {
     pos,

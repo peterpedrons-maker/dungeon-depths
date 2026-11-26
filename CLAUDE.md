@@ -24,7 +24,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   pixel art "crocante" (Three.js renderizando em ~200 linhas no celular e ~270 no PC, pós-processo com paleta fixa
   de ~60 cores via LUT 3D + contorno por profundidade + brilho/bloom + dithering leve, texturas
   procedurais, sem arquivos de imagem; luzes das salas são "emissores" emprestados a um pool
-  pequeno de PointLights reais, e só as salas vizinhas são desenhadas). O jogador segura um dado e escolhe a face (1–6) antes
+  de PointLights reais (12 + 4 com sombra na qualidade alta; toda tocha e braseiro pode ter sombra, `DESIGN.md` §63), e só as salas vizinhas são desenhadas). O jogador segura um dado e escolhe a face (1–6) antes
   de arremessar/posicionar; cada face é uma mecânica de puzzle (ricochete, peso, fogo...).
   Sem combate. Mundo conectado (estilo Metroidvania) com volta livre; faces novas destravam
   caminhos. Pedra-sabão (giz) infinita: o jogador a troca com o dado na mão principal

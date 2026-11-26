@@ -984,3 +984,18 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
   equipamento, boneco de treino, moedas, bolsas de dinheiro e baús de tesouro, chaves, ferramentas de ofício (bigorna, bancada, pedra de afiar),
   caldeirão, comida e barraca de feira; e o que imita a gramática dos puzzles: tochas e lanternas, estandartes e panos pendurados, lenha em brasa.
   Na Galeria, a prateleira trocou as garrafas por caneca, prato e pote.
+
+## 63. O motor de luz: toda chama acende o seu pedaço da sala (pedido do Pedro: "a iluminação é o cerne")
+- **Mais luzes de verdade**, pela qualidade (Configurações → Imagem): alta 12 luzes + 4 com sombra; média 10 + 2; baixa 6 + 0 (`BUDGET` em
+  `scene.ts`; o número de luzes só muda quando a qualidade muda, então os shaders não recompilam ao trocar de sala). Cada luz tem alcance
+  (`Emitter.range`, 11 m) e some suave até ele.
+- **Sombra em toda tocha e todo braseiro** (`Emitter.shadow` agora vem ligado em `kit.torch`, `makeBrazier` e nas tochas das constelações): as
+  mais perto do jogador ganham sombra de verdade. **Toda sala** passa a ter sombras: tudo que é sólido recebe; projeta o que tem volume (caixas,
+  colunas, pedestais, objetos), não os planos (paredes antigas, chão, decalques, escritas), o transparente, o "aceso" (MeshBasic) e o que pede
+  `userData.noShadow` (a tigela e o carvão do braseiro, o cabo e o suporte da tocha: senão a chama ganhava uma barra preta embaixo). Salas que
+  decidem sozinhas marcam `group.userData.ownShadows` (A Lousa, o Vestíbulo).
+- **Custo**: o mapa de sombra só é refeito quando a luz é nova ou quando o jogador ou o dado se mexem a menos de 10 m dela (parado, custo zero);
+  rodízio de 2 mapas por quadro (alta) ou 1 (média). Medido na Galeria: parado, as mesmas ~290 chamadas de antes; andando, ~370 (alta), ~330
+  (média), ~290 (baixa). As luzes com sombra não tremem de lugar (só de força), para não refazer o mapa a cada quadro.
+- **O brilho de longe**: cada tocha tem uma mancha de luz na parede que só aparece enquanto ela está sem luz de verdade (`Emitter.lit`, escrito pelo
+  motor) e apaga no escuro da Casa (`lightEnv.scale`): nenhuma tocha parece morta de longe, e a cal continua visível no escuro.

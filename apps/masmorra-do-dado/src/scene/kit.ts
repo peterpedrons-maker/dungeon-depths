@@ -31,6 +31,8 @@ export const T = 1.2; // metros por "tile" de textura
 // chaves de depuração (só usadas pelos testes em desenvolvimento)
 export const dbg = { flicker: true, bob: true };
 export const LAMP_OFF = 0x2a2230;
+// o motor escreve aqui quanto de luz o mundo tem agora (1 = normal, ~0,08 = o ESCURO da Casa): os brilhos falsos apagam junto
+export const lightEnv = { scale: 1 };
 
 export function lambert(map: THREE.Texture | null, color = 0xffffff) {
   return new THREE.MeshLambertMaterial({ map, color });
@@ -75,6 +77,8 @@ export class Emitter {
   // jogador). jit: o tremor da chama (alguns cm), somado à posição: a luz e a sombra "dançam" com o fogo.
   shadow = false;
   jit = new THREE.Vector3();
+  range = 11; // alcance da luz (m): ela some suave até aqui
+  lit = 0; // (o motor escreve) quanto de luz de verdade esta chama tem agora: 0 = nenhuma (só o brilho falso)
   constructor(
     public pos: THREE.Vector3,
     public color: number,
@@ -96,7 +100,7 @@ export class Kit {
   frames = flameFrames();
   stone: THREE.MeshLambertMaterial;
   slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
-  private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number }[] = [];
+  private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial }[] = [];
   private poolTex: THREE.Texture | null = null;
   private beams: { geo: THREE.BufferGeometry; cx: number; cz: number; r: number; y0: number; y1: number; seed: number[] }[] = [];
   private flicker = true;
@@ -139,8 +143,9 @@ export class Kit {
 
   // tocha de parede: (nx, nz) = para onde a parede "olha" (de onde vem a luz)
   torch(x: number, y: number, z: number, nx: number, nz: number, phase: number, color = 0xff9a3c, intensity = 42) {
-    this.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.stone, x, y - 0.05, z, false);
-    this.box(0.1, 0.6, 0.1, this.mat('torchStick', () => lambert(null, 0x5a3a24)), x + nx * 0.16, y + 0.12, z + nz * 0.16, false);
+    // o suporte e o cabo NÃO fazem sombra (a própria chama ficaria com uma barra preta embaixo, na parede)
+    this.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.mat('torchBracket', () => this.stone.clone()), x, y - 0.05, z, false).userData.noShadow = true;
+    this.box(0.1, 0.6, 0.1, this.mat('torchStick', () => lambert(null, 0x5a3a24)), x + nx * 0.16, y + 0.12, z + nz * 0.16, false).userData.noShadow = true;
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: this.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }),
     );
@@ -148,7 +153,15 @@ export class Kit {
     sprite.position.set(x + nx * 0.16, y + 0.57, z + nz * 0.16);
     this.group.add(sprite);
     const light = this.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, color, intensity);
-    this.torches.push({ sprite, light, phase, base: intensity });
+    light.shadow = true; // toda tocha pode ganhar sombra de verdade (o motor dá às mais perto)
+    // o BRILHO DE LONGE: uma mancha de luz na parede (em volta da chama), que só aparece enquanto a tocha está sem luz de verdade (longe do jogador)
+    const haloMat = this.mat(`halo:${color}`, () => new THREE.MeshBasicMaterial({ map: this.poolTex ?? (this.poolTex = lightPoolTexture()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, opacity: 0.3, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 })) as THREE.MeshBasicMaterial;
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.9), haloMat.clone());
+    halo.position.set(x + nx * 0.03, y + 0.55, z + nz * 0.03);
+    halo.rotation.y = Math.atan2(nx, nz);
+    halo.renderOrder = 2;
+    this.group.add(halo);
+    this.torches.push({ sprite, light, phase, base: intensity, halo: halo.material as THREE.MeshBasicMaterial });
   }
 
   // inscrição dos Contáveis (talhada, cal branca); olhar para ela manda os símbolos ao diário
@@ -489,6 +502,7 @@ export class Kit {
       const out = new THREE.Mesh(merged, material);
       out.castShadow = meshes.some((m) => m.castShadow); // (as peças que fazem sombra continuam fazendo, juntas)
       out.receiveShadow = meshes.some((m) => m.receiveShadow);
+      if (meshes.every((m) => m.userData.noShadow)) out.userData.noShadow = true;
       this.group.add(out);
       meshes.forEach((m) => {
         this.group.remove(m);
@@ -533,6 +547,12 @@ export class Kit {
       } else
       tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
       tc.sprite.material.map = this.frames[Math.floor(t * 8 + i) % this.frames.length];
+      // o brilho falso some na medida em que a luz de verdade chega (e oscila com a chama)
+      const fake = (1 - tc.light.lit) * (tc.light.intensity / Math.max(1, tc.base)) * lightEnv.scale;
+      if (tc.halo) {
+        tc.halo.opacity = 0.3 * fake;
+        tc.halo.visible = fake > 0.02;
+      }
     });
     for (const b of this.beams) {
       // descem devagar, rodopiando (a luz de cima as faz brilhar); quem sai do feixe volta para o alto dele

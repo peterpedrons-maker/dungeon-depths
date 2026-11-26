@@ -20,7 +20,7 @@ import {
 } from './textures';
 import { Chalk } from './chalk';
 import { Sfx, type AudioMode } from './audio';
-import { CORRIDOR, dbg } from './kit';
+import { CORRIDOR, dbg, lightEnv } from './kit';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { LEX } from '../story/lexicon';
@@ -1560,12 +1560,26 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (i > 0) off.z = offs[i - 1].z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ;
       if (i > 0) off.y = offs[i - 1].y + (rooms[i - 1].exitDy ?? 0) - (room.entranceY ?? 0); // salas que descem (fosso, banhos): a seguinte começa no nível da porta de saída
       room.group.position.copy(off);
+      if (!room.group.userData.ownShadows) applyShadowFlags(room.group);
       scene.add(room.group);
       rooms.push(room);
       offs.push(off);
     });
   };
 
+  // SOMBRAS EM TODA SALA (DESIGN.md §63): tudo que é sólido recebe sombra; projeta o que tem volume (caixas, colunas, pedestais, objetos);
+  // não projetam os planos (paredes antigas, chão, decalques, escritas), o que é transparente ou "aceso" (MeshBasic) e o que pediu `noShadow`
+  function applyShadowFlags(g: THREE.Object3D) {
+    const FLAT = new Set(['PlaneGeometry', 'ShapeGeometry', 'CircleGeometry', 'RingGeometry']);
+    g.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.Material;
+      if (!mat || mat.transparent || (mat as THREE.MeshBasicMaterial).isMeshBasicMaterial || (mat as THREE.ShaderMaterial).isShaderMaterial) return;
+      m.receiveShadow = true;
+      if (!FLAT.has(m.geometry.type) && !m.userData.noShadow) m.castShadow = true;
+    });
+  }
   // em qual sala está o ponto z (o corredor pertence à sala da porta)
   const roomOfZ = (z: number) => {
     for (let i = 0; i < rooms.length; i++) {
@@ -1594,8 +1608,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const nearSurfaces = () => surfCache;
 
-  // ── pool de luzes: poucas luzes reais, emprestadas aos emissores mais relevantes ──
-  const POOL = 6;
+  // ── O MOTOR DE LUZ (DESIGN.md §63): luzes reais emprestadas às chamas mais relevantes (perto e fortes). Toda chama perto do jogador acende
+  // o próprio pedaço da sala; as mais perto ganham SOMBRA de verdade (mapa pequeno, filtro duro, combina com o pixel); as longe ficam com um
+  // brilho barato na parede (o kit apaga esse brilho quando a luz de verdade chega: `Emitter.lit`). Quantas luzes e sombras: a qualidade escolhe.
+  // O número de luzes só muda quando a qualidade muda (assim os shaders não recompilam ao trocar de sala).
   interface Slot {
     light: THREE.PointLight;
     em: Emitter | null;
@@ -1603,26 +1619,43 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     w: number;
     leaving: boolean;
   }
-  const slots: Slot[] = Array.from({ length: POOL }, () => {
-    const light = new THREE.PointLight(0xffffff, 0, 0, 2);
-    scene.add(light);
-    return { light, em: null, room: 0, w: 0, leaving: false };
-  });
-  // ── luzes COM SOMBRA (DESIGN.md §60): duas PointLights de sombra (mapa pequeno, filtro duro, combina com o pixel) emprestadas às chamas
-  // marcadas (`Emitter.shadow`) mais relevantes. Ficam sempre na cena (o número de luzes não muda, então os shaders não recompilam ao
-  // trocar de sala). O mapa de cada uma é refeito em rodízio (uma por quadro) e logo que ela muda de chama.
-  const SHADOW_POOL = 2;
-  const sslots: (Slot & { fresh: boolean })[] = Array.from({ length: SHADOW_POOL }, () => {
-    const light = new THREE.PointLight(0xffffff, 0, 0, 2);
-    light.castShadow = true;
-    light.shadow.mapSize.set(256, 256);
-    light.shadow.camera.near = 0.08;
-    light.shadow.camera.far = 18;
-    light.shadow.bias = -0.006;
-    light.shadow.autoUpdate = false;
-    scene.add(light);
-    return { light, em: null, room: 0, w: 0, leaving: false, fresh: false };
-  });
+  const BUDGET: Record<string, { pool: number; shadow: number; perFrame: number }> = {
+    alta: { pool: 12, shadow: 4, perFrame: 2 },
+    media: { pool: 10, shadow: 2, perFrame: 1 },
+    baixa: { pool: 6, shadow: 0, perFrame: 0 },
+  };
+  let budget = BUDGET.alta;
+  let POOL = budget.pool;
+  let SHADOW_POOL = budget.shadow;
+  let slots: Slot[] = [];
+  let sslots: (Slot & { fresh: boolean; lastBody: THREE.Vector3; lastDie: THREE.Vector3 })[] = [];
+  const buildLightPools = (q: string) => {
+    budget = BUDGET[q] ?? BUDGET.alta;
+    POOL = budget.pool;
+    SHADOW_POOL = budget.shadow;
+    for (const sl of [...slots, ...sslots]) {
+      scene.remove(sl.light);
+      sl.light.dispose();
+    }
+    slots = Array.from({ length: POOL }, () => {
+      const light = new THREE.PointLight(0xffffff, 0, 0, 2);
+      scene.add(light);
+      return { light, em: null, room: 0, w: 0, leaving: false };
+    });
+    sslots = Array.from({ length: SHADOW_POOL }, () => {
+      const light = new THREE.PointLight(0xffffff, 0, 0, 2);
+      light.castShadow = true;
+      light.shadow.mapSize.set(256, 256);
+      light.shadow.camera.near = 0.08;
+      light.shadow.camera.far = 12;
+      light.shadow.bias = -0.006;
+      light.shadow.normalBias = 0.02;
+      light.shadow.autoUpdate = false;
+      scene.add(light);
+      return { light, em: null, room: 0, w: 0, leaving: false, fresh: false, lastBody: new THREE.Vector3(), lastDie: new THREE.Vector3() };
+    });
+  };
+  buildLightPools(configStore.get().quality);
   let shadowTurn = 0;
   let shadowsDirty = false;
   let lightTick = 0;
@@ -1641,7 +1674,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       });
       cand.sort((p, q) => q.score - p.score);
       // as chamas marcadas mais fortes vão para as luzes com sombra; as outras (e todas, sem sombras) para o pool comum
-      const shadowTop = shadowsOn ? cand.filter((c) => c.e.shadow).slice(0, SHADOW_POOL) : [];
+      const shadowTop = SHADOW_POOL > 0 ? cand.filter((c) => c.e.shadow).slice(0, SHADOW_POOL) : [];
       sslots.forEach((sl) => {
         if (sl.em && !shadowTop.some((c) => c.e === sl.em)) sl.leaving = true;
       });
@@ -1676,6 +1709,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     let fireNear = 0;
+    lightEnv.scale = lightScale();
+    // quanto cada chama já tem de luz de verdade (o kit esconde o brilho falso dela na mesma medida)
+    activeRooms.forEach((i) => {
+      for (const e of rooms[i].emitters) e.lit = 0;
+    });
     for (const sl of slots) {
       if (!sl.em) {
         sl.light.intensity = 0;
@@ -1691,11 +1729,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sl.w = Math.min(1, sl.w);
       sl.light.position.copy(sl.em.pos).add(sl.em.jit).add(offs[sl.room]);
       sl.light.color.setHex(sl.em.color);
+      sl.light.distance = sl.em.range;
       sl.light.intensity = sl.em.intensity * sl.w * lightScale();
+      sl.em.lit = Math.max(sl.em.lit, sl.w);
       fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
     }
-    // as luzes com sombra: só se movem (o tremor da chama) quando o mapa delas é refeito, para a sombra nunca "descolar" da luz
-    shadowTurn = (shadowTurn + 1) % SHADOW_POOL;
+    // as luzes com sombra: só se movem (o tremor da chama) quando o mapa delas é refeito, para a sombra nunca "descolar" da luz.
+    // Rodízio: `perFrame` mapas por quadro (os recém-chegados na hora)
+    const turn0 = shadowTurn;
+    shadowTurn = SHADOW_POOL ? (shadowTurn + budget.perFrame) % SHADOW_POOL : 0;
     shadowsDirty = false;
     sslots.forEach((sl, k) => {
       if (!sl.em) {
@@ -1710,14 +1752,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return;
       }
       sl.w = Math.min(1, sl.w);
-      if (sl.fresh || k === shadowTurn) {
-        sl.light.position.copy(sl.em.pos).add(sl.em.jit).add(offs[sl.room]);
+      // o mapa da sombra só é refeito quando precisa: luz recém-chegada, ou o jogador/o dado se mexeram perto dela (parado, custo zero)
+      sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
+      const near = sl.light.position.distanceToSquared(body.position) < 100 || sl.light.position.distanceToSquared(worldDie.position) < 100;
+      const moved = near && (sl.lastBody.distanceToSquared(body.position) > 0.0025 || sl.lastDie.distanceToSquared(worldDie.position) > 0.0025);
+      if (sl.fresh || (moved && (k - turn0 + SHADOW_POOL) % SHADOW_POOL < budget.perFrame)) {
         sl.light.shadow.needsUpdate = true;
         sl.fresh = false;
+        sl.lastBody.copy(body.position);
+        sl.lastDie.copy(worldDie.position);
         shadowsDirty = true;
       }
       sl.light.color.setHex(sl.em.color);
+      sl.light.distance = sl.em.range;
       sl.light.intensity = sl.em.intensity * sl.w * lightScale();
+      sl.em.lit = Math.max(sl.em.lit, sl.w);
       fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
     });
     sfx.fire(fireNear);
@@ -2350,9 +2399,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     rooms.forEach((r) => {
       if (r.shadowLight && r.shadowLight.castShadow !== shadowsOn) r.shadowLight.castShadow = shadowsOn;
     });
-    sslots.forEach((sl) => {
-      if (sl.light.castShadow !== shadowsOn) sl.light.castShadow = shadowsOn;
-    });
+    if ((BUDGET[c.quality] ?? BUDGET.alta) !== budget) buildLightPools(c.quality);
     pixelSize = c.pixel;
     fovH = c.fov;
     sensMouse = c.mouseSens / 5;

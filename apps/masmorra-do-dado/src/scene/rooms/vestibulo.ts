@@ -683,6 +683,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
 
   kit.bake();
   if (A2) {
+    kit.group.userData.ownShadows = true;
     // tudo recebe sombra; fazem sombra só as peças de dentro da sala (as paredes e a abóbada são o limite)
     kit.group.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) o.receiveShadow = true;

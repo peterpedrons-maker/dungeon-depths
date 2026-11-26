@@ -308,6 +308,7 @@ export function buildLousa(ctx: Ctx): Room {
     ((globalThis as Record<string, unknown>).__lousa = () => ({ l1: L1.solved, l2: L2.solved, s1: secret.solved, door: DB.grid.points(), solved, grate: +grateK.toFixed(2), cells: (k: number) => [L1.b, L2.b, DB, SB][k] && [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => [L1.b, L2.b, DB, SB][k].cellPos(i).toArray().map((v) => +v.toFixed(2))) }));
   }
   kit.bake();
+  kit.group.userData.ownShadows = true; // (a sala decide as sombras sozinha: o nicho alto não projeta)
   // sombras: a luz do nicho alto bate em tudo; projetam as coisas sólidas (não os decalques, as chamas nem o próprio nicho alto)
   kit.group.traverse((o) => {
     const m = o as THREE.Mesh;

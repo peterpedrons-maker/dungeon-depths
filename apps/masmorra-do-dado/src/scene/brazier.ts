@@ -37,6 +37,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   } else {
     kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, y0 + 0.4 * s, z);
     const bowlMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.32 * s, 0.3 * s, 8), lambert(null, 0x3a3a46));
+    bowlMesh.userData.noShadow = true; // a tigela não tapa a própria luz (senão o chão em volta fica escuro)
     bowlMesh.position.set(x, y0 + 0.95 * s, z);
     kit.add(bowlMesh);
   }
@@ -47,9 +48,11 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   flame.visible = false;
   kit.group.add(flame);
   const lamp = kit.light(x - 0.3 * s, y0 + 1.9 * s, z + 0.4 * s, 0xff8a2a, 0);
+  lamp.shadow = true; // braseiro aceso faz sombra de verdade (o motor dá às chamas mais perto)
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
     const coal = new THREE.Mesh(new THREE.DodecahedronGeometry((useModel ? 0.06 : 0.11) * s), coalMat);
+    coal.userData.noShadow = true;
     coal.position.set(x + Math.cos(i * 1.3) * coalR, y0 + ((useModel ? 1.06 : 1.12) + (i % 2) * 0.04) * s, z + Math.sin(i * 1.3) * coalR);
     kit.group.add(coal);
   }
