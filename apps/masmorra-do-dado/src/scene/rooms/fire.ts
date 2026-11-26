@@ -1064,7 +1064,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           l.emb.scale.set(es, es, 1);
           l.burn.set(l.lit);
           l.burn.highlight(l === aimed);
-          l.burn.update(dt, t);
+          l.burn.update(ctx.paused() ? 0 : dt, t); // (durante uma cena, como a do dado queimando, a luz espera: ela escreve à vista)
           l.fire = l.burn.level();
           l.flame.visible = l.fire > 0.05;
           if (l.flame.visible) {

@@ -18,7 +18,7 @@ import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { placeProp, T_HEIGHT } from '../props';
 
-// PRÉVIA (?objetos=1, DESIGN.md §60): a galeria com os objetos dos condenados (modelos 3D dos packs) e as tochas com sombra de verdade
+// PRÉVIA (?objetos=1, DESIGN.md §62): a galeria com os objetos dos condenados (modelos 3D dos packs) e as tochas com sombra de verdade
 const PROPS_ON = typeof location !== 'undefined' && new URLSearchParams(location.search).has('objetos');
 
 const X0 = -3.5;

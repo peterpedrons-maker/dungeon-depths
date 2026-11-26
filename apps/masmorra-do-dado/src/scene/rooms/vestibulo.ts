@@ -57,7 +57,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   // névoa mística do pátio lá fora (sala 1): manchas de névoa PIXELADAS que passeiam devagar em volta do poço
   const mist: { s: THREE.Sprite; a: number; r: number; y: number; sp: number; ph: number; base: number }[] = [];
 
-  // SALA 2, O SALÃO DE COLUNAS (DESIGN.md §56): cantaria com relevo, lajes grandes, abóbadas de aresta sobre arcos e colunas redondas
+  // SALA 2, O SALÃO DE COLUNAS (DESIGN.md §60): cantaria com relevo, lajes grandes, abóbadas de aresta sobre arcos e colunas redondas
   const A2 = v === 2;
   const RISE = 1.9; // a abóbada sobe 1,9 m acima do nascimento (H)
   const HT = A2 ? H + RISE : H; // altura das paredes

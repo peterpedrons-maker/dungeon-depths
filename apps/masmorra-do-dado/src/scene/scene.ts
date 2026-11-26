@@ -1608,7 +1608,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     scene.add(light);
     return { light, em: null, room: 0, w: 0, leaving: false };
   });
-  // ── luzes COM SOMBRA (DESIGN.md §56): duas PointLights de sombra (mapa pequeno, filtro duro, combina com o pixel) emprestadas às chamas
+  // ── luzes COM SOMBRA (DESIGN.md §60): duas PointLights de sombra (mapa pequeno, filtro duro, combina com o pixel) emprestadas às chamas
   // marcadas (`Emitter.shadow`) mais relevantes. Ficam sempre na cena (o número de luzes não muda, então os shaders não recompilam ao
   // trocar de sala). O mapa de cada uma é refeito em rodízio (uma por quadro) e logo que ela muda de chama.
   const SHADOW_POOL = 2;

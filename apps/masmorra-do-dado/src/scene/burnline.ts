@@ -3,18 +3,19 @@
 //    cal das escritas comuns (que brilha um pouco). Antes era fissura preta: confundia com o rejunte dos tijolos. A pedra só lembra, sem
 //    brilhar, que ali já houve fogo: uma mancha velha de FULIGEM acima da frase.
 //  · ACESA: o glifo continua NÍTIDO, no desenho exato, e BRILHA numa luz dourada meio mágica: a luz corre pelos sulcos do soquete até o fim da
-//    frase, traço por traço (a ordem da escrita), e depois respira devagar, com um reflexo correndo ao longo dos traços; halo dourado na parede e
+//    frase, traço por traço (a ordem da escrita), e depois respira devagar, com um reflexo discreto correndo ao longo dos traços; o brilho fica
+//    SÓ no desenho (sem faixa de luz atrás, DESIGN.md §58) e
 //    luz de verdade. (Antes havia chamas por cima das letras: deformavam o glifo e confundiam.)
 //  · AO APAGAR (erro, punição): a luz esmaece em âmbar, e fica FULIGEM por ~2 s depois que a luz da sala volta.
 //  · REALCE DE MIRA: um contorno dourado em volta da frase, enquanto a mira (com a face de Fogo) está sobre ela.
-// De longe dá para contar quantas frases estão acesas: a luz e o halo ignoram a névoa.
+// De longe dá para contar quantas frases estão acesas: a luz ignora a névoa.
 import * as THREE from 'three';
 import { drawGlyphPart, glyphSamples } from '../book/font';
 import { glyphsOf } from '../story/lexicon';
 import { CELL, GLYPH_SIZE, PAD } from './glyphcell';
 import type { Inscription } from './inscription';
 import type { Kit } from './kit';
-import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, HALO_K, PER_GLYPH, rng, softCapsule } from './firefx';
+import { canvasTexture, drawGlowGlyph, glowColor, glowStrokeMaterial, makeFlashMesh, PER_GLYPH, PULSE_ON, pulseK, rng, softCapsule } from './firefx';
 
 const SOOT = new THREE.Color(0.25, 0.22, 0.21); // a escrita apagada pela Casa, enegrecida
 const IVORY = '#ddd3b8'; // o branco meio amarelado (osso, pálido) da escrita que ainda não foi acesa
@@ -56,6 +57,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     base: THREE.MeshLambertMaterial;
     defs: ReturnType<typeof glyphsOf>;
     dirty: boolean;
+    flash: ReturnType<typeof makeFlashMesh> | null;
   }
   const ps: P[] = [];
   const uT = { value: 0 };
@@ -100,12 +102,18 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     m.rotation.copy(p.mesh.rotation);
     m.renderOrder = 3;
     kit.group.add(m);
+    const flash = PULSE_ON ? makeFlashMesh(p.mesh.geometry as THREE.PlaneGeometry, defs, W, H) : null;
+    if (flash) {
+      flash.mesh.position.copy(p.mesh.position).addScaledVector(n, 0.006);
+      flash.mesh.rotation.copy(p.mesh.rotation);
+      kit.group.add(flash.mesh);
+    }
     defs.forEach((_, j) => {
       glyphs.push({ panel: pi, idx: j, t0: unit, f: 0 });
       unit += 1;
     });
     unit += WORD_GAP;
-    ps.push({ canvas, g2, tex, mat, base: p.mat, defs, dirty: false });
+    ps.push({ canvas, g2, tex, mat, base: p.mat, defs, dirty: false, flash });
   });
   const total = Math.max(1, unit - WORD_GAP);
   const first = panels[0];
@@ -117,7 +125,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
   const mid = start.clone().add(end).multiplyScalar(0.5);
   const hPanel = (first.mesh.geometry as THREE.PlaneGeometry).parameters.height;
 
-  // o halo dourado (somado à parede), a fuligem (escurece), a fuligem VELHA (fixa, acima da frase) e o contorno de mira
+  // a fuligem (escurece), a fuligem VELHA (fixa, acima da frase) e o contorno de mira
   const plane = (w: number, h: number, mat: THREE.Material, off: number, order: number, up = 0) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     m.position.copy(mid).addScaledVector(n, off);
@@ -127,8 +135,6 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     kit.group.add(m);
     return m;
   };
-  const haloMat = new THREE.MeshBasicMaterial({ map: softCapsule(), color: 0xffb648, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
-  plane(len + o.size * 2.0, hPanel * 2.0, haloMat, -0.006, 0);
   const sootMat = new THREE.MeshBasicMaterial({ map: softCapsule(), color: 0x000000, transparent: true, opacity: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
   plane(len + o.size * 1.4, hPanel * 1.6, sootMat, -0.004, 0, hPanel * 0.12);
   // a pedra lembra que ali já houve fogo: uma mancha velha e fraca de fuligem, mais alta que a frase (a fumaça sobe). Não brilha.
@@ -158,13 +164,14 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
   const outMat = new THREE.MeshBasicMaterial({ map: ot, color: 0xffd36b, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 });
   const outline = plane(OW, OH, outMat, 0.012, 4);
   outline.position.addScaledVector(along, -o.size * 0.15);
-  // uma luz de verdade (o motor empresta uma PointLight às mais fortes): o halo ilumina a parede e o chão em volta
+  // uma luz de verdade, fraca (o motor empresta uma PointLight às mais fortes): esquenta um pouco a parede em volta
   const em = kit.light(mid.x + n.x * 0.7, mid.y, mid.z + n.z * 0.7, 0xffb050, 0);
 
   let lit = false;
   let run = 0; // símbolos já percorridos pela luz
   let show = 0; // 0..1 o traço aceso visível (esmaece ao apagar)
   let sootT = 0;
+  let pulseT = -1; // segundos desde que a luz terminou de escrever (o pulso); -1 = nenhum
   let hlWant = false;
   let hl = 0;
 
@@ -213,6 +220,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
         if (run < total) {
           run = Math.min(total, run + dt / PER_GLYPH);
           sync();
+          if (run >= total) pulseT = 0; // terminou de escrever: o pulso
         }
         show = 1;
       } else if (show > 0) {
@@ -225,16 +233,18 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
       if (sootT > 0 && !o.hold?.()) sootT = Math.max(0, sootT - dt);
       const soot = Math.min(1, sootT / 0.7); // segura escura e clareia no fim
       const breathe = 0.92 + 0.08 * Math.sin(t * 1.9 + phase);
+      if (pulseT >= 0) pulseT += dt;
+      const pk = pulseK(pulseT);
       for (const P of ps) {
         P.mat.opacity = Math.min(1, show * 1.3);
-        glowColor(P.mat.color, lit ? 1 : show * show);
+        glowColor(P.mat.color, lit ? 1 : show * show, 1 + 0.5 * pk);
+        P.flash?.set(pk);
         P.base.color.copy(MATTE).lerp(SOOT, soot);
         P.base.emissiveIntensity = 0;
       }
       const grow = Math.min(1, 0.2 + run / total);
-      haloMat.opacity = HALO_K * 0.5 * show * breathe * grow;
       sootMat.opacity = 0.72 * soot;
-      em.intensity = 4 * show * breathe * grow; // (fraca: a luz não pode dourar as frases apagadas vizinhas)
+      em.intensity = (4 + 16 * pk) * show * breathe * grow; // (fraca: a luz não pode dourar as frases apagadas vizinhas; no pulso, um clarão)
       // realce de mira
       hl += ((hlWant ? 1 : 0) - hl) * Math.min(1, dt * 14);
       hlWant = false;

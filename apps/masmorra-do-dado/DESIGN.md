@@ -911,7 +911,22 @@ da cal das escritas comuns (que brilha um pouco). São três tons que não se co
 ser acesa), **dourado luminoso** (acesa). Para a luz quente não "acender" o marfim, ele é um pouco menos claro que a cal e a luz de verdade que
 a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A moldura do tablete acendível é do mesmo marfim, sem brilho.
 
-## 58. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
+## 58. Brilho só no desenho, mais contido (pedido do Pedro)
+- Saiu a **faixa de luz** (halo retangular) atrás das frases e das palavras acesas: o brilho fica **só no desenho do glifo**, um brilho macio e
+  estreito que segue cada traço (testado primeiro atrás de `?glifo=suave` e aprovado; agora é o padrão e o parâmetro saiu).
+- **Mais contido** para não deformar os glifos (eles têm traços curtos e pontinhos próximos, que um brilho largo junta): o traço aceso tem a
+  largura do sulco, o brilho em volta é estreito e fraco, a cor fica só um pouco acima de 1 (o bloom dá um brilho leve, sem borrar) e o reflexo
+  que corre pelos traços e a respiração ficaram discretos. A luz de verdade que a frase projeta continua fraca.
+- De longe, as frases acesas aparecem como traços dourados (sem o bloco de luz); ainda dá para contar quantas estão acesas.
+
+## 59. A luz espera a cena do dado; o pulso (em teste)
+- **A frase acendível só começa a ser escrita depois da cena do dado queimando** (`ctx.paused()`): antes a luz escrevia por trás do dado em
+  chamas e o jogador perdia a escrita traço a traço. Agora ela acontece à vista. (Vale para o jogo, já.)
+- **Pulso** (EM TESTE, só com `?pulso=1` no endereço; `PULSE_ON` em `firefx.ts`): no instante em que a luz termina de escrever a frase ou a
+  palavra, um clarão de ~0,75 s no formato exato dos traços (uma camada de luz somada, só um pouco mais larga que eles; `makeFlashMesh`), a luz
+  da frase esquenta a parede por um instante, e tudo assenta no brilho contido (§58). Não deixa nada atrás da escrita nem deforma o glifo.
+
+## 60. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
 O Pedro pediu um nível "AAA" de ambientação, **sempre em pixel art**, com uma foto de referência (cripta de colunas redondas e abóbadas de
 aresta, tochas, escuro de verdade) e quis ver primeiro uma sala pronta. A sala 2 (O Vestíbulo) virou o mockup. **Nada do puzzle mudou**: os três
 braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugares; a sala ainda se resolve com exatamente dois acesos.
@@ -933,7 +948,7 @@ braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugar
   `wallMat`, `uvScale`): vistas de trás não somem mais e a laje da porta sobe para dentro da parede.
 - Desempenho: ~500 chamadas de desenho com os braseiros acesos (antes ~350). Testado com Playwright (PC e celular emulado); não testado num celular real.
 
-## 59. O braseiro em modelo 3D (prévia, pedido do Pedro)
+## 61. O braseiro em modelo 3D (prévia, pedido do Pedro)
 O Pedro achou o braseiro feio e mandou um modelo do Sketchfab: **"Stone Column Brazier", de Amarveer, CC BY 4.0** (pode entrar no jogo, inclusive
 vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS.txt`). É o primeiro arquivo de modelo do jogo (até aqui tudo era código).
 - **Tratamento** (`tools/braseiro_glb.py` → `public/models/braseiro.glb`, 240 KB; o original tinha 28 MB): sai a chama "de foto" (o jogo usa a
@@ -945,7 +960,7 @@ vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS
 - **Ainda é prévia**: só entra com `?braseiro=novo` (carrega o arquivo e troca o pé e a tigela de todos os braseiros). Para virar o padrão falta
   carregar o modelo antes de montar as salas e conferir todas as salas com braseiro.
 
-## 60. Objetos de cena em modelo 3D: dois packs CC0, a vitrine e a Galeria com objetos (prévias, pedido do Pedro)
+## 62. Objetos de cena em modelo 3D: dois packs CC0, a vitrine e a Galeria com objetos (prévias, pedido do Pedro)
 O Pedro pediu objetos de verdade para as salas. Achei e baixei dois packs gratuitos **CC0** (podem entrar no jogo, até vendido, sem crédito
 obrigatório; o crédito está em `public/audio/CREDITS.txt`): **Fantasy Props MegaKit (Standard)**, de Quaternius (94 objetos em glTF, quatro texturas
 "trim sheet" compartilhadas), e **Medieval Tavern Props Pack**, de System G6 (19 objetos num arquivo do Blender, exportados para .glb pelo Blender

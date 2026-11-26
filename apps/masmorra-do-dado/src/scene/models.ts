@@ -1,4 +1,4 @@
-// MODELOS 3D de fora (DESIGN.md §59). Por enquanto só o braseiro, a partir de "Stone Column Brazier" de Amarveer (Sketchfab, CC BY 4.0: o
+// MODELOS 3D de fora (DESIGN.md §61). Por enquanto só o braseiro, a partir de "Stone Column Brazier" de Amarveer (Sketchfab, CC BY 4.0: o
 // crédito está na tela de Créditos). O arquivo do jogo (`public/models/braseiro.glb`) já vem tratado para o pixel: sem a chama de foto
 // (o jogo usa a própria chama), texturas reduzidas a 128 px (a densidade de pixel do resto) e filtro "nearest"; aqui os materiais viram
 // Lambert (o mesmo das paredes) com o relevo do mapa de normais.

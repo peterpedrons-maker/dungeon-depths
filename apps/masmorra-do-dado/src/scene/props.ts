@@ -1,4 +1,4 @@
-// OBJETOS DE CENA em modelo 3D (DESIGN.md §60): packs gratuitos tratados para o pixel.
+// OBJETOS DE CENA em modelo 3D (DESIGN.md §62): packs gratuitos tratados para o pixel.
 //  · "q": Fantasy Props MegaKit (Standard), de Quaternius, CC0 (as texturas são quatro "trim sheets" compartilhadas, reduzidas a 256 px);
 //  · "t": Medieval Tavern Props Pack, de System G6 (Qoma), CC0 (texturas reduzidas a 128 px).
 // Os materiais viram Lambert (o mesmo das paredes), com o relevo do mapa de normais, cor de vértice quando o modelo tem, e filtro "nearest".
