@@ -42,7 +42,7 @@ import { DieLife, type LifeTarget } from './dielife';
 import { layout as bookLayout } from '../book/pages';
 import { config, configStore } from '../story/config';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
-import { FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_SOMBRA } from './rooms/chapter1b';
+import { FIRE_DIZEM, FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_MEMORIA, FIRE_SOMBRA } from './rooms/chapter1b';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
 import { buildChamaCurta } from './rooms/chamaCurta';
@@ -82,8 +82,10 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     (c) => buildFireRoom(c, FIRE_LEI), // NÍVEL 8. A LEI PEQUENA: a sala sobe; «UM BOATO IGUAL VERDADE», dois boatos que dizem o mesmo
     buildRespiro4, // RESPIRO R4 A ESCADARIA: o poço com três lances; janelas para salas já feitas; a porta dos seis pontos (fechada)
     (c) => buildFireRoom(c, FIRE_FOGO_CORRE), // NÍVEL 8. O FOGO QUE CORRE: 4 s de chama, uma vez; canaletas com tempo; os quatro cantos num instante (+ C5)
-    buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (no plano: entre as salas 16 e 17)
-    buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala 18)
+    (c) => buildFireRoom(c, FIRE_DIZEM), // NÍVEL 9. OS QUE DIZEM O MESMO: claustro; queimar UM estandarte (o boato sai da conta) e acender na ordem (+ C6)
+    buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (ensina a sala seguinte)
+    (c) => buildFireRoom(c, FIRE_MEMORIA), // NÍVEL 9. A MEMÓRIA DA CASA: hub + três anexos; a confirmada escondida no quadro vazio (soquete frio → escuro)
+    buildTribunal, // NÍVEL 10. O TRIBUNAL DOS RUMORES: o fim do capítulo 1
     // Reserva (fora do jogo por ora): vestibulo.ts v3 (Os Quatro) e FIRE_ORDEM (A Ordem), que as novas 3 e 5 substituem; room1.ts (A Entrada, cena do
     // Escrivão que dá o giz), vestibulo.ts v4 (A Lacuna), room2.ts (O Selo), room3.ts (O Salão das Brasas), room4.ts (O Mirante); FIRE_SEGREDO
     // (A Confirmação, Mastermind) em fireRooms.ts; lab.ts (A Placa que Julga). Usam Peso e giz, que só chegam nos capítulos 2 e 3.

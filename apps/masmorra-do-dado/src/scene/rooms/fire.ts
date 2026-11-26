@@ -138,6 +138,7 @@ export interface FireSpec {
   fog?: { color: string; near: number; far: number };
   ambient?: { color: number; intensity: number };
   doorY?: number; // a porta de saída fica num andar alto (mezanino): a sala seguinte começa nessa altura
+  sky?: boolean; // sem teto: um pátio a céu aberto (céu pálido, como o do pátio da abertura)
 }
 
 // brasa fraca (um pontinho laranja) para o soquete das frases acendíveis
@@ -244,7 +245,29 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const zm = (Z0 + Z1) / 2;
 
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], theme)), 0, 0, zm, -Math.PI / 2);
-  kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
+  if (!spec.sky) kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
+  else {
+    // o céu: uma placa clara bem acima das paredes, com nuvens em pixels (sem luz e sem névoa)
+    const c = document.createElement('canvas');
+    c.width = 64;
+    c.height = 64;
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#b8c0d4';
+    g.fillRect(0, 0, 64, 64);
+    for (let k = 0; k < 90; k++) {
+      const x = (k * 37) % 64;
+      const y = (k * 23 + (k % 7) * 5) % 64;
+      g.fillStyle = k % 3 ? '#c8cede' : '#a8b0c6';
+      g.fillRect(x, y, 6 + (k % 5), 2);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(4, 4);
+    t.colorSpace = THREE.SRGBColorSpace;
+    kit.plane(W * 3, L * 3, new THREE.MeshBasicMaterial({ map: t, fog: false }), 0, H + 10, zm, Math.PI / 2, 0, false);
+  }
   const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
   const wallL = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
   const wallR = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
@@ -816,7 +839,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     bonus: extra.bonus,
     clampDie(p, vel, e, R) {
       extra.clampDie?.(p, vel, e, R);
-      if (p.y > H - R) {
+      if (p.y > (spec.sky ? H + 8 : H) - R) {
         p.y = H - R;
         if (vel.y > 0) vel.y = -vel.y * e;
       }

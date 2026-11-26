@@ -230,7 +230,37 @@ Canaletas: centro→cantos do fundo (0 em 2 s, 2 em 3 s) e centro→canto da fre
   acendê-lo abre o nicho da gema (parede direita, perto da porta).
 - **Por que é única:** uma ignição nunca basta; de todos os pares ordenados só centro → canto 6 funciona. **Dificuldade: 8 de 10.**
 
-## Sala 14 — O Tribunal dos Rumores  — NÍVEL 10 (**provisório aqui**: a posição final é a sala 18, depois das salas da curva de `PUZZLES_PROPOSTAS.md` §2)
+## Os Que Dizem o Mesmo  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO e «ACENDER UM BOATO»)  — NÍVEL 9 ("dizer é fazer"; `tools/verify_dizem_mesmo.mjs`)
+**Claustro a céu aberto:** um pátio quadrado com galerias cobertas em volta (8 colunas: 4 nos cantos, 4 no meio dos lados) e uma **fonte** seca no meio.
+Cinco braseiros no pátio: UM, DOIS, TRÊS (o **GRANDE**), QUATRO e CINCO (o **PEQUENO**). Na porta, «ACENDER TODOS BRASEIRO ORDEM CONFIRMADO» e, ao lado,
+«ACENDER UM BOATO CONFIRMADO». **Confirmadas**, talhadas nas paredes das galerias: «PEQUENO ANTES TRÊS», «UM ANTES CINCO», «CINCO ANTES DOIS».
+**Boatos**, em **estandartes de pano** pendurados entre as colunas: «DOIS ANTES QUATRO», «GRANDE DEPOIS DOIS», «DOIS ANTES TRÊS», «TRÊS ANTES UM»,
+«TRÊS DEPOIS QUATRO». Na fonte, a **lei** «DOIS BOATO IGUAL VERDADE». **Queimar um estandarte tira aquele boato da conta.** Queimar um **2º**: a Casa
+pendura todos de volta. A porta só aceita a ordem se o **único** estandarte queimado for o certo. Errar: escuro e frios por 12 s.
+1. Das confirmadas: **1** é o primeiro; depois **5**; o 5 vem antes do 2 e do 3.
+2. «TRÊS ANTES UM» é sempre falso. «GRANDE DEPOIS DOIS» e «DOIS ANTES TRÊS» dizem a mesma coisa (GRANDE é o 3). Com os cinco, a lei não fecha (contradição).
+3. Testar "e se este não existisse?": só **sem «DOIS ANTES QUATRO»** sobra uma resposta. **Queimar «DOIS ANTES QUATRO»** (o estandarte da galeria do fundo, à esquerda).
+4. **Ordem: UM, CINCO, DOIS, TRÊS, QUATRO.**
+- **Constelação C6:** as 8 colunas e a fonte são uma grade 3×3, todas com tocha (+3 de parede). Os **frisos** (a galeria do fundo de canto a canto, uma
+  **viga** que cruza o pátio na diagonal e a galeria da frente) formam um **Z**: o glifo DE NOVO. Acender as tochas das **quatro colunas dos cantos**: o
+  fogo desenha o Z, um braseiro sobe ao lado da fonte; acendê-lo abre o nicho (parede esquerda, perto da entrada).
+- **Por que é única:** com os cinco, nenhuma ordem; queimando cada um: só «DOIS ANTES QUATRO» deixa uma ordem. **Dificuldade: 9 de 10.**
+
+## A Memória da Casa  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO)  — NÍVEL 9 (ensaio do Tribunal; `tools/verify_lei.mjs`)
+Um salão com quatro colunas em volta dos braseiros (UM, DOIS, TRÊS = **GRANDE**, QUATRO = **PEQUENO**) e a porta; **três anexos** com batente:
+- **Anexo A** (à esquerda, perto da entrada): «PEQUENO ANTES DOIS CONFIRMADO».
+- **Anexo B** (à direita): quatro boatos gastos: «UM ANTES GRANDE», «QUATRO DEPOIS TRÊS», «GRANDE ANTES PEQUENO», «TRÊS ANTES DOIS».
+- **Anexo C** (à esquerda, perto da porta): a lei «DOIS BOATO IGUAL VERDADE» e um **quadro de frase vazio** com um **soquete frio** embaixo (como na
+  Antecâmara Fria, logo antes). Acender o soquete traz o escuro (2,5 s) e mostra no quadro, em cal, **«UM DEPOIS QUATRO» CONFIRMADO**. Repetível.
+O glifo TODOS da porta se acende conforme os braseiros acendem. Errar: escuro e frios por 12 s.
+1. Achar a confirmada escondida: soquete frio → escuro → **UM DEPOIS QUATRO** (4 antes de 1).
+2. Confirmadas: 4 antes de 2 (PEQUENO = 4) e 4 antes de 1.
+3. «QUATRO DEPOIS TRÊS» e «GRANDE ANTES PEQUENO» dizem o mesmo (3 antes de 4). Se fossem verdade, os outros dois seriam mentira e dá contradição. Então
+   são mentira: 4 antes de 3. Os verdadeiros são «UM ANTES GRANDE» (1 antes de 3) e «TRÊS ANTES DOIS» (3 antes de 2).
+4. **Ordem: QUATRO, UM, TRÊS, DOIS.**
+- **Por que é única:** cada pista é necessária, inclusive a do escuro. **Palavra nova:** TODOS (o glifo se enche). **Dificuldade: 9 de 10.**
+
+## O Tribunal dos Rumores  — NÍVEL 10 (o fim do capítulo 1, depois de A Memória da Casa)
 Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
 Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).
 

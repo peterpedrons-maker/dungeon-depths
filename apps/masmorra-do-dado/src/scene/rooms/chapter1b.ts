@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireSpec } from './fire';
-import { glyphPattern, makeTorch, makeWallBoard, type Torch, type WallBoard } from '../firegrid';
+import { glyphPattern, makeCloth, makeTorch, makeWallBoard, type Torch, type WallBoard } from '../firegrid';
 import { constellation } from './chapter1';
 import { lambert } from '../kit';
 import { makeCal, type CalText } from '../cal';
@@ -714,4 +714,320 @@ export const FIRE_FOGO_CORRE: FireSpec = {
   fog: { color: '#0a0a11', near: 7, far: 30 },
   ambient: { color: 0x7a78b8, intensity: 1.7 },
   extra: fogoCorreExtra,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// SALA 16 · OS QUE DIZEM O MESMO (nível 9; tools/verify_dizem_mesmo.mjs; Ficha 9)
+// Claustro a céu aberto: um pátio quadrado com galerias cobertas em volta (8 colunas: 4 nos cantos, 4 no meio dos lados) e uma fonte no meio.
+// Cinco braseiros no pátio: UM, DOIS, TRÊS (o GRANDE), QUATRO e CINCO (o PEQUENO). Confirmadas talhadas nas paredes das galerias; cinco BOATOS em
+// estandartes de pano entre as colunas; na fonte, a lei «DOIS BOATO IGUAL VERDADE». Porta: «ACENDER TODOS BRASEIRO ORDEM» e «ACENDER UM BOATO».
+// Com os cinco estandartes a lei não tem solução: é preciso queimar UM (o boato sai da conta). Só sem «DOIS ANTES QUATRO» sobra uma ordem:
+// 1, 5, 2, 3, 4. Queimar um 2º estandarte: a Casa pendura todos de volta. A porta só aceita a ordem se o queimado for «DOIS ANTES QUATRO».
+// C6: tochas nas 8 colunas e na fonte (grade 3×3) + 3 de parede; os frisos (galeria do fundo, a viga diagonal, galeria da frente) formam um Z:
+// DE NOVO. Acender as quatro colunas dos cantos.
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+const DM = { hx: 9, z0: -18, h: 6.5, gx: 4.5, gz: [4.5, 9, 13.5], roof: 4.2 };
+const dmCell = (i: number): [number, number] => [[-DM.gx, 0, DM.gx][i % 3], DM.gz[Math.floor(i / 3)]];
+const DM_BANNERS: { words: string[]; at: [number, number]; n: [number, number] }[] = [
+  { words: ['n2', 'antes', 'n4'], at: [-DM.gx / 2, DM.gz[0]], n: [0, 1] }, // entre as colunas 0 e 1 (o certo)
+  { words: ['grande', 'depois', 'n2'], at: [DM.gx / 2, DM.gz[0]], n: [0, 1] }, // entre 1 e 2
+  { words: ['n2', 'antes', 'n3'], at: [-DM.gx, (DM.gz[0] + DM.gz[1]) / 2], n: [1, 0] }, // entre 0 e 3
+  { words: ['n3', 'antes', 'n1'], at: [DM.gx, (DM.gz[0] + DM.gz[1]) / 2], n: [-1, 0] }, // entre 2 e 5
+  { words: ['n3', 'depois', 'n4'], at: [0, DM.gz[2]], n: [0, -1] }, // na galeria da frente
+];
+function dizemExtra(api: FireExtraApi): FireExtra {
+  const { kit, ctx, X0, X1, Z0, H, boxes } = api;
+  // ── as galerias: telhado de pedra entre as paredes e a linha das colunas ──
+  const R = DM.roof;
+  const ix0 = -DM.gx;
+  const ix1 = DM.gx;
+  const iz0 = Z0 + DM.gz[0];
+  const iz1 = Z0 + DM.gz[2];
+  for (const [x0, x1, z0, z1] of [
+    [X0, X1, Z0, iz0], // fundo
+    [X0, X1, iz1, 2], // frente
+    [X0, ix0, iz0, iz1], // esquerda
+    [ix1, X1, iz0, iz1], // direita
+  ] as [number, number, number, number][]) {
+    kit.box(x1 - x0, 0.3, z1 - z0, kit.stone, (x0 + x1) / 2, R + 0.15, (z0 + z1) / 2, false);
+    kit.plane(x1 - x0, z1 - z0, kit.brick([(x1 - x0) / 2, (z1 - z0) / 2], 0.6, 27), (x0 + x1) / 2, R - 0.001, (z0 + z1) / 2, Math.PI / 2, 0, false);
+  }
+  // os frisos e a viga da constelação C6 (fundo 0-2, viga 2-6, frente 6-8), à altura do telhado
+  const FRIEZES: [number, number][] = [[0, 2], [2, 6], [6, 8]];
+  const frieze = FRIEZES.map(([a, b]) => {
+    const [ax, adz] = dmCell(a);
+    const [bx, bdz] = dmCell(b);
+    const az = Z0 + adz;
+    const bz = Z0 + bdz;
+    const len = Math.hypot(bx - ax, bz - az);
+    const yaw = Math.atan2(-(bz - az), bx - ax);
+    const stone = new THREE.Mesh(new THREE.BoxGeometry(len, 0.3, 0.36), kit.slab);
+    stone.position.set((ax + bx) / 2, R - 0.2, (az + bz) / 2);
+    stone.rotation.y = yaw;
+    kit.group.add(stone);
+    const geo = new THREE.PlaneGeometry(len, 0.14);
+    geo.rotateX(Math.PI / 2);
+    geo.translate(len / 2, 0, 0);
+    const fire = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffa040, fog: false }));
+    fire.position.set(ax, R - 0.36, az);
+    fire.rotation.y = yaw;
+    fire.scale.x = 0.0001;
+    fire.visible = false;
+    kit.group.add(fire);
+    return { a, b, fire, k: 0 };
+  });
+  // a fonte, no meio do pátio (seca), com a lei numa estela
+  const [fx, fdz] = dmCell(4);
+  const fz = Z0 + fdz;
+  const basin = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.45, 0.55, 14), kit.slab);
+  basin.position.set(fx, 0.275, fz);
+  kit.add(basin);
+  const inner = new THREE.Mesh(new THREE.CircleGeometry(1.15, 14), lambert(null, 0x1c1a22));
+  inner.rotation.x = -Math.PI / 2;
+  inner.position.set(fx, 0.56, fz);
+  kit.group.add(inner);
+  kit.box(0.5, 1.6, 0.5, kit.stone, fx, 0.8, fz);
+  kit.box(1.9, 1.0, 0.22, kit.slab, fx, 1.95, fz + 0.36);
+  kit.inscribe({ words: ['n2', 'boato', 'igual', 'verdade', 'conf'], x: fx, y: 1.95, z: fz + 0.475, nx: 0, nz: 1, size: 0.22, age: 0.12, seed: 181, plaque: true });
+  boxes.push(mkBox(fx - 1.4, 0, fz - 1.4, fx + 1.4, 0.55, fz + 1.4), mkBox(fx - 0.95, 0, fz - 0.25, fx + 0.95, 2.45, fz + 0.47));
+  kit.contact(fx, fz, 3.4);
+  // ── os estandartes (boatos de pano) ──
+  const banners = DM_BANNERS.map((b, k) => {
+    const [x, dz] = b.at;
+    const rodTop = R - 0.45;
+    return makeCloth(kit, ctx, { x: x + b.n[0] * 0.08, y: rodTop - 0.55, z: Z0 + dz + b.n[1] * 0.08, nx: b.n[0], nz: b.n[1], words: b.words, size: 0.34, color: ['#8a3040', '#5a4280', '#8a5a2a', '#3a6a4a', '#7a3a6a'][k], tall: 0.25, key: `dm${k}`, secs: 2.2 });
+  });
+  let restoreT = -1;
+  // ── C6: tochas nas 8 colunas e na fonte (grade 3×3) + 3 iscas ──
+  const torches: Torch[] = [];
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < 9; i++) {
+    const [cx, cdz] = dmCell(i);
+    if (i === 4) torches.push(makeTorch(kit, ctx, fx, 2.6, fz - 0.26, 0, -1, 40, true));
+    else torches.push(makeTorch(kit, ctx, cx, 2.3, Z0 + cdz + (cdz > 9 ? -0.5 : 0.5), 0, cdz > 9 ? -1 : 1));
+    cells.push(i);
+  }
+  torches.push(makeTorch(kit, ctx, X0 + 0.1, 2.3, Z0 + 2.2, 1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.3, Z0 + 16, -1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.3, Z0 + 2.2, -1, 0));
+  cells.push(null, null, null);
+  const C = constellation(api, torches, cells, [0, 2, 6, 8], [fx + 2.2, fz + 2.0], [X0 + 0.02, 1.25, Z0 + 15.5, 1, 0]);
+  const litCell = (c: number) => torches[cells.indexOf(c)]?.lit ?? false;
+  // luz das galerias (o pátio já tem o céu)
+  for (const [x, z] of [[X0 + 0.1, Z0 + 6], [X0 + 0.1, Z0 + 12], [X1 - 0.1, Z0 + 6], [X1 - 0.1, Z0 + 12]] as [number, number][]) kit.torch(x, 3.0, z, x < 0 ? 1 : -1, 0, x + z, 0xffa860, 22);
+  kit.light(0, H + 2, Z0 + 9, 0xc8d0e8, 30);
+  void H;
+  return {
+    update(dt, t) {
+      C.update(dt, t);
+      for (const f of frieze) {
+        const on = litCell(f.a) && litCell(f.b);
+        f.k = on ? Math.min(1, f.k + dt / 1.2) : Math.max(0, f.k - dt / 0.6);
+        f.fire.visible = f.k > 0.001;
+        f.fire.scale.x = Math.max(0.0001, f.k);
+      }
+      // os estandartes: o Fogo os queima; queimar um 2º faz a Casa pendurar todos de volta
+      const solved = api.solved();
+      banners.forEach((b) => b.update(dt, t, !solved && restoreT < 0));
+      const gone = banners.filter((b) => b.k > 0 || b.burning).length;
+      if (gone >= 2 && restoreT < 0 && banners.every((b) => !b.burning)) {
+        restoreT = 1.2;
+        ctx.sfx('error');
+        ctx.caption('A Casa pendurou tudo de novo', '', '#cfc6e8');
+      }
+      if (restoreT >= 0) {
+        restoreT -= ctx.paused() ? 0 : dt;
+        if (restoreT < 0) {
+          banners.forEach((b) => b.restore());
+          ctx.sfx('door');
+        }
+      }
+      // os estandartes voltam quando o jogador sai da sala (como os panos)
+      const lp = ctx.player.pos;
+      if (!solved && banners.some((b) => b.k > 0) && (lp.z > 2.6 || lp.z < Z0 - 1.2)) banners.forEach((b) => b.restore());
+    },
+    // a ordem certa só vale se o ÚNICO estandarte queimado for «DOIS ANTES QUATRO»
+    accept: () => banners[0].k >= 1 && banners.slice(1).every((b) => b.k === 0 && !b.burning),
+    reset() {
+      banners.forEach((b) => b.restore());
+      restoreT = -1;
+      C.reset();
+      for (const f of frieze) f.k = 0;
+    },
+    bonus: C.bonus,
+    rects: () => [...C.rect(), [fx - 1.45, fz - 1.45, fx + 1.45, fz + 1.45, 0.55] as Rect, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect],
+    interactables: [C.niche.interactable],
+  };
+}
+export const FIRE_DIZEM: FireSpec = {
+  name: 'Os Que Dizem o Mesmo',
+  subtitle: 'Um pátio a céu aberto.',
+  hx: DM.hx,
+  z0: DM.z0,
+  h: DM.h,
+  sky: true,
+  braziers: [
+    { x: -2.4, dz: 6.6, mark: 'n1' },
+    { x: 2.5, dz: 6.4, mark: 'n2' },
+    { x: -2.6, dz: 11.6, mark: 'n3', scale: 1.5 }, // GRANDE
+    { x: 2.6, dz: 11.7, mark: 'n4' },
+    { x: 0, dz: 12.4, mark: 'n5', scale: 0.6 }, // PEQUENO
+  ],
+  rule: { kind: 'order', seq: [0, 4, 1, 2, 3], hints: false, penalty: 12 }, // UM, CINCO, DOIS, TRÊS, QUATRO
+  words: ['acender', 'todos', 'brasa', 'ordem', 'conf'],
+  tablets: [
+    { words: ['acender', 'n1', 'boato', 'conf'], wall: 'backR' },
+    { words: ['pequeno', 'antes', 'n3', 'conf'], wall: 'left', dz: 6.5, seal: true, y: 2.0, size: 0.34 },
+    { words: ['n1', 'antes', 'n5', 'conf'], wall: 'left', dz: 12.5, seal: true, y: 2.0, size: 0.34 },
+    { words: ['n5', 'antes', 'n2', 'conf'], wall: 'right', dz: 9, seal: true, y: 2.0, size: 0.34 },
+  ],
+  pillars: [0, 1, 2, 3, 5, 6, 7, 8].map((i) => dmCell(i)),
+  torches: 'few',
+  fog: { color: '#1a1c26', near: 8, far: 34 },
+  ambient: { color: 0x9aa0c8, intensity: 2.2 },
+  extra: dizemExtra,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// SALA 17 · A MEMÓRIA DA CASA (nível 9; tools/verify_lei.mjs; Ficha 10). Ensaio do Tribunal.
+// Um salão redondo (o hub, anel de colunas) com os quatro braseiros e a porta; TRÊS ANEXOS em volta, cada um uma câmara curta com batente:
+//  A (à esquerda, perto da entrada): «PEQUENO ANTES DOIS» CONFIRMADO.
+//  B (à direita): os quatro boatos, gastos: «UM ANTES GRANDE» · «QUATRO DEPOIS TRÊS» · «GRANDE ANTES PEQUENO» · «TRÊS ANTES DOIS».
+//  C (à esquerda, perto da porta): a lei «DOIS BOATO IGUAL VERDADE» e um QUADRO DE FRASE VAZIO com um SOQUETE FRIO embaixo (ensinado na R5):
+//    acendê-lo traz o escuro (2,5 s) e, no quadro, em cal, «UM DEPOIS QUATRO» CONFIRMADO. Repetível.
+// Porta: «ACENDER TODOS BRASEIRO ORDEM CONFIRMADO»; o glifo TODOS se enche conforme os braseiros acendem. Ordem: QUATRO, UM, TRÊS, DOIS.
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+const MEM = { hx: 9, z0: -16, h: 5.5 };
+function memoriaExtra(api: FireExtraApi): FireExtra {
+  const { kit, ctx, X0, X1, Z0, H, boxes, braziers, sign } = api;
+  const rects: Rect[] = [];
+  // ── os anexos: paredes de partição com um batente (a passagem) para o hub ──
+  const AX = 5.2; // onde começam os anexos (|x|)
+  const annex = (side: number, z0: number, z1: number, torchZ: number) => {
+    const x = side * AX;
+    const zm = (z0 + z1) / 2;
+    // a parede de partição tem um vão de 1,8 m no meio
+    for (const [za, zb] of [[z0, zm - 0.9], [zm + 0.9, z1]] as [number, number][]) {
+      kit.box(0.4, H, zb - za, kit.brick([1, 1], 0.95, 61 + Math.round(za)), x, H / 2, (za + zb) / 2);
+      boxes.push(mkBox(x - 0.2, 0, za, x + 0.2, H, zb));
+      rects.push([x - 0.2, za, x + 0.2, zb]);
+    }
+    kit.box(0.5, 0.5, 1.8, kit.slab, x, 2.75, zm, false); // a verga
+    kit.box(0.4, H - 3.0, 1.8, kit.stone, x, (H + 3.0) / 2, zm, false);
+    boxes.push(mkBox(x - 0.2, 3.0, zm - 0.9, x + 0.2, H, zm + 0.9));
+    // as paredes de fundo e frente do anexo (fecham a câmara)
+    for (const z of [z0, z1]) {
+      kit.box(Math.abs(X1) - AX, H, 0.4, kit.brick([1, 1], 0.95, 71 + Math.round(z)), side * (AX + (Math.abs(X1) - AX) / 2), H / 2, z);
+      boxes.push(mkBox(Math.min(x, side * Math.abs(X1)), 0, z - 0.2, Math.max(x, side * Math.abs(X1)), H, z + 0.2));
+      rects.push([Math.min(x, side * Math.abs(X1)), z - 0.2, Math.max(x, side * Math.abs(X1)), z + 0.2]);
+    }
+    kit.torch(side * (Math.abs(X1) - 0.1), 2.4, torchZ, -side, 0, z0 + side, 0xffa860, 26);
+  };
+  annex(-1, Z0 + 10.5, Z0 + 16.5, Z0 + 11.4); // A
+  annex(1, Z0 + 4, Z0 + 14, Z0 + 9); // B
+  annex(-1, Z0 + 1.2, Z0 + 9, Z0 + 5.0); // C
+  // A: a confirmada
+  kit.inscribe({ words: ['pequeno', 'antes', 'n2', 'conf'], x: X0 + 0.025, y: 2.0, z: Z0 + 13.5, nx: 1, nz: 0, size: 0.34, age: 0.12, seed: 191, plaque: true });
+  // B: os quatro boatos, gastos
+  [['n1', 'antes', 'grande', 'boato'], ['n4', 'depois', 'n3', 'boato'], ['grande', 'antes', 'pequeno', 'boato'], ['n3', 'antes', 'n2', 'boato']].forEach((w, k) =>
+    kit.inscribe({ words: w, x: X1 - 0.025, y: 2.6 - (k % 2) * 0.9, z: Z0 + (k < 2 ? 6.6 : 11.4), nx: -1, nz: 0, size: 0.3, age: 0.6, seed: 193 + k * 2 }),
+  );
+  // C: a lei e o quadro vazio com o soquete frio
+  kit.inscribe({ words: ['n2', 'boato', 'igual', 'verdade', 'conf'], x: X0 + 0.025, y: 2.7, z: Z0 + 3.4, nx: 1, nz: 0, size: 0.28, age: 0.12, seed: 201, plaque: true });
+  const QZ = Z0 + 6.6;
+  const QY = 2.0;
+  kit.box(0.05, 0.62, 1.4, kit.slab, X0 + 0.025, QY, QZ, false);
+  const frameTex = canvasTex(140, 62, (g) => {
+    g.clearRect(0, 0, 140, 62);
+    const groove = (x: number, y: number, w: number, h: number, t: number, col: string) => {
+      g.fillStyle = col;
+      g.fillRect(x, y, w, t);
+      g.fillRect(x, y + h - t, w, t);
+      g.fillRect(x, y, t, h);
+      g.fillRect(x + w - t, y, t, h);
+    };
+    groove(3, 3, 134, 56, 4, '#2a2430');
+    groove(5, 5, 130, 52, 1, '#8a8478');
+    groove(108, 18, 22, 26, 3, '#2a2430');
+  });
+  const fm = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 0.6), new THREE.MeshLambertMaterial({ map: frameTex, transparent: true, alphaTest: 0.05, depthWrite: false }));
+  fm.position.set(X0 + 0.055, QY, QZ);
+  fm.rotation.y = Math.PI / 2;
+  kit.group.add(fm);
+  const cal = makeCal(kit, ctx, { words: ['n1', 'depois', 'n4', 'conf'], x: X0 + 0.06, y: QY, z: QZ, nx: 1, nz: 0, size: 0.22, seed: 203 });
+  const SY = 1.0;
+  const sock = new THREE.Vector3(X0 + 0.32, SY + 0.12, QZ);
+  kit.box(0.34, 0.12, 0.34, kit.stone, X0 + 0.2, SY - 0.06, QZ, false);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.12, 0.13, 10, 1, true), lambert(null, 0x6a5234));
+  bowl.position.set(X0 + 0.32, SY + 0.065, QZ);
+  kit.add(bowl, false);
+  const bowlIn = new THREE.Mesh(new THREE.CircleGeometry(0.17, 10), new THREE.MeshBasicMaterial({ color: 0x1a1412 }));
+  bowlIn.rotation.x = -Math.PI / 2;
+  bowlIn.position.set(X0 + 0.32, SY + 0.11, QZ);
+  kit.add(bowlIn, false);
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+  flame.scale.set(0.3, 0.26, 1);
+  flame.position.set(X0 + 0.32, SY + 0.3, QZ);
+  flame.visible = false;
+  kit.group.add(flame);
+  // ── o hub: um anel de colunas e um círculo talhado no chão ──
+  const ring = new THREE.Mesh(new THREE.RingGeometry(3.6, 3.8, 32), new THREE.MeshLambertMaterial({ color: 0x4a4250, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -3 }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(0, 0.01, Z0 + 9);
+  kit.group.add(ring);
+  // TODOS na porta: enche conforme os braseiros acendem
+  const todos = sign.panels.filter((p) => p.id === 'todos');
+  let lit = 0;
+  let busy = false;
+  const gate = shotGate(ctx.die);
+  void H;
+  return {
+    update(dt, t) {
+      gate.tick();
+      cal.update();
+      // o soquete frio: acender traz o escuro e a frase em cal no quadro
+      if (!busy && ctx.die.face === 3 && (ctx.die.state === 'flying' || ctx.die.state === 'rest') && ctx.die.pos.distanceTo(sock) < 0.45 && gate.take()) {
+        busy = true;
+        lit = 0.001;
+        flame.visible = true;
+        ctx.sfx('ignite', 'memoria');
+        ctx.blackout(2.5);
+      }
+      if (lit > 0) {
+        lit += dt;
+        flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+        if (lit > 1.5 && ctx.dark() < 0.02) {
+          lit = 0;
+          flame.visible = false;
+          busy = false;
+        }
+      }
+      const n = braziers.filter((b) => b.lit).length;
+      for (const p of todos) p.fire = (p.fire ?? 0) + ((api.solved() ? 1 : n / 4) - (p.fire ?? 0)) * Math.min(1, dt * 5);
+    },
+    reset() {
+      lit = 0;
+      flame.visible = false;
+      busy = false;
+    },
+    rects: () => rects,
+  };
+}
+export const FIRE_MEMORIA: FireSpec = {
+  name: 'A Memória da Casa',
+  subtitle: 'Três câmaras em volta.',
+  hx: MEM.hx,
+  z0: MEM.z0,
+  h: MEM.h,
+  braziers: [
+    { x: -2.4, dz: 7.2, mark: 'n1' },
+    { x: 2.4, dz: 7.4, mark: 'n2' },
+    { x: -1.8, dz: 11.2, mark: 'n3', scale: 1.5 }, // GRANDE
+    { x: 2.0, dz: 10.9, mark: 'n4', scale: 0.6 }, // PEQUENO
+  ],
+  rule: { kind: 'order', seq: [3, 0, 2, 1], hints: false, penalty: 12 }, // QUATRO, UM, TRÊS, DOIS
+  words: ['acender', 'todos', 'brasa', 'ordem', 'conf'],
+  pillars: [[-3.7, 5.3], [3.7, 5.3], [-3.7, 12.7], [3.7, 12.7]],
+  torches: 'few',
+  fog: { color: '#0a0a11', near: 6, far: 26 },
+  ambient: { color: 0x7a78b8, intensity: 1.9 },
+  extra: memoriaExtra,
 };
