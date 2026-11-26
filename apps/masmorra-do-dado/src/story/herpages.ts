@@ -30,7 +30,7 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p3',
     where: 'O Que a Casa Confirma (junto da grade)',
-    body: ['Quase a mesma frase, duas vezes. A Casa fez uma e apagou a outra.', 'Acho que o risquinho com o ponto em cima quer dizer "é verdade". O outro, "dizem que".'],
+    body: ['Quase a mesma frase, duas vezes. A Casa fez uma e apagou a outra.', 'Acho que o risquinho com o ponto no meio quer dizer "é verdade". O de ponto em cima, "dizem que".'],
   },
   {
     id: 'p4',

@@ -917,7 +917,7 @@ Quem escreve **TRÊS** (acreditou na de baixo) vê a Casa **apagar a lousa** e o
 CONFIRMADO **acender** e a grade se abrir. As duas frases têm quatro glifos, três deles conhecidos: a única novidade é a marca do fim.
 (O verificador confere que escrever um nunca passa pelo outro no caminho: o efeito de cada marca é limpo.)
 Junto da grade, uma **página arrancada** do caderno dela: *"Duas frases quase iguais. A Casa fez a de cima e apagou a de baixo. Acho
-que o risquinho com o ponto em cima quer dizer 'é verdade'. O outro, 'dizem que'."*
+que o risquinho com o ponto no meio quer dizer 'é verdade'. O de ponto em cima, 'dizem que'."*
 
 **Parte 2 — ANTES/DEPOIS (o puzzle).** Cinco frases curtas em dois parágrafos, cada uma com o soquete de brasa no começo:
 | Parede | Frase | Marca |
