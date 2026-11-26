@@ -35,6 +35,7 @@ import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
 import { buildRespiro5 } from './rooms/respiro5';
 import { buildRespiro4 } from './rooms/respiro4';
+import { buildRespiro3 } from './rooms/respiro3';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
@@ -77,6 +78,7 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
     buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
     (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
+    buildRespiro3, // RESPIRO R3 A GALERIA DOS CONDENADOS: marcas de giz, o Escrivão sentado, duas folhas dela; puzzle opcional da lei (2, 3, 1)
     (c) => buildFireRoom(c, FIRE_SOMBRA), // NÍVEL 7. A SOMBRA: a luz escreve na moldura da frase; a frase tem de ser verdade (o número de acesos)
     (c) => buildFireRoom(c, FIRE_ESCURO), // NÍVEL 7. O ESCURO: errar de propósito; no escuro de 4 s, a cal no teto dá a ordem
     (c) => buildFireRoom(c, FIRE_LEI), // NÍVEL 8. A LEI PEQUENA: a sala sobe; «UM BOATO IGUAL VERDADE», dois boatos que dizem o mesmo

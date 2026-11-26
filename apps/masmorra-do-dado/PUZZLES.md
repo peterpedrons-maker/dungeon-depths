@@ -163,6 +163,16 @@ Como na Sala 8 (O Que a Casa Confirma), as frases da parede se acendem com o dad
 - **Por que é única** (`node tools/verify_verdade.mjs`): dos 64 conjuntos de frases só um é consistente; as confirmadas dão uma ordem só.
 - **Palavra nova:** VERDADE. **Dificuldade: 6 de 10.**
 
+## A Galeria dos Condenados  — RESPIRO R3 (área livre, sem trava; um puzzle opcional)
+Galeria longa e alta, bancos de pedra, centenas de **marcas de contagem** a giz nas paredes e desenhos de outros condenados (um rosto apagado, uma porta).
+Sobre a porta de saída, talhada: «CONDENADO LER SENTENÇA». O **Escrivão** está sentado no fim, escrevendo; quando o jogador se aproxima, levanta e some,
+e fica uma marca de giz fresca no banco. Um desenho a giz mostra um braseiro **enorme** e um **minúsculo**, com GRANDE e PEQUENO embaixo; no banco ao lado,
+a **folha nº 6** dela diz que o glifo de PEQUENO quer dizer UM (ela erra; quem fez Os Apelidos sabe). No banco do fundo, a **folha nº 5** (a pista do Escuro).
+- **Puzzle opcional (nível 3):** na **câmara lateral** (à esquerda), três braseiros (UM, DOIS, TRÊS), a balança «DOIS IGUAL DOIS», três frases **riscadas a
+  giz** (giz não é pedra: são boatos) «TRÊS ANTES UM», «TRÊS ANTES DOIS», «DOIS DEPOIS TRÊS», e a lei talhada «UM BOATO IGUAL VERDADE».
+  «TRÊS ANTES DOIS» e «DOIS DEPOIS TRÊS» dizem o mesmo; não podem ser os dois verdade (a lei diz um só), então são falsos (2 antes de 3), e o verdadeiro é
+  «TRÊS ANTES UM». **Ordem: DOIS, TRÊS, UM** → abre o nicho da gema (parede do fundo da câmara). Errar só apaga, sem punição.
+
 ## A Sombra  (ACENDER · [moldura] · BRASEIRO)  — NÍVEL 7 ("a luz escreve, e a frase tem de ser verdade"; `tools/verify_sombra.mjs`)
 Salão escuro. No meio, uma **tela de pedra** com nove "olhos" em grade 3×3: só **dois** são furos de verdade (o de cima à esquerda e o do centro). Na parede
 do fundo, sobre a porta, «ACENDER ▢ BRASEIRO» talhada grande, e a casa ▢ é uma **moldura 3×3** de pedra clara: a luz de cada braseiro passa pelos furos
