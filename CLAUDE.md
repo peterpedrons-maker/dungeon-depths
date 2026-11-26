@@ -99,6 +99,10 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   olho de arte e de level design, seguindo `DIRECAO_DE_ARTE.md` e o `DESIGN.md`. Testa no navegador (PC e celular). **Não quebra puzzles**: não muda
   soluções nem o que o jogador precisa ver, alcançar ou acertar; não escreve textos (isso é do `narrador`). Também roda como **chat separado**
   (uma sessão própria, com o Pedro conversando direto com ele), na branch `claude/cenografo`; como subagente, não faz commit.
+- **`sonoplasta`** (`.claude/agents/sonoplasta.md`): designer de som da masmorra-do-dado. Use para avaliar e melhorar efeitos sonoros e som
+  ambiente (passos por piso, fogo, portas, o dado, a escrita que acende, vento nos lugares abertos, fogo crepitando, gotas, o "quarto" de cada
+  sala), sempre com GRAVAÇÕES REAIS (CC0 do OpenGameArt e os instrumentos do FluidR3_GM), registrando créditos e scripts reprodutíveis, e entrega
+  uma faixa de demonstração para o Pedro ouvir. Não mexe na música, nos textos nem nos puzzles; como subagente, não faz commit.
 
 ## Convenção para puzzles (masmorra-do-dado)
 
