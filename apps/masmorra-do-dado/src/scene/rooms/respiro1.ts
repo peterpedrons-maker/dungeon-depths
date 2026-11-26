@@ -28,6 +28,10 @@ const Z0 = -26; // a porta (parede do fundo do pátio)
 const CH = 2.8; // teto do corredor
 const PH = 10; // altura do pátio
 const GAL = 3.2; // altura das galerias
+// as galerias vão de GZ até a parede norte do pátio (−12); as escadas sobem de SZ (chão) até GZ. O pé da escada fica a 2,5 m da parede do fundo
+// (antes começava a 0,5 m, e com o braseiro do canto na frente sobrava uma fresta junto da parede para chegar ao 1º degrau).
+const GZ = -18;
+const SZ = -23.5;
 // ── o corredor em células de 2 m: célula (ix, iz) cobre x ∈ [2ix-1, 2ix+1], z ∈ [2-2(iz+1), 2-2iz] ──
 const CELLS: [number, number][] = [
   [0, 0], [0, 1], [0, 2], // entra e desce
@@ -40,6 +44,7 @@ const isCell = (ix: number, iz: number) => CELLS.some(([a, b]) => a === ix && b 
 const cx = (ix: number) => 2 * ix;
 const cz = (iz: number) => 1 - 2 * iz;
 const CIST = { x: 0, z: -19, r: 1.8 };
+const stairY = (z: number) => (GAL * (z - SZ)) / (GZ - SZ);
 const COURT = { x0: -7, x1: 7, z0: Z0, z1: -12 };
 const CHAMBER = { x0: 7, x1: 9.6, z0: -17.5, z1: -14 };
 
@@ -327,17 +332,18 @@ export function buildRespiro1(ctx: Ctx): Room {
   for (const s of [-1, 1]) {
     const gx = s * 6;
     const galSide = kit.brick([1, 1], 0.95, 60 + s);
-    kit.box(2, GAL, 8, [galSide, galSide, lambert(floorTexture([1, 1], 'ruin')), galSide, galSide, galSide], gx, GAL / 2, -16);
-    kit.box(0.12, 0.14, 8, kit.slab, gx - s * 1.03, GAL - 0.2, -16, false); // a quina da galeria, em pedra lavrada
-    boxes.push(mkBox(gx - 1, 0, -20, gx + 1, GAL, -12));
+    const gl = -12 - GZ;
+    kit.box(2, GAL, gl, [galSide, galSide, lambert(floorTexture([1, 1], 'ruin')), galSide, galSide, galSide], gx, GAL / 2, (GZ - 12) / 2);
+    kit.box(0.12, 0.14, gl, kit.slab, gx - s * 1.03, GAL - 0.2, (GZ - 12) / 2, false); // a quina da galeria, em pedra lavrada
+    boxes.push(mkBox(gx - 1, 0, GZ, gx + 1, GAL, -12));
     // a rampa (degraus), do chão (perto da porta) até a galeria
-    stairs(kit, { x0: gx - 1, x1: gx + 1, zLow: -25.5, zHigh: -20, yHigh: GAL, n: 10 });
+    stairs(kit, { x0: gx - 1, x1: gx + 1, zLow: SZ, zHigh: GZ, yHigh: GAL, n: 10 });
     // parapeito da galeria (com um vão na ponta da rampa) e mureta da rampa, que acompanha a subida
     const px = gx - s * 1;
-    kit.box(0.14, 0.92, 8, kit.stone, px, GAL + 0.46, -16, false);
-    kit.box(0.24, 0.09, 8.04, kit.slab, px, GAL + 0.965, -16, false);
-    slopedWall(kit, { x0: px - 0.07, z0: -25.5, x1: px + 0.07, z1: -20, top: (_x, z) => (GAL * (z + 25.5)) / 5.5 + 0.95 });
-    rects.push(s < 0 ? [-5.15, -24.8, -4.85, -12, GAL + 1.2] : [4.85, -24.8, 5.15, -12, GAL + 1.2]);
+    kit.box(0.14, 0.92, gl, kit.stone, px, GAL + 0.46, (GZ - 12) / 2, false);
+    kit.box(0.24, 0.09, gl + 0.04, kit.slab, px, GAL + 0.965, (GZ - 12) / 2, false);
+    slopedWall(kit, { x0: px - 0.07, z0: SZ, x1: px + 0.07, z1: GZ, top: (_x, z) => stairY(z) + 0.95 });
+    rects.push(s < 0 ? [-5.15, SZ + 0.7, -4.85, -12, GAL + 1.2] : [4.85, SZ + 0.7, 5.15, -12, GAL + 1.2]);
   }
   // a câmara lateral (no alto, a leste): a folha arrancada nº 2
   {
@@ -411,7 +417,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   rects.push([-0.45, stoneZ - 0.15, 0.45, stoneZ + 0.15]);
   const twoIns = kit.inscribe({ words: ['n2'], x: 0, y: 0.48, z: stoneZ + 0.155, nx: 0, nz: 1, size: 0.4, age: 0.2, frame: true, seed: 95 });
   // os quatro braseiros dos cantos do pátio: 0 frente-esq, 1 frente-dir, 2 fundo-esq, 3 fundo-dir ("fundo" = lado da porta)
-  const corners: [number, number][] = [[-4.1, -13.2], [4.1, -13.2], [-4.1, -24.6], [4.1, -24.6]];
+  const corners: [number, number][] = [[-4.1, -13.2], [4.1, -13.2], [-2.8, -24.6], [2.8, -24.6]]; // (os do fundo, mais perto da porta: deixam livre o caminho até o pé das escadas)
   const braz: Brazier[] = corners.map(([x, z]) => makeBrazier(kit, ctx, x, z, false));
   for (const b of braz) boxes.push(...b.boxes);
   // os reflexos na água: cada braseiro aceso aparece espelhado de cima para baixo (quem olha da pedra, para a porta)
@@ -458,8 +464,8 @@ export function buildRespiro1(ctx: Ctx): Room {
   interactables.push(point.interactable);
 
   // luz: velas no corredor (nos nichos), a luz do buraco e algumas tochas no pátio
-  kit.torch(X1 - 0.1, 1.8, -24, -1, 0, 2.6);
-  kit.torch(X0 + 0.1, 1.8, -24, 1, 0, 3.6);
+  kit.torch(X1 - 0.1, 1.8, -24.9, -1, 0, 2.6);
+  kit.torch(X0 + 0.1, 1.8, -24.9, 1, 0, 3.6);
   kit.torch(0.95 + 0.2, 1.8, cz(2) + 0.4, -1, 0, 0.4);
   kit.aoSides(X0, X1, COURT.z0, COURT.z1, PH);
 
@@ -469,8 +475,8 @@ export function buildRespiro1(ctx: Ctx): Room {
   kit.bake();
 
   const levelY = (x: number, z: number) => {
-    if (z < -12 && z > -20 && Math.abs(x) > 5 && Math.abs(x) < 7) return GAL;
-    if (z <= -20 && z > -25.5 && Math.abs(x) > 5 && Math.abs(x) < 7) return (GAL * (z + 25.5)) / 5.5;
+    if (z < -12 && z > GZ && Math.abs(x) > 5 && Math.abs(x) < 7) return GAL;
+    if (z <= GZ && z > SZ && Math.abs(x) > 5 && Math.abs(x) < 7) return stairY(z);
     if (x >= CHAMBER.x0 && x <= CHAMBER.x1 && z <= CHAMBER.z1 && z >= CHAMBER.z0) return GAL;
     return 0;
   };
@@ -526,7 +532,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     },
     groundY: levelY,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
-    dieFloor: (x, z) => (z <= -20 && z > -25.5 && Math.abs(x) > 5 && Math.abs(x) < 7 ? levelY(x, z) : 0),
+    dieFloor: (x, z) => (z <= GZ && z > SZ && Math.abs(x) > 5 && Math.abs(x) < 7 ? levelY(x, z) : 0),
     holdsDie: () => false,
     update(dt, t) {
       kit.tick(dt, t);

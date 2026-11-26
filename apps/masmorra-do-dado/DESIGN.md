@@ -594,6 +594,11 @@ a "parede estranha"). Nada de posição, tamanho, regra ou caminho mudou; só co
   mureta acompanha a inclinação e tem capa (antes era uma caixa reta do chão até acima do balcão, a tal parede estranha). Usadas na sala 4
   (com pilastras de arremate e cornija na borda do balcão, que agora tem piso por cima e alvenaria nos lados), no pátio da cisterna e na
   escadaria dos Banhos Secos.
+- **Regra do pé da escada:** o 1º degrau fica a **2 m ou mais** de qualquer parede, virado para um espaço livre, e nada (pilastra, braseiro,
+  tocha) estreita o caminho até ele. Duas escadas quebravam a regra e foram refeitas: a da **sala 4** começava a 0,8 m da parede da entrada,
+  com a pilastra deixando uns 5 cm de folga, e agora sobe **encostada na frente do balcão** (`stairsX`, 1,9 m de largura), do meio da sala para
+  a esquerda, até um patamar no canto; as das **galerias do pátio da cisterna** começavam a 0,5 m da parede do fundo, com o braseiro do canto
+  na frente, e agora começam a 2,5 m (galerias de 6 m em vez de 8; os braseiros do fundo foram para perto da porta, em x = ±2,8).
 - **Luz** (`scene.ts`, `shapeLight`): a luz ambiente de cada sala (a mesma cor e força de sempre) é repartida em ambiente menor + luz de cima
   (hemisférica: o que olha para cima é mais claro, o avesso das coisas mais escuro) + uma luz fraca de lado. Pisos, espelhos de degrau e as
   duas paredes de um canto deixam de ter o mesmo tom: as formas se separam sem precisar de mais contorno.

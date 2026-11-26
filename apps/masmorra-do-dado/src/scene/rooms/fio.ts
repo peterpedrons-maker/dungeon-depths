@@ -14,21 +14,26 @@ import { Kit, lambert, LAMP_OFF } from '../kit';
 import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { FireGrid, makeFloorChannel, makeGemNiche, makeWallBoard, type GridEdge, type WallBoard } from '../firegrid';
-import { mkBox, roomShell, shotGate, slopedWall, stairs } from './shell';
+import { mkBox, roomShell, shotGate, slopedWall, stairs, stairsX } from './shell';
 import type { Ctx, Rect, Room } from '../types';
 
 const BAL = 3; // altura do balcão
 const BZ0 = -2.6; // borda do balcão do lado da entrada
 const BZ1 = -7.6; // borda do lado do chão (parapeito)
-const UP = { x0: -6.5, x1: -5, z0: 1.2, z1: BZ0 }; // escada que sobe (encostada na parede esquerda)
+// a escada que sobe corre ENCOSTADA NA FRENTE DO BALCÃO, do meio da sala (x1, chão) para a esquerda (x0, alto), e termina num patamar no canto
+// (LX0..x0), de onde se passa ao balcão pelo vão do parapeito. O pé fica virado para o meio da sala, longe das paredes (antes ela subia colada à
+// parede esquerda e começava a 0,8 m da parede da entrada: o jogador tinha de se espremer entre a pilastra e a parede para chegar ao 1º degrau).
+const UP = { x0: -5, x1: -0.5, z0: BZ0, z1: -0.7 }; // 1,9 m de largura
+const LX0 = -6.5; // o patamar vai até a parede esquerda
 const DN = { x0: 5, x1: 6.5, z0: BZ1, z1: -11.6 }; // escada que desce (parede direita)
 const FLOOR_EDGES: [number, number][] = [[2, 4], [4, 0], [4, 8], [1, 2], [5, 8], [3, 7], [7, 6]];
 
 function stairY(x: number, z: number) {
-  if (x < UP.x1 && z < UP.z0 && z > UP.z1) return (BAL * (UP.z0 - z)) / (UP.z0 - UP.z1);
+  if (z > UP.z0 && z < UP.z1 && x >= LX0 && x < UP.x1) return x <= UP.x0 ? BAL : (BAL * (UP.x1 - x)) / (UP.x1 - UP.x0);
   if (x > DN.x0 && z < DN.z0 && z > DN.z1) return (BAL * (z - DN.z1)) / (DN.z0 - DN.z1);
   return -1;
 }
+const upY = (x: number) => (BAL * Math.min(1, Math.max(0, (UP.x1 - x) / (UP.x1 - UP.x0))));
 function levelY(x: number, z: number) {
   if (z <= BZ0 && z >= BZ1) return BAL;
   const s = stairY(x, z);
@@ -47,8 +52,9 @@ export function buildFio(ctx: Ctx): Room {
   // uma cornija de pedra lavrada na borda do balcão (a quina de cima fica marcada) e um rodapé embaixo
   for (const z of [BZ0, BZ1]) {
     const s = z === BZ0 ? 1 : -1;
-    kit.box(X1 - X0, 0.16, 0.12, kit.slab, 0, BAL - 0.24, z + s * 0.06, false);
-    kit.box(X1 - X0, 0.22, 0.1, kit.slab, 0, 0.11, z + s * 0.05, false);
+    const xa = z === BZ0 ? UP.x1 : X0; // (do lado da entrada, a escada encosta no balcão: cornija e rodapé só depois dela)
+    kit.box(X1 - xa, 0.16, 0.12, kit.slab, (xa + X1) / 2, BAL - 0.24, z + s * 0.06, false);
+    kit.box(X1 - xa, 0.22, 0.1, kit.slab, (xa + X1) / 2, 0.11, z + s * 0.05, false);
   }
   S.boxes.push(mkBox(X0, 0, BZ1, X1, BAL, BZ0));
   // parapeitos do balcão: alvenaria com capa de pedra lavrada
@@ -57,16 +63,22 @@ export function buildFio(ctx: Ctx): Room {
     kit.box(x1 - x0 + 0.08, 0.1, 0.32, kit.slab, (x0 + x1) / 2, BAL + 0.97, z, false);
     S.boxes.push(mkBox(x0, BAL, z - 0.11, x1, BAL + 1.05, z + 0.11));
   };
-  par(UP.x1, X1, BZ0 - 0.11);
+  par(UP.x0, X1, BZ0 - 0.11);
   par(X0, DN.x0, BZ1 + 0.11);
   // as duas escadas: degraus de alvenaria com piso de pedra lavrada
-  stairs(kit, { x0: UP.x0, x1: UP.x1, zLow: UP.z0, zHigh: UP.z1, yHigh: BAL, n: 12 }); // (o dado rola pela rampa de dieFloor, como antes)
+  stairsX(kit, { z0: UP.z0, z1: UP.z1, xLow: UP.x1, xHigh: UP.x0, yHigh: BAL, n: 12 }); // (o dado rola pela rampa de dieFloor, como antes)
   stairs(kit, { x0: DN.x0, x1: DN.x1, zLow: DN.z1, zHigh: DN.z0, yHigh: BAL, n: 12 });
-  // a mureta do lado de dentro de cada escada: acompanha a subida (um corrimão de pedra a ~0,95 m dos degraus)
-  S.boxes.push(...slopedWall(kit, { x0: UP.x1, z0: UP.z1, x1: UP.x1 + 0.18, z1: UP.z0, top: (_x, z) => (BAL * (UP.z0 - z)) / (UP.z0 - UP.z1) + 0.95, segs: 6 }));
+  // o patamar do canto (alvenaria com o piso do balcão) e o parapeito dele, virado para a entrada
+  kit.box(UP.x0 - LX0, BAL, UP.z1 - UP.z0, [kit.stone, kit.stone, balFloor, kit.stone, kit.stone, kit.stone], (LX0 + UP.x0) / 2, BAL / 2, (UP.z0 + UP.z1) / 2);
+  S.boxes.push(mkBox(LX0, 0, UP.z0, UP.x0, BAL, UP.z1));
+  kit.box(UP.x0 - LX0, BAL + 0.92, 0.2, kit.stone, (LX0 + UP.x0) / 2, (BAL + 0.92) / 2, UP.z1 + 0.1);
+  kit.box(UP.x0 - LX0 + 0.08, 0.1, 0.3, kit.slab, (LX0 + UP.x0) / 2, BAL + 0.97, UP.z1 + 0.1, false);
+  S.boxes.push(mkBox(LX0, 0, UP.z1, UP.x0, BAL + 1.05, UP.z1 + 0.2));
+  // a mureta do lado de fora de cada escada: acompanha a subida (um corrimão de pedra a ~0,95 m dos degraus)
+  S.boxes.push(...slopedWall(kit, { x0: UP.x0, z0: UP.z1, x1: UP.x1, z1: UP.z1 + 0.18, top: (x) => upY(x) + 0.95, segs: 6 }));
   S.boxes.push(...slopedWall(kit, { x0: DN.x0 - 0.18, z0: DN.z1, x1: DN.x0, z1: DN.z0, top: (_x, z) => (BAL * (z - DN.z1)) / (DN.z0 - DN.z1) + 0.95, segs: 6 }));
   // pilastras onde a mureta encontra o balcão e o chão (arremates)
-  for (const [px, pz, h] of [[UP.x1 + 0.09, UP.z0, 1.15], [UP.x1 + 0.09, UP.z1, BAL + 1.15], [DN.x0 - 0.09, DN.z1, 1.15], [DN.x0 - 0.09, DN.z0, BAL + 1.15]] as [number, number, number][]) {
+  for (const [px, pz, h] of [[UP.x1, UP.z1 + 0.09, 1.15], [UP.x0, UP.z1 + 0.09, BAL + 1.15], [DN.x0 - 0.09, DN.z1, 1.15], [DN.x0 - 0.09, DN.z0, BAL + 1.15]] as [number, number, number][]) {
     kit.box(0.3, h, 0.3, kit.stone, px, h / 2, pz, false);
     if (h < 2) kit.contact(px, pz, 0.8);
     kit.box(0.38, 0.1, 0.38, kit.slab, px, h + 0.05, pz, false);
@@ -207,8 +219,14 @@ export function buildFio(ctx: Ctx): Room {
     rects() {
       const r: Rect[] = S.rects(doorOpen);
       r.push(...braz.map((b) => b.rect));
-      r.push([UP.x1, UP.z1, UP.x1 + 0.16, UP.z0, BAL + 1.2]); // murinho da escada que sobe
-      r.push([UP.x1, BZ0 - 0.22, X1 + 1, BZ0, BAL + 1.2]); // frente do balcão (embaixo: a parede; em cima: o parapeito)
+      // murinho da escada que sobe, em pedaços que acompanham a subida (embaixo não se entra pelo lado; em cima não se cai), e o parapeito do patamar
+      for (let k = 0; k < 8; k++) {
+        const xa = UP.x0 + ((UP.x1 - UP.x0) * k) / 8;
+        const xb = UP.x0 + ((UP.x1 - UP.x0) * (k + 1)) / 8;
+        r.push([xa, UP.z1, xb, UP.z1 + 0.18, upY(xa) + 0.95]);
+      }
+      r.push([LX0 - 1, UP.z1, UP.x0, UP.z1 + 0.2, BAL + 1.2]);
+      r.push([UP.x0, BZ0 - 0.22, X1 + 1, BZ0, BAL + 1.2]); // frente do balcão (embaixo: a parede; em cima: o parapeito)
       r.push([X0 - 1, BZ1, DN.x0, BZ1 + 0.22, BAL + 1.2]); // fundo do balcão (o parapeito sobre o chão)
       r.push([DN.x0 - 0.16, DN.z1, DN.x0, DN.z0, BAL + 1.2]); // murinho da escada que desce
       return r;

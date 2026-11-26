@@ -205,6 +205,32 @@ export function stairs(kit: Kit, o: { x0: number; x1: number; zLow: number; zHig
   return out;
 }
 
+// A mesma escada, correndo em X (da borda baixa xLow à alta xHigh, entre z0 e z1). Para quando o pé da escada precisa ficar virado para o
+// meio da sala (e não encostado numa parede).
+export function stairsX(kit: Kit, o: { z0: number; z1: number; xLow: number; xHigh: number; yLow?: number; yHigh: number; n: number }): Box[] {
+  const y0 = o.yLow ?? 0;
+  const dir = Math.sign(o.xHigh - o.xLow);
+  const TH = 0.07;
+  const NOSE = 0.05;
+  const out: Box[] = [];
+  const d = o.z1 - o.z0;
+  const zc = (o.z0 + o.z1) / 2;
+  for (let k = 0; k < o.n; k++) {
+    const xA = o.xLow + ((o.xHigh - o.xLow) * k) / o.n;
+    const xB = o.xLow + ((o.xHigh - o.xLow) * (k + 1)) / o.n;
+    const top = y0 + ((o.yHigh - y0) * (k + 1)) / o.n;
+    const xa = Math.min(xA, xB);
+    const xb = Math.max(xA, xB);
+    const bodyH = top - TH - y0;
+    kit.box(xb - xa, bodyH, d, kit.stone, (xa + xb) / 2, y0 + bodyH / 2, zc);
+    const ta = dir < 0 ? xa : xa - NOSE;
+    const tb = dir < 0 ? xb + NOSE : xb;
+    kit.box(tb - ta, TH, d, kit.slab, (ta + tb) / 2, top - TH / 2, zc);
+    out.push(mkBox(xa, y0, o.z0, xb, top, o.z1));
+  }
+  return out;
+}
+
 // MURETA que acompanha uma rampa/escada: parede de tijolo de y0 até yAt(z) (ou yAt(x), se correr em x) e uma CAPA de pedra lavrada por cima,
 // um pouco mais larga. `thick` = espessura. Devolve as caixas do dado (em pedaços, seguindo a inclinação).
 export function slopedWall(kit: Kit, o: { x0: number; z0: number; x1: number; z1: number; top: (x: number, z: number) => number; y0?: number; segs?: number }): Box[] {
