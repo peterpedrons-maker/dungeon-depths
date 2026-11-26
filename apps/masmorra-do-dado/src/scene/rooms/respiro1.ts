@@ -272,6 +272,8 @@ export function buildRespiro1(ctx: Ctx): Room {
     kit.plane(8, 14, lambert(null, 0x0a0910), -11, -1.2, wz, -Math.PI / 2, 0, false);
     kit.plane(3, 14, lambert(floorTexture([3 / T, 14 / T], 'ruin')), -13, 0.2, wz, -Math.PI / 2, 0, false);
     kit.plane(14, 4, brick(14, 4, 47), -14.5, 2.2, wz, 0, Math.PI / 2, false);
+    // o teto da galeria e do vão (de perto da janela, olhando para cima, via-se o vazio por cima da parede de lá; §67)
+    kit.plane(7.5, 14, brick(7.5, 14, 48), -10.75, 3.6, wz, Math.PI / 2, 0, false);
     for (const dz of [-4, 0, 4]) kit.torch(-14.4, 1.8, wz + dz, 1, 0, dz);
   }
   const scribe = makeScribe();
@@ -313,7 +315,8 @@ export function buildRespiro1(ctx: Ctx): Room {
     const hole = new THREE.Path();
     hole.absarc(CIST.x, -CIST.z, 1.5, 0, Math.PI * 2, true);
     sh.holes.push(hole);
-    const cm = brick(W, L, 19);
+    // (a ShapeGeometry tem UV em metros: a repetição é por metro, como a do chão; com brick(W, L) os tijolos saíam minúsculos; §67)
+    const cm = kit.brick([1 / T, 1 / T], 0.95, 19);
     cm.side = THREE.DoubleSide;
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 24), cm);
     m.rotation.x = -Math.PI / 2;
@@ -467,7 +470,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   // luz: velas no corredor (nos nichos), a luz do buraco e algumas tochas no pátio
   kit.torch(X1 - 0.1, 1.8, -24.9, -1, 0, 2.6);
   kit.torch(X0 + 0.1, 1.8, -24.9, 1, 0, 3.6);
-  kit.torch(0.95 + 0.2, 1.8, cz(2) + 0.4, -1, 0, 0.4);
+  kit.torch(0.9, 1.8, cz(2) + 0.4, -1, 0, 0.4); // (antes em x = 1,15, dentro da parede)
   kit.aoSides(X0, X1, COURT.z0, COURT.z1, PH);
 
   if (import.meta.env.DEV) {

@@ -685,12 +685,12 @@ export function reliefPlaneMat(t: Tex2, w: number, h: number, bumpScale = 3, til
 }
 
 // POEIRA DENTRO DE UM FEIXE INCLINADO (de `from` a `to`): os grãos flutuam devagar dentro do cone de luz (só no feixe, nunca no ar todo)
-export function beamMotes(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3, n = 48, color = 0xc8d4f0) {
+export function beamMotes(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3, n = 48, color = 0xc8d4f0, opacity = 0.5) {
   const dir = to.clone().sub(from);
   const pos = new Float32Array(n * 3);
   const seeds = Array.from({ length: n }, (_, i) => [((i * 0.618) % 1) * 0.8 + 0.12, Math.random() * Math.PI * 2, Math.sqrt(Math.random()), Math.random() * 10]);
   const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.5, fog: false, depthWrite: false }));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity, fog: false, depthWrite: false }));
   pts.frustumCulled = false;
   parent.add(pts);
   const ref = Math.abs(dir.clone().normalize().z) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);

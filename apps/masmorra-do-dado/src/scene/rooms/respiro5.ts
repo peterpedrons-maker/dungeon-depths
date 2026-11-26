@@ -26,7 +26,7 @@ export function buildRespiro5(ctx: Ctx): Room {
   kit.wear([[0, 1.7], [0.2, -1], [0, -3.6]], 1.0);
 
   // ── a moldura de frase vazia (à direita da porta, na parede do fundo) ──
-  const FX = 2.25;
+  const FX = 2.29; // (era 2,25: a imposta do batente da porta encostava na laje da moldura; 4 cm de folga; §67)
   const FY = 1.78;
   const FW = 1.06;
   const FH = 0.5;

@@ -1116,6 +1116,39 @@ modelo 3D para as tochas.
 - **Ferramentas fora do jogo**: a prévia `?vitrine=bib` (estantes, velas, candelabro e candidatos a Escrivão animados; os modelos CC0 ficam em
   `public/models/_vitrine/`, fora do repositório) e a exportação do Escrivão para o Mixamo (`tools/escrivao_mixamo.ts` e `.py`).
 
+### 67.1 A varredura das demais salas
+
+Três ajudantes andaram pelas 24 salas procurando defeitos de cenário. Nenhum conserto muda solução, posição de braseiro, frase, lousa ou
+soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
+
+- **O fim do capítulo** (O Tribunal dos Rumores): a porta da última sala abria para um corredor que dava no vazio. Agora ela tem a luz de saída
+  (`FireSpec.last`) e chegar ao fundo do corredor encerra o capítulo (`exitReached`).
+- **Tochas de enfeite por cima das escritas.** Uma regra geral, no fim da montagem de cada sala (`kit.clearTorches`): toda tocha de parede que
+  fica a menos de 2,2 m de uma tocha de constelação, a menos de 1,4 m de uma lousa ou a menos de 1,3 m de um braseiro é afastada pela parede;
+  se não houver lugar, sai. Foram 29 tochas movidas e 3 tiradas, nas salas 3, 4, 7, 9, 16, 17, 19, 20, 22 e 23. As tochas que fazem parte de
+  puzzle (constelações) não se mexem nunca.
+- **A porta-lousa de A Lousa**: os lampiões de bronze ficam à frente da parede e subiam com a laje, passando por cima da frase
+  «ACENDER ▢ BRASEIRO» e ficando à mostra lá em cima. Agora a porta-lousa some (a luz dela também) quando a laje começa a entrar na parede.
+- **Salas já resolvidas ao carregar um jogo** (`skip()`): a grade do meio de A Lousa e a grade de O Que a Casa Confirma ficavam fechadas, e os
+  pilares que sobem do chão ficavam embaixo. Quem carregava um jogo mais adiante e voltava dava com o caminho fechado. Agora tudo fica como
+  depois de resolvido (`FireExtra.skip`).
+- **A Galeria**: a verga da passagem da câmara era funda e alta demais e cobria, de baixo, a frase «ACENDER BRASA ORDEM» logo acima. Ficou mais
+  fina e mais rasa. A poeira no feixe de lua ficou mais rala.
+- **Os Banhos Secos**: as passagens das câmaras de banho eram só o recorte de duas folhas de parede. Ganharam batentes e verga de pedra lavrada.
+- **Os Nichos e a Cisterna**: o teto do pátio tinha tijolos minúsculos (a escala da textura estava errada); a janela de grade mostrava a galeria
+  de lá sem teto, e de perto via-se o vazio. Ganhou teto.
+- **O Fio de Fogo**: a plaquinha do segredo e o soquete frio boiavam acima do parapeito. Ganharam um pé de pedra, sem sair do lugar.
+- **Os Que Dizem o Mesmo**: as colunas do claustro atravessavam o telhado das galerias e subiam soltas no céu aberto. Agora param no telhado
+  (`FireSpec.pillarH`).
+- **A Antecâmara Fria**: a moldura vazia encostava na imposta do batente da porta; foi 4 cm para o lado, com o soquete.
+- **Portas de parede grossa** (Vestíbulo e Galeria): o corredor atrás da porta começava dentro da espessura da parede, e as duas faces
+  piscavam. A pedra-chave do arco também encostava na parede. Os dois ganharam folga.
+- **Ficam para o Pedro decidir** (mexem perto de puzzle ou de circulação): os furos da tela de A Sombra aparecem também atrás; a moldura de
+  A Sombra quase toca a pedra-chave; a frase da porta de Os Apelidos é mais larga que o trecho reto da parede; a frase da porta de A Memória da
+  Casa fica escondida atrás do anexo C para quem entra; canaletas soltas no ar em O Fogo que Corre; o patamar sem parapeito em A Escadaria; um
+  pilar no caminho em O Pano; a pedra-chave encostando no teto nas salas de 3 m; e o Vestíbulo ficou mais escuro que o mockup aprovado desde as
+  sombras do §64.
+
 ## 68. O mouse no PC e o monitor ultrawide (pedido do Pedro, 3440×1440)
 
 - **O mouse não ficava preso.** No PC, o olhar segue o mouse sem clicar porque o jogo pede ao navegador para prender o cursor (pointer lock).

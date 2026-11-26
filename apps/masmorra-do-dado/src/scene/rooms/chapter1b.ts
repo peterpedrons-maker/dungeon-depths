@@ -886,6 +886,7 @@ export const FIRE_DIZEM: FireSpec = {
     { words: ['n5', 'antes', 'n2', 'conf'], wall: 'right', dz: 9, seal: true, y: 2.0, size: 0.34 },
   ],
   pillars: [0, 1, 2, 3, 5, 6, 7, 8].map((i) => dmCell(i)),
+  pillarH: DM.roof + 0.3, // as colunas seguram o telhado das galerias (antes atravessavam e subiam soltas até 6,5 m no céu aberto; §67)
   torches: 'few',
   fog: { color: '#1a1c26', near: 8, far: 34 },
   ambient: { color: 0x9aa0c8, intensity: 2.2 },

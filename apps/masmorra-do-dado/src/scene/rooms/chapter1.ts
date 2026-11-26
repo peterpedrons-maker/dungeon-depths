@@ -467,6 +467,12 @@ function confirmaExtra(api: FireExtraApi): FireExtra {
       board.grid.clear();
     },
     rects: () => (gateK < 0.75 ? [[X0 - 1, GZ - 0.12, X1 + 1, GZ + 0.12]] : []),
+    skip() {
+      solved = true;
+      gateK = 1;
+      grate.position.y = H - 0.3;
+      gBox.min.y = H - 0.3;
+    },
     interactables: [takeLeaf],
   };
 }

@@ -246,7 +246,9 @@ export function buildRespiro3(ctx: Ctx): Room {
     kit.plane(cw, CH.h, reliefPlaneMat(wallT, cw, CH.h, 4.5), cx, CH.h / 2, CH.z1, 0, Math.PI);
     // o batente da passagem, com a frase «ACENDER BRASEIRO ORDEM» por cima (do lado da galeria)
     for (const z of [CZ - 1.05, CZ + 1.05]) kit.box(0.34, 2.7, 0.3, kit.slab, X0 + 0.12, 1.35, z, false); // os batentes da passagem
-    kit.box(0.34, 0.3, 2.4, kit.slab, X0 + 0.12, 2.75, CZ, false); // a verga
+    // a verga: mais fina e mais rasa que os batentes (a de 30 cm × 34 cm entrava na frase «ACENDER BRASA ORDEM» logo acima, e de baixo a
+    // escondia; esta deixa a frase inteira à vista de 2 m da parede para lá; §67)
+    kit.box(0.22, 0.17, 2.4, kit.slab, X0 + 0.08, 2.635, CZ, false);
     kit.inscribe({ words: ['acender', 'brasa', 'ordem'], x: X0 + 0.025, y: 3.0, z: CZ, nx: 1, nz: 0, size: 0.32, age: 0.2, seed: 221 });
     rects.push([CH.x0 - 2, CH.z0 - 2, CH.x0, CH.z1 + 2], [CH.x0, CH.z0 - 2, X0, CH.z0], [CH.x0, CH.z1, X0, CH.z1 + 2], [X0 - 0.3, Z0, X0, CZ - 0.9], [X0 - 0.3, CZ + 0.9, X0, Z1]);
   }
@@ -268,7 +270,8 @@ export function buildRespiro3(ctx: Ctx): Room {
     boxes.push(...b.boxes);
     kit.inscribe({ words: [`n${k + 1}`], x: bz[k][0], y: 0.36, z: bz[k][1] + 0.245, nx: 0, nz: 1, size: 0.4, age: 0.12, frame: true, seed: 241 + k });
   });
-  kit.torch(CH.x0 + 0.1, 2.6, -12, 1, 0, 1.3, 0xffa860, 24);
+  // (na parede do lado da entrada da câmara: no fundo ela ficava a 1,5 m das frases a giz e da lei talhada, e a luz apagava os glifos)
+  kit.torch(-8.6, 2.6, CH.z1 - 0.1, 0, -1, 1.3, 0xffa860, 24);
   let bonus = false;
   const niche = makeGemNiche(kit, ctx, -9.0, 1.25, CH.z0 + 0.02, 0, 1, () => (bonus = true));
   interactables.push(niche.interactable);
@@ -308,7 +311,8 @@ export function buildRespiro3(ctx: Ctx): Room {
     moon.shadow.autoUpdate = false; // a sombra da fresta só se refaz quando algo se mexe embaixo dela (ver update)
     moon.shadow.needsUpdate = true;
     kit.group.add(moon, moon.target);
-    lifeFx.push(beamMotes(kit.group, moon.position.clone(), moon.target.position.clone(), 52));
+    // (poeira mais rala e mais apagada: com 52 grãos a meia opacidade o feixe parecia chuviscar; §67)
+    lifeFx.push(beamMotes(kit.group, moon.position.clone(), moon.target.position.clone(), 34, 0xc8d4f0, 0.32));
   }
   // ── OS OBJETOS DE QUEM VIVEU AQUI ESPERANDO (DESIGN.md §65): pequenas cenas encostadas nas paredes, nunca no caminho, longe da passagem da
   // câmara, das folhas, dos desenhos e do banco do Escrivão. Só coisas do dia a dia (nada de RPG, DIRECAO_DE_ARTE.md §4.7) ──

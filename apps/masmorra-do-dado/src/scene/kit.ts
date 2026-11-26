@@ -106,7 +106,10 @@ export class Kit {
   }
   stone: THREE.MeshLambertMaterial;
   slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
-  private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial }[] = [];
+  private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial; haloMesh?: THREE.Mesh; holder?: THREE.Object3D; nx: number; nz: number }[] = [];
+  // o que as tochas de ENFEITE têm de respeitar (DESIGN.md §67): [ponto, distância mínima da chama]. Tochas dos puzzles, lousas e braseiros
+  // se registram aqui; as escritas entram sozinhas (kit.inscriptions). No `bake`, a tocha que estiver perto demais desliza pela parede.
+  keepClear: [THREE.Vector3, number][] = [];
   private poolTex: THREE.Texture | null = null;
   private beams: { geo: THREE.BufferGeometry; cx: number; cz: number; r: number; y0: number; y1: number; seed: number[] }[] = [];
   private flicker = true;
@@ -151,7 +154,7 @@ export class Kit {
   torch(x: number, y: number, z: number, nx: number, nz: number, phase: number, color = 0xff9a3c, intensity = 42) {
     // a tocha de parede em modelo 3D (DESIGN.md §66); se o arquivo falhar, o suporte e o cabo de caixas de antes. Nenhum dos dois faz sombra
     // (a própria chama ficaria com uma barra preta embaixo, na parede)
-    wallTorch(this.group, x, y, z, nx, nz, (h) => {
+    const holder = wallTorch(this.group, x, y, z, nx, nz, (h) => {
       for (const [w, hh, d, mat, px, py, pz] of [
         [Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.mat('torchBracket', () => this.stone.clone()), x, y - 0.05, z],
         [0.1, 0.6, 0.1, this.mat('torchStick', () => lambert(null, 0x5a3a24)), x + nx * 0.16, y + 0.12, z + nz * 0.16],
@@ -177,7 +180,7 @@ export class Kit {
     halo.rotation.y = Math.atan2(nx, nz);
     halo.renderOrder = 2;
     this.group.add(halo);
-    this.torches.push({ sprite, light, phase, base: intensity, halo: halo.material as THREE.MeshBasicMaterial });
+    this.torches.push({ sprite, light, phase, base: intensity, halo: halo.material as THREE.MeshBasicMaterial, haloMesh: halo, holder, nx, nz });
   }
 
   // inscrição dos Contáveis (talhada, cal branca); olhar para ela manda os símbolos ao diário
@@ -496,7 +499,82 @@ export class Kit {
 
   // Junta as caixas decorativas que usam o mesmo material numa única malha (menos chamadas de
   // desenho). Chamar uma vez, no fim da montagem da sala.
+  // TOCHAS DE ENFEITE LONGE DO QUE SE LÊ (varredura do cenógrafo, DESIGN.md §67): a chama a 1,6 m ou mais de todo glifo, longe das lousas,
+  // dos braseiros e das tochas dos puzzles (uma chama acesa colada numa constelação vira parte dela). A tocha que estiver perto demais desliza
+  // pela mesma parede (até 3,2 m para cada lado, e sobe 0,8 m se preciso) até um lugar livre COM parede atrás e nada na frente; se não houver,
+  // fica onde está e é anotada (só no modo de desenvolvimento: `__tochasPresas`).
+  private clearTorches() {
+    if (!this.torches.length) return;
+    this.group.updateMatrixWorld(true);
+    const inv = this.group.matrixWorld.clone().invert();
+    const pts: [THREE.Vector3, number][] = [...this.keepClear];
+    for (const ins of this.inscriptions) {
+      if (ins.hidden) continue;
+      for (const p of ins.panels) pts.push([p.mesh.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv), 1.6]);
+    }
+    const surf = this.surfaces.filter((o) => o.parent);
+    const ray = new THREE.Raycaster();
+    const free = (f: THREE.Vector3, self: (typeof this.torches)[number]) =>
+      pts.every(([p, r]) => p.distanceTo(f) >= r) && this.torches.every((o) => o === self || o.sprite.position.distanceTo(f) >= 1.8);
+    const wallAt = (f: THREE.Vector3, n: THREE.Vector3) => {
+      // parede logo atrás da chama (a 0,26 m) e nada na frente dela
+      ray.set(f, n.clone().negate());
+      ray.far = 0.45;
+      if (!ray.intersectObjects(surf, true).length) return false;
+      ray.set(f, n);
+      ray.far = 0.5;
+      if (ray.intersectObjects(surf, true).length) return false;
+      // e o teto longe da chama (a fumaça e a luz precisam de ar em cima)
+      ray.set(f, new THREE.Vector3(0, 1, 0));
+      ray.far = 0.7;
+      return !ray.intersectObjects(surf, true).length;
+    };
+    for (const tc of this.torches) {
+      const f0 = tc.sprite.position.clone();
+      if (free(f0, tc)) continue;
+      const n = new THREE.Vector3(tc.nx, 0, tc.nz).normalize();
+      const tan = new THREE.Vector3(-n.z, 0, n.x);
+      let to: THREE.Vector3 | null = null;
+      search: for (const dy of [0, 0.8])
+        for (const d of [0.8, -0.8, 1.6, -1.6, 2.4, -2.4, 3.2, -3.2, 0]) {
+          if (!d && !dy) continue;
+          const f = f0.clone().addScaledVector(tan, d);
+          f.y += dy;
+          if (free(f, tc) && wallAt(f, n)) {
+            to = f;
+            break search;
+          }
+        }
+      if (to) {
+        const dlt = to.clone().sub(f0);
+        tc.sprite.position.add(dlt);
+        tc.light.pos.add(dlt);
+        tc.haloMesh?.position.add(dlt);
+        tc.holder?.position.add(dlt);
+        if (import.meta.env.DEV) {
+          const g = globalThis as Record<string, unknown>;
+          ((g.__tochasMovidas ??= []) as unknown[]).push([g.__salaMontando, f0.toArray().map((v) => +v.toFixed(2)), dlt.toArray().map((v) => +v.toFixed(2))]);
+        }
+      } else if (this.torches.length > 2) {
+        // sem lugar livre numa sala que tem outras tochas: a de enfeite sai (a sala continua iluminada pelas outras)
+        tc.sprite.removeFromParent();
+        tc.haloMesh?.removeFromParent();
+        tc.holder?.removeFromParent();
+        tc.light.intensity = 0;
+        tc.base = 0;
+        if (import.meta.env.DEV) {
+          const g = globalThis as Record<string, unknown>;
+          ((g.__tochasTiradas ??= []) as unknown[]).push([g.__salaMontando, f0.toArray().map((v) => +v.toFixed(2))]);
+        }
+      } else if (import.meta.env.DEV) {
+        const g = globalThis as Record<string, unknown>;
+        ((g.__tochasPresas ??= []) as unknown[]).push([g.__salaMontando, f0.toArray().map((v) => +v.toFixed(2))]);
+      }
+    }
+  }
+
   bake() {
+    this.clearTorches();
     const byMat = new Map<THREE.Material, THREE.Mesh[]>();
     for (const o of [...this.group.children]) {
       const m = o as THREE.Mesh;
@@ -671,8 +749,9 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   rm.position.z = o.z0;
   g.add(rm);
   mark(rm);
-  const key = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.38, 0.36), kit.stone);
-  key.position.set(0, ARCH_TOP + 0.15, o.z0 + 0.18);
+  // (a fundo dela fica 2 cm à frente da parede: encostada nela, as duas faces piscavam; §67)
+  const key = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.38, 0.34), kit.stone);
+  key.position.set(0, ARCH_TOP + 0.15, o.z0 + 0.19);
   g.add(key);
   mark(key);
 
@@ -701,20 +780,23 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   g.add(slabG);
 
   // corredor atrás da porta
-  const cm = lambert(brickTexture([CORRIDOR / T, ARCH_TOP / T], 0.85, 71, theme));
-  const ceilM = lambert(brickTexture([(2 * DW) / T, CORRIDOR / T], 0.7, 72, theme));
-  const floorM = lambert(floorTexture([(2 * DW) / T, CORRIDOR / T], theme));
-  const zc = o.z0 - CORRIDOR / 2;
+  // com parede grossa (`thick`), o corredor começa onde a ombreira termina: os dois planos no mesmo lugar piscavam (§67)
+  const t0 = o.thick ?? 0;
+  const CL = CORRIDOR - t0;
+  const cm = lambert(brickTexture([CL / T, ARCH_TOP / T], 0.85, 71, theme));
+  const ceilM = lambert(brickTexture([(2 * DW) / T, CL / T], 0.7, 72, theme));
+  const floorM = lambert(floorTexture([(2 * DW) / T, CORRIDOR / T], theme)); // (o chão vai até a soleira)
+  const zc = o.z0 - t0 - CL / 2;
   const mk = (w: number, h: number, mat: THREE.Material, x: number, y: number, z: number, rx: number, ry: number) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     m.position.set(x, y, z);
     m.rotation.set(rx, ry, 0);
     g.add(m);
   };
-  mk(CORRIDOR, ARCH_TOP, cm, -DW, ARCH_TOP / 2, zc, 0, Math.PI / 2);
-  mk(CORRIDOR, ARCH_TOP, cm, DW, ARCH_TOP / 2, zc, 0, -Math.PI / 2);
-  mk(2 * DW, CORRIDOR, ceilM, 0, ARCH_TOP, zc, Math.PI / 2, 0);
-  mk(2 * DW, CORRIDOR, floorM, 0, 0.003, zc, -Math.PI / 2, 0);
+  mk(CL, ARCH_TOP, cm, -DW, ARCH_TOP / 2, zc, 0, Math.PI / 2);
+  mk(CL, ARCH_TOP, cm, DW, ARCH_TOP / 2, zc, 0, -Math.PI / 2);
+  mk(2 * DW, CL, ceilM, 0, ARCH_TOP, zc, Math.PI / 2, 0);
+  mk(2 * DW, CORRIDOR, floorM, 0, 0.003, o.z0 - CORRIDOR / 2, -Math.PI / 2, 0);
   if (!o.connected) {
     const exitGlow = new THREE.Mesh(new THREE.PlaneGeometry(2 * DW, ARCH_TOP), new THREE.MeshBasicMaterial({ color: 0xfff0c8, fog: false }));
     exitGlow.position.set(0, ARCH_TOP / 2, o.z0 - CORRIDOR);

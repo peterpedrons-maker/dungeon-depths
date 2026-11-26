@@ -219,6 +219,7 @@ export interface WallBoard {
   normal: THREE.Vector3;
   group: THREE.Group;
   lift: number; // deslocamento vertical (a porta-lousa sobe com a laje)
+  hidden?: boolean; // escondida (a porta-lousa, quando a laje já entrou na parede): sem desenho e sem luz
   hit(): number; // casa que o dado de Fogo está tocando agora (ou -1)
   cellPos(i: number): THREE.Vector3; // posição (local da sala) do lampião i
   update(dt: number, t: number): void;
@@ -236,6 +237,7 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
   const OUT = 0.025;
   const g = new THREE.Group();
   g.position.set(o.x + n.x * OUT, o.y, o.z + n.z * OUT);
+  kit.keepClear.push([new THREE.Vector3(o.x, o.y, o.z), 1.4]); // (nenhuma tocha de enfeite em cima de uma lousa)
   g.rotation.y = ry;
   (o.parent ?? kit.group).add(g);
   const size = step * 3 + 0.2;
@@ -386,8 +388,9 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
       grid.update(dt, t);
       g.position.y = o.y + board.lift;
       light.pos.y = o.y + board.lift;
+      g.visible = !board.hidden;
       const nLit = grid.points().length;
-      light.intensity = nLit ? 3 + 1.6 * nLit : 0;
+      light.intensity = nLit && !board.hidden ? 3 + 1.6 * nLit : 0;
       void flames;
     },
     setDim(v) {
@@ -518,6 +521,7 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
   sprite.scale.set(0.38, 0.3, 1);
   const pos = new THREE.Vector3(x + nx * 0.16, y + 0.57, z + nz * 0.16);
   sprite.position.copy(pos);
+  kit.keepClear.push([pos.clone(), 2.2]); // (nenhuma tocha de enfeite colada numa tocha de puzzle)
   sprite.visible = false;
   kit.group.add(sprite);
   const light = kit.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, 0xff9a3c, 0);

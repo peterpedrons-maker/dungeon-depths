@@ -1613,6 +1613,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     offs.length = 0;
     BUILDERS.forEach((build, i) => {
       const off = new THREE.Vector3();
+      if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
       const room = build(makeCtx(off, i));
       room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
       if (i > 0) off.z = offs[i - 1].z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ;

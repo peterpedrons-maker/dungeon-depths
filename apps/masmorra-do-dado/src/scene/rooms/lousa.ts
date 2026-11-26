@@ -188,9 +188,10 @@ export function buildLousa(ctx: Ctx): Room {
   const L1 = mkCopy(0.1, 'n2', 'lousa1');
   const L2 = mkCopy(-4.3, 'n3', 'lousa2');
   kit.torch(X0 + 0.1, 1.9, 0.2, 1, 0, 0.7);
-  kit.torch(X1 - 0.1, 1.9, -2.6, -1, 0, 1.9);
+  // (a da direita mais alta: a 1,9 m ela ficava a 0,7 m do TRÊS talhado, que parecia aceso com a luz dela)
+  kit.torch(X1 - 0.1, 2.75, -2.6, -1, 0, 1.9);
   kit.soot(X0, 2.4, 0.2, 1, 0, 0.6, 1.1);
-  kit.soot(X1, 2.4, -2.6, -1, 0, 0.6, 1.1);
+  kit.soot(X1, 3.25, -2.6, -1, 0, 0.6, 1.1);
   kit.lightPool(X0 + 0.7, 0.2, 1.4, 0, 0xff9a3c).opacity = 0.2;
   kit.lightPool(X1 - 0.7, -2.6, 1.4, 0, 0xff9a3c).opacity = 0.2;
   // fuligem acima dos três braseiros do chão (os da porta enegrecem a parede do fundo; o do meio, a parede esquerda)
@@ -380,6 +381,9 @@ export function buildLousa(ctx: Ctx): Room {
 
       // ── a porta-lousa ──
       DB.lift = doorOpen * (2.65 + 0.2);
+      // a porta-lousa fica 2 mm À FRENTE da parede (os lampiões, 7,5 cm): subindo com a laje, ela passava por cima do aro e da frase
+      // «ACENDER ▢ BRASEIRO» e ficava lá em cima, à mostra. Quando a laje começa a entrar na parede, ela some (a luz dela também)
+      DB.hidden = DB.lift > 0.5;
       if (!solved) {
         const i = DB.hit();
         if (i >= 0 && gate.take()) {
@@ -432,6 +436,9 @@ export function buildLousa(ctx: Ctx): Room {
       readT = 99;
       prevWant = 1;
       doorOpen = 1;
+      // a grade do meio também fica em cima (sem isso, quem volta de uma sala salva mais adiante dava com ela fechada; §67)
+      grateUp = true;
+      grateK = 1;
     },
     isSolved: () => solved,
     reset,

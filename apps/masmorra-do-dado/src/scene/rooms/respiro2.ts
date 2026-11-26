@@ -163,6 +163,11 @@ export function buildRespiro2(ctx: Ctx): Room {
   };
   sideWall(X0, 1, WEST, 33);
   sideWall(X1, -1, EAST, 39);
+  // o vão de cada câmara ganha batentes e verga de pedra lavrada (antes era só o recorte de duas folhas de parede, sem espessura; §67)
+  for (const [x, c] of [[X0, WEST], [X1, EAST]] as const) {
+    for (const z of [c.d0 + 0.11, c.d1 - 0.11]) solidBox(x - 0.25, HALL, z - 0.11, x + 0.25, HALL + 2.3, z + 0.11, kit.slab);
+    kit.box(0.5, 0.18, c.d1 - c.d0, kit.slab, x, HALL + 2.39, (c.d0 + c.d1) / 2, false);
+  }
   rects.push([X0 - 0.3, WEST.d1, X0, Z1 + 1], [X0 - 0.3, Z0 - 1, X0, WEST.d0], [X1, EAST.d1, X1 + 0.3, Z1 + 1], [X1, Z0 - 1, X1 + 0.3, EAST.d0]);
   const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: HALL, h: HH, lamps: 1, connected: true });
   door.setOpen(1);

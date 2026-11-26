@@ -22,6 +22,7 @@ export interface Brazier {
 
 export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1, y0 = 0, poolR = 1.9): Brazier {
   const s = scale; // braseiros menores/maiores (o tamanho pode dizer quanto a chama dura)
+  kit.keepClear.push([new THREE.Vector3(x, y0 + 1.1 * scale, z), 1.3]); // (nenhuma chama de enfeite logo acima de um braseiro: parece aceso)
   const useModel = !!brazierModelMode;
   // o modelo da coluna com a cesta de ferro (models.ts) no lugar do pé e da tigela (`?braseiro=antigo` volta ao de caixas); as medidas do puzzle são as mesmas
   let flameW = 0.75 * s;

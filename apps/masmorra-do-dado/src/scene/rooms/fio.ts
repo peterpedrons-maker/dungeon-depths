@@ -139,6 +139,9 @@ export function buildFio(ctx: Ctx): Room {
   const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.11, 0.12, 6), lambert(null, 0x3a3a46));
   cup.position.set(PX + 1.0, BAL + 1.14, PZ - 0.2);
   kit.add(cup);
+  // a plaquinha e o soquete ficavam soltos no ar, 10 cm e 6 cm acima da capa do parapeito: ganham um pé de pedra (eles não mudam de lugar; §67)
+  kit.box(1.56, 0.11, 0.2, kit.slab, PX, BAL + 1.07, BZ1 + 0.3, false);
+  kit.box(0.18, 0.07, 0.18, kit.slab, PX + 1.0, BAL + 1.055, PZ - 0.2, false);
   const sockFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   sockFlame.scale.set(0.3, 0.26, 1);
   sockFlame.position.set(PX + 1.0, BAL + 1.36, PZ - 0.2);

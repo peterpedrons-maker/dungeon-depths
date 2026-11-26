@@ -110,10 +110,12 @@ export interface FireExtra {
   floorY?(x: number, z: number, feet: number): number; // chão com alturas (plataformas, rampa)
   dieFloor?(x: number, z: number): number;
   clampDie?(p: THREE.Vector3, vel: THREE.Vector3, e: number, R: number): void;
+  skip?(): void; // salvamento: a sala volta resolvida (grades em cima etc.)
 }
 
 export interface FireSpec {
   name: string; // sem o "Sala N ·": a numeração é automática
+  last?: boolean; // a ÚLTIMA sala do capítulo: o corredor da porta termina na luz de saída e chegar nele encerra o capítulo
   blackout?: number; // segundos do ESCURO da punição (PUZZLES_PROPOSTAS Ficha 1: 2,5 s; a sala 13 "O Escuro" usará 4 s)
   subtitle: string;
   hx: number; // meia-largura
@@ -125,6 +127,7 @@ export interface FireSpec {
   words: string[]; // a frase (ids do léxico)
   sign?: 'back' | 'left' | 'right'; // em que parede está a frase (padrão: fundo, à esquerda da porta)
   pillars?: [number, number][]; // [x, dz] colunas no meio da sala
+  pillarH?: number; // altura das colunas (padrão: até o teto; no claustro, até o telhado das galerias)
   tablets?: FireTablet[]; // frases na parede (rumores, leis...)
   plate?: { x: number; dz: number }; // placa de pressão (regra `commit`): só o Peso a afunda
   // TRAVA DE ESCRITA: antes do puzzle de braseiros, o jogador passa o dado de Fogo pelas FRASES da parede (tablete `lit`). Acender as certas faz os pilares
@@ -276,18 +279,20 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   const steps = spec.rule.kind === 'custom' ? (spec.rule.lamps ?? 1) : spec.rule.kind === 'commit' ? 1 : spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
   const DY = spec.doorY ?? 0;
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: DY, h: H - DY, lamps: Math.min(5, steps), connected: true, theme });
+  // (a última sala: a porta não dá na próxima, dá na luz; antes o corredor do Tribunal acabava no vazio e o capítulo não terminava)
+  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: DY, h: H - DY, lamps: Math.min(5, steps), connected: !spec.last, theme });
 
   // colunas (também seguram o dado)
   const boxes: Box[] = [];
   const rects: ReturnType<Room['rects']> = [];
+  const PH = spec.pillarH ?? H;
   for (const [px, pdz] of spec.pillars ?? []) {
     const pz = Z0 + pdz;
-    kit.box(0.9, H, 0.9, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, H / 2, pz);
+    kit.box(0.9, PH, 0.9, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, PH / 2, pz);
     kit.box(1.1, 0.25, 1.1, kit.stone, px, 0.125, pz);
-    kit.box(1.1, 0.25, 1.1, kit.stone, px, H - 0.125, pz);
+    kit.box(1.1, 0.25, 1.1, kit.stone, px, PH - 0.125, pz);
     kit.contact(px, pz, 2.1);
-    boxes.push(mkBox(px - 0.45, 0, pz - 0.45, px + 0.45, H, pz + 0.45), mkBox(px - 0.55, 0, pz - 0.55, px + 0.55, 0.25, pz + 0.55), mkBox(px - 0.55, H - 0.25, pz - 0.55, px + 0.55, H, pz + 0.55));
+    boxes.push(mkBox(px - 0.45, 0, pz - 0.45, px + 0.45, PH, pz + 0.45), mkBox(px - 0.55, 0, pz - 0.55, px + 0.55, 0.25, pz + 0.55), mkBox(px - 0.55, PH - 0.25, pz - 0.55, px + 0.55, PH, pz + 0.55));
     rects.push([px - 0.55, pz - 0.55, px + 0.55, pz + 0.55]);
   }
 
@@ -878,6 +883,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     doorZ: Z0,
     entranceZ: Z1,
     exitDy: spec.doorY,
+    exitReached: spec.last ? () => doorOpen > 0.85 && ctx.player.pos.z < door.zExit : undefined,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: spec.fog ?? { color: '#0a0a11', near: 3.5, far: 18 },
@@ -1326,6 +1332,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       readT = 99;
       prevWant = 1;
       doorOpen = 1;
+      // os pilares que sobem do chão já estão em cima, e as peças da sala (grades) também (§67)
+      risen = true;
+      riseK = 1;
+      applyRise();
+      extra.skip?.();
     },
     isSolved: () => solved,
     reset,

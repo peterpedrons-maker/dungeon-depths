@@ -33,6 +33,7 @@ export function buildTribunal(ctx: Ctx): Room {
   ];
   const spec: FireSpec = {
     name: data.nome,
+    last: true, // o fim do capítulo 1
     subtitle: 'Todas as frases falam de alguém.',
     hx: 6.2,
     z0: -16,
