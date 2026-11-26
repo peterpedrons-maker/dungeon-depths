@@ -38,9 +38,22 @@ export const HER_PAGES: HerPage[] = [
     // (ERRO PLANTADO, decidido: ela está enganada; O Boato Verdadeiro e o Tribunal mostram que o talhado também pode ser boato)
     body: ['O que está talhado não mente. O que alguém só disse, às vezes mente.', 'Acendi uma frase de boato e a Casa me apagou, como a uma vela.'],
   },
-  { id: 'p5', where: '(ainda não está no jogo)', body: [] },
-  { id: 'p6', where: '(ainda não está no jogo)', body: [] },
-  { id: 'p7', where: '(ainda não está no jogo)', body: [] },
+  {
+    id: 'p5',
+    where: 'A Galeria dos Condenados (no banco do fundo; a pista da sala do Escuro)',
+    body: ['Quando eu erro, a Casa apaga tudo.', 'Por um instante, no escuro, juro que vi alguma coisa brilhando no teto.'],
+  },
+  {
+    id: 'p6',
+    where: 'A Galeria dos Condenados (perto do desenho a giz do braseiro grande e do pequeno)',
+    // (ela erra de novo: o glifo é PEQUENO; quem fez Os Apelidos sabe)
+    body: ['O ponto no meio, com as duas barras do lado, quer dizer UM.', 'Tenho certeza.'],
+  },
+  {
+    id: 'p7',
+    where: 'A Escadaria (no meio da subida)',
+    body: ['Contei as faces de tudo aqui. Quatro cantos, buracos redondos no teto, sempre um, dois...', 'Esta casa tem a forma de alguma coisa que eu conheço. Não lembro do quê.'],
+  },
 ];
 
 // as anotações dela no dicionário de símbolos (tinta sépia, desbotada; o jogador não apaga)

@@ -195,6 +195,25 @@ três lousas pequenas lado a lado. **Não há pista nenhuma à vista.**
 - **Por que é única:** o teto cita só três números; as duas confirmadas dão uma ordem e ambas são necessárias. **Palavra nova:** ESCURO (só existe no escuro).
   **Dificuldade: 7 de 10.**
 
+## A Lei Pequena  (ACENDER · QUATRO · BRASEIRO · ORDEM · CONFIRMADO)  — NÍVEL 8 (a 1ª lei da contagem; `tools/verify_lei.mjs`)
+A sala **sobe**. No **térreo**, na frente do mezanino (quem está em cima não vê esta parede): «QUATRO DEPOIS UM CONFIRMADO» e «DOIS ANTES TRÊS CONFIRMADO»;
+na parede esquerda, o mural da **balança** com dois braseirinhos em cada prato e «DOIS IGUAL DOIS CONFIRMADO» (IGUAL é o sinal das duas barras). Uma
+**rampa** larga sobe colada à parede direita; nessa parede, gastos, três **boatos**: «DOIS ANTES UM», «UM DEPOIS DOIS», «DOIS DEPOIS QUATRO». No
+**mezanino**: os quatro braseiros (UM a QUATRO), a porta e, à direita dela, a **lei** «UM BOATO IGUAL VERDADE CONFIRMADO» (exatamente um boato é verdade).
+Errar: escuro e braseiros frios por 10 s, sem gema por passo.
+1. «DOIS ANTES UM» e «UM DEPOIS DOIS» **dizem a mesma coisa**: são os dois verdade ou os dois mentira.
+2. A lei diz que **só um** boato é verdade: esses dois não podem ser verdade (seriam dois). São mentira: **o 1 vem antes do 2**.
+3. O verdadeiro é o terceiro, «DOIS DEPOIS QUATRO»: 4 antes de 2.
+4. Juntando as confirmadas (1 antes de 4; 2 antes de 3): **UM, QUATRO, DOIS, TRÊS**. Subir a rampa e acender nessa ordem.
+- **Por que é única:** uma ordem só entre 24; todas as cinco frases são necessárias; "todos os boatos falsos" dá 2 ordens; "todos verdadeiros", nenhuma.
+  **Palavra nova:** IGUAL (pela balança). **Dificuldade: 8 de 10.**
+
+## A Escadaria  — RESPIRO R4 (área livre, sem trava)
+Um poço de 12 m com três lances colados às paredes (direita, esquerda, direita de novo) e três patamares (3 m no fundo, 6 m na frente, 9 m no fundo,
+onde está a porta). Janelas de grade dão para salas já feitas, vistas de cima: **A Casa Escreve** (as nove colunas em grade: a dica mais clara de que
+elas eram a grade da constelação C1), o fosso da **Ponte** e a capela do **Pano**. No patamar do meio, a **folha arrancada nº 7** dela. No alto, ao lado
+da porta, uma portinha com **seis** pontos de bronze, fechada (a face que a língua não tem; abre num capítulo posterior). Nada é obrigatório.
+
 ## Sala 14 — O Tribunal dos Rumores  — NÍVEL 10 (**provisório aqui**: a posição final é a sala 18, depois das salas da curva de `PUZZLES_PROPOSTAS.md` §2)
 Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
 Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).

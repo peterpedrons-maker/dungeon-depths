@@ -6,7 +6,7 @@ import type { FireExtra, FireExtraApi, FireSpec } from './fire';
 import { glyphPattern, makeWallBoard, type WallBoard } from '../firegrid';
 import { lambert } from '../kit';
 import { makeCal, type CalText } from '../cal';
-import { shotGate } from './shell';
+import { shotGate, slopedWall, wedge } from './shell';
 import type { Box, Rect } from '../types';
 
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
@@ -350,3 +350,123 @@ export const FIRE_ESCURO: FireSpec = {
   extra: escuroExtra,
 };
 void lambert;
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// SALA 14 · A LEI PEQUENA (nível 8; tools/verify_lei.mjs; Ficha 6)
+// A sala SOBE. Térreo: as duas confirmadas (na frente do mezanino: de cima não se veem) e o mural da balança («DOIS IGUAL DOIS»). Uma rampa
+// larga junto à parede direita, com os três boatos gastos na parede. No mezanino: os quatro braseiros, a lei «UM BOATO IGUAL VERDADE» e a porta.
+// «DOIS ANTES UM» e «UM DEPOIS DOIS» dizem a mesma coisa: não podem ser os dois verdade (a lei diz um só) → são mentira; o verdadeiro é
+// «DOIS DEPOIS QUATRO». Ordem: UM, QUATRO, DOIS, TRÊS.
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+const LEI = { hx: 6, z0: -15, h: 7.5, level: 3.0, mze: -9.5, rx0: 3.7, rLow: 0 };
+const leiRampY = (z: number) => LEI.level * Math.min(1, Math.max(0, (LEI.rLow - z) / (LEI.rLow - LEI.mze)));
+const leiFloor = (x: number, z: number) => (z < LEI.mze ? LEI.level : x > LEI.rx0 && z <= LEI.rLow ? leiRampY(z) : 0);
+function balanceTexture() {
+  return canvasTex(160, 112, (g) => {
+    g.clearRect(0, 0, 160, 112);
+    const line = (pts: [number, number][], w = 3) => {
+      for (const [col, lw, d] of [['#15110f', w + 2, 1], ['#e9e1cc', w, 0]] as [string, number, number][]) {
+        g.strokeStyle = col;
+        g.lineWidth = lw;
+        g.beginPath();
+        pts.forEach(([x, y], i) => (i ? g.lineTo(x + d, y + d) : g.moveTo(x + d, y + d)));
+        g.stroke();
+      }
+    };
+    line([[80, 18], [80, 98]]); // o poste
+    line([[56, 98], [104, 98]]); // a base
+    line([[22, 30], [138, 30]]); // o travessão (reto: equilíbrio)
+    line([[30, 30], [22, 62]], 2);
+    line([[30, 30], [38, 62]], 2);
+    line([[130, 30], [122, 62]], 2);
+    line([[130, 30], [138, 62]], 2);
+    line([[14, 62], [46, 62]]); // os pratos
+    line([[114, 62], [146, 62]]);
+    // DOIS em cada prato (dois braseirinhos)
+    for (const cx of [22, 38, 122, 138]) {
+      g.fillStyle = '#15110f';
+      g.fillRect(cx - 5, 50, 11, 11);
+      g.fillStyle = '#e9e1cc';
+      g.fillRect(cx - 4, 51, 9, 9);
+      g.fillStyle = '#ff9a40';
+      g.fillRect(cx - 2, 45, 5, 6);
+    }
+  });
+}
+function leiExtra(api: FireExtraApi): FireExtra {
+  const { kit, X0, X1, Z0, H, boxes } = api;
+  const { level: LV, mze: MZE, rx0: RX } = LEI;
+  // o mezanino (bloco de alvenaria) com piso de pedra por cima
+  const MZ = MZE - Z0;
+  kit.box(X1 - X0, LV, MZ, kit.stone, 0, LV / 2, (Z0 + MZE) / 2);
+  kit.plane(X1 - X0, MZ, kit.floorMat([(X1 - X0) / 2, MZ / 2]), 0, LV + 0.002, (Z0 + MZE) / 2, -Math.PI / 2);
+  kit.box(X1 - X0, 0.12, 0.3, kit.slab, 0, LV - 0.06, MZE + 0.1, false); // a capa da borda
+  boxes.push(mkBox(X0, 0, Z0, X1, LV, MZE));
+  // o parapeito (deixa o vão da rampa)
+  kit.box(RX - X0, 0.95, 0.24, kit.stone, (X0 + RX) / 2, LV + 0.475, MZE + 0.12);
+  kit.box(RX - X0 + 0.06, 0.08, 0.32, kit.slab, (X0 + RX) / 2, LV + 0.99, MZE + 0.12, false);
+  boxes.push(mkBox(X0, LV, MZE, RX, LV + 1.0, MZE + 0.24));
+  // a rampa, colada na parede direita, com mureta do lado de dentro
+  kit.add(wedge(RX, MZE, X1, LEI.rLow, (_x, z) => leiRampY(z), kit.stone, kit.slab));
+  slopedWall(kit, { x0: RX - 0.16, z0: MZE, x1: RX, z1: LEI.rLow, top: (_x, z) => leiRampY(z) + 0.9, segs: 8 }).forEach((b) => boxes.push(b));
+  kit.contact(0, MZE + 0.3, X1 - X0, 1.2);
+  // térreo: as confirmadas, na FRENTE do mezanino (quem está em cima não as vê) e o mural da balança na parede esquerda
+  kit.inscribe({ words: ['n4', 'depois', 'n1', 'conf'], x: -3.2, y: 1.7, z: MZE + 0.025, nx: 0, nz: 1, size: 0.34, age: 0.15, seed: 151, plaque: true });
+  kit.inscribe({ words: ['n2', 'antes', 'n3', 'conf'], x: 0.9, y: 1.7, z: MZE + 0.025, nx: 0, nz: 1, size: 0.34, age: 0.15, seed: 153, plaque: true });
+  const mural = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.12), new THREE.MeshLambertMaterial({ map: balanceTexture(), transparent: true, alphaTest: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
+  mural.position.set(X0 + 0.02, 2.45, -4.2);
+  mural.rotation.y = Math.PI / 2;
+  kit.group.add(mural);
+  kit.inscribe({ words: ['n2', 'igual', 'n2', 'conf'], x: X0 + 0.025, y: 1.55, z: -4.2, nx: 1, nz: 0, size: 0.32, age: 0.15, seed: 155, plaque: true });
+  // a rampa: os três boatos, gastos, na parede direita
+  for (const [k, [z, words]] of ([
+    [-1.6, ['n2', 'antes', 'n1', 'boato']],
+    [-4.7, ['n1', 'depois', 'n2', 'boato']],
+    [-7.8, ['n2', 'depois', 'n4', 'boato']],
+  ] as [number, string[]][]).entries())
+    kit.inscribe({ words, x: X1 - 0.025, y: leiRampY(z) + 1.75, z, nx: -1, nz: 0, size: 0.3, age: 0.6, seed: 157 + k * 2 });
+  // o mezanino: a lei, à direita da porta
+  kit.inscribe({ words: ['n1', 'boato', 'igual', 'verdade', 'conf'], x: 3.55, y: LV + 1.75, z: Z0 + 0.025, nx: 0, nz: 1, size: 0.3, age: 0.15, seed: 163, plaque: true });
+  // luz: térreo, rampa e mezanino
+  kit.torch(X0 + 0.1, 2.2, -1.6, 1, 0, 0.4);
+  kit.torch(X0 + 0.1, 2.2, -7.0, 1, 0, 1.1);
+  kit.torch(X1 - 0.1, leiRampY(-3.2) + 2.2, -3.2, -1, 0, 1.7);
+  kit.torch(X1 - 0.1, leiRampY(-6.3) + 2.2, -6.3, -1, 0, 2.3);
+  kit.torch(-4.6, LV + 1.8, Z0 + 0.1, 0, 1, 3.1);
+  kit.torch(4.9, LV + 1.8, Z0 + 0.1, 0, 1, 3.7);
+  kit.light(-1, 2.6, MZE + 2.2, 0xffb070, 10); // as frases do térreo
+  void H;
+  // colisão do jogador: o mezanino (para quem está embaixo), o parapeito e a mureta da rampa (em pedaços, subindo)
+  const rects: Rect[] = [[X0, Z0, X1, MZE, LV], [X0, MZE - 0.02, RX, MZE + 0.26, LV + 1.0]];
+  const N = 12;
+  for (let k = 0; k < N; k++) {
+    const za = MZE + ((LEI.rLow - MZE) * k) / N;
+    const zb = MZE + ((LEI.rLow - MZE) * (k + 1)) / N;
+    rects.push([RX - 0.18, za, RX + 0.02, zb, leiRampY(za) + 0.9]);
+  }
+  return {
+    rects: () => rects,
+    floorY: (x, z) => leiFloor(x, z),
+    dieFloor: (x, z) => leiFloor(x, z),
+  };
+}
+export const FIRE_LEI: FireSpec = {
+  name: 'A Lei Pequena',
+  subtitle: 'A sala sobe.',
+  hx: LEI.hx,
+  z0: LEI.z0,
+  h: LEI.h,
+  doorY: LEI.level,
+  braziers: [
+    { x: -4.2, dz: 2.4, mark: 'n1', y: LEI.level },
+    { x: -2.0, dz: 4.3, mark: 'n2', y: LEI.level },
+    { x: 2.2, dz: 4.4, mark: 'n3', y: LEI.level },
+    { x: 4.4, dz: 2.2, mark: 'n4', y: LEI.level },
+  ],
+  rule: { kind: 'order', seq: [0, 3, 1, 2], hints: false, penalty: 10 }, // UM, QUATRO, DOIS, TRÊS
+  words: ['acender', 'n4', 'brasa', 'ordem', 'conf'],
+  torches: 'few',
+  fog: { color: '#0a0a11', near: 6, far: 26 },
+  ambient: { color: 0x7a78b8, intensity: 1.8 },
+  extra: leiExtra,
+};
