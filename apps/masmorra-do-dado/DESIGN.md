@@ -982,8 +982,7 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
   garrafas embaixo das marcas de giz; pote quebrado e inteiro; correntes no chão; um candelabro velho pendurado no meio; barris num suporte junto da
   porta. Tudo encostado nas paredes, fora do caminho, da passagem da câmara lateral, das folhas dela e dos desenhos; as tochas ganham sombra de
   verdade. Na branch ficam só os objetos usados (`public/models/props_q.glb`, 1,1 MB, e `props_t.glb`, 0,5 MB).
-- Ainda é prévia: o jogo normal não muda. Antes de virar padrão: escolher os objetos, carregar os packs antes de montar as salas e passar a sala pela
-  mesma arquitetura nova do Vestíbulo.
+- Era prévia (`?objetos=1`); **virou padrão na Galeria em §64**, com os objetos refeitos em pequenas cenas e a arquitetura nova.
 - **O que entra (decisão do Pedro: o jogo não é RPG)**: só objetos do dia a dia de quem viveu e esperou na Casa: móveis (bancos, banquetas,
   cadeiras, mesas, armários, estantes, camas), barris, caixotes, cestos, sacos, baldes, potes e vasos (inteiros e quebrados), canecas, pratos e
   talheres, velas e castiçais, candelabro, livros e pergaminhos, cordas, correntes e gaiola. **Fora**: armas, escudos, poções e garrafinhas,
@@ -1005,3 +1004,33 @@ instalado na sessão; os PNG tinham um bloco de cor com CRC errado, consertado).
   (média), ~290 (baixa). As luzes com sombra não tremem de lugar (só de força), para não refazer o mapa a cada quadro.
 - **O brilho de longe**: cada tocha tem uma mancha de luz na parede que só aparece enquanto ela está sem luz de verdade (`Emitter.lit`, escrito pelo
   motor) e apaga no escuro da Casa (`lightEnv.scale`): nenhuma tocha parece morta de longe, e a cal continua visível no escuro.
+
+## 64. A Galeria dos Condenados como sala-modelo completa (cenógrafo, pedido do Pedro)
+A sala 15 (`rooms/respiro3.ts`) é a primeira sala inteira na direção de arte nova (§60), com o motor de luz (§63) e os objetos (§62). Nada do
+que o jogador precisa ver, alcançar ou acertar mudou: a câmara lateral (formato, frases a giz, lei talhada, braseiros, nicho), a passagem e a
+inscrição sobre ela, as folhas 5 e 6 nos bancos, o Escrivão e a marca de giz, os desenhos (tamanhos, rosto, porta), as marcas de contagem, os
+bancos, as tochas e a frase da porta ficam onde estavam. Testado: DOIS, TRÊS, UM abre o nicho da gema; o Escrivão some quando o jogador passa
+do meio da galeria e deixa a marca de giz.
+- **Arquitetura**: abóbadas de aresta em **cinco tramos** (nascem a 5,2 m, acima das marcas de giz e das tochas; o fecho a 7,6 m), separadas por
+  **arcos de aduelas** que nascem de **mísulas** (pedras em balanço) no alto das paredes, em vez de colunas, para não tapar as paredes de giz.
+  Paredes de **cantaria com relevo e espessura** (35 cm, por fora; a entrada e a porta também ganharam espessura); chão de lajes; a câmara do
+  puzzle com a mesma pedra (planos com relevo, `reliefPlaneMat` em `arch.ts`). O dado bate no teto de verdade (a união dos dois berços de cada tramo).
+- **Luz**: o teto chapado e a luz azul que vinha "de cima" saíram. A luz é das cinco tochas (cada uma com a sua sombra), das velas (fracas, sem
+  sombra) e de uma **fresta alta** na luneta da direita: a lua entra em diagonal e cai no banco do Escrivão (a única luz fria; é a `shadowLight`
+  da sala, com grades que fazem sombra, e a poeira flutua dentro do feixe, `beamMotes`). A sombra da fresta só se refaz quando algo se mexe
+  embaixo dela (o jogador ou o dado no fundo da galeria; a cada 3 quadros enquanto o Escrivão escreve). Ambiente mais baixo (0x5c5c8a, 0,8).
+- **Objetos em pequenas cenas** (só coisas do dia a dia; encostados nas paredes, nunca no caminho):
+  1. *Onde alguém dormia* (esquerda, logo depois da entrada): a cama de solteiro, a banqueta de cabeceira com a vela acesa, a caneca no chão, o
+     saco no pé da cama.
+  2. *A mesa* (esquerda, antes da passagem da câmara): o saco **em cima da mesa**, a caneca, o prato, o castiçal de três velas aceso, uma banqueta
+     puxada e outra caída, o balde embaixo.
+  3. *A despensa* (direita, junto da entrada): barril com a caneca esquecida em cima, caixote com um saco em cima, balde.
+  4. *A prateleira* (direita, no meio): caneca, prato, pote e uma vela; um cesto embaixo e um pote quebrado no chão.
+  5. *As correntes* (direita, entre os bancos do fundo): argola na parede com os elos descendo, a corrente enrolada no chão e uma corda.
+  6. *O lugar do Escrivão*: a vela dele (continua acesa depois que ele some) e o rolo, no banco.
+  7. *Junto da porta*: o suporte com dois barris (direita); barril, pote e a sacola encostada (esquerda).
+  E o candelabro velho, apagado, pendurado do fecho da abóbada do meio.
+- **Custo**: os objetos parados são juntados numa malha por material quando os packs chegam (`bakeProps` em `props.ts`), e os arcos, mísulas e
+  ferragens no `kit.bake`. Medido (PC e celular, qualidade alta, média de 20 quadros): entrada ~350, meio ~280, porta ~415 chamadas (a galeria
+  antiga: ~290 / ~235 / ~340; o Vestíbulo novo passa de 700). `props_q.glb` ganhou cama, sacola, corda, pote, vela e balde de madeira (1,4 MB).
+- Não testado em celular de verdade (só no navegador do computador em tamanho de celular).

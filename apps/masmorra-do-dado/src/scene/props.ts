@@ -5,6 +5,7 @@
 // Cada objeto é normalizado: centrado em x/z, pé em y = 0, e (no pack "t", que não tem escala real) na altura pedida no catálogo.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const base = () => (import.meta as unknown as { env: { BASE_URL: string } }).env.BASE_URL;
 // q e t: só os objetos em uso (no repositório); qv: o pack inteiro da Quaternius, só para a vitrine (gerado à parte, fora do repositório)
@@ -106,6 +107,49 @@ export function placeProp(parent: THREE.Object3D, pack: string, name: string, x:
     onReady?.(obj, size);
   });
   return holder;
+}
+
+// JUNTA os objetos parados de uma sala numa malha por material (as texturas da Quaternius são folhas compartilhadas: dezenas de objetos viram
+// poucos desenhos por quadro). Espera os packs carregarem (os objetos já colocados entram antes, na ordem das promessas) e substitui, em
+// `root`, os objetos de `holders` pelas malhas juntas. Os atributos quantizados viram float antes de aplicar a posição.
+export function bakeProps(root: THREE.Object3D, holders: THREE.Object3D[], packIds: string[]) {
+  Promise.all(packIds.map(loadPack)).then(() => {
+    root.updateWorldMatrix(true, true);
+    const inv = root.matrixWorld.clone().invert();
+    const groups = new Map<string, { mat: THREE.Material; geos: THREE.BufferGeometry[] }>();
+    for (const h of holders) {
+      h.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh || Array.isArray(m.material)) return;
+        let g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+        const f = new THREE.BufferGeometry();
+        for (const [name, a] of Object.entries(g.attributes)) {
+          if (name !== 'position' && name !== 'normal' && name !== 'uv' && name !== 'color') continue;
+          const at = a as THREE.BufferAttribute;
+          const arr = new Float32Array(at.count * at.itemSize);
+          for (let i = 0; i < at.count; i++) for (let c = 0; c < at.itemSize; c++) arr[i * at.itemSize + c] = at.getComponent(i, c);
+          f.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
+        }
+        g.dispose();
+        g = f;
+        g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+        const key = m.material.uuid + ':' + Object.keys(g.attributes).sort().join(',');
+        const e = groups.get(key) ?? { mat: m.material, geos: [] };
+        e.geos.push(g);
+        groups.set(key, e);
+      });
+      h.removeFromParent();
+    }
+    for (const { mat, geos } of groups.values()) {
+      const merged = geos.length > 1 ? mergeGeometries(geos) : geos[0];
+      if (!merged) continue;
+      const out = new THREE.Mesh(merged, mat);
+      out.castShadow = true;
+      out.receiveShadow = true;
+      root.add(out);
+      if (merged !== geos[0]) geos.forEach((x) => x.dispose());
+    }
+  });
 }
 
 // alturas reais dos objetos do pack "t" (o modelo original não tem escala de metros)

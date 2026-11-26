@@ -672,3 +672,42 @@ export function floorPlane(x0: number, x1: number, z0: number, z1: number, y: nu
   for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / tile, -p.getZ(i) / tile);
   return new THREE.Mesh(geo, mat);
 }
+
+// material com relevo para um PLANO (UV 0..1): a mesma cantaria, repetida pelo tamanho real do plano (w × h metros)
+export function reliefPlaneMat(t: Tex2, w: number, h: number, bumpScale = 3, tile = ST) {
+  const map = t.map.clone();
+  const bump = t.bump.clone();
+  for (const x of [map, bump]) {
+    x.repeat.set(w / tile, h / tile);
+    x.needsUpdate = true;
+  }
+  return new THREE.MeshLambertMaterial({ map, bumpMap: bump, bumpScale });
+}
+
+// POEIRA DENTRO DE UM FEIXE INCLINADO (de `from` a `to`): os grãos flutuam devagar dentro do cone de luz (só no feixe, nunca no ar todo)
+export function beamMotes(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3, n = 48, color = 0xc8d4f0) {
+  const dir = to.clone().sub(from);
+  const pos = new Float32Array(n * 3);
+  const seeds = Array.from({ length: n }, (_, i) => [((i * 0.618) % 1) * 0.8 + 0.12, Math.random() * Math.PI * 2, Math.sqrt(Math.random()), Math.random() * 10]);
+  const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.5, fog: false, depthWrite: false }));
+  pts.frustumCulled = false;
+  parent.add(pts);
+  const ref = Math.abs(dir.clone().normalize().z) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+  const side = ref.cross(dir).normalize();
+  const up = dir.clone().cross(side).normalize();
+  const p = new THREE.Vector3();
+  return (t: number) => {
+    for (let i = 0; i < n; i++) {
+      const [t0, a0, r0, k] = seeds[i];
+      const along = 0.12 + ((t0 + t * 0.006 * (1 + (k % 1))) % 1) * 0.82;
+      const rad = (0.12 + along * 0.95) * r0;
+      const a = a0 + t * 0.15 * ((k % 2) - 0.5);
+      p.copy(from).addScaledVector(dir, along).addScaledVector(side, Math.cos(a) * rad).addScaledVector(up, Math.sin(a) * rad);
+      pos[i * 3] = p.x;
+      pos[i * 3 + 1] = p.y + Math.sin(t * 0.7 + k) * 0.03;
+      pos[i * 3 + 2] = p.z;
+    }
+    geo.attributes.position.needsUpdate = true;
+  };
+}
