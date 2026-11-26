@@ -97,7 +97,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 - **`cenografo`** (`.claude/agents/cenografo.md`): level designer e diretor de arte da masmorra-do-dado. Use para dar vida aos ambientes
   (arquitetura, luz, desgaste, objetos que contam história, partículas e movimento, circulação, composição e acabamento) e para revisar salas com
   olho de arte e de level design, seguindo `DIRECAO_DE_ARTE.md` e o `DESIGN.md`. Testa no navegador (PC e celular). **Não quebra puzzles**: não muda
-  soluções nem o que o jogador precisa ver, alcançar ou acertar; não escreve textos (isso é do `narrador`); não faz commit.
+  soluções nem o que o jogador precisa ver, alcançar ou acertar; não escreve textos (isso é do `narrador`). Também roda como **chat separado**
+  (uma sessão própria, com o Pedro conversando direto com ele), na branch `claude/cenografo`; como subagente, não faz commit.
 
 ## Convenção para puzzles (masmorra-do-dado)
 

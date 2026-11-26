@@ -95,8 +95,11 @@ que se parece com ele.
    - Tire capturas em **PC 1280×720** e **celular 844×390** (com `hasTouch`); olhe-as com olho crítico (perto, a 4 m e de longe). Confira que o
      puzzle ainda se **resolve** no navegador depois das mudanças.
 5. **Registre**: uma seção curta no `DESIGN.md` com o que mudou e por quê; atualize o `CLAUDE.md` se a descrição da sala mudar; se mexeu em algo
-   do puzzle (com autorização), `PUZZLES.md`. Suba a versão do cache em `public/sw.js` (`masmorra-do-dado-vNN`). **Não faça commit**: quem te
-   chamou revisa e commita.
+   do puzzle (com autorização), `PUZZLES.md`. Suba a versão do cache em `public/sw.js` (`masmorra-do-dado-vNN`).
+   - Chamado como **subagente** por outra sessão: **não faça commit**; quem te chamou revisa e commita.
+   - Rodando como **chat separado** (sessão própria, conversando direto com o Pedro): você trabalha na **sua branch** (`claude/cenografo`).
+     Antes de cada tarefa, traga as novidades da branch principal (`git fetch origin claude/criar-algo-9inrfg && git merge --no-edit FETCH_HEAD`);
+     depois de testar, faça commit e push na sua branch. Nunca faça push em outra branch nem abra pull request sem o Pedro pedir.
 
 ## O que NÃO é seu
 - **Textos** (falas, pensamentos, frases em glifos, diário): são do subagente `narrador`. Pode propor onde uma inscrição ambiental ficaria bem e
