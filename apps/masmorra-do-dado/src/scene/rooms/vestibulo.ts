@@ -14,6 +14,7 @@ import { glyphsOf } from '../../story/lexicon';
 import { diary } from '../../story/diary';
 import { ui } from '../../story/ui';
 import type { Box, Ctx, Room } from '../types';
+import { column, drip, flagstones, floorPlane, groinVault, masonry, reliefMat, ST, stoneBox, torchSmoke, transverseArch } from '../arch';
 
 export type VestVariant = 1 | 2 | 3 | 4;
 
@@ -31,7 +32,7 @@ interface Dim {
 // tamanhos bem diferentes: pequena e abafada, um salão comprido, média, baixa e apertada
 const DIMS: Record<VestVariant, Dim> = {
   1: { hx: 3.4, z0: -9, h: 3.2, theme: 'ruin', name: 'Sala 1 · O Poço', subtitle: 'Uma porta. Um braseiro frio.', fog: { color: '#090a11', near: 3, far: 15 }, ambient: { color: 0x6a72a4, intensity: 1.45 } },
-  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: 'A escrita mudou.', fog: { color: '#0a0a11', near: 3.5, far: 19 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
+  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: 'A escrita mudou.', fog: { color: '#07070c', near: 4, far: 22 }, ambient: { color: 0x524e78, intensity: 0.5 } },
   3: { hx: 3.7, z0: -11.5, h: 3.4, theme: 'ruin', name: 'Sala 3 · Os Quatro', subtitle: 'Quatro braseiros. Outro número.', fog: { color: '#0a0a11', near: 3.5, far: 17 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
   4: { hx: 3.3, z0: -8, h: 3.0, theme: 'crypt', name: 'Sala 5 · A Lacuna', subtitle: 'Falta uma palavra na frase.', fog: { color: '#0b0912', near: 3.5, far: 15 }, ambient: { color: 0x7a78b8, intensity: 1.7 } },
 };
@@ -56,7 +57,14 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   // névoa mística do pátio lá fora (sala 1): manchas de névoa PIXELADAS que passeiam devagar em volta do poço
   const mist: { s: THREE.Sprite; a: number; r: number; y: number; sp: number; ph: number; base: number }[] = [];
 
-  kit.plane(W, L, lambert(floorTexture([W / T, L / T], D.theme)), 0, 0, zm, -Math.PI / 2);
+  // SALA 2, O SALÃO DE COLUNAS (DESIGN.md §56): cantaria com relevo, lajes grandes, abóbadas de aresta sobre arcos e colunas redondas
+  const A2 = v === 2;
+  const RISE = 1.9; // a abóbada sobe 1,9 m acima do nascimento (H)
+  const HT = A2 ? H + RISE : H; // altura das paredes
+  const WIN = { z: -12.25, y: 4.75, w: 0.62, h: 0.9 }; // a fresta alta da parede direita (sala 2)
+  const wallM = A2 ? reliefMat(masonry({ rows: [16, 24], blocks: [26, 60], seed: 301, theme: D.theme }), 4.5) : null;
+  if (A2) kit.add(floorPlane(X0, X1, Z0, Z1, 0, reliefMat(flagstones(303, D.theme), 4.5), 2 * ST));
+  else kit.plane(W, L, lambert(floorTexture([W / T, L / T], D.theme)), 0, 0, zm, -Math.PI / 2);
   // teto (o primeiro tem o poço)
   if (v === 1) {
     const shape = new THREE.Shape();
@@ -222,15 +230,35 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     kit.group.add(pool);
     kit.light(SHAFT.x, H - 0.3, SHAFT.z, 0xcfdcff, 70);
     kit.beamDust(SHAFT.x, SHAFT.z, SHAFT.r * 1.05, 0.2, H - 0.2, 44, 0xe8eeff); // poeira só no feixe do poço
+  } else if (A2) {
+    // três abóbadas de aresta, uma por tramo (entre a entrada, os dois pares de colunas e a porta); pedra mais miúda e escura que a parede
+    const vaultM = reliefMat(masonry({ rows: [12, 16], blocks: [22, 42], seed: 302, theme: D.theme, tint: 0.8, cracks: 0.3 }), 2.2);
+    for (const [za, zb] of [[-5, Z1], [-9.5, -5], [Z0, -9.5]]) kit.add(groinVault(X0, X1, za, zb, H, RISE, vaultM));
   } else {
     kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 17 + v), 0, H, zm, Math.PI / 2);
   }
   if (v === 1) kit.plane(W, H, kit.brick([W / T, H / T], 1, 23), 0, H / 2, Z1, 0, Math.PI);
-  const entrance = v > 1 ? buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H }) : null;
-  kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 31 + v), X0, H / 2, zm, 0, Math.PI / 2);
-  kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 37 + v), X1, H / 2, zm, 0, -Math.PI / 2);
+  const entrance = v > 1 ? buildEntrance(kit, A2 ? { x0: X0, x1: X1, z: Z1, h: HT, wallMat: wallM!, uvScale: ST, thick: 0.45 } : { x0: X0, x1: X1, z: Z1, h: H }) : null;
+  if (A2) {
+    // paredes de verdade: blocos com espessura (por fora da sala), até o alto das lunetas da abóbada
+    kit.add(stoneBox(0.5, HT, L + 1, wallM!, X0 - 0.25, HT / 2, zm));
+    // a parede da direita tem uma FRESTA alta no último tramo (na luneta da abóbada): a parede é montada em volta do vão
+    const wz0 = WIN.z - WIN.w / 2;
+    const wz1 = WIN.z + WIN.w / 2;
+    const wy0 = WIN.y - WIN.h / 2;
+    const wy1 = WIN.y + WIN.h / 2;
+    const zA = Z0 - 0.5;
+    const zB = Z1 + 0.5;
+    kit.add(stoneBox(0.5, wy0, zB - zA, wallM!, X1 + 0.25, wy0 / 2, (zA + zB) / 2));
+    kit.add(stoneBox(0.5, HT - wy1, zB - zA, wallM!, X1 + 0.25, (wy1 + HT) / 2, (zA + zB) / 2));
+    kit.add(stoneBox(0.5, wy1 - wy0, wz0 - zA, wallM!, X1 + 0.25, WIN.y, (zA + wz0) / 2));
+    kit.add(stoneBox(0.5, wy1 - wy0, zB - wz1, wallM!, X1 + 0.25, WIN.y, (wz1 + zB) / 2));
+  } else {
+    kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 31 + v), X0, H / 2, zm, 0, Math.PI / 2);
+    kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 37 + v), X1, H / 2, zm, 0, -Math.PI / 2);
+  }
 
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme });
+  const door = buildDoor(kit, A2 ? { x0: X0, x1: X1, z0: Z0, h: HT, lamps: 1, connected: true, theme: D.theme, wallMat: wallM!, uvScale: ST, thick: 0.45 } : { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme });
 
   // a frase talhada: v1–v3 na parede do fundo, à esquerda da porta; a lacuna (v4) na parede esquerda, bem maior
   // UMA palavra nova por sala (DESIGN.md §24): 1 = só ACENDER; 2 = ACENDER + DOIS; 3 = ACENDER + TRÊS + BRASEIRO (o desenho do braseiro aparece no dado)
@@ -251,7 +279,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         : v === 3
           ? [[X0 + 1.0, Z0 + 2.4], [X1 - 1.0, Z0 + 2.4], [X0 + 1.0, Z0 + 6.8], [X1 - 1.0, Z0 + 6.8]]
           : [[X1 - 0.9, Z0 + 1.0], [X1 - 0.9, Z0 + 4.4], [X1 - 0.9, Z0 + 7.2]];
+  const emBefore = kit.emitters.length;
   const braziers: Brazier[] = spots.map(([x, z]) => makeBrazier(kit, ctx, x, z, v === 4));
+  if (A2) kit.emitters.slice(emBefore).forEach((e) => (e.shadow = true)); // braseiro aceso faz sombra de verdade
 
   // ── sala 1: entulho embaixo do poço; é ali que o dado caiu junto com você ──
   let dieLie: THREE.Vector3 | undefined;
@@ -277,24 +307,167 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   // rachaduras e umidade: a Casa está velha
   kit.damp(X0, 1.0, Z0 + 4.4, 1, 0, 1.9);
   kit.damp(X1, 2.2, Z0 + 3.8, -1, 0, 1.5);
-  kit.skirting(X0, X1, Z0, Z1, 1.3);
+  if (!A2) kit.skirting(X0, X1, Z0, Z1, 1.3);
   kit.aoSides(X0, X1, Z0, Z1, H);
   kit.cornice(X0, X1, Z0, Z1, H);
-  kit.pilaster(X0, Z0 + 5.5, 1, 0, H);
-  kit.pilaster(X1, Z0 + 5.5, -1, 0, H);
+  if (!A2) {
+    kit.pilaster(X0, Z0 + 5.5, 1, 0, H);
+    kit.pilaster(X1, Z0 + 5.5, -1, 0, H);
+  }
+  const lifeFx: ((t: number) => void)[] = []; // fumaça, gota: o que se mexe na sala
+  const casters: THREE.Object3D[] = []; // o que faz sombra nas chamas (colunas, arcos, banco, entulho)
+  // peça estática de pedra: entra solta no grupo (o kit.bake junta as do mesmo material numa malha só) e faz sombra
+  const piece = (o: THREE.Object3D) => {
+    const list = o instanceof THREE.Group ? [...o.children] : [o];
+    for (const m of list) {
+      const mesh = m as THREE.Mesh;
+      if (mesh.geometry?.index) mesh.geometry = mesh.geometry.toNonIndexed(); // (para juntar malhas de tipos diferentes)
+      m.userData.merge = true;
+      m.castShadow = true;
+      kit.group.add(m);
+    }
+  };
   if (v >= 2) {
-    kit.torch(X0 + 0.1, 1.8, -1.2, 1, 0, 0.7);
-    kit.torch(X1 - 0.1, 1.8, -1.2, -1, 0, 2.4);
+    const e0 = kit.emitters.length;
+    kit.torch(X0 + 0.1, 1.8, -1.2, 1, 0, 0.7, 0xff9a3c, A2 ? 58 : 42);
+    kit.torch(X1 - 0.1, 1.8, -1.2, -1, 0, 2.4, 0xff9a3c, A2 ? 58 : 42);
+    if (A2) {
+      kit.lively = true;
+      kit.emitters.slice(e0).forEach((e) => (e.shadow = true));
+      // fuligem na parede acima das tochas (a fumaça sobe) e a fumaça subindo
+      kit.soot(X0, 2.25, -1.2, 1, 0, 1.0, 2.2);
+      kit.soot(X1, 2.25, -1.2, -1, 0, 1.0, 2.2);
+      lifeFx.push(torchSmoke(kit.group, X0 + 0.26, 2.45, -1.2, 1, 0), torchSmoke(kit.group, X1 - 0.26, 2.45, -1.2, -1, 0));
+    }
   }
   if (v === 3) kit.torch(-D.hx + 0.9, 1.8, Z0 + 0.1, 0, 1, 4.1);
-  if (v === 2) {
-    // o salão comprido: colunas dos dois lados
+  const colBoxes: Box[] = [];
+  let moon: THREE.SpotLight | undefined;
+  if (A2) {
+    // o salão de colunas: quatro colunas redondas encostadas às paredes; delas nascem os dois arcos que dividem a abóbada em três tramos
+    const shaftM = reliefMat(masonry({ rows: [28, 36], blocks: [128, 128], vjoint: false, seed: 304, theme: D.theme, tint: 1.04, cracks: 0.15 }), 2.0);
+    const dressedM = reliefMat(masonry({ rows: [22, 30], blocks: [44, 72], seed: 305, theme: D.theme, tint: 1.14, cracks: 0.1 }), 2.0);
+    const ringM = reliefMat(masonry({ w: 128, h: 32, rows: [32, 32], blocks: [32, 32], seed: 306, theme: D.theme, tint: 1.1, cracks: 0.25 }), 2.2);
+    ringM.side = THREE.DoubleSide;
+    const fillM = (wallM as THREE.MeshLambertMaterial).clone();
+    fillM.side = THREE.DoubleSide;
+    const CX = X1 - 0.37;
+    const iron = new THREE.MeshLambertMaterial({ color: 0x3a3430 });
+    let abacusW = 0.7;
     for (const z of [-5, -9.5]) {
-      kit.box(0.8, H, 0.8, kit.brick([1, 1], 0.95, 50 + Math.abs(z)), X0 + 0.4, H / 2, z);
-      kit.box(0.8, H, 0.8, kit.brick([1, 1], 0.95, 52 + Math.abs(z)), X1 - 0.4, H / 2, z);
-      kit.contact(X0 + 0.4, z, 1.7);
-      kit.contact(X1 - 0.4, z, 1.7);
+      for (const sx of [-1, 1]) {
+        const c = column(sx * CX, z, H, shaftM, dressedM);
+        abacusW = c.abacusW;
+        piece(c.group);
+        kit.contact(sx * CX, z, 1.2);
+        colBoxes.push(mkBox(sx * CX - 0.3, 0, z - 0.3, sx * CX + 0.3, H, z + 0.3));
+      }
+      const arch = transverseArch({
+        zc: z,
+        depth: 0.56,
+        xs: CX - abacusW / 2,
+        spring: H,
+        rise: RISE,
+        thick: 0.4,
+        wallX: X1,
+        top: (x) => H + RISE * Math.sqrt(Math.max(0, 1 - (x / D.hx) ** 2)),
+        ring: ringM,
+        fill: fillM,
+      });
+      piece(arch);
     }
+    // o banco de pedra entre as colunas da direita: aqui os condenados esperavam (argolas de ferro na parede, acima dele)
+    const benchZ0 = -8.45;
+    const benchZ1 = -6.05;
+    const seat = stoneBox(0.5, 0.1, benchZ1 - benchZ0, dressedM, X1 - 0.27, 0.45, (benchZ0 + benchZ1) / 2);
+    piece(seat);
+    for (const z of [benchZ0 + 0.3, benchZ1 - 0.3]) {
+      const leg = stoneBox(0.4, 0.4, 0.24, dressedM, X1 - 0.27, 0.2, z);
+      piece(leg);
+    }
+    kit.contact(X1 - 0.27, (benchZ0 + benchZ1) / 2, 0.9, 2.6);
+    colBoxes.push(mkBox(X1 - 0.52, 0, benchZ0, X1, 0.5, benchZ1));
+    for (const z of [-6.75, -7.75]) {
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.12), iron);
+      plate.position.set(X1 - 0.02, 1.25, z);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.02, 4, 10), iron);
+      ring.position.set(X1 - 0.06, 1.16, z);
+      ring.rotation.set(0.25, Math.PI / 2, 0);
+      kit.group.add(plate, ring);
+      casters.push(ring);
+    }
+    // uma aduela caiu do arco do fundo (a Casa está velha): o bloco quebrado no chão, lascas em volta; acima, a rachadura que pinga
+    const fallen = stoneBox(0.52, 0.34, 0.4, ringM, -3.55, 0.17, -7.6);
+    fallen.rotation.set(0.12, 0.7, 0.18);
+    fallen.position.y = 0.2;
+    piece(fallen);
+    for (const [dx, dz, sz] of [[0.45, 0.3, 0.12], [-0.35, 0.42, 0.09], [0.2, -0.45, 0.1], [0.62, -0.15, 0.07]] as [number, number, number][]) {
+      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), dressedM);
+      m.position.set(-3.55 + dx, sz * 0.6, -7.6 + dz);
+      m.rotation.set(dx * 7, dz * 5, 0);
+      piece(m);
+    }
+    kit.contact(-3.55, -7.6, 1.3);
+    colBoxes.push(mkBox(-3.85, 0, -7.9, -3.25, 0.4, -7.3));
+    kit.puddle(-2.15, -7.7, 1.3, 0.4);
+    lifeFx.push(drip(kit.group, -2.15, H + RISE * Math.sqrt(1 - ((-7.7 + 7.25) / 2.25) ** 2) - 0.03, -7.7, 2.9));
+    // A FRESTA: luz fria de fora (lua), a única luz que não é fogo. Cai em diagonal no fundo do salão, sobre a frase da porta, e as
+    // grades fazem sombra no chão. É a luz principal com sombra da sala (Room.shadowLight), como a chama do nicho na sala 3.
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w, WIN.h), new THREE.MeshBasicMaterial({ color: 0xa9bce6, fog: false }));
+    glow.position.set(X1 + 0.48, WIN.y, WIN.z);
+    glow.rotation.y = -Math.PI / 2;
+    kit.group.add(glow);
+    for (const dz of [-0.17, 0, 0.17]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.045, WIN.h, 0.045), iron);
+      bar.position.set(X1 + 0.12, WIN.y, WIN.z + dz);
+      kit.group.add(bar);
+      casters.push(bar);
+    }
+    const cross = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, WIN.w), iron);
+    cross.position.set(X1 + 0.12, WIN.y + 0.12, WIN.z);
+    kit.group.add(cross);
+    casters.push(cross);
+    moon = new THREE.SpotLight(0xa8bce8, 70, 16, 0.3, 0.55, 1.4);
+    moon.position.set(X1 + 0.42, WIN.y, WIN.z);
+    moon.target.position.set(-2.4, 0.5, -14.1);
+    moon.castShadow = true;
+    moon.shadow.mapSize.set(512, 512);
+    moon.shadow.camera.near = 0.2;
+    moon.shadow.camera.far = 16;
+    moon.shadow.bias = -0.002;
+    kit.group.add(moon, moon.target);
+    // nada de cone desenhado (a paleta o achataria num bloco): o feixe se lê pela POEIRA que flutua dentro dele e pela luz onde ele cai
+    {
+      const from = moon.position.clone();
+      const dir = moon.target.position.clone().sub(from);
+      const N = 56;
+      const pos = new Float32Array(N * 3);
+      const seeds = Array.from({ length: N }, (_, i) => [((i * 0.618) % 1) * 0.8 + 0.12, Math.random() * Math.PI * 2, Math.sqrt(Math.random()), Math.random() * 10]);
+      const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xc8d4f0, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.5, fog: false, depthWrite: false }));
+      pts.frustumCulled = false;
+      kit.group.add(pts);
+      const side = new THREE.Vector3(0, 0, 1).cross(dir).normalize();
+      const up = dir.clone().cross(side).normalize();
+      lifeFx.push((t) => {
+        for (let i = 0; i < N; i++) {
+          const [t0, a0, r0, k] = seeds[i];
+          const tt = (t0 + t * 0.006 * (1 + (k % 1))) % 1; // descem devagar ao longo do feixe
+          const along = 0.12 + tt * 0.82;
+          const rad = (0.12 + along * 0.95) * r0;
+          const a = a0 + t * 0.15 * ((k % 2) - 0.5);
+          const p = from.clone().addScaledVector(dir, along).addScaledVector(side, Math.cos(a) * rad).addScaledVector(up, Math.sin(a) * rad);
+          pos[i * 3] = p.x;
+          pos[i * 3 + 1] = p.y + Math.sin(t * 0.7 + k) * 0.03;
+          pos[i * 3 + 2] = p.z;
+        }
+        geo.attributes.position.needsUpdate = true;
+      });
+    }
+    // o caminho gasto da entrada à porta, teias nos cantos altos do fundo
+    kit.wear([[0, 1.6], [0, -6], [0.2, -14.4]], 1.5);
+    kit.web(X0, H + 0.2, Z0 + 0.5, 1, 0);
+    kit.web(X1, H + 0.2, Z0 + 0.5, -1, 0, true);
   }
 
   // lacuna (v4): como dividir a placa em 3×3 para ler o que o jogador riscou
@@ -327,6 +500,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   // sólidos pro dado
   const boxes: Box[] = [];
   braziers.forEach((b) => boxes.push(...b.boxes));
+  boxes.push(...colBoxes);
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3));
   boxes.push(mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3));
   boxes.push(mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
@@ -508,6 +682,13 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   };
 
   kit.bake();
+  if (A2) {
+    // tudo recebe sombra; fazem sombra só as peças de dentro da sala (as paredes e a abóbada são o limite)
+    kit.group.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) o.receiveShadow = true;
+    });
+    for (const c of casters) c.traverse((o) => (o.castShadow = true));
+  }
 
   return {
     name: D.name,
@@ -518,6 +699,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     inscriptions: kit.inscriptions,
     interactables,
     dieLie,
+    shadowLight: moon,
     shaft: v === 1 ? new THREE.Vector3(SHAFT.x, H + 2.5, SHAFT.z) : undefined,
     wellTop: v === 1 ? new THREE.Vector3(SHAFT.x, H + 16, SHAFT.z) : undefined,
     doorZ: Z0,
@@ -535,8 +717,10 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
       if (v === 1) r.push([X0 - 2, Z1, X1 + 2, Z1 + 0.5]);
       else r.push(...(entrance?.rects() ?? []));
-      if (v === 2)
+      if (v === 2) {
         for (const z of [-5, -9.5]) r.push([X0, z - 0.4, X0 + 0.8, z + 0.4], [X1 - 0.8, z - 0.4, X1, z + 0.4]);
+        r.push([X1 - 0.55, -8.45, X1, -6.05], [-3.9, -7.95, -3.2, -7.25]); // o banco e a aduela caída
+      }
       r.push(...door.rects(doorOpen > 0.85));
       return r;
     },
@@ -573,6 +757,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         (m.s.material as THREE.SpriteMaterial).opacity = m.base * (0.75 + 0.25 * Math.sin(t * 0.21 + m.ph));
       }
       kit.tick(dt, t);
+      for (const f of lifeFx) f(t);
       if (v === 1 && ctx.flag('caiu') && !ctx.have().die) {
         // o dado no chão pede ajuda: pulsa e murmura, enquanto o jogador não o pega
         diePos.copy(ctx.die.pos);

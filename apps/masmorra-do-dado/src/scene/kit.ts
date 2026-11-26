@@ -71,6 +71,10 @@ export function worldBoxUV(geo: THREE.BufferGeometry, cx: number, cy: number, cz
 }
 
 export class Emitter {
+  // shadow: a luz pode ganhar SOMBRA de verdade (o motor tem poucas luzes com sombra e as empresta às chamas marcadas mais perto do
+  // jogador). jit: o tremor da chama (alguns cm), somado à posição: a luz e a sombra "dançam" com o fogo.
+  shadow = false;
+  jit = new THREE.Vector3();
   constructor(
     public pos: THREE.Vector3,
     public color: number,
@@ -96,6 +100,8 @@ export class Kit {
   private poolTex: THREE.Texture | null = null;
   private beams: { geo: THREE.BufferGeometry; cx: number; cz: number; r: number; y0: number; y1: number; seed: number[] }[] = [];
   private flicker = true;
+  // lively: chamas mais vivas (a luz oscila de verdade e o ponto de luz treme alguns cm: com as luzes de sombra, a sombra dança)
+  lively = false;
 
   constructor(public theme = 'crypt') {
     this.stone = lambert(brickTexture([1, 1], 0.9, 41, theme));
@@ -481,6 +487,8 @@ export class Kit {
       const merged = mergeGeometries(geos);
       if (!merged) return;
       const out = new THREE.Mesh(merged, material);
+      out.castShadow = meshes.some((m) => m.castShadow); // (as peças que fazem sombra continuam fazendo, juntas)
+      out.receiveShadow = meshes.some((m) => m.receiveShadow);
       this.group.add(out);
       meshes.forEach((m) => {
         this.group.remove(m);
@@ -517,6 +525,12 @@ export class Kit {
       this.emberPts.geometry.attributes.position.needsUpdate = true;
     }
     this.torches.forEach((tc, i) => {
+      if (this.lively && dbg.flicker) {
+        const p = tc.phase;
+        const n = 0.25 * Math.sin(t * 7.3 + p) + 0.15 * Math.sin(t * 13.1 + p * 2) + 0.1 * Math.sin(t * 23.7 + p * 3) + 0.06 * Math.sin(t * 2.1 + p);
+        tc.light.intensity = tc.base * (1 + 0.22 * n);
+        tc.light.jit.set(Math.sin(t * 6.1 + p) * 0.035, Math.sin(t * 8.7 + p * 1.3) * 0.03 + n * 0.02, Math.cos(t * 5.3 + p) * 0.035);
+      } else
       tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
       tc.sprite.material.map = this.frames[Math.floor(t * 8 + i) % this.frames.length];
     });
@@ -561,6 +575,19 @@ export interface DoorOpts {
   lamps: number; // 1 a 5 gemas
   theme?: string;
   connected?: boolean; // true: o corredor desemboca na próxima sala (sem parede nem luz no fim)
+  wallMat?: THREE.Material; // material da parede (UV em metros ÷ uvScale)
+  uvScale?: number;
+  thick?: number; // espessura da parede (para trás); a laje da porta sobe para DENTRO dela e some
+}
+
+// a parede com o vão em arco: plana (como sempre) ou, com `thick`, um bloco com espessura (as faces do vão são a ombreira e o intradorso)
+function archWall(shape: THREE.Shape, mat: THREE.Material, thick: number | undefined, uvScale: number) {
+  if (!thick) return new THREE.Mesh(new THREE.ShapeGeometry(shape, 12), mat);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thick, bevelEnabled: false, curveSegments: 12 });
+  geo.translate(0, 0, -thick);
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / uvScale, uv.getY(i) / uvScale);
+  return new THREE.Mesh(geo, mat);
 }
 
 export function buildDoor(kit: Kit, o: DoorOpts) {
@@ -582,7 +609,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   wall.lineTo(o.x1, o.h);
   wall.lineTo(o.x0, o.h);
   wall.closePath();
-  const wm = new THREE.Mesh(new THREE.ShapeGeometry(wall, 12), lambert(brickTexture([1 / T, 1 / T], 1, 23, theme)));
+  const wm = archWall(wall, o.wallMat ?? lambert(brickTexture([1 / T, 1 / T], 1, 23, theme)), o.thick, o.uvScale ?? 1);
   wm.position.z = o.z0;
   g.add(wm);
   mark(wm);
@@ -706,7 +733,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
 // ── entrada de uma sala (liga com o corredor da sala anterior) ──────────────
 // Parede de frente (z = o.z, olhando pra dentro da sala, ou seja, -z) com a abertura em arco
 // no centro e um aro de pedra saindo pra dentro da sala.
-export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number }) {
+export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number; wallMat?: THREE.Material; uvScale?: number; thick?: number }) {
   const theme = o.theme ?? kit.theme;
   const wall = new THREE.Shape();
   wall.moveTo(o.x0, 0);
@@ -718,7 +745,7 @@ export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; 
   wall.lineTo(o.x1, o.h);
   wall.lineTo(o.x0, o.h);
   wall.closePath();
-  const wm = new THREE.Mesh(new THREE.ShapeGeometry(wall, 12), lambert(brickTexture([1 / T, 1 / T], 1, 25, theme)));
+  const wm = archWall(wall, o.wallMat ?? lambert(brickTexture([1 / T, 1 / T], 1, 25, theme)), o.thick, o.uvScale ?? 1);
   wm.rotation.y = Math.PI; // de frente pra dentro da sala
   wm.position.z = o.z;
   wm.position.y = o.y0 ?? 0;

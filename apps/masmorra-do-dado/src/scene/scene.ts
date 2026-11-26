@@ -455,6 +455,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const worldDie = new THREE.Group();
   const worldModel = buildDie(dieMats);
   worldModel.scale.setScalar(0.42);
+  worldModel.traverse((o) => (o.castShadow = true)); // o dado pousado também faz sombra nas chamas que projetam sombra
   worldDie.add(worldModel);
   worldDie.visible = false;
   scene.add(worldDie);
@@ -1604,6 +1605,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     scene.add(light);
     return { light, em: null, room: 0, w: 0, leaving: false };
   });
+  // ── luzes COM SOMBRA (DESIGN.md §56): duas PointLights de sombra (mapa pequeno, filtro duro, combina com o pixel) emprestadas às chamas
+  // marcadas (`Emitter.shadow`) mais relevantes. Ficam sempre na cena (o número de luzes não muda, então os shaders não recompilam ao
+  // trocar de sala). O mapa de cada uma é refeito em rodízio (uma por quadro) e logo que ela muda de chama.
+  const SHADOW_POOL = 2;
+  const sslots: (Slot & { fresh: boolean })[] = Array.from({ length: SHADOW_POOL }, () => {
+    const light = new THREE.PointLight(0xffffff, 0, 0, 2);
+    light.castShadow = true;
+    light.shadow.mapSize.set(256, 256);
+    light.shadow.camera.near = 0.08;
+    light.shadow.camera.far = 18;
+    light.shadow.bias = -0.006;
+    light.shadow.autoUpdate = false;
+    scene.add(light);
+    return { light, em: null, room: 0, w: 0, leaving: false, fresh: false };
+  });
+  let shadowTurn = 0;
+  let shadowsDirty = false;
   let lightTick = 0;
   const wp = new THREE.Vector3();
   const updateLights = (dt: number) => {
@@ -1619,7 +1637,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       });
       cand.sort((p, q) => q.score - p.score);
-      const top = cand.slice(0, POOL);
+      // as chamas marcadas mais fortes vão para as luzes com sombra; as outras (e todas, sem sombras) para o pool comum
+      const shadowTop = shadowsOn ? cand.filter((c) => c.e.shadow).slice(0, SHADOW_POOL) : [];
+      sslots.forEach((sl) => {
+        if (sl.em && !shadowTop.some((c) => c.e === sl.em)) sl.leaving = true;
+      });
+      for (const c of shadowTop) {
+        const had = sslots.find((sl) => sl.em === c.e);
+        if (had) {
+          had.leaving = false;
+          continue;
+        }
+        const free = sslots.find((sl) => !sl.em);
+        if (free) {
+          free.em = c.e;
+          free.room = c.room;
+          free.w = 0;
+          free.leaving = false;
+          free.fresh = true;
+        }
+      }
+      const top = cand.filter((c) => !shadowTop.includes(c)).slice(0, POOL);
       slots.forEach((sl) => {
         if (sl.em && !top.some((c) => c.e === sl.em)) sl.leaving = true; // saiu do top: apaga aos poucos
       });
@@ -1648,11 +1686,37 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         continue;
       }
       sl.w = Math.min(1, sl.w);
-      sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
+      sl.light.position.copy(sl.em.pos).add(sl.em.jit).add(offs[sl.room]);
       sl.light.color.setHex(sl.em.color);
       sl.light.intensity = sl.em.intensity * sl.w * lightScale();
       fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
     }
+    // as luzes com sombra: só se movem (o tremor da chama) quando o mapa delas é refeito, para a sombra nunca "descolar" da luz
+    shadowTurn = (shadowTurn + 1) % SHADOW_POOL;
+    shadowsDirty = false;
+    sslots.forEach((sl, k) => {
+      if (!sl.em) {
+        sl.light.intensity = 0;
+        return;
+      }
+      sl.w += (sl.leaving ? -1 : 1) * dt * 5;
+      if (sl.leaving && sl.w <= 0) {
+        sl.em = null;
+        sl.w = 0;
+        sl.light.intensity = 0;
+        return;
+      }
+      sl.w = Math.min(1, sl.w);
+      if (sl.fresh || k === shadowTurn) {
+        sl.light.position.copy(sl.em.pos).add(sl.em.jit).add(offs[sl.room]);
+        sl.light.shadow.needsUpdate = true;
+        sl.fresh = false;
+        shadowsDirty = true;
+      }
+      sl.light.color.setHex(sl.em.color);
+      sl.light.intensity = sl.em.intensity * sl.w * lightScale();
+      fireNear = Math.max(fireNear, sl.w * Math.min(1, sl.em.intensity / (40 * (1 + 0.12 * sl.light.position.distanceToSquared(camera.position)))));
+    });
     sfx.fire(fireNear);
   };
 
@@ -2282,6 +2346,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     shadowsOn = c.quality === 'alta';
     rooms.forEach((r) => {
       if (r.shadowLight && r.shadowLight.castShadow !== shadowsOn) r.shadowLight.castShadow = shadowsOn;
+    });
+    sslots.forEach((sl) => {
+      if (sl.light.castShadow !== shadowsOn) sl.light.castShadow = shadowsOn;
     });
     pixelSize = c.pixel;
     fovH = c.fov;
@@ -3759,7 +3826,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     body.position.set(pos.x, feetY, pos.z);
     body.rotation.y = yaw;
-    renderer.shadowMap.needsUpdate = !!rooms[curRoom]?.shadowLight && shadowsOn;
+    renderer.shadowMap.needsUpdate = (!!rooms[curRoom]?.shadowLight && shadowsOn) || shadowsDirty;
     renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
@@ -3933,6 +4000,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (k === 'half') { renderer.setSize(200, 90, false); rt.setSize(200, 90); rtHud.setSize(200, 90); postMat.uniforms.uRes.value.set(200, 90); }
       },
       perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
+      shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)
       drop: (x: number, y: number, z: number) => {

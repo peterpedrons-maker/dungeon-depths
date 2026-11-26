@@ -892,3 +892,25 @@ iguais) e era difícil acertar (mirava-se o soquete, de 15 cm, e o toque só val
 - Apagadas, essas palavras **continuam de cal** (são textos para ler); só as frases ACENDÍVEIS (tabletes `lit`) são fissuras na pedra (§54).
 - As peças do fogo (shaders das chamas e brasas, o traço em brasa, a mancha macia) moram em `firefx.ts` e são as mesmas das frases acendíveis
   (`burnline.ts`); as medidas da célula de um glifo, em `glyphcell.ts`.
+
+## 56. Mockup da direção de arte nova: o Vestíbulo como salão de colunas (cenógrafo, pedido do Pedro)
+O Pedro pediu um nível "AAA" de ambientação, **sempre em pixel art**, com uma foto de referência (cripta de colunas redondas e abóbadas de
+aresta, tochas, escuro de verdade) e quis ver primeiro uma sala pronta. A sala 2 (O Vestíbulo) virou o mockup. **Nada do puzzle mudou**: os três
+braseiros, a frase «ACENDER DOIS», a porta e o caderno estão nos mesmos lugares; a sala ainda se resolve com exatamente dois acesos.
+- **Sombras de verdade nas chamas** (`scene.ts`, "luzes COM SOMBRA"): duas PointLights com sombra (mapa de 256, filtro duro) emprestadas às chamas
+  marcadas (`Emitter.shadow`) mais perto do jogador; ficam sempre na cena (sem recompilar shaders ao trocar de sala); o mapa de cada uma é refeito em
+  rodízio. Colunas, arcos, banco, entulho, o corpo do jogador e o dado fazem sombra; paredes e abóbada só recebem. Vale com qualidade "alta".
+- **Chamas vivas** (`kit.lively`, também nos braseiros): a luz oscila e o ponto de luz treme alguns cm, e a sombra dança junto.
+- **Arquitetura** (`src/scene/arch.ts`): cantaria de blocos grandes com **relevo de verdade** (cor e altura desenhadas juntas; a altura vira
+  `bumpMap`: a quina de cada bloco pega a luz da tocha), lajes grandes e irregulares no chão (4,8 m por ladrilho), **abóbadas de aresta** em três
+  tramos, dois **arcos de aduelas** nascendo de **colunas redondas** (plinto, toro, fuste com êntase, colarinho, equino, ábaco), paredes com
+  espessura até o alto das lunetas. Peças estáticas juntadas por material (`kit.bake`, agora mantendo quem faz sombra).
+- **Luz**: ambiente bem mais baixo e escuro (o salão vive das chamas); tochas mais fortes; uma **fresta alta** com grade na luneta do último tramo da
+  parede direita traz a única luz fria (lua): cai em diagonal sobre a frase da porta (a escrita recebe luz) e as grades fazem sombra (`Room.shadowLight`).
+  O feixe se lê pela poeira que flutua nele (um cone desenhado virava um bloco chapado na paleta).
+- **História no lugar**: banco de pedra entre as colunas da direita com argolas de ferro na parede (os condenados esperavam ali); uma aduela caída do
+  arco, com lascas, e uma gota que pinga da abóbada numa poça (o passo muda de som); caminho gasto da entrada à porta; fuligem e fumaça nas tochas;
+  teias nos cantos altos do fundo.
+- **Bugs de passagem corrigidos nesta sala**: a parede da porta e a da entrada têm espessura (`buildDoor`/`buildEntrance` ganharam `thick`,
+  `wallMat`, `uvScale`): vistas de trás não somem mais e a laje da porta sobe para dentro da parede.
+- Desempenho: ~500 chamadas de desenho com os braseiros acesos (antes ~350). Testado com Playwright (PC e celular emulado); não testado num celular real.

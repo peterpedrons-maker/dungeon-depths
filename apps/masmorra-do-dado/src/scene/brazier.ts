@@ -83,7 +83,12 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
       const k = Math.max(0.15, b.flameK);
       flame.scale.set(0.75 * s * k, 0.6 * s * k, 1); // a chama encolhe quando está acabando
       flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
-      lamp.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + x) + 0.012 * Math.sin(t * 11));
+      if (kit.lively) {
+        // chama viva: a luz oscila e o ponto de luz treme (com sombra, as sombras dançam)
+        const n = 0.25 * Math.sin(t * 6.7 + x) + 0.15 * Math.sin(t * 12.3 + z) + 0.1 * Math.sin(t * 21.1 + x * 2);
+        lamp.intensity = 40 * k * (1 + 0.2 * n);
+        lamp.jit.set(Math.sin(t * 5.9 + z) * 0.05, n * 0.04, Math.cos(t * 4.7 + x) * 0.05);
+      } else lamp.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + x) + 0.012 * Math.sin(t * 11));
       pool.opacity = 0.3 * k * (0.92 + 0.08 * Math.sin(t * 6 + z));
       // as brasas: sobem da chama, balançando, e somem no alto (cada uma no seu tempo)
       for (let i = 0; i < EN; i++) {
