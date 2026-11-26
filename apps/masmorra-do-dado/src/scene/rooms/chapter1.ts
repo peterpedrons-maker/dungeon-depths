@@ -13,9 +13,9 @@ import { diary, diaryStore } from '../../story/diary';
 // ── constelação: tochas que escrevem (§3) ─────────────────────────────────
 // `cells[i]` = casa da grade da tocha i (null = isca, fora da grade). Acender EXATAMENTE as tochas do alvo, nenhuma outra, faz o braseiro
 // subir das rachaduras frias; acendê-lo abre o nicho da gema. As tochas se apagam sozinhas em ~40 s.
-function constellation(api: FireExtraApi, torches: Torch[], cells: (number | null)[], target: number[], riserAt: [number, number], niche: [number, number, number, number, number]) {
+export function constellation(api: FireExtraApi, torches: Torch[], cells: (number | null)[], target: number[], riserAt: [number, number], niche: [number, number, number, number, number], riserY = 0) {
   const { kit, ctx } = api;
-  const riser = makeRiser(kit, ctx, riserAt[0], riserAt[1]);
+  const riser = makeRiser(kit, ctx, riserAt[0], riserAt[1], 1, riserY);
   api.boxes.push(...riser.boxes);
   let bonus = false;
   const nic = makeGemNiche(kit, ctx, niche[0], niche[1], niche[2], niche[3], niche[4], () => (bonus = true));

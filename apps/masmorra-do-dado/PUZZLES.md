@@ -214,6 +214,22 @@ onde está a porta). Janelas de grade dão para salas já feitas, vistas de cima
 elas eram a grade da constelação C1), o fosso da **Ponte** e a capela do **Pano**. No patamar do meio, a **folha arrancada nº 7** dela. No alto, ao lado
 da porta, uma portinha com **seis** pontos de bronze, fechada (a face que a língua não tem; abre num capítulo posterior). Nada é obrigatório.
 
+## O Fogo que Corre  (ACENDER · DOIS · BRASEIRO · TEMPO + o glifo QUATRO)  — NÍVEL 8 ("o desenho existe num instante"; `tools/verify_fogo_corre.mjs`)
+Salão aberto com **nove plataformas** em grade 3×3, de alturas diferentes, um braseiro em cada. **Canaletas** descem de uma plataforma a outra (o fogo só
+desce) e o desenho do sulco mostra o tempo: **reta 1 s**, **com uma volta 2 s**, **em zigue-zague 3 s**. Cada braseiro queima **só 4 s** e **só uma vez**
+por tentativa (o óleo acaba). A porta abre se, **num instante**, os acesos forem **exatamente os quatro cantos**. Quando tudo se apaga sem acertar: escuro
+e a Casa reabastece. (Casa 0 = canto do fundo à esquerda, vendo a porta.)
+Canaletas: centro→cantos do fundo (0 em 2 s, 2 em 3 s) e centro→canto da frente à direita (8, 2 s); frente-esquerda (6)→centro (2 s) e →frente-meio
+(7, 3 s); 7→centro (3 s), 7→8 (1 s); meio-direita (5)→8 e →1 (1 s); meio-esquerda (3)→0 (2 s) e →7 (3 s); 1→0 (1 s).
+1. O centro alimenta três cantos (0, 8 e 2) e **se apaga aos 4 s**, sem voltar. O canto da frente à esquerda (6) ninguém alimenta: **2ª ignição, à mão**.
+2. Mas o 6 corre para o 7 (3 s) e para o centro: aceso cedo demais, o 7 acende ou o centro reacende no instante errado.
+3. **Solução: fogo no centro; esperar ~3 s; fogo no canto da frente à esquerda.** Por volta dos 4 s o centro se apaga e, por um instante, só os quatro
+   cantos estão acesos. (Janela confortável: de 1,5 s a 5,5 s entre as duas.)
+- **Constelação C5:** no escuro de uma tentativa que falhou, aparece no **teto**, em cal, o glifo **MENOS** (a fileira do meio). Acender as tochas dos
+  **postes das três plataformas do meio** (meio-esquerda, centro, meio-direita) e nenhuma outra: um braseiro sobe do chão, entre as plataformas;
+  acendê-lo abre o nicho da gema (parede direita, perto da porta).
+- **Por que é única:** uma ignição nunca basta; de todos os pares ordenados só centro → canto 6 funciona. **Dificuldade: 8 de 10.**
+
 ## Sala 14 — O Tribunal dos Rumores  — NÍVEL 10 (**provisório aqui**: a posição final é a sala 18, depois das salas da curva de `PUZZLES_PROPOSTAS.md` §2)
 Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
 Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).

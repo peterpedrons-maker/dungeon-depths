@@ -42,7 +42,7 @@ import { DieLife, type LifeTarget } from './dielife';
 import { layout as bookLayout } from '../book/pages';
 import { config, configStore } from '../story/config';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
-import { FIRE_ESCURO, FIRE_LEI, FIRE_SOMBRA } from './rooms/chapter1b';
+import { FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_SOMBRA } from './rooms/chapter1b';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
 import { buildChamaCurta } from './rooms/chamaCurta';
@@ -81,6 +81,7 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     (c) => buildFireRoom(c, FIRE_ESCURO), // NÍVEL 7. O ESCURO: errar de propósito; no escuro de 4 s, a cal no teto dá a ordem
     (c) => buildFireRoom(c, FIRE_LEI), // NÍVEL 8. A LEI PEQUENA: a sala sobe; «UM BOATO IGUAL VERDADE», dois boatos que dizem o mesmo
     buildRespiro4, // RESPIRO R4 A ESCADARIA: o poço com três lances; janelas para salas já feitas; a porta dos seis pontos (fechada)
+    (c) => buildFireRoom(c, FIRE_FOGO_CORRE), // NÍVEL 8. O FOGO QUE CORRE: 4 s de chama, uma vez; canaletas com tempo; os quatro cantos num instante (+ C5)
     buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (no plano: entre as salas 16 e 17)
     buildTribunal, // NÍVEL 10 (provisório aqui; a posição final é a sala 18)
     // Reserva (fora do jogo por ora): vestibulo.ts v3 (Os Quatro) e FIRE_ORDEM (A Ordem), que as novas 3 e 5 substituem; room1.ts (A Entrada, cena do

@@ -3,7 +3,8 @@
 
 import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireSpec } from './fire';
-import { glyphPattern, makeWallBoard, type WallBoard } from '../firegrid';
+import { glyphPattern, makeTorch, makeWallBoard, type Torch, type WallBoard } from '../firegrid';
+import { constellation } from './chapter1';
 import { lambert } from '../kit';
 import { makeCal, type CalText } from '../cal';
 import { shotGate, slopedWall, wedge } from './shell';
@@ -469,4 +470,248 @@ export const FIRE_LEI: FireSpec = {
   fog: { color: '#0a0a11', near: 6, far: 26 },
   ambient: { color: 0x7a78b8, intensity: 1.8 },
   extra: leiExtra,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// SALA 15 · O FOGO QUE CORRE (nível 8; tools/verify_fogo_corre.mjs; Ficha 8)
+// Salão aberto com nove plataformas em grade 3×3, em alturas diferentes, um braseiro em cada. Canaletas descem de uma plataforma a outra (a altura
+// mostra o sentido) e cada uma leva um TEMPO (reta e curta 1 s; com uma volta 2 s; em zigue-zague 3 s). Cada braseiro queima SÓ 4 s e SÓ UMA VEZ por
+// tentativa (o óleo acaba: o pote fica vazio). A porta («ACENDER DOIS BRASEIRO TEMPO» + QUATRO talhado) abre se, num instante, os acesos forem
+// EXATAMENTE os quatro cantos. Quando tudo se apaga sem acertar: escuro e a Casa reabastece. Solução: fogo no centro; ~3 s depois, no canto da
+// frente à esquerda (janela de 1,5 a 5,5 s).
+// C5: tochas nos nove postes + 3 de parede; no escuro de uma tentativa que falhou, MENOS em cal no teto; acender os postes do meio (3, 4, 5).
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+const FC = { hx: 9, z0: -18, h: 9, burn: 4 };
+const FC_X = [-5, 0, 5];
+const FC_DZ = [4.2, 9.2, 14.2]; // linha 0 = a do fundo (perto da porta)
+const FC_HY = [0.25, 0.55, 0.25, 1.85, 1.0, 1.0, 1.85, 1.4, 0.25]; // altura de cada plataforma (o fogo só desce)
+const FC_EDGES: [number, number, number][] = [[4, 2, 3], [4, 8, 2], [6, 4, 2], [5, 8, 1], [5, 1, 1], [6, 7, 3], [7, 4, 3], [3, 0, 2], [7, 8, 1], [3, 7, 3], [4, 0, 2], [1, 0, 1]];
+const FC_TARGET = [0, 2, 6, 8];
+const FC_PH = 1.2; // meia largura da plataforma
+const fcCell = (i: number) => ({ x: FC_X[i % 3], dz: FC_DZ[Math.floor(i / 3)], y: FC_HY[i] });
+function fogoCorreExtra(api: FireExtraApi): FireExtra {
+  const { kit, ctx, X0, X1, Z0, H, boxes, braziers } = api;
+  // ── as plataformas (blocos de alvenaria com tampo de pedra) ──
+  const rects: Rect[] = [];
+  for (let i = 0; i < 9; i++) {
+    const c = fcCell(i);
+    const z = Z0 + c.dz;
+    kit.box(FC_PH * 2, c.y, FC_PH * 2, kit.stone, c.x, c.y / 2, z);
+    kit.box(FC_PH * 2 + 0.1, 0.08, FC_PH * 2 + 0.1, kit.slab, c.x, c.y - 0.04, z, false);
+    kit.contact(c.x, z, FC_PH * 2 + 0.6);
+    boxes.push(mkBox(c.x - FC_PH, 0, z - FC_PH, c.x + FC_PH, c.y, z + FC_PH));
+    rects.push([c.x - FC_PH, z - FC_PH, c.x + FC_PH, z + FC_PH, c.y]);
+  }
+  const platAt = (x: number, z: number) => {
+    for (let i = 0; i < 9; i++) {
+      const c = fcCell(i);
+      if (Math.abs(x - c.x) < FC_PH && Math.abs(z - (Z0 + c.dz)) < FC_PH) return c.y;
+    }
+    return 0;
+  };
+  // ── as canaletas: um sulco de pedra que desce do tampo de uma plataforma ao da outra; o caminho mostra o tempo (reta, uma volta, zigue-zague) ──
+  const grooveMat = lambert(null, 0x2a2228);
+  const offMat = new THREE.MeshBasicMaterial({ color: 0x3a2a24, fog: true });
+  interface Chan {
+    a: number;
+    b: number;
+    d: number;
+    pts: THREE.Vector3[];
+    pieces: { m: THREE.Mesh; k: number }[];
+    t: number; // -1 = parada; >= 0 = segundos desde que o fogo entrou
+    front: THREE.Sprite;
+  }
+  const chans: Chan[] = FC_EDGES.map(([a, b, d]) => {
+    const A = fcCell(a);
+    const B = fcCell(b);
+    const ax = A.x;
+    const az = Z0 + A.dz;
+    const bx = B.x;
+    const bz = Z0 + B.dz;
+    const dx = bx - ax;
+    const dzz = bz - az;
+    const len = Math.hypot(dx, dzz);
+    const ux = dx / len;
+    const uz = dzz / len;
+    const px = -uz;
+    const pz = ux;
+    // sai da borda de A e chega à borda de B
+    const s0 = FC_PH * (Math.abs(ux) > 0.5 && Math.abs(uz) > 0.5 ? 1.35 : 1) - 0.25;
+    const sA = new THREE.Vector3(ax + ux * s0, A.y + 0.02, az + uz * s0);
+    const sB = new THREE.Vector3(bx - ux * s0, B.y + 0.02, bz - uz * s0);
+    const raw: [number, number][] = [[0, 0]];
+    if (d === 2) raw.push([0.5, 0.7]);
+    if (d === 3) raw.push([0.2, 0.75], [0.4, -0.75], [0.6, 0.75], [0.8, -0.75]);
+    raw.push([1, 0]);
+    const pts = raw.map(([u, w]) => new THREE.Vector3().lerpVectors(sA, sB, u).add(new THREE.Vector3(px * w, 0, pz * w)));
+    // a altura segue o comprimento percorrido (o sulco desce pela lateral da plataforma de cima)
+    const segL = pts.slice(1).map((p, k) => p.distanceTo(pts[k]));
+    const total = segL.reduce((x, y) => x + y, 0);
+    let acc = 0;
+    pts.forEach((p, k) => {
+      if (k) acc += segL[k - 1];
+      p.y = A.y + (B.y - A.y) * (acc / total) + 0.03;
+    });
+    // em pedaços: cada pedaço acende quando a frente do fogo passa
+    const pieces: { m: THREE.Mesh; k: number }[] = [];
+    let run = 0;
+    for (let k = 1; k < pts.length; k++) {
+      const p0 = pts[k - 1];
+      const p1 = pts[k];
+      const n = Math.max(2, Math.round(p0.distanceTo(p1) / 0.35));
+      for (let j = 0; j < n; j++) {
+        const q0 = new THREE.Vector3().lerpVectors(p0, p1, j / n);
+        const q1 = new THREE.Vector3().lerpVectors(p0, p1, (j + 1) / n);
+        const mid = q0.clone().add(q1).multiplyScalar(0.5);
+        const l = q0.distanceTo(q1);
+        const g = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, l + 0.02), grooveMat);
+        g.position.copy(mid).setY(mid.y - 0.02);
+        g.lookAt(q1.x, mid.y - 0.02 + (q1.y - q0.y) / 2, q1.z);
+        kit.group.add(g);
+        const f = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.02, l + 0.02), offMat);
+        f.position.copy(mid).setY(mid.y + 0.015);
+        f.lookAt(q1.x, mid.y + 0.015 + (q1.y - q0.y) / 2, q1.z);
+        kit.group.add(f);
+        run += l;
+        pieces.push({ m: f, k: run / total });
+      }
+    }
+    const front = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+    front.scale.set(0.3, 0.26, 1);
+    front.visible = false;
+    kit.group.add(front);
+    return { a, b, d, pts, pieces, t: -1, front };
+  });
+  const litMat = new THREE.MeshBasicMaterial({ color: 0xffa040, fog: false });
+  const burntMat = new THREE.MeshBasicMaterial({ color: 0x6a3018, fog: true });
+  const along = (ch: Chan, u: number) => {
+    const segL = ch.pts.slice(1).map((p, k) => p.distanceTo(ch.pts[k]));
+    const total = segL.reduce((x, y) => x + y, 0);
+    let target = u * total;
+    for (let k = 0; k < segL.length; k++) {
+      if (target <= segL[k]) return new THREE.Vector3().lerpVectors(ch.pts[k], ch.pts[k + 1], target / segL[k]);
+      target -= segL[k];
+    }
+    return ch.pts[ch.pts.length - 1].clone();
+  };
+  // ── a porta: QUATRO talhado à direita da porta ──
+  kit.inscribe({ words: ['n4'], x: (FC.hx + 1.25) / 2, y: 2.2, z: Z0 + 0.025, nx: 0, nz: 1, size: 0.7, age: 0.15, seed: 171, frame: true });
+  // ── C5: postes com tocha ao lado de cada braseiro, 3 tochas de parede, MENOS em cal no teto ──
+  const torches: Torch[] = [];
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < 9; i++) {
+    const c = fcCell(i);
+    const tx = c.x + 0.85;
+    const tz = Z0 + c.dz + 0.85;
+    kit.box(0.14, 1.4, 0.14, lambert(null, 0x4a3426), tx, c.y + 0.7, tz, false);
+    torches.push(makeTorch(kit, ctx, tx, c.y + 1.3, tz, 0, 1, 40, true));
+    cells.push(i);
+  }
+  torches.push(makeTorch(kit, ctx, X0 + 0.1, 2.4, Z0 + 6.7, 1, 0), makeTorch(kit, ctx, X1 - 0.1, 2.4, Z0 + 11.7, -1, 0), makeTorch(kit, ctx, X0 + 0.1, 2.4, Z0 + 16.5, 1, 0));
+  cells.push(null, null, null);
+  const C = constellation(api, torches, cells, [3, 4, 5], [2.5, Z0 + 11.7], [X1 - 0.02, 1.25, Z0 + 3.0, -1, 0]);
+  const cal = makeCal(kit, ctx, { words: ['menos'], x: 0, y: H - 0.02, z: Z0 + 9.2, ceil: true, size: 1.6, seed: 173 });
+  // luz alta e fria para o salão; os braseiros fazem o resto
+  for (const [x, z] of [[X0 + 0.1, Z0 + 2.5], [X1 - 0.1, Z0 + 7.5], [X0 + 0.1, Z0 + 12], [X1 - 0.1, Z0 + 17]] as [number, number][]) kit.torch(x, 4.6, z, x < 0 ? 1 : -1, 0, x + z, 0xb8c4f0, 24);
+
+  // ── a regra: queima 4 s, uma vez; o fogo corre; os quatro cantos sozinhos num instante ──
+  const used = Array(9).fill(false);
+  const left = Array(9).fill(0);
+  let refill = -1;
+  const ignite = (i: number, quiet = false) => {
+    if (used[i] || braziers[i].lit) return;
+    used[i] = true;
+    left[i] = FC.burn;
+    braziers[i].light(true, quiet); // (com som: o próprio braseiro toca o fogo e a cena do dado queimando)
+    for (const ch of chans) if (ch.a === i && ch.t < 0 && !used[ch.b]) ch.t = 0;
+  };
+  const refillAll = () => {
+    used.fill(false);
+    left.fill(0);
+    braziers.forEach((b) => b.light(false, true));
+    for (const ch of chans) {
+      ch.t = -1;
+      ch.front.visible = false;
+      ch.pieces.forEach((p) => (p.m.material = offMat));
+    }
+  };
+  const gate = shotGate(ctx.die);
+  return {
+    update(dt, t) {
+      gate.tick();
+      C.update(dt, t);
+      cal.update();
+      const p = ctx.paused();
+      const step = p ? 0 : dt;
+      if (!api.solved() && refill < 0) for (let i = 0; i < 9; i++) if (braziers[i].touched() && !used[i]) ignite(i);
+      // o óleo: 4 s de chama; a chama encolhe no último segundo e meio
+      for (let i = 0; i < 9; i++) {
+        if (!braziers[i].lit) continue;
+        left[i] -= step;
+        braziers[i].flameK = left[i] < 1.5 ? Math.max(0.15, left[i] / 1.5) : 1;
+        if (left[i] <= 0 && !api.solved()) braziers[i].light(false);
+      }
+      // as canaletas
+      for (const ch of chans) {
+        if (ch.t < 0) continue;
+        ch.t += step;
+        const u = Math.min(1, ch.t / ch.d);
+        ch.pieces.forEach((pc) => (pc.m.material = pc.k <= u ? (u < 1 ? litMat : burntMat) : offMat));
+        ch.front.visible = u < 1;
+        if (u < 1) {
+          ch.front.position.copy(along(ch, u)).setY(along(ch, u).y + 0.15);
+          ch.front.material.map = kit.frames[Math.floor(t * 10 + ch.a) % kit.frames.length];
+        } else {
+          ch.t = -2; // terminou
+          ch.front.visible = false;
+          ch.pieces.forEach((pc) => (pc.m.material = burntMat));
+          if (!used[ch.b]) {
+            ignite(ch.b, true);
+            ctx.sfx('spread');
+          }
+        }
+      }
+      // a porta: exatamente os quatro cantos acesos, num instante
+      const litNow = braziers.map((b, i) => (b.lit ? i : -1)).filter((i) => i >= 0);
+      if (!api.solved() && litNow.length === 4 && FC_TARGET.every((i) => litNow.includes(i))) {
+        api.markSolved();
+        ctx.sfx('door');
+      }
+      // tudo apagado sem acertar: escuro, e a Casa reabastece
+      if (!api.solved() && refill < 0 && used.some(Boolean) && litNow.length === 0 && !chans.some((c) => c.t >= 0)) {
+        refill = 1.2;
+        ctx.sfx('error');
+        ctx.blackout(2.5);
+      }
+      if (refill >= 0) {
+        refill -= step;
+        if (refill < 0) refillAll();
+      }
+      for (const [k, glow] of [['tempo', braziers.some((b) => b.lit && b.flameK < 1) ? 0.55 + 0.45 * Math.sin(t * 7) : litNow.length ? 0.35 : 0]] as [string, number][]) api.glow(k, glow, dt);
+    },
+    reset() {
+      refillAll();
+      refill = -1;
+      C.reset();
+    },
+    bonus: C.bonus,
+    rects: () => [...rects, ...C.rect()],
+    interactables: [C.niche.interactable],
+    floorY: (x, z) => platAt(x, z),
+    dieFloor: (x, z) => platAt(x, z),
+  };
+}
+export const FIRE_FOGO_CORRE: FireSpec = {
+  name: 'O Fogo que Corre',
+  subtitle: 'Nove plataformas.',
+  hx: FC.hx,
+  z0: FC.z0,
+  h: FC.h,
+  braziers: [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ x: fcCell(i).x, dz: fcCell(i).dz, y: fcCell(i).y })),
+  rule: { kind: 'custom', lamps: 1 },
+  words: ['acender', 'n2', 'brasa', 'tempo'],
+  torches: 'few',
+  fog: { color: '#0a0a11', near: 7, far: 30 },
+  ambient: { color: 0x7a78b8, intensity: 1.7 },
+  extra: fogoCorreExtra,
 };
