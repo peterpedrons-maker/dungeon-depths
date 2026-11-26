@@ -910,3 +910,11 @@ o sulco talhado preenchido de **marfim**: um branco meio amarelado, pálido (cor
 da cal das escritas comuns (que brilha um pouco). São três tons que não se confundem: **branco** (texto para ler), **marfim** (frase que pode
 ser acesa), **dourado luminoso** (acesa). Para a luz quente não "acender" o marfim, ele é um pouco menos claro que a cal e a luz de verdade que
 a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A moldura do tablete acendível é do mesmo marfim, sem brilho.
+
+## 58. Brilho só no desenho, mais contido (pedido do Pedro)
+- Saiu a **faixa de luz** (halo retangular) atrás das frases e das palavras acesas: o brilho fica **só no desenho do glifo**, um brilho macio e
+  estreito que segue cada traço (testado primeiro atrás de `?glifo=suave` e aprovado; agora é o padrão e o parâmetro saiu).
+- **Mais contido** para não deformar os glifos (eles têm traços curtos e pontinhos próximos, que um brilho largo junta): o traço aceso tem a
+  largura do sulco, o brilho em volta é estreito e fraco, a cor fica só um pouco acima de 1 (o bloom dá um brilho leve, sem borrar) e o reflexo
+  que corre pelos traços e a respiração ficaram discretos. A luz de verdade que a frase projeta continua fraca.
+- De longe, as frases acesas aparecem como traços dourados (sem o bloco de luz); ainda dá para contar quantas estão acesas.
