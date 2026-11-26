@@ -539,7 +539,7 @@ export function buildRespiro1(ctx: Ctx): Room {
       gate.tick();
       point.update(dt);
       for (const c of candleLights) {
-        c.s.material.map = kit.frames[Math.floor(t * 8 + c.ph) % kit.frames.length];
+        c.s.material.map = kit.frame(t * 8 + c.ph);
         c.e.intensity = 9 * (0.9 + 0.1 * Math.sin(t * 7 + c.ph));
       }
       // a lousa do nicho vazio: QUATRO abre a laje (a folha p1)
@@ -591,7 +591,7 @@ export function buildRespiro1(ctx: Ctx): Room {
         if (b.touched()) b.light(true);
         b.update(t);
         refl[k].visible = b.lit;
-        if (b.lit) refl[k].material.map = kit.frames[Math.floor(t * 8 + k) % kit.frames.length];
+        if (b.lit) refl[k].material.map = kit.frame(t * 8 + k);
       }
       if (!reflSolved) {
         const lit = braz.map((b, i) => (b.lit ? i : -1)).filter((i) => i >= 0);

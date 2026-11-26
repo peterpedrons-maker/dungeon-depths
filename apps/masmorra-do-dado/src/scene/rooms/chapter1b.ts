@@ -660,7 +660,7 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
         ch.front.visible = u < 1;
         if (u < 1) {
           ch.front.position.copy(along(ch, u)).setY(along(ch, u).y + 0.15);
-          ch.front.material.map = kit.frames[Math.floor(t * 10 + ch.a) % kit.frames.length];
+          ch.front.material.map = kit.frame(t * 10 + ch.a);
         } else {
           ch.t = -2; // terminou
           ch.front.visible = false;
@@ -993,7 +993,7 @@ function memoriaExtra(api: FireExtraApi): FireExtra {
       }
       if (lit > 0) {
         lit += dt;
-        flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+        flame.material.map = kit.frame(t * 8);
         if (lit > 1.5 && ctx.dark() < 0.02) {
           lit = 0;
           flame.visible = false;

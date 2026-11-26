@@ -10,6 +10,7 @@
 // Casas: i = linha*3 + coluna, linha 0 em cima (ou, no chão, do lado da porta), coluna 0 à esquerda de quem olha.
 
 import * as THREE from 'three';
+import { wallTorch } from './models';
 import { lambert, type Kit } from './kit';
 import { makeBrazier, type Brazier } from './brazier';
 import { drawGlyph } from '../book/font';
@@ -294,7 +295,7 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
         gm.color.setHex(on ? 0xffb048 : 0x241810);
       },
       update(_dt, t) {
-        if (fl.visible) fl.material.map = kit.frames[Math.floor(t * 9 + i * 1.7) % kit.frames.length];
+        if (fl.visible) fl.material.map = kit.frame(t * 9 + i * 1.7);
       },
     };
   }
@@ -341,7 +342,7 @@ export function makeWallBoard(kit: Kit, ctx: Ctx, o: WallBoardOpts): WallBoard {
           bm.color.setScalar(burnt ? 0.75 : 1);
           front.visible = k > 0.001 && k < 1;
           front.position.set(start.x + Math.cos(ang) * len * k, start.y + Math.sin(ang) * len * k + 0.04, 0.05);
-          front.material.map = kit.frames[Math.floor(performance.now() / 110) % kit.frames.length];
+          front.material.map = kit.frame(performance.now() / 110);
         },
       },
     };
@@ -442,7 +443,7 @@ export function makeFloorChannel(kit: Kit, ax: number, az: number, bx: number, b
       bm.color.setScalar(burnt ? 0.7 : 1);
       front.visible = k > 0.001 && k < 1;
       front.position.set(sx + ux * len * k, 0.18, sz + uz * len * k);
-      front.material.map = kit.frames[Math.floor(performance.now() / 110) % kit.frames.length];
+      front.material.map = kit.frame(performance.now() / 110);
       lamp.pos.set(sx + ux * len * k, 0.5, sz + uz * len * k);
       lamp.intensity = front.visible ? 16 : 0;
     },
@@ -497,10 +498,22 @@ export interface Torch {
 }
 // `stand`: tocha de pé (num corrimão, num pedestal), sem o suporte de parede
 export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, nx: number, nz: number, life = 40, stand = false): Torch {
-  if (!stand) kit.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, kit.stone, x, y - 0.05, z, false);
-  kit.box(0.1, 0.6, 0.1, lambert(null, 0x5a3a24), x + nx * 0.16, y + 0.12, z + nz * 0.16, false);
-  // a cabeça da tocha: pano enrolado (escuro quando apagada)
-  kit.box(0.16, 0.14, 0.16, lambert(null, 0x2a2026), x + nx * 0.16, y + 0.45, z + nz * 0.16, false);
+  const oldTorch = (add: (w: number, h: number, d: number, m: THREE.Material, px: number, py: number, pz: number) => void) => {
+    if (!stand) add(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, kit.stone, x, y - 0.05, z);
+    add(0.1, 0.6, 0.1, lambert(null, 0x5a3a24), x + nx * 0.16, y + 0.12, z + nz * 0.16);
+    // a cabeça da tocha: pano enrolado (escuro quando apagada)
+    add(0.16, 0.14, 0.16, lambert(null, 0x2a2026), x + nx * 0.16, y + 0.45, z + nz * 0.16);
+  };
+  // na parede: a tocha em modelo 3D (DESIGN.md §65), com a gaiola de ferro exatamente embaixo do ponto onde o dado acende; em pé: a de antes
+  if (!stand)
+    wallTorch(kit.group, x, y, z, nx, nz, (holder) =>
+      oldTorch((w, h, d, m, px, py, pz) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+        b.position.set(px, py, pz);
+        holder.add(b);
+      }),
+    );
+  else oldTorch((w, h, d, m, px, py, pz) => kit.box(w, h, d, m, px, py, pz, false));
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   sprite.scale.set(0.38, 0.3, 1);
   const pos = new THREE.Vector3(x + nx * 0.16, y + 0.57, z + nz * 0.16);
@@ -530,7 +543,7 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
       if (!paused) left -= dt;
       const k = left < 6 ? Math.max(0.2, left / 6) : 1; // a chama encolhe nos últimos segundos
       sprite.scale.set(0.38 * k, 0.3 * k, 1);
-      sprite.material.map = kit.frames[Math.floor(t * 8 + x * 3 + z) % kit.frames.length];
+      sprite.material.map = kit.frame(t * 8 + x * 3 + z);
       light.intensity = 34 * k * (0.97 + 0.03 * Math.sin(t * 5 + x));
       if (left <= 0) tc.light(false);
     },
@@ -783,7 +796,7 @@ export function makeFuse(kit: Kit, pts: [number, number][], width = 0.2): Fuse {
       }
       front.visible = k > 0.001 && k < 1;
       front.position.set(fx, 0.16, fz);
-      front.material.map = kit.frames[Math.floor(performance.now() / 110) % kit.frames.length];
+      front.material.map = kit.frame(performance.now() / 110);
       lamp.pos.set(fx, 0.5, fz);
       lamp.intensity = front.visible ? 14 : 0;
     },
@@ -911,7 +924,7 @@ export function makeCloth(kit: Kit, ctx: Ctx, o: { x: number; y: number; z: numb
         f.visible = rest > 0.02;
         f.position.copy(cc).addScaledVector(right, (k - 1) * w * 0.33).addScaledVector(n, 0.08);
         f.position.y = by + 0.12;
-        f.material.map = kit.frames[Math.floor(t * 10 + k * 2) % kit.frames.length];
+        f.material.map = kit.frame(t * 10 + k * 2);
       });
       lamp.intensity = rest > 0.02 ? 30 : 0;
       if (c.k >= 1) {

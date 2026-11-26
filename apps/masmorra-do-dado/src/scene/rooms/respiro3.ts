@@ -317,6 +317,7 @@ export function buildRespiro3(ctx: Ctx): Room {
   const block = (x0: number, z0: number, x1: number, z1: number, h = 0.9) => {
     rects.push([x0, z0, x1, z1, h + 0.1]);
     boxes.push(mkBox(x0, 0, z0, x1, h, z1));
+    kit.contact((x0 + x1) / 2, (z0 + z1) / 2, (x1 - x0) * 1.35, (z1 - z0) * 1.35); // a sombra de contato: o objeto assenta no chão
   };
   const placed: THREE.Object3D[] = [];
   const put = (pk: string, n: string, x: number, y: number, z: number, ry = 0, h?: number) => {
@@ -456,7 +457,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0a0a11', near: 6, far: 26 },
-    ambient: { color: 0x5c5c8a, intensity: 0.8 },
+    ambient: { color: 0x5c5c8a, intensity: 0.68 }, // (menos luz de enchimento: as sombras das chamas ficam fundas, DESIGN.md §65)
     boxes: [...boxes, ...kit.boxes],
     shadowLight: moon,
     sockets: braz.map((b) => b.socket),
@@ -512,7 +513,7 @@ export function buildRespiro3(ctx: Ctx): Room {
         const inBeam = (v: THREE.Vector3) => v.z < -14.5 && v.z > -24 && v.x < 1.5;
         if (inBeam(ctx.player.pos) || (ctx.die.state !== 'hand' && inBeam(ctx.die.pos)) || (!scribeGone && moonTick % 3 === 0)) moon.shadow.needsUpdate = true;
       }
-      candles.forEach((f, i) => (f.material.map = kit.frames[Math.floor(t * 9 + i * 3) % kit.frames.length]));
+      candles.forEach((f, i) => (f.material.map = kit.frame(t * 9 + i * 3)));
       // o Escrivão: escreve, sentado; quando o jogador chega perto, levanta e some, e fica uma marca de giz fresca no banco
       if (!scribeGone) {
         const pz = ctx.player.pos.z;

@@ -223,7 +223,7 @@ export function buildRoom4(ctx: Ctx): Room {
         ctx.sfx('ignite', 'm');
       }
       if (lit) {
-        flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+        flame.material.map = kit.frame(t * 8);
         flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
       }
       const pressed = d.state === 'rest' && d.face === 2 && onPlate();

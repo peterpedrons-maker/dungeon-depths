@@ -25,6 +25,7 @@ import {
   vineTexture,
 } from './textures';
 import { makeInscription, type InscribeOpts, type Inscription } from './inscription';
+import { wallTorch } from './models';
 import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
@@ -98,6 +99,11 @@ export class Kit {
   group = new THREE.Group();
   surfaces: THREE.Object3D[] = [];
   frames = flameFrames();
+  // o quadro da chama para um "tempo" qualquer (o resto da divisão nunca fica negativo: um índice negativo deixava a chama sem desenho)
+  frame(n: number) {
+    const k = this.frames.length;
+    return this.frames[((Math.floor(n) % k) + k) % k];
+  }
   stone: THREE.MeshLambertMaterial;
   slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
   private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial }[] = [];
@@ -143,9 +149,19 @@ export class Kit {
 
   // tocha de parede: (nx, nz) = para onde a parede "olha" (de onde vem a luz)
   torch(x: number, y: number, z: number, nx: number, nz: number, phase: number, color = 0xff9a3c, intensity = 42) {
-    // o suporte e o cabo NÃO fazem sombra (a própria chama ficaria com uma barra preta embaixo, na parede)
-    this.box(Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.mat('torchBracket', () => this.stone.clone()), x, y - 0.05, z, false).userData.noShadow = true;
-    this.box(0.1, 0.6, 0.1, this.mat('torchStick', () => lambert(null, 0x5a3a24)), x + nx * 0.16, y + 0.12, z + nz * 0.16, false).userData.noShadow = true;
+    // a tocha de parede em modelo 3D (DESIGN.md §65); se o arquivo falhar, o suporte e o cabo de caixas de antes. Nenhum dos dois faz sombra
+    // (a própria chama ficaria com uma barra preta embaixo, na parede)
+    wallTorch(this.group, x, y, z, nx, nz, (h) => {
+      for (const [w, hh, d, mat, px, py, pz] of [
+        [Math.abs(nz) > 0 ? 0.2 : 0.08, 0.2, Math.abs(nx) > 0 ? 0.2 : 0.08, this.mat('torchBracket', () => this.stone.clone()), x, y - 0.05, z],
+        [0.1, 0.6, 0.1, this.mat('torchStick', () => lambert(null, 0x5a3a24)), x + nx * 0.16, y + 0.12, z + nz * 0.16],
+      ] as [number, number, number, THREE.Material, number, number, number][]) {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), mat);
+        b.position.set(px, py, pz);
+        b.userData.noShadow = true;
+        h.add(b);
+      }
+    });
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: this.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }),
     );
@@ -271,6 +287,7 @@ export class Kit {
     p.rotation.x = -Math.PI / 2;
     p.position.set(x, y + 0.016, z);
     p.renderOrder = 3;
+    p.userData.merge = true; // (o kit.bake junta todas as sombras de contato da sala num desenho só)
     this.group.add(p);
   }
 
@@ -546,7 +563,8 @@ export class Kit {
         tc.light.jit.set(Math.sin(t * 6.1 + p) * 0.035, Math.sin(t * 8.7 + p * 1.3) * 0.03 + n * 0.02, Math.cos(t * 5.3 + p) * 0.035);
       } else
       tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
-      tc.sprite.material.map = this.frames[Math.floor(t * 8 + i) % this.frames.length];
+      // (o primeiro quadro do jogo chegava a ter o relógio negativo, e um índice negativo deixava a chama sem desenho: um retângulo branco)
+      tc.sprite.material.map = this.frame(t * 8 + i);
       // o brilho falso some na medida em que a luz de verdade chega (e oscila com a chama)
       const fake = (1 - tc.light.lit) * (tc.light.intensity / Math.max(1, tc.base)) * lightEnv.scale;
       if (tc.halo) {

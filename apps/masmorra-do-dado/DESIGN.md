@@ -1034,3 +1034,34 @@ do meio da galeria e deixa a marca de giz.
   ferragens no `kit.bake`. Medido (PC e celular, qualidade alta, média de 20 quadros): entrada ~350, meio ~280, porta ~415 chamadas (a galeria
   antiga: ~290 / ~235 / ~340; o Vestíbulo novo passa de 700). `props_q.glb` ganhou cama, sacola, corda, pote, vela e balde de madeira (1,4 MB).
 - Não testado em celular de verdade (só no navegador do computador em tamanho de celular).
+
+## 65. Sombras mais realistas, a opção "Sombras" e a tocha em modelo 3D (cenógrafo, pedido do Pedro)
+O Pedro pediu "caprichar mais nas sombras, dar ainda mais realismo", com uma opção no menu para diminuí-las se pesar no celular; e mandou um
+modelo 3D para as tochas.
+- **Configurações → Imagem → Sombras** (`Config.shadows`, separada da Qualidade, que continua cuidando de quantas luzes e do brilho):
+  | nível | chamas com sombra | mapa | borda | luz principal da sala (fresta, nicho) | oclusão de ambiente |
+  |---|---|---|---|---|---|
+  | Altas (padrão no PC) | 4 | 512 | suave (PCF, raio 2,5) | sim, 1024 | 100% |
+  | Médias (padrão no celular) | 2 | 256 | suave (raio 1,6) | sim, 512 | 85% |
+  | Baixas | 1 | 256 | dura (filtro básico) | não | 70% |
+  | Desligadas | 0 | — | — | não | não |
+  A borda suave do three r187 gira as amostras por pixel; o pontilhado do pós-processo transforma esse ruído numa penumbra de pixel. Com o mapa
+  maior, o desvio da sombra diminui e ela encosta no pé do objeto em vez de "descolar".
+- **Oclusão de ambiente** (no pós-processo, `ambientOcc` em `scene.ts`): a luz que vem "de todo lado" chega menos nos cantos, embaixo da mesa e da
+  cama, no pé dos objetos e entre as pedras. Oito amostras num disco de ~0,6 m, lidas da profundidade da cena (no centro do pixel), giradas pelo
+  pontilhado. Quase não age no que a chama ilumina forte (a oclusão é da luz ambiente). Barata porque a imagem do jogo é pequena (~480 × 270).
+  Para testes: `__mdd.exp('ao=-1')` mostra só a oclusão em cinza; `ao=1` volta.
+- **Sombra de contato** embaixo de cada objeto de chão da Galeria (`kit.contact`, agora juntadas pelo `kit.bake` num desenho só em todas as salas).
+- A Galeria ficou com menos luz de enchimento (ambiente 0,68 em vez de 0,8): as sombras das chamas ficam mais fundas.
+- **A tocha** ("Medieval Wall Torch", de Kigha, Sketchfab, CC BY 4.0; crédito na tela de Créditos e em `public/audio/CREDITS.txt`): suporte de
+  ferro com placa na parede, cabo de madeira inclinado e uma gaiola de ferro onde a chama do jogo entra. `tools/tocha_glb.py` junta os nós, multiplica
+  a oclusão do próprio modelo na cor, reduz as texturas a 128 px e grava `public/models/tocha.glb` (81 KB). `models.ts` normaliza (placa na
+  parede, alto da gaiola em y = 0, a gaiola a 0,26 m da parede) e `wallTorch` a põe em **toda tocha de parede** (`kit.torch` e as tochas dos
+  puzzles, `makeTorch`), com a gaiola exatamente embaixo da chama de sempre: o ponto onde o dado acende as tochas dos puzzles não mudou. As tochas
+  em pé (`stand`) continuam as de antes. A tocha não faz sombra (a chama ficaria com uma barra preta embaixo). Se o arquivo não carregar, volta a
+  tocha de caixas.
+- **Conserto: o "quadrado branco" no lugar da chama.** O primeiro quadro do jogo às vezes tinha o relógio NEGATIVO (o horário do quadro chegava
+  antes do horário guardado), e o quadro da chama, calculado com o resto de uma divisão, virava um índice negativo: a chama ficava sem desenho e
+  aparecia como um retângulo branco. Agora o passo do relógio nunca é negativo e toda chama usa `kit.frame(n)`, que nunca dá índice negativo.
+- **Conserto: objetos que chegam depois** (modelos carregados à parte) entram na mesma camada de desenho da sala (`adoptLayers`); antes, eles
+  continuavam sendo desenhados com a sala longe.

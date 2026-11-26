@@ -659,7 +659,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
       // ── o Escrivão no escritório: escreve, de costas; o jogador chega perto da grade e ele some (a lamparina apaga) ──
       if (!scribeGone) {
         scribe.animate(dt, t, { walk: 0, lean: 0.45, headPitch: 0.5, reach: 0.3 + 0.06 * Math.sin(t * 6) });
-        lampFlame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+        lampFlame.material.map = kit.frame(t * 8);
         if (lp.x > OX0 - 0.6 && lp.z < OZ1 + 1.3 && lp.z > OZ1) {
           scribeGone = true;
           scribe.group.visible = false;

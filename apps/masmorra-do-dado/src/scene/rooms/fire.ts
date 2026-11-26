@@ -1068,7 +1068,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           l.fire = l.burn.level();
           l.flame.visible = l.fire > 0.05;
           if (l.flame.visible) {
-            l.flame.material.map = kit.frames[Math.floor(t * 8 + l.z) % kit.frames.length];
+            l.flame.material.map = kit.frame(t * 8 + l.z);
             l.flame.scale.set(0.3 * l.fire, 0.27 * l.fire, 1); // (uma chaminha no soquete: o fogo de verdade está na frase)
           }
         }
@@ -1113,7 +1113,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
               f.visible = rest > 0.02;
               f.position.copy(c.center).addScaledVector(c.right, (k - 1) * c.w * 0.33).addScaledVector(c.n, 0.08);
               f.position.y = by + 0.12;
-              f.material.map = kit.frames[Math.floor(t * 10 + k * 2) % kit.frames.length];
+              f.material.map = kit.frame(t * 10 + k * 2);
             });
             c.lamp.intensity = rest > 0.02 ? 30 : 0;
             if (c.covered && c.k > 0.5) c.covered.visible = true;

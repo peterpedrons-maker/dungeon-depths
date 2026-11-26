@@ -249,7 +249,7 @@ export function buildRoom2(ctx: Ctx): Room {
         ctx.sfx('ignite', 'b');
       }
       if (lit) {
-        flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+        flame.material.map = kit.frame(t * 8);
         flameLight.intensity = 40 * (0.97 + 0.02 * Math.sin(t * 5) + 0.012 * Math.sin(t * 11));
         reveal = Math.min(1, reveal + dt * 0.7);
         hiddenFrag.color.setScalar(0.06 + 0.94 * reveal);

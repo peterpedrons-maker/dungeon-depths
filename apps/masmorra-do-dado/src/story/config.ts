@@ -4,6 +4,7 @@ import { createStore } from './store';
 const KEY = 'mdd-config-v1';
 
 export type Quality = 'baixa' | 'media' | 'alta';
+export type ShadowLevel = 'desligadas' | 'baixas' | 'medias' | 'altas';
 export type PixelSize = 'fino' | 'medio' | 'grosso';
 export type TextSpeed = 'lenta' | 'normal' | 'rapida';
 export type Action = 'frente' | 'tras' | 'esquerda' | 'direita' | 'correr' | 'agir' | 'posicionar' | 'diario' | 'reiniciar';
@@ -39,6 +40,7 @@ export interface Config {
   volSfx: number;
   // imagem
   quality: Quality;
+  shadows: ShadowLevel; // sombras de verdade nas chamas (DESIGN.md §65): quantas, de que tamanho, com borda suave ou dura
   pixel: PixelSize;
   brightness: number; // -5 a 5
   fov: number; // campo de visão horizontal, em graus
@@ -65,6 +67,8 @@ export const DEFAULT_CONFIG: Config = {
   volMusic: 6,
   volSfx: 8,
   quality: 'alta',
+  // no celular (toque) as sombras começam em "médias": metade das luzes com sombra e mapas menores
+  shadows: typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 'medias' : 'altas',
   pixel: 'medio',
   brightness: 0,
   fov: 95,
@@ -88,6 +92,9 @@ function load(): Config {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const j = JSON.parse(raw);
+      // antes, a Qualidade decidia também as sombras (média: 2 chamas; baixa: nenhuma): quem já tinha escolhido continua com o mesmo
+      if (!j.shadows && j.quality === 'baixa') j.shadows = 'desligadas';
+      if (!j.shadows && j.quality === 'media') j.shadows = 'medias';
       return { ...DEFAULT_CONFIG, ...j, keys: { ...DEFAULT_KEYS, ...(j.keys ?? {}) } };
     }
     // o botão de som antigo (♫/♪/∅) vira os volumes

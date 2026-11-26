@@ -354,7 +354,7 @@ export function buildLousa(ctx: Ctx): Room {
       kit.tick(dt, t);
       gate.tick();
       for (const b of bz) b.update(t);
-      nFlame.material.map = kit.frames[Math.floor(t * 8 + 3) % kit.frames.length];
+      nFlame.material.map = kit.frame(t * 8 + 3);
       nLight.intensity = 14 * (0.97 + 0.03 * Math.sin(t * 5));
       keyLight.intensity = 46 * (0.96 + 0.03 * Math.sin(t * 5) + 0.015 * Math.sin(t * 11.3));
       for (const b of boards) b.update(dt, t);

@@ -274,6 +274,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uFocus: { value: 1 },
       tSnap: { value: rtSnap.texture },
       uDis: { value: -1 },
+      uAO: { value: 1 },
+      uTan: { value: new THREE.Vector2(1, 1) },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
@@ -287,6 +289,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uFocus; // a distância (m) em que está o dado (o plano em foco)
       uniform sampler2D tSnap;
       uniform float uDis; // transição em pontilhado: < 0 desligada; 0..1 = quanto da imagem nova já apareceu
+      uniform float uAO; // força da oclusão de ambiente (0 = desligada)
+      uniform vec2 uTan; // tangente da metade do campo de visão (x, y): para voltar da tela à posição no espaço da câmera
       varying vec2 vUv;
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
@@ -298,10 +302,53 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         float z = uNear * uFar / (uFar - d * (uFar - uNear));
         return 1.0 / z;
       }
+      float linZ(vec2 uv){
+        float d = texture2D(tDepth, uv).r;
+        return uNear * uFar / (uFar - d * (uFar - uNear));
+      }
+      vec3 viewP(vec2 uv){ float z = linZ(uv); return vec3((uv * 2.0 - 1.0) * uTan * z, -z); }
+      // OCLUSÃO DE AMBIENTE (DESIGN.md §65): a luz que vem "de todo lado" chega menos nos cantos, embaixo dos objetos, entre as pedras e onde
+      // um objeto encosta no outro. Oito amostras num disco de ~0,5 m em volta do ponto (girado pelo pontilhado: o ruído vira dither da paleta).
+      float ambientOccK(vec2 uv, vec2 o, float k);
+      float ambientOcc(vec2 uv, vec2 o){ return ambientOccK(uv, o, uAO); }
+      float ambientOccK(vec2 uv, vec2 o, float k){
+        uv = (floor(uv * uRes) + 0.5) / uRes;
+        float d0 = texture2D(tDepth, uv).r;
+        if (d0 > 0.99995) return 1.0;
+        vec3 P = viewP(uv);
+        vec3 pr = viewP(uv + vec2(o.x, 0.0)) - P;
+        vec3 pl = P - viewP(uv - vec2(o.x, 0.0));
+        vec3 pu = viewP(uv + vec2(0.0, o.y)) - P;
+        vec3 pd = P - viewP(uv - vec2(0.0, o.y));
+        vec3 N = normalize(cross(abs(pr.z) < abs(pl.z) ? pr : pl, abs(pu.z) < abs(pd.z) ? pu : pd));
+        const float R = 0.6;
+        float rs = min(R / (-P.z * uTan.y * 2.0), 0.15);
+        vec2 rv = vec2(rs * uRes.y / uRes.x, rs);
+        float rot = bayer4(floor(uv * uRes)) * 6.2832;
+        float occ = 0.0;
+        for (int k = 0; k < 8; k++) {
+          float a = rot + float(k) * 2.39996;
+          vec2 su = uv + vec2(cos(a), sin(a)) * rv * sqrt((float(k) + 0.5) / 8.0);
+          su = (floor(su * uRes) + 0.5) / uRes; // no centro do pixel (a profundidade é de pixel inteiro: senão o chão "entorta")
+          if (su.x < 0.0 || su.y < 0.0 || su.x > 1.0 || su.y > 1.0) continue;
+          vec3 v = viewP(su) - P;
+          float vv = dot(v, v);
+          occ += max(0.0, dot(v, N) * inversesqrt(vv + 1e-4) - 0.1) / (1.0 + 2.0 * vv / (R * R));
+        }
+        return clamp(1.0 - k * occ * 0.55, 0.0, 1.0);
+      }
       void main(){
         vec2 o = 1.0 / uRes;
         vec4 hud = texture2D(tHud, vUv);
         vec3 room = texture2D(tRoom, vUv).rgb;
+        if (uAO < -150.0) { vec3 P = viewP(vUv); vec3 N = normalize(cross(viewP(vUv + vec2(o.x, 0.0)) - P, viewP(vUv + vec2(0.0, o.y)) - P)); gl_FragColor = vec4(N * 0.5 + 0.5, 1.0); return; }
+        if (uAO < -50.0) { gl_FragColor = vec4(vec3(fract(linZ(vUv))), 1.0); return; }
+        if (uAO < 0.0) { gl_FragColor = vec4(vec3(ambientOccK(vUv, o, -uAO)), 1.0); return; }
+        if (uAO > 0.0 && hud.a < 0.5 && uBlur < 0.01) {
+          // o que já está bem iluminado pela chama perto quase não escurece (a oclusão é da luz ambiente)
+          float lum = dot(room, vec3(0.299, 0.587, 0.114));
+          room *= mix(ambientOcc(vUv, o), 1.0, smoothstep(0.45, 1.6, lum));
+        }
         float coc = 0.0; // círculo de confusão: 0 no plano do dado, 1 longe dele
         if (uBlur > 0.01) {
           float dz = texture2D(tDepth, vUv).r;
@@ -1619,20 +1666,40 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     w: number;
     leaving: boolean;
   }
-  const BUDGET: Record<string, { pool: number; shadow: number; perFrame: number }> = {
-    alta: { pool: 12, shadow: 4, perFrame: 2 },
-    media: { pool: 10, shadow: 2, perFrame: 1 },
-    baixa: { pool: 6, shadow: 0, perFrame: 0 },
+  const BUDGET: Record<string, { pool: number }> = {
+    alta: { pool: 12 },
+    media: { pool: 10 },
+    baixa: { pool: 6 },
+  };
+  // AS SOMBRAS (Configurações → Imagem → Sombras; DESIGN.md §65): quantas chamas fazem sombra, o tamanho do mapa (nitidez), a borda (suave =
+  // PCF, que o pontilhado do pós-processo transforma numa penumbra de pixel; dura = o filtro básico) e o mapa da luz principal da sala
+  // (a fresta da lua, a chama do nicho). `perFrame`: quantos mapas podem ser refeitos por quadro quando o jogador se mexe.
+  // `ao`: a força da oclusão de ambiente no pós-processo (os cantos e o pé dos objetos mais escuros; barata, porque a imagem é pequena)
+  const SHADOWS: Record<string, { n: number; size: number; pcf: boolean; radius: number; room: number; perFrame: number; ao: number }> = {
+    altas: { n: 4, size: 512, pcf: true, radius: 2.5, room: 1024, perFrame: 2, ao: 1 },
+    medias: { n: 2, size: 256, pcf: true, radius: 1.6, room: 512, perFrame: 1, ao: 0.85 },
+    baixas: { n: 1, size: 256, pcf: false, radius: 1, room: 0, perFrame: 1, ao: 0.7 },
+    desligadas: { n: 0, size: 256, pcf: false, radius: 1, room: 0, perFrame: 0, ao: 0 },
   };
   let budget = BUDGET.alta;
+  let shadowCfg = SHADOWS.altas;
   let POOL = budget.pool;
-  let SHADOW_POOL = budget.shadow;
+  let SHADOW_POOL = shadowCfg.n;
   let slots: Slot[] = [];
   let sslots: (Slot & { fresh: boolean; lastBody: THREE.Vector3; lastDie: THREE.Vector3 })[] = [];
-  const buildLightPools = (q: string) => {
+  const buildLightPools = (q: string, sh: string) => {
     budget = BUDGET[q] ?? BUDGET.alta;
+    shadowCfg = SHADOWS[sh] ?? SHADOWS.altas;
     POOL = budget.pool;
-    SHADOW_POOL = budget.shadow;
+    SHADOW_POOL = shadowCfg.n;
+    const type = shadowCfg.pcf ? THREE.PCFShadowMap : THREE.BasicShadowMap;
+    if (renderer.shadowMap.type !== type) {
+      renderer.shadowMap.type = type;
+      scene.traverse((o) => {
+        const m = (o as THREE.Mesh).material;
+        if (m) for (const x of Array.isArray(m) ? m : [m]) x.needsUpdate = true;
+      });
+    }
     for (const sl of [...slots, ...sslots]) {
       scene.remove(sl.light);
       sl.light.dispose();
@@ -1645,17 +1712,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sslots = Array.from({ length: SHADOW_POOL }, () => {
       const light = new THREE.PointLight(0xffffff, 0, 0, 2);
       light.castShadow = true;
-      light.shadow.mapSize.set(256, 256);
+      light.shadow.mapSize.set(shadowCfg.size, shadowCfg.size);
+      light.shadow.radius = shadowCfg.radius;
       light.shadow.camera.near = 0.08;
       light.shadow.camera.far = 12;
-      light.shadow.bias = -0.006;
-      light.shadow.normalBias = 0.02;
+      // (mapa maior: menos desvio, e a sombra encosta no objeto em vez de "descolar" do pé dele)
+      light.shadow.bias = shadowCfg.size >= 512 ? -0.003 : -0.006;
+      light.shadow.normalBias = shadowCfg.size >= 512 ? 0.012 : 0.02;
       light.shadow.autoUpdate = false;
       scene.add(light);
       return { light, em: null, room: 0, w: 0, leaving: false, fresh: false, lastBody: new THREE.Vector3(), lastDie: new THREE.Vector3() };
     });
   };
-  buildLightPools(configStore.get().quality);
+  buildLightPools(configStore.get().quality, configStore.get().shadows);
   let shadowTurn = 0;
   let shadowsDirty = false;
   let lightTick = 0;
@@ -1737,7 +1806,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // as luzes com sombra: só se movem (o tremor da chama) quando o mapa delas é refeito, para a sombra nunca "descolar" da luz.
     // Rodízio: `perFrame` mapas por quadro (os recém-chegados na hora)
     const turn0 = shadowTurn;
-    shadowTurn = SHADOW_POOL ? (shadowTurn + budget.perFrame) % SHADOW_POOL : 0;
+    shadowTurn = SHADOW_POOL ? (shadowTurn + shadowCfg.perFrame) % SHADOW_POOL : 0;
     shadowsDirty = false;
     sslots.forEach((sl, k) => {
       if (!sl.em) {
@@ -1756,7 +1825,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
       const near = sl.light.position.distanceToSquared(body.position) < 100 || sl.light.position.distanceToSquared(worldDie.position) < 100;
       const moved = near && (sl.lastBody.distanceToSquared(body.position) > 0.0025 || sl.lastDie.distanceToSquared(worldDie.position) > 0.0025);
-      if (sl.fresh || (moved && (k - turn0 + SHADOW_POOL) % SHADOW_POOL < budget.perFrame)) {
+      if (sl.fresh || (moved && (k - turn0 + SHADOW_POOL) % SHADOW_POOL < shadowCfg.perFrame)) {
         sl.light.shadow.needsUpdate = true;
         sl.fresh = false;
         sl.lastBody.copy(body.position);
@@ -2395,11 +2464,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     postMat.uniforms.uBright.value = 1 + c.brightness * 0.07;
     postMat.uniforms.uBloom.value = c.quality === 'baixa' ? 0 : 1;
     postMat.uniforms.uGlowK.value = c.reduceFlash ? 0.08 : 0.16;
-    shadowsOn = c.quality === 'alta';
+    if ((BUDGET[c.quality] ?? BUDGET.alta) !== budget || (SHADOWS[c.shadows] ?? SHADOWS.altas) !== shadowCfg) buildLightPools(c.quality, c.shadows);
+    postMat.uniforms.uAO.value = shadowCfg.ao;
+    // a luz principal da sala (a fresta, a chama do nicho): com sombra nas sombras médias e altas, num mapa do tamanho escolhido
+    shadowsOn = shadowCfg.room > 0;
     rooms.forEach((r) => {
-      if (r.shadowLight && r.shadowLight.castShadow !== shadowsOn) r.shadowLight.castShadow = shadowsOn;
+      const l = r.shadowLight;
+      if (!l) return;
+      if (l.castShadow !== shadowsOn) l.castShadow = shadowsOn;
+      if (shadowsOn && l.shadow.mapSize.x !== shadowCfg.room) {
+        l.shadow.mapSize.set(shadowCfg.room, shadowCfg.room);
+        l.shadow.map?.dispose();
+        l.shadow.map = null;
+        l.shadow.needsUpdate = true;
+      }
+      l.shadow.radius = shadowCfg.radius;
     });
-    if ((BUDGET[c.quality] ?? BUDGET.alta) !== budget) buildLightPools(c.quality);
     pixelSize = c.pixel;
     fovH = c.fov;
     sensMouse = c.mouseSens / 5;
@@ -3482,10 +3562,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     lastDraw = now;
     const paused = ui.menu() === 'pause'; // pausa: o mundo pára (fogo, tempo, dado), só a imagem continua
-    const dt = paused ? 0 : Math.min(0.05, (now - last) / 1000) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
+    const dt = paused ? 0 : Math.max(0, Math.min(0.05, (now - last) / 1000)) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
     last = now;
     t += dt;
-    disTick(Math.min(0.05, (now - last + 16) / 1000));
+    disTick(Math.max(0, Math.min(0.05, (now - last + 16) / 1000)));
     if (mode === 'title') {
       titleTick(dt);
       titleCam();
@@ -3888,6 +3968,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     renderer.clear();
     renderer.render(dieScene, dieInWorld ? camera : dieCam);
     renderer.setRenderTarget(null);
+    {
+      const ty = Math.tan((camera.fov * Math.PI) / 360);
+      postMat.uniforms.uTan.value.set(ty * camera.aspect, ty);
+    }
     renderer.render(postScene, postCam);
     const bookOut = book.isOut();
     if (bookOut !== bookShown) {
@@ -4042,6 +4126,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         if (k === 'noao') scene.traverse((o) => { if (o.renderOrder === 2 || o.renderOrder === 3) o.visible = false; });
         if (k === 'nobloom') postMat.uniforms.uBloom.value = 0;
+        if (k === 'aoview') postMat.uniforms.uAO.value = -Math.abs(postMat.uniforms.uAO.value || 1); // (testes: a oclusão sozinha, em cinza)
+        if (k.startsWith('ao=')) postMat.uniforms.uAO.value = Number(k.slice(3));
         if (k === 'noadd') scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m && !Array.isArray(m) && m.blending === THREE.AdditiveBlending) o.visible = false; });
         if (k === 'noshadow') renderer.shadowMap.enabled = false;
         if (k === 'notrans') scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m && !Array.isArray(m) && m.transparent) o.visible = false; });

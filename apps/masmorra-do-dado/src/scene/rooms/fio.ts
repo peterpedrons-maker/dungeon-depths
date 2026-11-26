@@ -275,7 +275,7 @@ export function buildFio(ctx: Ctx): Room {
           used = 0;
         }
       }
-      if (sockFlame.visible) sockFlame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+      if (sockFlame.visible) sockFlame.material.map = kit.frame(t * 8);
 
       // ── o chão ──
       floor.update(dt, t);

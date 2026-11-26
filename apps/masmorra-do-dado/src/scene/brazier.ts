@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { lambert, type Kit } from './kit';
 import type { Box, Ctx, Socket } from './types';
-import { brazierModelMode, onBrazierModel } from './models';
+import { adoptLayers, brazierModelMode, onBrazierModel } from './models';
 
 export interface Brazier {
   x: number;
@@ -33,7 +33,10 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     kit.group.add(holder);
     flameW = 0.5 * s;
     coalR = 0.09 * s;
-    onBrazierModel((m) => holder.add(m.group.clone()));
+    onBrazierModel((m) => {
+      holder.add(m.group.clone());
+      adoptLayers(kit.group, holder);
+    });
   } else {
     kit.box(0.6 * s, 0.8 * s, 0.6 * s, kit.stone, x, y0 + 0.4 * s, z);
     const bowlMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.32 * s, 0.3 * s, 8), lambert(null, 0x3a3a46));
@@ -100,7 +103,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
       if (!b.lit) return;
       const k = Math.max(0.15, b.flameK);
       flame.scale.set(flameW * k, 0.6 * s * k, 1); // a chama encolhe quando está acabando
-      flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+      flame.material.map = kit.frame(t * 8);
       if (kit.lively) {
         // chama viva: a luz oscila e o ponto de luz treme (com sombra, as sombras dançam)
         const n = 0.25 * Math.sin(t * 6.7 + x) + 0.15 * Math.sin(t * 12.3 + z) + 0.1 * Math.sin(t * 21.1 + x * 2);

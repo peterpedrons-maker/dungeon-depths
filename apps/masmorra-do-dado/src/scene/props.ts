@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { adoptLayers } from './models';
 
 const base = () => (import.meta as unknown as { env: { BASE_URL: string } }).env.BASE_URL;
 // q e t: só os objetos em uso (no repositório); qv: o pack inteiro da Quaternius, só para a vitrine (gerado à parte, fora do repositório)
@@ -104,6 +105,7 @@ export function placeProp(parent: THREE.Object3D, pack: string, name: string, x:
     }
     const { obj, size } = propInstance(tpl, h);
     holder.add(obj);
+    adoptLayers(parent, holder);
     onReady?.(obj, size);
   });
   return holder;
@@ -147,6 +149,7 @@ export function bakeProps(root: THREE.Object3D, holders: THREE.Object3D[], packI
       out.castShadow = true;
       out.receiveShadow = true;
       root.add(out);
+      adoptLayers(root, out);
       if (merged !== geos[0]) geos.forEach((x) => x.dispose());
     }
   });

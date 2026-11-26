@@ -154,7 +154,7 @@ export function buildRespiro5(ctx: Ctx): Room {
       }
       if (lit > 0) {
         lit += dt;
-        flame.material.map = kit.frames[Math.floor(t * 8) % kit.frames.length];
+        flame.material.map = kit.frame(t * 8);
         sockLight.intensity = 12;
         // depois que a luz volta, a chama se apaga e o soquete esfria
         if (lit > 1.5 && ctx.dark() < 0.02) {

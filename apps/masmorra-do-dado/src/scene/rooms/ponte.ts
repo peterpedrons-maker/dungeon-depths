@@ -327,7 +327,7 @@ export function buildPonte(ctx: Ctx): Room {
         }
       },
       update(dt: number, t: number) {
-        const frame = kit.frames[Math.floor(t * 9) % kit.frames.length];
+        const frame = kit.frame(t * 9);
         front.material.map = frame;
         tt += dt;
         if (st === 'burning') {
@@ -336,7 +336,7 @@ export function buildPonte(ctx: Ctx): Room {
           woodDark.color.setHex(0x5e3c20).lerp(new THREE.Color(0x120e0c), k);
           fires.forEach((f, i) => {
             f.visible = true;
-            f.material.map = kit.frames[Math.floor(t * 9 + i * 2) % kit.frames.length];
+            f.material.map = kit.frame(t * 9 + i * 2);
             f.scale.set(0.6 * (0.6 + 0.4 * k), 0.55 * (0.6 + 0.6 * k), 1);
           });
           lamp.intensity = 26;

@@ -217,7 +217,7 @@ export function buildRoom3(ctx: Ctx): Room {
         if (b.left > 0) {
           const k = Math.min(1, b.left / 8); // nos últimos 8 s a chama encolhe
           b.flame.scale.set(0.75 * (0.4 + 0.6 * k), 0.6 * (0.4 + 0.6 * k), 1);
-          b.flame.material.map = kit.frames[Math.floor(t * 8 + i) % kit.frames.length];
+          b.flame.material.map = kit.frame(t * 8 + i);
           b.light.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + i) + 0.012 * Math.sin(t * 11));
         }
         door.lampMats[i].color.setHex(b.left > 0 ? 0xff7a2e : LAMP_OFF);

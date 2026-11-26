@@ -241,7 +241,7 @@ function panoExtra(api: FireExtraApi): FireExtra {
         const k = Math.min(1, sparkT / 0.9);
         spark.visible = k < 1;
         spark.position.set(X0 + 0.5 - 0.35 * k, 0.9 + 0.75 * k + Math.sin(k * 9) * 0.03, DZ + Math.sin(k * 7) * 0.05);
-        spark.material.map = kit.frames[Math.floor(t * 12) % kit.frames.length];
+        spark.material.map = kit.frame(t * 12);
         if (k >= 1) {
           sparkT = -1;
           rag.ignite(true);
