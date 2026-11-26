@@ -2,13 +2,13 @@
 // crédito está na tela de Créditos). O arquivo do jogo (`public/models/braseiro.glb`) já vem tratado para o pixel: sem a chama de foto
 // (o jogo usa a própria chama), texturas reduzidas a 128 px (a densidade de pixel do resto) e filtro "nearest"; aqui os materiais viram
 // Lambert (o mesmo das paredes) com o relevo do mapa de normais.
-// PRÉVIA: por enquanto só entra com `?braseiro=novo` (o jogo segue com o braseiro antigo até o Pedro aprovar). O arquivo é gerado por
+// APROVADO pelo Pedro: é o braseiro do jogo (o antigo, de caixas, só com `?braseiro=antigo` no endereço). O arquivo é gerado por
 // `tools/braseiro_glb.py` a partir do .zip do Sketchfab.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const q = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('braseiro') : null;
-export const brazierModelMode: 'novo' | null = q === 'novo' ? q : null;
+export const brazierModelMode: 'novo' | null = q === 'antigo' ? null : 'novo';
 
 export interface BrazierModel {
   group: THREE.Group; // o modelo já em metros, com o pé em y = 0 e o topo da cesta em y = 1,1

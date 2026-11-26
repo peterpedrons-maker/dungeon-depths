@@ -997,8 +997,10 @@ vendido, com crédito: já está na tela de Créditos e em `public/audio/CREDITS
 - **Medidas do puzzle intocadas** (`brazier.ts`): o topo da cesta fica em 1,1 m × escala (onde a tigela sempre esteve), as caixas de colisão, o
   soquete, o ponto de acender e a escala por tamanho (GRANDE/PEQUENO) são os mesmos; a base da coluna tem os mesmos 0,6 m do pé antigo. A chama
   e o carvão foram ajustados à cesta, que é menor que a tigela antiga.
-- **Ainda é prévia**: só entra com `?braseiro=novo` (carrega o arquivo e troca o pé e a tigela de todos os braseiros). Para virar o padrão falta
-  carregar o modelo antes de montar as salas e conferir todas as salas com braseiro.
+- **Virou o padrão** (aprovado pelo Pedro): todos os braseiros do jogo usam o modelo; o antigo, de caixas, só com `?braseiro=antigo`. O modelo
+  carrega à parte e entra em cada braseiro quando chega (`onBrazierModel`); nada do puzzle depende dele (colisão, soquete, altura da tigela e
+  rótulos são os mesmos). Conferido: A Lousa, O Fio de Fogo, Os Apelidos, O Pano (o rótulo talhado no pedestal continua legível), O Fogo que
+  Corre (puzzle resolvido), O Que a Casa Confirma (resolvido), os 18 verificadores e a passagem por todas as 24 salas.
 
 ## 63. Objetos de cena em modelo 3D: dois packs CC0, a vitrine e a Galeria com objetos (prévias, pedido do Pedro)
 O Pedro pediu objetos de verdade para as salas. Achei e baixei dois packs gratuitos **CC0** (podem entrar no jogo, até vendido, sem crédito

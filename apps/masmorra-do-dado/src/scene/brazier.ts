@@ -23,7 +23,7 @@ export interface Brazier {
 export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit = false, scale = 1, y0 = 0, poolR = 1.9): Brazier {
   const s = scale; // braseiros menores/maiores (o tamanho pode dizer quanto a chama dura)
   const useModel = !!brazierModelMode;
-  // (prévia, ?braseiro=…) o modelo da coluna com a cesta de ferro (models.ts) no lugar do pé e da tigela; as medidas do puzzle são as mesmas
+  // o modelo da coluna com a cesta de ferro (models.ts) no lugar do pé e da tigela (`?braseiro=antigo` volta ao de caixas); as medidas do puzzle são as mesmas
   let flameW = 0.75 * s;
   let coalR = 0.22 * s;
   if (useModel) {
