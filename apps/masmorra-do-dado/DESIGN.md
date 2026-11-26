@@ -918,3 +918,10 @@ a frase acesa projeta ficou fraca (o brilho fica na frase, não nas vizinhas). A
   largura do sulco, o brilho em volta é estreito e fraco, a cor fica só um pouco acima de 1 (o bloom dá um brilho leve, sem borrar) e o reflexo
   que corre pelos traços e a respiração ficaram discretos. A luz de verdade que a frase projeta continua fraca.
 - De longe, as frases acesas aparecem como traços dourados (sem o bloco de luz); ainda dá para contar quantas estão acesas.
+
+## 59. A luz espera a cena do dado; o pulso (em teste)
+- **A frase acendível só começa a ser escrita depois da cena do dado queimando** (`ctx.paused()`): antes a luz escrevia por trás do dado em
+  chamas e o jogador perdia a escrita traço a traço. Agora ela acontece à vista. (Vale para o jogo, já.)
+- **Pulso** (EM TESTE, só com `?pulso=1` no endereço; `PULSE_ON` em `firefx.ts`): no instante em que a luz termina de escrever a frase ou a
+  palavra, um clarão de ~0,75 s no formato exato dos traços (uma camada de luz somada, só um pouco mais larga que eles; `makeFlashMesh`), a luz
+  da frase esquenta a parede por um instante, e tudo assenta no brilho contido (§58). Não deixa nada atrás da escrita nem deforma o glifo.

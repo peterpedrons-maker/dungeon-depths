@@ -86,6 +86,41 @@ export function canvasTexture(c: HTMLCanvasElement) {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+// O PULSO (EM TESTE, `?pulso=1` no endereço): no instante em que a luz termina de escrever a frase/palavra, um clarão curto que segue o
+// desenho (o traço fica bem mais claro e o bloom o abre um pouco) e depois assenta no brilho contido. Devolve a sensação de recompensa sem
+// deformar o glifo: dura pouco e não deixa nada atrás da escrita.
+export const PULSE_ON = typeof location !== 'undefined' && new URLSearchParams(location.search).get('pulso') === '1';
+export const PULSE_S = 0.75; // duração do pulso (s)
+// 0..1: a força do pulso `t` segundos depois de a escrita terminar (sobe em 0,06 s e cai suave)
+export function pulseK(t: number) {
+  if (!PULSE_ON || t < 0 || t > PULSE_S) return 0;
+  const up = Math.min(1, t / 0.06);
+  const down = 1 - (t - 0.06) / (PULSE_S - 0.06);
+  return t < 0.06 ? up : Math.max(0, down) ** 2;
+}
+
+// o CLARÃO do pulso: uma camada de luz no formato exato dos traços (só um pouco mais larga e macia que eles), somada por cima, que acende e
+// some. Desenhada uma vez por palavra; só aparece se o pulso estiver ligado.
+export function makeFlashMesh(geo: THREE.PlaneGeometry, defs: GlyphDef[], W: number, H: number) {
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d')!;
+  defs.forEach((def, j) => {
+    const cx = PAD + CELL * (j + 0.5);
+    const cy = PAD + CELL / 2;
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,214,140,0.22)', 1, 20);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,222,160,0.32)', 1, 13);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,236,190,0.55)', 1, 7);
+    drawGlyphPart(g, def, cx, cy, GLYPH_SIZE, 'rgba(255,250,232,0.9)', 1, 3);
+  });
+  const mat = new THREE.MeshBasicMaterial({ map: canvasTexture(c), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 });
+  const m = new THREE.Mesh(geo.clone(), mat);
+  m.renderOrder = 4;
+  m.visible = false;
+  return { mesh: m, set(k: number) { mat.opacity = k; m.visible = k > 0.005; } };
+}
+
 // a cor do traço: acesa = dourado luminoso (só um pouco acima de 1: o bloom dá um brilho leve, sem borrar o desenho); esfriando = âmbar apagado
 export function glowColor(c: THREE.Color, hot: number, k = 1) {
   return c.setRGB((0.45 + 0.7 * hot) * k, (0.28 + 0.66 * hot) * k, (0.1 + 0.42 * hot) * k);
@@ -117,6 +152,12 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
   over.rotation.copy(mesh.rotation);
   over.renderOrder = 3;
   parent.add(over);
+  const flash = PULSE_ON ? makeFlashMesh(geo, defs, W, H) : null;
+  if (flash) {
+    flash.mesh.position.copy(mesh.position).addScaledVector(n, 0.006);
+    flash.mesh.rotation.copy(mesh.rotation);
+    parent.add(flash.mesh);
+  }
 
   const total = parts;
   const fs = defs.map(() => 0);
@@ -125,6 +166,7 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
   let run = 0;
   let show = 0;
   let inten = 0;
+  let pulseT = -1;
   const sync = () => {
     let dirty = false;
     defs.forEach((_, j) => {
@@ -154,6 +196,7 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
         if (run < total) {
           run = Math.min(total, run + dt / PER_GLYPH);
           sync();
+          if (run >= total) pulseT = 0; // terminou de escrever: o pulso
         }
         show = 1;
       } else if (show > 0) {
@@ -168,7 +211,10 @@ export function makeWordGlow(mesh: THREE.Mesh, id: string, normal: THREE.Vector3
       if (!vis) return;
       const k = on ? Math.max(0.15, inten) : 1; // acesa pela metade (ou pulsando): a luz acompanha
       mat.opacity = Math.min(1, show * 1.3) * Math.min(1, k * 1.25);
-      glowColor(mat.color, on ? 1 : show * show);
+      if (pulseT >= 0) pulseT += dt;
+      const pk = pulseK(pulseT);
+      glowColor(mat.color, on ? 1 : show * show, 1 + 0.5 * pk);
+      flash?.set(pk * (visible ? 1 : 0));
     },
   };
 }
