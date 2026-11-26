@@ -1159,9 +1159,10 @@ modelo 3D para as tochas.
 - **Som** (só gravações e instrumentos reais): celesta subindo e o sino de vidro quando ela vem (`gemShine`); o vidro estalando em tom alto, um
   glockenspiel agudo e o ar levando o pó (`gemBreak`); um toque de latão e a harpa no encaixe (`gemSet`); os sinos tubulares quando uma face se
   completa (`gemFace`). O `sonoplasta` pode refinar.
-- **Salvamento.** O resumo do espaço guarda `gems` (a tela de espaços mostra o número). Saves de antes: o segredo achado numa sala que tinha UMA gema
-  e continua com ela (a Cisterna, a C6) vira a gema no caderno; a Biblioteca tinha três segredos e fica de fora (não dá para saber qual foi).
-- **O epílogo** das 21 (depois de qualquer um dos três finais) e os **21 furos redondos** nos tetos estão no `HISTORIA.md`. A regra dos furos para a
+- **Salvamento.** O resumo do espaço guarda `gems` (a tela de espaços mostra o número). Saves de antes não são convertidos (só o Pedro testa por
+  enquanto).
+- **O epílogo** das 21 (depois de qualquer um dos três finais; volta ao poço com a boca VAZIA lá em cima, decidido pelo Pedro; um New Game Plus fica
+  para bem depois) e os **21 furos redondos** nos tetos estão no `HISTORIA.md`. A regra dos furos para a
   arte está no `DIRECAO_DE_ARTE.md` §9: só contam os furos REDONDOS de luz no teto; precisam ser exatamente 21 no jogo todo. Ainda não foram
   contados nem espalhados (tarefa do `cenografo`).
 - **Teste**: `window.__mdd.gem(id, primeira)` toca a cena com uma gema à frente dos olhos; `window.__mdd.gemState()`.

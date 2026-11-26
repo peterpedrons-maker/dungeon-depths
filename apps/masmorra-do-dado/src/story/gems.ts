@@ -6,7 +6,7 @@
 export const GEM_TOTAL = 21;
 export const GEMS_PER_CHAPTER = [3, 3, 3, 4, 4, 4] as const;
 
-// as gemas que já existem no jogo (o id é o que fica salvo no caderno; `room` é o nome da sala, para o salvamento antigo)
+// as gemas que já existem no jogo (o id é o que fica salvo no caderno)
 export const GEMS: { id: string; chapter: number; room: string; where: string }[] = [
   { id: 'cisterna', chapter: 1, room: 'Os Nichos e a Cisterna', where: 'o reflexo na água da Cisterna (sala 5)' },
   { id: 'papel', chapter: 1, room: 'A Biblioteca', where: 'atrás do terceiro livro de boato queimado, na Ala do Papel (sala 11)' },

@@ -2975,12 +2975,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Salva sozinho ao entrar numa sala, ao resolver um puzzle (a porta abre, a gema) e ao fechar o diário; também ao pausar e ao sair da página.
   // O resumo (meta) guarda a sala, a posição, o tempo, as gemas e uma miniatura; o resto (marcos, diário, perguntas) cada loja grava sozinha.
   const bonusSet = new Set<number>(saves.meta()?.bonus ?? []);
-  // salvamento de antes das 21 gemas (DESIGN.md §69): o segredo achado numa sala que tinha UMA gema só, e que continua com ela, vira a gema
-  // no fundo do caderno (a Biblioteca tinha três segredos: não dá para saber qual foi, então ela fica de fora)
-  for (const i of bonusSet) {
-    const g = GEMS.find((x) => x.id !== 'papel' && rooms[i]?.name.includes(x.room));
-    if (g && !diary.hasGem(g.id)) diary.addGem(g.id);
-  }
   let playTime = saves.meta()?.time ?? 0;
   let saveIn = Infinity; // segundos até salvar (agendado)
   let thumbWant = false;

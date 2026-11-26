@@ -73,19 +73,15 @@ para quem achou **as 21 gemas**.
   poço de novo. Um laço: **a Casa fica dentro do dado**.
 - **Não é o Repetir.** O Repetir também volta ao poço, mas é o **julgamento recomeçando** (a sentença lançada outra vez, a primeira frase do dado
   agora legível). O epílogo é a **revelação da escala**: a mesma queda, vista de fora. Por isso alguma coisa tem de estar diferente na volta.
-  **[DECIDIR]** O quê (proposta do `narrador`; a 1 e a 3 podem andar juntas):
-  1. **A boca do poço vazia** (recomendo). A queda e o acordar são os mesmos, mas lá em cima não há ninguém: nem o Escrivão na mureta, nem
-     `VOCÊ VIVER ?`, nem o dado caindo. Ninguém lança o julgamento; o jogador veio de fora e caiu sozinho. É a diferença mais clara para o Repetir
-     (em que alguém joga o dado de novo), não precisa de palavra nenhuma e custa pouco (a abertura sem a cena do Escrivão). Fecha na luz redonda lá em
-     cima, em silêncio.
-  2. **Ele cai no lugar do dado.** A câmera refaz o caminho do dado na abertura (desce por baixo da luz) e o jogador acorda no entulho, no ponto exato
-     onde o dado caiu da primeira vez. Torna literal o "lançado, como um dado".
-  3. **Uma sombra na luz.** Deitado, ele olha para cima; a luz do furo escurece por um instante, como se algo enorme passasse por cima do dado (eco do
-     sonho da folha p13, "dentro de uma mão fechada"), e volta. Abre a pergunta de quem segura o dado, sem responder.
-  - **Não recomendo:** a primeira frase do dado ficar legível (é o que o Repetir já faz) nem uma frase nova que diga a escala em glifos (o dado
-    explicaria o que a cena acabou de mostrar).
-  - **Depois do Repetir** seriam duas quedas seguidas (a do final e a do epílogo). **[DECIDIR]** se o epílogo entra no lugar da queda do Repetir (o final
-    corta para o caderno antes de cair) ou depois dela, com os créditos no meio.
+  **Decidido (Pedro): a boca do poço vazia.** A queda e o acordar são os mesmos, mas lá em cima não há ninguém: nem o Escrivão na mureta, nem
+  `VOCÊ VIVER ?`, nem o dado caindo. Ninguém lança o julgamento; o jogador veio de fora e caiu sozinho. É a diferença mais clara para o Repetir (em
+  que alguém joga o dado de novo), não precisa de palavra nenhuma e custa pouco (a abertura sem a cena do Escrivão). Fecha na luz redonda lá em cima,
+  em silêncio. (As outras propostas do `narrador`, guardadas: ele acordar no ponto exato onde o dado caiu; uma sombra passando pela luz do furo.)
+  - **Não:** a primeira frase do dado ficar legível (é o que o Repetir já faz) nem uma frase nova que diga a escala em glifos (o dado explicaria o
+    que a cena acabou de mostrar).
+- **Depois do epílogo (para bem depois, quando os finais existirem):** a ideia do Pedro é um **New Game Plus** com outras coisas, para qualquer
+  final. Também fica para lá decidir a ordem com o Repetir, que também termina numa queda (o epílogo no lugar da queda do Repetir ou depois dela,
+  com os créditos no meio).
 
 ## As folhas dela no capítulo 1
 - São **18**: p1 a p7 e, nos segredos que não guardam gema, p8 a p18 (`src/story/herpages.ts`). A ordem do caderno é a do caminho da Casa, da sala 3
@@ -110,7 +106,7 @@ Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidad
 2. **O dado mente.** Pode ser que o jogador só descubra isso no meio? Ou desde o começo?
 3. **O Escrivão traiu ou protegeu?** Ele deixou a sentença sem confirmação por maldade ou porque não acreditou na acusação? Recomendo deixar **ambíguo**.
 4. **Quem são os outros 2 NPCs?** (o Contador e o Juiz são proposta; "a que veio antes" é a diarista)
-5. **O que muda na volta do epílogo** e onde ele entra depois do Repetir (ver "O epílogo").
+5. ~~O que muda na volta do epílogo?~~ **A boca do poço vazia** (decidido). Para depois: o New Game Plus e a ordem com a queda do Repetir.
 
 ## Duração e ritmo
 O jogo deve durar **algumas horas** (meta 4 a 6 h), não 20 minutos. O dado começa com **só Fogo e Peso** e fica com eles por
