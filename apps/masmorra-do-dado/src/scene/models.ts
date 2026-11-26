@@ -112,7 +112,8 @@ const torchWaiting: ((m: THREE.Group | null) => void)[] = [];
           t.minFilter = THREE.NearestMipmapNearestFilter;
           t.needsUpdate = true;
         }
-        m.material = new THREE.MeshLambertMaterial({ map: src.map, normalMap: src.normalMap, normalScale: new THREE.Vector2(1.3, 1.3), side: THREE.DoubleSide, name: 'tocha' });
+        // (um pouco mais escura: a luz da própria chama fica a poucos centímetros do cabo e o deixava em brasa de cima a baixo)
+        m.material = new THREE.MeshLambertMaterial({ map: src.map, normalMap: src.normalMap, normalScale: new THREE.Vector2(1.3, 1.3), color: 0x9a9a9a, side: THREE.DoubleSide, name: 'tocha' });
         m.castShadow = false; // (a tocha não faz sombra: a chama dela ficaria com uma barra preta na parede)
         m.receiveShadow = true;
         m.userData.noShadow = true;
