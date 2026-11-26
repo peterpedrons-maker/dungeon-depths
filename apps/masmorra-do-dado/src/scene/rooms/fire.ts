@@ -507,11 +507,10 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         g.fillRect(x + ww - th / 2, y - th / 2, th, hh + th);
       };
       if (t.lit) {
-        // tablete ACENDÍVEL: a moldura também é só talho na pedra (sem cal), como as fissuras das frases (burnline.ts)
-        rect(8, 8, cw - 20, ch - 20, 7, 'rgba(206,190,166,0.45)');
-        rect(10, 10, cw - 20, ch - 20, 6, '#0b0807');
-        rect(24, 24, cw - 52, ch - 52, 3, 'rgba(206,190,166,0.35)');
-        rect(26, 26, cw - 52, ch - 52, 3, '#0b0807');
+        // tablete ACENDÍVEL: a moldura é do mesmo marfim fosco das frases que ainda não foram acesas (burnline.ts), sem brilho
+        rect(10, 10, cw - 20, ch - 20, 12, '#15110f');
+        rect(10, 10, cw - 20, ch - 20, 5, '#c9bfa4');
+        rect(26, 26, cw - 52, ch - 52, 4, '#c9bfa4');
       } else {
         rect(10, 10, cw - 20, ch - 20, 12, '#15110f');
         rect(10, 10, cw - 20, ch - 20, 5, '#f1ebd9');
