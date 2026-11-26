@@ -36,6 +36,7 @@ import { buildFireRoom } from './rooms/fire';
 import { buildRespiro5 } from './rooms/respiro5';
 import { buildRespiro4 } from './rooms/respiro4';
 import { buildRespiro3 } from './rooms/respiro3';
+import { buildBiblioteca } from './rooms/biblioteca';
 import { buildTribunal } from './rooms/tribunal';
 import { buildLab } from './rooms/lab';
 import type { SketchKind } from './sketch';
@@ -75,6 +76,7 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     (c) => buildFireRoom(c, FIRE_CONFIRMA), // NÍVEL 5. Duas partes: as marcas numa lousa (QUATRO CONFIRMADO × TRÊS BOATO); depois 3 frases confirmadas -> pilares -> 2, 4, 1, 3
     buildRespiro2, // RESPIRO R2 (sem trava): Os Banhos Secos; piscinas vazias, a fonte seca, o estandarte; puzzle opcional (exatamente DOIS)
     (c) => buildFireRoom(c, FIRE_PANO), // NÍVEL 5. O PANO: o fogo queima o boato tecido e mostra a pedra (+ constelação C2)
+    buildBiblioteca, // A BIBLIOTECA (térreo, área livre): o Átrio de 9 mesas (C-Bib), as alas, o Museu dos Nomes, a Sala de Aula, o escritório do Escrivão
     buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
     buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
     (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
@@ -3774,7 +3776,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       interact: () => interact(),
       interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: [+(camera.position.x - offs[curRoom].x).toFixed(2), +(camera.position.z - offs[curRoom].z).toFixed(2)] })),
       chat: (k: string) => { chatCool = 0; chatFn(k); },
-      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1) })),
+      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1), door: r.doorZ, dy: r.exitDy ?? 0 })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
@@ -3831,6 +3833,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       put: () => place(),
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
+      skipRoom: (i: number) => rooms[i].skip?.(),
       save: () => saveGame(),
       darkLevel: () => darkK,
       blackout: (s: number) => (darkQ = { secs: s }),

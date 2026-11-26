@@ -130,7 +130,29 @@ Capela alta e estreita (teto de 7 m), seis pilares com tocha (apagada), quatro b
 - **Constelação C2 (gema):** os **frisos de pedra do teto** ligam só três pilares num **triângulo** com a ponta no meio da fileira do fundo: é o glifo **ACENDER**. **Acenda as tochas do pilar do meio do fundo (lado da porta) e dos dois pilares dos cantos da frente (lado da entrada), e nenhuma outra** (há iscas: uma perto da porta e duas na parede da entrada). O fogo corre pelos frisos e desenha o triângulo no teto; um braseiro sobe das rachaduras frias no centro; **acenda-o**: um nicho abre na parede direita, perto da entrada, com uma gema. (`tools/verify_constelacoes.mjs`: 1 conjunto entre 512; só ACENDER tem as linhas dos frisos.)
 - **Dificuldade: 5 de 10.**
 
-## Sala 11 — Os Apelidos  (ACENDER · GRANDE · ANTES · PEQUENO · CONFIRMADO)  — NÍVEL 6, em ROTUNDA
+## Sala 11 — A Biblioteca · O Arquivo das Sentenças (térreo)  — ÁREA LIVRE, sem trava (todos os puzzles são opcionais)
+O caminho principal é curto: atravessar o **Átrio** até a porta, sempre aberta. O Átrio tem três andares, uma luz redonda no alto, passarelas vazias (as
+escadas desabaram) e **nove mesas de leitura** em grade, cada uma com uma lamparina. Em volta, quatro alas baixas e o escritório do Escrivão.
+- **Constelação C-Bib:** pela grade do **escritório** (fundo, à direita) vê-se a mesa do Escrivão e uma página virada para a cadeira dele: o jogador a vê
+  **de cabeça para baixo**. Copiada assim, dá o triângulo de ACENDER (a armadilha); a outra linha (BRASEIRO DOIS) também está de cabeça para baixo, e isso
+  denuncia o lado. Lida do lado certo é **PEGAR**: acender as lamparinas das mesas **0, 2 e 7** (os dois cantos do fundo e a do meio da frente, vendo a
+  porta em cima). Um braseiro sobe no centro; acendê-lo abre o nicho da gema (parede do fundo, à esquerda da porta).
+- **Os livros que mentem (Ala do Papel, oeste perto da porta):** seis livros na estante do fundo: três com **BOATO** na lombada, dois **cadernos** sem marca
+  (de condenados), um de **pedra** com CONFIRMADO (não queima). **Queimar os três de boato** abre o nicho da gema na parede. Queimar um caderno: "Uma página se
+  perdeu" (volta ao sair da ala).
+- **A Sala de Aula (leste perto da porta):** três lousas com murais. (a) quatro braseiros e «ACENDER ▢ BRASEIRO» → **QUATRO**; (b) acender o 2 e depois o 1,
+  «▢ ANTES UM» → **DOIS**; (c) um braseiro pequeno com o número QUATRO e «PEQUENO IGUAL ▢»: fica **apagada** até o jogador ter visto IGUAL (A Lei Pequena) e
+  voltar → **QUATRO**. A (c) abre o nicho da gema da sala de aula.
+- **O mural de encaixe (Sala de Aula, parede do fundo):** quatro desenhos (porta, livro, chave, sino) e, embaixo, quatro blocos com glifos embaralhados.
+  E num bloco e E noutro troca os dois. **Solução:** cada desenho com o seu nome (PORTA, LIVRO, CHAVE, SINO); os nomes estão no **Museu dos Nomes**, ao lado.
+  Também abre o nicho da sala de aula.
+- **O Museu dos Nomes (leste perto da entrada):** objetos em pedestais com o nome talhado (PORTA, CHAVE, LIVRO, MESA, SINO, GIZ, DADO) e um pedestal vazio só
+  com o nome (o objeto está em outra parte da Biblioteca: fica para o capítulo 2).
+- **A Ala das Pedras (oeste perto da entrada):** tábuas talhadas com CONFIRMADO, murais com figura (ESCREVER, LER, ESCRIVÃO, SENTENÇA) e a tábua do índice
+  «CONDENADO CRIME ?» (nem a Casa sabe qual foi o crime).
+- **O Escrivão (3ª aparição):** no escritório, de costas, escrevendo; quando o jogador chega junto da grade, a lamparina apaga e ele não está mais.
+
+## Sala 12 — Os Apelidos  (ACENDER · GRANDE · ANTES · PEQUENO · CONFIRMADO)  — NÍVEL 6, em ROTUNDA
 Sala **redonda** (~12 m). Cinco braseiros: o **GRANDE** no **centro**, **sem número** (o pedestal mostra o glifo GRANDE), e os outros quatro em volta, em cruz, de modo que não há começo óbvio de leitura. Vistos da entrada: **UM à esquerda, DOIS ao fundo** (perto da porta), **TRÊS à direita** e **QUATRO à frente, junto da entrada**; o **QUATRO é o menor** braseiro da sala (é o PEQUENO). As frases ficam em **três placas de pedra** na parede curva: à esquerda, do lado da porta, «UM DEPOIS DOIS»; à direita, do lado da porta, «PEQUENO ANTES DOIS»; à esquerda, do lado da entrada, «GRANDE DEPOIS TRÊS»; **sobre a porta**: «ACENDER GRANDE ANTES PEQUENO» (todas confirmadas).
 - **Armadilha:** o glifo PEQUENO parece UM numa moldura e o GRANDE parece QUATRO. Quem lê pelo desenho cai em **contradição** (nenhuma ordem fecha) e percebe que leu errado.
 - **Dedução:** GRANDE = o braseiro grande do meio; PEQUENO = o QUATRO (o menor). Porta: GRANDE antes do 4. «1 depois 2» → 2 antes de 1. «GRANDE depois 3» → 3 antes do GRANDE. «PEQUENO antes 2» → 4 antes de 2. Cadeia: 3 → GRANDE → 4 → 2 → 1.
@@ -138,7 +160,7 @@ Sala **redonda** (~12 m). Cinco braseiros: o **GRANDE** no **centro**, **sem nú
 - **Por que é única** (`node tools/verify_apelidos.mjs`): uma ordem entre 120; sem qualquer frase sobram 5 a 10; ler pelo desenho dá 0 ordens; só com as frases de número sobram 60.
 - **Palavras novas:** GRANDE, PEQUENO. **Dificuldade: 6 de 10.**
 
-## Sala 12 — A Ponte de Madeira  (ACENDER · DOIS + o glifo MAIS)  — NÍVEL 6 (o fogo destrói o próprio caminho; `tools/verify_ponte.mjs`)
+## Sala 13 — A Ponte de Madeira  (ACENDER · DOIS + o glifo MAIS)  — NÍVEL 6 (o fogo destrói o próprio caminho; `tools/verify_ponte.mjs`)
 **O fosso.** Entra-se **por cima**, numa galeria em volta da boca do fosso (gradil vazado: dá para ver o fundo). Em frente à entrada há um **patamar**; dele parte uma **rampa em espiral** que desce colada às paredes (uma volta inteira, 8 m; passa por cima da porta numa ponte de pedra) e chega ao fundo por baixo do patamar. No fundo: **9 braseiros em grade** ligados por **canaletas** (os chevrons mostram o sentido), a **porta** (num vão sob a rampa) e, na frente da ponte de pedra, «ACENDER DOIS» e o glifo **MAIS** (uma cruz) com dois soquetes que contam as ignições.
 - **A novidade:** onde duas canaletas diagonais se cruzam (no bloco do canto do fundo à esquerda), uma passa **por baixo** de uma **calha de madeira** que leva a outra **por cima**. Quando o fogo passa por baixo, **a madeira queima e cai**, e a canaleta de cima fica **cortada**.
 - **Regras:** duas ignições; **enquanto há fogo correndo, a Casa recusa o fogo**. Se o desenho não for a cruz (ou assim que um canto acender, que não tem volta), tudo se apaga, **a Casa repõe a ponte** (uma calha nova desliza da parede) e os braseiros ficam frios por 6 s.
@@ -152,7 +174,7 @@ Sala **redonda** (~12 m). Cinco braseiros: o **GRANDE** no **centro**, **sem nú
 - **Constelação C3 (gema):** com a cruz acesa lá embaixo, **os quatro cantos da grade ficam escuros**. Na boca do fosso há **8 tochas apagadas de pé no gradil**: uma em cada canto do fosso e uma no meio de cada lado (a do lado da entrada fica na ponta direita do gradil do patamar). Vistas do alto, caem sobre as casas da grade. **Acenda só as 4 tochas dos CANTOS do fosso, e nenhuma outra** (nem as dos meios, nem as 3 tochas-isca das paredes do fundo); elas duram 70 s, então dê a volta na galeria sem parar. Um **braseiro sobe no patamar do canto da rampa** (o canto do fundo à esquerda, a meia altura); **acenda-o**: abre-se um nicho com uma gema na parede ao lado dele. (1 conjunto aceito de 2048.)
 - **Palavra vista:** MAIS (só o desenho é exigido). **Dificuldade: 6 de 10.**
 
-## Sala 13 — O Boato Verdadeiro  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 (boato não é mentira)
+## Sala 14 — O Boato Verdadeiro  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 (boato não é mentira)
 Como na Sala 8 (O Que a Casa Confirma), as frases da parede se acendem com o dado de Fogo e há quatro pilares escondidos sob o chão. Mas a porta diz «**ACENDER VERDADE**»: acenda **toda frase verdadeira, inclusive boatos verdadeiros, e nenhuma falsa**. Acender ou apagar frases **não pune**; tocar de novo numa frase acesa a **apaga** (para desfazer um engano). A Casa **só julga quando você acende a frase da porta** (ela também tem um soquete com brasa).
 0. **Demonstração** (parede esquerda, perto da entrada, **já acesa**): «UM ANTES DOIS CONFIRMADO» e «DOIS DEPOIS UM BOATO». Um boato aceso, porque diz o mesmo que a confirmada.
 1. Confirmadas: **1 antes de 2** (a demonstração), **1 depois de 3**, **4 depois de 2** → cadeia **3 → 1 → 2 → 4**.
@@ -163,7 +185,7 @@ Como na Sala 8 (O Que a Casa Confirma), as frases da parede se acendem com o dad
 - **Por que é única** (`node tools/verify_verdade.mjs`): dos 64 conjuntos de frases só um é consistente; as confirmadas dão uma ordem só.
 - **Palavra nova:** VERDADE. **Dificuldade: 6 de 10.**
 
-## A Galeria dos Condenados  — RESPIRO R3 (área livre, sem trava; um puzzle opcional)
+## Sala 15 — A Galeria dos Condenados  — RESPIRO R3 (área livre, sem trava; um puzzle opcional)
 Galeria longa e alta, bancos de pedra, centenas de **marcas de contagem** a giz nas paredes e desenhos de outros condenados (um rosto apagado, uma porta).
 Sobre a porta de saída, talhada: «CONDENADO LER SENTENÇA». O **Escrivão** está sentado no fim, escrevendo; quando o jogador se aproxima, levanta e some,
 e fica uma marca de giz fresca no banco. Um desenho a giz mostra um braseiro **enorme** e um **minúsculo**, com GRANDE e PEQUENO embaixo; no banco ao lado,
@@ -173,7 +195,7 @@ a **folha nº 6** dela diz que o glifo de PEQUENO quer dizer UM (ela erra; quem 
   «TRÊS ANTES DOIS» e «DOIS DEPOIS TRÊS» dizem o mesmo; não podem ser os dois verdade (a lei diz um só), então são falsos (2 antes de 3), e o verdadeiro é
   «TRÊS ANTES UM». **Ordem: DOIS, TRÊS, UM** → abre o nicho da gema (parede do fundo da câmara). Errar só apaga, sem punição.
 
-## A Sombra  (ACENDER · [moldura] · BRASEIRO)  — NÍVEL 7 ("a luz escreve, e a frase tem de ser verdade"; `tools/verify_sombra.mjs`)
+## Sala 16 — A Sombra  (ACENDER · [moldura] · BRASEIRO)  — NÍVEL 7 ("a luz escreve, e a frase tem de ser verdade"; `tools/verify_sombra.mjs`)
 Salão escuro. No meio, uma **tela de pedra** com nove "olhos" em grade 3×3: só **dois** são furos de verdade (o de cima à esquerda e o do centro). Na parede
 do fundo, sobre a porta, «ACENDER ▢ BRASEIRO» talhada grande, e a casa ▢ é uma **moldura 3×3** de pedra clara: a luz de cada braseiro passa pelos furos
 e cai em casas fixas da moldura. Cinco braseiros em volta da tela:
@@ -192,7 +214,7 @@ número e **não bate**, depois de 3 s a Casa pune: escuro e braseiros frios por
 4. **Solução: F, AE e BD.** O BD só reacende a casa 0, que já estava acesa: o desenho não muda, mas agora são três. A frase fica verdadeira.
 - **Por que é única:** dos 31 conjuntos só F+BD+AE escreve um número com o mesmo número de braseiros. **Dificuldade: 7 de 10.**
 
-## O Escuro  (ACENDER · ▢ · ▢ · ▢ · ORDEM)  — NÍVEL 7 ("errar de propósito"; `tools/verify_escuro.mjs`)
+## Sala 17 — O Escuro  (ACENDER · ▢ · ▢ · ▢ · ORDEM)  — NÍVEL 7 ("errar de propósito"; `tools/verify_escuro.mjs`)
 Sala pequena e baixa (6×11 m, teto 3 m). Quatro braseiros já acesos nos cantos (só luz). Na parede esquerda, junto da porta: «ACENDER ▢ ▢ ▢ ORDEM»,
 três lousas pequenas lado a lado. **Não há pista nenhuma à vista.**
 - A Casa julga quando **as três lousas mostram um número completo** e ficam assim por 3 s (o glifo ORDEM pulsa enquanto isso). Certo: a porta abre.
@@ -205,7 +227,7 @@ três lousas pequenas lado a lado. **Não há pista nenhuma à vista.**
 - **Por que é única:** o teto cita só três números; as duas confirmadas dão uma ordem e ambas são necessárias. **Palavra nova:** ESCURO (só existe no escuro).
   **Dificuldade: 7 de 10.**
 
-## A Lei Pequena  (ACENDER · QUATRO · BRASEIRO · ORDEM · CONFIRMADO)  — NÍVEL 8 (a 1ª lei da contagem; `tools/verify_lei.mjs`)
+## Sala 18 — A Lei Pequena  (ACENDER · QUATRO · BRASEIRO · ORDEM · CONFIRMADO)  — NÍVEL 8 (a 1ª lei da contagem; `tools/verify_lei.mjs`)
 A sala **sobe**. No **térreo**, na frente do mezanino (quem está em cima não vê esta parede): «QUATRO DEPOIS UM CONFIRMADO» e «DOIS ANTES TRÊS CONFIRMADO»;
 na parede esquerda, o mural da **balança** com dois braseirinhos em cada prato e «DOIS IGUAL DOIS CONFIRMADO» (IGUAL é o sinal das duas barras). Uma
 **rampa** larga sobe colada à parede direita; nessa parede, gastos, três **boatos**: «DOIS ANTES UM», «UM DEPOIS DOIS», «DOIS DEPOIS QUATRO». No
@@ -218,13 +240,13 @@ Errar: escuro e braseiros frios por 10 s, sem gema por passo.
 - **Por que é única:** uma ordem só entre 24; todas as cinco frases são necessárias; "todos os boatos falsos" dá 2 ordens; "todos verdadeiros", nenhuma.
   **Palavra nova:** IGUAL (pela balança). **Dificuldade: 8 de 10.**
 
-## A Escadaria  — RESPIRO R4 (área livre, sem trava)
+## Sala 19 — A Escadaria  — RESPIRO R4 (área livre, sem trava)
 Um poço de 12 m com três lances colados às paredes (direita, esquerda, direita de novo) e três patamares (3 m no fundo, 6 m na frente, 9 m no fundo,
 onde está a porta). Janelas de grade dão para salas já feitas, vistas de cima: **A Casa Escreve** (as nove colunas em grade: a dica mais clara de que
 elas eram a grade da constelação C1), o fosso da **Ponte** e a capela do **Pano**. No patamar do meio, a **folha arrancada nº 7** dela. No alto, ao lado
 da porta, uma portinha com **seis** pontos de bronze, fechada (a face que a língua não tem; abre num capítulo posterior). Nada é obrigatório.
 
-## O Fogo que Corre  (ACENDER · DOIS · BRASEIRO · TEMPO + o glifo QUATRO)  — NÍVEL 8 ("o desenho existe num instante"; `tools/verify_fogo_corre.mjs`)
+## Sala 20 — O Fogo que Corre  (ACENDER · DOIS · BRASEIRO · TEMPO + o glifo QUATRO)  — NÍVEL 8 ("o desenho existe num instante"; `tools/verify_fogo_corre.mjs`)
 Salão aberto com **nove plataformas** em grade 3×3, de alturas diferentes, um braseiro em cada. **Canaletas** descem de uma plataforma a outra (o fogo só
 desce) e o desenho do sulco mostra o tempo: **reta 1 s**, **com uma volta 2 s**, **em zigue-zague 3 s**. Cada braseiro queima **só 4 s** e **só uma vez**
 por tentativa (o óleo acaba). A porta abre se, **num instante**, os acesos forem **exatamente os quatro cantos**. Quando tudo se apaga sem acertar: escuro
@@ -240,7 +262,7 @@ Canaletas: centro→cantos do fundo (0 em 2 s, 2 em 3 s) e centro→canto da fre
   acendê-lo abre o nicho da gema (parede direita, perto da porta).
 - **Por que é única:** uma ignição nunca basta; de todos os pares ordenados só centro → canto 6 funciona. **Dificuldade: 8 de 10.**
 
-## Os Que Dizem o Mesmo  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO e «ACENDER UM BOATO»)  — NÍVEL 9 ("dizer é fazer"; `tools/verify_dizem_mesmo.mjs`)
+## Sala 21 — Os Que Dizem o Mesmo  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO e «ACENDER UM BOATO»)  — NÍVEL 9 ("dizer é fazer"; `tools/verify_dizem_mesmo.mjs`)
 **Claustro a céu aberto:** um pátio quadrado com galerias cobertas em volta (8 colunas: 4 nos cantos, 4 no meio dos lados) e uma **fonte** seca no meio.
 Cinco braseiros no pátio: UM, DOIS, TRÊS (o **GRANDE**), QUATRO e CINCO (o **PEQUENO**). Na porta, «ACENDER TODOS BRASEIRO ORDEM CONFIRMADO» e, ao lado,
 «ACENDER UM BOATO CONFIRMADO». **Confirmadas**, talhadas nas paredes das galerias: «PEQUENO ANTES TRÊS», «UM ANTES CINCO», «CINCO ANTES DOIS».
@@ -256,7 +278,13 @@ pendura todos de volta. A porta só aceita a ordem se o **único** estandarte qu
   fogo desenha o Z, um braseiro sobe ao lado da fonte; acendê-lo abre o nicho (parede esquerda, perto da entrada).
 - **Por que é única:** com os cinco, nenhuma ordem; queimando cada um: só «DOIS ANTES QUATRO» deixa uma ordem. **Dificuldade: 9 de 10.**
 
-## A Memória da Casa  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO)  — NÍVEL 9 (ensaio do Tribunal; `tools/verify_lei.mjs`)
+## Sala 22 — A Antecâmara Fria  — RESPIRO R5 (sem puzzle; ensina A Memória da Casa; PUZZLES_PROPOSTAS.md §2b "R5" e Ficha 9b)
+Câmara pequena, porta fechada sem frase. Na parede do fundo, à direita da porta, uma moldura de frase vazia e, embaixo, um soquete frio (tigela
+de bronze rachada): a única coisa acendível. **Como passar:** acender o soquete com o dado de Fogo (face 3). A Casa apaga tudo por 4 s; no escuro,
+a moldura mostra em cal «ABRIR PORTA CONFIRMADO» e a porta abre. Repetível (o soquete esfria quando a luz volta). Hoje fica logo antes do
+Tribunal (o plano a põe entre as salas 16 e 17, que ainda não existem).
+
+## Sala 23 — A Memória da Casa  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO)  — NÍVEL 9 (ensaio do Tribunal; `tools/verify_lei.mjs`)
 Um salão com quatro colunas em volta dos braseiros (UM, DOIS, TRÊS = **GRANDE**, QUATRO = **PEQUENO**) e a porta; **três anexos** com batente:
 - **Anexo A** (à esquerda, perto da entrada): «PEQUENO ANTES DOIS CONFIRMADO».
 - **Anexo B** (à direita): quatro boatos gastos: «UM ANTES GRANDE», «QUATRO DEPOIS TRÊS», «GRANDE ANTES PEQUENO», «TRÊS ANTES DOIS».
@@ -270,7 +298,7 @@ O glifo TODOS da porta se acende conforme os braseiros acendem. Errar: escuro e 
 4. **Ordem: QUATRO, UM, TRÊS, DOIS.**
 - **Por que é única:** cada pista é necessária, inclusive a do escuro. **Palavra nova:** TODOS (o glifo se enche). **Dificuldade: 9 de 10.**
 
-## O Tribunal dos Rumores  — NÍVEL 10 (o fim do capítulo 1, depois de A Memória da Casa)
+## Sala 24 — O Tribunal dos Rumores  — NÍVEL 10 (o fim do capítulo 1, depois de A Memória da Casa)
 Puzzle de **leitura e lógica**, só com o dado de Fogo. **Cinco braseiros** com um **número no pedestal** (um a cinco) e **tamanhos diferentes** (o 3 é GRANDE, o 2 é PEQUENO, os outros são médios). Nas paredes há **sete frases** da forma «X ANTES Y» ou «X DEPOIS Y» (X e Y são números **ou** os apelidos GRANDE e PEQUENO, que só se resolvem **olhando os braseiros**). Cada frase termina com uma marca: **CONFIRMADO** (verdade; a frase tem moldura talhada) ou **BOATO** (talvez falso; a frase é gasta, sem moldura). Na porta estão a ordem do que fazer («ACENDER TODOS BRASEIRO ORDEM») e **a lei da casa**: «DOIS BOATO = VERDADE», isto é, **exatamente dois dos boatos são verdadeiros**.
 Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os braseiros **frios por 12 s** (o dado só faz um som seco); **não há gema de progresso por passo**, então não dá para ir descobrindo aos poucos. Chutar não compensa (120 ordens).
 
@@ -422,10 +450,3 @@ e que nenhuma pista é descartável.
    braseiros ficam **frios por 6 s**: chutar não compensa. Para recomeçar, recolha o dado (`E`).
 
 > **Convenção de escrita (atualizada):** as frases das portas das salas 1 a 6 mostram **só as palavras que a sala ensina** (uma nova por sala; ver `DESIGN.md` §24); a marca final (CONFIRMADO) volta a fechar as frases do Tribunal e da sala de teste. Os glifos **brilham** quando o que eles dizem acontece. As soluções não mudam.
-
-
-## R5 · A Antecâmara Fria (respiro, sem puzzle; PUZZLES_PROPOSTAS.md §2b "R5" e Ficha 9b)
-Câmara pequena, porta fechada sem frase. Na parede do fundo, à direita da porta, uma moldura de frase vazia e, embaixo, um soquete frio (tigela
-de bronze rachada): a única coisa acendível. **Como passar:** acender o soquete com o dado de Fogo (face 3). A Casa apaga tudo por 4 s; no escuro,
-a moldura mostra em cal «ABRIR PORTA CONFIRMADO» e a porta abre. Repetível (o soquete esfria quando a luz volta). Hoje fica logo antes do
-Tribunal (o plano a põe entre as salas 16 e 17, que ainda não existem).

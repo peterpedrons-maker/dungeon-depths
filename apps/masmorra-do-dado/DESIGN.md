@@ -819,3 +819,17 @@ abre no escuro; a luz volta, a moldura está lisa, a porta segue aberta. Repetí
 - **A pergunta do dado não abre mais a pausa:** o jogo solta o mouse para as opções já na subida do dado (antes de a pergunta estar "ativa"), e
   soltar o mouse no meio do jogo abre a pausa. Agora a pausa por mouse solto não vale quando foi o próprio jogo que soltou (pergunta do dado,
   cena do dado ao centro, abertura, cena de queimar).
+
+## 52. O capítulo 1 completo (as salas da branch de puzzles montadas)
+Com as fichas de `PUZZLES_PROPOSTAS.md` §4, o capítulo 1 ficou com **24 salas**: os puzzles 12 a 17 do plano (A Sombra, O Escuro, A Lei Pequena, O Fogo que
+Corre, Os Que Dizem o Mesmo, A Memória da Casa), os respiros R3 (A Galeria dos Condenados) e R4 (A Escadaria), a Biblioteca (térreo, entre O Pano e Os
+Apelidos), a R5 entre a 16 e a 17 do plano e o Tribunal no fim. Soluções em `PUZZLES.md`; provas em `tools/verify_*.mjs` (todos passam).
+- **Construtor `fire.ts`:** regra `custom` (a sala julga com `api.markSolved()` / `api.punish(frio)`), `accept()` na regra `order` (a ordem só vale se a sala
+  aceitar: o estandarte certo queimado), braseiros com altura (`y`), porta num andar alto (`doorY` → `exitDy`), chão e dado com alturas vindos do `extra`
+  (`floorY`, `dieFloor`), frase da porta opcional (`words: []`), sala a céu aberto (`sky`), estado dos panos para o `extra`.
+- **A cal** (`src/scene/cal.ts`): escrita verde-pálida que só aparece abaixo de 25% de luz e manda as palavras ao diário na 1ª vez; na parede ou no teto.
+  Usada em O Escuro (teto), O Fogo que Corre (MENOS no teto, C5), A Memória da Casa (o quadro vazio) e na R5.
+- **O escuro** também apaga a luz que o dado da mão carrega e a marca de mira (numa sala baixa elas acendiam o teto e cobriam a cal).
+- **As folhas dela** 5, 6 e 7 ganharam texto (Galeria: a pista do Escuro e o erro sobre PEQUENO; Escadaria: "a forma de alguma coisa que eu conheço").
+- **Ainda fora:** os segredos que dependem de voltar (S5, as palavras do escuro nas salas 2, 7 e 11; S8, o soquete do poço), os atalhos dos respiros e a
+  cena da página do Escrivão que some ao voltar; o pedestal vazio do Museu fica para o capítulo 2.
