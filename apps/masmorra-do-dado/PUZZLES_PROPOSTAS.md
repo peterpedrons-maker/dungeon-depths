@@ -374,6 +374,8 @@ corredor **desemboca no pátio**: a primeira área livre do jogo é grande e che
 - **Atalho:** uma das câmaras de banho tem uma grade que dá para o fundo da sala 6 (a galeria comprida).
 
 ### R3 · A Galeria dos Condenados (entre as salas 11 e 12)
+- **Antes da Galeria, o Jardim** (`LEVEL_DESIGN.md` §3): a sala 11 se abre num jardim sob um poço de luz enorme, com uma árvore; só depois vem a galeria.
+  A 2ª página do Cavador fica entre as marcas de contagem (`LEVEL_DESIGN.md` §6).
 - **Forma:** galeria longa e alta, com **bancos de pedra** e, nas paredes, centenas de **marcas de contagem** riscadas a giz por outros
   condenados (dias? tentativas?). Algumas paredes têm desenhos de giz de outras pessoas: um braseiro, uma porta, um rosto apagado.
 - **O Escrivão de longe (4ª aparição):** sentado no fim da galeria, escrevendo. Quando o jogador se aproxima, ele se levanta e some
