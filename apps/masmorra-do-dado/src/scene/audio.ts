@@ -34,7 +34,12 @@ export type SfxName =
   | 'shaftRumble'
   | 'shaftFall'
   | 'rise' // pilar subindo do chão
-  | 'dark'; // a Casa apaga tudo (o escuro): a chama sugada e um grave abafado
+  | 'dark' // a Casa apaga tudo (o escuro): a chama sugada e um grave abafado
+  // a cena da gema (DESIGN.md §69): ela vem e brilha; estala e vira pó; encaixa no furo do caderno; uma face do dado se completa
+  | 'gemShine'
+  | 'gemBreak'
+  | 'gemSet'
+  | 'gemFace';
 
 // 0 = tudo ligado, 1 = só efeitos, 2 = mudo
 export type AudioMode = 0 | 1 | 2;
@@ -461,7 +466,7 @@ export class Sfx {
   play(name: SfxName, v = 1, key?: string) {
     if (!this.ac || this.mode === 2) return;
     this.played++;
-    if (name === 'door' || name === 'doorClose' || name === 'rise' || name === 'error' || name === 'dark' || name === 'gem' || name === 'piece') this.duckUntil = this.ac.currentTime + 1.6;
+    if (name === 'door' || name === 'doorClose' || name === 'rise' || name === 'error' || name === 'dark' || name === 'gem' || name === 'gemBreak' || name === 'piece') this.duckUntil = this.ac.currentTime + 1.6;
     switch (name) {
       case 'throw':
         this.sample(pick(['throw1', 'throw2']), 0.9 * Math.min(1, 0.4 + v), rand(0.93, 1.07));
@@ -531,6 +536,27 @@ export class Sfx {
         this.sample('gem1', 0.7, 1.1, 0, 0.5);
         this.sample('gem2', 0.5, 1, 0.05, 0.5);
         [84, 88, 91, 96].forEach((m, i) => this.fxNote('celesta', m, 0.4, 0.08 + i * 0.12, 0.7, 0.3));
+        break;
+      // a cena da gema, só com gravações e instrumentos reais: o sino de vidro e a celesta sobem quando ela vem; o vidro estala (em tom alto)
+      // e o ar leva o pó; ao encaixar, um toque de latão e a harpa; a face completa ganha os sinos
+      case 'gemShine':
+        [84, 88, 91, 96].forEach((m, i) => this.fxNote('celesta', m, 0.2, i * 0.1, 0.7, 0.3));
+        this.sample('gem1', 0.35, 1.2, 0.25, 0.6);
+        break;
+      case 'gemBreak':
+        this.sample('gem2', 0.75, 1.35, 0, 0.5);
+        this.sample('gem1', 0.4, 1.6, 0.02, 0.6);
+        this.fxNote('glockenspiel', 100, 0.22, 0.01, 0.6, 0.2);
+        this.fxNote('glockenspiel', 103, 0.16, 0.06, 0.6, 0.2);
+        this.sample('sweep', 0.28, 1.7, 0.08, 0.5);
+        break;
+      case 'gemSet':
+        this.sample('put1', 0.55, 1.35, 0, 0.3);
+        [64, 69, 76].forEach((m, i) => this.fxNote('orchestral_harp', m, 0.4, 0.02 + i * 0.07, 0.6, 0.2));
+        this.fxNote('celesta', 88, 0.3, 0.2, 0.7, 0.3);
+        break;
+      case 'gemFace':
+        [72, 76, 79].forEach((m, i) => this.fxNote('tubular_bells', m, 0.3, 0.35 + i * 0.22, 0.9));
         break;
       // porta de pedra: a laje sobe arrastando e trava lá em cima (com pó caindo); a Casa aceita (violoncelo grave)
       case 'door':

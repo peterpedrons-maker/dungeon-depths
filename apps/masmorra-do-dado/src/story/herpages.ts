@@ -15,8 +15,21 @@ export const HER_RELATO: string[][] = [
   ['Conto tudo. Os passos, os braseiros, as vezes que o dado me olha.', 'Se alguém achar isto, não acredite em tudo o que eu'],
 ];
 
-// as folhas arrancadas, na ordem do caderno (os buracos ficam no lugar delas até serem achadas)
+// as folhas arrancadas, na ordem do caderno (os buracos ficam no lugar delas até serem achadas). A ordem é a do caminho da Casa (sala 3 → sala 20):
+// ela escrevia por onde passava. No capítulo 1 são 18: as 7 primeiras e as 11 (p8 a p18) dos segredos que não guardam gema (story/gems.ts).
+// Fios que atravessam as folhas, sempre de leve e sem resolver (HISTORIA.md, "O epílogo" e "As folhas dela"): ela conta os FUROS redondos de luz do teto (p7, p8)
+// e para de contar (p18); acha PEDRAS que brilham e não sabe onde pôr (p10); sonha dentro de uma mão fechada (p13); lembra de cair de muito alto (p16).
 export const HER_PAGES: HerPage[] = [
+  {
+    id: 'p8',
+    where: 'A Lousa (sala 3; o nicho atrás da coluna esquerda, depois de escrever CINCO no soquete frio sob o dado de cinco pontos)',
+    body: ['Vou anotar os furos de luz do teto. Só os redondos.', 'O primeiro fica onde eu acordei.'],
+  },
+  {
+    id: 'p9',
+    where: 'O Fio de Fogo (sala 4; o nicho sob o balcão, o segredo FAZER)',
+    body: ['Escrevi no chão com fogo e uma parede se abriu.', 'Não sei o que eu disse. Espero que não tenha sido contra mim.'],
+  },
   {
     id: 'p1',
     where: 'Corredor dos Nichos (o nicho vazio, depois de escrever QUATRO)',
@@ -26,6 +39,11 @@ export const HER_PAGES: HerPage[] = [
     id: 'p2',
     where: 'Pátio da Cisterna (numa câmara lateral)',
     body: ['Os pontos são números. Eu já sabia disso antes de cair aqui?', 'Contei os nichos três vezes. Um está vazio. Aqui tudo falta um pedaço. Eu também?'],
+  },
+  {
+    id: 'p10',
+    where: 'A Casa Escreve (sala 6; a constelação C1: o nicho da parede esquerda, perto da entrada)',
+    body: ['Achei uma pedra que brilha sozinha. Guardei.', 'Não serve em porta nenhuma. Não sei onde pôr.'],
   },
   {
     id: 'p3',
@@ -39,6 +57,39 @@ export const HER_PAGES: HerPage[] = [
     body: ['O que está talhado não mente. O que alguém só disse, às vezes mente.', 'Acendi uma frase de boato e a Casa me apagou, como a uma vela.'],
   },
   {
+    id: 'p11',
+    where: 'Os Banhos Secos (sala 9; sobe do ralo da piscina mais funda, com exatamente DOIS braseiros acesos)',
+    body: ['Desci na piscina funda. Seca há muito tempo.', 'Eu também. Não tenho sede, nem fome, desde que cheguei.'],
+  },
+  {
+    id: 'p12',
+    where: 'Os Banhos Secos (sala 9; o nicho atrás do estandarte de BOATO bordado, depois que ele queima)',
+    // (ERRO PLANTADO, de pavio longo: o dado PODE mentir, HISTORIA.md "O dado: o Boato"; quando ele mentir pela 1ª vez, esta folha vira o engano dela)
+    body: ['Joguei o dado no fogo para ver se ele morria. Voltou para a minha mão, quente.', 'Pedi desculpa. Ele nunca mentiu para mim.'],
+  },
+  {
+    id: 'p13',
+    where: 'O Pano (sala 10; a constelação C2, os frisos do teto: o nicho da parede direita, perto da entrada)',
+    body: ['Dormi perto de um braseiro. Sonhei que estava dentro de uma mão fechada. Ela me sacudia.', 'Acordei tonta, com gosto de poeira.'],
+  },
+  {
+    id: 'p14',
+    where: 'A Biblioteca (sala 11; a constelação C-Bib, a página da mesa do Escrivão: o nicho do Átrio, parede do fundo, à esquerda da porta)',
+    // (o "de capuz" é o Escrivão; ela não sabe o nome. Ambíguo de propósito: nunca dizer se ele traiu ou protegeu)
+    body: ['O de capuz escreve de costas, sem parar. Nunca vi o rosto dele.', 'Acho que escreve sobre mim. Não sei se isso é bom.'],
+  },
+  {
+    id: 'p15',
+    where: 'A Biblioteca (sala 11; o nicho da Sala de Aula, aberto por uma das três lousas)',
+    // (ERRO PLANTADO: nenhuma parede escreve o seis num glifo só, mas ele existe: é a portinha dos seis pontos da Escadaria e, na base 6 do Contador, UM ZERO)
+    body: ['Contei nos dedos, como criança: um, dois, três, quatro, cinco.', 'Depois do cinco, nenhuma parede escreve nada. Acho que aqui o seis não existe.'],
+  },
+  {
+    id: 'p16',
+    where: 'A Ponte de Madeira (sala 13; a constelação C3, as tochas da boca do fosso: a câmara no patamar da rampa)',
+    body: ['Na beira do fosso, lembrei de cair. Não daqui. De muito mais alto.', 'A luz ia ficando pequena lá em cima. Redonda.'],
+  },
+  {
     id: 'p5',
     where: 'A Galeria dos Condenados (no banco do fundo; a pista da sala do Escuro)',
     body: ['Quando eu erro, a Casa apaga tudo.', 'Por um instante, no escuro, juro que vi alguma coisa brilhando no teto.'],
@@ -50,9 +101,22 @@ export const HER_PAGES: HerPage[] = [
     body: ['O ponto no meio, com as duas barras do lado, quer dizer UM.', 'Tenho certeza.'],
   },
   {
+    id: 'p17',
+    where: 'A Galeria dos Condenados (sala 15; o nicho da câmara lateral, depois da ordem da lei: DOIS, TRÊS, UM)',
+    // (ERRO PLANTADO: ela lê o UM de «UM BOATO IGUAL VERDADE» como artigo, "um boato é igual à verdade"; é o número: EXATAMENTE UM boato é verdade,
+    // como a própria câmara acabou de mostrar. Somado ao erro da p4, "o talhado não mente", ela conclui que o que leram para ela é verdade, e para)
+    body: ['Na câmara, a pedra diz: um boato é igual à verdade.', 'Então o que leram para mim é'],
+  },
+  {
     id: 'p7',
     where: 'A Escadaria (no meio da subida)',
     body: ['Contei as faces de tudo aqui. Quatro cantos, buracos redondos no teto, sempre um, dois...', 'Esta casa tem a forma de alguma coisa que eu conheço. Não lembro do quê.'],
+  },
+  {
+    id: 'p18',
+    where: 'O Fogo que Corre (sala 20; a constelação C5, MENOS em cal no teto: o nicho da parede direita, perto da porta)',
+    // (a última folha arrancada do capítulo 1; o relato, escrito depois que "a Casa apagou tudo de novo", mostra que ela voltou a contar)
+    body: ['Parei de contar os furos. Cada vez dava outro número.', 'Contar não me tira daqui.'],
   },
 ];
 

@@ -57,6 +57,8 @@ import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './typ
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
 import { makeScribe, type ScribePose } from './scribe';
+import { makeGemScene } from './gemscene';
+import { GEMS } from '../story/gems';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
@@ -939,6 +941,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   window.addEventListener('resize', sizeBook);
   let bookShown = false;
   const book = createDiaryBook({ scene: bookScene, cam: dieCam, dom: canvas, sound: (n) => sfx.play(n), halfW: () => hudHalfW });
+  let pixScale = 3; // quantos pixels de tela tem um pixel do jogo (resize)
+  // a cena da gema (DESIGN.md §69): na cena do livro, por cima do jogo
+  const gemFx = makeGemScene({ scene: bookScene, cam: dieCam, book, sfx: (n) => sfx.play(n), px: () => pixScale / Math.min(2, window.devicePixelRatio || 1) });
 
   let tool: Tool = 'die';
   let dieU = 0; // 0 = dado na mão principal, 1 = na auxiliar
@@ -1498,6 +1503,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       feetY: () => feetY - off.y,
       glyphLight: (i, n, at) => sfx.glyph(i, n, panOf(at.x + off.x, at.z + off.z)),
+      // pegou uma gema (`at` = onde ela estava, local da sala): a cena da gema leva ela ao fundo do caderno (DESIGN.md §69)
+      gem: (id, at, cap) => {
+        life.react('joy');
+        if (diary.hasGem(id)) return;
+        const ndc = new THREE.Vector3(at.x + off.x, at.y + off.y, at.z + off.z).project(camera);
+        const first = progress.set('gema');
+        gemFx.start(id, new THREE.Vector2(Math.max(-1.2, Math.min(1.2, ndc.x)), Math.max(-1.2, Math.min(1.2, ndc.y))), first, progress.has('caderno'), () => {
+          if (cap) caption(cap[0], cap[1], cap[2]);
+          saveIn = Math.min(saveIn, 0.5);
+        });
+      },
       say: (lines, o) => dialogue.say(lines, o),
       seen: (id) => diary.markSeen(id, rooms[idx]?.name),
       milestone: (f) => {
@@ -2130,9 +2146,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
 
   // nas CENAS o jogador não olha em volta (a câmera é da cena) e a mira some: abertura, o dado falando no centro, cenas travadas, o caderno achado
-  const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall();
+  const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall() || gemFx.active();
   let cineWas = false;
-  const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null; // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
+  const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null || gemFx.active(); // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
 
   // ── marcos da história ──
   const onMilestone = (f: Flag) => {
@@ -2452,6 +2468,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const big = window.innerHeight >= 600;
     const pixelLines = big ? (pixelSize === 'fino' ? 360 : pixelSize === 'grosso' ? 200 : 280) : pixelSize === 'fino' ? 270 : pixelSize === 'grosso' ? 150 : 200;
     const scale = Math.max(2, Math.round(window.innerHeight / pixelLines));
+    pixScale = scale;
     const w = Math.max(64, Math.ceil(window.innerWidth / scale));
     const h = Math.max(64, Math.ceil(window.innerHeight / scale));
     renderer.setSize(w, h, false);
@@ -2958,6 +2975,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Salva sozinho ao entrar numa sala, ao resolver um puzzle (a porta abre, a gema) e ao fechar o diário; também ao pausar e ao sair da página.
   // O resumo (meta) guarda a sala, a posição, o tempo, as gemas e uma miniatura; o resto (marcos, diário, perguntas) cada loja grava sozinha.
   const bonusSet = new Set<number>(saves.meta()?.bonus ?? []);
+  // salvamento de antes das 21 gemas (DESIGN.md §69): o segredo achado numa sala que tinha UMA gema só, e que continua com ela, vira a gema
+  // no fundo do caderno (a Biblioteca tinha três segredos: não dá para saber qual foi, então ela fica de fora)
+  for (const i of bonusSet) {
+    const g = GEMS.find((x) => x.id !== 'papel' && rooms[i]?.name.includes(x.room));
+    if (g && !diary.hasGem(g.id)) diary.addGem(g.id);
+  }
   let playTime = saves.meta()?.time ?? 0;
   let saveIn = Infinity; // segundos até salvar (agendado)
   let thumbWant = false;
@@ -2979,6 +3002,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       yaw: +yaw.toFixed(3),
       solvedHere: r.isSolved?.() ?? true,
       bonus: [...bonusSet].sort((a, b) => a - b),
+      gems: (diaryStore.get().gems ?? []).length,
       time: Math.round(playTime),
       chapter: 1,
       at: Date.now(),
@@ -3581,6 +3605,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   const onSkip = () => {
     if (burn) skipScene = true;
+    gemFx.skip();
   };
   window.addEventListener('pointerdown', onSkip, { passive: true });
   window.addEventListener('keydown', onSkip);
@@ -3893,7 +3918,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
       complete = true;
       sfx.play('fanfare');
-      gems = rooms.filter((r) => r.bonus?.()).length;
+      gems = (diaryStore.get().gems ?? []).filter((g) => GEMS.some((x) => x.id === g && x.chapter === 1)).length;
       progress.set('cap1'); // fim do capítulo 1: a tela inicial passa a mostrar o último lugar salvo
       saveIn = 0.5;
       opts.onComplete?.({ gem: gems > 0 });
@@ -4033,6 +4058,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     {
       dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new') && !devNoHud; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
+      gemFx.update(dt);
       const hide = book.update(dt, t);
       if (hide > 0) {
         dieGroup.position.y -= hide * 0.95; // dado e giz saem da frente enquanto o livro está na mão
@@ -4059,7 +4085,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       postMat.uniforms.uTan.value.set(ty * camera.aspect, ty);
     }
     renderer.render(postScene, postCam);
-    const bookOut = book.isOut();
+    const bookOut = book.isOut() || gemFx.active();
     if (bookOut !== bookShown) {
       bookShown = bookOut;
       bookCanvas.style.display = bookOut ? 'block' : 'none';
@@ -4127,6 +4153,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1), x: +offs[i].x.toFixed(2), y: +offs[i].y.toFixed(2), door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
+      // (testes) a cena da gema: uma gema `id` 1,2 m à frente dos olhos; `first` = a cena inteira
+      gem: (id: string, first = true) => {
+        if (first) progressStore.set((st) => ({ ...st, flags: { ...st.flags, gema: undefined } }));
+        progress.set('caderno');
+        const at = new THREE.Vector3(-Math.sin(yaw) * 1.2, -0.25, -Math.cos(yaw) * 1.2).add(pos).sub(offs[curRoom]);
+        makeCtx(offs[curRoom], curRoom).gem(id, at);
+      },
+      gemState: () => ({ active: gemFx.active(), gems: [...(diaryStore.get().gems ?? [])], book: book.opened() }),
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),

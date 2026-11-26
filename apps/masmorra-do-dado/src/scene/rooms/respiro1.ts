@@ -221,7 +221,6 @@ export function buildRespiro1(ctx: Ctx): Room {
   let p1Taken = (diaryStore.get().pages ?? []).includes('p1');
   const emptyN = makeGemNiche(kit, ctx, -5, 1.15, cz(4) + 0.35, -1, 0, () => {
     p1Taken = true;
-    diary.addPage('p1');
   }, 'p1');
   interactables.push(emptyN.interactable);
   over(-5, cz(4) + 0.35, -1, 0, false, 17);
@@ -433,7 +432,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   const SOL = [0, 3]; // frente-esq + fundo-dir: na água aparece o DOIS
   let reflSolved = false;
   let reflIdle = 0;
-  let gemTaken = false;
+  let gemTaken = diary.hasGem('cisterna'); // (uma das 21 gemas: DESIGN.md §69)
   const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshLambertMaterial({ color: 0x7af0ff, emissive: 0x2ab8e0, emissiveIntensity: 0.8, flatShading: true }));
   gem.position.set(CIST.x, -0.2, CIST.z);
   gem.visible = false;
@@ -447,8 +446,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     use: () => {
       gemTaken = true;
       gem.visible = false;
-      ctx.sfx('gem');
-      ctx.caption('Uma gema', 'Na água, a Casa escreve ao contrário.', '#7ad8ff');
+      ctx.gem('cisterna', gem.position.clone(), ['Uma gema', 'Na água, a Casa escreve ao contrário.', '#7ad8ff']);
     },
   });
 

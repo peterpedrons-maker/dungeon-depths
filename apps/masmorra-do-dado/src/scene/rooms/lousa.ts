@@ -239,7 +239,7 @@ export function buildLousa(ctx: Ctx): Room {
   kit.inscribe({ words: ['n5'], x: X0 + 0.025, y: 2.35, z: SZ, nx: 1, nz: 0, size: 0.34, age: 0.4, frame: true, seed: 71 });
   kit.box(0.14, 0.26, 0.22, kit.stone, X0 + 0.07, 1.35, SZ + 1.0, false); // o soquete frio: pedra sem brasa
   let bonus = false;
-  const niche = makeGemNiche(kit, ctx, X0 + 0.02, 1.25, SZ - 1.35, 1, 0, () => (bonus = true));
+  const niche = makeGemNiche(kit, ctx, X0 + 0.02, 1.25, SZ - 1.35, 1, 0, () => (bonus = true), 'p8'); // (era uma gema; agora uma folha dela: DESIGN.md §69)
   const secret = { b: SB, target: 'n5', key: 'lousaS', solved: false, idle: 0 };
 
   // ── a porta-lousa: nove pontinhos de bronze na própria laje (sobem com ela) ──

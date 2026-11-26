@@ -365,7 +365,7 @@ export default function App() {
         </div>
       )}
 
-      {!complete && !inMenu && inv.die && tool === 'die' && !uis.bars && (
+      {!complete && !inMenu && inv.die && tool === 'die' && !uis.bars && !uis.bookOut && !cine && ( // (com o caderno na mão ou numa cena, os botões do dado somem: nada deles funciona ali e eles tapavam a página)
         <div className="touchbtns">
           <button
             className="btn-rotate"

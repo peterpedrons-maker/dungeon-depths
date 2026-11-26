@@ -147,7 +147,7 @@ export function buildFio(ctx: Ctx): Room {
   const sockPos = new THREE.Vector3(PX + 1.0, BAL + 1.25, PZ - 0.2);
   let secretOn = false;
   let bonus = false;
-  const niche = makeGemNiche(kit, ctx, -3.2, 1.25, BZ1, 0, -1, () => (bonus = true));
+  const niche = makeGemNiche(kit, ctx, -3.2, 1.25, BZ1, 0, -1, () => (bonus = true), 'p9'); // (era uma gema; agora uma folha dela: DESIGN.md §69)
 
   // luz: tochas no balcão e embaixo
   kit.torch(X0 + 0.1, BAL + 1.6, -4.8, 1, 0, 0.4);

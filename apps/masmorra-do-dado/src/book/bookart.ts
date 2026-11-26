@@ -293,3 +293,118 @@ export function diaryEdgeArt(): THREE.CanvasTexture {
   }
   return tex(c, true);
 }
+
+// ── O FUNDO DO CADERNO (DESIGN.md §69): por dentro da capa de trás, a parte dura, de couro, com o DADO ABERTO em cruz talhado e um furo para
+// cada ponto (21). As gemas enchem os furos em ordem: a face 1, depois a 2, ... (story/gems.ts). Do tamanho de uma página (o livro mostra
+// esta textura numa placa reta no lugar do papel da direita, quando se chega ao fim do caderno).
+export const BOARD_W = 132;
+export const BOARD_H = 176;
+const NET_S = 34; // o lado de uma face, em pixels
+const NET_X = 19;
+const NET_Y = 18;
+// onde fica cada face na cruz [coluna, linha]: a coluna do meio é 1, 2, 6, 5 (faces opostas somam 7) e os braços, 3 e 4
+const NET: Record<number, [number, number]> = { 1: [1, 0], 3: [0, 1], 2: [1, 1], 4: [2, 1], 6: [1, 2], 5: [1, 3] };
+// os pontos de cada face (grade 3 x 3), na ordem em que as gemas entram
+const PIPS: Record<number, [number, number][]> = {
+  1: [[1, 1]],
+  2: [[0, 0], [2, 2]],
+  3: [[0, 0], [1, 1], [2, 2]],
+  4: [[0, 0], [2, 0], [0, 2], [2, 2]],
+  5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
+  6: [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2]],
+};
+const faceXY = (f: number) => ({ x: NET_X + NET[f][0] * NET_S, y: NET_Y + NET[f][1] * NET_S });
+// o centro do furo de número k (0..20), em pixels da placa
+export function gemSocketPx(k: number): { x: number; y: number } {
+  let face = 1;
+  let first = 0;
+  while (k >= first + face) {
+    first += face;
+    face++;
+  }
+  const [a, b] = PIPS[face][k - first];
+  const o = faceXY(face);
+  return { x: o.x + 8 + a * 9, y: o.y + 8 + b * 9 };
+}
+const disc = (ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: (dx: number, dy: number, d2: number) => string | null) => {
+  for (let dy = -r - 1; dy <= r + 1; dy++)
+    for (let dx = -r - 1; dx <= r + 1; dx++) {
+      const c = color(dx, dy, dx * dx + dy * dy);
+      if (!c) continue;
+      ctx.fillStyle = c;
+      ctx.fillRect(cx + dx, cy + dy, 1, 1);
+    }
+};
+// `n` gemas já no lugar; `flash` = o furo que acabou de receber a sua (o brilho dura `fk` de 0 a 1)
+export function drawGemBoard(ctx: CanvasRenderingContext2D, n: number, flash = -1, fk = 1) {
+  const W = BOARD_W;
+  const H = BOARD_H;
+  leather(ctx, W, H, 331, 0);
+  // a dobra do lombo (à esquerda) afunda na sombra; a beirada do couro dobrado por dentro, gravada a seco
+  for (let x = 0; x < 16; x++) {
+    ctx.fillStyle = `rgba(16,4,2,${0.55 * (1 - x / 16) ** 1.4})`;
+    ctx.fillRect(x, 0, 1, H);
+  }
+  ctx.fillStyle = 'rgba(16,4,2,0.45)';
+  ctx.fillRect(10, 7, W - 17, 1);
+  ctx.fillRect(10, H - 8, W - 17, 1);
+  ctx.fillRect(W - 8, 7, 1, H - 14);
+  ctx.fillStyle = 'rgba(255,190,150,0.16)';
+  ctx.fillRect(10, 8, W - 17, 1);
+  ctx.fillRect(10, H - 7, W - 17, 1);
+  ctx.fillRect(W - 7, 7, 1, H - 14);
+  for (let x = 13; x < W - 10; x += 3) {
+    goldPx(ctx, x, 10, 1, 1, 0.55);
+    goldPx(ctx, x, H - 11, 1, 1, 0.55);
+  }
+  // as faces: rebaixadas no couro, com o fio gravado a seco; a face completa ganha o fio de ouro
+  let done = 0;
+  let need = 0;
+  for (let f = 1; f <= 6; f++) {
+    need += f;
+    const full = n >= need;
+    if (full) done = f;
+    const o = faceXY(f);
+    ctx.fillStyle = 'rgba(20,4,2,0.32)';
+    ctx.fillRect(o.x + 1, o.y + 1, NET_S - 1, NET_S - 1);
+    ctx.fillStyle = 'rgba(16,4,2,0.7)';
+    ctx.fillRect(o.x, o.y, NET_S + 1, 1);
+    ctx.fillRect(o.x, o.y, 1, NET_S + 1);
+    ctx.fillStyle = 'rgba(255,190,150,0.2)';
+    ctx.fillRect(o.x + 1, o.y + NET_S, NET_S, 1);
+    ctx.fillRect(o.x + NET_S, o.y + 1, 1, NET_S);
+    if (full) {
+      for (let k = 2; k < NET_S - 1; k++) {
+        goldPx(ctx, o.x + k, o.y + 2, 1, 1, 0.95);
+        goldPx(ctx, o.x + k, o.y + NET_S - 2, 1, 1, 0.95);
+        goldPx(ctx, o.x + 2, o.y + k, 1, 1, 0.95);
+        goldPx(ctx, o.x + NET_S - 2, o.y + k, 1, 1, 0.95);
+      }
+    }
+  }
+  void done;
+  // os furos: aro de latão; vazio, um buraco escuro; cheio, a gema lapidada (luz em cima à esquerda)
+  for (let k = 0; k < 21; k++) {
+    const { x, y } = gemSocketPx(k);
+    const has = k < n;
+    disc(ctx, x, y, 4, (dx, dy, d2) => {
+      if (d2 > 14) return null;
+      if (d2 > 7) return css(BRASS, dx + dy < 0 ? 1.05 : 0.62);
+      if (!has) return dx + dy >= 2 ? 'rgb(40,18,10)' : 'rgb(14,5,3)';
+      if (dx === -1 && dy === -2) return 'rgb(236,255,255)';
+      const s = -(dx + dy) / 6; // -1 (embaixo à direita) .. 1 (em cima à esquerda)
+      return s > 0.3 ? 'rgb(150,240,255)' : s > -0.3 ? 'rgb(56,196,232)' : 'rgb(24,112,150)';
+    });
+    if (has) {
+      ctx.fillStyle = 'rgba(120,230,255,0.22)';
+      for (const [dx, dy] of [[-4, -1], [4, 1], [-1, -4], [1, 4]]) ctx.fillRect(x + dx, y + dy, 1, 1);
+    }
+  }
+  // o furo que acabou de receber a gema: um anel de luz que abre e some
+  if (flash >= 0 && fk < 1) {
+    const { x, y } = gemSocketPx(flash);
+    const r = 4 + fk * 9;
+    const a = (1 - fk) * 0.9;
+    disc(ctx, x, y, Math.ceil(r) + 1, (_dx, _dy, d2) => (Math.abs(Math.sqrt(d2) - r) < 0.8 ? `rgba(200,250,255,${a})` : null));
+  }
+}

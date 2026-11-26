@@ -1135,3 +1135,33 @@ modelo 3D para as tochas.
   - No 16:9 e no celular nada muda.
 - **A resolução** continua sendo a do pixel (cerca de 280 linhas no PC, `pixelLines`): a 1440 px de altura são 288 linhas, a mesma densidade de
   uma tela 1080p. Quem quiser mais definição usa Configurações → Imagem → Tamanho do pixel → Fino (360 linhas).
+
+## 69. As 21 gemas, o fundo do caderno e a cena da gema (decidido com o Pedro)
+
+- **Quantas.** São **21 gemas no jogo todo**, a soma das faces de um dado (1+2+3+4+5+6): os furos, os pontos do dado. Por capítulo: **3, 3, 3, 4,
+  4, 4** (o capítulo 1 é o que tem menos). Registro em `src/story/gems.ts`; o caderno guarda as gemas por id, na ordem em que foram achadas
+  (`diary.gems`, `diary.addGem`).
+- **O capítulo 1** fica com três: a da **Cisterna** (sala 5, o reflexo na água), a da **Ala do Papel** (sala 11, os três livros de boato) e a da
+  **constelação C6** (sala 21). Uma por terço do capítulo, cada uma de um tipo de segredo. Os outros **11 segredos** (que davam gema) continuam iguais,
+  mas guardam **folhas arrancadas dela**, p8 a p18, escritas pelo `narrador` (`src/story/herpages.ts`; o caderno tem 18 folhas dela). O nicho
+  (`makeGemNiche`, `firegrid.ts`) recebe o id do que guarda: `'pN'` é folha, o resto é gema; se o jogador já pegou, ele abre vazio.
+- **O fundo do caderno.** No fim do caderno (depois das Notas, e no índice, "Gemas n/21") as folhas acabam: à esquerda a guarda solta (o papel vinho
+  da contracapa, sem etiqueta, com a seta e o índice em ouro para voltar) e, à direita, a **parte dura da capa de trás**: uma placa de couro reta (o
+  bloco de folhas da direita some) com o **dado aberto em cruz** talhado e **21 furos** com aro de latão (`drawGemBoard`, `book/bookart.ts`). A cruz
+  é a planificação certa (1, 2, 6, 5 no meio; 3 e 4 nos braços; as faces opostas somam 7). As gemas enchem os furos **em ordem, não por sala**: a 1ª
+  fecha a face 1; a 2ª e a 3ª, a face 2; da 4ª à 6ª, a face 3; e assim até a 21ª. Face completa ganha um fio de ouro e os sinos tocam.
+- **A cena da gema** (`src/scene/gemscene.ts`), pedida pelo Pedro: ao pegar, a gema sai de onde estava e vem até perto dos olhos, girando, maior;
+  brilha; encolhe um pouco e clareia; **estala e se desfaz num pó de luz pontilhado**; o caderno sai sozinho da bolsa, **aberto direto no fundo**; o pó
+  corre em fio, por uma curva, até o próximo furo; a gema se refaz ali com um anel de luz; o caderno volta para a bolsa (e, da próxima vez que o
+  jogador o abrir, abre na página onde ele tinha deixado). Tudo na cena do livro (o canvas em resolução cheia), com uma gema lapidada (coroa e ponta)
+  no lugar do octaedro do nicho. **A 1ª vez é a cena inteira (~4,5 s); as outras, a mesma mais rápida (~2,5 s)**; qualquer toque ou tecla pula para o
+  encaixe. Durante a cena o jogador fica parado, a mira some e os botões de toque do dado também (eles somem também com o caderno na mão).
+- **Som** (só gravações e instrumentos reais): celesta subindo e o sino de vidro quando ela vem (`gemShine`); o vidro estalando em tom alto, um
+  glockenspiel agudo e o ar levando o pó (`gemBreak`); um toque de latão e a harpa no encaixe (`gemSet`); os sinos tubulares quando uma face se
+  completa (`gemFace`). O `sonoplasta` pode refinar.
+- **Salvamento.** O resumo do espaço guarda `gems` (a tela de espaços mostra o número). Saves de antes: o segredo achado numa sala que tinha UMA gema
+  e continua com ela (a Cisterna, a C6) vira a gema no caderno; a Biblioteca tinha três segredos e fica de fora (não dá para saber qual foi).
+- **O epílogo** das 21 (depois de qualquer um dos três finais) e os **21 furos redondos** nos tetos estão no `HISTORIA.md`. A regra dos furos para a
+  arte está no `DIRECAO_DE_ARTE.md` §9: só contam os furos REDONDOS de luz no teto; precisam ser exatamente 21 no jogo todo. Ainda não foram
+  contados nem espalhados (tarefa do `cenografo`).
+- **Teste**: `window.__mdd.gem(id, primeira)` toca a cena com uma gema à frente dos olhos; `window.__mdd.gemState()`.

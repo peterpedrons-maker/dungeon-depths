@@ -270,7 +270,7 @@ export function buildRespiro3(ctx: Ctx): Room {
   });
   kit.torch(CH.x0 + 0.1, 2.6, -12, 1, 0, 1.3, 0xffa860, 24);
   let bonus = false;
-  const niche = makeGemNiche(kit, ctx, -9.0, 1.25, CH.z0 + 0.02, 0, 1, () => (bonus = true));
+  const niche = makeGemNiche(kit, ctx, -9.0, 1.25, CH.z0 + 0.02, 0, 1, () => (bonus = true), 'p17'); // (era uma gema; agora uma folha dela: DESIGN.md §69)
   interactables.push(niche.interactable);
   const SEQ = [1, 2, 0]; // DOIS, TRÊS, UM
   let prog = 0;

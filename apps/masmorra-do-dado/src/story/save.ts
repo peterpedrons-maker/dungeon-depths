@@ -66,6 +66,7 @@ export interface SlotMeta {
   yaw: number;
   solvedHere: boolean; // a sala já estava resolvida quando salvou
   bonus: number[]; // salas cujo segredo (gema) já foi achado
+  gems?: number; // gemas no fundo do caderno (DESIGN.md §69)
   time: number; // segundos de jogo
   chapter: number;
   at: number; // data (ms)

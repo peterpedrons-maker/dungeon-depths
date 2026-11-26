@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
 import { dialogue, dialogueStore } from '../story/dialogue';
-import { diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt } from './bookart';
+import { BOARD_H, BOARD_W, diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt, drawGemBoard, gemSocketPx } from './bookart';
 import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
@@ -108,6 +108,7 @@ export function createDiaryBook(env: BookEnv) {
     return g;
   };
   const rightHalf = makeHalf(false);
+  const rightBlock = rightHalf.children[0];
   const leftPivot = new THREE.Group();
   leftPivot.add(makeHalf(true));
   inner.add(rightHalf, leftPivot);
@@ -127,6 +128,37 @@ export function createDiaryBook(env: BookEnv) {
   const meshR = new THREE.Mesh(pageGeo(false), matR);
   leftPivot.add(meshL);
   inner.add(meshR);
+
+  // O FUNDO DO CADERNO (DESIGN.md §69): no fim, as folhas foram todas para a esquerda e a direita mostra a parte dura da capa de trás, de
+  // couro, com o dado aberto e os 21 furos das gemas (book/bookart.ts). É uma placa RETA na face de dentro da capa (o bloco de folhas da
+  // direita some), não uma página.
+  const BZ = -0.0395; // (a face de dentro da capa de trás fica em z = -0,04)
+  const boardC = document.createElement('canvas');
+  boardC.width = BOARD_W;
+  boardC.height = BOARD_H;
+  const boardCtx = boardC.getContext('2d')!;
+  const boardTex = new THREE.CanvasTexture(boardC);
+  boardTex.magFilter = THREE.NearestFilter;
+  boardTex.minFilter = THREE.LinearFilter;
+  boardTex.generateMipmaps = false;
+  boardTex.colorSpace = THREE.SRGBColorSpace;
+  const BRW = BW - 0.004;
+  const BRH = BH - 0.004;
+  const boardGeo = new THREE.PlaneGeometry(BRW, BRH);
+  boardGeo.translate(BW / 2, 0, BZ);
+  const board = new THREE.Mesh(boardGeo, new THREE.MeshLambertMaterial({ map: boardTex, emissive: 0xffffff, emissiveMap: boardTex, emissiveIntensity: 0.34 }));
+  board.visible = false;
+  inner.add(board);
+  let boardKey = '';
+  // `n` gemas à mostra (na cena da gema, a nova só entra quando encaixa); `flash` = o furo que brilha, `fk` de 0 a 1
+  const drawBoard = (n: number, flash = -1, fk = 1) => {
+    const key = `${n}|${flash}|${fk < 1 ? Math.round(fk * 20) : 'x'}`;
+    if (key === boardKey) return;
+    boardKey = key;
+    drawGemBoard(boardCtx, n, flash, fk);
+    boardTex.needsUpdate = true;
+  };
+  let boardOverride: null | { n: number; flash: number; fk: number } = null;
 
   // folha que vira (articulada no lombo)
   const leafGeo = new THREE.PlaneGeometry(PWD, PHD, 18, 1);
@@ -368,6 +400,11 @@ export function createDiaryBook(env: BookEnv) {
       thinkInBook(WRITE_ASK);
     }
   };
+
+  // ── a cena da gema (scene.ts): o livro sai sozinho, aberto direto no fundo, sem o jogador mexer; depois volta para a página onde estava ──
+  let presenting = false;
+  let presentFast = false;
+  let presentFrom = -1;
 
   // ── estado ──
   let T = 0; // 0 = guardado, 1 = aberto
@@ -681,15 +718,41 @@ export function createDiaryBook(env: BookEnv) {
   window.addEventListener('wheel', onWheel, { capture: true, passive: false });
 
   // ── a cada quadro ──
+  const sock = new THREE.Vector3();
   return {
     isOut: () => T > 0.01,
+    // a cena da gema: o livro sai sozinho, aberto no fundo (rápido nas gemas seguintes) e guarda quando `on` volta a false
+    present(on: boolean, fast = false) {
+      if (on && !presenting) {
+        if (presentFrom < 0) presentFrom = view.spread;
+        stopEdit();
+        flip = null;
+        leaf.visible = false;
+        view.spread = target = layout(dState()).gemsAt;
+        presentFast = fast;
+        refresh();
+      }
+      presenting = on;
+    },
+    // o que a placa mostra durante a cena (null = as gemas do caderno)
+    board(o: null | { n: number; flash: number; fk: number }) {
+      boardOverride = o;
+    },
+    opened: () => T,
+    // onde fica, na cena do livro, o furo de número k
+    socketWorld(k: number, out: THREE.Vector3) {
+      const p = gemSocketPx(k);
+      sock.set(BW / 2 - BRW / 2 + (p.x / BOARD_W) * BRW, BRH / 2 - (p.y / BOARD_H) * BRH, BZ + 0.002);
+      root.updateMatrixWorld(true);
+      return out.copy(inner.localToWorld(sock));
+    },
     click: (id: string) => act(id), // (também usado nos testes)
     update(dt: number, t: number) {
-      const want = ui.diaryOpen() ? 1 : 0;
+      const want = ui.diaryOpen() || presenting ? 1 : 0;
       if (want !== lastWant) {
         lastWant = want;
         env.sound(want ? 'uiopen' : 'uiclose');
-        if (want && ui.guided()) {
+        if (want && ui.guided() && !presenting) {
           // o caderno abre e vira até o RELATO dela (a primeira coisa que se lê)
           diary.markSeen(GUIDED_ID);
           view.spread = 0;
@@ -761,9 +824,15 @@ export function createDiaryBook(env: BookEnv) {
       const dir = want - T;
       if (Math.abs(dir) > 1e-4) {
         const was = T;
-        T = Math.min(1, Math.max(0, T + Math.sign(dir) * dt * (want ? 1 / 1.15 : 1 / 0.85)));
+        T = Math.min(1, Math.max(0, T + Math.sign(dir) * dt * (want ? 1 / 1.15 : 1 / 0.85) * (presentFast ? 1.9 : 1)));
         if (want && was < 0.001) refresh();
         if (!want && T < 0.0005) T = 0;
+      }
+      if (T === 0 && !presenting && presentFrom >= 0) {
+        // guardado depois da cena da gema: na próxima vez o caderno abre onde o jogador tinha deixado
+        view.spread = target = presentFrom;
+        presentFrom = -1;
+        presentFast = false;
       }
       ui.setBookOut(T > 0.002);
       if (want && T >= 0.99 && !seenNews) {
@@ -799,6 +868,18 @@ export function createDiaryBook(env: BookEnv) {
       if (claspPrev > 0.04 && claspK <= 0.04) env.sound('uiblip'); // prendeu
       claspPrev = claspK;
 
+      // o fundo do caderno: a placa de couro no lugar do papel e do bloco de folhas da direita (também durante a virada que chega nele)
+      {
+        const gAt = layout(dState()).gemsAt;
+        const showBoard = flip ? flip.s + 1 === gAt : view.spread === gAt;
+        board.visible = showBoard;
+        meshR.visible = !showBoard;
+        rightBlock.visible = !showBoard;
+        if (showBoard) {
+          const o = boardOverride;
+          drawBoard(o ? o.n : (dState().gems ?? []).length, o ? o.flash : -1, o ? o.fk : 1);
+        }
+      }
       // virada de página
       if (ready() && !flip && view.spread !== target) {
         const step = Math.sign(target - view.spread) as 1 | -1;

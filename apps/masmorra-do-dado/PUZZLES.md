@@ -10,6 +10,12 @@ o **Ricochete (1) fica selado** por enquanto (só chega bem mais tarde).
 Ao acender um braseiro o dado queima: 1,5 s na 1ª vez de cada braseiro, ~0,3 s nas seguintes.
 Olhar uns segundos para uma inscrição na parede manda os símbolos dela ao diário (como "avistado").
 
+**As gemas e as folhas dos segredos** (`DESIGN.md` §69): são **21 gemas no jogo todo** (1+2+3+4+5+6; por capítulo 3, 3, 3, 4, 4, 4). Cada uma
+vai para um furo do dado aberto no fundo do caderno, com a cena da gema. No capítulo 1 são três: **a Cisterna** (sala 5, o reflexo), **a Ala do
+Papel** (sala 11, os três livros de boato) e **a constelação C6** (sala 21). Os outros onze segredos (que até a v99 davam gema) guardam **folhas
+dela**: S1 da Lousa (p8), FAZER do Fio (p9), C1 (p10), a piscina funda (p11) e o estandarte (p12) dos Banhos Secos, C2 (p13), C-Bib (p14), a Sala de
+Aula (p15), C3 da Ponte (p16), a lei da Galeria (p17) e C5 (p18). As soluções não mudaram.
+
 ## Sala 1 — O Poço  (só ACENDER)
 Você acorda no chão, **sem nada nas mãos**, olha o poço de luz no teto e a cena termina. A sala é pequena.
 1. Vá até a **porta** (fundo da sala): aparece "E · Tentar abrir a porta" (no celular, o botão AGIR). **Não abre.** Logo em seguida você ouve **um barulho lá em cima**: a câmera vira para o poço e **o dado despenca pelo buraco**, bate no chão e para junto do entulho, brilhando. Ele "fala" em glifos (`EU CAIR`, `VOCÊ AJUDAR EU ?`) e depois **murmura** (`AJUDAR EU`, `VOCÊ VIR`, `EU ESPERAR`) a cada ~9 s enquanto você não o pega.
@@ -35,7 +41,7 @@ Regra das lousas: quando o conjunto aceso é **exatamente** o glifo, o glifo tal
 2. **Lousa 2** (depois da grade; glifo **TRÊS**): acenda a **diagonal inteira** (canto, centro, canto). A **porta acorda**: os nove pontinhos de bronze da própria porta passam a acender (antes, o dado só bate seco).
 3. **A porta é a lousa.** Acima dela: «ACENDER ▢ BRASEIRO», e a casa lisa **copia ao vivo** o que está aceso na porta. A frase tem de ficar **verdadeira**: quantos braseiros estão acesos? Há **quatro**: à esquerda da porta, à direita da porta, no meio da parede esquerda e **um num nicho alto em cima do arco da entrada** (atrás de quem entra). Quem conta só os da frente escreve TRÊS: depois de ~6 s a Casa lê, **não aceita** e os pontinhos se apagam.
 4. A resposta é **QUATRO**, que ninguém ensinou: o DOIS e o TRÊS eram **faces de dado** (o **dado de pedra meio enterrado** no canto direito, perto da porta, mostra UM em cima e DOIS e TRÊS dos lados). A face quatro de um dado são **os quatro cantos**: acenda os **quatro cantos da porta**. A casa lisa mostra QUATRO, a Casa lê a frase (as palavras acendem uma a uma) e a porta abre.
-- **Segredo S1 (gema):** atrás da **coluna esquerda**, na parede esquerda, há uma lousa com um **soquete frio** (pedra sem brasa) e um **dado de cinco pontos** talhado acima. Escreva **CINCO** (os quatro cantos e o centro): um nicho se abre ao lado, com uma **gema** (E / AGIR para pegar).
+- **Segredo S1 (folha p8):** atrás da **coluna esquerda**, na parede esquerda, há uma lousa com um **soquete frio** (pedra sem brasa) e um **dado de cinco pontos** talhado acima. Escreva **CINCO** (os quatro cantos e o centro): um nicho se abre ao lado, com uma **folha dela, a p8** (E / AGIR para pegar; até a v99 era uma gema).
 - **Por que é única** (`node tools/verify_lousa.mjs`): os números do léxico são as faces de um dado comum; cada lousa aceita 1 desenho entre 512; a frase só fica verdadeira com QUATRO; "quatro pontos quaisquer" são 126 desenhos e só a face do dado serve; acender os cantos um a um não abre nada antes do quarto.
 - **Palavras novas:** TRÊS, QUATRO, BRASEIRO. **Dificuldade: 2 de 10.**
 
@@ -49,7 +55,7 @@ A sala tem dois níveis: entra-se embaixo e **sobe-se a escada** junto da parede
 - **Solução: fogo no canto do FUNDO À DIREITA e no canto da FRENTE À ESQUERDA.** Do fundo-direita o fogo desce ao centro e dali aos cantos fundo-esquerda e frente-direita; o frente-esquerda não recebe fogo de dentro do glifo, então precisa da 2ª ignição. Resultado: os quatro cantos e o centro = CINCO.
 - **A primeira impressão engana:** a lição da lousa 2 foi "comece pelo meio", mas aqui o meio acende só três e sobra uma ignição para dois cantos. Começar pelas casas do meio das bordas acende uma casa fora do glifo.
 - **Errar:** quando as duas ignições acabaram e o fogo para sem escrever CINCO, em ~3 s a Casa apaga tudo e os braseiros ficam **frios por 4 s**.
-- **Segredo S10 (para voltar depois):** no parapeito do balcão (à esquerda) há uma plaquinha «**DIZER IGUAL ▢**» · «**ACENDER UM**» com um **soquete frio**. Só se entende com o lema dos Contáveis, «DIZER IGUAL FAZER», de um diário que ainda não existe no jogo. Solução: **acenda o soquete frio** (o chão passa a aceitar só **uma** ignição e espera FAZER) e ponha fogo **só no canto do fundo à direita**: o fogo desce ao centro e dali aos cantos fundo-esquerda e frente-direita, e as canaletas queimadas desenham as três linhas de **FAZER**. Abre-se um nicho **sob o balcão** (do lado do chão) com uma gema. (Quem resolveu a porta acendendo o fundo-direita primeiro **já escreveu FAZER** sem saber.)
+- **Segredo S10 (para voltar depois):** no parapeito do balcão (à esquerda) há uma plaquinha «**DIZER IGUAL ▢**» · «**ACENDER UM**» com um **soquete frio**. Só se entende com o lema dos Contáveis, «DIZER IGUAL FAZER», de um diário que ainda não existe no jogo. Solução: **acenda o soquete frio** (o chão passa a aceitar só **uma** ignição e espera FAZER) e ponha fogo **só no canto do fundo à direita**: o fogo desce ao centro e dali aos cantos fundo-esquerda e frente-direita, e as canaletas queimadas desenham as três linhas de **FAZER**. Abre-se um nicho **sob o balcão** (do lado do chão) com uma **folha dela, a p9**. (Quem resolveu a porta acendendo o fundo-direita primeiro **já escreveu FAZER** sem saber.)
 - **Por que é única** (`node tools/verify_fio.mjs`): lousa 2, só o centro escreve TRÊS; porta, dos 36 pares só {fundo-direita, frente-esquerda} escreve CINCO, com uma ignição é impossível e nenhum par com o centro serve; com uma ignição o chão só escreve FAZER (fundo-direita) e TRÊS (centro).
 - **Palavras novas:** UM, CINCO. **Dificuldade: 3 de 10.**
 
@@ -58,7 +64,7 @@ A primeira área livre: um **corredor que vira várias vezes**, com nichos (tige
 - **O mural** (parede do 3º trecho do corredor): braseiro apagado · mão acendendo · braseiro aceso, com **ANTES · AGORA · DEPOIS** embaixo (ensina ANTES/DEPOIS, que a sala 8 exige).
 - **A janela de grade** (2º trecho, parede da esquerda): quando você chega perto, o **Escrivão** passa devagar numa galeria distante e some.
 - **Os nichos e a lousa (nível 1):** ao lado dos nichos há **dados talhados** com as faces 1, 2, 3, então um **nicho fechado**, e a face 5. No canto logo depois, uma lousa pequena. **Solução: escreva QUATRO (os quatro cantos)**, a face que falta. O nicho fechado se abre: uma **folha arrancada** do caderno dela (E / AGIR para pegar; ela volta para o diário, na seção "Páginas dela").
-- **O reflexo (nível 2):** na beira da cisterna, uma pedra com **DOIS** (a diagonal do canto de cima à esquerda ao de baixo à direita). Quatro braseiros nos cantos do pátio se refletem na água, e o reflexo inverte de cima para baixo (de quem olha da pedra para a porta). Quem acende a diagonal "certa" (o canto do fundo à esquerda e o da frente à direita) vê a **outra** diagonal na água; com dois acesos errados, eles se apagam em ~3 s. **Solução: acenda o canto do FUNDO À DIREITA e o da FRENTE À ESQUERDA** ("fundo" = lado da porta). Na água aparece o DOIS e uma **gema** sobe da cisterna.
+- **O reflexo (nível 2):** na beira da cisterna, uma pedra com **DOIS** (a diagonal do canto de cima à esquerda ao de baixo à direita). Quatro braseiros nos cantos do pátio se refletem na água, e o reflexo inverte de cima para baixo (de quem olha da pedra para a porta). Quem acende a diagonal "certa" (o canto do fundo à esquerda e o da frente à direita) vê a **outra** diagonal na água; com dois acesos errados, eles se apagam em ~3 s. **Solução: acenda o canto do FUNDO À DIREITA e o da FRENTE À ESQUERDA** ("fundo" = lado da porta). Na água aparece o DOIS e uma **gema** sobe da cisterna (**uma das 21**: vai para o fundo do caderno com a cena da gema).
 - **A câmara lateral:** suba a rampa da direita até a galeria; no meio dela, uma abertura na parede leva a uma câmara pequena com **outra folha arrancada** dela.
 - **Semente (para depois):** num nicho do 1º trecho há uma **tapeçaria** pequena com um glifo tecido. Por ora não faz nada (a ideia é que, depois da sala do Pano, queimá-la mostre uma palavra talhada; ainda não implementado).
 - Também há o relevo «CONTÁVEIS ACENDER BRASEIRO» (gente em volta de um braseiro) no pátio.
@@ -72,7 +78,7 @@ Salão quadrado amplo com **9 colunas em grade 3×3**, todas com uma **tocha apa
 3. **Acenda os braseiros ao pé dessas colunas, nessa ordem** ("fundo" = lado da porta). Errar a ordem apaga tudo e deixa os braseiros **frios por 6 s**.
 - **A armadilha se denuncia:** quem lê a lousa de cabeça para baixo, espelhada ou girada manda pelo menos um quadro para uma **coluna sem braseiro**.
 - **Por que é única** (`node tools/verify_casa_escreve.mjs`): lida como mapa, uma ordem entre 24; as leituras erradas caem em colunas vazias (3, 1 ou 4 quadros); começar o laço no meio dá ordens erradas.
-- **Constelação C1 (gema):** com a porta aberta, **a cada três voltas** a lousa mostra um 5º quadro antes do escuro: **cinco pontos de uma vez**, os quatro cantos e o centro (**CINCO**), que não é de braseiro nenhum. Lido como mapa: **acenda as tochas das quatro colunas dos cantos e da coluna do centro, e nenhuma outra** (as tochas se apagam sozinhas em ~40 s; planeje o caminho). As **rachaduras frias** no chão (entre a coluna do centro e a da frente-meio) se abrem e um braseiro sobe; **acenda-o**: um nicho se abre na parede esquerda, perto da entrada, com uma **gema**. (`tools/verify_constelacoes.mjs`: 1 conjunto aceito entre 4096.)
+- **Constelação C1 (folha p10):** com a porta aberta, **a cada três voltas** a lousa mostra um 5º quadro antes do escuro: **cinco pontos de uma vez**, os quatro cantos e o centro (**CINCO**), que não é de braseiro nenhum. Lido como mapa: **acenda as tochas das quatro colunas dos cantos e da coluna do centro, e nenhuma outra** (as tochas se apagam sozinhas em ~40 s; planeje o caminho). As **rachaduras frias** no chão (entre a coluna do centro e a da frente-meio) se abrem e um braseiro sobe; **acenda-o**: um nicho se abre na parede esquerda, perto da entrada, com uma **folha dela, a p10**. (`tools/verify_constelacoes.mjs`: 1 conjunto aceito entre 4096.)
 - **Palavra nova:** ORDEM. **Dificuldade: 3 de 10.**
 
 ## Sala 7 — A Chama Curta  (ACENDER · QUATRO · BRASEIRO · TEMPO)  — NÍVEL 4 ("o fogo que espera"; `tools/verify_chama_curta.mjs`)
@@ -109,9 +115,9 @@ As chamas **se apagam sozinhas** e o tamanho do braseiro diz quanto duram. A por
 Um salão grande e **mais baixo que a porta de entrada**: desce-se uma escadaria larga até um chão com **três piscinas vazias** de pedra, em profundidades diferentes (cai-se nelas pela borda; sai-se pela rampa de cada uma), colunas grossas, uma **fonte seca** no meio e duas **câmaras de banho** laterais com bancos. **A porta do fundo está sempre aberta**: dá para atravessar em um minuto. O que há para achar:
 - **Inscrições do mundo** (estelas com relevo): «CONTÁVEIS DIZER CONFIRMADO» (alguém falando e um **dado de pedra** pousado numa prateleira), na beira da piscina rasa; e, gasta, «CONTÁVEIS MENTIR BOATO» (alguém cochichando), logo atrás.
 - **O dado pede para apontar:** quando você olha a 1ª estela, o dado lê a frase e pergunta «**DADO ONDE ?**». **Resposta:** mire no **dado de pedra da prateleira** e aperte **E / AGIR**. (Errar duas vezes: o dado se inclina para ele e mostra.)
-- **A piscina mais funda (à direita, gema):** quatro braseiros e duas frases na parede do fundo dela: «ACENDER DOIS CONFIRMADO» e «ACENDER UM BOATO». **Solução: acenda exatamente DOIS braseiros** (quaisquer dois) e espere uns 3 s: uma **gema sobe do ralo**, no meio da piscina. Um só não faz nada; com três, a Casa apaga tudo e os braseiros ficam frios por 4 s. (A frase com a marca BOATO é só dizem-que.)
+- **A piscina mais funda (à direita, folha p11):** quatro braseiros e duas frases na parede do fundo dela: «ACENDER DOIS CONFIRMADO» e «ACENDER UM BOATO». **Solução: acenda exatamente DOIS braseiros** (quaisquer dois) e espere uns 3 s: uma **folha dela (p11) sobe do ralo**, no meio da piscina. Um só não faz nada; com três, a Casa apaga tudo e os braseiros ficam frios por 4 s. (A frase com a marca BOATO é só dizem-que.)
 - **Folha arrancada nº 3 (dela):** num **banco da câmara de banho da esquerda** (oeste). Vai para "Páginas dela" no diário.
-- **O estandarte (gema; a semente):** alto, na parede da fonte, há um **estandarte tecido** com BOATO bordado. **Arremesse o dado de Fogo nele:** ele queima e, atrás, abre-se um **nicho com uma gema** (olhe para cima, chegue perto da bacia e aperte E). O jogo só ensina que pano queima na sala seguinte; quem voltar depois acha.
+- **O estandarte (folha p12; a semente):** alto, na parede da fonte, há um **estandarte tecido** com BOATO bordado. **Arremesse o dado de Fogo nele:** ele queima e, atrás, abre-se um **nicho com uma folha dela, a p12** (olhe para cima, chegue perto da bacia e aperte E). O jogo só ensina que pano queima na sala seguinte; quem voltar depois acha.
 - A grade da câmara de banho da direita (o "atalho" da proposta) é só cenário por enquanto: o mundo ainda é uma fila de salas.
 
 ## Sala 10 — O Pano  (ACENDER · ▢ · BRASEIRO · CONFIRMADO)  — NÍVEL 5 (o fogo queima o BOATO)
@@ -128,7 +134,7 @@ Capela alta e estreita (teto de 7 m), seis pilares com tocha (apagada), quatro b
 4. **Acenda o TRÊS e depois o QUATRO.** A porta abre.
 - O pano da direita é boato puro: queimado, mostra pedra lisa. Quem acredita nele junto com a pedra cai em contradição.
 - **Por que é única** (`node tools/verify_pano.mjs`): lendo a pedra, 1 resposta entre 64; acreditando nos panos, nenhuma aceita; queimar só um dos dois panos certos não basta.
-- **Constelação C2 (gema):** os **frisos de pedra do teto** ligam só três pilares num **triângulo** com a ponta no meio da fileira do fundo: é o glifo **ACENDER**. **Acenda as tochas do pilar do meio do fundo (lado da porta) e dos dois pilares dos cantos da frente (lado da entrada), e nenhuma outra** (há iscas: uma perto da porta e duas na parede da entrada). O fogo corre pelos frisos e desenha o triângulo no teto; um braseiro sobe das rachaduras frias no centro; **acenda-o**: um nicho abre na parede direita, perto da entrada, com uma gema. (`tools/verify_constelacoes.mjs`: 1 conjunto entre 512; só ACENDER tem as linhas dos frisos.)
+- **Constelação C2 (folha p13):** os **frisos de pedra do teto** ligam só três pilares num **triângulo** com a ponta no meio da fileira do fundo: é o glifo **ACENDER**. **Acenda as tochas do pilar do meio do fundo (lado da porta) e dos dois pilares dos cantos da frente (lado da entrada), e nenhuma outra** (há iscas: uma perto da porta e duas na parede da entrada). O fogo corre pelos frisos e desenha o triângulo no teto; um braseiro sobe das rachaduras frias no centro; **acenda-o**: um nicho abre na parede direita, perto da entrada, com uma **folha dela, a p13**. (`tools/verify_constelacoes.mjs`: 1 conjunto entre 512; só ACENDER tem as linhas dos frisos.)
 - **Dificuldade: 5 de 10.**
 
 ## Sala 11 — A Biblioteca · O Arquivo das Sentenças (térreo)  — ÁREA LIVRE, sem trava (todos os puzzles são opcionais)
@@ -137,13 +143,13 @@ escadas desabaram) e **nove mesas de leitura** em grade, cada uma com uma lampar
 - **Constelação C-Bib:** pela grade do **escritório** (fundo, à direita) vê-se a mesa do Escrivão e uma página virada para a cadeira dele: o jogador a vê
   **de cabeça para baixo**. Copiada assim, dá o triângulo de ACENDER (a armadilha); a outra linha (BRASEIRO DOIS) também está de cabeça para baixo, e isso
   denuncia o lado. Lida do lado certo é **PEGAR**: acender as lamparinas das mesas **0, 2 e 7** (os dois cantos do fundo e a do meio da frente, vendo a
-  porta em cima). Um braseiro sobe no centro; acendê-lo abre o nicho da gema (parede do fundo, à esquerda da porta).
+  porta em cima). Um braseiro sobe no centro; acendê-lo abre o nicho com uma **folha dela, a p14** (parede do fundo, à esquerda da porta).
 - **Os livros que mentem (Ala do Papel, oeste perto da porta):** seis livros na estante do fundo: três com **BOATO** na lombada, dois **cadernos** sem marca
-  (de condenados), um de **pedra** com CONFIRMADO (não queima). **Queimar os três de boato** abre o nicho da gema na parede. Queimar um caderno: "Uma página se
+  (de condenados), um de **pedra** com CONFIRMADO (não queima). **Queimar os três de boato** abre o nicho da **gema** na parede (**uma das 21**). Queimar um caderno: "Uma página se
   perdeu" (volta ao sair da ala).
 - **A Sala de Aula (leste perto da porta):** três lousas com murais. (a) quatro braseiros e «ACENDER ▢ BRASEIRO» → **QUATRO**; (b) acender o 2 e depois o 1,
   «▢ ANTES UM» → **DOIS**; (c) um braseiro pequeno com o número QUATRO e «PEQUENO IGUAL ▢»: fica **apagada** até o jogador ter visto IGUAL (A Lei Pequena) e
-  voltar → **QUATRO**. A (c) abre o nicho da gema da sala de aula.
+  voltar → **QUATRO**. A (c) abre o nicho da sala de aula, com uma **folha dela, a p15**.
 - **O mural de encaixe (Sala de Aula, parede do fundo):** quatro desenhos (porta, livro, chave, sino) e, embaixo, quatro blocos com glifos embaralhados.
   E num bloco e E noutro troca os dois. **Solução:** cada desenho com o seu nome (PORTA, LIVRO, CHAVE, SINO); os nomes estão no **Museu dos Nomes**, ao lado.
   Também abre o nicho da sala de aula.
@@ -172,7 +178,7 @@ Sala **redonda** (~12 m). Cinco braseiros: o **GRANDE** no **centro**, **sem nú
   3. **1ª ignição: o braseiro do meio da borda ESQUERDA (casa 3).** Acende o 3 e o 1 (meio do fundo) e **queima a ponte de madeira**.
   4. **2ª ignição: o braseiro do meio da FRENTE (casa 7).** O fogo sobe ao centro e vai ao 5 e ao 3; o caminho para o canto já caiu. Acesos: 1, 3, 4, 5, 7: **a cruz**. A porta abre.
 - **Por que é única** (`node tools/verify_ponte.mjs`): das 72 sequências de duas ignições, só **3 → 7**; a ordem contrária (7 → 3) acende também o canto 0; com uma ignição é impossível; sem a madeira não há resposta; nenhuma sequência com o centro resolve.
-- **Constelação C3 (gema):** com a cruz acesa lá embaixo, **os quatro cantos da grade ficam escuros**. Na boca do fosso há **8 tochas apagadas de pé no gradil**: uma em cada canto do fosso e uma no meio de cada lado (a do lado da entrada fica na ponta direita do gradil do patamar). Vistas do alto, caem sobre as casas da grade. **Acenda só as 4 tochas dos CANTOS do fosso, e nenhuma outra** (nem as dos meios, nem as 3 tochas-isca das paredes do fundo); elas duram 70 s, então dê a volta na galeria sem parar. Um **braseiro sobe no patamar do canto da rampa** (o canto do fundo à esquerda, a meia altura); **acenda-o**: abre-se um nicho com uma gema na parede ao lado dele. (1 conjunto aceito de 2048.)
+- **Constelação C3 (folha p16):** com a cruz acesa lá embaixo, **os quatro cantos da grade ficam escuros**. Na boca do fosso há **8 tochas apagadas de pé no gradil**: uma em cada canto do fosso e uma no meio de cada lado (a do lado da entrada fica na ponta direita do gradil do patamar). Vistas do alto, caem sobre as casas da grade. **Acenda só as 4 tochas dos CANTOS do fosso, e nenhuma outra** (nem as dos meios, nem as 3 tochas-isca das paredes do fundo); elas duram 70 s, então dê a volta na galeria sem parar. Um **braseiro sobe no patamar do canto da rampa** (o canto do fundo à esquerda, a meia altura); **acenda-o**: abre-se um nicho com uma **folha dela, a p16**, na parede ao lado dele. (1 conjunto aceito de 2048.)
 - **Palavra vista:** MAIS (só o desenho é exigido). **Dificuldade: 6 de 10.**
 
 ## Sala 14 — O Boato Verdadeiro  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 (boato não é mentira)
@@ -194,7 +200,7 @@ a **folha nº 6** dela diz que o glifo de PEQUENO quer dizer UM (ela erra; quem 
 - **Puzzle opcional (nível 3):** na **câmara lateral** (à esquerda), três braseiros (UM, DOIS, TRÊS), a balança «DOIS IGUAL DOIS», três frases **riscadas a
   giz** (giz não é pedra: são boatos) «TRÊS ANTES UM», «TRÊS ANTES DOIS», «DOIS DEPOIS TRÊS», e a lei talhada «UM BOATO IGUAL VERDADE».
   «TRÊS ANTES DOIS» e «DOIS DEPOIS TRÊS» dizem o mesmo; não podem ser os dois verdade (a lei diz um só), então são falsos (2 antes de 3), e o verdadeiro é
-  «TRÊS ANTES UM». **Ordem: DOIS, TRÊS, UM** → abre o nicho da gema (parede do fundo da câmara). Errar só apaga, sem punição.
+  «TRÊS ANTES UM». **Ordem: DOIS, TRÊS, UM** → abre o nicho com uma **folha dela, a p17** (parede do fundo da câmara). Errar só apaga, sem punição.
 
 ## Sala 16 — A Sombra  (ACENDER · [moldura] · BRASEIRO)  — NÍVEL 7 ("a luz escreve, e a frase tem de ser verdade"; `tools/verify_sombra.mjs`)
 Salão escuro. No meio, uma **tela de pedra** com nove "olhos" em grade 3×3: só **dois** são furos de verdade (o de cima à esquerda e o do centro). Na parede
@@ -261,7 +267,7 @@ Canaletas: centro→cantos do fundo (0 em 2 s, 2 em 3 s) e centro→canto da fre
    na hora com E e arremessa em menos de 3 s vê o 7 acender antes de o centro se apagar.)
 - **Constelação C5:** no escuro de uma tentativa que falhou, aparece no **teto**, em cal, o glifo **MENOS** (a fileira do meio). Acender as tochas dos
   **postes das três plataformas do meio** (meio-esquerda, centro, meio-direita) e nenhuma outra: um braseiro sobe do chão, entre as plataformas;
-  acendê-lo abre o nicho da gema (parede direita, perto da porta).
+  acendê-lo abre o nicho com uma **folha dela, a p18** (parede direita, perto da porta).
 - **Por que é única:** uma ignição nunca basta; de todos os pares ordenados só centro → canto 6 funciona. **Dificuldade: 8 de 10.**
 
 ## Sala 21 — Os Que Dizem o Mesmo  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO e «ACENDER UM BOATO»)  — NÍVEL 9 ("dizer é fazer"; `tools/verify_dizem_mesmo.mjs`)
@@ -277,7 +283,7 @@ pendura todos de volta. A porta só aceita a ordem se o **único** estandarte qu
 4. **Ordem: UM, CINCO, DOIS, TRÊS, QUATRO.**
 - **Constelação C6:** as 8 colunas e a fonte são uma grade 3×3, todas com tocha (+3 de parede). Os **frisos** (a galeria do fundo de canto a canto, uma
   **viga** que cruza o pátio na diagonal e a galeria da frente) formam um **Z**: o glifo DE NOVO. Acender as tochas das **quatro colunas dos cantos**: o
-  fogo desenha o Z, um braseiro sobe ao lado da fonte; acendê-lo abre o nicho (parede esquerda, perto da entrada).
+  fogo desenha o Z, um braseiro sobe ao lado da fonte; acendê-lo abre o nicho com a **gema** (parede esquerda, perto da entrada; **uma das 21**).
 - **Por que é única:** com os cinco, nenhuma ordem; queimando cada um: só «DOIS ANTES QUATRO» deixa uma ordem. **Dificuldade: 9 de 10.**
 
 ## Sala 22 — A Antecâmara Fria  — RESPIRO R5 (sem puzzle; ensina A Memória da Casa; PUZZLES_PROPOSTAS.md §2b "R5" e Ficha 9b)

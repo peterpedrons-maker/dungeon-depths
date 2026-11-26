@@ -181,7 +181,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   torches.push(makeTorch(kit, ctx, -AX + 0.1, 2.0, -1.5, 1, 0), makeTorch(kit, ctx, AX - 0.1, 2.0, -1.5, -1, 0), makeTorch(kit, ctx, -AX + 0.1, 2.0, -23.5, 1, 0), makeTorch(kit, ctx, AX - 0.1, 2.0, -16.5, -1, 0));
   cells.push(null, null, null, null);
   const api = { kit, ctx, boxes } as unknown as FireExtraApi;
-  const C = constellation(api, torches, cells, [0, 2, 7], [0, -16.2], [-1.8, 1.25, Z0 + 0.02, 0, 1]);
+  const C = constellation(api, torches, cells, [0, 2, 7], [0, -16.2], [-1.8, 1.25, Z0 + 0.02, 0, 1], 'p14');
   interactables.push(C.niche.interactable);
 
   // ══ as ALAS (câmaras baixas ao lado do Átrio) ══
@@ -247,7 +247,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
 
   // ── A ALA DO PAPEL: os livros que mentem ──
   let paperGem = false;
-  const paperNiche = makeGemNiche(kit, ctx, -WX + 0.02, 1.25, -15.0, 1, 0, () => (paperGem = true));
+  const paperNiche = makeGemNiche(kit, ctx, -WX + 0.02, 1.25, -15.0, 1, 0, () => (paperGem = true), 'papel'); // (uma das 21 gemas: DESIGN.md §69)
   interactables.push(paperNiche.interactable);
   interface Book {
     kind: 'boato' | 'caderno' | 'pedra';
@@ -328,7 +328,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   const aula: { board: ReturnType<typeof makeWallBoard>; want: string; done: boolean; locked: () => boolean; mural: THREE.MeshLambertMaterial }[] = [];
   let aulaGem = false;
   // o nicho da Aula: na parede do lado do Átrio, de frente para a lousa (c) que o abre (antes ele ficava no MESMO lugar da lousa, por cima dela)
-  const aulaNiche = makeGemNiche(kit, ctx, AX + 0.32, 1.25, -14.4, 1, 0, () => (aulaGem = true));
+  const aulaNiche = makeGemNiche(kit, ctx, AX + 0.32, 1.25, -14.4, 1, 0, () => (aulaGem = true), 'p15'); // (era uma gema; agora uma folha dela: DESIGN.md §69)
   interactables.push(aulaNiche.interactable);
   {
     const W = wing(1, WINGS.aula[0], WINGS.aula[1], 101, [AX + 0.4, -19.6, 1]);

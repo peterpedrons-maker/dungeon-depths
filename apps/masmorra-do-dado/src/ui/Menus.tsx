@@ -208,7 +208,7 @@ function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new
                       Capítulo {m?.chapter ?? 1} - {fmtTime(m?.time ?? 0)}
                     </li>
                     <li className="gems">
-                      <PixelIcon name="gema" size={16} /> {m?.bonus.length ?? 0} {m?.bonus.length === 1 ? 'gema' : 'gemas'}
+                      <PixelIcon name="gema" size={16} /> {m?.gems ?? 0} {m?.gems === 1 ? 'gema' : 'gemas'}
                     </li>
                     <li className="dim">{m ? fmtDate(m.at) : ''}</li>
                   </ul>

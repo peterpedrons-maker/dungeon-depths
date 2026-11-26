@@ -425,7 +425,7 @@ export function buildPonte(ctx: Ctx): Room {
   const riser = makeRiser(kit, ctx, RX, RZ, 0.8, H.SW);
   boxes.push(...riser.boxes);
   let bonus = false;
-  const niche = makeGemNiche(kit, ctx, -4.75, H.SW + 1.3, PZ0, 0, 1, () => (bonus = true));
+  const niche = makeGemNiche(kit, ctx, -4.75, H.SW + 1.3, PZ0, 0, 1, () => (bonus = true), 'p16'); // (era uma gema; agora uma folha dela: DESIGN.md §69)
 
   // luz: tochas fixas na galeria e no fundo
   kit.torch(-OX + 0.1, TOP + 1.9, -3.2, 1, 0, 0.4);
