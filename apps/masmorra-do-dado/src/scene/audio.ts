@@ -170,8 +170,16 @@ const holdParam = (p: AudioParam, now: number) => {
 };
 
 export class Sfx {
-  private ac: BaseAudioContext | null = null;
-  private live = true; // false = contexto offline (testes: gravar a faixa de demonstração)
+  // O contexto de áudio nasce LOGO AO ABRIR A PÁGINA (`prepare`), ainda suspenso: assim as gravações baixam e decodificam enquanto a tela da
+  // editora, a tela inicial e a tela de carregamento estão à vista (DESIGN.md §80). Som só sai depois do 1º toque/tecla (`unlock`): até lá,
+  // `ac` responde null e nada é agendado (senão tudo tocaria junto quando o som fosse liberado). Nos testes, `init` recebe um contexto
+  // offline (`real` = false), que já começa ligado.
+  private ctx: BaseAudioContext | null = null;
+  private real = true; // false = contexto offline (testes: gravar a faixa de demonstração)
+  private on = false; // o som pode sair (o 1º gesto; no contexto offline, já)
+  private get ac(): BaseAudioContext | null {
+    return this.on ? this.ctx : null;
+  }
   private master!: GainNode;
   private bus!: GainNode;
   private musicBus!: GainNode;
@@ -300,6 +308,9 @@ export class Sfx {
     }
   }
   private loaded = 0;
+  // quantos ARQUIVOS já estão prontos (para a barra da tela de carregamento); os instrumentos só se sabem depois de ler o índice
+  private filesDone = 0;
+  private filesTotal = SFX_FILES.length + 81;
   private loadP: Promise<void> | null = null;
   get state() {
     return this.ac ? this.ac.state : 'sem-contexto';
@@ -307,6 +318,12 @@ export class Sfx {
   get ready() {
     return this.loaded;
   }
+  // 0..1: quanto das gravações já está pronto (1 também quando não há áudio no aparelho, para ninguém esperar à toa)
+  get progress() {
+    if (!this.ctx) return this.noAudio ? 1 : 0;
+    return Math.min(1, this.filesDone / this.filesTotal);
+  }
+  private noAudio = false;
 
   private vol = { master: 0.8, music: 0.6, sfx: 0.8 };
   setMode(m: AudioMode) {
@@ -341,20 +358,41 @@ export class Sfx {
     this.bus.gain.setTargetAtTime(0.85 * (this.vol.sfx / 0.8), t, 0.05);
   }
 
-  // cria o contexto de áudio (precisa de um gesto do usuário) e começa a baixar as gravações
-  unlock() {
-    if (!this.ac) {
+  // cria o contexto de áudio (suspenso) e começa a baixar e decodificar as gravações: não precisa de gesto
+  prepare() {
+    if (!this.ctx && !this.noAudio) {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return;
-      this.init(new AC());
+      let ac: AudioContext | null = null;
+      try {
+        ac = AC ? new AC() : null;
+      } catch {
+        ac = null;
+      }
+      if (!ac) {
+        this.noAudio = true;
+        return;
+      }
+      void this.init(ac, true);
     }
-    if (this.live && this.ac!.state !== 'running') void (this.ac as AudioContext).resume();
   }
 
-  // monta a mesa de som num contexto (o de verdade, ou um OfflineAudioContext nos testes) e carrega tudo; a promessa resolve quando acabou
-  init(ac: BaseAudioContext, live = true) {
-    this.ac = ac;
-    this.live = live;
+  // o 1º toque/tecla do jogador: o som pode sair (o navegador só deixa depois de um gesto)
+  unlock() {
+    this.prepare();
+    const ac = this.ctx;
+    if (!ac) return;
+    if (!this.on) this.start();
+    if (this.real && ac.state !== 'running') void (ac as AudioContext).resume();
+  }
+  get unlocked() {
+    return this.on;
+  }
+
+  // monta a mesa de som num contexto (o de verdade, ou um OfflineAudioContext nos testes) e carrega tudo; a promessa resolve quando acabou.
+  // O de verdade fica mudo até o 1º gesto (`unlock` → `start`); o offline liga já
+  init(ac: BaseAudioContext, real = true) {
+    this.ctx = ac;
+    this.real = real;
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -14;
     comp.ratio.value = 3;
@@ -433,23 +471,28 @@ export class Sfx {
     this.longSend = ac.createGain();
     this.space.connect(convS).connect(this.shortRet).connect(this.master);
     this.space.connect(this.longSend).connect(this.verbSend);
-    this.setSpace(this.sizeLevel);
+    this.loadP = this.loadAll();
+    if (!real) this.start();
+    return this.loadP;
+  }
 
+  // o som liga: a sala, o relógio do ambiente e da música, o volume e a música pedida antes de o som ligar (a tela inicial, ou o jogo)
+  private start() {
+    const ac = this.ctx!;
+    this.on = true;
+    this.setSpace(this.sizeLevel);
     const t0 = ac.currentTime;
     this.nextBreath = t0 + rand(70, 120);
     this.nextGust = t0 + rand(6, 14);
     this.gm = { st: 'rest', until: t0 + 6, left: 0, phraseEnd: 0, fadeAt: 0, faded: false, started: false };
     this.applyMode();
-    // a música pedida antes de o som ligar (a tela inicial, ou o jogo)
     const w = this.wantScene;
     this.wantScene = null;
     if (w) this.scene(w.s, { wait: w.wait });
-    this.loadP = this.loadAll();
-    return this.loadP;
   }
 
   suspend(on: boolean) {
-    if (!this.ac || !this.live) return;
+    if (!this.ac || !this.real) return;
     const ac = this.ac as AudioContext;
     if (on) void ac.suspend();
     else void ac.resume();
@@ -460,7 +503,7 @@ export class Sfx {
     try {
       const r = await fetch(url);
       if (!r.ok) return null;
-      return await this.ac!.decodeAudioData(await r.arrayBuffer());
+      return await this.ctx!.decodeAudioData(await r.arrayBuffer());
     } catch {
       return null;
     }
@@ -474,11 +517,13 @@ export class Sfx {
         const b = await this.decode(`${base}sfx/${n}.mp3?v=${AUDIO_VERSION}`);
         if (b) this.buf.set(n, b);
         this.loaded++;
+        this.filesDone++;
       }),
     );
     this.startLoops();
     try {
       const man = (await (await fetch(`${base}inst/manifest.json?v=${AUDIO_VERSION}`)).json()) as Record<string, number[]>;
+      this.filesTotal = SFX_FILES.length + INSTRUMENTS.reduce((a, n) => a + (man[n]?.length ?? 0), 0);
       for (const name of INSTRUMENTS) {
         const notes = man[name] ?? [];
         const inst: Inst = { notes, bufs: new Map() };
@@ -486,6 +531,7 @@ export class Sfx {
           notes.map(async (m) => {
             const b = await this.decode(`${base}inst/${name}/${m}.mp3?v=${AUDIO_VERSION}`);
             if (b) inst.bufs.set(m, b);
+            this.filesDone++;
           }),
         );
         this.inst[name] = inst; // (só entra quando todas as notas chegaram: a música não começa com um instrumento pela metade)
@@ -494,6 +540,7 @@ export class Sfx {
     } catch {
       /* sem instrumentos: só os efeitos tocam */
     }
+    this.filesDone = this.filesTotal; // (o que falhou não vai chegar: a barra não fica esperando)
   }
 
   // tamanho da sala (0..1): quanto vai para a sala curta e quanto para a longa
@@ -505,7 +552,7 @@ export class Sfx {
   }
 
   private startLoops() {
-    const ac = this.ac!;
+    const ac = this.ctx!;
     // um laço que toca sempre (o volume muda, a fonte não se recria); `pre` = filtros/pan entre a fonte e o volume
     const loop = (name: string, rate = 1, pre: AudioNode[] = []) => {
       const b = this.buf.get(name);
@@ -777,7 +824,7 @@ export class Sfx {
         this.sample(pick(['bounce1', 'bounce2', 'bounce3']), 0.7 * Math.min(1, v), rand(0.75, 0.9));
         break;
       // trocar a face: o próprio dado girando na mão e assentando (um toque um pouco mais agudo a cada face). Era o glockenspiel: o Pedro não
-      // quer som "mágico" no que é de clicar (DESIGN.md §80)
+      // quer som "mágico" no que é de clicar (DESIGN.md §86)
       case 'face':
         {
           const k = Math.max(0, Math.min(5, Math.round(v) - 1));
@@ -788,7 +835,7 @@ export class Sfx {
       case 'locked':
         this.sample('locked', 0.7, rand(0.75, 0.85));
         break;
-      // INTERFACE (DESIGN.md §80, pedido do Pedro): som de COISA, não de "mágica". Era uma nota de celesta em todo clique. Os menus são de pedra
+      // INTERFACE (DESIGN.md §86, pedido do Pedro): som de COISA, não de "mágica". Era uma nota de celesta em todo clique. Os menus são de pedra
       // talhada: apertar é um toque curto de pedra (a pedrinha batendo e o corpo do toque); passar por uma opção, mexer num ajuste ou o dado
       // falando é só o tique, bem baixo. `v` = força (1 = apertar; ~0,5 = passar por cima)
       case 'uiblip':

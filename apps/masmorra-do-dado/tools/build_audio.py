@@ -85,7 +85,7 @@ SFX = {
     'swap1': (K + '/cloth1.ogg', {}),
     'swap2': (K + '/cloth3.ogg', {}),
     'sweep': (K + '/clothBelt.ogg', {}),
-    # interface com som de coisa (DESIGN.md §80, pedido do Pedro: nada de celesta nos cliques): o caderno de verdade (abrir, fechar, virar
+    # interface com som de coisa (DESIGN.md §86, pedido do Pedro: nada de celesta nos cliques): o caderno de verdade (abrir, fechar, virar
     # página) e o fecho de metal dele
     'book_open': (K + '/bookOpen.ogg', {}),
     'book_close': (K + '/bookClose.ogg', {}),

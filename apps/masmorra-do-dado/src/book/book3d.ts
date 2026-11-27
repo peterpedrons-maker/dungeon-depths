@@ -21,7 +21,7 @@ export interface BookEnv {
   scene: THREE.Scene;
   cam: THREE.PerspectiveCamera;
   dom: HTMLElement;
-  sound(name: 'uiflip' | 'bookOpen' | 'bookClose' | 'bookTap' | 'bookLatch'): void; // (DESIGN.md §80: papel, couro e o fecho de metal)
+  sound(name: 'uiflip' | 'bookOpen' | 'bookClose' | 'bookTap' | 'bookLatch'): void; // (DESIGN.md §86: papel, couro e o fecho de metal)
   halfW(): number;
 }
 

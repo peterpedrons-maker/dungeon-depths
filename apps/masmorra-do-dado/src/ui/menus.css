@@ -31,6 +31,8 @@
     100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%,
     8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px));
   animation: board-in 0.22s steps(4); }
+/* a tela inicial aparece DEPOIS do cenário (DESIGN.md §80): o preto se abre, o logo surge no lugar e o menu em seguida, sem subir de baixo */
+@keyframes title-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes board-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .board-s { width: min(calc(420px * var(--ui)), 92vw); }
 .board-w { width: min(calc(820px * var(--ui)), 96vw); }
@@ -66,8 +68,8 @@
 /* ── TELA INICIAL ── */
 .title-scr { position: absolute; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
   background: linear-gradient(90deg, rgba(5, 4, 10, 0.78) 0%, rgba(5, 4, 10, 0.45) 45%, rgba(5, 4, 10, 0) 75%); }
-.title-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-left: 8vw; padding-bottom: 3vh; animation: board-in 0.6s steps(6); }
-.title-logo { align-self: stretch; display: flex; justify-content: center; padding-top: 5vh; pointer-events: none; animation: board-in 0.8s steps(6);
+.title-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-left: 8vw; padding-bottom: 3vh; animation: title-in 0.7s steps(6) 0.95s both; }
+.title-logo { align-self: stretch; display: flex; justify-content: center; padding-top: 5vh; pointer-events: none; animation: title-in 0.9s steps(7) 0.45s both;
   background: linear-gradient(180deg, rgba(5, 4, 10, 0.55), rgba(5, 4, 10, 0)); }
 @media (max-height: 520px) { .title-logo { padding-top: 3vh; } .title-list { gap: 5px; } .title-list .plq { padding-top: 3px; padding-bottom: 3px; } }
 @media (max-width: 700px) { .title-col { margin-left: 4vw; } }
@@ -191,3 +193,10 @@
 /* o dadinho girando também numa plaquinha de pedra (os avisos são todos assim; INTERFACE.md §5) */
 .saving { box-sizing: content-box; padding: 2px; background: #1d1922; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent;
   border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch; image-rendering: pixelated; }
+
+/* A ABERTURA DA EDITORA (Pedra-Sabão) e a TELA DE CARREGAMENTO (DESIGN.md §80) */
+.splash { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 70; background: #0b0912; image-rendering: pixelated; cursor: default; }
+.loadscr { position: absolute; inset: 0; z-index: 45; }
+.loadscr.asked { cursor: pointer; }
+.loadgo { position: absolute; transform: translate(-50%, 0); font-size: var(--fl); font-weight: normal; color: #ffd36b; white-space: nowrap;
+  text-shadow: 2px 2px 0 #000; animation: blink 1.4s steps(2) infinite; pointer-events: none; }

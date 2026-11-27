@@ -16,6 +16,8 @@ import { quiz } from './story/quiz';
 import { WordGlyph } from './ui/Glyph';
 import { useUiScale } from './ui/scale';
 import { Credits, PauseMenu, SaveIndicator, TitleScreen, type TitleApi } from './ui/Menus';
+import { Splash } from './ui/Splash';
+import { LoadingScreen } from './ui/LoadingScreen';
 import { saves } from './story/save';
 import { configStore, keyName } from './story/config';
 import type { IconName } from './ui/PixelIcon';
@@ -39,7 +41,6 @@ const take = (k: string) => {
   }
 };
 const FROM_WHITE = take('mdd-white');
-const FROM_DIS = take('mdd-dis');
 const mark = (k: string) => {
   try {
     sessionStorage.setItem(k, '1');
@@ -48,6 +49,19 @@ const mark = (k: string) => {
   }
 };
 const SHOW_TITLE = !PLAY_NOW && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
+// A ABERTURA DA EDITORA (Pedra-Sabão): ao abrir o jogo, uma vez por sessão do navegador (voltar à tela inicial no meio do jogo não repete).
+// ?splash=0 pula, ?splash=1 força (testes)
+const SPLASH = (() => {
+  if (!SHOW_TITLE || Q.get('splash') === '0') return false;
+  if (Q.get('splash') === '1') return true;
+  try {
+    if (sessionStorage.getItem('mdd-splash') === '1') return false;
+    sessionStorage.setItem('mdd-splash', '1');
+  } catch {
+    /* ok */
+  }
+  return true;
+})();
 
 const STICK_R = 46;
 
@@ -81,7 +95,10 @@ export default function App() {
   const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
   const captionTimer = useRef(0);
   const completeRef = useRef(false);
-  const [cine, setCine] = useState(false); // cena em curso (a mira some)
+  const [cine, setCine] = useState(true); // cena em curso (a mira some). Começa escondida: a cena avisa no 1º quadro se o jogo já começou
+  const [sceneReady, setSceneReady] = useState(false); // a cena já desenhou e os modelos chegaram (a tela inicial pode aparecer)
+  const [splashOn, setSplashOn] = useState(SPLASH);
+  const [titleShown, setTitleShown] = useState(false);
   const openPauseRef = useRef<() => void>(() => {});
   const dry = useStore(diaryStore);
   const talking = useStore(dialogueStore) !== null;
@@ -227,6 +244,8 @@ export default function App() {
         setComplete(c);
       },
       title: SHOW_TITLE,
+      load: PLAY_NOW,
+      onReady: () => setSceneReady(true),
       onCine: setCine,
       onPause: () => openPauseRef.current(),
       onDie: (st) => setDieOut(st !== 'hand'),
@@ -243,7 +262,6 @@ export default function App() {
       },
     });
     sceneRef.current = scene;
-    if (FROM_DIS) scene.fadeInFromBlack();
     return () => {
       scene.dispose();
     };
@@ -263,6 +281,13 @@ export default function App() {
   };
 
   const inMenu = uis.menu !== null;
+  const titleNow = uis.menu === 'title' && sceneReady && !splashOn;
+  useEffect(() => {
+    if (titleNow && !titleShown) {
+      setTitleShown(true);
+      sceneRef.current?.titleReveal();
+    }
+  }, [titleNow, titleShown]);
   const cfg = useStore(configStore);
   const [whiteIn, setWhiteIn] = useState(FROM_WHITE);
   const titleApi = useMemo<TitleApi>(
@@ -277,11 +302,7 @@ export default function App() {
         }),
       play: (slot) => {
         if (slot === saves.active()) sceneRef.current?.titleGo();
-        else
-          sceneRef.current?.titleGo(() => {
-            mark('mdd-dis');
-            saves.play(slot);
-          }, true);
+        else sceneRef.current?.titleGo(() => saves.play(slot), true);
       },
     }),
     [],
@@ -487,8 +508,10 @@ export default function App() {
       <DialogueBox onSound={sound} />
       <QuizPanel onSound={sound} />
 
-      {uis.menu === 'title' && <TitleScreen api={titleApi} snd={sound} />}
+      {uis.menu === 'title' && titleShown && <TitleScreen api={titleApi} snd={sound} />}
+      {uis.menu === 'loading' && <LoadingScreen onGo={() => sceneRef.current?.loadGo()} />}
       {whiteIn && <div className="white-in" onAnimationEnd={() => setWhiteIn(false)} />}
+      {splashOn && <Splash ready={sceneReady} onDone={() => setSplashOn(false)} />}
       {uis.menu === 'pause' && (
         <PauseMenu
           hasBook={hasBook}
@@ -502,7 +525,7 @@ export default function App() {
           snd={sound}
         />
       )}
-      <SaveIndicator hidden={uis.menu === 'title'} />
+      <SaveIndicator hidden={uis.menu === 'title' || uis.menu === 'loading'} />
 
       {complete && (
         <div className="done">

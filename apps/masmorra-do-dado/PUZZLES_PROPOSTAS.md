@@ -207,7 +207,7 @@ por dentro dela é curto** (atravessar o átrio até a porta da sala 9, sempre a
 inteiro** (estilo Metroidvania), e isso dilui tudo:
 - **Capítulo 1: só o térreo.** As escadas para cima estão desabadas; vê-se o 2º e o 3º andar pelo vão do átrio.
 - **Capítulo 2: o 2º andar**, por um **elevador de contrapeso** que só o **Peso** move. É aqui que o Escrivão aparece **de perto** e deixa o
-  **giz** (proposta; o plano antigo punha a cena numa sala própria).
+  **giz** (decidido pelo Pedro: no MEIO do capítulo 2, `DESIGN.md` §84; o plano antigo punha a cena numa sala própria).
 - **Capítulo final: o 3º andar**, com a **sentença do jogador**: o pergaminho **sem a marca de confirmação** (a virada do meio do jogo, `HISTORIA.md`).
 
 **No motor:** não é uma sala gigante. São **5 ou 6 módulos ligados** (o jogo só desenha as salas vizinhas): átrio, duas alas, museu, sala de

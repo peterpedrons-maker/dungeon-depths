@@ -4,6 +4,7 @@
 
 import { sketchCanvas, type SketchKind } from './sketch';
 import * as THREE from 'three';
+import { chalkTexture } from './chalkdraw';
 import { drawGlyph } from '../book/font';
 import type { GlyphDef } from '../story/lexicon';
 
@@ -652,6 +653,10 @@ export interface RostoLook {
   mw?: number; // largura: -3 (apertada) .. 1 (relaxada) px de cada lado
   sq?: number; // pálpebra de cima descendo: 0..3 px
   nose?: boolean; // narinas abertas
+  bl?: number; // cada sobrancelha sobe (+) ou desce por conta própria: -2..2 px (sempre RETA: só sobe e desce, nunca inclina)
+  br?: number;
+  sd?: number; // olhar de canto: as íris vão ao canto (-4..4 px) sem o rosto acompanhar
+  ir?: number; // a íris se fecha (luz forte): -1..0 px no raio
 }
 const NO_LOOK: RostoLook = { ex: 0, ey: 0, by: 0, closed: false };
 function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string, look: RostoLook = NO_LOOK) {
@@ -699,9 +704,9 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
       }
       return 0;
     };
-    const ix = lx + Math.max(-4, Math.min(4, look.ex - fx * 0.5 + Math.sign(look.ex) * 1));
+    const ix = lx + Math.max(-4, Math.min(4, look.ex - fx * 0.5 + Math.sign(look.ex) * 1 + Math.round(look.sd ?? 0)));
     const iy = ly + Math.max(-1, Math.min(1, look.ey - fy));
-    const r = 3;
+    const r = 3 + Math.max(-1, Math.min(0, Math.round(look.ir ?? 0)));
     for (let y = -r; y <= r; y++)
       for (let x = -r; x <= r; x++) {
         const d = Math.abs(x) + Math.abs(y);
@@ -722,11 +727,12 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   eye(20, 29);
   eye(44, 29);
   // sobrancelhas: um arco leve, com um risquinho na ponta de dentro (como a serifa de um glifo)
-  const by = look.by;
-  poly([[0, 3], [3, 1], [6, 0], [15, 0]], 11 + fx, 16 + by);
-  px1(26 + fx, 17 + by);
-  poly([[0, 0], [9, 0], [12, 1], [15, 3]], 38 + fx, 16 + by);
-  px1(38 + fx, 17 + by);
+  const byL = look.by - Math.max(-2, Math.min(2, Math.round(look.bl ?? 0)));
+  const byR = look.by - Math.max(-2, Math.min(2, Math.round(look.br ?? 0)));
+  poly([[0, 3], [3, 1], [6, 0], [15, 0]], 11 + fx, 16 + byL);
+  px1(26 + fx, 17 + byL);
+  poly([[0, 0], [9, 0], [12, 1], [15, 3]], 38 + fx, 16 + byR);
+  px1(38 + fx, 17 + byR);
   // nariz: a ponte desce do meio das sobrancelhas; a base com as narinas
   seg(32 + fx, 21 + fy, 32 + fx, 40 + fy);
   seg(30 + fx, 41 + fy, 34 + fx, 41 + fy);
@@ -1451,28 +1457,6 @@ export function wearTexture() {
 // RISCOS DE GIZ de um condenado contando dias: grupos de quatro tracinhos cortados por um quinto, tortos, em fileiras; o último grupo incompleto.
 // (Contagem, não escrita: nunca parecido com um glifo.)
 export function tallyTexture(days = 23) {
-  const { c, ctx } = canvas(64, 32);
-  const r = rng(days * 7);
-  const chalk = (x: number, y: number) => {
-    ctx.fillStyle = r() < 0.25 ? 'rgba(235,232,220,0.55)' : 'rgba(240,238,228,0.9)';
-    ctx.fillRect(x, y, 1, 1);
-  };
-  let n = 0;
-  for (let row = 0; row < 3 && n < days; row++) {
-    for (let g = 0; g < 4 && n < days; g++) {
-      const gx = 3 + g * 15 + Math.round((r() - 0.5) * 2);
-      const gy = 2 + row * 10;
-      for (let k = 0; k < 4 && n < days; k++, n++) {
-        const x = gx + k * 3;
-        const lean = r() < 0.5 ? 0 : 1;
-        for (let y = 0; y < 7; y++) if (r() < 0.9) chalk(x + (y > 3 ? lean : 0), gy + y);
-      }
-      if (n < days) {
-        // o quinto risco, atravessado
-        for (let i = 0; i < 12; i++) if (r() < 0.85) chalk(gx - 1 + i, gy + 5 - Math.round(i * 0.4));
-        n++;
-      }
-    }
-  }
-  return toTexture(c, undefined, false, false);
+  // o giz do jogo, à mão (scene/chalkdraw.ts, DESIGN.md §80): grupos de quatro riscos e o quinto atravessado
+  return chalkTexture('contagem', 64, 32, days * 7, { days, step: 4 });
 }

@@ -286,6 +286,7 @@ Uma sala de braseiros é uma **descrição** (`FireSpec`): tamanho, tema, brasei
   (`layoutWorld`: 6 por fileira, 3 fileiras por andar = 18 por andar, escadas entre andares). Para inserir uma sala basta pôr na lista.
 - **Plano de ritmo** (aprovado): ~50 a 60 salas, ~6 h; só Fogo nas primeiras ~16 salas, Peso na ~17, giz pouco depois (~28), a 3ª face (Eco) no capítulo 3.
   O Escrivão aparece de longe 3 a 4 vezes (cedo, no meio, no fim do cap. 1) e só no começo do cap. 2 de perto, deixando o giz.
+  (Substituído pelo §84: o Peso chega no fim do capítulo 1 e o giz, com o Escrivão de perto, no MEIO do capítulo 2.)
 
 ## 17. Régua de dificuldade (corrigida) e curva do capítulo 1
 Aprendido com o feedback: o que eu chamava de "4 de 10" era **nível 1 ou 2**. Em um jogo de puzzle, qualquer pessoa resolve um nível 1.
@@ -1219,8 +1220,8 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   galeria vista pela janela de grade dos Nichos. Sentado na Galeria dos Condenados e no escritório da Biblioteca continua o de código (não há
   animação de sentar). `?escrivao=antigo` volta ao de código em tudo; enquanto o arquivo não chega, aparece o de código.
 - **Como as animações viram a pose do jogo:**
-  - **andar**: o *Start Walking* é a partida (parado → dois passos). O jogo recorta o ciclo estável (1,15 s a 2,48 s), costura o fim no começo
-    (0,3 s) e tira o avanço da raiz (quem move o Escrivão é o jogo); o passo acompanha a velocidade pedida;
+  - **andar**: o *Start Walking* é a partida (parado → dois passos). O jogo recorta o ciclo estável (1,15 s a 2,48 s; hoje 1,067 s + 1,484 s, §78), costura o fim no começo
+    (0,3 s) e tira o avanço da raiz (quem move o Escrivão é o jogo); o passo acompanha a velocidade pedida (a túnica no quadril e os braços junto do corpo: §81);
   - **debruçar**: a inclinação escolhe o quadro do *olhar para baixo* (0 = de pé, 1 = debruçado aos 1,78 s); parado debruçado, um vaivém lento
     até 2,35 s. A animação original segura uma tocha na mão esquerda: aqui essa mão fica sempre por código (junto do corpo, ou pousada na borda);
   - **mão direita** (às costas, para dentro do manto; estendida sobre o meio do poço, a 1 m do corpo e 1,5 m do chão, de onde o dado cai) e
@@ -1729,7 +1730,7 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     está em −17,5 e o erro em −26,3.
   - A porta volta a tocar sempre o violoncelo grave dela, que o Pedro aprovou (antes, logo depois do resolvido, ela ficava só com a pedra).
   - **Ainda com instrumento** (o Pedro não avaliou): a escrita que acende, a cena da gema, o altar do Peso, o "Novo jogo" da tela inicial
-    e a música (as notas das faces saíram no §80).
+    e a música (as notas das faces saíram no §86).
 - **Um fio de "descoberta", bem baixo (pedido do Pedro: "ficou bom, só adicionar um pouco, mas bem pouco mesmo, de efeito de descoberta").**
   Por baixo da pedra, só instrumentos de som orgânico, nunca celesta, sino, gongo ou coro:
   - **passo certo:** uma nota de harpa grave (lá);
@@ -1740,7 +1741,172 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     pedra no resolvido, no segredo e no passo certo. No fim do capítulo a medida dá −12,5 dB, inflada pelo compressor geral, que reage ao
     estrondo longo. O volume total quase não muda (menos de 0,4 dB).
 
-## 80. O som da interface: coisa de verdade, não mágica (pedido do Pedro)
+## 80. A abertura da editora, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
+
+- **A editora: «CINCO RISCOS»** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`). A 1ª versão, «Pedra-Sabão» (uma laje clara com o nome a giz),
+  não agradou: o Pedro pediu outro nome e um símbolo mais original, desenhado pelo giz do jogo. Foram propostas «Quina» (a face do cinco feita de
+  riscos), «Cinco Riscos» e «Olho de Giz»; **o Pedro escolheu Cinco Riscos**, por ser um nome que serve também a outros jogos. Agora: o escuro,
+  uma **luz quente se acende numa parede das salas** (a mesma alvenaria do jogo) e o **giz do jogo** (os quadradinhos claros `#f0ecdc`, que
+  falham no grão da pedra) risca, traço a traço, o símbolo, a **contagem de cinco dos condenados** (quatro riscos e o quinto atravessado,
+  passando da conta), e depois o nome, com um toco de giz na ponta soltando pó; no fim a luz baixa até o preto e a tela inicial se abre. Tudo em
+  pixel, no tamanho de pixel do jogo; ~4 s; um toque, clique ou tecla pula; uma vez por sessão do navegador (voltar à tela inicial no meio do
+  jogo não repete); `?splash=0` pula, `?splash=1` força. Ela só sai quando a tela inicial está pronta.
+- **A tela inicial não "sobe do preto" mais.** O defeito: o menu aparecia (subindo de baixo) com a tela ainda preta, e o cenário surgia segundos
+  depois, porque o 1º desenho de cada material compila o programa de sombreamento, e os modelos 3D chegam depois. Agora a cena avisa quando está
+  pronta (`onReady`: 4 quadros desenhados, os modelos chegaram, a fonte carregou; no máximo 10 s; `src/story/loading.ts`) e só então, depois da
+  abertura, a imagem **se abre do preto** (1,1 s, o dado junto), o **logo** aparece no lugar e o **menu** em seguida, sem subir de baixo. O dado já
+  está no lugar dele no 1º quadro (antes ele vinha girando até a posição).
+- **O dado mais vivo na tela inicial** (`scene.ts`, `titleActTick`): de tempos em tempos (5 a 10 s), se ninguém mexe no mouse, ele faz alguma coisa e
+  volta reto ao chão, de rosto para a câmera:
+  - **tenta rolar**: faz força (aperta a boca, semicerra os olhos), levanta de lado sobre a quina de baixo e cai de volta com um baque (som baixo),
+    duas ou três vezes, cada vez um pouco mais alto, e **desiste com um leve suspiro**;
+  - **olha em volta**: vira o corpo um pouco para um lado, olha, volta;
+  - **olha o feixe** de luz lá em cima: inclina para trás e a íris se fecha com a claridade;
+  - dá um **pulinho**.
+- **O rosto mais vivo, sempre NEUTRO** (`dielife.ts`, desenho em `textures.ts`), na mão, na tela inicial e na de carregamento:
+  - **olhar de canto**: só as íris vão ao canto do olho e ficam lá um instante (o rosto não vira), com a pálpebra de cima 1 px mais baixa; às vezes
+    pisca ao voltar;
+  - **sobrancelhas que mexem sozinhas**: uma (ou as duas) sobe 1 px e volta; a do lado para onde ele olha de canto às vezes sobe junto. Elas só
+    sobem e descem **retas**, nunca inclinam (inclinar é o que faria cara de bravo ou de triste);
+  - **o olho descansa**: a pálpebra de cima desce um pouquinho por alguns segundos e volta (o olho muda de forma sem mudar a expressão);
+  - **a íris se fecha** olhando para a luz forte (o feixe do poço, na tela inicial);
+  - **o leve suspiro**: puxa o ar (sobe e "enche" um tiquinho, sobrancelhas sobem, narinas abrem) e solta devagar (desce, as pálpebras caem um
+    pouco, a boca entreabre 1 px). De vez em quando (mais vezes na tela inicial). Não é tristeza nem cansaço: é só ele respirando.
+  A boca continua sempre reta (§51); nada disso é emoção.
+- **A tela de carregamento** (`src/ui/LoadingScreen.tsx` + o fundo em `src/ui/loadart.ts`; o motor entra no modo `load`): depois de **Novo
+  jogo** (a subida pelo feixe até o branco, que vira preto), de **Continuar** (o dado pula para fora e a imagem vira pontilhado até o preto) e de
+  **Carregar** outro espaço. Três rodadas com o Pedro: o preto liso com a barra ficou "muito purista"; a parede com o fogo e os riscos de giz
+  ganhou vida, mas ele pediu **o dado em 2D, mexendo o rosto**, e **uma barra com mais coisas do jogo**. Agora:
+  - uma **parede das salas no escuro** e uma **bancada de pedra** embaixo; do alto à esquerda desce a **fresta de luz fria com poeira boiando**;
+  - na bancada, a **canaleta** por onde o **fogo corre** conforme carrega e **cinco braseiros** de ferro (pé, haste, bacia) que **se acendem um a
+    um quando o fogo chega**, com clarão e faíscas, e cada um **ilumina a parede** (a mecânica do jogo: o fogo corre e acende);
+  - na parede, **os desenhos a giz dos condenados** (os mesmos das paredes do jogo, ver abaixo; nada de glifo, pedido do Pedro, que trocou a
+    frase «ACENDER BRASEIRO» que estava ali): **quem passa de capuz**, dentro da fresta de luz fria, se vê desde o começo; **a porta, a
+    contagem dos dias, o dado e a luz do poço** ficam no escuro e **aparecem quando um braseiro acende perto** (o giz devolve bem a luz). A tela
+    fica pronta com os cinco acesos;
+  - no canto, **o dado em 2D, em pixel**, quase de frente, com **o rosto vivo de verdade** (o mesmo de `dielife.ts`/`textures.ts`: os olhos seguem
+    a ponta do fogo e espiam o desenho que acabou de aparecer, pisca, mexe as sobrancelhas, olha de canto, suspira); **recua a cada braseiro que
+    acende** (como no jogo), se anima quando os cinco estão acesos, a luz da chama esquenta a lateral dele e, no clique de começar, **sai pulando pela direita** enquanto a
+    parede escurece (0,5 s);
+  - o aviso «Clique/Toque para começar» fica embaixo da canaleta (nada por cima de nada).
+  O fundo é pintado a cada quadro num canvas no tamanho de pixel do jogo e entra no **pós-processo** (`tBack`/`uBack`): a mesma paleta e o mesmo
+  pontilhado do jogo. O lugar salvo é preparado por baixo (o mundo fica parado), e a tela espera **os modelos, os primeiros quadros e as
+  gravações de som** (no máximo 15 s; a barra leva no mínimo ~1,4 s).
+  - **Os sons que chegavam tarde**: antes, as gravações só começavam a baixar depois do 1º toque/tecla (e, depois de Novo jogo, a página recarrega:
+    era preciso um gesto novo). Agora o motor de som (`audio.ts`, `prepare`) cria o contexto de áudio **suspenso logo ao abrir a página** e já
+    baixa e decodifica tudo durante a abertura, a tela inicial e a de carregamento; nada é agendado antes do gesto (`unlock`), para não tocar tudo
+    junto depois.
+  - **No fim**: se o som já está liberado (Continuar no mesmo espaço: houve o clique), o jogo segue sozinho; se a página acabou de recarregar (Novo
+    jogo, Carregar), aparece **«Clique para começar»** (no celular, **«Toque para começar»**) piscando sobre a barra: é o gesto que o navegador exige
+    para o som sair e, no PC, para prender o mouse (antes aparecia "Clique para jogar" por cima da cena de acordar, e ela começava muda).
+  - Depois do clique: num jogo novo, a cena de acordar começa no preto como sempre; num jogo salvo, o véu se abre (1,1 s) e aparece o nome da sala.
+- **Os desenhos a giz das paredes, melhorados** (`src/scene/chalkdraw.ts`; pedido do Pedro). Os desenhos que os condenados deixaram nas paredes
+  eram linhas retas finas, de vetor, sem cara de giz. Agora saem do **mesmo giz do jogo** (os quadradinhos claros que falham no grão), **feitos à
+  mão**: tremor, traço mais grosso no meio e fino nas pontas, alguns traços repassados, pó em volta, partes apagadas (esfregadas). Os desenhos:
+  **o braseiro** (três línguas de fogo), **a porta** em arco com tábuas, cinta e argola, **o dado** com o rosto (boca reta), **a luz do poço** com
+  alguém embaixo de braços erguidos, **quem passa de capuz** (o Escrivão, visto pelos condenados), **uma mão** contornada, **o rosto apagado** e
+  **a contagem dos dias**. Nas salas, um pouco mais foscos que o giz puro (ao lado das tochas, o branco saturava em laranja e parecia brasa), e
+  na resolução certa para a distância (~85 px/m na Galeria, ~105 nos corredores estreitos).
+  - **A Galeria dos Condenados**: as centenas de riscos, o rosto apagado, a porta e o desenho dos tamanhos, nos mesmos lugares. **No desenho dos
+    tamanhos, GRANDE e PEQUENO estavam errados** (com uma base embaixo, como um U); agora são como no léxico, só as duas laterais (V) com os
+    pontos (0, 2, 6, 8 e 4). O braseiro grande e o pequeno continuam lá, e a folha nº 6 continua a três passos.
+  - **Os corredores**: além dos riscos (uns 4 em cada 10 corredores compridos), alguns ganham **um desenho** (hoje quatro: o braseiro, a mão, o
+    dado e quem passa de capuz), no trecho mais comprido, na altura dos olhos.
+  - **A Lousa**: os riscos de quem contou os dias ao lado da 1ª lousa, com o giz novo.
+  - **Não mexi no mural da Biblioteca** (porta, livro, chave, sino): a porta e o livro de lá são de propósito o mesmo rabisco que o dado mostra
+    quando traduz uma palavra, e o puzzle é casar os dois.
+- **A mira só aparece com o jogo de fato começado**: a interface começa com ela escondida, a tela inicial e a de carregamento contam como cena, e o
+  motor avisa já no 1º quadro (antes ela piscava no meio da tela no começo do jogo e só depois sumia). Nas cenas (acordar, o poço, o dado ao centro,
+  a gema...) ela some e volta quando a cena acaba, como antes.
+
+## 81. O andar do Escrivão: a túnica não é calça (cenógrafo, pedido do Pedro)
+
+O Pedro achou o andar do Escrivão animado "meio estranho" e pediu para arrumar ou voltar ao de antes. Filmando o passo quadro a quadro (de lado, de
+3/4 e de frente), o problema não era o recorte do ciclo (o de §78 e o antigo de §70 dão quase o mesmo movimento, e o de agora é o mais liso na
+emenda), e sim o **pano**:
+
+- **A túnica andava como calça.** Na hora de pôr o esqueleto, o Mixamo prendeu a túnica de baixo, a barra do casaco e a estola aos ossos das
+  PERNAS (coxa, canela, pé e ponta do pé). A cada passo o pano ia junto com a perna: a barra se esticava em cunha para trás, a túnica se abria entre
+  as pernas e a estola vermelha rasgava em tiras. Agora (`robeNotTrousers` em `scribeRig.ts`, uma vez quando o arquivo carrega) o pano que estava
+  nas pernas passa para o **quadril**, e só um pouco dele (`ROBE_SWAY` = 22%) fica na coxa do mesmo lado: a túnica cai como um sino e a barra
+  balança de leve com o passo, como no Escrivão de código. Só os **sapatos** (achados pela cor quase preta da textura) continuam nos pés: eles
+  aparecem e somem sob a barra a cada passo, sem o pé escorregar no chão.
+- **Os braços de pinguim.** O "Start Walking" abria os braços para os lados e dobrava a mão esquerda de lado na frente da barriga. Andando, as mãos
+  agora caem junto do corpo, um pouco à frente (`ARM_HOLD` = 70%, os dois ossos do braço, como já se fazia ao debruçar), cada uma balançando pouco ao
+  contrário do pé do mesmo lado, e os pulsos voltam à pose de pé. Quando a mão direita tem o que fazer (ir ao manto, erguer o dado), ela manda.
+- O recorte do ciclo ficou o de §78 (1,067 s + 1,484 s, emenda de 0,35 s); os números estão em `WALK_CUT`, num objeto, para os testes compararem
+  recortes. Nada mudou no debruçar, no erguer do dado nem nos tempos das cenas (o poço e a janela dos Nichos). `?escrivao=antigo` continua
+  mostrando o Escrivão de código, se o Pedro quiser comparar.
+
+## 82. A barra de carregamento vira uma frase que a luz enche (cenógrafo, pedido do Pedro)
+
+O Pedro achou estranhos os cinco braseiros em cima da barra e pediu que a barra tivesse o efeito dos puzzles de glifos, "aonde a luz vai enchendo".
+Saíram a canaleta de fogo e os braseiros (`ui/loadart.ts`). No lugar:
+
+- **A frase talhada.** Uma laje de pedra lavrada presa à parede (borda de cima clara, de baixo escura, uma sombra embaixo, como as lousas das
+  salas) com a frase do Escrivão na cena do poço, «EU DAR DADO · VOCÊ LER» (6 símbolos), no desenho exato dos glifos do jogo (`drawGlyphPart`).
+  Apagada, ela é como as frases acendíveis (§53): o sulco escuro preenchido de marfim fosco, com uns pontinhos onde o marfim descascou.
+- **A luz que enche.** Conforme carrega, a luz dourada corre pelos sulcos **traço a traço, na ordem da escrita**, símbolo por símbolo, e pula de
+  uma palavra para a outra como nas frases do jogo (0,35 de símbolo). Cada símbolo clareia quando a luz chega nele e assenta (o pulso de §59),
+  toca a nota dele (celesta e harpa, `sfx.glyph`, a mesma das frases acendíveis) e depois respira de leve, com o reflexo correndo pelos traços.
+  O brilho fica no desenho: o ouro do tamanho do sulco, um fio claro no meio e um halo estreito pontilhado. Na ponta da luz, um ponto
+  branco-dourado tremula e solta um pó de luz que sobe; com tudo aceso, o pó sai de vez em quando de um símbolo.
+- **A luz na parede.** Cada símbolo aceso clareia a parede em volta (mais para cima que para baixo), e os desenhos a giz aparecem com essa luz,
+  como antes apareciam com os braseiros (subiram um pouco para dar lugar à laje). O dado olha a ponta da luz e o desenho que acabou de aparecer;
+  com a frase inteira acesa, ele se anima. A tela só sai quando a frase está toda acesa (o mesmo "pronto" de antes).
+- O aviso «Clique/Toque para começar» fica na frente da bancada, embaixo da laje (`LOAD_BAR.prompt`).
+- A frase é só uma escolha de cenário (uma fala que já existe no jogo); se o narrador quiser outra, é trocar `PHRASE` em `loadart.ts` (a laje e
+  o tamanho dos símbolos se ajustam sozinhos à largura).
+
+## 83. O dado da tela de carregamento em 2D de verdade (cenógrafo, pedido do Pedro)
+
+O Pedro aprovou a frase da barra (§82) e pediu o dado "de fato em 2D, com a face totalmente virada para o jogador". Saíram as faces de cima e
+de lado que imitavam uma caixa em perspectiva (`drawDie` em `ui/loadart.ts`): fica só a face da frente, o mesmo rosto vivo (olhar, piscar,
+sobrancelhas, suspiro), chapada, no tamanho do pixel do jogo, com 1 px de contorno escuro para se separar da parede, a borda virada para a frase
+pegando a luz dourada e o lado esquerdo do rosto mais quente. Como agora é um desenho, ele pula como desenho animado: estica um pouco no ar e
+achata ao pousar, apoiado na bancada pelo meio de baixo; a sombra de contato pontilhada encolhe no pulo. No clique de começar, sai pulando pela
+direita, como antes.
+
+## 84. O ritmo das novidades: o giz chega no meio do capítulo 2 (decidido pelo Pedro)
+
+O Pedro não quer duas mecânicas novas em seguida: o Peso chega no fim do capítulo 1 (o altar do Tribunal, §77), então o giz **não** vem logo
+no começo do capítulo 2 (o plano antigo, §16 e §19). Fica valendo um ritmo fixo: **uma novidade a cada meio capítulo**, alternando face do dado
+e ferramenta, para o jogador aprender cada uma sozinha antes da próxima.
+
+| Momento | O que chega | O que se usa |
+|---|---|---|
+| Fim do capítulo 1 (o Tribunal) | **Peso** (IGUAL) | |
+| 1ª metade do capítulo 2 | nada novo | **Fogo + Peso**: primeiro 2 ou 3 salas só de Peso, depois os dois juntos |
+| **Meio do capítulo 2** | **o giz**, com o Escrivão de perto pela primeira vez | |
+| 2ª metade do capítulo 2 | nada novo | **Fogo + Peso + giz** |
+| Fim do capítulo 2 | **Eco** (a 3ª face, num altar, como o Peso) | |
+
+- **Onde o giz chega:** na volta à **Biblioteca**, o centro do mundo (no capítulo 1 ela era o grande respiro do meio do capítulo; no 2 repete o
+  papel). Um **elevador de contrapeso**, que só o Peso move, leva ao **2º andar** (no capítulo 1 as escadas para cima estão desabadas e os andares
+  de cima só se veem pelo vão do Átrio). Lá em cima o Escrivão espera, de perto pela primeira vez: escreve a frase da sentença («EU ESCREVER
+  SENTENÇA», depois «VOCÊ LER SENTENÇA ?») e deixa o giz. A cena guardada de A Entrada (`rooms/room1.ts`) serve de base. É o momento em que o
+  jogador entende a premissa (`HISTORIA.md`, "Como a premissa é revelada cedo").
+- **Paga uma pista do capítulo 1:** pela grade do escritório do Escrivão, na Biblioteca, já se vê um **toco de giz** em cima da mesa.
+- **O que isso pede das salas:** nenhum puzzle da 1ª metade do capítulo 2 pode depender do giz. Das salas guardadas, O Salão das Brasas e O
+  Mirante (Fogo + Peso) servem para a 1ª metade; A Lacuna, O Selo e A Placa que Julga (com giz) só depois do meio.
+- Os textos e a cena são do `narrador`; os puzzles, da sessão de puzzles. Aqui fica só onde cada coisa chega.
+
+## 85. Os desenhos do dado: livro, pegar e escrever refeitos (cenógrafo, pedido do Pedro)
+
+Os desenhos que o dado mostra (`src/scene/sketch.ts`, na face de cima, no balão e nos murais da Biblioteca) continuam no mesmo estilo, de traço
+grosso e limpo com o laranja do fogo, porque têm de ser lidos de relance em 40 px (os desenhos a giz das paredes, §80, são outra coisa: o
+giz fino dos condenados). Três se liam mal e foram refeitos:
+- **livro**: era um retângulo em pé, que parecia uma porta. Agora é o livro **fechado e deitado**, visto um pouco de cima: a capa, a espessura
+  das folhas na frente, a lombada e a fita laranja. É o desenho da fala «LIVRO» do dado no Vestíbulo e do bloco LIVRO do mural de encaixe.
+- **pegar**: era uma mancha. Agora é uma **mão descendo e fechando os dedos** em volta do mesmo livro, com uma **seta laranja para cima** (o
+  contrário da placa, em que a seta aperta para baixo). É o desenho de «VOCÊ PEGAR LIVRO» no Vestíbulo. Numa segunda passada (o Pedro pediu
+  para melhorar), a mão deixou de ser contorno, que em 40 px parecia um ancinho, e virou **mão cheia**, em marfim: pulso, costas da mão,
+  os quatro dedos juntos com a separação escura e o polegar do lado, pousados na capa.
+- **escrever**: tinha riscos demais (mão, página, pena e um livrinho). Agora é uma **folha** com duas linhas já escritas e a **pena** escrevendo
+  a terceira, que sai laranja da ponta. É o mural ESCREVER da Biblioteca.
+- O mural de encaixe usa o mesmo desenho do dado, então os dois mudaram juntos e o puzzle de casar o desenho com o nome continua igual.
+
+## 86. O som da interface: coisa de verdade, não mágica (pedido do Pedro)
 
 "Uma coisa que acho que podemos melhorar é o som de UI, de clicar nas coisas." Os sons de interface eram notas de instrumento: uma celesta
 em todo clique, harpa ao abrir a pausa, glockenspiel ao anotar e uma nota de glockenspiel diferente para cada face do dado. Pela mesma regra
@@ -1767,4 +1933,3 @@ ligado ao objeto que aparece na tela:
 - **Níveis medidos**, cada um sozinho (pico): apertar −18 dB, passar por cima −29, mudar de aba −28, abrir a pausa −18, fechar −16, abrir o
   caderno −9, virar a página −10, tocar no papel −21, o fecho −10, fechar o caderno −9, anotado −25, trocar a face −11. Os do caderno são
   mais altos de propósito: é o objeto grande que o personagem tem na mão; os de passar por cima são os mais baixos porque tocam a toda hora.
-

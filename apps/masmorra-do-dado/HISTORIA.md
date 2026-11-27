@@ -12,7 +12,8 @@ Você foi **lançado, como um dado**, dentro de uma Casa que é ao mesmo tempo o
 
 ## Quem é você
 - **Sem nome.** Lembra de duas coisas: de ter sido **lançado** (de cair, não de ter sido carregado) e de uma voz lendo algo comprido, numa língua que não entendeu. **Não lembra do crime.**
-- Ganha um **dado** logo no começo (o Escrivão o joga pelo poço). O **giz** (todo condenado recebe um) só chega no capítulo 2, com o Escrivão.
+- Ganha um **dado** logo no começo (o Escrivão o joga pelo poço). O **giz** (todo condenado recebe um) só chega **no meio do capítulo 2**, das mãos do Escrivão, de perto pela primeira vez, no 2º andar da
+  Biblioteca (decidido pelo Pedro: duas ferramentas novas não chegam juntas; `DESIGN.md` §84).
 
 ## O dado: o Boato
 - É **o boato sobre você**: a acusação que ninguém confirmou. Por isso te segue para todo lado: ele é *sobre* você.
@@ -22,7 +23,7 @@ Você foi **lançado, como um dado**, dentro de uma Casa que é ao mesmo tempo o
 ## Os NPCs (4, mais o dado)
 | NPC | Quando aparece | Papel |
 |---|---|---|
-| **O Escrivão** | fim do 1º capítulo; de novo no meio; e no fim | Escreve com o mesmo giz branco. Ensina **fazendo**: escreve uma frase e a sala a obedece. Fala em glifos. Foi quem escreveu a sua sentença, e **deixou de fora a marca de confirmação**. |
+| **O Escrivão** | de longe no capítulo 1 (4 vezes); de perto no meio do capítulo 2, quando deixa o giz; e no fim | Escreve com o mesmo giz branco. Ensina **fazendo**: escreve uma frase e a sala a obedece. Fala em glifos. Foi quem escreveu a sua sentença, e **deixou de fora a marca de confirmação**. |
 | **O Contador** | capítulo 2 ou 3 | Eco de um Contável que só fala em números. Ensina a base 6. Humor seco. |
 | **A que veio antes** | os diários dela estão pelo caminho (em português); aparece **uma vez**, perto do fim | Outra condenada. Errou o final. Seus diários são as dicas: às vezes certas, às vezes não. |
 | **O Juiz** | sala do veredito | Quem leu a sentença. Só fala com as marcas CONFIRMADO e BOATO. |
@@ -41,7 +42,7 @@ Você foi **lançado, como um dado**, dentro de uma Casa que é ao mesmo tempo o
 ## Como a premissa é revelada cedo (palavras-chave)
 O jogador não precisa de tudo, só de poucas palavras logo de início. Elas viram **puzzle do começo** (não opcionais): **VOCÊ, EU, ESCREVER, LER, SENTENÇA**.
 1. Os 3 primeiros puzzles ensinam números e ACENDER.
-2. No fim do capítulo 1, **o Escrivão aparece** escrevendo na parede: `EU · ESCREVER · SENTENÇA`. Cada símbolo brilha conforme ele escreve.
+2. No meio do capítulo 2 (o primeiro encontro de perto, no 2º andar da Biblioteca, `DESIGN.md` §84), **o Escrivão aparece** escrevendo na parede: `EU · ESCREVER · SENTENÇA`. Cada símbolo brilha conforme ele escreve.
 3. Em seguida ele escreve `VOCÊ · LER · SENTENÇA` com a marca de pergunta, e **espera**.
 4. As frases das portas já vistas acendem uma depois da outra: a Casa inteira é uma frase. O jogador pensa: *"(Esta casa inteira é uma frase. E eu estou dentro dela.)"*
 - Pronto: ele sabe que está preso a uma sentença, que ler é o caminho, e que o Escrivão é um aliado estranho. **Sem explicação, só demonstração.**
