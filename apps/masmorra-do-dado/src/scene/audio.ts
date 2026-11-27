@@ -955,10 +955,12 @@ export class Sfx {
     }
   }
 
-  // O RESOLVIDO (DESIGN.md §79): o momento de "consegui", 2 a 3 s, que resolve. Uma cadência plagal com a terça de picardia, como nos
-  // jogos de mistério: a PERGUNTA (Ré menor: a harpa sobe e o coro respira) e a RESPOSTA (Lá MAIOR, a Casa aceitando): o grave da Casa
-  // (o mesmo tambor distante do escuro, aqui com o acorde maior) e o tímpano, o violoncelo, o coro abrindo, a harpa, um sino e a celesta
-  // subindo. A música abre espaço e depois sai: a frase acaba aqui e vem um silêncio, para o resolvido respirar.
+  // O RESOLVIDO (DESIGN.md §79): o momento de "consegui", ~2,5 s. Feito da MESMA matéria dos outros sons do jogo (pedido do Pedro: a versão
+  // com coro, tímpano, violoncelo e contrabaixo empilhados soava sintética, um jingle de MIDI destoando do resto): quase tudo gravação de
+  // verdade. A trava de pedra que solta (o estalo da placa, mais grave), a pedra assentando e um baque surdo lá no fundo; o GONGO gravado,
+  // tocado a 0,668 da velocidade, que vira um Lá maior (as parciais dele, medidas, são mi, sol sustenido e si: um Mi maior quase afinado,
+  // que nessa velocidade cai em lá, dó sustenido e mi); e por cima o mesmo par do passo certo, harpa e celesta, agora inteiro e resolvendo
+  // (lá, dó sustenido, mi, lá), e o sino gravado afinado no lá. A música abre espaço e depois sai: vem um silêncio para o resolvido respirar.
   private solved() {
     const ac = this.ac!;
     const now = ac.currentTime;
@@ -967,7 +969,7 @@ export class Sfx {
     this.duckUntil = Math.max(this.duckUntil, now + 3.2);
     this.duckMusic(0.18, 2.6, 2.4);
     this.musicBreak(now);
-    // a porta acabou de tocar o violoncelo dela: o resolvido assume o grave
+    // a porta acabou de tocar o violoncelo dela: o resolvido assume o grave (o baque e o gongo)
     const dc = this.doorCello;
     if (dc && now - this.doorAt < 1.2) {
       if (dc.t > now + 0.005) dc.s.stop();
@@ -977,21 +979,18 @@ export class Sfx {
       }
     }
     this.doorCello = null;
-    const f = (inst: string, m: number, vol: number, at: number, o: { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number }) => this.note(inst, m, now + at, vol, { toMusic: false, ...o });
-    // a pergunta: ré, fá, lá, ré subindo na harpa; o coro em ré e fá
-    [50, 53, 57, 62].forEach((m, i) => f('orchestral_harp', m, 0.3, i * 0.075, { fadeIn: 0.004, fadeOut: 0.6, verb: 0.55, echo: 0.1, pan: -0.25 + i * 0.12 }));
-    [62, 65].forEach((m, i) => f('choir_aahs', m, 0.13, 0.02 + i * 0.04, { fadeIn: 0.22, hold: 0.22, fadeOut: 0.3, verb: 0.7, pan: i ? 0.25 : -0.25 }));
-    // a resposta: Lá maior
-    const R = 0.52;
-    this.sample('boom', 0.3, 1.05, R - 0.02, 0.5, 0, 700);
-    f('timpani', 33, 0.32, R, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.7 });
-    // (o lá grave no contrabaixo, gravado nessa altura: o violoncelo só desce até o dó e, puxado para baixo, soava abafado)
-    f(this.inst.contrabass ? 'contrabass' : 'cello', 33, 0.3, R, { fadeIn: 0.05, hold: 1.1, fadeOut: 1.3, verb: 0.7 });
-    f('cello', 45, 0.24, R + 0.02, { fadeIn: 0.12, hold: 1.0, fadeOut: 1.3, verb: 0.7 });
-    [57, 61, 64].forEach((m, i) => f('choir_aahs', m, 0.17, R + i * 0.03, { fadeIn: 0.3, hold: 1.0, fadeOut: 1.4, verb: 0.85, pan: (i - 1) * 0.3 }));
-    [57, 61, 64, 69, 73].forEach((m, i) => f('orchestral_harp', m, 0.34, R + i * 0.055, { fadeIn: 0.004, fadeOut: 1.1, verb: 0.65, echo: 0.15, pan: -0.3 + i * 0.15 }));
-    f('tubular_bells', 69, 0.22, R + 0.06, { fadeIn: 0.004, fadeOut: 1.4, verb: 0.9 });
-    [81, 85, 88, 93].forEach((m, i) => f('celesta', m, 0.17, R + 0.3 + i * 0.1, { fadeIn: 0.004, fadeOut: 0.8, verb: 0.75, echo: 0.3, pan: 0.3 - i * 0.15 }));
+    // a pedra: a trava solta, a pedra assenta e, lá no fundo, o baque
+    this.sample('plate1', 0.5, 0.75, 0, 0.35, 0, 3000);
+    this.sample('settle', 0.4, 0.85, 0.03, 0.5, 0, 2600);
+    this.sample('boom', 0.32, 0.9, 0.05, 0.5, 0, 380);
+    // o gongo gravado, afinado em Lá maior: a Casa aceitando. (Medido: a 0,668 as parciais fortes caem em mi +40 cents, dó sustenido e lá; é a
+    // desafinação natural de um gongo, por isso ele fica por baixo, e quem diz o acorde é a harpa)
+    this.sample('gong', 0.42, 0.668, 0.12, 0.8);
+    // harpa (lá, dó sustenido, mi, lá) e, no alto, a celesta e o sino gravado (afinado no lá: a parcial forte dele está em 1827 Hz)
+    [57, 61, 64, 69].forEach((m, i) => this.fxNote('orchestral_harp', m, 0.32, 0.18 + i * 0.07, 0.55, 0.12));
+    this.fxNote('celesta', 81, 0.2, 0.5, 0.65, 0.3);
+    this.fxNote('celesta', 88, 0.16, 0.64, 0.65, 0.3);
+    this.sample('bell', 0.2, 0.963, 0.55, 0.85);
   }
 
   // passo: SEMPRE a mesma gravação para cada tipo de piso (decisão do Pedro: nada de sorteio). Pedra, degrau e entulho têm duas tomadas,
