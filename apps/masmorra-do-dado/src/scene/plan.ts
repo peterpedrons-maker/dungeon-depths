@@ -5,8 +5,8 @@ import PLANTA from './planta.json';
 import type { DoorSide, EntrySide } from './kit';
 
 const Q = new URLSearchParams(location.search);
-// ?planta=1: o mundo pela planta nova (em construção: passo 3 do §73). Sem isso, a fila de sempre.
-export const PLANTA_ON = !Q.has('lab') && !Q.has('vitrine') && Q.get('planta') === '1';
+// o mundo pela planta nova (o padrão desde o passo 3 do §73); ?planta=0 volta à fila antiga (para comparar)
+export const PLANTA_ON = !Q.has('lab') && !Q.has('vitrine') && Q.get('planta') !== '0';
 
 interface Entry {
   n: string;

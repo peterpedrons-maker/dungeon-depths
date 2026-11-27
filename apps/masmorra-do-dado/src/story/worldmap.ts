@@ -7,6 +7,7 @@ export interface MapRoom {
   key: string; // início do nome da sala (ex.: "Sala 1")
   floor: number; // índice do andar
   floors?: number[]; // salas que atravessam andares (o fosso, a escadaria): aparecem em todos estes
+  parts?: { x: number; y: number; w: number; h: number }[]; // (mapa em pixels) a forma da sala: a união destes retângulos
   x: number;
   y: number;
   w: number;

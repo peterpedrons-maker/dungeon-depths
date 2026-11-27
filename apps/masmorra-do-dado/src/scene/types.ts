@@ -141,6 +141,9 @@ export interface Room {
   // devolvem os dois prontos (`door.exit`, `entrance.entry`).
   exit?: Opening;
   entry?: Opening;
+  // a forma da sala no MAPA do caderno (retângulos do chão, nas coordenadas dela), para salas que não são um retângulo (corredor que vira,
+  // alas, câmaras); sem isto, a caixa da sala
+  mapRects?: Rect[];
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)
   startYaw: number;
   fog: { color: string; near: number; far: number };

@@ -71,8 +71,8 @@ const LAB = new URLSearchParams(location.search).has('lab');
 // ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
 const VITRINE = new URLSearchParams(location.search).has('vitrine');
 const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
-// ?planta=1: o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; plan.ts): cada sala no seu lugar e com o seu giro, ligadas por
-// corredores com curvas. Sem isso, a fila de sempre (em construção: passo 3 do §73).
+// o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; plan.ts), o padrão: cada sala no seu lugar e com o seu giro, ligadas por
+// corredores com curvas. ?planta=0: a fila antiga (para comparar).
 function MAIN_BUILDERS(): RoomBuilder[] {
   // Capítulo 1 (só Fogo), curva da sessão de projeto de puzzles (PUZZLES_PROPOSTAS.md §2): da sala 3 em diante só sobe. Níveis: 1, 1, 2, 3, 3, 4, 5, 5, 6, 6 ... 10.
   // Faltam (propostas ainda sem detalhe): A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
@@ -1768,7 +1768,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const [x0, z0, x1, z1] = rects[i];
       const y = places[i].pos.y;
       const fl = [...new Set([y, y + (r.entranceY ?? 0), y + (r.exitDy ?? 0)].map(flOf))].sort();
-      return { key: shortRoom(r.name), floor: fl[0], floors: fl.length > 1 ? fl : undefined, x: U(z1), y: V(x0), w: (z1 - z0) * s, h: (x1 - x0) * s };
+      // a forma de verdade (salas que não são um retângulo): cada retângulo da sala, no mundo e no mapa
+      const parts = r.mapRects?.map((q) => {
+        const [ax, az] = places[i].xz(q[0], q[1]);
+        const [bx, bz] = places[i].xz(q[2], q[3]);
+        return { x: U(Math.max(az, bz)), y: V(Math.min(ax, bx)), w: Math.abs(bz - az) * s, h: Math.abs(bx - ax) * s };
+      });
+      return { key: shortRoom(r.name), floor: fl[0], floors: fl.length > 1 ? fl : undefined, x: U(z1), y: V(x0), w: (z1 - z0) * s, h: (x1 - x0) * s, parts };
     });
     const links: MapLink[] = paths.map((p) => ({ a: shortRoom(rooms[p.a].name), b: shortRoom(rooms[p.b].name), path: [], floor: flOf(p.y), pts: p.pts.map(([x, z]) => [U(z), V(x)] as [number, number]) }));
     const two = mrooms.some((r) => r.floor === 1 || r.floors?.includes(1));

@@ -447,6 +447,8 @@ export function buildRespiro2(ctx: Ctx): Room {
     interactables,
     doorZ: Z0,
     exit: door.exit,
+    // no mapa: o salão e as duas câmaras de banho
+    mapRects: [[X0, Z0, X1, Z1], [WEST.x0, WEST.z0, WEST.x1, WEST.z1], [EAST.x0, EAST.z0, EAST.x1, EAST.z1]],
     entranceZ: Z1,
     entranceY: EY,
     exitDy: HALL,

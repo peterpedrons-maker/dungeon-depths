@@ -484,6 +484,8 @@ export function buildRespiro1(ctx: Ctx): Room {
     doorZ: Z0,
     entranceZ: Z1,
     entry: entrance.entry,
+    // no mapa: as células do corredor, o pátio e a câmara alta (a galeria de trás da janela não é lugar de andar)
+    mapRects: [...CELLS.map(([ix, iz]) => [cx(ix) - 1, cz(iz) - 1, cx(ix) + 1, cz(iz) + 1] as Rect), [COURT.x0, COURT.z0, COURT.x1, COURT.z1], [CHAMBER.x0, CHAMBER.z0, CHAMBER.x1, CHAMBER.z1]],
     start: SIDE_IN ? new THREE.Vector3(0.2, 0, cz(0)) : new THREE.Vector3(0, 0, 1.2),
     startYaw: SIDE_IN ? Math.PI / 2 : 0,
     fog: { color: '#0b0c14', near: 4, far: 30 },

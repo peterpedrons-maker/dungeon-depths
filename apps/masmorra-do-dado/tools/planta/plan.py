@@ -39,7 +39,7 @@ class Room:
 
     def door(self):
         # (ponto da porta no plano, direção de saída). Se o jogo já disse onde a porta ficou (salas.json: `exit`, exportado de
-        # window.__mdd.footprints() com ?planta=1) e é no mesmo lado, vale o ponto de verdade
+        # window.__mdd.footprints() com a planta ligada) e é no mesmo lado, vale o ponto de verdade
         s = self.s
         if 'exit' in s:
             lx, lz, dx, dz = s['exit']

@@ -838,6 +838,27 @@ function drawStroke(ctx: CanvasRenderingContext2D, st: Stroke) {
 
 function drawRoom(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number, here: boolean, px = false) {
   // (mapa em pixels: a sala do tamanho dela; em células: a grade de sempre)
+  if (px && r.parts?.length) {
+    // a forma de verdade: a união dos retângulos, com o contorno só por fora
+    const P = r.parts.map((q) => [Math.round(ox + q.x), Math.round(oy + q.y), Math.round(ox + q.x + q.w), Math.round(oy + q.y + q.h)]);
+    const x0 = Math.min(...P.map((q) => q[0]));
+    const y0 = Math.min(...P.map((q) => q[1]));
+    const W = Math.max(...P.map((q) => q[2])) - x0 + 1;
+    const H = Math.max(...P.map((q) => q[3])) - y0 + 1;
+    const m = new Uint8Array(W * H);
+    for (const [a, b, c, d] of P) for (let y = b; y < d; y++) for (let x = a; x < c; x++) m[(y - y0) * W + (x - x0)] = 1;
+    const at = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] === 1;
+    ctx.fillStyle = here ? '#f0cf86' : HILITE;
+    for (const [a, b, c, d] of P) ctx.fillRect(a, b, c - a, d - b);
+    ctx.fillStyle = INK;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (at(x, y) && (!at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1))) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+    if (here) {
+      const big = P.reduce((u, q) => ((q[2] - q[0]) * (q[3] - q[1]) > (u[2] - u[0]) * (u[3] - u[1]) ? q : u));
+      ctx.fillStyle = RED;
+      ctx.fillRect(Math.floor((big[0] + big[2]) / 2) - 1, Math.floor((big[1] + big[3]) / 2) - 1, 4, 4);
+    }
+    return;
+  }
   const rx = px ? Math.round(ox + r.x) : ox + r.x * CELL_W;
   const ry = px ? Math.round(oy + r.y) : oy + r.y * CELL_H;
   const rw = px ? Math.max(3, Math.round(ox + r.x + r.w) - rx) : r.w * CELL_W;

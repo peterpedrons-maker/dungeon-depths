@@ -1331,7 +1331,7 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   - **a planta é a fonte:** `tools/planta/planta_cap1.py` grava `src/scene/planta.json` (a origem e o giro de cada sala, pelo nome) e o
     desenho. Ela também alinha sozinha as salas quase alinhadas (um degrau de lado de menos de 1,5 m num corredor fica feio) e avisa salas
     sobrepostas e corredores que atravessam salas. A altura de cada sala continua saindo da anterior (porta de saída = entrada da seguinte);
-  - **`?planta=1`:** monta o mundo pela planta (prévia). Sem isso, o mundo continua em fila, idêntico ao de antes (conferido sala por sala:
+  - **`?planta=1`** (até o passo 3; hoje a planta é o padrão e `?planta=0` volta à fila): monta o mundo pela planta (prévia). Sem isso, o mundo continua em fila, idêntico ao de antes (conferido sala por sala:
     posições e imagens iguais). A prévia só fica certa no passo 3: hoje as salas ainda só têm a porta do fundo e a entrada da frente, então
     onde a planta pede porta de lado o corredor dá voltas ou atravessa a sala;
   - **o mapa do caderno sai do 3D** (com `?planta=1`): cada sala é a caixa dela, no lugar dela; cada corredor, o caminho dele, da porta à
@@ -1380,7 +1380,10 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   - **a ferramenta da planta** avisa: salas sobrepostas, corredor (com as paredes) encostando em sala, corredor que volta para trás, porta
     encostada demais na entrada seguinte; e alinha sozinha o que ficou quase alinhado (até 2 m);
   - **testes:** `__mdd.paths()` (cada ligação no mundo), `__mdd.look(ângulo, inclinação)`, `__mdd.rectsNear(x, z)` e a travessia (andar de cada
-    porta, pelo corredor, até dentro da sala seguinte).
+    porta, pelo corredor, até dentro da sala seguinte);
+  - **a planta nova é o padrão.** `?planta=0` volta à fila antiga (para comparar; o jogo salvo vale nas duas, porque a posição é gravada
+    dentro da sala). O que ainda é do passo 2 e vale aqui: o mapa sai do 3D; as salas que não são um retângulo (a Cisterna, a Biblioteca, os
+    Banhos) aparecem no mapa com a forma de verdade (`Room.mapRects`: os retângulos do chão, nas coordenadas da sala).
 
 ## 74. O dado no braseiro 3D e o caderno que pula de parte em parte (pedidos do Pedro)
 

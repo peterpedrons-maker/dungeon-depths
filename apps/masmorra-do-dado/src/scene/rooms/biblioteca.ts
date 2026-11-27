@@ -617,6 +617,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
     interactables,
     doorZ: Z0,
     entranceZ: Z1,
+    // no mapa: o Átrio e as quatro alas
+    mapRects: [[-AX, Z0, AX, Z1], [-WX, WINGS.pedras[0], -AX, WINGS.pedras[1]], [-WX, WINGS.papel[0], -AX, WINGS.papel[1]], [AX, WINGS.museu[0], WX, WINGS.museu[1]], [AX, WINGS.aula[0], WX, WINGS.aula[1]]],
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0a0a12', near: 7, far: 34 },
