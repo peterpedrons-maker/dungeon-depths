@@ -4,7 +4,7 @@ import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
 import { dialogue, dialogueStore } from '../story/dialogue';
 import { BOARD_H, BOARD_W, diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt, drawGemBoard, gemSocketPx } from './bookart';
-import { currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
+import { blankPaper, currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -160,25 +160,47 @@ export function createDiaryBook(env: BookEnv) {
   };
   let boardOverride: null | { n: number; flash: number; fk: number } = null;
 
-  // folha que vira (articulada no lombo)
-  const leafGeo = new THREE.PlaneGeometry(PWD, PHD, 18, 1);
-  leafGeo.translate(PWD / 2, 0, 0);
-  const leafBase = Float32Array.from(leafGeo.attributes.position.array as Float32Array);
-  const leafF = new THREE.Mesh(leafGeo, matLeafF);
-  const leafB = new THREE.Mesh(leafGeo, matLeafB);
-  const leaf = new THREE.Group();
-  leaf.add(leafF, leafB);
-  leaf.visible = false;
-  inner.add(leaf);
-  const bend = (theta: number, lag: number) => {
-    const p = leafGeo.attributes.position;
+  // folhas que viram (articuladas no lombo). Virar UMA página usa uma folha; pular para outra parte do caderno (pelo índice) vira um MAÇO de
+  // uma vez, em leque: a 1ª folha leva a página de onde se sai, a última traz a página aonde se chega, e as do meio são papel em branco
+  // (antes o caderno virava as folhas uma por uma até lá, e do fim ao índice eram mais de quinze viradas)
+  const blankTex = (side: 'L' | 'R') => {
+    const t = new THREE.CanvasTexture(blankPaper(side));
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const blankBackTex = blankTex('L');
+  blankBackTex.wrapS = THREE.RepeatWrapping; // (o verso é lido de trás para a frente, como o da folha de verdade)
+  blankBackTex.repeat.x = -1;
+  blankBackTex.offset.x = 1;
+  const MAXL = 5;
+  const leaves = Array.from({ length: MAXL }, (_, k) => {
+    const geo = new THREE.PlaneGeometry(PWD, PHD, 18, 1);
+    geo.translate(PWD / 2, 0, 0);
+    const base = Float32Array.from(geo.attributes.position.array as Float32Array);
+    const blankF = paperMat(blankTex('R'), THREE.FrontSide);
+    const blankB = paperMat(blankBackTex, THREE.BackSide);
+    const front = new THREE.Mesh(geo, k === 0 ? matLeafF : blankF);
+    const back = new THREE.Mesh(geo, matLeafB);
+    const group = new THREE.Group();
+    group.add(front, back);
+    group.visible = false;
+    inner.add(group);
+    return { geo, base, front, back, group, blankF, blankB };
+  });
+  type Leaf = (typeof leaves)[number];
+  // `dz`: quantas folhas há por cima desta no maço (para não brigarem entre si)
+  const bend = (lf: Leaf, theta: number, lag: number, dz = 0) => {
+    const p = lf.geo.attributes.position;
     for (let i = 0; i < p.count; i++) {
-      const u = leafBase[i * 3] / PWD;
+      const u = lf.base[i * 3] / PWD;
       const phi = Math.min(Math.PI, Math.max(0, theta - lag * u)); // a folha encurva, mas nunca desce para dentro das páginas de baixo
-      p.setXYZ(i, GAP + u * PWD * Math.cos(phi), leafBase[i * 3 + 1], 0.003 + u * PWD * Math.sin(phi) + curve(u) * Math.abs(Math.cos(theta)) ** 3);
+      p.setXYZ(i, GAP + u * PWD * Math.cos(phi), lf.base[i * 3 + 1], 0.003 + dz * 0.0012 + u * PWD * Math.sin(phi) + curve(u) * Math.abs(Math.cos(theta)) ** 3);
     }
     p.needsUpdate = true;
-    leafGeo.computeBoundingSphere();
+    lf.geo.computeBoundingSphere();
   };
 
   // a lombada: meia-cana de couro atrás do dobra, com as nervuras e o ouro
@@ -414,7 +436,8 @@ export function createDiaryBook(env: BookEnv) {
   let regL: Region[] = [];
   let regR: Region[] = [];
   let target = 0;
-  let flip: { s: number; dir: 1 | -1; t: number; dur: number } | null = null;
+  // a virada em curso: entre os spreads `lo` e `hi` (vizinhos numa página só; distantes num maço de `n` folhas que saem uma atrás da outra)
+  let flip: { lo: number; hi: number; dir: 1 | -1; t: number; dur: number; n: number; lag: number } | null = null;
   let caretT = 0;
   let lastWant = 0;
   let seenNews = false;
@@ -491,17 +514,19 @@ export function createDiaryBook(env: BookEnv) {
   });
 
   // ── virar páginas ──
-  const startFlip = (s: number, dir: 1 | -1, quick: boolean) => {
-    // a folha fica entre os spreads s e s+1
-    const d = dState();
-    const lay = layout(d);
-    draw(pgL, 'L', s);
-    draw(pgR, 'R', s + 1);
-    draw(lfF, 'R', s);
-    draw(lfB, 'L', s + 1);
-    void lay;
-    flip = { s, dir, t: 0, dur: quick ? 0.26 : 0.46 };
-    leaf.visible = true;
+  const startFlip = (lo: number, hi: number, dir: 1 | -1) => {
+    // embaixo, à esquerda a página de `lo` e à direita a de `hi`; a folha (ou o maço) leva a direita de `lo` e traz a esquerda de `hi`
+    draw(pgL, 'L', lo);
+    draw(pgR, 'R', hi);
+    draw(lfF, 'R', lo);
+    draw(lfB, 'L', hi);
+    const n = Math.min(MAXL, hi - lo);
+    leaves.forEach((lf, k) => {
+      lf.group.visible = k < n;
+      lf.front.material = k === 0 ? matLeafF : lf.blankF;
+      lf.back.material = k === n - 1 ? matLeafB : lf.blankB;
+    });
+    flip = { lo, hi, dir, t: 0, dur: n > 1 ? 0.5 : 0.46, n, lag: n > 1 ? 0.055 : 0 };
     env.sound('uiflip');
   };
   const goTo = (n: number) => {
@@ -727,7 +752,7 @@ export function createDiaryBook(env: BookEnv) {
         if (presentFrom < 0) presentFrom = view.spread;
         stopEdit();
         flip = null;
-        leaf.visible = false;
+        leaves.forEach((lf) => (lf.group.visible = false));
         view.spread = target = layout(dState()).gemsAt;
         presentFast = fast;
         refresh();
@@ -871,7 +896,7 @@ export function createDiaryBook(env: BookEnv) {
       // o fundo do caderno: a placa de couro no lugar do papel e do bloco de folhas da direita (também durante a virada que chega nele)
       {
         const gAt = layout(dState()).gemsAt;
-        const showBoard = flip ? flip.s + 1 === gAt : view.spread === gAt;
+        const showBoard = flip ? flip.hi === gAt : view.spread === gAt;
         board.visible = showBoard;
         meshR.visible = !showBoard;
         rightBlock.visible = !showBoard;
@@ -881,24 +906,34 @@ export function createDiaryBook(env: BookEnv) {
         }
       }
       // virada de página
+      // (uma página de cada vez com as setas, a roda e o canto da folha; um pulo maior, pelo índice, vira tudo de uma vez num maço)
       if (ready() && !flip && view.spread !== target) {
-        const step = Math.sign(target - view.spread) as 1 | -1;
-        const s = step > 0 ? view.spread : view.spread - 1;
-        startFlip(s, step, Math.abs(target - view.spread) > 1);
+        const dir = Math.sign(target - view.spread) as 1 | -1;
+        startFlip(Math.min(view.spread, target), Math.max(view.spread, target), dir);
       }
       if (flip) {
-        flip.t += dt / flip.dur;
-        const p = clamp01(flip.t);
-        const e = ease(p);
-        const theta = flip.dir > 0 ? Math.PI * e : Math.PI * (1 - e);
-        bend(theta, 0.55 * Math.sin(Math.PI * p));
-        const shade = 0.72 + 0.28 * Math.abs(Math.cos(theta));
-        matLeafF.color.setScalar(shade);
-        matLeafB.color.setScalar(shade);
-        if (p >= 1) {
-          view.spread = flip.dir > 0 ? flip.s + 1 : flip.s;
+        const f = flip;
+        f.t += dt;
+        let done = true;
+        for (let k = 0; k < f.n; k++) {
+          const lf = leaves[k];
+          // indo para a frente, a folha de cima da direita (a 0) sai primeiro; voltando, a de cima da esquerda (a última)
+          const order = f.dir > 0 ? k : f.n - 1 - k;
+          const p = clamp01((f.t - order * f.lag) / f.dur);
+          if (p < 1) done = false;
+          const e = ease(p);
+          const theta = f.dir > 0 ? Math.PI * e : Math.PI * (1 - e);
+          // por cima: na direita, a folha 0; na esquerda, a última (cada uma vai trocando de lugar no maço enquanto vira)
+          const onLeft = theta / Math.PI;
+          bend(lf, theta, 0.55 * Math.sin(Math.PI * p), (f.n - 1 - k) * (1 - onLeft) + k * onLeft);
+          const shade = 0.72 + 0.28 * Math.abs(Math.cos(theta));
+          (lf.front.material as THREE.MeshBasicMaterial).color.setScalar(shade);
+          (lf.back.material as THREE.MeshBasicMaterial).color.setScalar(shade);
+        }
+        if (done) {
+          view.spread = f.dir > 0 ? f.hi : f.lo;
           flip = null;
-          leaf.visible = false;
+          leaves.forEach((lf) => (lf.group.visible = false));
           refresh();
         }
       }

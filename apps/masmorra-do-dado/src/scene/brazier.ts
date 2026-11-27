@@ -73,17 +73,32 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   embers.visible = false;
   kit.group.add(embers);
 
+  // a colisão segue o desenho: no modelo 3D (coluna com cesta), base, fuste, capitel e cesta, medidos do arquivo (o fuste tem uns 22 cm de raio e
+  // a cesta 18); antes eram dois blocos do braseiro de caixas (o de cima com 42 cm), e o dado e o jogador batiam no ar em volta da cesta
+  const bx = (r: number, a: number, h: number) => ({ min: new THREE.Vector3(x - r * s, y0 + a * s, z - r * s), max: new THREE.Vector3(x + r * s, y0 + h * s, z + r * s) });
+  const boxes: Box[] = useModel
+    ? [bx(0.3, 0, 0.18), bx(0.2, 0.18, 0.8), bx(0.26, 0.8, 0.9), bx(0.18, 0.9, 1.1)] // (a cesta: o dado repousa em cima, a 1,1 m)
+    : [bx(0.3, 0, 0.8), bx(0.42, 0.8, 1.1)];
+  const socket: Socket = { x, y: y0 + 1.1 * s, z, r: 0.6 * s };
+  if (useModel) {
+    // a MIRA do posicionar: o modelo não é superfície (a mira o atravessava e o dado ia para o chão atrás). Um cilindro invisível do tamanho do
+    // braseiro recebe a mira; mirar em qualquer parte dele assenta o dado no centro, em cima da cesta (scene.ts, placeDie)
+    const aim = new THREE.Mesh(new THREE.CylinderGeometry(0.24 * s, 0.3 * s, 1.1 * s, 10), new THREE.MeshBasicMaterial());
+    aim.position.set(x, y0 + 0.55 * s, z);
+    aim.visible = false;
+    aim.userData.socket = socket;
+    aim.userData.aimOnly = true; // (o giz não risca nele)
+    kit.group.add(aim);
+    kit.surfaces.push(aim);
+  }
   const b: Brazier = {
     x,
     z,
     bowl,
     lit: false,
     flameK: 1,
-    boxes: [
-      { min: new THREE.Vector3(x - 0.3 * s, y0, z - 0.3 * s), max: new THREE.Vector3(x + 0.3 * s, y0 + 0.8 * s, z + 0.3 * s) },
-      { min: new THREE.Vector3(x - 0.42 * s, y0 + 0.8 * s, z - 0.42 * s), max: new THREE.Vector3(x + 0.42 * s, y0 + 1.1 * s, z + 0.42 * s) }, // a tigela: o dado repousa em cima
-    ],
-    socket: { x, y: y0 + 1.1 * s, z, r: 0.6 * s },
+    boxes,
+    socket,
     rect: [x - 0.5 * s, z - 0.5 * s, x + 0.5 * s, z + 0.5 * s],
     touched() {
       const d = ctx.die;
