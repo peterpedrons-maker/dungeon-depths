@@ -331,7 +331,7 @@ function decorate(
       }
     }
     // os riscos de giz (em uns 4 de cada 10 corredores, no trecho mais comprido, entre dois arcos) ou, em outros, UM DESENHO A GIZ de quem
-    // passou por aqui (a porta, a mão, a luz do poço, quem passa de capuz, o dado, o braseiro; scene/chalkdraw.ts, DESIGN.md §79)
+    // passou por aqui (a porta, a mão, a luz do poço, quem passa de capuz, o dado, o braseiro; scene/chalkdraw.ts, DESIGN.md §80)
     if (k === longest && L >= 4.5) {
       const roll = L >= 6 ? rnd() : 0.45 + rnd() * 0.55; // (os riscos pedem um trecho de 6 m; um desenho cabe em 4,5)
       const t = spots.length > 1 ? spots[Math.floor(spots.length / 2)] : L / 2;

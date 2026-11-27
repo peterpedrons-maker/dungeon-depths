@@ -1,7 +1,7 @@
 // Som do jogo com GRAVAÇÕES REAIS (nada sintetizado): efeitos de pacotes livres (CC0) e
-// instrumentos reais (violoncelo, cordas, coro, harpa, celesta, flauta, tímpano, sinos...)
-// do soundfont FluidR3_GM. A música é composta em tempo real, tocando essas notas
-// gravadas; uma só pra o jogo todo. Créditos em public/audio/CREDITS.txt.
+// instrumentos reais (violoncelo, contrabaixo, cordas, coros, harpa, celesta, flauta, tímpano, sinos, garrafa soprada...)
+// do soundfont FluidR3_GM. A música é composta em tempo real, tocando essas notas gravadas: uma para a tela inicial ("O Poço")
+// e uma para o jogo, que toca em FRASES com silêncios entre elas (DESIGN.md §79). Créditos em public/audio/CREDITS.txt.
 // O navegador só libera áudio depois de um toque/tecla: unlock() cria tudo nesse momento.
 
 export type SfxName =
@@ -19,7 +19,8 @@ export type SfxName =
   | 'gem'
   | 'door'
   | 'doorClose'
-  | 'piece'
+  | 'piece' // um passo certo do puzzle (não o fim)
+  | 'solved' // o puzzle da sala RESOLVIDO (uma vez por sala; o motor decide quando, DESIGN.md §79)
   | 'error'
   | 'burnout'
   | 'land'
@@ -55,6 +56,9 @@ export type AudioMode = 0 | 1 | 2;
 // o que soa sob os pés: o piso (Room.surfaceAt) ou, se o passo subiu/desceu, o degrau
 export type StepKind = 'stone' | 'rug' | 'plate' | 'water' | 'rubble' | 'stair';
 
+// qual música: a da tela inicial (e dos créditos) ou a do jogo
+export type MusicScene = 'title' | 'game';
+
 // como está o lugar onde o jogador está (o motor calcula a partir de Room.ambience; DESIGN.md §60)
 export interface AmbientState {
   wind: number; // 0..1 vento aqui (cresce perto das aberturas)
@@ -63,29 +67,32 @@ export interface AmbientState {
   dripPan: number; // -1..1 de que lado pinga
   calm: boolean; // sem conversa, sem cena, sem escuro: a Casa pode "respirar"
   paused: boolean; // menu de pausa: o ambiente baixa
+  dark?: number; // 0..1 o escuro da Casa: a música também recua
+  quiet?: boolean; // área livre / respiro: menos música (frases curtas, silêncios longos; §79)
 }
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 // Muda quando qualquer arquivo de áudio é trocado: força o navegador/PWA a baixar de novo
-const AUDIO_VERSION = 5;
+const AUDIO_VERSION = 6;
 
 const SFX_FILES = [
   'step_stone_l', 'step_stone_r', 'step_stair_l', 'step_stair_r', 'step_rubble_l', 'step_rubble_r', 'step_rug', 'step_plate', 'step_water',
   'land', 'throw1', 'throw2', 'recall', 'catch', 'put1', 'put2',
   'bounce1', 'bounce2', 'bounce3', 'bounce4', 'roll', 'locked', 'swap1', 'swap2', 'sweep', 'chalk1', 'chalk2',
   'erase', 'ignite', 'ignite_small', 'ignite_cloth', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door_open', 'door_shut', 'rise',
-  'doorclose1', 'error', 'burnout', 'fire', 'crackle', 'wind', 'gust', 'drip', 'boom', 'creak',
+  'doorclose1', 'error', 'burnout', 'fire', 'crackle', 'wind', 'gust', 'drip', 'boom', 'creak', 'settle',
 ];
 // as gotas do arquivo drip.mp3 (início em s; cada uma dura ~0,55 s)
-const DRIPS = [0, 0.6, 1.2];
-const INSTRUMENTS = ['cello', 'string_ensemble_1', 'choir_aahs', 'orchestral_harp', 'celesta', 'glockenspiel', 'flute', 'timpani', 'tubular_bells'];
+const DRIPS = [0, 0.6, 1.2, 1.8, 2.4, 3.0];
+// a ordem é a de carregar: primeiro o que a tela inicial usa (ela pode ser a 1ª coisa que se ouve), depois o resto do jogo
+const INSTRUMENTS = ['orchestral_harp', 'celesta', 'voice_oohs', 'contrabass', 'cello', 'string_ensemble_1', 'choir_aahs', 'tubular_bells', 'glockenspiel', 'flute', 'timpani', 'blown_bottle'];
 
 // notas (MIDI) das faces 1–6 no glockenspiel: pentatônica de lá menor
 const FACE_MIDI = [76, 79, 81, 84, 86, 88];
 
-// Lá menor → Fá → Ré menor → Mi: cada acorde dura 16 s
+// ── a música do JOGO: Lá menor → Fá → Ré menor → Mi; cada acorde dura 16 s ──
 interface Chord {
   root: number; // baixo (violoncelo)
   pad: number[]; // acorde das cordas/coro
@@ -99,25 +106,83 @@ const PROG: Chord[] = [
 ];
 const CHORD_LEN = 16;
 
+// ── a música da TELA INICIAL, "O Poço" (DESIGN.md §79): o dado no fundo do poço, a luz pálida lá em cima. Ré, grave e aberto; cada acorde
+// dura 12 s, oito acordes por volta (96 s). O contrabaixo segura o chão, o coro (oohs) respira, a harpa cai devagar como gotas de luz, a
+// celesta brilha de longe, um sino lá em cima e, de vez em quando, o sopro de uma garrafa: o ar passando pela boca do poço. O Lá maior
+// (com o dó sustenido) é a luz. Ao fim de cada metade, o tema: lá, ré, mi, FÁ... e, na segunda, sobe até o lá (olhar para cima).
+interface TChord {
+  bass: number;
+  pad: number[];
+  arp: number[]; // notas da harpa (de cima para baixo) e da celesta
+  light?: boolean; // o acorde da luz: entra um fio de cordas por cima
+  sus?: number; // acorde suspenso: na metade, esta nota do pad vira a de baixo (a resolução)
+}
+const TPROG: TChord[] = [
+  { bass: 38, pad: [50, 57, 64], arp: [62, 64, 65, 69, 72, 74, 76, 81] }, // Ré aberto (ré, lá, mi)
+  { bass: 34, pad: [50, 53, 57], arp: [58, 62, 65, 69, 70, 74, 77, 81] }, // Si bemol com a sétima
+  { bass: 36, pad: [52, 55, 60], arp: [60, 64, 67, 69, 72, 74, 76, 79] }, // Dó
+  { bass: 33, pad: [52, 57, 61], arp: [57, 61, 64, 69, 73, 76, 81], light: true }, // Lá maior: a luz
+  { bass: 38, pad: [50, 53, 57, 64], arp: [62, 65, 69, 72, 74, 76, 77, 81] }, // Ré menor com a nona
+  { bass: 31, pad: [50, 55, 58], arp: [55, 58, 62, 65, 67, 70, 74, 77] }, // Sol menor
+  { bass: 34, pad: [53, 58, 62], arp: [58, 62, 65, 70, 74, 77, 81] }, // Si bemol
+  { bass: 33, pad: [52, 57, 62], arp: [57, 62, 64, 69, 74, 76, 81], light: true, sus: 61 }, // Lá suspenso que vira Lá maior
+];
+const T_LEN = 12;
+const TITLE_GAIN = 1.35; // (a peça é rala: um pouco mais de volume na faixa para ela ficar perto da música do jogo)
+// o tema (nota, tempo em s, nota longa?) na harpa, com a celesta uma oitava acima nas notas longas
+const MOTIF_A: [number, number, boolean?][] = [[69, 0], [74, 0.9], [76, 1.6], [77, 2.3, true], [76, 4.0], [74, 4.8, true]];
+const MOTIF_B: [number, number, boolean?][] = [[69, 0], [74, 0.9], [76, 1.6], [77, 2.3], [79, 3.0], [81, 3.7, true], [77, 5.6], [76, 6.4, true]];
+
 interface Inst {
   notes: number[];
   bufs: Map<number, AudioBuffer>;
 }
+// as duas músicas têm cada uma a sua "faixa" (seco, reverberação e eco), com volume próprio: uma some enquanto a outra entra
+type LaneName = 'game' | 'title';
+interface Lane {
+  dry: GainNode;
+  verb: GainNode;
+  echo: GainNode;
+}
+interface NoteHandle {
+  s: AudioBufferSourceNode;
+  g: GainNode;
+  t: number;
+}
+// o estado da música do jogo: tocando uma frase, sumindo (o fim da frase), ou em silêncio (o ambiente na frente)
+type GameMusic = 'play' | 'fade' | 'rest';
+
+// segura o valor de agora (para uma rampa nova sair dele, sem pulo)
+const holdParam = (p: AudioParam, now: number) => {
+  if (typeof p.cancelAndHoldAtTime === 'function') p.cancelAndHoldAtTime(now);
+  else {
+    const v = p.value;
+    p.cancelScheduledValues(now);
+    p.setValueAtTime(v, now);
+  }
+};
 
 export class Sfx {
   // O contexto de áudio nasce LOGO AO ABRIR A PÁGINA (`prepare`), ainda suspenso: assim as gravações baixam e decodificam enquanto a tela da
-  // editora, a tela inicial e a tela de carregamento estão à vista (DESIGN.md §79). Som só sai depois do 1º toque/tecla (`unlock`): até lá,
-  // `ac` responde null e nada é agendado (senão tudo tocaria junto quando o som fosse liberado).
-  private ctx: AudioContext | null = null;
-  private live = false;
-  private get ac(): AudioContext | null {
-    return this.live ? this.ctx : null;
+  // editora, a tela inicial e a tela de carregamento estão à vista (DESIGN.md §80). Som só sai depois do 1º toque/tecla (`unlock`): até lá,
+  // `ac` responde null e nada é agendado (senão tudo tocaria junto quando o som fosse liberado). Nos testes, `init` recebe um contexto
+  // offline (`real` = false), que já começa ligado.
+  private ctx: BaseAudioContext | null = null;
+  private real = true; // false = contexto offline (testes: gravar a faixa de demonstração)
+  private on = false; // o som pode sair (o 1º gesto; no contexto offline, já)
+  private get ac(): BaseAudioContext | null {
+    return this.on ? this.ctx : null;
   }
   private master!: GainNode;
   private bus!: GainNode;
   private musicBus!: GainNode;
+  private musicVerb!: GainNode; // a reverberação da música (segue o volume de música, como o som seco)
+  private mDuck!: GainNode; // a música abre espaço (o "resolvido", a porta)
+  private mDuckV!: GainNode;
+  private mDelay!: DelayNode;
+  private lanes!: Record<LaneName, Lane>;
   private verbSend!: GainNode;
-  private echoSend!: GainNode;
+  private echoSend!: GainNode; // o eco dos EFEITOS (celesta e harpa das falas, da escrita...)
   // reverberação dos sons do MUNDO (passos, portas, fogo, gotas): mistura uma sala curta e a longa conforme o tamanho da sala
   private space!: GainNode;
   private shortRet!: GainNode;
@@ -142,6 +207,15 @@ export class Sfx {
   private amb: AmbientState = { wind: 0, size: 0.4, drip: 0, dripPan: 0, calm: false, paused: false };
   private windLevel = 0;
   private sizeLevel = 0.4;
+  private windMod = 1; // o vento nunca fica igual: sobe e desce devagar (o laço não se percebe)
+  private windModTo = 1;
+  private windModAt = 0;
+  private ambBoost = 1; // no silêncio da música, o ambiente sobe (~2,5 dB)
+  private darkLevel = 0;
+  private darkApplied = 0;
+  private duckHold = 0; // até quando a música está aberta para um efeito, e quanto
+  private duckDepth = 1;
+  private fadedAll = false;
   private nextGust = 0;
   private nextDrip = 0;
   private nextBreath = 0;
@@ -154,13 +228,31 @@ export class Sfx {
   private scratchNext = 0;
   private scratchNode: GainNode | null = null;
   private lastBounce = 0;
-  // música
+  // o resolvido e a porta (o violoncelo da porta dá lugar ao do resolvido)
+  private solvedAt = -99;
+  private doorAt = -99;
+  private doorCello: NoteHandle | null = null;
+  // música do jogo
+  private musicScene: MusicScene = 'game';
+  private wantScene: { s: MusicScene; wait?: number } | null = null;
+  private gm = { st: 'rest' as GameMusic, until: 6, left: 0, phraseEnd: 0, fadeAt: 0, faded: false, started: false };
+  private mt: { chords?: number; rest?: number } = {}; // (testes) frases e silêncios mais curtos
   private chordAt = 0;
   private chordIdx = 0;
   private nextHarp = 0;
   private nextCelesta = 0;
   private nextFlute = 0;
   private nextTimpani = 0;
+  // música da tela inicial
+  private titleOn = false;
+  private tAt = 0;
+  private tIdx = 0;
+  private nextTHarp = 0;
+  private nextTCel = 0;
+  private nextTBell = 0;
+  private nextTBottle = 0;
+  private tMotifFrom = 0;
+  private tMotifUntil = 0;
   played = 0; // só pra testes
   steps = 0;
   log: string[] = []; // (testes, só em desenvolvimento) as últimas gravações que tocaram
@@ -173,12 +265,44 @@ export class Sfx {
   }
   // (testes) o ambiente como o motor de som o vê agora
   debug() {
-    return { wind: +this.windLevel.toFixed(2), size: +this.sizeLevel.toFixed(2), fire: +this.fireLevel.toFixed(2), firePan: +this.firePan.toFixed(2), drip: +this.amb.drip.toFixed(2), calm: this.amb.calm, nextBreath: this.ac ? +(this.nextBreath - this.ac.currentTime).toFixed(1) : null, nextGust: this.ac ? +(this.nextGust - this.ac.currentTime).toFixed(1) : null };
+    return { wind: +this.windLevel.toFixed(2), size: +this.sizeLevel.toFixed(2), fire: +this.fireLevel.toFixed(2), firePan: +this.firePan.toFixed(2), drip: +this.amb.drip.toFixed(2), calm: this.amb.calm, boost: +this.ambBoost.toFixed(2), nextBreath: this.ac ? +(this.nextBreath - this.ac.currentTime).toFixed(1) : null, nextGust: this.ac ? +(this.nextGust - this.ac.currentTime).toFixed(1) : null };
+  }
+  // (testes) o estado da música: qual toca, em que fase, quanto falta
+  music() {
+    const now = this.ac ? this.ac.currentTime : 0;
+    const lv = (n: LaneName) => (this.lanes ? +this.lanes[n].dry.gain.value.toFixed(2) : null);
+    return {
+      scene: this.musicScene,
+      title: this.titleOn,
+      titleChords: this.tIdx, // quantos acordes da peça do menu já foram agendados
+      gameChords: this.chordIdx,
+      st: this.gm.st,
+      chordsLeft: this.gm.left,
+      untilIn: +(this.gm.until - now).toFixed(1),
+      phraseEndIn: +(this.gm.phraseEnd - now).toFixed(1),
+      game: lv('game'),
+      titleLane: lv('title'),
+      duck: this.mDuck ? +this.mDuck.gain.value.toFixed(2) : null,
+      boost: +this.ambBoost.toFixed(2),
+      quiet: !!this.amb.quiet,
+      solvedAgo: +(now - this.solvedAt).toFixed(1),
+    };
+  }
+  // (testes) encurta as frases (`chords` acordes antes do fim) e os silêncios (`rest` s); `end` termina a frase já
+  musicTest(o: { chords?: number; rest?: number; end?: boolean; restNow?: number }) {
+    this.mt = { chords: o.chords ?? this.mt.chords, rest: o.rest ?? this.mt.rest };
+    if (o.end && this.gm.st === 'play') this.gm.left = 0;
+    if (o.restNow !== undefined && this.ac) {
+      this.gm.st = 'rest';
+      this.gm.until = this.ac.currentTime + o.restNow;
+      this.laneTo('game', 0, 1);
+    }
   }
   private loaded = 0;
   // quantos ARQUIVOS já estão prontos (para a barra da tela de carregamento); os instrumentos só se sabem depois de ler o índice
   private filesDone = 0;
   private filesTotal = SFX_FILES.length + 81;
+  private loadP: Promise<void> | null = null;
   get state() {
     return this.ac ? this.ac.state : 'sem-contexto';
   }
@@ -204,11 +328,24 @@ export class Sfx {
     this.applyMode();
   }
 
+  // o volume da música: o botão de música (1 = o padrão) e o escuro da Casa (a música recua com a luz)
+  private musicK() {
+    return (this.mode === 0 ? this.vol.music / 0.6 : 0) * (1 - 0.6 * this.darkApplied);
+  }
+  private applyMusic(tc: number) {
+    if (!this.ac) return;
+    const t = this.ac.currentTime;
+    const k = this.musicK();
+    // (o seco da música sempre foi 0,2 do canal; a reverberação ia inteira: as proporções continuam, mas agora a reverberação também segue o
+    // volume de música e some com ela)
+    this.musicBus.gain.setTargetAtTime(0.2 * k, t, tc);
+    this.musicVerb.gain.setTargetAtTime(k, t, tc);
+  }
   private applyMode() {
     if (!this.ac) return;
     const t = this.ac.currentTime;
     this.master.gain.setTargetAtTime(this.mode === 2 ? 0 : this.vol.master / 0.8, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.mode === 0 ? 0.2 * (this.vol.music / 0.6) : 0, t, 0.4);
+    this.applyMusic(0.4);
     this.bus.gain.setTargetAtTime(0.85 * (this.vol.sfx / 0.8), t, 0.05);
   }
 
@@ -226,59 +363,7 @@ export class Sfx {
         this.noAudio = true;
         return;
       }
-      this.ctx = ac;
-      const comp = ac.createDynamicsCompressor();
-      comp.threshold.value = -14;
-      comp.ratio.value = 3;
-      this.master = ac.createGain();
-      this.master.connect(comp).connect(ac.destination);
-      this.bus = ac.createGain();
-      this.bus.gain.value = 0.85;
-      this.bus.connect(this.master);
-      this.musicBus = ac.createGain();
-      this.musicBus.gain.value = 0;
-      this.musicBus.connect(this.master);
-
-      // reverb de sala (só processamento: o som continua sendo o das gravações)
-      const len = Math.floor(ac.sampleRate * 3.2);
-      const ir = ac.createBuffer(2, len, ac.sampleRate);
-      for (let c = 0; c < 2; c++) {
-        const d = ir.getChannelData(c);
-        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
-      }
-      const conv = ac.createConvolver();
-      conv.buffer = ir;
-      this.verbSend = ac.createGain();
-      this.verbSend.gain.value = 1;
-      const verbRet = ac.createGain();
-      verbRet.gain.value = 0.55;
-      this.verbSend.connect(conv).connect(verbRet).connect(this.master);
-      // eco (celesta e harpa)
-      const delay = ac.createDelay(1.5);
-      delay.delayTime.value = 0.52;
-      const fb = ac.createGain();
-      fb.gain.value = 0.34;
-      this.echoSend = ac.createGain();
-      this.echoSend.gain.value = 1;
-      this.echoSend.connect(delay);
-      delay.connect(fb).connect(delay);
-      delay.connect(this.musicBus);
-      delay.connect(this.verbSend);
-      // a sala curta (~0,9 s, só processamento como a longa): corredores e câmaras pequenas abafam; salões altos vão para a longa
-      const sl = Math.floor(ac.sampleRate * 0.9);
-      const irS = ac.createBuffer(2, sl, ac.sampleRate);
-      for (let c = 0; c < 2; c++) {
-        const d = irS.getChannelData(c);
-        for (let i = 0; i < sl; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / sl, 3.2);
-      }
-      const convS = ac.createConvolver();
-      convS.buffer = irS;
-      this.space = ac.createGain();
-      this.shortRet = ac.createGain();
-      this.longSend = ac.createGain();
-      this.space.connect(convS).connect(this.shortRet).connect(this.master);
-      this.space.connect(this.longSend).connect(this.verbSend);
-      void this.loadAll();
+      void this.init(ac, true);
     }
   }
 
@@ -287,30 +372,121 @@ export class Sfx {
     this.prepare();
     const ac = this.ctx;
     if (!ac) return;
-    if (!this.live) {
-      this.live = true;
-      this.setSpace(this.sizeLevel);
-      // a música e o ambiente contam a partir de agora
-      this.chordAt = ac.currentTime + 0.5;
-      const t0 = ac.currentTime;
-      this.nextHarp = t0 + 4;
-      this.nextCelesta = t0 + 9;
-      this.nextFlute = t0 + 20;
-      this.nextTimpani = t0 + 45;
-      this.nextBreath = t0 + rand(70, 120);
-      this.nextGust = t0 + rand(6, 14);
-      this.applyMode();
-    }
-    if (ac.state !== 'running') void ac.resume();
+    if (!this.on) this.start();
+    if (this.real && ac.state !== 'running') void (ac as AudioContext).resume();
   }
   get unlocked() {
-    return this.live;
+    return this.on;
+  }
+
+  // monta a mesa de som num contexto (o de verdade, ou um OfflineAudioContext nos testes) e carrega tudo; a promessa resolve quando acabou.
+  // O de verdade fica mudo até o 1º gesto (`unlock` → `start`); o offline liga já
+  init(ac: BaseAudioContext, real = true) {
+    this.ctx = ac;
+    this.real = real;
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.ratio.value = 3;
+    this.master = ac.createGain();
+    this.master.connect(comp).connect(ac.destination);
+    this.bus = ac.createGain();
+    this.bus.gain.value = 0.85;
+    this.bus.connect(this.master);
+
+    // reverb de sala (só processamento: o som continua sendo o das gravações)
+    const len = Math.floor(ac.sampleRate * 3.2);
+    const ir = ac.createBuffer(2, len, ac.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+    }
+    const conv = ac.createConvolver();
+    conv.buffer = ir;
+    this.verbSend = ac.createGain();
+    this.verbSend.gain.value = 1;
+    const verbRet = ac.createGain();
+    verbRet.gain.value = 0.55;
+    this.verbSend.connect(conv).connect(verbRet).connect(this.master);
+    // eco dos efeitos (celesta e harpa): sai pelo canal dos efeitos (antes saía pelo da música e sumia com ela)
+    const fd = ac.createDelay(1.5);
+    fd.delayTime.value = 0.52;
+    const ffb = ac.createGain();
+    ffb.gain.value = 0.34;
+    this.echoSend = ac.createGain();
+    this.echoSend.connect(fd);
+    fd.connect(ffb).connect(fd);
+    const fOut = ac.createGain();
+    fOut.gain.value = 0.24; // (o mesmo nível de antes, quando passava pelo canal da música a 0,2)
+    fd.connect(fOut).connect(this.bus);
+    fd.connect(this.verbSend);
+
+    // MÚSICA: o canal seco e o da reverberação, cada um com o "abrir espaço"; o eco próprio; e as duas faixas (jogo, tela inicial)
+    this.musicBus = ac.createGain();
+    this.musicBus.gain.value = 0;
+    this.mDuck = ac.createGain();
+    this.musicBus.connect(this.mDuck).connect(this.master);
+    this.musicVerb = ac.createGain();
+    this.musicVerb.gain.value = 0;
+    this.mDuckV = ac.createGain();
+    this.musicVerb.connect(this.mDuckV).connect(this.verbSend);
+    this.mDelay = ac.createDelay(1.5);
+    this.mDelay.delayTime.value = 0.52;
+    const mfb = ac.createGain();
+    mfb.gain.value = 0.34;
+    this.mDelay.connect(mfb).connect(this.mDelay);
+    this.mDelay.connect(this.musicBus);
+    this.mDelay.connect(this.musicVerb);
+    const lane = (): Lane => {
+      const dry = ac.createGain();
+      const verb = ac.createGain();
+      const echo = ac.createGain();
+      for (const g of [dry, verb, echo]) g.gain.value = 0;
+      dry.connect(this.musicBus);
+      verb.connect(this.musicVerb);
+      echo.connect(this.mDelay);
+      return { dry, verb, echo };
+    };
+    this.lanes = { game: lane(), title: lane() };
+
+    // a sala curta (~0,9 s, só processamento como a longa): corredores e câmaras pequenas abafam; salões altos vão para a longa
+    const sl = Math.floor(ac.sampleRate * 0.9);
+    const irS = ac.createBuffer(2, sl, ac.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = irS.getChannelData(c);
+      for (let i = 0; i < sl; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / sl, 3.2);
+    }
+    const convS = ac.createConvolver();
+    convS.buffer = irS;
+    this.space = ac.createGain();
+    this.shortRet = ac.createGain();
+    this.longSend = ac.createGain();
+    this.space.connect(convS).connect(this.shortRet).connect(this.master);
+    this.space.connect(this.longSend).connect(this.verbSend);
+    this.loadP = this.loadAll();
+    if (!real) this.start();
+    return this.loadP;
+  }
+
+  // o som liga: a sala, o relógio do ambiente e da música, o volume e a música pedida antes de o som ligar (a tela inicial, ou o jogo)
+  private start() {
+    const ac = this.ctx!;
+    this.on = true;
+    this.setSpace(this.sizeLevel);
+    const t0 = ac.currentTime;
+    this.nextBreath = t0 + rand(70, 120);
+    this.nextGust = t0 + rand(6, 14);
+    this.gm = { st: 'rest', until: t0 + 6, left: 0, phraseEnd: 0, fadeAt: 0, faded: false, started: false };
+    this.applyMode();
+    const w = this.wantScene;
+    this.wantScene = null;
+    if (w) this.scene(w.s, { wait: w.wait });
   }
 
   suspend(on: boolean) {
-    if (!this.ac) return;
-    if (on) void this.ac.suspend();
-    else void this.ac.resume();
+    if (!this.ac || !this.real) return;
+    const ac = this.ac as AudioContext;
+    if (on) void ac.suspend();
+    else void ac.resume();
   }
 
   // ── carregamento das gravações ──────────────────────────────────────────
@@ -337,12 +513,11 @@ export class Sfx {
     );
     this.startLoops();
     try {
-      const man = (await (await fetch(`${base}inst/manifest.json`)).json()) as Record<string, number[]>;
+      const man = (await (await fetch(`${base}inst/manifest.json?v=${AUDIO_VERSION}`)).json()) as Record<string, number[]>;
       this.filesTotal = SFX_FILES.length + INSTRUMENTS.reduce((a, n) => a + (man[n]?.length ?? 0), 0);
       for (const name of INSTRUMENTS) {
         const notes = man[name] ?? [];
         const inst: Inst = { notes, bufs: new Map() };
-        this.inst[name] = inst;
         await Promise.all(
           notes.map(async (m) => {
             const b = await this.decode(`${base}inst/${name}/${m}.mp3?v=${AUDIO_VERSION}`);
@@ -350,6 +525,7 @@ export class Sfx {
             this.filesDone++;
           }),
         );
+        this.inst[name] = inst; // (só entra quando todas as notas chegaram: a música não começa com um instrumento pela metade)
         this.loaded++;
       }
     } catch {
@@ -461,15 +637,16 @@ export class Sfx {
     else s.start(t);
   }
 
-  // uma nota de instrumento real: usa a gravação mais próxima e ajusta a altura (rate)
-  private note(instName: string, midi: number, t: number, vol: number, opts: { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number; toMusic?: boolean } = {}) {
+  // uma nota de instrumento real: usa a gravação mais próxima e ajusta a altura (rate). `lane` = a faixa da música (jogo ou tela inicial);
+  // `toMusic: false` = é um EFEITO (canal dos efeitos)
+  private note(instName: string, midi: number, t: number, vol: number, opts: { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number; toMusic?: boolean; lane?: LaneName } = {}): NoteHandle | null {
     const ac = this.ac;
     const inst = this.inst[instName];
-    if (!ac || !inst || inst.bufs.size === 0) return;
+    if (!ac || !inst || inst.bufs.size === 0) return null;
     let best = inst.notes[0];
     for (const n of inst.notes) if (inst.bufs.has(n) && Math.abs(n - midi) < Math.abs(best - midi)) best = n;
     const b = inst.bufs.get(best);
-    if (!b) return;
+    if (!b) return null;
     const s = ac.createBufferSource();
     s.buffer = b;
     s.playbackRate.value = Math.pow(2, (midi - best) / 12);
@@ -489,25 +666,116 @@ export class Sfx {
       g.connect(p);
       node = p;
     }
-    node.connect(opts.toMusic === false ? this.bus : this.musicBus);
+    const L = opts.toMusic === false ? null : this.lanes[opts.lane ?? 'game'];
+    node.connect(L ? L.dry : this.bus);
     if (opts.verb) {
       const v = ac.createGain();
       v.gain.value = opts.verb;
-      node.connect(v).connect(this.verbSend);
+      node.connect(v).connect(L ? L.verb : this.verbSend);
     }
     if (opts.echo) {
       const e = ac.createGain();
       e.gain.value = opts.echo;
-      node.connect(e).connect(this.echoSend);
+      node.connect(e).connect(L ? L.echo : this.echoSend);
     }
     s.start(t);
     s.stop(t + fi + Math.max(0, hold) + fo + 0.05);
+    return { s, g, t };
   }
 
   // nota de instrumento como EFEITO (sai pelo canal dos efeitos, mesmo com a música desligada)
   private fxNote(inst: string, midi: number, vol: number, delay = 0, verb = 0.5, echo = 0) {
+    if (!this.ac) return null;
+    return this.note(inst, midi, this.ac.currentTime + delay, vol, { fadeIn: 0.005, fadeOut: 0.5, verb, echo, toMusic: false });
+  }
+
+  // a música abre espaço: cai até `depth` (0..1) depressa, fica `hold` s e volta em ~`release` s
+  private duckMusic(depth: number, hold: number, release: number) {
+    if (!this.ac || !this.mDuck) return;
+    const now = this.ac.currentTime;
+    if (now < this.duckHold && depth >= this.duckDepth) return; // (já está mais aberta para outro efeito: não sobe no meio dele)
+    this.duckHold = now + hold;
+    this.duckDepth = depth;
+    for (const p of [this.mDuck.gain, this.mDuckV.gain]) {
+      holdParam(p, now);
+      p.setTargetAtTime(depth, now, 0.04);
+      p.setTargetAtTime(1, now + hold, release / 3);
+    }
+  }
+  // o volume de uma faixa de música (0..1), chegando lá com a constante de tempo `tc` (s), a partir de `at`
+  private laneTo(name: LaneName, v: number, tc: number, at = 0) {
+    const ac = this.ac;
+    if (!ac || !this.lanes) return;
+    const now = ac.currentTime;
+    for (const p of [this.lanes[name].dry.gain, this.lanes[name].verb.gain, this.lanes[name].echo.gain]) {
+      holdParam(p, now);
+      p.setTargetAtTime(v, Math.max(now, at), Math.max(0.01, tc));
+    }
+  }
+  private echoTime(s: number) {
+    if (this.ac && this.mDelay) this.mDelay.delayTime.setTargetAtTime(s, this.ac.currentTime, 0.2);
+  }
+
+  // ── qual música toca ────────────────────────────────────────────────────
+  // 'title' = a tela inicial (e os créditos); 'game' = o jogo, que começa em silêncio por `wait` s e entra devagar
+  scene(s: MusicScene, o: { wait?: number } = {}) {
+    if (!this.ac) {
+      this.wantScene = { s, wait: o.wait };
+      return;
+    }
+    const now = this.ac.currentTime;
+    this.musicScene = s;
+    if (this.fadedAll) {
+      // (tudo tinha sumido para a página recarregar, e ela não recarregou: o som volta)
+      this.fadedAll = false;
+      this.applyMode();
+    }
+    if (s === 'title') {
+      this.gm.st = 'rest';
+      this.gm.until = Infinity;
+      this.laneTo('game', 0, 1.5, now + (o.wait ?? 0));
+      this.startTitle(now + (o.wait ?? 0));
+    } else {
+      if (this.titleOn) {
+        this.titleOn = false;
+        this.laneTo('title', 0, 0.8);
+      }
+      if (this.gm.st !== 'play') {
+        this.gm.st = 'rest';
+        this.gm.until = now + (o.wait ?? 6);
+      }
+    }
+  }
+  // sair da tela inicial: 'new' = jogo novo (a câmera sobe pelo feixe até o branco e a página recarrega: um arpejo sobe para a luz e tudo
+  // some até ~3,1 s); 'go' = continuar aqui (a música do menu some e a do jogo entra depois); 'out' = outro espaço (some e recarrega)
+  leaveTitle(kind: 'new' | 'go' | 'out') {
+    const ac = this.ac;
+    if (!ac) return;
+    const now = ac.currentTime;
+    this.titleOn = false;
+    if (kind === 'new') {
+      if (this.mode === 0) {
+        // o Lá maior subindo, da harpa à celesta, com o coro crescendo por baixo; o sino na entrada do branco
+        const up = [57, 61, 64, 69, 73, 76, 81, 85, 88];
+        up.forEach((m, i) => this.note(m > 84 ? 'celesta' : 'orchestral_harp', m, now + 0.85 + i * 0.22, 0.28 - i * 0.012, { fadeIn: 0.004, fadeOut: 0.9, verb: 0.8, echo: 0.25, pan: -0.4 + i * 0.1, lane: 'title' }));
+        [57, 64, 73].forEach((m, i) => this.note('voice_oohs', m, now + 0.6 + i * 0.15, 0.22, { fadeIn: 1.6, hold: 0.4, fadeOut: 0.6, verb: 0.9, pan: (i - 1) * 0.4, lane: 'title' }));
+        this.note('tubular_bells', 81, now + 2.75, 0.2, { fadeIn: 0.004, fadeOut: 0.4, verb: 1, lane: 'title' });
+      }
+      this.fadeAll(0.4, 2.75);
+    } else if (kind === 'go') {
+      this.laneTo('title', 0, 0.7);
+    } else {
+      this.laneTo('title', 0, 0.4);
+      this.fadeAll(0.35, 0.95);
+    }
+  }
+  // tudo some (antes de a página recarregar: sem corte seco)
+  fadeAll(dur = 0.3, delay = 0) {
     if (!this.ac) return;
-    this.note(inst, midi, this.ac.currentTime + delay, vol, { fadeIn: 0.005, fadeOut: 0.5, verb, echo, toMusic: false });
+    const now = this.ac.currentTime;
+    this.fadedAll = true;
+    holdParam(this.master.gain, now);
+    this.master.gain.setTargetAtTime(0, now + delay, dur / 3);
   }
 
   // ── efeitos ─────────────────────────────────────────────────────────────
@@ -515,7 +783,8 @@ export class Sfx {
   play(name: SfxName, v = 1, key?: string) {
     if (!this.ac || this.mode === 2) return;
     this.played++;
-    if (name === 'door' || name === 'doorClose' || name === 'rise' || name === 'error' || name === 'dark' || name === 'gem' || name === 'gemBreak' || name === 'piece') this.duckUntil = this.ac.currentTime + 1.6;
+    const now = this.ac.currentTime;
+    if (name === 'door' || name === 'doorClose' || name === 'rise' || name === 'error' || name === 'dark' || name === 'gem' || name === 'gemBreak' || name === 'piece') this.duckUntil = Math.max(this.duckUntil, now + 1.6);
     switch (name) {
       case 'throw':
         this.sample(pick(['throw1', 'throw2']), 0.9 * Math.min(1, 0.4 + v), rand(0.93, 1.07));
@@ -628,6 +897,7 @@ export class Sfx {
         this.sample('boom', 0.35, 0.9, 0.02, 0.6, 0, 500);
         break;
       case 'altarGlow':
+        this.duckMusic(0.4, 3, 2.5);
         this.fxNote('choir_aahs', 57, 0.22, 0, 0.9);
         this.fxNote('choir_aahs', 64, 0.16, 0.25, 0.9);
         this.fxNote('cello', 33, 0.4, 0, 0.9);
@@ -637,10 +907,13 @@ export class Sfx {
       case 'altarOpen':
         this.sample('door_open', 0.85, 1.15, 0, 0.35);
         break;
-      // porta de pedra: a laje sobe arrastando e trava lá em cima (com pó caindo); a Casa aceita (violoncelo grave)
+      // porta de pedra: a laje sobe arrastando e trava lá em cima (com pó caindo); a Casa aceita (violoncelo grave). Logo depois do
+      // "resolvido", quem fala pela Casa é ele: a porta fica só com a pedra
       case 'door':
+        this.duckMusic(0.65, 1.2, 1.6);
         this.sample('door_open', 1, 0.95, 0, 0.35);
-        this.fxNote('cello', 36, 0.42, 0.1, 0.8);
+        this.doorAt = now;
+        this.doorCello = now - this.solvedAt > 5 ? this.fxNote('cello', 36, 0.42, 0.1, 0.8) : null;
         break;
       // a laje desce raspando e bate no chão
       case 'doorClose':
@@ -648,6 +921,7 @@ export class Sfx {
         break;
       // pilar subindo do chão (2,2 s): arrasto grave, pedrinhas soltando e o baque no fim
       case 'rise':
+        this.duckMusic(0.65, 1.8, 1.6);
         this.sample('rise', 1, 1, 0, 0.4);
         this.fxNote('cello', 33, 0.35, 0.2, 0.8);
         break;
@@ -656,13 +930,23 @@ export class Sfx {
         this.sample('burnout', 0.75, 0.9, 0, 0.3);
         this.sample('boom', 0.55, 0.85, 0.05, 0.6, 0, 400, 0, 0, true);
         break;
+      // um passo CERTO, não o fim (DESIGN.md §79): pequeno e claro, para não se confundir com o resolvido. O clique de pedra de um mecanismo
+      // que encaixou e duas notas que sobem uma quarta (mi → lá), na harpa e, uma oitava e meia acima, na celesta
       case 'piece':
-        this.fxNote('celesta', 79, 0.45, 0, 0.7, 0.3);
-        this.fxNote('celesta', 91, 0.4, 0.12, 0.7, 0.3);
-        this.sample('bell', 0.25, 1.2, 0.05, 0.7);
+        this.duckMusic(0.6, 0.5, 1.0);
+        this.sample('plate2', 0.26, 1.35, 0, 0.3, 0, 3500);
+        this.fxNote('orchestral_harp', 64, 0.38, 0, 0.5, 0.12);
+        this.fxNote('orchestral_harp', 69, 0.4, 0.1, 0.55, 0.15);
+        this.fxNote('celesta', 81, 0.3, 0.1, 0.6, 0.25);
+        this.fxNote('celesta', 88, 0.24, 0.21, 0.6, 0.25);
         break;
+      case 'solved':
+        this.solved();
+        break;
+      // a Casa recusa: o "toc" seco de madeira e, por baixo, um baque de pedra abafado (curto: repete-se quando o braseiro está frio)
       case 'error':
-        this.sample('error', 0.8, 0.8);
+        this.sample('error', 0.72, 0.8);
+        this.sample('bounce4', 0.32, 0.55, 0.004, 0.2, 0, 650);
         break;
       case 'burnout':
         this.sample('burnout', 0.6 * v, 1, 0, 0.2);
@@ -693,10 +977,49 @@ export class Sfx {
         this.fxNote('cello', 45, 0.45, 0.15, 0.8);
         break;
       case 'fanfare':
+        this.duckMusic(0.3, 4, 3);
         [60, 64, 67, 72, 76, 79].forEach((m, i) => this.fxNote('orchestral_harp', m, 0.5, i * 0.14, 0.6));
         [72, 76, 79, 84].forEach((m, i) => this.fxNote('tubular_bells', m, 0.35, 0.3 + i * 0.3, 0.9));
         break;
     }
+  }
+
+  // O RESOLVIDO (DESIGN.md §79): o momento de "consegui", 2 a 3 s, que resolve. Uma cadência plagal com a terça de picardia, como nos
+  // jogos de mistério: a PERGUNTA (Ré menor: a harpa sobe e o coro respira) e a RESPOSTA (Lá MAIOR, a Casa aceitando): o grave da Casa
+  // (o mesmo tambor distante do escuro, aqui com o acorde maior) e o tímpano, o violoncelo, o coro abrindo, a harpa, um sino e a celesta
+  // subindo. A música abre espaço e depois sai: a frase acaba aqui e vem um silêncio, para o resolvido respirar.
+  private solved() {
+    const ac = this.ac!;
+    const now = ac.currentTime;
+    this.dbg('solved');
+    this.solvedAt = now;
+    this.duckUntil = Math.max(this.duckUntil, now + 3.2);
+    this.duckMusic(0.18, 2.6, 2.4);
+    this.musicBreak(now);
+    // a porta acabou de tocar o violoncelo dela: o resolvido assume o grave
+    const dc = this.doorCello;
+    if (dc && now - this.doorAt < 1.2) {
+      if (dc.t > now + 0.005) dc.s.stop();
+      else {
+        dc.g.gain.cancelScheduledValues(now);
+        dc.g.gain.setTargetAtTime(0.0001, now, 0.08);
+      }
+    }
+    this.doorCello = null;
+    const f = (inst: string, m: number, vol: number, at: number, o: { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number }) => this.note(inst, m, now + at, vol, { toMusic: false, ...o });
+    // a pergunta: ré, fá, lá, ré subindo na harpa; o coro em ré e fá
+    [50, 53, 57, 62].forEach((m, i) => f('orchestral_harp', m, 0.3, i * 0.075, { fadeIn: 0.004, fadeOut: 0.6, verb: 0.55, echo: 0.1, pan: -0.25 + i * 0.12 }));
+    [62, 65].forEach((m, i) => f('choir_aahs', m, 0.13, 0.02 + i * 0.04, { fadeIn: 0.22, hold: 0.22, fadeOut: 0.3, verb: 0.7, pan: i ? 0.25 : -0.25 }));
+    // a resposta: Lá maior
+    const R = 0.52;
+    this.sample('boom', 0.3, 1.05, R - 0.02, 0.5, 0, 700);
+    f('timpani', 33, 0.32, R, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.7 });
+    f('cello', 33, 0.3, R, { fadeIn: 0.05, hold: 1.1, fadeOut: 1.3, verb: 0.7 });
+    f('cello', 45, 0.24, R + 0.02, { fadeIn: 0.12, hold: 1.0, fadeOut: 1.3, verb: 0.7 });
+    [57, 61, 64].forEach((m, i) => f('choir_aahs', m, 0.17, R + i * 0.03, { fadeIn: 0.3, hold: 1.0, fadeOut: 1.4, verb: 0.85, pan: (i - 1) * 0.3 }));
+    [57, 61, 64, 69, 73].forEach((m, i) => f('orchestral_harp', m, 0.34, R + i * 0.055, { fadeIn: 0.004, fadeOut: 1.1, verb: 0.65, echo: 0.15, pan: -0.3 + i * 0.15 }));
+    f('tubular_bells', 69, 0.22, R + 0.06, { fadeIn: 0.004, fadeOut: 1.4, verb: 0.9 });
+    [81, 85, 88, 93].forEach((m, i) => f('celesta', m, 0.17, R + 0.3 + i * 0.1, { fadeIn: 0.004, fadeOut: 0.8, verb: 0.75, echo: 0.3, pan: 0.3 - i * 0.15 }));
   }
 
   // passo: SEMPRE a mesma gravação para cada tipo de piso (decisão do Pedro: nada de sorteio). Pedra, degrau e entulho têm duas tomadas,
@@ -738,7 +1061,8 @@ export class Sfx {
     }
     out.connect(this.bus);
     const v = ac.createGain();
-    v.gain.value = verb * (0.6 + 0.8 * this.sizeLevel);
+    // no silêncio da música os passos ganham um pouco mais de sala (o eco da pedra fica na frente)
+    v.gain.value = verb * (0.6 + 0.8 * this.sizeLevel) * (1 + (this.ambBoost - 1) * 0.8);
     out.connect(v).connect(this.space);
     s.start(now);
   }
@@ -841,38 +1165,60 @@ export class Sfx {
     const on = this.mode !== 2 && this.loaded > 0;
     // o ambiente abre espaço para o que importa: pausa, porta, erro, o escuro (baixa por ~1,6 s)
     const duck = (a.paused ? 0.45 : 1) * (now < this.duckUntil ? 0.5 : 1);
+    // no SILÊNCIO da música (§79) o ambiente sobe ~2,5 dB, devagar: os passos, o vento, as gotas e o fogo ficam na frente
+    const resting = this.mode === 0 && this.musicScene === 'game' && (this.gm.st === 'rest' || (this.gm.st === 'fade' && this.gm.faded));
+    this.ambBoost += ((resting ? 1.33 : 1) - this.ambBoost) * Math.min(1, dt * 0.25);
+    const boost = this.ambBoost;
     // vento: segue o lugar devagar (não "pula" ao virar uma esquina); perto da abertura, mais forte e mais claro
     this.windLevel += (a.wind - this.windLevel) * Math.min(1, dt * 0.9);
     const w = this.windLevel;
     this.sizeLevel += (a.size - this.sizeLevel) * Math.min(1, dt * 0.8);
+    // o vento respira: um passeio lento entre 70% e 115% (volume e brilho), para o laço de 16 s nunca soar igual
+    if (now >= this.windModAt) {
+      this.windModTo = rand(0.7, 1.15);
+      this.windModAt = now + rand(2.5, 6);
+    }
+    this.windMod += (this.windModTo - this.windMod) * Math.min(1, dt * 0.45);
+    this.darkLevel += ((a.dark ?? 0) - this.darkLevel) * Math.min(1, dt * 6);
     // (os volumes e filtros mudam só ~10 vezes por segundo: menos trabalho para o celular; as rampas suaves cobrem o resto)
     if (now >= this.paramAt) {
       this.paramAt = now + 0.1;
-      if (this.windG) this.windG.gain.setTargetAtTime(on ? 0.38 * Math.pow(w, 1.3) * duck : 0, now, 0.25);
-      if (this.windLP) this.windLP.frequency.setTargetAtTime(350 + 4200 * w * w, now, 0.3);
+      const wm = this.windMod;
+      if (this.windG) this.windG.gain.setTargetAtTime(on ? 0.38 * Math.pow(w, 1.3) * duck * boost * wm : 0, now, 0.25);
+      if (this.windLP) this.windLP.frequency.setTargetAtTime((350 + 4200 * w * w) * (0.8 + 0.3 * wm), now, 0.3);
       // o ar da sala: sempre um fio, um pouco mais presente nas salas grandes e onde venta
-      if (this.toneG) this.toneG.gain.setTargetAtTime(on ? (0.06 + 0.05 * this.sizeLevel + 0.08 * w) * duck : 0, now, 0.4);
+      if (this.toneG) this.toneG.gain.setTargetAtTime(on ? (0.06 + 0.05 * this.sizeLevel + 0.08 * w) * duck * (1 + (boost - 1) * 0.7) * (0.85 + 0.15 * wm) : 0, now, 0.4);
       this.setSpace(this.sizeLevel);
       const fl = this.fireLevel;
-      if (this.fireG) this.fireG.gain.setTargetAtTime(this.mode === 2 ? 0 : fl * 0.95 * duck, now, 0.1);
+      if (this.fireG) this.fireG.gain.setTargetAtTime(this.mode === 2 ? 0 : fl * 0.95 * duck * Math.sqrt(boost), now, 0.1);
       if (this.fireLP) this.fireLP.frequency.setTargetAtTime(900 + 6000 * fl * fl, now, 0.15);
       if (this.firePanN) this.firePanN.pan.setTargetAtTime(this.firePan * (1 - 0.5 * fl), now, 0.2); // bem perto, o fogo "abraça" (menos lateral)
+      // o escuro: a música recua junto com a luz (e volta com ela)
+      const dk = this.darkLevel < 0.002 ? 0 : this.darkLevel;
+      if (this.musicBus && Math.abs(dk - this.darkApplied) > 0.01) {
+        this.darkApplied = dk;
+        this.applyMusic(0.12);
+      }
     }
     if (!on || a.paused) return;
     // rajadas: só onde venta de verdade, de tempos em tempos, de um lado ou do outro
     if (now >= this.nextGust) {
       if (w > 0.22) {
-        this.sample('gust', 0.32 * Math.pow(w, 1.2), rand(0.85, 1.1), 0, 0, rand(-0.6, 0.6), 600 + 4500 * w * w);
+        this.sample('gust', 0.32 * Math.pow(w, 1.2) * boost, rand(0.85, 1.1), 0, 0, rand(-0.6, 0.6), 600 + 4500 * w * w);
         this.nextGust = now + rand(9, 22) / (w + 0.3);
       } else this.nextGust = now + rand(3, 6); // aqui não venta: olha de novo daqui a pouco (ao chegar num lugar aberto, a rajada não demora)
     }
-    // gotas: espaçadas, com eco de pedra, do lado em que pingam
+    // gotas: espaçadas, com eco de pedra, do lado em que pingam; às vezes duas seguidas, às vezes uma lá longe (abafada, na sala longa)
     if (now >= this.nextDrip) {
       if (a.drip > 0.02) {
-        const d = pick(DRIPS);
-        this.sample('drip', 0.3 * a.drip, rand(0.88, 1.12), 0, 0.7, a.dripPan, 0, d, 0.55);
+        const far = Math.random() < 0.22;
+        if (far) this.sample('drip', 0.13 * a.drip * boost, rand(0.8, 0.95), 0, 0.9, rand(-0.8, 0.8), 2200, pick(DRIPS), 0.55, true);
+        else {
+          this.sample('drip', 0.3 * a.drip * boost, rand(0.88, 1.12), 0, 0.7, a.dripPan, 0, pick(DRIPS), 0.55);
+          if (Math.random() < 0.2) this.sample('drip', 0.13 * a.drip * boost, rand(1.0, 1.2), rand(0.22, 0.5), 0.7, a.dripPan, 0, pick(DRIPS), 0.55);
+        }
       }
-      this.nextDrip = now + rand(2.2, 6.5);
+      this.nextDrip = now + rand(1.8, 6.5);
     }
     // estalos do fogo (pedacinhos de gravações de fogo, ao acaso): mais e mais altos perto; longe, abafados
     const fl = this.fireLevel;
@@ -880,25 +1226,32 @@ export class Sfx {
       if (fl > 0.06) {
         const crk = this.buf.get('crackle');
         const dur = rand(0.06, 0.22);
-        if (crk) this.sample('crackle', 0.32 * fl * rand(0.5, 1), rand(0.85, 1.2), 0, 0.12, this.firePan + rand(-0.15, 0.15), 1500 + 8000 * fl, rand(0, crk.duration - dur - 0.02), dur);
+        if (crk) this.sample('crackle', 0.32 * fl * rand(0.5, 1) * Math.sqrt(boost), rand(0.85, 1.2), 0, 0.12, this.firePan + rand(-0.15, 0.15), 1500 + 8000 * fl, rand(0, crk.duration - dur - 0.02), dur);
       }
       this.nextCrackle = now + rand(0.12, 0.7) / Math.max(0.25, fl);
     }
-    // a Casa respira: um grave distante ou pedra rangendo longe. Raro (1 a 2,5 min), só num momento calmo, e nunca duas vezes iguais seguidas
+    // a Casa respira: um grave distante, pedra rangendo, pedrinhas caindo lá longe, um arrasto surdo. Raro (1 a 2,5 min; no silêncio da
+    // música, 40 s a 1,5 min), só num momento calmo, e nunca duas vezes o mesmo seguido
     if (now >= this.nextBreath) {
       if (a.calm) {
-        this.breathKind = (this.breathKind + 1 + Math.floor(Math.random() * 2)) % 3;
+        this.breathKind = (this.breathKind + 1 + Math.floor(Math.random() * 4)) % 5;
         const pan = rand(-0.7, 0.7);
         if (this.breathKind === 0) {
           // um grave que vem de longe: o tambor de tronco abafado e, por baixo, o violoncelo que cresce e some (um suspiro)
           this.sample('boom', 0.3, rand(0.85, 1.0), 0, 0.9, pan, 380, 0, 0, true);
           this.note('cello', pick([33, 36]), now + 0.1, 0.1, { fadeIn: 1.4, hold: 0.6, fadeOut: 1.6, verb: 0.9, pan: pan * 0.5, toMusic: false });
         } else if (this.breathKind === 1) this.sample('creak', 0.13, rand(0.8, 1.0), 0, 0.8, pan, 900, 0, 0, true);
-        else {
+        else if (this.breathKind === 2) {
           this.sample('boom', 0.2, 0.8, 0, 0.9, pan, 300, 0, 0, true);
           this.sample('creak', 0.09, 0.75, 1.1, 0.9, -pan, 700, 0, 0, true);
+        } else if (this.breathKind === 3) {
+          // pedrinhas e pó caindo em outra sala (a Casa assentando)
+          this.sample('settle', 0.14, rand(0.8, 0.95), 0, 1, pan, 1800, 0, 0, true);
+        } else {
+          // um bloco arrastado lá longe, devagar, quase só o grave
+          this.sample('rise', 0.16, 0.5, 0, 1, pan, 380, 0.2, 2.4, true);
         }
-        this.nextBreath = now + rand(70, 150);
+        this.nextBreath = now + (resting ? rand(40, 90) : rand(70, 150));
       } else this.nextBreath = now + rand(8, 20); // não era calmo: tenta de novo daqui a pouco
     }
   }
@@ -910,32 +1263,111 @@ export class Sfx {
     const now = ac.currentTime;
     this.fireLevel += (this.fireTarget - this.fireLevel) * Math.min(1, dt * 3);
     this.ambientTick(dt, now);
-    if (this.mode !== 0 || !this.inst.cello || this.inst.cello.bufs.size === 0) return;
+    if (this.mode !== 0) return;
+    this.titleMusic(now);
+    this.gameMusic(now);
+  }
 
-    // ── música: acordes de baixo + cordas + coro, harpa, celesta, flauta e tímpano ──
+  // ── a música do jogo, em FRASES (DESIGN.md §79) ─────────────────────────
+  // Uma frase = uma ou duas voltas da progressão (64 ou 128 s) e a coda (o Lá menor, que resolve e some): 1min20 a 2min30. Depois, um
+  // silêncio de 45 s a 2 min (nas áreas livres, mais longo) em que o ambiente fica na frente; e a música volta devagar. Um puzzle resolvido
+  // encerra a frase na hora (o resolvido respira) e o silêncio que vem é mais curto.
+  private gameMusic(now: number) {
+    if (this.musicScene !== 'game' || !this.inst.cello || this.inst.cello.bufs.size === 0) return;
+    const g = this.gm;
+    if (g.st === 'rest') {
+      if (now < g.until) return;
+      this.startPhrase(now);
+    }
+    if (g.st === 'fade') {
+      if (!g.faded && now >= g.fadeAt) {
+        g.faded = true;
+        this.laneTo('game', 0, 3.2);
+      }
+      if (now >= g.until) {
+        g.st = 'rest';
+        g.until = now + (this.mt.rest ?? rand(45, 120)) * (this.amb.quiet ? 1.5 : 1);
+      }
+      return;
+    }
+    // ── tocando: acordes de baixo + cordas + coro, harpa, celesta, flauta e tímpano ──
+    if (this.chordAt < now - 0.5) {
+      // (a música esteve desligada no meio da frase: ela segue daqui, sem tocar de uma vez os acordes que ficaram para trás)
+      const d = now + 0.2 - this.chordAt;
+      this.chordAt += d;
+      g.phraseEnd += d;
+      this.nextHarp = Math.max(this.nextHarp, now + 2);
+      this.nextCelesta = Math.max(this.nextCelesta, now + 4);
+      this.nextFlute = Math.max(this.nextFlute, now + 10);
+      this.nextTimpani = Math.max(this.nextTimpani, now + 20);
+    }
     while (this.chordAt < now + 2) {
+      if (g.left <= 0) {
+        // fim da frase: a coda (o Lá menor) e a música some no meio dela
+        this.scheduleCoda(this.chordAt);
+        g.st = 'fade';
+        g.fadeAt = this.chordAt + 4;
+        g.faded = false;
+        g.until = this.chordAt + CHORD_LEN;
+        return;
+      }
       this.scheduleChord(PROG[this.chordIdx % PROG.length], this.chordAt, this.chordIdx);
       this.chordAt += CHORD_LEN;
       this.chordIdx++;
+      g.left--;
     }
     const ch = PROG[(this.chordIdx - 1 + PROG.length) % PROG.length];
+    const end = g.phraseEnd - 1.5; // (os enfeites param antes da coda)
     while (this.nextHarp < now + 0.5) {
-      this.harpPhrase(ch, Math.max(now, this.nextHarp));
+      if (this.nextHarp < end) this.harpPhrase(ch, Math.max(now, this.nextHarp));
       this.nextHarp += rand(5, 9);
     }
     while (this.nextCelesta < now + 0.5) {
       const m = pick(ch.scale) + 24;
-      this.note('celesta', m, Math.max(now, this.nextCelesta), 0.3, { fadeIn: 0.005, fadeOut: 0.6, verb: 0.8, echo: 0.55, pan: rand(-0.5, 0.5) });
+      if (this.nextCelesta < end) this.note('celesta', m, Math.max(now, this.nextCelesta), 0.3, { fadeIn: 0.005, fadeOut: 0.6, verb: 0.8, echo: 0.55, pan: rand(-0.5, 0.5) });
       this.nextCelesta += rand(7, 14);
     }
     while (this.nextFlute < now + 0.5) {
-      this.flutePhrase(ch, Math.max(now, this.nextFlute));
+      if (this.nextFlute < end - 6) this.flutePhrase(ch, Math.max(now, this.nextFlute));
       this.nextFlute += rand(24, 40);
     }
     while (this.nextTimpani < now + 0.5) {
-      this.note('timpani', pick([33, 36, 38]), Math.max(now, this.nextTimpani), 0.28, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.9 });
+      if (this.nextTimpani < end) this.note('timpani', pick([33, 36, 38]), Math.max(now, this.nextTimpani), 0.28, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.9 });
       this.nextTimpani += rand(40, 70);
     }
+  }
+
+  private startPhrase(now: number) {
+    const g = this.gm;
+    const first = !g.started;
+    g.started = true;
+    // a 1ª frase do jogo tem duas voltas; depois, uma ou duas; nas áreas livres, uma
+    const cycles = this.amb.quiet ? 1 : first ? 2 : 1 + Math.floor(Math.random() * 2);
+    this.chordIdx = 0;
+    this.chordAt = now + 0.2;
+    g.left = this.mt.chords ?? cycles * PROG.length;
+    g.st = 'play';
+    g.phraseEnd = this.chordAt + g.left * CHORD_LEN;
+    this.nextHarp = now + rand(5, 8);
+    this.nextCelesta = now + rand(9, 13);
+    this.nextFlute = now + rand(20, 30);
+    this.nextTimpani = now + rand(35, 55);
+    this.echoTime(0.52);
+    // volta devagar: ~10 s até o volume cheio
+    this.laneTo('game', 1, 3.5);
+  }
+
+  // o fim de uma frase da música do jogo, ou a saída por um puzzle resolvido
+  private musicBreak(now: number) {
+    if (this.musicScene !== 'game') return;
+    const g = this.gm;
+    const rest = this.mt.rest ?? rand(35, 60);
+    if (g.st === 'play' || g.st === 'fade') {
+      // a música já abriu espaço para o resolvido; em vez de voltar, ela vai embora por baixo dele
+      this.laneTo('game', 0, 1.3, now + 0.4);
+      g.st = 'rest';
+      g.until = now + 4 + rest;
+    } else g.until = Math.max(g.until, now + 0.6 * rest);
   }
 
   private scheduleChord(c: Chord, t: number, idx: number) {
@@ -951,6 +1383,18 @@ export class Sfx {
         this.note(pad, m, t + i * 0.7 + k * 2.6, 0.5, { fadeIn: 1.1, fadeOut: 1.3, verb: 0.8, pan: (i - 1) * 0.35 });
       }
     });
+  }
+
+  // a coda: o Lá menor, cada vez mais fino (o baixo e as cordas diminuindo), e uma última frase da harpa que desce
+  private scheduleCoda(t: number) {
+    const c = PROG[0];
+    for (let k = 0; k < 5; k++) this.note('cello', c.root, t + k * 2.7, 0.85 * (1 - k * 0.16), { fadeIn: 0.5, fadeOut: 0.9, verb: 0.55 });
+    this.note('cello', c.root + 7, t + 0.2, 0.35, { fadeIn: 0.7, fadeOut: 1.0, verb: 0.55 });
+    c.pad.forEach((m, i) => {
+      for (let k = 0; k < 3; k++) this.note('string_ensemble_1', m, t + i * 0.7 + k * 2.6, 0.5 * (1 - k * 0.25), { fadeIn: 1.1, fadeOut: 1.5, verb: 0.85, pan: (i - 1) * 0.35 });
+    });
+    [76, 72, 69, 64, 57].forEach((m, i) => this.note('orchestral_harp', m, t + 1.4 + i * 1.05, 0.42, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.75, echo: 0.35, pan: 0.3 - i * 0.12 }));
+    this.note('celesta', 93, t + 7.4, 0.18, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.9, echo: 0.5 });
   }
 
   private harpPhrase(c: Chord, t: number) {
@@ -972,6 +1416,129 @@ export class Sfx {
       idx = Math.max(0, Math.min(c.scale.length - 1, idx + pick([-2, -1, 1, 2])));
       this.note('flute', c.scale[idx] + 12, at, 0.38, { fadeIn: 0.25, fadeOut: 0.9, verb: 0.9, echo: 0.3 });
       at += rand(1.6, 2.6);
+    }
+  }
+
+  // ── a música da tela inicial, "O Poço" ──────────────────────────────────
+  private startTitle(t: number) {
+    this.titleOn = true;
+    this.tIdx = 0;
+    this.tAt = t + 0.3;
+    this.nextTHarp = t + 7;
+    this.nextTCel = t + 10;
+    this.nextTBell = t + rand(26, 34);
+    this.nextTBottle = t + rand(16, 22);
+    this.tMotifFrom = 0;
+    this.tMotifUntil = 0;
+    this.echoTime(0.78); // o eco do poço: mais longo que o das salas
+    this.laneTo('title', TITLE_GAIN, 1.2, t);
+  }
+
+  private titleMusic(now: number) {
+    if (!this.titleOn) return;
+    const pad = this.inst.voice_oohs ? 'voice_oohs' : 'choir_aahs';
+    if (!this.inst[pad] || !this.inst.orchestral_harp) return;
+    if (this.tAt < now) {
+      // (os instrumentos chegaram depois da hora marcada: a peça começa agora, sem empilhar o que ficou para trás)
+      const d = now + 0.3 - this.tAt;
+      this.tAt += d;
+      this.nextTHarp += d;
+      this.nextTCel += d;
+      this.nextTBell += d;
+      this.nextTBottle += d;
+    }
+    // (agenda 4 s à frente: o tema fica conhecido antes de a harpa decidir se cai por cima dele)
+    while (this.tAt < now + 4) {
+      this.scheduleTChord(TPROG[this.tIdx % TPROG.length], this.tAt, this.tIdx, pad);
+      this.tAt += T_LEN;
+      this.tIdx++;
+    }
+    // (o acorde que soa agora: o último agendado pode ainda não ter começado)
+    const c = TPROG[((this.tAt - T_LEN <= now + 0.5 ? this.tIdx - 1 : this.tIdx - 2) + TPROG.length * 2) % TPROG.length];
+    // a harpa cai devagar, de cima para baixo, como gotas de luz no poço (nunca por cima do tema)
+    while (this.nextTHarp < now + 0.5) {
+      const at = Math.max(now, this.nextTHarp);
+      if (at + 6 > this.tMotifFrom && at < this.tMotifUntil) {
+        this.nextTHarp = this.tMotifUntil + rand(1, 3);
+        continue;
+      }
+      this.tHarpDrops(c, at);
+      this.nextTHarp += rand(9, 15);
+    }
+    // a celesta, lá no alto: uma nota, às vezes uma quinta acima logo depois
+    while (this.nextTCel < now + 0.5) {
+      const at = Math.max(now, this.nextTCel);
+      const m = Math.min(93, pick(c.arp) + 12);
+      this.note('celesta', m, at, 0.2, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.85, echo: 0.5, pan: rand(-0.6, 0.6), lane: 'title' });
+      if (Math.random() < 0.4 && m + 7 <= 96) this.note('celesta', m + 7, at + 0.42, 0.14, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.85, echo: 0.5, pan: rand(-0.6, 0.6), lane: 'title' });
+      this.nextTCel += rand(11, 19);
+    }
+    // um sino lá em cima, longe
+    while (this.nextTBell < now + 0.5) {
+      this.note('tubular_bells', pick([57, 62, 69]), Math.max(now, this.nextTBell), 0.17, { fadeIn: 0.005, fadeOut: 1.2, verb: 1, echo: 0.3, pan: rand(-0.3, 0.3), lane: 'title' });
+      this.nextTBell += rand(45, 80);
+    }
+    // o sopro na boca do poço: uma garrafa soprada, uma nota longa do acorde, quase vento
+    while (this.nextTBottle < now + 0.5) {
+      const at = Math.max(now, this.nextTBottle);
+      if (this.inst.blown_bottle) {
+        const m = pick(c.pad.map((p) => p + 12).filter((p) => p >= 62 && p <= 76));
+        if (m) {
+          const pan = rand(-0.5, 0.5);
+          this.note('blown_bottle', m, at, 0.13, { fadeIn: 1.8, hold: 0.3, fadeOut: 0.9, verb: 0.95, echo: 0.2, pan, lane: 'title' });
+          this.note('blown_bottle', m, at + 2.6, 0.11, { fadeIn: 0.4, hold: 0.6, fadeOut: 1.6, verb: 0.95, echo: 0.2, pan, lane: 'title' });
+        }
+      }
+      this.nextTBottle += rand(28, 50);
+    }
+  }
+
+  private scheduleTChord(c: TChord, t: number, idx: number, pad: string) {
+    const bassInst = this.inst.contrabass ? 'contrabass' : 'cello';
+    // o chão: o contrabaixo, nota longa renovada; o violoncelo uma oitava acima, de vez em quando
+    for (let k = 0; t + k * 2.6 < t + T_LEN; k++) {
+      this.note(bassInst, c.bass, t + k * 2.6, 0.72, { fadeIn: 0.9, fadeOut: 1.1, verb: 0.6 });
+      if (k % 2 === 1) this.note('cello', c.bass + 12, t + k * 2.6 + 0.3, 0.2, { fadeIn: 1.0, fadeOut: 1.0, verb: 0.7 });
+    }
+    // o coro respira o acorde (entradas escalonadas, bem lentas); no suspenso, a nota de cima resolve na metade
+    c.pad.forEach((m0, i) => {
+      for (let k = 0; t + i * 0.9 + k * 2.7 < t + T_LEN + 1.2; k++) {
+        const at = t + i * 0.9 + k * 2.7;
+        const m = c.sus !== undefined && i === c.pad.length - 1 && at > t + T_LEN / 2 ? c.sus : m0;
+        this.note(pad, m, at, 0.4, { fadeIn: 1.6, fadeOut: 1.6, verb: 0.9, pan: (i - (c.pad.length - 1) / 2) * 0.4, lane: 'title' });
+      }
+    });
+    // a luz: um fio de cordas, uma oitava acima do coro
+    if (c.light) {
+      const top = c.pad[c.pad.length - 1] + 12;
+      for (let k = 0; k < 4; k++) this.note('string_ensemble_1', k >= 2 && c.sus !== undefined ? c.sus + 12 : top, t + 1.5 + k * 2.6, 0.16, { fadeIn: 1.4, fadeOut: 1.4, verb: 0.95, pan: 0.2, lane: 'title' });
+    }
+    // o tema, no começo de cada metade (a segunda versão só nas voltas ímpares, para não cansar)
+    const k8 = idx % TPROG.length;
+    const loop = Math.floor(idx / TPROG.length);
+    if (k8 === 0 || (k8 === 4 && loop % 2 === 1)) this.motif(k8 === 0 ? MOTIF_A : MOTIF_B, t + 3);
+  }
+
+  private motif(m: [number, number, boolean?][], t: number) {
+    const pan = rand(-0.25, 0.25);
+    for (const [n, at, long] of m) {
+      this.note('orchestral_harp', n, t + at, 0.4, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.8, echo: 0.35, pan, lane: 'title' });
+      if (long) this.note('celesta', n + 12, t + at + 0.02, 0.12, { fadeIn: 0.004, fadeOut: 0.9, verb: 0.85, echo: 0.4, pan: -pan, lane: 'title' });
+    }
+    this.tMotifFrom = t;
+    this.tMotifUntil = t + m[m.length - 1][1] + 2.5;
+  }
+
+  private tHarpDrops(c: TChord, t: number) {
+    const n = 3 + Math.floor(Math.random() * 3);
+    let idx = c.arp.length - 1 - Math.floor(Math.random() * 2);
+    let at = t;
+    let pan = rand(-0.5, 0.5);
+    for (let i = 0; i < n && idx >= 0; i++) {
+      this.note('orchestral_harp', c.arp[idx], at, 0.36 - i * 0.03, { fadeIn: 0.004, fadeOut: 0.9, verb: 0.85, echo: 0.45, pan, lane: 'title' });
+      idx -= Math.random() < 0.65 ? 1 : 2;
+      at += rand(0.9, 1.5);
+      pan = Math.max(-0.7, Math.min(0.7, pan + rand(-0.25, 0.25)));
     }
   }
 }

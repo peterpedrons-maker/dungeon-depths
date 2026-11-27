@@ -3,6 +3,9 @@
 # Precisa de: curl, unzip, ffmpeg, python3 + numpy + py7zr.
 # Uso: bash tools/fetch_audio.sh [pasta para os downloads]   (sem pasta: uma temporária)
 # Para refazer só alguns arquivos: python3 tools/build_audio.py <pasta dos downloads> public/audio wind gust ...
+# Para refazer um instrumento do FluidR3_GM: ... public/audio inst:contrabass inst:voice_oohs (as notas baixadas ficam em <pasta>/sf)
+# 3ª leva (DESIGN.md §79): nada novo para baixar aqui. As gotas novas e a pedra assentando saem dos pacotes de cima; os instrumentos novos
+# da música do menu (contrabaixo, coro "oohs", garrafa soprada) vêm do mesmo FluidR3_GM, baixados pelo build_audio.py.
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 D=${1:-$(mktemp -d)}; mkdir -p "$D"; cd "$D"

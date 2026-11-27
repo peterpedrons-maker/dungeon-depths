@@ -1457,6 +1457,6 @@ export function wearTexture() {
 // RISCOS DE GIZ de um condenado contando dias: grupos de quatro tracinhos cortados por um quinto, tortos, em fileiras; o último grupo incompleto.
 // (Contagem, não escrita: nunca parecido com um glifo.)
 export function tallyTexture(days = 23) {
-  // o giz do jogo, à mão (scene/chalkdraw.ts, DESIGN.md §79): grupos de quatro riscos e o quinto atravessado
+  // o giz do jogo, à mão (scene/chalkdraw.ts, DESIGN.md §80): grupos de quatro riscos e o quinto atravessado
   return chalkTexture('contagem', 64, 32, days * 7, { days, step: 4 });
 }

@@ -330,6 +330,7 @@ export function buildRespiro4(ctx: Ctx): Room {
     // o som do lugar (§60): um poço alto de pedra, que ecoa muito; o ar corre pelas janelas de grade e venta mais quanto mais alto se sobe;
     // embaixo, junto da mancha de umidade, pinga
     ambience: {
+      quiet: true, // (respiro: menos música, §79)
       size: 0.85,
       wind: (() => {
         const win = windNear([

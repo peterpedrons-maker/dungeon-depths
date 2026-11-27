@@ -144,7 +144,7 @@ export interface SceneOptions {
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
   load?: boolean; // começa na TELA DE CARREGAMENTO (veio da tela inicial: jogo novo ou outro espaço); o jogo só começa com loadGo()
-  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §79)
+  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §80)
   onPause?: () => void;
   onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
 }
@@ -1498,6 +1498,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return Math.max(-1, Math.min(1, (dx * Math.cos(yaw) - dz * Math.sin(yaw)) / d)) * Math.min(1, d / 1.5);
   };
 
+  // O RESOLVIDO (DESIGN.md §79): a 1ª vez que uma sala de puzzle fica resolvida (Room.isSolved passa de falso a verdadeiro logo depois de
+  // um som da própria sala: a peça final, a porta), toca a recompensa, uma vez por sala. O 'piece' espera o fim do quadro: se ele foi o
+  // passo que resolveu, quem toca é o resolvido.
+  const solvedWas: (boolean | undefined)[] = [];
+  const solvedRang = new Set<number>();
+  const solveWatch: number[] = []; // até quando (ms) a sala está sendo vigiada
+  let heldPiece: number[] = [];
+
   const makeCtx = (idx: number): Ctx => {
     const pl = places[idx]; // (criado antes de a sala ser montada; buildWorld o põe no lugar depois)
     const lp = new THREE.Vector3();
@@ -1512,7 +1520,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           sfx.play('ignite', 0.45);
           return;
         }
-        sfx.play(n, 1, key);
+        solveWatch[idx] = performance.now() + 1200; // (a porta do Vestíbulo só conta como aberta ~0,3 s depois do som)
+        if (n === 'piece') heldPiece.push(idx);
+        else sfx.play(n, 1, key);
         // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
         if (n === 'ignite') {
           const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
@@ -3539,7 +3549,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let titleDieYaw = 0;
   const DIE_W = 0.42; // o lado do dado de verdade (worldModel)
   const lightHome = new Map<THREE.DirectionalLight, THREE.Vector3>();
-  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §79): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
+  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §80): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
   // TENTA ROLAR (força, balança de lado sobre a quina, cai de volta com um baque, duas ou três vezes, e desiste com um suspiro), OLHA EM VOLTA
   // (vira o corpo um pouco para um lado, olha, volta), OLHA O FEIXE de luz lá em cima (inclina para trás; a íris se fecha) ou dá um PULINHO.
   // Sempre volta a ficar reto no chão, de rosto para a câmera.
@@ -3678,6 +3688,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const enterTitle = () => {
     mode = 'title';
     ui.setMenu('title');
+    sfx.scene('title'); // a música da tela inicial, "O Poço" (DESIGN.md §79)
     const place = titlePlace();
     if (place) {
       for (let i = 0; i < place.room; i++) rooms[i].skip?.();
@@ -3811,7 +3822,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo).
-  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §79): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
+  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §80): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
   // só começa com loadGo() (o clique ou toque do fim do carregamento, que também libera o som e prende o mouse)
   let begun = false;
   let goPending: { cap: (() => void) | null; intro: boolean } | null = null;
@@ -3820,6 +3831,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const begin = (load = false) => {
     if (begun) return;
     begun = true;
+    // a música do jogo começa em silêncio e entra devagar: vindo da tela inicial, logo depois que a do menu some; num jogo novo, só depois
+    // de o jogador acordar (o poço, o vento e as gotas primeiro). (Com o som ainda preso, ela espera o 1º gesto: o clique do fim do carregamento)
+    sfx.scene('game', { wait: !progress.has('intro') ? 22 : mode === 'title' ? 2.5 : 5 });
     mode = load ? 'load' : 'play';
     ui.setMenu(load ? 'loading' : null);
     dieCineTarget = 0;
@@ -4290,7 +4304,25 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     }
     const calm = mode === 'play' && !paused && !busy() && !cineCam && darkK === 0 && !dialogueStore.get() && !chatterStore.get();
-    sfx.ambient({ wind, size: Math.max(0, Math.min(1, sizeOf(i, lx, lz, lf))), drip, dripPan, calm, paused });
+    sfx.ambient({ wind, size: Math.max(0, Math.min(1, sizeOf(i, lx, lz, lf))), drip, dripPan, calm, paused, dark: darkK, quiet: !!a?.quiet });
+  };
+  // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
+  // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
+  const solvedTick = () => {
+    const ms = performance.now();
+    let rang = -1;
+    for (let i = 0; i < rooms.length; i++) {
+      const s = rooms[i].isSolved?.();
+      const was = solvedWas[i];
+      solvedWas[i] = s;
+      if (s === true && was === false && mode === 'play' && ms <= (solveWatch[i] ?? 0) && !solvedRang.has(i)) {
+        solvedRang.add(i);
+        rang = i;
+      }
+    }
+    if (rang >= 0) sfx.play('solved');
+    for (const i of heldPiece) if (i !== rang) sfx.play('piece');
+    heldPiece = [];
   };
   let lastRev = 0;
   let emittedDie: DieState | null = null;
@@ -4563,6 +4595,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── salas ──
     activeRooms.forEach((i) => rooms[i].update(dt, t));
+    solvedTick();
     readInscriptions(dt);
     scanInteract();
     scanFireAim();
@@ -4571,6 +4604,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
       complete = true;
       sfx.play('fanfare');
+      sfx.scene('title', { wait: 6 }); // o fim do capítulo (e os créditos dele) fica com a música do Poço, a da tela inicial
       gems = (diaryStore.get().gems ?? []).filter((g) => GEMS.some((x) => x.id === g && x.chapter === 1)).length;
       progress.set('cap1'); // fim do capítulo 1: a tela inicial passa a mostrar o último lugar salvo
       saveIn = 0.5;
@@ -4889,7 +4923,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sfxPlay: (n: Parameters<Sfx['play']>[0], v = 1, key?: string) => sfx.play(n, v, key), // (testes)
       sfxBounce: (i: number) => sfx.bounce(i),
       sfxMode: (m: 0 | 1 | 2) => sfx.setMode(m),
-      audio: () => ({ state: sfx.state, played: sfx.played, steps: sfx.steps, loaded: sfx.ready, log: sfx.log.slice(-60), logN: sfx.logN, amb: sfx.debug() }),
+      audio: () => ({ state: sfx.state, played: sfx.played, steps: sfx.steps, loaded: sfx.ready, log: sfx.log.slice(-60), logN: sfx.logN, amb: sfx.debug(), music: sfx.music() }),
+      // (testes) a música: o estado (cena, fase, quanto falta) e encurtar frases/silêncios (`{ chords, rest, end, restNow }`)
+      music: () => sfx.music(),
+      musicTest: (o: Parameters<Sfx['musicTest']>[0]) => sfx.musicTest(o),
+      // (testes) quais salas já tocaram o resolvido
+      solvedRang: () => [...solvedRang],
+      // (testes) grava uma faixa de demonstração com o motor de som num OfflineAudioContext (devolve um WAV em base64; ver audioRender.ts)
+      renderAudio: (secs: number, ops: unknown[]) => import('./audioRender').then((m) => m.renderAudio(secs, ops as never)),
       state: () => ({
         room: curRoom,
         dieState,
@@ -5072,6 +5113,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       requestLock(); // (ainda dentro do clique: sem gesto do jogador o navegador recusa prender o mouse)
       titleTr = { k: 'new', t: 0, done };
       sfx.play('room', 0.6);
+      sfx.leaveTitle('new'); // um arpejo sobe com a câmera até o branco, e o som some antes de a página recarregar
     },
     titleGo: (done?: () => void, reload = false) => {
       if (titleTr) return;
@@ -5079,6 +5121,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       life.react('joy');
       titleTr = { k: reload ? 'out' : 'go', t: 0, done };
       sfx.play('throw', 0.4);
+      sfx.leaveTitle(reload ? 'out' : 'go'); // a música do menu some; a do jogo entra depois do pontilhado
     },
     // ao abrir a página logo depois de escolher outro espaço: aparece em pontilhado a partir do preto
     titleReveal,
@@ -5090,7 +5133,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       disT = 0;
       disDir = 1;
     },
-    toTitle: () => saveGame(() => location.replace(location.pathname + location.search)),
+    toTitle: () => {
+      sfx.fadeAll(0.25); // (sem corte seco ao recarregar)
+      saveGame(() => location.replace(location.pathname + location.search));
+    },
     saveNow: () => saveGame(),
     lock: requestLock,
     dispose() {

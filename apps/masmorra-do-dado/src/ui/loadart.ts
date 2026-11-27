@@ -8,7 +8,7 @@ import type { RostoMove } from '../scene/dielife';
 import { FACES } from '../faces';
 import { bayer, rnd, wallBase } from './chalkart';
 
-// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §79 e §81): uma parede das salas no escuro e uma bancada de pedra embaixo.
+// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §80 e §82): uma parede das salas no escuro e uma bancada de pedra embaixo.
 // - A BARRA é uma FRASE TALHADA numa laje da parede, como as frases que o dado de Fogo acende nos puzzles (scene/burnline.ts): apagada, o sulco
 //   preenchido de marfim, fosco; conforme carrega, a LUZ DOURADA corre pelos sulcos traço a traço, na ordem da escrita, símbolo por símbolo, com o
 //   clarão que anda junto (o pulso de §59) e a nota de celesta e harpa de cada símbolo (a mesma do jogo). A frase é a do Escrivão na cena do poço,
@@ -18,7 +18,7 @@ import { bayer, rnd, wallBase } from './chalkart';
 //   da frase (a porta, a contagem dos dias, o dado, a luz do poço); quem passa de capuz fica dentro da fresta de luz fria, que desce do alto à
 //   esquerda com poeira boiando, e se vê desde o começo.
 // - No canto, O DADO EM 2D, em pixel, com o rosto vivo (o mesmo de dielife.ts: olha a ponta da luz e o desenho que acabou de aparecer, pisca,
-//   mexe as sobrancelhas, suspira), só a face da frente, chapada e virada para o jogador (§82), na bancada, aquecido pela luz; no clique de
+//   mexe as sobrancelhas, suspira), só a face da frente, chapada e virada para o jogador (§83), na bancada, aquecido pela luz; no clique de
 //   começar, sai pulando pela direita.
 // Pintado num canvas no tamanho de pixel do jogo; a cena o usa no pós-processo (a paleta e o pontilhado do jogo).
 
@@ -459,7 +459,7 @@ export function makeLoadArt() {
     return ev;
   };
 
-  // O DADO EM 2D DE VERDADE (pedido do Pedro, DESIGN.md §82): só a face da frente, virada inteira para o jogador, como um desenho chapado (sem
+  // O DADO EM 2D DE VERDADE (pedido do Pedro, DESIGN.md §83): só a face da frente, virada inteira para o jogador, como um desenho chapado (sem
   // as faces de cima e de lado). O contorno escuro o separa da parede; a borda do lado da frase pega a luz dourada. No pulo ele estica um pouco
   // e, ao pousar, achata e volta (o jeito de desenho animado), sempre apoiado na bancada pelo meio de baixo.
   let prevHop = 0;

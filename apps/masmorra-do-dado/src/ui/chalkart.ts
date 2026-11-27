@@ -1,6 +1,6 @@
 import { brickTexture } from '../scene/textures';
 
-// O GIZ EM 2D (DESIGN.md §79): o mesmo giz do jogo (quadradinhos claros, cor #f0ecdc, colados um atrás do outro, falhando no grão da pedra)
+// O GIZ EM 2D (DESIGN.md §80): o mesmo giz do jogo (quadradinhos claros, cor #f0ecdc, colados um atrás do outro, falhando no grão da pedra)
 // riscado na mesma parede de alvenaria das salas. Usado pela abertura da editora e pela tela de carregamento.
 
 // o pincel (o mesmo das paredes do jogo) mora em scene/chalkdraw.ts

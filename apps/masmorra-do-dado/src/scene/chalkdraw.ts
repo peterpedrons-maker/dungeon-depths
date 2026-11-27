@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-// OS DESENHOS A GIZ DAS PAREDES (pedido do Pedro, DESIGN.md §79). O mesmo giz do jogo (quadradinhos claros, #f0ecdc, colados um atrás do
+// OS DESENHOS A GIZ DAS PAREDES (pedido do Pedro, DESIGN.md §80). O mesmo giz do jogo (quadradinhos claros, #f0ecdc, colados um atrás do
 // outro, que falham no grão da pedra) em desenhos feitos à mão pelos condenados: tremor de mão, traço que engrossa no meio e afina nas pontas,
 // alguns traços repassados, um pouco de pó em volta, e partes apagadas (esfregadas). Nada de glifo nos desenhos (o desenho dos tamanhos, da
 // Galeria, é a exceção: ele traz GRANDE e PEQUENO embaixo, exatamente como no léxico).

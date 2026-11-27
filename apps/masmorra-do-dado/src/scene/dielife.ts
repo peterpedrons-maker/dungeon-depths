@@ -1,5 +1,5 @@
 // O dado da mão tem vida: olha para as coisas, pisca, se assusta, vibra de alegria, cochila quando o jogador fica parado; olha de canto,
-// mexe as sobrancelhas e suspira de leve, sempre com a expressão NEUTRA (DESIGN.md §51 e §79).
+// mexe as sobrancelhas e suspira de leve, sempre com a expressão NEUTRA (DESIGN.md §51 e §80).
 // Aqui fica só a "alma" (estado e molas); o motor (`scene.ts`) diz para onde há algo interessante e o que aconteceu, e aplica o resultado.
 // Tudo é sutil de propósito: pequenas inclinações, um pulinho, o brilho das gemas. Ver DESIGN.md §23.
 
@@ -116,7 +116,7 @@ export class DieLife {
   private yawned = false;
   private flash = 0; // lampejo das sobrancelhas
   private squint = 0;
-  // o rosto mais vivo (DESIGN.md §79; pedido do Pedro): sem mudar a emoção, que continua NEUTRA
+  // o rosto mais vivo (DESIGN.md §80; pedido do Pedro): sem mudar a emoção, que continua NEUTRA
   private sideT = 6; // olhar de canto
   private sideOn = 0;
   private sideDir = 1;

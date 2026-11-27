@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { DUST_RGB, CHALK_RGB, bayer, chalkAlong, chalkStub, lenOf, rnd, shapeStrokes, textStrokes, textWidth, wallBase, type Stroke } from './chalkart';
 
-// A ABERTURA DA EDITORA «CINCO RISCOS» (nome escolhido pelo Pedro, DESIGN.md §79). Ao abrir o jogo, antes da tela inicial: o escuro, uma luz
+// A ABERTURA DA EDITORA «CINCO RISCOS» (nome escolhido pelo Pedro, DESIGN.md §80). Ao abrir o jogo, antes da tela inicial: o escuro, uma luz
 // quente se acende numa PAREDE DAS SALAS (a mesma alvenaria do jogo) e o GIZ DO JOGO (os quadradinhos claros) risca, traço a traço, o símbolo, a
 // contagem de cinco dos condenados (quatro riscos e o quinto atravessado, passando da conta), e depois o nome, com um toco de giz na ponta
 // soltando pó. No fim a luz baixa até o preto. Tudo em pixel, no tamanho de pixel do jogo, desenhado aqui. (Foram propostas também «Quina» e

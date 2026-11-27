@@ -115,7 +115,7 @@ export function buildRespiro3(ctx: Ctx): Room {
   // marcas de contagem e desenhos a giz nas paredes (decalques)
   let dk = 0;
   for (const [x, nx, z] of [[X1, -1, -2.5], [X1, -1, -7], [X1, -1, -13.5], [X1, -1, -20], [X0, 1, -3], [X0, 1, -7.5], [X0, 1, -17], [X0, 1, -22.5]] as [number, number, number][]) {
-    // (centenas: a contagem miúda, de giz fino, igual à de antes no tamanho; o giz agora é o do jogo, feito à mão, DESIGN.md §79)
+    // (centenas: a contagem miúda, de giz fino, igual à de antes no tamanho; o giz agora é o do jogo, feito à mão, DESIGN.md §80)
     const seed = 31 + dk * 17;
     kit.decal(2.4, 1.8, `tally${dk}`, () => chalkTexture('contagem', 128, 96, seed, { days: 150 + (seed % 60), step: 3 }), x + nx * 0.02, 2.2 + (dk % 3) * 0.5, z, 0, nx > 0 ? Math.PI / 2 : -Math.PI / 2);
     dk++;
@@ -436,6 +436,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     },
     groundY: () => 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    ambience: { quiet: true }, // o som do lugar: respiro, menos música (DESIGN.md §79)
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {

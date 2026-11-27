@@ -52,7 +52,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
   `src/scene/audio.ts` + `public/audio/`): efeitos de pacotes CC0 (OpenGameArt) e instrumentos reais do
   soundfont FluidR3_GM (CC BY 3.0 — por isso há a tela de Créditos, na tela inicial e no fim); a música é composta em tempo
-  real tocando essas notas gravadas e é uma só pro jogo todo (não muda por sala). Os arquivos são gerados
+  real tocando essas notas gravadas e são DUAS peças (`DESIGN.md` §79): a da **tela inicial**, «O Poço» (contrabaixo, coro "oohs", harpa
+  caindo, celesta, sino e a garrafa soprada; também nos créditos e no fim do capítulo), que some com a transição de Novo jogo/Continuar; e a
+  do **jogo**, a mesma em todas as salas (não muda por sala), que toca em **frases** de 1min20 a 2min30 e some numa coda, com **silêncios**
+  de 45 s a 2 min em que o ambiente sobe ~2,5 dB (nos respiros e na Biblioteca, `Ambience.quiet`, menos música; no escuro ela recua). O
+  **resolvido** (`'solved'`, cadência Ré menor → Lá maior com coro, harpa, sino e o grave da Casa) toca uma vez por sala quando
+  `Room.isSolved()` vira verdadeiro, e a frase da música termina ali; o `'piece'` ficou só para os passos certos intermediários. Os arquivos são gerados
   por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Os passos têm UM som fixo por tipo
   de piso (pedra, entulho, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`; o degrau o motor percebe sozinho quando o passo sobe ou
   desce), pé esquerdo e direito alternando sempre na mesma ordem, sem variação aleatória. **Ambiente** (`Room.ambience`, `src/scene/ambience.ts`,
@@ -95,14 +100,14 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **configurações** em abas (Áudio, Imagem, Controles com remapear teclas, Acessibilidade, Idioma; valem para o aparelho, `src/story/config.ts`).
   Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
   no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
-  **Abertura da editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`, `DESIGN.md` §79): ao abrir o jogo, uma luz quente acende numa parede das
+  **Abertura da editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`, `DESIGN.md` §80): ao abrir o jogo, uma luz quente acende numa parede das
   salas e o giz do jogo risca o símbolo e o nome: a editora é **«Cinco Riscos»** (escolha do Pedro; o símbolo é a contagem de cinco dos
   condenados; uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
   `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, fundo `src/ui/loadart.ts` no pós-processo,
   modo `load` do motor) depois de Novo jogo, Continuar e Carregar: a parede no escuro, a barra é uma frase de glifos talhada numa laje
-  («EU DAR DADO · VOCÊ LER») que a luz dourada enche traço a traço, como as frases acendíveis, com a nota de cada símbolo (`DESIGN.md` §81),
+  («EU DAR DADO · VOCÊ LER») que a luz dourada enche traço a traço, como as frases acendíveis, com a nota de cada símbolo (`DESIGN.md` §82),
   os desenhos a giz dos condenados que aparecem com a luz, a fresta fria com poeira e o dado em 2D de verdade (só a face da frente, chapada,
-  com o rosto vivo, `DESIGN.md` §82), olhando a ponta da luz; espera modelos, quadros e os sons (que agora
+  com o rosto vivo, `DESIGN.md` §83), olhando a ponta da luz; espera modelos, quadros e os sons (que agora
   baixam desde a abertura da página, `Sfx.prepare`) e, se a página recarregou, pede «Clique/Toque para começar» (o gesto libera o som e prende o
   mouse). A mira só aparece com o jogo começado. **Os desenhos a giz das paredes** (`src/scene/chalkdraw.ts`: braseiro, porta, dado, a luz do
   poço, quem passa de capuz, mão, rosto apagado, tamanhos, contagem) com o giz do jogo feito à mão, na Galeria, nos corredores e na Lousa. O dado da tela inicial tenta rolar, olha em volta e para o feixe; o rosto olha de canto, mexe as
@@ -111,7 +116,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em
   pontilhado (`uDis`/`rtSnap`); créditos com a câmera girando. **Caixas** em pedra de 9 pedaços (`tools/build_frames.py` → `src/ui/frames.css`),
   ouro no Escrivão, pensamento em tira de papel. **O Escrivão animado** (`src/scene/scribeRig.ts`, `public/models/escrivao.glb`, `DESIGN.md` §70):
-  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos (a janela grande, de barras finas; na 1ª vez, uma mini cena vira a câmera para ele; o ciclo de passos sem o tranco da emenda, `DESIGN.md` §78; a túnica cai do quadril como um sino, sem andar como calça, só os sapatos seguem os pés, e os braços andam junto do corpo, §80); mãos e
+  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos (a janela grande, de barras finas; na 1ª vez, uma mini cena vira a câmera para ele; o ciclo de passos sem o tranco da emenda, `DESIGN.md` §78; a túnica cai do quadril como um sino, sem andar como calça, só os sapatos seguem os pés, e os braços andam junto do corpo, §81); mãos e
   cabeça por código; `?escrivao=antigo` volta ao de código; prévia `?vitrine=escrivao`; `?intro=poco` testa a cena do poço. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).

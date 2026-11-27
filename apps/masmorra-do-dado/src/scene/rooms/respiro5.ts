@@ -132,7 +132,7 @@ export function buildRespiro5(ctx: Ctx): Room {
     groundY: () => 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
     // o som do lugar (§60): a menor sala do jogo, fria e abafada; pinga num canto
-    ambience: { size: 0.1, drips: [{ x: X0 + 0.4, y: 0.1, z: Z0 + 0.6 }] },
+    ambience: { size: 0.1, drips: [{ x: X0 + 0.4, y: 0.1, z: Z0 + 0.6 }], quiet: true },
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {

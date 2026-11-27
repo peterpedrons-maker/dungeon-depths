@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LOAD_BAR, loadStore } from '../story/loading';
 import { useStore } from '../story/store';
 
-// A TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §79 e §81): depois de Novo jogo / Continuar / Carregar. A imagem é do motor
+// A TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §80 e §82): depois de Novo jogo / Continuar / Carregar. A imagem é do motor
 // (`ui/loadart.ts`): a parede no escuro com os desenhos a giz, a frase de glifos talhada numa laje que a luz enche traço a traço (a barra) e, no
 // canto, o dado em 2D com o rosto vivo. Aqui fica só o aviso do fim (na frente da bancada, embaixo da frase) e o clique.
 // Espera os modelos, os primeiros quadros e as GRAVAÇÕES DE SOM. No fim, se o som ainda não foi liberado (a página acabou de recarregar), pede

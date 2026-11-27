@@ -40,7 +40,7 @@ export function preloadScribeRig() {
   return rigP;
 }
 
-// A TÚNICA NÃO É CALÇA (DESIGN.md §80). O Mixamo prendeu a túnica de baixo, a barra do casaco e a estola aos ossos das PERNAS: a cada passo o
+// A TÚNICA NÃO É CALÇA (DESIGN.md §81). O Mixamo prendeu a túnica de baixo, a barra do casaco e a estola aos ossos das PERNAS: a cada passo o
 // pano ia junto com a coxa e o pé, a barra se esticava em cunha para trás, a estola rasgava em tiras e a túnica parecia uma calça (o andar
 // "estranho" que o Pedro viu). Aqui, uma vez no arquivo carregado, o pano que estava nas pernas passa para o QUADRIL e só um pouco dele fica
 // na coxa do mesmo lado (a barra balança de leve com o passo, como o pano do Escrivão de código); só os sapatos (o quase preto da textura,
@@ -444,7 +444,7 @@ export function makeScribeRig(o: { fog?: boolean } = {}): Scribe & { ready: Prom
       hd.quaternion.copy(_q3.invert().multiply(_q2));
       hd.updateMatrixWorld(true);
     }
-    // OS BRAÇOS ANDANDO (DESIGN.md §80): o "Start Walking" abria os braços para os lados, de pinguim, com a mão esquerda torta à frente da
+    // OS BRAÇOS ANDANDO (DESIGN.md §81): o "Start Walking" abria os braços para os lados, de pinguim, com a mão esquerda torta à frente da
     // barriga. Andando, as mãos caem junto do corpo, um pouco à frente, e balançam pouco, cada uma ao contrário do pé do mesmo lado (como no
     // Escrivão de código); o que sobra da animação (1 − ARM_HOLD) dá o resto do jeito.
     const hold = cur.wW * ARM_HOLD;
