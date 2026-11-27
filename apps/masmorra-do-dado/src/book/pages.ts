@@ -71,6 +71,7 @@ export interface View {
   pulse?: boolean; // modo guiado: o campo de anotação pisca, pedindo uma palavra
   guide?: string | null; // o tutorial do caderno: a região (id) que pisca em ouro, mostrando onde tocar (DESIGN.md §75)
   blink?: boolean;
+  hereOff?: boolean; // o "aqui" do mapa pisca devagar: na fase apagada ele não é pintado
 }
 // a moldura dourada que pisca em volta de onde o tutorial pede para tocar
 function guideFrame(ctx: CanvasRenderingContext2D, regs: Region[], view: View) {
@@ -854,7 +855,7 @@ export const mapOrigin = () => {
   return { ox: Math.round((2 * PW - w.cols * CELL_W) / 2), oy: 24 };
 };
 
-let memo: { d: DiaryState; sig: string; cvs: HTMLCanvasElement; regs: Region[] } | null = null;
+let memo: { d: DiaryState; sig: string; cvs: HTMLCanvasElement; regs: Region[]; note: HereNote | null } | null = null;
 
 function drawStroke(ctx: CanvasRenderingContext2D, st: Stroke) {
   ctx.fillStyle = (PENS[st.c] ?? PENS[0]).color;
@@ -940,11 +941,16 @@ function drawHoles(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: nu
   }
 }
 
-// "VOCÊ ESTÁ AQUI" (pedido do Pedro): escrito em vermelho FORA da sala, num pedaço vazio do papel, com uma seta CURVA até ela (a seta reta é
-// palavra da língua da Casa: INTERFACE.md §6). Nada por cima da sala, nem do furo de luz. O lugar: o mais perto da sala onde o bilhete fica só em
-// papel (não cobre sala, corredor nem a dobra do livro) e a seta passa por cima do mínimo possível (nas salas do miolo ela cruza um corredor); em
-// duas linhas, ou numa, ou só "aqui". Sem lugar nenhum (não acontece no capítulo 1), o quadradinho vermelho no meio da sala, como antes.
-function drawHereNote(cx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number, px: boolean) {
+// "AQUI" (pedido do Pedro): escrito em vermelho FORA da sala, num pedaço vazio do papel, com uma seta CURVA até ela (a seta reta é palavra
+// da língua da Casa: INTERFACE.md §6), e PISCANDO devagar (o vermelho é também uma caneta do jogador: o que pisca é do caderno, não dele).
+// Nada por cima da sala, nem do furo de luz. O lugar: o mais perto da sala onde a palavra fica só em papel (não cobre sala, corredor nem a dobra
+// do livro) e a seta passa por cima do mínimo possível. Sem lugar nenhum (não acontece no capítulo 1), um quadradinho no meio da sala.
+// Aqui só se CALCULA (pixels da seta e onde vai a palavra); quem mostra a página pinta (`paintHereNote`), na fase acesa do piscar.
+interface HereNote {
+  pix: [number, number][]; // a seta (ou o quadradinho)
+  text: { s: string; x: number; y: number } | null;
+}
+function placeHereNote(cx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number, px: boolean): HereNote {
   // a caixa da sala no papel ([x0, y0, x1, y1), com o contorno)
   let bx0: number, by0: number, bx1: number, by1: number;
   if (px && r.parts?.length) {
@@ -965,7 +971,7 @@ function drawHereNote(cx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: 
   const img = cx.getImageData(0, 0, W, cx.canvas.height).data;
   const DRAWN = new Set([INK, INK2, HILITE, '#f0cf86', SKY, RED, GOLD].map((h) => parseInt(h.slice(1), 16)));
   const A = MAP_AREA;
-  // ocupado: fora da área do mapa, na dobra do livro, ou tinta/sala/corredor já desenhados
+  // ocupado: fora da área do mapa, na dobra do livro, ou sala/corredor/tinta já desenhados
   const busy = (x: number, y: number) => {
     if (x < A.x || y < A.y || x >= A.x + A.w || y >= A.y + A.h || Math.abs(x - PW + 0.5) < 4) return true;
     const o = (y * W + x) * 4;
@@ -975,7 +981,7 @@ function drawHereNote(cx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: 
     for (let y = y0 - 1; y <= y0 + h; y++) for (let x = x0 - 1; x <= x0 + w; x++) if (busy(x, y)) return false;
     return true;
   };
-  // a seta: uma curva (Bézier) de S a E, com a ponta em E
+  // a seta: uma curva (Bézier) de S a E
   const curve = (S: [number, number], E: [number, number]) => {
     const dx = E[0] - S[0];
     const dy = E[1] - S[1];
@@ -992,60 +998,65 @@ function drawHereNote(cx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: 
     }
     return pts;
   };
-  const OPTIONS = [['você está', 'aqui'], ['você está aqui'], ['aqui']];
+  const WORD = 'aqui';
+  const tw = textWidth(WORD) - 1;
+  const th = 8;
   const mx = (bx0 + bx1) / 2;
   const my = (by0 + by1) / 2;
-  for (const lines of OPTIONS) {
-    const tw = Math.max(...lines.map((l) => textWidth(l))) - 1;
-    const th = (lines.length - 1) * LINE + 8;
-    let best: { lx: number; ly: number; pts: [number, number][]; cost: number } | null = null;
-    for (const side of ['E', 'W', 'S', 'N'] as const) {
-      const vert = side === 'N' || side === 'S';
-      const span = vert ? tw + 6 : th + 10;
-      for (let gap = 6; gap <= 46; gap += 2) {
-        for (let sl = -span; sl <= span; sl += 2) {
-          let lx: number, ly: number, S: [number, number], E: [number, number];
-          if (side === 'N' || side === 'S') {
-            lx = Math.round(mx - tw / 2 + sl);
-            ly = side === 'N' ? by0 - gap - th : by1 + gap;
-            S = [lx + Math.round(tw / 2), side === 'N' ? ly + th + 1 : ly - 2];
-            E = [Math.max(bx0 + 3, Math.min(bx1 - 4, S[0])), side === 'N' ? by0 - 2 : by1 + 1];
-          } else {
-            lx = side === 'W' ? bx0 - gap - tw : bx1 + gap;
-            ly = Math.round(my - th / 2 + sl);
-            S = [side === 'W' ? lx + tw + 1 : lx - 2, ly + Math.round(th / 2)];
-            E = [side === 'W' ? bx0 - 2 : bx1 + 1, Math.max(by0 + 3, Math.min(by1 - 4, S[1]))];
-          }
-          let cost = gap * 2 + Math.abs(sl) * 0.6 + (vert ? 3 : 0);
-          if (best && cost >= best.cost) continue;
-          if (!freeRect(lx, ly, tw, th)) continue;
-          const pts = curve(S, E);
-          if (pts.length < 5) continue;
-          cost += 6 * pts.filter(([x, y]) => busy(x, y)).length; // (cada ponto da seta por cima de sala ou corredor)
-          if (best && cost >= best.cost) continue;
-          best = { lx, ly, pts, cost };
+  let best: { lx: number; ly: number; pts: [number, number][]; cost: number } | null = null;
+  for (const side of ['E', 'W', 'S', 'N'] as const) {
+    const vert = side === 'N' || side === 'S';
+    const span = vert ? tw + 6 : th + 10;
+    for (let gap = 9; gap <= 46; gap += 2) {
+      for (let sl = -span; sl <= span; sl += 2) {
+        let lx: number, ly: number, S: [number, number], E: [number, number];
+        if (vert) {
+          lx = Math.round(mx - tw / 2 + sl);
+          ly = side === 'N' ? by0 - gap - th : by1 + gap;
+          S = [lx + Math.round(tw / 2), side === 'N' ? ly + th + 1 : ly - 2];
+          E = [Math.max(bx0 + 3, Math.min(bx1 - 4, S[0])), side === 'N' ? by0 - 2 : by1 + 1];
+        } else {
+          lx = side === 'W' ? bx0 - gap - tw : bx1 + gap;
+          ly = Math.round(my - th / 2 + sl);
+          S = [side === 'W' ? lx + tw + 1 : lx - 2, ly + Math.round(th / 2)];
+          E = [side === 'W' ? bx0 - 2 : bx1 + 1, Math.max(by0 + 3, Math.min(by1 - 4, S[1]))];
         }
+        let cost = gap * 2 + Math.abs(sl) * 0.6 + (vert ? 3 : 0);
+        if (best && cost >= best.cost) continue;
+        if (!freeRect(lx, ly, tw, th)) continue;
+        const pts = curve(S, E);
+        if (pts.length < 5) continue;
+        cost += 6 * pts.filter(([x, y]) => busy(x, y)).length; // (cada ponto da seta por cima de sala ou corredor)
+        if (best && cost >= best.cost) continue;
+        best = { lx, ly, pts, cost };
       }
     }
-    if (!best) continue;
-    cx.fillStyle = RED;
-    for (const [x, y] of best.pts) cx.fillRect(x, y, 1, 1);
-    // a ponta: dois riscos curtos voltando da ponta, abertos para os lados
-    const P = best.pts;
-    const [ex, ey] = P[P.length - 1];
-    const [qx, qy] = P[Math.max(0, P.length - 4)];
-    const dl = Math.hypot(ex - qx, ey - qy) || 1;
-    const ux = (ex - qx) / dl;
-    const uy = (ey - qy) / dl;
-    for (const k of [1, 2]) for (const sg of [-1, 1]) cx.fillRect(Math.round(ex - ux * k + sg * uy * k), Math.round(ey - uy * k - sg * ux * k), 1, 1);
-    lines.forEach((l, i) => drawText(cx, l, best!.lx + Math.round((tw - (textWidth(l) - 1)) / 2), best!.ly - 2 + i * LINE, RED));
-    return;
   }
-  cx.fillStyle = RED;
-  cx.fillRect(Math.floor(mx) - 1, Math.floor(my) - 1, 4, 4);
+  if (!best) {
+    const x = Math.floor(mx);
+    const y = Math.floor(my);
+    const pix: [number, number][] = [];
+    for (let j = -1; j < 3; j++) for (let i = -1; i < 3; i++) pix.push([x + i, y + j]);
+    return { pix, text: null };
+  }
+  // a ponta: dois riscos curtos voltando da ponta, abertos para os lados
+  const pix = [...best.pts];
+  const [ex, ey] = pix[pix.length - 1];
+  const [qx, qy] = pix[Math.max(0, pix.length - 4)];
+  const dl = Math.hypot(ex - qx, ey - qy) || 1;
+  const ux = (ex - qx) / dl;
+  const uy = (ey - qy) / dl;
+  for (const k of [1, 2]) for (const sg of [-1, 1]) pix.push([Math.round(ex - ux * k + sg * uy * k), Math.round(ey - uy * k - sg * ux * k)]);
+  return { pix, text: { s: WORD, x: best.lx, y: best.ly - 2 } };
+}
+// pinta o "aqui" (dx: o deslocamento da página: a da direita começa em PW)
+function paintHereNote(ctx: CanvasRenderingContext2D, n: HereNote, dx: number) {
+  ctx.fillStyle = RED;
+  for (const [x, y] of n.pix) ctx.fillRect(x + dx, y, 1, 1);
+  if (n.text) drawText(ctx, n.text.s, n.text.x + dx, n.text.y, RED);
 }
 
-function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElement; regs: Region[] } {
+function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElement; regs: Region[]; note: HereNote | null } {
   void lay;
   const cvs = document.createElement('canvas');
   cvs.width = 2 * PW;
@@ -1155,9 +1166,9 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
       }
     }
   }
-  // "você está aqui", por fora da sala (depois de tudo desenhado: ele procura papel vazio)
+  // o "aqui", por fora da sala: só o lugar (depois das salas e dos corredores: ele procura papel vazio); quem mostra a página o pinta, piscando
   const hereRoom = d.here ? roomsHere.find((r) => visited(r.key) && named(r.key, [d.here!])) : undefined;
-  if (hereRoom) drawHereNote(cx, hereRoom, ox, oy, !!w.px);
+  const note = hereRoom ? placeHereNote(cx, hereRoom, ox, oy, !!w.px) : null;
   if (!roomsHere.some((r) => visited(r.key))) drawCentered(cx, '...', PW, 78, SEPIA);
 
   // o que o jogador escreveu à mão
@@ -1245,13 +1256,15 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     cx.fillStyle = RED;
     cx.fillRect(hv.x, hv.y + hv.h - 1, hv.w, 1);
   }
-  return { cvs, regs };
+  return { cvs, regs, note };
 }
 
 // (testes) o mapa inteiro, as duas páginas, num canvas: `floor` = o andar; todas as salas `rooms` como visitadas
 export function mapPreview(d: DiaryState, floor: number): HTMLCanvasElement {
   const view: View = { spread: 0, sel: null, pen: 0, floor, stamp: -1, trayAt: 0, live: null, editing: null, hover: null, caret: false };
-  return buildMap(view, d, layout(d)).cvs;
+  const m = buildMap(view, d, layout(d));
+  if (m.note) paintHereNote(m.cvs.getContext('2d')!, m.note, 0);
+  return m.cvs;
 }
 
 function renderMapHalf(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
@@ -1260,6 +1273,7 @@ function renderMapHalf(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: Vie
   const off = side === 'L' ? 0 : PW;
   ctx.clearRect(0, 0, PW, PH);
   ctx.drawImage(memo.cvs, off, 0, PW, PH, 0, 0, PW, PH);
+  if (memo.note && !view.hereOff) paintHereNote(ctx, memo.note, -off);
   const out: Region[] = [];
   for (const r of memo.regs) {
     const x0 = Math.max(r.x, off);

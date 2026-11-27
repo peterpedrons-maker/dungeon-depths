@@ -1410,11 +1410,13 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   - **A Lousa** tem abóbada baixa: o furo vaza a abóbada (o shader descarta o que cai dentro do círculo, visto de cima), o arco de reforço do meio
     não é feito, e o aro, o lábio e a boca do tubo acompanham a curva (`skyHole(..., { ceil })`). O teto plano do casco ganhou o furo também
     (`roomShell({ skyHoles })`).
-  - **"Você está aqui" por fora da sala** (pedido do Pedro): o quadradinho vermelho de dentro da sala saiu. Agora a sala atual fica com o amarelo
-    mais forte e, do lado de fora, num pedaço vazio do papel, vem escrito em vermelho «você está / aqui», com uma seta CURVA até a sala (a seta
-    reta é palavra da língua da Casa, `INTERFACE.md` §6). O lugar é o mais perto da sala onde o bilhete fica só em papel (sem cobrir sala,
-    corredor nem a dobra do livro). Nas salas do miolo, a seta fica mais comprida e cruza um corredor. Onde as duas linhas não cabem (a
-    Cisterna e a Confirma, na beirada do mapa), fica só «aqui» (`drawHereNote` em `pages.ts`). Conferido nas 24 salas, nos dois andares.
+  - **"Aqui" por fora da sala** (pedido do Pedro): o quadradinho vermelho de dentro da sala saiu. Agora a sala atual fica com o amarelo mais
+    forte e, do lado de fora, num pedaço vazio do papel, vem escrito em vermelho «aqui» (uma palavra só: o «você está / aqui» em duas linhas
+    tomava mais papel do que muitas salas), com uma seta CURVA curta até a sala (a seta reta é palavra da língua da Casa, `INTERFACE.md` §6). O
+    lugar é o mais perto da sala onde a palavra fica só em papel (sem cobrir sala, corredor nem a dobra do livro); nas salas do miolo a seta cruza
+    um corredor. O «aqui» **pisca devagar** (aceso 1,2 s, apagado 0,5 s) com o caderno aberto no mapa: o vermelho é também uma caneta do jogador,
+    e o que pisca é do caderno, não dele (`placeHereNote`/`paintHereNote` em `pages.ts`; o piscar em `book3d.ts`, `view.hereOff`). Conferido nas 24
+    salas, nos dois andares, e no caderno aberto de verdade.
   - **Teste:** `__mdd.skyHoles()` (os furos no mundo).
 
 ## 74. O dado no braseiro 3D e o caderno que pula de parte em parte (pedidos do Pedro)

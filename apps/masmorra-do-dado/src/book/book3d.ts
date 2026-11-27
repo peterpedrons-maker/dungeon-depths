@@ -898,6 +898,14 @@ export function createDiaryBook(env: BookEnv) {
           refresh();
         }
       }
+      // o "aqui" do mapa pisca devagar (aceso 1,2 s, apagado 0,5 s), só com o caderno aberto no mapa
+      if (T >= 0.99 && !flip && view.spread === layout(dState()).mapAt) {
+        const off = t % 1.7 > 1.2;
+        if (off !== !!view.hereOff) {
+          view.hereOff = off;
+          refresh();
+        }
+      }
       if (!want && view.editing) stopEdit();
       const dir = want - T;
       if (Math.abs(dir) > 1e-4) {
