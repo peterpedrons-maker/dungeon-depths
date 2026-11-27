@@ -1511,3 +1511,52 @@ fazer, e o jogador tinha de adivinhar que precisava passar por todas as partes. 
   aquele canto (a lousa secreta do CINCO, a pedra do soquete frio, o nicho da folha e a porta-lousa, na parede esquerda) está separado, sem nada
   por cima de nada (conferido de vários ângulos, no celular). Os riscos cor-de-rosa que aparecem na porta-lousa olhando de lado são a **mira de
   fogo** (o desenho da mira muda quando ela aponta para algo que se acende), não uma sobreposição.
+
+## 77. A abertura Pedra-Sabão, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
+
+- **A editora: «Pedra-Sabão»** (nome escolhido pelo Pedro; `src/ui/Splash.tsx`). Ao abrir o jogo, antes da tela inicial, no PC e no celular: uma
+  laje de pedra-sabão (cinza-esverdeada, com manchas largas, veios claros de talco, pintas, bisel com luz de cima à esquerda, a espessura da laje
+  embaixo e a sombra no chão) e o nome **riscado à mão, a giz, traço a traço**, com um toco de giz na ponta do traço soltando pó; no fim, um
+  sublinhado rápido. Tudo em pixel, no tamanho de pixel do jogo (200 linhas no celular, 240 no PC), desenhado em código (sem imagem). Entra e sai em
+  pontilhado, como as transições do jogo. ~3,5 s; um toque, clique ou tecla pula (o nome aparece inteiro e a abertura sai). Aparece **uma vez por
+  sessão do navegador** (voltar à tela inicial no meio do jogo não repete); `?splash=0` pula, `?splash=1` força. Ela só sai quando a tela inicial
+  está pronta (se o aparelho é lento, o nome fica à vista mais um pouco).
+- **A tela inicial não "sobe do preto" mais.** O defeito: o menu aparecia (subindo de baixo) com a tela ainda preta, e o cenário surgia segundos
+  depois, porque o 1º desenho de cada material compila o programa de sombreamento, e os modelos 3D chegam depois. Agora a cena avisa quando está
+  pronta (`onReady`: 4 quadros desenhados, os modelos chegaram, a fonte carregou; no máximo 10 s; `src/story/loading.ts`) e só então, depois da
+  abertura, a imagem **se abre do preto** (1,1 s, o dado junto), o **logo** aparece no lugar e o **menu** em seguida, sem subir de baixo. O dado já
+  está no lugar dele no 1º quadro (antes ele vinha girando até a posição).
+- **O dado mais vivo na tela inicial** (`scene.ts`, `titleActTick`): de tempos em tempos (5 a 10 s), se ninguém mexe no mouse, ele faz alguma coisa e
+  volta reto ao chão, de rosto para a câmera:
+  - **tenta rolar**: faz força (aperta a boca, semicerra os olhos), levanta de lado sobre a quina de baixo e cai de volta com um baque (som baixo),
+    duas ou três vezes, cada vez um pouco mais alto, e **desiste com um leve suspiro**;
+  - **olha em volta**: vira o corpo um pouco para um lado, olha, volta;
+  - **olha o feixe** de luz lá em cima: inclina para trás e a íris se fecha com a claridade;
+  - dá um **pulinho**.
+- **O rosto mais vivo, sempre NEUTRO** (`dielife.ts`, desenho em `textures.ts`), na mão, na tela inicial e na de carregamento:
+  - **olhar de canto**: só as íris vão ao canto do olho e ficam lá um instante (o rosto não vira), com a pálpebra de cima 1 px mais baixa; às vezes
+    pisca ao voltar;
+  - **sobrancelhas que mexem sozinhas**: uma (ou as duas) sobe 1 px e volta; a do lado para onde ele olha de canto às vezes sobe junto. Elas só
+    sobem e descem **retas**, nunca inclinam (inclinar é o que faria cara de bravo ou de triste);
+  - **o olho descansa**: a pálpebra de cima desce um pouquinho por alguns segundos e volta (o olho muda de forma sem mudar a expressão);
+  - **a íris se fecha** olhando para a luz forte (o feixe do poço, na tela inicial);
+  - **o leve suspiro**: puxa o ar (sobe e "enche" um tiquinho, sobrancelhas sobem, narinas abrem) e solta devagar (desce, as pálpebras caem um
+    pouco, a boca entreabre 1 px). De vez em quando (mais vezes na tela inicial). Não é tristeza nem cansaço: é só ele respirando.
+  A boca continua sempre reta (§51); nada disso é emoção.
+- **A tela de carregamento** (`src/ui/LoadingScreen.tsx`; o motor entra no modo `load`): depois de **Novo jogo** (a subida pelo feixe até o branco,
+  que vira preto), de **Continuar** (o dado pula para fora e a imagem vira pontilhado até o preto) e de **Carregar** outro espaço. Tela preta, **o
+  dado no canto de baixo à direita**, de rosto para o jogador, com o rosto vivo e a cabeça acompanhando um pouco os olhos (ele olha para o jogador e,
+  de vez em quando, espia a ponta da barra), e **a barra embaixo**: um **sulco talhado** na pedra, cheio de marfim fosco, por onde **a luz dourada
+  corre** como nas frases que acendem, com o clarão na ponta. O lugar salvo é preparado por baixo do véu preto (o mundo fica parado), e a tela
+  espera **os modelos, os primeiros quadros e as gravações de som** (no máximo 15 s; a barra leva no mínimo ~1,4 s).
+  - **Os sons que chegavam tarde**: antes, as gravações só começavam a baixar depois do 1º toque/tecla (e, depois de Novo jogo, a página recarrega:
+    era preciso um gesto novo). Agora o motor de som (`audio.ts`, `prepare`) cria o contexto de áudio **suspenso logo ao abrir a página** e já
+    baixa e decodifica tudo durante a abertura, a tela inicial e a de carregamento; nada é agendado antes do gesto (`unlock`), para não tocar tudo
+    junto depois.
+  - **No fim**: se o som já está liberado (Continuar no mesmo espaço: houve o clique), o jogo segue sozinho; se a página acabou de recarregar (Novo
+    jogo, Carregar), aparece **«Clique para começar»** (no celular, **«Toque para começar»**) piscando sobre a barra: é o gesto que o navegador exige
+    para o som sair e, no PC, para prender o mouse (antes aparecia "Clique para jogar" por cima da cena de acordar, e ela começava muda).
+  - Depois do clique: num jogo novo, a cena de acordar começa no preto como sempre; num jogo salvo, o véu se abre (1,1 s) e aparece o nome da sala.
+- **A mira só aparece com o jogo de fato começado**: a interface começa com ela escondida, a tela inicial e a de carregamento contam como cena, e o
+  motor avisa já no 1º quadro (antes ela piscava no meio da tela no começo do jogo e só depois sumia). Nas cenas (acordar, o poço, o dado ao centro,
+  a gema...) ela some e volta quando a cena acaba, como antes.

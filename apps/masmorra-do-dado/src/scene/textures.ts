@@ -652,6 +652,10 @@ export interface RostoLook {
   mw?: number; // largura: -3 (apertada) .. 1 (relaxada) px de cada lado
   sq?: number; // pálpebra de cima descendo: 0..3 px
   nose?: boolean; // narinas abertas
+  bl?: number; // cada sobrancelha sobe (+) ou desce por conta própria: -2..2 px (sempre RETA: só sobe e desce, nunca inclina)
+  br?: number;
+  sd?: number; // olhar de canto: as íris vão ao canto (-4..4 px) sem o rosto acompanhar
+  ir?: number; // a íris se fecha (luz forte): -1..0 px no raio
 }
 const NO_LOOK: RostoLook = { ex: 0, ey: 0, by: 0, closed: false };
 function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent: string, look: RostoLook = NO_LOOK) {
@@ -699,9 +703,9 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
       }
       return 0;
     };
-    const ix = lx + Math.max(-4, Math.min(4, look.ex - fx * 0.5 + Math.sign(look.ex) * 1));
+    const ix = lx + Math.max(-4, Math.min(4, look.ex - fx * 0.5 + Math.sign(look.ex) * 1 + Math.round(look.sd ?? 0)));
     const iy = ly + Math.max(-1, Math.min(1, look.ey - fy));
-    const r = 3;
+    const r = 3 + Math.max(-1, Math.min(0, Math.round(look.ir ?? 0)));
     for (let y = -r; y <= r; y++)
       for (let x = -r; x <= r; x++) {
         const d = Math.abs(x) + Math.abs(y);
@@ -722,11 +726,12 @@ function tracos(ctx: CanvasRenderingContext2D, n: number, glow: boolean, accent:
   eye(20, 29);
   eye(44, 29);
   // sobrancelhas: um arco leve, com um risquinho na ponta de dentro (como a serifa de um glifo)
-  const by = look.by;
-  poly([[0, 3], [3, 1], [6, 0], [15, 0]], 11 + fx, 16 + by);
-  px1(26 + fx, 17 + by);
-  poly([[0, 0], [9, 0], [12, 1], [15, 3]], 38 + fx, 16 + by);
-  px1(38 + fx, 17 + by);
+  const byL = look.by - Math.max(-2, Math.min(2, Math.round(look.bl ?? 0)));
+  const byR = look.by - Math.max(-2, Math.min(2, Math.round(look.br ?? 0)));
+  poly([[0, 3], [3, 1], [6, 0], [15, 0]], 11 + fx, 16 + byL);
+  px1(26 + fx, 17 + byL);
+  poly([[0, 0], [9, 0], [12, 1], [15, 3]], 38 + fx, 16 + byR);
+  px1(38 + fx, 17 + byR);
   // nariz: a ponte desce do meio das sobrancelhas; a base com as narinas
   seg(32 + fx, 21 + fy, 32 + fx, 40 + fy);
   seg(30 + fx, 41 + fy, 34 + fx, 41 + fy);

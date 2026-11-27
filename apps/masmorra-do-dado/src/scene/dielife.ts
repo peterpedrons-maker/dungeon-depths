@@ -1,4 +1,5 @@
-// O dado da mão tem vida: olha para as coisas, pisca, se assusta, vibra de alegria, cochila quando o jogador fica parado.
+// O dado da mão tem vida: olha para as coisas, pisca, se assusta, vibra de alegria, cochila quando o jogador fica parado; olha de canto,
+// mexe as sobrancelhas e suspira de leve, sempre com a expressão NEUTRA (DESIGN.md §51 e §77).
 // Aqui fica só a "alma" (estado e molas); o motor (`scene.ts`) diz para onde há algo interessante e o que aconteceu, e aplica o resultado.
 // Tudo é sutil de propósito: pequenas inclinações, um pulinho, o brilho das gemas. Ver DESIGN.md §23.
 
@@ -22,6 +23,8 @@ export interface LifeInput {
   sleepAfter?: number; // segundos parado até cochilar (padrão 40; na tela inicial, 30)
   face?: number; // 0..1: quanto um ROSTO está virado para o jogador. Com o rosto à vista, o DADO fica quieto e quem se mexe são os olhos e o rosto
   talking?: boolean; // o dado está escrevendo uma fala no balão: a boca mexe
+  lively?: boolean; // tela inicial e tela de carregamento: o dado está "sozinho" e mexe mais o rosto (olha de canto, suspira mais vezes)
+  glare?: boolean; // há uma luz forte no alto (o feixe do poço): olhando para cima, a íris se fecha
 }
 
 export interface LifeOut {
@@ -47,6 +50,10 @@ export interface RostoMove {
   mw: number; // -1..1: a boca aperta (-) ou relaxa (+)
   squint: number; // 0..1: pálpebras de cima descendo (foco, sono, meio piscar)
   nose: boolean; // narinas abertas (uma fungada)
+  bl: number; // -1..1: cada sobrancelha sobe (+) ou desce um pouco por conta própria (a esquerda e a direita da tela); as duas ficam RETAS
+  br: number;
+  side: number; // -1..1: olhar DE CANTO (só as íris vão ao canto; o rosto não acompanha)
+  iris: number; // -1..0: a íris se fecha (luz forte)
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -109,9 +116,63 @@ export class DieLife {
   private yawned = false;
   private flash = 0; // lampejo das sobrancelhas
   private squint = 0;
+  // o rosto mais vivo (DESIGN.md §77; pedido do Pedro): sem mudar a emoção, que continua NEUTRA
+  private sideT = 6; // olhar de canto
+  private sideOn = 0;
+  private sideDir = 1;
+  private sideK = 0;
+  private relaxT = 8; // o olho "descansa": a pálpebra de cima desce 1 px por uns segundos e volta
+  private relaxOn = 0;
+  private relaxK = 0;
+  private browT = 4; // uma sobrancelha (ou as duas) sobe 1 px e volta
+  private browOn = 0;
+  private browSide = 0; // -1 esquerda, 1 direita, 0 as duas
+  private bl = 0;
+  private br = 0;
+  private irisK = 0;
+  private sighT = 22; // o leve suspiro
+  private sighS = -1; // > = 0: segundos dentro do suspiro
+  private sighBody = 0; // o peito do suspiro (sobe ao puxar o ar, desce ao soltar)
   private q = new THREE.Quaternion();
   private e = new THREE.Euler();
-  out: LifeOut = { quat: this.q, dx: 0, dy: 0, scale: 1, glow: 1, look: { x: 0, y: 0, brow: 0, closed: false, mouth: 0, mx: 0, mw: 0, squint: 0, nose: false } };
+  out: LifeOut = { quat: this.q, dx: 0, dy: 0, scale: 1, glow: 1, look: { x: 0, y: 0, brow: 0, closed: false, mouth: 0, mx: 0, mw: 0, squint: 0, nose: false, bl: 0, br: 0, side: 0, iris: 0 } };
+
+  // volta tudo ao repouso (a tela inicial ou a de carregamento acabaram de aparecer: nada de molas ainda chegando ao lugar)
+  settle() {
+    this.gy = this.gp = this.vy = this.vp = 0;
+    this.eyeX = this.eyeY = this.eyeVX = this.eyeVY = 0;
+    this.hopY = this.hopV = this.shake = this.squash = this.droop = this.wiggle = this.lean = this.boost = 0;
+    this.sideOn = this.sideK = 0;
+    this.sighS = -1;
+    this.sighBody = 0;
+    this.idleT = 0;
+    this.sleep = 0;
+  }
+  // quanto do `dy` de agora é o peito do suspiro (no chão, a tela inicial tira: o dado não flutua, só "enche")
+  get sighDy() {
+    return this.sighBody * 0.022;
+  }
+  // um leve suspiro agora (a tela inicial pede quando o dado "desiste" de rolar)
+  sighNow() {
+    if (this.sighS < 0 && this.sleep < 0.3) this.sighS = 0;
+  }
+  // um pulinho (a tela inicial: o dado tenta sair do lugar)
+  hop(v: number) {
+    this.hopV = Math.max(this.hopV, v);
+  }
+  // força: aperta a boca e semicerra os olhos por `secs` (tentando rolar)
+  effort(secs: number) {
+    this.tic = 'press';
+    this.ticOn = Math.max(this.ticOn, secs);
+    this.relaxOn = Math.max(this.relaxOn, secs);
+  }
+  // olha para um ponto (-1..1 na face) por `secs`, mesmo com outra coisa à frente (olhar o feixe de luz lá em cima, o menu)
+  glance(x: number, y: number, secs: number) {
+    this.glX = x;
+    this.glY = y;
+    this.glOn = secs;
+    this.glT = secs + 1.2 + Math.random() * 1.5;
+  }
 
   react(kind: Reaction) {
     this.idleT = 0;
@@ -329,8 +390,73 @@ export class DieLife {
       if (Math.random() < 0.35) this.noseT = 0.3; // duas fungadas seguidas
     }
     if (this.noseOn > 0) this.noseOn -= dt;
+    const lively = !!i.lively;
+    const free = awake && !i.talking && this.yawn <= 0 && this.sighS < 0;
+    // OLHAR DE CANTO: só as íris correm até o canto do olho e ficam um tempo lá (o rosto não vira); a pálpebra de cima desce 1 px
+    this.sideT -= dt;
+    if (this.sideT <= 0 && free && this.glOn <= 0) {
+      this.sideT = lively ? 5 + Math.random() * 6 : 8 + Math.random() * 10;
+      this.sideOn = 0.8 + Math.random() * 1.1;
+      this.sideDir = Math.random() < 0.5 ? -1 : 1;
+      if (Math.random() < 0.5) this.blinkT = Math.min(this.blinkT, this.sideOn + 0.15); // às vezes pisca ao voltar
+    }
+    if (this.sideOn > 0) this.sideOn -= dt;
+    if (!awake) this.sideOn = 0;
+    this.sideK += ((this.sideOn > 0 ? this.sideDir : 0) - this.sideK) * Math.min(1, dt * 16); // o olho anda depressa e para
+    // O OLHO DESCANSA: a pálpebra de cima desce um pouquinho por alguns segundos e volta (o olho muda de forma, sem mudar a expressão)
+    this.relaxT -= dt;
+    if (this.relaxT <= 0 && free) {
+      this.relaxT = 6 + Math.random() * 8;
+      this.relaxOn = 2 + Math.random() * 3;
+    }
+    if (this.relaxOn > 0) this.relaxOn -= dt;
+    this.relaxK += ((this.relaxOn > 0 ? 1 : 0) - this.relaxK) * Math.min(1, dt * 3);
+    // SOBRANCELHAS: de vez em quando uma delas (ou as duas) sobe 1 px e volta; a do lado para onde ele olha de canto sobe junto às vezes.
+    // Elas só sobem e descem RETAS (nunca inclinam: inclinar é que faria cara de bravo ou de triste)
+    this.browT -= dt;
+    if (this.browT <= 0 && free) {
+      this.browT = lively ? 3 + Math.random() * 4 : 4 + Math.random() * 6;
+      this.browOn = 0.45 + Math.random() * 0.5;
+      const r = Math.random();
+      this.browSide = r < 0.35 ? -1 : r < 0.7 ? 1 : 0;
+    }
+    if (this.browOn > 0) this.browOn -= dt;
+    const bOn = this.browOn > 0 ? 1 : 0;
+    const sideBrow = this.sideOn > 0 && this.sideDir !== 0 ? 0.5 : 0;
+    const blGoal = bOn * (this.browSide <= 0 ? 0.7 : 0) + (this.sideDir < 0 ? sideBrow : 0);
+    const brGoal = bOn * (this.browSide >= 0 ? 0.7 : 0) + (this.sideDir > 0 ? sideBrow : 0);
+    // O SUSPIRO: puxa o ar (o dado sobe e cresce um tiquinho, as sobrancelhas sobem, as narinas abrem) e solta devagar (desce, as pálpebras
+    // caem um pouco, a boca entreabre 1 px). Leve, de vez em quando; não é tristeza nem cansaço, é só o dado respirando
+    this.sighT -= dt;
+    if (this.sighT <= 0 && free && !i.busy) {
+      this.sighT = lively ? 14 + Math.random() * 14 : 24 + Math.random() * 26;
+      this.sighS = 0;
+    }
+    let sighLid = 0;
+    let sighBrow = 0;
+    if (this.sighS >= 0) {
+      const S = (this.sighS += dt);
+      const ss = (a: number, b: number) => {
+        const u = clamp((S - a) / (b - a), 0, 1);
+        return u * u * (3 - 2 * u);
+      };
+      // o corpo: sobe até 1 em 0,9 s, desce até -0,5 em 2,1 s, volta a 0 em 2,7 s
+      this.sighBody = S < 0.9 ? ss(0, 0.9) : S < 2.1 ? 1 - 1.5 * ss(0.9, 2.1) : -0.5 + 0.5 * ss(2.1, 2.7);
+      if (S < 0.2) this.noseOn = Math.max(this.noseOn, 0.2);
+      sighBrow = S < 0.9 ? 0.6 * ss(0, 0.6) : 0.6 - 1.1 * ss(0.9, 1.6) + 0.5 * ss(2.1, 2.7);
+      sighLid = S < 0.9 ? 0 : 0.55 * ss(0.9, 1.5) * (1 - ss(2.0, 2.7));
+      if (S > 1.0 && S < 1.9) this.mouthGoal = Math.max(this.mouthGoal, 0.22);
+      if (S >= 2.7) {
+        this.sighS = -1;
+        this.sighBody = 0;
+      }
+    }
+    this.bl += (clamp(blGoal + sighBrow * 0.6, -1, 1) - this.bl) * Math.min(1, dt * 12);
+    this.br += (clamp(brGoal + sighBrow * 0.6, -1, 1) - this.br) * Math.min(1, dt * 12);
+    // A ÍRIS: olhando para cima, para a luz forte do poço, ela se fecha um pouco
+    this.irisK += ((i.glare && this.eyeY > 0.5 ? -1 : 0) - this.irisK) * Math.min(1, dt * 4);
     // pálpebras: piscar pela metade (descendo e subindo), foco quando quer muito alguma coisa, sono e bocejo
-    const lidGoal = Math.max(this.lean * 0.5, clamp((this.sleep - 0.1) * 1.6, 0, 1), this.yawn > 0 ? 0.8 : 0, this.blink > 0.15 ? 0.7 : 0);
+    const lidGoal = Math.max(this.lean * 0.5, clamp((this.sleep - 0.1) * 1.6, 0, 1), this.yawn > 0 ? 0.8 : 0, this.blink > 0.15 ? 0.7 : 0, this.sideK !== 0 ? Math.abs(this.sideK) * 0.34 : 0, this.relaxK * 0.34, sighLid);
     this.squint += (lidGoal - this.squint) * Math.min(1, dt * 10);
     this.flash = Math.max(0, this.flash - dt * 2.2);
 
@@ -347,8 +473,8 @@ export class DieLife {
     const breathe = Math.sin(this.time * 1.7) * 0.012 * (1 - 0.5 * this.sleep);
     const eagerPulse = this.lean * (0.5 + 0.5 * Math.sin(this.time * 7)) * 0.35;
     this.out.dx = ((i.target ? clamp(i.target.dx, -1, 1) * 0.035 * this.lean : 0) + tr * 0.012) * (0.2 + 0.8 * calm);
-    this.out.dy = this.hopY * 0.045 - this.droop * 0.07 - this.sleep * 0.05 + breathe + (i.target ? clamp(i.target.dy, -1, 1) * 0.02 * this.lean : 0) * (0.2 + 0.8 * calm);
-    this.out.scale = 1 + breathe * 0.6 - this.squash * 0.1 + this.lean * 0.04;
+    this.out.dy = this.hopY * 0.045 - this.droop * 0.07 - this.sleep * 0.05 + breathe + this.sighBody * 0.022 + (i.target ? clamp(i.target.dy, -1, 1) * 0.02 * this.lean : 0) * (0.2 + 0.8 * calm);
+    this.out.scale = 1 + breathe * 0.6 - this.squash * 0.1 + this.lean * 0.04 + this.sighBody * 0.022;
     const eyelid = 1 - 0.85 * this.blink;
     this.out.glow = Math.max(0.05, (1 + this.boost + eagerPulse) * eyelid * (1 - 0.55 * this.sleep));
     // o olhar do rosto: os olhos acompanham o alvo; as sobrancelhas sobem com interesse, alegria e susto e descem com o cansaço
@@ -361,10 +487,16 @@ export class DieLife {
     this.out.look.mw = this.mw;
     this.out.look.squint = this.squint;
     this.out.look.nose = this.noseOn > 0;
+    this.out.look.bl = this.bl;
+    this.out.look.br = this.br;
+    this.out.look.side = this.sideK;
+    this.out.look.iris = this.irisK;
     // rede de segurança: se algum número virar NaN, a vida reinicia em vez de contaminar o resto
     if (!Number.isFinite(this.out.dx + this.out.dy + this.out.scale + this.out.glow + this.q.x + this.q.y + this.q.z + this.q.w + this.eyeX + this.eyeY + this.out.look.brow)) {
       this.eyeX = this.eyeY = this.eyeVX = this.eyeVY = 0;
       this.gy = this.gp = this.vy = this.vp = this.hopY = this.hopV = this.shake = this.squash = this.boost = this.droop = this.wiggle = this.lean = 0;
+      this.sighS = -1;
+      this.sighBody = this.sideK = this.bl = this.br = this.irisK = 0;
       this.q.identity();
       this.out.dx = this.out.dy = 0;
       this.out.scale = this.out.glow = 1;

@@ -97,7 +97,14 @@ interface Inst {
 }
 
 export class Sfx {
-  private ac: AudioContext | null = null;
+  // O contexto de áudio nasce LOGO AO ABRIR A PÁGINA (`prepare`), ainda suspenso: assim as gravações baixam e decodificam enquanto a tela da
+  // editora, a tela inicial e a tela de carregamento estão à vista (DESIGN.md §77). Som só sai depois do 1º toque/tecla (`unlock`): até lá,
+  // `ac` responde null e nada é agendado (senão tudo tocaria junto quando o som fosse liberado).
+  private ctx: AudioContext | null = null;
+  private live = false;
+  private get ac(): AudioContext | null {
+    return this.live ? this.ctx : null;
+  }
   private master!: GainNode;
   private bus!: GainNode;
   private musicBus!: GainNode;
@@ -161,12 +168,21 @@ export class Sfx {
     return { wind: +this.windLevel.toFixed(2), size: +this.sizeLevel.toFixed(2), fire: +this.fireLevel.toFixed(2), firePan: +this.firePan.toFixed(2), drip: +this.amb.drip.toFixed(2), calm: this.amb.calm, nextBreath: this.ac ? +(this.nextBreath - this.ac.currentTime).toFixed(1) : null, nextGust: this.ac ? +(this.nextGust - this.ac.currentTime).toFixed(1) : null };
   }
   private loaded = 0;
+  // quantos ARQUIVOS já estão prontos (para a barra da tela de carregamento); os instrumentos só se sabem depois de ler o índice
+  private filesDone = 0;
+  private filesTotal = SFX_FILES.length + 81;
   get state() {
     return this.ac ? this.ac.state : 'sem-contexto';
   }
   get ready() {
     return this.loaded;
   }
+  // 0..1: quanto das gravações já está pronto (1 também quando não há áudio no aparelho, para ninguém esperar à toa)
+  get progress() {
+    if (!this.ctx) return this.noAudio ? 1 : 0;
+    return Math.min(1, this.filesDone / this.filesTotal);
+  }
+  private noAudio = false;
 
   private vol = { master: 0.8, music: 0.6, sfx: 0.8 };
   setMode(m: AudioMode) {
@@ -188,13 +204,21 @@ export class Sfx {
     this.bus.gain.setTargetAtTime(0.85 * (this.vol.sfx / 0.8), t, 0.05);
   }
 
-  // cria o contexto de áudio (precisa de um gesto do usuário) e começa a baixar as gravações
-  unlock() {
-    if (!this.ac) {
+  // cria o contexto de áudio (suspenso) e começa a baixar e decodificar as gravações: não precisa de gesto
+  prepare() {
+    if (!this.ctx && !this.noAudio) {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return;
-      const ac = new AC();
-      this.ac = ac;
+      let ac: AudioContext | null = null;
+      try {
+        ac = AC ? new AC() : null;
+      } catch {
+        ac = null;
+      }
+      if (!ac) {
+        this.noAudio = true;
+        return;
+      }
+      this.ctx = ac;
       const comp = ac.createDynamicsCompressor();
       comp.threshold.value = -14;
       comp.ratio.value = 3;
@@ -246,8 +270,19 @@ export class Sfx {
       this.longSend = ac.createGain();
       this.space.connect(convS).connect(this.shortRet).connect(this.master);
       this.space.connect(this.longSend).connect(this.verbSend);
-      this.setSpace(this.sizeLevel);
+      void this.loadAll();
+    }
+  }
 
+  // o 1º toque/tecla do jogador: o som pode sair (o navegador só deixa depois de um gesto)
+  unlock() {
+    this.prepare();
+    const ac = this.ctx;
+    if (!ac) return;
+    if (!this.live) {
+      this.live = true;
+      this.setSpace(this.sizeLevel);
+      // a música e o ambiente contam a partir de agora
       this.chordAt = ac.currentTime + 0.5;
       const t0 = ac.currentTime;
       this.nextHarp = t0 + 4;
@@ -257,9 +292,11 @@ export class Sfx {
       this.nextBreath = t0 + rand(70, 120);
       this.nextGust = t0 + rand(6, 14);
       this.applyMode();
-      void this.loadAll();
     }
-    if (this.ac.state !== 'running') void this.ac.resume();
+    if (ac.state !== 'running') void ac.resume();
+  }
+  get unlocked() {
+    return this.live;
   }
 
   suspend(on: boolean) {
@@ -273,7 +310,7 @@ export class Sfx {
     try {
       const r = await fetch(url);
       if (!r.ok) return null;
-      return await this.ac!.decodeAudioData(await r.arrayBuffer());
+      return await this.ctx!.decodeAudioData(await r.arrayBuffer());
     } catch {
       return null;
     }
@@ -287,11 +324,13 @@ export class Sfx {
         const b = await this.decode(`${base}sfx/${n}.mp3?v=${AUDIO_VERSION}`);
         if (b) this.buf.set(n, b);
         this.loaded++;
+        this.filesDone++;
       }),
     );
     this.startLoops();
     try {
       const man = (await (await fetch(`${base}inst/manifest.json`)).json()) as Record<string, number[]>;
+      this.filesTotal = SFX_FILES.length + INSTRUMENTS.reduce((a, n) => a + (man[n]?.length ?? 0), 0);
       for (const name of INSTRUMENTS) {
         const notes = man[name] ?? [];
         const inst: Inst = { notes, bufs: new Map() };
@@ -300,6 +339,7 @@ export class Sfx {
           notes.map(async (m) => {
             const b = await this.decode(`${base}inst/${name}/${m}.mp3?v=${AUDIO_VERSION}`);
             if (b) inst.bufs.set(m, b);
+            this.filesDone++;
           }),
         );
         this.loaded++;
@@ -307,6 +347,7 @@ export class Sfx {
     } catch {
       /* sem instrumentos: só os efeitos tocam */
     }
+    this.filesDone = this.filesTotal; // (o que falhou não vai chegar: a barra não fica esperando)
   }
 
   // tamanho da sala (0..1): quanto vai para a sala curta e quanto para a longa
@@ -318,7 +359,7 @@ export class Sfx {
   }
 
   private startLoops() {
-    const ac = this.ac!;
+    const ac = this.ctx!;
     // um laço que toca sempre (o volume muda, a fonte não se recria); `pre` = filtros/pan entre a fonte e o volume
     const loop = (name: string, rate = 1, pre: AudioNode[] = []) => {
       const b = this.buf.get(name);

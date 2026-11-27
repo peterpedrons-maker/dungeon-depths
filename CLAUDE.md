@@ -95,6 +95,13 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **configurações** em abas (Áudio, Imagem, Controles com remapear teclas, Acessibilidade, Idioma; valem para o aparelho, `src/story/config.ts`).
   Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
   no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
+  **Abertura da editora «Pedra-Sabão»** (`src/ui/Splash.tsx`, `DESIGN.md` §77): ao abrir o jogo, uma laje de pedra-sabão com o nome riscado a giz,
+  traço a traço (uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
+  `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, modo `load` do motor) depois de Novo jogo,
+  Continuar e Carregar: preto, o dado vivo no canto, a barra que é um sulco onde a luz dourada corre; espera modelos, quadros e os sons (que agora
+  baixam desde a abertura da página, `Sfx.prepare`) e, se a página recarregou, pede «Clique/Toque para começar» (o gesto libera o som e prende o
+  mouse). A mira só aparece com o jogo começado. O dado da tela inicial tenta rolar, olha em volta e para o feixe; o rosto olha de canto, mexe as
+  sobrancelhas e suspira de leve, sempre neutro.
   **Tela inicial do dado caído** (`DESIGN.md` §46): o dado reto no chão DE VERDADE do Poço (desenhado com a câmera da sala), no meio do entulho da própria sala (o dado do HUD é projetado no ponto `dieLie`), profundidade de campo com foco no dado (`uBlur`/`uFocus`), o olho seguindo o
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em
   pontilhado (`uDis`/`rtSnap`); créditos com a câmera girando. **Caixas** em pedra de 9 pedaços (`tools/build_frames.py` → `src/ui/frames.css`),

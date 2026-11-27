@@ -63,6 +63,7 @@ import { type ScribePose } from './scribe';
 import { makeScribeRig, preloadScribeRig } from './scribeRig';
 import { makeGemScene } from './gemscene';
 import { GEMS } from '../story/gems';
+import { LOAD_BAR, loading } from '../story/loading';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
@@ -141,6 +142,8 @@ export interface SceneOptions {
   onFireAim?: (on: boolean) => void; // a mira (face de Fogo) está sobre algo que o Fogo acende: a mira vira o ícone de acender
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
+  load?: boolean; // começa na TELA DE CARREGAMENTO (veio da tela inicial: jogo novo ou outro espaço); o jogo só começa com loadGo()
+  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §77)
   onPause?: () => void;
   onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
 }
@@ -162,6 +165,8 @@ export interface SceneApi {
   titleNew(done: () => void): void;
   titleGo(done?: () => void, reload?: boolean): void;
   fadeInFromBlack(): void;
+  titleReveal(): void; // a tela inicial aparece: o preto se abre sobre o cenário (depois da tela da editora)
+  loadGo(): void; // fim da tela de carregamento: o jogo começa (ou a cena de acordar, num jogo novo)
   begin(): void; // sai da tela inicial: continua do último ponto salvo do espaço ativo (ou acorda, num jogo novo)
   toTitle(): void; // salva e volta à tela inicial
   saveNow(): void; // salva agora (pausa, sair)
@@ -172,6 +177,7 @@ export interface SceneApi {
 export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}): SceneApi {
   // som: só liga depois do primeiro toque/tecla (regra dos navegadores)
   const sfx = new Sfx();
+  sfx.prepare(); // as gravações já baixam e decodificam agora (o som só sai depois do 1º gesto)
   const unlockAudio = () => sfx.unlock();
   window.addEventListener('pointerdown', unlockAudio, { passive: true });
   window.addEventListener('keydown', unlockAudio);
@@ -584,6 +590,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let titleTarget: LifeTarget | null = null; // tela inicial: para onde o olho do dado vai (o mouse, a opção marcada, o dedo)
   const lifeTarget = (): LifeTarget | null => {
     if (mode === 'title') return titleTarget;
+    if (mode === 'load') return loadTarget();
     if (dieCineTarget > 0.5) return { dx: 0, dy: 0, player: true }; // na cena, o dado olha DIRETO para o jogador
     if (forcedLook && performance.now() < forcedLook.until) {
       // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
@@ -838,8 +845,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           mw: Math.round(lk.mw * 3),
           sq: Math.round(lk.squint * 3),
           nose: lk.nose,
+          bl: Math.round(lk.bl * 1.45),
+          br: Math.round(lk.br * 1.45),
+          sd: Math.round(lk.side * 4),
+          ir: lk.iris < -0.5 ? -1 : 0,
         };
-        const key = `${q.ex},${q.ey},${q.by},${q.closed},${q.mo},${q.mx},${q.mw},${q.sq},${q.nose}`;
+        const key = `${q.ex},${q.ey},${q.by},${q.closed},${q.mo},${q.mx},${q.mw},${q.sq},${q.nose},${q.bl},${q.br},${q.sd},${q.ir}`;
         if (rostoKey[i] !== key) {
           rostoKey[i] = key;
           rostos[i].setLook(q);
@@ -2364,7 +2375,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // nas CENAS o jogador não olha em volta (a câmera é da cena) e a mira some: abertura, o dado falando no centro, cenas travadas, o caderno achado
   const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall() || gemFx.active();
-  let cineWas = false;
+  let cineWas: boolean | null = null; // (null: avisa a interface já no 1º quadro)
   const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null || gemFx.active(); // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
 
   // ── marcos da história ──
@@ -3282,7 +3293,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // O dado é o do HUD (tem o rosto e a vida de dielife.ts), deitado de lado um pouco à direita do centro, com o entulho em volta; atrás, a sala 1
   // desfocada (uBlur), o feixe do poço com a poeira. A câmera respira. O olho segue o mouse, a opção marcada ou o dedo; cochila em 30 s.
   // Depois do capítulo 1, o fundo é o último lugar salvo.
-  let mode: 'title' | 'play' = 'play';
+  let mode: 'title' | 'play' | 'load' = 'play';
   let titleT = 0;
   let titleIdle = 0;
   let titleGone = false; // o dado saiu do quadro (transição)
@@ -3385,11 +3396,84 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let titleDieYaw = 0;
   const DIE_W = 0.42; // o lado do dado de verdade (worldModel)
   const lightHome = new Map<THREE.DirectionalLight, THREE.Vector3>();
+  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §77): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
+  // TENTA ROLAR (força, balança de lado sobre a quina, cai de volta com um baque, duas ou três vezes, e desiste com um suspiro), OLHA EM VOLTA
+  // (vira o corpo um pouco para um lado, olha, volta), OLHA O FEIXE de luz lá em cima (inclina para trás; a íris se fecha) ou dá um PULINHO.
+  // Sempre volta a ficar reto no chão, de rosto para a câmera.
+  type TitleAct = { k: 'rock' | 'turn' | 'up' | 'hop'; t: number; dir: number; n: number; hit: number };
+  let tAct: TitleAct | null = null;
+  let tActIn = 3.5; // segundos até a próxima
+  let tRock = 0; // ângulos aplicados agora (rad)
+  let tTurn = 0;
+  let tUp = 0;
+  const sm = (u: number) => {
+    const v = clamp(u, 0, 1);
+    return v * v * (3 - 2 * v);
+  };
+  const titleActTick = (dt: number) => {
+    if (titleTr) tAct = null;
+    if (!tAct) {
+      const calmNow = !titleTr && !titleCreditsOn && titleOrbit === 0 && !veilGo && veil <= 0 && titleIdle > 1.2 && titleIdle < 29;
+      if (calmNow) tActIn -= dt;
+      if (tActIn <= 0) {
+        const r = Math.random();
+        const k = r < 0.36 ? 'rock' : r < 0.66 ? 'turn' : r < 0.86 ? 'up' : 'hop';
+        tAct = { k, t: 0, dir: Math.random() < 0.5 ? -1 : 1, n: 2 + (Math.random() < 0.5 ? 1 : 0), hit: 0 };
+        tActIn = 5 + Math.random() * 5;
+        if (k === 'rock') life.effort(0.55 * tAct.n + 0.2);
+        else if (k === 'turn') life.glance(tAct.dir * 0.95, 0.1 + Math.random() * 0.2, 1.7);
+        else if (k === 'up') life.glance(0.15, 1, 1.9);
+        else life.hop(3.4);
+      }
+    }
+    let rock = 0;
+    let turn = 0;
+    let up = 0;
+    if (tAct) {
+      const A = tAct;
+      A.t += dt;
+      if (A.k === 'rock') {
+        // cada empurrão: sobe em 0,26 s, cai em 0,2 s (acelerando) e bate; o próximo vem um pouco mais forte
+        const P = 0.55;
+        const i = Math.floor(A.t / P);
+        const u = A.t - i * P;
+        if (i < A.n) {
+          const amp = 0.09 + i * 0.05;
+          rock = u < 0.26 ? amp * (1 - (1 - u / 0.26) ** 2) : u < 0.46 ? amp * (1 - ((u - 0.26) / 0.2) ** 2) : 0;
+          if (u >= 0.46 && A.hit <= i) {
+            A.hit = i + 1;
+            life.react('thump');
+            sfx.play('rest', 0.18 + i * 0.06);
+          }
+        } else if (A.t > A.n * P + 0.25) {
+          life.sighNow(); // desiste: um leve suspiro
+          tAct = null;
+        }
+        rock *= A.dir;
+      } else if (A.k === 'turn') {
+        turn = A.dir * 0.32 * (sm(A.t / 0.5) - sm((A.t - 1.7) / 0.6));
+        if (A.t > 2.4) tAct = null;
+      } else if (A.k === 'up') {
+        up = 0.13 * (sm(A.t / 0.6) - sm((A.t - 1.8) / 0.6));
+        if (A.t > 2.5) tAct = null;
+      } else if (A.t > 1.2) tAct = null;
+    }
+    // (com a transição ou mexendo no mouse, volta para o lugar)
+    const k = Math.min(1, dt * 14);
+    tRock += (rock - tRock) * (tAct?.k === 'rock' ? 1 : k);
+    tTurn += (turn - tTurn) * k;
+    tUp += (up - tUp) * k;
+  };
+  const actC = new THREE.Vector3();
+  const tmpP = new THREE.Vector3();
+  const axF = new THREE.Vector3();
+  const axR = new THREE.Vector3();
+  const qAct = new THREE.Quaternion();
   const titlePose = (dt: number, lo: { dx: number; dy: number; scale: number }) => {
     dieInWorld = true;
     const x0 = titleFocus.x;
     const z0 = titleFocus.z;
-    let y = titleFocus.y + DIE_W * 0.5 + Math.max(0, lo.dy) * DIE_W * 3.4; // reto no chão, apoiado numa face (só sai do chão nos pulinhos)
+    let y = titleFocus.y + DIE_W * 0.5 + Math.max(0, lo.dy - life.sighDy) * DIE_W * 3.4; // reto no chão, apoiado numa face (só sai do chão nos pulinhos; o suspiro é só o tamanho)
     let side = 0;
     // pulinho para fora do quadro (continuar): rola para a direita da câmera
     if (titleTr?.k === 'go' || titleTr?.k === 'out' || titleGone) {
@@ -3399,7 +3483,28 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     dieGroup.position.set(x0 + Math.cos(titleDieYaw) * side, y, z0 - Math.sin(titleDieYaw) * side);
     dieGroup.scale.setScalar(DIE_W * lo.scale);
-    dieGroup.quaternion.copy(titleQ.setFromAxisAngle(titleUp, titleDieYaw + TT.turn)); // um pouco virado no chão: aparece a lateral e ele lê como cubo
+    dieGroup.quaternion.copy(titleQ.setFromAxisAngle(titleUp, titleDieYaw + TT.turn + tTurn)); // um pouco virado no chão: aparece a lateral e ele lê como cubo
+    // tentando rolar (gira sobre a quina de baixo, do lado da câmera) e olhando para cima (inclina para trás sobre a quina de trás)
+    if (Math.abs(tRock) > 1e-4 || tUp > 1e-4) {
+      const h = DIE_W * 0.5 * lo.scale;
+      axF.set(-Math.sin(titleDieYaw), 0, -Math.cos(titleDieYaw)); // para longe da câmera
+      axR.set(Math.cos(titleDieYaw), 0, -Math.sin(titleDieYaw)); // direita da câmera
+      actC.copy(dieGroup.position);
+      if (Math.abs(tRock) > 1e-4) {
+        const sgn = Math.sign(tRock);
+        qAct.setFromAxisAngle(axF, tRock);
+        tmpP.copy(actC).addScaledVector(axR, sgn * h).addScaledVector(titleUp, -h);
+        actC.sub(tmpP).applyQuaternion(qAct).add(tmpP);
+        dieGroup.quaternion.premultiply(qAct);
+      }
+      if (tUp > 1e-4) {
+        qAct.setFromAxisAngle(axR, -tUp);
+        tmpP.copy(actC).addScaledVector(axF, h).addScaledVector(titleUp, -h);
+        actC.sub(tmpP).applyQuaternion(qAct).add(tmpP);
+        dieGroup.quaternion.premultiply(qAct);
+      }
+      dieGroup.position.copy(actC);
+    }
     // RETO no chão (pedido do Pedro): sem a inclinação da mão nem a "respiração" de girar; só o rosto e os olhos vivem
     dieHolder.quaternion.copy(curQ);
     // as luzes do dado: a mesma direção de antes, só que relativa à câmera do mundo
@@ -3438,6 +3543,34 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieCineTarget = 1; // o rosto de frente, sem a inclinação da mão
     blendAtmosphere(0, true);
     titleCam();
+    // começa no PRETO: a imagem só aparece quando a cena já desenhou e os modelos chegaram (titleReveal, depois da tela da editora).
+    // Antes, o menu subia sobre a tela preta e o cenário surgia segundos depois (os programas de sombreamento compilam no 1º desenho).
+    veil = 1;
+    veilGo = false;
+    veilQuad = false;
+  };
+  // O VÉU PRETO da tela inicial e da tela de carregamento. Na tela inicial ele escurece a imagem inteira (o brilho do pós-processo: o dado
+  // some junto com o cenário); na de carregamento, só o MUNDO (o plano colado na câmera), e o dado do canto aparece sobre o preto.
+  let veil = 0;
+  let veilGo = false;
+  let veilQuad = false; // o véu está segurando o plano preto (a cena de acordar também usa esse plano: ela o toma para si)
+  const veilE = () => veil * veil * (3 - 2 * veil);
+  const veilTick = (dt: number) => {
+    if (veilGo && veil > 0) veil = Math.max(0, veil - dt / 1.1);
+    if (veilGo && veil <= 0) veilGo = false;
+    if (veilQuad) {
+      fadeMat.color.setHex(0x000000);
+      fadeQuad.visible = veil > 0;
+      fadeMat.opacity = veilE();
+      if (veil <= 0) veilQuad = false;
+    }
+  };
+  const titleReveal = () => {
+    if (mode !== 'title' || veilGo) return;
+    veilGo = true;
+    titleIdle = 0;
+    life.settle(); // o dado já está no lugar dele (nada de girar até a posição no 1º quadro)
+    curQ.copy(targetQ);
   };
   // a vida do olho: mouse, toque e teclado acordam e dizem para onde olhar
   const titleInput = (cx: number, cy: number) => {
@@ -3470,6 +3603,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const titleTick = (dt: number) => {
     titleT += dt;
     titleIdle += dt;
+    titleActTick(dt);
     if (touchLookT > 0) {
       touchLookT -= dt;
       if (touchLookT <= 0) titleTarget = null;
@@ -3481,7 +3615,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       titleOrbit = Math.abs(a) < 0.002 ? 0 : a * (1 - Math.min(1, dt * 1.5));
     }
     // a luz do poço "respira"
-    postMat.uniforms.uBright.value = (1 + configStore.get().brightness * 0.07) * (1 + Math.sin(titleT * 0.7) * 0.03);
+    postMat.uniforms.uBright.value = (1 + configStore.get().brightness * 0.07) * (1 + Math.sin(titleT * 0.7) * 0.03) * (1 - veilE());
     postMat.uniforms.uBlur.value = titleTr?.k === 'new' ? Math.max(0, TB.blur - titleTr.t * 1.6) : TB.blur;
     titleRim.intensity = 1.6;
     if (titleTr) {
@@ -3497,17 +3631,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         titleTr.snapped = true;
         titleGone = true;
         if (titleTr.k === 'go') {
-          // continuar no mesmo espaço: guarda a imagem, entra no jogo e desfaz o quadro em pontilhado para o lugar salvo
-          snapWant = 'frame';
+          // continuar no mesmo espaço: o quadro se desfaz em pontilhado para o PRETO e vem a tela de carregamento (o lugar salvo é preparado
+          // por baixo do véu; o jogo começa com loadGo)
+          snapWant = 'black';
+          disT = 0;
+          disDir = -1;
           const done = titleTr.done;
-          window.setTimeout(() => {
+          disDone = () => {
             titleTr = null;
             titleGone = false;
-            begin();
-            disT = 0;
-            disDir = 1;
+            begin(true);
+            postMat.uniforms.uDis.value = -1;
             done?.();
-          }, 0);
+          };
         } else {
           // outro espaço: some em pontilhado para o preto e recarrega
           snapWant = 'black';
@@ -3531,13 +3667,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       d?.();
     }
   };
-  // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo)
+  // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo).
+  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §77): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
+  // só começa com loadGo() (o clique ou toque do fim do carregamento, que também libera o som e prende o mouse)
   let begun = false;
-  const begin = () => {
+  let goPending: { cap: (() => void) | null; intro: boolean } | null = null;
+  let loadT = 0; // há quanto tempo a tela de carregamento está aberta
+  let drawn = 0; // quadros desenhados (o 1º desenho de cada coisa compila os programas: é o que demora)
+  const begin = (load = false) => {
     if (begun) return;
     begun = true;
-    mode = 'play';
-    ui.setMenu(null);
+    mode = load ? 'load' : 'play';
+    ui.setMenu(load ? 'loading' : null);
     dieCineTarget = 0;
     dieCine = 0;
     titleShadow.visible = false;
@@ -3573,20 +3714,98 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
       for (let i = 0; i <= m.room; i++) announced.add(i);
       diary.visitRoom(r.name);
-      caption(r.name, r.subtitle, '#ffd36b');
+      goPending = { cap: () => caption(r.name, r.subtitle, '#ffd36b'), intro: false };
     } else {
       spawnIn(0);
       announced.add(0);
       diary.visitRoom(rooms[0].name);
-      if (!progress.has('intro')) startIntro();
+      goPending = { cap: null, intro: !progress.has('intro') };
     }
     blendAtmosphere(0, true);
     opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+    if (load) {
+      // o véu preto cobre o mundo; o dado fica no canto, de rosto para o jogador (loadPose)
+      veil = 1;
+      veilGo = false;
+      veilQuad = true;
+      loadT = 0;
+      drawn = 0;
+      dieCineTarget = 1;
+      dieCine = 1;
+      life.settle();
+    } else loadGo();
+  };
+  const loadGo = () => {
+    const g = goPending;
+    if (!g) return;
+    goPending = null;
+    if (mode === 'load') {
+      mode = 'play';
+      ui.setMenu(null);
+      dieCineTarget = 0;
+      dieCine = 0;
+      titleDieHome();
+    }
+    if (g.intro) {
+      veil = 0;
+      veilGo = false;
+      veilQuad = false;
+      startIntro(); // a cena de acordar começa no preto e abre sozinha (toma o plano preto para si)
+    } else if (veil > 0) {
+      veilGo = true;
+      window.setTimeout(() => g.cap?.(), 700);
+    } else g.cap?.();
     requestLock();
   };
+  // pronto? (a tela inicial espera o cenário; a de carregamento espera também o som). O tempo máximo evita esperar para sempre por um
+  // arquivo que não vem
+  let readyT = 0;
+  let readySent = false;
+  let barShown = 0; // a barra como o jogador a vê (anda macio até o valor de verdade)
+  const readyTick = (dt: number) => {
+    readyT += dt;
+    const models = loading.models();
+    const fonts = loading.fonts();
+    if (!readySent && ((drawn >= 4 && models >= 1 && fonts) || readyT > 10)) {
+      readySent = true;
+      opts.onReady?.();
+    }
+    if (mode === 'load') {
+      const a = sfx.progress;
+      const p = 0.2 * Math.min(1, drawn / 6) + 0.3 * models + 0.5 * a;
+      barShown = Math.min(p, barShown + dt / 1.4); // (no mínimo ~1,4 s de barra: dá tempo de ver o fogo correr)
+      const ready = (barShown >= 0.999 && drawn >= 6 && fonts) || loadT > 15;
+      loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
+    }
+  };
+  // TELA DE CARREGAMENTO: o dado no canto de baixo à direita, de rosto para o jogador; a cabeça acompanha um pouco os olhos
+  const loadPose = (lo: { dy: number; scale: number; look: { x: number; y: number } }) => {
+    const ty = Math.tan((45 * Math.PI) / 360);
+    const hw = ty * dieCam.aspect;
+    const s = dieScaleBase * 0.78 * lo.scale;
+    dieGroup.scale.setScalar(s);
+    dieGroup.position.set(hw * 0.9 - s * 0.65, -ty * 0.86 + s * 0.68 + lo.dy * 0.5, -1);
+    dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(-lo.look.y * 0.1, lo.look.x * 0.22, 0)));
+  };
+  // para onde o dado do canto olha: quase sempre para o jogador; de vez em quando, para a ponta do fogo que corre na barra
+  let loadLookT = 1.5;
+  let loadAtBar = false;
+  const loadTarget = (): LifeTarget | null => {
+    loadLookT -= 1 / 60;
+    if (loadLookT <= 0) {
+      loadAtBar = !loadAtBar && !loadStoreReady();
+      loadLookT = loadAtBar ? 0.9 + Math.random() * 0.8 : 1.8 + Math.random() * 2.2;
+    }
+    if (!loadAtBar) return { dx: 0, dy: 0, player: true };
+    dieOnScreen(dieNdc);
+    const bx = (LOAD_BAR.x0 + (LOAD_BAR.x1 - LOAD_BAR.x0) * barShown) * 2 - 1;
+    const by = -(LOAD_BAR.y * 2 - 1);
+    return Number.isFinite(dieNdc.x + dieNdc.y) ? { dx: bx - dieNdc.x, dy: by - dieNdc.y } : null;
+  };
+  const loadStoreReady = () => barShown >= 0.999;
   applyConfig();
   if (opts.title) enterTitle();
-  else begin();
+  else begin(!!opts.load);
   // ── interação (E no PC, AGIR / toque no celular): a porta trancada, o giz no chão... ──
   let promptLabel: string | null = null;
   let nearest: Interactable | null = null;
@@ -3905,14 +4124,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       return;
     }
     lastDraw = now;
-    const paused = ui.menu() === 'pause'; // pausa: o mundo pára (fogo, tempo, dado), só a imagem continua
-    const dt = paused ? 0 : Math.max(0, Math.min(0.05, (now - last) / 1000)) * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
+    // pausa e tela de carregamento: o mundo pára (fogo, tempo), só a imagem continua; na tela de carregamento o dado do canto vive (rdt)
+    const paused = ui.menu() === 'pause' || mode === 'load';
+    const rdt = Math.max(0, Math.min(0.05, (now - last) / 1000));
+    const dt = paused ? 0 : rdt * (import.meta.env.DEV ? (((globalThis as Record<string, unknown>).__timeScale as number | undefined) ?? 1) : 1); // (testes: câmera lenta)
     last = now;
     t += dt;
     disTick(Math.max(0, Math.min(0.05, (now - last + 16) / 1000)));
+    veilTick(rdt);
+    readyTick(rdt);
     if (mode === 'title') {
       titleTick(dt);
       titleCam();
+    } else if (mode === 'load') {
+      loadT += rdt;
     } else if (!paused) {
       playTime += dt;
       saveIn -= dt;
@@ -4191,14 +4416,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
 
     // ── mãos (dado e giz trocam de lugar com um deslize suave) ──
-    const swapK = Math.min(1, dt * 9);
+    const hdt = mode === 'load' ? rdt : dt; // (na tela de carregamento o mundo pára, mas o dado do canto vive)
+    const swapK = Math.min(1, hdt * 9);
     dieU += ((tool === 'die' ? 0 : 1) - dieU) * swapK;
     soapU += ((tool === 'chalk' ? 0 : 1) - soapU) * swapK;
     const ease = (u: number) => u * u * (3 - 2 * u);
-    handPop = Math.max(0, handPop - dt * 4);
+    handPop = Math.max(0, handPop - hdt * 4);
     if (sketchOn) {
       // o dado para de girar com a face do desenho de pé para quem olha, e volta a girar quando o desenho some
-      sketchOn.age += dt;
+      sketchOn.age += hdt;
       if (import.meta.env.DEV && typeof (globalThis as Record<string, unknown>).__skAge === 'number') sketchOn.age = (globalThis as Record<string, unknown>).__skAge as number; // teste: congela a linha do tempo
       sketchOn.blend.set(sketchP());
       if (!sketchOn.spoke && sketchOn.age >= SK_IN1) {
@@ -4213,7 +4439,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       let dsp = (SKETCH_SPIN - spin) % (Math.PI * 2);
       if (dsp > Math.PI) dsp -= Math.PI * 2;
       if (dsp < -Math.PI) dsp += Math.PI * 2;
-      spin += dsp * Math.min(1, dt * 5);
+      spin += dsp * Math.min(1, hdt * 5);
       spinTo = null;
       if (sketchOn.age >= SK_LIFE) endSketch();
     } else if (dieCine > 0.3) {
@@ -4221,32 +4447,34 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       let dsp = (Math.PI - spin) % (Math.PI * 2);
       if (dsp > Math.PI) dsp -= Math.PI * 2;
       if (dsp < -Math.PI) dsp += Math.PI * 2;
-      spin += dsp * Math.min(1, dt * 3);
+      spin += dsp * Math.min(1, hdt * 3);
       spinTo = null;
     } else if (!(import.meta.env.DEV && (globalThis as Record<string, unknown>).__spinFreeze !== undefined)) {
       // na mão: fica um bom tempo com UMA face (o rosto) reta para o jogador e, de vez em quando, vira devagar um quarto de volta
       if (spinTo === null) spinTo = spinSnap(spin);
-      spinHold -= dt;
+      spinHold -= hdt;
       if (spinHold <= 0) {
         spinHold = 11 + Math.random() * 6;
         spinTo = spinSnap(spinTo) + Math.PI / 2;
       }
-      spin += (spinTo - spin) * (1 - Math.exp(-dt * 1.6));
+      spin += (spinTo - spin) * (1 - Math.exp(-hdt * 1.6));
     }
     else spin = (globalThis as Record<string, unknown>).__spinFreeze as number;
-    handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, dt * 8);
-    lookedT += dt;
-    dieCine += (dieCineTarget - dieCine) * Math.min(1, dt * 2.6);
+    handDim += ((dieState === 'hand' ? 0 : 1) - handDim) * Math.min(1, hdt * 8);
+    lookedT += hdt;
+    dieCine += (dieCineTarget - dieCine) * Math.min(1, hdt * 2.6);
     const cn = dieCine * dieCine * (3 - 2 * dieCine);
     tiltNow.copy(idQ).slerp(tilt, 1 - cn);
     const lo =
       mode === 'title'
-        ? life.update({ dt, t, idle: titleIdle > 1, target: lifeTarget(), busy: false, sleepAfter: 30, face: Math.max(...rostoP) })
-        : life.update({ dt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP), talking: talkingNow() });
+        ? life.update({ dt: hdt, t, idle: titleIdle > 1, target: lifeTarget(), busy: false, sleepAfter: 30, face: Math.max(...rostoP), lively: true, glare: true })
+        : mode === 'load'
+        ? life.update({ dt: hdt, t, idle: false, target: lifeTarget(), busy: false, face: Math.max(...rostoP), lively: true })
+        : life.update({ dt: hdt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP), talking: talkingNow() });
     lifeGlow = lo.glow * (quizShake > 0.05 && !calmFx ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
     updateMats();
     computeTarget(face, spin);
-    curQ.slerp(targetQ, 1 - Math.exp(-dt * 9));
+    curQ.slerp(targetQ, 1 - Math.exp(-hdt * 9));
     wobble.setFromEuler(wobbleEuler.set(Math.sin(t * 1.1) * 0.012 * (1 - cn), 0, Math.sin(t * 0.8) * 0.012 * (1 - cn)));
     lifeQ.copy(lo.quat).slerp(idQ, cn);
     dieHolder.quaternion.copy(lifeQ).multiply(curQ).multiply(wobble);
@@ -4258,8 +4486,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       (dieBaseY + Math.sin(t * 1.6) * 0.012 + (moving ? Math.sin(bob + 1) * 0.012 : 0) + Math.sin(Math.PI * du) * 0.05 + lo.dy + Math.sin(t * 93) * 0.008 * quizShake * (calmFx ? 0.25 : 1)) * (1 - cn) + (cineHop * 0.11 - cineDroop * 0.05) * cn,
       -1,
     );
-    if (mode === 'title' || titleTr) titlePose(dt, lo);
-    updateRostos(dt);
+    if (mode === 'title' || titleTr) titlePose(hdt, lo);
+    else if (mode === 'load') loadPose(lo);
+    updateRostos(hdt);
     publishDieScreen();
     dieCam.position.set(0, 0, 0);
 
@@ -4297,7 +4526,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new') && !devNoHud; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
+      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new' || mode === 'load') && !devNoHud; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
       gemFx.update(dt);
       const hide = book.update(dt, t);
@@ -4326,6 +4555,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       postMat.uniforms.uTan.value.set(ty * camera.aspect, ty);
     }
     renderer.render(postScene, postCam);
+    drawn++;
     const bookOut = book.isOut() || gemFx.active();
     if (bookOut !== bookShown) {
       bookShown = bookOut;
@@ -4333,7 +4563,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     if (bookOut) bookRenderer.render(bookScene, dieCam);
     {
-      const c = mode === 'play' && lookLocked();
+      const c = mode !== 'play' || lookLocked(); // (tela inicial e de carregamento contam como cena: a mira só aparece com o jogo de fato começado)
       if (c !== cineWas) {
         cineWas = c;
         opts.onCine?.(c);
@@ -4444,7 +4674,23 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return cv.toDataURL('image/png');
       },
       freezeSpin: (v: number | null) => { (globalThis as Record<string, unknown>).__spinFreeze = v === null ? undefined : v; },
-      life: (k: string) => { if (k === 'sleep') life.sleepNow(); else life.react(k as never); },
+      life: (k: string) => { if (k === 'sleep') life.sleepNow(); else if (k === 'sigh') life.sighNow(); else life.react(k as never); },
+      // (testes) a tela inicial: dispara uma ação do dado ('rock', 'turn', 'up', 'hop') e lê o estado da abertura
+      titleAct: (k: 'rock' | 'turn' | 'up' | 'hop') => {
+        titleIdle = 2;
+        tAct = null;
+        tActIn = 0;
+        const r0 = Math.random;
+        const pickR = { rock: 0.1, turn: 0.5, up: 0.7, hop: 0.95 }[k];
+        let first = true;
+        Math.random = () => (first ? ((first = false), pickR) : r0());
+        titleActTick(0.001);
+        Math.random = r0;
+      },
+      // (testes) o rosto desenhado com um olhar qualquer (folha de expressões)
+      rosto: (look: Record<string, number | boolean>) => dieRostoCanvas(3, FACES[2].color, false, 0, { ex: 0, ey: 0, by: 0, closed: false, ...look }).face.toDataURL(),
+      lifeLook: () => ({ ...life.out.look }),
+      boot: () => ({ mode, veil: +veil.toFixed(2), drawn, ready: readySent, models: loading.models(), audio: +sfx.progress.toFixed(2), live: sfx.unlocked }),
       glyphFire: (ri: number) => (rooms[ri]?.inscriptions ?? []).map((ins) => ins.panels.filter((p) => p.id).map((p) => `${p.id}:${(p.fire ?? 0).toFixed(2)}`).join(' ')),
       sketchAge: (v: number | null) => { (globalThis as Record<string, unknown>).__skAge = v === null ? undefined : v; },
       sfxStep: (s: StepKind) => sfx.step(s),
@@ -4633,6 +4879,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       sfx.play('throw', 0.4);
     },
     // ao abrir a página logo depois de escolher outro espaço: aparece em pontilhado a partir do preto
+    titleReveal,
+    loadGo: () => {
+      if (mode === 'load') loadGo();
+    },
     fadeInFromBlack: () => {
       snapWant = 'black';
       disT = 0;
