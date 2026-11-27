@@ -1423,6 +1423,22 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
     e o que pisca é do caderno, não dele (`placeHereNote`/`paintHereNote` em `pages.ts`; o piscar em `book3d.ts`, `view.hereOff`). Conferido nas 24
     salas, nos dois andares, e no caderno aberto de verdade.
   - **Teste:** `__mdd.skyHoles()` (os furos no mundo).
+- **Passo 5, feito (o teste completo do capítulo 1, com a planta nova):**
+  - **corredores e portas:** as 23 ligações, andando de dentro de cada sala, pela porta e pelo corredor, até dentro da seguinte, com uma foto em
+    cada ponto (a porta, o fim do corredor da porta, cada curva, a chegada e a entrada vista de dentro). Nenhum buraco, luz vazando ou peça
+    boiando; todas passam (a da Escadaria pela passarela e pela ponte);
+  - **jogada contínua:** uma sessão só, do Poço ao Tribunal, pelas portas, no PC (1280×720) e no celular (844×390): as 24 salas, nenhum erro,
+    a memória igual do começo ao fim (sem vazamento), e o **salvamento automático** gravando cada sala ao entrar;
+  - **salvar e carregar de verdade:** numa sala girada (volta no lugar, a 5 cm, do empurrão de parede) e na ponte alta depois da passarela
+    (volta lá em cima, na altura certa, sem cair);
+  - **puzzles:** A Lousa (a única sala em que peças do puzzle mudaram de lugar) resolvida dentro do jogo; nas outras só a porta mudou de
+    parede, e ela abre pelo mesmo caminho do código quando o puzzle é resolvido; os verificadores passam;
+  - **atenção para testes:** `?intro=0` DESLIGA o salvamento (de propósito: testes não gravam no espaço). Para testar salvar e carregar, semeie o
+    espaço (`mdd-slot1-meta`/`-progress` com a bandeira `intro`) e abra só com `?titulo=0`. (O teste de salvar do passo 3 usava `?intro=0` e,
+    por isso, não provava nada; refeito aqui.)
+  - **o mais pesado** (chamadas de desenho, com as salas vizinhas e as sombras): Os Apelidos (~700 no PC, ~790 no celular), A Biblioteca e O Fogo
+    que Corre (~690 no PC), A Lousa (~620). Os quadros por segundo do teste não valem para aparelho de verdade (o navegador do teste desenha sem
+    placa de vídeo), mas mostram quais salas pesam mais, se algum celular engasgar.
 
 ## 74. O dado no braseiro 3D e o caderno que pula de parte em parte (pedidos do Pedro)
 
