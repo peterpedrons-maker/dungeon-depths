@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createStore } from './store';
 
-// O CARREGAMENTO (DESIGN.md §77). O que falta para o jogo estar pronto:
+// O CARREGAMENTO (DESIGN.md §78). O que falta para o jogo estar pronto:
 // - os modelos 3D (tocha, braseiro, objetos, o Escrivão): o GLTFLoader usa o gerenciador padrão do three, que conta o que já chegou;
 // - a fonte do jogo (mdd-pixel);
 // - as gravações de som (audio.ts já baixa e decodifica antes do 1º toque; a cena informa quanto falta);

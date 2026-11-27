@@ -252,7 +252,8 @@ Como o mundo é conectado, voltar a uma sala antiga a mostra mais viva (mais luz
 ## 13. Ritmo e duração (proposta; **[DECIDIR]** os números)
 Meta: **algumas horas de jogo (4 a 6 h)**, não 20 minutos. Um jogo de puzzle depende de o jogador **aprender**, então as
 mecânicas chegam devagar e cada uma é explorada a fundo antes da próxima.
-- **Só Fogo e Peso no começo, por muito tempo** (implementado: `progress.ts`). A 3ª face (Eco, no lugar de Ricochete) só chega bem depois.
+- **O capítulo 1 é só o Fogo** (`progress.ts`; mudado a pedido do Pedro, §77). Antes o dado começava com Fogo e Peso. Agora o Peso fica
+  selado até o fim do capítulo: o dado entra no altar do Tribunal e volta com ele. A 3ª face (Eco, no lugar de Ricochete) só chega bem depois.
   A face Ricochete está selada até lá (a gema escondida da Sala 4 espera por ela).
 - **Meta de tamanho:** ~40 salas em 3 andares (o mapa de teste). Com só Fogo e Peso: o **1º andar inteiro** (~15 a 18 salas);
   Eco abre o 2º andar; Troca, Deslizar e Atravessar ficam para o 3º, um capítulo cada.
@@ -1512,7 +1513,45 @@ fazer, e o jogador tinha de adivinhar que precisava passar por todas as partes. 
   por cima de nada (conferido de vários ângulos, no celular). Os riscos cor-de-rosa que aparecem na porta-lousa olhando de lado são a **mira de
   fogo** (o desenho da mira muda quando ela aponta para algo que se acende), não uma sobreposição.
 
-## 77. A abertura Pedra-Sabão, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
+## 77. O Peso chega no fim do capítulo 1: o altar do Tribunal (pedido do Pedro)
+O dado começava com Fogo e Peso. O Pedro pediu que o jogador **não** começasse com o Peso e o ganhasse resolvendo um puzzle **do caminho
+principal** (não um opcional), num buraco na parede ao lado de uma porta, com uma cena dramática: o dado entra devagar, a parede fecha, um
+brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, a porta só abre com o dado de Peso numa placa.
+- **Selado** (`story/progress.ts`): `FACES[1].unlocked = !!flags.peso` (o marco `peso`). A face 2 aparece apagada, a tecla 2 diz "Selada", o
+  caderno mostra 1/6 faces e a fala do tutorial passou a "Só uma tem nome, por enquanto". A sala de teste (`?lab=1`), a vitrine e o `?demo`
+  ligam o Peso.
+- **Onde:** no **Tribunal dos Rumores** (sala 24), o último puzzle do capítulo. É linear (a porta depende dele) e combina com o
+  `HISTORIA.md` ("cada face é um capítulo e um altar"). O altar fica **embaixo da lei «DOIS BOATO IGUAL VERDADE»**: IGUAL é a palavra do Peso.
+  Uma sala antes seria pior: o jogador atravessaria o Tribunal com uma face inútil ali, achando que ela fazia parte da solução.
+- **A sala** (`rooms/tribunal.ts`, `altarExtra`): um bloco de pedra (1,3 × 0,75 × 1,18 m) com capa e degrau, encostado no fundo à direita da
+  porta, e um nicho de 54 cm tampado por uma pedra.
+  - A ordem certa acende os lampiões da porta, mas **não abre**. 1,3 s depois a pedra **racha**: decalque de rachadura com fio de ouro, pó,
+    tremor, `altarCrack`, frestas com um fio de luz para se ver do outro lado da sala, e a câmera e o dado se viram para ela.
+  - **"Empurrar a pedra"** (E/AGIR): ela recua 6 cm e desce para dentro do bloco (`altarPush`).
+  - O dado olha para dentro e fala «EU DENTRO» · «VOCÊ ESPERAR». **"Pôr o dado"** só aparece quando ele termina de escrever (relógio de
+    verdade, como o balão).
+- **A cena** (motor: `ctx.altar`, `startAltar`/`altarTick` em `scene.ts`; fases `AltarPhase` em `types.ts`; tempos em `AL`; cerca de 11 s; uma
+  vez só, sem pular; trava o jogador, esconde a mira, faixas de cinema):
+  - 0 a 0,9 s: o dado sai da mão até a boca do nicho, num arco.
+  - Até 1,8 s: ele para ali, respirando, com a face 2 ainda selada virada para o jogador.
+  - Até 4,4 s: entra devagar (`altarSlide`).
+  - 4,6 s: a pedra sobe e fecha (`altarShut`).
+  - 6,1 s: o marco `peso` (a face muda lá dentro). As frestas acendem em ouro, a luz no fundo do nicho acende o chão na frente, a pedra treme e
+    solta pó (`altarGlow`: coro, violoncelo, sinos e celesta). A câmera sobe até a lei e o IGUAL ganha um halo de ouro que pulsa; a palavra
+    também acende (`fire`).
+  - 8,6 s: a câmera desce, a pedra abre (`altarOpen`) e o dado sai com a face do Peso (o glifo IGUAL) virada para o jogador, brilhando.
+  - 11,2 s: ele volta para a mão já na face 2 («2 · Peso»), comemora («IGUAL») e olha para a placa («PLACA»). Se o jogador demora, ele olha
+    de novo a cada 25 s.
+- **A placa** (`fire.ts`): `plate` fora da regra `commit` virou a **trava da porta**. Com a sala resolvida, a porta só abre quando o Peso
+  afunda a placa, e **fica aberta** (dá para recolher o dado e passar).
+- **Sons:** só gravações que o jogo já tem (pedra do pilar e da porta, o rolar e o pousar do dado, o baque) e os instrumentos do FluidR3.
+- **Salvar e voltar:** com o Peso já ganho, o altar abre vazio, com uma brasa de luz dentro e o IGUAL da lei aceso; falta só a ordem e a placa.
+  `skip()` (sala de trás num jogo carregado) dá o marco `peso`.
+- **Testado no navegador** (PC 1280×720 e celular 915×412): a ordem 5-3-2-4-1 racha a pedra; empurrar abre; "Pôr o dado" libera depois da
+  fala; a cena inteira; o dado volta na face 2 com o `peso`; a placa abre a porta, que continua aberta depois de recolher o dado; e chegar à
+  luz encerra o capítulo. Ganchos de teste: `__altar.state()`/`crack()`, `__mdd.altarState()`.
+
+## 78. A abertura Pedra-Sabão, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
 
 - **A editora: «Pedra-Sabão»** (nome escolhido pelo Pedro; `src/ui/Splash.tsx`). Ao abrir o jogo, antes da tela inicial, no PC e no celular: uma
   laje de pedra-sabão (cinza-esverdeada, com manchas largas, veios claros de talco, pintas, bisel com luz de cima à esquerda, a espessura da laje

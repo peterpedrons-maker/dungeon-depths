@@ -19,6 +19,10 @@ export interface Ambience {
 
 export type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
 
+// as fases da cena do altar (`Ctx.altar`): o dado começa a ir ('in'); a pedra fecha ('shut'); a luz lá dentro ('glow', a face nova); a pedra
+// abre ('open'); o dado sai ('out'); ele já está na mão ('done')
+export type AltarPhase = 'in' | 'shut' | 'glow' | 'open' | 'out' | 'done';
+
 // retângulo no plano XZ: x0, z0, x1, z1 (+ altura do topo: só bloqueia quem está abaixo dela; + altura do pé: só bloqueia quem está acima
 // dela, como o parapeito de uma galeria alta, que não pode barrar quem passa embaixo)
 export type Rect = [number, number, number, number, number?, number?];
@@ -53,12 +57,17 @@ export interface Ctx {
   // `key` identifica o braseiro em 'ignite': a cena do dado queimando só toca inteira na 1ª vez de cada um
   // 'spread' = o fogo que CORRE (canaleta, friso) acende algo sozinho: só o som, sem a cena do dado queimando
   // 'rise' = pilar subindo do chão (2,2 s)
-  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout' | 'rise', key?: string): void;
+  // 'altarCrack' / 'altarPush' = a pedra do altar do Tribunal racha / é empurrada (DESIGN.md §77)
+  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout' | 'rise' | 'altarCrack' | 'altarPush', key?: string): void;
   // a luz que escreve uma frase acesa passou pelo símbolo i de n (`at` = onde ele está, local da sala): a nota que acompanha a onda (§60)
   glyphLight?(i: number, n: number, at: THREE.Vector3): void;
   // pegou a gema `id` (story/gems.ts) que estava em `at` (local da sala): toca a cena da gema e ela vai para o fundo do caderno; `cap` = a
   // legenda que aparece depois da cena
   gem(id: string, at: THREE.Vector3, cap?: [string, string, string]): void;
+  // O ALTAR (DESIGN.md §77): a cena em que o dado sai da mão, entra devagar num nicho da parede e volta com uma face nova. `at` = o fundo do
+  // nicho e `n` = para fora da parede (locais da sala). A sala anima a pedra conforme as fases (`onPhase`); o motor cuida do dado, da câmera,
+  // do som e do marco `flag` (que libera a face `face`, na fase 'glow'). Devolve false se o dado não está na mão.
+  altar(o: { at: THREE.Vector3; n: THREE.Vector3; flag: Flag; face: number; onPhase(p: AltarPhase): void }): boolean;
   player: { readonly pos: THREE.Vector3 }; // olhos do jogador
   feetY(): number;
   say(lines: Line[], opts?: { block?: boolean; onEnd?: () => void }): void; // janela de conversa

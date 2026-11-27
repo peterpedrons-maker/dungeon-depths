@@ -8,7 +8,7 @@ const KEY = slotKey('progress'); // (no espaço de jogo ativo: story/save.ts)
 
 // Em ordem: cada marco alcançado sobe um "estágio" da Casa.
 export const STAGE_FLAGS = ['fogo', 'dois', 'tres', 'escrivao', 'selo', 'brasas'] as const;
-export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco' | 'dado' | 'giz' | 'caiu' | 'caderno' | 'cap1' | 'gema'; // gema: já viu a cena inteira da gema (as outras são curtas) // cap1: terminou o capítulo 1 (a tela inicial passa a mostrar o último lugar salvo)
+export type Flag = (typeof STAGE_FLAGS)[number] | 'intro' | 'eco' | 'dado' | 'giz' | 'caiu' | 'caderno' | 'cap1' | 'gema' | 'peso'; // gema: já viu a cena inteira da gema (as outras são curtas) // cap1: terminou o capítulo 1 (a tela inicial passa a mostrar o último lugar salvo) // peso: o dado voltou do altar do Tribunal com a face do Peso (DESIGN.md §77)
 export const MAX_STAGE = STAGE_FLAGS.length;
 
 interface State {
@@ -43,12 +43,12 @@ progressStore.subscribe(() => {
   }
 });
 
-// as faces do dado liberadas dependem dos marcos: começam Fogo e Peso
+// as faces do dado liberadas dependem dos marcos: o capítulo 1 inteiro é só o Fogo
 function applyFaces() {
   const f = progressStore.get().flags;
-  // Duas faces por MUITO tempo: Fogo e Peso. As outras só chegam bem depois (ver DESIGN.md §13).
+  // O capítulo 1 é só o Fogo. O Peso chega no fim dele: o dado entra no altar do Tribunal e volta com a face nova (DESIGN.md §13 e §77).
   FACES[2].unlocked = true; // Fogo
-  FACES[1].unlocked = true; // Peso
+  FACES[1].unlocked = !!f.peso; // Peso
   FACES[0].unlocked = !!f.eco; // (reservado: a 3ª face chega com o marco "eco")
 }
 applyFaces();

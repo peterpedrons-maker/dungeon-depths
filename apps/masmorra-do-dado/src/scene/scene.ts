@@ -56,7 +56,7 @@ import { buildRespiro1 } from './rooms/respiro1';
 import { buildPonte } from './rooms/ponte';
 import { buildRespiro2 } from './rooms/respiro2';
 import { buildApelidos } from './rooms/apelidos';
-import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder, Socket } from './types';
+import type { AltarPhase, Ctx, DieState, Interactable, Rect, Room, RoomBuilder, Socket } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
 import { type ScribePose } from './scribe';
@@ -143,7 +143,7 @@ export interface SceneOptions {
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
   load?: boolean; // começa na TELA DE CARREGAMENTO (veio da tela inicial: jogo novo ou outro espaço); o jogo só começa com loadGo()
-  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §77)
+  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §78)
   onPause?: () => void;
   onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
 }
@@ -1546,6 +1546,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           saveIn = Math.min(saveIn, 0.5);
         });
       },
+      altar: (o) => startAltar(idx, o),
       say: (lines, o) => dialogue.say(lines, o),
       seen: (id) => diary.markSeen(id, rooms[idx]?.name),
       milestone: (f) => {
@@ -2374,10 +2375,139 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     sfx.play('recall');
   };
 
+  // vira a câmera suavemente para um ponto do MUNDO (o `ctx.lookAt` das salas faz o mesmo com um ponto da sala)
+  const lookAtWorld = (gp: THREE.Vector3, dur: number) => {
+    const wx = gp.x - pos.x;
+    const wy = gp.y - pos.y;
+    const wz = gp.z - pos.z;
+    const y1 = Math.atan2(-wx, -wz);
+    const dy = Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw)); // caminho mais curto
+    camTween = { y0: yaw, p0: pitch, y1: yaw + dy, p1: clamp(Math.atan2(wy, Math.hypot(wx, wz)), -1.0, 1.0), t: 0, dur };
+  };
+
+  // ── O ALTAR (DESIGN.md §77): o dado sai da mão, para na boca de um nicho da parede, vira para o jogador a face ainda selada e entra DEVAGAR;
+  // a pedra fecha, a luz acende lá dentro (o marco que libera a face nova), a pedra abre e ele sai com a face nova virada para o jogador e volta
+  // para a mão. Uma vez só no jogo, sem pular. A SALA anima a pedra pelas fases (`onPhase`); o motor cuida do dado, da câmera e do som. ──
+  const AL = { fly: 0.9, turn: 1.8, inEnd: 4.4, shut: 4.6, shutHit: 5.2, glow: 6.1, open: 8.6, out: 9.2, outEnd: 10.0, back: 11.2 };
+  let altar: null | {
+    t: number;
+    room: number;
+    at: THREE.Vector3; // o fundo do nicho (local)
+    mouth: THREE.Vector3; // a boca do nicho, um palmo para fora (local)
+    q: THREE.Quaternion; // a face `face` virada para fora da parede (para o jogador)
+    flag: Flag;
+    face: number;
+    on: (p: AltarPhase) => void;
+    fired: Set<string>;
+  } = null;
+  const altarFrom = new THREE.Vector3();
+  const startAltar = (room: number, o: Parameters<Ctx['altar']>[0]) => {
+    if (altar || dieState !== 'hand' || !hasDie || busy()) return false;
+    const nW = places[room].dirToWorld(o.n.clone().setY(0)).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), nW).multiply(faceQ(o.face));
+    altar = { t: 0, room, at: o.at.clone(), mouth: o.at.clone().addScaledVector(o.n, 0.75), q, flag: o.flag, face: o.face, on: o.onPhase, fired: new Set() };
+    if (tool !== 'die') setTool('die');
+    endSketch();
+    dieRoom = room;
+    thrownFace = o.face; // (a face que brilha mais no dado lá fora: a que vai mudar)
+    dieThrown = false;
+    updateMats();
+    handWorld(altarFrom);
+    worldDie.position.copy(altarFrom);
+    worldDie.quaternion.setFromAxisAngle(tmpAxis.set(0, 1, 0), yaw);
+    worldModel.scale.setScalar(0.3);
+    worldDie.visible = true;
+    dieV.set(0, 0, 0);
+    dieW.set(0, 0, 0);
+    dieState = 'placing';
+    holds++;
+    ui.setBars(true);
+    lookAtWorld(toW(room, o.at.clone().addScaledVector(o.n, 0.25)), 1.1);
+    sfx.play('throw', 0.35);
+    o.onPhase('in');
+    return true;
+  };
+  const altarTick = (dt: number) => {
+    const a = altar!;
+    a.t += dt;
+    const t = a.t;
+    const once = (k: string, at: number, f: () => void) => {
+      if (t >= at && !a.fired.has(k)) {
+        a.fired.add(k);
+        f();
+      }
+    };
+    const ease = (u: number) => u * u * (3 - 2 * u);
+    if (dieState === 'placing') {
+      if (t < AL.fly) {
+        // da mão até a boca do nicho, num arco curto
+        const u = t / AL.fly;
+        handWorld(altarFrom);
+        worldDie.position.lerpVectors(altarFrom, toW(a.room, tmpV.copy(a.mouth)), ease(u));
+        worldDie.position.y += Math.sin(Math.PI * u) * 0.22;
+        worldModel.scale.setScalar(0.3 + 0.12 * ease(u));
+        worldDie.quaternion.slerp(a.q, 1 - Math.exp(-dt * 3.5));
+      } else if (t < AL.turn) {
+        // para na boca, de frente, respirando: a face ainda selada virada para o jogador
+        toW(a.room, worldDie.position.copy(a.mouth));
+        worldDie.position.y += Math.sin((t - AL.fly) * 5) * 0.012;
+        worldModel.scale.setScalar(0.42);
+        worldDie.quaternion.slerp(a.q, 1 - Math.exp(-dt * 6));
+      } else if (t < AL.out) {
+        // entra devagar (2,6 s) e fica lá dentro
+        const u = Math.min(1, (t - AL.turn) / (AL.inEnd - AL.turn));
+        toW(a.room, worldDie.position.lerpVectors(a.mouth, a.at, ease(u)));
+        worldDie.quaternion.copy(a.q);
+      } else if (t < AL.outEnd) {
+        // sai, já com a face nova virada para o jogador
+        const u = (t - AL.out) / (AL.outEnd - AL.out);
+        toW(a.room, worldDie.position.lerpVectors(a.at, a.mouth, 1 - (1 - u) * (1 - u)));
+        worldDie.quaternion.copy(a.q);
+      } else if (t < AL.back) {
+        // um instante na boca, um pouco mais alto, brilhando
+        toW(a.room, worldDie.position.copy(a.mouth));
+        worldDie.position.y += 0.05 * Math.min(1, (t - AL.outEnd) * 3) + Math.sin((t - AL.outEnd) * 4) * 0.015;
+        worldDie.quaternion.copy(a.q);
+      } else {
+        // volta para a mão como sempre (o recolher)
+        animFrom.copy(worldDie.position);
+        animT = 0;
+        dieState = 'returning';
+        sfx.play('recall');
+      }
+      toL(a.room, worldDie.position, dieP);
+    }
+    // o dado brilha quando sai (a face nova), e o brilho assenta até a mão
+    talkGlow = t > AL.open ? Math.max(0, 1 - (t - AL.open) / 3.2) : 0;
+    once('slide', AL.turn, () => sfx.play('altarSlide'));
+    once('shut', AL.shut, () => a.on('shut'));
+    once('shutHit', AL.shutHit, () => sfx.play('altarShut'));
+    once('glow', AL.glow, () => {
+      progress.set(a.flag); // a face nova (story/progress.ts): o dado lá dentro já volta com ela
+      sfx.play('altarGlow');
+      a.on('glow');
+    });
+    once('open', AL.open, () => {
+      sfx.play('altarOpen');
+      a.on('open');
+    });
+    once('out', AL.out, () => a.on('out'));
+    if (t > AL.back && dieState === 'hand') {
+      altar = null;
+      holds = Math.max(0, holds - 1);
+      ui.setBars(false);
+      talkGlow = 0;
+      selectFace(a.face); // a face nova na mão, com a legenda dela
+      life.react('joy');
+      saveIn = Math.min(saveIn, 1.5);
+      a.on('done');
+    }
+  };
+
   // nas CENAS o jogador não olha em volta (a câmera é da cena) e a mira some: abertura, o dado falando no centro, cenas travadas, o caderno achado
-  const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall() || gemFx.active();
+  const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall() || gemFx.active() || altar !== null;
   let cineWas: boolean | null = null; // (null: avisa a interface já no 1º quadro)
-  const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null || gemFx.active(); // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
+  const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null || gemFx.active() || altar !== null; // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
 
   // ── marcos da história ──
   const onMilestone = (f: Flag) => {
@@ -3204,10 +3334,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0' || q.get('intro') === 'poco') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
     if (q.has('demo')) {
       progress.noSave();
-      for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz'] as const) progress.set(f);
+      for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz', 'peso'] as const) progress.set(f);
     } else if (q.has('lab') || q.has('vitrine')) {
       progress.noSave();
-      for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
+      for (const f of ['intro', 'dado', 'giz', 'peso'] as const) progress.set(f); // (a sala de teste usa o Peso)
     } else if (q.get('intro') === '0') {
       progress.noSave();
       for (const f of ['intro', 'dado', 'giz'] as const) progress.set(f);
@@ -3397,7 +3527,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let titleDieYaw = 0;
   const DIE_W = 0.42; // o lado do dado de verdade (worldModel)
   const lightHome = new Map<THREE.DirectionalLight, THREE.Vector3>();
-  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §77): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
+  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §78): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
   // TENTA ROLAR (força, balança de lado sobre a quina, cai de volta com um baque, duas ou três vezes, e desiste com um suspiro), OLHA EM VOLTA
   // (vira o corpo um pouco para um lado, olha, volta), OLHA O FEIXE de luz lá em cima (inclina para trás; a íris se fecha) ou dá um PULINHO.
   // Sempre volta a ficar reto no chão, de rosto para a câmera.
@@ -3669,7 +3799,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo).
-  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §77): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
+  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §78): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
   // só começa com loadGo() (o clique ou toque do fim do carregamento, que também libera o som e prende o mouse)
   let begun = false;
   let goPending: { cap: (() => void) | null; intro: boolean } | null = null;
@@ -4244,6 +4374,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     wakeHop = Math.max(0, wakeHop + wakeHopV * dt);
     if (wakeHop === 0 && wakeHopV < 0) wakeHopV = 0;
     worldModel.position.y = wakeHop * 0.4;
+    if (altar) altarTick(dt); // (a cena do altar move o dado ela mesma; na volta, o recolher de sempre)
     if (dieState === 'flying') {
       const n = Math.max(1, Math.ceil(dt / (1 / 120)));
       if (dropWatch && scribeDrop) {
@@ -4289,7 +4420,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           dieW.multiplyScalar(Math.exp(-dt * 6));
         }
       }
-    } else if (dieState === 'placing') {
+    } else if (dieState === 'placing' && !altar) {
       animT += dt / 0.36;
       const u = Math.min(1, animT);
       const e = u * u * (3 - 2 * u);
@@ -4658,6 +4789,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         makeCtx(curRoom).gem(id, at);
       },
       gemState: () => ({ active: gemFx.active(), gems: [...(diaryStore.get().gems ?? [])], book: book.opened() }),
+      altarState: () => (altar ? { t: +altar.t.toFixed(2), die: dieState, holds } : null), // (testes) a cena do altar (DESIGN.md §77)
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),

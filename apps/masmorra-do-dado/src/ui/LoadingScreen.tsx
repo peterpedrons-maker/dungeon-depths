@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LOAD_BAR, loadStore } from '../story/loading';
 import { useStore } from '../story/store';
 
-// A TELA DE CARREGAMENTO (pedido do Pedro, DESIGN.md §77): depois de Novo jogo / Continuar / Carregar. Tela preta, o dado no canto de baixo
+// A TELA DE CARREGAMENTO (pedido do Pedro, DESIGN.md §78): depois de Novo jogo / Continuar / Carregar. Tela preta, o dado no canto de baixo
 // à direita olhando para o jogador (desenhado pela cena, com o rosto vivo) e, embaixo, a barra: um SULCO talhado em pedra, cheio de marfim
 // fosco, por onde a luz dourada corre como nas frases que acendem; a ponta da luz tem o clarão. O dado espia a ponta de vez em quando.
 // Espera os modelos, os primeiros quadros e as GRAVAÇÕES DE SOM (antes elas às vezes chegavam tarde). No fim, se o som ainda não foi

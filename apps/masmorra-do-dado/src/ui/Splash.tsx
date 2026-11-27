@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// A ABERTURA DA EDITORA «PEDRA-SABÃO» (pedido do Pedro, DESIGN.md §77): ao abrir o jogo, antes da tela inicial. Uma laje de pedra-sabão
+// A ABERTURA DA EDITORA «PEDRA-SABÃO» (pedido do Pedro, DESIGN.md §78): ao abrir o jogo, antes da tela inicial. Uma laje de pedra-sabão
 // (cinza-esverdeada, macia, com veios e pintinhas de talco) e o nome riscado À MÃO, a giz, traço a traço; um toco de giz vai na ponta do
 // traço e solta pó. Tudo em pixel, no mesmo tamanho de pixel do jogo, desenhado aqui mesmo (sem arquivo de imagem).
 // Dura ~3,5 s; um toque, clique ou tecla pula. Enquanto isso o jogo carrega por trás; a abertura só some quando a tela inicial está pronta.
