@@ -119,7 +119,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos (a janela grande, de barras finas; na 1ª vez, uma mini cena vira a câmera para ele; o ciclo de passos sem o tranco da emenda, `DESIGN.md` §78; a túnica cai do quadril como um sino, sem andar como calça, só os sapatos seguem os pés, e os braços andam junto do corpo, §81); mãos e
   cabeça por código; `?escrivao=antigo` volta ao de código; prévia `?vitrine=escrivao`; `?intro=poco` testa a cena do poço. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
-  «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).
+  «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app, que é o dado 2D da tela de carregamento, de rosto para quem vê (`tools/build_app_icon.mjs`, `DESIGN.md` §90).
   **Cenas** travam o olhar e escondem a mira (`lookLocked`/`onCine`); o dado caído da abertura chega de rosto para o jogador, de olhos fechados, e
   acorda antes de falar; o **tutorial do caderno** começa no índice e leva parte por parte: a linha da vez pisca em ouro, o personagem diz o que é aquilo e o que dá para
   fazer (anotar o que acha que é BRASEIRO, riscar o mapa), a tarefa pisca até ser feita e o caderno volta sozinho ao índice; um toque passa o

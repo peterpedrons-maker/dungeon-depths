@@ -2,10 +2,10 @@
 # - letras desenhadas à mão numa grade de 11 linhas, hastes de 2 pixels; o Ç com a cedilha desenhada (os geradores erram a cedilha);
 # - o último A é o glifo ACENDER de verdade: um ponto em cada vértice (o de cima é a brasa), ligados por três linhas, com a grossura das hastes;
 #   nada de pontos dentro nem soltos;
-# - ícone do app: a face do dado (pedra escura, moldura de ouro, as cantoneiras) com o triângulo ACENDER no meio e a brasa no ponto de cima.
-# Gera src/ui/logo.ts (a grade do logo; a tela inicial desenha em pedra talhada) e public/icons/*.png.
+# (o ÍCONE DO APP não sai mais daqui: agora é o dado 2D da tela de carregamento, tools/build_app_icon.mjs, DESIGN.md §90)
+# Gera src/ui/logo.ts (a grade do logo; a tela inicial desenha em pedra talhada).
 # Rodar: python3 tools/build_logo.py
-import os, zlib, struct
+import os
 
 H = 11
 L = {
@@ -130,95 +130,8 @@ def ts(rows):
     )
 
 
-# ── ícone do app: 32 x 32 ──
-def app_icon():
-    N = 32
-    g = [['.'] * N for _ in range(N)]
-    for y in range(N):
-        for x in range(N):
-            cx, cy = min(x, N - 1 - x), min(y, N - 1 - y)
-            if cx + cy < 3:
-                continue  # cantos redondos do dado
-            d = min(cx, cy)
-            g[y][x] = 'D' if d >= 3 else ('B' if d == 0 else ('G' if d == 2 else 'K'))
-    # cantoneiras de ouro
-    for (ox, oy) in ((3, 3), (25, 3), (3, 25), (25, 25)):
-        for i in range(4):
-            for j in range(4):
-                if i + j < 6:
-                    g[oy + j][ox + i] = 'G' if (i == 0 or j == 0) else g[oy + j][ox + i]
-    # o triângulo ACENDER no meio (traço de 2, pontos de 3 nos vértices)
-    tri = []
-    T = 20
-    for y in range(T):
-        tri.append(['.'] * T)
-
-    def put(x, y, c):
-        if 0 <= x < T and 0 <= y < T:
-            tri[y][x] = c
-
-    for y in range(2, 17):
-        t = (y - 2) / 14
-        xl = round(9.5 - t * 8)
-        xr = round(9.5 + t * 8)
-        for k in (0, 1):
-            put(xl + k, y, 'G')
-            put(xr - k, y, 'G')
-    for x in range(2, 18):
-        put(x, 16, 'G')
-        put(x, 17, 'G')
-    for dx in range(4):
-        for dy in range(4):
-            put(8 + dx, 0 + dy, 'R')
-            put(0 + dx, 15 + dy, 'Y')
-            put(16 + dx, 15 + dy, 'Y')
-    for y in range(T):
-        for x in range(T):
-            if tri[y][x] != '.':
-                g[y + 6][x + 6] = tri[y][x]
-    return g
-
-
-COL = {
-    'D': (29, 25, 34, 255),  # pedra escura (a face do dado)
-    'K': (14, 11, 18, 255),
-    'B': (5, 4, 10, 255),
-    'G': (201, 163, 90, 255),  # ouro velho
-    'Y': (255, 211, 107, 255),  # ouro
-    'R': (255, 138, 58, 255),  # brasa
-}
-
-
-def png(w, h, pix):
-    raw = b''.join(b'\x00' + b''.join(bytes(pix(x, y)) for x in range(w)) for y in range(h))
-
-    def ch(t, d):
-        return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
-
-    return b'\x89PNG\r\n\x1a\n' + ch(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 6, 0, 0, 0)) + ch(b'IDAT', zlib.compress(raw, 9)) + ch(b'IEND', b'')
-
-
-def write_icon(path, size, scale, bg=(11, 9, 18, 255)):
-    g = app_icon()
-    n = len(g)
-    off = (size - n * scale) // 2
-
-    def pix(x, y):
-        gx, gy = (x - off) // scale, (y - off) // scale
-        if 0 <= gx < n and 0 <= gy < n and x >= off and y >= off and g[gy][gx] != '.':
-            return COL[g[gy][gx]]
-        return bg
-
-    open(path, 'wb').write(png(size, size, pix))
-
-
 here = os.path.dirname(os.path.abspath(__file__))
 root = os.path.join(here, '..')
 rows = logo_grid()
 open(os.path.join(root, 'src', 'ui', 'logo.ts'), 'w').write(ts(rows))
-icons = os.path.join(root, 'public', 'icons')
-write_icon(os.path.join(icons, 'icon-512.png'), 512, 16)
-write_icon(os.path.join(icons, 'icon-192.png'), 192, 6)
-write_icon(os.path.join(icons, 'apple-touch-icon.png'), 180, 5)
-write_icon(os.path.join(icons, 'icon-maskable-512.png'), 512, 12)  # (cabe na área segura de 80%)
 print('logo', len(rows[0]), 'x', len(rows))

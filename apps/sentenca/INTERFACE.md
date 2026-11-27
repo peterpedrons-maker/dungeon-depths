@@ -180,7 +180,8 @@ são as únicas cores além da pedra.
 - **O traço do triângulo** com a grossura das hastes das letras (ele faz o papel de um A).
 - **O Ç desenhado à mão** (os geradores erram a cedilha).
 - **Versões:** vetor limpo (loja, cartaz, redes: base = a versão clara enviada pelo Pedro) e pixel em pedra talhada com a brasa (tela de título).
-- **Ícone do app:** a face do dado (pedra escura, moldura de ouro) com o triângulo ACENDER no meio, a brasa no ponto de cima.
+- **Ícone do app:** o dado 2D da tela de carregamento, de rosto para quem vê (o Pedro trocou; antes era a face do dado com o triângulo
+  ACENDER; `DESIGN.md` §90).
 
 ---
 

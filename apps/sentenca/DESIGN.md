@@ -736,7 +736,8 @@ cedilha desenhada à mão**, e o último A é o **glifo ACENDER de verdade**: tr
 **brasa** no de cima, nada dentro nem solto. A tela inicial o pinta em pedra talhada (luz em cima, sombra embaixo, contorno e sombra projetada).
 O **ícone do app** (`public/icons/*.png`, 192, 512, 512 mascarável e 180 para o iPhone) é a face do dado: pedra escura, moldura e cantoneiras de
 ouro, o triângulo ACENDER no meio com a brasa em cima. *Não mudei o nome do app no manifesto* ("Masmorra do Dado"): o `INTERFACE.md` pede para
-conferir antes se «Sentença» está livre na Steam e nas lojas.
+conferir antes se «Sentença» está livre na Steam e nas lojas. (Depois: o nome mudou para «Sentença» no §89, e o ícone virou o dado 2D da
+tela de carregamento no §90.)
 *Ainda não feito:* os botões do controle (gamepad), o vetor limpo do logo (para loja e cartaz) e a aba do mapa no diário com o ícone novo (o diário
 desenha as próprias abas no papel).
 
@@ -1988,4 +1989,20 @@ errar quando alguém digita.
 - O endereço antigo (`/masmorra-do-dado/`) deixa de existir. Quem instalou o jogo pelo endereço antigo precisa instalar de novo pelo novo.
 - A branch do cenógrafo (`claude/cenografo`) ainda usa a pasta antiga: ao juntar, o git acompanha a troca de nome dos arquivos que já
   existiam; arquivos NOVOS criados lá na pasta antiga precisam ser movidos para `apps/sentenca/`.
+
+## 90. O ícone do app é o dado 2D da tela de carregamento (pedido do Pedro)
+
+"Faz com que o ícone do aplicativo seja o ícone 2D do dado que aparece na tela de loading, ou alguma daquelas figuras das paredes; acho que o
+dado ficaria melhor." Ficou o dado. O ícone era a face do dado com o triângulo ACENDER (§45, passo 6).
+
+- **É o mesmo desenho do jogo**, não uma cópia: `tools/build_app_icon.mjs` abre o código do jogo num navegador (Vite + Playwright), pega a
+  face de `dieRostoCanvas` (a face 3, a do Fogo, com o ouro, os rebites e os olhos acesos; o rosto de afeição neutra olhando para quem vê),
+  pinta com a mesma luz chapada da tela de carregamento (§83, `src/ui/loadart.ts`) e amplia em pixels inteiros. Se o rosto do dado mudar,
+  basta rodar o script de novo.
+- Em volta: o contorno escuro de 1 pixel e, atrás, o escuro das salas com uma luz quente em anéis pontilhados. Sem a borda acesa da tela
+  de carregamento (lá ela é o reflexo da frase; aqui parecia um risco).
+- Tamanhos: 512 (o dado ocupa 462 px, 7 por pixel), 192 e 180 do iPhone (2 por pixel) e o 512 **mascarável** (4 por pixel, 264 px: cabe
+  inteiro no círculo que o Android recorta, com as cantoneiras de ouro à vista).
+- `tools/build_logo.py` agora só gera o logo; a parte do ícone antigo saiu, para não sobrescrever o novo.
+- Quem já instalou o app pode continuar vendo o ícone antigo até reinstalar (o celular guarda o ícone da instalação).
 
