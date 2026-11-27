@@ -37,6 +37,7 @@ export interface DiaryState {
   texts: string[]; // textos de lore achados
   pages: string[]; // páginas arrancadas do caderno dela que o jogador achou e encaixou de volta
   gems: string[]; // as gemas, na ordem em que foram achadas (cada uma num furo do dado do fundo do caderno; story/gems.ts)
+  herKnown?: boolean; // já leu o relato e sabe que o caderno era DELA, outra condenada (antes disso o índice não diz "Dela")
   rooms: string[]; // salas visitadas (para o mapa)
   strokes: Stroke[]; // o que o jogador escreveu à mão no mapa
   stamps: Stamp[]; // símbolos já avistados que o jogador carimbou no mapa
@@ -101,6 +102,10 @@ export const diary = {
     return true;
   },
   hasGem: (id: string) => (diaryStore.get().gems ?? []).includes(id),
+  // leu o relato: a partir daqui o caderno é "dela"
+  knowHer() {
+    if (!diaryStore.get().herKnown) diaryStore.set((s) => ({ ...s, herKnown: true }));
+  },
   visitRoom(name: string) {
     diaryStore.set((s) => ({ ...s, here: name, rooms: s.rooms.includes(name) ? s.rooms : [...s.rooms, name] }));
   },
@@ -161,6 +166,7 @@ export const diary = {
       notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
       texts: ['demo-pagina'],
       pages: ['p2'],
+      herKnown: true,
       gems: ['cisterna', 'papel', 'c6', 'demo4'],
       unread: 0,
     }));

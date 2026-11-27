@@ -625,6 +625,11 @@ function endpaper(ctx: CanvasRenderingContext2D, label = true) {
 // o papel de uma folha sem nada escrito (as folhas do meio de um maço virando de uma vez, book3d.ts)
 export const blankPaper = (side: 'L' | 'R') => paper(side, 0);
 
+// a linha das folhas dela no índice, ANTES de o personagem ler o relato (ele ainda não sabe de quem é o caderno); depois, "Dela"
+export const HER_ROW_BEFORE = 'Folhas';
+// (saves de antes desta regra: quem já escreveu sobre BRASEIRO no tutorial já leu o relato)
+const herKnown = (d: DiaryState) => d.herKnown ?? !!(d.notes?.brasa ?? '').trim();
+
 // leva a lista de regiões a sério: dá para clicar em quase tudo que está escrito
 export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
   if (view.spread === lay.mapAt) return renderMapHalf(ctx, side, view, d, lay);
@@ -669,7 +674,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       ctx.fillRect(x0 + 8, 40, CW - 16, 1);
       // [rótulo, contagem, folha, ícone]
       const rows: [string, string, number, number][] = [
-        ['Dela', `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
+        [herKnown(d) ? 'Dela' : HER_ROW_BEFORE, `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
         ['Símbolos', `${d.order.length}`, lay.dictAt, 0],
         ['Faces', `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt, 1],
         ['Textos', `${d.texts.length}`, lay.textsAt, 2],

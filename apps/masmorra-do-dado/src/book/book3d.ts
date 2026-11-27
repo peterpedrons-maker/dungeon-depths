@@ -387,11 +387,13 @@ export function createDiaryBook(env: BookEnv) {
     say: string[];
     task?: 'note' | 'stroke';
     done?: string[]; // o que ele pensa depois de fazer a tarefa
+    after?: () => void; // depois dos pensamentos desta parada
   }
   const INTRO = ['O caderno dela.', 'Ela dividiu tudo em partes. Vou ver uma por uma.'];
   const STOPS: Record<Part, Stop[]> = {
     dela: [
-      { at: (l) => l.herAt, say: ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'] },
+      // (é LENDO o relato que ele descobre de quem é o caderno: daí em diante o índice diz "Dela")
+      { at: (l) => l.herAt, say: ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'], after: () => diary.knowHer() },
       { at: (l) => l.herAt + 1, say: ['Faltam folhas. Arrancadas.', 'Se eu achar alguma, ponho de volta no lugar.'] },
     ],
     simbolos: [
@@ -844,6 +846,7 @@ export function createDiaryBook(env: BookEnv) {
             if (st.task === 'note') view.sel = GUIDED_ID;
             if (st.task === 'stroke') view.pen = 0;
             thinkInBook(st.say, () => {
+              st.after?.();
               if (!st.task) return nextStop();
               tut.phase = 'task';
               tut.strokes0 = dState().strokes.length;
