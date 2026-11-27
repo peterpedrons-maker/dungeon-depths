@@ -620,12 +620,16 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     });
   }
 
-  // ── sala 2: o CADERNO ACHADO (PUZZLES_PROPOSTAS.md §5, sala 2). No chão, junto da base da coluna esquerda, no escuro; a luz do 1º braseiro
-  // o revela. É o caderno de "a que veio antes", que vira o diário do jogador. Até pegá-lo, a porta não abre (a sala fica "travada").
-  type NbState = 'dark' | 'shown' | 'talked' | 'taken' | 'call' | 'done';
-  let nb: NbState = ctx.flag('caderno') ? 'done' : 'dark';
+  // ── sala 2: o CADERNO ACHADO (PUZZLES_PROPOSTAS.md §5, sala 2). É o caderno de "a que veio antes", que vira o diário do jogador. Até
+  // pegá-lo, a porta não abre (a sala fica "travada"). Pedido do Pedro: ele fica EXPOSTO, caído no meio do chão do primeiro tramo, logo depois
+  // da entrada (um pouco à esquerda do caminho: à direita, o dado da mão o tapava), entre as duas tochas: quem entra o vê embaixo, no meio da
+  // tela, e dá para pegá-lo logo, antes de acender qualquer coisa. (Antes ficava no escuro, ao pé da coluna esquerda, e só aparecia com o 1º braseiro
+  // aceso: aí o dado já falava dele e o jogador, lá no fundo, nem tinha chance de pegá-lo antes.) O dado só fala do caderno se o jogador
+  // passar direto para dentro do salão ou acender um braseiro sem pegá-lo.
+  type NbState = 'shown' | 'talked' | 'taken' | 'call' | 'done';
+  let nb: NbState = ctx.flag('caderno') ? 'done' : 'shown';
   let nbT = 0;
-  const nbPos = new THREE.Vector3(X0 + 1.15, 0.05, -4.1);
+  const nbPos = new THREE.Vector3(-0.6, 0.05, -1.9);
   const nbGroup = new THREE.Group();
   const nbMats: THREE.MeshLambertMaterial[] = [];
   if (v === 2) {
@@ -653,9 +657,6 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     nbGroup.visible = nb !== 'done';
     kit.group.add(nbGroup);
     kit.contact(nbPos.x, nbPos.z, 0.7);
-    const setDark = (k: number) => nbMats.forEach((m, i) => m.color.setHex(i === 0 ? 0x5a2216 : 0xd8b880).multiplyScalar(0.12 + 0.88 * k));
-    setDark(0);
-    (nbGroup.userData as { setDark: (k: number) => void }).setDark = setDark;
     interactables.push({
       pos: nbPos,
       r: 2.3,
@@ -681,14 +682,10 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   }
   const updateNotebook = (dt: number, nLit: number) => {
     if (v !== 2 || nb === 'done') return;
-    if (nb === 'dark' && nLit > 0) {
-      nb = 'shown';
-      nbT = 0;
-    }
-    if (nb === 'shown' || nb === 'talked') {
-      nbT += dt;
-      (nbGroup.userData as { setDark: (k: number) => void }).setDark(Math.min(1, nbT / 1.2));
-      if (nb === 'shown' && nbT > 1.4 && !ctx.paused()) {
+    if (nb === 'shown') {
+      // passou direto para dentro do salão (além do primeiro par de colunas) ou acendeu um braseiro sem pegar o caderno: o dado chama
+      if (nLit > 0 || ctx.player.pos.z < -5.6) nbT += dt;
+      if (nbT > 0.6 && !ctx.paused()) {
         nb = 'talked';
         ctx.lookAt(nbPos, 0.9);
         // enquanto o dado fala do caderno, o olhar fica nele (a cena trava; o jogador ainda pode pegar o caderno)

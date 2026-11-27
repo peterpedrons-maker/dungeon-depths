@@ -4,6 +4,7 @@
 // Coordenadas do MUNDO (o grupo fica na origem). O corredor pertence à sala da porta (é a saída dela).
 import * as THREE from 'three';
 import { ARCH_TOP, CORRIDOR, DW, Kit } from './kit';
+import { tallyTexture } from './textures';
 import type { Rect } from './types';
 
 export type XZ = [number, number];
@@ -198,6 +199,7 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
       }
     }
   }
+  decorate(kit, pts, y, w, h, top, from, rects, dirOf, turnAt, isOpen);
   kit.bake();
   const group = kit.group;
   group.userData.connector = true;
@@ -217,6 +219,148 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
       });
     },
   };
+}
+
+// A VIDA DO CORREDOR (pedido do Pedro: os corredores de ligação compridos ficavam escuros, lisos e iguais). Só pedra e marca, sem luz nova (chama
+// é coisa de puzzle, e o corredor não entra no rodízio de luzes) e nada no caminho: arcos de reforço a cada 3 m (o ritmo, como na Lousa), o chão
+// gasto no meio, manchas de umidade nas paredes e musgo no pé delas (mais no subsolo), entulho e teia no canto de fora das curvas, pedras soltas
+// junto da parede e, em alguns, os riscos de giz de alguém contando os dias. Tudo sai de um sorteio fixo por corredor (igual toda vez).
+function decorate(
+  kit: Kit,
+  pts: XZ[],
+  y: number,
+  w: number,
+  h: number,
+  top: number,
+  seed: number,
+  rects: Rect[],
+  dirOf: (k: number) => XZ,
+  turnAt: (k: number) => boolean,
+  isOpen: (k: number) => boolean,
+) {
+  let st = (seed * 7919 + 1013) >>> 0;
+  const rnd = () => {
+    st = (st + 0x6d2b79f5) >>> 0;
+    let t = st;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const n = pts.length - 1;
+  const deep = y < -3; // o subsolo: mais úmido
+  const RIB = 3.0;
+  // o chão gasto (só nos trechos fechados)
+  let run: XZ[] = [];
+  const flush = () => {
+    if (run.length > 1) kit.wear(run, 0.95, y);
+    run = [];
+  };
+  for (let k = 0; k < n; k++) {
+    if (isOpen(k)) {
+      flush();
+      continue;
+    }
+    if (!run.length) run.push(pts[k]);
+    run.push(pts[k + 1]);
+  }
+  flush();
+  let longest = -1;
+  let longL = 0;
+  for (let k = 0; k < n; k++) {
+    if (isOpen(k)) continue;
+    const [ax, az] = pts[k];
+    const [bx, bz] = pts[k + 1];
+    const L = Math.hypot(bx - ax, bz - az);
+    if (L > longL) {
+      longL = L;
+      longest = k;
+    }
+  }
+  for (let k = 0; k < n; k++) {
+    if (isOpen(k)) continue;
+    const d = dirOf(k);
+    const [ax, az] = pts[k];
+    const [bx, bz] = pts[k + 1];
+    const L = Math.hypot(bx - ax, bz - az);
+    if (L < 1.5) continue;
+    const s0 = turnAt(k) ? w / 2 + 0.4 : 0.6;
+    const s1 = turnAt(k + 1) ? w / 2 + 0.4 : 0.6;
+    const at = (t: number): XZ => [ax + d[0] * t, az + d[1] * t];
+    // os arcos de reforço: pilastra de pedra lavrada nas duas paredes e a cinta no teto
+    const nr = Math.floor((L - s0 - s1) / RIB);
+    const t0 = s0 + (L - s0 - s1 - nr * RIB) / 2 + RIB / 2;
+    const ribs: number[] = [];
+    for (let i = 0; i < nr; i++) ribs.push(t0 + i * RIB);
+    for (const t of ribs) {
+      const [px, pz] = at(t);
+      for (const side of [-1, 1]) {
+        const [ox, oz] = nl0(d, side);
+        const cx = px + ox * (w / 2 - 0.08);
+        const cz = pz + oz * (w / 2 - 0.08);
+        const sx = d[0] !== 0 ? 0.3 : 0.16;
+        const sz = d[0] !== 0 ? 0.16 : 0.3;
+        kit.box(sx, h, sz, kit.slab, cx, y + h / 2, cz, false);
+        rects.push([cx - sx / 2, cz - sz / 2, cx + sx / 2, cz + sz / 2, top]);
+      }
+      kit.box(d[0] !== 0 ? 0.3 : w, 0.16, d[0] !== 0 ? w : 0.3, kit.slab, px, y + h - 0.08, pz, false);
+    }
+    // manchas de umidade no meio de cada vão entre os arcos (de um lado ou do outro); musgo no pé da parede
+    const spots = ribs.length ? [ribs[0] - RIB / 2, ...ribs.map((t) => t + RIB / 2)] : [L / 2];
+    for (const t of spots) {
+      if (t < s0 || t > L - s1) continue;
+      const side = rnd() < 0.5 ? -1 : 1;
+      const [ox, oz] = nl0(d, side);
+      const [px, pz] = at(t + (rnd() - 0.5) * 0.8);
+      const wx = px + ox * (w / 2);
+      const wz = pz + oz * (w / 2);
+      if (rnd() < (deep ? 0.75 : 0.5)) kit.damp(wx, y + 0.75 + rnd() * 0.7, wz, -ox, -oz, 1.1 + rnd() * 0.6);
+      if (rnd() < (deep ? 0.55 : 0.2)) kit.moss(wx, y + 0.3, wz, -ox, -oz, 0.7 + rnd() * 0.4);
+      // pedras soltas junto da parede do outro lado (pequenas: não atrapalham o passo)
+      if (rnd() < 0.6) {
+        const [qx, qz] = at(t + (rnd() - 0.5) * 1.2);
+        const [o2x, o2z] = nl0(d, -side);
+        for (let i = 0, m = 1 + Math.floor(rnd() * 3); i < m; i++) {
+          const sz = 0.09 + rnd() * 0.12;
+          const g = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), kit.stone);
+          g.position.set(qx + o2x * (w / 2 - 0.14 - rnd() * 0.1) + d[0] * (rnd() - 0.5) * 0.5, y + sz * 0.55, qz + o2z * (w / 2 - 0.14 - rnd() * 0.1) + d[1] * (rnd() - 0.5) * 0.5);
+          g.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+          kit.group.add(g);
+        }
+      }
+    }
+    // os riscos de giz (em uns 4 de cada 10 corredores, no trecho mais comprido, entre dois arcos)
+    if (k === longest && L >= 6 && rnd() < 0.45) {
+      const t = spots.length > 1 ? spots[Math.floor(spots.length / 2)] : L / 2;
+      const side = rnd() < 0.5 ? -1 : 1;
+      const [ox, oz] = nl0(d, side);
+      const [px, pz] = at(t);
+      const days = 7 + (seed * 13) % 31;
+      kit.decal(1.3, 0.65, `tally-con${days}`, () => tallyTexture(days), px + ox * (w / 2 - 0.02), y + 1.45, pz + oz * (w / 2 - 0.02), 0, Math.atan2(-ox, -oz));
+    }
+  }
+  // as curvas: entulho no canto de fora (fora do caminho) e, às vezes, uma teia lá em cima
+  for (let k = 1; k < n; k++) {
+    if (!turnAt(k) || isOpen(k - 1) || isOpen(k)) continue;
+    const din = dirOf(k - 1);
+    const dout = dirOf(k);
+    const [px, pz] = pts[k];
+    const r = w / 2 - 0.38;
+    const cx = px + din[0] * r - dout[0] * r;
+    const cz = pz + din[1] * r - dout[1] * r;
+    for (let i = 0, m = 3 + Math.floor(rnd() * 3); i < m; i++) {
+      const sz = 0.1 + rnd() * 0.15;
+      const g = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), kit.stone);
+      g.position.set(cx + (rnd() - 0.5) * 0.45, y + sz * 0.55, cz + (rnd() - 0.5) * 0.45);
+      g.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+      kit.group.add(g);
+    }
+    if (rnd() < 0.5) {
+      // na parede de frente para quem chega, no canto de cima
+      const wx = px + din[0] * (w / 2) - dout[0] * (w / 2 - 0.45);
+      const wz = pz + din[1] * (w / 2) - dout[1] * (w / 2 - 0.45);
+      kit.web(wx, y + h - 0.42, wz, -din[0], -din[1], rnd() < 0.5, 0.8);
+    }
+  }
 }
 
 // a normal "para fora" de um dos dois lados (`side` = -1 ou +1) de quem anda na direção `d`
