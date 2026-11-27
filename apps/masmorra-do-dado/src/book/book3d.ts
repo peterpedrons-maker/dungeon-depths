@@ -405,7 +405,7 @@ export function createDiaryBook(env: BookEnv) {
         done: ['Anotado. Se eu entender melhor, mudo depois.'],
       },
     ],
-    faces: [{ at: (l) => l.facesAt, say: ['As faces do dado. Só duas têm nome, por enquanto.'] }],
+    faces: [{ at: (l) => l.facesAt, say: ['As faces do dado. Só uma tem nome, por enquanto.'] }],
     textos: [{ at: (l) => l.textsAt, say: ['Aqui ficam as frases inteiras, quando eu achar alguma.'] }],
     mapa: [
       {

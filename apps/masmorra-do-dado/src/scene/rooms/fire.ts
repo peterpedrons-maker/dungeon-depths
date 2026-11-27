@@ -130,7 +130,9 @@ export interface FireSpec {
   pillars?: [number, number][]; // [x, dz] colunas no meio da sala
   pillarH?: number; // altura das colunas (padrão: até o teto; no claustro, até o telhado das galerias)
   tablets?: FireTablet[]; // frases na parede (rumores, leis...)
-  plate?: { x: number; dz: number }; // placa de pressão (regra `commit`): só o Peso a afunda
+  // placa de pressão: só o Peso a afunda. Na regra `commit` ela julga as chamas; nas outras ela é a TRAVA DA PORTA (o Tribunal, DESIGN.md
+  // §77): com a sala resolvida, a porta só abre quando o Peso afunda a placa, e então fica aberta
+  plate?: { x: number; dz: number };
   // TRAVA DE ESCRITA: antes do puzzle de braseiros, o jogador passa o dado de Fogo pelas FRASES da parede (tablete `lit`). Acender as certas faz os pilares
   // `hidden` subirem do chão (puzzle liberado). Acender uma errada apaga todas as frases acesas e a Casa recusa o fogo por `penalty` segundos.
   // `ordered`: as frases com `ord` têm de ser acesas nessa ordem; senão (padrão) basta acender todas as `good`, em qualquer ordem.
@@ -795,6 +797,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     return Math.abs(p.x - PL.x) < PL.half + 0.05 && Math.abs(p.z - PL.z) < PL.half + 0.05 && p.y < PL.top + ctx.die.R + 0.1;
   };
   let plateDown = false;
+  let plateOpen = false; // (placa fora da regra `commit`) o Peso já afundou a placa com a sala resolvida: a porta fica aberta
 
   boxes.push(mkBox(-1.25, DY, Z0, -0.95, DY + ARCH_TOP, Z0 + 0.3), mkBox(0.95, DY, Z0, 1.25, DY + ARCH_TOP, Z0 + 0.3), mkBox(-1.25, DY + ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3));
   braziers.forEach((b) => boxes.push(...b.boxes));
@@ -865,6 +868,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   const reset = () => {
     plateDown = false;
+    plateOpen = false;
     litLines.forEach((l) => {
       l.lit = l.preLit;
       l.fire = l.preLit ? 1 : 0;
@@ -895,7 +899,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
 
   if (import.meta.env.DEV) {
     const g = globalThis as Record<string, unknown>;
-    const fn = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rise: +riseK.toFixed(2), lockCold: +lockCold.toFixed(1), lines: litLines.map((l) => l.lit), spots: litLines.map((l) => [l.x, l.y, l.z, l.hw]), rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))) });
+    const fn = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rise: +riseK.toFixed(2), plateOpen, lockCold: +lockCold.toFixed(1), lines: litLines.map((l) => l.lit), spots: litLines.map((l) => [l.x, l.y, l.z, l.hw]), rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))) });
     g.__fire = fn; // a última sala construída
     ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
   }
@@ -1319,6 +1323,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         want = solved ? 1 : 0;
         door.lampMats.forEach((m, i) => m.color.setHex(solved || braziers[i]?.lit ? 0xff7a2e : LAMP_OFF));
       }
+      // a PLACA DA PORTA (fora da regra `commit`): a sala resolvida só abre a porta quando o Peso afunda a placa; depois ela fica aberta
+      if (PL && rule.kind !== 'commit') {
+        const pressed = ctx.die.state === 'rest' && ctx.die.face === 2 && onPlate();
+        if (pressed && !plateDown) ctx.sfx('plate');
+        plateDown = pressed;
+        if (pressed && solved) plateOpen = true;
+        if (!plateOpen) want = 0;
+      }
       braziers.forEach((b) => b.update(t));
       {
         const nLit = braziers.filter((b) => b.lit).length;
@@ -1362,6 +1374,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     // salvamento: a sala já resolvida (ao carregar um jogo, as salas de trás voltam abertas; a porta abre sem som)
     skip() {
       solved = true;
+      plateOpen = true;
       readT = 99;
       prevWant = 1;
       doorOpen = 1;

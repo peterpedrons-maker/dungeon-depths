@@ -336,6 +336,24 @@ Objetivo: acender os cinco **na ordem certa**. Errar apaga tudo e deixa os brase
 - **Vocabulário que as salas anteriores precisam ensinar antes** (a fazer): ANTES e DEPOIS, GRANDE e PEQUENO (a Sala 5 pode rotular os braseiros por tamanho), TODOS, IGUAL, VERDADE e o conceito de BOATO × CONFIRMADO (marcas), além dos números 1 a 5 e ORDEM (já existem).
 - **Dificuldade: 9 a 10.** É o teto do capítulo de Fogo, não uma sala de início de jogo.
 
+**Depois da ordem certa: o altar do Peso e a placa da porta** (`DESIGN.md` §77; pedido do Pedro). A ordem certa **não abre a porta**. Os
+lampiões da porta acendem e, um instante depois, a pedra do **altar** racha, com pó, um estalo e um fio de luz dourada nas frestas, e a câmera
+vira para ela. O altar é o bloco de pedra encostado no fundo, à direita da porta, **embaixo da lei** (a do IGUAL, que é a palavra do Peso).
+1. Chegar perto do altar e **empurrar a pedra** (E no PC, AGIR no celular): ela recua e desce, e abre um **nicho**.
+2. O dado olha para dentro e fala «EU DENTRO» · «VOCÊ ESPERAR». Quando ele termina, **pôr o dado** no nicho (E/AGIR).
+3. A cena (cerca de 11 s, não dá para pular, acontece uma vez só):
+   - o dado sai da mão, para na boca do nicho com a face 2 (ainda selada) virada para o jogador e entra devagar;
+   - a pedra sobe e fecha o nicho;
+   - as frestas acendem em ouro e a câmera sobe até a lei, onde o IGUAL ganha um halo dourado;
+   - a câmera desce, a pedra abre e o dado sai com a **face do Peso** (o glifo IGUAL) e volta para a mão já nela («2 · Peso»);
+   - o dado comemora («IGUAL») e olha para a **placa** na frente da porta («PLACA»).
+4. **Posicionar (ou arremessar) o dado de Peso na placa**: ela afunda e a porta abre **de vez** (dá para recolher o dado e passar). O corredor
+   termina na luz de saída, e chegar nela encerra o capítulo 1.
+- A placa é uma demonstração de um passo, não um puzzle: é a primeira vez que o Peso serve para alguma coisa. Com outra face ela não afunda
+  («Leve demais · Só o dado pesado afunda a placa»).
+- O Peso fica **selado** até aqui: o capítulo 1 inteiro é só o Fogo (`progress.ts`, marco `peso`).
+- Voltar à sala (ou reiniciá-la) com o Peso já ganho: o nicho fica aberto e vazio e só falta a ordem e a placa.
+
 
 ## As perguntas do dado ("você sabe o que é isso?")
 De tempos em tempos, num momento calmo, o dado **treme** na mão, vem **grande ao centro da tela**, mostra um glifo e pergunta «VOCÊ SABER ?». Embaixo aparecem **5 opções** (4 significados embaralhados e "não sei"; clique/toque ou teclas **1 a 5**). Certo: ele pula e mostra CONFIRMADO. Errado: fica abatido, sem punição. "Não sei": «EU ESPERAR». A escolha (certa ou errada) é anotada na página daquele glifo no diário, abaixo do que já estava escrito; "não sei" não escreve nada. Quem errou ou não soube é perguntado de novo **só depois de ler aquela palavra outra vez em outro lugar** (no máximo 3 vezes).

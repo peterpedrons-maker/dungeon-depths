@@ -39,7 +39,15 @@ export type SfxName =
   | 'gemShine'
   | 'gemBreak'
   | 'gemSet'
-  | 'gemFace';
+  | 'gemFace'
+  // o altar do Tribunal (DESIGN.md §77): a pedra racha; a pedra é empurrada e desce; o dado desliza para dentro; a pedra fecha; a luz lá dentro;
+  // a pedra abre de novo
+  | 'altarCrack'
+  | 'altarPush'
+  | 'altarSlide'
+  | 'altarShut'
+  | 'altarGlow'
+  | 'altarOpen';
 
 // 0 = tudo ligado, 1 = só efeitos, 2 = mudo
 export type AudioMode = 0 | 1 | 2;
@@ -557,6 +565,36 @@ export class Sfx {
         break;
       case 'gemFace':
         [72, 76, 79].forEach((m, i) => this.fxNote('tubular_bells', m, 0.3, 0.35 + i * 0.22, 0.9));
+        break;
+      // O ALTAR (§77), só com as gravações que o jogo já tem: pedra (o pilar, a laje da porta, o baque), o dado (pousar, rolar) e os
+      // instrumentos reais. Racha: um estalo grave e pedrinhas. Empurrar: a pedra arrasta para dentro e desce. O dado desliza devagar.
+      // Fecha: a laje bate. A luz: o coro baixinho, o violoncelo e os sinos. Abre: a laje sobe arrastando.
+      case 'altarCrack':
+        this.sample('boom', 0.5, 1.25, 0, 0.5);
+        this.sample('rise', 0.55, 1.5, 0.05, 0.4, 0, 0, 1.6, 0.7);
+        this.fxNote('cello', 31, 0.3, 0.05, 0.8);
+        break;
+      case 'altarPush':
+        this.sample('rise', 0.75, 1.2, 0, 0.4, 0, 0, 0, 1.3);
+        this.sample('door_shut', 0.35, 1.3, 1.05, 0.3);
+        break;
+      case 'altarSlide':
+        this.sample('roll', 0.3, 0.55, 0, 0.3, 0, 1800, 0, 2.4);
+        this.sample('put2', 0.45, 0.8, 0, 0.3);
+        break;
+      case 'altarShut':
+        this.sample('door_shut', 0.9, 1.05, 0, 0.4);
+        this.sample('boom', 0.35, 0.9, 0.02, 0.6, 0, 500);
+        break;
+      case 'altarGlow':
+        this.fxNote('choir_aahs', 57, 0.22, 0, 0.9);
+        this.fxNote('choir_aahs', 64, 0.16, 0.25, 0.9);
+        this.fxNote('cello', 33, 0.4, 0, 0.9);
+        [69, 76, 81].forEach((m, i) => this.fxNote('tubular_bells', m, 0.26, 0.5 + i * 0.3, 0.9));
+        [84, 88, 91, 96].forEach((m, i) => this.fxNote('celesta', m, 0.18, 1.2 + i * 0.1, 0.8, 0.3));
+        break;
+      case 'altarOpen':
+        this.sample('door_open', 0.85, 1.15, 0, 0.35);
         break;
       // porta de pedra: a laje sobe arrastando e trava lá em cima (com pó caindo); a Casa aceita (violoncelo grave)
       case 'door':

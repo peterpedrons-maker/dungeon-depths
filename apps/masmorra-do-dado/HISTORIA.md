@@ -47,7 +47,8 @@ O jogador não precisa de tudo, só de poucas palavras logo de início. Elas vir
 - Pronto: ele sabe que está preso a uma sentença, que ler é o caminho, e que o Escrivão é um aliado estranho. **Sem explicação, só demonstração.**
 
 ## Começo, meio e fim
-**Começo (cap. 1, Fogo).** O poço, o Vestíbulo dos Números, o Escrivão. O jogador aprende a ler números e ACENDER, e a premissa.
+**Começo (cap. 1, Fogo).** O poço, o Vestíbulo dos Números, o Escrivão. O jogador aprende a ler números e ACENDER, e a premissa. O capítulo
+fecha no Tribunal: resolvido, o altar embaixo da lei do IGUAL se abre, o dado entra nele e volta com o **Peso**, o primeiro altar das faces.
 
 **Meio (cap. 2 a 6).** Cada face do dado é um capítulo e um altar (Peso, Eco, Troca, Deslizar, Atravessar). Os diários de "a que veio antes" mostram erros e destinos. Os ecos dos Contáveis ensinam a lei. O Boato mente e diz a verdade. A virada do meio: o jogador descobre que **a sentença dele não tem a marca de confirmação**. Ele está condenado por um boato.
 
@@ -109,8 +110,9 @@ Como nos Metroidvanias: dá para chegar ao fim sem ver quase nada. A profundidad
 5. ~~O que muda na volta do epílogo?~~ **A boca do poço vazia** (decidido). Para depois: o New Game Plus e a ordem com a queda do Repetir.
 
 ## Duração e ritmo
-O jogo deve durar **algumas horas** (meta 4 a 6 h), não 20 minutos. O dado começa com **só Fogo e Peso** e fica com eles por
-um bom tempo; novas faces chegam por capítulo e nunca todas de uma vez (ver `DESIGN.md` §13).
+O jogo deve durar **algumas horas** (meta 4 a 6 h), não 20 minutos. O capítulo 1 inteiro é **só o Fogo**; o **Peso** chega no fim dele, no
+altar do Tribunal (o dado entra na parede e volta com a face nova, `DESIGN.md` §77). Novas faces chegam por capítulo e nunca todas de uma
+vez (ver `DESIGN.md` §13).
 
 ## O tom da narração (decidido)
 **Ler sem entender.** O jogador lê e pensa como quem está diante de algo que não compreende: constata o que vê, quase sem explicar, e só de vez em quando faz uma pergunta a si mesmo (o Pedro pediu menos indagações).
