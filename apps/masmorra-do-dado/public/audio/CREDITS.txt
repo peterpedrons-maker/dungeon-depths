@@ -14,7 +14,7 @@ INSTRUMENTOS (música e sinos/notas dos efeitos)
   contrabaixo também dá o grave do "resolvido" dos puzzles.
 
 EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
-  - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro, facada, trinco.
+  - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro (abrir, fechar, virar a página), facada, trinco.
   - 100 CC0 SFX e 100 CC0 SFX #2 — rubberduck: gongo, sinos, vidro, pancadas,
     pedras, interruptores, ar, madeira; o baque da porta de pedra travando.
   - 75 CC0 breaking / falling / hit sfx — rubberduck: pedrinhas e pó caindo

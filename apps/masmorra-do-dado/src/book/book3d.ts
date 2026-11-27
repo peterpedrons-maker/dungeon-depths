@@ -21,7 +21,7 @@ export interface BookEnv {
   scene: THREE.Scene;
   cam: THREE.PerspectiveCamera;
   dom: HTMLElement;
-  sound(name: 'uiopen' | 'uiclose' | 'uiflip' | 'uiblip'): void;
+  sound(name: 'uiflip' | 'bookOpen' | 'bookClose' | 'bookTap' | 'bookLatch'): void; // (DESIGN.md §80: papel, couro e o fecho de metal)
   halfW(): number;
 }
 
@@ -588,7 +588,7 @@ export function createDiaryBook(env: BookEnv) {
       const want = tut.phase === 'pick' ? `goto:${ROW[TOUR[tut.i]](lay)}` : null;
       const ok = id === want || id === 'close' || (tut.phase === 'task' && (id === 'edit:note' || id.startsWith('pen:') || id.startsWith('floor:')));
       if (!ok) {
-        env.sound('uiblip');
+        env.sound('bookTap');
         return;
       }
       if (id === want) tut.phase = 'go';
@@ -627,7 +627,7 @@ export function createDiaryBook(env: BookEnv) {
     // modo guiado (1ª abertura do caderno): só fecha depois de o jogador escrever alguma coisa sobre BRASEIRO
     // modo guiado: só fecha depois de ler tudo e de escrever sobre BRASEIRO; senão o personagem diz o que falta (com as palavras dele)
     if (ui.guided() && !guidedOk()) {
-      env.sound('uiblip');
+      env.sound('bookTap');
       if (!thinking()) thinkInBook(['Ainda não. Falta ver o resto.']);
       return;
     }
@@ -676,7 +676,7 @@ export function createDiaryBook(env: BookEnv) {
       const i = stampChoice(view, d);
       if (i >= 0 && d.order[i]) {
         diary.addStamp({ f: currentFloor(view, d), id: d.order[i], x: Math.round(x), y: Math.round(y) });
-        env.sound('uiblip');
+        env.sound('bookTap');
       }
       return;
     }
@@ -814,7 +814,7 @@ export function createDiaryBook(env: BookEnv) {
       const want = ui.diaryOpen() || presenting ? 1 : 0;
       if (want !== lastWant) {
         lastWant = want;
-        env.sound(want ? 'uiopen' : 'uiclose');
+        env.sound(want ? 'bookOpen' : 'bookClose');
         // uma folha dela acabou de ser achada: o caderno abre direto nela (DESIGN.md §78)
         const np = dState().newPage;
         if (want && np && !ui.guided() && !presenting) {
@@ -964,8 +964,8 @@ export function createDiaryBook(env: BookEnv) {
       claspK = ease(clamp01((T - 0.42) / 0.16));
       flap.rotation.y = CLASP_OPEN * claspK;
       tongue.visible = claspK < 0.05; // presa: a lingueta passa pelo pino
-      if (claspPrev < 0.04 && claspK >= 0.04) env.sound('uiblip'); // soltou
-      if (claspPrev > 0.04 && claspK <= 0.04) env.sound('uiblip'); // prendeu
+      if (claspPrev < 0.04 && claspK >= 0.04) env.sound('bookLatch'); // soltou
+      if (claspPrev > 0.04 && claspK <= 0.04) env.sound('bookLatch'); // prendeu
       claspPrev = claspK;
 
       // o fundo do caderno: a placa de couro no lugar do papel e do bloco de folhas da direita (também durante a virada que chega nele)

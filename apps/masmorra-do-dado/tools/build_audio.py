@@ -85,6 +85,14 @@ SFX = {
     'swap1': (K + '/cloth1.ogg', {}),
     'swap2': (K + '/cloth3.ogg', {}),
     'sweep': (K + '/clothBelt.ogg', {}),
+    # interface com som de coisa (DESIGN.md §80, pedido do Pedro: nada de celesta nos cliques): o caderno de verdade (abrir, fechar, virar
+    # página) e o fecho de metal dele
+    'book_open': (K + '/bookOpen.ogg', {}),
+    'book_close': (K + '/bookClose.ogg', {}),
+    'book_flip1': (K + '/bookFlip1.ogg', {}),
+    'book_flip2': (K + '/bookFlip2.ogg', {}),
+    'book_flip3': (K + '/bookFlip3.ogg', {}),
+    'latch': (K + '/metalLatch.ogg', {}),
     'chalk1': (p('chalk_drawing_01.mp3'), {}),
     'chalk2': (p('chalk_drawing_02.mp3'), {}),
     'erase': (p('pencil_erase.ogg'), {}),

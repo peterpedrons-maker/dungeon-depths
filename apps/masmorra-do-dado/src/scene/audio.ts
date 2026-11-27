@@ -21,6 +21,10 @@ export type SfxName =
   | 'doorClose'
   | 'piece' // um passo certo do puzzle (não o fim)
   | 'solved' // o puzzle da sala RESOLVIDO (uma vez por sala; o motor decide quando, DESIGN.md §79)
+  | 'bookOpen' // o caderno sai da bolsa e abre (couro e o livro de verdade)
+  | 'bookClose' // o caderno fecha e volta para a bolsa
+  | 'bookTap' // um toque dentro do caderno (escolher uma linha do índice, uma caneta, um carimbo): o papel
+  | 'bookLatch' // o fecho de metal do caderno (soltar e prender)
   | 'secret' // um SEGREDO achado: o nicho escondido que se abre (com uma folha dela ou uma gema), menor e mais misterioso que o resolvido
   | 'error'
   | 'burnout'
@@ -76,7 +80,7 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 // Muda quando qualquer arquivo de áudio é trocado: força o navegador/PWA a baixar de novo
-const AUDIO_VERSION = 7;
+const AUDIO_VERSION = 8;
 
 const SFX_FILES = [
   'step_stone_l', 'step_stone_r', 'step_stair_l', 'step_stair_r', 'step_rubble_l', 'step_rubble_r', 'step_rug', 'step_plate', 'step_water',
@@ -84,14 +88,13 @@ const SFX_FILES = [
   'bounce1', 'bounce2', 'bounce3', 'bounce4', 'roll', 'locked', 'swap1', 'swap2', 'sweep', 'chalk1', 'chalk2',
   'erase', 'ignite', 'ignite_small', 'ignite_cloth', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door_open', 'door_shut', 'rise',
   'doorclose1', 'error', 'burnout', 'fire', 'crackle', 'wind', 'gust', 'drip', 'boom', 'creak', 'settle',
+  'book_open', 'book_close', 'book_flip1', 'book_flip2', 'book_flip3', 'latch',
 ];
 // as gotas do arquivo drip.mp3 (início em s; cada uma dura ~0,55 s)
 const DRIPS = [0, 0.6, 1.2, 1.8, 2.4, 3.0];
 // a ordem é a de carregar: primeiro o que a tela inicial usa (ela pode ser a 1ª coisa que se ouve), depois o resto do jogo
 const INSTRUMENTS = ['orchestral_harp', 'celesta', 'voice_oohs', 'contrabass', 'cello', 'string_ensemble_1', 'choir_aahs', 'tubular_bells', 'glockenspiel', 'flute', 'timpani', 'blown_bottle'];
 
-// notas (MIDI) das faces 1–6 no glockenspiel: pentatônica de lá menor
-const FACE_MIDI = [76, 79, 81, 84, 86, 88];
 
 // ── a música do JOGO: Lá menor → Fá → Ré menor → Mi; cada acorde dura 16 s ──
 interface Chord {
@@ -225,6 +228,7 @@ export class Sfx {
   private scratchNode: GainNode | null = null;
   private lastBounce = 0;
   // o resolvido e a porta (o violoncelo da porta dá lugar ao do resolvido)
+  private flipN = 0; // (a próxima tomada da virada de página)
   private solvedAt = -99;
   // música do jogo
   private musicScene: MusicScene = 'game';
@@ -772,32 +776,62 @@ export class Sfx {
       case 'rest':
         this.sample(pick(['bounce1', 'bounce2', 'bounce3']), 0.7 * Math.min(1, v), rand(0.75, 0.9));
         break;
+      // trocar a face: o próprio dado girando na mão e assentando (um toque um pouco mais agudo a cada face). Era o glockenspiel: o Pedro não
+      // quer som "mágico" no que é de clicar (DESIGN.md §80)
       case 'face':
         {
-          const m = FACE_MIDI[Math.max(0, Math.min(5, Math.round(v) - 1))];
-          this.fxNote('glockenspiel', m, 0.45, 0, 0.5, 0.15);
+          const k = Math.max(0, Math.min(5, Math.round(v) - 1));
+          this.sample('put2', 0.34, 0.9 + k * 0.05, 0, 0.12, 0, 3800);
+          this.sample('bounce1', 0.07, 1.3, 0.03, 0.1, 0, 3000);
         }
         break;
       case 'locked':
         this.sample('locked', 0.7, rand(0.75, 0.85));
         break;
-      // interface (conversa e diário): sons suaves, sempre com os instrumentos reais
+      // INTERFACE (DESIGN.md §80, pedido do Pedro): som de COISA, não de "mágica". Era uma nota de celesta em todo clique. Os menus são de pedra
+      // talhada: apertar é um toque curto de pedra (a pedrinha batendo e o corpo do toque); passar por uma opção, mexer num ajuste ou o dado
+      // falando é só o tique, bem baixo. `v` = força (1 = apertar; ~0,5 = passar por cima)
       case 'uiblip':
-        this.fxNote('celesta', 79 + (Math.round(v) % 5) * 2, 0.07, 0, 0.15, 0);
+        if (v >= 0.75) {
+          this.sample('bounce4', 0.2, 0.75, 0, 0.12, 0, 2800);
+          this.sample('put1', 0.2, 1.3, 0, 0.12, 0, 3200);
+        } else this.sample('bounce4', 0.16 * v, 0.95, 0, 0.08, 0, 3400);
         break;
+      // o menu de pausa (uma tábua de pedra) abre: um arrasto curto de pedra e o assentar
       case 'uiopen':
-        this.sample('swap1', 0.45, rand(0.85, 0.95));
-        this.fxNote('orchestral_harp', 67, 0.25, 0.05, 0.5, 0.2);
+        this.sample('rise', 0.22 * v, 1.55, 0, 0.15, 0, 2600, 0.45, 0.32);
+        this.sample('put2', 0.2 * v, 0.8, 0.12, 0.12, 0, 2400);
         break;
-      case 'uiflip':
-        this.sample('swap2', 0.32, rand(1.15, 1.35));
-        break;
+      // e fecha: a pedra assentando
       case 'uiclose':
-        this.sample('swap2', 0.4, rand(0.8, 0.9));
+        this.sample('put1', 0.24 * v, 0.72, 0, 0.12, 0, 2000);
         break;
+      // virar a página do caderno: papel de verdade (três tomadas, em rodízio)
+      case 'uiflip':
+        this.flipN = (this.flipN + 1) % 3;
+        this.sample(`book_flip${this.flipN + 1}`, 0.5, rand(0.96, 1.04), 0, 0.1);
+        break;
+      // o caderno sai da bolsa e abre; fecha e volta para a bolsa
+      case 'bookOpen':
+        this.sample('catch', 0.4, 1.05, 0, 0.08);
+        this.sample('book_open', 0.6, 1, 0.22, 0.1);
+        break;
+      case 'bookClose':
+        this.sample('book_close', 0.6, 1, 0, 0.1);
+        this.sample('catch', 0.32, 0.95, 0.2, 0.08);
+        break;
+      // um toque no papel do caderno (o começo de uma virada de página, curto e baixo)
+      case 'bookTap':
+        this.sample('book_flip2', 0.14, 1.2, 0, 0.08, 0, 6000, 0, 0.08);
+        break;
+      // o fecho de metal do caderno
+      case 'bookLatch':
+        this.sample('latch', 0.4, 1, 0, 0.1);
+        break;
+      // "anotado no caderno" (um símbolo novo): um risco de lápis no papel. Era o glockenspiel
       case 'uinew':
-        this.fxNote('glockenspiel', 88, 0.3, 0, 0.6, 0.25);
-        this.fxNote('glockenspiel', 95, 0.26, 0.11, 0.6, 0.25);
+        this.sample('erase', 0.3, 1.15, 0, 0.1, 0, 5000, 0.1, 0.35);
+        this.sample('book_flip3', 0.1, 1.3, 0.05, 0.08, 0, 5000, 0, 0.1);
         break;
       case 'swap':
         this.sample(pick(['swap1', 'swap2']), 0.7, rand(0.95, 1.05));

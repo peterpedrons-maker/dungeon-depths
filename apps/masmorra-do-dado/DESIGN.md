@@ -1728,8 +1728,8 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
   - Níveis medidos, cada um sozinho: resolvido −19,4 LUFS, fim do capítulo −18,2, passo certo −24,0, segredo −24,5. Para comparar: a porta
     está em −17,5 e o erro em −26,3.
   - A porta volta a tocar sempre o violoncelo grave dela, que o Pedro aprovou (antes, logo depois do resolvido, ela ficava só com a pedra).
-  - **Ainda com instrumento** (o Pedro não avaliou): a escrita que acende, a cena da gema, o altar do Peso, as notas das faces, o "Novo jogo"
-    da tela inicial e a música.
+  - **Ainda com instrumento** (o Pedro não avaliou): a escrita que acende, a cena da gema, o altar do Peso, o "Novo jogo" da tela inicial
+    e a música (as notas das faces saíram no §80).
 - **Um fio de "descoberta", bem baixo (pedido do Pedro: "ficou bom, só adicionar um pouco, mas bem pouco mesmo, de efeito de descoberta").**
   Por baixo da pedra, só instrumentos de som orgânico, nunca celesta, sino, gongo ou coro:
   - **passo certo:** uma nota de harpa grave (lá);
@@ -1739,3 +1739,32 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
   - Medido pela diferença entre a gravação com e sem a camada nova (a pedra é idêntica nas duas), a camada fica 15 a 17 dB abaixo da
     pedra no resolvido, no segredo e no passo certo. No fim do capítulo a medida dá −12,5 dB, inflada pelo compressor geral, que reage ao
     estrondo longo. O volume total quase não muda (menos de 0,4 dB).
+
+## 80. O som da interface: coisa de verdade, não mágica (pedido do Pedro)
+
+"Uma coisa que acho que podemos melhorar é o som de UI, de clicar nas coisas." Os sons de interface eram notas de instrumento: uma celesta
+em todo clique, harpa ao abrir a pausa, glockenspiel ao anotar e uma nota de glockenspiel diferente para cada face do dado. Pela mesma regra
+do §79 (efeito é coisa física; nada de celesta, sino ou glockenspiel), todos viraram gravações de **pedra, papel, couro e metal**, cada um
+ligado ao objeto que aparece na tela:
+
+- **Menus (pedra talhada, `src/ui/Menus.tsx`):**
+  - **apertar um botão** (`uiblip` com força 0,75 ou mais; também o E/AGIR e as opções da pergunta do dado): um toque curto de pedra, a
+    pedrinha batendo grave e o corpo do toque;
+  - **passar pelas opções, mudar de aba ou de ajuste, o dado falando** (força abaixo de 0,75): só o tique da pedrinha, bem baixo;
+  - **abrir a pausa** (`uiopen`): um arrasto curto de pedra e a tábua assentando; **fechar** (`uiclose`): a pedra assentando, grave.
+- **O caderno (`src/book/book3d.ts`), com as gravações de livro do RPG Sound Pack do Kenney (CC0):**
+  - **tirar da bolsa e abrir** (`bookOpen`): o couro da bolsa e o livro abrindo; **fechar e guardar** (`bookClose`): o livro fechando e o
+    couro;
+  - **virar a página** (`uiflip`): papel de verdade, três tomadas em rodízio (antes era o "swap" do dado);
+  - **tocar numa parte do papel** (`bookTap`: escolher uma linha do índice, um símbolo, uma ferramenta do mapa): o comecinho de uma virada de
+    página, curto e baixo;
+  - **o fecho de metal** (`bookLatch`): o trinco de metal.
+- **Anotado no caderno** (`uinew`, um símbolo novo avistado): um risco de lápis no papel.
+- **Trocar a face do dado** (`face`): o dado batendo de leve na mão, um pouco mais agudo a cada número (antes era uma escala de
+  glockenspiel).
+- Arquivos novos em `public/audio/sfx/`: `book_open`, `book_close`, `book_flip1` a `book_flip3` e `latch` (mapa em `tools/build_audio.py`;
+  `AUDIO_VERSION` 8). Os outros sons já estavam no jogo (`bounce4`, `put1`, `put2`, `rise`, `catch`, `erase`, `bounce1`).
+- **Níveis medidos**, cada um sozinho (pico): apertar −18 dB, passar por cima −29, mudar de aba −28, abrir a pausa −18, fechar −16, abrir o
+  caderno −9, virar a página −10, tocar no papel −21, o fecho −10, fechar o caderno −9, anotado −25, trocar a face −11. Os do caderno são
+  mais altos de propósito: é o objeto grande que o personagem tem na mão; os de passar por cima são os mais baixos porque tocam a toda hora.
+
