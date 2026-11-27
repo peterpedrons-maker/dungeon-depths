@@ -56,8 +56,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   caindo, celesta, sino e a garrafa soprada; também nos créditos e no fim do capítulo), que some com a transição de Novo jogo/Continuar; e a
   do **jogo**, a mesma em todas as salas (não muda por sala), que toca em **frases** de 1min20 a 2min30 e some numa coda, com **silêncios**
   de 45 s a 2 min em que o ambiente sobe ~2,5 dB (nos respiros e na Biblioteca, `Ambience.quiet`, menos música; no escuro ela recua). O
-  **resolvido** (`'solved'`, cadência Ré menor → Lá maior com coro, harpa, sino e o grave da Casa) toca uma vez por sala quando
-  `Room.isSolved()` vira verdadeiro, e a frase da música termina ali; o `'piece'` ficou só para os passos certos intermediários. Os arquivos são gerados
+  **resolvido** (`'solved'`, só pedra e mecanismo: linguetas caindo, o ferrolho, um baque pesado, a pedra arrastando e assentando; o Pedro não quer som "mágico" nos efeitos, `DESIGN.md` §79) toca uma vez por sala quando
+  `Room.isSolved()` vira verdadeiro, e a frase da música termina ali; o `'piece'` ficou só para os passos certos intermediários (uma lingueta de pedra), o `'secret'` para os nichos escondidos (uma laje pequena correndo) e o fim do capítulo é a Casa inteira se mexendo. Os arquivos são gerados
   por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Os passos têm UM som fixo por tipo
   de piso (pedra, entulho, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`; o degrau o motor percebe sozinho quando o passo sobe ou
   desce), pé esquerdo e direito alternando sempre na mesma ordem, sem variação aleatória. **Ambiente** (`Room.ambience`, `src/scene/ambience.ts`,

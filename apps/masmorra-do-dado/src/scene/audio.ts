@@ -226,8 +226,6 @@ export class Sfx {
   private lastBounce = 0;
   // o resolvido e a porta (o violoncelo da porta dá lugar ao do resolvido)
   private solvedAt = -99;
-  private doorAt = -99;
-  private doorCello: NoteHandle | null = null;
   // música do jogo
   private musicScene: MusicScene = 'game';
   private wantScene: { s: MusicScene; wait?: number } | null = null;
@@ -884,8 +882,7 @@ export class Sfx {
       case 'door':
         this.duckMusic(0.65, 1.2, 1.6);
         this.sample('door_open', 1, 0.95, 0, 0.35);
-        this.doorAt = now;
-        this.doorCello = now - this.solvedAt > 5 ? this.fxNote('cello', 36, 0.42, 0.1, 0.8) : null;
+        this.fxNote('cello', 36, 0.42, 0.1, 0.8); // (a porta, aprovada pelo Pedro: a pedra e o violoncelo grave, sempre)
         break;
       // a laje desce raspando e bate no chão
       case 'doorClose':
@@ -902,28 +899,26 @@ export class Sfx {
         this.sample('burnout', 0.75, 0.9, 0, 0.3);
         this.sample('boom', 0.55, 0.85, 0.05, 0.6, 0, 400, 0, 0, true);
         break;
-      // um passo CERTO, não o fim (DESIGN.md §79): pequeno e claro, para não se confundir com o resolvido. O clique de pedra de um mecanismo
-      // que encaixou e duas notas que sobem uma quarta (mi → lá), na harpa e, uma oitava e meia acima, na celesta
+      // um passo CERTO, não o fim (DESIGN.md §79). Só pedra e mecanismo (pedido do Pedro: nada de harpa, celesta ou sino, "nada de mágico"):
+      // uma lingueta de pedra caindo no lugar. O estalo da placa, o chocalho curto da trava e uma pedrinha que bate
       case 'piece':
         this.duckMusic(0.6, 0.5, 1.0);
-        this.sample('plate2', 0.26, 1.35, 0, 0.3, 0, 3500);
-        this.fxNote('orchestral_harp', 64, 0.38, 0, 0.5, 0.12);
-        this.fxNote('orchestral_harp', 69, 0.4, 0.1, 0.55, 0.15);
-        this.fxNote('celesta', 81, 0.3, 0.1, 0.6, 0.25);
-        this.fxNote('celesta', 88, 0.24, 0.21, 0.6, 0.25);
+        this.sample('plate2', 0.66, 0.9, 0, 0.3, 0, 3000);
+        this.sample('locked', 0.54, 1.0, 0.02, 0.3);
+        this.sample('bounce2', 0.25, 0.7, 0.08, 0.3, 0, 2000);
         break;
       case 'solved':
         this.solved();
         break;
-      // um SEGREDO achado (DESIGN.md §79): o nicho escondido se abre. Menor e mais misterioso que o resolvido, da mesma matéria: a laje
-      // pequena do nicho correndo (a pedra da porta, mais aguda e curta), um brilho de vidro, a harpa no lá e três notas de celesta subindo
-      // (mi, lá, dó sustenido) com eco: algo que estava escondido apareceu
+      // um SEGREDO achado (DESIGN.md §79): o nicho escondido se abre. Só pedra: uma laje pequena correndo de lado (o arrasto do pilar, mais
+      // agudo e curto), poeira e pedrisco escorrendo, a pedra assentando e um toque oco quando ela para. Mais baixo e mais perto que o resolvido
       case 'secret':
         this.duckMusic(0.5, 1.2, 1.4);
-        this.sample('door_open', 0.45, 1.35, 0, 0.4, 0, 0, 0, 1.1);
-        this.sample('gem1', 0.22, 0.9, 0.25, 0.7);
-        this.fxNote('orchestral_harp', 57, 0.28, 0.3, 0.6, 0.15);
-        [76, 81, 85].forEach((m, i) => this.fxNote('celesta', m, 0.22, 0.3 + i * 0.13, 0.75, 0.35));
+        this.sample('rise', 0.42, 1.3, 0, 0.35, 0, 2600, 0.2, 1.0);
+        this.sample('step_rubble_l', 0.13, 1.5, 0.3, 0.3, -0.2, 3500);
+        this.sample('step_rubble_r', 0.1, 1.7, 0.55, 0.3, 0.2, 3500);
+        this.sample('settle', 0.18, 1.2, 0.85, 0.35, 0, 3000);
+        this.sample('bounce4', 0.22, 0.55, 0.95, 0.35, 0, 900);
         break;
       // a Casa recusa: o "toc" seco de madeira e, por baixo, um baque de pedra abafado (curto: repete-se quando o braseiro está frio)
       case 'error':
@@ -958,20 +953,25 @@ export class Sfx {
         this.sample('gong', 0.6, 0.85, 0, 0.7);
         this.fxNote('cello', 45, 0.45, 0.15, 0.8);
         break;
+      // O FIM DO CAPÍTULO: a Casa inteira se mexe. Só pedra (pedido do Pedro): um estrondo grave e longo lá no fundo, um arrasto enorme e
+      // lento, uma laje correndo ao longe, a pedra assentando, pedrisco caindo e, por fim, uma laje que bate longe
       case 'fanfare':
-        this.duckMusic(0.3, 4, 3);
-        [60, 64, 67, 72, 76, 79].forEach((m, i) => this.fxNote('orchestral_harp', m, 0.5, i * 0.14, 0.6));
-        [72, 76, 79, 84].forEach((m, i) => this.fxNote('tubular_bells', m, 0.35, 0.3 + i * 0.3, 0.9));
+        this.duckMusic(0.25, 5, 3);
+        this.sample('boom', 0.88, 0.7, 0, 0.7, 0, 260, 0, 0, true);
+        this.sample('rise', 0.95, 0.75, 0.2, 0.6);
+        this.sample('door_open', 0.72, 0.7, 1.4, 0.7, 0, 1800, 0, 0, true);
+        this.sample('settle', 0.64, 0.7, 2.6, 0.6, 0, 2200);
+        this.sample('step_rubble_l', 0.26, 1.2, 2.8, 0.5, -0.3, 3500);
+        this.sample('step_rubble_r', 0.21, 1.4, 3.05, 0.5, 0.3, 3500);
+        this.sample('door_shut', 0.56, 0.6, 3.3, 0.8, 0, 1500, 0, 0, true);
         break;
     }
   }
 
-  // O RESOLVIDO (DESIGN.md §79): o momento de "consegui", ~2,5 s. Feito da MESMA matéria dos outros sons do jogo (pedido do Pedro: a versão
-  // com coro, tímpano, violoncelo e contrabaixo empilhados soava sintética, um jingle de MIDI destoando do resto): quase tudo gravação de
-  // verdade. A trava de pedra que solta (o estalo da placa, mais grave), a pedra assentando e um baque surdo lá no fundo; o GONGO gravado,
-  // tocado a 0,668 da velocidade, que vira um Lá maior (as parciais dele, medidas, são mi, sol sustenido e si: um Mi maior quase afinado,
-  // que nessa velocidade cai em lá, dó sustenido e mi); e por cima o mesmo par do passo certo, harpa e celesta, agora inteiro e resolvendo
-  // (lá, dó sustenido, mi, lá), e o sino gravado afinado no lá. A música abre espaço e depois sai: vem um silêncio para o resolvido respirar.
+  // O RESOLVIDO (DESIGN.md §79): o mecanismo da Casa destravando, ~2,2 s. Só pedra e peso (pedido do Pedro: as versões com coro, harpa,
+  // celesta, sino e gongo soavam sintéticas e "mágicas demais" para o jogo; o que ele aprovou foram a porta e o erro, de pedra e madeira).
+  // Três linguetas caindo uma depois da outra (o estalo da placa, cada vez mais grave), o ferrolho correndo (a trava), um baque pesado com o
+  // grave surdo lá no fundo, a pedra arrastando e assentando, e pedrisco caindo. A música abre espaço e depois sai, para ele respirar.
   private solved() {
     const ac = this.ac!;
     const now = ac.currentTime;
@@ -980,28 +980,17 @@ export class Sfx {
     this.duckUntil = Math.max(this.duckUntil, now + 3.2);
     this.duckMusic(0.18, 2.6, 2.4);
     this.musicBreak(now);
-    // a porta acabou de tocar o violoncelo dela: o resolvido assume o grave (o baque e o gongo)
-    const dc = this.doorCello;
-    if (dc && now - this.doorAt < 1.2) {
-      if (dc.t > now + 0.005) dc.s.stop();
-      else {
-        dc.g.gain.cancelScheduledValues(now);
-        dc.g.gain.setTargetAtTime(0.0001, now, 0.08);
-      }
-    }
-    this.doorCello = null;
-    // a pedra: a trava solta, a pedra assenta e, lá no fundo, o baque
-    this.sample('plate1', 0.5, 0.75, 0, 0.35, 0, 3000);
-    this.sample('settle', 0.4, 0.85, 0.03, 0.5, 0, 2600);
-    this.sample('boom', 0.32, 0.9, 0.05, 0.5, 0, 380);
-    // o gongo gravado, afinado em Lá maior: a Casa aceitando. (Medido: a 0,668 as parciais fortes caem em mi +40 cents, dó sustenido e lá; é a
-    // desafinação natural de um gongo, por isso ele fica por baixo, e quem diz o acorde é a harpa)
-    this.sample('gong', 0.42, 0.668, 0.12, 0.8);
-    // harpa (lá, dó sustenido, mi, lá) e, no alto, a celesta e o sino gravado (afinado no lá: a parcial forte dele está em 1827 Hz)
-    [57, 61, 64, 69].forEach((m, i) => this.fxNote('orchestral_harp', m, 0.32, 0.18 + i * 0.07, 0.55, 0.12));
-    this.fxNote('celesta', 81, 0.2, 0.5, 0.65, 0.3);
-    this.fxNote('celesta', 88, 0.16, 0.64, 0.65, 0.3);
-    this.sample('bell', 0.2, 0.963, 0.55, 0.85);
+    // as linguetas
+    [0, 0.16, 0.3].forEach((at, i) => this.sample('plate2', 0.52 + i * 0.06, 0.95 - i * 0.05, at, 0.3, (i - 1) * 0.15, 3200));
+    // o ferrolho e o baque
+    this.sample('locked', 0.6, 0.8, 0.42, 0.35);
+    this.sample('plate1', 0.9, 0.65, 0.5, 0.4, 0, 2200);
+    this.sample('boom', 0.6, 0.85, 0.5, 0.5, 0, 300);
+    // a pedra arrastando, assentando, e o pedrisco
+    this.sample('rise', 0.68, 1.1, 0.55, 0.4, 0, 0, 0.3, 1.0);
+    this.sample('settle', 0.52, 0.85, 1.2, 0.4, 0, 2400);
+    this.sample('step_rubble_l', 0.22, 1.2, 1.35, 0.35, -0.25, 4000);
+    this.sample('step_rubble_r', 0.18, 1.4, 1.55, 0.35, 0.25, 4000);
   }
 
   // passo: SEMPRE a mesma gravação para cada tipo de piso (decisão do Pedro: nada de sorteio). Pedra, degrau e entulho têm duas tomadas,

@@ -1715,3 +1715,18 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
   - a **porta** (`door`), o **erro** (`error`) e o **fim do capítulo** (`fanfare`).
   - Para o Pedro ouvir cada um **sozinho**, o gravador de demonstração (`audioRender.ts`, só em desenvolvimento) ganhou a opção `dry`:
     sem música, sem vento e sem o "ar" da sala; o silêncio entre os sons é absoluto.
+- **Só pedra, nada de mágico (pedido do Pedro).** Dos seis efeitos que ouviu sozinhos, só a **porta** e o **erro** ficaram bons: "todos os
+  demais parecem mágicos demais; o som sintético e mágico não encaixa no nosso jogo; sons que lembrem rochas". Então o **resolvido**, o
+  **passo certo**, o **segredo** e o **fim do capítulo** perderam todo instrumento (harpa, celesta, sino, gongo, coro) e viraram só gravações
+  de pedra, mecanismo e peso:
+  - **passo certo:** uma lingueta de pedra caindo no lugar (o estalo da placa, o chocalho da trava, uma pedrinha);
+  - **resolvido:** o mecanismo da Casa destravando (três linguetas em sequência, cada vez mais graves; o ferrolho; um baque pesado com o
+    grave surdo; a pedra arrastando e assentando; pedrisco caindo), ~2,2 s;
+  - **segredo:** uma laje pequena correndo de lado, poeira e pedrisco, a pedra assentando e um toque oco quando ela para;
+  - **fim do capítulo:** a Casa inteira se mexendo (estrondo grave e longo, arrasto enorme, uma laje correndo ao longe, a pedra assentando,
+    pedrisco e uma laje que bate longe), ~5 s.
+  - Níveis medidos, cada um sozinho: resolvido −19,4 LUFS, fim do capítulo −18,2, passo certo −24,0, segredo −24,5. Para comparar: a porta
+    está em −17,5 e o erro em −26,3.
+  - A porta volta a tocar sempre o violoncelo grave dela, que o Pedro aprovou (antes, logo depois do resolvido, ela ficava só com a pedra).
+  - **Ainda com instrumento** (o Pedro não avaliou): a escrita que acende, a cena da gema, o altar do Peso, as notas das faces, o "Novo jogo"
+    da tela inicial e a música.
