@@ -37,8 +37,9 @@ export interface LoadState {
 }
 export const loadStore = createStore<LoadState>({ p: 0, ready: false, live: false });
 
-// onde fica a barra da tela de carregamento (frações da janela): a cena usa para o dado olhar a ponta do fogo
-export const LOAD_BAR = { x0: 0.12, x1: 0.66, y: 0.88 };
+// onde fica a barra da tela de carregamento (frações da janela): a frase de glifos centrada entre x0 e x1, com o meio da linha em y; a bancada
+// começa em `ledge` e o aviso de começar fica em `prompt` (na frente da bancada). A cena usa para o dado olhar a ponta da luz
+export const LOAD_BAR = { x0: 0.06, x1: 0.72, y: 0.78, ledge: 0.88, prompt: 0.905 };
 
 export const loading = {
   models: () => (mTotal === 0 ? 1 : Math.min(1, mDone / mTotal)),

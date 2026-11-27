@@ -1,18 +1,24 @@
 import { LOAD_BAR } from '../story/loading';
+import { glyphsOf, type GlyphDef } from '../story/lexicon';
+import { drawGlyphPart, glyphSamples } from '../book/font';
+import { pulseK } from '../scene/firefx';
 import { drawChalk, type DrawKind } from '../scene/chalkdraw';
 import { dieFaceCanvas, dieRostoCanvas, type RostoLook } from '../scene/textures';
 import type { RostoMove } from '../scene/dielife';
 import { FACES } from '../faces';
 import { bayer, rnd, wallBase } from './chalkart';
 
-// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §79): uma parede das salas no escuro e uma bancada de pedra embaixo.
-// - Na bancada corre uma CANALETA por onde o fogo anda conforme carrega, e cinco BRASEIROS que se ACENDEM um a um quando o fogo chega
-//   (a mecânica do jogo: o fogo corre e acende); cada um ilumina a parede e solta faíscas.
-// - Na parede, OS DESENHOS A GIZ dos condenados (os mesmos das paredes do jogo, scene/chalkdraw.ts; nada de glifo): no escuro, eles só
-//   aparecem quando um braseiro acende perto (a porta, a contagem dos dias, o dado, a luz do poço); quem passa de capuz fica dentro da fresta
-//   de luz fria, que desce do alto à esquerda com poeira boiando, e se vê desde o começo.
-// - No canto, O DADO EM 2D, em pixel, com o rosto vivo (o mesmo de dielife.ts: olha a ponta do fogo e o desenho que acabou de aparecer, pisca,
-//   mexe as sobrancelhas, suspira), recuando a cada braseiro que acende, aquecido pela luz; no clique de começar, sai pulando pela direita.
+// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §79 e §81): uma parede das salas no escuro e uma bancada de pedra embaixo.
+// - A BARRA é uma FRASE TALHADA numa laje da parede, como as frases que o dado de Fogo acende nos puzzles (scene/burnline.ts): apagada, o sulco
+//   preenchido de marfim, fosco; conforme carrega, a LUZ DOURADA corre pelos sulcos traço a traço, na ordem da escrita, símbolo por símbolo, com o
+//   clarão que anda junto (o pulso de §59) e a nota de celesta e harpa de cada símbolo (a mesma do jogo). A frase é a do Escrivão na cena do poço,
+//   «EU DAR DADO · VOCÊ LER». A luz dos símbolos acesos clareia a parede em volta. (Antes era uma canaleta de fogo com cinco braseiros em cima;
+//   o Pedro achou os braseiros estranhos.)
+// - Na parede, OS DESENHOS A GIZ dos condenados (os mesmos das paredes do jogo, scene/chalkdraw.ts): no escuro quase somem; aparecem com a luz
+//   da frase (a porta, a contagem dos dias, o dado, a luz do poço); quem passa de capuz fica dentro da fresta de luz fria, que desce do alto à
+//   esquerda com poeira boiando, e se vê desde o começo.
+// - No canto, O DADO EM 2D, em pixel, com o rosto vivo (o mesmo de dielife.ts: olha a ponta da luz e o desenho que acabou de aparecer, pisca,
+//   mexe as sobrancelhas, suspira), na bancada, aquecido pela luz; no clique de começar, sai pulando pela direita.
 // Pintado num canvas no tamanho de pixel do jogo; a cena o usa no pós-processo (a paleta e o pontilhado do jogo).
 
 export interface DieLook {
@@ -20,7 +26,7 @@ export interface DieLook {
   dy: number;
   look: RostoMove;
 }
-interface Ember {
+interface Mote {
   x: number;
   y: number;
   vx: number;
@@ -29,14 +35,16 @@ interface Ember {
   max: number;
 }
 type RGB = [number, number, number];
-const N_BRAZ = 5;
+// a frase: as palavras (ids do léxico); a luz leva WORD_GAP "símbolos" para pular de uma palavra para a outra (como nas frases do jogo)
+const PHRASE = ['eu', 'dar', 'dado', 'voce', 'ler'];
+const WORD_GAP = 0.35;
 // os desenhos na parede: posição e altura em "alturas de tela" (pensado para 16:9; em telas mais estreitas, tudo encolhe junto)
 const WALL_ART: { kind: DrawKind; x: number; y: number; h: number; w?: number; seed: number; days?: number }[] = [
   { kind: 'figura', x: 0.4, y: 0.06, h: 0.34, seed: 3 },
-  { kind: 'poco', x: 1.0, y: 0.15, h: 0.34, seed: 4 },
-  { kind: 'porta', x: 0.03, y: 0.4, h: 0.32, seed: 5 },
-  { kind: 'contagem', x: 0.5, y: 0.575, h: 0.13, w: 0.32, seed: 6, days: 17 },
-  { kind: 'dado', x: 0.84, y: 0.41, h: 0.29, seed: 7 },
+  { kind: 'poco', x: 1.0, y: 0.13, h: 0.32, seed: 4 },
+  { kind: 'porta', x: 0.03, y: 0.33, h: 0.32, seed: 5 },
+  { kind: 'contagem', x: 0.5, y: 0.52, h: 0.13, w: 0.32, seed: 6, days: 17 },
+  { kind: 'dado', x: 0.86, y: 0.38, h: 0.27, seed: 7 },
 ];
 
 // o rosto da vida do dado → o desenho (igual a scene.ts/updateRostos)
@@ -64,24 +72,50 @@ export function makeLoadArt() {
   let H = 0;
   let wall = new Float32Array(0);
   let beam = new Float32Array(0); // a fresta fria (fixa)
-  let lmaps: Float32Array[] = []; // a luz de cada braseiro (fixa; o tremor é um número por quadro)
+  let lmaps: Float32Array[] = []; // a luz de cada símbolo da frase na parede (fixa; a força muda por quadro)
   let art = new Uint8ClampedArray(0); // os desenhos a giz na parede (RGBA)
   let artAt: { x: number; y: number }[] = []; // o centro de cada desenho (px)
   let img: ImageData | null = null;
   let t = 0;
   const r = rnd(5);
-  let bx0 = 0;
-  let bx1 = 0;
   let by = 0; // o alto da bancada
-  let head = 0;
-  let braz: { x: number; lit: number; seed: number }[] = []; // lit: segundos desde que acendeu (-1 = frio)
-  let doneT = -1; // os cinco acesos há quanto tempo (s); -1 = ainda não
-  let focus = -1; // o desenho que o último braseiro aceso iluminou
+  // ── a frase ──
+  const defs: { def: GlyphDef; t0: number }[] = []; // cada símbolo e quando a luz chega nele (em "símbolos" desde o começo)
+  {
+    let u = 0;
+    PHRASE.forEach((w, wi) => {
+      if (wi) u += WORD_GAP;
+      for (const def of glyphsOf(w)) {
+        defs.push({ def, t0: u });
+        u += 1;
+      }
+    });
+  }
+  const total = defs.length ? defs[defs.length - 1].t0 + 1 : 1;
+  let gs = 20; // o lado de um símbolo (px)
+  let gSize = 23; // o `size` de drawGlyphPart para esse lado
+  let gx: number[] = []; // o centro x de cada símbolo
+  let gy = 0;
+  let slab = { x0: 0, y0: 0, x1: 0, y1: 0 }; // a laje
+  let ink = new Uint8ClampedArray(0); // o sulco e o marfim (RGBA, a tela toda)
+  let gOf = new Int8Array(0); // de que símbolo é cada coluna da laje (-1 = nenhum)
+  let samples: { x: number; y: number; u: number }[][] = []; // pontos ao longo dos traços (a ponta da luz)
+  const litC = document.createElement('canvas');
+  const litG = litC.getContext('2d', { willReadFrequently: true })!;
+  let litPx = new Uint8ClampedArray(0);
+  let litKey = '';
+  let front = 0; // até onde a luz chegou (em símbolos)
+  let reached = -1; // o último símbolo em que a luz já chegou
+  const arrive: number[] = []; // quando (t) a luz chegou em cada símbolo
+  let doneT = -1; // a frase inteira acesa há quanto tempo (s); -1 = ainda não
+  let focus = -1; // o desenho que a luz do último símbolo iluminou
+  let headX = 0;
+  let headY = 0;
   let dieX = 0;
   let dieY = 0;
-  const embers: Ember[] = [];
-  const motes: { u: number; v: number; s: number; ph: number }[] = [];
-  for (let i = 0; i < 40; i++) motes.push({ u: Math.random(), v: Math.random(), s: 0.004 + Math.random() * 0.01, ph: Math.random() * 6.3 });
+  const motes: Mote[] = []; // o pó de luz que sobe da ponta
+  const dust: { u: number; v: number; s: number; ph: number }[] = [];
+  for (let i = 0; i < 40; i++) dust.push({ u: Math.random(), v: Math.random(), s: 0.004 + Math.random() * 0.01, ph: Math.random() * 6.3 });
   // as faces do dado 2D: a da frente é o rosto (refeito quando o olhar muda), a de cima e a da esquerda são fixas
   const accent = FACES[2].color;
   const topPx = pixels(dieFaceCanvas(1, FACES[0].color, false));
@@ -93,6 +127,7 @@ export function makeLoadArt() {
   const fx0 = () => W * 0.42;
   const fx1 = () => W * 0.16;
   const fw = () => W * 0.1;
+  const fOf = (i: number) => Math.max(0, Math.min(1, front - defs[i].t0));
 
   const resize = (w: number, h: number) => {
     if (w === W && h === H) return;
@@ -102,42 +137,73 @@ export function makeLoadArt() {
     canvas.height = H;
     wall = wallBase(W, H, H > 300 ? 2 : 1);
     img = g.createImageData(W, H);
-    bx0 = Math.round(LOAD_BAR.x0 * W);
-    bx1 = Math.round(LOAD_BAR.x1 * W);
-    by = Math.round(LOAD_BAR.y * H);
-    head = bx0;
-    // os braseiros: um a cada quinto da canaleta (o último na ponta)
-    braz = [];
-    for (let k = 0; k < N_BRAZ; k++) braz.push({ x: Math.round(bx0 + ((bx1 - bx0) * (k + 1)) / N_BRAZ) - 4, lit: -1, seed: k * 1.7 + 0.3 });
-    // as luzes fixas (falloff de cada braseiro e da frase) e a fresta
-    const R = H * 0.42;
-    lmaps = braz.map((b) => {
+    by = Math.round(LOAD_BAR.ledge * H);
+    // a frase: o maior símbolo que cabe na faixa (pela altura e pela largura)
+    const span = (LOAD_BAR.x1 - LOAD_BAR.x0) * W;
+    const units = defs.length + (defs.length - PHRASE.length) * 0.3 + (PHRASE.length - 1) * 0.9;
+    gs = Math.max(11, Math.min(Math.round(H * 0.088), Math.floor(span / units)));
+    gSize = gs / (112 / 130);
+    let x = 0;
+    gx = [];
+    PHRASE.forEach((wd, wi) => {
+      if (wi) x += gs * 0.9;
+      glyphsOf(wd).forEach((_, j) => {
+        if (j) x += gs * 0.3;
+        gx.push(x + gs / 2);
+        x += gs;
+      });
+    });
+    const off = Math.round(((LOAD_BAR.x0 + LOAD_BAR.x1) / 2) * W - x / 2);
+    gx = gx.map((v) => Math.round(v + off));
+    gy = Math.round(LOAD_BAR.y * H);
+    const pad = Math.max(4, Math.round(gs * 0.42));
+    slab = { x0: off - pad, y0: gy - Math.round(gs / 2) - pad, x1: off + Math.round(x) + pad, y1: gy + Math.round(gs / 2) + pad };
+    // o sulco (escuro, um pouco mais largo) e o marfim por cima, desenhados uma vez
+    const ic = document.createElement('canvas');
+    ic.width = W;
+    ic.height = H;
+    const icg = ic.getContext('2d')!;
+    defs.forEach((d, i) => drawGlyphPart(icg, d.def, gx[i], gy, gSize, '#15110f', 1, 2));
+    defs.forEach((d, i) => drawGlyphPart(icg, d.def, gx[i], gy, gSize, '#ddd3b8', 1, 1));
+    ink = new Uint8ClampedArray(icg.getImageData(0, 0, W, H).data);
+    // gasto: alguns pontinhos onde o marfim descascou
+    for (let i = 0; i < W * H; i++) if (ink[i * 4 + 3] && ink[i * 4] > 150 && r() < 0.07) (ink[i * 4] = 156), (ink[i * 4 + 1] = 138), (ink[i * 4 + 2] = 98);
+    gOf = new Int8Array(W).fill(-1);
+    gx.forEach((c, i) => {
+      for (let xx = Math.round(c - gs * 0.75); xx <= Math.round(c + gs * 0.75); xx++) if (xx >= 0 && xx < W) gOf[xx] = i;
+    });
+    samples = defs.map((d, i) => glyphSamples(d.def, gx[i], gy, gSize, 1.5));
+    litC.width = slab.x1 - slab.x0;
+    litC.height = slab.y1 - slab.y0;
+    litKey = '';
+    // a luz de cada símbolo na parede (um halo largo, mais alto que largo para cima)
+    const R = H * 0.4;
+    lmaps = gx.map((cx) => {
       const m = new Float32Array(W * H);
-      const cy = by - 20;
       for (let y = 0; y < H; y++)
-        for (let x = 0; x < W; x++) {
-          const dx = (x - b.x) / R;
-          const dy = (y - cy) / (R * 0.8);
+        for (let x2 = 0; x2 < W; x2++) {
+          const dx = (x2 - cx) / R;
+          const dy = (y - gy) / (R * (y < gy ? 0.85 : 0.6));
           const f = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy));
-          m[y * W + x] = f * f;
+          m[y * W + x2] = f * f;
         }
       return m;
     });
     beam = new Float32Array(W * H);
     for (let y = 0; y < H; y++) {
       const cx = fx0() + (fx1() - fx0()) * (y / H);
-      for (let x = 0; x < W; x++) {
-        const band = Math.max(0, 1 - Math.abs(x - cx) / fw()) * (1 - 0.55 * (y / H));
-        beam[y * W + x] = y < by ? band * band : 0;
+      for (let x2 = 0; x2 < W; x2++) {
+        const band = Math.max(0, 1 - Math.abs(x2 - cx) / fw()) * (1 - 0.55 * (y / H));
+        beam[y * W + x2] = y < by ? band * band : 0;
       }
     }
-    // os desenhos a giz
+    // os desenhos a giz (fora da laje)
     art = new Uint8ClampedArray(W * H * 4);
     artAt = [];
     const k = Math.min(1, W / H / 1.78);
     for (const a of WALL_ART) {
       const dh = Math.max(8, Math.round(a.h * H * k));
-      const dw = Math.round((a.w ? a.w * H * k : (dh * 4) / 3));
+      const dw = Math.round(a.w ? a.w * H * k : (dh * 4) / 3);
       const x0 = Math.round((a.x / 1.78) * W);
       const y0 = Math.round(a.y * H);
       const px = drawChalk(a.kind, dw, dh, a.seed, { days: a.days, step: 4 });
@@ -148,6 +214,7 @@ export function makeLoadArt() {
           const X = x0 + xx;
           const Y = y0 + yy;
           if (X < 0 || Y < 0 || X >= W || Y >= by - 2) continue;
+          if (X >= slab.x0 - 2 && X <= slab.x1 + 2 && Y >= slab.y0 - 2 && Y <= slab.y1 + 3) continue;
           const di = (Y * W + X) * 4;
           art[di] = px[si];
           art[di + 1] = px[si + 1];
@@ -158,62 +225,102 @@ export function makeLoadArt() {
     }
     doneT = -1;
     focus = -1;
+    headX = slab.x0 + 2;
+    headY = gy;
     // o dado: no canto de baixo à direita, apoiado na bancada
     dieX = Math.round(W * 0.84);
     dieY = by;
   };
 
-  // p: 0..1 (a barra como o jogador a vê); goK: 0..1 saindo para o jogo (escurece); devolve quantos braseiros acenderam neste quadro e se
-  // a frase começou a acender
+  // a luz acesa nos sulcos: redesenhada só quando a ponta anda (o brilho e o pulso entram depois, pixel a pixel)
+  const drawLit = () => {
+    const key = defs.map((_, i) => fOf(i).toFixed(3)).join(',');
+    if (key === litKey) return;
+    litKey = key;
+    litG.clearRect(0, 0, litC.width, litC.height);
+    defs.forEach((d, i) => {
+      const f = fOf(i);
+      if (f <= 0) return;
+      const cx = gx[i] - slab.x0;
+      const cy = gy - slab.y0;
+      // (o brilho fica no desenho: um halo estreito e fraco, o ouro do tamanho do sulco e o fio claro no meio)
+      drawGlyphPart(litG, d.def, cx, cy, gSize, 'rgba(255,206,120,0.22)', f, 3);
+      drawGlyphPart(litG, d.def, cx, cy, gSize, '#d9a640', f, 1);
+      drawGlyphPart(litG, d.def, cx, cy, gSize, '#ffe9a8', f, 0);
+    });
+    litPx = litG.getImageData(0, 0, litC.width, litC.height).data;
+  };
+
+  // p: 0..1 (a barra como o jogador a vê); goK: 0..1 saindo para o jogo (escurece). Devolve o símbolo em que a luz acabou de chegar (para a
+  // nota) e se a frase acabou de ficar inteira acesa
   const paint = (dt: number, p: number, goK: number, die: DieLook) => {
-    const ev = { ignited: 0, done: false };
+    const ev = { glyph: -1, n: defs.length, done: false };
     if (!img) return ev;
     t += dt;
-    const target = bx0 + (bx1 - bx0) * Math.min(1, p);
-    head += (target - head) * Math.min(1, dt * 8);
-    if (p >= 0.999) head = Math.max(head, bx1);
-    for (const b of braz) {
-      if (b.lit < 0 && head >= Math.min(b.x + 4, bx1 - 1)) {
-        b.lit = 0;
-        ev.ignited++;
-        // o desenho que este braseiro acabou de iluminar (o mais perto dele)
-        let best = -1;
-        let bd = Infinity;
-        artAt.forEach((q, i) => {
-          const dd = Math.hypot(q.x - (b.x + 4), (q.y - by) * 1.3);
-          if (dd < bd) {
-            bd = dd;
-            best = i;
-          }
-        });
-        focus = best;
-        for (let n = 0; n < 16; n++) embers.push({ x: b.x + 4 + (r() - 0.5) * 10, y: by - 18, vx: (r() - 0.5) * 40, vy: -(30 + r() * 50), life: 0, max: 0.4 + r() * 0.7 });
-      } else if (b.lit >= 0) b.lit += dt;
+    const target = total * Math.min(1, p);
+    front += (target - front) * Math.min(1, dt * 7);
+    if (p >= 0.999 && target - front < 0.02) front = total;
+    while (reached + 1 < defs.length && front > defs[reached + 1].t0 + 0.02) {
+      reached++;
+      arrive[reached] = t;
+      ev.glyph = reached;
+      // o desenho que este símbolo acabou de iluminar (o mais perto dele)
+      let best = -1;
+      let bd = Infinity;
+      artAt.forEach((q, i) => {
+        const dd = Math.hypot(q.x - gx[reached], (q.y - gy) * 1.2);
+        if (dd < bd) {
+          bd = dd;
+          best = i;
+        }
+      });
+      focus = best;
     }
-    const allLit = braz.every((b) => b.lit >= 0);
-    if (allLit && doneT < 0) {
+    if (front >= total - 1e-3 && doneT < 0) {
       doneT = 0;
       ev.done = true;
     } else if (doneT >= 0) doneT += dt;
-    // faíscas: da ponta do fogo e dos braseiros acesos
-    if (head < bx1 - 1 && r() < dt * 30) embers.push({ x: head, y: by + 2, vx: (r() - 0.5) * 12, vy: -(14 + r() * 26), life: 0, max: 0.4 + r() * 0.6 });
-    for (const b of braz) if (b.lit >= 0 && r() < dt * 3.5) embers.push({ x: b.x + 4 + (r() - 0.5) * 8, y: by - 24, vx: (r() - 0.5) * 10, vy: -(16 + r() * 26), life: 0, max: 0.6 + r() * 0.9 });
-    for (let i = embers.length - 1; i >= 0; i--) {
-      const e = embers[i];
+    drawLit();
+    // a ponta da luz: o ponto do traço em que ela está agora
+    const running = front < total - 1e-3;
+    {
+      const i = Math.max(0, Math.min(defs.length - 1, reached));
+      const f = fOf(i);
+      const sm = samples[i];
+      let q = sm[0];
+      for (const s2 of sm) if (s2.u <= f) q = s2;
+      if (q) {
+        headX = q.x;
+        headY = q.y;
+      }
+    }
+    // o pó de luz: da ponta, enquanto corre; depois, de vez em quando, de um símbolo aceso
+    if (running && front > 0.02 && r() < dt * 26) motes.push({ x: headX + (r() - 0.5) * 2, y: headY, vx: (r() - 0.5) * 8, vy: -(6 + r() * 12), life: 0, max: 0.6 + r() * 0.7 });
+    if (!running && r() < dt * 4) {
+      const i = Math.floor(r() * defs.length);
+      const s2 = samples[i][Math.floor(r() * samples[i].length)];
+      if (s2) motes.push({ x: s2.x, y: s2.y, vx: (r() - 0.5) * 5, vy: -(4 + r() * 8), life: 0, max: 0.8 + r() * 0.8 });
+    }
+    for (let i = motes.length - 1; i >= 0; i--) {
+      const e = motes[i];
       e.life += dt;
-      e.vy += 10 * dt;
-      e.vx += Math.sin(t * 5 + i) * 10 * dt;
+      e.vx += Math.sin(t * 3 + i) * 6 * dt;
       e.x += e.vx * dt;
       e.y += e.vy * dt;
-      if (e.life >= e.max) embers.splice(i, 1);
+      if (e.life >= e.max) motes.splice(i, 1);
     }
-    // a força de cada luz agora (acende com um clarão e tremula)
-    const ks = braz.map((b) => (b.lit < 0 ? 0 : (1 + Math.max(0, 0.9 - b.lit * 2.2)) * (1 + Math.sin(t * 10.3 + b.seed * 5) * 0.06 + Math.sin(t * 23.1 + b.seed) * 0.04)));
-    const headK = head < bx1 - 0.5 ? 0.55 : 0;
-    const RH = H * 0.22;
+    // a força da luz de cada símbolo agora: cresce com o quanto dele está aceso, clareia quando a luz chega (o pulso) e respira de leve
+    const pul = defs.map((_, i) => (i <= reached ? pulseK(t - arrive[i]) : 0));
+    const ks = defs.map((_, i) => {
+      const f = fOf(i);
+      return f <= 0 ? 0 : f * (0.42 + 0.6 * pul[i]) * (1 + Math.sin(t * 1.9 + i) * 0.04);
+    });
+    const RH = H * 0.12;
+    const headK = running && front > 0.02 ? 0.4 : 0;
     const fade = 1 - goK;
     const d = img.data;
     const amb = 0.055;
+    const sw = (x: number) => Math.pow(0.5 + 0.5 * Math.sin(x * 0.06 - t * 1.6), 8); // o reflexo que corre ao longo dos traços acesos
     for (let y = 0; y < H; y++) {
       const ledge = y >= by;
       for (let x = 0; x < W; x++) {
@@ -221,8 +328,8 @@ export function makeLoadArt() {
         let L = 0;
         for (let k = 0; k < ks.length; k++) if (ks[k]) L += ks[k] * lmaps[k][i];
         if (headK) {
-          const dx = (x - head) / RH;
-          const dy = (y - by) / (RH * 0.8);
+          const dx = (x - headX) / RH;
+          const dy = (y - headY) / RH;
           const f = 1 - Math.sqrt(dx * dx + dy * dy);
           if (f > 0) L += headK * f * f;
         }
@@ -231,19 +338,74 @@ export function makeLoadArt() {
         const o = i * 3;
         const o4 = i * 4;
         if (art[o4 + 3]) {
-          // o giz na parede: no escuro quase some; a chama e a fresta o acendem (o giz devolve bem a luz)
+          // o giz na parede: no escuro quase some; a luz da frase e a fresta o acendem (o giz devolve bem a luz)
           const l = Math.min(1.05, 0.1 + lv * 1.05 + cool * 1.1);
-          d[o4] = Math.min(255, art[o4] * l * (1 + lv * 0.12) * fade);
+          d[o4] = Math.min(255, art[o4] * l * (1 + lv * 0.1) * fade);
           d[o4 + 1] = Math.min(255, art[o4 + 1] * l * fade);
           d[o4 + 2] = Math.min(255, art[o4 + 2] * l * (1 - lv * 0.12 + cool * 0.1) * fade);
           d[o4 + 3] = 255;
           continue;
         }
-        // a bancada: a mesma pedra, mais escura, com a aresta de cima pegando a luz
-        const lk = ledge ? (y === by ? 1.5 : y === by + 1 ? 1.1 : 0.62) : 1;
-        const rr = wall[o] * (amb + lv * 1.3 + cool * 0.55) * lk;
-        const gg = wall[o + 1] * (amb + lv * 0.88 + cool * 0.62) * lk;
-        const bb = wall[o + 2] * (amb * 1.4 + lv * 0.5 + cool * 0.85) * lk;
+        let rr: number;
+        let gg: number;
+        let bb: number;
+        const inSlab = x >= slab.x0 && x < slab.x1 && y >= slab.y0 && y < slab.y1;
+        if (inSlab && ink[o4 + 3]) {
+          if (ink[o4] < 60) {
+            // o sulco
+            rr = 0.06 + lv * 0.05;
+            gg = 0.05 + lv * 0.04;
+            bb = 0.05 + lv * 0.02;
+          } else {
+            // o marfim, fosco: a luz o deixa claro, mas nunca dourado (não pode parecer aceso)
+            const l = Math.min(0.95, 0.22 + lv * 0.55 + cool * 0.5);
+            rr = (ink[o4] / 255) * l;
+            gg = (ink[o4 + 1] / 255) * l;
+            bb = (ink[o4 + 2] / 255) * l * 0.97;
+          }
+        } else {
+          // a laje: pedra lavrada (a textura da parede, mais lisa), afastada da parede: borda de cima clara, de baixo escura e uma sombra
+          let tone = 1;
+          let mixK = 0;
+          if (inSlab) {
+            mixK = 0.6;
+            tone = y === slab.y0 || x === slab.x0 ? 1.45 : y === slab.y1 - 1 || x === slab.x1 - 1 ? 0.5 : 1.05;
+          } else if ((y >= slab.y1 && y < slab.y1 + 2 && x > slab.x0 && x <= slab.x1) || (x >= slab.x1 && x < slab.x1 + 1 && y > slab.y0 && y < slab.y1 + 2)) tone = (x + y) % 2 ? 0.35 : 0.55;
+          const wr = wall[o] * (1 - mixK) + 0.4 * mixK;
+          const wg = wall[o + 1] * (1 - mixK) + 0.37 * mixK;
+          const wb = wall[o + 2] * (1 - mixK) + 0.35 * mixK;
+          // a bancada: a mesma pedra, mais escura, com a aresta de cima pegando a luz
+          const lk = (ledge ? (y === by ? 1.5 : y === by + 1 ? 1.1 : 0.62) : 1) * tone;
+          rr = wr * (amb + lv * 1.25 + cool * 0.55) * lk;
+          gg = wg * (amb + lv * 0.98 + cool * 0.62) * lk;
+          bb = wb * (amb * 1.4 + lv * 0.52 + cool * 0.85) * lk;
+        }
+        // a luz nos sulcos (por cima do marfim): o ouro nítido, o halo macio somado, o clarão quando a luz chega
+        if (inSlab) {
+          const li = ((y - slab.y0) * litC.width + (x - slab.x0)) * 4;
+          const a = litPx[li + 3] / 255;
+          if (a > 0) {
+            const gi = gOf[x];
+            const pk = gi >= 0 ? pul[gi] : 0;
+            const glow = (0.95 + 0.05 * Math.sin(t * 1.9 + gi)) * (1 + 0.55 * pk) + (a > 0.9 ? 0.18 * sw(x) : 0);
+            const cr = (litPx[li] / 255) * glow;
+            const cg = (litPx[li + 1] / 255) * glow;
+            const cb = (litPx[li + 2] / 255) * glow;
+            if (a > 0.9) {
+              rr = cr;
+              gg = cg;
+              bb = cb;
+            } else {
+              // o halo: somado e pontilhado (a luz que vaza do sulco)
+              const h = a * (0.9 + 1.6 * pk);
+              if (h * 2 + bayer(x, y) * 0.5 > 0.5) {
+                rr += cr * h;
+                gg += cg * h;
+                bb += cb * h;
+              }
+            }
+          }
+        }
         d[o4] = Math.min(255, rr * 255 * fade);
         d[o4 + 1] = Math.min(255, gg * 255 * fade);
         d[o4 + 2] = Math.min(255, bb * 255 * fade);
@@ -265,7 +427,7 @@ export function makeLoadArt() {
       return Math.min(1.3, L);
     };
     // a fresta: a poeira boiando
-    for (const m of motes) {
+    for (const m of dust) {
       m.v += m.s * dt * 2.2;
       m.u += Math.sin(t * 0.7 + m.ph) * dt * 0.01;
       if (m.v > 1) {
@@ -278,80 +440,19 @@ export function makeLoadArt() {
       const tw = 0.5 + 0.5 * Math.sin(t * 2.3 + m.ph * 3);
       if (Math.max(0, 1 - Math.abs(x - cx) / fw()) * tw > 0.25) put(x, y, [0.62 + 0.3 * tw, 0.66 + 0.28 * tw, 0.74 + 0.2 * tw]);
     }
-    // a canaleta: o sulco na frente da bancada; apagado = marfim, aceso = ouro, a linguinha de fogo na ponta
-    const hx = Math.round(head);
-    const running = head < bx1 - 0.5;
-    for (let x = bx0 - 1; x <= bx1 + 1; x++) {
-      const lt = lightAt(x, by + 3);
-      put(x, by + 2, [0.05, 0.04, 0.05]);
-      put(x, by + 6, [0.2 + lt * 0.3, 0.16 + lt * 0.2, 0.14 + lt * 0.08]);
-      for (let yy = 3; yy <= 5; yy++) {
-        if (x < bx0 || x > bx1) {
-          put(x, by + yy, [0.05, 0.04, 0.05]);
-          continue;
-        }
-        if (x > hx) {
-          const k2 = 0.35 + lt * 0.5;
-          put(x, by + yy, yy === 3 ? [0.42 * k2, 0.39 * k2, 0.33 * k2] : [0.82 * k2, 0.78 * k2, 0.66 * k2]);
-          continue;
-        }
-        const dist = hx - x;
-        const pulse = 0.5 + 0.5 * Math.sin(x * 0.35 - t * 6);
-        const c: RGB = dist < 2 && running ? [1, 0.97, 0.82] : dist < 6 && running ? [1, 0.86, 0.45] : pulse > 0.8 ? [1, 0.82, 0.36] : [0.92, 0.66, 0.24];
-        put(x, by + yy, c);
-      }
+    // a ponta da luz: um ponto branco-dourado que tremula
+    if (running && front > 0.02) {
+      const hx = Math.round(headX);
+      const hy = Math.round(headY);
+      const fl = 0.85 + 0.15 * Math.sin(t * 31);
+      put(hx, hy, [1, 1, 0.92]);
+      for (const [ddx, ddy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) put(hx + ddx, hy + ddy, [1 * fl, 0.9 * fl, 0.62 * fl]);
     }
-    if (running) {
-      const hgt = 3 + Math.round(1.5 + Math.sin(t * 17) * 1.2 + Math.sin(t * 29) * 0.8);
-      for (let yy = 0; yy < hgt; yy++) put(hx + (yy > 1 ? Math.round(Math.sin(t * 13 + yy) * 0.6) : 0), by + 2 - yy, yy < 2 ? [1, 0.98, 0.85] : yy < hgt - 1 ? [1, 0.8, 0.35] : [0.95, 0.45, 0.15]);
-    }
-    // os braseiros: pé, haste e bacia de ferro na bancada; frios, brasas cinzentas; acesos, brasas e a chama
-    for (const b of braz) {
-      const bxx = b.x;
-      const lt = Math.max(lightAt(bxx + 4, by - 10), 0.15);
-      const iron = (k: number): RGB => [0.16 * k + 0.32 * lt * k, 0.13 * k + 0.2 * lt * k, 0.14 * k + 0.1 * lt * k];
-      const cx = bxx + 4;
-      for (let xx = -5; xx <= 5; xx++) {
-        put(cx + xx, by - 1, iron(Math.abs(xx) === 5 ? 0.8 : 1.15)); // o pé
-        if (Math.abs(xx) < 4) put(cx + xx, by - 2, iron(xx === -3 ? 1.4 : 0.9));
-      }
-      for (let yy = 3; yy <= 7; yy++) {
-        put(cx - 1, by - yy, iron(1.35));
-        put(cx, by - yy, iron(1));
-        put(cx + 1, by - yy, iron(0.75));
-      }
-      // a bacia: de 8 px embaixo a 16 em cima, a borda de cima mais clara
-      for (let row = 0; row < 7; row++) {
-        const w = 4 + Math.round(row * 0.67);
-        const yb = by - 8 - row;
-        for (let xx = -w; xx <= w; xx++) put(cx + xx, yb, iron(xx === -w ? 1.6 : xx === w ? 0.7 : row === 6 ? 1.9 : row === 5 ? 0.8 : 1));
-      }
-      // a boca (brasas)
-      const hot = b.lit >= 0;
-      for (let xx = -7; xx <= 7; xx++) {
-        const h = (((xx * 7 + Math.floor(t * (hot ? 6 : 0))) % 5) + 5) % 5;
-        put(cx + xx, by - 15, hot ? (h === 0 ? [1, 0.88, 0.5] : h < 3 ? [1, 0.55, 0.18] : [0.75, 0.25, 0.08]) : h < 2 ? [0.26, 0.24, 0.24] : [0.16, 0.15, 0.16]);
-      }
-      if (!hot) continue;
-      // a chama: colunas que tremulam, maior no clarão de quando acende
-      const boost = 1 + Math.max(0, 0.8 - b.lit * 2.5);
-      for (let xx = -6; xx <= 6; xx++) {
-        const base = (12 - Math.abs(xx) * 1.45) * boost;
-        const n = 0.72 + 0.28 * Math.sin(t * 9 + xx * 1.7 + b.seed * 3) * Math.sin(t * 5.3 + xx * 0.9 + b.seed);
-        const hgt = Math.max(1, Math.round(base * n));
-        for (let yy = 0; yy < hgt; yy++) {
-          const u = yy / hgt;
-          if (u > 0.85 && (xx + yy + Math.floor(t * 12)) % 2) continue;
-          put(cx + xx + (u > 0.5 ? Math.round(Math.sin(t * 11 + yy * 0.7 + b.seed) * 0.9) : 0), by - 16 - yy, u < 0.3 ? [1, 0.96, 0.78] : u < 0.62 ? [1, 0.74, 0.3] : u < 0.85 ? [0.98, 0.45, 0.14] : [0.72, 0.2, 0.07]);
-        }
-      }
-    }
-    // as faíscas
-    for (const e of embers) {
+    // o pó de luz
+    for (const e of motes) {
       const u = e.life / e.max;
-      const c: RGB = u < 0.3 ? [1, 0.93, 0.6] : u < 0.65 ? [1, 0.62, 0.22] : [0.7, 0.22, 0.08];
-      if (u > 0.85 && (Math.round(e.x) + Math.round(e.y)) % 2) continue;
-      put(Math.round(e.x), Math.round(e.y), c);
+      if (u > 0.6 && (Math.round(e.x) + Math.round(e.y)) % 2) continue;
+      put(Math.round(e.x), Math.round(e.y), u < 0.35 ? [1, 0.95, 0.75] : [0.95, 0.75, 0.38]);
     }
     // O DADO 2D: a face da frente é o rosto vivo; em cima e à esquerda, as faces que se veem de quem está à esquerda; sombra no chão
     drawDie(put, lightAt, die, goK);
@@ -411,17 +512,12 @@ export function makeLoadArt() {
     canvas,
     resize,
     paint,
-    // a ponta do fogo e o dado, em frações da tela (o dado olha para lá)
-    headAt: () => ({ x: W ? head / W : LOAD_BAR.x0, y: LOAD_BAR.y }),
+    // a ponta da luz e o dado, em frações da tela (o dado olha para lá)
+    headAt: () => ({ x: W ? headX / W : LOAD_BAR.x0, y: H ? headY / H : LOAD_BAR.y }),
     dieAt: () => ({ x: W ? dieX / W : 0.84, y: H ? (dieY - 32) / H : 0.75 }),
-    // o último braseiro aceso (para onde o dado olha quando o fogo já passou)
-    litAt: () => {
-      const b = [...braz].reverse().find((q) => q.lit >= 0);
-      return b ? { x: (b.x + 4) / W, y: (by - 18) / H } : null;
-    },
-    // os cinco acesos há um instante: pronto
+    // a frase inteira acesa há um instante: pronto
     allDone: () => doneT >= 0.8,
-    // o desenho que o último braseiro iluminou (para onde o dado olha); depois de tudo aceso, um desenho qualquer, trocando de vez em quando
+    // o desenho que a luz do último símbolo iluminou (para onde o dado olha); depois de tudo aceso, um desenho qualquer, trocando de vez em quando
     focusAt: () => {
       let i = focus;
       if (doneT >= 0.8 && artAt.length) i = Math.floor(t / 2.6) % artAt.length;

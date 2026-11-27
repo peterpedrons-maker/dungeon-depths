@@ -1685,3 +1685,23 @@ emenda), e sim o **pano**:
 - O recorte do ciclo ficou o de §78 (1,067 s + 1,484 s, emenda de 0,35 s); os números estão em `WALK_CUT`, num objeto, para os testes compararem
   recortes. Nada mudou no debruçar, no erguer do dado nem nos tempos das cenas (o poço e a janela dos Nichos). `?escrivao=antigo` continua
   mostrando o Escrivão de código, se o Pedro quiser comparar.
+
+## 81. A barra de carregamento vira uma frase que a luz enche (cenógrafo, pedido do Pedro)
+
+O Pedro achou estranhos os cinco braseiros em cima da barra e pediu que a barra tivesse o efeito dos puzzles de glifos, "aonde a luz vai enchendo".
+Saíram a canaleta de fogo e os braseiros (`ui/loadart.ts`). No lugar:
+
+- **A frase talhada.** Uma laje de pedra lavrada presa à parede (borda de cima clara, de baixo escura, uma sombra embaixo, como as lousas das
+  salas) com a frase do Escrivão na cena do poço, «EU DAR DADO · VOCÊ LER» (6 símbolos), no desenho exato dos glifos do jogo (`drawGlyphPart`).
+  Apagada, ela é como as frases acendíveis (§53): o sulco escuro preenchido de marfim fosco, com uns pontinhos onde o marfim descascou.
+- **A luz que enche.** Conforme carrega, a luz dourada corre pelos sulcos **traço a traço, na ordem da escrita**, símbolo por símbolo, e pula de
+  uma palavra para a outra como nas frases do jogo (0,35 de símbolo). Cada símbolo clareia quando a luz chega nele e assenta (o pulso de §59),
+  toca a nota dele (celesta e harpa, `sfx.glyph`, a mesma das frases acendíveis) e depois respira de leve, com o reflexo correndo pelos traços.
+  O brilho fica no desenho: o ouro do tamanho do sulco, um fio claro no meio e um halo estreito pontilhado. Na ponta da luz, um ponto
+  branco-dourado tremula e solta um pó de luz que sobe; com tudo aceso, o pó sai de vez em quando de um símbolo.
+- **A luz na parede.** Cada símbolo aceso clareia a parede em volta (mais para cima que para baixo), e os desenhos a giz aparecem com essa luz,
+  como antes apareciam com os braseiros (subiram um pouco para dar lugar à laje). O dado olha a ponta da luz e o desenho que acabou de aparecer;
+  com a frase inteira acesa, ele se anima. A tela só sai quando a frase está toda acesa (o mesmo "pronto" de antes).
+- O aviso «Clique/Toque para começar» fica na frente da bancada, embaixo da laje (`LOAD_BAR.prompt`).
+- A frase é só uma escolha de cenário (uma fala que já existe no jogo); se o narrador quiser outra, é trocar `PHRASE` em `loadart.ts` (a laje e
+  o tamanho dos símbolos se ajustam sozinhos à largura).

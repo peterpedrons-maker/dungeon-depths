@@ -3936,11 +3936,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const a = sfx.progress;
       const p = 0.2 * Math.min(1, drawn / 6) + 0.3 * models + 0.5 * a;
       barShown = Math.min(p, barShown + dt / 1.4); // (no mínimo ~1,4 s de barra: dá tempo de ver o fogo correr)
-      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone()) || loadT > 15; // (pronto: os cinco braseiros acesos)
+      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone()) || loadT > 15; // (pronto: a frase inteira acesa)
       loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
     }
   };
-  // o fundo da tela de carregamento (ui/loadart.ts): a parede, o sulco com o fogo, as faíscas, os riscos de giz
+  // o fundo da tela de carregamento (ui/loadart.ts): a parede, os desenhos a giz, a frase talhada que a luz enche (a barra)
   const loadArt = makeLoadArt();
   const backTex = new THREE.CanvasTexture(loadArt.canvas);
   backTex.magFilter = THREE.NearestFilter;
@@ -3954,30 +3954,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const ev = loadArt.paint(dt, barShown, goK, life.out);
     backTex.needsUpdate = true;
     postMat.uniforms.uBack.value = 1;
-    // a cada braseiro que acende, o dado recua (como no jogo) e depois espia o desenho que apareceu; com os cinco acesos, ele se anima
-    if (ev.ignited) {
-      life.react('flinch');
-      if (sfx.unlocked) sfx.play('ignite', 0.4);
+    // a cada símbolo em que a luz chega, a nota dele (celesta e harpa, a mesma das frases do jogo) e o dado espia o desenho que apareceu; com a
+    // frase inteira acesa, ele se anima
+    if (ev.glyph >= 0) {
+      if (sfx.unlocked) sfx.glyph(ev.glyph, ev.n, -0.3 + (0.6 * ev.glyph) / Math.max(1, ev.n - 1));
       loadAtBar = true;
-      loadLookT = 1.4;
+      loadLookT = 1.1;
     }
     if (ev.done) life.react('perk');
   };
-  // para onde o dado do canto olha: quase sempre para o jogador; de vez em quando, para a ponta do fogo que corre na barra
+  // para onde o dado do canto olha: quase sempre para o jogador; de vez em quando, para a ponta da luz que corre na frase (a barra)
   let loadLookT = 1.5;
   let loadAtBar = false;
   const loadTarget = (): LifeTarget | null => {
     loadLookT -= 1 / 60;
     const ready = loadStoreReady();
     if (loadLookT <= 0) {
-      // carregando: quase sempre de olho no fogo, de vez em quando no jogador; pronto: no jogador, espiando o fogo às vezes
+      // carregando: quase sempre de olho na luz, de vez em quando no jogador; pronto: no jogador, espiando a frase às vezes
       loadAtBar = ready ? !loadAtBar && Math.random() < 0.3 : !loadAtBar || Math.random() < 0.5;
       loadLookT = loadAtBar ? (ready ? 0.8 : 1.6 + Math.random() * 1.6) : 1.2 + Math.random() * 1.8;
     }
     if (!loadAtBar) return { dx: 0, dy: 0, player: true };
     const dd = loadArt.dieAt();
-    // o fogo correndo; depois, a frase acendendo; depois, o braseiro mais perto
-    // logo depois de um braseiro acender, o desenho que ele iluminou; senão, a ponta do fogo (ou, tudo aceso, um desenho qualquer)
+    // logo depois de a luz chegar num símbolo, o desenho que ele iluminou; senão, a ponta da luz (ou, tudo aceso, um desenho qualquer)
     const tg = (loadLookT > 0.4 || barShown >= 0.999 ? loadArt.focusAt() : null) ?? loadArt.headAt();
     return { dx: (tg.x - dd.x) * 2, dy: -(tg.y - dd.y) * 2 };
   };
