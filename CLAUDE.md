@@ -71,7 +71,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   e **diário** (tecla J ou botão do canto): um **livro 3D** que o personagem tira da bolsa, abre e fecha; as folhas **viram de verdade**
   (`src/book/book3d.ts`; desenhado num canvas PRÓPRIO em resolução cheia por cima do jogo, para as letras ficarem nítidas, e ocupa quase a tela toda; `DESIGN.md` §34) e todo o conteúdo é desenhado em pixels **no próprio papel amarelado** (`src/book/pages.ts` + fonte
   bitmap com acentos em `src/book/font.ts`), nada de interface por cima. Na contracapa há o **índice** (Dela, Símbolos, Faces, Textos,
-  Mapa, Notas, Gemas): escolher vira até lá NUM MAÇO de folhas de uma vez, em leque (as setas e a roda viram uma página; `DESIGN.md` §70). **As 21 gemas** (`DESIGN.md` §69, `src/story/gems.ts`): uma por ponto do dado, 3, 3, 3, 4,
+  Mapa, Notas, Gemas): escolher vira até lá NUM MAÇO de folhas de uma vez, em leque (as setas e a roda viram uma página; `DESIGN.md` §74). **As 21 gemas** (`DESIGN.md` §69, `src/story/gems.ts`): uma por ponto do dado, 3, 3, 3, 4,
   4, 4 por capítulo (no 1: Cisterna, Ala do Papel e C6; os outros 11 segredos guardam folhas dela, p8 a p18); vão para o **fundo do caderno** (a parte
   dura da capa de trás, com o dado aberto em cruz e 21 furos, enchidos em ordem) com a **cena da gema** (`src/scene/gemscene.ts`: ela vem, brilha,
   vira pó de luz e o pó corre até o furo; 1ª vez inteira, depois curta, toque pula); com as 21, um epílogo depois de qualquer final (`HISTORIA.md`);
@@ -104,7 +104,9 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).
   **Cenas** travam o olhar e escondem a mira (`lookLocked`/`onCine`); o dado caído da abertura chega de rosto para o jogador, de olhos fechados, e
-  acorda antes de falar; o **tutorial do caderno** obriga a passar por todas as partes, com pensamentos do personagem (`DESIGN.md` §47). Lousas de
+  acorda antes de falar; o **tutorial do caderno** começa no índice e leva parte por parte: a linha da vez pisca em ouro, o personagem diz o que é aquilo e o que dá para
+  fazer (anotar o que acha que é BRASEIRO, riscar o mapa), a tarefa pisca até ser feita e o caderno volta sozinho ao índice; um toque passa o
+  pensamento; no fim, "Guardar" pisca (`DESIGN.md` §75). Lousas de
   parede são lajes afastadas 2,5 cm da parede; decalques com offset -1 e plano acima do chão.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em

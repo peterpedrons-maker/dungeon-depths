@@ -68,6 +68,25 @@ export interface View {
   hover: string | null;
   caret: boolean;
   pulse?: boolean; // modo guiado: o campo de anotação pisca, pedindo uma palavra
+  guide?: string | null; // o tutorial do caderno: a região (id) que pisca em ouro, mostrando onde tocar (DESIGN.md §75)
+  blink?: boolean;
+}
+// a moldura dourada que pisca em volta de onde o tutorial pede para tocar
+function guideFrame(ctx: CanvasRenderingContext2D, regs: Region[], view: View) {
+  if (!view.guide || !view.blink) return;
+  const r = regs.find((g) => g.id === view.guide);
+  if (!r) return;
+  const x = Math.round(r.x) - 2;
+  const y = Math.round(r.y) - 2;
+  const w = Math.round(r.w) + 4;
+  const h = Math.round(r.h) + 4;
+  ctx.fillStyle = '#c8962e';
+  for (const k of [0, 1]) {
+    ctx.fillRect(x + k, y + k, w - 2 * k, 1);
+    ctx.fillRect(x + k, y + h - 1 - k, w - 2 * k, 1);
+    ctx.fillRect(x + k, y + k, 1, h - 2 * k);
+    ctx.fillRect(x + w - 1 - k, y + k, 1, h - 2 * k);
+  }
 }
 
 export interface Layout {
@@ -803,6 +822,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     }
   }
 
+  guideFrame(ctx, regions, view);
   // realce da região sob o dedo/mouse
   const hv = regions.find((r) => r.id === view.hover);
   if (hv && !hv.id.startsWith('edit:')) {
@@ -1123,5 +1143,6 @@ function renderMapHalf(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: Vie
     const x1 = Math.min(r.x + r.w, off + PW);
     if (x1 > x0) out.push({ ...r, x: x0 - off, w: x1 - x0 });
   }
+  guideFrame(ctx, out, view);
   return out;
 }

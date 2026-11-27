@@ -4377,6 +4377,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       seen: (id: string) => diary.markSeen(id, rooms[curRoom]?.name),
       visit: (name: string) => diary.visitRoom(name),
       bookClick: (id: string) => book.click(id),
+      // (testes) o tutorial do caderno: abre como na 1ª vez; o estado dele; um risco no mapa
+      bookTutorial: () => {
+        progress.set('caderno');
+        ui.setBookCall(false);
+        ui.setGuided(true);
+        ui.setDiary(true);
+      },
+      bookTut: () => book.tut(),
+      bookStroke: () => diary.addStroke({ f: 0, c: 0, p: [80, 120, 110, 140, 140, 120] }),
       bookLayout: () => bookLayout(diaryStore.get()),
       strokes: () => diaryStore.get().strokes.length,
       stamps: () => diaryStore.get().stamps.length,
