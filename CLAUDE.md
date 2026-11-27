@@ -98,7 +98,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   canto; chaves `mdd-slotN-*`, `src/story/save.ts`; retoma na sala e na posição salvas, as salas anteriores ficam resolvidas com `Room.skip()`),
   **pausa** (Esc, mouse solto ou o botão do celular: o mundo pára; Continuar, Diário, Configurações, Reiniciar a sala, Voltar à tela inicial) e
   **configurações** em abas (Áudio, Imagem, Controles com remapear teclas, Acessibilidade, Idioma; valem para o aparelho, `src/story/config.ts`).
-  Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada; nas tábuas grandes só o meio rola, o título, as abas e o Voltar ficam sempre à vista, com três pontinhos de ouro quando há mais embaixo, `DESIGN.md` §87). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
+  Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada; as tábuas usam a moldura de 9 pedaços das caixas de fala; nas configurações as abas se emendam numa laje e as escolhas ficam num sulco talhado, `DESIGN.md` §88; nas tábuas grandes só o meio rola, o título, as abas e o Voltar ficam sempre à vista, com três pontinhos de ouro quando há mais embaixo, `DESIGN.md` §87). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
   no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
   **Abertura da editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`, `DESIGN.md` §80): ao abrir o jogo, uma luz quente acende numa parede das
   salas e o giz do jogo risca o símbolo e o nome: a editora é **«Cinco Riscos»** (escolha do Pedro; o símbolo é a contagem de cinco dos

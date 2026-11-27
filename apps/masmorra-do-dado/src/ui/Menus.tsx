@@ -58,7 +58,7 @@ function useMenuKeys(active: boolean, root: React.RefObject<HTMLElement | null>,
 // isso nada dizia que Brilho, Campo de visão etc. estavam lá embaixo ──
 function useScrollCue(board: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
-    const el = board.current?.querySelector<HTMLElement>(':scope > .opts, :scope > .slots, :scope > .credits-t');
+    const el = board.current?.querySelector<HTMLElement>(':scope > .opts-wrap > .opts, :scope > .slots, :scope > .credits-t');
     if (!el) return;
     const upd = () => {
       const below = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
@@ -438,145 +438,147 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
             </button>
           ))}
         </div>
-        <div className="opts">
-          {tab === 'audio' && (
-            <>
-              <Adjust label="Volume geral" value={c.volMaster} min={0} max={10} onChange={set('volMaster')} snd={snd} />
-              <Adjust label="Música" value={c.volMusic} min={0} max={10} onChange={set('volMusic')} snd={snd} />
-              <Adjust label="Efeitos" value={c.volSfx} min={0} max={10} onChange={set('volSfx')} snd={snd} />
-            </>
-          )}
-          {tab === 'imagem' && (
-            <>
-              {document.fullscreenEnabled && (
+        <div className="opts-wrap">
+          <div className="opts">
+            {tab === 'audio' && (
+              <>
+                <Adjust label="Volume geral" value={c.volMaster} min={0} max={10} onChange={set('volMaster')} snd={snd} />
+                <Adjust label="Música" value={c.volMusic} min={0} max={10} onChange={set('volMusic')} snd={snd} />
+                <Adjust label="Efeitos" value={c.volSfx} min={0} max={10} onChange={set('volSfx')} snd={snd} />
+              </>
+            )}
+            {tab === 'imagem' && (
+              <>
+                {document.fullscreenEnabled && (
+                  <Choice
+                    label="Modo de tela"
+                    value={full}
+                    options={[
+                      { v: false, label: 'Janela' },
+                      { v: true, label: 'Tela cheia' },
+                    ]}
+                    onChange={screenMode}
+                    snd={snd}
+                  />
+                )}
                 <Choice
-                  label="Modo de tela"
-                  value={full}
+                  label="Qualidade"
+                  value={c.quality}
                   options={[
-                    { v: false, label: 'Janela' },
-                    { v: true, label: 'Tela cheia' },
+                    { v: 'baixa', label: 'Baixa' },
+                    { v: 'media', label: 'Média' },
+                    { v: 'alta', label: 'Alta' },
                   ]}
-                  onChange={screenMode}
+                  onChange={set('quality')}
                   snd={snd}
                 />
-              )}
-              <Choice
-                label="Qualidade"
-                value={c.quality}
-                options={[
-                  { v: 'baixa', label: 'Baixa' },
-                  { v: 'media', label: 'Média' },
-                  { v: 'alta', label: 'Alta' },
-                ]}
-                onChange={set('quality')}
-                snd={snd}
-              />
-              <Choice
-                label="Sombras"
-                value={c.shadows}
-                options={[
-                  { v: 'desligadas', label: 'Desligadas' },
-                  { v: 'baixas', label: 'Baixas' },
-                  { v: 'medias', label: 'Médias' },
-                  { v: 'altas', label: 'Altas' },
-                ]}
-                onChange={set('shadows')}
-                snd={snd}
-              />
-              <Choice
-                label="Tamanho do pixel"
-                value={c.pixel}
-                options={[
-                  { v: 'fino', label: 'Fino' },
-                  { v: 'medio', label: 'Médio' },
-                  { v: 'grosso', label: 'Grosso' },
-                ]}
-                onChange={set('pixel')}
-                snd={snd}
-              />
-              <Adjust label="Brilho" value={c.brightness} min={-5} max={5} fmt={(v) => (v > 0 ? `+${v}` : String(v))} onChange={set('brightness')} snd={snd} />
-              <Adjust label="Campo de visão" value={c.fov} min={75} max={115} step={5} fmt={(v) => `${v} graus`} onChange={set('fov')} snd={snd} />
-              <Choice
-                label="Limitar quadros"
-                value={c.fpsCap}
-                options={[
-                  { v: 0, label: 'Sem limite' },
-                  { v: 60, label: '60 por s' },
-                  { v: 30, label: '30 por s' },
-                ]}
-                onChange={set('fpsCap')}
-                snd={snd}
-              />
-            </>
-          )}
-          {tab === 'controles' && (
-            <>
-              {!coarse && <Adjust label="Sensibilidade do mouse" value={c.mouseSens} min={1} max={10} onChange={set('mouseSens')} snd={snd} />}
-              <Adjust label="Sensibilidade do toque" value={c.touchSens} min={1} max={10} onChange={set('touchSens')} snd={snd} />
-              <Choice label="Inverter o eixo Y" value={c.invertY} options={yesNo} onChange={set('invertY')} snd={snd} />
-              {coarse && <Choice label="Vibração" value={c.vibration} options={yesNo} onChange={set('vibration')} snd={snd} />}
-              {!coarse && (
-                <>
-                  <p className="opt-h">Teclas</p>
-                  {(Object.keys(DEFAULT_KEYS) as Action[]).map((a) => (
-                    <div key={a} className="opt">
-                      <span className="opt-l">{ACTION_LABEL[a]}</span>
-                      <button
-                        data-nav
-                        className={`keycap${wait === a ? ' wait' : ''}`}
-                        onClick={() => {
-                          snd('uiblip', 0.6);
-                          setWait(a);
-                        }}
-                      >
-                        {wait === a ? 'Aperte uma tecla' : keyName(c.keys[a])}
-                      </button>
+                <Choice
+                  label="Sombras"
+                  value={c.shadows}
+                  options={[
+                    { v: 'desligadas', label: 'Desligadas' },
+                    { v: 'baixas', label: 'Baixas' },
+                    { v: 'medias', label: 'Médias' },
+                    { v: 'altas', label: 'Altas' },
+                  ]}
+                  onChange={set('shadows')}
+                  snd={snd}
+                />
+                <Choice
+                  label="Tamanho do pixel"
+                  value={c.pixel}
+                  options={[
+                    { v: 'fino', label: 'Fino' },
+                    { v: 'medio', label: 'Médio' },
+                    { v: 'grosso', label: 'Grosso' },
+                  ]}
+                  onChange={set('pixel')}
+                  snd={snd}
+                />
+                <Adjust label="Brilho" value={c.brightness} min={-5} max={5} fmt={(v) => (v > 0 ? `+${v}` : String(v))} onChange={set('brightness')} snd={snd} />
+                <Adjust label="Campo de visão" value={c.fov} min={75} max={115} step={5} fmt={(v) => `${v} graus`} onChange={set('fov')} snd={snd} />
+                <Choice
+                  label="Limitar quadros"
+                  value={c.fpsCap}
+                  options={[
+                    { v: 0, label: 'Sem limite' },
+                    { v: 60, label: '60 por s' },
+                    { v: 30, label: '30 por s' },
+                  ]}
+                  onChange={set('fpsCap')}
+                  snd={snd}
+                />
+              </>
+            )}
+            {tab === 'controles' && (
+              <>
+                {!coarse && <Adjust label="Sensibilidade do mouse" value={c.mouseSens} min={1} max={10} onChange={set('mouseSens')} snd={snd} />}
+                <Adjust label="Sensibilidade do toque" value={c.touchSens} min={1} max={10} onChange={set('touchSens')} snd={snd} />
+                <Choice label="Inverter o eixo Y" value={c.invertY} options={yesNo} onChange={set('invertY')} snd={snd} />
+                {coarse && <Choice label="Vibração" value={c.vibration} options={yesNo} onChange={set('vibration')} snd={snd} />}
+                {!coarse && (
+                  <>
+                    <p className="opt-h">Teclas</p>
+                    {(Object.keys(DEFAULT_KEYS) as Action[]).map((a) => (
+                      <div key={a} className="opt">
+                        <span className="opt-l">{ACTION_LABEL[a]}</span>
+                        <button
+                          data-nav
+                          className={`keycap${wait === a ? ' wait' : ''}`}
+                          onClick={() => {
+                            snd('uiblip', 0.6);
+                            setWait(a);
+                          }}
+                        >
+                          {wait === a ? 'Aperte uma tecla' : keyName(c.keys[a])}
+                        </button>
+                      </div>
+                    ))}
+                    <div className="row-btns left">
+                      <Plaque small onClick={() => config.resetKeys()} snd={snd}>
+                        Voltar às teclas padrão
+                      </Plaque>
                     </div>
-                  ))}
-                  <div className="row-btns left">
-                    <Plaque small onClick={() => config.resetKeys()} snd={snd}>
-                      Voltar às teclas padrão
-                    </Plaque>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-          {tab === 'acess' && (
-            <>
-              <Adjust label="Tamanho da interface" value={c.uiSize} min={80} max={160} step={10} fmt={(v) => `${v}%`} onChange={set('uiSize')} snd={snd} />
-              <Choice
-                label="Velocidade do texto"
-                value={c.textSpeed}
-                options={[
-                  { v: 'lenta', label: 'Lenta' },
-                  { v: 'normal', label: 'Normal' },
-                  { v: 'rapida', label: 'Rápida' },
-                ]}
-                onChange={set('textSpeed')}
-                snd={snd}
-              />
-              <Choice label="Reduzir tremores e clarões" value={c.reduceFlash} options={yesNo} onChange={set('reduceFlash')} snd={snd} />
-              <Choice label="Reduzir o movimento da câmera" value={c.reduceMotion} options={yesNo} onChange={set('reduceMotion')} snd={snd} />
-              <Choice label="Alto contraste nos glifos" value={c.highContrast} options={yesNo} onChange={set('highContrast')} snd={snd} />
-              <Choice label="Mira sempre visível" value={c.crosshair} options={yesNo} onChange={set('crosshair')} snd={snd} />
-            </>
-          )}
-          {tab === 'idioma' && (
-            <>
-              <Choice
-                label="Idioma"
-                value={c.lang}
-                options={[
-                  { v: 'pt', label: 'Português' },
-                  { v: 'en' as 'pt', label: 'English (em breve)', off: true },
-                ]}
-                onChange={set('lang')}
-                snd={snd}
-              />
-              <p className="opt-note">O idioma muda o caderno, os pensamentos e a interface. Os glifos não mudam.</p>
-            </>
-          )}
+                  </>
+                )}
+              </>
+            )}
+            {tab === 'acess' && (
+              <>
+                <Adjust label="Tamanho da interface" value={c.uiSize} min={80} max={160} step={10} fmt={(v) => `${v}%`} onChange={set('uiSize')} snd={snd} />
+                <Choice
+                  label="Velocidade do texto"
+                  value={c.textSpeed}
+                  options={[
+                    { v: 'lenta', label: 'Lenta' },
+                    { v: 'normal', label: 'Normal' },
+                    { v: 'rapida', label: 'Rápida' },
+                  ]}
+                  onChange={set('textSpeed')}
+                  snd={snd}
+                />
+                <Choice label="Reduzir tremores e clarões" value={c.reduceFlash} options={yesNo} onChange={set('reduceFlash')} snd={snd} />
+                <Choice label="Reduzir o movimento da câmera" value={c.reduceMotion} options={yesNo} onChange={set('reduceMotion')} snd={snd} />
+                <Choice label="Alto contraste nos glifos" value={c.highContrast} options={yesNo} onChange={set('highContrast')} snd={snd} />
+                <Choice label="Mira sempre visível" value={c.crosshair} options={yesNo} onChange={set('crosshair')} snd={snd} />
+              </>
+            )}
+            {tab === 'idioma' && (
+              <>
+                <Choice
+                  label="Idioma"
+                  value={c.lang}
+                  options={[
+                    { v: 'pt', label: 'Português' },
+                    { v: 'en' as 'pt', label: 'English (em breve)', off: true },
+                  ]}
+                  onChange={set('lang')}
+                  snd={snd}
+                />
+                <p className="opt-note">O idioma muda o caderno, os pensamentos e a interface. Os glifos não mudam.</p>
+              </>
+            )}
+          </div>
         </div>
         <div className="row-btns">
           <Plaque onClick={onBack} snd={snd}>

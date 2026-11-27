@@ -1952,3 +1952,23 @@ ligado ao objeto que aparece na tela:
 - Testado em 6 tamanhos (celular 915 × 412 e 740 × 360; PC 1280 × 720, 1400 × 560, 1920 × 1080 e 820 × 620): o Voltar fica inteiro dentro da
   tábua e da tela em todos, a tábua não rola mais (só a lista), e o Voltar funciona.
 
+## 88. O visual das configurações (pedido do Pedro: "quero que melhore o visual desse menu")
+
+A tela parecia um formulário: abas soltas, cada escolha numa caixinha separada, tudo na mesma pedra lisa. Agora ela segue a mesma regra do
+resto da interface (pedra é o mundo, ouro só no que está escolhido; `src/ui/menus.css`):
+
+- **A tábua** ganhou a moldura de 9 pedaços das caixas de fala e dos avisos (`--frame-stone`, `frames.css`): quina de cima clara, sulco e
+  cantos lascados pixel a pixel. Vale para todas as tábuas de menu (pausa, espaços, confirmação, créditos), que antes usavam uma borda de
+  CSS com os cantos cortados.
+- **As abas** são entalhes no alto de uma **laje** (o painel das opções): a aba escolhida é da mesma pedra da laje e se emenda nela, com
+  a quina clara em cima e o texto em ouro; as outras ficam atrás, mais escuras, com o ícone apagado.
+- **Cada opção é uma linha da laje**: o nome à esquerda e as escolhas num **sulco talhado** à direita, onde a escolhida é a pedrinha que sobe,
+  em ouro, com o ponto dos glifos. Os ajustes (volume, brilho, campo de visão) têm a fileira de entalhes no mesmo sulco, entre as duas
+  pontas de pedra, e o número colado.
+- **A linha em que se está** ganha um ponto de ouro antes do nome e um fundo um pouco mais claro: pelo teclado (`:focus-visible`) ou com o
+  mouse por cima. No toque nada fica marcado (o toque não é "estar" numa linha).
+- **Tudo cresce junto na tela grande**: bordas, pontos, setas, entalhes e os ícones das abas crescem em pixels inteiros com a escala da
+  tela (`--px`), no mesmo passo das letras. Antes, em 1920 × 1080, as letras eram de 30 px e as barrinhas continuavam de 8 px.
+- Testado no celular (915 × 412) e no PC (1280 × 720 e 1920 × 1080), nas abas Áudio, Imagem, Controles e Acessibilidade, e a moldura nova na
+  pausa, na confirmação e nos espaços de jogo.
+

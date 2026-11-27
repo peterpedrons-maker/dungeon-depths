@@ -20,17 +20,14 @@
 .mnu-veil.top { z-index: 45; background: rgba(5, 4, 10, 0.55); }
 .mnu-veil.pause { background: rgba(5, 4, 10, 0.7); }
 
-/* a TÁBUA de pedra (cantos lascados: clip-path em degraus de 4px) */
-.board { position: relative; box-sizing: border-box; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: auto; padding: calc(14px * var(--ui)) calc(20px * var(--ui));
-  color: var(--chalk); text-align: center; background: var(--st-face);
+/* a TÁBUA de pedra: a mesma moldura de 9 pedaços das caixas de fala e dos avisos (frames.css; quina de cima clara, sulco e cantos
+   lascados pixel a pixel), na escala de pixel da tela (--px) */
+.board { position: relative; box-sizing: border-box; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: auto;
+  padding: calc(10px * var(--ui)) calc(14px * var(--ui)); color: var(--chalk); text-align: center; background: var(--st-face);
   background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), radial-gradient(rgba(0, 0, 0, 0.18) 1px, transparent 1px);
-  background-size: 7px 7px, 5px 5px; background-position: 0 0, 3px 2px;
-  border: 4px solid; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid);
-  box-shadow: inset 0 0 0 3px var(--st-deep), inset 0 0 0 5px rgba(138, 130, 120, 0.18);
-  clip-path: polygon(0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
-    100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%,
-    8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px));
-  animation: board-in 0.22s steps(4); }
+  background-size: 7px 7px, 5px 5px; background-position: 0 0, 3px 2px; background-clip: padding-box;
+  border: calc(var(--px, 1px) * 8) solid transparent; border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch;
+  box-shadow: 6px 6px 0 rgba(5, 4, 10, 0.8); animation: board-in 0.22s steps(4); }
 /* a tela inicial aparece DEPOIS do cenário (DESIGN.md §80): o preto se abre, o logo surge no lugar e o menu em seguida, sem subir de baixo */
 @keyframes title-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes board-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -40,13 +37,14 @@
    pedra fina (antes a tábua inteira rolava junto com a lista: duas barras e o Voltar sumindo embaixo em janela baixa ou estreita) */
 .board-w { display: flex; flex-direction: column; overflow: hidden; }
 .board-w > h2, .board-w > .tabs, .board-w > .row-btns { flex: none; }
-.board-w > .opts, .board-w > .slots, .board-w > .credits-t { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #5a534e transparent; }
-.board-w > .more.above {
+.board-w > .opts-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.opts-wrap > .opts, .board-w > .slots, .board-w > .credits-t { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #5a534e transparent; }
+.board-w .more.above {
   -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%);
   mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%); }
-.board-w > .more:not(.above) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%);
+.board-w .more:not(.above) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%);
   mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%); }
-.board-w > .above:not(.more) { -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px);
+.board-w .above:not(.more) { -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px);
   mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px); }
 .board-w > .row-btns { position: relative; }
 .board-w.more-below > .row-btns::before { content: ''; position: absolute; left: 50%; top: calc(-9px * var(--ui)); width: 4px; height: 4px; margin-left: -2px;
@@ -55,9 +53,9 @@
 .board-w ::-webkit-scrollbar { width: 6px; }
 .board-w ::-webkit-scrollbar-track { background: transparent; }
 .board-w ::-webkit-scrollbar-thumb { background: #5a534e; }
-@media (max-height: 520px) { .board h2 svg { width: 24px; height: 24px; } .board h2 { margin-bottom: 6px; } }
 .board h2 { margin: 0 0 calc(10px * var(--ui)); font-size: var(--fl); font-weight: normal; color: var(--gold); text-shadow: 2px 2px 0 #05040a;
   display: flex; align-items: center; justify-content: center; gap: 10px; }
+@media (max-height: 520px) { .board h2 svg { width: 24px; height: 24px; } .board h2 { margin-bottom: 6px; } }
 .board-q { margin: 4px 0 6px; font-size: var(--fl); text-shadow: 2px 2px 0 #05040a; }
 .board-sub { margin: 0 0 12px; font-size: var(--fm); opacity: 0.75; }
 
@@ -117,41 +115,70 @@
   .slot-thumb { aspect-ratio: 16 / 7; }
 }
 
-/* ── CONFIGURAÇÕES ── */
-.settings { text-align: left; }
-.tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: calc(10px * var(--ui)); }
-.tab { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--fm); color: var(--chalk); cursor: pointer; padding: 4px 12px; outline: none; text-shadow: 2px 2px 0 #05040a;
-  background: #17141b; border: 3px solid; border-color: var(--st-lo) var(--st-dark) #1a1718 #34302e; }
-.tab.on { color: var(--gold); background: #2a2430; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); }
-.tab:focus, .tab:hover { border-color: var(--gold) var(--gold-old) #6a5024 #c9a35a; }
-.opts { display: flex; flex-direction: column; gap: calc(6px * var(--ui)); min-height: 120px; padding: 4px 10px 4px 6px; }
-.opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 2px solid rgba(5, 4, 10, 0.5); }
-.opt-l { font-size: var(--fm); }
-.opt-h { margin: 8px 0 0; font-size: var(--fm); color: var(--gold); }
-.opt-note { margin: 6px 0 0; font-size: var(--fs); opacity: 0.7; }
-.choice { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.chip { font: inherit; font-size: var(--fs); color: var(--chalk); cursor: pointer; padding: 4px 10px; outline: none;
-  background: #17141b; border: 3px solid; border-color: var(--st-lo) var(--st-dark) #1a1718 #34302e; }
-.chip.on { color: var(--gold); background: #2e2733; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); }
-.chip.on::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; vertical-align: middle; background: var(--gold); }
-.chip:focus, .chip:hover { border-color: var(--gold) var(--gold-old) #6a5024 #c9a35a; }
+/* ── CONFIGURAÇÕES (DESIGN.md §88) ──
+   As abas são entalhes no alto de uma LAJE (o painel das opções): a escolhida é da mesma pedra da laje e se emenda nela, com a quina clara
+   em cima; as outras ficam atrás, mais escuras. Cada opção é uma linha da laje: o nome à esquerda, as escolhas num SULCO talhado à direita
+   (a escolhida é a pedrinha que sobe, em ouro); a linha em que se está ganha um ponto de ouro antes do nome. Ouro só no que está escolhido. */
+.settings { text-align: left; --slab: #25202b; --b: calc(3 * var(--px, 1px)); --b2: calc(2 * var(--px, 1px)); --dot: calc(6 * var(--px, 1px)); }
+/* (as peças de pixel, bordas, pontos, setas, entalhes e ícones, crescem em pixels inteiros com a tela, --px, junto com as letras) */
+.tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: calc(4 * var(--px, 1px)); justify-content: center; padding: 0 8px; position: relative; z-index: 1; }
+.tab { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: var(--fm); color: #a89f8f; cursor: pointer; padding: 4px 12px; outline: none;
+  text-shadow: 2px 2px 0 #05040a; background: #17141b; border: var(--b) solid; border-bottom: 0; border-color: #3e3a38 #221e22 transparent #34302e; }
+.tab svg { opacity: 0.7; width: calc(24 * var(--px, 1px)); height: calc(24 * var(--px, 1px)); }
+.tab:hover, .tab:focus-visible { color: var(--chalk); border-top-color: var(--gold-old); }
+.tab:hover svg, .tab:focus-visible svg, .tab.on svg { opacity: 1; }
+.tab.on { position: relative; color: var(--gold); background: var(--slab); border-color: var(--st-hi) var(--st-lo) transparent var(--st-mid);
+  padding-bottom: calc(4px + var(--b)); margin-bottom: calc(-1 * var(--b)); }
+.tab.on:focus-visible { border-top-color: var(--gold); }
+/* a laje: um pouco mais clara que a tábua, quina de cima clara e a de baixo escura */
+.opts-wrap { background: var(--slab); background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 6px 6px;
+  border: var(--b) solid; border-color: var(--st-mid) var(--st-dark) #141118 #4c4752; box-shadow: var(--b) var(--b) 0 rgba(5, 4, 10, 0.55); }
+.opts { display: flex; flex-direction: column; min-height: 120px; padding: 4px 6px; }
+.opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(5px * var(--ui)) 8px calc(5px * var(--ui)) 4px;
+  border-bottom: var(--b2) solid #19151d; box-shadow: 0 1px 0 rgba(138, 130, 120, 0.08); }
+.opt:last-child { border-bottom: 0; box-shadow: none; }
+.opt-l { font-size: var(--fm); color: #d9cfbb; text-shadow: 2px 2px 0 #05040a; }
+.opt-l::before { content: ''; display: inline-block; width: var(--dot); height: var(--dot); margin-right: calc(8 * var(--px, 1px)); vertical-align: middle; background: transparent; }
+/* a linha em que se está: pelo teclado (ponto de ouro) ou com o mouse por cima (ponto mais apagado); no toque, nada fica marcado */
+.opt:has(:focus-visible) { background: rgba(255, 246, 220, 0.035); }
+.opt:has(:focus-visible) .opt-l { color: #fff6dc; }
+.opt:has(:focus-visible) .opt-l::before { background: var(--gold); box-shadow: 1px 1px 0 #05040a; }
+@media (hover: hover) {
+  .opt:hover { background: rgba(255, 246, 220, 0.035); }
+  .opt:hover .opt-l { color: #fff6dc; }
+  .opt:hover:not(:has(:focus-visible)) .opt-l::before { background: var(--gold-old); }
+}
+.opt-h { margin: 10px 4px 0; padding-bottom: 4px; font-size: var(--fm); color: var(--gold); text-shadow: 2px 2px 0 #05040a; border-bottom: var(--b2) solid #3e3a38; }
+.opt-note { margin: 8px 4px 2px; font-size: var(--fs); opacity: 0.7; }
+/* o sulco das escolhas */
+.choice { display: flex; gap: var(--b2); flex-wrap: wrap; justify-content: flex-end; padding: var(--b2); background: #0f0d13; border: var(--b2) solid;
+  border-color: #05040a #3a3540 #4a4450 #05040a; }
+.chip { font: inherit; font-size: var(--fs); color: #a89f8f; cursor: pointer; padding: 3px 10px; outline: none; text-shadow: 2px 2px 0 #05040a;
+  background: transparent; border: var(--b2) solid transparent; }
+@media (hover: hover) { .chip:hover:not(:disabled) { color: var(--chalk); background: #1d1922; } }
+.chip:focus-visible { border-color: var(--gold-old); }
+.chip.on { color: var(--gold); background: #2e2733; border-color: var(--st-hi) var(--st-dark) #1a1718 var(--st-mid); box-shadow: 0 var(--b2) 0 #05040a; }
+.chip.on:focus-visible { border-color: var(--gold) var(--gold-old) #6a5024 #c9a35a; }
+.chip.on::before { content: ''; display: inline-block; width: var(--dot); height: var(--dot); margin-right: var(--dot); vertical-align: middle; background: var(--gold); }
 .chip:disabled { opacity: 0.4; cursor: default; }
-/* ajuste: ponta talhada de cada lado, uma fileira de entalhes, o número */
-.adj { display: flex; align-items: center; gap: 6px; outline: none; padding: 2px 4px; border: 3px solid transparent; }
-.adj:focus, .adj:hover { border-color: var(--gold-old); }
-.adj-b { width: 22px; height: 22px; padding: 0; cursor: pointer; background: #26212c; border: 2px solid; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); position: relative; }
-.adj-b::after { content: ''; position: absolute; left: 50%; top: 50%; width: 0; height: 0; border: 5px solid transparent; transform: translate(-50%, -50%); }
-.adj-b.l::after { border-right-color: var(--chalk); margin-left: -3px; }
-.adj-b.r::after { border-left-color: var(--chalk); margin-left: 3px; }
+/* ajuste: as duas pontas de pedra e, entre elas, a fileira de entalhes num sulco; o número em seguida */
+.adj { display: flex; align-items: center; gap: calc(6 * var(--px, 1px)); outline: none; padding: var(--b2); border: var(--b2) solid transparent; }
+.adj:focus-visible { border-color: var(--gold-old); }
+.adj-b { width: calc(24 * var(--px, 1px)); height: calc(24 * var(--px, 1px)); padding: 0; cursor: pointer; background: #2a2530; border: var(--b2) solid;
+  border-color: var(--st-hi) var(--st-dark) #1a1718 var(--st-mid); box-shadow: 0 var(--b2) 0 #05040a; position: relative; }
+.adj-b:active { transform: translateY(var(--b2)); box-shadow: none; }
+.adj-b::after { content: ''; position: absolute; left: 50%; top: 50%; width: 0; height: 0; border: calc(5 * var(--px, 1px)) solid transparent; transform: translate(-50%, -50%); }
+.adj-b.l::after { border-right-color: var(--chalk); margin-left: calc(-3 * var(--px, 1px)); }
+.adj-b.r::after { border-left-color: var(--chalk); margin-left: calc(3 * var(--px, 1px)); }
 .adj-b:hover::after { filter: brightness(1.2); }
-.adj-bar { display: flex; gap: 3px; }
-.adj-bar i { display: block; width: 8px; height: 14px; background: #0b0912; box-shadow: inset 1px 1px 0 #05040a; }
-.adj-bar i.on { background: var(--gold-old); box-shadow: inset 0 2px 0 var(--gold); }
-.adj-v { min-width: 4.5em; text-align: left; font-size: var(--fs); }
+.adj-bar { display: flex; gap: var(--b2); padding: calc(3 * var(--px, 1px)); background: #0f0d13; border: var(--b2) solid; border-color: #05040a #3a3540 #4a4450 #05040a; }
+.adj-bar i { display: block; width: calc(8 * var(--px, 1px)); height: calc(14 * var(--px, 1px)); background: #1f1b25; }
+.adj-bar i.on { background: var(--gold-old); box-shadow: inset 0 var(--b2) 0 var(--gold), inset 0 calc(-1 * var(--b2)) 0 #8a6a30; }
+.adj-v { min-width: 4.5em; text-align: left; font-size: var(--fs); color: #d9cfbb; text-shadow: 2px 2px 0 #05040a; }
 @media (max-width: 760px) { .adj-bar i { width: 5px; } .adj-v { min-width: 3em; } }
 /* tecla de pedra */
 .keycap { min-width: 7em; font: inherit; font-size: var(--fs); color: var(--chalk); cursor: pointer; padding: 4px 10px; outline: none;
-  background: #2a2530; border: 3px solid; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); box-shadow: 0 3px 0 #05040a; }
+  background: #2a2530; border: var(--b, 3px) solid; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); box-shadow: 0 var(--b, 3px) 0 #05040a; }
 .keycap:focus, .keycap:hover { border-color: var(--gold) var(--gold-old) #6a5024 #c9a35a; }
 .keycap.wait { color: var(--gold); animation: blink 0.9s steps(2) infinite; }
 
@@ -192,7 +219,7 @@
 /* o nome da opção e as escolhas na MESMA letra (no celular a escolha saía com a metade do tamanho do nome; agora também dá para tocar);
    no celular baixo, as abas cabem numa linha */
 .chip, .keycap, .adj-v { font-size: var(--fm); }
-@media (max-height: 520px) { .tab { font-size: var(--fs); padding: 3px 8px; } .tabs { flex-wrap: nowrap; } }
+@media (max-height: 520px) { .tab { font-size: var(--fs); padding: 3px 8px; } .tab.on { padding-bottom: 6px; } .tabs { flex-wrap: nowrap; } }
 
 /* tela inicial: as opções somem quando a transição começa */
 .title-scr { transition: opacity 0.35s steps(4); }
