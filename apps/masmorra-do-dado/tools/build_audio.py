@@ -272,9 +272,11 @@ wr(loop(rd(p('storm_arwen_2022.flac'), 28, 18.5, 'highpass=f=110,lowpass=f=6500'
 # rajada: um pedaço forte da mesma tempestade, que cresce e passa
 wr(fade(rd(p('storm_arwen_2022.flac'), 51.5, 4.5, 'highpass=f=150,lowpass=f=7000'), 1.4, 1.8), 'gust', peak=-3, br='48k')
 # gotas (seis): pingos caindo numa poça de um porão; o zumbido do porão sai no filtro. Ficam em 0, 0,6, 1,2 ... 3,0 s do arquivo
-# (as três primeiras são as de antes; as outras três vieram em DESIGN.md §79, para as gotas expostas no silêncio da música não se repetirem)
+# (as três primeiras são as de antes; as outras três vieram em DESIGN.md §79, para as gotas expostas no silêncio da música não se repetirem.
+# Na revisão do §79 as três novas foram trocadas: as primeiras escolhidas, em 2,66, 9,52 e 15,58 s, eram estalos secos com o brilho em 4 a
+# 5 kHz, não gotas; estas três têm o "plim" das antigas, com o corpo entre 1 e 3 kHz)
 if want('drip'):
-    drops = [fade(rd(p('atmosbasement.flac'), t, 0.55, 'highpass=f=900,lowpass=f=9000'), 0.004, 0.25) for t in (1.505, 6.795, 19.025, 2.66, 9.52, 15.58)]
+    drops = [fade(rd(p('atmosbasement.flac'), t, 0.55, 'highpass=f=900,lowpass=f=9000'), 0.004, 0.25) for t in (1.505, 6.795, 19.025, 8.43, 5.545, 2.285)]
     # (as três de antes ficam como eram; as novas, que no porão são bem mais fortes, descem até o "corpo" médio delas, sem passar do pico)
     rms = lambda d: float(np.sqrt(np.mean(d ** 2))) + 1e-9
     ref_pk = max(float(np.abs(d).max()) for d in drops[:3])

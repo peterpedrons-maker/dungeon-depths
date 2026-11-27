@@ -286,6 +286,7 @@ Uma sala de braseiros é uma **descrição** (`FireSpec`): tamanho, tema, brasei
   (`layoutWorld`: 6 por fileira, 3 fileiras por andar = 18 por andar, escadas entre andares). Para inserir uma sala basta pôr na lista.
 - **Plano de ritmo** (aprovado): ~50 a 60 salas, ~6 h; só Fogo nas primeiras ~16 salas, Peso na ~17, giz pouco depois (~28), a 3ª face (Eco) no capítulo 3.
   O Escrivão aparece de longe 3 a 4 vezes (cedo, no meio, no fim do cap. 1) e só no começo do cap. 2 de perto, deixando o giz.
+  (Substituído pelo §84: o Peso chega no fim do capítulo 1 e o giz, com o Escrivão de perto, no MEIO do capítulo 2.)
 
 ## 17. Régua de dificuldade (corrigida) e curva do capítulo 1
 Aprendido com o feedback: o que eu chamava de "4 de 10" era **nível 1 ou 2**. Em um jogo de puzzle, qualquer pessoa resolve um nível 1.
@@ -1623,8 +1624,8 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     - a cada 30 a 50 s, uma garrafa soprada: o ar passando pela boca do poço;
     - nos acordes de luz, um fio de cordas por cima.
   - **O tema:** no começo de cada metade, lá, ré, mi, FÁ... mi, RÉ. Nas voltas ímpares vem a resposta, que sobe até o lá: olhar para cima.
-  - **O eco e o volume:** o eco é mais longo que o das salas (0,78 s). A faixa tem ganho 1,35, para a peça rala ficar ~2 dB abaixo da música
-    do jogo.
+  - **O eco e o volume:** o eco é mais longo que o das salas (0,78 s). A faixa tem ganho 1,55 (era 1,35; ver a revisão, abaixo): medido na
+    gravação, a peça fica em −26,7 LUFS e a música do jogo em −22,7, ~4 dB abaixo (o compressor da mesa achata a diferença).
   - **Onde toca:** na tela inicial e nos submenus dela (Configurações, Carregar, Créditos) e no fim do capítulo, 6 s depois da fanfarra (os
     créditos de lá).
   - **As transições** (`leaveTitle`):
@@ -1662,6 +1663,40 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     frases e silêncios. `__mdd.solvedRang()` diz quais salas já tocaram o resolvido;
   - `__mdd.renderAudio(s, ops)` grava o motor de verdade num `OfflineAudioContext` (`src/scene/audioRender.ts`, só em desenvolvimento; não
     vai para o build) e é com ele que se fazem as faixas de demonstração.
+- **Revisão (o 2º sonoplasta, que terminou o trabalho):**
+  - **Conferido no navegador** (Chromium, 1280×720):
+    - o resolvido toca **uma vez** e no lugar do `'piece'` final: no Poço (acender, a porta, o resolvido); na Lousa (as duas lousas de cópia
+      tocam o `'piece'`; a porta-lousa, o resolvido, e a porta abre 1,6 s depois só com a pedra); no Tribunal (o 5º braseiro; a pedra racha
+      1,3 s depois); na Antecâmara Fria (no escuro, junto com a porta);
+    - a música do menu entra no 1º toque, e abrir e fechar Configurações não a recomeça. No **Continuar**, ela some em ~2 s e a do jogo entra
+      ~3 s depois, chegando ao volume cheio em ~12 s. No **Novo jogo**, o arpejo sobe e tudo some antes de recarregar; o jogo novo espera
+      22 s pela música;
+    - as pausas, com os tempos encurtados (`musicTest`): frase, coda e silêncio, com o ambiente subindo até ×1,32, e a volta. Numa área livre,
+      o silêncio é 1,5 vez mais longo;
+    - no escuro da Casa, o canal da música cai a 40% e volta. No modo "só efeitos", a frase fica parada e, ao religar, segue sem empilhar
+      acordes. No mudo, o resolvido não toca.
+  - **Corrigido:**
+    - **Notas cortadas.** As gravações de notas longas (coro, cordas, baixo) acabam ainda soando. O coro do menu pedia entrada e saída de 1,6 s
+      numa nota de ~3 s. Nas notas puxadas para cima (meio tom acima da gravação mais próxima), a gravação acabava antes do envelope, e a
+      nota era cortada ainda soando: um "tique" abafado no fim de cada uma. Medido num `OfflineAudioContext` (o mi do coro, da gravação do
+      mi bemol): antes, os últimos 40 ms estavam ~21 dB abaixo do pico e caíam a zero de uma vez; agora chegam a −81 dB. `note()` agora
+      encolhe o envelope para ele acabar antes do fim da gravação (vale para tudo, também o suspiro do violoncelo da Casa respirando).
+    - **O menu raspava meio tom nas trocas de acorde.** O coro do acorde que saía ficava no auge ~2 s dentro do seguinte: o dó natural do Dó
+      por cima do dó sustenido da luz; fá e mi; lá e si bemol; e, no baixo, si bemol e lá.
+      - Agora cada acorde se cala até 0,7 s depois do fim dele, e a reverberação cobre a passagem.
+      - A harpa, a celesta, o sino e a garrafa escolhem notas do acorde que soa naquele instante, e também do seguinte, se ainda estiverem
+        soando quando ele chegar. No Lá suspenso, depois da metade, a harpa também troca o ré pelo dó sustenido.
+      - Medido na gravação: o dó natural sai em ~1 s, antes de o dó sustenido entrar (antes, ainda soava ~3 s dentro do Lá maior e cruzava
+        com o dó sustenido). A peça ficou ~1 dB mais baixa, por isso o ganho subiu.
+    - **Gotas.** As três novas eram estalos secos, com o brilho em 4 a 5 kHz, e não gotas. Foram trocadas por três do mesmo porão, com o
+      "plim" das antigas (1,5 a 2 kHz): `drip.mp3` refeito (`build_audio.py`), `AUDIO_VERSION` 7, cache `v113`.
+    - O lá grave do resolvido passou ao **contrabaixo**, gravado nessa altura, e não mais o violoncelo puxado abaixo da corda mais grave.
+    - Pedir a música do menu com ela já tocando não a recomeça mais.
+    - **Créditos** (`CREDITS.txt`): os três instrumentos novos e o autor certo das gotas (Independent.nu, enviado por qubodup; CC0 conferido
+      na página).
+  - **Testes:** `__mdd.music()` mostra também o canal da música (`bus`, `verbBus`) e o escuro aplicado (`dark`).
+  - **Faixas de demonstração:** gravadas com `renderAudio` e convertidas com o `ffmpeg`, fora do projeto: o resolvido (antes e depois), a
+    peça do menu e a pausa da música do jogo.
 
 ## 80. A abertura da editora, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
 
@@ -1788,3 +1823,27 @@ sobrancelhas, suspiro), chapada, no tamanho do pixel do jogo, com 1 px de contor
 pegando a luz dourada e o lado esquerdo do rosto mais quente. Como agora é um desenho, ele pula como desenho animado: estica um pouco no ar e
 achata ao pousar, apoiado na bancada pelo meio de baixo; a sombra de contato pontilhada encolhe no pulo. No clique de começar, sai pulando pela
 direita, como antes.
+
+## 84. O ritmo das novidades: o giz chega no meio do capítulo 2 (decidido pelo Pedro)
+
+O Pedro não quer duas mecânicas novas em seguida: o Peso chega no fim do capítulo 1 (o altar do Tribunal, §77), então o giz **não** vem logo
+no começo do capítulo 2 (o plano antigo, §16 e §19). Fica valendo um ritmo fixo: **uma novidade a cada meio capítulo**, alternando face do dado
+e ferramenta, para o jogador aprender cada uma sozinha antes da próxima.
+
+| Momento | O que chega | O que se usa |
+|---|---|---|
+| Fim do capítulo 1 (o Tribunal) | **Peso** (IGUAL) | |
+| 1ª metade do capítulo 2 | nada novo | **Fogo + Peso**: primeiro 2 ou 3 salas só de Peso, depois os dois juntos |
+| **Meio do capítulo 2** | **o giz**, com o Escrivão de perto pela primeira vez | |
+| 2ª metade do capítulo 2 | nada novo | **Fogo + Peso + giz** |
+| Fim do capítulo 2 | **Eco** (a 3ª face, num altar, como o Peso) | |
+
+- **Onde o giz chega:** na volta à **Biblioteca**, o centro do mundo (no capítulo 1 ela era o grande respiro do meio do capítulo; no 2 repete o
+  papel). Um **elevador de contrapeso**, que só o Peso move, leva ao **2º andar** (no capítulo 1 as escadas para cima estão desabadas e os andares
+  de cima só se veem pelo vão do Átrio). Lá em cima o Escrivão espera, de perto pela primeira vez: escreve a frase da sentença («EU ESCREVER
+  SENTENÇA», depois «VOCÊ LER SENTENÇA ?») e deixa o giz. A cena guardada de A Entrada (`rooms/room1.ts`) serve de base. É o momento em que o
+  jogador entende a premissa (`HISTORIA.md`, "Como a premissa é revelada cedo").
+- **Paga uma pista do capítulo 1:** pela grade do escritório do Escrivão, na Biblioteca, já se vê um **toco de giz** em cima da mesa.
+- **O que isso pede das salas:** nenhum puzzle da 1ª metade do capítulo 2 pode depender do giz. Das salas guardadas, O Salão das Brasas e O
+  Mirante (Fogo + Peso) servem para a 1ª metade; A Lacuna, O Selo e A Placa que Julga (com giz) só depois do meio.
+- Os textos e a cena são do `narrador`; os puzzles, da sessão de puzzles. Aqui fica só onde cada coisa chega.
