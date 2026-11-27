@@ -671,7 +671,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
     groundY: floorOf,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
     // o som do lugar (§60): um ar leve desce pelo furo do Átrio (§73, passo 4: era um por furo, nos dois de antes)
-    ambience: { wind: windNear(SKY.map(([x, z]) => ({ x, z, r: 4.5, k: 0.18 }))) },
+    ambience: { wind: windNear(SKY.map(([x, z]) => ({ x, z, r: 4.5, k: 0.18 }))), quiet: true }, // (área livre: menos música, §79)
     dieFloor: floorOf,
     holdsDie: () => false,
     update(dt, t) {

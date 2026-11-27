@@ -15,6 +15,8 @@ export interface Ambience {
   // quanto venta neste ponto (0..1): cresce perto das aberturas (céu, boca de poço, janelas). Use `windNear` (ambience.ts) para montar.
   wind?(x: number, z: number, feetY: number): number;
   drips?: { x: number; y: number; z: number }[]; // onde pinga (umidade); ouvem-se até ~9 m
+  // área livre / respiro: menos música (frases de uma volta só e silêncios mais longos), para o lugar falar sozinho (DESIGN.md §79)
+  quiet?: boolean;
 }
 
 export type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';

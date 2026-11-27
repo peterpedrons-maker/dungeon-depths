@@ -1588,3 +1588,77 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
   - as duas lousas com o símbolo livre;
   - a mini cena da janela, com o jogador parado, a câmera acompanhando e o capuz virando, e o jogador solto no fim.
   - Ganchos de teste: `__mdd.addPage`, `setFlag`, `knowHer`, `newPage`.
+
+## 79. O "resolvido", a música do menu e as pausas na música (pedido do Pedro; feito pelo subagente `sonoplasta`)
+Tudo continua com **gravações reais**: os instrumentos do FluidR3_GM (três novos, do mesmo soundfont e com o mesmo crédito: **contrabaixo**,
+**coro "oohs"** e **garrafa soprada**) e os efeitos CC0 que o jogo já tinha. Nenhuma fonte nova de efeito: as gotas novas e a "pedra assentando"
+saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 → 2,95 MB** (instrumentos 1,81 → 2,35 MB; efeitos 0,58 → 0,60 MB).
+- **O resolvido** (`'solved'`, novo em `SfxName`; `audio.ts`, `solved()`). O momento de "consegui", de 2 a 3 s, que resolve. É uma cadência
+  plagal com a terça de picardia, comum nos jogos de mistério:
+  - a **pergunta**, em Ré menor: a harpa sobe ré, fá, lá, ré, e o coro respira;
+  - a **resposta**, em Lá MAIOR (a Casa aceitando), 0,5 s depois: o grave da Casa (o mesmo tambor distante do escuro, agora com o acorde
+    maior), o tímpano e o violoncelo em lá; o coro abre o acorde, a harpa o arpeja, um sino tubular toca e a celesta sobe.
+  - **Toca uma vez por sala**, no instante em que o puzzle principal fica resolvido. O motor (`scene.ts`, `solvedTick`) vê `Room.isSolved()`
+    passar de falso a verdadeiro até 1,2 s depois de um som da própria sala (a peça final, a porta). Carregar um jogo salvo ou `skip()` não
+    toca nada, e reiniciar a sala e resolver de novo também não. No Tribunal ele toca quando a ordem fica certa: a pedra do altar racha
+    1,3 s depois, por baixo dele. Na Antecâmara Fria (R5), toca no escuro, quando a porta abre: o escuro ali não é castigo.
+  - O `'piece'` do mesmo quadro **espera um quadro** e, se foi ele que resolveu, quem toca é o resolvido. O violoncelo da porta (a "Casa
+    aceita") dá lugar ao do resolvido: ele é cortado se ainda não começou e some se já começou (no Vestíbulo, a sala só conta como resolvida
+    ~0,3 s depois do som da porta). Uma porta que abre até 5 s depois do resolvido fica só com a pedra (na Lousa, ela abre 1,6 s depois).
+  - A **música abre espaço** (cai a ~18% em ~0,1 s e fica assim 2,6 s) e, em vez de voltar, **vai embora** por baixo: a frase termina ali e
+    vem um silêncio de 35 a 60 s, para o resolvido respirar.
+- **O passo certo** (`'piece'`) ficou pequeno e claro, para não se confundir com o resolvido: o clique de pedra de um mecanismo e duas notas
+  que sobem uma quarta (mi, lá) na harpa, com a celesta por cima. Tem ~1 s, sem grave, sem coro e sem sino. **O erro**: o "toc" de madeira de
+  antes e, por baixo, um baque de pedra abafado. Continua curto, porque se repete quando o braseiro está frio.
+- **A música do menu, "O Poço"** (`TPROG`, `titleMusic`). É composta na hora como a do jogo, mas é outra peça: contemplativa, esparsa,
+  grave e com muito espaço.
+  - **Harmonia:** Ré; a volta tem oito acordes de 12 s (96 s): Ré aberto, Si bemol, Dó, **Lá maior (a luz)**, Ré menor com a nona, Sol menor,
+    Si bemol e Lá suspenso, que vira Lá maior.
+  - **O que toca:**
+    - o contrabaixo segura o chão, com o violoncelo uma oitava acima;
+    - o coro "oohs", mais macio que o "aahs" do jogo, respira o acorde;
+    - a harpa cai devagar, de cima para baixo, como gotas de luz no poço;
+    - a celesta brilha lá no alto;
+    - um sino toca longe, de vez em quando;
+    - a cada 30 a 50 s, uma garrafa soprada: o ar passando pela boca do poço;
+    - nos acordes de luz, um fio de cordas por cima.
+  - **O tema:** no começo de cada metade, lá, ré, mi, FÁ... mi, RÉ. Nas voltas ímpares vem a resposta, que sobe até o lá: olhar para cima.
+  - **O eco e o volume:** o eco é mais longo que o das salas (0,78 s). A faixa tem ganho 1,35, para a peça rala ficar ~2 dB abaixo da música
+    do jogo.
+  - **Onde toca:** na tela inicial e nos submenus dela (Configurações, Carregar, Créditos) e no fim do capítulo, 6 s depois da fanfarra (os
+    créditos de lá).
+  - **As transições** (`leaveTitle`):
+    - **Novo jogo:** um arpejo de Lá maior sobe com a câmera pelo feixe (harpa até a celesta, o coro crescendo, o sino na entrada do branco).
+      Tudo some até ~3,1 s, antes de a página recarregar, sem corte seco. No jogo novo, a música só entra 22 s depois de o som ligar: o
+      jogador acorda com o poço, o vento e as gotas;
+    - **Continuar:** a peça some em ~1,5 s, junto do pulinho e do pontilhado. A do jogo entra ~3 s depois e cresce em ~10 s;
+    - **outro espaço:** some e a página recarrega.
+  - **Voltar à tela inicial** (pausa): o som some em 0,25 s antes de recarregar.
+- **As pausas na música do jogo** (`gameMusic`). A música do jogo é a mesma de antes (o caráter não mudou), mas agora toca em **frases**:
+  - **a frase:** uma ou duas voltas da progressão (64 ou 128 s; a 1ª do jogo tem duas) e a **coda**, o Lá menor que resolve e afina: o baixo
+    e as cordas diminuindo, e uma última frase da harpa que desce. A música some no meio da coda (~12 s). Uma frase dura de 1min20 a 2min30;
+  - **o silêncio:** de 45 s a 2 min. A música volta devagar (~10 s até o volume cheio);
+  - **no silêncio, o ambiente sobe ~2,5 dB**, em ~4 s: o vento, o ar da sala, as gotas, o fogo, os passos (com um pouco mais de sala). A Casa
+    respira mais (de 40 s a 1min30, em vez de 70 s a 2min30). O que precisa ser ouvido continua abaixando o ambiente: porta, erro, escuro;
+  - **regras de contexto:**
+    - um puzzle resolvido encerra a frase na hora (ver acima);
+    - nas **áreas livres e respiros** (`Ambience.quiet`: R1 a R5 e a Biblioteca), a frase tem uma volta só e o silêncio é 1,5 vez mais longo;
+    - no **escuro da Casa** a música recua junto com a luz (até 40%).
+- **O ambiente, mais exposto no silêncio:**
+  - **gotas:** seis gotas em vez de três (as novas saem do mesmo porão, com o "corpo" das antigas). Às vezes caem duas seguidas, às vezes uma
+    lá longe, abafada e na sala longa;
+  - **vento:** o laço de 16 s passeia devagar entre 70% e 115% de volume e de brilho, para não se perceber a volta;
+  - **a Casa respira** de cinco jeitos, nunca o mesmo duas vezes seguidas. Aos três de antes somam-se pedrinhas e pó caindo em outra sala
+    (`settle.mp3`, três quedas de pedra do rubberduck) e um bloco arrastado lá longe, quase só o grave (o `rise`, uma oitava abaixo).
+- **Mesa de som** (só processamento):
+  - cada música tem a sua **faixa** (seco, reverberação e eco) com volume próprio, por isso uma some enquanto a outra entra;
+  - a **reverberação da música agora segue o volume de música**. Antes ela ia inteira para a sala mesmo com a música baixa ou desligada; as
+    proporções do volume padrão continuam iguais;
+  - o **eco dos efeitos** (celesta e harpa das falas, da escrita) tem linha própria. Antes passava pelo canal da música e sumia com ela no
+    modo "só efeitos".
+  - Ao religar a música no meio de uma frase, ela segue dali, sem tocar de uma vez os acordes que ficaram para trás (defeito antigo).
+- **Testes:**
+  - `__mdd.music()` mostra a cena, a fase, quanto falta e o volume das faixas. `__mdd.musicTest({ chords, rest, end, restNow })` encurta
+    frases e silêncios. `__mdd.solvedRang()` diz quais salas já tocaram o resolvido;
+  - `__mdd.renderAudio(s, ops)` grava o motor de verdade num `OfflineAudioContext` (`src/scene/audioRender.ts`, só em desenvolvimento; não
+    vai para o build) e é com ele que se fazem as faixas de demonstração.

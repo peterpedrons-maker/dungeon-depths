@@ -505,6 +505,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     },
     groundY: () => 0,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
+    ambience: { quiet: true }, // o som do lugar: respiro, menos música (DESIGN.md §79)
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {

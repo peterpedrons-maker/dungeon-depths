@@ -543,6 +543,7 @@ export function buildRespiro1(ctx: Ctx): Room {
     // o som do lugar (§60): o corredor é estreito e abafado; o pátio é alto e ecoa, venta (mais forte embaixo do buraco de luz) e pinga na
     // cisterna
     ambience: {
+      quiet: true, // (respiro: menos música, §79)
       size: (_x, z) => (z < COURT.z1 + 0.5 ? 0.9 : 0.25),
       wind: windNear([
         { x: 0, z: (COURT.z0 + COURT.z1) / 2, hx: COURT.x1, hz: (COURT.z1 - COURT.z0) / 2, r: 3.5, k: 0.3 },

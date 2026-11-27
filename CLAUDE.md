@@ -52,7 +52,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   Mobile só na horizontal, além de PC. Som com GRAVAÇÕES REAIS (nada sintetizado como fonte;
   `src/scene/audio.ts` + `public/audio/`): efeitos de pacotes CC0 (OpenGameArt) e instrumentos reais do
   soundfont FluidR3_GM (CC BY 3.0 — por isso há a tela de Créditos, na tela inicial e no fim); a música é composta em tempo
-  real tocando essas notas gravadas e é uma só pro jogo todo (não muda por sala). Os arquivos são gerados
+  real tocando essas notas gravadas e são DUAS peças (`DESIGN.md` §79): a da **tela inicial**, «O Poço» (contrabaixo, coro "oohs", harpa
+  caindo, celesta, sino e a garrafa soprada; também nos créditos e no fim do capítulo), que some com a transição de Novo jogo/Continuar; e a
+  do **jogo**, a mesma em todas as salas (não muda por sala), que toca em **frases** de 1min20 a 2min30 e some numa coda, com **silêncios**
+  de 45 s a 2 min em que o ambiente sobe ~2,5 dB (nos respiros e na Biblioteca, `Ambience.quiet`, menos música; no escuro ela recua). O
+  **resolvido** (`'solved'`, cadência Ré menor → Lá maior com coro, harpa, sino e o grave da Casa) toca uma vez por sala quando
+  `Room.isSolved()` vira verdadeiro, e a frase da música termina ali; o `'piece'` ficou só para os passos certos intermediários. Os arquivos são gerados
   por `tools/fetch_audio.sh` / `tools/build_audio.py`; créditos em `public/audio/CREDITS.txt`. Os passos têm UM som fixo por tipo
   de piso (pedra, entulho, tapete, placa de pressão, poça; `Room.surfaceAt`/`Kit.zone`; o degrau o motor percebe sozinho quando o passo sobe ou
   desce), pé esquerdo e direito alternando sempre na mesma ordem, sem variação aleatória. **Ambiente** (`Room.ambience`, `src/scene/ambience.ts`,

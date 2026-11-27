@@ -5,7 +5,8 @@ Fontes (todas livres; ver public/audio/CREDITS.txt):
   - efeitos: OpenGameArt (CC0) — Kenney, rubberduck, qubodup, Fantozzi, LEGIT Audio, AntumDeluge, Tsorthan Grove, NenadSimic etc.
   - instrumentos: amostras de instrumentos reais do FluidR3_GM (CC BY 3.0), via midi-js-soundfonts.
 Uso:  python3 tools/build_audio.py <pasta com os pacotes baixados> <pasta de saída> [nomes...]
-(Os downloads estão descritos em fetch_audio.sh. Com nomes, refaz só esses arquivos de sfx, sem tocar nos instrumentos.)
+(Os downloads estão descritos em fetch_audio.sh. Com nomes, refaz só esses arquivos de sfx, sem tocar nos instrumentos; `inst:<nome>` refaz
+um instrumento e atualiza o manifesto. As notas do FluidR3_GM baixadas ficam em <pasta dos pacotes>/sf.)
 """
 import os, re, subprocess, sys, json
 import numpy as np
@@ -270,14 +271,26 @@ if want('rise'):
 wr(loop(rd(p('storm_arwen_2022.flac'), 28, 18.5, 'highpass=f=110,lowpass=f=6500'), 16, 2.2), 'wind', peak=-3, br='48k')
 # rajada: um pedaço forte da mesma tempestade, que cresce e passa
 wr(fade(rd(p('storm_arwen_2022.flac'), 51.5, 4.5, 'highpass=f=150,lowpass=f=7000'), 1.4, 1.8), 'gust', peak=-3, br='48k')
-# gotas (três): pingos caindo numa poça de um porão; o zumbido do porão sai no filtro. Ficam em 0, 0,6 e 1,2 s do arquivo
+# gotas (seis): pingos caindo numa poça de um porão; o zumbido do porão sai no filtro. Ficam em 0, 0,6, 1,2 ... 3,0 s do arquivo
+# (as três primeiras são as de antes; as outras três vieram em DESIGN.md §79, para as gotas expostas no silêncio da música não se repetirem)
 if want('drip'):
-    drops = [fade(rd(p('atmosbasement.flac'), t, 0.55, 'highpass=f=900,lowpass=f=9000'), 0.004, 0.25) for t in (1.505, 6.795, 19.025)]
+    drops = [fade(rd(p('atmosbasement.flac'), t, 0.55, 'highpass=f=900,lowpass=f=9000'), 0.004, 0.25) for t in (1.505, 6.795, 19.025, 2.66, 9.52, 15.58)]
+    # (as três de antes ficam como eram; as novas, que no porão são bem mais fortes, descem até o "corpo" médio delas, sem passar do pico)
+    rms = lambda d: float(np.sqrt(np.mean(d ** 2))) + 1e-9
+    ref_pk = max(float(np.abs(d).max()) for d in drops[:3])
+    ref_rms = float(np.mean([rms(d) for d in drops[:3]]))
+    drops = drops[:3] + [d * min(ref_rms / rms(d), ref_pk / float(np.abs(d).max())) for d in drops[3:]]
     wr(mix(*[(d, 0.6 * i, 0) for i, d in enumerate(drops)]), 'drip', peak=-3)
 # a Casa respira (1): um tambor de tronco ao longe, abafado (NenadSimic)
 wr(fade(rd(p('distant_log_drum.wav'), 0, 4.6, 'lowpass=f=500'), 0, 1.2), 'boom', peak=-3, br='48k')
 # a Casa respira (2): pedra rangendo, longe (um bloco arrastado num tijolo, uma oitava abaixo)
 wr(fade(rd(p('scrape-1.ogg'), af='asetrate=44100*0.5,aresample=44100,lowpass=f=1200,highpass=f=50'), 0.3, 0.8), 'creak', peak=-3, br='48k')
+# a Casa respira (3, DESIGN.md §79): pedrinhas e pó caindo em outra sala, a Casa assentando (três quedas de pedra do rubberduck, em cascata)
+if want('settle'):
+    a = trim(rd(f'{BF}/bfh1_rock_falling_01.ogg', af='highpass=f=200,lowpass=f=5000'))
+    b = trim(rd(f'{BF}/bfh1_rock_falling_03.ogg', af='highpass=f=200,lowpass=f=5000'))
+    c = trim(rd(f'{BF}/bfh1_rock_falling_09.ogg', af='highpass=f=200,lowpass=f=4000'))
+    wr(fade(mix((nrm(a), 0, 0), (nrm(b), 0.38, -5), (nrm(c), 0.9, -9)), 0, 0.3), 'settle', peak=-3, br='48k')
 
 # instrumentos reais: uma nota a cada 3 semitons, tocada com playbackRate pra cobrir o resto
 NOTE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
@@ -293,17 +306,28 @@ INST = {
     'flute': (60, 84),
     'timpani': (36, 48),
     'tubular_bells': (60, 84),
+    # a música da tela inicial (DESIGN.md §79): o contrabaixo, o coro "oohs" (mais macio que o "aahs") e a garrafa soprada (o ar na boca do poço)
+    'contrabass': (24, 48),     # C1..C3
+    'voice_oohs': (48, 72),
+    'blown_bottle': (60, 75),   # só as poucas notas que a peça usa
 }
-if ONLY:
+# com nomes: só os sfx pedidos; `inst:<nome>` refaz um instrumento (o manifesto é atualizado, os outros ficam como estão)
+ONLY_INST = {n[5:] for n in ONLY if n.startswith('inst:')}
+if ONLY and not ONLY_INST:
     sys.exit(0)  # só alguns arquivos de sfx: os instrumentos ficam como estão
 manifest = {}
+if ONLY_INST and os.path.exists(f'{OUT}/inst/manifest.json'):
+    manifest = json.load(open(f'{OUT}/inst/manifest.json'))
 base = 'https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/FluidR3_GM'
+os.makedirs(os.path.join(SRC, 'sf'), exist_ok=True)  # as notas baixadas ficam junto dos outros downloads
 for inst, (lo, hi) in INST.items():
+    if ONLY_INST and inst not in ONLY_INST:
+        continue
     notes = list(range(lo, hi + 1, 3))
     manifest[inst] = notes
     os.makedirs(f'{OUT}/inst/{inst}', exist_ok=True)
     for m in notes:
-        raw = f'/tmp/sf_{inst}_{m}.mp3'
+        raw = os.path.join(SRC, 'sf', f'sf_{inst}_{m}.mp3')
         if not os.path.exists(raw):
             r = run(['curl', '-s', '-m', '60', '-o', raw, '-w', '%{http_code}', f'{base}/{inst}-mp3/{name(m)}.mp3'])
             if r.stdout.strip() != '200':
