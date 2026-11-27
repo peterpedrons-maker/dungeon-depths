@@ -1730,3 +1730,12 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
   - A porta volta a tocar sempre o violoncelo grave dela, que o Pedro aprovou (antes, logo depois do resolvido, ela ficava só com a pedra).
   - **Ainda com instrumento** (o Pedro não avaliou): a escrita que acende, a cena da gema, o altar do Peso, as notas das faces, o "Novo jogo"
     da tela inicial e a música.
+- **Um fio de "descoberta", bem baixo (pedido do Pedro: "ficou bom, só adicionar um pouco, mas bem pouco mesmo, de efeito de descoberta").**
+  Por baixo da pedra, só instrumentos de som orgânico, nunca celesta, sino, gongo ou coro:
+  - **passo certo:** uma nota de harpa grave (lá);
+  - **segredo:** as cordas entrando devagar num Lá maior aberto e uma nota de harpa;
+  - **resolvido:** depois do baque, o violoncelo grave (o mesmo da porta) e as cordas abrindo num Lá maior, e uma nota de harpa no fim;
+  - **fim do capítulo:** o violoncelo grave e as cordas, por baixo do arrasto.
+  - Medido pela diferença entre a gravação com e sem a camada nova (a pedra é idêntica nas duas), a camada fica 15 a 17 dB abaixo da
+    pedra no resolvido, no segredo e no passo certo. No fim do capítulo a medida dá −12,5 dB, inflada pelo compressor geral, que reage ao
+    estrondo longo. O volume total quase não muda (menos de 0,4 dB).

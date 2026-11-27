@@ -906,6 +906,8 @@ export class Sfx {
         this.sample('plate2', 0.66, 0.9, 0, 0.3, 0, 3000);
         this.sample('locked', 0.54, 1.0, 0.02, 0.3);
         this.sample('bounce2', 0.25, 0.7, 0.08, 0.3, 0, 2000);
+        // um FIO de descoberta, bem baixo (pedido do Pedro: "um pouco, bem pouco mesmo"): uma nota de harpa grave, quase escondida na pedra
+        this.note('orchestral_harp', 57, now + 0.06, 0.042, { fadeIn: 0.004, fadeOut: 0.9, verb: 0.5, toMusic: false });
         break;
       case 'solved':
         this.solved();
@@ -919,6 +921,9 @@ export class Sfx {
         this.sample('step_rubble_r', 0.1, 1.7, 0.55, 0.3, 0.2, 3500);
         this.sample('settle', 0.18, 1.2, 0.85, 0.35, 0, 3000);
         this.sample('bounce4', 0.22, 0.55, 0.95, 0.35, 0, 900);
+        // o fio de descoberta, bem baixo: as cordas entram devagar num Lá maior aberto e uma nota de harpa
+        [57, 64, 73].forEach((m, i) => this.note('string_ensemble_1', m, now + 0.35 + i * 0.12, 0.03, { fadeIn: 0.5, hold: 0.4, fadeOut: 1.1, verb: 0.7, pan: (i - 1) * 0.3, toMusic: false }));
+        this.note('orchestral_harp', 69, now + 0.5, 0.036, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.6, echo: 0.15, toMusic: false });
         break;
       // a Casa recusa: o "toc" seco de madeira e, por baixo, um baque de pedra abafado (curto: repete-se quando o braseiro está frio)
       case 'error':
@@ -964,6 +969,9 @@ export class Sfx {
         this.sample('step_rubble_l', 0.26, 1.2, 2.8, 0.5, -0.3, 3500);
         this.sample('step_rubble_r', 0.21, 1.4, 3.05, 0.5, 0.3, 3500);
         this.sample('door_shut', 0.56, 0.6, 3.3, 0.8, 0, 1500, 0, 0, true);
+        // o fio de descoberta, bem baixo: o violoncelo grave (o mesmo da porta) e as cordas abrindo num Lá maior, por baixo do arrasto
+        this.note('cello', 45, now + 0.4, 0.085, { fadeIn: 0.6, hold: 2.0, fadeOut: 2.0, verb: 0.8, toMusic: false });
+        [57, 61, 64].forEach((m, i) => this.note('string_ensemble_1', m, now + 1.2 + i * 0.25, 0.033, { fadeIn: 1.0, hold: 1.4, fadeOut: 2.0, verb: 0.8, pan: (i - 1) * 0.3, toMusic: false }));
         break;
     }
   }
@@ -991,6 +999,12 @@ export class Sfx {
     this.sample('settle', 0.52, 0.85, 1.2, 0.4, 0, 2400);
     this.sample('step_rubble_l', 0.22, 1.2, 1.35, 0.35, -0.25, 4000);
     this.sample('step_rubble_r', 0.18, 1.4, 1.55, 0.35, 0.25, 4000);
+    // um FIO de descoberta, bem baixo (pedido do Pedro: "um pouco, bem pouco mesmo"): depois do baque, o violoncelo grave (o mesmo da porta,
+    // que ele aprovou) e as cordas abrindo devagar num Lá maior, por baixo da pedra; e uma nota de harpa no fim. Nada de celesta, sino ou coro
+    const n = (inst: string, m: number, at: number, vol: number, o: { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number }) => this.note(inst, m, now + at, vol, { toMusic: false, ...o });
+    n('cello', 45, 0.55, 0.072, { fadeIn: 0.25, hold: 0.9, fadeOut: 1.4, verb: 0.75 });
+    [57, 61, 64].forEach((m, i) => n('string_ensemble_1', m, 0.7 + i * 0.1, 0.033, { fadeIn: 0.45, hold: 0.7, fadeOut: 1.3, verb: 0.75, pan: (i - 1) * 0.3 }));
+    n('orchestral_harp', 69, 1.15, 0.036, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.6, echo: 0.15 });
   }
 
   // passo: SEMPRE a mesma gravação para cada tipo de piso (decisão do Pedro: nada de sorteio). Pedra, degrau e entulho têm duas tomadas,
