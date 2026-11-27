@@ -100,7 +100,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     (tube.material as THREE.MeshLambertMaterial).side = THREE.BackSide;
     tube.position.set(SHAFT.x, H + shaftH / 2, SHAFT.z);
     kit.group.add(tube);
-    holeRim(kit, SHAFT.x, SHAFT.z, H, SHAFT.r); // o aro de pedra lavrada: o poço é o furo do UM, e os 21 furos têm a mesma cara (DESIGN.md §72)
+    holeRim(kit, SHAFT.x, SHAFT.z, H, SHAFT.r); // o aro de pedra lavrada: o poço é o furo do UM, e os 21 furos têm a mesma cara (DESIGN.md §72, §73)
     // ── LÁ EM CIMA, do lado de fora (abertura, DESIGN.md §33): a boca do poço num pátio em ruínas, sob um céu pálido de madrugada ──
     // Tudo acima do teto da sala: de dentro só se vê pelo poço (o céu, a trave e a corda em silhueta).
     const TOP = H + shaftH;
@@ -733,6 +733,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     dieLie,
     shadowLight: moon,
     shaft: v === 1 ? new THREE.Vector3(SHAFT.x, H + 2.5, SHAFT.z) : undefined,
+    skyHoles: v === 1 ? [[SHAFT.x, SHAFT.z]] : undefined, // o furo do UM (DESIGN.md §73, passo 4)
     wellTop: v === 1 ? new THREE.Vector3(SHAFT.x, H + 16, SHAFT.z) : undefined,
     doorZ: Z0,
     entranceZ: Z1,

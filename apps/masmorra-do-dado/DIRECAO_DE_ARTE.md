@@ -236,7 +236,7 @@ Como aplicar (para todo capítulo novo):
   Quem mexer numa sala com furo redondo atualiza a contagem.
   **Como ficam** (`DESIGN.md` §73): um furo por sala, solto no teto, e as faces só aparecem no MAPA, juntando as salas de cada grupo (no teto
   de uma sala só, o desenho entregava fácil demais o dado). Todos com o mesmo aro de pedra lavrada (`src/scene/skyhole.ts`); nenhum ilumina o
-  que é de puzzle.
+  que é de puzzle. O capítulo 1 está feito (`DESIGN.md` §73, passo 4): o Poço; a Lousa e o Fio; a Cisterna, a Biblioteca e os Banhos.
 - **Os objetos rareiam** (§4.7 continua valendo: só o dia a dia, nada de RPG): a borda foi habitada; o centro, nunca.
 - O que é **gramática de puzzle** (frases, braseiros, lousas, soquetes, tochas das constelações) mantém a mesma cara em todos os capítulos, para o
   jogador nunca ter de reaprender a ler.

@@ -48,6 +48,7 @@ const isCell = (ix: number, iz: number) => CELLS.some(([a, b]) => a === ix && b 
 const cx = (ix: number) => 2 * ix;
 const cz = (iz: number) => 1 - 2 * iz;
 const CIST = { x: 0, z: -19, r: 1.8 };
+const SKY: [number, number][] = [[0.15, -18.3]]; // o furo de luz (DESIGN.md §73, passo 4)
 const stairY = (z: number) => (GAL * (z - SZ)) / (GZ - SZ);
 const COURT = { x0: -7, x1: 7, z0: Z0, z1: -12 };
 const CHAMBER = { x0: 7, x1: 9.6, z0: -17.5, z1: -14 };
@@ -312,13 +313,13 @@ export function buildRespiro1(ctx: Ctx): Room {
   door.setOpen(1);
   door.lampMats[0].color.setHex(0xff7a2e);
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, 2.65, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, 2.65, Z0 + 0.3));
-  // o teto, muito alto, com TRÊS furos redondos de luz em diagonal, o do meio em cima da cisterna (a face 3 dos 21 furos: DESIGN.md §72). Os dos
-  // lados ficam a mais de 2 m dos braseiros dos cantos
+  // o teto, muito alto, com UM furo redondo de luz, em cima da cisterna (DESIGN.md §73, passo 4: com o da Biblioteca e o dos Banhos, a face 3 no
+  // mapa, a diagonal longa; por isso 15 cm a leste e 70 cm ao norte do centro dela, ainda em cima da boca). Longe dos braseiros dos cantos
   {
-    const HOLES: [number, number][] = [[4.4, -15.4], [CIST.x, CIST.z], [-4.4, -22.6]];
+    const HOLES = SKY;
     // (a ShapeGeometry tem UV em metros: a repetição é por metro, como a do chão; §67)
     kit.group.add(ceilingWithHoles(X0, X1, COURT.z0, COURT.z1, PH, HOLES, holeCeilingMat(kit, 0.95)));
-    for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, PH, { light: hx === CIST.x ? 34 : 24 });
+    for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, PH, { light: 34 });
   }
   // as galerias: blocos sólidos ao longo das paredes leste e oeste; em cima, o andar de cima; rampas no sul
   for (const s of [-1, 1]) {
@@ -473,6 +474,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   };
 
   return {
+    skyHoles: SKY,
     name: 'Os Nichos e a Cisterna',
     subtitle: 'Nada trancado.',
     group: kit.group,

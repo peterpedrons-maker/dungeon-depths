@@ -61,6 +61,9 @@ function groundY(x: number, z: number) {
 const WEST = { x0: -12.5, x1: X0, z0: -15.5, z1: -11.5, d0: -14.6, d1: -12.4 }; // câmara de banho do oeste (d0..d1 = o vão)
 const EAST = { x0: X1, x1: 12.5, z0: -23, z1: -19.2, d0: -22.2, d1: -20 };
 const CH = 3.1; // pé-direito das câmaras
+// o furo de luz (DESIGN.md §73, passo 4; com o da Cisterna e o da Biblioteca, a face 3 no mapa, a diagonal longa): no fundo, à direita de quem
+// desce, ao lado da coluna e da câmara de banho do leste. A ~5 m dos braseiros da piscina funda (o puzzle de "exatamente DOIS")
+const SKY: [number, number][] = [[7.2, -20.65]];
 
 function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
   const c = document.createElement('canvas');
@@ -159,7 +162,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   // piscina rasa e a média, de frente para a câmara de banho. Longe da piscina funda: os quatro braseiros de lá são o puzzle de "exatamente
   // DOIS", e quatro luzes ao lado deles seriam uma pista falsa
   {
-    const HOLES: [number, number][] = [[-7.0, -11.7], [-3.4, -11.7], [-7.0, -15.3], [-3.4, -15.3]];
+    const HOLES = SKY;
     kit.group.add(ceilingWithHoles(X0, X1, Z0, Z1, CEIL, HOLES, holeCeilingMat(kit, 0.6)));
     for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, CEIL, { floorY: groundY(hx, hz), light: 18 });
   }
@@ -438,6 +441,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   kit.bake();
 
   return {
+    skyHoles: SKY,
     name: 'Os Banhos Secos',
     subtitle: 'A água se foi. As palavras ficaram.',
     group: kit.group,

@@ -1774,7 +1774,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         const [bx, bz] = places[i].xz(q[2], q[3]);
         return { x: U(Math.max(az, bz)), y: V(Math.min(ax, bx)), w: Math.abs(bz - az) * s, h: Math.abs(bx - ax) * s };
       });
-      return { key: shortRoom(r.name), floor: fl[0], floors: fl.length > 1 ? fl : undefined, x: U(z1), y: V(x0), w: (z1 - z0) * s, h: (x1 - x0) * s, parts };
+      // os furos de luz do teto (DESIGN.md §73, passo 4): o mapa marca cada um, e os de um grupo de salas formam uma face do dado
+      const holes = r.skyHoles?.map(([hx, hz]) => {
+        const [wx, wz] = places[i].xz(hx, hz);
+        return { x: U(wz), y: V(wx) };
+      });
+      return { key: shortRoom(r.name), floor: fl[0], floors: fl.length > 1 ? fl : undefined, x: U(z1), y: V(x0), w: (z1 - z0) * s, h: (x1 - x0) * s, parts, holes };
     });
     const links: MapLink[] = paths.map((p) => ({ a: shortRoom(rooms[p.a].name), b: shortRoom(rooms[p.b].name), path: [], floor: flOf(p.y), pts: p.pts.map(([x, z]) => [U(z), V(x)] as [number, number]) }));
     const two = mrooms.some((r) => r.floor === 1 || r.floors?.includes(1));
@@ -4402,6 +4407,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           return { i, n: r.name, x0: +box.min.x.toFixed(1), x1: +box.max.x.toFixed(1), z0: +box.min.z.toFixed(1), z1: +box.max.z.toFixed(1), y0: +box.min.y.toFixed(1), y1: +box.max.y.toFixed(1), door: r.doorZ, ent: r.entranceZ, entY: r.entranceY ?? 0, exitDy: r.exitDy ?? 0, offY: +places[i].pos.y.toFixed(1), q: places[i].q, exit: [ex.x, ex.z, ex.dx, ex.dz].map((v) => +v.toFixed(3)), entry: [en.x, en.z, en.dx, en.dz].map((v) => +v.toFixed(3)) };
         }),
       rooms: () => rooms.map((r, i) => ({ n: r.name, z: +places[i].pos.z.toFixed(1), x: +places[i].pos.x.toFixed(2), y: +places[i].pos.y.toFixed(2), q: places[i].q, door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
+      // (testes) os furos de luz de cada sala, no mundo (DESIGN.md §73, passo 4)
+      skyHoles: () => rooms.flatMap((r, i) => (r.skyHoles ?? []).map(([hx, hz]) => { const [x, z] = places[i].xz(hx, hz); return { n: r.name, x: +x.toFixed(2), z: +z.toFixed(2) }; })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
       // (testes) a cena da gema: uma gema `id` 1,2 m à frente dos olhos; `first` = a cena inteira

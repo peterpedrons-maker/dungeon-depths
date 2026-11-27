@@ -38,6 +38,7 @@ const WX = 11.5; // as alas vão até |x| = 11,5
 const WH = 4.2; // pé-direito das alas
 // as alas: [z0, z1] (a passagem do Átrio fica no meio, com 2 m de largura)
 const WINGS = { pedras: [-11, -3], papel: [-21, -13], museu: [-11, -3], aula: [-21, -13] } as const;
+const SKY: [number, number][] = [[3.4, -1.8]]; // o furo de luz (DESIGN.md §73, passo 4)
 const TABLES_X = [-3.2, 0, 3.2];
 const TABLES_Z = [-19, -13.5, -8]; // linha 0 = a do fundo (perto da porta e do escritório)
 const tableAt = (i: number): [number, number] => [TABLES_X[i % 3], TABLES_Z[Math.floor(i / 3)]];
@@ -115,9 +116,10 @@ export function buildBiblioteca(ctx: Ctx): Room {
   door.setOpen(1);
   door.lampMats[0].color.setHex(0xff7a2e);
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, 2.65, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, 2.65, Z0 + 0.3));
-  // o teto, com DOIS furos redondos de luz em diagonal (a face 2 dos 21 furos: DESIGN.md §72). Cada um em cima de um CRUZAMENTO dos corredores
-  // entre as mesas: a luz cai igual em quatro mesas, sem destacar nenhuma (as mesas são as casas da constelação C-Bib)
-  const HOLES: [number, number][] = [[-1.6, -10.75], [1.6, -16.25]];
+  // o teto, com UM furo redondo de luz (DESIGN.md §73, passo 4: com o da Cisterna e o dos Banhos, a face 3 no mapa, a diagonal longa, e a
+  // Biblioteca no meio): na frente, à direita de quem entra, a mais de 6 m das mesas (as mesas são as casas da constelação C-Bib: nenhuma
+  // pode ganhar luz só dela) e sem tocar as passarelas (a luz desce rente ao parapeito)
+  const HOLES = SKY;
   kit.group.add(ceilingWithHoles(-AX, AX, Z0, Z1, H, HOLES, holeCeilingMat(kit, 0.6)));
   for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, H, { light: 34 });
   // as paredes do Átrio, com as passagens (2 m) para as alas. São de pedra COM ESPESSURA (30 cm, para o lado das alas): antes eram folhas de uma
@@ -608,6 +610,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
 
   const floorOf = () => 0;
   return {
+    skyHoles: SKY,
     name: 'A Biblioteca',
     subtitle: 'O Arquivo das Sentenças.',
     group: kit.group,
@@ -667,8 +670,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
     },
     groundY: floorOf,
     surfaceAt: (x, z) => kit.surfaceAt(x, z),
-    // o som do lugar (§60): um ar leve desce pelos dois furos do Átrio
-    ambience: { wind: windNear([{ x: -1.6, z: -10.75, r: 4.5, k: 0.18 }, { x: 1.6, z: -16.25, r: 4.5, k: 0.18 }]) },
+    // o som do lugar (§60): um ar leve desce pelo furo do Átrio (§73, passo 4: era um por furo, nos dois de antes)
+    ambience: { wind: windNear(SKY.map(([x, z]) => ({ x, z, r: 4.5, k: 0.18 }))) },
     dieFloor: floorOf,
     holdsDie: () => false,
     update(dt, t) {

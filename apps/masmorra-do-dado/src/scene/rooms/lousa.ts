@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { Kit, lambert, LAMP_OFF } from '../kit';
 import { tallyTexture } from '../textures';
 import { makeBrazier } from '../brazier';
+import { skyHole } from '../skyhole';
 import { makeGemNiche, makeLivePanel, makeWallBoard, type WallBoard } from '../firegrid';
 import { mkBox, roomShell, shotGate } from './shell';
 import { planDoors } from '../plan';
@@ -60,7 +61,10 @@ function dieFaceTex(points: number[]) {
 export function buildLousa(ctx: Ctx): Room {
   const kit = new Kit('ruin');
   const D = planDoors('A Lousa');
-  const S = roomShell(kit, { hx: 3.6, z0: -9.5, h: 3.8, lamps: 1, exit: D.exit, entry: D.entry });
+  // o furo de luz (DESIGN.md §73, passo 4; com o do Fio, a face 2 no mapa): no meio da abóbada, no lugar do arco de reforço do meio, entre as
+  // duas colunas. A luz cai no chão do meio da sala, longe das lousas, da porta-lousa e dos braseiros
+  const SKY: [number, number][] = [[0, -3.75]];
+  const S = roomShell(kit, { hx: 3.6, z0: -9.5, h: 3.8, lamps: 1, exit: D.exit, entry: D.entry, skyHoles: SKY });
   const { X0, X1, Z0, Z1, H } = S;
   const SIDE = D.exit.side === 'L'; // a porta na parede esquerda (a planta nova)
   if (D.exit.side === 'R' || D.entry.side !== 'F') throw new Error('A Lousa: só porta no fundo ou na esquerda, entrada na frente');
@@ -70,7 +74,8 @@ export function buildLousa(ctx: Ctx): Room {
   // QUADRO DE ESTILO (DIRECAO_DE_ARTE.md §6: "um corredor baixo onde alguém ensinava a contar"): abóbada baixa com arcos de reforço,
   // colunas com base e capitel, batentes grossos, um nicho, três pedras (tijolo, laje do chão, pedra lavrada), a luz do nicho alto com
   // sombra de verdade, poças de luz, fuligem, o caminho gasto, os riscos de um condenado contando os dias.
-  const vaultY = S.vault(3.0, H - 0.03, 2.9);
+  const vaultY = S.vault(3.0, H - 0.03, 2.9, SKY);
+  for (const [hx, hz] of SKY) skyHole(kit, hx, hz, vaultY(hx), { ceil: vaultY, light: 14 });
   // colunas: a da esquerda esconde a lousa secreta de quem vem da grade
   S.pillar(-2.2, -3.0, 0.8, vaultY(-2.2));
   S.pillar(1.8, -5.6, 0.8, vaultY(1.8));
@@ -337,6 +342,7 @@ export function buildLousa(ctx: Ctx): Room {
   });
 
   return {
+    skyHoles: SKY,
     name: 'A Lousa',
     subtitle: 'Nove lampiões.',
     group: kit.group,

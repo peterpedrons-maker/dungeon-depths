@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { Kit, lambert, LAMP_OFF } from '../kit';
 import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
+import { skyHole } from '../skyhole';
 import { FireGrid, makeFloorChannel, makeGemNiche, makeWallBoard, type GridEdge, type WallBoard } from '../firegrid';
 import { mkBox, roomShell, shotGate, slopedWall, stairs, stairsX } from './shell';
 import type { Ctx, Rect, Room } from '../types';
@@ -42,7 +43,11 @@ function levelY(x: number, z: number) {
 
 export function buildFio(ctx: Ctx): Room {
   const kit = new Kit('ruin');
-  const S = roomShell(kit, { hx: 6.5, z0: -21.5, h: 7, lamps: 2 });
+  // o furo de luz (DESIGN.md §73, passo 4; com o da Lousa, a face 2 no mapa): na frente, à esquerda de quem entra, em cima do pé da escada que
+  // sobe. Longe dos nove braseiros do chão (uma luz em cima de um deles seria pista falsa) e das lousas do balcão
+  const SKY: [number, number][] = [[-3.65, 0.2]];
+  const S = roomShell(kit, { hx: 6.5, z0: -21.5, h: 7, lamps: 2, skyHoles: SKY });
+  for (const [hx, hz] of SKY) skyHole(kit, hx, hz, 7, { light: 22 });
   const { X0, X1, Z0, Z1 } = S;
 
   // ── o balcão e as escadas ──
@@ -204,6 +209,7 @@ export function buildFio(ctx: Ctx): Room {
   kit.bake();
 
   return {
+    skyHoles: SKY,
     name: 'O Fio de Fogo',
     subtitle: 'O fogo não fica onde eu o ponho.',
     group: kit.group,

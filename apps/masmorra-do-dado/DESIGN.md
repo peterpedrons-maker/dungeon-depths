@@ -1269,7 +1269,7 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   com o teto alto e visto de lado, ele virava uma coluna cinza sólida no pixel.
 - **Quem mexer** numa sala com furo, ou fizer as do capítulo 2, atualiza esta tabela e o comentário do topo de `skyhole.ts`.
 - **Substituído pelo §73** (decidido com o Pedro): os desenhos de face no teto de uma sala só entregam fácil demais que a Casa fica dentro de um
-  dado. No §73 cada furo fica solto, num teto de uma sala, e as faces só aparecem no mapa. O código de hoje segue este §72 até o passo 4 do §73.
+  dado. No §73 cada furo fica solto, num teto de uma sala, e as faces só aparecem no mapa. Desde o passo 4 do §73 (feito), o código segue o §73.
 
 ## 73. O level design novo: a planta do capítulo 1 (proposta, Etapa 1; pedido do Pedro)
 
@@ -1384,6 +1384,30 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   - **a planta nova é o padrão.** `?planta=0` volta à fila antiga (para comparar; o jogo salvo vale nas duas, porque a posição é gravada
     dentro da sala). O que ainda é do passo 2 e vale aqui: o mapa sai do 3D; as salas que não são um retângulo (a Cisterna, a Biblioteca, os
     Banhos) aparecem no mapa com a forma de verdade (`Room.mapRects`: os retângulos do chão, nas coordenadas da sala).
+- **Passo 4, feito (os furos do capítulo 1):** um furo por sala, solto no teto, em seis salas; o desenho das faces só aparece no MAPA do caderno,
+  que marca cada furo (um círculo pequeno de tinta com o céu claro dentro, do tamanho do furo com o aro; `Room.skyHoles`, `drawHoles` em
+  `pages.ts`). Os da Biblioteca (eram 2), da Cisterna (3) e dos Banhos (4) do §72 viraram um só em cada; o Fio e a Lousa ganharam o seu.
+
+  | Face | Sala | Onde (na sala) | Por quê |
+  |---|---|---|---|
+  | 1 | O Poço | o próprio poço | sozinho no canto do mapa |
+  | 2 | A Lousa | no meio da abóbada, entre as duas colunas, no lugar do arco de reforço do meio | a luz cai no chão do meio, longe das lousas, da porta-lousa e dos braseiros |
+  | 2 | O Fio de Fogo | na frente, à esquerda de quem entra, em cima do pé da escada que sobe | longe dos nove braseiros do chão (luz em cima de um deles seria pista falsa) e das lousas do balcão |
+  | 3 | Os Nichos e a Cisterna | em cima da boca da cisterna (15 cm a leste e 70 cm ao norte do centro) | |
+  | 3 | A Biblioteca | na frente, à direita de quem entra, a mais de 6 m das mesas | as mesas são as casas da constelação C-Bib; a luz desce rente ao parapeito das passarelas, sem tocá-las |
+  | 3 | Os Banhos Secos | no fundo, à direita de quem desce, ao lado da coluna e da câmara do leste | a ~5 m dos braseiros da piscina funda (o puzzle de "exatamente DOIS") |
+
+  - **A face 3 é uma diagonal exata:** 45° no mapa, 29,4 m entre um furo e o outro, a Biblioteca no meio. Ela atravessa o mapa inteiro, do
+    noroeste ao sudeste, passando pelo centro da espiral.
+  - **A face 2 ficou um par lado a lado, não em diagonal.** Com a planta de hoje, o Fio fica quase em cima da Lousa no mapa. Em diagonal no
+    sentido da face 3 o par não cabe (a inclinação máxima seria 12°). No outro sentido cabe (até ~40°), mas aí o Poço, a Lousa e o Fio ficam em fila
+    e com o mesmo espaço entre si, e os três leriam como um "3". Lado a lado, o par fica mais perto um do outro (15 m) do que do Poço (24 m).
+    Para uma diagonal de verdade, o Fio teria de andar uns 15 m para o oeste na planta (corredores e travessia de novo): fica como opção.
+  - **A Lousa** tem abóbada baixa: o furo vaza a abóbada (o shader descarta o que cai dentro do círculo, visto de cima), o arco de reforço do meio
+    não é feito, e o aro, o lábio e a boca do tubo acompanham a curva (`skyHole(..., { ceil })`). O teto plano do casco ganhou o furo também
+    (`roomShell({ skyHoles })`).
+  - **No mapa**, o "você está aqui" vermelho sai de cima do furo e vai para o lado, sem sair da sala.
+  - **Teste:** `__mdd.skyHoles()` (os furos no mundo).
 
 ## 74. O dado no braseiro 3D e o caderno que pula de parte em parte (pedidos do Pedro)
 

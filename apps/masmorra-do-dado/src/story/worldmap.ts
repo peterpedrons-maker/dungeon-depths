@@ -8,6 +8,7 @@ export interface MapRoom {
   floor: number; // índice do andar
   floors?: number[]; // salas que atravessam andares (o fosso, a escadaria): aparecem em todos estes
   parts?: { x: number; y: number; w: number; h: number }[]; // (mapa em pixels) a forma da sala: a união destes retângulos
+  holes?: { x: number; y: number }[]; // (mapa em pixels) os furos redondos de luz do teto (DESIGN.md §73, passo 4)
   x: number;
   y: number;
   w: number;

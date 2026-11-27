@@ -17,6 +17,7 @@ const RED = '#a8321a';
 const GOLD = '#a87a28';
 const STAMP_BLUE = '#2c4a7a';
 const HILITE = '#f6d9a0';
+const SKY = '#eef1ea'; // o céu visto por um furo do teto (no mapa)
 const SEPIA = '#8a5a34'; // a tinta DELA (a que veio antes): sépia desbotada
 const PENCIL = 'rgba(70,58,48,0.2)';
 const PER_PAGE = 12;
@@ -872,10 +873,10 @@ function drawRoom(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: num
     for (const [a, b, c, d] of P) ctx.fillRect(a, b, c - a, d - b);
     ctx.fillStyle = INK;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (at(x, y) && (!at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1))) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+    drawHoles(ctx, r, ox, oy);
     if (here) {
       const big = P.reduce((u, q) => ((q[2] - q[0]) * (q[3] - q[1]) > (u[2] - u[0]) * (u[3] - u[1]) ? q : u));
-      ctx.fillStyle = RED;
-      ctx.fillRect(Math.floor((big[0] + big[2]) / 2) - 1, Math.floor((big[1] + big[3]) / 2) - 1, 4, 4);
+      hereMark(ctx, r, ox, oy, Math.floor((big[0] + big[2]) / 2), Math.floor((big[1] + big[3]) / 2), (x, y) => at(x - x0, y - y0));
     }
     return;
   }
@@ -919,11 +920,55 @@ function drawRoom(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: num
       ctx.fillRect(x, ty + k, w, 1);
     }
   });
-  if (here) {
-    ctx.fillStyle = RED;
-    ctx.fillRect(cx - 1, cy - 1, 4, 4);
+  if (px) drawHoles(ctx, r, ox, oy);
+  if (here) hereMark(ctx, r, ox, oy, cx, cy, (x, y) => x >= rx + 1 && y >= ry + 1 && x < rx + rw - 1 && y < ry + rh - 1);
+}
+
+// OS FUROS no mapa (DESIGN.md §73, passo 4): cada furo redondo de luz do teto vira um círculo pequeno (5 px, mais ou menos o tamanho dele com o
+// aro), de tinta, com o céu claro dentro. Um por sala; os de um grupo de salas formam uma face do dado (no capítulo 1: 1, 2 e 3)
+function drawHoles(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number) {
+  for (const h of r.holes ?? []) {
+    const x = Math.round(ox + h.x);
+    const y = Math.round(oy + h.y);
+    ctx.fillStyle = INK;
+    ctx.fillRect(x - 1, y - 2, 3, 1);
+    ctx.fillRect(x - 1, y + 2, 3, 1);
+    ctx.fillRect(x - 2, y - 1, 1, 3);
+    ctx.fillRect(x + 2, y - 1, 1, 3);
+    ctx.fillStyle = SKY;
+    ctx.fillRect(x - 1, y - 1, 3, 3);
   }
 }
+
+// "você está aqui" (o quadradinho vermelho, 4 px): no meio da sala; se ali houver um furo, o mais perto possível ao lado dele, sem encostar
+// nele e sem sair da sala (`inside`)
+function hereMark(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number, cx: number, cy: number, inside: (x: number, y: number) => boolean) {
+  const hs = (r.holes ?? []).map((h) => [Math.round(ox + h.x), Math.round(oy + h.y)]);
+  // (`g` = a folga em volta do furo: 1 px; numa sala pequena demais, encostado)
+  const free = (x: number, y: number, g: number) => hs.every(([hx, hy]) => x - 1 > hx + 2 + g || x + 2 < hx - 2 - g || y - 1 > hy + 2 + g || y + 2 < hy - 2 - g);
+  const fits = (x: number, y: number) => inside(x - 1, y - 1) && inside(x + 2, y + 2);
+  if (!free(cx, cy, 0)) {
+    for (const g of [1, 0]) {
+      let best: [number, number, number] | null = null;
+      for (let dy = -8; dy <= 8; dy++)
+        for (let dx = -8; dx <= 8; dx++) {
+          if (!free(cx + dx, cy + dy, g) || !fits(cx + dx, cy + dy)) continue;
+          const cost = dx * dx + dy * dy + (dy < 0 ? 0.5 : 0); // (de preferência embaixo ou ao lado do furo)
+          if (!best || cost < best[2]) best = [dx, dy, cost];
+        }
+      if (best) {
+        cx += best[0];
+        cy += best[1];
+        break;
+      }
+    }
+  }
+  ctx.fillStyle = RED;
+  ctx.fillRect(cx - 1, cy - 1, 4, 4);
+  hereAt = [cx, cy];
+}
+// (onde ficou o "você está aqui": o mapa o pinta de novo depois das bocas dos corredores, que passam por cima do contorno da sala)
+let hereAt: [number, number] | null = null;
 
 function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElement; regs: Region[] } {
   void lay;
@@ -1022,6 +1067,7 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
       else cx.fillRect(px, c[1] >= room.y + room.h ? py - 1 : py + CELL_H - 1, CELL_W, 2);
     }
   }
+  hereAt = null;
   for (const r of roomsHere) if (visited(r.key)) drawRoom(cx, r, ox, oy, !!d.here && named(r.key, [d.here]), !!w.px);
   if (w.px) {
     // as bocas dos corredores: o miolo do corredor passa por cima do contorno da sala (a porta aberta)
@@ -1033,6 +1079,11 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
         const [x, y] = l.pts[end];
         cx.fillRect(Math.round(ox + x) - 1, Math.round(oy + y) - 1, 3, 3);
       }
+    }
+    const h = hereAt as [number, number] | null;
+    if (h) {
+      cx.fillStyle = RED;
+      cx.fillRect(h[0] - 1, h[1] - 1, 4, 4);
     }
   }
   if (!roomsHere.some((r) => visited(r.key))) drawCentered(cx, '...', PW, 78, SEPIA);

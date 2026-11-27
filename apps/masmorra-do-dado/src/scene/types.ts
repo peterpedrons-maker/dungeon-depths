@@ -144,6 +144,8 @@ export interface Room {
   // a forma da sala no MAPA do caderno (retângulos do chão, nas coordenadas dela), para salas que não são um retângulo (corredor que vira,
   // alas, câmaras); sem isto, a caixa da sala
   mapRects?: Rect[];
+  // os furos redondos de luz no teto desta sala (x, z da sala; DESIGN.md §73, passo 4): o mapa do caderno marca cada um
+  skyHoles?: [number, number][];
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)
   startYaw: number;
   fog: { color: string; near: number; far: number };

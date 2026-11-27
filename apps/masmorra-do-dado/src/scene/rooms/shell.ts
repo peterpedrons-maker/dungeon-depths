@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { floorTexture } from '../textures';
 import { ARCH_TOP, buildDoor, buildEntrance, doorFrame, entryFrame, Kit, lambert, T, type DoorSide, type EntrySide, type Holes } from '../kit';
+import { ceilingWithHoles, holeCeilingMat, HOLE_R } from '../skyhole';
 import type { Box, Rect } from '../types';
 
 export const Z1 = 2;
@@ -14,7 +15,8 @@ export const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number
 
 // `exit`/`entry`: a porta e a entrada em outra parede (DESIGN.md §73, passo 3; o lado e o ponto vêm da planta, `planDoors`). A parede
 // que ganha o vão vira a parede da porta (com o arco); a que perdeu o vão fica lisa.
-export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamps: number; theme?: string; floor?: boolean; exit?: { side: DoorSide; at: number }; entry?: { side: EntrySide; at: number } }) {
+// `skyHoles`: os furos redondos de luz no teto (DESIGN.md §73, passo 4): o teto plano sai recortado (a sala chama `skyHole` em cada um)
+export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamps: number; theme?: string; floor?: boolean; exit?: { side: DoorSide; at: number }; entry?: { side: EntrySide; at: number }; skyHoles?: [number, number][] }) {
   const X0 = -o.hx;
   const X1 = o.hx;
   const Z0 = o.z0;
@@ -27,7 +29,8 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
   const en = o.entry ?? { side: 'F', at: 0 };
   if (ex.side !== 'B' && ex.side === en.side) throw new Error('porta e entrada na mesma parede');
   if (o.floor !== false) kit.plane(W, L, lambert(floorTexture([W / T, L / T], theme)), 0, 0, zm, -Math.PI / 2);
-  kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
+  if (o.skyHoles?.length) kit.group.add(ceilingWithHoles(X0, X1, Z0, Z1, H, o.skyHoles, holeCeilingMat(kit, 0.65, 19)));
+  else kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
   const plainEntry = en.side === 'F' && en.at === 0;
   const plainExit = ex.side === 'B' && ex.at === 0;
   const entrance = buildEntrance(kit, plainEntry ? { x0: X0, x1: X1, z: Z1, h: H } : { x0: X0, x1: X1, z: Z1, h: H, frame: entryFrame(en.side, en.at, X0, X1, Z0, Z1) });
@@ -74,7 +77,9 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
     },
     // ABÓBADA de berço baixa (DIRECAO_DE_ARTE.md §4.5): nasce em `spring` nas paredes laterais e sobe até `crown` no meio; arcos de reforço
     // (pedra lavrada) a cada `ribEvery` m e uma imposta ao longo das paredes. Devolve a altura da abóbada em x.
-    vault(spring: number, crown: number, ribEvery = 2.6) {
+    // `holes`: furos redondos de luz (DESIGN.md §73): a abóbada fica vazada em cada um (um círculo visto de cima) e o arco de reforço que
+    // passaria por ele não é feito (o furo toma o lugar dele)
+    vault(spring: number, crown: number, ribEvery = 2.6, holes: [number, number][] = []) {
       const hx = (X1 - X0) / 2;
       const rise = crown - spring;
       const r = (hx * hx + rise * rise) / (2 * rise);
@@ -103,12 +108,24 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
       geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       geo.setIndex(idx);
       geo.computeVertexNormals();
-      const vm = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: kit.brick([1, 1], 0.62, 23).map, side: THREE.DoubleSide }));
+      const vMat = new THREE.MeshLambertMaterial({ map: kit.brick([1, 1], 0.62, 23).map, side: THREE.DoubleSide });
+      if (holes.length) {
+        // (o vazado: no shader, cada pedaço da abóbada que cai dentro de um furo, visto de cima, é descartado; a malha é filha direta da
+        // sala, então a posição do vértice é a da sala)
+        const list = holes.map(([hx, hz]) => `if (distance(vVaultXZ, vec2(${hx.toFixed(3)}, ${hz.toFixed(3)})) < ${HOLE_R.toFixed(3)}) discard;`).join('\n');
+        vMat.onBeforeCompile = (sh) => {
+          sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vVaultXZ;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvVaultXZ = position.xz;');
+          sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vVaultXZ;').replace('void main() {', `void main() {\n${list}`);
+        };
+        vMat.customProgramCacheKey = () => 'vault-holes:' + holes.map((h) => h.join(',')).join(';');
+      }
+      const vm = new THREE.Mesh(geo, vMat);
       kit.add(vm);
       // arcos de reforço: um setor de anel extrudado, rente à abóbada
       const n = Math.max(1, Math.round((Z1 - Z0) / ribEvery));
       for (let k = 1; k < n; k++) {
         const z = Z0 + ((Z1 - Z0) * k) / n;
+        if (holes.some(([, hz]) => Math.abs(z - hz) < HOLE_R + 0.5)) continue;
         const sh = new THREE.Shape();
         sh.absarc(0, cy, r + 0.02, Math.PI / 2 - a, Math.PI / 2 + a, false);
         sh.absarc(0, cy, r - 0.14, Math.PI / 2 + a, Math.PI / 2 - a, true);
