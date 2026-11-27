@@ -313,8 +313,8 @@ function decorate(
       const [px, pz] = at(t + (rnd() - 0.5) * 0.8);
       const wx = px + ox * (w / 2);
       const wz = pz + oz * (w / 2);
-      if (rnd() < (deep ? 0.75 : 0.5)) kit.damp(wx, y + 0.75 + rnd() * 0.7, wz, -ox, -oz, 1.1 + rnd() * 0.6);
-      if (rnd() < (deep ? 0.55 : 0.2)) kit.moss(wx, y + 0.3, wz, -ox, -oz, 0.7 + rnd() * 0.4);
+      if (rnd() < (deep ? 0.75 : 0.5)) kit.damp(wx, y + 0.75 + rnd() * 0.7, wz, -ox, -oz, 1.1 + rnd() * 0.6).userData.merge = true;
+      if (rnd() < (deep ? 0.55 : 0.2)) kit.moss(wx, y + 0.3, wz, -ox, -oz, 0.7 + rnd() * 0.4).userData.merge = true;
       // pedras soltas junto da parede do outro lado (pequenas: não atrapalham o passo)
       if (rnd() < 0.6) {
         const [qx, qz] = at(t + (rnd() - 0.5) * 1.2);
@@ -324,6 +324,7 @@ function decorate(
           const g = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), kit.stone);
           g.position.set(qx + o2x * (w / 2 - 0.14 - rnd() * 0.1) + d[0] * (rnd() - 0.5) * 0.5, y + sz * 0.55, qz + o2z * (w / 2 - 0.14 - rnd() * 0.1) + d[1] * (rnd() - 0.5) * 0.5);
           g.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+          g.userData.merge = true; // (junta-se numa malha só, na hora de assar)
           kit.group.add(g);
         }
       }
@@ -352,13 +353,14 @@ function decorate(
       const g = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), kit.stone);
       g.position.set(cx + (rnd() - 0.5) * 0.45, y + sz * 0.55, cz + (rnd() - 0.5) * 0.45);
       g.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+      g.userData.merge = true;
       kit.group.add(g);
     }
     if (rnd() < 0.5) {
       // na parede de frente para quem chega, no canto de cima
       const wx = px + din[0] * (w / 2) - dout[0] * (w / 2 - 0.45);
       const wz = pz + din[1] * (w / 2) - dout[1] * (w / 2 - 0.45);
-      kit.web(wx, y + h - 0.42, wz, -din[0], -din[1], rnd() < 0.5, 0.8);
+      kit.web(wx, y + h - 0.42, wz, -din[0], -din[1], rnd() < 0.5, 0.8); // (a teia espelhada não se junta: o espelho vira as faces do avesso)
     }
   }
 }

@@ -683,8 +683,11 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const updateNotebook = (dt: number, nLit: number) => {
     if (v !== 2 || nb === 'done') return;
     if (nb === 'shown') {
-      // passou direto para dentro do salão (além do primeiro par de colunas) ou acendeu um braseiro sem pegar o caderno: o dado chama
-      if (nLit > 0 || ctx.player.pos.z < -5.6) nbT += dt;
+      // passou direto para dentro do salão (além do primeiro par de colunas) ou acendeu um braseiro sem pegar o caderno: o dado chama.
+      // (só com o jogador DENTRO do Vestíbulo: a sala vizinha também roda este código, com a posição do jogador nas coordenadas daqui)
+      const lp = ctx.player.pos;
+      const inside = lp.x > X0 && lp.x < X1 && lp.z > Z0 && lp.z < Z1 && Math.abs(lp.y - 1.6) < 1.5;
+      if (inside && (nLit > 0 || lp.z < -5.6)) nbT += dt;
       if (nbT > 0.6 && !ctx.paused()) {
         nb = 'talked';
         ctx.lookAt(nbPos, 0.9);
