@@ -73,6 +73,8 @@
   50% { box-shadow: 0 0 0 calc(7px * var(--ui, 1)) rgba(240, 200, 104, 0), 0 0 calc(22px * var(--ui, 1)) rgba(240, 200, 104, 0.9); transform: scale(1.12); }
 }
 .book-call.on ~ .hudbtns button:not(.diary-btn) { opacity: 0.2; pointer-events: none; }
+/* a tecla do caderno embaixo do botão (PC), quando uma folha dela foi achada e ainda não foi lida (DESIGN.md §78) */
+.hudbtns .book-key { position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); font-size: var(--fs); pointer-events: none; }
 
 /* ── a pergunta do dado: o glifo grande ao lado do dado e as 5 opções embaixo ───────────────── */
 .quiz { position: absolute; inset: 0; z-index: 22; pointer-events: none; }

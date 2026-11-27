@@ -70,7 +70,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **janela de conversa** estilo RPG no rodapé (`src/ui/DialogueBox.tsx`, `src/story/dialogue.ts`; salas usam `ctx.say(...)`)
   e **diário** (tecla J ou botão do canto): um **livro 3D** que o personagem tira da bolsa, abre e fecha; as folhas **viram de verdade**
   (`src/book/book3d.ts`; desenhado num canvas PRÓPRIO em resolução cheia por cima do jogo, para as letras ficarem nítidas, e ocupa quase a tela toda; `DESIGN.md` §34) e todo o conteúdo é desenhado em pixels **no próprio papel amarelado** (`src/book/pages.ts` + fonte
-  bitmap com acentos em `src/book/font.ts`), nada de interface por cima. Na contracapa há o **índice** (Dela, Símbolos, Faces, Textos,
+  bitmap com acentos em `src/book/font.ts`), nada de interface por cima. Ao achar uma **folha dela**, o personagem pensa uma frase curta, o botão do caderno pulsa (no PC aparece, com a tecla J) e o caderno abre direto na folha nova (`diary.newPage`, `DESIGN.md` §78). Na contracapa há o **índice** (Dela, Símbolos, Faces, Textos,
   Mapa, Notas, Gemas): escolher vira até lá NUM MAÇO de folhas de uma vez, em leque (as setas e a roda viram uma página; `DESIGN.md` §74). **As 21 gemas** (`DESIGN.md` §69, `src/story/gems.ts`): uma por ponto do dado, 3, 3, 3, 4,
   4, 4 por capítulo (no 1: Cisterna, Ala do Papel e C6; os outros 11 segredos guardam folhas dela, p8 a p18); vão para o **fundo do caderno** (a parte
   dura da capa de trás, com o dado aberto em cruz e 21 furos, enchidos em ordem) com a **cena da gema** (`src/scene/gemscene.ts`: ela vem, brilha,
@@ -95,7 +95,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   **configurações** em abas (Áudio, Imagem, Controles com remapear teclas, Acessibilidade, Idioma; valem para o aparelho, `src/story/config.ts`).
   Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
   no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
-  **Abertura da editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`, `DESIGN.md` §78): ao abrir o jogo, uma luz quente acende numa parede das
+  **Abertura da editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`, `DESIGN.md` §79): ao abrir o jogo, uma luz quente acende numa parede das
   salas e o giz do jogo risca o símbolo e o nome: a editora é **«Cinco Riscos»** (escolha do Pedro; o símbolo é a contagem de cinco dos
   condenados; uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
   `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, fundo `src/ui/loadart.ts` no pós-processo,
@@ -109,7 +109,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em
   pontilhado (`uDis`/`rtSnap`); créditos com a câmera girando. **Caixas** em pedra de 9 pedaços (`tools/build_frames.py` → `src/ui/frames.css`),
   ouro no Escrivão, pensamento em tira de papel. **O Escrivão animado** (`src/scene/scribeRig.ts`, `public/models/escrivao.glb`, `DESIGN.md` §70):
-  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos; mãos e
+  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos (a janela grande, de barras finas; na 1ª vez, uma mini cena vira a câmera para ele; o ciclo de passos sem o tranco da emenda, `DESIGN.md` §78); mãos e
   cabeça por código; `?escrivao=antigo` volta ao de código; prévia `?vitrine=escrivao`; `?intro=poco` testa a cena do poço. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).

@@ -269,13 +269,20 @@ export function buildRespiro1(ctx: Ctx): Room {
 
   // a JANELA de grade (trecho C, parede oeste, x = -7) e, do outro lado, a galeria distante onde o Escrivão passa
   {
+    // (pedido do Pedro: a janela era baixa, com seis barras grossas e uma travessa no meio, e não deixava ver o Escrivão. Agora ela vai de
+    // 0,7 a 2,4 m e tem 1,6 m de largura, com quatro barras finas e uma travessa só, lá em cima, fora da linha dos olhos; DESIGN.md §78)
     const wz = cz(4);
-    wallAt(-7, wz, 1, 0, 2, 1.0, 0, 41);
-    wallAt(-7, wz, 1, 0, 2, CH - 2.1, 2.1, 42);
-    for (const dz of [-0.85, 0.85]) wallAt(-7, wz + dz, 1, 0, 0.3, 1.1, 1.0, 43);
+    const WY0 = 0.7;
+    const WY1 = 2.4;
+    wallAt(-7, wz, 1, 0, 2, WY0, 0, 41);
+    wallAt(-7, wz, 1, 0, 2, CH - WY1, WY1, 42);
+    for (const dz of [-0.9, 0.9]) wallAt(-7, wz + dz, 1, 0, 0.2, WY1 - WY0, WY0, 43);
     const iron = lambert(null, 0x2a2a30);
-    for (let k = -0.55; k <= 0.56; k += 0.22) kit.box(0.04, 1.1, 0.04, iron, -7, 1.55, wz + k, false);
-    kit.box(0.06, 0.06, 1.4, iron, -7, 1.55, wz, false);
+    for (const k of [-0.6, -0.2, 0.2, 0.6]) kit.box(0.025, WY1 - WY0, 0.025, iron, -7, (WY0 + WY1) / 2, wz + k, false);
+    kit.box(0.03, 0.03, 1.6, iron, -7, WY1 - 0.12, wz, false);
+    kit.box(0.24, 0.06, 1.7, kit.slab, -6.95, WY0 - 0.03, wz, false); // o peitoril de pedra lavrada
+    // a luz quente da galeria entra pela janela e cai no chão do corredor: chama o olhar para ela
+    kit.lightPool(-6.35, wz, 1.7, 0, 0xffb060).opacity = 0.22;
     boxes.push(mkBox(-7.1, 0, wz - 1, -6.95, CH, wz + 1));
     // a galeria lá longe: um corredor iluminado, mais baixo, do outro lado de um vão escuro
     kit.plane(8, 14, lambert(null, 0x0a0910), -11, -1.2, wz, -Math.PI / 2, 0, false);
@@ -287,12 +294,18 @@ export function buildRespiro1(ctx: Ctx): Room {
   }
   const scribe = makeScribeRig(); // (o animado, DESIGN.md §70; chega depois da sala montada: entra na camada dela)
   void scribe.ready.then((ok) => ok && adoptLayers(kit.group, scribe.group));
-  scribe.group.position.set(-13, 0.2, cz(4) + 4);
+  scribe.group.position.set(-13, 0.2, cz(4) + 3.2);
   scribe.group.rotation.y = Math.PI; // anda para -z
   scribe.group.visible = false;
   kit.group.add(scribe.group);
   let scribeT = -1; // -1 = esperando; 0..1 = passando
   let scribeCool = 6;
+  // A 1ª VEZ é uma mini cena (pedido do Pedro): quando o jogador chega à janela, ele para, a câmera e o dado se viram para lá e acompanham o
+  // Escrivão passando; depois ele segue. Das outras vezes o Escrivão só passa (se o jogador estiver por perto).
+  let scribeSeen = false;
+  let scribeCine = -1; // tempo dentro da mini cena (-1 = sem cena)
+  let scribeLook = 0;
+  const scribeHead = new THREE.Vector3();
 
   // ══ O PÁTIO ══
   const { x0: X0, x1: X1 } = COURT;
@@ -365,7 +378,6 @@ export function buildRespiro1(ctx: Ctx): Room {
       leaf.visible = false;
       diary.addPage('p2');
       ctx.sfx('gem');
-      ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
     },
   });
 
@@ -579,20 +591,46 @@ export function buildRespiro1(ctx: Ctx): Room {
       const lp = ctx.player.pos;
       if (scribeT < 0) {
         scribeCool -= dt;
-        if (scribeCool <= 0 && lp.x < -4 && Math.abs(lp.z - cz(4)) < 4) {
+        // a 1ª vez, só quando o jogador está NA janela (de lá se vê a galeria inteira); depois, em qualquer ponto daquele trecho
+        const atWindow = lp.x < -5 && Math.abs(lp.z - cz(4)) < 1.1;
+        if (scribeCool <= 0 && (scribeSeen ? lp.x < -4 && Math.abs(lp.z - cz(4)) < 4 : atWindow) && !ctx.paused()) {
           scribeT = 0;
           scribe.group.visible = true;
           scribe.setAlpha(1);
+          if (!scribeSeen) {
+            scribeSeen = true;
+            scribeCine = 0;
+            scribeLook = 0;
+            ctx.freeze(true);
+            ctx.dieReact('perk');
+          }
         }
       } else {
         scribeT += dt / 9;
-        scribe.group.position.z = cz(4) + 4 - 8 * scribeT;
-        scribe.animate(dt, t, { walk: 8 / 9, headYaw: Math.sin(scribeT * 6) * 0.2 }); // (a velocidade de verdade: 8 m em 9 s)
+        scribe.group.position.z = cz(4) + 3.2 - 8 * scribeT; // (começa já à vista da janela)
+        // passando bem na frente da janela, ele vira o capuz para o jogador (um instante) e volta a olhar o caminho
+        const face = Math.max(0, 1 - Math.abs(scribe.group.position.z - cz(4)) / 1.6);
+        scribe.animate(dt, t, { walk: 8 / 9, headYaw: Math.sin(scribeT * 6) * 0.2 * (1 - face) - 0.85 * face * face * (3 - 2 * face) }); // (a velocidade de verdade: 8 m em 9 s)
         scribe.setAlpha(Math.min(1, Math.min(scribeT, 1 - scribeT) * 8));
         if (scribeT >= 1) {
           scribeT = -1;
           scribe.group.visible = false;
           scribeCool = 70;
+        }
+      }
+      // a mini cena: a câmera e o dado acompanham o capuz dele pela janela, e o jogador fica parado até ele passar do meio
+      if (scribeCine >= 0) {
+        scribeCine += dt;
+        scribeHead.set(scribe.group.position.x, scribe.group.position.y + 1.6, scribe.group.position.z);
+        scribeLook -= dt;
+        if (scribeLook <= 0) {
+          ctx.lookAt(scribeHead, scribeCine < 0.2 ? 1.0 : 0.4);
+          ctx.dieLook(scribeHead, 1);
+          scribeLook = scribeCine < 0.2 ? 1.0 : 0.35;
+        }
+        if (scribeCine > 6.2 || scribeT < 0) {
+          scribeCine = -1;
+          ctx.freeze(false);
         }
       }
       // o reflexo

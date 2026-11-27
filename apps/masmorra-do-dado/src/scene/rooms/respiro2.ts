@@ -394,7 +394,6 @@ export function buildRespiro2(ctx: Ctx): Room {
       gemLight.intensity = 0;
       ctx.sfx('gem');
       diary.addPage('p11');
-      ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
     },
   });
 
@@ -415,7 +414,6 @@ export function buildRespiro2(ctx: Ctx): Room {
       leaf.visible = false;
       diary.addPage('p4');
       ctx.sfx('gem');
-      ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
     },
   });
 

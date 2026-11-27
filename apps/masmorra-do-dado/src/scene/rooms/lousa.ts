@@ -194,19 +194,21 @@ export function buildLousa(ctx: Ctx): Room {
   const mkCopy = (z: number, target: string, key: string) => {
     const b = makeWallBoard(kit, ctx, { x: X1 - 0.02, y: 1.45, z, nx: -1, nz: 0, key });
     boards.push(b);
-    // o glifo talhado ao lado (à direita de quem lê = rumo à entrada)
-    const ins = kit.inscribe({ words: [target], x: X1 - 0.025, y: 1.45, z: z + 1.0, nx: -1, nz: 0, size: 0.42, age: 0.15, frame: true, seed: 5 + z * 3 });
+    // o glifo talhado ao lado (à direita de quem lê = rumo à entrada). A 1,3 m do centro da lousa: a lousa tem 1,64 m e a moldura de pedra
+    // 1,95 m; a 1,0 m a borda dela tapava o começo do símbolo (print do Pedro)
+    const ins = kit.inscribe({ words: [target], x: X1 - 0.025, y: 1.45, z: z + 1.3, nx: -1, nz: 0, size: 0.42, age: 0.15, frame: true, seed: 5 + z * 3 });
     return { b, ins, target, key, solved: false, idle: 0 };
   };
   const L1 = mkCopy(0.1, 'n2', 'lousa1');
   const L2 = mkCopy(-4.3, 'n3', 'lousa2');
   kit.torch(X0 + 0.1, 1.9, 0.2, 1, 0, 0.7);
-  // (a da direita mais alta: a 1,9 m ela ficava a 0,7 m do TRÊS talhado, que parecia aceso com a luz dela)
-  kit.torch(X1 - 0.1, 2.75, -2.6, -1, 0, 1.9);
+  // (a da direita mais alta: a 1,9 m ela ficava a 0,7 m do TRÊS talhado, que parecia aceso com a luz dela; e mais perto da grade, para ficar a
+  // 1,6 m do TRÊS, que passou a ficar 1,3 m ao lado da lousa)
+  kit.torch(X1 - 0.1, 2.75, -2.0, -1, 0, 1.9);
   kit.soot(X0, 2.4, 0.2, 1, 0, 0.6, 1.1);
-  kit.soot(X1, 3.25, -2.6, -1, 0, 0.6, 1.1);
+  kit.soot(X1, 3.25, -2.0, -1, 0, 0.6, 1.1);
   kit.lightPool(X0 + 0.7, 0.2, 1.4, 0, 0xff9a3c).opacity = 0.2;
-  kit.lightPool(X1 - 0.7, -2.6, 1.4, 0, 0xff9a3c).opacity = 0.2;
+  kit.lightPool(X1 - 0.7, -2.0, 1.4, 0, 0xff9a3c).opacity = 0.2;
   // fuligem acima dos três braseiros do chão (os da porta enegrecem a parede do fundo; o do meio, a parede esquerda)
   kit.soot(-2.5, 1.55, Z0, 0, 1, 1.0, 1.9);
   kit.soot(2.5, 1.55, Z0, 0, 1, 1.0, 1.9);

@@ -5,7 +5,7 @@ import type { RostoMove } from '../scene/dielife';
 import { FACES } from '../faces';
 import { bayer, rnd, wallBase } from './chalkart';
 
-// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §78): uma parede das salas no escuro e uma bancada de pedra embaixo.
+// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §79): uma parede das salas no escuro e uma bancada de pedra embaixo.
 // - Na bancada corre uma CANALETA por onde o fogo anda conforme carrega, e cinco BRASEIROS que se ACENDEM um a um quando o fogo chega
 //   (a mecânica do jogo: o fogo corre e acende); cada um ilumina a parede e solta faíscas.
 // - Na parede, talhada em marfim, a frase «ACENDER BRASEIRO» (a primeira coisa que o dado diz no jogo). Com os cinco acesos, a frase

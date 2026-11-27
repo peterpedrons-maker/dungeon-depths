@@ -1551,7 +1551,45 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
   fala; a cena inteira; o dado volta na face 2 com o `peso`; a placa abre a porta, que continua aberta depois de recolher o dado; e chegar à
   luz encerra o capítulo. Ganchos de teste: `__altar.state()`/`crack()`, `__mdd.altarState()`.
 
-## 78. A abertura Pedra-Sabão, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
+## 78. Folhas dela mais discretas, o aviso da folha nova, a Lousa, a janela do Escrivão e o andar dele (pedidos do Pedro)
+- **As folhas não entregam o fim.** A p8 (a 1ª folha secreta, na Lousa) dizia "Vou anotar os furos de luz do teto. Só os redondos. O primeiro fica
+  onde eu acordei": mandava contar os furos e apontava para o plot. Agora a luz do teto aparece só de leve, sem instrução (`herpages.ts`):
+  - p8: "Tem luz entrando pelo teto aqui também." · "Fiquei parada embaixo dela um tempo. Não sei esperando o quê.";
+  - p7: "Contei tudo aqui. Os cantos, os degraus, as luzes lá em cima." (era "buracos redondos no teto, sempre um, dois...");
+  - p18: "Parei de contar. Cada vez dava outro número." (era "Parei de contar os furos").
+  O fio continua (ela fica embaixo da luz, conta tudo por mania, para de contar), mas ninguém diz "furos" nem manda contar (`HISTORIA.md`).
+- **A folha nova chama o jogador para ler** (`diary.newPage`, `App.tsx`, `book3d.ts`). Ao pegar uma folha dela:
+  - o personagem pensa uma frase curta: "Uma folha arrancada. A letra dela." na 1ª, depois "Outra folha dela." / "Mais uma folha dela." /
+    "A letra dela de novo."; antes de ler o relato, "Uma folha arrancada. A mesma letra do caderno.";
+  - o botão do caderno pulsa em dourado até ele abrir o caderno. No PC, que não tem botão fixo, ele aparece pulsando, com a tecla do
+    caderno (J) embaixo;
+  - o caderno abre **direto na folha nova** (e então para de pulsar).
+  A legenda antiga ("Uma folha arrancada · É do caderno. A letra dela.") saiu das sete salas: o aviso agora é um só, no caderno.
+- **A Lousa (sala 3):** os glifos que se copiam (DOIS e TRÊS) ficavam a 1,0 m do centro das lousas. A lousa tem 1,64 m e a moldura de pedra
+  1,95 m, então a borda dela tapava o começo do símbolo (print do Pedro). Agora ficam a 1,3 m. A tocha da direita foi para z = −2,0, para
+  continuar a 1,6 m ou mais do TRÊS.
+- **A janela do Escrivão (Corredor dos Nichos):**
+  - **A janela:** era baixa (1,0 a 2,1 m), com seis barras grossas e uma travessa no meio, bem na altura dos olhos. Agora vai de 0,7 a 2,4 m,
+    tem 1,6 m de largura, quatro barras finas e uma travessa só, lá em cima. Ganhou um peitoril de pedra lavrada e uma mancha de luz quente
+    no chão do corredor, que chama o olhar.
+  - **A mini cena (só na 1ª vez):** quando o jogador chega à janela, ele para, e a câmera e o dado se viram e acompanham o capuz do
+    Escrivão pela janela. Bem na frente dela, ele vira o capuz para o jogador por um instante. O jogador é solto quando ele passa do meio
+    (cerca de 6 s). Das outras vezes ele só passa.
+- **O andar do Escrivão travava** (`scribeRig.ts`, `walkLoop`). O ciclo é recortado do "Start Walking", e a emenda do fim com o começo misturava
+  o quadril com o do começo do ciclo **sem somar o passo andado**.
+  - Na costura o corpo escorregava cerca de 1,1 m para trás e, a cada volta (1,2 s), pulava de novo para a frente num quadro só: a cabeça dava
+    um tranco de cerca de 3900 m/s².
+  - Agora o passo é somado antes de misturar, e o recorte é o que melhor fecha o ciclo (1,067 s + 1,484 s, achado por busca; o antigo,
+    1,15 + 1,333 s, era curto demais). Medido no esqueleto a 60 quadros por segundo: o maior tranco da cabeça caiu para 11 m/s², e os pés
+    ficam no normal do passo.
+  - Vale para as duas cenas do Escrivão andando (o poço e a janela).
+- **Testado no navegador**, no PC (1280×720) e no celular (915×412):
+  - o pensamento, o botão pulsando (com o J no PC) e o caderno abrindo na p8;
+  - as duas lousas com o símbolo livre;
+  - a mini cena da janela, com o jogador parado, a câmera acompanhando e o capuz virando, e o jogador solto no fim.
+  - Ganchos de teste: `__mdd.addPage`, `setFlag`, `knowHer`, `newPage`.
+
+## 79. A abertura da editora, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
 
 - **A editora: «CINCO RISCOS»** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`). A 1ª versão, «Pedra-Sabão» (uma laje clara com o nome a giz),
   não agradou: o Pedro pediu outro nome e um símbolo mais original, desenhado pelo giz do jogo. Foram propostas «Quina» (a face do cinco feita de

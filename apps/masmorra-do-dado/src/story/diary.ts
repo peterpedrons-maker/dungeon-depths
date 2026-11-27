@@ -38,6 +38,7 @@ export interface DiaryState {
   pages: string[]; // páginas arrancadas do caderno dela que o jogador achou e encaixou de volta
   gems: string[]; // as gemas, na ordem em que foram achadas (cada uma num furo do dado do fundo do caderno; story/gems.ts)
   herKnown?: boolean; // já leu o relato e sabe que o caderno era DELA, outra condenada (antes disso o índice não diz "Dela")
+  newPage?: string | null; // a folha dela que acabou de ser achada e ainda não foi lida: o botão do caderno pulsa e ele abre nela (DESIGN.md §78)
   rooms: string[]; // salas visitadas (para o mapa)
   strokes: Stroke[]; // o que o jogador escreveu à mão no mapa
   stamps: Stamp[]; // símbolos já avistados que o jogador carimbou no mapa
@@ -93,7 +94,11 @@ export const diary = {
   },
   addPage(id: string) {
     if (diaryStore.get().pages.includes(id)) return;
-    diaryStore.set((s) => ({ ...s, pages: [...s.pages, id], unread: s.unread + 1 }));
+    diaryStore.set((s) => ({ ...s, pages: [...s.pages, id], unread: s.unread + 1, newPage: id }));
+  },
+  // o caderno abriu na folha nova: ela foi lida
+  readPage() {
+    if (diaryStore.get().newPage) diaryStore.set((s) => ({ ...s, newPage: null }));
   },
   // true se a gema é nova (vai para o próximo furo do fundo do caderno)
   addGem(id: string): boolean {

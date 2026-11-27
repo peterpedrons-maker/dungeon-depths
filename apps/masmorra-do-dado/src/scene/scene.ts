@@ -144,7 +144,7 @@ export interface SceneOptions {
   onInventory?: (inv: { die: boolean; chalk: boolean }) => void; // o que o jogador já tem nas mãos
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
   load?: boolean; // começa na TELA DE CARREGAMENTO (veio da tela inicial: jogo novo ou outro espaço); o jogo só começa com loadGo()
-  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §78)
+  onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §79)
   onPause?: () => void;
   onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
 }
@@ -3539,7 +3539,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let titleDieYaw = 0;
   const DIE_W = 0.42; // o lado do dado de verdade (worldModel)
   const lightHome = new Map<THREE.DirectionalLight, THREE.Vector3>();
-  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §78): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
+  // O DADO SOZINHO NA TELA INICIAL (pedido do Pedro, DESIGN.md §79): de tempos em tempos, sem ninguém mexer no mouse, ele faz alguma coisa:
   // TENTA ROLAR (força, balança de lado sobre a quina, cai de volta com um baque, duas ou três vezes, e desiste com um suspiro), OLHA EM VOLTA
   // (vira o corpo um pouco para um lado, olha, volta), OLHA O FEIXE de luz lá em cima (inclina para trás; a íris se fecha) ou dá um PULINHO.
   // Sempre volta a ficar reto no chão, de rosto para a câmera.
@@ -3811,7 +3811,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   // sai da tela inicial: continua de onde o espaço ativo parou (ou acorda, num jogo novo).
-  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §78): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
+  // `load`: passa antes pela TELA DE CARREGAMENTO (DESIGN.md §79): o lugar é preparado por baixo do véu preto, o mundo fica parado e o jogo
   // só começa com loadGo() (o clique ou toque do fim do carregamento, que também libera o som e prende o mouse)
   let begun = false;
   let goPending: { cap: (() => void) | null; intro: boolean } | null = null;
@@ -4840,6 +4840,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       gemState: () => ({ active: gemFx.active(), gems: [...(diaryStore.get().gems ?? [])], book: book.opened() }),
       altarState: () => (altar ? { t: +altar.t.toFixed(2), die: dieState, holds } : null), // (testes) a cena do altar (DESIGN.md §77)
+      // (testes) uma folha dela achada agora (o aviso: pensamento, botão pulsando, o caderno abre nela; §78), um marco, e "já sabe que é dela"
+      addPage: (id: string) => diary.addPage(id),
+      setFlag: (f: Flag) => progress.set(f),
+      knowHer: () => diary.knowHer(),
+      newPage: () => diaryStore.get().newPage ?? null,
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),

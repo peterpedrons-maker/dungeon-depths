@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LOAD_BAR, loadStore } from '../story/loading';
 import { useStore } from '../story/store';
 
-// A TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §78): depois de Novo jogo / Continuar / Carregar. A imagem é do motor (`ui/loadart.ts`):
+// A TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §79): depois de Novo jogo / Continuar / Carregar. A imagem é do motor (`ui/loadart.ts`):
 // a parede no escuro, a canaleta por onde o fogo corre acendendo cinco braseiros, a frase «ACENDER BRASEIRO» que acende quando os cinco estão
 // acesos e, no canto, o dado em 2D com o rosto vivo. Aqui fica só o aviso do fim (embaixo da canaleta) e o clique.
 // Espera os modelos, os primeiros quadros e as GRAVAÇÕES DE SOM. No fim, se o som ainda não foi liberado (a página acabou de recarregar), pede

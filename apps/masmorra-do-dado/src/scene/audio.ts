@@ -106,7 +106,7 @@ interface Inst {
 
 export class Sfx {
   // O contexto de áudio nasce LOGO AO ABRIR A PÁGINA (`prepare`), ainda suspenso: assim as gravações baixam e decodificam enquanto a tela da
-  // editora, a tela inicial e a tela de carregamento estão à vista (DESIGN.md §78). Som só sai depois do 1º toque/tecla (`unlock`): até lá,
+  // editora, a tela inicial e a tela de carregamento estão à vista (DESIGN.md §79). Som só sai depois do 1º toque/tecla (`unlock`): até lá,
   // `ac` responde null e nada é agendado (senão tudo tocaria junto quando o som fosse liberado).
   private ctx: AudioContext | null = null;
   private live = false;

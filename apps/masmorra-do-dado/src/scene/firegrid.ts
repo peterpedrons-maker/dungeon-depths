@@ -710,7 +710,6 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
       if (page) {
         ctx.sfx('gem');
         diary.addPage(page);
-        ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
       } else ctx.gem(prize, new THREE.Vector3(x + nx * 0.16, y - 0.05, z + nz * 0.16), ['Uma gema', 'Escondida pela Casa. Nem toda porta é a da frente.', '#7ad8ff']);
       onTake?.();
     },

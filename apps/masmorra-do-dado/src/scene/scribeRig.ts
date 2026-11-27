@@ -33,9 +33,11 @@ export function preloadScribeRig() {
 }
 
 // ── os recortes das animações (medidos no arquivo; ver DESIGN.md §70) ──
-const WALK_A = 1.15; // o ciclo de passos estável: 1,15 s … 2,48 s do "Start Walking"
-const WALK_L = 1.333;
-const SEAM = 0.3; // os últimos 0,3 s do ciclo se fundem com o começo dele (a volta não dá pulo)
+// O ciclo de passos estável: 1,067 s … 2,551 s do "Start Walking". O período do passo é ~1,48 s (achado por busca: é o recorte em que a pose do
+// fim mais se parece com a do começo; o antigo, 1,15 + 1,333 s, era curto demais e as pernas pulavam de fase a cada volta).
+const WALK_A = 1.067;
+const WALK_L = 1.484;
+const SEAM = 0.35; // os últimos 0,35 s do ciclo se fundem com o começo dele (a volta não dá pulo)
 // no "olhar para baixo", aos 1,78 s ele já está debruçado e quase parado (depois varre de um lado ao outro e levanta); parado debruçado, um
 // vaivém lento dentro deste trecho
 const LOOK_SWAY: [number, number] = [1.78, 2.35];
@@ -55,6 +57,9 @@ function walkLoop(src: THREE.AnimationClip) {
   const n = Math.round(WALK_L * fps);
   const tracks: THREE.KeyframeTrack[] = [];
   let speed = 0.8;
+  // quanto o quadril anda para a frente num ciclo (no arquivo, a frente é o eixo y do osso da raiz)
+  const hipsTr = src.tracks.find((tr) => tr.name.endsWith('Hips.position'));
+  const stride = hipsTr ? (interp(hipsTr).evaluate(WALK_A + WALK_L) as ArrayLike<number>)[1] - (interp(hipsTr).evaluate(WALK_A) as ArrayLike<number>)[1] : 0;
   for (const tr of src.tracks) {
     if (tr.name.endsWith('.scale')) continue;
     const f = interp(tr);
@@ -71,6 +76,9 @@ function walkLoop(src: THREE.AnimationClip) {
       const k = THREE.MathUtils.smoothstep((t - (WALK_A + WALK_L - SEAM)) / SEAM, 0, 1);
       if (k > 0) {
         const w = Array.from(f.evaluate(t - WALK_L) as ArrayLike<number>);
+        // O QUADRIL do ciclo anterior está um passo inteiro atrás: soma o passo antes de misturar. (Sem isso, na costura o corpo escorregava
+        // ~1,1 m para trás e, na volta do ciclo, pulava de novo para a frente num quadro só: o "travando" que o Pedro viu, DESIGN.md §78.)
+        if (tr === hipsTr) w[1] += stride;
         if (isQ) {
           qa.fromArray(v);
           qb.fromArray(w);

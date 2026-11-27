@@ -408,7 +408,6 @@ function confirmaExtra(api: FireExtraApi): FireExtra {
       leaf.visible = false;
       diary.addPage('p3');
       ctx.sfx('gem');
-      ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
     },
   };
   let solved = false;

@@ -19,13 +19,15 @@ export const HER_RELATO: string[][] = [
 
 // as folhas arrancadas, na ordem do caderno (os buracos ficam no lugar delas até serem achadas). A ordem é a do caminho da Casa (sala 3 → sala 20):
 // ela escrevia por onde passava. No capítulo 1 são 18: as 7 primeiras e as 11 (p8 a p18) dos segredos que não guardam gema (story/gems.ts).
-// Fios que atravessam as folhas, sempre de leve e sem resolver (HISTORIA.md, "O epílogo" e "As folhas dela"): ela conta os FUROS redondos de luz do teto (p7, p8)
-// e para de contar (p18); acha PEDRAS que brilham e não sabe onde pôr (p10); sonha dentro de uma mão fechada (p13); lembra de cair de muito alto (p16).
+// Fios que atravessam as folhas, sempre de leve e sem resolver (HISTORIA.md, "O epílogo" e "As folhas dela"). Ninguém manda contar nada: ela fica embaixo da
+// LUZ do teto sem saber por quê (p8), conta tudo, por mania, até as luzes (p7), e um dia para de contar (p18); acha PEDRAS que brilham e não sabe onde pôr
+// (p10); sonha dentro de uma mão fechada (p13); lembra de cair de muito alto, com a luz redonda lá em cima (p16). (Pedido do Pedro: a p8 antiga, "vou anotar
+// os furos, só os redondos", entregava o fim; tudo aqui tem de ser ambíguo e discreto.)
 export const HER_PAGES: HerPage[] = [
   {
     id: 'p8',
     where: 'A Lousa (sala 3; o nicho atrás da coluna esquerda, depois de escrever CINCO no soquete frio sob o dado de cinco pontos)',
-    body: ['Vou anotar os furos de luz do teto. Só os redondos.', 'O primeiro fica onde eu acordei.'],
+    body: ['Tem luz entrando pelo teto aqui também.', 'Fiquei parada embaixo dela um tempo. Não sei esperando o quê.'],
   },
   {
     id: 'p9',
@@ -112,13 +114,13 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p7',
     where: 'A Escadaria (no meio da subida)',
-    body: ['Contei as faces de tudo aqui. Quatro cantos, buracos redondos no teto, sempre um, dois...', 'Esta casa tem a forma de alguma coisa que eu conheço. Não lembro do quê.'],
+    body: ['Contei tudo aqui. Os cantos, os degraus, as luzes lá em cima.', 'Esta casa tem a forma de alguma coisa que eu conheço. Não lembro do quê.'],
   },
   {
     id: 'p18',
     where: 'O Fogo que Corre (sala 20; a constelação C5, MENOS em cal no teto: o nicho da parede direita, perto da porta)',
     // (a última folha arrancada do capítulo 1; o relato, escrito depois que "a Casa apagou tudo de novo", mostra que ela voltou a contar)
-    body: ['Parei de contar os furos. Cada vez dava outro número.', 'Contar não me tira daqui.'],
+    body: ['Parei de contar. Cada vez dava outro número.', 'Contar não me tira daqui.'],
   },
 ];
 

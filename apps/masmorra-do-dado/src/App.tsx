@@ -170,6 +170,19 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [hintShown]);
 
+  // FOLHA DELA ACHADA (DESIGN.md §78): o personagem pensa uma frase curta, e o botão do caderno pulsa até ele ler (o caderno abre nela)
+  const lastPage = useRef<string | null | undefined>(dry.newPage);
+  useEffect(() => {
+    const np = dry.newPage ?? null;
+    if (np === lastPage.current) return;
+    lastPage.current = np;
+    if (!np) return;
+    const n = (dry.pages ?? []).length;
+    const known = dry.herKnown ?? !!(dry.notes?.brasa ?? '').trim();
+    const lines = !known ? ['Uma folha arrancada. A mesma letra do caderno.'] : n <= 1 ? ['Uma folha arrancada. A letra dela.'] : [['Outra folha dela.', 'Mais uma folha dela.', 'A letra dela de novo.'][n % 3]];
+    window.setTimeout(() => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false }), 450);
+  }, [dry.newPage, dry.pages, dry.herKnown, dry.notes]);
+
   // símbolo novo: aviso rápido no topo
   // (os avisos entram numa fila e só aparecem DEPOIS da conversa; no máximo os 3 mais recentes)
   useEffect(() => {
@@ -318,10 +331,12 @@ export default function App() {
           no momento em que o caderno é achado (a tela escurece e ele pulsa) */}
       {!inMenu && !complete && (
         <div className="hudbtns">
-          {hasBook && (coarse || uis.bookCall) && !uis.bookOut && (
-            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) ? ' call' : ''}`} onClick={toggleDiary} aria-label="Caderno" title="Caderno (J)">
+          {hasBook && (coarse || uis.bookCall || !!dry.newPage) && !uis.bookOut && (
+            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) || dry.newPage ? ' call' : ''}`} onClick={toggleDiary} aria-label="Caderno" title="Caderno (J)">
               <PixelIcon name="diario" size={32} />
               {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
+              {/* (no PC, que não tem botão fixo: a folha nova faz o botão aparecer pulsando, com a tecla do caderno embaixo) */}
+              {dry.newPage && !uis.bookCall && <span className="keycap-hud hint-pc book-key">{keyName(cfg.keys.diario)}</span>}
             </button>
           )}
           {coarse && !uis.bookOut && (
