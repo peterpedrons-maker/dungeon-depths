@@ -1412,12 +1412,15 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
 
 O tutorial de antes abria no relato dela e depois soltava o jogador no índice para "ver tudo", com um pensamento curto por parte: não dizia o que
 fazer, e o jogador tinha de adivinhar que precisava passar por todas as partes. Agora (`book3d.ts`, `tut`):
-- **Começa no índice.** O personagem: "O caderno dela." · "Ela dividiu tudo em partes. Vou ver uma por uma."
+- **Começa no índice.** O personagem: "Escrito à mão. Dividido em partes." · "Vou ver uma por uma." (ele ainda NÃO sabe de quem é o caderno:
+  nada diz "ela" antes da leitura, e a 1ª linha do índice se chama "Folhas")
 - **A parte da vez pisca em ouro** no índice (`View.guide`/`blink`, `guideFrame` em `pages.ts`). Só ela responde; tocar em outra linha dá só o
   "plim". O jogador não folheia por conta própria enquanto o tutorial dura (setas, roda e teclas esperam).
 - **Em cada parte o personagem diz o que é e o que dá para fazer**, com as palavras dele (aqui ele fala um pouco mais que no resto do jogo, §48;
   é ele quem ensina o caderno):
-  - **Dela:** o relato ("A letra não é minha." · "Ela também acordou embaixo da luz." · "E parou no meio."); vira para as folhas arrancadas
+  - **Folhas → Dela:** o relato, que agora diz "Dizem que estou condenada." no alto da 2ª página; é LENDO que ele descobre ("A letra não é
+    minha." · "É de uma mulher. Condenada." · "Ela também acordou embaixo da luz." · "E parou no meio."), e a linha do índice vira "Dela"
+    (`diary.knowHer`, `HER_ROW_BEFORE`; correção pedida pelo Pedro: antes ele dizia "o caderno dela" antes de ler qualquer coisa); vira para as folhas arrancadas
     ("Faltam folhas. Arrancadas." · "Se eu achar alguma, ponho de volta no lugar.").
   - **Símbolos:** vai até BRASEIRO ("Os símbolos das paredes. Os que eu já vi estão aqui." · "Ela anotava o que achava que eram. Se anotava, era
     importante." · "Este ela não sabia. E eu, o que acho que é?"). **Tarefa:** o campo embaixo do "?" dela abre e pisca até ele escrever e sair do

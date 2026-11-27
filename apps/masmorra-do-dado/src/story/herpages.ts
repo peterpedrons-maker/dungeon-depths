@@ -9,10 +9,12 @@ export interface HerPage {
 }
 
 // O RELATO dela: as duas primeiras páginas do caderno, logo depois do índice (é a primeira coisa que o jogador lê). Ela não sabe o que está
-// acontecendo; conta o que vê e para no meio da frase. Cada página tem no máximo 13 linhas de 16 letras (a página é estreita).
+// acontecendo; conta o que vê e para no meio da frase. Cada página tem no máximo 13 linhas de 16 letras (a página é estreita; as duas estão cheias).
+// É LENDO o relato que o jogador descobre que o caderno é de outra pessoa, uma mulher, condenada ("condenada" é a marca); antes, o tutorial não diz "ela".
+// ("Dizem que" é como ela mesma lê a marca de BOATO, p3: sem saber, ecoa a 1ª frase do dado, VOCÊ CONDENADO BOATO. Não revela nada; só se relê no fim.)
 export const HER_RELATO: string[][] = [
   ['Não sei mais que dia é.', 'A Casa apagou tudo de novo.', 'Acordei embaixo da luz. Sempre embaixo da luz.', 'Leram algo comprido para mim.'],
-  ['Conto tudo. Os passos, os braseiros, as vezes que o dado me olha.', 'Se alguém achar isto, não acredite em tudo o que eu'],
+  ['Dizem que estou condenada.', 'Conto tudo. Os passos, os braseiros, as vezes que o dado me olha.', 'Se alguém achar isto, não acredite em tudo o que eu'],
 ];
 
 // as folhas arrancadas, na ordem do caderno (os buracos ficam no lugar delas até serem achadas). A ordem é a do caminho da Casa (sala 3 → sala 20):

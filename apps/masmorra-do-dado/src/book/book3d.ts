@@ -389,11 +389,12 @@ export function createDiaryBook(env: BookEnv) {
     done?: string[]; // o que ele pensa depois de fazer a tarefa
     after?: () => void; // depois dos pensamentos desta parada
   }
-  const INTRO = ['O caderno dela.', 'Ela dividiu tudo em partes. Vou ver uma por uma.'];
+  // (antes de ler, nada de "ela": ele só vê letra à mão e as partes; sem memória, nem sabe ainda se a letra é dele)
+  const INTRO = ['Escrito à mão. Dividido em partes.', 'Vou ver uma por uma.'];
   const STOPS: Record<Part, Stop[]> = {
     dela: [
       // (é LENDO o relato que ele descobre de quem é o caderno: daí em diante o índice diz "Dela")
-      { at: (l) => l.herAt, say: ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'], after: () => diary.knowHer() },
+      { at: (l) => l.herAt, say: ['A letra não é minha.', 'É de uma mulher. Condenada.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'], after: () => diary.knowHer() },
       { at: (l) => l.herAt + 1, say: ['Faltam folhas. Arrancadas.', 'Se eu achar alguma, ponho de volta no lugar.'] },
     ],
     simbolos: [
