@@ -66,6 +66,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
       }
     };
     const pd = (e: Event) => {
+      if ((e.target as HTMLElement | null)?.closest?.('.skipintro')) return; // (segurar para pular a introdução não passa a fala)
       e.stopPropagation();
       advance();
     };

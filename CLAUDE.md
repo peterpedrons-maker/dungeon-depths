@@ -66,7 +66,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   símbolo (celesta e harpa). Volumes
   (geral, música, efeitos) na aba Áudio das Configurações; o áudio só liga após o 1º toque/tecla.
   **Abertura e progressão** (`DESIGN.md` §12): o jogo começa com uma cena de acordar (deitado, poço de luz no teto; só na 1ª vez,
-  `?intro=0` pula); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o
+  `?intro=0` pula; a abertura inteira, até o fim da explicação do dado, pode ser pulada segurando Espaço ou o dedo na plaquinha «Segure para pular a introdução», `src/ui/SkipIntro.tsx`, `DESIGN.md` §92); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o
   jogador olha para elas; acender com o Fogo toca uma cena do dado queimando (1,5 s só na 1ª vez de cada braseiro; depois ~0,3 s); **marcos** (`src/story/progress.ts`) sobem o
   "estágio" da Casa (luz mais quente, cal brilhando) (o capítulo 1 é **só o Fogo**: o Peso fica selado até o altar do Tribunal, marco `peso`, `DESIGN.md` §77; o jogo deve durar algumas horas, ver `DESIGN.md` §13). Cenas usam `ctx.freeze/lookAt/say`; interação com E/AGIR via `Room.interactables`; o **dado fala** de vez em quando (balão em glifos, `story/chatter.ts`).
   **História e língua** (ver `apps/sentenca/DESIGN.md`, `LINGUA.md`): o jogador está condenado por uma "sentença"

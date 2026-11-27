@@ -147,6 +147,7 @@ export interface SceneOptions {
   onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §80)
   onPause?: () => void;
   onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
+  onIntroSkip?: (on: boolean) => void; // a abertura está em curso e pode ser pulada (DESIGN.md §92)
 }
 
 export interface SceneApi {
@@ -159,6 +160,7 @@ export interface SceneApi {
   setChalkMode(m: ChalkMode): void; // (celular) desenhar ou apagar com o dedo
   clearChalk(): void; // apaga tudo (pede confirmação: aperte de novo)
   reset(): void; // reinicia a sala atual
+  skipIntro(): void; // pula a abertura inteira: de pé no Poço, com o dado de Fogo na mão (DESIGN.md §92)
   restart(): void; // volta pra primeira sala
   titleLook(x: number, y: number): void;
   titleMood(m: 'new' | 'quit' | null): void;
@@ -671,9 +673,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return !!ch && performance.now() < mouthUntil;
   };
   let forcedLook: { p: THREE.Vector3; until: number } | null = null;
+  let talkGen = 0; // (pular a abertura cancela as falas do dado que ainda iam aparecer)
   const saySay = (glyphs: string[], o?: { pic?: string; delay?: number; joy?: boolean }) => {
     talkUntil = Math.max(talkUntil, performance.now() + (o?.delay ?? 0) * 1000 + 150 + lineMs(glyphs, !!o?.pic) + LINGER_MS);
+    const gen = talkGen;
     window.setTimeout(() => {
+      if (gen !== talkGen) return;
       if (!hasDie && !worldDie.visible) return;
       chatter.say(glyphs, o?.pic);
       handTalk = 1;
@@ -1611,6 +1616,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pin: (on) => {
         pinned = on;
       },
+      introGen: () => introGen,
       dieCenter: (on) => {
         dieCineTarget = on ? 1 : 0;
         ui.setBars(on);
@@ -2529,6 +2535,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // nas CENAS o jogador não olha em volta (a câmera é da cena) e a mira some: abertura, o dado falando no centro, cenas travadas, o caderno achado
   const lookLocked = () => pinned || holds > 0 || intro !== null || camTween !== null || dieCine > 0.5 || ui.bookCall() || gemFx.active() || altar !== null;
   let cineWas: boolean | null = null; // (null: avisa a interface já no 1º quadro)
+  let skipWas: boolean | null = null;
   const busy = () => complete || ui.blocked() || book.isOut() || holds > 0 || intro !== null || burn !== null || gemFx.active() || altar !== null; // fim de jogo, conversa ou diário (inclusive o livro subindo/descendo): o jogador fica parado
 
   // ── marcos da história ──
@@ -3321,6 +3328,61 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         vy = 0;
       }
     }
+  };
+
+  // PULAR A ABERTURA (DESIGN.md §92, pedido do Pedro): de qualquer ponto dela (acordar, a porta trancada, o Escrivão no poço, o dado caído, o dado
+  // explicando) até o dado estar na mão. Desmonta a cena que estiver rodando e deixa o jogador de pé no Poço com o dado de Fogo na mão, como se
+  // tivesse visto tudo: as marcas da abertura, os símbolos que ela mostra (vão para o caderno quando ele for achado) e o salvamento.
+  let introGen = 0;
+  const INTRO_GLYPHS = ['voce', 'viver', 'perg', 'eu', 'dar', 'dado', 'ler', 'cair', 'ajudar', 'condenado', 'boato', 'acender', 'brasa'];
+  // (até o dado estar na mão, e também enquanto ele explica, no centro da tela, logo depois de ser pego: a explicação é parte da abertura)
+  const introSkippable = () => mode === 'play' && curRoom === 0 && !LAB && !VITRINE && !complete && !progress.has('fogo') && (!hasDie || dieCineTarget > 0.5);
+  const skipIntro = () => {
+    if (!introSkippable()) return;
+    introGen++;
+    talkGen++;
+    // a cena de acordar
+    intro = null;
+    introDrop = 0;
+    introRoll = 0;
+    fadeMat.opacity = 0;
+    fadeQuad.visible = false;
+    // a cena do poço (o Escrivão lá fora, a câmera de cinema, o dado caindo)
+    scribeDrop = null;
+    dropWatch = null;
+    cineCam = null;
+    fovCine = 0;
+    autoWalk = null;
+    camTween = null;
+    pinned = false;
+    holds = 0;
+    pickup = null;
+    if (topScribe) topScribe.setAlpha(0);
+    if (scribeDie) scribeDie.visible = false;
+    outdoor.intensity = 0;
+    if (outsideAtmo) outsideAtmo = false;
+    endWorldRosto();
+    ui.setBars(false);
+    dieCineTarget = 0;
+    dieCine = 0;
+    talkGlow = 0;
+    talkUntil = 0;
+    dialogue.clear();
+    chatter.clear();
+    // o que a abertura deixaria
+    progress.set('intro');
+    progress.set('caiu');
+    progress.set('dado');
+    hasDie = true;
+    for (const g of INTRO_GLYPHS) diary.markSeen(g, rooms[0].name);
+    selectFace(3);
+    spawnIn(0);
+    blendAtmosphere(0, true);
+    opts.onInventory?.({ die: hasDie, chalk: hasChalk });
+    sfx.play('catch');
+    saveGame();
+    // a única instrução do Poço, para quem pulou sem nunca ter visto: o dado pede uma vez para acender o braseiro (com o desenho)
+    saySay(['acender', 'brasa'], { pic: 'braseiro', delay: 0.9 });
   };
 
   // reinicia só a sala atual (o giz fica)
@@ -4788,6 +4850,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         cineWas = c;
         opts.onCine?.(c);
       }
+      const sk = introSkippable();
+      if (sk !== skipWas) {
+        skipWas = sk;
+        opts.onIntroSkip?.(sk);
+      }
     }
     if (thumbWant) captureThumb(); // (logo depois de desenhar: a imagem ainda está no canvas)
     if (snapWant) {
@@ -5094,6 +5161,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     },
     clearChalk,
     reset,
+    skipIntro,
     restart,
     begin,
     // tela inicial: para onde o olho do dado vai (coordenadas da janela), e o humor (pulinho em "Novo jogo", abatido em "Sair")

@@ -248,3 +248,17 @@
 .loadscr.asked { cursor: pointer; }
 .loadgo { position: absolute; transform: translate(-50%, 0); font-size: var(--fl); font-weight: normal; color: #ffd36b; white-space: nowrap;
   text-shadow: 2px 2px 0 #000; animation: blink 1.4s steps(2) infinite; pointer-events: none; }
+
+/* PULAR A INTRODUÇÃO (DESIGN.md §92): plaquinha de pedra no alto, à direita; segurar enche a faixa de ouro */
+.skipintro { position: absolute; right: 12px; top: 12px; z-index: 46; display: flex; align-items: center; gap: calc(8px * var(--ui, 1));
+  padding: 2px 12px 2px 6px; font-size: var(--fs); color: #cfc6b4; text-shadow: 2px 2px 0 #05040a; cursor: pointer; opacity: 0.78;
+  user-select: none; -webkit-user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent;
+  background: #1d1922; background-clip: padding-box; border: calc(var(--px, 1px) * 8) solid transparent;
+  border-image: var(--frame-stone) 8 / calc(var(--px, 1px) * 8) stretch; image-rendering: pixelated; box-shadow: 4px 4px 0 rgba(5, 4, 10, 0.7); }
+.skipintro.holding { opacity: 1; color: #fff6dc; }
+.skipintro .keycap-hud { font-size: var(--fs); padding: 1px 5px 2px; }
+.skipintro-bar { position: absolute; left: 0; right: 0; bottom: 0; height: calc(3 * var(--px, 1px)); background: var(--gold); box-shadow: 0 0 6px #ffb048;
+  transform-origin: left center; transform: scaleX(0); }
+@media (pointer: coarse) { .skipintro { top: 62px; padding: 8px 14px 8px 10px; } }
+@media (pointer: coarse) and (max-height: 420px) { .skipintro { top: 54px; } }
+

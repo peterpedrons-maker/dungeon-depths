@@ -40,6 +40,10 @@ export const dialogue = {
       c.onEnd?.();
     } else dialogueStore.set({ ...c, i: c.i + 1 });
   },
+  // apaga a conversa sem chamar o `onEnd` (pular a abertura)
+  clear() {
+    dialogueStore.set(null);
+  },
   get blocking() {
     const c = dialogueStore.get();
     return !!c && c.block;

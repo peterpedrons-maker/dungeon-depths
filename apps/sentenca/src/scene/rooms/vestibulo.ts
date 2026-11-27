@@ -600,6 +600,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       enabled: () => ctx.flag('caiu') && !ctx.have().die && ctx.die.state === 'rest' && !pickingUp,
       use: () => {
         pickingUp = true;
+        const gen = ctx.introGen();
         ctx.freeze(true);
         ctx.pin(false); // sai da trava da abertura (o resto da cena segue com freeze)
         ctx.dieGlow(1);
@@ -609,10 +610,11 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
           ctx.dieCenter(true);
           const ms = ctx.dieTalk([{ glyphs: ['voce', 'condenado', 'boato'] }, { glyphs: ['eu', 'ajudar', 'voce'] }, { glyphs: ['acender', 'brasa'], pic: 'braseiro' }], { delay: 1.3 }); // (a 1ª frase: «dizem que você está condenado»; só se lê no fim)
           window.setTimeout(() => {
-            ctx.dieCenter(false);
-            ctx.freeze(false);
             pickingUp = false;
             nudge = 0; // a partir daqui, se o jogador demorar a acender, o dado repete o pedido
+            if (ctx.introGen() !== gen) return; // (pulou a abertura: a cena já foi desmontada)
+            ctx.dieCenter(false);
+            ctx.freeze(false);
             ctx.say([{ who: 'thought', text: 'Pesa como se me conhecesse.' }], { block: true });
           }, 1300 + ms);
         });

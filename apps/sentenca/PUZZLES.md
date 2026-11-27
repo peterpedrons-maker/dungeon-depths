@@ -5,8 +5,8 @@
 
 Controles rápidos: **arremessar** (clique esq. / botão ARREMESSAR) · **posicionar** (botão direito, `G`,
 botão POSICIONAR) · **trocar a face** (`1`–`6`, roda do mouse, botão GIRAR) · **dado ↔ giz** (`Tab`/`Q`,
-botão GIZ/DADO). Faces: **1 Ricochete**, **2 Peso**, **3 Fogo**. O jogador **começa sem nada nas mãos**: o **dado** é achado na Sala 1 e o **giz** ainda não está no jogo principal (só na sala de teste); o **diário** é o caderno achado na Sala 2. Interagir com o que está à frente (porta, giz no chão): **E** (PC) ou o botão **AGIR** (celular). O dado tem **Fogo (3) e Peso (2)**;
-o **Ricochete (1) fica selado** por enquanto (só chega bem mais tarde).
+botão GIZ/DADO). Faces: **1 Ricochete**, **2 Peso**, **3 Fogo**. O jogador **começa sem nada nas mãos**: o **dado** é achado na Sala 1 e o **giz** ainda não está no jogo principal (só na sala de teste); o **diário** é o caderno achado na Sala 2. Interagir com o que está à frente (porta, giz no chão): **E** (PC) ou o botão **AGIR** (celular). No capítulo 1 o dado tem **só o Fogo (3)**:
+o **Peso (2)** fica selado até o fim do capítulo (o altar do Tribunal, Sala 24) e o **Ricochete (1)** só chega bem mais tarde.
 Ao acender um braseiro o dado queima: 1,5 s na 1ª vez de cada braseiro, ~0,3 s nas seguintes.
 Olhar uns segundos para uma inscrição na parede manda os símbolos dela ao diário (como "avistado").
 
@@ -18,8 +18,9 @@ Aula (p15), C3 da Ponte (p16), a lei da Galeria (p17) e C5 (p18). As soluções 
 
 ## Sala 1 — O Poço  (só ACENDER)
 Você acorda no chão, **sem nada nas mãos**, olha o poço de luz no teto e a cena termina. A sala é pequena.
-1. Vá até a **porta** (fundo da sala): aparece "E · Tentar abrir a porta" (no celular, o botão AGIR). **Não abre.** Logo em seguida você ouve **um barulho lá em cima**: a câmera vira para o poço e **o dado despenca pelo buraco**, bate no chão e para junto do entulho, brilhando. Ele "fala" em glifos (`EU CAIR`, `VOCÊ AJUDAR EU ?`) e depois **murmura** (`AJUDAR EU`, `VOCÊ VIR`, `EU ESPERAR`) a cada ~9 s enquanto você não o pega.
-2. Você tem o controle: aproxime-se do dado e **pressione E / AGIR ("Pegar o dado")**. O dado voa para a sua mão, vem para o **centro da tela** (com faixas de cinema) e explica, uma frase curta por vez: `VOCÊ CONDENADO` · `EU BOATO` · `EU AJUDAR VOCÊ` · `ACENDER BRASEIRO` (com o desenho do braseiro).
+1. Vá até a **porta** (fundo da sala): aparece "E · Tentar abrir a porta" (no celular, o botão AGIR). **Não abre** («Trancada.»). Logo em seguida você ouve **um barulho lá em cima**, desconfia e **anda sozinho** até embaixo do poço e olha para cima. **Corte para fora:** o **Escrivão** chega andando à boca do poço, se debruça e fala em glifos (`VOCÊ VIVER ?` · `EU DAR DADO` · `VOCÊ LER`), tira o dado de dentro do manto e o solta. A câmera desce por baixo do dado, ele bate no chão junto do entulho e, olhando de novo para cima, o Escrivão sumiu. O dado caído acorda e fala (`EU CAIR`, `VOCÊ AJUDAR EU ?`); a cena fica **travada** até você pegá-lo.
+2. Aproxime-se do dado e **pressione E / AGIR ("Pegar o dado")**. O dado voa para a sua mão, vem para o **centro da tela** (com faixas de cinema) e explica, uma frase curta por vez: `VOCÊ CONDENADO BOATO` · `EU AJUDAR VOCÊ` · `ACENDER BRASEIRO` (com o desenho do braseiro).
+- **Pular a introdução** (`DESIGN.md` §92): do acordar até o fim da explicação do dado, no alto à direita há a plaquinha «Segure para pular a introdução». **Segure Espaço** (PC) ou **segure o dedo nela** (celular) por 1 s: você fica de pé no Poço com o dado de Fogo na mão, e o dado pede uma vez «ACENDER BRASEIRO». Daí em diante é o passo 3.
 3. Agora você tem o dado, na face **Fogo (3)**. Na parede esquerda da porta está talhada **uma só palavra: ACENDER**. Acenda o **único braseiro** (canto direito, perto da porta): arremesse o dado dentro da tigela ou posicione-o nela. O glifo brilha, o dado comemora (`VOCÊ ACENDER CONFIRMADO`, `EU SENTIR ALEGRIA`) e a porta abre. Se você demorar 50 s, ele repete o pedido.
 - O dado queima ~1,5 s na 1ª vez (rápido nas seguintes). **Você ainda não tem o giz.**
 
@@ -360,15 +361,15 @@ De tempos em tempos, num momento calmo, o dado **treme** na mão, vem **grande a
 | # | Quando | Glifo | Resposta certa (as outras opções) |
 |---|---|---|---|
 | 1 | no corredor depois da Sala 3 (A Lousa) | ACENDER | **acender** (braseiro · fogo · dois) |
-| 2 | na chegada ao pátio da cisterna (Sala 5) | QUATRO | **quatro** (três · cinco · cantos) |
+| 2 | na chegada ao pátio da cisterna (Sala 5, Os Nichos e a Cisterna) | QUATRO | **quatro** (três · cinco · seis) |
 | 3 | no corredor depois da Sala 6 (A Casa Escreve) | ANTES | **antes** (depois · agora · ordem) |
-| 4 | ao pé da escadaria dos Banhos Secos (Sala 9) | CONFIRMADO | **confirmado (é verdade)** (boato (dizem que) · pergunta · fim) |
-| 5 | no corredor depois da Sala 10 (O Pano); na proposta é na chegada à Biblioteca, que ainda não existe | BOATO | **boato (dizem que)** (mentira · confirmado (é verdade) · pano) |
-| 6 | no corredor depois da Sala 11 (Os Apelidos) | DEPOIS | **depois** (antes · longe · agora) |
-| 7 | no corredor depois da Sala 12 (A Ponte de Madeira) | PEQUENO | **pequeno** (um · grande · meio) |
-| 8 | no corredor depois da Sala 13 (O Boato Verdadeiro); na proposta é na Galeria dos Condenados, que ainda não existe | VERDADE | **verdade** (mentira · dúvida · boato) |
-| 9 | (Escadaria R4: ainda não existe; a pergunta está pronta, sem gatilho) | IGUAL | **igual** (dois · lei · mais) |
-| 10 | (sala 17, antes do Tribunal: ainda não existe; pronta, sem gatilho) | TODOS | **todos** (nove · muitos · nenhum) |
+| 4 | na chegada aos Banhos Secos (Sala 9), ao pé da escadaria | CONFIRMADO | **confirmado (é verdade)** (boato (dizem que) · pergunta · fim) |
+| 5 | no corredor depois da Sala 10 (O Pano) | BOATO | **boato (dizem que)** (mentira · confirmado (é verdade) · pano) |
+| 6 | no corredor depois da Sala 12 (Os Apelidos) | DEPOIS | **depois** (antes · longe · agora) |
+| 7 | no corredor depois da Sala 13 (A Ponte de Madeira) | PEQUENO | **pequeno** (um · grande · meio) |
+| 8 | no corredor depois da Sala 14 (O Boato Verdadeiro) | VERDADE | **verdade** (mentira · dúvida · boato) |
+| 9 | **sem gatilho** (a pergunta está pronta em `quiz.ts`, mas nenhuma sala a chama) | IGUAL | **igual** (dois · lei · mais) |
+| 10 | **sem gatilho** (pronta, nenhuma sala a chama) | TODOS | **todos** (nove · muitos · nenhum) |
 Uma pergunta só acontece se o jogador **já viu** o glifo, tem o caderno, está com o dado na mão e nada mais ocupa a tela.
 
 ## RESERVA — salas fora do jogo por ora (voltam nos capítulos 2 e 3, usam Peso e/ou giz)

@@ -2026,8 +2026,27 @@ Pontos da avaliação que **continuam em aberto** (o Pedro não decidiu ainda):
    se errou a palavra ou o raciocínio (as perguntas do dado cobrem ANTES, DEPOIS, PEQUENO e VERDADE).
 3. O Fogo que Corre: a janela de 3 a 7 s faz um erro de execução parecer erro de ideia; falta uma âncora visual de tempo, como a chama
    longe da Chama Curta.
-4. A abertura leva uns 8 a 12 minutos de cenas e tutorial antes da Lousa, o primeiro puzzle de verdade (estimativa, não medida).
-5. Partes do `PUZZLES.md` estão desatualizadas: o topo diz que o dado começa com o Peso, a tabela das perguntas do dado usa a numeração antiga
-   e a Sala 1 não descreve a cena do Escrivão.
-6. Falta um teste às cegas com 2 ou 3 pessoas que nunca jogaram, anotando o tempo em cada sala e onde travaram.
+4. A abertura: o Pedro acha que ninguém leva 8 a 12 minutos até a Lousa (os puzzles do começo são simples e a leitura é a história, que
+   importa). Decisão: um botão de **pular a introdução** (§92).
+5. ~~Partes do `PUZZLES.md` desatualizadas~~ (corrigido no §92: o topo, a Sala 1 e a tabela das perguntas do dado).
+6. O teste às cegas com pessoas que nunca jogaram: o Pedro está fazendo.
+
+## 92. Pular a introdução (pedido do Pedro)
+
+"O que a gente pode fazer é adicionar um botão de pular toda a introdução." Do acordar até o fim da explicação do dado (o dado no centro da
+tela, logo depois de ser pego), aparece no alto, à direita, uma plaquinha de pedra «Segure para pular a introdução» (`src/ui/SkipIntro.tsx`).
+- **Segurar, não tocar**, para ninguém pular sem querer: no PC, a tecla **Espaço** (o mouse está preso no jogo, não há cursor), com a tecla de
+  pedra desenhada na plaquinha; no celular, **o dedo na plaquinha** (embaixo do botão de pausa). Uma faixa de ouro enche em 1 s; cheia, pula.
+  Um toque curto não pula. (Segurar o Espaço com uma conversa na tela também passa uma fala: não faz mal, a abertura vai ser pulada.)
+- **O que o pulo faz** (`skipIntro` em `scene.ts`): desmonta o que estiver rodando (a cena de acordar, o «Trancada.», o Escrivão lá fora e a
+  câmera de cinema, o dado caindo ou caído, a explicação), cancela as falas do dado que ainda iam aparecer (`talkGen`) e o que o Poço tinha
+  agendado (`ctx.introGen`), e deixa o jogador de pé no Poço com o **dado de Fogo na mão**, com as marcas da abertura (`intro`, `caiu`,
+  `dado`) e os símbolos que ela mostra marcados como vistos (vão para o caderno quando ele for achado). Salva na hora.
+- Quem pulou sem nunca ter visto ainda precisa saber o que fazer: logo depois do pulo, o dado pede uma vez **«ACENDER BRASEIRO»**, com o
+  desenho (a última frase da explicação).
+- A caixa de conversa, que passa a fala com qualquer toque na tela, ignora o toque na plaquinha.
+- Testado no PC (pulando no acordar, no meio da cena do Escrivão lá fora e durante a explicação do dado) e no celular (toque curto não pula;
+  segurar pula): em todos, o dado fica na mão, nenhuma cena fica presa (o jogador anda), nada aparece depois e não há erros.
+- `PUZZLES.md` corrigido junto: o topo (o capítulo 1 é só o Fogo; o Peso chega no altar do Tribunal), a Sala 1 (a cena do Escrivão e o pulo) e
+  a tabela das perguntas do dado (numeração atual das salas; as perguntas de IGUAL e TODOS estão prontas, mas sem gatilho).
 

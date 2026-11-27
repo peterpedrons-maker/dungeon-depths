@@ -18,6 +18,7 @@ import { useUiScale } from './ui/scale';
 import { Credits, PauseMenu, SaveIndicator, TitleScreen, type TitleApi } from './ui/Menus';
 import { Splash } from './ui/Splash';
 import { LoadingScreen } from './ui/LoadingScreen';
+import { SkipIntro } from './ui/SkipIntro';
 import { saves } from './story/save';
 import { configStore, keyName } from './story/config';
 import type { IconName } from './ui/PixelIcon';
@@ -96,6 +97,7 @@ export default function App() {
   const captionTimer = useRef(0);
   const completeRef = useRef(false);
   const [cine, setCine] = useState(true); // cena em curso (a mira some). Começa escondida: a cena avisa no 1º quadro se o jogo já começou
+  const [introSkip, setIntroSkip] = useState(false); // a abertura está em curso e dá para pular (DESIGN.md §92)
   const [sceneReady, setSceneReady] = useState(false); // a cena já desenhou e os modelos chegaram (a tela inicial pode aparecer)
   const [splashOn, setSplashOn] = useState(SPLASH);
   const [titleShown, setTitleShown] = useState(false);
@@ -247,6 +249,7 @@ export default function App() {
       load: PLAY_NOW,
       onReady: () => setSceneReady(true),
       onCine: setCine,
+      onIntroSkip: setIntroSkip,
       onPause: () => openPauseRef.current(),
       onDie: (st) => setDieOut(st !== 'hand'),
       onTool: setTool,
@@ -327,6 +330,7 @@ export default function App() {
       {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
       <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 
+      {introSkip && !inMenu && !uis.bookOut && <SkipIntro coarse={coarse} onSkip={() => sceneRef.current?.skipIntro()} />}
       {/* NADA FIXO NO PC (INTERFACE.md §4). No celular, só a pausa; o diário ganha um botão depois do caderno. No PC o botão do diário só aparece
           no momento em que o caderno é achado (a tela escurece e ele pulsa) */}
       {!inMenu && !complete && (
