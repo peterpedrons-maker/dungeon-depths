@@ -2006,3 +2006,28 @@ dado ficaria melhor." Ficou o dado. O ícone era a face do dado com o triângulo
 - `tools/build_logo.py` agora só gera o logo; a parte do ícone antigo saiu, para não sobrescrever o novo.
 - Quem já instalou o app pode continuar vendo o ícone antigo até reinstalar (o celular guarda o ícone da instalação).
 
+## 91. Avaliação do capítulo 1 e as decisões do Pedro sobre ela
+
+Pedi para fazer uma avaliação crítica do capítulo 1 inteiro (ritmo, puzzles, dificuldade), feita a partir das soluções do `PUZZLES.md`, da régua
+(§17) e da meta de duração (§13), sem um teste às cegas. O Pedro respondeu a quatro pontos, que **não são problema** e não devem voltar como
+crítica:
+- **A Memória da Casa ser o ensaio do Tribunal** (mesma lei «DOIS BOATO IGUAL VERDADE», mesmos apelidos): é de propósito. O jogador repete
+  puzzles de qualquer forma.
+- **O capítulo 1 chegar ao nível 9 e 10 da régua:** ele esgota a escala **só com o Fogo**. Nos capítulos seguintes a dificuldade volta a subir
+  com as ferramentas novas e com a combinação delas (Fogo com Peso etc.), não com lógica mais funda. A curva antiga do §17 («o capítulo 1 termina
+  no nível 5») está superada: a régua vale **por conjunto de ferramentas**.
+- **Duração:** os 4 a 6 h do §13 são uma média, não um teto. O capítulo 1 pode passar disso.
+- **Respostas repetidas** (QUATRO, os quatro cantos, em várias salas e constelações): não é problema que o jogador chute por hábito.
+
+Pontos da avaliação que **continuam em aberto** (o Pedro não decidiu ainda):
+1. Da sala 12 em diante, 7 dos 9 puzzles são «ler frases ANTES/DEPOIS com marcas, deduzir a ordem, acender em fila»; os puzzles de espaço,
+   tempo e física (Fio, Ponte, Sombra, Chama Curta) quase somem no fim.
+2. A dúvida dupla: quem anotou errado uma palavra de relação (ANTES/DEPOIS, GRANDE/PEQUENO, IGUAL) erra todas as salas de ordem sem saber
+   se errou a palavra ou o raciocínio (as perguntas do dado cobrem ANTES, DEPOIS, PEQUENO e VERDADE).
+3. O Fogo que Corre: a janela de 3 a 7 s faz um erro de execução parecer erro de ideia; falta uma âncora visual de tempo, como a chama
+   longe da Chama Curta.
+4. A abertura leva uns 8 a 12 minutos de cenas e tutorial antes da Lousa, o primeiro puzzle de verdade (estimativa, não medida).
+5. Partes do `PUZZLES.md` estão desatualizadas: o topo diz que o dado começa com o Peso, a tabela das perguntas do dado usa a numeração antiga
+   e a Sala 1 não descreve a cena do Escrivão.
+6. Falta um teste às cegas com 2 ou 3 pessoas que nunca jogaram, anotando o tempo em cada sala e onde travaram.
+
