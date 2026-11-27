@@ -1711,7 +1711,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         const last = pts[pts.length - 1];
         const prev = pts[pts.length - 2];
         const dl: XZ = [Math.sign(last[0] - prev[0]), Math.sign(last[1] - prev[1])];
-        const tail = route(last, dl, ent, [Math.round(db.x), Math.round(db.z)]);
+        const tail = route(last, dl, ent, [Math.round(db.x), Math.round(db.z)], 0);
         pts.push(...tail.slice(1));
         // os trechos abertos: entre os pontos `aberto` da ponte
         const open = pts.slice(0, -1).map((p, k) => pn.aberto.some(([u, w]) => Math.hypot(p[0] - via[u][0], p[1] - via[u][1]) < 0.05 && Math.hypot(pts[k + 1][0] - via[w][0], pts[k + 1][1] - via[w][1]) < 0.05));
@@ -4479,7 +4479,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return cv.toDataURL('image/png');
       },
       // (testes) os obstáculos (mundo) perto de um ponto, para achar quem barra o jogador
-      rectsNear: (x: number, z: number, r = 0.6) => worldRects().filter((q) => x > q[0] - r && x < q[2] + r && z > q[1] - r && z < q[3] + r).map((q) => q.map((v) => (v === undefined ? null : +(+v).toFixed(2)))),
+      rectsNear: (x: number, z: number, r = 0.6) => {
+        const out: unknown[] = [];
+        const near = (q: Rect) => x > q[0] - r && x < q[2] + r && z > q[1] - r && z < q[3] + r;
+        const fmt = (q: Rect) => q.map((v) => (v === undefined ? null : +(+v).toFixed(2)));
+        for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) {
+          const pl = places[i];
+          rooms[i].rects(feetY - pl.pos.y).forEach((q, k) => {
+            const w = pl.rectToWorld(q);
+            if (near(w)) out.push({ sala: i, k, local: fmt(q), mundo: fmt(w) });
+          });
+        }
+        for (const c of connectors) if (c.from === curRoom || c.from === curRoom - 1) c.rects.forEach((q, k) => near(q) && out.push({ corredor: c.from, k, mundo: fmt(q) }));
+        return out;
+      },
       // (testes) cada ligação em coordenadas do MUNDO: a porta (e para onde ela sai), o caminho do corredor de ligação e a entrada da próxima
       paths: () =>
         rooms.slice(0, -1).map((r, i) => {

@@ -8,14 +8,19 @@ import type { Rect } from './types';
 
 export type XZ = [number, number];
 const RB = 2.0; // quanto o corredor anda reto antes de chegar à entrada
+export const LEAD = DW; // quanto o corredor anda reto depois do corredor da porta, antes de virar (a curva não pode encostar no corredor da porta,
+// cujas paredes vão até a ponta: virando ali, metade da passagem ficava tapada)
 const WALL = 0.3; // espessura das paredes
 
 // o caminho: da ponta do corredor da porta (`a`, saindo na direção `da`) até a entrada (`b`, entrando na direção `db`), em ângulos retos.
 // Mesma regra da ferramenta da planta (tools/planta/plan.py, `route`), para o desenho e o jogo baterem.
-export function route(a: XZ, da: XZ, b: XZ, db: XZ): XZ[] {
-  const q1: XZ = [b[0] - db[0] * RB, b[1] - db[1] * RB];
-  const pts: XZ[] = [a];
+export function route(a0: XZ, da: XZ, b: XZ, db: XZ, lead = LEAD): XZ[] {
   const eq = (u: number, v: number) => Math.abs(u - v) < 0.05;
+  const q1: XZ = [b[0] - db[0] * RB, b[1] - db[1] * RB];
+  // (reto até a entrada, sem desvio de lado: direto; senão, primeiro um trecho reto de `lead`)
+  const straight = da[0] === db[0] && da[1] === db[1] && (da[0] === 0 ? eq(a0[0], b[0]) : eq(a0[1], b[1]));
+  const a: XZ = straight ? a0 : [a0[0] + da[0] * lead, a0[1] + da[1] * lead];
+  const pts: XZ[] = straight ? [a] : [a0, a];
   if (!eq(a[0], q1[0]) && !eq(a[1], q1[1])) {
     const alongX = da[0] !== 0;
     if (alongX === (db[0] !== 0)) {
@@ -43,6 +48,11 @@ export function route(a: XZ, da: XZ, b: XZ, db: XZ): XZ[] {
   if ((q1[0] - last[0]) * db[0] + (q1[1] - last[1]) * db[1] >= -0.01) pts.push(q1);
   else if (!eq(last[0], b[0]) && !eq(last[1], b[1])) pts.push(db[0] === 0 ? [b[0], last[1]] : [last[0], b[1]]);
   pts.push(b);
+  // os pontos quase alinhados ficam alinhados de verdade (de trás para a frente: a entrada não sai do lugar)
+  for (let k = pts.length - 2; k >= 0; k--) {
+    if (eq(pts[k][0], pts[k + 1][0])) pts[k] = [pts[k + 1][0], pts[k][1]];
+    if (eq(pts[k][1], pts[k + 1][1])) pts[k] = [pts[k][0], pts[k + 1][1]];
+  }
   // tira pontos repetidos e os que ficam no meio de uma reta
   const out: XZ[] = [];
   for (const p of pts) {
@@ -88,10 +98,11 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
   const rects: Rect[] = [];
   const top = y + 3.5;
   const n = pts.length - 1;
+  const sg = (v: number) => (Math.abs(v) < 1e-3 ? 0 : Math.sign(v));
   const dirOf = (k: number): XZ => {
     const [ax, az] = pts[k];
     const [bx, bz] = pts[k + 1];
-    return [Math.sign(bx - ax), Math.sign(bz - az)];
+    return [sg(bx - ax), sg(bz - az)];
   };
   const isOpen = (k: number) => !!o.open?.[k];
   const turnAt = (k: number) => k > 0 && k < n && (dirOf(k - 1)[0] !== dirOf(k)[0] || dirOf(k - 1)[1] !== dirOf(k)[1]);

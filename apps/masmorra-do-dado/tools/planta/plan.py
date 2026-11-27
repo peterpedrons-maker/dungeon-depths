@@ -116,6 +116,7 @@ def at(i, d, cx, cy, **kw):
 
 
 CORRIDOR = 3.2  # o corredor que a própria sala faz atrás da porta (src/scene/kit.ts)
+LEAD = 0.95  # o trecho reto depois dele, antes de virar (src/scene/connector.ts)
 RB = 2.0  # o corredor de ligação chega reto na entrada por estes metros (src/scene/connector.ts)
 
 
@@ -124,9 +125,11 @@ def route(a, b, ra=CORRIDOR, rb=RB, raw=False):
     # cotovelos. A MESMA regra de src/scene/connector.ts (`route`), para o desenho e o jogo baterem.
     (ex, ey), (dx, dy) = a.door()
     (nx, ny), (fx, fy) = b.entrance()
-    p1 = (ex + dx * ra, ey + dy * ra)
-    q1 = (nx - fx * rb, ny - fy * rb)
     eq = lambda u, v: abs(u - v) < 0.05
+    q1 = (nx - fx * rb, ny - fy * rb)
+    # (reto até a entrada, sem desvio de lado: direto; senão, depois do corredor da porta, mais LEAD reto antes de virar)
+    straight = (dx, dy) == (fx, fy) and (eq(ex, nx) if dx == 0 else eq(ey, ny))
+    p1 = (ex + dx * ra, ey + dy * ra) if straight else (ex + dx * (ra + LEAD), ey + dy * (ra + LEAD))
     pts = [(ex, ey), p1]
     if not eq(p1[0], q1[0]) and not eq(p1[1], q1[1]):
         along_x = dx != 0
@@ -158,6 +161,11 @@ def route(a, b, ra=CORRIDOR, rb=RB, raw=False):
     elif not eq(lx_, nx) and not eq(ly_, ny):
         pts.append((nx, ly_) if fx == 0 else (lx_, ny))
     pts.append((nx, ny))
+    for k in range(len(pts) - 2, -1, -1):
+        if eq(pts[k][0], pts[k + 1][0]):
+            pts[k] = (pts[k + 1][0], pts[k][1])
+        if eq(pts[k][1], pts[k + 1][1]):
+            pts[k] = (pts[k][0], pts[k + 1][1])
     if raw:
         return pts
     out = []
