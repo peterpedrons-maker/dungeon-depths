@@ -20,7 +20,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
 
 ## Jogos atuais
 
-- `apps/masmorra-do-dado/` — (nome provisório) puzzle de masmorra 3D em primeira pessoa, visual
+- `apps/sentenca/` — (nome provisório) puzzle de masmorra 3D em primeira pessoa, visual
   pixel art "crocante" (Three.js renderizando em ~200 linhas no celular e ~270 no PC, pós-processo com paleta fixa
   de ~60 cores via LUT 3D + contorno por profundidade + brilho/bloom + dithering leve, texturas
   procedurais, sem arquivos de imagem; luzes das salas são "emissores" emprestados a um pool
@@ -31,9 +31,9 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   (Tab/Q no PC, botão GIZ/DADO no celular) e desenha livremente nas paredes/chão em 3D
   (segurar o botão esquerdo desenha, o direito apaga; no celular, modos desenhar/apagar/olhar;
   apagar tudo pede confirmação). Planejado: minimapa com anotações persistentes e caderno
-  de pistas. Segredos opcionais ao estilo Metroidvania ficam para depois (dá para terminar só correndo). História resumida em `apps/masmorra-do-dado/HISTORIA.md`. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
+  de pistas. Segredos opcionais ao estilo Metroidvania ficam para depois (dá para terminar só correndo). História resumida em `apps/sentenca/HISTORIA.md`. Ficam para depois: build da armação do dado, ranking por nº de arremessos. Sem editor de
   salas. O dado pode ser arremessado ou posicionado com cuidado onde a mira aponta (botão direito/G; botão POSICIONAR no
-  celular). Hoje o capítulo 1 está COMPLETO, com 24 salas (18 puzzles, os respiros R1 a R5 e a Biblioteca) (só Fogo; numeração e mapa do diário são automáticos a partir da lista em `scene.ts`; plano: ~50 a 60 salas no jogo, 18 no capítulo 1 pela curva da sessão de projeto de puzzles, `apps/masmorra-do-dado/PUZZLES_PROPOSTAS.md` §2, branch `claude/puzzles-design`, verificadores em `tools/verify_*.mjs`; **dificuldade: régua em `DESIGN.md` §17; da sala 3 em diante só sobe**) (`src/scene/rooms/`, cada uma um módulo `Room` com
+  celular). Hoje o capítulo 1 está COMPLETO, com 24 salas (18 puzzles, os respiros R1 a R5 e a Biblioteca) (só Fogo; numeração e mapa do diário são automáticos a partir da lista em `scene.ts`; plano: ~50 a 60 salas no jogo, 18 no capítulo 1 pela curva da sessão de projeto de puzzles, `apps/sentenca/PUZZLES_PROPOSTAS.md` §2, branch `claude/puzzles-design`, verificadores em `tools/verify_*.mjs`; **dificuldade: régua em `DESIGN.md` §17; da sala 3 em diante só sobe**) (`src/scene/rooms/`, cada uma um módulo `Room` com
   tema visual, formato e física próprios; `scene.ts` é o motor; as salas ficam lado a lado e o
   corredor da porta de uma desemboca direto na entrada da próxima, sem tela de carregamento;
   só o dado volta pra mão ao mudar de sala): 1–2 O Vestíbulo (O Poço e O Vestíbulo; a sala 2 é o **mockup da direção de arte nova** do cenógrafo, `DESIGN.md` §61: salão de colunas redondas com abóbadas de aresta, cantaria com relevo (`src/scene/arch.ts`), sombras de verdade nas chamas e uma fresta de luz fria; o braseiro em modelo 3D é o padrão do jogo (`?braseiro=antigo` volta ao de caixas; colisão em quatro partes seguindo o modelo e um cilindro invisível que recebe a mira do posicionar, `DESIGN.md` §74), `DESIGN.md` §62, `src/scene/models.ts`; objetos de cena em modelo 3D (packs CC0 da Quaternius e do System G6, `src/scene/props.ts`): vitrine `?vitrine=1`, `DESIGN.md` §63; a **Galeria dos Condenados (sala 15) é a sala-modelo completa** da direção de arte nova: abóbadas em cinco tramos, cantaria com espessura, fresta de lua com sombra, e os objetos em pequenas cenas encostadas nas paredes (cama, mesa, despensa, prateleira, correntes), juntados numa malha por material (`bakeProps`), `DESIGN.md` §65; o jogador **começa sem diário**: o caderno de "a que veio antes" é achado no Vestíbulo e vira o diário dele, com modo guiado, as notas dela em sépia, desgaste e folhas arrancadas que se acham pelo jogo, `DESIGN.md` §41; o jogador
@@ -69,7 +69,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   `?intro=0` pula); **inscrições** talhadas nas paredes (`src/scene/inscription.ts`, `kit.inscribe`) mandam os símbolos ao diário quando o
   jogador olha para elas; acender com o Fogo toca uma cena do dado queimando (1,5 s só na 1ª vez de cada braseiro; depois ~0,3 s); **marcos** (`src/story/progress.ts`) sobem o
   "estágio" da Casa (luz mais quente, cal brilhando) (o capítulo 1 é **só o Fogo**: o Peso fica selado até o altar do Tribunal, marco `peso`, `DESIGN.md` §77; o jogo deve durar algumas horas, ver `DESIGN.md` §13). Cenas usam `ctx.freeze/lookAt/say`; interação com E/AGIR via `Room.interactables`; o **dado fala** de vez em quando (balão em glifos, `story/chatter.ts`).
-  **História e língua** (ver `apps/masmorra-do-dado/DESIGN.md`, `LINGUA.md`): o jogador está condenado por uma "sentença"
+  **História e língua** (ver `apps/sentenca/DESIGN.md`, `LINGUA.md`): o jogador está condenado por uma "sentença"
   escrita numa língua inventada (os Contáveis; 174 palavras em `tools/lexicon.mjs` → `src/story/lexicon.json`).
   O mundo fala em glifos; pensamentos do jogador e diários de outros condenados vêm em português. Já existem:
   **janela de conversa** estilo RPG no rodapé (`src/ui/DialogueBox.tsx`, `src/story/dialogue.ts`; salas usam `ctx.say(...)`)
@@ -126,28 +126,28 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   pensamento; no fim, "Guardar" pisca (`DESIGN.md` §75). Lousas de
   parede são lajes afastadas 2,5 cm da parede; decalques com offset -1 e plano acima do chão.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
-  Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em
+  Publicado em `/sentenca/` (https://peterpedrons-maker.github.io/dungeon-depths/sentenca/; a pasta se chamava `masmorra-do-dado` até a troca de nome, `DESIGN.md` §89). É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; a instalação fica com o navegador).
 
 ## Subagentes do projeto
 
-- **`narrador`** (`.claude/agents/narrador.md`): roteirista/narrador da masmorra-do-dado. Use para escrever e revisar pensamentos do jogador,
+- **`narrador`** (`.claude/agents/narrador.md`): roteirista/narrador de «Sentença». Use para escrever e revisar pensamentos do jogador,
   falas do dado e do Escrivão em glifos, o diário de "a que veio antes", textos de parede e o arco da história, seguindo `HISTORIA.md`,
   `LINGUA.md` e o léxico. Só mexe em texto (não em puzzles, tempos de cena ou gráficos).
-- **`cenografo`** (`.claude/agents/cenografo.md`): level designer e diretor de arte da masmorra-do-dado. Use para dar vida aos ambientes
+- **`cenografo`** (`.claude/agents/cenografo.md`): level designer e diretor de arte de «Sentença». Use para dar vida aos ambientes
   (arquitetura, luz, desgaste, objetos que contam história, partículas e movimento, circulação, composição e acabamento) e para revisar salas com
   olho de arte e de level design, seguindo `DIRECAO_DE_ARTE.md` e o `DESIGN.md`. Testa no navegador (PC e celular). **Não quebra puzzles**: não muda
   soluções nem o que o jogador precisa ver, alcançar ou acertar; não escreve textos (isso é do `narrador`). Também roda como **chat separado**
   (uma sessão própria, com o Pedro conversando direto com ele), na branch `claude/cenografo`; como subagente, não faz commit.
-- **`sonoplasta`** (`.claude/agents/sonoplasta.md`): designer de som da masmorra-do-dado. Use para avaliar e melhorar efeitos sonoros e som
+- **`sonoplasta`** (`.claude/agents/sonoplasta.md`): designer de som de «Sentença». Use para avaliar e melhorar efeitos sonoros e som
   ambiente (passos por piso, fogo, portas, o dado, a escrita que acende, vento nos lugares abertos, fogo crepitando, gotas, o "quarto" de cada
   sala), sempre com GRAVAÇÕES REAIS (CC0 do OpenGameArt e os instrumentos do FluidR3_GM), registrando créditos e scripts reprodutíveis, e entrega
   uma faixa de demonstração para o Pedro ouvir. Não mexe na música, nos textos nem nos puzzles; como subagente, não faz commit.
 
-## Convenção para puzzles (masmorra-do-dado)
+## Convenção para puzzles (sentenca)
 
 Sempre que criar ou alterar um puzzle: **explique ao usuário como resolvê-lo** na resposta e
-registre a solução em `apps/masmorra-do-dado/PUZZLES.md`.
+registre a solução em `apps/sentenca/PUZZLES.md`.
 
 Os jogos antigos (dungeon-depths, reino-e-masmorras, ricochete) foram removidos de `apps/` e
 continuam no histórico do git.

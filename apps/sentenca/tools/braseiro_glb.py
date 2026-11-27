@@ -47,7 +47,7 @@ mesh_col['primitives'][0]['material'] = 1
 mesh_cesta['name'] = 'cesta'
 mesh_col['name'] = 'coluna'
 out_g = {
-    'asset': {'version': '2.0', 'generator': 'masmorra-do-dado tools/braseiro (de Stone Column Brazier, Amarveer, CC BY 4.0)'},
+    'asset': {'version': '2.0', 'generator': 'sentenca tools/braseiro (de Stone Column Brazier, Amarveer, CC BY 4.0)'},
     'scene': 0,
     'scenes': [{'nodes': [0]}],
     'nodes': [{'name': 'braseiro', 'matrix': g['nodes'][0]['matrix'], 'children': [1, 2]}, {'mesh': 0, 'name': 'cesta'}, {'mesh': 1, 'name': 'coluna'}],

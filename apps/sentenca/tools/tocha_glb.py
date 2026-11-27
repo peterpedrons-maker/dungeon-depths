@@ -52,7 +52,7 @@ prim = mesh['primitives'][0]
 prim['material'] = 0
 prim['attributes'] = {k: v for k, v in prim['attributes'].items() if k in ('POSITION', 'NORMAL', 'TEXCOORD_0')}
 out_g = {
-    'asset': {'version': '2.0', 'generator': 'masmorra-do-dado tools/tocha_glb.py (de Medieval Wall Torch, Kigha, CC BY 4.0)'},
+    'asset': {'version': '2.0', 'generator': 'sentenca tools/tocha_glb.py (de Medieval Wall Torch, Kigha, CC BY 4.0)'},
     'scene': 0,
     'scenes': [{'nodes': [0]}],
     'nodes': [{'name': 'tocha', 'matrix': [float(v) for v in W.T.reshape(-1)], 'mesh': 0}],

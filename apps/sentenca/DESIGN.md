@@ -1972,3 +1972,20 @@ resto da interface (pedra é o mundo, ouro só no que está escolhido; `src/ui/m
 - Testado no celular (915 × 412) e no PC (1280 × 720 e 1920 × 1080), nas abas Áudio, Imagem, Controles e Acessibilidade, e a moldura nova na
   pausa, na confirmação e nos espaços de jogo.
 
+## 89. A pasta e o endereço passam a se chamar «sentenca» (pedido do Pedro)
+
+A pasta do jogo virou `apps/sentenca/` (era `apps/masmorra-do-dado/`) e o endereço publicado virou
+**https://peterpedrons-maker.github.io/dungeon-depths/sentenca/**. Sem o «ç»: num endereço ele vira `%C3%A7`, e o link fica feio e fácil de
+errar quando alguém digita.
+
+- `vite.config.ts` (`base`), o cache do service worker (`sentenca-vNN`), o nome do pacote e todos os caminhos em `CLAUDE.md`, nos três
+  subagentes (`.claude/agents/`), no `.gitignore` e no `PUZZLES.md` foram trocados. O workflow de publicação não mudou: ele publica sozinho
+  cada pasta de `apps/`.
+- O nome que o jogador vê também virou **Sentença**: o título da aba do navegador e o nome do app instalado (`manifest.webmanifest`), que
+  ainda diziam «Masmorra do Dado».
+- **Os jogos salvos continuam**: o salvamento fica no navegador por site (`peterpedrons-maker.github.io`), não por pasta, e as chaves
+  (`mdd-...`) não mudaram.
+- O endereço antigo (`/masmorra-do-dado/`) deixa de existir. Quem instalou o jogo pelo endereço antigo precisa instalar de novo pelo novo.
+- A branch do cenógrafo (`claude/cenografo`) ainda usa a pasta antiga: ao juntar, o git acompanha a troca de nome dos arquivos que já
+  existiam; arquivos NOVOS criados lá na pasta antiga precisam ser movidos para `apps/sentenca/`.
+

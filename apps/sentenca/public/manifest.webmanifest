@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Masmorra do Dado",
-  "short_name": "Masmorra",
+  "name": "Sentença",
+  "short_name": "Sentença",
   "description": "Puzzle de masmorra 3D em primeira pessoa: cada face do dado é uma habilidade.",
   "lang": "pt-BR",
   "start_url": "./",

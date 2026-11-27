@@ -457,7 +457,7 @@ pulando, mas a volta é pela rampa).
 
 
 ## Sala de teste — A Placa que Julga  (`?lab=1`; Fogo + Peso + giz; fora do jogo principal)
-Sala isolada para mostrar o que as três ferramentas fazem juntas. Abre com `…/masmorra-do-dado/?lab=1` (nada é salvo no aparelho; o dado e o giz já
+Sala isolada para mostrar o que as três ferramentas fazem juntas. Abre com `…/sentenca/?lab=1` (nada é salvo no aparelho; o dado e o giz já
 estão nas mãos e as palavras da sala já estão no diário). Dados em `src/scene/rooms/lab.json`; `node tools/verify_lab.mjs` prova que a solução é única
 e que nenhuma pista é descartável.
 
