@@ -1198,6 +1198,10 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   para bem depois) e os **21 furos redondos** nos tetos estão no `HISTORIA.md`. A regra dos furos para a
   arte está no `DIRECAO_DE_ARTE.md` §9: só contam os furos REDONDOS de luz no teto; precisam ser exatamente 21 no jogo todo. Espalhados pelo
   `cenografo` no §72 (seis salas, uma face cada; as faces 5 e 6 ficam para o capítulo 2).
+- **Conserto (visto pelo Pedro jogando): a cena era pulada no mesmo aperto que pegava a gema.** O E (ou o toque no AGIR do celular) começava a
+  cena e, no mesmo instante, chegava também ao "pular cena" do jogo, que pulava direto para o encaixe (o caderno mal abria). Agora a cena só aceita
+  pular depois de começar (0,35 s) e segurar a tecla não conta como aperto novo. Testado com a tecla E de verdade: antes, a cena durava um instante
+  e o caderno não chegava a abrir; agora toca inteira.
 - **Teste**: `window.__mdd.gem(id, primeira)` toca a cena com uma gema à frente dos olhos; `window.__mdd.gemState()`.
 
 ## 70. O Escrivão animado (cenógrafo, animações do Pedro no Mixamo)
