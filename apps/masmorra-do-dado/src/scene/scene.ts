@@ -826,6 +826,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       buildRostos(); // a face escolhida mudou: as faces laterais giram de outro jeito
     }
     FRONT.set(0, -0.72 * (1 - dieCine), 0.7 + 0.3 * dieCine).normalize(); // na cena, o rosto fica de frente (sem inclinar)
+    if (mode === 'load') FRONT.set(-dieGroup.position.x, -dieGroup.position.y, -dieGroup.position.z).normalize(); // (no canto: a face que olha para a câmera)
     DIE_FACES.forEach((_, i) => {
       nW.copy(FACE_N[i]).applyQuaternion(dieHolder.quaternion);
       const d = nW.dot(FRONT);
@@ -3785,7 +3786,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const s = dieScaleBase * 0.78 * lo.scale;
     dieGroup.scale.setScalar(s);
     dieGroup.position.set(hw * 0.9 - s * 0.65, -ty * 0.86 + s * 0.68 + lo.dy * 0.5, -1);
-    dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(-lo.look.y * 0.1, lo.look.x * 0.22, 0)));
+    // quase de frente para a câmera (no canto, a perspectiva mostraria muito a lateral): o rosto encara o jogador e ainda se vê uma lasca
+    // da lateral e do topo, para ele ler como cubo
+    const gx = dieGroup.position.x;
+    const gy = dieGroup.position.y;
+    dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(0.5 * Math.atan2(gy, 1) - lo.look.y * 0.1, 0.62 * Math.atan2(-gx, 1) + lo.look.x * 0.22, 0, 'YXZ')));
+    wobbleEuler.order = 'XYZ';
   };
   // para onde o dado do canto olha: quase sempre para o jogador; de vez em quando, para a ponta do fogo que corre na barra
   let loadLookT = 1.5;
