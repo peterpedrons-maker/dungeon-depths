@@ -38,9 +38,10 @@ export function route(a: XZ, da: XZ, b: XZ, db: XZ): XZ[] {
       }
     } else pts.push(alongX ? [q1[0], a[1]] : [a[0], q1[1]]);
   }
-  // (o ponto de chegada reta só entra se não ficar para trás da volta)
+  // (o ponto de chegada reta só entra se não ficar para trás da volta; sem ele, a volta vai para a linha da entrada: nada de trecho torto)
   const last = pts[pts.length - 1];
   if ((q1[0] - last[0]) * db[0] + (q1[1] - last[1]) * db[1] >= -0.01) pts.push(q1);
+  else if (!eq(last[0], b[0]) && !eq(last[1], b[1])) pts.push(db[0] === 0 ? [b[0], last[1]] : [last[0], b[1]]);
   pts.push(b);
   // tira pontos repetidos e os que ficam no meio de uma reta
   const out: XZ[] = [];
@@ -64,13 +65,19 @@ export interface Connector {
   group: THREE.Group;
   floors: Rect[]; // o chão, retângulo por trecho (para saber se um ponto está no corredor)
   rects: Rect[]; // as paredes (colisão)
+  see: number[]; // outras salas que ficam desenhadas enquanto o jogador está aqui (a Biblioteca, vista da passarela)
   dispose(): void;
+}
+export interface ConnectorOpts {
+  open?: boolean[]; // por trecho: true = de outra sala (a passarela da Biblioteca): sem malha; só o chão e um parapeito dos dois lados
+  openW?: number; // a largura dos trechos abertos
+  see?: number[];
 }
 
 const MATS = new Map<string, { wallM: THREE.Material; ceilM: THREE.Material; floorM: THREE.Material }>(); // (um jogo de texturas por tema)
 
 // `pts` = o caminho (mundo), `y` = o chão, `theme` = a pedra da sala da porta
-export function buildConnector(from: number, to: number, pts: XZ[], y: number, theme: string): Connector {
+export function buildConnector(from: number, to: number, pts: XZ[], y: number, theme: string, o: ConnectorOpts = {}): Connector {
   const kit = new Kit(theme);
   const w = 2 * DW;
   const h = ARCH_TOP;
@@ -86,11 +93,41 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
     const [bx, bz] = pts[k + 1];
     return [Math.sign(bx - ax), Math.sign(bz - az)];
   };
+  const isOpen = (k: number) => !!o.open?.[k];
+  const turnAt = (k: number) => k > 0 && k < n && (dirOf(k - 1)[0] !== dirOf(k)[0] || dirOf(k - 1)[1] !== dirOf(k)[1]);
+  const ow = o.openW ?? w;
+  // os trechos abertos: o chão (para o motor), o parapeito dos dois lados e, nas pontas que dão num trecho fechado, os "ombros" (o corredor é
+  // mais largo que o vão da passarela). O parapeito só barra quem está na passarela (`bottom`): quem anda lá embaixo passa livre.
+  for (let k = 0; k < n; k++) {
+    if (!isOpen(k)) continue;
+    const [dx, dz] = dirOf(k);
+    const [ax, az] = pts[k];
+    const [bx, bz] = pts[k + 1];
+    const hw = ow / 2;
+    floors.push([Math.min(ax, bx) - (dx === 0 ? hw : 0), Math.min(az, bz) - (dz === 0 ? hw : 0), Math.max(ax, bx) + (dx === 0 ? hw : 0), Math.max(az, bz) + (dz === 0 ? hw : 0)]);
+    for (const sd of [-1, 1]) {
+      const [nx, nz] = nl0([dx, dz], sd);
+      const ra = [ax + nx * (hw + 0.1), az + nz * (hw + 0.1)];
+      const rb = [bx + nx * (hw + 0.1), bz + nz * (hw + 0.1)];
+      const t = 0.1;
+      rects.push([Math.min(ra[0], rb[0]) - (dx === 0 ? t : 0), Math.min(ra[1], rb[1]) - (dz === 0 ? t : 0), Math.max(ra[0], rb[0]) + (dx === 0 ? t : 0), Math.max(ra[1], rb[1]) + (dz === 0 ? t : 0), undefined, y]);
+      for (const [px, pz] of [[ax, az], [bx, bz]] as [number, number][]) {
+        const c0 = hw;
+        const c1 = w / 2 + WALL;
+        const qx0 = px + nx * c0 - dx * 0.35;
+        const qz0 = pz + nz * c0 - dz * 0.35;
+        const qx1 = px + nx * c1 + dx * 0.35;
+        const qz1 = pz + nz * c1 + dz * 0.35;
+        rects.push([Math.min(qx0, qx1), Math.min(qz0, qz1), Math.max(qx0, qx1), Math.max(qz0, qz1), undefined, y]);
+      }
+    }
+  }
   // chão e teto: um retângulo por trecho; o quadrado da curva fica com o trecho que chega nela
   for (let k = 0; k < n; k++) {
+    if (isOpen(k)) continue;
     const [dx, dz] = dirOf(k);
-    const s = k > 0 ? w / 2 : 0;
-    const e = k < n - 1 ? w / 2 : 0;
+    const s = turnAt(k) ? w / 2 : 0;
+    const e = turnAt(k + 1) ? w / 2 : 0;
     const ax = pts[k][0] + dx * s;
     const az = pts[k][1] + dz * s;
     const bx = pts[k + 1][0] + dx * e;
@@ -128,6 +165,7 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
       off.push([pts[k][0] + (ox * w) / 2, pts[k][1] + (oz * w) / 2]);
     }
     for (let k = 0; k < n; k++) {
+      if (isOpen(k)) continue;
       const [ax, az] = off[k];
       const [bx, bz] = off[k + 1];
       const d = dirOf(k);
@@ -141,7 +179,7 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
       kit.box(sx, h, sz, wallM, cx, y + h / 2, cz, false);
       rects.push([cx - sx / 2, cz - sz / 2, cx + sx / 2, cz + sz / 2, top]);
       // o canto de fora da curva (atrás das duas paredes): fechado na colisão
-      if (k < n - 1) {
+      if (k < n - 1 && turnAt(k + 1)) {
         const v2 = nl0(dirOf(k + 1), side);
         const ex = bx + (v[0] + v2[0]) * WALL;
         const ez = bz + (v[1] + v2[1]) * WALL;
@@ -160,6 +198,7 @@ export function buildConnector(from: number, to: number, pts: XZ[], y: number, t
     group,
     floors,
     rects,
+    see: o.see ?? [],
     dispose() {
       group.traverse((o) => {
         const m = o as THREE.Mesh;

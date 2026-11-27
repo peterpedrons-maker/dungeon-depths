@@ -1,4 +1,4 @@
-# A PLANTA DO CAPÍTULO 1 (DESIGN.md §73; proposta da Etapa 1 do level design novo). Uso: python3 tools/planta/planta_cap1.py saida.png [faces]
+# A PLANTA DO CAPÍTULO 1 (DESIGN.md §73): a que o jogo usa. Grava src/scene/planta.json (o motor e as salas leem dela) e o desenho. Uso: python3 tools/planta/planta_cap1.py saida.png [faces]
 # salas.json = a planta de cada sala hoje (window.__mdd.footprints(), no modo de desenvolvimento).
 # A planta do capítulo 1, versão para o Pedro: térreo e subsolo, o caminho, os desvios, os atalhos e os furos (com e sem os desenhos das faces)
 import sys, os, math
@@ -41,6 +41,19 @@ put(at(16, 'N', 33, 74), 'S')
 put(at(17, 'N', 33, 56), 'S')
 put(at(18, 'E', 48.5, 42.5), 'S')
 
+# ── A PONTE (DESIGN.md §73, passo 3): a Escadaria sai na passarela baixa da esquerda da Biblioteca (pelo vão do fundo), anda por ela até o
+# vão da frente e dali uma ponte (corredor alto) leva ao Fogo que Corre. A porta da Escadaria fica alinhada com o vão do fundo, a 3,2 m dele
+# (o corredor da própria porta chega exatamente no vão). WALK_X = o x (local da Biblioteca) do meio dos vãos: src/scene/rooms/biblioteca.ts.
+WALK_X = -5.25
+(wx, wb) = R[11].P(WALK_X, -26)
+(_, wf) = R[11].P(WALK_X, 2)
+(dx19, dy19), _ = R[19].door()
+R[19].ox += wx - dx19
+R[19].oy += (wb - 3.2) - dy19
+# o último ponto da ponte: na linha de chegada reta da entrada do Fogo que Corre (2 m antes dela): a ponte vira ali, sem degrau de lado
+(_, ey20), _ = R[20].entrance()
+PONTE = {'de': 'A Escadaria', 'via': [[round(wx, 3), round(wb, 3)], [round(wx, 3), round(wf, 3)], [round(wx, 3), round(ey20 - 2.0, 3)]], 'aberto': [[0, 1]], 'ver': ['A Biblioteca'], 'largura': 1.3}
+
 # os furos (no plano) e a face de cada um
 HOLES = {
     1: ((10.0, 104.0), 1),
@@ -49,8 +62,8 @@ HOLES = {
     # (a face 4 fica para o capítulo 2; a 5 para o 3 e a 6 para o 4: DESIGN.md §73)
 }
 # a passarela alta da Biblioteca (a Escadaria sai nela; ela leva, por uma ponte, ao Fogo que Corre)
-WALK = [(44.7, 33.9), (44.7, 62.0)]
-BRIDGE = [(44.7, 62.0), (44.7, 77.0), (64.2, 77.0), (64.2, 78.9)]
+WALK = [tuple(PONTE['via'][0]), tuple(PONTE['via'][1])]
+BRIDGE = [tuple(PONTE['via'][1]), tuple(PONTE['via'][2]), (R[20].entrance()[0][0], PONTE['via'][2][1]), R[20].entrance()[0]]
 SHORTCUTS = [
     ([(33.8, 108.0), (13.9, 108.0)], 'atalho secreto: do Tribunal de volta ao Poço (abre no fim)'),
     ([(30.0, 66.0), (30.0, 70.8)], ''),
@@ -135,7 +148,8 @@ JS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'src',
 with open(JS, 'w') as fh:
     json.dump({'_': 'gerado por tools/planta/planta_cap1.py (não edite à mão)',
                'salas': [{'n': S[i]['n'], 'd': r.d, 'x': round(r.ox, 3), 'z': round(r.oy, 3), 'andar': r.fl,
-                          'saida': [r.exit_side, r.exit_off], 'entrada': [r.ent_side, r.ent_off]} for i, r in sorted(R.items())]},
+                          'saida': [r.exit_side, r.exit_off], 'entrada': [r.ent_side, r.ent_off]} for i, r in sorted(R.items())],
+               'pontes': [PONTE]},
               fh, ensure_ascii=False, indent=1)
 
 # ── desenho ──
@@ -263,7 +277,7 @@ for panel, (fl, title) in enumerate([('T', 'TÉRREO  (as salas 20 a 24 ficam 2,5
                             g.line([(ax + (bx - ax) * j / n, ay + (by - ay) * j / n), (ax + (bx - ax) * (j + 1) / n, ay + (by - ay) * (j + 1) / n)], fill=(200, 140, 20), width=3)
                 lx, ly_ = T(panel, min(xs), min(ys))
                 g.text((lx - 8, ly_ - 34), f'face {f}', fill=(170, 100, 0), font=FB)
-g.text((24, 18), 'Capítulo 1 · a planta nova (proposta da Etapa 1)' + ('  ·  com as faces marcadas' if SHOW_FACES else '  ·  como o jogador vê no caderno'), fill=INK, font=font(28))
+g.text((24, 18), 'Capítulo 1 · a planta (a que o jogo usa; DESIGN.md §73)' + ('  ·  com as faces marcadas' if SHOW_FACES else '  ·  como o jogador vê no caderno'), fill=INK, font=font(28))
 # legenda
 ly = TOP + PH + 24
 items = [((240, 232, 214), 'desvio opcional'), ((60, 110, 190), 'entrada'), ((210, 120, 40), 'porta de saída'), ((214, 190, 150), 'corredor'), ((200, 184, 226), 'passarela e ponte altas'), ((170, 40, 40), 'atalho secreto (fechado)'), ((255, 250, 225), 'furo redondo de luz no teto')]

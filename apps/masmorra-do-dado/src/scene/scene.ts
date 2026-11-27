@@ -23,7 +23,7 @@ import { Sfx, type AudioMode, type StepKind } from './audio';
 import { CORRIDOR, DW, dbg, lightEnv } from './kit';
 import { Place, QUARTER } from './place';
 import { buildConnector, corridorEnd, route, type Connector, type XZ } from './connector';
-import { PLAN_ORIGIN, PLANTA_ON, planPlace } from './plan';
+import { PLAN_ORIGIN, PLANTA_ON, PONTES, planPlace } from './plan';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { LEX } from '../story/lexicon';
@@ -1702,6 +1702,26 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const end = corridorEnd(door, [Math.round(da.x), Math.round(da.z)]);
       const ent = pb.xz(en.x, en.z);
       const db = pb.dirToWorld(new THREE.Vector3(en.dx, 0, en.dz));
+      // uma PONTE (plan.ts): o caminho passa pelos pontos dela (pela passarela da Biblioteca) antes de seguir até a entrada
+      const pn = PONTES.find((p) => p.de === bare(a.name));
+      if (pn && p0) {
+        const via: XZ[] = pn.via.map(([x, z]) => [x - p0.x, z - p0.z]);
+        const pts: XZ[] = [end];
+        for (const v of via) if (Math.hypot(v[0] - pts[pts.length - 1][0], v[1] - pts[pts.length - 1][1]) > 0.05) pts.push(v);
+        const last = pts[pts.length - 1];
+        const prev = pts[pts.length - 2];
+        const dl: XZ = [Math.sign(last[0] - prev[0]), Math.sign(last[1] - prev[1])];
+        const tail = route(last, dl, ent, [Math.round(db.x), Math.round(db.z)]);
+        pts.push(...tail.slice(1));
+        // os trechos abertos: entre os pontos `aberto` da ponte
+        const open = pts.slice(0, -1).map((p, k) => pn.aberto.some(([u, w]) => Math.hypot(p[0] - via[u][0], p[1] - via[u][1]) < 0.05 && Math.hypot(pts[k + 1][0] - via[w][0], pts[k + 1][1] - via[w][1]) < 0.05));
+        const see = pn.ver.map((nm) => rooms.findIndex((r) => bare(r.name) === nm)).filter((k) => k >= 0);
+        const c = buildConnector(i, i + 1, pts, pa.pos.y + (a.exitDy ?? 0), a.theme ?? 'crypt', { open, openW: pn.largura, see });
+        applyShadowFlags(c.group);
+        scene.add(c.group);
+        connectors.push(c);
+        continue;
+      }
       if (Math.hypot(end[0] - ent[0], end[1] - ent[1]) < 0.05) continue;
       const pts: XZ[] = route(end, [Math.round(da.x), Math.round(da.z)], ent, [Math.round(db.x), Math.round(db.z)]);
       const c = buildConnector(i, i + 1, pts, pa.pos.y + (a.exitDy ?? 0), a.theme ?? 'crypt');
@@ -1852,10 +1872,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const applyActive = () => {
     activeRooms.clear();
     surfCache = [];
-    for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) {
-      activeRooms.add(i);
-      surfCache.push(...rooms[i].surfaces);
-    }
+    for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) activeRooms.add(i);
+    // (e as salas que se veem de um caminho especial: a Biblioteca, da passarela)
+    for (const c of connectors) if (c.from === curRoom) for (const k of c.see) activeRooms.add(k);
+    activeRooms.forEach((i) => surfCache.push(...rooms[i].surfaces));
     const setLayer = (g: THREE.Object3D, layer: number) =>
       g.traverse((o) => {
         if ((o as THREE.Mesh).isMesh || (o as THREE.Sprite).isSprite || (o as THREE.Points).isPoints) o.layers.set(layer);
@@ -2964,8 +2984,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // Colisão do jogador: círculo (raio PR) contra retângulos no plano XZ.
   const PR = 0.3;
-  const pushOut = (r: [number, number, number, number, (number | undefined)?]) => {
+  const pushOut = (r: Rect) => {
     if (r[4] !== undefined && feetY >= r[4] - 0.3) return; // por cima do obstáculo: não bloqueia
+    if (r[5] !== undefined && feetY < r[5] - 0.5) return; // por baixo (o parapeito de uma galeria alta): não bloqueia
     const cx = clamp(pos.x, r[0], r[2]);
     const cz = clamp(pos.z, r[1], r[3]);
     const dx = pos.x - cx;
@@ -3005,6 +3026,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const out: Rect[] = [];
     for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) {
       const pl = places[i];
+      // (uma sala por cima ou por baixo da outra: acima do teto dela, ou bem abaixo do chão, as paredes dela não contam)
+      const b = bounds[i];
+      if (feetY > pl.pos.y + b.max.y - 0.2 || feetY + 1.8 < pl.pos.y + b.min.y) continue;
       for (const r of rooms[i].rects(feetY - pl.pos.y)) out.push(pl.rectToWorld(r));
     }
     for (const c of connectors) if (c.from === curRoom || c.from === curRoom - 1) out.push(...c.rects);
@@ -4418,6 +4442,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         vz: moveVel.z,
         gems,
       }),
+      // (testes) vira o olhar (yaw, pitch do mundo) sem mexer na posição
+      look: (y: number, p: number) => {
+        yaw = y;
+        pitch = p;
+      },
       place: (x: number, z: number, y: number, p: number) => {
         pos.set(x, feetY + EYE, z);
         yaw = y;
@@ -4429,9 +4458,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
       // (testes) põe o jogador num ponto LOCAL da sala i (x, z da sala; o ângulo também é o da sala)
-      placeIn: (i: number, x: number, z: number, y: number, p: number) => {
+      placeIn: (i: number, x: number, z: number, y: number, p: number, feet?: number) => {
         toW(i, pos.set(x, 0, z));
-        feetY = places[i].pos.y + rooms[i].groundY(x, z, feetY - places[i].pos.y);
+        feetY = places[i].pos.y + (feet ?? rooms[i].groundY(x, z, feetY - places[i].pos.y));
+        vy = 0;
         pos.y = feetY + EYE;
         yaw = y + places[i].yaw;
         pitch = p;
@@ -4448,6 +4478,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         g.drawImage(src, 0, 0, cv.width, cv.height);
         return cv.toDataURL('image/png');
       },
+      // (testes) os obstáculos (mundo) perto de um ponto, para achar quem barra o jogador
+      rectsNear: (x: number, z: number, r = 0.6) => worldRects().filter((q) => x > q[0] - r && x < q[2] + r && z > q[1] - r && z < q[3] + r).map((q) => q.map((v) => (v === undefined ? null : +(+v).toFixed(2)))),
+      // (testes) cada ligação em coordenadas do MUNDO: a porta (e para onde ela sai), o caminho do corredor de ligação e a entrada da próxima
+      paths: () =>
+        rooms.slice(0, -1).map((r, i) => {
+          const ex = exitOf(r);
+          const en = entryOf(rooms[i + 1]);
+          const dw = toW(i, new THREE.Vector3(ex.x, r.exitDy ?? 0, ex.z));
+          const dd = places[i].dirToWorld(new THREE.Vector3(ex.dx, 0, ex.dz));
+          const ew = toW(i + 1, new THREE.Vector3(en.x, rooms[i + 1].entranceY ?? 0, en.z));
+          const ed = places[i + 1].dirToWorld(new THREE.Vector3(en.dx, 0, en.dz));
+          const c = connectors.find((q) => q.from === i);
+          const r2 = (v: number) => +v.toFixed(2);
+          return { i, door: [r2(dw.x), r2(dw.y), r2(dw.z)], out: [Math.round(dd.x), Math.round(dd.z)], pts: c ? c.pts.map(([x, z]) => [r2(x), r2(z)]) : [], ent: [r2(ew.x), r2(ew.y), r2(ew.z)], in: [Math.round(ed.x), Math.round(ed.z)], local: [ex.x, ex.z, ex.dx, ex.dz, r.exitDy ?? 0] };
+        }),
       connectors: () => connectors.map((c) => ({ from: c.from, to: c.to, y: c.y, pts: c.pts.map(([x, z]) => [+x.toFixed(2), +z.toFixed(2)]) })),
       skipRoom: (i: number) => rooms[i].skip?.(),
       save: () => saveGame(),

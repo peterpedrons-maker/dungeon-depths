@@ -63,7 +63,7 @@ export class Place {
   rectToWorld(r: Rect): Rect {
     const [ax, az] = this.xz(r[0], r[1]);
     const [bx, bz] = this.xz(r[2], r[3]);
-    return [Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz), r[4] === undefined ? undefined : r[4] + this.pos.y];
+    return [Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz), r[4] === undefined ? undefined : r[4] + this.pos.y, r[5] === undefined ? undefined : r[5] + this.pos.y];
   }
 
   // põe o grupo da sala no lugar

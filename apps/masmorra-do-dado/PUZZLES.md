@@ -25,7 +25,7 @@ Você acorda no chão, **sem nada nas mãos**, olha o poço de luz no teto e a c
 
 ## Sala 2 — O Vestíbulo  (ACENDER · DOIS)  — o salão comprido, com colunas
 Três braseiros apagados; a frase diz DOIS (o símbolo de DOIS são dois pontos na diagonal).
-1. Acenda **exatamente dois** braseiros (quaisquer). Com dois acesos a porta abre.
+1. Acenda **exatamente dois** braseiros (quaisquer). Com dois acesos a porta abre (com a planta nova, a porta é a da **parede direita, logo à direita de quem entra**; a frase continua no fundo).
 2. Se acender o **terceiro**, depois de ~1,5 s a Casa apaga todos ("dizer é fazer": o número tem que ser exato). Aí é só acender dois de novo.
 **O caderno achado (tutorial do diário; não é puzzle).** O jogador ainda **não tem diário**: os símbolos que ele vê ficam guardados em silêncio. No chão, junto da base da coluna esquerda (perto da entrada), há um **caderno caído aberto, no escuro**.
 3. Ao acender o **primeiro braseiro**, a luz chega até ele; o dado olha e fala «VOCÊ VER LIVRO», «VOCÊ PEGAR LIVRO» (com desenhos).
@@ -39,7 +39,8 @@ Sala pequena e baixa. Logo na entrada, uma **grade de ferro** fecha o resto da s
 Regra das lousas: quando o conjunto aceso é **exatamente** o glifo, o glifo talhado brilha e a lousa trava acesa. Se passam **5 s sem lampião novo** e o desenho não bate, tudo se apaga (sem pena).
 1. **Lousa 1** (antes da grade; glifo **DOIS** ao lado): acenda o **canto de cima à esquerda** e o **canto de baixo à direita**. A grade sobe.
 2. **Lousa 2** (depois da grade; glifo **TRÊS**): acenda a **diagonal inteira** (canto, centro, canto). A **porta acorda**: os nove pontinhos de bronze da própria porta passam a acender (antes, o dado só bate seco).
-3. **A porta é a lousa.** Acima dela: «ACENDER ▢ BRASEIRO», e a casa lisa **copia ao vivo** o que está aceso na porta. A frase tem de ficar **verdadeira**: quantos braseiros estão acesos? Há **quatro**: à esquerda da porta, à direita da porta, no meio da parede esquerda e **um num nicho alto em cima do arco da entrada** (atrás de quem entra). Quem conta só os da frente escreve TRÊS: depois de ~6 s a Casa lê, **não aceita** e os pontinhos se apagam.
+3. **A porta é a lousa.** No meio da parede do fundo: «ACENDER ▢ BRASEIRO», e a casa lisa **copia ao vivo** o que está aceso na porta. A frase tem de ficar **verdadeira**: quantos braseiros estão acesos? Há **quatro**: **três em fila no fundo**, embaixo da frase, e **um num nicho alto em cima do arco da entrada** (atrás de quem entra). Quem conta só os da frente escreve TRÊS: depois de ~6 s a Casa lê, **não aceita** e os pontinhos se apagam.
+   - **Com a planta nova** (o padrão; `DESIGN.md` §73), a porta-lousa fica na **parede esquerda, perto do fundo**, e a frase continua no meio do fundo, em cima dos três braseiros. Com `?planta=0` (o mundo em fila de antes), a porta é no fundo, com um braseiro de cada lado, e o terceiro no meio da parede esquerda. A conta e a resposta não mudam.
 4. A resposta é **QUATRO**, que ninguém ensinou: o DOIS e o TRÊS eram **faces de dado** (o **dado de pedra meio enterrado** no canto direito, perto da porta, mostra UM em cima e DOIS e TRÊS dos lados). A face quatro de um dado são **os quatro cantos**: acenda os **quatro cantos da porta**. A casa lisa mostra QUATRO, a Casa lê a frase (as palavras acendem uma a uma) e a porta abre.
 - **Segredo S1 (folha p8):** atrás da **coluna esquerda**, na parede esquerda, há uma lousa com um **soquete frio** (pedra sem brasa) e um **dado de cinco pontos** talhado acima. Escreva **CINCO** (os quatro cantos e o centro): um nicho se abre ao lado, com uma **folha dela, a p8** (E / AGIR para pegar; até a v99 era uma gema).
 - **Por que é única** (`node tools/verify_lousa.mjs`): os números do léxico são as faces de um dado comum; cada lousa aceita 1 desenho entre 512; a frase só fica verdadeira com QUATRO; "quatro pontos quaisquer" são 126 desenhos e só a face do dado serve; acender os cantos um a um não abre nada antes do quarto.
@@ -288,7 +289,8 @@ pendura todos de volta. A porta só aceita a ordem se o **único** estandarte qu
 
 ## Sala 22 — A Antecâmara Fria  — RESPIRO R5 (sem puzzle; ensina A Memória da Casa; PUZZLES_PROPOSTAS.md §2b "R5" e Ficha 9b)
 Câmara pequena, porta fechada sem frase. Na parede do fundo, à direita da porta, uma moldura de frase vazia e, embaixo, um soquete frio (tigela
-de bronze rachada): a única coisa acendível. **Como passar:** acender o soquete com o dado de Fogo (face 3). A Casa apaga tudo por 4 s; no escuro,
+de bronze rachada): a única coisa acendível. (Com a planta nova, a porta fica na parede direita, perto da frente; a moldura, no canto do fundo ao lado
+dela.) **Como passar:** acender o soquete com o dado de Fogo (face 3). A Casa apaga tudo por 4 s; no escuro,
 a moldura mostra em cal «ABRIR PORTA CONFIRMADO» e a porta abre. Repetível (o soquete esfria quando a luz volta). Hoje fica logo antes do
 Tribunal (o plano a põe entre as salas 16 e 17, que ainda não existem).
 

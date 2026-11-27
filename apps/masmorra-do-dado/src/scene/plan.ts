@@ -18,6 +18,21 @@ interface Entry {
   entrada: (string | number)[];
 }
 const SALAS = (PLANTA as { salas: Entry[] }).salas;
+// PONTES: caminhos especiais entre duas salas, que passam por dentro de uma terceira (a Escadaria sai na passarela alta da Biblioteca e uma
+// ponte leva às salas do claustro). `via` = pontos do caminho depois da porta (plano); `aberto` = trechos [i, i+1] que são de outra sala (a
+// passarela: sem paredes, com parapeito); `ver` = as salas que ficam desenhadas enquanto o jogador está no caminho; `largura` do trecho aberto.
+export interface Ponte {
+  de: string;
+  via: [number, number][];
+  aberto: [number, number][];
+  ver: string[];
+  largura: number;
+  y?: number; // (a altura do trecho aberto, local da sala que ele atravessa: a passarela)
+}
+const PONTES_ALL = ((PLANTA as unknown as { pontes?: Ponte[] }).pontes ?? []) as Ponte[];
+export const PONTES: Ponte[] = PLANTA_ON ? PONTES_ALL : [];
+// a ponte que atravessa a sala `name` (para ela abrir os vãos e baixar a passarela)
+export const ponteThrough = (name: string) => PONTES.find((p) => p.ver.includes(name));
 
 // a sala `name` na planta (sem o "Sala N · " do começo), ou nada (fora da planta: em fila)
 export function planPlace(name: string): Entry | undefined {

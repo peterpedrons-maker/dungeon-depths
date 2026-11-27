@@ -455,7 +455,7 @@ export class Kit {
       this.box(0.34, DH + 0.1, 0.34, this.slab, x + dir * 0.17, y0 + (DH + 0.1) / 2, z, false);
       this.box(0.42, 0.14, 0.44, this.slab, x + dir * 0.19, y0 + DH + 0.17, z, false);
       this.box(0.42, 0.1, 0.44, this.slab, x + dir * 0.19, y0 + 0.05, z, false);
-      this.rects.push([Math.min(x, x + dir * 0.42), z - 0.22, Math.max(x, x + dir * 0.42), z + 0.22, y0 + 2]);
+      this.rects.push([Math.min(x, x + dir * 0.42), z - 0.22, Math.max(x, x + dir * 0.42), z + 0.22, y0 + 2, y0 > 0.5 ? y0 : undefined]); // (num andar alto, não barra quem passa embaixo)
     }
     this.box(0.5, 0.04, 2 * DW + 0.5, this.slab, x + dir * 0.2, y0 + 0.02, cz, false);
   }
@@ -753,7 +753,7 @@ const frameDir = (q: number, fx: number, fz: number): [number, number] => {
 const frameRect = (q: number, ox: number, oz: number, r: Rect): Rect => {
   const [ax, az] = frameDir(q, r[0], r[1]);
   const [bx, bz] = frameDir(q, r[2], r[3]);
-  return [Math.min(ax, bx) + ox, Math.min(az, bz) + oz, Math.max(ax, bx) + ox, Math.max(az, bz) + oz, r[4]];
+  return [Math.min(ax, bx) + ox, Math.min(az, bz) + oz, Math.max(ax, bx) + ox, Math.max(az, bz) + oz, r[4], r[5]];
 };
 
 export interface DoorOpts {
@@ -769,6 +769,24 @@ export interface DoorOpts {
   wallMat?: THREE.Material; // material da parede (UV em metros ÷ uvScale)
   uvScale?: number;
   thick?: number; // espessura da parede (para trás); a laje da porta sobe para DENTRO dela e some
+  holes?: WallHole[]; // outros vãos na mesma parede (em arco), em x da parede (ex.: a passarela alta da Biblioteca)
+}
+// um vão em arco numa parede: o meio em x, o chão em y (acima do pé da parede), a largura e a altura até o alto do arco
+export interface WallHole {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+function archHole(x: number, y: number, w: number, h: number) {
+  const p = new THREE.Path();
+  const r = w / 2;
+  p.moveTo(x - r, y);
+  p.lineTo(x + r, y);
+  p.lineTo(x + r, y + h - r);
+  p.absarc(x, y + h - r, r, 0, Math.PI, false);
+  p.lineTo(x - r, y);
+  return p;
 }
 
 // a parede com o vão em arco: plana (como sempre) ou, com `thick`, um bloco com espessura (as faces do vão são a ombreira e o intradorso)
@@ -806,6 +824,7 @@ export function buildDoor(kit: Kit, o0: DoorOpts) {
   wall.lineTo(o.x1, o.h);
   wall.lineTo(o.x0, o.h);
   wall.closePath();
+  for (const hh of o.holes ?? []) wall.holes.push(archHole(hh.x, hh.y, hh.w, hh.h));
   const wm = archWall(wall, o.wallMat ?? lambert(brickTexture([1 / T, 1 / T], 1, 23, theme)), o.thick, o.uvScale ?? 1);
   wm.position.z = o.z0;
   g.add(wm);
@@ -942,7 +961,7 @@ export function buildDoor(kit: Kit, o0: DoorOpts) {
 // ── entrada de uma sala (liga com o corredor da sala anterior) ──────────────
 // Parede de frente (z = o.z, olhando pra dentro da sala, ou seja, -z) com a abertura em arco
 // no centro e um aro de pedra saindo pra dentro da sala.
-export function buildEntrance(kit: Kit, o0: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number; wallMat?: THREE.Material; uvScale?: number; thick?: number; frame?: Frame }) {
+export function buildEntrance(kit: Kit, o0: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number; wallMat?: THREE.Material; uvScale?: number; thick?: number; frame?: Frame; holes?: WallHole[] }) {
   // (num quadro: a parede vai de `a` a `b` no x dele; por dentro, as peças giram meia volta, como sempre, e trocam os lados)
   const fr = o0.frame;
   const o = fr ? { ...o0, x0: -fr.b, x1: -fr.a, z: 0 } : o0;
@@ -968,6 +987,8 @@ export function buildEntrance(kit: Kit, o0: { x0: number; x1: number; z: number;
   wall.lineTo(o.x1, o.h);
   wall.lineTo(o.x0, o.h);
   wall.closePath();
+  // (as peças da entrada giram meia volta: um vão em x da sala fica em -x na forma)
+  for (const hh of o.holes ?? []) wall.holes.push(archHole(-hh.x, hh.y, hh.w, hh.h));
   const wm = archWall(wall, o.wallMat ?? lambert(brickTexture([1 / T, 1 / T], 1, 25, theme)), o.thick, o.uvScale ?? 1);
   wm.rotation.y = Math.PI; // de frente pra dentro da sala
   wm.position.z = o.z;

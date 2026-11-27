@@ -29,6 +29,7 @@ import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { windNear } from '../ambience';
 import { bakeProps, loadPack, placeProp } from '../props';
 import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
+import { ponteThrough } from '../plan';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
 const Z0 = -26;
@@ -103,8 +104,14 @@ export function buildBiblioteca(ctx: Ctx): Room {
   const zm = (Z0 + Z1) / 2;
   // ══ o ÁTRIO ══
   kit.plane(AX * 2, L, lambert(floorTexture([(AX * 2) / T, L / T], 'crypt')), 0, 0, zm, -Math.PI / 2);
-  const entrance = buildEntrance(kit, { x0: -AX, x1: AX, z: Z1, h: H });
-  const door = buildDoor(kit, { x0: -AX, x1: AX, z0: Z0, h: H, lamps: 1, connected: true });
+  // A PLANTA NOVA (DESIGN.md §73, passo 3): a Escadaria sai na passarela baixa da esquerda (pelo fundo) e dela uma ponte sai (pela frente) para as
+  // salas do claustro. A passarela desce para a altura da saída da Escadaria e ganha um vão em arco em cada ponta. O caminho é da Escadaria
+  // (motor: corredor de ligação com um trecho aberto); a Biblioteca só abre os vãos.
+  const PONTE = !!ponteThrough('A Biblioteca');
+  const WALK_Y = PONTE ? 3.875 : 4.6; // (o meio da laje: o topo fica a 4,0 m, a saída da Escadaria)
+  const WALK_HOLE = { x: -(AX - 0.75), y: WALK_Y + 0.125, w: 1.3, h: 2.4 };
+  const entrance = buildEntrance(kit, { x0: -AX, x1: AX, z: Z1, h: H, holes: PONTE ? [WALK_HOLE] : [] });
+  const door = buildDoor(kit, { x0: -AX, x1: AX, z0: Z0, h: H, lamps: 1, connected: true, holes: PONTE ? [WALK_HOLE] : [] });
   door.setOpen(1);
   door.lampMats[0].color.setHex(0xff7a2e);
   boxes.push(mkBox(-1.25, 0, Z0, -0.95, 2.65, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, 2.65, Z0 + 0.3));
@@ -133,7 +140,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
     // o Átrio (para o jogador): as paredes, menos as passagens
     for (let k = 0; k < cuts.length - 1; k += 2) rects.push(side < 0 ? [-AX - 0.4, cuts[k], -AX, cuts[k + 1]] : [AX, cuts[k], AX + 0.4, cuts[k + 1]]);
     // as passarelas dos andares de cima (vazias, sem acesso: as escadas desabaram)
-    for (const y of [4.6, 8.8]) {
+    for (const y of [WALK_Y, 8.8]) {
       kit.box(1.4, 0.25, L, kit.slab, side * (AX - 0.7), y, zm, false);
       for (let z = Z0 + 1; z < Z1; z += 1.2) kit.box(0.06, 0.8, 0.06, lambert(null, 0x3a3430), side * (AX - 1.35), y + 0.5, z, false);
       kit.box(0.08, 0.06, L, lambert(null, 0x3a3430), side * (AX - 1.35), y + 0.9, zm, false);
@@ -146,7 +153,13 @@ export function buildBiblioteca(ctx: Ctx): Room {
     m.rotation.set(x, z, s * 4);
     kit.group.add(m);
   }
-  kit.box(1.6, 0.25, 3, kit.slab, -5.2, 4.2, -23, false); // um lance quebrado pendurado
+  // um lance quebrado pendurado (com a passarela em uso, ele fica pendurado embaixo dela)
+  if (PONTE) {
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 3), kit.slab);
+    fl.position.set(-5.0, 3.25, -23);
+    fl.rotation.set(0.12, 0, -0.35);
+    kit.add(fl, false);
+  } else kit.box(1.6, 0.25, 3, kit.slab, -5.2, 4.2, -23, false);
   // ── as nove mesas de leitura, cada uma com uma lamparina; e quatro lamparinas de parede ──
   const torches: Torch[] = [];
   const cells: (number | null)[] = [];

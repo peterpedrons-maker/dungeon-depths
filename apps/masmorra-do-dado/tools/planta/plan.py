@@ -155,6 +155,8 @@ def route(a, b, ra=CORRIDOR, rb=RB, raw=False):
     lx_, ly_ = pts[-1]
     if (q1[0] - lx_) * fx + (q1[1] - ly_) * fy >= -0.01:
         pts.append(q1)
+    elif not eq(lx_, nx) and not eq(ly_, ny):
+        pts.append((nx, ly_) if fx == 0 else (lx_, ny))
     pts.append((nx, ny))
     if raw:
         return pts

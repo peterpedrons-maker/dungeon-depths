@@ -19,8 +19,9 @@ export interface Ambience {
 
 export type DieState = 'hand' | 'flying' | 'rest' | 'returning' | 'placing';
 
-// retângulo no plano XZ: x0, z0, x1, z1 (+ altura do topo: só bloqueia quem está abaixo dela)
-export type Rect = [number, number, number, number, number?];
+// retângulo no plano XZ: x0, z0, x1, z1 (+ altura do topo: só bloqueia quem está abaixo dela; + altura do pé: só bloqueia quem está acima
+// dela, como o parapeito de uma galeria alta, que não pode barrar quem passa embaixo)
+export type Rect = [number, number, number, number, number?, number?];
 
 export interface Box {
   min: THREE.Vector3;

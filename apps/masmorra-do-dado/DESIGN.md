@@ -1341,6 +1341,46 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
     lugar ou de giro;
   - **testes:** `__mdd.placeIn(sala, x, z, ângulo, inclinação)` (ponto local da sala), `__mdd.connectors()` e `__mdd.mapImage(andar)` (o mapa
     com tudo visitado). A sala 20 foi 4,6 m para o oeste na planta (o corredor dos Banhos ao Pano passava por baixo dela).
+- **Passo 3, feito (as portas de lado):**
+  - **portas e entradas em qualquer parede** (`kit.ts`: `doorFrame`/`entryFrame`). A porta e a entrada de sempre são montadas num QUADRO: a
+    origem no meio do vão, girado para a parede escolhida (fundo, esquerda ou direita; a entrada: frente, esquerda ou direita) e em qualquer ponto
+    dela. Elas devolvem onde ficaram (`door.exit`, `entrance.entry`), e a sala passa isso ao motor (`Room.exit`/`entry`). O casco comum
+    (`roomShell`) e o construtor das salas de fogo (`fire.ts`) fazem isso sozinhos: a parede do lado ganha a peça da porta e o fundo fica liso.
+    O rodapé e a faixa de sombra das paredes deixam o vão; há batente para parede do lado (`batenteX`);
+  - **a sala pergunta à planta** de que parede sai (`plan.ts`, `planDoors`), e a ferramenta da planta usa o lugar de verdade de cada porta
+    (o jogo o exporta para `tools/planta/salas.json`);
+  - **o que mudou em cada sala** (nenhuma solução mudou; os verificadores passam):
+    - **A Lousa:** a porta-lousa (os nove pontinhos de bronze) foi para a **parede esquerda, perto do fundo**. A frase «ACENDER ▢ BRASEIRO» fica no
+      meio do fundo (na parede do lado a abóbada começa a 3 m e a cobriria). O braseiro do meio da parede esquerda (que ficaria na frente da
+      porta) foi para o meio do fundo: os três da frente ficam em fila embaixo da frase. A conta continua QUATRO, com o do nicho atrás de quem entra;
+    - **O Vestíbulo:** a saída fica na **parede direita, no 1º tramo** (logo à direita de quem entra). No fundo, ela cairia em cima de um braseiro
+      do «ACENDER DOIS» e embaixo da fresta. A tocha da direita foi para perto da entrada. O fundo ficou inteiro, com a frase;
+    - **Os Nichos e a Cisterna:** entra-se pela **parede direita da 1ª célula** do corredor (a frente dela virou parede);
+    - **Os Banhos:** a saída fica na **parede direita**, no chão do salão, entre a coluna e a piscina funda (a piscina funda é o puzzle; a porta
+      não podia dar na beirada estreita dela). Uma tocha deslizou;
+    - **A Antecâmara:** a saída fica na parede direita, perto da frente, com a moldura no canto do fundo ao lado dela;
+    - **A Memória:** a saída fica na parede direita, no **canto do fundo, fora da câmara B** (onde estão as frases e a tocha da câmara);
+    - **A Escadaria:** uma **galeria estreita no alto**, no nível do patamar alto, corre ao longo da parede esquerda (por cima do lance B e do
+      patamar da frente) até a frente, e a porta fica nela, de lado. A mureta da galeria só barra quem está nela (motor: obstáculo com
+      **altura de pé**, o 6º número do retângulo), e quem sobe pelo lance B passa livre por baixo. A porta dos seis pontos continua no patamar alto;
+    - **A Biblioteca e a ponte:** a porta da Escadaria dá direto num **vão em arco no fundo da passarela baixa da esquerda** do Átrio. As
+      passarelas baixas desceram de 4,6 para 4,0 m (a altura da saída da Escadaria), e o lance quebrado pendurado ficou embaixo delas. O
+      jogador anda a passarela inteira, vendo de cima as mesas por onde passou, e sai por um **vão igual na frente**. De lá, uma **ponte**
+      (corredor alto, 2,5 m acima do térreo) segue 15 m e vira até a entrada do Fogo que Corre. No motor, é um corredor de ligação com um
+      **trecho aberto** (`planta.json`: `pontes`): no trecho aberto não há paredes (são as da Biblioteca), só o chão e um parapeito que barra
+      quem está na passarela. A Biblioteca fica desenhada enquanto o jogador está no caminho;
+    - **A Chama Curta e o Fogo que Corre** ficaram com a porta de sempre: na Chama Curta, a porta do lado cairia na frente do braseiro MÉDIO
+      (do puzzle); a planta mudou em volta deles;
+  - **a planta reorganizada** (a mesma espiral; as salas andaram alguns metros): com o corredor de verdade da porta (3,2 m) e a chegada reta (2 m),
+    algumas salas estavam perto demais (os Apelidos e a Ponte, as salas do claustro) e alguns corredores voltavam para trás. O claustro foi
+    alinhado embaixo do Fogo que Corre; a Escadaria foi para o norte da Biblioteca, alinhada com a passarela; a Cisterna, a Casa Escreve, a
+    Lousa e o Fio andaram um pouco;
+  - **o motor:** paredes de uma sala que fica embaixo (ou em cima) de outra não contam acima do teto dela (o subsolo fica embaixo da passarela);
+    a regra do caminho põe a volta na ponta do corredor da porta quando o espaço é curto e nunca faz trecho torto;
+  - **a ferramenta da planta** avisa: salas sobrepostas, corredor (com as paredes) encostando em sala, corredor que volta para trás, porta
+    encostada demais na entrada seguinte; e alinha sozinha o que ficou quase alinhado (até 2 m);
+  - **testes:** `__mdd.paths()` (cada ligação no mundo), `__mdd.look(ângulo, inclinação)`, `__mdd.rectsNear(x, z)` e a travessia (andar de cada
+    porta, pelo corredor, até dentro da sala seguinte).
 
 ## 74. O dado no braseiro 3D e o caderno que pula de parte em parte (pedidos do Pedro)
 

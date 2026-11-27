@@ -6,7 +6,8 @@
 // pontinhos de bronze, fechada (a face que a língua não tem; só abre num capítulo posterior).
 import * as THREE from 'three';
 import { floorTexture } from '../textures';
-import { buildDoor, buildEntrance, Kit, lambert, T } from '../kit';
+import { buildDoor, buildEntrance, doorFrame, Kit, lambert, T } from '../kit';
+import { planDoors } from '../plan';
 import { mkBox, slopedWall, stairs, wedge, Z1 } from './shell';
 import { windNear } from '../ambience';
 import { diary, diaryStore } from '../../story/diary';
@@ -26,9 +27,16 @@ const hA = (z: number) => L1 * Math.min(1, Math.max(0, -z / -ZB)); // z de 0 a Z
 const hB = (z: number) => L1 + (L2 - L1) * Math.min(1, Math.max(0, (z - ZB) / (ZF - ZB))); // de ZB a ZF
 const hC = (z: number) => L2 + (L3 - L2) * Math.min(1, Math.max(0, (ZF - z) / (ZF - ZB))); // de ZF a ZB
 
+// A PLANTA NOVA (DESIGN.md §73, passo 3): a porta sai pela parede ESQUERDA, no alto: uma GALERIA estreita no nível do patamar alto corre ao
+// longo da parede esquerda (por cima do lance B e do patamar da frente) até a frente da sala, e a porta fica nela. Do outro lado da porta está a
+// passarela da Biblioteca.
+const PD = planDoors('A Escadaria');
+const GAL = PD.exit.side === 'L'; // com a galeria e a porta de lado
+const GZ1 = Z1; // a galeria vai até a parede da frente (assim não precisa de parapeito no fim, que barraria quem passa embaixo)
 // os chãos possíveis em (x, z); o jogador fica no mais alto que estiver até 0,6 m acima dos pés
 function floors(x: number, z: number): number[] {
   const out = [0];
+  if (GAL && x < -SX && z >= ZB && z <= GZ1) out.push(L3);
   if (x > SX && z <= 0 && z >= ZB) out.push(hA(z));
   if (x < -SX && z >= ZB && z <= ZF) out.push(hB(z));
   if (x > SX && z >= ZB && z <= ZF) out.push(hC(z));
@@ -145,10 +153,20 @@ export function buildRespiro4(ctx: Ctx): Room {
   kit.plane(W, L, lambert(floorTexture([W / T, L / T], 'crypt')), 0, 0, zm, -Math.PI / 2);
   kit.plane(W, L, kit.brick([W / T, L / T], 0.6, 19), 0, H, zm, Math.PI / 2);
   const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
-  kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
+  const DZ = PD.exit.at;
+  const DSPAN = 1.6;
+  if (GAL) {
+    // a parede esquerda em volta da peça da porta (lá em cima) e o fundo inteiro
+    kit.plane(DZ - DSPAN - Z0, H, kit.brick([(DZ - DSPAN - Z0) / T, H / T], 0.95, 33), X0, H / 2, (Z0 + DZ - DSPAN) / 2, 0, Math.PI / 2);
+    kit.plane(Z1 - DZ - DSPAN, H, kit.brick([(Z1 - DZ - DSPAN) / T, H / T], 0.95, 34), X0, H / 2, (DZ + DSPAN + Z1) / 2, 0, Math.PI / 2);
+    kit.plane(2 * DSPAN, L3, kit.brick([(2 * DSPAN) / T, L3 / T], 0.95, 36), X0, L3 / 2, DZ, 0, Math.PI / 2);
+    kit.plane(W, H, kit.brick([W / T, H / T], 0.95, 41), 0, H / 2, Z0, 0, 0);
+  } else {
+    kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
+    kit.plane(W, L3, kit.brick([W / T, L3 / T], 0.95, 41), 0, L3 / 2, Z0, 0, 0); // a parede do fundo, abaixo da porta
+  }
   kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
-  kit.plane(W, L3, kit.brick([W / T, L3 / T], 0.95, 41), 0, L3 / 2, Z0, 0, 0); // a parede do fundo, abaixo da porta
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: L3, h: H - L3, lamps: 1, connected: true });
+  const door = buildDoor(kit, GAL ? { x0: 0, x1: 0, z0: 0, y0: L3, h: H - L3, lamps: 1, connected: true, frame: doorFrame('L', DZ, X0, X1, DZ - DSPAN, DZ + DSPAN) } : { x0: X0, x1: X1, z0: Z0, y0: L3, h: H - L3, lamps: 1, connected: true });
   door.setOpen(1);
   door.lampMats[0].color.setHex(0xff7a2e);
   const boxes: Box[] = [];
@@ -172,6 +190,18 @@ export function buildRespiro4(ctx: Ctx): Room {
   boxes.push(...slopedWall(kit, { x0: SX - 0.16, z0: ZB, x1: SX, z1: 0, top: (_x, z) => hA(z) + 0.9, segs: 6 }));
   boxes.push(...slopedWall(kit, { x0: -SX, z0: ZB, x1: -SX + 0.16, z1: ZF, top: (_x, z) => hB(z) + 0.9, segs: 6 }));
   boxes.push(...slopedWall(kit, { x0: SX - 0.16, z0: ZB, x1: SX, z1: ZF, top: (_x, z) => hC(z) + 0.9, y0: L2 - 0.3, segs: 6 }));
+  if (GAL) {
+    // a GALERIA: laje de pedra lavrada sobre mísulas, encostada na parede esquerda, e a mureta do lado do poço
+    const gl = GZ1 - ZB;
+    const gx = (X0 - SX) / 2;
+    kit.box(-SX - X0, 0.3, gl, kit.slab, gx, L3 - 0.15, (ZB + GZ1) / 2);
+    boxes.push(mkBox(X0, L3 - 0.3, ZB, -SX, L3, GZ1));
+    for (let z = ZB + 1.2; z < GZ1 - 0.4; z += 2.1) kit.box(0.5, 0.45, 0.3, kit.stone, X0 + 0.25, L3 - 0.52, z, false);
+    kit.box(0.16, 0.9, gl, kit.stone, -SX - 0.08, L3 + 0.45, (ZB + GZ1) / 2);
+    kit.box(0.22, 0.08, gl + 0.06, kit.slab, -SX - 0.08, L3 + 0.94, (ZB + GZ1) / 2, false);
+    boxes.push(mkBox(-SX - 0.16, L3, ZB, -SX, L3 + 0.95, GZ1));
+    kit.batenteX(X0, DZ, 1, L3);
+  }
   for (const y of [L1, L3]) {
     kit.box(2 * SX, 0.9, 0.16, kit.stone, 0, y + 0.45, ZB - 0.08);
     kit.box(2 * SX + 0.06, 0.08, 0.22, kit.slab, 0, y + 0.94, ZB - 0.08, false);
@@ -225,19 +255,21 @@ export function buildRespiro4(ctx: Ctx): Room {
   ];
   // luz: tochas ao longo da subida e um feixe pálido que desce do alto
   kit.torch(X1 - 0.1, hA(-3.2) + 2.1, -3.2, -1, 0, 0.3);
-  kit.torch(X0 + 0.1, hB(-2.6) + 2.1, -2.6, 1, 0, 1.1);
+  kit.torch(X0 + 0.1, hB(-2.6) + (GAL ? 1.6 : 2.1), -2.6, 1, 0, 1.1); // (com a galeria por cima, um pouco mais baixa)
   kit.torch(-2.6, L1 + 1.9, Z0 + 0.1, 0, 1, 1.9);
   kit.torch(X1 - 0.1, hC(-5.6) + 2.1, -5.6, -1, 0, 2.7);
   kit.torch(2.6, L3 + 1.9, Z0 + 0.1, 0, 1, 3.5);
   kit.light(0, H - 1, -3, 0xc8d6ff, 14);
   kit.beamDust(0, -3, 1.6, 0.2, H - 0.3, 40);
   kit.skirting(X0, X1, Z0, Z1, 1.3);
-  kit.aoSides(X0, X1, Z0, Z1, H);
+  kit.aoSides(X0, X1, Z0, Z1, H, 0);
   kit.cornice(X0, X1, Z0, Z1, H);
   kit.damp(X0, 2.0, -6, 1, 0, 1.8);
   kit.web(X1, H - 0.5, Z0 + 0.5, -1, 0);
   // colisão do jogador: os lances maciços (A e B, para quem está embaixo), em pedaços que sobem
   const rects: Rect[] = [[-SX, ZB - 0.18, SX, ZB + 0.02, L3 + 0.95]]; // as muretas dos patamares do fundo (quem está embaixo também não passa)
+  // a mureta da galeria: só barra quem está nela (quem passa embaixo, no lance B e no patamar da frente, passa livre)
+  if (GAL) rects.push([-SX - 0.18, ZB, -SX + 0.02, GZ1, L3 + 0.95, L3]);
   const N = 10;
   for (let k = 0; k < N; k++) {
     const a = (ZB * k) / N;
@@ -263,6 +295,7 @@ export function buildRespiro4(ctx: Ctx): Room {
     interactables,
     doorZ: Z0,
     entranceZ: Z1,
+    exit: door.exit,
     exitDy: L3,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
@@ -270,7 +303,8 @@ export function buildRespiro4(ctx: Ctx): Room {
     ambient: { color: 0x7078a8, intensity: 1.7 },
     boxes: [...boxes, ...kit.boxes],
     rects() {
-      return [...rects, ...kit.rects, ...entrance.rects(), ...door.rects(true), [X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]];
+      const left: Rect[] = GAL ? [[X0 - 2, Z0, X0, DZ - DSPAN], [X0 - 2, DZ + DSPAN, X0, Z1 + 0.5], [X0 - 2, DZ - DSPAN, X0, DZ + DSPAN, L3 - 0.3]] : [[X0 - 2, Z0, X0, Z1 + 0.5]];
+      return [...rects, ...kit.rects, ...entrance.rects(), ...door.rects(true), ...left, [X1, Z0, X1 + 2, Z1 + 0.5]];
     },
     clampDie(p, vel, e, R) {
       if (p.y > H - R) {
