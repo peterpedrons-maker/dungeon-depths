@@ -1705,3 +1705,12 @@ Saíram a canaleta de fogo e os braseiros (`ui/loadart.ts`). No lugar:
 - O aviso «Clique/Toque para começar» fica na frente da bancada, embaixo da laje (`LOAD_BAR.prompt`).
 - A frase é só uma escolha de cenário (uma fala que já existe no jogo); se o narrador quiser outra, é trocar `PHRASE` em `loadart.ts` (a laje e
   o tamanho dos símbolos se ajustam sozinhos à largura).
+
+## 82. O dado da tela de carregamento em 2D de verdade (cenógrafo, pedido do Pedro)
+
+O Pedro aprovou a frase da barra (§81) e pediu o dado "de fato em 2D, com a face totalmente virada para o jogador". Saíram as faces de cima e
+de lado que imitavam uma caixa em perspectiva (`drawDie` em `ui/loadart.ts`): fica só a face da frente, o mesmo rosto vivo (olhar, piscar,
+sobrancelhas, suspiro), chapada, no tamanho do pixel do jogo, com 1 px de contorno escuro para se separar da parede, a borda virada para a frase
+pegando a luz dourada e o lado esquerdo do rosto mais quente. Como agora é um desenho, ele pula como desenho animado: estica um pouco no ar e
+achata ao pousar, apoiado na bancada pelo meio de baixo; a sombra de contato pontilhada encolhe no pulo. No clique de começar, sai pulando pela
+direita, como antes.

@@ -3,7 +3,7 @@ import { glyphsOf, type GlyphDef } from '../story/lexicon';
 import { drawGlyphPart, glyphSamples } from '../book/font';
 import { pulseK } from '../scene/firefx';
 import { drawChalk, type DrawKind } from '../scene/chalkdraw';
-import { dieFaceCanvas, dieRostoCanvas, type RostoLook } from '../scene/textures';
+import { dieRostoCanvas, type RostoLook } from '../scene/textures';
 import type { RostoMove } from '../scene/dielife';
 import { FACES } from '../faces';
 import { bayer, rnd, wallBase } from './chalkart';
@@ -18,7 +18,8 @@ import { bayer, rnd, wallBase } from './chalkart';
 //   da frase (a porta, a contagem dos dias, o dado, a luz do poço); quem passa de capuz fica dentro da fresta de luz fria, que desce do alto à
 //   esquerda com poeira boiando, e se vê desde o começo.
 // - No canto, O DADO EM 2D, em pixel, com o rosto vivo (o mesmo de dielife.ts: olha a ponta da luz e o desenho que acabou de aparecer, pisca,
-//   mexe as sobrancelhas, suspira), na bancada, aquecido pela luz; no clique de começar, sai pulando pela direita.
+//   mexe as sobrancelhas, suspira), só a face da frente, chapada e virada para o jogador (§82), na bancada, aquecido pela luz; no clique de
+//   começar, sai pulando pela direita.
 // Pintado num canvas no tamanho de pixel do jogo; a cena o usa no pós-processo (a paleta e o pontilhado do jogo).
 
 export interface DieLook {
@@ -116,10 +117,8 @@ export function makeLoadArt() {
   const motes: Mote[] = []; // o pó de luz que sobe da ponta
   const dust: { u: number; v: number; s: number; ph: number }[] = [];
   for (let i = 0; i < 40; i++) dust.push({ u: Math.random(), v: Math.random(), s: 0.004 + Math.random() * 0.01, ph: Math.random() * 6.3 });
-  // as faces do dado 2D: a da frente é o rosto (refeito quando o olhar muda), a de cima e a da esquerda são fixas
+  // a face do dado 2D: o rosto (refeito quando o olhar muda)
   const accent = FACES[2].color;
-  const topPx = pixels(dieFaceCanvas(1, FACES[0].color, false));
-  const sidePx = pixels(dieFaceCanvas(2, FACES[1].color, false));
   let faceKey = '';
   let facePx: Uint8ClampedArray = new Uint8ClampedArray(64 * 64 * 4);
   let glowPx: Uint8ClampedArray = new Uint8ClampedArray(64 * 64 * 4);
@@ -454,13 +453,18 @@ export function makeLoadArt() {
       if (u > 0.6 && (Math.round(e.x) + Math.round(e.y)) % 2) continue;
       put(Math.round(e.x), Math.round(e.y), u < 0.35 ? [1, 0.95, 0.75] : [0.95, 0.75, 0.38]);
     }
-    // O DADO 2D: a face da frente é o rosto vivo; em cima e à esquerda, as faces que se veem de quem está à esquerda; sombra no chão
-    drawDie(put, lightAt, die, goK);
+    // O DADO 2D: só a face da frente, o rosto vivo, virada para o jogador; sombra no chão
+    drawDie(put, lightAt, die, goK, dt);
     g.putImageData(img, 0, 0);
     return ev;
   };
 
-  const drawDie = (put: (x: number, y: number, c: RGB | number[]) => void, lightAt: (x: number, y: number) => number, die: DieLook, goK: number) => {
+  // O DADO EM 2D DE VERDADE (pedido do Pedro, DESIGN.md §82): só a face da frente, virada inteira para o jogador, como um desenho chapado (sem
+  // as faces de cima e de lado). O contorno escuro o separa da parede; a borda do lado da frase pega a luz dourada. No pulo ele estica um pouco
+  // e, ao pousar, achata e volta (o jeito de desenho animado), sempre apoiado na bancada pelo meio de baixo.
+  let prevHop = 0;
+  let squashT = 0;
+  const drawDie = (put: (x: number, y: number, c: RGB | number[]) => void, lightAt: (x: number, y: number) => number, die: DieLook, goK: number, dt: number) => {
     const look = rostoOf(die.look);
     const key = JSON.stringify(look);
     if (key !== faceKey) {
@@ -470,42 +474,54 @@ export function makeLoadArt() {
       glowPx = pixels(rc.glow);
     }
     const S = 64;
-    const D = 12; // profundidade das faces de lado
-    const hop = Math.min(16, Math.round(Math.max(0, die.dy) * 320));
+    const hopF = Math.max(0, die.dy) * 320;
+    const hop = Math.min(16, Math.round(hopF));
+    // esticar no ar, achatar ao pousar
+    const vh = dt > 0 ? (hopF - prevHop) / dt : 0;
+    if (prevHop > 1.5 && hopF <= 0.5) squashT = 1;
+    prevHop = hopF;
+    squashT = Math.max(0, squashT - dt * 6);
+    let k = 1 + Math.min(0.1, Math.abs(vh) * 0.0009) - 0.12 * Math.sin(Math.PI * squashT);
+    k = Math.max(0.86, Math.min(1.1, k));
+    const Sh = Math.round(S * k);
+    const Sw = Math.round(S / k); // (a área fica igual: mais alto = mais estreito)
     const shake = Math.round(die.dx * 500);
     const out = goK * goK;
     const away = Math.round(out * W * 0.25);
-    const ox = dieX - S / 2 + shake + away;
-    const oy = dieY - S - hop - Math.round(Math.sin(Math.PI * Math.min(1, goK * 1.2)) * 18);
-    const L = lightAt(dieX - S * 0.6, dieY - S * 0.5); // a luz que chega pela esquerda
+    const cx = dieX + shake + away;
+    const ox = Math.round(cx - Sw / 2);
+    const oy = dieY - Sh - hop - Math.round(Math.sin(Math.PI * Math.min(1, goK * 1.2)) * 18);
+    const L = lightAt(dieX - S * 0.6, dieY - S * 0.5); // a luz que chega pela esquerda (da frase)
     // sombra de contato pontilhada (encolhe com o pulo)
-    const sw = Math.round((S / 2 + 4) * (1 - Math.min(0.5, hop / 30)));
+    const sw = Math.round((Sw / 2 + 3) * (1 - Math.min(0.5, hop / 30)));
     for (let xx = -sw; xx <= sw; xx++)
-      for (let yy = 0; yy < 2; yy++) if ((xx + yy) % 2 === 0) put(dieX + away + xx - 4, dieY + yy, [0.02, 0.015, 0.02]);
-    const shadeOf = (px: Uint8ClampedArray, i: number, k: number, warm: number): RGB => [
-      (px[i] / 255) * k * (1 + warm * 0.35),
-      (px[i + 1] / 255) * k * (1 + warm * 0.1),
-      (px[i + 2] / 255) * k * (1 - warm * 0.2),
+      for (let yy = 0; yy < 2; yy++) if ((xx + yy) % 2 === 0) put(dieX + away + xx, dieY + yy, [0.02, 0.015, 0.02]);
+    const shadeOf = (px: Uint8ClampedArray, i: number, kk: number, warm: number): RGB => [
+      (px[i] / 255) * kk * (1 + warm * 0.35),
+      (px[i + 1] / 255) * kk * (1 + warm * 0.1),
+      (px[i + 2] / 255) * kk * (1 - warm * 0.2),
     ];
-    // em cima: recua para a esquerda (quem olha está à esquerda e acima)
-    for (let rI = 0; rI < D; rI++) {
-      const ty = Math.floor((rI * S) / D);
-      const x0 = ox - (D - rI);
-      for (let x = 0; x < S; x++) put(x0 + x, oy - D + rI, shadeOf(topPx, (ty * S + x) * 4, 0.62 + L * 0.25, L * 0.5));
+    // o contorno: 1 px escuro em volta
+    for (let x = -1; x <= Sw; x++) {
+      put(ox + x, oy - 1, [0.02, 0.015, 0.025]);
+      put(ox + x, oy + Sh, [0.02, 0.015, 0.025]);
     }
-    // à esquerda: a face que a chama ilumina
-    for (let cI = 0; cI < D; cI++) {
-      const tx = Math.floor((cI * S) / D);
-      const y0 = oy - (D - cI);
-      for (let y = 0; y < S; y++) put(ox - D + cI, y0 + y, shadeOf(sidePx, (y * S + tx) * 4, 0.42 + L * 0.75, Math.min(1, L * 1.2)));
+    for (let y = 0; y < Sh; y++) {
+      put(ox - 1, oy + y, [0.02, 0.015, 0.025]);
+      put(ox + Sw, oy + y, [0.02, 0.015, 0.025]);
     }
-    // a frente: o rosto, com o ouro e os olhos acesos (o brilho soma)
-    for (let y = 0; y < S; y++)
-      for (let x = 0; x < S; x++) {
-        const i = (y * S + x) * 4;
-        const base = shadeOf(facePx, i, 0.7 + L * 0.35, L * 0.6);
-        put(ox + x, oy + y, [base[0] + (glowPx[i] / 255) * 0.55, base[1] + (glowPx[i + 1] / 255) * 0.55, base[2] + (glowPx[i + 2] / 255) * 0.55]);
+    // a face, chapada: o rosto com o ouro e os olhos acesos (o brilho soma); a luz da frase esquenta o lado esquerdo
+    for (let y = 0; y < Sh; y++) {
+      const sy = Math.min(S - 1, Math.floor((y * S) / Sh));
+      for (let x = 0; x < Sw; x++) {
+        const sx = Math.min(S - 1, Math.floor((x * S) / Sw));
+        const i = (sy * S + sx) * 4;
+        const side = 1 - x / Sw; // mais luz do lado da frase
+        const base = shadeOf(facePx, i, 0.72 + L * (0.2 + 0.25 * side), L * (0.3 + 0.5 * side));
+        const rim = x === 0 ? 0.25 * L + 0.06 : 0; // a borda virada para a frase pega a luz
+        put(ox + x, oy + y, [base[0] + (glowPx[i] / 255) * 0.55 + rim, base[1] + (glowPx[i + 1] / 255) * 0.55 + rim * 0.8, base[2] + (glowPx[i + 2] / 255) * 0.55 + rim * 0.4]);
       }
+    }
   };
 
   return {

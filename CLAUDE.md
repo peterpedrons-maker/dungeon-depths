@@ -101,8 +101,8 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, fundo `src/ui/loadart.ts` no pós-processo,
   modo `load` do motor) depois de Novo jogo, Continuar e Carregar: a parede no escuro, a barra é uma frase de glifos talhada numa laje
   («EU DAR DADO · VOCÊ LER») que a luz dourada enche traço a traço, como as frases acendíveis, com a nota de cada símbolo (`DESIGN.md` §81),
-  os desenhos a giz dos condenados que aparecem com a luz, a fresta fria com poeira e o dado em 2D com o rosto vivo, olhando a ponta da
-  luz; espera modelos, quadros e os sons (que agora
+  os desenhos a giz dos condenados que aparecem com a luz, a fresta fria com poeira e o dado em 2D de verdade (só a face da frente, chapada,
+  com o rosto vivo, `DESIGN.md` §82), olhando a ponta da luz; espera modelos, quadros e os sons (que agora
   baixam desde a abertura da página, `Sfx.prepare`) e, se a página recarregou, pede «Clique/Toque para começar» (o gesto libera o som e prende o
   mouse). A mira só aparece com o jogo começado. **Os desenhos a giz das paredes** (`src/scene/chalkdraw.ts`: braseiro, porta, dado, a luz do
   poço, quem passa de capuz, mão, rosto apagado, tamanhos, contagem) com o giz do jogo feito à mão, na Galeria, nos corredores e na Lousa. O dado da tela inicial tenta rolar, olha em volta e para o feixe; o rosto olha de canto, mexe as
