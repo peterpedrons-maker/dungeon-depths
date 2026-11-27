@@ -2556,7 +2556,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     // a mira caiu no braseiro (o cilindro invisível do modelo 3D, em qualquer altura): o dado vai para cima da cesta
     const sk = a.obj.userData.socket as Socket | undefined;
-    if (sk && sk.r > 0) animTo.set(off.x + sk.x, off.y + sk.y + R + 0.02, off.z + sk.z);
+    if (sk && sk.r > 0) toW(a.room, animTo.set(sk.x, sk.y + R + 0.02, sk.z));
     handWorld(animFrom);
     animT = 0;
     dieV.set(0, 0, 0);
