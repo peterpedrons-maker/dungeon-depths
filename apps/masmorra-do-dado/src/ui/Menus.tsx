@@ -572,13 +572,14 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
             <Logo />
             <h3>Instrumentos</h3>
             <p>Amostras reais do soundfont FluidR3_GM, de Frank Wen (CC BY 3.0)</p>
-            <p>violoncelo, cordas, coro, harpa, celesta, glockenspiel, flauta, tímpano e sinos tubulares</p>
+            <p>violoncelo, contrabaixo, cordas, coro, vozes, harpa, celesta, glockenspiel, flauta, garrafa soprada, tímpano e sinos tubulares</p>
             <h3>Efeitos</h3>
             <p>CC0, via OpenGameArt.org</p>
             <p>Kenney (RPG Sound Pack)</p>
             <p>rubberduck (100 CC0 SFX)</p>
             <p>Fantozzi (passos)</p>
-            <p>qubodup (bola rolando, gotas)</p>
+            <p>qubodup (bola rolando)</p>
+            <p>Independent.nu (gotas)</p>
             <p>LEGIT Audio (fogo)</p>
             <p>Tsorthan Grove (vento)</p>
             <p>NenadSimic (tambor ao longe)</p>
@@ -603,11 +604,11 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
         <h2>Créditos</h2>
         <div className="credits-t">
           <p>
-            <b>Instrumentos</b> (música, sinos e notas): amostras reais do soundfont <i>FluidR3_GM</i>, de Frank Wen (CC BY 3.0): violoncelo, cordas, coro, harpa,
-            celesta, glockenspiel, flauta, tímpano e sinos tubulares.
+            <b>Instrumentos</b> (música, sinos e notas): amostras reais do soundfont <i>FluidR3_GM</i>, de Frank Wen (CC BY 3.0): violoncelo, contrabaixo, cordas, coro,
+            vozes, harpa, celesta, glockenspiel, flauta, garrafa soprada, tímpano e sinos tubulares.
           </p>
           <p>
-            <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi (passos), qubodup (bola rolando, gotas),
+            <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi (passos), qubodup (bola rolando), Independent.nu (gotas),
             LEGIT Audio (fogo), Tsorthan Grove (vento), NenadSimic (tambor ao longe), e gravações de giz, borracha, porta de pedra, arrastos, pedras, estalos e vapor.
           </p>
           <p>

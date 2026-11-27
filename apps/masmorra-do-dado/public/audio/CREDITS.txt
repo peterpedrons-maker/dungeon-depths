@@ -7,15 +7,19 @@ INSTRUMENTOS (música e sinos/notas dos efeitos)
   Amostras de instrumentos reais do soundfont "FluidR3_GM" de Frank Wen,
   licença Creative Commons Attribution 3.0 (CC BY 3.0),
   distribuídas em MP3 pelo projeto midi-js-soundfonts (gleitz, MIT).
-  Instrumentos usados: violoncelo, conjunto de cordas, coro (aahs), harpa
-  orquestral, celesta, glockenspiel, flauta, tímpano e sinos tubulares.
+  Instrumentos usados: violoncelo, contrabaixo, conjunto de cordas, coro
+  (aahs), coro (oohs), harpa orquestral, celesta, glockenspiel, flauta,
+  tímpano, sinos tubulares e garrafa soprada. O contrabaixo, o coro "oohs"
+  e a garrafa soprada tocam a música da tela inicial ("O Poço"); o
+  contrabaixo também dá o grave do "resolvido" dos puzzles.
 
 EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
   - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro, facada, trinco.
   - 100 CC0 SFX e 100 CC0 SFX #2 — rubberduck: gongo, sinos, vidro, pancadas,
     pedras, interruptores, ar, madeira; o baque da porta de pedra travando.
   - 75 CC0 breaking / falling / hit sfx — rubberduck: pedrinhas e pó caindo
-    (porta, pilar, passos no entulho).
+    (porta, pilar, passos no entulho; e a Casa "assentando" em outra sala,
+    três quedas de pedra em cascata).
   - Metal footsteps on concrete: o peso do passo no degrau (bota em concreto).
   - Fantozzi's Footsteps (Grass/Sand & Stone) — Fantozzi, recortados por
     qubodup: os passos em pedra, degrau e entulho (sapato em pedra).
@@ -29,7 +33,8 @@ EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
   - Fire Crackling — AntumDeluge: estalos de lareira.
   - Steam Release Sounds: o chiado curto da brasa que apaga.
   - Storm Arwen 2022 — Tsorthan Grove: o vento e as rajadas.
-  - Dripping water loop — qubodup: as gotas.
+  - Dripping water loop — Independent.nu (enviado por qubodup): as seis
+    gotas, recortadas da gravação de um porão.
   - Muffled Distant Explosion — NenadSimic (um tambor de tronco ao longe):
     a Casa respirando e o grave do escuro.
   - qubodup — Bowling ball rolling: bola rolando (dado rolando).

@@ -1623,8 +1623,8 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     - a cada 30 a 50 s, uma garrafa soprada: o ar passando pela boca do poço;
     - nos acordes de luz, um fio de cordas por cima.
   - **O tema:** no começo de cada metade, lá, ré, mi, FÁ... mi, RÉ. Nas voltas ímpares vem a resposta, que sobe até o lá: olhar para cima.
-  - **O eco e o volume:** o eco é mais longo que o das salas (0,78 s). A faixa tem ganho 1,35, para a peça rala ficar ~2 dB abaixo da música
-    do jogo.
+  - **O eco e o volume:** o eco é mais longo que o das salas (0,78 s). A faixa tem ganho 1,55 (era 1,35; ver a revisão, abaixo): medido na
+    gravação, a peça fica em −26,7 LUFS e a música do jogo em −22,7, ~4 dB abaixo (o compressor da mesa achata a diferença).
   - **Onde toca:** na tela inicial e nos submenus dela (Configurações, Carregar, Créditos) e no fim do capítulo, 6 s depois da fanfarra (os
     créditos de lá).
   - **As transições** (`leaveTitle`):
@@ -1662,3 +1662,37 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     frases e silêncios. `__mdd.solvedRang()` diz quais salas já tocaram o resolvido;
   - `__mdd.renderAudio(s, ops)` grava o motor de verdade num `OfflineAudioContext` (`src/scene/audioRender.ts`, só em desenvolvimento; não
     vai para o build) e é com ele que se fazem as faixas de demonstração.
+- **Revisão (o 2º sonoplasta, que terminou o trabalho):**
+  - **Conferido no navegador** (Chromium, 1280×720):
+    - o resolvido toca **uma vez** e no lugar do `'piece'` final: no Poço (acender, a porta, o resolvido); na Lousa (as duas lousas de cópia
+      tocam o `'piece'`; a porta-lousa, o resolvido, e a porta abre 1,6 s depois só com a pedra); no Tribunal (o 5º braseiro; a pedra racha
+      1,3 s depois); na Antecâmara Fria (no escuro, junto com a porta);
+    - a música do menu entra no 1º toque, e abrir e fechar Configurações não a recomeça. No **Continuar**, ela some em ~2 s e a do jogo entra
+      ~3 s depois, chegando ao volume cheio em ~12 s. No **Novo jogo**, o arpejo sobe e tudo some antes de recarregar; o jogo novo espera
+      22 s pela música;
+    - as pausas, com os tempos encurtados (`musicTest`): frase, coda e silêncio, com o ambiente subindo até ×1,32, e a volta. Numa área livre,
+      o silêncio é 1,5 vez mais longo;
+    - no escuro da Casa, o canal da música cai a 40% e volta. No modo "só efeitos", a frase fica parada e, ao religar, segue sem empilhar
+      acordes. No mudo, o resolvido não toca.
+  - **Corrigido:**
+    - **Notas cortadas.** As gravações de notas longas (coro, cordas, baixo) acabam ainda soando. O coro do menu pedia entrada e saída de 1,6 s
+      numa nota de ~3 s. Nas notas puxadas para cima (meio tom acima da gravação mais próxima), a gravação acabava antes do envelope, e a
+      nota era cortada ainda soando: um "tique" abafado no fim de cada uma. Medido num `OfflineAudioContext` (o mi do coro, da gravação do
+      mi bemol): antes, os últimos 40 ms estavam ~21 dB abaixo do pico e caíam a zero de uma vez; agora chegam a −81 dB. `note()` agora
+      encolhe o envelope para ele acabar antes do fim da gravação (vale para tudo, também o suspiro do violoncelo da Casa respirando).
+    - **O menu raspava meio tom nas trocas de acorde.** O coro do acorde que saía ficava no auge ~2 s dentro do seguinte: o dó natural do Dó
+      por cima do dó sustenido da luz; fá e mi; lá e si bemol; e, no baixo, si bemol e lá.
+      - Agora cada acorde se cala até 0,7 s depois do fim dele, e a reverberação cobre a passagem.
+      - A harpa, a celesta, o sino e a garrafa escolhem notas do acorde que soa naquele instante, e também do seguinte, se ainda estiverem
+        soando quando ele chegar. No Lá suspenso, depois da metade, a harpa também troca o ré pelo dó sustenido.
+      - Medido na gravação: o dó natural sai em ~1 s, antes de o dó sustenido entrar (antes, ainda soava ~3 s dentro do Lá maior e cruzava
+        com o dó sustenido). A peça ficou ~1 dB mais baixa, por isso o ganho subiu.
+    - **Gotas.** As três novas eram estalos secos, com o brilho em 4 a 5 kHz, e não gotas. Foram trocadas por três do mesmo porão, com o
+      "plim" das antigas (1,5 a 2 kHz): `drip.mp3` refeito (`build_audio.py`), `AUDIO_VERSION` 7, cache `v113`.
+    - O lá grave do resolvido passou ao **contrabaixo**, gravado nessa altura, e não mais o violoncelo puxado abaixo da corda mais grave.
+    - Pedir a música do menu com ela já tocando não a recomeça mais.
+    - **Créditos** (`CREDITS.txt`): os três instrumentos novos e o autor certo das gotas (Independent.nu, enviado por qubodup; CC0 conferido
+      na página).
+  - **Testes:** `__mdd.music()` mostra também o canal da música (`bus`, `verbBus`) e o escuro aplicado (`dark`).
+  - **Faixas de demonstração:** gravadas com `renderAudio` e convertidas com o `ffmpeg`, fora do projeto: o resolvido (antes e depois), a
+    peça do menu e a pausa da música do jogo.

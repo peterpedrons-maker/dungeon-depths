@@ -75,7 +75,7 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 // Muda quando qualquer arquivo de áudio é trocado: força o navegador/PWA a baixar de novo
-const AUDIO_VERSION = 6;
+const AUDIO_VERSION = 7;
 
 const SFX_FILES = [
   'step_stone_l', 'step_stone_r', 'step_stair_l', 'step_stair_r', 'step_rubble_l', 'step_rubble_r', 'step_rug', 'step_plate', 'step_water',
@@ -128,7 +128,10 @@ const TPROG: TChord[] = [
   { bass: 33, pad: [52, 57, 62], arp: [57, 62, 64, 69, 74, 76, 81], light: true, sus: 61 }, // Lá suspenso que vira Lá maior
 ];
 const T_LEN = 12;
-const TITLE_GAIN = 1.35; // (a peça é rala: um pouco mais de volume na faixa para ela ficar perto da música do jogo)
+// (a peça é rala: um pouco mais de volume na faixa para ela ficar perto da música do jogo. Era 1,35; com o coro sem invadir o acorde
+// seguinte, a peça perdeu ~1,2 dB, e 1,55 devolve parte disso (o compressor da mesa achata: medido, −26,7 LUFS contra −22,7 da música do
+// jogo, ~4 dB abaixo; antes da revisão, −25,7). DESIGN.md §79)
+const TITLE_GAIN = 1.55;
 // o tema (nota, tempo em s, nota longa?) na harpa, com a celesta uma oitava acima nas notas longas
 const MOTIF_A: [number, number, boolean?][] = [[69, 0], [74, 0.9], [76, 1.6], [77, 2.3, true], [76, 4.0], [74, 4.8, true]];
 const MOTIF_B: [number, number, boolean?][] = [[69, 0], [74, 0.9], [76, 1.6], [77, 2.3], [79, 3.0], [81, 3.7, true], [77, 5.6], [76, 6.4, true]];
@@ -275,6 +278,9 @@ export class Sfx {
       game: lv('game'),
       titleLane: lv('title'),
       duck: this.mDuck ? +this.mDuck.gain.value.toFixed(2) : null,
+      bus: this.musicBus ? +this.musicBus.gain.value.toFixed(3) : null, // o canal da música (volume, modo e o escuro da Casa)
+      verbBus: this.musicVerb ? +this.musicVerb.gain.value.toFixed(3) : null,
+      dark: +this.darkApplied.toFixed(2),
       boost: +this.ambBoost.toFixed(2),
       quiet: !!this.amb.quiet,
       solvedAgo: +(now - this.solvedAt).toFixed(1),
@@ -604,9 +610,21 @@ export class Sfx {
     s.buffer = b;
     s.playbackRate.value = Math.pow(2, (midi - best) / 12);
     const g = ac.createGain();
-    const fi = opts.fadeIn ?? 0.01;
-    const hold = opts.hold ?? b.duration / s.playbackRate.value - fi - (opts.fadeOut ?? 0.3);
-    const fo = opts.fadeOut ?? 0.3;
+    let fi = opts.fadeIn ?? 0.01;
+    let fo = opts.fadeOut ?? 0.3;
+    let hold = opts.hold ?? b.duration / s.playbackRate.value - fi - fo;
+    // (as notas longas gravadas, coro, cordas, baixo, acabam ainda soando, sem cauda: se o envelope pedido passa do fim da gravação, a nota é
+    // cortada no meio do som. Encolhe o envelope para ele chegar a zero antes; acontecia no coro da música do menu, entrada e saída de 1,6 s
+    // numa nota de ~3 s, DESIGN.md §79)
+    const len = b.duration / s.playbackRate.value - 0.04;
+    if (fi + Math.max(0, hold) + fo > len) {
+      hold = Math.max(0, len - fi - fo);
+      if (fi + fo > len) {
+        const k = len / (fi + fo);
+        fi *= k;
+        fo *= k;
+      }
+    }
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(vol, t + fi);
     g.gain.setValueAtTime(vol, t + fi + Math.max(0, hold));
@@ -687,7 +705,7 @@ export class Sfx {
       this.gm.st = 'rest';
       this.gm.until = Infinity;
       this.laneTo('game', 0, 1.5, now + (o.wait ?? 0));
-      this.startTitle(now + (o.wait ?? 0));
+      if (!this.titleOn) this.startTitle(now + (o.wait ?? 0)); // (já tocando: segue, sem recomeçar por cima das notas agendadas)
     } else {
       if (this.titleOn) {
         this.titleOn = false;
@@ -967,7 +985,8 @@ export class Sfx {
     const R = 0.52;
     this.sample('boom', 0.3, 1.05, R - 0.02, 0.5, 0, 700);
     f('timpani', 33, 0.32, R, { fadeIn: 0.004, fadeOut: 1.0, verb: 0.7 });
-    f('cello', 33, 0.3, R, { fadeIn: 0.05, hold: 1.1, fadeOut: 1.3, verb: 0.7 });
+    // (o lá grave no contrabaixo, gravado nessa altura: o violoncelo só desce até o dó e, puxado para baixo, soava abafado)
+    f(this.inst.contrabass ? 'contrabass' : 'cello', 33, 0.3, R, { fadeIn: 0.05, hold: 1.1, fadeOut: 1.3, verb: 0.7 });
     f('cello', 45, 0.24, R + 0.02, { fadeIn: 0.12, hold: 1.0, fadeOut: 1.3, verb: 0.7 });
     [57, 61, 64].forEach((m, i) => f('choir_aahs', m, 0.17, R + i * 0.03, { fadeIn: 0.3, hold: 1.0, fadeOut: 1.4, verb: 0.85, pan: (i - 1) * 0.3 }));
     [57, 61, 64, 69, 73].forEach((m, i) => f('orchestral_harp', m, 0.34, R + i * 0.055, { fadeIn: 0.004, fadeOut: 1.1, verb: 0.65, echo: 0.15, pan: -0.3 + i * 0.15 }));
@@ -1406,8 +1425,6 @@ export class Sfx {
       this.tAt += T_LEN;
       this.tIdx++;
     }
-    // (o acorde que soa agora: o último agendado pode ainda não ter começado)
-    const c = TPROG[((this.tAt - T_LEN <= now + 0.5 ? this.tIdx - 1 : this.tIdx - 2) + TPROG.length * 2) % TPROG.length];
     // a harpa cai devagar, de cima para baixo, como gotas de luz no poço (nunca por cima do tema)
     while (this.nextTHarp < now + 0.5) {
       const at = Math.max(now, this.nextTHarp);
@@ -1415,27 +1432,36 @@ export class Sfx {
         this.nextTHarp = this.tMotifUntil + rand(1, 3);
         continue;
       }
-      this.tHarpDrops(c, at);
+      this.tHarpDrops(at);
       this.nextTHarp += rand(9, 15);
     }
-    // a celesta, lá no alto: uma nota, às vezes uma quinta acima logo depois
+    // a celesta, lá no alto: uma nota, às vezes uma quinta acima logo depois (o eco a faz soar ~3 s: a nota tem de caber também no acorde
+    // seguinte, se ele chegar nesse meio-tempo; a quinta, só se também couber)
     while (this.nextTCel < now + 0.5) {
       const at = Math.max(now, this.nextTCel);
-      const m = Math.min(93, pick(c.arp) + 12);
+      const arp = this.tSafe(at, 3);
+      const m = Math.min(93, pick(arp) + 12);
       this.note('celesta', m, at, 0.2, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.85, echo: 0.5, pan: rand(-0.6, 0.6), lane: 'title' });
-      if (Math.random() < 0.4 && m + 7 <= 96) this.note('celesta', m + 7, at + 0.42, 0.14, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.85, echo: 0.5, pan: rand(-0.6, 0.6), lane: 'title' });
+      if (Math.random() < 0.4 && m + 7 <= 96 && arp.some((x) => (x - (m + 7)) % 12 === 0)) this.note('celesta', m + 7, at + 0.42, 0.14, { fadeIn: 0.005, fadeOut: 0.8, verb: 0.85, echo: 0.5, pan: rand(-0.6, 0.6), lane: 'title' });
       this.nextTCel += rand(11, 19);
     }
     // um sino lá em cima, longe
     while (this.nextTBell < now + 0.5) {
-      this.note('tubular_bells', pick([57, 62, 69]), Math.max(now, this.nextTBell), 0.17, { fadeIn: 0.005, fadeOut: 1.2, verb: 1, echo: 0.3, pan: rand(-0.3, 0.3), lane: 'title' });
+      // (lá ou ré, o que couber no acorde de agora e no dos próximos 4 s: o ré do sino não cai em cima do dó sustenido da luz)
+      const at = Math.max(now, this.nextTBell);
+      const a = this.tNotes(at).pcs;
+      const b = this.tNotes(at + 4).pcs;
+      const m = pick([57, 62, 69].filter((x) => a.has(x % 12) && b.has(x % 12)));
+      if (m) this.note('tubular_bells', m, at, 0.17, { fadeIn: 0.005, fadeOut: 1.2, verb: 1, echo: 0.3, pan: rand(-0.3, 0.3), lane: 'title' });
       this.nextTBell += rand(45, 80);
     }
     // o sopro na boca do poço: uma garrafa soprada, uma nota longa do acorde, quase vento
     while (this.nextTBottle < now + 0.5) {
       const at = Math.max(now, this.nextTBottle);
       if (this.inst.blown_bottle) {
-        const m = pick(c.pad.map((p) => p + 12).filter((p) => p >= 62 && p <= 76));
+        // (os dois sopros duram ~5,5 s: a nota tem de ser do acorde de agora e do que estiver soando no fim deles)
+        const pcs = this.tNotes(at + 5.5).pcs;
+        const m = pick(this.tNotes(at).pad.map((p) => p + 12).filter((p) => p >= 62 && p <= 76 && pcs.has(p % 12)));
         if (m) {
           const pan = rand(-0.5, 0.5);
           this.note('blown_bottle', m, at, 0.13, { fadeIn: 1.8, hold: 0.3, fadeOut: 0.9, verb: 0.95, echo: 0.2, pan, lane: 'title' });
@@ -1448,23 +1474,34 @@ export class Sfx {
 
   private scheduleTChord(c: TChord, t: number, idx: number, pad: string) {
     const bassInst = this.inst.contrabass ? 'contrabass' : 'cello';
+    // (revisão, §79) cada acorde se cala até ~0,7 s depois do fim dele: antes, o coro do acorde que saía ainda estava no auge 2 s dentro do
+    // seguinte e raspava meio tom nele (o dó natural do Dó por cima do dó sustenido da luz; fá e mi; lá e si bemol). A reverberação cobre a
+    // passagem, e o coro "respira" entre um acorde e outro.
+    const end = t + T_LEN + 0.7;
+    const upTo = (at: number, fi: number, fo: number) => ({ fadeIn: fi, hold: 0, fadeOut: Math.max(0.5, Math.min(fo, end - at - fi)) });
     // o chão: o contrabaixo, nota longa renovada; o violoncelo uma oitava acima, de vez em quando
     for (let k = 0; t + k * 2.6 < t + T_LEN; k++) {
-      this.note(bassInst, c.bass, t + k * 2.6, 0.72, { fadeIn: 0.9, fadeOut: 1.1, verb: 0.6 });
-      if (k % 2 === 1) this.note('cello', c.bass + 12, t + k * 2.6 + 0.3, 0.2, { fadeIn: 1.0, fadeOut: 1.0, verb: 0.7 });
+      const at = t + k * 2.6;
+      const last = at + 2.6 >= t + T_LEN;
+      // (a última nota do baixo some no fim do acorde, sem ficar meio tom embaixo do baixo novo: si bemol e lá)
+      this.note(bassInst, c.bass, at, 0.72, last ? { fadeIn: 0.9, hold: Math.max(0, end - 0.2 - at - 1.7), fadeOut: 0.8, verb: 0.6 } : { fadeIn: 0.9, fadeOut: 1.1, verb: 0.6 });
+      if (k % 2 === 1) this.note('cello', c.bass + 12, at + 0.3, 0.2, { fadeIn: 1.0, fadeOut: 1.0, verb: 0.7 });
     }
     // o coro respira o acorde (entradas escalonadas, bem lentas); no suspenso, a nota de cima resolve na metade
     c.pad.forEach((m0, i) => {
-      for (let k = 0; t + i * 0.9 + k * 2.7 < t + T_LEN + 1.2; k++) {
+      for (let k = 0; t + i * 0.9 + k * 2.7 < t + T_LEN - 1.4; k++) {
         const at = t + i * 0.9 + k * 2.7;
         const m = c.sus !== undefined && i === c.pad.length - 1 && at > t + T_LEN / 2 ? c.sus : m0;
-        this.note(pad, m, at, 0.4, { fadeIn: 1.6, fadeOut: 1.6, verb: 0.9, pan: (i - (c.pad.length - 1) / 2) * 0.4, lane: 'title' });
+        this.note(pad, m, at, 0.4, { ...upTo(at, 1.6, 1.6), verb: 0.9, pan: (i - (c.pad.length - 1) / 2) * 0.4, lane: 'title' });
       }
     });
     // a luz: um fio de cordas, uma oitava acima do coro
     if (c.light) {
       const top = c.pad[c.pad.length - 1] + 12;
-      for (let k = 0; k < 4; k++) this.note('string_ensemble_1', k >= 2 && c.sus !== undefined ? c.sus + 12 : top, t + 1.5 + k * 2.6, 0.16, { fadeIn: 1.4, fadeOut: 1.4, verb: 0.95, pan: 0.2, lane: 'title' });
+      for (let k = 0; k < 4; k++) {
+        const at = t + 1.5 + k * 2.6;
+        this.note('string_ensemble_1', k >= 2 && c.sus !== undefined ? c.sus + 12 : top, at, 0.16, { fadeIn: 1.4, hold: Math.max(0, Math.min(0.3, end - at - 2.8)), fadeOut: Math.max(0.5, Math.min(1.4, end - at - 1.4)), verb: 0.95, pan: 0.2, lane: 'title' });
+      }
     }
     // o tema, no começo de cada metade (a segunda versão só nas voltas ímpares, para não cansar)
     const k8 = idx % TPROG.length;
@@ -1482,14 +1519,46 @@ export class Sfx {
     this.tMotifUntil = t + m[m.length - 1][1] + 2.5;
   }
 
-  private tHarpDrops(c: TChord, t: number) {
+  // as notas da peça do menu no instante `x` (também nos acordes que ainda não foram agendados: a ordem é fixa). No acorde suspenso, da
+  // metade em diante a quarta já resolveu (o ré vira dó sustenido também na harpa, na celesta e na garrafa)
+  private tNotes(x: number): { arp: number[]; pad: number[]; pcs: Set<number> } {
+    const j = this.tIdx + Math.floor((x - this.tAt) / T_LEN);
+    const c = TPROG[((j % TPROG.length) + TPROG.length) % TPROG.length];
+    const start = this.tAt + (j - this.tIdx) * T_LEN;
+    const top = c.pad[c.pad.length - 1] % 12;
+    const down = c.sus !== undefined && x >= start + T_LEN / 2 ? top - (c.sus % 12) : 0;
+    const fix = (m: number) => (down && m % 12 === top ? m - down : m);
+    const arp = c.arp.map(fix);
+    const pad = c.pad.map(fix);
+    return { arp, pad, pcs: new Set([c.bass, ...pad, ...arp].map((m) => m % 12)) };
+  }
+  // as notas de `arp` que cabem nos dois instantes, `at` e `at + ring` (uma nota que ainda soa quando o acorde muda não pode raspar no
+  // seguinte); se nenhuma cabe, já usa as do seguinte (antecipa)
+  private tSafe(at: number, ring: number): number[] {
+    const a = this.tNotes(at);
+    const b = this.tNotes(at + ring);
+    const both = a.arp.filter((m) => b.pcs.has(m % 12));
+    return both.length ? both : b.arp;
+  }
+
+  // (revisão, §79) cada gota escolhe a nota do acorde que soa quando ela cai: antes, as cinco gotas saíam do acorde em que a frase começou e,
+  // perto da troca, caíam por cima do acorde seguinte (um dó natural da harpa dentro do Lá maior da luz)
+  private tHarpDrops(t: number) {
     const n = 3 + Math.floor(Math.random() * 3);
-    let idx = c.arp.length - 1 - Math.floor(Math.random() * 2);
+    const a0 = this.tNotes(t).arp;
+    let m = a0[a0.length - 1 - Math.floor(Math.random() * 2)];
     let at = t;
     let pan = rand(-0.5, 0.5);
-    for (let i = 0; i < n && idx >= 0; i++) {
-      this.note('orchestral_harp', c.arp[idx], at, 0.36 - i * 0.03, { fadeIn: 0.004, fadeOut: 0.9, verb: 0.85, echo: 0.45, pan, lane: 'title' });
-      idx -= Math.random() < 0.65 ? 1 : 2;
+    for (let i = 0; i < n; i++) {
+      const arp = this.tSafe(at, 1.6);
+      const below = arp.filter((x) => x <= m);
+      if (!below.length) break;
+      const note = below[below.length - 1];
+      this.note('orchestral_harp', note, at, 0.36 - i * 0.03, { fadeIn: 0.004, fadeOut: 0.9, verb: 0.85, echo: 0.45, pan, lane: 'title' });
+      // a próxima: um ou dois degraus abaixo (se o acorde mudar até lá, a mais alta dele que fica abaixo desta)
+      const k = below.length - 1 - (Math.random() < 0.65 ? 1 : 2);
+      if (k < 0) break;
+      m = below[k];
       at += rand(0.9, 1.5);
       pan = Math.max(-0.7, Math.min(0.7, pan + rand(-0.25, 0.25)));
     }
