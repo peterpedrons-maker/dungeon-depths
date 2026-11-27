@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { Kit, lambert } from '../kit';
 import { makeInscription } from '../inscription';
 import { roomShell, shotGate } from './shell';
+import { planDoors } from '../plan';
 import type { Ctx, Room } from '../types';
 
 const CAL = new THREE.Color('#c8f0a0'); // a cal fosforescente (Ficha 1)
@@ -18,12 +19,16 @@ export function buildRespiro5(ctx: Ctx): Room {
   const kit = new Kit('crypt');
   // 6 × 6 m (a Ficha pede 4 × 6, teto 2,4: a porta-padrão do jogo tem 2,65 m de altura e o batente ocupa ±1,6 m; para a moldura caber AO LADO
   // da porta, a câmara ficou com 6 m de largura e o teto foi a 3 m, o mínimo que cabe a porta; continua a menor sala do jogo)
-  const S = roomShell(kit, { hx: 3.0, z0: -4, h: 3.0, lamps: 1 });
-  const { X0, Z0, Z1 } = S;
+  // A PLANTA NOVA (DESIGN.md §73, passo 3): a porta sai pela parede DIREITA, perto da moldura (que fica no canto do fundo, ao lado dela)
+  const PD = planDoors('A Antecâmara Fria');
+  const SIDE = PD.exit.side === 'R';
+  const S = roomShell(kit, { hx: 3.0, z0: -4, h: 3.0, lamps: 1, exit: PD.exit, entry: PD.entry });
+  const { X0, X1, Z0, Z1 } = S;
   kit.batente(0, Z1, -1);
-  kit.batente(0, Z0, 1);
+  if (SIDE) kit.batenteX(X1, PD.exit.at, -1);
+  else kit.batente(0, Z0, 1);
   S.decorate();
-  kit.wear([[0, 1.7], [0.2, -1], [0, -3.6]], 1.0);
+  kit.wear(SIDE ? [[0, 1.7], [0.6, -0.4], [2.8, PD.exit.at]] : [[0, 1.7], [0.2, -1], [0, -3.6]], 1.0);
 
   // ── a moldura de frase vazia (à direita da porta, na parede do fundo) ──
   const FX = 2.29; // (era 2,25: a imposta do batente da porta encostava na laje da moldura; 4 cm de folga; §67)
@@ -112,6 +117,7 @@ export function buildRespiro5(ctx: Ctx): Room {
     interactables: [],
     doorZ: Z0,
     entranceZ: Z1,
+    exit: S.door.exit,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#080a10', near: 3, far: 12 },

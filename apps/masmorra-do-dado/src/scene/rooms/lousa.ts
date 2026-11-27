@@ -4,6 +4,8 @@
 //  2) lousa 2: copiar o TRÊS → a porta-lousa acorda;
 //  3) a PORTA é a lousa: «ACENDER ▢ BRASEIRO» tem de ficar VERDADEIRA. Há QUATRO braseiros acesos (um num nicho em cima da entrada,
 //     atrás de quem entra). A resposta é QUATRO, que ninguém ensinou: a face quatro do dado (o dado de pedra no canto mostra UM, DOIS, TRÊS).
+// PLANTA NOVA (DESIGN.md §73, passo 3): a porta-lousa sai pela parede ESQUERDA, perto do fundo; os três braseiros da frente ficam então
+// em fila no fundo (o do meio da parede esquerda estaria na frente da porta). A conta não muda: três à frente e o do nicho atrás.
 // Segredo S1: atrás da coluna esquerda, uma lousa de soquete frio sob um dado de CINCO pontos. Escrever CINCO abre um nicho com uma gema.
 
 import * as THREE from 'three';
@@ -12,6 +14,7 @@ import { tallyTexture } from '../textures';
 import { makeBrazier } from '../brazier';
 import { makeGemNiche, makeLivePanel, makeWallBoard, type WallBoard } from '../firegrid';
 import { mkBox, roomShell, shotGate } from './shell';
+import { planDoors } from '../plan';
 import type { Ctx, Room } from '../types';
 
 function dieFaceTex(points: number[]) {
@@ -56,8 +59,12 @@ function dieFaceTex(points: number[]) {
 
 export function buildLousa(ctx: Ctx): Room {
   const kit = new Kit('ruin');
-  const S = roomShell(kit, { hx: 3.6, z0: -9.5, h: 3.8, lamps: 1 });
+  const D = planDoors('A Lousa');
+  const S = roomShell(kit, { hx: 3.6, z0: -9.5, h: 3.8, lamps: 1, exit: D.exit, entry: D.entry });
   const { X0, X1, Z0, Z1, H } = S;
+  const SIDE = D.exit.side === 'L'; // a porta na parede esquerda (a planta nova)
+  if (D.exit.side === 'R' || D.entry.side !== 'F') throw new Error('A Lousa: só porta no fundo ou na esquerda, entrada na frente');
+  const DZ0 = D.exit.at; // (o meio da porta da esquerda)
   const GRATE_Z = -1.5;
 
   // QUADRO DE ESTILO (DIRECAO_DE_ARTE.md §6: "um corredor baixo onde alguém ensinava a contar"): abóbada baixa com arcos de reforço,
@@ -68,13 +75,14 @@ export function buildLousa(ctx: Ctx): Room {
   S.pillar(-2.2, -3.0, 0.8, vaultY(-2.2));
   S.pillar(1.8, -5.6, 0.8, vaultY(1.8));
   kit.batente(0, Z1, -1);
-  kit.batente(0, Z0, 1);
+  if (SIDE) kit.batenteX(X0, DZ0, 1);
+  else kit.batente(0, Z0, 1);
 
   // ── os quatro braseiros acesos pela Casa ──
   const bz = [
     makeBrazier(kit, ctx, -2.5, Z0 + 0.95, true), // à esquerda da porta
     makeBrazier(kit, ctx, 2.5, Z0 + 0.95, true, 1, 0, 1.3), // à direita da porta (poça menor: o dado de pedra está perto)
-    makeBrazier(kit, ctx, -3.0, -6.3, true), // meio da parede esquerda
+    SIDE ? makeBrazier(kit, ctx, 0, Z0 + 0.95, true) : makeBrazier(kit, ctx, -3.0, -6.3, true), // meio da parede esquerda (com a porta ali: meio do fundo)
   ];
   for (const b of bz) S.boxes.push(...b.boxes);
   // o 4º: num nicho alto, em cima do arco da entrada (atrás de quem entra)
@@ -197,7 +205,8 @@ export function buildLousa(ctx: Ctx): Room {
   // fuligem acima dos três braseiros do chão (os da porta enegrecem a parede do fundo; o do meio, a parede esquerda)
   kit.soot(-2.5, 1.55, Z0, 0, 1, 1.0, 1.9);
   kit.soot(2.5, 1.55, Z0, 0, 1, 1.0, 1.9);
-  kit.soot(X0, 1.55, -6.3, 1, 0, 1.0, 1.4);
+  if (SIDE) kit.soot(0, 1.55, Z0, 0, 1, 1.0, 1.9);
+  else kit.soot(X0, 1.55, -6.3, 1, 0, 1.0, 1.4);
   // a pedra lavrada em volta das duas lousas (a moldura talhada)
   for (const z of [0.1, -4.3]) kit.box(0.016, 1.95, 1.95, kit.slab, X1 - 0.008, 1.45, z, false); // (fina e atrás da lousa: a lousa fica 3 cm à frente dela)
   // RISCOS DE GIZ: um condenado contou os dias aqui, ao lado da 1ª lousa (baixo, como quem está sentado no chão)
@@ -231,7 +240,7 @@ export function buildLousa(ctx: Ctx): Room {
     g.add(wick);
   }
   // o caminho GASTO de quem passou: da entrada até a porta, desviando das colunas
-  kit.wear([[0, 1.7], [0.25, -1.2], [-0.15, -4.3], [0.1, -7.2], [0, -9.1]], 1.25);
+  kit.wear(SIDE ? [[0, 1.7], [0.25, -1.2], [-0.15, -4.3], [-1.4, DZ0], [-3.4, DZ0]] : [[0, 1.7], [0.25, -1.2], [-0.15, -4.3], [0.1, -7.2], [0, -9.1]], 1.25);
 
   // a lousa secreta (S1): parede esquerda, atrás da coluna; soquete frio, um dado de cinco pontos talhado acima
   const SZ = -3.95;
@@ -244,9 +253,13 @@ export function buildLousa(ctx: Ctx): Room {
   const secret = { b: SB, target: 'n5', key: 'lousaS', solved: false, idle: 0 };
 
   // ── a porta-lousa: nove pontinhos de bronze na própria laje (sobem com ela) ──
-  const DB = makeWallBoard(kit, ctx, { x: 0, y: 1.2, z: Z0 - 0.035, nx: 0, nz: 1, step: 0.42, bronze: true, key: 'porta' });
+  const DB = SIDE
+    ? makeWallBoard(kit, ctx, { x: X0 - 0.035, y: 1.2, z: DZ0, nx: 1, nz: 0, step: 0.42, bronze: true, key: 'porta' })
+    : makeWallBoard(kit, ctx, { x: 0, y: 1.2, z: Z0 - 0.035, nx: 0, nz: 1, step: 0.42, bronze: true, key: 'porta' });
   DB.setDim(0);
   boards.push(DB);
+  // a frase fica no meio do fundo, como sempre (na parede do lado, a abóbada começa a 3 m e a cobriria); com a porta à esquerda, ela fica
+  // em cima dos três braseiros da frente, e a casa lisa copia a porta ao lado
   const sign = kit.inscribe({ words: ['acender', null, 'brasa'], x: 0, y: 3.3, z: Z0 + 0.025, nx: 0, nz: 1, size: 0.42, age: 0.25, seed: 9, lead: true });
   const live = makeLivePanel(sign);
   live.draw([]);
@@ -333,6 +346,8 @@ export function buildLousa(ctx: Ctx): Room {
     interactables: [niche.interactable],
     doorZ: Z0,
     entranceZ: Z1,
+    exit: S.door.exit,
+    entry: S.entrance.entry,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
     fog: { color: '#0a0a11', near: 3.5, far: 16 },
@@ -395,7 +410,8 @@ export function buildLousa(ctx: Ctx): Room {
         } else if (!L2.solved && ctx.die.face === 3 && ctx.die.state !== 'hand') {
           // adormecida: o dado só bate seco nos pontinhos
           const d = ctx.die.pos;
-          if (Math.abs(d.z - (Z0 + 0.25)) < 0.12 && Math.abs(d.x) < 0.8 && d.y > 0.4 && d.y < 2 && gate.take()) ctx.sfx('error');
+          const atDoor = SIDE ? Math.abs(d.x - (X0 + 0.25)) < 0.12 && Math.abs(d.z - DZ0) < 0.8 : Math.abs(d.z - (Z0 + 0.25)) < 0.12 && Math.abs(d.x) < 0.8;
+          if (atDoor && d.y > 0.4 && d.y < 2 && gate.take()) ctx.sfx('error');
         }
         const pts = DB.grid.points();
         if (pts.length && DB.grid.writes('n4')) {

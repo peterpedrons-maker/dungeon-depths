@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { floorTexture } from '../textures';
-import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, T } from '../kit';
+import { ARCH_TOP, buildDoor, buildEntrance, doorFrame, entryFrame, Kit, lambert, T, type DoorSide, type EntrySide, type Holes } from '../kit';
 import type { Box, Rect } from '../types';
 
 export const Z1 = 2;
@@ -12,7 +12,9 @@ export const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number
   max: new THREE.Vector3(x1, y1, z1),
 });
 
-export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamps: number; theme?: string; floor?: boolean }) {
+// `exit`/`entry`: a porta e a entrada em outra parede (DESIGN.md §73, passo 3; o lado e o ponto vêm da planta, `planDoors`). A parede
+// que ganha o vão vira a parede da porta (com o arco); a que perdeu o vão fica lisa.
+export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamps: number; theme?: string; floor?: boolean; exit?: { side: DoorSide; at: number }; entry?: { side: EntrySide; at: number } }) {
   const X0 = -o.hx;
   const X1 = o.hx;
   const Z0 = o.z0;
@@ -21,13 +23,25 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
   const L = Z1 - Z0;
   const zm = (Z0 + Z1) / 2;
   const theme = o.theme ?? kit.theme;
+  const ex = o.exit ?? { side: 'B', at: 0 };
+  const en = o.entry ?? { side: 'F', at: 0 };
+  if (ex.side !== 'B' && ex.side === en.side) throw new Error('porta e entrada na mesma parede');
   if (o.floor !== false) kit.plane(W, L, lambert(floorTexture([W / T, L / T], theme)), 0, 0, zm, -Math.PI / 2);
   kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
-  const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
-  const wallL = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
-  const wallR = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, h: H, lamps: o.lamps, connected: true, theme });
-  const boxes: Box[] = [mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3), mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3)];
+  const plainEntry = en.side === 'F' && en.at === 0;
+  const plainExit = ex.side === 'B' && ex.at === 0;
+  const entrance = buildEntrance(kit, plainEntry ? { x0: X0, x1: X1, z: Z1, h: H } : { x0: X0, x1: X1, z: Z1, h: H, frame: entryFrame(en.side, en.at, X0, X1, Z0, Z1) });
+  const door = buildDoor(kit, plainExit ? { x0: X0, x1: X1, z0: Z0, h: H, lamps: o.lamps, connected: true, theme } : { x0: 0, x1: 0, z0: 0, h: H, lamps: o.lamps, connected: true, theme, frame: doorFrame(ex.side, ex.at, X0, X1, Z0, Z1) });
+  // as paredes que não têm vão: lisas
+  const sideHas = (s: 'L' | 'R') => ex.side === s || en.side === s;
+  const wallL = sideHas('L') ? null : kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
+  const wallR = sideHas('R') ? null : kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
+  if (ex.side !== 'B') kit.plane(W, H, kit.brick([W / T, H / T], 0.95, 35), 0, H / 2, Z0, 0, 0);
+  if (en.side !== 'F') kit.plane(W, H, kit.brick([W / T, H / T], 0.95, 37), 0, H / 2, Z1, 0, Math.PI);
+  const holes: Holes = { B: ex.side === 'B' ? [ex.at] : [], F: en.side === 'F' ? [en.at] : [], L: [], R: [] };
+  if (ex.side !== 'B') holes[ex.side]!.push(ex.at);
+  if (en.side !== 'F') holes[en.side]!.push(en.at);
+  const boxes: Box[] = plainExit ? [mkBox(-1.25, 0, Z0, -0.95, ARCH_TOP, Z0 + 0.3), mkBox(0.95, 0, Z0, 1.25, ARCH_TOP, Z0 + 0.3), mkBox(-1.25, ARCH_TOP - 0.3, Z0, 1.25, H, Z0 + 0.3)] : [];
   const pillarRects: Rect[] = [];
   const shell = {
     X0,
@@ -40,6 +54,8 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
     wallL,
     wallR,
     door,
+    entrance,
+    holes,
     boxes,
     // coluna do chão ao teto
     // COLUNA com base e capitel (DIRECAO_DE_ARTE.md §4.5): plinto de pedra lavrada, um toro mais estreito, o fuste de tijolo, e em cima o
@@ -105,16 +121,23 @@ export function roomShell(kit: Kit, o: { hx: number; z0: number; h: number; lamp
       return (x: number) => cy + Math.sqrt(Math.max(0, r * r - x * x));
     },
     decorate() {
-      kit.damp(X0, 1.0, Z0 + L * 0.4, 1, 0, 1.9);
-      kit.damp(X1, 2.2, Z0 + L * 0.3, -1, 0, 1.5);
-      kit.skirting(X0, X1, Z0, Z1, 1.3);
-      kit.aoSides(X0, X1, Z0, Z1, H);
+      // a umidade nas paredes dos lados, longe dos vãos
+      const away = (z: number, list: number[]) => (list.some((c) => Math.abs(c - z) < 2.4) ? (z - Z0 > L / 2 ? Z0 + L * 0.2 : Z0 + L * 0.75) : z);
+      kit.damp(X0, 1.0, away(Z0 + L * 0.4, holes.L!), 1, 0, 1.9);
+      kit.damp(X1, 2.2, away(Z0 + L * 0.3, holes.R!), -1, 0, 1.5);
+      if (plainExit && plainEntry) kit.skirting(X0, X1, Z0, Z1, 1.3);
+      else kit.skirting(X0, X1, Z0, Z1, 1.3, holes);
+      kit.aoSides(X0, X1, Z0, Z1, H, 0, holes);
       kit.cornice(X0, X1, Z0, Z1, H);
     },
     // obstáculos de sempre: colunas, paredes, entrada e porta
     rects(doorOpen: number): Rect[] {
       const r: Rect[] = [...pillarRects, ...kit.rects, ...entrance.rects()];
-      r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
+      // as paredes dos lados (a que tem vão é feita pela porta ou pela entrada), o fundo e a frente lisos
+      if (!sideHas('L')) r.push([X0 - 2, Z0, X0, Z1 + 0.5]);
+      if (!sideHas('R')) r.push([X1, Z0, X1 + 2, Z1 + 0.5]);
+      if (ex.side !== 'B') r.push([X0 - 1, Z0 - 2, X1 + 1, Z0]);
+      if (en.side !== 'F') r.push([X0 - 1, Z1, X1 + 1, Z1 + 2]);
       r.push(...door.rects(doorOpen > 0.85));
       return r;
     },

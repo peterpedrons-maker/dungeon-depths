@@ -35,6 +35,21 @@ export const LAMP_OFF = 0x2a2230;
 // o motor escreve aqui quanto de luz o mundo tem agora (1 = normal, ~0,08 = o ESCURO da Casa): os brilhos falsos apagam junto
 export const lightEnv = { scale: 1 };
 
+// vãos de porta/entrada numa sala retangular, por parede (L/R: o z do meio do vão; B/F: o x)
+export type Holes = Partial<Record<'L' | 'R' | 'B' | 'F', number[]>>;
+const HOLE_HALF = 1.3; // meia largura de um vão com o aro (DW + 0,3 + folga)
+// o trecho a..b sem os vãos (centro ± half)
+export function cutSpan(a: number, b: number, cuts: number[], half: number): [number, number][] {
+  const out: [number, number][] = [];
+  let cur = a;
+  for (const c of [...cuts].sort((p, q) => p - q)) {
+    if (c - half > cur) out.push([cur, Math.min(b, c - half)]);
+    cur = Math.max(cur, c + half);
+  }
+  if (cur < b) out.push([cur, b]);
+  return out.filter(([p, q]) => q - p > 0.05);
+}
+
 export function lambert(map: THREE.Texture | null, color = 0xffffff) {
   return new THREE.MeshLambertMaterial({ map, color });
 }
@@ -250,22 +265,21 @@ export class Kit {
   }
 
   // sombra suave (oclusão ambiente) no encontro das paredes laterais com chão e teto
-  aoSides(x0: number, x1: number, z0: number, z1: number, h: number, y0 = 0) {
+  // `holes`: portas e entradas nas paredes dos lados (o z do meio de cada vão): a faixa de baixo não atravessa o vão
+  aoSides(x0: number, x1: number, z0: number, z1: number, h: number, y0 = 0, holes: Holes = {}) {
     const m = this.mat('aoStrip', () => new THREE.MeshBasicMaterial({ map: aoStripTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }));
-    const len = z1 - z0;
-    const cz = (z0 + z1) / 2;
-    const strip = (x: number, y: number, ry: number, flip: boolean, hh: number) => {
-      const p = new THREE.Mesh(new THREE.PlaneGeometry(len, hh), m);
-      p.position.set(x, y, cz);
+    const strip = (x: number, y: number, ry: number, flip: boolean, hh: number, za: number, zb: number) => {
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(zb - za, hh), m);
+      p.position.set(x, y, (za + zb) / 2);
       p.rotation.set(0, ry, flip ? Math.PI : 0);
       p.renderOrder = 2;
       this.group.add(p);
     };
     // plano girado em torno de Y: o "comprimento" da faixa corre ao longo de z
-    strip(x0 + 0.008, y0 + 0.3, Math.PI / 2, false, 0.6);
-    strip(x1 - 0.008, y0 + 0.3, -Math.PI / 2, false, 0.6);
-    strip(x0 + 0.008, h - 0.3, Math.PI / 2, true, 0.6);
-    strip(x1 - 0.008, h - 0.3, -Math.PI / 2, true, 0.6);
+    for (const [za, zb] of cutSpan(z0, z1, holes.L ?? [], HOLE_HALF)) strip(x0 + 0.008, y0 + 0.3, Math.PI / 2, false, 0.6, za, zb);
+    for (const [za, zb] of cutSpan(z0, z1, holes.R ?? [], HOLE_HALF)) strip(x1 - 0.008, y0 + 0.3, -Math.PI / 2, false, 0.6, za, zb);
+    strip(x0 + 0.008, h - 0.3, Math.PI / 2, true, 0.6, z0, z1);
+    strip(x1 - 0.008, h - 0.3, -Math.PI / 2, true, 0.6, z0, z1);
   }
 
   // anel de sombra no chão e no teto, junto à parede curva
@@ -353,7 +367,9 @@ export class Kit {
   }
 
   // rodapé baixo em volta da sala
-  skirting(x0: number, x1: number, z0: number, z1: number, gap = 0) {
+  // `gap`: a meia largura do vão no meio do fundo e da frente (porta e entrada de sempre); `holes`: vãos em outros lugares (z nos lados, x no
+  // fundo e na frente), que substituem os do meio na parede em que aparecem
+  skirting(x0: number, x1: number, z0: number, z1: number, gap = 0, holes?: Holes) {
     const m = this.mat('skirt', () => lambert(null, 0x2a2838));
     const mk = (w: number, d: number, x: number, z: number) => {
       const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), m);
@@ -361,6 +377,13 @@ export class Kit {
       b.userData.merge = true;
       this.group.add(b);
     };
+    if (holes) {
+      for (const [za, zb] of cutSpan(z0, z1, holes.L ?? [], HOLE_HALF)) mk(0.1, zb - za, x0 + 0.05, (za + zb) / 2);
+      for (const [za, zb] of cutSpan(z0, z1, holes.R ?? [], HOLE_HALF)) mk(0.1, zb - za, x1 - 0.05, (za + zb) / 2);
+      for (const [xa, xb] of cutSpan(x0, x1, holes.B ?? [], HOLE_HALF)) mk(xb - xa, 0.1, (xa + xb) / 2, z0 + 0.05);
+      for (const [xa, xb] of cutSpan(x0, x1, holes.F ?? [], HOLE_HALF)) mk(xb - xa, 0.1, (xa + xb) / 2, z1 - 0.05);
+      return;
+    }
     mk(0.1, z1 - z0, x0 + 0.05, (z0 + z1) / 2);
     mk(0.1, z1 - z0, x1 - 0.05, (z0 + z1) / 2);
     // paredes da frente e do fundo (com vão pra porta/entrada)
@@ -424,6 +447,17 @@ export class Kit {
       this.rects.push([x - 0.22, Math.min(z, z + dir * 0.42), x + 0.22, Math.max(z, z + dir * 0.42), y0 + 2]);
     }
     this.box(2 * DW + 0.5, 0.04, 0.5, this.slab, cx, y0 + 0.02, z + dir * 0.2, false); // a soleira, gasta no meio
+  }
+  // o mesmo batente numa parede dos lados (x constante; `cz` = o meio do vão; `dir` = para dentro da sala, em x)
+  batenteX(x: number, cz: number, dir: number, y0 = 0) {
+    for (const s of [-1, 1]) {
+      const z = cz + s * (DW + 0.48);
+      this.box(0.34, DH + 0.1, 0.34, this.slab, x + dir * 0.17, y0 + (DH + 0.1) / 2, z, false);
+      this.box(0.42, 0.14, 0.44, this.slab, x + dir * 0.19, y0 + DH + 0.17, z, false);
+      this.box(0.42, 0.1, 0.44, this.slab, x + dir * 0.19, y0 + 0.05, z, false);
+      this.rects.push([Math.min(x, x + dir * 0.42), z - 0.22, Math.max(x, x + dir * 0.42), z + 0.22, y0 + 2]);
+    }
+    this.box(0.5, 0.04, 2 * DW + 0.5, this.slab, x + dir * 0.2, y0 + 0.02, cz, false);
   }
   // NICHO na parede: moldura de pedra lavrada com arco reto, fundo escuro e uma prateleira; (x, y, z) = o meio da base, (nx, nz) = para onde olha.
   // Devolve um grupo alinhado ao nicho (x para a direita de quem olha, y para cima, z para fora) para pôr objetos dentro.
@@ -682,10 +716,51 @@ export const DH = 1.7; // altura da parte reta (o arco começa aqui)
 export const ARCH_TOP = DH + DW;
 export const CORRIDOR = 3.2;
 
+// PORTAS E ENTRADAS EM QUALQUER PAREDE (DESIGN.md §73, passo 3). A porta e a entrada são montadas num QUADRO: a origem no meio do vão, no
+// chão da parede; na porta, o -z do quadro aponta para FORA da sala (para o corredor); na entrada, para DENTRO. `a`..`b` = a extensão da
+// parede no x do quadro. Giro em quartos de volta (como em place.ts). Sala retangular X0..X1 × Z0..Z1 (Z1 = a frente).
+export type DoorSide = 'B' | 'L' | 'R'; // fundo, esquerda, direita
+export type EntrySide = 'F' | 'L' | 'R'; // frente, esquerda, direita
+export interface Frame {
+  q: number;
+  x: number;
+  z: number;
+  a: number;
+  b: number;
+}
+export function doorFrame(side: DoorSide, at: number, X0: number, X1: number, Z0: number, Z1: number): Frame {
+  if (side === 'L') return { q: 1, x: X0, z: at, a: at - Z1, b: at - Z0 };
+  if (side === 'R') return { q: 3, x: X1, z: at, a: Z0 - at, b: Z1 - at };
+  return { q: 0, x: at, z: Z0, a: X0 - at, b: X1 - at };
+}
+export function entryFrame(side: EntrySide, at: number, X0: number, X1: number, Z0: number, Z1: number): Frame {
+  if (side === 'L') return { q: 3, x: X0, z: at, a: Z0 - at, b: Z1 - at };
+  if (side === 'R') return { q: 1, x: X1, z: at, a: at - Z1, b: at - Z0 };
+  return { q: 0, x: at, z: Z1, a: X0 - at, b: X1 - at };
+}
+// onde a porta/entrada ficou, na sala: o ponto no meio do vão (na parede) e a direção (porta: para fora; entrada: para dentro)
+export interface Opening {
+  x: number;
+  z: number;
+  dx: number;
+  dz: number;
+}
+const frameDir = (q: number, fx: number, fz: number): [number, number] => {
+  const c = [1, 0, -1, 0][q];
+  const s = [0, 1, 0, -1][q];
+  return [fx * c + fz * s, -fx * s + fz * c];
+};
+const frameRect = (q: number, ox: number, oz: number, r: Rect): Rect => {
+  const [ax, az] = frameDir(q, r[0], r[1]);
+  const [bx, bz] = frameDir(q, r[2], r[3]);
+  return [Math.min(ax, bx) + ox, Math.min(az, bz) + oz, Math.max(ax, bx) + ox, Math.max(az, bz) + oz, r[4]];
+};
+
 export interface DoorOpts {
   x0: number;
   x1: number;
   z0: number;
+  frame?: Frame; // porta de lado ou fora do meio: x0, x1 e z0 vêm do quadro (`doorFrame`)
   y0?: number; // altura do chão da porta
   h: number; // altura da parede acima de y0
   lamps: number; // 1 a 5 gemas
@@ -706,10 +781,16 @@ function archWall(shape: THREE.Shape, mat: THREE.Material, thick: number | undef
   return new THREE.Mesh(geo, mat);
 }
 
-export function buildDoor(kit: Kit, o: DoorOpts) {
+export function buildDoor(kit: Kit, o0: DoorOpts) {
+  const fr = o0.frame;
+  const o = fr ? { ...o0, x0: fr.a, x1: fr.b, z0: 0 } : o0;
+  const q = fr?.q ?? 0;
+  const FX = fr?.x ?? 0;
+  const FZ = fr?.z ?? 0;
   const y0 = o.y0 ?? 0;
   const g = new THREE.Group();
-  g.position.y = y0;
+  g.position.set(FX, y0, FZ);
+  g.rotation.y = (q * Math.PI) / 2;
   kit.group.add(g);
   const mark = (m: THREE.Object3D) => kit.surfaces.push(m);
   const theme = o.theme ?? kit.theme;
@@ -791,6 +872,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     m.position.set(x, y, z);
     m.rotation.set(rx, ry, 0);
+    m.userData.corridor = true; // (não conta na planta da sala)
     g.add(m);
   };
   mk(CL, ARCH_TOP, cm, -DW, ARCH_TOP / 2, zc, 0, Math.PI / 2);
@@ -802,7 +884,8 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
     exitGlow.position.set(0, ARCH_TOP / 2, o.z0 - CORRIDOR);
     g.add(exitGlow);
   }
-  const corridorLight = kit.light(0, y0 + 1.9, o.z0 - 1.4, 0xffe2b0, 0);
+  const [clx, clz] = frameDir(q, 0, o.z0 - 1.4);
+  const corridorLight = kit.light(FX + clx, y0 + 1.9, FZ + clz, 0xffe2b0, 0);
 
   // gemas-lâmpada no aro
   const lampBack = new THREE.MeshBasicMaterial({ color: 0x120f18 });
@@ -822,10 +905,13 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
   }
 
   const zEnd = o.z0 - CORRIDOR;
+  const [odx, odz] = frameDir(q, 0, -1);
+  const exit: Opening = { x: fr ? FX : 0, z: fr ? FZ : o.z0, dx: Math.round(odx), dz: Math.round(odz) };
   return {
     lampMats,
     zExit: o.z0 - 1.2,
     zEnd,
+    exit,
     setOpen(v: number) {
       slabG.position.y = v * (ARCH_TOP + 0.2);
       // aberta de todo, a laje some: lá em cima ela fica atrás da parede e acima do teto do corredor, e em parede fina ou mais baixa que
@@ -848,7 +934,7 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
       if (!open) r.push([-DW, o.z0 - 0.3, DW, o.z0, top]);
       // sem saída (última sala): fecha o fundo do corredor
       if (!o.connected) r.push([-DW, zEnd - 0.4, DW, zEnd, top]);
-      return r;
+      return fr ? r.map((x) => frameRect(q, FX, FZ, x)) : r;
     },
   };
 }
@@ -856,7 +942,21 @@ export function buildDoor(kit: Kit, o: DoorOpts) {
 // ── entrada de uma sala (liga com o corredor da sala anterior) ──────────────
 // Parede de frente (z = o.z, olhando pra dentro da sala, ou seja, -z) com a abertura em arco
 // no centro e um aro de pedra saindo pra dentro da sala.
-export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number; wallMat?: THREE.Material; uvScale?: number; thick?: number }) {
+export function buildEntrance(kit: Kit, o0: { x0: number; x1: number; z: number; h: number; theme?: string; y0?: number; wallMat?: THREE.Material; uvScale?: number; thick?: number; frame?: Frame }) {
+  // (num quadro: a parede vai de `a` a `b` no x dele; por dentro, as peças giram meia volta, como sempre, e trocam os lados)
+  const fr = o0.frame;
+  const o = fr ? { ...o0, x0: -fr.b, x1: -fr.a, z: 0 } : o0;
+  const q = fr?.q ?? 0;
+  const FX = fr?.x ?? 0;
+  const FZ = fr?.z ?? 0;
+  const g = new THREE.Group();
+  g.position.set(FX, 0, FZ);
+  g.rotation.y = (q * Math.PI) / 2;
+  kit.group.add(g);
+  const add = (m: THREE.Object3D) => {
+    g.add(m);
+    kit.surfaces.push(m);
+  };
   const theme = o.theme ?? kit.theme;
   const wall = new THREE.Shape();
   wall.moveTo(o.x0, 0);
@@ -872,7 +972,7 @@ export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; 
   wm.rotation.y = Math.PI; // de frente pra dentro da sala
   wm.position.z = o.z;
   wm.position.y = o.y0 ?? 0;
-  kit.add(wm);
+  add(wm);
 
   const R2 = DW + 0.3;
   const ring = new THREE.Shape();
@@ -892,16 +992,23 @@ export function buildEntrance(kit: Kit, o: { x0: number; x1: number; z: number; 
   rm.rotation.y = Math.PI;
   rm.position.z = o.z;
   rm.position.y = o.y0 ?? 0;
-  kit.add(rm);
+  add(rm);
 
+  const [idx, idz] = frameDir(q, 0, -1);
+  const entry: Opening = { x: FX, z: fr ? FZ : o.z, dx: Math.round(idx), dz: Math.round(idz) };
   return {
+    entry,
     rects(): Rect[] {
-      return [
-        [o.x0 - 1, o.z, -DW, o.z + 0.5],
-        [DW, o.z, o.x1 + 1, o.z + 0.5],
+      // (no quadro, a parede vai de `a` a `b`; sem quadro, as peças giradas cobrem -x1..-x0, que nas salas de sempre é o mesmo x0..x1)
+      const a = fr ? fr.a : o.x0;
+      const b = fr ? fr.b : o.x1;
+      const r: Rect[] = [
+        [a - 1, o.z, -DW, o.z + 0.5],
+        [DW, o.z, b + 1, o.z + 0.5],
         [-R2, o.z - 0.3, -DW, o.z],
         [DW, o.z - 0.3, R2, o.z],
       ];
+      return fr ? r.map((x) => frameRect(q, FX, FZ, x)) : r;
     },
   };
 }

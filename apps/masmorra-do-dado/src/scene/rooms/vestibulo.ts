@@ -9,7 +9,8 @@
 import * as THREE from 'three';
 import { holeRim } from '../skyhole';
 import { floorTexture, brickTexture } from '../textures';
-import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { ARCH_TOP, buildDoor, buildEntrance, doorFrame, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { planDoors } from '../plan';
 import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
 import { diary } from '../../story/diary';
@@ -64,6 +65,14 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const RISE = 1.9; // a abóbada sobe 1,9 m acima do nascimento (H)
   const HT = A2 ? H + RISE : H; // altura das paredes
   const WIN = { z: -12.25, y: 4.75, w: 0.62, h: 0.9 }; // a fresta alta da parede direita (sala 2)
+  // A PLANTA NOVA (DESIGN.md §73, passo 3): a porta da sala 2 sai pela parede DIREITA, no primeiro tramo (logo à direita de quem entra; no
+  // fundo ela cairia em cima de um braseiro e embaixo da fresta). A parede do fundo fica inteira, com a frase.
+  const PD = v === 2 ? planDoors('O Vestíbulo') : null;
+  const SIDE = !!PD && PD.exit.side === 'R' && A2;
+  if (PD && PD.exit.side !== 'B' && !SIDE) throw new Error('O Vestíbulo: só porta no fundo ou na direita');
+  const DZ = SIDE ? PD!.exit.at : 0; // o meio da porta na parede direita
+  const DSPAN = 1.6; // a peça da porta (com o arco) vai de DZ - 1,6 a DZ + 1,6; o resto da parede são blocos
+  const DOORH = 3.4;
   const wallM = A2 ? reliefMat(masonry({ rows: [16, 24], blocks: [26, 60], seed: 301, theme: D.theme }), 4.5) : null;
   if (A2) kit.add(floorPlane(X0, X1, Z0, Z1, 0, reliefMat(flagstones(303, D.theme), 4.5), 2 * ST));
   else kit.plane(W, L, lambert(floorTexture([W / T, L / T], D.theme)), 0, 0, zm, -Math.PI / 2);
@@ -252,7 +261,16 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     const wy1 = WIN.y + WIN.h / 2;
     const zA = Z0 - 0.5;
     const zB = Z1 + 0.5;
-    kit.add(stoneBox(0.5, wy0, zB - zA, wallM!, X1 + 0.25, wy0 / 2, (zA + zB) / 2));
+    if (SIDE) {
+      // o vão da porta: a parede de baixo em dois pedaços, e um bloco em cima da peça da porta
+      const da = DZ - DSPAN;
+      const db = DZ + DSPAN;
+      kit.add(stoneBox(0.5, wy0, da - zA, wallM!, X1 + 0.25, wy0 / 2, (zA + da) / 2));
+      kit.add(stoneBox(0.5, wy0, zB - db, wallM!, X1 + 0.25, wy0 / 2, (db + zB) / 2));
+      kit.add(stoneBox(0.5, wy0 - DOORH, db - da, wallM!, X1 + 0.25, (DOORH + wy0) / 2, DZ));
+      // o fundo, inteiro
+      kit.add(stoneBox(W + 1, HT, 0.5, wallM!, 0, HT / 2, Z0 - 0.25));
+    } else kit.add(stoneBox(0.5, wy0, zB - zA, wallM!, X1 + 0.25, wy0 / 2, (zA + zB) / 2));
     kit.add(stoneBox(0.5, HT - wy1, zB - zA, wallM!, X1 + 0.25, (wy1 + HT) / 2, (zA + zB) / 2));
     kit.add(stoneBox(0.5, wy1 - wy0, wz0 - zA, wallM!, X1 + 0.25, WIN.y, (zA + wz0) / 2));
     kit.add(stoneBox(0.5, wy1 - wy0, zB - wz1, wallM!, X1 + 0.25, WIN.y, (wz1 + zB) / 2));
@@ -261,7 +279,14 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 37 + v), X1, H / 2, zm, 0, -Math.PI / 2);
   }
 
-  const door = buildDoor(kit, A2 ? { x0: X0, x1: X1, z0: Z0, h: HT, lamps: 1, connected: true, theme: D.theme, wallMat: wallM!, uvScale: ST, thick: 0.45 } : { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme });
+  const door = buildDoor(
+    kit,
+    SIDE
+      ? { x0: 0, x1: 0, z0: 0, h: DOORH, lamps: 1, connected: true, theme: D.theme, wallMat: wallM!, uvScale: ST, thick: 0.45, frame: doorFrame('R', DZ, X0, X1, DZ - DSPAN, DZ + DSPAN) }
+      : A2
+        ? { x0: X0, x1: X1, z0: Z0, h: HT, lamps: 1, connected: true, theme: D.theme, wallMat: wallM!, uvScale: ST, thick: 0.45 }
+        : { x0: X0, x1: X1, z0: Z0, h: H, lamps: 1, connected: true, theme: D.theme },
+  );
 
   // a frase talhada: v1–v3 na parede do fundo, à esquerda da porta; a lacuna (v4) na parede esquerda, bem maior
   // UMA palavra nova por sala (DESIGN.md §24): 1 = só ACENDER; 2 = ACENDER + DOIS; 3 = ACENDER + TRÊS + BRASEIRO (o desenho do braseiro aparece no dado)
@@ -312,7 +337,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   kit.damp(X0, 1.0, Z0 + 4.4, 1, 0, 1.9);
   kit.damp(X1, 2.2, Z0 + 3.8, -1, 0, 1.5);
   if (!A2) kit.skirting(X0, X1, Z0, Z1, 1.3);
-  kit.aoSides(X0, X1, Z0, Z1, H);
+  kit.aoSides(X0, X1, Z0, Z1, H, 0, SIDE ? { R: [DZ] } : {});
   kit.cornice(X0, X1, Z0, Z1, H);
   if (!A2) {
     kit.pilaster(X0, Z0 + 5.5, 1, 0, H);
@@ -334,14 +359,16 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   if (v >= 2) {
     const e0 = kit.emitters.length;
     kit.torch(X0 + 0.1, 1.8, -1.2, 1, 0, 0.7, 0xff9a3c, A2 ? 58 : 42);
-    kit.torch(X1 - 0.1, 1.8, -1.2, -1, 0, 2.4, 0xff9a3c, A2 ? 58 : 42);
+    // (com a porta na parede direita, a tocha dela vai para a frente da porta, perto da entrada)
+    const TZR = SIDE ? Math.min(Z1 - 0.7, DZ + DSPAN + 0.6) : -1.2;
+    kit.torch(X1 - 0.1, 1.8, TZR, -1, 0, 2.4, 0xff9a3c, A2 ? 58 : 42);
     if (A2) {
       kit.lively = true;
       kit.emitters.slice(e0).forEach((e) => (e.shadow = true));
       // fuligem na parede acima das tochas (a fumaça sobe) e a fumaça subindo
       kit.soot(X0, 2.25, -1.2, 1, 0, 1.0, 2.2);
-      kit.soot(X1, 2.25, -1.2, -1, 0, 1.0, 2.2);
-      lifeFx.push(torchSmoke(kit.group, X0 + 0.26, 2.45, -1.2, 1, 0), torchSmoke(kit.group, X1 - 0.26, 2.45, -1.2, -1, 0));
+      kit.soot(X1, 2.25, TZR, -1, 0, 1.0, 2.2);
+      lifeFx.push(torchSmoke(kit.group, X0 + 0.26, 2.45, -1.2, 1, 0), torchSmoke(kit.group, X1 - 0.26, 2.45, TZR, -1, 0));
     }
   }
   if (v === 3) kit.torch(-D.hx + 0.9, 1.8, Z0 + 0.1, 0, 1, 4.1);
@@ -709,6 +736,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     wellTop: v === 1 ? new THREE.Vector3(SHAFT.x, H + 16, SHAFT.z) : undefined,
     doorZ: Z0,
     entranceZ: Z1,
+    exit: door.exit,
     // 1ª sala: o jogador acorda perto da luz do poço, olhando pra ela
     start: v === 1 ? new THREE.Vector3(0.35, 0, SHAFT.z + 1.2) : new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
@@ -719,7 +747,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     rects() {
       const r: ReturnType<Room['rects']> = braziers.map((b) => b.rect);
       r.push(...kit.rects);
-      r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
+      r.push([X0 - 2, Z0, X0, Z1 + 0.5]);
+      if (SIDE) r.push([X1, Z0, X1 + 2, DZ - DSPAN], [X1, DZ + DSPAN, X1 + 2, Z1 + 0.5], [X0 - 1, Z0 - 2, X1 + 1, Z0]);
+      else r.push([X1, Z0, X1 + 2, Z1 + 0.5]);
       if (v === 1) r.push([X0 - 2, Z1, X1 + 2, Z1 + 0.5]);
       else r.push(...(entrance?.rects() ?? []));
       if (v === 2) {

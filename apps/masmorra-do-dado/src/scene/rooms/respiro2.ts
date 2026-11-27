@@ -10,7 +10,8 @@
 // Coordenadas: o fundo da piscina mais funda é y = 0; o salão fica em y = 1,2 (a porta de saída: `exitDy`) e a entrada em y = 2,7 (`entranceY`).
 
 import * as THREE from 'three';
-import { buildDoor, buildEntrance, Kit, lambert, T } from '../kit';
+import { buildDoor, buildEntrance, doorFrame, Kit, lambert, T } from '../kit';
+import { planDoors } from '../plan';
 import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { makeCloth, makeGemNiche } from '../firegrid';
@@ -163,9 +164,18 @@ export function buildRespiro2(ctx: Ctx): Room {
     for (const [hx, hz] of HOLES) skyHole(kit, hx, hz, CEIL, { floorY: groundY(hx, hz), light: 18 });
   }
   const HH = CEIL - HALL;
-  // paredes laterais, com o vão de cada câmara de banho
+  // A PLANTA NOVA (DESIGN.md §73, passo 3): a saída fica na parede DIREITA, na frente da piscina funda (entre a coluna e ela), no chão do salão
+  const PD = planDoors('Os Banhos Secos');
+  const SIDE = PD.exit.side === 'R';
+  if (PD.exit.side === 'L' || PD.entry.side !== 'F') throw new Error('Os Banhos Secos: porta no fundo ou na direita, entrada na frente');
+  const DZ = PD.exit.at;
+  const DSPAN = 1.6;
+  // paredes laterais, com o vão de cada câmara de banho (e, à direita, o da porta)
   const sideWall = (x: number, nx: number, c: typeof WEST, seed: number) => {
-    wallAt(x, (Z1 + c.d1) / 2, nx, 0, Z1 - c.d1, HH, HALL, seed);
+    if (SIDE && nx < 0) {
+      wallAt(x, (Z1 + DZ + DSPAN) / 2, nx, 0, Z1 - DZ - DSPAN, HH, HALL, seed);
+      wallAt(x, (DZ - DSPAN + c.d1) / 2, nx, 0, DZ - DSPAN - c.d1, HH, HALL, seed + 3);
+    } else wallAt(x, (Z1 + c.d1) / 2, nx, 0, Z1 - c.d1, HH, HALL, seed);
     wallAt(x, (c.d0 + Z0) / 2, nx, 0, c.d0 - Z0, HH, HALL, seed + 1);
     wallAt(x, (c.d0 + c.d1) / 2, nx, 0, c.d1 - c.d0, HH - 2.4, HALL + 2.4, seed + 2);
   };
@@ -176,8 +186,12 @@ export function buildRespiro2(ctx: Ctx): Room {
     for (const z of [c.d0 + 0.11, c.d1 - 0.11]) solidBox(x - 0.25, HALL, z - 0.11, x + 0.25, HALL + 2.3, z + 0.11, kit.slab);
     kit.box(0.5, 0.18, c.d1 - c.d0, kit.slab, x, HALL + 2.39, (c.d0 + c.d1) / 2, false);
   }
-  rects.push([X0 - 0.3, WEST.d1, X0, Z1 + 1], [X0 - 0.3, Z0 - 1, X0, WEST.d0], [X1, EAST.d1, X1 + 0.3, Z1 + 1], [X1, Z0 - 1, X1 + 0.3, EAST.d0]);
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: HALL, h: HH, lamps: 1, connected: true });
+  rects.push([X0 - 0.3, WEST.d1, X0, Z1 + 1], [X0 - 0.3, Z0 - 1, X0, WEST.d0], [X1, Z0 - 1, X1 + 0.3, EAST.d0]);
+  if (SIDE) {
+    rects.push([X1, DZ + DSPAN, X1 + 0.3, Z1 + 1], [X1, EAST.d1, X1 + 0.3, DZ - DSPAN], [X0 - 1, Z0 - 1, X1 + 1, Z0]);
+    wallAt(0, Z0, 0, 1, X1 - X0, HH, HALL, 45); // o fundo, inteiro
+  } else rects.push([X1, EAST.d1, X1 + 0.3, Z1 + 1]);
+  const door = buildDoor(kit, SIDE ? { x0: 0, x1: 0, z0: 0, y0: HALL, h: HH, lamps: 1, connected: true, frame: doorFrame('R', DZ, X0, X1, DZ - DSPAN, DZ + DSPAN) } : { x0: X0, x1: X1, z0: Z0, y0: HALL, h: HH, lamps: 1, connected: true });
   door.setOpen(1);
   door.lampMats.forEach((mm) => mm.color.setHex(0xff7a2e));
 
@@ -410,7 +424,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   kit.torch(X0 + 0.1, EY + 1.9, 0.4, 1, 0, 0.3);
   kit.torch(X1 - 0.1, EY + 1.9, 0.4, -1, 0, 1.1);
   kit.torch(X0 + 0.1, HALL + 2.1, -7.2, 1, 0, 1.9);
-  kit.torch(X1 - 0.1, HALL + 2.1, -6.2, -1, 0, 2.6);
+  kit.torch(X1 - 0.1, HALL + 2.1, SIDE ? DZ - DSPAN - 1.6 : -6.2, -1, 0, 2.6); // (com a porta ali, ela desliza para o lado da piscina funda)
   kit.torch(X1 - 0.1, HALL + 2.1, -14.5, -1, 0, 3.3);
   kit.torch(X0 + 0.1, HALL + 2.1, -19.5, 1, 0, 4.0);
   kit.torch(-3.2, HALL + 2.1, Z0 + 0.1, 0, 1, 4.7);
@@ -432,6 +446,7 @@ export function buildRespiro2(ctx: Ctx): Room {
     inscriptions: kit.inscriptions,
     interactables,
     doorZ: Z0,
+    exit: door.exit,
     entranceZ: Z1,
     entranceY: EY,
     exitDy: HALL,

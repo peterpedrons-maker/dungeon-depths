@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
 import type { Line } from '../story/dialogue';
-import type { Emitter } from './kit';
+import type { Emitter, Opening } from './kit';
 import type { Inscription } from './inscription';
 import type { Flag } from '../story/progress';
 
@@ -135,6 +135,11 @@ export interface Room {
   calm?(x: number, z: number): boolean;
   doorZ: number; // z (local) da parede do fundo, onde fica a porta
   entranceZ: number; // z (local) da parede da frente, onde a sala se liga à anterior
+  // ONDE FICAM a porta e a entrada (DESIGN.md §73, passo 3): o meio do vão, na parede, e a direção (porta: para fora; entrada: para dentro).
+  // Sem isto: a porta no meio do fundo (0, doorZ, para -z) e a entrada no meio da frente (0, entranceZ, para -z). `buildDoor`/`buildEntrance`
+  // devolvem os dois prontos (`door.exit`, `entrance.entry`).
+  exit?: Opening;
+  entry?: Opening;
   start: THREE.Vector3; // pés do jogador (ponto de reinício da sala)
   startYaw: number;
   fog: { color: string; near: number; far: number };

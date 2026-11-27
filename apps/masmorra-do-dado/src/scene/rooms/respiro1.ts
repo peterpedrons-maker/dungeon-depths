@@ -10,7 +10,8 @@
 //    de cima para baixo). Solução: o canto do FUNDO À DIREITA e o da FRENTE À ESQUERDA; na água aparece o DOIS e sobe uma gema.
 
 import * as THREE from 'three';
-import { buildDoor, buildEntrance, Kit, lambert, T } from '../kit';
+import { buildDoor, buildEntrance, entryFrame, Kit, lambert, T } from '../kit';
+import { planDoors } from '../plan';
 import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { makeGemNiche, makeWallBoard } from '../firegrid';
@@ -95,6 +96,11 @@ export function buildRespiro1(ctx: Ctx): Room {
   const floorM = lambert(floorTexture([1 / T, 1 / T], 'ruin'));
 
   // ══ O CORREDOR ══
+  // A PLANTA NOVA (DESIGN.md §73, passo 3): entra-se pela parede DIREITA da 1ª célula do corredor (o corredor de ligação vem pela frente da sala,
+  // por onde antes só havia pedra); a frente dessa célula vira parede.
+  const PD = planDoors('Os Nichos e a Cisterna');
+  const SIDE_IN = PD.entry.side === 'R';
+  if (PD.entry.side === 'L' || PD.exit.side !== 'B') throw new Error('Os Nichos e a Cisterna: entrada na frente ou na direita, porta no fundo');
   const wallAt = (x: number, z: number, nx: number, nz: number, w: number, h: number, y0 = 0, seed = 33) => {
     const m = kit.plane(w, h, brick(w, h, seed), x, y0 + h / 2, z, 0, Math.atan2(nx, nz));
     return m;
@@ -116,7 +122,7 @@ export function buildRespiro1(ctx: Ctx): Room {
       const nix = ix + dx;
       const niz = iz + dz;
       if (isCell(nix, niz)) continue;
-      if (ix === 0 && iz === 0 && dz === -1) continue; // a entrada
+      if (ix === 0 && iz === 0 && (SIDE_IN ? dx === 1 : dz === -1)) continue; // a entrada
       if (ix === 1 && iz === 6 && dz === 1) continue; // a saída para o pátio
       if (ix === -3 && iz === 4 && dx === -1) continue; // a janela de grade (feita à parte)
       wallAt(wx, wz, -dx, dz, 2, CH, 0, 30 + ix * 3 + iz);
@@ -126,12 +132,13 @@ export function buildRespiro1(ctx: Ctx): Room {
   for (let ix = -4; ix <= 4; ix++)
     for (let iz = 0; iz <= 6; iz++) {
       if (isCell(ix, iz)) continue;
+      if (SIDE_IN && iz === 0 && ix > 0) continue; // (por ali passa o corredor de ligação, que tem as próprias paredes)
       const x = cx(ix);
       const z = cz(iz);
       rects.push([x - 1, z - 1, x + 1, z + 1]);
       boxes.push(mkBox(x - 1, 0, z - 1, x + 1, CH, z + 1));
     }
-  const entrance = buildEntrance(kit, { x0: -1, x1: 1, z: Z1, h: CH });
+  const entrance = buildEntrance(kit, SIDE_IN ? { x0: -1, x1: 1, z: Z1, h: CH, frame: entryFrame('R', cz(0), -1, 1, 0, 2) } : { x0: -1, x1: 1, z: Z1, h: CH });
 
   // nichos: moldura de pedra saliente, fundo escuro, prateleira, um objeto e uma vela
   const candleLights: { e: ReturnType<typeof kit.light>; s: THREE.Sprite; ph: number }[] = [];
@@ -476,8 +483,9 @@ export function buildRespiro1(ctx: Ctx): Room {
     calm: (x, z) => z < COURT.z1 - 1.2 && z > COURT.z1 - 5 && Math.abs(x) < 4.5, // a chegada ao pátio: o dado pode fazer uma pergunta
     doorZ: Z0,
     entranceZ: Z1,
-    start: new THREE.Vector3(0, 0, 1.2),
-    startYaw: 0,
+    entry: entrance.entry,
+    start: SIDE_IN ? new THREE.Vector3(0.2, 0, cz(0)) : new THREE.Vector3(0, 0, 1.2),
+    startYaw: SIDE_IN ? Math.PI / 2 : 0,
     fog: { color: '#0b0c14', near: 4, far: 30 },
     ambient: { color: 0x7a80b8, intensity: 1.9 },
     boxes: [...boxes, ...kit.boxes],

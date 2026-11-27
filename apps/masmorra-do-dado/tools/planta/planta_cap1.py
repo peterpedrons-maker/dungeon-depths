@@ -16,24 +16,24 @@ def put(r, fl='T'):
 
 # ── TÉRREO ──
 put(at(1, 'N', 10, 106))
-put(at(2, 'N', 10, 85, exit_side='R', exit_off=-11))
-put(at(3, 'E', 27, 80.5, exit_side='L', exit_off=-7))
-put(at(4, 'N', 29, 59))
-put(at(5, 'E', 20, 26, ent_side='R', ent_off=-4))
-put(at(6, 'E', 47, 17.5))
-put(at(7, 'E', 75, 20, exit_side='R', exit_off=-24))
+put(at(2, 'N', 10, 85, exit_side='R', exit_off=-2.2))
+put(at(3, 'E', 27, 89.0, exit_side='L', exit_off=-7.4))
+put(at(4, 'N', 29, 64))
+put(at(5, 'E', 19, 26, ent_side='R', ent_off=1))
+put(at(6, 'E', 46.15, 15.4))
+put(at(7, 'E', 75, 20))
 put(at(8, 'S', 96, 42))
-put(at(9, 'S', 90, 78, exit_side='R', exit_off=-13))
-put(at(10, 'W', 66, 70))
+put(at(9, 'S', 90, 78, exit_side='R', exit_off=-6.5))
+put(at(10, 'W', 65.5, 70))
 put(at(11, 'N', 50, 48))
-put(at(12, 'S', 72, 40))
+put(at(12, 'S', 72, 36.4))
 put(at(13, 'S', 76, 55.6), 'TS')
-put(at(19, 'W', 43.5, 29.8, exit_side='L', exit_off=-3), 'TS')
-put(at(21, 'S', 62, 110))
-put(at(20, 'S', 64.2, 89, exit_side='B', exit_off=-4))
-put(at(22, 'S', 74, 123.6, exit_side='R', exit_off=-2))
-put(at(23, 'W', 49, 129.6, exit_side='R', exit_off=-9.95))
-put(at(24, 'N', 46.1, 95))
+put(at(19, 'W', 42.65, 26.8, exit_side='L', exit_off=-1), 'TS')
+put(at(21, 'S', 64.2, 113.05))
+put(at(20, 'S', 64.2, 89))
+put(at(22, 'S', 64.2, 129.55, exit_side='R', exit_off=-1))
+put(at(23, 'W', 46.95, 134.0, exit_side='R', exit_off=-14))
+put(at(24, 'N', 40.05, 111.45))
 # ── SUBSOLO ──
 put(at(14, 'S', 76, 76.5), 'S')
 put(at(15, 'W', 55, 95, ent_side='F'), 'S')
@@ -44,7 +44,7 @@ put(at(18, 'E', 48.5, 42.5), 'S')
 # os furos (no plano) e a face de cada um
 HOLES = {
     1: ((10.0, 104.0), 1),
-    4: ((33.0, 67.0), 2), 3: ((22.2, 77.8), 2),
+    4: ((33.5, 72.0), 2), 3: ((23.0, 89.5), 2),
     5: ((24.0, 24.0), 3), 11: ((54.0, 54.0), 3), 9: ((84.0, 84.0), 3),
     # (a face 4 fica para o capítulo 2; a 5 para o 3 e a 6 para o 4: DESIGN.md §73)
 }
@@ -52,7 +52,7 @@ HOLES = {
 WALK = [(44.7, 33.9), (44.7, 62.0)]
 BRIDGE = [(44.7, 62.0), (44.7, 77.0), (64.2, 77.0), (64.2, 78.9)]
 SHORTCUTS = [
-    ([(39.8, 95.0), (27.0, 95.0), (27.0, 100.0), (13.9, 100.0)], 'atalho secreto: do Tribunal de volta ao Poço (abre no fim)'),
+    ([(33.8, 108.0), (13.9, 108.0)], 'atalho secreto: do Tribunal de volta ao Poço (abre no fim)'),
     ([(30.0, 66.0), (30.0, 70.8)], ''),
 ]
 OPTIONAL = [
@@ -61,7 +61,7 @@ OPTIONAL = [
 ]
 LINKS = [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 16), (16, 17), (17, 18), (18, 19), (20, 21), (21, 22), (22, 23), (23, 24)]
 
-# ── alinha o que ficou QUASE alinhado (um corredor com um degrau lateral de menos de 1,5 m fica feio e não diz nada): a sala seguinte
+# ── alinha o que ficou QUASE alinhado (um corredor com um degrau lateral de menos de 2 m fica feio e não diz nada): a sala seguinte
 # desliza de lado até o corredor ficar reto. Em ordem, para cada sala ir junto com a anterior. ──
 for a, b in LINKS:
     (ex, ey), (dx, dy) = R[a].door()
@@ -69,7 +69,7 @@ for a, b in LINKS:
     if (dx, dy) != (fx, fy):
         continue
     lat = (nx - ex) if dx == 0 else (ny - ey)
-    if 0.01 < abs(lat) < 1.5:
+    if 0.01 < abs(lat) < 2.0:
         if dx == 0:
             R[b].ox -= lat
         else:
@@ -92,12 +92,13 @@ for i, ((hx, hy), f) in HOLES.items():
         print('furo perto da parede', i, round(m, 2))
 
 # corredores que atravessam outras salas (do mesmo andar)
-def seg_hits(p, q, r, m=0.3):
+def seg_hits(p, q, r, m=0.05, half=1.25):
+    # o corredor (com as paredes: 1,25 m de cada lado do eixo) encosta na sala?
     x0, y0, x1, y1 = r
     x0 += m; y0 += m; x1 -= m; y1 -= m
-    if abs(p[0] - q[0]) < 1e-6:
-        return x0 < p[0] < x1 and max(min(p[1], q[1]), y0) < min(max(p[1], q[1]), y1)
-    return y0 < p[1] < y1 and max(min(p[0], q[0]), x0) < min(max(p[0], q[0]), x1)
+    a0, a1 = min(p[0], q[0]) - half, max(p[0], q[0]) + half
+    b0, b1 = min(p[1], q[1]) - half, max(p[1], q[1]) + half
+    return a0 < x1 and x0 < a1 and b0 < y1 and y0 < b1
 for a, b in LINKS:
     pts = route(R[a], R[b])
     fl = set(R[a].fl) & set(R[b].fl)
@@ -106,6 +107,26 @@ for a, b in LINKS:
             continue
         if any(seg_hits(p, q, r) for p, q in zip(pts, pts[1:])):
             print('CORREDOR ATRAVESSA', (a, b), 'a sala', k)
+
+# corredores que voltam para trás: as salas perto demais (o corredor da própria porta tem 3,2 m e o de ligação chega reto 2 m na entrada)
+for a, b in LINKS:
+    (ex_, ey_), (dx_, dy_) = R[a].door()
+    (nx_, ny_), (fx_, fy_) = R[b].entrance()
+    along = (nx_ - ex_) * dx_ + (ny_ - ey_) * dy_
+    lat = abs((nx_ - ex_) * dy_ - (ny_ - ey_) * dx_)
+    if (dx_, dy_) == (fx_, fy_) and lat < 0.05:
+        if along < 3.2 - 0.01:
+            print('CORREDOR CURTO (a porta de uma encosta na entrada da outra)', (a, b), round(along, 2))
+        continue
+    P = route(R[a], R[b], raw=True)
+    dirs = []
+    for p, q in zip(P, P[1:]):
+        d = (q[0] - p[0], q[1] - p[1])
+        L = math.hypot(*d)
+        if L > 0.05:
+            dirs.append((round(d[0] / L), round(d[1] / L)))
+    if any(u[0] == -v[0] and u[1] == -v[1] for u, v in zip(dirs, dirs[1:])):
+        print('CORREDOR VOLTA PARA TRÁS (salas perto demais)', (a, b))
 
 # ── a planta para o jogo (src/scene/planta.json): o motor põe cada sala no lugar com estes números (a posição da ORIGEM da sala no plano:
 # x para leste, z para o sul; `d` = para onde a sala "anda", da entrada para o fundo) ──

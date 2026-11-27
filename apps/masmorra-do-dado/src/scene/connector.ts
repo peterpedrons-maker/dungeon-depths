@@ -20,16 +20,28 @@ export function route(a: XZ, da: XZ, b: XZ, db: XZ): XZ[] {
     const alongX = da[0] !== 0;
     if (alongX === (db[0] !== 0)) {
       // saída e chegada na mesma linha: em Z (o meio na perpendicular); em sentidos opostos, em U (o meio no ponto mais longe)
+      // (no mesmo sentido, com pouco espaço: a volta fica entre a ponta do corredor da porta e 1 m antes da entrada)
+      const mid = (a0: number, q0: number, n0: number, d: number, same: boolean) => {
+        const e = alongX ? da[0] : da[1]; // (o sentido da saída)
+        if (!same) return e > 0 ? Math.max(a0, q0) : Math.min(a0, q0);
+        let m = (a0 + q0) / 2;
+        if ((m - a0) * d < 0) m = a0;
+        if ((n0 - m) * d < 1) m = n0 - d;
+        return m;
+      };
       if (alongX) {
-        const mx = da[0] === db[0] ? (a[0] + q1[0]) / 2 : da[0] > 0 ? Math.max(a[0], q1[0]) : Math.min(a[0], q1[0]);
+        const mx = mid(a[0], q1[0], b[0], db[0], da[0] === db[0]);
         pts.push([mx, a[1]], [mx, q1[1]]);
       } else {
-        const mz = da[1] === db[1] ? (a[1] + q1[1]) / 2 : da[1] > 0 ? Math.max(a[1], q1[1]) : Math.min(a[1], q1[1]);
+        const mz = mid(a[1], q1[1], b[1], db[1], da[1] === db[1]);
         pts.push([a[0], mz], [q1[0], mz]);
       }
     } else pts.push(alongX ? [q1[0], a[1]] : [a[0], q1[1]]);
   }
-  pts.push(q1, b);
+  // (o ponto de chegada reta só entra se não ficar para trás da volta)
+  const last = pts[pts.length - 1];
+  if ((q1[0] - last[0]) * db[0] + (q1[1] - last[1]) * db[1] >= -0.01) pts.push(q1);
+  pts.push(b);
   // tira pontos repetidos e os que ficam no meio de uma reta
   const out: XZ[] = [];
   for (const p of pts) {

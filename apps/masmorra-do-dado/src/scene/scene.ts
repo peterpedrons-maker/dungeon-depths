@@ -20,10 +20,10 @@ import {
 } from './textures';
 import { Chalk } from './chalk';
 import { Sfx, type AudioMode, type StepKind } from './audio';
-import { CORRIDOR, dbg, lightEnv } from './kit';
+import { CORRIDOR, DW, dbg, lightEnv } from './kit';
 import { Place, QUARTER } from './place';
 import { buildConnector, corridorEnd, route, type Connector, type XZ } from './connector';
-import PLANTA from './planta.json';
+import { PLAN_ORIGIN, PLANTA_ON, planPlace } from './plan';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { LEX } from '../story/lexicon';
@@ -71,9 +71,8 @@ const LAB = new URLSearchParams(location.search).has('lab');
 // ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
 const VITRINE = new URLSearchParams(location.search).has('vitrine');
 const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
-// ?planta=1: o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; src/scene/planta.json, gerado por tools/planta/planta_cap1.py): cada
-// sala no seu lugar e com o seu giro, ligadas por corredores com curvas. Sem isso, a fila de sempre (em construção: passos 2 e 3 do §73).
-const PLANTA_ON = !LAB && !VITRINE && new URLSearchParams(location.search).get('planta') === '1';
+// ?planta=1: o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; plan.ts): cada sala no seu lugar e com o seu giro, ligadas por
+// corredores com curvas. Sem isso, a fila de sempre (em construção: passo 3 do §73).
 function MAIN_BUILDERS(): RoomBuilder[] {
   // Capítulo 1 (só Fogo), curva da sessão de projeto de puzzles (PUZZLES_PROPOSTAS.md §2): da sala 3 em diante só sobe. Níveis: 1, 1, 2, 3, 3, 4, 5, 5, 6, 6 ... 10.
   // Faltam (propostas ainda sem detalhe): A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
@@ -630,7 +629,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (best) return ndcOf(best, eagerFire);
       const r = rooms[curRoom];
       if (r) {
-        toW(curRoom, sp.set(0, 1.4, r.doorZ));
+        const ex = exitOf(r);
+        toW(curRoom, sp.set(ex.x, 1.4 + (r.exitDy ?? 0), ex.z));
         if (pick(sp, 0.6, 10) > 0) return ndcOf(sp);
       }
     }
@@ -1668,8 +1668,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     });
     connectors.length = 0;
     const bare = (n: string) => n.replace(/^Sala \d+ · /, '');
-    const plan = PLANTA_ON ? PLANTA.salas : [];
-    const p0 = plan.find((e) => e.n === 'O Poço');
+    const p0 = PLANTA_ON ? PLAN_ORIGIN : undefined;
     BUILDERS.forEach((build, i) => {
       const pl = new Place();
       places.push(pl);
@@ -1683,7 +1682,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         const pv = places[i - 1];
         pl.set(0, 0, pv.pos.y + (rooms[i - 1].exitDy ?? 0) - (room.entranceY ?? 0), pv.pos.z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ);
       }
-      const e = plan.find((x) => x.n === bare(room.name));
+      const e = planPlace(bare(room.name));
       if (e && p0) pl.set(QUARTER[e.d] ?? 0, e.x - p0.x, pl.pos.y, e.z - p0.z); // (o Poço fica na origem: a abertura e a tela inicial contam com isso)
       pl.apply(room.group);
       if (!room.group.userData.ownShadows) applyShadowFlags(room.group);
@@ -1696,11 +1695,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const b = rooms[i + 1];
       const pa = places[i];
       const pb = places[i + 1];
-      const door = pa.xz(0, a.doorZ);
-      const da = pa.dirToWorld(new THREE.Vector3(0, 0, -1));
+      const ex = exitOf(a);
+      const en = entryOf(b);
+      const door = pa.xz(ex.x, ex.z);
+      const da = pa.dirToWorld(new THREE.Vector3(ex.dx, 0, ex.dz));
       const end = corridorEnd(door, [Math.round(da.x), Math.round(da.z)]);
-      const ent = pb.xz(0, b.entranceZ);
-      const db = pb.dirToWorld(new THREE.Vector3(0, 0, -1));
+      const ent = pb.xz(en.x, en.z);
+      const db = pb.dirToWorld(new THREE.Vector3(en.dx, 0, en.dz));
       if (Math.hypot(end[0] - ent[0], end[1] - ent[1]) < 0.05) continue;
       const pts: XZ[] = route(end, [Math.round(da.x), Math.round(da.z)], ent, [Math.round(db.x), Math.round(db.z)]);
       const c = buildConnector(i, i + 1, pts, pa.pos.y + (a.exitDy ?? 0), a.theme ?? 'crypt');
@@ -1723,8 +1724,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     });
     const paths: { a: number; b: number; pts: XZ[]; y: number }[] = [];
     for (let i = 0; i + 1 < rooms.length; i++) {
-      const door = places[i].xz(0, rooms[i].doorZ);
-      const ent = places[i + 1].xz(0, rooms[i + 1].entranceZ);
+      const ex = exitOf(rooms[i]);
+      const en = entryOf(rooms[i + 1]);
+      const door = places[i].xz(ex.x, ex.z);
+      const ent = places[i + 1].xz(en.x, en.z);
       const c = connectors.find((x) => x.from === i);
       paths.push({ a: i, b: i + 1, pts: c ? [door, ...c.pts] : [door, ent], y: places[i].pos.y + (rooms[i].exitDy ?? 0) });
     }
@@ -1751,6 +1754,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const two = mrooms.some((r) => r.floor === 1 || r.floors?.includes(1));
     return { floors: two ? ['T', 'S'] : ['T'], cols: 0, rows: 0, rooms: mrooms, links, px: { pw: Math.ceil((u1 - u0) * s), ph: Math.ceil((v1 - v0) * s) } };
   }
+  // a porta e a entrada de uma sala (nas coordenadas dela): as que ela declarou, ou as de sempre (meio do fundo, meio da frente)
+  function exitOf(r: Room) {
+    return r.exit ?? { x: 0, z: r.doorZ, dx: 0, dz: -1 };
+  }
+  function entryOf(r: Room) {
+    return r.entry ?? { x: 0, z: r.entranceZ, dx: 0, dz: -1 };
+  }
+  // o corredor que a própria sala faz atrás da porta (nas coordenadas dela), de `d0` a `d1` metros da parede, com `w` de folga de cada lado
+  function inExitCorridor(r: Room, p: THREE.Vector3, d0 = 0, d1 = CORRIDOR, w = 0.1) {
+    const e = exitOf(r);
+    const along = (p.x - e.x) * e.dx + (p.z - e.z) * e.dz; // para fora
+    const side = Math.abs((p.x - e.x) * e.dz - (p.z - e.z) * e.dx);
+    return along >= d0 && along <= d1 && side <= DW + w;
+  }
   // a planta de uma sala (nas coordenadas dela): a caixa do que é dela, sem o pátio lá fora do Poço, os céus e os corredores da porta e da entrada
   function footprint(r: Room) {
     const box = new THREE.Box3();
@@ -1758,7 +1775,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     r.group.updateMatrixWorld(true);
     r.group.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (!m.isMesh || !m.geometry) return;
+      if (!m.isMesh || !m.geometry || m.userData.corridor) return;
       if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
       b.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld);
       const c = b.getCenter(wtmp);
@@ -1797,11 +1814,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     for (let i = 0; i < rooms.length; i++) {
       const r = rooms[i];
       toL(i, p, rA);
-      if (rA.z > r.entranceZ || rA.z <= r.doorZ - CORRIDOR) continue;
-      if (loose < 0 || i === curRoom) loose = i;
       const b = bounds[i];
       const fy = feet - places[i].pos.y;
-      if (rA.x < b.min.x - 1 || rA.x > b.max.x + 1 || fy < b.min.y - 2 || fy > b.max.y + 1) continue;
+      if (fy < b.min.y - 2 || fy > b.max.y + 1) continue;
+      // o corredor da porta (em qualquer parede) é da sala
+      if (inExitCorridor(r, rA)) {
+        if (hit < 0 || i === curRoom) hit = i;
+        continue;
+      }
+      // a sala: entre a frente e o fundo (com o corredor, se a porta é no fundo); dos lados, a caixa dela
+      const zLo = exitOf(r).dz === -1 ? r.doorZ - CORRIDOR : r.doorZ - 0.3;
+      if (rA.z > r.entranceZ || rA.z <= zLo) continue;
+      if (loose < 0 || i === curRoom) loose = i;
+      if (rA.x < b.min.x - 1 || rA.x > b.max.x + 1) continue;
       if (hit < 0 || i === curRoom) hit = i;
     }
     if (hit >= 0) return hit;
@@ -2525,8 +2550,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // só dá pra posicionar dentro do salão (não no corredor, que é só passagem)
     if (connectorAt(hit.point)) return null;
     const ri = roomAt(hit.point);
-    const lz = toL(ri, hit.point, wtmp).z;
-    if (lz < rooms[ri].doorZ - 0.1 || lz > rooms[ri].entranceZ - 0.15) return null; // (a própria porta conta: há portas que são lousas)
+    const lp = toL(ri, hit.point, wtmp);
+    if (lp.z < rooms[ri].doorZ - 0.1 || lp.z > rooms[ri].entranceZ - 0.15) return null; // (a própria porta conta: há portas que são lousas)
+    if (inExitCorridor(rooms[ri], lp, 0.1)) return null;
     const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
     if (n.dot(ray.ray.direction) > 0) n.negate();
     return { p: hit.point, n, room: ri, obj: hit.object };
@@ -3645,7 +3671,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const lx = lcl.x;
     const lz = lcl.z;
     const room = r.name.replace(/^Sala \d+ · /, '');
-    if (lz < r.doorZ - 0.6 && lz > r.doorZ - CORRIDOR + 0.4 && Math.abs(feetY - places[curRoom].pos.y - (r.exitDy ?? 0)) < 0.5) return { room, at: 'after' }; // (no chão do corredor: há salas com galeria por cima dele)
+    if (inExitCorridor(r, lcl, 0.6, CORRIDOR - 0.4, 0) && Math.abs(feetY - places[curRoom].pos.y - (r.exitDy ?? 0)) < 0.5) return { room, at: 'after' }; // (no chão do corredor: há salas com galeria por cima dele)
     if (r.calm?.(lx, lz)) return { room, at: 'arrive' };
     return null;
   };
@@ -4331,22 +4357,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       // (para o desenho do mapa, DESIGN.md §73: a planta de cada sala no chão, em coordenadas da sala, sem o corredor da porta e sem o que fica lá fora)
       footprints: () =>
         rooms.map((r, i) => {
-          const box = new THREE.Box3();
-          const b = new THREE.Box3();
-          const inv = r.group.matrixWorld.clone().invert();
-          r.group.updateMatrixWorld(true);
-          r.group.traverse((o) => {
-            const m = o as THREE.Mesh;
-            if (!m.isMesh || !m.geometry) return;
-            if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
-            b.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld).applyMatrix4(inv);
-            const c = b.getCenter(new THREE.Vector3());
-            const sz = b.getSize(new THREE.Vector3());
-            if (c.y > 14 || c.y < -12 || sz.x > 60 || sz.z > 80) return; // (o pátio lá fora do Poço, céus)
-            if (c.z < r.doorZ - 0.6 || c.z > r.entranceZ + 0.6) return; // (o corredor da porta e o de fora da entrada)
-            box.union(b);
-          });
-          return { i, n: r.name, x0: +box.min.x.toFixed(1), x1: +box.max.x.toFixed(1), z0: +box.min.z.toFixed(1), z1: +box.max.z.toFixed(1), y0: +box.min.y.toFixed(1), y1: +box.max.y.toFixed(1), door: r.doorZ, ent: r.entranceZ, entY: r.entranceY ?? 0, exitDy: r.exitDy ?? 0, offY: +places[i].pos.y.toFixed(1), q: places[i].q };
+          const box = bounds[i]; // (a mesma planta que o motor usa: sem o pátio de fora, os céus e os corredores das portas)
+          const ex = exitOf(r);
+          const en = entryOf(r);
+          return { i, n: r.name, x0: +box.min.x.toFixed(1), x1: +box.max.x.toFixed(1), z0: +box.min.z.toFixed(1), z1: +box.max.z.toFixed(1), y0: +box.min.y.toFixed(1), y1: +box.max.y.toFixed(1), door: r.doorZ, ent: r.entranceZ, entY: r.entranceY ?? 0, exitDy: r.exitDy ?? 0, offY: +places[i].pos.y.toFixed(1), q: places[i].q, exit: [ex.x, ex.z, ex.dx, ex.dz].map((v) => +v.toFixed(3)), entry: [en.x, en.z, en.dx, en.dz].map((v) => +v.toFixed(3)) };
         }),
       rooms: () => rooms.map((r, i) => ({ n: r.name, z: +places[i].pos.z.toFixed(1), x: +places[i].pos.x.toFixed(2), y: +places[i].pos.y.toFixed(2), q: places[i].q, door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),

@@ -38,8 +38,14 @@ class Room:
         return (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
 
     def door(self):
-        # (ponto da porta no plano, direção de saída)
+        # (ponto da porta no plano, direção de saída). Se o jogo já disse onde a porta ficou (salas.json: `exit`, exportado de
+        # window.__mdd.footprints() com ?planta=1) e é no mesmo lado, vale o ponto de verdade
         s = self.s
+        if 'exit' in s:
+            lx, lz, dx, dz = s['exit']
+            side = 'B' if dz < -0.5 else ('L' if dx < -0.5 else 'R')
+            if side == self.exit_side:
+                return self.P(lx, lz), rot(self.d, dx, dz)
         if self.exit_side == 'B':
             return self.P(self.exit_off, s['door']), rot(self.d, 0, -1)
         if self.exit_side == 'L':
@@ -48,6 +54,11 @@ class Room:
 
     def entrance(self):
         s = self.s
+        if 'entry' in s:
+            lx, lz, dx, dz = s['entry']
+            side = 'F' if dz < -0.5 else ('L' if dx > 0.5 else 'R')
+            if side == self.ent_side:
+                return self.P(lx, lz), rot(self.d, dx, dz)
         if self.ent_side == 'F':
             return self.P(self.ent_off, s['ent']), rot(self.d, 0, -1)  # (entra andando para a frente)
         if self.ent_side == 'L':
@@ -108,7 +119,7 @@ CORRIDOR = 3.2  # o corredor que a própria sala faz atrás da porta (src/scene/
 RB = 2.0  # o corredor de ligação chega reto na entrada por estes metros (src/scene/connector.ts)
 
 
-def route(a, b, ra=CORRIDOR, rb=RB):
+def route(a, b, ra=CORRIDOR, rb=RB, raw=False):
     # o corredor da porta de `a` até a entrada de `b`: sai reto `ra` (o corredor da própria sala), chega reto `rb`; no meio, um ou dois
     # cotovelos. A MESMA regra de src/scene/connector.ts (`route`), para o desenho e o jogo baterem.
     (ex, ey), (dx, dy) = a.door()
@@ -121,15 +132,32 @@ def route(a, b, ra=CORRIDOR, rb=RB):
         along_x = dx != 0
         if along_x == (fx != 0):
             # saída e chegada na mesma linha: em Z (o meio na perpendicular); em sentidos opostos, em U (o meio no ponto mais longe)
+            # (no mesmo sentido, com pouco espaço: a volta fica entre a ponta do corredor da porta e 1 m antes da entrada)
+            def mid(a0, b0, n0, d):
+                e = dx if along_x else dy  # (o sentido da saída)
+                if d != e:
+                    return max(a0, b0) if e > 0 else min(a0, b0)
+                m = (a0 + b0) / 2
+                if (m - a0) * d < 0:
+                    m = a0
+                if (n0 - m) * d < 1.0:
+                    m = n0 - d * 1.0
+                return m
             if along_x:
-                mx = (p1[0] + q1[0]) / 2 if dx == fx else (max(p1[0], q1[0]) if dx > 0 else min(p1[0], q1[0]))
+                mx = mid(p1[0], q1[0], nx, fx)
                 pts += [(mx, p1[1]), (mx, q1[1])]
             else:
-                my = (p1[1] + q1[1]) / 2 if dy == fy else (max(p1[1], q1[1]) if dy > 0 else min(p1[1], q1[1]))
+                my = mid(p1[1], q1[1], ny, fy)
                 pts += [(p1[0], my), (q1[0], my)]
         else:
             pts.append((q1[0], p1[1]) if along_x else (p1[0], q1[1]))
-    pts += [q1, (nx, ny)]
+    # (o ponto de chegada reta só entra se não ficar para trás da volta)
+    lx_, ly_ = pts[-1]
+    if (q1[0] - lx_) * fx + (q1[1] - ly_) * fy >= -0.01:
+        pts.append(q1)
+    pts.append((nx, ny))
+    if raw:
+        return pts
     out = []
     for p in pts:
         if out and eq(out[-1][0], p[0]) and eq(out[-1][1], p[1]):

@@ -5,7 +5,8 @@
 
 import * as THREE from 'three';
 import { floorTexture, plateTexture } from '../textures';
-import { ARCH_TOP, buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { ARCH_TOP, buildDoor, buildEntrance, doorFrame, Kit, lambert, LAMP_OFF, T } from '../kit';
+import { planDoors } from '../plan';
 import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
 import { drawGlyph } from '../../book/font';
@@ -274,13 +275,32 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     kit.plane(W * 3, L * 3, new THREE.MeshBasicMaterial({ map: t, fog: false }), 0, H + 10, zm, Math.PI / 2, 0, false);
   }
   const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
-  const wallL = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 33), X0, H / 2, zm, 0, Math.PI / 2);
-  const wallR = kit.plane(L, H, kit.brick([L / T, H / T], 0.95, 39), X1, H / 2, zm, 0, -Math.PI / 2);
+  // A PLANTA NOVA (DESIGN.md §73, passo 3): a porta pode sair por uma parede do lado (a planta diz qual e onde) ou fora do meio do fundo. A
+  // parede do lado ganha a peça da porta (com o arco) e fica em dois pedaços; o fundo fica liso.
+  const PD = spec.last ? null : planDoors(spec.name).exit;
+  const SD = PD && (PD.side !== 'B' || PD.at !== 0) ? PD : null;
+  if (planDoors(spec.name).entry.side !== 'F') throw new Error(`${spec.name}: entrada de lado ainda não existe nas salas de fogo`);
+  const DSPAN = 1.6;
+  const sideWall = (x: number, ry: number, seed: number, cut: boolean) => {
+    if (!cut) return kit.plane(L, H, kit.brick([L / T, H / T], 0.95, seed), x, H / 2, zm, 0, ry);
+    const za = SD!.at - DSPAN;
+    const zb = SD!.at + DSPAN;
+    kit.plane(Z1 - zb, H, kit.brick([(Z1 - zb) / T, H / T], 0.95, seed + 5), x, H / 2, (zb + Z1) / 2, 0, ry);
+    return kit.plane(za - Z0, H, kit.brick([(za - Z0) / T, H / T], 0.95, seed), x, H / 2, (Z0 + za) / 2, 0, ry);
+  };
+  const wallL = sideWall(X0, Math.PI / 2, 33, SD?.side === 'L');
+  const wallR = sideWall(X1, -Math.PI / 2, 39, SD?.side === 'R');
+  if (SD && SD.side !== 'B') kit.plane(W, H, kit.brick([W / T, H / T], 0.95, 35), 0, H / 2, Z0, 0, 0);
 
   const steps = spec.rule.kind === 'custom' ? (spec.rule.lamps ?? 1) : spec.rule.kind === 'commit' ? 1 : spec.rule.kind === 'order' ? spec.rule.seq.length : spec.rule.kind === 'together' || spec.rule.kind === 'secret' ? spec.braziers.length : 1;
   const DY = spec.doorY ?? 0;
   // (a última sala: a porta não dá na próxima, dá na luz; antes o corredor do Tribunal acabava no vazio e o capítulo não terminava)
-  const door = buildDoor(kit, { x0: X0, x1: X1, z0: Z0, y0: DY, h: H - DY, lamps: Math.min(5, steps), connected: !spec.last, theme });
+  const door = buildDoor(
+    kit,
+    SD
+      ? { x0: 0, x1: 0, z0: 0, y0: DY, h: H - DY, lamps: Math.min(5, steps), connected: true, theme, frame: SD.side === 'B' ? doorFrame('B', SD.at, X0, X1, Z0, Z1) : doorFrame(SD.side, SD.at, X0, X1, SD.at - DSPAN, SD.at + DSPAN) }
+      : { x0: X0, x1: X1, z0: Z0, y0: DY, h: H - DY, lamps: Math.min(5, steps), connected: !spec.last, theme },
+  );
 
   // colunas (também seguram o dado)
   const boxes: Box[] = [];
@@ -383,6 +403,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const tabIns: (Inscription | undefined)[] = [];
   // tochas das paredes laterais: nunca duas muito perto uma da outra (a lista guarda onde já há uma)
   const wallTz: Record<'left' | 'right', number[]> = { left: [], right: [] };
+  if (SD && SD.side !== 'B') wallTz[SD.side === 'L' ? 'left' : 'right'].push(SD.at); // (nenhuma tocha em cima da porta do lado)
   const wallTorch = (side: 'left' | 'right', z: number, y: number, phase: number, minGap = 3.2) => {
     if (wallTz[side].some((q) => Math.abs(q - z) < minGap)) return;
     wallTz[side].push(z);
@@ -737,10 +758,17 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const clothTmp = new THREE.Vector3();
 
   // decoração
-  kit.damp(X0, 1.0, Z0 + L * 0.4, 1, 0, 1.9);
-  kit.damp(X1, 2.2, Z0 + L * 0.3, -1, 0, 1.5);
-  kit.skirting(X0, X1, Z0, Z1, 1.3);
-  kit.aoSides(X0, X1, Z0, Z1, H);
+  const awayD = (z: number, s: 'L' | 'R') => (SD?.side === s && Math.abs(SD.at - z) < 2.6 ? (z - Z0 > L / 2 ? Z0 + L * 0.2 : Z0 + L * 0.75) : z);
+  kit.damp(X0, 1.0, awayD(Z0 + L * 0.4, 'L'), 1, 0, 1.9);
+  kit.damp(X1, 2.2, awayD(Z0 + L * 0.3, 'R'), -1, 0, 1.5);
+  if (SD) {
+    const holes = { L: SD.side === 'L' ? [SD.at] : [], R: SD.side === 'R' ? [SD.at] : [], B: SD.side === 'B' ? [SD.at] : [], F: [0] };
+    kit.skirting(X0, X1, Z0, Z1, 1.3, holes);
+    kit.aoSides(X0, X1, Z0, Z1, H, 0, holes);
+  } else {
+    kit.skirting(X0, X1, Z0, Z1, 1.3);
+    kit.aoSides(X0, X1, Z0, Z1, H);
+  }
   kit.cornice(X0, X1, Z0, Z1, H);
   wallTorch('left', -1.2, 1.8, 0.7);
   wallTorch('right', -1.2, 1.8, 2.4);
@@ -882,6 +910,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     inscriptions: kit.inscriptions,
     doorZ: Z0,
     entranceZ: Z1,
+    exit: door.exit,
     exitDy: spec.doorY,
     exitReached: spec.last ? () => doorOpen > 0.85 && ctx.player.pos.z < door.zExit : undefined,
     start: new THREE.Vector3(0, 0, 1.2),
@@ -932,7 +961,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     },
     rects() {
       const r: ReturnType<Room['rects']> = [...rects, ...braziers.filter((_, i) => !risers[i] || riseK >= 1).map((b) => b.rect), ...kit.rects, ...entrance.rects()];
-      r.push([X0 - 2, Z0, X0, Z1 + 0.5], [X1, Z0, X1 + 2, Z1 + 0.5]);
+      if (SD?.side === 'L') r.push([X0 - 2, Z0, X0, SD.at - DSPAN], [X0 - 2, SD.at + DSPAN, X0, Z1 + 0.5]);
+      else r.push([X0 - 2, Z0, X0, Z1 + 0.5]);
+      if (SD?.side === 'R') r.push([X1, Z0, X1 + 2, SD.at - DSPAN], [X1, SD.at + DSPAN, X1 + 2, Z1 + 0.5]);
+      else r.push([X1, Z0, X1 + 2, Z1 + 0.5]);
+      if (SD && SD.side !== 'B') r.push([X0 - 1, Z0 - 2, X1 + 1, Z0]);
       r.push(...door.rects(doorOpen > 0.85));
       if (extra.rects) r.push(...extra.rects());
       return r;
