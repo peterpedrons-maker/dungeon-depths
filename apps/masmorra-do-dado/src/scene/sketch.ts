@@ -206,18 +206,27 @@ function drawSimple(kind: SketchKind, seed: number, N: number): HTMLCanvasElemen
     book(14, 26, 1.05, '#e4d8b8', '#f0a850');
   }
   if (kind === 'pegar') {
-    // a mão que desce e fecha em volta do livro, e a seta para CIMA (o contrário da placa, que aperta para baixo)
+    // a MÃO cheia (não em contorno: em 40 px o contorno virava um ancinho), vista de cima, descendo e fechando os quatro dedos e o polegar na
+    // capa do livro; a seta laranja para CIMA (o contrário da placa, que aperta para baixo). (DESIGN.md §85)
     const PALE = '#e4d8b8';
     const OCRE = '#f0a850';
-    book(6, 56, 0.72, PALE, OCRE, false);
-    line([[30, 2], [31, 14]], PALE, 5); // o pulso
-    line([[52, 2], [51, 14]], PALE, 5);
-    line([[25, 32], [25, 20], [31, 15], [51, 15], [57, 20], [57, 32]], PALE, 5); // a palma (vista de cima, a mão descendo)
-    // os quatro dedos, os do meio mais compridos, com a ponta virando para dentro (agarrando a capa)
-    for (const f of [[[29, 32], [28, 45], [31, 50]], [[37, 32], [37, 50], [40, 55]], [[45, 32], [46, 50], [49, 54]], [[53, 32], [55, 45], [57, 49]]] as Pt[][]) line(f, PALE, 4.5);
-    line([[25, 24], [16, 31], [14, 44], [17, 49]], PALE, 4.5); // o polegar, do lado
-    line([[82, 86], [82, 22]], OCRE, 6); // para cima
-    line([[70, 36], [82, 20], [94, 36]], OCRE, 6);
+    const DARK = '#1c1714';
+    const fill = (pts: Pt[], color: string) => {
+      g.fillStyle = color;
+      g.beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(x * K, y * K) : g.moveTo(x * K, y * K)));
+      g.closePath();
+      g.fill();
+    };
+    const H = (pts: Pt[]): Pt[] => pts.map(([x, y]) => [x + 4, y]);
+    book(12, 54, 0.74, PALE, OCRE, false);
+    fill(H([[28, -2], [46, -2], [46, 15], [28, 15]]), PALE); // o pulso
+    fill(H([[22, 14], [52, 14], [56, 22], [56, 36], [20, 36], [20, 22]]), PALE); // as costas da mão
+    fill(H([[22, 34], [56, 34], [56, 50], [52, 56], [26, 58], [22, 52]]), PALE); // os quatro dedos juntos, até a capa
+    for (const x of [30.5, 39, 47.5]) line(H([[x, 38], [x, 56]]), DARK, 2); // a separação dos dedos
+    fill(H([[20, 22], [12, 30], [10, 44], [14, 50], [20, 46], [22, 34]]), PALE); // o polegar
+    line([[85, 86], [85, 22]], OCRE, 6); // para cima
+    line([[73, 36], [85, 20], [97, 36]], OCRE, 6);
   }
   if (kind === 'escrever') {
     // uma folha, duas linhas já escritas e a PENA escrevendo a terceira, ainda fresca (a linha laranja nasce da ponta)

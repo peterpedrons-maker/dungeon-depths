@@ -1866,7 +1866,9 @@ giz fino dos condenados). Três se liam mal e foram refeitos:
 - **livro**: era um retângulo em pé, que parecia uma porta. Agora é o livro **fechado e deitado**, visto um pouco de cima: a capa, a espessura
   das folhas na frente, a lombada e a fita laranja. É o desenho da fala «LIVRO» do dado no Vestíbulo e do bloco LIVRO do mural de encaixe.
 - **pegar**: era uma mancha. Agora é uma **mão descendo e fechando os dedos** em volta do mesmo livro, com uma **seta laranja para cima** (o
-  contrário da placa, em que a seta aperta para baixo). É o desenho de «VOCÊ PEGAR LIVRO» no Vestíbulo.
+  contrário da placa, em que a seta aperta para baixo). É o desenho de «VOCÊ PEGAR LIVRO» no Vestíbulo. Numa segunda passada (o Pedro pediu
+  para melhorar), a mão deixou de ser contorno, que em 40 px parecia um ancinho, e virou **mão cheia**, em marfim: pulso, costas da mão,
+  os quatro dedos juntos com a separação escura e o polegar do lado, pousados na capa.
 - **escrever**: tinha riscos demais (mão, página, pena e um livrinho). Agora é uma **folha** com duas linhas já escritas e a **pena** escrevendo
   a terceira, que sai laranja da ponta. É o mural ESCREVER da Biblioteca.
 - O mural de encaixe usa o mesmo desenho do dado, então os dois mudaram juntos e o puzzle de casar o desenho com o nome continua igual.
