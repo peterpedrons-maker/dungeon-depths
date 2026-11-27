@@ -104,23 +104,39 @@ def at(i, d, cx, cy, **kw):
     return r
 
 
-def route(a, b, ra=2.0, rb=2.0):
-    # corredor da porta de `a` até a entrada de `b`: sai reto `ra`, chega reto `rb`; no meio, um ou dois cotovelos
+CORRIDOR = 3.2  # o corredor que a própria sala faz atrás da porta (src/scene/kit.ts)
+RB = 2.0  # o corredor de ligação chega reto na entrada por estes metros (src/scene/connector.ts)
+
+
+def route(a, b, ra=CORRIDOR, rb=RB):
+    # o corredor da porta de `a` até a entrada de `b`: sai reto `ra` (o corredor da própria sala), chega reto `rb`; no meio, um ou dois
+    # cotovelos. A MESMA regra de src/scene/connector.ts (`route`), para o desenho e o jogo baterem.
     (ex, ey), (dx, dy) = a.door()
     (nx, ny), (fx, fy) = b.entrance()
     p1 = (ex + dx * ra, ey + dy * ra)
     q1 = (nx - fx * rb, ny - fy * rb)
+    eq = lambda u, v: abs(u - v) < 0.05
     pts = [(ex, ey), p1]
-    if abs(p1[0] - q1[0]) > 0.05 and abs(p1[1] - q1[1]) > 0.05:
-        if (dx != 0) == (fx != 0):
-            # as duas na mesma linha (saída e chegada paralelas): Z, com o meio na perpendicular
-            if dx != 0:
-                mx = (p1[0] + q1[0]) / 2
+    if not eq(p1[0], q1[0]) and not eq(p1[1], q1[1]):
+        along_x = dx != 0
+        if along_x == (fx != 0):
+            # saída e chegada na mesma linha: em Z (o meio na perpendicular); em sentidos opostos, em U (o meio no ponto mais longe)
+            if along_x:
+                mx = (p1[0] + q1[0]) / 2 if dx == fx else (max(p1[0], q1[0]) if dx > 0 else min(p1[0], q1[0]))
                 pts += [(mx, p1[1]), (mx, q1[1])]
             else:
-                my = (p1[1] + q1[1]) / 2
+                my = (p1[1] + q1[1]) / 2 if dy == fy else (max(p1[1], q1[1]) if dy > 0 else min(p1[1], q1[1]))
                 pts += [(p1[0], my), (q1[0], my)]
         else:
-            pts.append((q1[0], p1[1]) if dx != 0 else (p1[0], q1[1]))
+            pts.append((q1[0], p1[1]) if along_x else (p1[0], q1[1]))
     pts += [q1, (nx, ny)]
-    return pts
+    out = []
+    for p in pts:
+        if out and eq(out[-1][0], p[0]) and eq(out[-1][1], p[1]):
+            continue
+        if len(out) >= 2:
+            k, l = out[-2], out[-1]
+            if (eq(k[0], l[0]) and eq(l[0], p[0])) or (eq(k[1], l[1]) and eq(l[1], p[1])):
+                out.pop()
+        out.append(p)
+    return out

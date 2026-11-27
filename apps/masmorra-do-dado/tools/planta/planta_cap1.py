@@ -30,7 +30,7 @@ put(at(12, 'S', 72, 40))
 put(at(13, 'S', 76, 55.6), 'TS')
 put(at(19, 'W', 43.5, 29.8, exit_side='L', exit_off=-3), 'TS')
 put(at(21, 'S', 62, 110))
-put(at(20, 'S', 68, 89, exit_side='B', exit_off=-4))
+put(at(20, 'S', 64.2, 89, exit_side='B', exit_off=-4))
 put(at(22, 'S', 74, 123.6, exit_side='R', exit_off=-2))
 put(at(23, 'W', 49, 129.6, exit_side='R', exit_off=-9))
 put(at(24, 'N', 46.1, 95))
@@ -50,7 +50,7 @@ HOLES = {
 }
 # a passarela alta da Biblioteca (a Escadaria sai nela; ela leva, por uma ponte, ao Fogo que Corre)
 WALK = [(44.7, 33.9), (44.7, 62.0)]
-BRIDGE = [(44.7, 62.0), (44.7, 77.0), (68.0, 77.0), (68.0, 78.9)]
+BRIDGE = [(44.7, 62.0), (44.7, 77.0), (64.2, 77.0), (64.2, 78.9)]
 SHORTCUTS = [
     ([(39.8, 95.0), (27.0, 95.0), (27.0, 100.0), (13.9, 100.0)], 'atalho secreto: do Tribunal de volta ao Poço (abre no fim)'),
     ([(30.0, 66.0), (30.0, 70.8)], ''),
@@ -76,6 +76,32 @@ for i, ((hx, hy), f) in HOLES.items():
     m = min(hx - x0, x1 - hx, hy - y0, y1 - hy)
     if m < 1.5:
         print('furo perto da parede', i, round(m, 2))
+
+# corredores que atravessam outras salas (do mesmo andar)
+def seg_hits(p, q, r, m=0.3):
+    x0, y0, x1, y1 = r
+    x0 += m; y0 += m; x1 -= m; y1 -= m
+    if abs(p[0] - q[0]) < 1e-6:
+        return x0 < p[0] < x1 and max(min(p[1], q[1]), y0) < min(max(p[1], q[1]), y1)
+    return y0 < p[1] < y1 and max(min(p[0], q[0]), x0) < min(max(p[0], q[0]), x1)
+for a, b in LINKS:
+    pts = route(R[a], R[b])
+    fl = set(R[a].fl) & set(R[b].fl)
+    for k, r in rects.items():
+        if k in (a, b) or not (set(R[k].fl) & fl):
+            continue
+        if any(seg_hits(p, q, r) for p, q in zip(pts, pts[1:])):
+            print('CORREDOR ATRAVESSA', (a, b), 'a sala', k)
+
+# ── a planta para o jogo (src/scene/planta.json): o motor põe cada sala no lugar com estes números (a posição da ORIGEM da sala no plano:
+# x para leste, z para o sul; `d` = para onde a sala "anda", da entrada para o fundo) ──
+import json
+JS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'src', 'scene', 'planta.json')
+with open(JS, 'w') as fh:
+    json.dump({'_': 'gerado por tools/planta/planta_cap1.py (não edite à mão)',
+               'salas': [{'n': S[i]['n'], 'd': r.d, 'x': round(r.ox, 3), 'z': round(r.oy, 3), 'andar': r.fl,
+                          'saida': [r.exit_side, r.exit_off], 'entrada': [r.ent_side, r.ent_off]} for i, r in sorted(R.items())]},
+              fh, ensure_ascii=False, indent=1)
 
 # ── desenho ──
 K = 7

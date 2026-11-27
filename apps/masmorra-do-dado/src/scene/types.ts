@@ -116,6 +116,7 @@ export interface Room {
   name: string;
   subtitle: string;
   hint?: string;
+  theme?: string; // a pedra da sala (textures.ts THEMES): o corredor de ligação que sai dela usa a mesma (DESIGN.md §73)
   group: THREE.Group;
   surfaces: THREE.Object3D[]; // onde dá pra riscar com o giz
   emitters: Emitter[]; // luzes da sala (o motor empresta luzes reais às mais relevantes)

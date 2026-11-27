@@ -21,7 +21,9 @@ import {
 import { Chalk } from './chalk';
 import { Sfx, type AudioMode, type StepKind } from './audio';
 import { CORRIDOR, dbg, lightEnv } from './kit';
-import { Place } from './place';
+import { Place, QUARTER } from './place';
+import { buildConnector, corridorEnd, route, type Connector, type XZ } from './connector';
+import PLANTA from './planta.json';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { LEX } from '../story/lexicon';
@@ -31,7 +33,7 @@ import { MAX_STAGE, progress, progressStore, type Flag } from '../story/progress
 import { chatter, chatterStore } from '../story/chatter';
 import { quiz, quizStore, type QuizDef } from '../story/quiz';
 import { saves, slotKey, type SlotMeta } from '../story/save';
-import { layoutWorld, setWorld } from '../story/worldmap';
+import { layoutWorld, setWorld, shortRoom, type MapLink, type MapRoom, type World } from '../story/worldmap';
 import { buildVestibulo } from './rooms/vestibulo';
 import { buildFireRoom } from './rooms/fire';
 import { buildRespiro5 } from './rooms/respiro5';
@@ -43,7 +45,7 @@ import { buildLab } from './rooms/lab';
 import { buildVitrine } from './rooms/vitrine';
 import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
-import { layout as bookLayout } from '../book/pages';
+import { layout as bookLayout, MAP_AREA, mapPreview } from '../book/pages';
 import { config, configStore } from '../story/config';
 import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
 import { FIRE_DIZEM, FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_MEMORIA, FIRE_SOMBRA } from './rooms/chapter1b';
@@ -69,6 +71,9 @@ const LAB = new URLSearchParams(location.search).has('lab');
 // ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
 const VITRINE = new URLSearchParams(location.search).has('vitrine');
 const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
+// ?planta=1: o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; src/scene/planta.json, gerado por tools/planta/planta_cap1.py): cada
+// sala no seu lugar e com o seu giro, ligadas por corredores com curvas. Sem isso, a fila de sempre (em construção: passos 2 e 3 do §73).
+const PLANTA_ON = !LAB && !VITRINE && new URLSearchParams(location.search).get('planta') === '1';
 function MAIN_BUILDERS(): RoomBuilder[] {
   // Capítulo 1 (só Fogo), curva da sessão de projeto de puzzles (PUZZLES_PROPOSTAS.md §2): da sala 3 em diante só sobe. Níveis: 1, 1, 2, 3, 3, 4, 5, 5, 6, 6 ... 10.
   // Faltam (propostas ainda sem detalhe): A Sombra, O Escuro, A Lei Pequena, O Fogo que Corre, Os Que Dizem o Mesmo, A Memória da Casa.
@@ -1638,8 +1643,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     };
   };
 
-  // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`)
+  // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`; e o mapa do caderno)
   const bounds: THREE.Box3[] = [];
+  const connectors: Connector[] = [];
+  // o corredor de ligação em que está um ponto (`y` = a altura dele: pés, ou o ponto da mira)
+  const connectorAt = (p: THREE.Vector3, y = p.y): Connector | null => {
+    for (const c of connectors) {
+      if (y < c.y - 0.6 || y > c.y + 2.9) continue;
+      for (const f of c.floors) if (p.x >= f[0] - 0.05 && p.x <= f[2] + 0.05 && p.z >= f[1] - 0.05 && p.z <= f[3] + 0.05) return c;
+    }
+    return null;
+  };
   const buildWorld = () => {
     rooms.forEach((r) => {
       scene.remove(r.group);
@@ -1648,25 +1662,115 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     rooms.length = 0;
     places.length = 0;
     bounds.length = 0;
+    connectors.forEach((c) => {
+      scene.remove(c.group);
+      c.dispose();
+    });
+    connectors.length = 0;
+    const bare = (n: string) => n.replace(/^Sala \d+ · /, '');
+    const plan = PLANTA_ON ? PLANTA.salas : [];
+    const p0 = plan.find((e) => e.n === 'O Poço');
     BUILDERS.forEach((build, i) => {
       const pl = new Place();
       places.push(pl);
       if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
       const room = build(makeCtx(i));
       room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
-      bounds.push(new THREE.Box3().setFromObject(room.group)); // (a sala ainda está na origem, sem giro)
+      bounds.push(footprint(room)); // (a sala ainda está na origem, sem giro)
       // em fila: o corredor da porta de uma desemboca na entrada da próxima; salas que descem (fosso, banhos): a seguinte começa no nível
-      // da porta de saída
+      // da porta de saída (também na planta: o andar de cada sala sai da anterior)
       if (i > 0) {
         const pv = places[i - 1];
         pl.set(0, 0, pv.pos.y + (rooms[i - 1].exitDy ?? 0) - (room.entranceY ?? 0), pv.pos.z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ);
       }
+      const e = plan.find((x) => x.n === bare(room.name));
+      if (e && p0) pl.set(QUARTER[e.d] ?? 0, e.x - p0.x, pl.pos.y, e.z - p0.z); // (o Poço fica na origem: a abertura e a tela inicial contam com isso)
       pl.apply(room.group);
       if (!room.group.userData.ownShadows) applyShadowFlags(room.group);
       scene.add(room.group);
       rooms.push(room);
     });
+    // os corredores de ligação: da ponta do corredor da porta de cada sala até a entrada da seguinte (em fila, as duas coincidem e não há nada)
+    for (let i = 0; i + 1 < rooms.length; i++) {
+      const a = rooms[i];
+      const b = rooms[i + 1];
+      const pa = places[i];
+      const pb = places[i + 1];
+      const door = pa.xz(0, a.doorZ);
+      const da = pa.dirToWorld(new THREE.Vector3(0, 0, -1));
+      const end = corridorEnd(door, [Math.round(da.x), Math.round(da.z)]);
+      const ent = pb.xz(0, b.entranceZ);
+      const db = pb.dirToWorld(new THREE.Vector3(0, 0, -1));
+      if (Math.hypot(end[0] - ent[0], end[1] - ent[1]) < 0.05) continue;
+      const pts: XZ[] = route(end, [Math.round(da.x), Math.round(da.z)], ent, [Math.round(db.x), Math.round(db.z)]);
+      const c = buildConnector(i, i + 1, pts, pa.pos.y + (a.exitDy ?? 0), a.theme ?? 'crypt');
+      applyShadowFlags(c.group);
+      scene.add(c.group);
+      connectors.push(c);
+    }
   };
+  // O MAPA DO CADERNO SAI DO 3D (DESIGN.md §73): cada sala é a caixa dela, no lugar dela; cada corredor, o caminho dele (da porta até a
+  // entrada da próxima). Deitado nas duas páginas: o norte do mundo (-z) fica para a direita e o oeste (-x) em cima. Dois andares: o térreo
+  // (com o claustro, 2,5 m acima) e o subsolo; o fosso e a escadaria aparecem nos dois.
+  function realWorld(): World {
+    const CUT = -4; // abaixo disto (m), o subsolo
+    const flOf = (y: number) => (y < CUT ? 1 : 0);
+    const rects = rooms.map((_, i) => {
+      const b = bounds[i];
+      const [ax, az] = places[i].xz(b.min.x, b.min.z);
+      const [bx, bz] = places[i].xz(b.max.x, b.max.z);
+      return [Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz)];
+    });
+    const paths: { a: number; b: number; pts: XZ[]; y: number }[] = [];
+    for (let i = 0; i + 1 < rooms.length; i++) {
+      const door = places[i].xz(0, rooms[i].doorZ);
+      const ent = places[i + 1].xz(0, rooms[i + 1].entranceZ);
+      const c = connectors.find((x) => x.from === i);
+      paths.push({ a: i, b: i + 1, pts: c ? [door, ...c.pts] : [door, ent], y: places[i].pos.y + (rooms[i].exitDy ?? 0) });
+    }
+    let u0 = Infinity;
+    let u1 = -Infinity;
+    let v0 = Infinity;
+    let v1 = -Infinity;
+    for (const [x0, z0, x1, z1] of rects) {
+      u0 = Math.min(u0, -z1);
+      u1 = Math.max(u1, -z0);
+      v0 = Math.min(v0, x0);
+      v1 = Math.max(v1, x1);
+    }
+    const s = Math.min((MAP_AREA.w - 8) / (u1 - u0), (MAP_AREA.h - 6) / (v1 - v0));
+    const U = (z: number) => (-z - u0) * s;
+    const V = (x: number) => (x - v0) * s;
+    const mrooms: MapRoom[] = rooms.map((r, i) => {
+      const [x0, z0, x1, z1] = rects[i];
+      const y = places[i].pos.y;
+      const fl = [...new Set([y, y + (r.entranceY ?? 0), y + (r.exitDy ?? 0)].map(flOf))].sort();
+      return { key: shortRoom(r.name), floor: fl[0], floors: fl.length > 1 ? fl : undefined, x: U(z1), y: V(x0), w: (z1 - z0) * s, h: (x1 - x0) * s };
+    });
+    const links: MapLink[] = paths.map((p) => ({ a: shortRoom(rooms[p.a].name), b: shortRoom(rooms[p.b].name), path: [], floor: flOf(p.y), pts: p.pts.map(([x, z]) => [U(z), V(x)] as [number, number]) }));
+    const two = mrooms.some((r) => r.floor === 1 || r.floors?.includes(1));
+    return { floors: two ? ['T', 'S'] : ['T'], cols: 0, rows: 0, rooms: mrooms, links, px: { pw: Math.ceil((u1 - u0) * s), ph: Math.ceil((v1 - v0) * s) } };
+  }
+  // a planta de uma sala (nas coordenadas dela): a caixa do que é dela, sem o pátio lá fora do Poço, os céus e os corredores da porta e da entrada
+  function footprint(r: Room) {
+    const box = new THREE.Box3();
+    const b = new THREE.Box3();
+    r.group.updateMatrixWorld(true);
+    r.group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      b.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld);
+      const c = b.getCenter(wtmp);
+      const sx = b.max.x - b.min.x;
+      const sz = b.max.z - b.min.z;
+      if (c.y > 14 || c.y < -12 || sx > 60 || sz > 80) return;
+      if (c.z < r.doorZ - 0.6 || c.z > r.entranceZ + 0.6) return;
+      box.union(b);
+    });
+    if (box.isEmpty()) box.set(new THREE.Vector3(-3, 0, r.doorZ), new THREE.Vector3(3, 4, r.entranceZ));
+    return box;
+  }
 
   // SOMBRAS EM TODA SALA (DESIGN.md §64): tudo que é sólido recebe sombra; projeta o que tem volume (caixas, colunas, pedestais, objetos);
   // não projetam os planos (paredes antigas, chão, decalques, escritas), o que é transparente ou "aceso" (MeshBasic) e o que pediu `noShadow`
@@ -1686,6 +1790,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // DESIGN.md §73). Duas salas no mesmo ponto: fica a do jogador. Fora de todas: a mais perto.
   const rA = new THREE.Vector3();
   const roomAt = (p: THREE.Vector3, feet = p.y) => {
+    const cn = connectorAt(p, feet + 0.1);
+    if (cn) return cn.from; // (o corredor de ligação é a saída da sala da porta)
     let hit = -1;
     let loose = -1;
     for (let i = 0; i < rooms.length; i++) {
@@ -1725,12 +1831,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       activeRooms.add(i);
       surfCache.push(...rooms[i].surfaces);
     }
-    rooms.forEach((r, i) => {
-      const layer = activeRooms.has(i) ? 0 : 1;
-      r.group.traverse((o) => {
+    const setLayer = (g: THREE.Object3D, layer: number) =>
+      g.traverse((o) => {
         if ((o as THREE.Mesh).isMesh || (o as THREE.Sprite).isSprite || (o as THREE.Points).isPoints) o.layers.set(layer);
       });
-    });
+    rooms.forEach((r, i) => setLayer(r.group, activeRooms.has(i) ? 0 : 1));
+    connectors.forEach((c) => setLayer(c.group, activeRooms.has(c.from) || activeRooms.has(c.to) ? 0 : 1));
   };
   const nearSurfaces = () => surfCache;
 
@@ -2417,6 +2523,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const hit = ray.intersectObjects(nearSurfaces(), false)[0];
     if (!hit || !hit.face) return null;
     // só dá pra posicionar dentro do salão (não no corredor, que é só passagem)
+    if (connectorAt(hit.point)) return null;
     const ri = roomAt(hit.point);
     const lz = toL(ri, hit.point, wtmp).z;
     if (lz < rooms[ri].doorZ - 0.1 || lz > rooms[ri].entranceZ - 0.15) return null; // (a própria porta conta: há portas que são lousas)
@@ -2871,6 +2978,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const pl = places[i];
       for (const r of rooms[i].rects(feetY - pl.pos.y)) out.push(pl.rectToWorld(r));
     }
+    for (const c of connectors) if (c.from === curRoom || c.from === curRoom - 1) out.push(...c.rects);
     return out;
   };
 
@@ -2964,10 +3072,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // gravidade: subir rampa gruda no chão; ladeira abaixo acompanha; beirada = queda
   const vertical = (dt: number) => {
+    const cn = connectorAt(pos, feetY + 0.1);
     const ri = roomAt(pos, feetY);
     toL(ri, pos, lcl);
     const py = places[ri].pos.y;
-    const gy = rooms[ri].groundY(lcl.x, lcl.z, feetY - py) + py;
+    const gy = cn ? cn.y : rooms[ri].groundY(lcl.x, lcl.z, feetY - py) + py;
     const diff = gy - feetY;
     if (diff >= 0 || (diff > -0.3 && vy === 0)) {
       feetY = gy;
@@ -3006,7 +3115,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   let chatFn: (key: string) => void = () => {};
   buildWorld();
-  if (new URLSearchParams(location.search).get('demo') !== 'mapa') setWorld(layoutWorld(rooms.map((r) => r.name)));
+  if (new URLSearchParams(location.search).get('demo') !== 'mapa') setWorld(PLANTA_ON ? realWorld() : layoutWorld(rooms.map((r) => r.name)));
   scene.fog = new THREE.Fog(rooms[0].fog.color, rooms[0].fog.near, rooms[0].fog.far);
   ambient.color.setHex(rooms[0].ambient.color);
   ambient.intensity = rooms[0].ambient.intensity;
@@ -3805,7 +3914,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (speedFrac > 0.12 && vy === 0) {
         const sr = roomAt(pos, feetY);
         toL(sr, pos, lcl);
-        let kind: StepKind = rooms[sr].surfaceAt?.(lcl.x, lcl.z) ?? 'stone';
+        let kind: StepKind = connectorAt(pos, feetY + 0.1) ? 'stone' : (rooms[sr].surfaceAt?.(lcl.x, lcl.z) ?? 'stone');
         // o passo subiu ou desceu (escada, rampa): o degrau, com o peso do corpo
         if (kind === 'stone' && Math.abs(feetY - lastStepY) > 0.12) kind = 'stair';
         lastStepY = feetY;
@@ -4302,6 +4411,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       put: () => place(),
       reset: () => reset(),
       goto: (i: number) => spawnIn(i),
+      // (testes) põe o jogador num ponto LOCAL da sala i (x, z da sala; o ângulo também é o da sala)
+      placeIn: (i: number, x: number, z: number, y: number, p: number) => {
+        toW(i, pos.set(x, 0, z));
+        feetY = places[i].pos.y + rooms[i].groundY(x, z, feetY - places[i].pos.y);
+        pos.y = feetY + EYE;
+        yaw = y + places[i].yaw;
+        pitch = p;
+      },
+      // (testes) o mapa do caderno com todas as salas visitadas, como imagem (data URL)
+      mapImage: (floor = 0, scale = 4) => {
+        const d = { ...diaryStore.get(), rooms: rooms.map((r) => r.name), here: rooms[curRoom].name };
+        const src = mapPreview(d, floor);
+        const cv = document.createElement('canvas');
+        cv.width = src.width * scale;
+        cv.height = src.height * scale;
+        const g = cv.getContext('2d')!;
+        g.imageSmoothingEnabled = false;
+        g.drawImage(src, 0, 0, cv.width, cv.height);
+        return cv.toDataURL('image/png');
+      },
+      connectors: () => connectors.map((c) => ({ from: c.from, to: c.to, y: c.y, pts: c.pts.map(([x, z]) => [+x.toFixed(2), +z.toFixed(2)]) })),
       skipRoom: (i: number) => rooms[i].skip?.(),
       save: () => saveGame(),
       darkLevel: () => darkK,

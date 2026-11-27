@@ -6,6 +6,7 @@ export const CELL_H = 5;
 export interface MapRoom {
   key: string; // início do nome da sala (ex.: "Sala 1")
   floor: number; // índice do andar
+  floors?: number[]; // salas que atravessam andares (o fosso, a escadaria): aparecem em todos estes
   x: number;
   y: number;
   w: number;
@@ -19,6 +20,8 @@ export interface MapLink {
   b: string;
   path: [number, number][]; // células da passagem (a primeira e a última são as portas)
   locked?: boolean; // porta trancada
+  pts?: [number, number][]; // (mapa em pixels) o caminho do corredor, da porta à entrada
+  floor?: number; // (mapa em pixels) o andar do corredor
 }
 
 export interface World {
@@ -27,7 +30,13 @@ export interface World {
   rows: number;
   rooms: MapRoom[];
   links: MapLink[];
+  // O MUNDO DE VERDADE (DESIGN.md §73): o mapa sai do 3D, em PIXELS do livro (x, y, w, h das salas e os caminhos dos corredores), com o
+  // tamanho total `pw` × `ph`; sem isto, o mapa é em células (a fila antiga e o mundo de teste)
+  px?: { pw: number; ph: number };
 }
+
+// a sala no andar `f` (salas que atravessam andares aparecem em todos os delas)
+export const onFloor = (r: MapRoom, f: number) => (r.floors ? r.floors.includes(f) : r.floor === f);
 
 // "Sala 1 · A Entrada" -> "Sala 1" (por enquanto as salas não têm nome definitivo)
 export const shortRoom = (name: string) => name.split(' · ')[0] || name;

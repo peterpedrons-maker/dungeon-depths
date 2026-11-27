@@ -2,7 +2,7 @@ import { FACES } from '../faces';
 import type { DiaryState, Stroke } from '../story/diary';
 import { TEXTS } from '../story/texts';
 import { ADV, drawCentered, drawGlyph, drawText, drawWord, LINE, plot, textWidth, wrap } from './font';
-import { CELL_H, CELL_W, getWorld, shortRoom, type MapRoom } from '../story/worldmap';
+import { CELL_H, CELL_W, getWorld, onFloor, shortRoom, type MapRoom } from '../story/worldmap';
 import { glyphsOf, LEX } from '../story/lexicon';
 import { HER_NOTES, HER_PAGES as HER_ALL, HER_RELATO } from '../story/herpages';
 // (só as folhas que já existem no jogo: as que ainda não foram escritas não aparecem como buracos nem contam no índice)
@@ -819,7 +819,11 @@ export function currentFloor(view: View, d: DiaryState): number {
 }
 
 export const MAP_AREA = { x: 10, y: 22, w: 2 * PW - 20, h: 128 };
-export const mapOrigin = () => ({ ox: Math.round((2 * PW - getWorld().cols * CELL_W) / 2), oy: 24 });
+export const mapOrigin = () => {
+  const w = getWorld();
+  if (w.px) return { ox: MAP_AREA.x + Math.round((MAP_AREA.w - w.px.pw) / 2), oy: MAP_AREA.y + Math.round((MAP_AREA.h - w.px.ph) / 2) };
+  return { ox: Math.round((2 * PW - w.cols * CELL_W) / 2), oy: 24 };
+};
 
 let memo: { d: DiaryState; sig: string; cvs: HTMLCanvasElement; regs: Region[] } | null = null;
 
@@ -829,11 +833,12 @@ function drawStroke(ctx: CanvasRenderingContext2D, st: Stroke) {
   for (let i = 2; i < st.p.length; i += 2) plot(ctx, st.p[i - 2] / 2, st.p[i - 1] / 2, st.p[i] / 2, st.p[i + 1 - 0] / 2, 1);
 }
 
-function drawRoom(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number, here: boolean) {
-  const rx = ox + r.x * CELL_W;
-  const ry = oy + r.y * CELL_H;
-  const rw = r.w * CELL_W;
-  const rh = r.h * CELL_H;
+function drawRoom(ctx: CanvasRenderingContext2D, r: MapRoom, ox: number, oy: number, here: boolean, px = false) {
+  // (mapa em pixels: a sala do tamanho dela; em células: a grade de sempre)
+  const rx = px ? Math.round(ox + r.x) : ox + r.x * CELL_W;
+  const ry = px ? Math.round(oy + r.y) : oy + r.y * CELL_H;
+  const rw = px ? Math.max(3, Math.round(ox + r.x + r.w) - rx) : r.w * CELL_W;
+  const rh = px ? Math.max(3, Math.round(oy + r.y + r.h) - ry) : r.h * CELL_H;
   ctx.fillStyle = here ? '#f0cf86' : HILITE;
   ctx.fillRect(rx, ry, rw, rh);
   ctx.fillStyle = r.kind === 'boss' ? RED : INK;
@@ -928,10 +933,25 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     regs.push({ x: bx, y: 11, w: 19, h: 11, id: `floor:${i}` });
   });
   const visited = (key: string) => named(key, d.rooms);
-  const roomsHere = w.rooms.filter((r) => r.floor === fl);
+  const roomsHere = w.rooms.filter((r) => onFloor(r, fl));
   const byKey = new Map(w.rooms.map((r) => [r.key, r]));
   // passagens (se uma ponta foi visitada, a passagem aparece)
-  for (const l of w.links) {
+  if (w.px) {
+    // o mundo de verdade: os corredores pelo caminho deles, na largura deles (contorno e miolo)
+    for (const l of w.links) {
+      if ((l.floor ?? 0) !== fl || (!visited(l.a) && !visited(l.b)) || !l.pts) continue;
+      const P = l.pts.map(([x, y]) => [Math.round(ox + x), Math.round(oy + y)] as [number, number]);
+      for (const [col, g] of [[INK2, 2], [HILITE, 1]] as [string, number][]) {
+        cx.fillStyle = col;
+        for (let i = 1; i < P.length; i++) {
+          const [x0, y0] = P[i - 1];
+          const [x1, y1] = P[i];
+          cx.fillRect(Math.min(x0, x1) - g, Math.min(y0, y1) - g, Math.abs(x1 - x0) + 2 * g + 1, Math.abs(y1 - y0) + 2 * g + 1);
+        }
+      }
+    }
+  }
+  for (const l of w.px ? [] : w.links) {
     const a = byKey.get(l.a)!;
     const b = byKey.get(l.b)!;
     if (a.floor !== fl || (!visited(a.key) && !visited(b.key))) continue;
@@ -958,7 +978,19 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
       else cx.fillRect(px, c[1] >= room.y + room.h ? py - 1 : py + CELL_H - 1, CELL_W, 2);
     }
   }
-  for (const r of roomsHere) if (visited(r.key)) drawRoom(cx, r, ox, oy, !!d.here && named(r.key, [d.here]));
+  for (const r of roomsHere) if (visited(r.key)) drawRoom(cx, r, ox, oy, !!d.here && named(r.key, [d.here]), !!w.px);
+  if (w.px) {
+    // as bocas dos corredores: o miolo do corredor passa por cima do contorno da sala (a porta aberta)
+    cx.fillStyle = HILITE;
+    for (const l of w.links) {
+      if ((l.floor ?? 0) !== fl || !l.pts || l.pts.length < 2) continue;
+      for (const [end, key] of [[0, l.a], [l.pts.length - 1, l.b]] as [number, string][]) {
+        if (!visited(key)) continue;
+        const [x, y] = l.pts[end];
+        cx.fillRect(Math.round(ox + x) - 1, Math.round(oy + y) - 1, 3, 3);
+      }
+    }
+  }
   if (!roomsHere.some((r) => visited(r.key))) drawCentered(cx, '...', PW, 78, SEPIA);
 
   // o que o jogador escreveu à mão
@@ -1047,6 +1079,12 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     cx.fillRect(hv.x, hv.y + hv.h - 1, hv.w, 1);
   }
   return { cvs, regs };
+}
+
+// (testes) o mapa inteiro, as duas páginas, num canvas: `floor` = o andar; todas as salas `rooms` como visitadas
+export function mapPreview(d: DiaryState, floor: number): HTMLCanvasElement {
+  const view: View = { spread: 0, sel: null, pen: 0, floor, stamp: -1, trayAt: 0, live: null, editing: null, hover: null, caret: false };
+  return buildMap(view, d, layout(d)).cvs;
 }
 
 function renderMapHalf(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
