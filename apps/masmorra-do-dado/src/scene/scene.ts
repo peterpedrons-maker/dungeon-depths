@@ -63,7 +63,8 @@ import { type ScribePose } from './scribe';
 import { makeScribeRig, preloadScribeRig } from './scribeRig';
 import { makeGemScene } from './gemscene';
 import { GEMS } from '../story/gems';
-import { LOAD_BAR, loading } from '../story/loading';
+import { loading } from '../story/loading';
+import { makeLoadArt } from '../ui/loadart';
 
 const FOG = '#0b0912';
 // O Vestíbulo (3 salas) abre o jogo; depois vêm a Entrada, a Lacuna e as salas antigas.
@@ -290,10 +291,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uDis: { value: -1 },
       uAO: { value: 1 },
       uTan: { value: new THREE.Vector2(1, 1) },
+      tBack: { value: null as THREE.Texture | null },
+      uBack: { value: 0 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
       uniform sampler2D tRoom; uniform sampler2D tDepth; uniform sampler2D tHud;
+      uniform sampler2D tBack; uniform float uBack;
       uniform vec2 uRes; uniform float uNear; uniform float uFar;
       uniform highp sampler3D tLut;
       uniform float uBloom;
@@ -354,6 +358,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       void main(){
         vec2 o = 1.0 / uRes;
         vec4 hud = texture2D(tHud, vUv);
+        if (uBack > 0.5) {
+          // a TELA DE CARREGAMENTO: o fundo pintado (sRGB, volta ao linear) no lugar do mundo; o dado do HUD por cima; a mesma paleta e pontilhado
+          vec3 cb = hud.a > 0.5 ? hud.rgb : pow(texture2D(tBack, vUv).rgb, vec3(2.2));
+          cb = pow(clamp(cb * uBright, 0.0, 1.0), vec3(1.0 / 2.2));
+          cb += (bayer4(floor(vUv * uRes)) - 0.47) * 0.035;
+          gl_FragColor = vec4(texture(tLut, clamp(cb, 0.0, 1.0)).rgb, 1.0);
+          return;
+        }
         vec3 room = texture2D(tRoom, vUv).rgb;
         if (uAO < -150.0) { vec3 P = viewP(vUv); vec3 N = normalize(cross(viewP(vUv + vec2(o.x, 0.0)) - P, viewP(vUv + vec2(0.0, o.y)) - P)); gl_FragColor = vec4(N * 0.5 + 0.5, 1.0); return; }
         if (uAO < -50.0) { gl_FragColor = vec4(vec3(fract(linZ(vUv))), 1.0); return; }
@@ -3866,10 +3878,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       life.settle();
     } else loadGo();
   };
+  // o clique de começar: o dado sai pulando para a direita e a parede escurece (0,5 s); depois, o jogo (finishGo)
+  let goT = -1;
   const loadGo = () => {
+    if (!goPending) return;
+    if (mode === 'load') {
+      if (goT >= 0) return;
+      goT = 0;
+      requestLock(); // (ainda dentro do clique: sem gesto o navegador recusa prender o mouse)
+      life.hop(3.6);
+      return;
+    }
+    finishGo(true);
+  };
+  const finishGo = (lock: boolean) => {
     const g = goPending;
     if (!g) return;
     goPending = null;
+    postMat.uniforms.uBack.value = 0;
+    titleRim.intensity = 0;
+    titleRim.color.setHex(0xc8d6ff);
+    titleRim.position.set(-0.4, 1.2, -1.6);
+    titleRim.target.position.set(0, 0, 0);
+    titleRim.target.updateMatrixWorld();
     if (mode === 'load') {
       mode = 'play';
       ui.setMenu(null);
@@ -3886,7 +3917,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       veilGo = true;
       window.setTimeout(() => g.cap?.(), 700);
     } else g.cap?.();
-    requestLock();
+    if (lock) requestLock();
   };
   // pronto? (a tela inicial espera o cenário; a de carregamento espera também o som). O tempo máximo evita esperar para sempre por um
   // arquivo que não vem
@@ -3909,13 +3940,49 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
     }
   };
-  // TELA DE CARREGAMENTO: o dado no canto de baixo à direita, de rosto para o jogador; a cabeça acompanha um pouco os olhos
+  // o fundo da tela de carregamento (ui/loadart.ts): a parede, o sulco com o fogo, as faíscas, os riscos de giz
+  const loadArt = makeLoadArt();
+  const backTex = new THREE.CanvasTexture(loadArt.canvas);
+  backTex.magFilter = THREE.NearestFilter;
+  backTex.minFilter = THREE.NearestFilter;
+  backTex.generateMipmaps = false;
+  backTex.colorSpace = THREE.NoColorSpace;
+  postMat.uniforms.tBack.value = backTex;
+  let tallyWas = 0;
+  let headWas = 0;
+  const loadBackTick = (dt: number) => {
+    loadArt.resize(rt.width, rt.height);
+    const goK = goT >= 0 ? Math.min(1, goT / 0.45) : 0;
+    loadArt.paint(dt, barShown, loadStoreReady(), goK);
+    backTex.needsUpdate = true;
+    postMat.uniforms.uBack.value = 1;
+    // a cada grupo de cinco riscos, um pulinho; quando o fogo chega ao fim, ele se anima e olha para o jogador
+    const n = Math.floor(Math.min(1, barShown) * loadArt.tallyN());
+    if (Math.floor(n / 5) > Math.floor(tallyWas / 5)) life.hop(2.4);
+    tallyWas = n;
+    const hx = loadArt.headAt().x;
+    if (hx > 0.6 && headWas <= 0.6) life.react('perk');
+    headWas = hx;
+  };
+  // TELA DE CARREGAMENTO: o dado no canto de baixo à direita, de rosto para o jogador; a cabeça acompanha um pouco os olhos; a chama o ilumina
   const loadPose = (lo: { dy: number; scale: number; look: { x: number; y: number } }) => {
     const ty = Math.tan((45 * Math.PI) / 360);
     const hw = ty * dieCam.aspect;
     const s = dieScaleBase * 0.78 * lo.scale;
     dieGroup.scale.setScalar(s);
-    dieGroup.position.set(hw * 0.9 - s * 0.65, -ty * 0.86 + s * 0.68 + lo.dy * 0.5, -1);
+    // saindo (o clique de começar): pula para fora pela direita
+    const out = goT >= 0 ? Math.min(1, goT / 0.45) : 0;
+    dieGroup.position.set(hw * 0.9 - s * 0.65 + out * out * hw * 0.6, -ty * 0.86 + s * 0.68 + lo.dy * 0.5 + Math.sin(Math.PI * Math.min(1, out * 1.2)) * 0.12, -1);
+    // a luz quente da chama: vem da ponta do fogo, mais forte quanto mais perto ela chega
+    const hd = loadArt.headAt();
+    const hx = (hd.x * 2 - 1) * hw;
+    const hy = -(hd.y * 2 - 1) * ty;
+    const prox = Math.max(0, 1 - Math.abs(hx - dieGroup.position.x) / (hw * 1.4));
+    titleRim.color.setHex(0xffa04a);
+    titleRim.intensity = (0.5 + 2.2 * prox * prox) * (1 + Math.sin(t * 11 + loadT * 23) * 0.06) * (1 - out);
+    titleRim.position.set(hx, hy + 0.05, -0.55);
+    titleRim.target.position.copy(dieGroup.position);
+    titleRim.target.updateMatrixWorld();
     // quase de frente para a câmera (no canto, a perspectiva mostraria muito a lateral): o rosto encara o jogador e ainda se vê uma lasca
     // da lateral e do topo, para ele ler como cubo
     const gx = dieGroup.position.x;
@@ -3929,13 +3996,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const loadTarget = (): LifeTarget | null => {
     loadLookT -= 1 / 60;
     if (loadLookT <= 0) {
-      loadAtBar = !loadAtBar && !loadStoreReady();
-      loadLookT = loadAtBar ? 0.9 + Math.random() * 0.8 : 1.8 + Math.random() * 2.2;
+      // carregando: quase sempre de olho no fogo, de vez em quando no jogador; pronto: no jogador, espiando o fogo às vezes
+      const ready = loadStoreReady();
+      loadAtBar = ready ? !loadAtBar && Math.random() < 0.3 : !loadAtBar || Math.random() < 0.5;
+      loadLookT = loadAtBar ? (ready ? 0.8 : 1.6 + Math.random() * 1.6) : 1.2 + Math.random() * 1.8;
     }
     if (!loadAtBar) return { dx: 0, dy: 0, player: true };
     dieOnScreen(dieNdc);
-    const bx = (LOAD_BAR.x0 + (LOAD_BAR.x1 - LOAD_BAR.x0) * barShown) * 2 - 1;
-    const by = -(LOAD_BAR.y * 2 - 1);
+    const hd = loadArt.headAt();
+    const bx = hd.x * 2 - 1;
+    const by = -(hd.y * 2 - 1);
     return Number.isFinite(dieNdc.x + dieNdc.y) ? { dx: bx - dieNdc.x, dy: by - dieNdc.y } : null;
   };
   const loadStoreReady = () => barShown >= 0.999;
@@ -4274,6 +4344,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       titleCam();
     } else if (mode === 'load') {
       loadT += rdt;
+      if (goT >= 0) {
+        goT += rdt;
+        if (goT >= 0.5) {
+          goT = -1;
+          finishGo(false);
+        }
+      }
+      if (mode === 'load') loadBackTick(rdt);
     } else if (!paused) {
       playTime += dt;
       saveIn -= dt;
