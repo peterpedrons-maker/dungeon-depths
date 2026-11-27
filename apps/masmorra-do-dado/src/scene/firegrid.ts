@@ -719,7 +719,7 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
     open() {
       if (opening) return;
       opening = true;
-      ctx.sfx('door');
+      ctx.sfx('secret'); // (um segredo achado tem som próprio, não o da porta: DESIGN.md §79)
     },
     get taken() {
       return taken;

@@ -21,6 +21,7 @@ export type SfxName =
   | 'doorClose'
   | 'piece' // um passo certo do puzzle (não o fim)
   | 'solved' // o puzzle da sala RESOLVIDO (uma vez por sala; o motor decide quando, DESIGN.md §79)
+  | 'secret' // um SEGREDO achado: o nicho escondido que se abre (com uma folha dela ou uma gema), menor e mais misterioso que o resolvido
   | 'error'
   | 'burnout'
   | 'land'
@@ -960,6 +961,16 @@ export class Sfx {
         break;
       case 'solved':
         this.solved();
+        break;
+      // um SEGREDO achado (DESIGN.md §79): o nicho escondido se abre. Menor e mais misterioso que o resolvido, da mesma matéria: a laje
+      // pequena do nicho correndo (a pedra da porta, mais aguda e curta), um brilho de vidro, a harpa no lá e três notas de celesta subindo
+      // (mi, lá, dó sustenido) com eco: algo que estava escondido apareceu
+      case 'secret':
+        this.duckMusic(0.5, 1.2, 1.4);
+        this.sample('door_open', 0.45, 1.35, 0, 0.4, 0, 0, 0, 1.1);
+        this.sample('gem1', 0.22, 0.9, 0.25, 0.7);
+        this.fxNote('orchestral_harp', 57, 0.28, 0.3, 0.6, 0.15);
+        [76, 81, 85].forEach((m, i) => this.fxNote('celesta', m, 0.22, 0.3 + i * 0.13, 0.75, 0.35));
         break;
       // a Casa recusa: o "toc" seco de madeira e, por baixo, um baque de pedra abafado (curto: repete-se quando o braseiro está frio)
       case 'error':
