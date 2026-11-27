@@ -110,7 +110,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em
   pontilhado (`uDis`/`rtSnap`); créditos com a câmera girando. **Caixas** em pedra de 9 pedaços (`tools/build_frames.py` → `src/ui/frames.css`),
   ouro no Escrivão, pensamento em tira de papel. **O Escrivão animado** (`src/scene/scribeRig.ts`, `public/models/escrivao.glb`, `DESIGN.md` §70):
-  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos (a janela grande, de barras finas; na 1ª vez, uma mini cena vira a câmera para ele; o ciclo de passos sem o tranco da emenda, `DESIGN.md` §78); mãos e
+  o mesmo Escrivão com esqueleto e as animações do Pedro no Mixamo (andar, olhar para baixo), na cena do poço e na janela dos Nichos (a janela grande, de barras finas; na 1ª vez, uma mini cena vira a câmera para ele; o ciclo de passos sem o tranco da emenda, `DESIGN.md` §78; a túnica cai do quadril como um sino, sem andar como calça, só os sapatos seguem os pés, e os braços andam junto do corpo, §80); mãos e
   cabeça por código; `?escrivao=antigo` volta ao de código; prévia `?vitrine=escrivao`; `?intro=poco` testa a cena do poço. **Ícones** 16/24 pixel a pixel (`tools/build_icons.py` → `src/ui/icons.ts`) sem as formas que são
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).

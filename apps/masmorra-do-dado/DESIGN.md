@@ -1219,8 +1219,8 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   galeria vista pela janela de grade dos Nichos. Sentado na Galeria dos Condenados e no escritório da Biblioteca continua o de código (não há
   animação de sentar). `?escrivao=antigo` volta ao de código em tudo; enquanto o arquivo não chega, aparece o de código.
 - **Como as animações viram a pose do jogo:**
-  - **andar**: o *Start Walking* é a partida (parado → dois passos). O jogo recorta o ciclo estável (1,15 s a 2,48 s), costura o fim no começo
-    (0,3 s) e tira o avanço da raiz (quem move o Escrivão é o jogo); o passo acompanha a velocidade pedida;
+  - **andar**: o *Start Walking* é a partida (parado → dois passos). O jogo recorta o ciclo estável (1,15 s a 2,48 s; hoje 1,067 s + 1,484 s, §78), costura o fim no começo
+    (0,3 s) e tira o avanço da raiz (quem move o Escrivão é o jogo); o passo acompanha a velocidade pedida (a túnica no quadril e os braços junto do corpo: §80);
   - **debruçar**: a inclinação escolhe o quadro do *olhar para baixo* (0 = de pé, 1 = debruçado aos 1,78 s); parado debruçado, um vaivém lento
     até 2,35 s. A animação original segura uma tocha na mão esquerda: aqui essa mão fica sempre por código (junto do corpo, ou pousada na borda);
   - **mão direita** (às costas, para dentro do manto; estendida sobre o meio do poço, a 1 m do corpo e 1,5 m do chão, de onde o dado cai) e
@@ -1666,3 +1666,22 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
 - **A mira só aparece com o jogo de fato começado**: a interface começa com ela escondida, a tela inicial e a de carregamento contam como cena, e o
   motor avisa já no 1º quadro (antes ela piscava no meio da tela no começo do jogo e só depois sumia). Nas cenas (acordar, o poço, o dado ao centro,
   a gema...) ela some e volta quando a cena acaba, como antes.
+
+## 80. O andar do Escrivão: a túnica não é calça (cenógrafo, pedido do Pedro)
+
+O Pedro achou o andar do Escrivão animado "meio estranho" e pediu para arrumar ou voltar ao de antes. Filmando o passo quadro a quadro (de lado, de
+3/4 e de frente), o problema não era o recorte do ciclo (o de §78 e o antigo de §70 dão quase o mesmo movimento, e o de agora é o mais liso na
+emenda), e sim o **pano**:
+
+- **A túnica andava como calça.** Na hora de pôr o esqueleto, o Mixamo prendeu a túnica de baixo, a barra do casaco e a estola aos ossos das
+  PERNAS (coxa, canela, pé e ponta do pé). A cada passo o pano ia junto com a perna: a barra se esticava em cunha para trás, a túnica se abria entre
+  as pernas e a estola vermelha rasgava em tiras. Agora (`robeNotTrousers` em `scribeRig.ts`, uma vez quando o arquivo carrega) o pano que estava
+  nas pernas passa para o **quadril**, e só um pouco dele (`ROBE_SWAY` = 22%) fica na coxa do mesmo lado: a túnica cai como um sino e a barra
+  balança de leve com o passo, como no Escrivão de código. Só os **sapatos** (achados pela cor quase preta da textura) continuam nos pés: eles
+  aparecem e somem sob a barra a cada passo, sem o pé escorregar no chão.
+- **Os braços de pinguim.** O "Start Walking" abria os braços para os lados e dobrava a mão esquerda de lado na frente da barriga. Andando, as mãos
+  agora caem junto do corpo, um pouco à frente (`ARM_HOLD` = 70%, os dois ossos do braço, como já se fazia ao debruçar), cada uma balançando pouco ao
+  contrário do pé do mesmo lado, e os pulsos voltam à pose de pé. Quando a mão direita tem o que fazer (ir ao manto, erguer o dado), ela manda.
+- O recorte do ciclo ficou o de §78 (1,067 s + 1,484 s, emenda de 0,35 s); os números estão em `WALK_CUT`, num objeto, para os testes compararem
+  recortes. Nada mudou no debruçar, no erguer do dado nem nos tempos das cenas (o poço e a janela dos Nichos). `?escrivao=antigo` continua
+  mostrando o Escrivão de código, se o Pedro quiser comparar.

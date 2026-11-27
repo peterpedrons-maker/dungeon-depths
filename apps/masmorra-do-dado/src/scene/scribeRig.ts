@@ -23,25 +23,107 @@ export function preloadScribeRig() {
   if (!rigP) {
     const base = (import.meta as unknown as { env: { BASE_URL: string } }).env.BASE_URL;
     rigP = new Promise((res) =>
-      new GLTFLoader().load(`${base}models/escrivao.glb`, res, undefined, () => {
-        console.warn('Escrivão animado: o arquivo não carregou; fica o de código');
-        res(null);
-      }),
+      new GLTFLoader().load(
+        `${base}models/escrivao.glb`,
+        (g) => {
+          robeNotTrousers(g);
+          res(g);
+        },
+        undefined,
+        () => {
+          console.warn('Escrivão animado: o arquivo não carregou; fica o de código');
+          res(null);
+        },
+      ),
     );
   }
   return rigP;
 }
 
+// A TÚNICA NÃO É CALÇA (DESIGN.md §80). O Mixamo prendeu a túnica de baixo, a barra do casaco e a estola aos ossos das PERNAS: a cada passo o
+// pano ia junto com a coxa e o pé, a barra se esticava em cunha para trás, a estola rasgava em tiras e a túnica parecia uma calça (o andar
+// "estranho" que o Pedro viu). Aqui, uma vez no arquivo carregado, o pano que estava nas pernas passa para o QUADRIL e só um pouco dele fica
+// na coxa do mesmo lado (a barra balança de leve com o passo, como o pano do Escrivão de código); só os sapatos (o quase preto da textura,
+// embaixo da barra) continuam nos pés e andam o passo inteiro.
+const ROBE_SWAY = 0.22; // quanto do pano fica na coxa (0 = um sino rígido no quadril)
+function robeNotTrousers(g: GLTF) {
+  g.scene.traverse((o) => {
+    const m = o as THREE.SkinnedMesh;
+    if (!m.isSkinnedMesh) return;
+    const geo = m.geometry;
+    const si = geo.attributes.skinIndex as THREE.BufferAttribute;
+    const sw = geo.attributes.skinWeight as THREE.BufferAttribute;
+    const uv = geo.attributes.uv as THREE.BufferAttribute | undefined;
+    const names = m.skeleton.bones.map((b) => b.name.replace('mixamorig', '').replace(':', ''));
+    const idx = (n: string) => names.indexOf(n);
+    const hips = idx('Hips');
+    const up = { Left: idx('LeftUpLeg'), Right: idx('RightUpLeg') };
+    if (hips < 0 || up.Left < 0 || up.Right < 0) return;
+    const sideOf = names.map((n) => (/^(Left|Right)(UpLeg|Leg|Foot|ToeBase|Toe_End)$/.exec(n)?.[1] as 'Left' | 'Right' | undefined) ?? null);
+    // os sapatos: triângulos cuja cor (no meio do triângulo, na textura) é o quase preto deles (~26, 22, 32); o forro escuro da túnica é roxo
+    const shoe = new Uint8Array(si.count);
+    const img = (m.material as THREE.MeshStandardMaterial).map?.image as CanvasImageSource & { width: number; height: number };
+    if (uv && img?.width) {
+      const cv = document.createElement('canvas');
+      cv.width = img.width;
+      cv.height = img.height;
+      const cx = cv.getContext('2d', { willReadFrequently: true })!;
+      cx.drawImage(img, 0, 0);
+      const px = cx.getImageData(0, 0, img.width, img.height).data;
+      const index = geo.index;
+      const tri = index ? index.count / 3 : si.count / 3;
+      const vi = (k: number) => (index ? index.getX(k) : k);
+      for (let t = 0; t < tri; t++) {
+        const a = vi(t * 3);
+        const b = vi(t * 3 + 1);
+        const c = vi(t * 3 + 2);
+        const u = (uv.getX(a) + uv.getX(b) + uv.getX(c)) / 3;
+        const v = (uv.getY(a) + uv.getY(b) + uv.getY(c)) / 3;
+        const x = Math.min(img.width - 1, Math.max(0, Math.floor(u * img.width)));
+        const y = Math.min(img.height - 1, Math.max(0, Math.floor(v * img.height)));
+        const o4 = (y * img.width + x) * 4;
+        if (px[o4] < 40 && px[o4 + 1] < 36 && px[o4 + 2] < 46) shoe[a] = shoe[b] = shoe[c] = 1;
+      }
+    }
+    const w = new Map<number, number>();
+    for (let i = 0; i < si.count; i++) {
+      if (shoe[i]) continue;
+      w.clear();
+      let moved = 0;
+      for (let k = 0; k < 4; k++) {
+        const bi = si.getComponent(i, k);
+        const wi = sw.getComponent(i, k);
+        if (wi <= 0) continue;
+        const side = sideOf[bi];
+        if (side) {
+          w.set(up[side], (w.get(up[side]) ?? 0) + wi * ROBE_SWAY);
+          moved += wi * (1 - ROBE_SWAY);
+        } else w.set(bi, (w.get(bi) ?? 0) + wi);
+      }
+      if (moved <= 0) continue;
+      w.set(hips, (w.get(hips) ?? 0) + moved);
+      const top = [...w.entries()].sort((p, q) => q[1] - p[1]).slice(0, 4);
+      const sum = top.reduce((s, e) => s + e[1], 0);
+      for (let k = 0; k < 4; k++) {
+        si.setComponent(i, k, top[k]?.[0] ?? 0);
+        sw.setComponent(i, k, top[k] ? top[k][1] / sum : 0);
+      }
+    }
+    si.needsUpdate = true;
+    sw.needsUpdate = true;
+  });
+}
+
 // ── os recortes das animações (medidos no arquivo; ver DESIGN.md §70) ──
 // O ciclo de passos estável: 1,067 s … 2,551 s do "Start Walking". O período do passo é ~1,48 s (achado por busca: é o recorte em que a pose do
 // fim mais se parece com a do começo; o antigo, 1,15 + 1,333 s, era curto demais e as pernas pulavam de fase a cada volta).
-const WALK_A = 1.067;
-const WALK_L = 1.484;
-const SEAM = 0.35; // os últimos 0,35 s do ciclo se fundem com o começo dele (a volta não dá pulo)
+// (os números ficam num objeto para os testes poderem comparar recortes; o jogo usa estes)
+export const WALK_CUT = { a: 1.067, l: 1.484, seam: 0.35 };
 // no "olhar para baixo", aos 1,78 s ele já está debruçado e quase parado (depois varre de um lado ao outro e levanta); parado debruçado, um
 // vaivém lento dentro deste trecho
 const LOOK_SWAY: [number, number] = [1.78, 2.35];
 const IDLE_T = 0.2; // a pose de pé, do começo do "Start Walking"
+const ARM_HOLD = 0.7; // andando, o quanto os braços vão para junto do corpo (o resto é o balanço da animação)
 // os olhos do Escrivão de código (mesmas medidas do modelo assado: mesma origem, pose A)
 const EYES: [number, number, number][] = [
   [-0.077, 1.703, 0.17],
@@ -53,6 +135,7 @@ const EYE_S = 0.042;
 const interp = (tr: THREE.KeyframeTrack) => (tr as unknown as { createInterpolant(): THREE.Interpolant }).createInterpolant();
 // o ciclo de passos: recorte, costura e a raiz parada (só o balanço de lado e de altura ficam)
 function walkLoop(src: THREE.AnimationClip) {
+  const { a: WALK_A, l: WALK_L, seam: SEAM } = WALK_CUT;
   const fps = 30;
   const n = Math.round(WALK_L * fps);
   const tracks: THREE.KeyframeTrack[] = [];
@@ -192,6 +275,7 @@ export function makeScribeRig(o: { fog?: boolean } = {}): Scribe & { ready: Prom
     lookDur: number;
     b: Record<string, THREE.Bone>;
     touched: THREE.Bone[];
+    restHand: { L: THREE.Quaternion | null; R: THREE.Quaternion | null };
     base: THREE.Quaternion[];
   } = null;
   const applyAlpha = () => {
@@ -290,8 +374,14 @@ export function makeScribeRig(o: { fog?: boolean } = {}): Scribe & { ready: Prom
     group.add(root);
     group.remove(fallback.group);
     // os ossos que o código mexe por cima da animação (cabeça, braços, mão direita)
-    const touched = [b.Head, b.LeftArm, b.LeftForeArm, b.RightArm, b.RightForeArm, b.RightHand];
-    rig = { root, mixer, walk, idle, look, walkSpeed: loop.speed, lookDur: olhar.duration, b, touched, base: touched.map((x) => x.quaternion.clone()) };
+    const touched = [b.Head, b.LeftArm, b.LeftForeArm, b.RightArm, b.RightForeArm, b.RightHand, b.LeftHand];
+    // as mãos de pé (andando, os pulsos voltam para elas: no passo, a mão esquerda dobrava de lado, torta)
+    const handAt = (n: string) => {
+      const tr = andar.tracks.find((x) => x.name.endsWith(`${n}.quaternion`));
+      return tr ? new THREE.Quaternion().fromArray(Array.from(interp(tr).evaluate(IDLE_T) as ArrayLike<number>)) : null;
+    };
+    const restHand = { L: handAt('LeftHand'), R: handAt('RightHand') };
+    rig = { root, mixer, walk, idle, look, walkSpeed: loop.speed, lookDur: olhar.duration, b, touched, base: touched.map((x) => x.quaternion.clone()), restHand };
     applyAlpha();
     return true;
   });
@@ -354,22 +444,39 @@ export function makeScribeRig(o: { fog?: boolean } = {}): Scribe & { ready: Prom
       hd.quaternion.copy(_q3.invert().multiply(_q2));
       hd.updateMatrixWorld(true);
     }
+    // OS BRAÇOS ANDANDO (DESIGN.md §80): o "Start Walking" abria os braços para os lados, de pinguim, com a mão esquerda torta à frente da
+    // barriga. Andando, as mãos caem junto do corpo, um pouco à frente, e balançam pouco, cada uma ao contrário do pé do mesmo lado (como no
+    // Escrivão de código); o que sobra da animação (1 − ARM_HOLD) dá o resto do jeito.
+    const hold = cur.wW * ARM_HOLD;
+    let swing = 0;
+    if (hold > 0.001) {
+      b.LeftFoot.getWorldPosition(_a);
+      b.RightFoot.getWorldPosition(_b);
+      group.worldToLocal(_a);
+      group.worldToLocal(_b);
+      swing = THREE.MathUtils.clamp((_b.z - _a.z) / 0.5, -1, 1); // +1: o pé direito à frente → a mão esquerda à frente
+      if (rig.restHand.L) b.LeftHand.quaternion.slerp(rig.restHand.L, hold);
+      if (rig.restHand.R) b.RightHand.quaternion.slerp(rig.restHand.R, hold * (1 - Math.max(cur.back, cur.raise, cur.reach)));
+    }
     // a mão ESQUERDA: a animação segurava uma tocha; aqui ela fica junto do corpo ou pousada na borda à frente (rest)
     {
-      const side = tv.set(0.3, 0.86, 0.08);
+      const side = tv.set(0.3 - 0.02 * cur.wW, 0.86 + 0.02 * cur.wW, 0.08 + (0.03 + 0.07 * swing) * cur.wW);
       const ledge = new THREE.Vector3(0.22, 0.86, (pose.press ?? 0.12) + 0.14);
       side.lerp(ledge, cur.rest);
       group.localToWorld(side);
       pole.set(0.7, 0.9, -0.5);
       group.localToWorld(pole);
-      twoBoneIK(b.LeftArm, b.LeftForeArm, b.LeftHand, side, pole, Math.max(lw, cur.rest));
+      twoBoneIK(b.LeftArm, b.LeftForeArm, b.LeftHand, side, pole, Math.max(lw, cur.rest, hold));
     }
     // a mão DIREITA: às costas (para dentro do manto), estendida à frente, ou erguida alta sobre o que está à frente
     {
-      const wR = Math.max(cur.back, cur.raise, cur.reach);
+      // (andando, sem nada a fazer: junto do corpo, como a esquerda)
+      const hR = hold * (1 - Math.max(cur.back, cur.raise, cur.reach));
+      const wR = Math.max(cur.back, cur.raise, cur.reach, hR);
       if (wR > 0.001) {
         const tgt = new THREE.Vector3();
-        const s = cur.back + cur.raise + cur.reach + 1e-6;
+        const s = cur.back + cur.raise + cur.reach + hR + 1e-6;
+        tgt.addScaledVector(new THREE.Vector3(-0.28, 0.88, 0.11 - 0.07 * swing), hR / s);
         tgt.addScaledVector(new THREE.Vector3(-0.22, 1.02, -0.2), cur.back / s);
         // (erguido = estendido à frente, sobre o meio da boca do poço: a 1 m do corpo e 1,5 m do chão; é de lá que o dado cai)
         tgt.addScaledVector(new THREE.Vector3(-0.1, 1.5, 1.0), cur.raise / s);
