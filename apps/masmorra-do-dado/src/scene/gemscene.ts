@@ -143,8 +143,10 @@ export function makeGemScene(env: { scene: THREE.Scene; cam: THREE.PerspectiveCa
       gemMat.opacity = 1;
       env.sfx('gemShine');
     },
+    // um toque ou tecla NOVO pula para o encaixe. O mesmo aperto que pegou a gema (o E, ou o toque no AGIR do celular) também chega aqui, no
+    // mesmo instante: por isso a cena só aceita pular depois de começar (antes, ela era pulada no mesmo aperto e não aparecia)
     skip() {
-      if (s) skip = true;
+      if (s && s.t > 0.35) skip = true;
     },
     update(dt: number) {
       if (!s) return;

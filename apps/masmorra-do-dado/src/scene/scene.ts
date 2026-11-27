@@ -3832,7 +3832,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return;
     }
   };
-  const onSkip = () => {
+  const onSkip = (e: Event) => {
+    if ((e as KeyboardEvent).repeat) return; // (segurar a tecla não é um aperto novo)
     if (burn) skipScene = true;
     gemFx.skip();
   };
