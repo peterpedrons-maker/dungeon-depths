@@ -238,5 +238,10 @@ Como aplicar (para todo capítulo novo):
   de uma sala só, o desenho entregava fácil demais o dado). Todos com o mesmo aro de pedra lavrada (`src/scene/skyhole.ts`); nenhum ilumina o
   que é de puzzle. O capítulo 1 está feito (`DESIGN.md` §73, passo 4): o Poço; a Lousa e o Fio; a Cisterna, a Biblioteca e os Banhos.
 - **Os objetos rareiam** (§4.7 continua valendo: só o dia a dia, nada de RPG): a borda foi habitada; o centro, nunca.
+- **Packs de modelos para os capítulos fundos: adiado** (decisão do Pedro: primeiro fechar o capítulo 1). Já foram vistos, todos CC0, no
+  OpenGameArt, e nenhum agradou: Masmorra modular 2 (Fertile Soil, sem textura), Ruínas e Caverna Pro (3TD), Minas e caverna (loafbrr),
+  estalactites sem textura (agdg), a mina do rubberduck (com baú e moedas), os kits da Kenney e a masmorra da Quaternius (cor chapada, estilo
+  desenho animado) e um esgoto de concreto. Ficaram sem olhar, porque a rede da sessão não abria os sites: as rochas escaneadas do Poly Haven
+  (CC0) e os packs estilo PS1 do itch.io (a maioria pede crédito).
 - O que é **gramática de puzzle** (frases, braseiros, lousas, soquetes, tochas das constelações) mantém a mesma cara em todos os capítulos, para o
   jogador nunca ter de reaprender a ler.
