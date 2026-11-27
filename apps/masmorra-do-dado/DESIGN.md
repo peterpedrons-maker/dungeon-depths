@@ -1847,3 +1847,16 @@ e ferramenta, para o jogador aprender cada uma sozinha antes da próxima.
 - **O que isso pede das salas:** nenhum puzzle da 1ª metade do capítulo 2 pode depender do giz. Das salas guardadas, O Salão das Brasas e O
   Mirante (Fogo + Peso) servem para a 1ª metade; A Lacuna, O Selo e A Placa que Julga (com giz) só depois do meio.
 - Os textos e a cena são do `narrador`; os puzzles, da sessão de puzzles. Aqui fica só onde cada coisa chega.
+
+## 85. Os desenhos do dado: livro, pegar e escrever refeitos (cenógrafo, pedido do Pedro)
+
+Os desenhos que o dado mostra (`src/scene/sketch.ts`, na face de cima, no balão e nos murais da Biblioteca) continuam no mesmo estilo, de traço
+grosso e limpo com o laranja do fogo, porque têm de ser lidos de relance em 40 px (os desenhos a giz das paredes, §80, são outra coisa: o
+giz fino dos condenados). Três se liam mal e foram refeitos:
+- **livro**: era um retângulo em pé, que parecia uma porta. Agora é o livro **fechado e deitado**, visto um pouco de cima: a capa, a espessura
+  das folhas na frente, a lombada e a fita laranja. É o desenho da fala «LIVRO» do dado no Vestíbulo e do bloco LIVRO do mural de encaixe.
+- **pegar**: era uma mancha. Agora é uma **mão descendo e fechando os dedos** em volta do mesmo livro, com uma **seta laranja para cima** (o
+  contrário da placa, em que a seta aperta para baixo). É o desenho de «VOCÊ PEGAR LIVRO» no Vestíbulo.
+- **escrever**: tinha riscos demais (mão, página, pena e um livrinho). Agora é uma **folha** com duas linhas já escritas e a **pena** escrevendo
+  a terceira, que sai laranja da ponta. É o mural ESCREVER da Biblioteca.
+- O mural de encaixe usa o mesmo desenho do dado, então os dois mudaram juntos e o puzzle de casar o desenho com o nome continua igual.

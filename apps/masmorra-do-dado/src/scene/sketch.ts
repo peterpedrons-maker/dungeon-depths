@@ -1,5 +1,5 @@
-// Rabiscos de outros condenados: desenhos riscados na pedra ao lado dos glifos, só nas primeiras vezes em que uma palavra aparece (ver DESIGN.md §22).
-// Ficam claramente "feitos à mão": traço tremido, falhas, sulco escuro com um fio claro por cima, sem cor viva.
+// Os desenhos do dado (DESIGN.md §22 e §85): o que ele mostra na face de cima e no balão quando traduz uma palavra concreta, e os murais da Biblioteca.
+// O jogo usa a versão SIMPLES (40 px): traço grosso e claro, com o laranja do fogo. A versão grande, riscada na pedra (sulco escuro e fio claro), só tem o braseiro.
 
 
 export type SketchKind = 'braseiro' | 'chama' | 'porta' | 'placa' | 'livro' | 'pegar' | 'escrever' | 'abrir';
@@ -191,34 +191,46 @@ function drawSimple(kind: SketchKind, seed: number, N: number): HTMLCanvasElemen
     line([[50, 10], [50, 56]], OCRE, 6);
     line([[34, 42], [50, 60], [66, 42]], OCRE, 6);
   }
+  // (livro, pegar e escrever refeitos a pedido do Pedro, DESIGN.md §85: liam-se mal em 40 px)
+  // o livro fechado, deitado e visto de cima, um pouco de lado: a capa, a ESPESSURA das folhas na frente (o que o separa de uma porta ou
+  // de uma laje), a lombada arredondada à esquerda e a fita marcando a página
+  const book = (ox: number, oy: number, s: number, PALE: string, OCRE: string, ribbon = true) => {
+    const P = (x: number, y: number): Pt => [ox + x * s, oy + y * s];
+    line([P(0, 10), P(52, 0), P(70, 16), P(18, 28), P(0, 10)], PALE, 5 * s); // a capa
+    line([P(0, 10), P(0, 22), P(18, 40), P(70, 28), P(70, 16)], PALE, 5 * s); // a lombada e a frente (a espessura)
+    line([P(24, 34), P(66, 24)], PALE, 2.2 * s); // as folhas, na espessura
+    line([P(28, 12), P(44, 8)], OCRE, 3.5 * s); // o título na capa
+    if (ribbon) line([P(50, 32), P(52, 46)], OCRE, 3.5 * s); // a fita
+  };
   if (kind === 'livro') {
-    // um livro fechado, de pé, com a lombada e a fita
-    const PALE = '#e4d8b8';
-    const OCRE = '#f0a850';
-    line([[28, 14], [72, 14], [76, 86], [32, 86], [28, 14]], PALE, 5);
-    line([[36, 14], [38, 86]], PALE, 3);
-    line([[46, 34], [64, 34]], OCRE, 4);
-    line([[60, 86], [62, 98]], OCRE, 4);
+    book(14, 26, 1.05, '#e4d8b8', '#f0a850');
   }
   if (kind === 'pegar') {
-    // uma mão fechando em volta de um livro pequeno
+    // a mão que desce e fecha em volta do livro, e a seta para CIMA (o contrário da placa, que aperta para baixo)
     const PALE = '#e4d8b8';
     const OCRE = '#f0a850';
-    line([[34, 30], [66, 30], [68, 62], [36, 62], [34, 30]], OCRE, 4);
-    line([[14, 70], [30, 58], [40, 46], [46, 50], [40, 64], [54, 66], [70, 70], [84, 84], [60, 94], [30, 92], [14, 84]], PALE, 5);
-    line([[44, 52], [50, 40]], PALE, 4);
+    book(6, 56, 0.72, PALE, OCRE, false);
+    line([[30, 2], [31, 14]], PALE, 5); // o pulso
+    line([[52, 2], [51, 14]], PALE, 5);
+    line([[25, 32], [25, 20], [31, 15], [51, 15], [57, 20], [57, 32]], PALE, 5); // a palma (vista de cima, a mão descendo)
+    // os quatro dedos, os do meio mais compridos, com a ponta virando para dentro (agarrando a capa)
+    for (const f of [[[29, 32], [28, 45], [31, 50]], [[37, 32], [37, 50], [40, 55]], [[45, 32], [46, 50], [49, 54]], [[53, 32], [55, 45], [57, 49]]] as Pt[][]) line(f, PALE, 4.5);
+    line([[25, 24], [16, 31], [14, 44], [17, 49]], PALE, 4.5); // o polegar, do lado
+    line([[82, 86], [82, 22]], OCRE, 6); // para cima
+    line([[70, 36], [82, 20], [94, 36]], OCRE, 6);
   }
   if (kind === 'escrever') {
-    // uma mão com a pena escrevendo numa página (e o livrinho do diário ao lado)
+    // uma folha, duas linhas já escritas e a PENA escrevendo a terceira, ainda fresca (a linha laranja nasce da ponta)
     const PALE = '#e4d8b8';
     const OCRE = '#f0a850';
-    line([[10, 70], [56, 70], [62, 94], [14, 94], [10, 70]], PALE, 4);
-    line([[18, 80], [24, 77], [30, 82], [38, 78], [46, 82]], OCRE, 3);
-    line([[46, 78], [72, 20]], OCRE, 4);
-    line([[72, 20], [80, 12], [76, 26], [72, 20]], OCRE, 3);
-    line([[52, 62], [60, 52], [70, 56], [66, 68], [56, 70]], PALE, 5);
-    line([[78, 64], [94, 64], [94, 86], [78, 86], [78, 64]], PALE, 3);
-    line([[86, 64], [86, 86]], PALE, 2);
+    line([[12, 30], [62, 22], [70, 88], [20, 96], [12, 30]], PALE, 5); // a folha
+    line([[22, 42], [54, 37]], PALE, 3); // o já escrito
+    line([[24, 56], [56, 51]], PALE, 3);
+    line([[26, 72], [32, 67], [38, 73], [44, 66], [50, 70]], OCRE, 4); // a linha nova
+    line([[50, 70], [90, 12]], PALE, 6); // a pena
+    line([[90, 12], [94, 22], [84, 30]], PALE, 4); // a pluma
+    line([[76, 24], [84, 30]], PALE, 3);
+    line([[50, 70], [56, 62]], OCRE, 5); // a ponta molhada de tinta
   }
   if (kind === 'abrir') {
     // um livro se abrindo: duas páginas em V e as linhas do texto
