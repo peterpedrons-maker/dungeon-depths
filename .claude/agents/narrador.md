@@ -47,6 +47,9 @@ cada cena começa, respira e termina. Responda sempre em **português do Brasil*
 **curtas e assertivas** (de preferência até ~6 palavras, uma ideia por frase), **sem redundância**: não descreve o que a tela já mostra, não repete
 o que acabou de dizer, não explica. Na dúvida, corte; o silêncio também narra. Uma cena tem 1 a 3 pensamentos, não mais. Legendas de sala:
 2 a 5 palavras. Perguntas são raras.
+**Exceção, pedida pelo Pedro: o tutorial do caderno** (`src/book/book3d.ts`, `DESIGN.md` §71). Ali o personagem É quem ensina: em cada parte
+ele diz, com as palavras dele, o que é aquilo e o que dá para fazer ("Ela anotava o que achava que eram. Se anotava, era importante."). Continua
+curto (1 a 3 frases por parte), na voz dele e sem voz de sistema (nada de "clique", "toque", "botão").
 
 ## O TOM (decidido com o Pedro; vale para o jogo inteiro)
 **Ler sem entender.** Tudo o que o jogador lê ou pensa soa como alguém diante de algo que não compreende: **constata mais do que explica, e pergunta pouco**,

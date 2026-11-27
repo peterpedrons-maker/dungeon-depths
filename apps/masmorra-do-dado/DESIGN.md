@@ -1185,3 +1185,30 @@ modelo 3D para as tochas.
     página de onde se sai, a última traz a página aonde se chega, as do meio são papel em branco. Vale para qualquer pulo (índice, voltar ao índice,
     o modo guiado indo até BRASEIRO).
   - No modo guiado, uma parte só conta como vista quando o caderno PARA nela (antes, passar por ela virando conta).
+
+## 71. O tutorial do caderno, parte por parte (pedido do Pedro)
+
+O tutorial de antes abria no relato dela e depois soltava o jogador no índice para "ver tudo", com um pensamento curto por parte: não dizia o que
+fazer, e o jogador tinha de adivinhar que precisava passar por todas as partes. Agora (`book3d.ts`, `tut`):
+- **Começa no índice.** O personagem: "O caderno dela." · "Ela dividiu tudo em partes. Vou ver uma por uma."
+- **A parte da vez pisca em ouro** no índice (`View.guide`/`blink`, `guideFrame` em `pages.ts`). Só ela responde; tocar em outra linha dá só o
+  "plim". O jogador não folheia por conta própria enquanto o tutorial dura (setas, roda e teclas esperam).
+- **Em cada parte o personagem diz o que é e o que dá para fazer**, com as palavras dele (aqui ele fala um pouco mais que no resto do jogo, §48;
+  é ele quem ensina o caderno):
+  - **Dela:** o relato ("A letra não é minha." · "Ela também acordou embaixo da luz." · "E parou no meio."); vira para as folhas arrancadas
+    ("Faltam folhas. Arrancadas." · "Se eu achar alguma, ponho de volta no lugar.").
+  - **Símbolos:** vai até BRASEIRO ("Os símbolos das paredes. Os que eu já vi estão aqui." · "Ela anotava o que achava que eram. Se anotava, era
+    importante." · "Este ela não sabia. E eu, o que acho que é?"). **Tarefa:** o campo embaixo do "?" dela abre e pisca até ele escrever e sair do
+    campo ("Anotado. Se eu entender melhor, mudo depois.").
+  - **Faces:** "As faces do dado. Só duas têm nome, por enquanto."
+  - **Textos:** "Aqui ficam as frases inteiras, quando eu achar alguma."
+  - **Mapa:** "Um mapa de onde eu passei. Ele se desenha sozinho." · "Dá para riscar nele. Vou marcar alguma coisa." **Tarefa:** o mapa pisca até
+    ele riscar ("Assim eu lembro. Dá para carimbar os símbolos também.").
+  - **Notas:** "Folhas em branco. Posso anotar o que eu achar importante."
+  - **Gemas** (o fundo): "No fundo, uma cruz cheia de furos. Vazios."
+- **Depois de cada parte o caderno volta sozinho ao índice** (num maço, §70) e a próxima pisca.
+- **No fim:** "Vou anotar tudo, como ela.", e "Guardar" pisca (e o botão do caderno, no celular). Só então o caderno guarda; tentar antes: "Ainda
+  não. Falta ver o resto."
+- **Um toque (ou Espaço/Enter) passa o pensamento** na hora, sem esperar ele sumir sozinho.
+- Testado no PC e no celular emulado, do começo ao fim (as sete partes, o toque errado ignorado, a anotação salva, o caderno guardado).
+- Teste: `window.__mdd.bookTutorial()` abre o caderno como na 1ª vez; `bookTut()` diz em que ponto o tutorial está.

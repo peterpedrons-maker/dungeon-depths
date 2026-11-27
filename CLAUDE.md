@@ -93,7 +93,9 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   palavras (pausa = ampulheta; nada de X, +, setas retas, duas barras, losango); aviso de ação = tecla de pedra + ícone + texto. **Logo** pixel
   «SENTENÇA» com o triângulo ACENDER (`tools/build_logo.py` → `src/ui/logo.ts`) e o ícone do app (face do dado com ACENDER).
   **Cenas** travam o olhar e escondem a mira (`lookLocked`/`onCine`); o dado caído da abertura chega de rosto para o jogador, de olhos fechados, e
-  acorda antes de falar; o **tutorial do caderno** obriga a passar por todas as partes, com pensamentos do personagem (`DESIGN.md` §47). Lousas de
+  acorda antes de falar; o **tutorial do caderno** começa no índice e leva parte por parte: a linha da vez pisca em ouro, o personagem diz o que é aquilo e o que dá para
+  fazer (anotar o que acha que é BRASEIRO, riscar o mapa), a tarefa pisca até ser feita e o caderno volta sozinho ao índice; um toque passa o
+  pensamento; no fim, "Guardar" pisca (`DESIGN.md` §71). Lousas de
   parede são lajes afastadas 2,5 cm da parede; decalques com offset -1 e plano acima do chão.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
   Publicado em `/masmorra-do-dado/`. É um PWA instalável (manifest + service worker em

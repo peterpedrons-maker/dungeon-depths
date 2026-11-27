@@ -363,63 +363,78 @@ export function createDiaryBook(env: BookEnv) {
   let claspK = 0;
   let claspPrev = 0;
 
-  // ── modo guiado: a 1ª abertura do caderno vira sozinha até BRASEIRO e pede uma anotação ──
+  // ── O TUTORIAL DO CADERNO (1ª abertura; DESIGN.md §71, pedido do Pedro) ──
+  // Começa no ÍNDICE. A parte da vez pisca em ouro; o jogador toca nela e o caderno vai até lá; o PERSONAGEM diz, com as palavras dele, o que é
+  // aquilo e o que dá para fazer ali; quando há uma tarefa (anotar o que acha que é BRASEIRO, riscar o mapa), a região pisca até ele fazer; aí o
+  // caderno volta sozinho ao índice e a próxima parte pisca. No fim, "Guardar" pisca. Enquanto dura, o jogador não folheia por conta própria.
+  // (Aqui o personagem fala um pouco mais que no resto do jogo, DESIGN.md §48: é ele quem ensina o caderno.)
   const GUIDED_ID = 'brasa';
-  // O MODO GUIADO é uma LEITURA, não um tutorial: o caderno abre no RELATO de "a que veio antes"; o jogador lê sem entender e pensa em perguntas.
-  // Depois o índice; ele precisa passar por todas as partes (o personagem pergunta a si mesmo o que é cada uma) e, nos símbolos, escrever o
-  // que acha que é BRASEIRO (embaixo do "?" dela). Só então o caderno fecha. O mesmo tom vale para o resto do jogo (DESIGN.md §48).
-  // guidedStep: 0 = nada; 1 = virando até o relato; 2 = lendo o relato; 3 = passeio livre; 4 = escrevendo sobre BRASEIRO
-  let guidedStep = 0;
-  type Part = 'dela' | 'simbolos' | 'faces' | 'textos' | 'mapa' | 'notas';
-  const PARTS: Part[] = ['dela', 'simbolos', 'faces', 'textos', 'mapa', 'notas'];
-  // a leitura do relato (as duas primeiras páginas, na letra dela)
-  // (o personagem fala POUCO: uma frase curta onde importa; nada de repetir o que a página já diz)
-  const READ_RELATO = ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'];
-  const AFTER_RELATO: string[] = [];
-  const PART_THOUGHT: Record<Part, string[]> = {
-    dela: [],
-    simbolos: ['Os que eu vi. Já estão aqui.'],
-    faces: ['As faces do dado.'],
-    textos: ['Ela não achou nenhuma.'],
-    mapa: ['Onde acordei. E aqui.'],
-    notas: ['Em branco.'],
+  type Part = 'dela' | 'simbolos' | 'faces' | 'textos' | 'mapa' | 'notas' | 'gemas';
+  const TOUR: Part[] = ['dela', 'simbolos', 'faces', 'textos', 'mapa', 'notas', 'gemas'];
+  type Lay = ReturnType<typeof layout>;
+  // aonde o índice leva cada parte (a linha que pisca é a região `goto:` dessa folha)
+  const ROW: Record<Part, (l: Lay) => number> = {
+    dela: (l) => l.herAt,
+    simbolos: (l) => l.dictAt,
+    faces: (l) => l.facesAt,
+    textos: (l) => l.textsAt,
+    mapa: (l) => l.mapAt,
+    notas: (l) => l.notesAt,
+    gemas: (l) => l.gemsAt,
   };
-  const TORN_THOUGHT = ['Arrancadas.'];
-  const WRITE_ASK = ['Ela não sabia o que era. E eu?'];
-  const WRITE_DONE = ['Anotado.'];
-  const ALL_DONE = ['Vou anotar tudo, como ela.'];
-  const tourSeen = new Set<Part>();
-  let tornSeen = false;
-  let writeAsked = false;
-  let wroteSaid = false;
-  const thinking = () => dialogueStore.get() !== null; // um pensamento ainda na tela: o próximo espera
-  const partOf = (spread: number): Part | null => {
-    const lay = layout(dState());
-    if (spread <= 0) return null;
-    if (spread < lay.dictAt) return 'dela';
-    if (spread < lay.facesAt) return 'simbolos';
-    if (spread < lay.textsAt) return 'faces';
-    if (spread < lay.mapAt) return 'textos';
-    if (spread < lay.notesAt) return 'mapa';
-    return 'notas';
+  interface Stop {
+    at: (l: Lay) => number; // a folha onde o personagem para e pensa
+    say: string[];
+    task?: 'note' | 'stroke';
+    done?: string[]; // o que ele pensa depois de fazer a tarefa
+  }
+  const INTRO = ['O caderno dela.', 'Ela dividiu tudo em partes. Vou ver uma por uma.'];
+  const STOPS: Record<Part, Stop[]> = {
+    dela: [
+      { at: (l) => l.herAt, say: ['A letra não é minha.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'] },
+      { at: (l) => l.herAt + 1, say: ['Faltam folhas. Arrancadas.', 'Se eu achar alguma, ponho de volta no lugar.'] },
+    ],
+    simbolos: [
+      {
+        at: () => symbolSpread(GUIDED_ID, dState()),
+        say: ['Os símbolos das paredes. Os que eu já vi estão aqui.', 'Ela anotava o que achava que eram. Se anotava, era importante.', 'Este ela não sabia. E eu, o que acho que é?'],
+        task: 'note',
+        done: ['Anotado. Se eu entender melhor, mudo depois.'],
+      },
+    ],
+    faces: [{ at: (l) => l.facesAt, say: ['As faces do dado. Só duas têm nome, por enquanto.'] }],
+    textos: [{ at: (l) => l.textsAt, say: ['Aqui ficam as frases inteiras, quando eu achar alguma.'] }],
+    mapa: [
+      {
+        at: (l) => l.mapAt,
+        say: ['Um mapa de onde eu passei. Ele se desenha sozinho.', 'Dá para riscar nele. Vou marcar alguma coisa.'],
+        task: 'stroke',
+        done: ['Assim eu lembro. Dá para carimbar os símbolos também.'],
+      },
+    ],
+    notas: [{ at: (l) => l.notesAt, say: ['Folhas em branco. Posso anotar o que eu achar importante.'] }],
+    gemas: [{ at: (l) => l.gemsAt, say: ['No fundo, uma cruz cheia de furos. Vazios.'] }],
   };
+  const END = ['Vou anotar tudo, como ela.'];
+  // fase: idle (sem tutorial) · intro · pick (no índice, esperando o toque na parte) · go (indo até a folha) · say (pensando) · task · back (voltando
+  // ao índice) · end (terminou: "Guardar" pisca, e o caderno já pode ser folheado e guardado)
+  const tut = { phase: 'idle' as 'idle' | 'intro' | 'pick' | 'go' | 'say' | 'task' | 'back' | 'end', i: 0, stop: 0, strokes0: 0, wait: 0 };
+  const tutorialOn = () => ui.guided() && tut.phase !== 'idle' && tut.phase !== 'end';
+  const thinking = () => dialogueStore.get() !== null; // um pensamento ainda na tela
   const noteDone = () => !!(dState().notes[GUIDED_ID] ?? '').trim();
-  const tourDone = () => PARTS.every((p) => tourSeen.has(p));
   const thinkInBook = (lines: string[], onEnd?: () => void) => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false, onEnd });
-  // os pensamentos de cada parte entram numa FILA: a parte conta como vista assim que o jogador chega nela, mesmo que ele vire a página
-  // enquanto outro pensamento ainda está na tela; o pensamento dela vem logo depois
-  const thoughtQ: { lines: string[]; onEnd?: () => void; part?: Part | 'torn' }[] = [];
-  const queueThought = (lines: string[], onEnd?: () => void, part?: Part | 'torn') => thoughtQ.push({ lines, onEnd, part });
-  // no modo guiado, só pode fechar depois de LER tudo e de ESCREVER sobre BRASEIRO
-  const guidedOk = () => noteDone() && tourDone();
-  // pede a anotação de BRASEIRO: vira até a página e abre o campo, embaixo do "?" dela
-  const askWrite = () => {
-    guidedStep = 4;
-    view.sel = GUIDED_ID;
-    goTo(symbolSpread(GUIDED_ID, dState()));
-    if (!writeAsked) {
-      writeAsked = true;
-      thinkInBook(WRITE_ASK);
+  // só pode guardar o caderno depois de passar por tudo
+  const guidedOk = () => tut.phase === 'end';
+  const curStop = () => STOPS[TOUR[tut.i]][tut.stop];
+  // a parada seguinte desta parte, ou a volta ao índice
+  const nextStop = () => {
+    tut.stop++;
+    if (tut.stop < STOPS[TOUR[tut.i]].length) {
+      tut.phase = 'go';
+      goTo(curStop().at(layout(dState())));
+    } else {
+      tut.phase = 'back';
+      tut.wait = 0.6; // (um respiro antes de voltar ao índice)
     }
   };
 
@@ -564,6 +579,16 @@ export function createDiaryBook(env: BookEnv) {
   const act = (id: string) => {
     const d = dState();
     const lay = layout(d);
+    if (tutorialOn()) {
+      // no índice, só a parte da vez; na tarefa, o campo de anotação e as canetas do mapa; o resto espera
+      const want = tut.phase === 'pick' ? `goto:${ROW[TOUR[tut.i]](lay)}` : null;
+      const ok = id === want || id === 'close' || (tut.phase === 'task' && (id === 'edit:note' || id.startsWith('pen:') || id.startsWith('floor:')));
+      if (!ok) {
+        env.sound('uiblip');
+        return;
+      }
+      if (id === want) tut.phase = 'go';
+    }
     if (id === 'prev') goTo(view.spread - 1);
     else if (id === 'next') goTo(view.spread + 1);
     else if (id === 'close') close();
@@ -599,13 +624,7 @@ export function createDiaryBook(env: BookEnv) {
     // modo guiado: só fecha depois de ler tudo e de escrever sobre BRASEIRO; senão o personagem diz o que falta (com as palavras dele)
     if (ui.guided() && !guidedOk()) {
       env.sound('uiblip');
-      if (guidedStep < 3) return; // ainda lendo o relato
-      if (!tourDone()) {
-        if (!thinking()) thinkInBook(['Falta ver o resto.']);
-        stopEdit();
-        guidedStep = 3;
-        goTo(0);
-      } else askWrite();
+      if (!thinking()) thinkInBook(['Ainda não. Falta ver o resto.']);
       return;
     }
     stopEdit();
@@ -700,9 +719,16 @@ export function createDiaryBook(env: BookEnv) {
     e.stopPropagation();
     e.preventDefault();
     if (!ready()) return;
+    // no tutorial, enquanto o personagem pensa, um toque passa para o próximo pensamento (sem esperar)
+    if (tutorialOn() && tut.phase === 'say' && thinking()) {
+      dialogue.next();
+      return;
+    }
     const p = pick(e);
     if (p?.region) {
-      if (p.region.id === 'map') beginDraw(p.side, p.px, p.py);
+      if (p.region.id === 'map') {
+        if (!tutorialOn() || (tut.phase === 'task' && curStop().task === 'stroke')) beginDraw(p.side, p.px, p.py);
+      }
       else act(p.region.id);
       return;
     }
@@ -716,11 +742,17 @@ export function createDiaryBook(env: BookEnv) {
     if (!ui.diaryOpen() || e.repeat) return;
     if (document.activeElement === ta) return;
     const k = e.key.toLowerCase();
+    if (tutorialOn() && tut.phase === 'say' && thinking() && (k === ' ' || k === 'enter')) {
+      e.preventDefault();
+      e.stopPropagation();
+      dialogue.next();
+      return;
+    }
     if (k === configStore.get().keys.diario || k === 'escape') {
       e.preventDefault();
       e.stopPropagation();
       close();
-    } else if (ready()) {
+    } else if (ready() && !tutorialOn()) {
       if (k === 'arrowright' || k === 'pagedown' || k === 'd') goTo(view.spread + 1);
       else if (k === 'arrowleft' || k === 'pageup' || k === 'a') goTo(view.spread - 1);
       else if (k === 'home') goTo(0);
@@ -733,7 +765,7 @@ export function createDiaryBook(env: BookEnv) {
     if (!ready()) return;
     e.preventDefault();
     e.stopPropagation();
-    if (!flip && Math.abs(e.deltaY) > 4) goTo(view.spread + (e.deltaY > 0 ? 1 : -1));
+    if (!flip && !tutorialOn() && Math.abs(e.deltaY) > 4) goTo(view.spread + (e.deltaY > 0 ? 1 : -1));
   };
   window.addEventListener('pointermove', onMove, true);
   window.addEventListener('pointerup', endDraw, true);
@@ -772,77 +804,94 @@ export function createDiaryBook(env: BookEnv) {
       return out.copy(inner.localToWorld(sock));
     },
     click: (id: string) => act(id), // (também usado nos testes)
+    // (testes) em que ponto está o tutorial e qual linha do índice ele espera
+    tut: () => ({ phase: tut.phase, part: TOUR[tut.i] ?? null, stop: tut.stop, want: tut.phase === 'pick' ? `goto:${ROW[TOUR[tut.i]](layout(dState()))}` : null, spread: view.spread, guide: view.guide ?? null, editing: view.editing }),
     update(dt: number, t: number) {
       const want = ui.diaryOpen() || presenting ? 1 : 0;
       if (want !== lastWant) {
         lastWant = want;
         env.sound(want ? 'uiopen' : 'uiclose');
         if (want && ui.guided() && !presenting) {
-          // o caderno abre e vira até o RELATO dela (a primeira coisa que se lê)
+          // o caderno abre no ÍNDICE e o personagem começa a olhar parte por parte
           diary.markSeen(GUIDED_ID);
-          view.spread = 0;
-          guidedStep = 1;
+          view.spread = target = 0;
+          tut.phase = 'intro';
+          tut.i = 0;
+          tut.stop = 0;
         }
       }
-      if (!want && ui.guided() && ui.uiGuidedOk()) ui.setGuided(false); // fechou depois de ler e escrever: a leitura guiada acabou
-      if (guidedStep && !ui.guided()) {
-        guidedStep = 0;
+      if (!want && ui.guided() && ui.uiGuidedOk()) ui.setGuided(false); // guardou depois do tutorial: acabou
+      if (tut.phase !== 'idle' && !ui.guided()) {
+        tut.phase = 'idle';
         view.pulse = false;
+        view.guide = null;
       }
-      if (guidedStep === 1 && T >= 0.99) {
-        target = layout(dState()).herAt;
-        if (view.spread === target && !flip) {
-          guidedStep = 2;
-          tourSeen.add('dela');
-          thinkInBook(READ_RELATO, () => {
-            thinkInBook(AFTER_RELATO);
-            window.setTimeout(() => {
-              if (guidedStep === 2) {
-                guidedStep = 3;
-                goTo(0);
+      if (tut.phase !== 'idle' && T >= 0.99) {
+        const lay = layout(dState());
+        const settled = !flip && view.spread === target;
+        let guide: string | null = null;
+        if (tut.phase === 'intro' && settled) {
+          tut.phase = 'say';
+          thinkInBook(INTRO, () => (tut.phase = 'pick'));
+        } else if (tut.phase === 'pick') {
+          guide = `goto:${ROW[TOUR[tut.i]](lay)}`;
+        } else if (tut.phase === 'go' && settled) {
+          const at = curStop().at(lay);
+          if (view.spread !== at) goTo(at);
+          else {
+            const st = curStop();
+            tut.phase = 'say';
+            if (st.task === 'note') view.sel = GUIDED_ID;
+            if (st.task === 'stroke') view.pen = 0;
+            thinkInBook(st.say, () => {
+              if (!st.task) return nextStop();
+              tut.phase = 'task';
+              tut.strokes0 = dState().strokes.length;
+            });
+          }
+        } else if (tut.phase === 'task') {
+          const st = curStop();
+          let did = false;
+          if (st.task === 'note') {
+            // o campo abre sozinho, embaixo do "?" dela, e pisca até ele escrever e sair do campo
+            if (!noteDone() && !view.editing) startEdit('note');
+            did = noteDone() && !view.editing;
+            if (!did) guide = 'edit:note';
+          } else if (st.task === 'stroke') {
+            did = dState().strokes.length > tut.strokes0 && !drawing;
+            if (!did) guide = 'map';
+          }
+          if (did) {
+            tut.phase = 'say';
+            thinkInBook(st.done ?? [], nextStop);
+          }
+        } else if (tut.phase === 'back') {
+          tut.wait -= dt;
+          if (tut.wait <= 0 && !thinking()) {
+            if (view.spread !== 0) {
+              if (!flip && target !== 0) goTo(0);
+            }
+            if (settled && view.spread === 0) {
+              tut.i++;
+              tut.stop = 0;
+              if (tut.i < TOUR.length) tut.phase = 'pick';
+              else {
+                tut.phase = 'end';
+                ui.setGuidedNote(true);
+                thinkInBook(END);
               }
-            }, 1200);
-          });
+            }
+          }
         }
-      }
-      if (guidedStep >= 3 && T >= 0.99 && !flip) {
-        const part = partOf(view.spread);
-        // as folhas arrancadas (logo depois do relato): uma pergunta a mais, sem obrigação
-        if (!tornSeen && view.spread === layout(dState()).herAt + 1) {
-          tornSeen = true;
-          queueThought(TORN_THOUGHT, undefined, 'torn');
-        } else if (part && !tourSeen.has(part)) {
-          tourSeen.add(part);
-          if (part === 'simbolos' && !noteDone()) queueThought(PART_THOUGHT[part], askWrite, part);
-          else queueThought(tourDone() && noteDone() ? [...PART_THOUGHT[part], ...ALL_DONE] : PART_THOUGHT[part], undefined, part);
-          ui.setGuidedNote(guidedOk());
-        }
-      }
-      if (guidedStep === 3 && !thinking() && thoughtQ.length) {
-        // o pensamento da página que está aberta passa na frente (os outros vêm depois, como lembrança)
-        const here = view.spread === layout(dState()).herAt + 1 ? 'torn' : partOf(view.spread);
-        const k = Math.max(0, thoughtQ.findIndex((q) => q.part === here));
-        const [q] = thoughtQ.splice(k, 1);
-        thinkInBook(q.lines, q.onEnd);
-      }
-      if (guidedStep === 4) {
-        // (o campo abre assim que a página chega; o pensamento fica no alto e os outros esperam a anotação)
-        if (T >= 0.99 && !flip && view.spread === symbolSpread(GUIDED_ID, dState()) && !view.editing && !noteDone()) startEdit('note');
-        const empty = !noteDone();
-        const pulse = empty && Math.floor(t * 2.4) % 2 === 0;
-        if (pulse !== !!view.pulse) {
+        if (tut.phase === 'end' && view.spread === 0 && !flip) guide = 'close';
+        // pisca (~2,4 vezes por segundo)
+        const blink = !!guide && Math.floor(t * 2.4) % 2 === 0;
+        const pulse = tut.phase === 'task' && curStop()?.task === 'note' && !noteDone() && blink;
+        if (guide !== view.guide || blink !== !!view.blink || pulse !== !!view.pulse) {
+          view.guide = guide;
+          view.blink = blink;
           view.pulse = pulse;
           refresh();
-        }
-        // escreveu e saiu do campo: volta ao passeio (pelo índice)
-        if (!empty && !view.editing && !wroteSaid) {
-          wroteSaid = true;
-          guidedStep = 3;
-          view.pulse = false;
-          ui.setGuidedNote(guidedOk());
-          queueThought(tourDone() ? [...WRITE_DONE, ...ALL_DONE] : WRITE_DONE, () => {
-            if (!tourDone()) goTo(0);
-          });
         }
       }
       if (!want && view.editing) stopEdit();
