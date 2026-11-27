@@ -463,6 +463,11 @@ Sequência (depois de o jogador chegar embaixo do poço e olhar para cima, com z
 5. **A câmera desce POR BAIXO do dado** que cai: o dado em cima, girando, contra o círculo de céu, e as paredes do poço passando (dentro da coluna do poço).
 6. Perto do teto da sala, **corte para o olhar do jogador**, que vê o dado bater no chão, quicar e rolar. Daí em diante como na §32 (olha para cima: ele sumiu; "Sumiu."; câmera para a frente; cena travada até pegar o dado).
 - O Escrivão tem 1,3× o tamanho de antes (alto e curvado; o dado, de ~40 cm, cabe na mão dele). Dev: `__mdd.opening()` mostra a fase, se a câmera de cinema está ativa e onde está a mão dele.
+- **O zoom só depois de olhar para cima** (pedido do Pedro): o olhar subia até a boca do poço e o zoom começava junto, então a câmera "dava
+  zoom" ainda olhando para o chão. Agora o olhar sobe sem zoom e, já lá em cima, um zoom leve (44°, era 32°) empurra devagar para a luz, antes
+  do corte para fora; o mesmo quando ele olha de novo e o Escrivão sumiu. **O dado caído** aparece com um zoom leve (42°; era 20°, mais de três
+  vezes): ainda se vê o rosto dormindo, o acordar e o balão. Testado no PC e no celular (`__mdd.opening().fov`: o campo de visão fica no normal
+  enquanto o olhar sobe).
 
 ## 34. Diário nítido e interface maior no PC (implementado)
 - **O diário tem o próprio canvas**, em resolução cheia (até 2× a densidade da tela), por cima do jogo (`bookRenderer`/`bookScene` em `scene.ts`). As páginas continuam em pixel art (132×176 pixels, fonte 5×8), mas cada pixel do papel vira vários pixels de tela, nítidos: no canvas do jogo (~200 linhas, com pontilhado e paleta) as letras se desmanchavam. Cliques seguem pelo canvas do jogo (mesmo lugar e tamanho). Aberto, o livro ocupa quase a tela toda (escala 1,2). Enquanto o livro está fora, avisos, legendas e a dica de controles esperam.

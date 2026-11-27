@@ -1314,14 +1314,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         break;
       case 3:
         if (!autoWalk) {
-          // chegou: ergue os olhos devagar até a boca do poço (a luz, a trave, a corda)
+          // chegou: ergue os olhos devagar até a boca do poço (a luz, a trave, a corda). O zoom só vem DEPOIS, com o olhar já lá em cima
+          // (pedido do Pedro: começando junto, ele "dava zoom" ainda olhando para o chão)
           camTween = { y0: yaw, p0: pitch, y1: lookYaw(W.x, W.z), p1: lookPitch(W.x, W.y + 1.6, W.z + 0.05), t: 0, dur: 2.2 };
-          fovCine = 32;
           go(3.5);
         }
         break;
       case 3.5:
-        if (S.t > 1.3) {
+        // (as fases só correm depois do movimento de câmera: aqui ele já está olhando para a luz) um zoom leve na boca do poço
+        fovCine = 44;
+        if (S.t > 1.5) {
           // CORTE: lá fora. O Escrivão vem andando por trás da mureta
           sPos.copy(SCRIBE_FROM).add(W);
           S.yaw = Math.atan2(SCRIBE_AT.x - SCRIBE_FROM.x, SCRIBE_AT.z - SCRIBE_FROM.z);
@@ -1394,19 +1396,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 9:
         // o dado parou no chão: o olhar volta lá para cima… e ele não está mais lá
         camTween = { y0: yaw, p0: pitch, y1: lookYaw(W.x, W.z), p1: lookPitch(W.x, W.y + 1.6, W.z + 0.05), t: 0, dur: 1.6 };
-        fovCine = 32;
         go(9.5);
         break;
       case 9.5:
+        fovCine = 44; // (o mesmo zoom leve, só com o olhar já lá em cima)
         if (S.t > 1.3) {
           dialogue.say([{ who: 'thought', text: 'Sumiu.' }], { block: true, onEnd: () => go(10) });
           S.ph = 9.8;
         }
         break;
       case 10: {
-        // de volta para a frente, com o olhar um pouco baixo: o dado caído aparece no meio da tela, de perto (zoom: dá para ver o rosto
-        // dormindo e o acordar)
-        fovCine = 20;
+        // de volta para a frente, com o olhar um pouco baixo: o dado caído aparece no meio da tela, um pouco mais perto (zoom leve: dá
+        // para ver o rosto dormindo e o acordar; era 20°, mais de 3 vezes, e o Pedro achou demais)
+        fovCine = 42;
         const dw = worldDie.position;
         camTween = { y0: yaw, p0: pitch, y1: lookYaw(dw.x, dw.z), p1: lookPitch(dw.x, dw.y + 0.05, dw.z), t: 0, dur: 1.6 };
         go(11);
