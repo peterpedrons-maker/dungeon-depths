@@ -1697,6 +1697,16 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
   - **Testes:** `__mdd.music()` mostra também o canal da música (`bus`, `verbBus`) e o escuro aplicado (`dark`).
   - **Faixas de demonstração:** gravadas com `renderAudio` e convertidas com o `ffmpeg`, fora do projeto: o resolvido (antes e depois), a
     peça do menu e a pausa da música do jogo.
+- **O resolvido refeito com gravações (pedido do Pedro: "ficou bem destoante dos restantes, ficou mais sintético").** A versão com coro de
+  ataque lento, tímpano, violoncelo e contrabaixo empilhados numa cadência inteira soava como um jingle de MIDI. Os outros sons do jogo são
+  gravações de pedra, porta e dado, com no máximo um toque de harpa ou celesta. Agora o resolvido é da mesma matéria:
+  - a trava de pedra que solta (`plate1`, mais grave), a pedra assentando (`settle`) e um baque surdo (`boom`);
+  - o **gongo gravado** a 0,668 da velocidade. Medido: as parciais fortes dele caem em mi (+40 cents), dó sustenido e lá, um Lá maior com a
+    desafinação natural de gongo, por isso ele fica por baixo;
+  - por cima, o mesmo par do passo certo, agora inteiro e resolvendo: a harpa em lá, dó sustenido, mi e lá, a celesta em lá e mi, e o **sino
+    gravado** afinado no lá (a parcial forte dele está em 1827 Hz; toca a 0,963).
+  Sem coro, tímpano, violoncelo nem contrabaixo. O volume fica parecido com o de antes (−18,2 LUFS sozinho, −15,6 com a porta, medidos na
+  faixa de demonstração). O duck da música, o silêncio depois e o "uma vez por sala" continuam iguais.
 
 ## 80. A abertura da editora, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
 
