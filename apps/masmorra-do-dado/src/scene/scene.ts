@@ -1517,7 +1517,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           life.react('shake');
           if (configStore.get().vibration && window.matchMedia('(pointer: coarse)').matches) navigator.vibrate?.(70); // (celular: vibra no erro)
         }
-        else if (n === 'piece' || n === 'gem') {
+        else if (n === 'piece' || n === 'gem' || n === 'secret') {
           life.react('joy');
           saveIn = Math.min(saveIn, 1.2);
         }
@@ -4629,7 +4629,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       // (testes) quais salas já tocaram o resolvido
       solvedRang: () => [...solvedRang],
       // (testes) grava uma faixa de demonstração com o motor de som num OfflineAudioContext (devolve um WAV em base64; ver audioRender.ts)
-      renderAudio: (secs: number, ops: unknown[]) => import('./audioRender').then((m) => m.renderAudio(secs, ops as never)),
+      renderAudio: (secs: number, ops: unknown[], dry = false) => import('./audioRender').then((m) => m.renderAudio(secs, ops as never, 48000, dry)),
       state: () => ({
         room: curRoom,
         dieState,

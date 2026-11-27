@@ -1706,3 +1706,12 @@ saíram dos pacotes já creditados (qubodup, rubberduck). Áudio total: **2,39 �
     gravado** afinado no lá (a parcial forte dele está em 1827 Hz; toca a 0,963).
   Sem coro, tímpano, violoncelo nem contrabaixo. O volume fica parecido com o de antes (−18,2 LUFS sozinho, −15,6 com a porta, medidos na
   faixa de demonstração). O duck da música, o silêncio depois e o "uma vez por sala" continuam iguais.
+- **Um som para cada tipo de solução (pedido do Pedro: "tipos de efeito sonoro para variados tipos de solução").** O jogo tem agora:
+  - o **passo certo** (`piece`), um acerto no meio do puzzle;
+  - o **resolvido** (`solved`), o puzzle principal da sala;
+  - o **segredo** (`secret`, novo), o nicho escondido que se abre com uma folha dela ou uma gema. Os nichos de segredo (`makeGemNiche`)
+    tocavam o som da porta. Agora tocam o próprio: a laje pequena correndo (a pedra da porta, mais aguda e curta), um brilho de vidro, a harpa
+    no lá e três notas de celesta subindo com eco. É menor e mais misterioso que o resolvido;
+  - a **porta** (`door`), o **erro** (`error`) e o **fim do capítulo** (`fanfare`).
+  - Para o Pedro ouvir cada um **sozinho**, o gravador de demonstração (`audioRender.ts`, só em desenvolvimento) ganhou a opção `dry`:
+    sem música, sem vento e sem o "ar" da sala; o silêncio entre os sons é absoluto.

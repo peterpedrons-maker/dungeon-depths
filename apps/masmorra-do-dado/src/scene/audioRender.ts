@@ -22,11 +22,13 @@ type Priv = {
   ac: BaseAudioContext;
 };
 
-export async function renderAudio(secs: number, ops: RenderOp[], sr = 48000): Promise<string> {
+// `dry` = sem o "ar" da sala (o laço de vento grave que fica sempre ligado): para gravar um efeito SOZINHO, limpo (pedido do Pedro)
+export async function renderAudio(secs: number, ops: RenderOp[], sr = 48000, dry = false): Promise<string> {
   const oac = new OfflineAudioContext(2, Math.ceil(secs * sr), sr);
   const s = new Sfx();
   await s.init(oac, false);
   const p = s as unknown as Priv;
+  if (dry) (s as unknown as { toneG: GainNode | null }).toneG = null; // (o ganho dele nasce em zero e ninguém mais o sobe)
   let amb: AmbientState = { wind: 0, size: 0.5, drip: 0, dripPan: 0, calm: true, paused: false };
   // os passos viram uma sequência de passos separados
   const list: RenderOp[] = [];
