@@ -2,6 +2,7 @@ import { configStore } from '../story/config';
 import * as THREE from 'three';
 import { diary, diaryStore } from '../story/diary';
 import { ui } from '../story/ui';
+import { HER_PAGES, HER_RELATO } from '../story/herpages';
 import { dialogue, dialogueStore } from '../story/dialogue';
 import { BOARD_H, BOARD_W, diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt, drawGemBoard, gemSocketPx } from './bookart';
 import { blankPaper, currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
@@ -814,6 +815,19 @@ export function createDiaryBook(env: BookEnv) {
       if (want !== lastWant) {
         lastWant = want;
         env.sound(want ? 'uiopen' : 'uiclose');
+        // uma folha dela acabou de ser achada: o caderno abre direto nela (DESIGN.md §78)
+        const np = dState().newPage;
+        if (want && np && !ui.guided() && !presenting) {
+          const k = HER_PAGES.filter((p) => p.body.length > 0).findIndex((p) => p.id === np);
+          if (k >= 0) {
+            stopEdit();
+            flip = null;
+            leaves.forEach((lf) => (lf.group.visible = false));
+            view.spread = target = layout(dState()).herAt + Math.floor((HER_RELATO.length + k) / 2);
+            refresh();
+          }
+          diary.readPage();
+        }
         if (want && ui.guided() && !presenting) {
           // o caderno abre no ÍNDICE e o personagem começa a olhar parte por parte
           diary.markSeen(GUIDED_ID);

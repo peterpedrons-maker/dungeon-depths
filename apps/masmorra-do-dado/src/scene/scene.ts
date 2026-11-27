@@ -4554,6 +4554,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       gemState: () => ({ active: gemFx.active(), gems: [...(diaryStore.get().gems ?? [])], book: book.opened() }),
       altarState: () => (altar ? { t: +altar.t.toFixed(2), die: dieState, holds } : null), // (testes) a cena do altar (DESIGN.md §77)
+      // (testes) uma folha dela achada agora (o aviso: pensamento, botão pulsando, o caderno abre nela; §78), um marco, e "já sabe que é dela"
+      addPage: (id: string) => diary.addPage(id),
+      setFlag: (f: Flag) => progress.set(f),
+      knowHer: () => diary.knowHer(),
+      newPage: () => diaryStore.get().newPage ?? null,
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),

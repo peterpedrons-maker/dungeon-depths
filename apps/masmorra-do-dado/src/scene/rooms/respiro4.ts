@@ -249,7 +249,6 @@ export function buildRespiro4(ctx: Ctx): Room {
         leaf.visible = false;
         diary.addPage('p7');
         ctx.sfx('gem');
-        ctx.caption('Uma folha arrancada', 'É do caderno. A letra dela.', '#d8b880');
       },
     },
   ];

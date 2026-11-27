@@ -68,7 +68,8 @@ para quem achou **as 21 gemas**.
   a da Ala do Papel (sala 11) e a da constelação C6 (sala 21). Os outros 11 segredos do capítulo guardam **folhas arrancadas dela** (p8 a p18).
 - **Os furos.** Em todo o jogo há exatamente **21 furos redondos de luz** nos tetos: os pontos do dado. **Só os redondos contam** (frestas, pátios e o
   claustro não). A Casa fica dentro do dado e o capítulo 1 é a borda (`DIRECAO_DE_ARTE.md` §9), então quase todos ficam nos capítulos 1 e 2; o **Poço**
-  do começo é o furo do UM. Ninguém diz isso no jogo. Só as folhas dela, de leve: ela anota os furos, "só os redondos" (p8), e um dia para de contar (p18).
+  do começo é o furo do UM. Ninguém diz isso no jogo, nem as folhas dela: ela só fica parada embaixo da luz do teto sem saber por quê (p8), conta tudo por
+  mania, as luzes lá em cima também (p7), e um dia para de contar (p18). (Pedido do Pedro: nada de ela mandar contar os furos; tudo ambíguo e discreto.)
 - **A cena.** O dado montado no fundo do caderno sai do livro: a cruz se dobra e vira um cubo. Zoom: ele está rachando, e a luz vaza pelos 21 furos.
   Ele rola e para no UM. O furo do UM é o Poço do começo: a câmera entra nele com a luz brilhando, tudo fica branco, e o jogador se vê caindo dentro do
   poço de novo. Um laço: **a Casa fica dentro do dado**.
@@ -87,7 +88,7 @@ para quem achou **as 21 gemas**.
 ## As folhas dela no capítulo 1
 - São **18**: p1 a p7 e, nos segredos que não guardam gema, p8 a p18 (`src/story/herpages.ts`). A ordem do caderno é a do caminho da Casa, da sala 3
   à sala 20: ela escrevia por onde passava.
-- **Fios que atravessam as folhas**, sempre de leve e sem resolver nada: os furos redondos do teto (p7, p8, p18), uma pedra que brilha e não serve em
+- **Fios que atravessam as folhas**, sempre de leve e sem resolver nada: a luz do teto (p8, p7, p18; ninguém diz "furos" nem manda contar), uma pedra que brilha e não serve em
   porta nenhuma (p10), o corpo que não sente sede nem fome (p11), o sonho dentro de uma mão fechada (p13), "o de capuz" que escreve "sobre mim" (p14,
   sem dizer se é bom), a lembrança de cair de muito mais alto, com a luz redonda ficando pequena (p16).
 - **Erros plantados** (além da p4, "o que está talhado não mente", e da p6, PEQUENO = UM):
