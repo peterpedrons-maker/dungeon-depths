@@ -1317,3 +1317,27 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
   3. as portas de lado e os corredores com cotovelo e escada, mexendo em puzzle só onde for preciso, com verificador e `PUZZLES.md`;
   4. os furos;
   5. o teste completo.
+- **Passo 2, feito (o motor):**
+  - **onde cada sala fica:** `src/scene/place.ts`. Cada sala continua construída nas coordenadas dela; o motor a põe no mundo com uma
+    posição e um giro em quartos de volta (`Place`). Toda conversão entre o mundo e a sala passa por ele: posição, direção, ângulo de olhar,
+    retângulos de colisão, a mira, o dado (posição e velocidade), as escritas (a normal também gira), o giz, as luzes e as cenas. O Poço fica
+    sempre na origem e sem giro (a abertura e a tela inicial contam com isso);
+  - **em que sala está um ponto:** `roomAt`, pela caixa da sala nas coordenadas dela (entre a entrada e o fim do corredor da porta, dentro da
+    largura e da altura dela). Duas salas no mesmo ponto, uma por cima da outra: fica a do jogador;
+  - **os corredores de ligação:** `src/scene/connector.ts`. Quando a entrada da próxima sala não fica na ponta do corredor da porta, o motor
+    completa o caminho com um corredor de pedra do mesmo corte (1,9 m × 2,65 m): reto, em L, em Z ou em U, sempre em ângulo reto. Ele
+    sai reto da porta, vira e chega reto (2 m) na entrada. Ele tem chão, teto, paredes e colisão, e pertence à sala da porta. A regra do
+    caminho é a mesma da ferramenta da planta;
+  - **a planta é a fonte:** `tools/planta/planta_cap1.py` grava `src/scene/planta.json` (a origem e o giro de cada sala, pelo nome) e o
+    desenho. Ela também alinha sozinha as salas quase alinhadas (um degrau de lado de menos de 1,5 m num corredor fica feio) e avisa salas
+    sobrepostas e corredores que atravessam salas. A altura de cada sala continua saindo da anterior (porta de saída = entrada da seguinte);
+  - **`?planta=1`:** monta o mundo pela planta (prévia). Sem isso, o mundo continua em fila, idêntico ao de antes (conferido sala por sala:
+    posições e imagens iguais). A prévia só fica certa no passo 3: hoje as salas ainda só têm a porta do fundo e a entrada da frente, então
+    onde a planta pede porta de lado o corredor dá voltas ou atravessa a sala;
+  - **o mapa do caderno sai do 3D** (com `?planta=1`): cada sala é a caixa dela, no lugar dela; cada corredor, o caminho dele, da porta à
+    entrada. O mapa fica deitado nas duas páginas, com o norte do mundo para a direita. Tem dois andares, o térreo (com o claustro) e o
+    subsolo (abas T e S), e o fosso e a Escadaria aparecem nos dois. Sem a planta, o mapa em cobra de antes;
+  - **o salvamento** grava a posição E o ângulo locais à sala (e acha a sala pelo nome): o jogo salvo continua valendo quando a sala muda de
+    lugar ou de giro;
+  - **testes:** `__mdd.placeIn(sala, x, z, ângulo, inclinação)` (ponto local da sala), `__mdd.connectors()` e `__mdd.mapImage(andar)` (o mapa
+    com tudo visitado). A sala 20 foi 4,6 m para o oeste na planta (o corredor dos Banhos ao Pano passava por baixo dela).

@@ -32,7 +32,7 @@ put(at(19, 'W', 43.5, 29.8, exit_side='L', exit_off=-3), 'TS')
 put(at(21, 'S', 62, 110))
 put(at(20, 'S', 64.2, 89, exit_side='B', exit_off=-4))
 put(at(22, 'S', 74, 123.6, exit_side='R', exit_off=-2))
-put(at(23, 'W', 49, 129.6, exit_side='R', exit_off=-9))
+put(at(23, 'W', 49, 129.6, exit_side='R', exit_off=-9.95))
 put(at(24, 'N', 46.1, 95))
 # ── SUBSOLO ──
 put(at(14, 'S', 76, 76.5), 'S')
@@ -60,6 +60,20 @@ OPTIONAL = [
     ('S', (26.0, 92.0, 36.0, 101.0), (36.0, 96.5, 41.0, 96.5)),     # no subsolo, a oeste da Galeria
 ]
 LINKS = [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 16), (16, 17), (17, 18), (18, 19), (20, 21), (21, 22), (22, 23), (23, 24)]
+
+# ── alinha o que ficou QUASE alinhado (um corredor com um degrau lateral de menos de 1,5 m fica feio e não diz nada): a sala seguinte
+# desliza de lado até o corredor ficar reto. Em ordem, para cada sala ir junto com a anterior. ──
+for a, b in LINKS:
+    (ex, ey), (dx, dy) = R[a].door()
+    (nx, ny), (fx, fy) = R[b].entrance()
+    if (dx, dy) != (fx, fy):
+        continue
+    lat = (nx - ex) if dx == 0 else (ny - ey)
+    if 0.01 < abs(lat) < 1.5:
+        if dx == 0:
+            R[b].ox -= lat
+        else:
+            R[b].oy -= lat
 
 # ── checagens ──
 rects = {i: r.rect() for i, r in R.items()}
