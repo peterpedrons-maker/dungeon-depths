@@ -603,6 +603,9 @@ function endpaper(ctx: CanvasRenderingContext2D, label = true) {
   drawCentered(ctx, 'O que eu acho.', cx, ly + 114, INK2);
 }
 
+// o papel de uma folha sem nada escrito (as folhas do meio de um maço virando de uma vez, book3d.ts)
+export const blankPaper = (side: 'L' | 'R') => paper(side, 0);
+
 // leva a lista de regiões a sério: dá para clicar em quase tudo que está escrito
 export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
   if (view.spread === lay.mapAt) return renderMapHalf(ctx, side, view, d, lay);

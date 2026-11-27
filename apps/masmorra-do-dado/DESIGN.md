@@ -1341,3 +1341,23 @@ soquete; os verificadores (`tools/verify_*.mjs`) continuam passando.
     lugar ou de giro;
   - **testes:** `__mdd.placeIn(sala, x, z, ângulo, inclinação)` (ponto local da sala), `__mdd.connectors()` e `__mdd.mapImage(andar)` (o mapa
     com tudo visitado). A sala 20 foi 4,6 m para o oeste na planta (o corredor dos Banhos ao Pano passava por baixo dela).
+
+## 74. O dado no braseiro 3D e o caderno que pula de parte em parte (pedidos do Pedro)
+
+- **Posicionar o dado no braseiro.** Com o braseiro em modelo 3D (§62) o "posicionar" deixou de funcionar: o dado só assenta num braseiro quando a
+  mira bate numa SUPERFÍCIE dele, e o braseiro de caixas era superfície; o modelo não. A mira atravessava a coluna: mirando na cesta ou no meio da
+  coluna o dado nem saía da mão ("longe demais"); mirando embaixo ele ia para o chão, atrás. Agora cada braseiro em modelo tem um cilindro
+  INVISÍVEL do tamanho dele que recebe a mira (`aimOnly`, o giz não risca nele), e mirar em qualquer altura dele assenta o dado no centro, em cima da
+  cesta (`placeDie`, `userData.socket`). Testado mirando na cesta, no meio, na base, de lado e de perto.
+- **A colisão segue o desenho** (`brazier.ts`). Medido do arquivo: a coluna tem uns 22 cm de raio no fuste, um pouco mais na base e no capitel, e a
+  cesta 18 cm. Antes eram os dois blocos do braseiro de caixas (o de cima com 42 cm de meia largura): o jogador e o dado batiam no ar em volta da
+  cesta. Agora são quatro: base (30 cm, até 0,18 m), fuste (20 cm, até 0,8 m), capitel (26 cm, até 0,9 m) e cesta (18 cm, até 1,1 m, onde o dado
+  repousa). O ponto onde o dado acende (a tigela, 1,15 m) não mudou. O braseiro antigo (`?braseiro=antigo`) continua com as caixas dele.
+- **O caderno pula de parte em parte de uma vez.** Antes, escolher uma parte no índice (ou voltar ao índice pela setinha) virava as folhas uma por
+  uma até lá: do fundo (Gemas) ao índice eram mais de quinze viradas. Agora:
+  - as setas, a roda e o canto da folha viram **uma página** (como antes);
+  - um pulo maior vira **um maço de folhas de uma vez**, em leque (até 5 folhas saindo uma atrás da outra, ~0,7 s no total): a primeira folha leva a
+    página de onde se sai, a última traz a página aonde se chega, as do meio são papel em branco. Vale para qualquer pulo (índice, voltar ao índice,
+    o modo guiado indo até BRASEIRO).
+  - No modo guiado, uma parte só conta como vista quando o caderno PARA nela (antes, passar por ela virando conta).
+

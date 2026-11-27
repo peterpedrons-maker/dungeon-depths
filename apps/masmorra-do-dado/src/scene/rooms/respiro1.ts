@@ -417,7 +417,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   const SOL = [0, 3]; // frente-esq + fundo-dir: na água aparece o DOIS
   let reflSolved = false;
   let reflIdle = 0;
-  let gemTaken = diary.hasGem('cisterna'); // (uma das 21 gemas: DESIGN.md §70)
+  let gemTaken = diary.hasGem('cisterna'); // (uma das 21 gemas: DESIGN.md §69)
   const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshLambertMaterial({ color: 0x7af0ff, emissive: 0x2ab8e0, emissiveIntensity: 0.8, flatShading: true }));
   gem.position.set(CIST.x, -0.2, CIST.z);
   gem.visible = false;

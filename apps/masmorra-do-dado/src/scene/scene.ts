@@ -56,7 +56,7 @@ import { buildRespiro1 } from './rooms/respiro1';
 import { buildPonte } from './rooms/ponte';
 import { buildRespiro2 } from './rooms/respiro2';
 import { buildApelidos } from './rooms/apelidos';
-import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder } from './types';
+import type { Ctx, DieState, Interactable, Rect, Room, RoomBuilder, Socket } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
 import { type ScribePose } from './scribe';
@@ -982,7 +982,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     camera.updateMatrixWorld();
     ray.setFromCamera(ndc, camera);
     ray.far = 4.5;
-    const hit = ray.intersectObjects(nearSurfaces(), false)[0];
+    const hit = ray.intersectObjects(nearSurfaces(), false).find((h) => !h.object.userData.aimOnly); // (a mira invisível do braseiro não leva giz)
     if (!hit || !hit.face) {
       chalk.beginStroke();
       return;
@@ -2516,7 +2516,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // com precisão — mas o dado "posicionado" não pega segredos: pra eles
   // ainda é preciso arremessar (ricochete).
   const PLACE_RANGE = 3.2;
-  const aimPoint = (): { p: THREE.Vector3; n: THREE.Vector3; room: number } | null => {
+  const aimPoint = (): { p: THREE.Vector3; n: THREE.Vector3; room: number; obj: THREE.Object3D } | null => {
     camera.updateMatrixWorld();
     ray.setFromCamera(ndc0, camera);
     ray.far = PLACE_RANGE;
@@ -2529,7 +2529,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (lz < rooms[ri].doorZ - 0.1 || lz > rooms[ri].entranceZ - 0.15) return null; // (a própria porta conta: há portas que são lousas)
     const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
     if (n.dot(ray.ray.direction) > 0) n.negate();
-    return { p: hit.point, n, room: ri };
+    return { p: hit.point, n, room: ri, obj: hit.object };
   };
   const placeDie = () => {
     if (dieState !== 'hand' || busy()) return;
@@ -2554,6 +2554,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         toW(a.room, animTo.set(s.x, s.y + R + 0.02, s.z));
       }
     }
+    // a mira caiu no braseiro (o cilindro invisível do modelo 3D, em qualquer altura): o dado vai para cima da cesta
+    const sk = a.obj.userData.socket as Socket | undefined;
+    if (sk && sk.r > 0) animTo.set(off.x + sk.x, off.y + sk.y + R + 0.02, off.z + sk.z);
     handWorld(animFrom);
     animT = 0;
     dieV.set(0, 0, 0);
