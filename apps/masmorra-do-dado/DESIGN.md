@@ -1933,3 +1933,22 @@ ligado ao objeto que aparece na tela:
 - **Níveis medidos**, cada um sozinho (pico): apertar −18 dB, passar por cima −29, mudar de aba −28, abrir a pausa −18, fechar −16, abrir o
   caderno −9, virar a página −10, tocar no papel −21, o fecho −10, fechar o caderno −9, anotado −25, trocar a face −11. Os do caderno são
   mais altos de propósito: é o objeto grande que o personagem tem na mão; os de passar por cima são os mais baixos porque tocam a toda hora.
+
+## 87. As configurações cabem em qualquer janela (pedido do Pedro)
+
+"Menu tá bem estranho, e dependendo da janela fica o botão de voltar cortado lá embaixo." Três defeitos na tela de Configurações:
+
+- **O Voltar sumia.** A tábua inteira rolava junto com a lista de opções, e a lista tinha uma altura máxima calculada à parte. Em janela
+  baixa ou estreita (no PC, 820 × 620, com as abas em duas linhas; no celular, a aba Imagem) a tábua passava da tela: duas barras de
+  rolagem e o Voltar cortado embaixo. Agora as tábuas grandes (configurações, espaços de jogo, créditos) são uma coluna: o título, as abas e o
+  Voltar ficam **sempre à vista** e **só o meio rola**, numa barra de pedra fina. A altura máxima usa `100dvh`, a altura de verdade da tela
+  do celular (com a barra do navegador).
+- **Letras de dois tamanhos.** No celular o nome da opção saía com o dobro do tamanho das escolhas (`--fm` × `--fs`): o nome parecia título
+  e os botões ficavam pequenos demais para o dedo. Agora o nome e as escolhas usam a mesma letra em qualquer tela. O número dos ajustes (o
+  "0" do Brilho) fica colado na barra, não solto na ponta da linha. No celular baixo, o ícone do título cai para 24 px.
+- **Nada dizia que havia mais embaixo.** No celular a barra de rolagem só aparece enquanto se rola. Com opções escondidas embaixo, a borda
+  de baixo da lista esmaece e **três pontinhos de ouro** piscam entre a lista e o Voltar; com a lista já rolada, a borda de cima também
+  esmaece (`useScrollCue` em `src/ui/Menus.tsx`).
+- Testado em 6 tamanhos (celular 915 × 412 e 740 × 360; PC 1280 × 720, 1400 × 560, 1920 × 1080 e 820 × 620): o Voltar fica inteiro dentro da
+  tábua e da tela em todos, a tábua não rola mais (só a lista), e o Voltar funciona.
+

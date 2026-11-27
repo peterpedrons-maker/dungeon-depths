@@ -21,7 +21,7 @@
 .mnu-veil.pause { background: rgba(5, 4, 10, 0.7); }
 
 /* a TÁBUA de pedra (cantos lascados: clip-path em degraus de 4px) */
-.board { position: relative; box-sizing: border-box; max-height: calc(100vh - 24px); overflow: auto; padding: calc(14px * var(--ui)) calc(20px * var(--ui));
+.board { position: relative; box-sizing: border-box; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: auto; padding: calc(14px * var(--ui)) calc(20px * var(--ui));
   color: var(--chalk); text-align: center; background: var(--st-face);
   background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), radial-gradient(rgba(0, 0, 0, 0.18) 1px, transparent 1px);
   background-size: 7px 7px, 5px 5px; background-position: 0 0, 3px 2px;
@@ -36,6 +36,26 @@
 @keyframes board-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .board-s { width: min(calc(420px * var(--ui)), 92vw); }
 .board-w { width: min(calc(820px * var(--ui)), 96vw); }
+/* tábua grande (configurações, espaços, créditos): o título, as abas e o Voltar ficam SEMPRE à vista; só o meio rola, com uma barra de
+   pedra fina (antes a tábua inteira rolava junto com a lista: duas barras e o Voltar sumindo embaixo em janela baixa ou estreita) */
+.board-w { display: flex; flex-direction: column; overflow: hidden; }
+.board-w > h2, .board-w > .tabs, .board-w > .row-btns { flex: none; }
+.board-w > .opts, .board-w > .slots, .board-w > .credits-t { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #5a534e transparent; }
+.board-w > .more.above {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%); }
+.board-w > .more:not(.above) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 34px), rgba(0, 0, 0, 0.55) calc(100% - 14px), transparent 100%); }
+.board-w > .above:not(.more) { -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px);
+  mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.55) 14px, #000 34px); }
+.board-w > .row-btns { position: relative; }
+.board-w.more-below > .row-btns::before { content: ''; position: absolute; left: 50%; top: calc(-9px * var(--ui)); width: 4px; height: 4px; margin-left: -2px;
+  background: var(--gold-old); box-shadow: -10px 0 0 var(--gold-old), 10px 0 0 var(--gold-old), 1px 1px 0 #05040a; animation: more-bob 1.2s steps(2) infinite; }
+@keyframes more-bob { 50% { transform: translateY(2px); opacity: 0.55; } }
+.board-w ::-webkit-scrollbar { width: 6px; }
+.board-w ::-webkit-scrollbar-track { background: transparent; }
+.board-w ::-webkit-scrollbar-thumb { background: #5a534e; }
+@media (max-height: 520px) { .board h2 svg { width: 24px; height: 24px; } .board h2 { margin-bottom: 6px; } }
 .board h2 { margin: 0 0 calc(10px * var(--ui)); font-size: var(--fl); font-weight: normal; color: var(--gold); text-shadow: 2px 2px 0 #05040a;
   display: flex; align-items: center; justify-content: center; gap: 10px; }
 .board-q { margin: 4px 0 6px; font-size: var(--fl); text-shadow: 2px 2px 0 #05040a; }
@@ -104,7 +124,7 @@
   background: #17141b; border: 3px solid; border-color: var(--st-lo) var(--st-dark) #1a1718 #34302e; }
 .tab.on { color: var(--gold); background: #2a2430; border-color: var(--st-hi) var(--st-lo) var(--st-dark) var(--st-mid); }
 .tab:focus, .tab:hover { border-color: var(--gold) var(--gold-old) #6a5024 #c9a35a; }
-.opts { display: flex; flex-direction: column; gap: calc(6px * var(--ui)); max-height: calc(100vh - 220px * var(--ui)); min-height: 120px; overflow: auto; padding: 4px 6px; }
+.opts { display: flex; flex-direction: column; gap: calc(6px * var(--ui)); min-height: 120px; padding: 4px 10px 4px 6px; }
 .opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 2px solid rgba(5, 4, 10, 0.5); }
 .opt-l { font-size: var(--fm); }
 .opt-h { margin: 8px 0 0; font-size: var(--fm); color: var(--gold); }
@@ -127,7 +147,7 @@
 .adj-bar { display: flex; gap: 3px; }
 .adj-bar i { display: block; width: 8px; height: 14px; background: #0b0912; box-shadow: inset 1px 1px 0 #05040a; }
 .adj-bar i.on { background: var(--gold-old); box-shadow: inset 0 2px 0 var(--gold); }
-.adj-v { min-width: 4.5em; text-align: right; font-size: var(--fs); }
+.adj-v { min-width: 4.5em; text-align: left; font-size: var(--fs); }
 @media (max-width: 760px) { .adj-bar i { width: 5px; } .adj-v { min-width: 3em; } }
 /* tecla de pedra */
 .keycap { min-width: 7em; font: inherit; font-size: var(--fs); color: var(--chalk); cursor: pointer; padding: 4px 10px; outline: none;
@@ -169,8 +189,9 @@
 /* acessibilidade: glifos da interface com mais contraste */
 :root[data-contrast='1'] .dlg-glyphs svg, :root[data-contrast='1'] .toast svg, :root[data-contrast='1'] .quiz svg { filter: brightness(1.35) contrast(1.4); }
 
-/* letras um pouco maiores no PC; no celular baixo, as abas cabem numa linha */
-@media (min-height: 600px) { .chip, .keycap, .adj-v { font-size: var(--fm); } }
+/* o nome da opção e as escolhas na MESMA letra (no celular a escolha saía com a metade do tamanho do nome; agora também dá para tocar);
+   no celular baixo, as abas cabem numa linha */
+.chip, .keycap, .adj-v { font-size: var(--fm); }
 @media (max-height: 520px) { .tab { font-size: var(--fs); padding: 3px 8px; } .tabs { flex-wrap: nowrap; } }
 
 /* tela inicial: as opções somem quando a transição começa */

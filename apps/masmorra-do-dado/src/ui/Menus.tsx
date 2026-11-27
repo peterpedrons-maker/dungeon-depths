@@ -53,6 +53,33 @@ function useMenuKeys(active: boolean, root: React.RefObject<HTMLElement | null>,
   }, [active, root, snd]);
 }
 
+// ── a tábua grande rola só no meio (menus.css): quando ainda há opções embaixo, a borda de baixo esmaece em degraus e três pontinhos de
+// ouro piscam acima do Voltar; já rolada, a borda de cima também esmaece. No celular a barra de rolagem só aparece enquanto se rola, e sem
+// isso nada dizia que Brilho, Campo de visão etc. estavam lá embaixo ──
+function useScrollCue(board: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = board.current?.querySelector<HTMLElement>(':scope > .opts, :scope > .slots, :scope > .credits-t');
+    if (!el) return;
+    const upd = () => {
+      const below = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
+      el.classList.toggle('more', below);
+      el.classList.toggle('above', el.scrollTop > 2);
+      board.current?.classList.toggle('more-below', below); // os três pontinhos acima do Voltar
+    };
+    upd();
+    el.addEventListener('scroll', upd, { passive: true });
+    const ro = new ResizeObserver(upd);
+    ro.observe(el);
+    const mo = new MutationObserver(upd); // (trocar de aba troca o conteúdo)
+    mo.observe(el, { childList: true, subtree: true });
+    return () => {
+      el.removeEventListener('scroll', upd);
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, [board]);
+}
+
 // plaquinha de pedra (botão)
 function Plaque({ children, onClick, disabled, tone, small, snd, onFocus }: { children: ReactNode; onClick: () => void; disabled?: boolean; tone?: 'gold' | 'danger' | 'plain'; small?: boolean; snd: UiSound; onFocus?: (el: HTMLElement) => void }) {
   return (
@@ -188,6 +215,7 @@ function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new
   const [, force] = useState(0);
   const [ask, setAsk] = useState<{ slot: number; step: 'new' | 'erase1' | 'erase2' } | null>(null);
   useMenuKeys(!ask, ref, onBack, snd);
+  useScrollCue(ref);
   const slots = Array.from({ length: SLOTS }, (_, i) => i + 1);
   return (
     <div className="mnu-veil">
@@ -354,6 +382,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
   const [full, setFull] = useState(!!document.fullscreenElement);
   const coarse = window.matchMedia('(pointer: coarse)').matches;
   useMenuKeys(!wait, ref, onBack, snd);
+  useScrollCue(ref);
   useEffect(() => {
     const f = () => setFull(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', f);
@@ -563,6 +592,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
 export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSound; roll?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useMenuKeys(true, ref, onBack, snd);
+  useScrollCue(ref);
   if (roll)
     // na tela inicial: os nomes sobem devagar enquanto a câmera gira em volta do dado (INTERFACE.md §3.1)
     return (
