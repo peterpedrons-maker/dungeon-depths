@@ -22,7 +22,7 @@ import { Chalk } from './chalk';
 import { Sfx, type AudioMode, type StepKind } from './audio';
 import { CORRIDOR, DW, dbg, lightEnv } from './kit';
 import { Place, QUARTER } from './place';
-import { buildConnector, corridorEnd, route, type Connector, type XZ } from './connector';
+import { buildConnector, CHALK_SPOTS, corridorEnd, route, type Connector, type XZ } from './connector';
 import { PLAN_ORIGIN, PLANTA_ON, PONTES, planPlace } from './plan';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
@@ -3936,7 +3936,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const a = sfx.progress;
       const p = 0.2 * Math.min(1, drawn / 6) + 0.3 * models + 0.5 * a;
       barShown = Math.min(p, barShown + dt / 1.4); // (no mínimo ~1,4 s de barra: dá tempo de ver o fogo correr)
-      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.phraseDone()) || loadT > 15; // (pronto quando a frase acende)
+      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone()) || loadT > 15; // (pronto: os cinco braseiros acesos)
       loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
     }
   };
@@ -3954,15 +3954,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const ev = loadArt.paint(dt, barShown, goK, life.out);
     backTex.needsUpdate = true;
     postMat.uniforms.uBack.value = 1;
-    // a cada braseiro que acende, o dado recua (como no jogo); quando a frase acende, ele se anima
+    // a cada braseiro que acende, o dado recua (como no jogo) e depois espia o desenho que apareceu; com os cinco acesos, ele se anima
     if (ev.ignited) {
       life.react('flinch');
       if (sfx.unlocked) sfx.play('ignite', 0.4);
+      loadAtBar = true;
+      loadLookT = 1.4;
     }
-    if (ev.phrase) {
-      life.react('perk');
-      if (sfx.unlocked) for (let i = 0; i < 2; i++) window.setTimeout(() => sfx.glyph(i, 2, -0.2), 120 + i * 480);
-    }
+    if (ev.done) life.react('perk');
   };
   // para onde o dado do canto olha: quase sempre para o jogador; de vez em quando, para a ponta do fogo que corre na barra
   let loadLookT = 1.5;
@@ -3978,7 +3977,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (!loadAtBar) return { dx: 0, dy: 0, player: true };
     const dd = loadArt.dieAt();
     // o fogo correndo; depois, a frase acendendo; depois, o braseiro mais perto
-    const tg = barShown < 0.999 ? loadArt.headAt() : !loadArt.phraseDone() ? loadArt.phraseAt() : loadArt.litAt() ?? loadArt.headAt();
+    // logo depois de um braseiro acender, o desenho que ele iluminou; senão, a ponta do fogo (ou, tudo aceso, um desenho qualquer)
+    const tg = (loadLookT > 0.4 || barShown >= 0.999 ? loadArt.focusAt() : null) ?? loadArt.headAt();
     return { dx: (tg.x - dd.x) * 2, dy: -(tg.y - dd.y) * 2 };
   };
   const loadStoreReady = () => barShown >= 0.999;
@@ -4977,6 +4977,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       blackout: (s: number) => (darkQ = { secs: s }),
       titleTune: (o: Partial<typeof TT> & { blur?: number }) => { if (o.blur !== undefined) TB.blur = o.blur; Object.assign(TT, o); },
       titleDbg: () => ({ focus: titleFocus.toArray(), cam: camera.position.toArray(), fov: camera.fov, die: dieGroup.position.toArray(), s: dieGroup.scale.x, vis: dieGroup.visible, focusZ: postMat.uniforms.uFocus.value, mode }),
+      // (testes) a câmera de frente para o desenho a giz número k dos corredores
+      chalkSpot: (k: number) => {
+        const q = CHALK_SPOTS[k];
+        if (!q) return null;
+        feetY = q.y;
+        pos.set(q.x + q.nx * 1.4, feetY + EYE, q.z + q.nz * 1.4);
+        yaw = Math.atan2(q.nx, q.nz);
+        pitch = -0.02;
+        return { n: CHALK_SPOTS.length, kind: q.kind };
+      },
       noHud: (v = true) => {
         devNoHud = v;
       },

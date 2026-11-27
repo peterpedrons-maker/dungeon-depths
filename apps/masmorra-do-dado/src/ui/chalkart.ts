@@ -3,43 +3,9 @@ import { brickTexture } from '../scene/textures';
 // O GIZ EM 2D (DESIGN.md §79): o mesmo giz do jogo (quadradinhos claros, cor #f0ecdc, colados um atrás do outro, falhando no grão da pedra)
 // riscado na mesma parede de alvenaria das salas. Usado pela abertura da editora e pela tela de carregamento.
 
-export const hash = (x: number, y: number) => {
-  let h = (x * 374761393 + y * 668265263) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
-};
-export const rnd = (seed: number) => {
-  let s = seed >>> 0 || 1;
-  return () => {
-    s ^= s << 13;
-    s ^= s >>> 17;
-    s ^= s << 5;
-    return (s >>> 0) / 4294967295;
-  };
-};
-export const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-export const bayer = (x: number, y: number) => BAYER[(y & 3) * 4 + (x & 3)] / 16;
-
-// suaviza uma curva (Chaikin, duas vezes)
-export const chaikin = (pts: number[][]) => {
-  let p = pts;
-  for (let k = 0; k < 2; k++) {
-    const o: number[][] = [p[0]];
-    for (let i = 0; i < p.length - 1; i++) {
-      const [x0, y0] = p[i];
-      const [x1, y1] = p[i + 1];
-      o.push([x0 * 0.75 + x1 * 0.25, y0 * 0.75 + y1 * 0.25], [x0 * 0.25 + x1 * 0.75, y0 * 0.25 + y1 * 0.75]);
-    }
-    o.push(p[p.length - 1]);
-    p = o;
-  }
-  return p;
-};
-export const lenOf = (pts: number[][]) => {
-  let l = 0;
-  for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-  return l;
-};
+// o pincel (o mesmo das paredes do jogo) mora em scene/chalkdraw.ts
+import { CHALK_RGB, DUST_RGB, bayer, BAYER, chaikin, chalkAlong, chalkDot, hash, lenOf, rnd, type Plot } from '../scene/chalkdraw';
+export { CHALK_RGB, DUST_RGB, bayer, BAYER, chaikin, chalkAlong, chalkDot, hash, lenOf, rnd, type Plot };
 
 // ── as letras a giz: traços numa grade de 6 × 10 (y para baixo); `c` = curva ──
 export type Stroke = { p: number[][]; c?: boolean };
@@ -100,58 +66,6 @@ export function shapeStrokes(strokes: Stroke[], x: number, y: number, unit: numb
     if (st.c) pts = chaikin(pts);
     return pts;
   });
-}
-
-// os tons do giz (o claro é o do jogo, #f0ecdc) e o do pó solto, em RGB 0..1
-export const CHALK_RGB = [
-  [0.79, 0.78, 0.72],
-  [0.87, 0.85, 0.8],
-  [0.94, 0.925, 0.86],
-  [0.985, 0.97, 0.925],
-];
-export const DUST_RGB = [0.6, 0.6, 0.57];
-
-// ── o giz: o mesmo "quadradinho" do giz do jogo, que falha no grão da pedra ──
-// `plot(px, py, k)`: pinta o pixel com o tom k do giz (0 = mais escuro … 3 = mais claro; -1 = pó solto)
-export type Plot = (px: number, py: number, k: number) => void;
-export function chalkDot(plot: Plot, x: number, y: number, size = 2) {
-  const x0 = Math.round(x - size / 2);
-  const y0 = Math.round(y - size / 2);
-  for (let dy = 0; dy < size; dy++)
-    for (let dx = 0; dx < size; dx++) {
-      const px = x0 + dx;
-      const py = y0 + dy;
-      const h = hash(px * 7 + 3, py * 13 + 1);
-      if (h < 0.14) continue; // falha do giz
-      plot(px, py, h < 0.3 ? 0 : h < 0.55 ? 1 : h < 0.88 ? 2 : 3);
-    }
-  const h2 = hash(x0 * 31, y0 * 17);
-  if (h2 < 0.05) plot(x0 + (h2 < 0.025 ? -2 : size + 1), y0 + (h2 < 0.012 ? size : -1), -1);
-}
-
-// risca um traço do comprimento `from` até `to` (px ao longo dele); devolve a ponta (para o toco de giz)
-export function chalkAlong(plot: Plot, pts: number[][], from: number, to: number, size = 2): { x: number; y: number } | null {
-  let acc = 0;
-  let tip: { x: number; y: number } | null = null;
-  for (let k = 1; k < pts.length; k++) {
-    const [x0, y0] = pts[k - 1];
-    const [x1, y1] = pts[k];
-    const L = Math.hypot(x1 - x0, y1 - y0);
-    if (acc + L < from) {
-      acc += L;
-      continue;
-    }
-    for (let d = Math.max(from, acc); d <= Math.min(to, acc + L); d += 0.5) {
-      const u = (d - acc) / (L || 1);
-      const x = x0 + (x1 - x0) * u;
-      const y = y0 + (y1 - y0) * u;
-      chalkDot(plot, x, y, size);
-      tip = { x, y };
-    }
-    acc += L;
-    if (acc >= to) break;
-  }
-  return tip;
 }
 
 // o toco de giz na ponta do traço: inclinado, a mão fica embaixo à direita (cores RGB 0..1)

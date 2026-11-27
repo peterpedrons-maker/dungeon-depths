@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { ARCH_TOP, CORRIDOR, DW, Kit } from './kit';
 import { tallyTexture } from './textures';
+import { chalkTexture, decalRes } from './chalkdraw';
 import type { Rect } from './types';
 
 export type XZ = [number, number];
@@ -329,14 +330,23 @@ function decorate(
         }
       }
     }
-    // os riscos de giz (em uns 4 de cada 10 corredores, no trecho mais comprido, entre dois arcos)
-    if (k === longest && L >= 6 && rnd() < 0.45) {
+    // os riscos de giz (em uns 4 de cada 10 corredores, no trecho mais comprido, entre dois arcos) ou, em outros, UM DESENHO A GIZ de quem
+    // passou por aqui (a porta, a mão, a luz do poço, quem passa de capuz, o dado, o braseiro; scene/chalkdraw.ts, DESIGN.md §79)
+    if (k === longest && L >= 4.5) {
+      const roll = L >= 6 ? rnd() : 0.45 + rnd() * 0.55; // (os riscos pedem um trecho de 6 m; um desenho cabe em 4,5)
       const t = spots.length > 1 ? spots[Math.floor(spots.length / 2)] : L / 2;
       const side = rnd() < 0.5 ? -1 : 1;
       const [ox, oz] = nl0(d, side);
       const [px, pz] = at(t);
-      const days = 7 + (seed * 13) % 31;
-      kit.decal(1.3, 0.65, `tally-con${days}`, () => tallyTexture(days), px + ox * (w / 2 - 0.02), y + 1.45, pz + oz * (w / 2 - 0.02), 0, Math.atan2(-ox, -oz));
+      if (roll < 0.45) {
+        const days = 7 + (seed * 13) % 31;
+        kit.decal(1.3, 0.65, `tally-con${days}`, () => tallyTexture(days), px + ox * (w / 2 - 0.02), y + 1.45, pz + oz * (w / 2 - 0.02), 0, Math.atan2(-ox, -oz));
+      } else if (roll < 0.8) {
+        const KINDS = ['porta', 'mao', 'poco', 'figura', 'dado', 'braseiro'] as const;
+        const kind = KINDS[seed % KINDS.length];
+        kit.decal(0.96, 0.72, `draw-con${seed}`, () => chalkTexture(kind, ...decalRes(0.96, 0.72, 105), seed), px + ox * (w / 2 - 0.02), y + 1.5, pz + oz * (w / 2 - 0.02), 0, Math.atan2(-ox, -oz));
+        CHALK_SPOTS.push({ kind, x: px + ox * (w / 2), y, z: pz + oz * (w / 2), nx: -ox, nz: -oz });
+      }
     }
   }
   // as curvas: entulho no canto de fora (fora do caminho) e, às vezes, uma teia lá em cima
@@ -371,4 +381,6 @@ function nl0(d: XZ, side: number): XZ {
 }
 
 // a ponta do corredor da porta: `CORRIDOR` metros além da porta, na direção de saída
+// (testes) onde ficou cada desenho a giz dos corredores: o ponto na parede, o chão e para onde a parede olha
+export const CHALK_SPOTS: { kind: string; x: number; y: number; z: number; nx: number; nz: number }[] = [];
 export const corridorEnd = (door: XZ, dir: XZ): XZ => [door[0] + dir[0] * CORRIDOR, door[1] + dir[1] * CORRIDOR];

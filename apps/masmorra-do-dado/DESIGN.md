@@ -1628,12 +1628,13 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
   - uma **parede das salas no escuro** e uma **bancada de pedra** embaixo; do alto à esquerda desce a **fresta de luz fria com poeira boiando**;
   - na bancada, a **canaleta** por onde o **fogo corre** conforme carrega e **cinco braseiros** de ferro (pé, haste, bacia) que **se acendem um a
     um quando o fogo chega**, com clarão e faíscas, e cada um **ilumina a parede** (a mecânica do jogo: o fogo corre e acende);
-  - na parede, talhada em marfim, a frase **«ACENDER BRASEIRO»** (a primeira coisa que o dado diz no jogo; sem número, para não ensinar
-    antes da hora o CINCO, que é segredo da Lousa). **Com os cinco acesos, a frase fica verdadeira e acende traço a traço**, em ouro, com o clarão
-    na ponta, como as frases das salas (e, com o som liberado, soa símbolo a símbolo): é aí que o jogo está pronto;
+  - na parede, **os desenhos a giz dos condenados** (os mesmos das paredes do jogo, ver abaixo; nada de glifo, pedido do Pedro, que trocou a
+    frase «ACENDER BRASEIRO» que estava ali): **quem passa de capuz**, dentro da fresta de luz fria, se vê desde o começo; **a porta, a
+    contagem dos dias, o dado e a luz do poço** ficam no escuro e **aparecem quando um braseiro acende perto** (o giz devolve bem a luz). A tela
+    fica pronta com os cinco acesos;
   - no canto, **o dado em 2D, em pixel**, quase de frente, com **o rosto vivo de verdade** (o mesmo de `dielife.ts`/`textures.ts`: os olhos seguem
-    a ponta do fogo e depois a frase, pisca, mexe as sobrancelhas, olha de canto, suspira); **recua a cada braseiro que acende** (como no jogo),
-    se anima quando a frase acende, a luz da chama esquenta a lateral dele e, no clique de começar, **sai pulando pela direita** enquanto a
+    a ponta do fogo e espiam o desenho que acabou de aparecer, pisca, mexe as sobrancelhas, olha de canto, suspira); **recua a cada braseiro que
+    acende** (como no jogo), se anima quando os cinco estão acesos, a luz da chama esquenta a lateral dele e, no clique de começar, **sai pulando pela direita** enquanto a
     parede escurece (0,5 s);
   - o aviso «Clique/Toque para começar» fica embaixo da canaleta (nada por cima de nada).
   O fundo é pintado a cada quadro num canvas no tamanho de pixel do jogo e entra no **pós-processo** (`tBack`/`uBack`): a mesma paleta e o mesmo
@@ -1647,6 +1648,21 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
     jogo, Carregar), aparece **«Clique para começar»** (no celular, **«Toque para começar»**) piscando sobre a barra: é o gesto que o navegador exige
     para o som sair e, no PC, para prender o mouse (antes aparecia "Clique para jogar" por cima da cena de acordar, e ela começava muda).
   - Depois do clique: num jogo novo, a cena de acordar começa no preto como sempre; num jogo salvo, o véu se abre (1,1 s) e aparece o nome da sala.
+- **Os desenhos a giz das paredes, melhorados** (`src/scene/chalkdraw.ts`; pedido do Pedro). Os desenhos que os condenados deixaram nas paredes
+  eram linhas retas finas, de vetor, sem cara de giz. Agora saem do **mesmo giz do jogo** (os quadradinhos claros que falham no grão), **feitos à
+  mão**: tremor, traço mais grosso no meio e fino nas pontas, alguns traços repassados, pó em volta, partes apagadas (esfregadas). Os desenhos:
+  **o braseiro** (três línguas de fogo), **a porta** em arco com tábuas, cinta e argola, **o dado** com o rosto (boca reta), **a luz do poço** com
+  alguém embaixo de braços erguidos, **quem passa de capuz** (o Escrivão, visto pelos condenados), **uma mão** contornada, **o rosto apagado** e
+  **a contagem dos dias**. Nas salas, um pouco mais foscos que o giz puro (ao lado das tochas, o branco saturava em laranja e parecia brasa), e
+  na resolução certa para a distância (~85 px/m na Galeria, ~105 nos corredores estreitos).
+  - **A Galeria dos Condenados**: as centenas de riscos, o rosto apagado, a porta e o desenho dos tamanhos, nos mesmos lugares. **No desenho dos
+    tamanhos, GRANDE e PEQUENO estavam errados** (com uma base embaixo, como um U); agora são como no léxico, só as duas laterais (V) com os
+    pontos (0, 2, 6, 8 e 4). O braseiro grande e o pequeno continuam lá, e a folha nº 6 continua a três passos.
+  - **Os corredores**: além dos riscos (uns 4 em cada 10 corredores compridos), alguns ganham **um desenho** (hoje quatro: o braseiro, a mão, o
+    dado e quem passa de capuz), no trecho mais comprido, na altura dos olhos.
+  - **A Lousa**: os riscos de quem contou os dias ao lado da 1ª lousa, com o giz novo.
+  - **Não mexi no mural da Biblioteca** (porta, livro, chave, sino): a porta e o livro de lá são de propósito o mesmo rabisco que o dado mostra
+    quando traduz uma palavra, e o puzzle é casar os dois.
 - **A mira só aparece com o jogo de fato começado**: a interface começa com ela escondida, a tela inicial e a de carregamento contam como cena, e o
   motor avisa já no 1º quadro (antes ela piscava no meio da tela no começo do jogo e só depois sumia). Nas cenas (acordar, o poço, o dado ao centro,
   a gema...) ela some e volta quando a cena acaba, como antes.

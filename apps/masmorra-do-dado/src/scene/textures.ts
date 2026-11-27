@@ -4,6 +4,7 @@
 
 import { sketchCanvas, type SketchKind } from './sketch';
 import * as THREE from 'three';
+import { chalkTexture } from './chalkdraw';
 import { drawGlyph } from '../book/font';
 import type { GlyphDef } from '../story/lexicon';
 
@@ -1456,28 +1457,6 @@ export function wearTexture() {
 // RISCOS DE GIZ de um condenado contando dias: grupos de quatro tracinhos cortados por um quinto, tortos, em fileiras; o último grupo incompleto.
 // (Contagem, não escrita: nunca parecido com um glifo.)
 export function tallyTexture(days = 23) {
-  const { c, ctx } = canvas(64, 32);
-  const r = rng(days * 7);
-  const chalk = (x: number, y: number) => {
-    ctx.fillStyle = r() < 0.25 ? 'rgba(235,232,220,0.55)' : 'rgba(240,238,228,0.9)';
-    ctx.fillRect(x, y, 1, 1);
-  };
-  let n = 0;
-  for (let row = 0; row < 3 && n < days; row++) {
-    for (let g = 0; g < 4 && n < days; g++) {
-      const gx = 3 + g * 15 + Math.round((r() - 0.5) * 2);
-      const gy = 2 + row * 10;
-      for (let k = 0; k < 4 && n < days; k++, n++) {
-        const x = gx + k * 3;
-        const lean = r() < 0.5 ? 0 : 1;
-        for (let y = 0; y < 7; y++) if (r() < 0.9) chalk(x + (y > 3 ? lean : 0), gy + y);
-      }
-      if (n < days) {
-        // o quinto risco, atravessado
-        for (let i = 0; i < 12; i++) if (r() < 0.85) chalk(gx - 1 + i, gy + 5 - Math.round(i * 0.4));
-        n++;
-      }
-    }
-  }
-  return toTexture(c, undefined, false, false);
+  // o giz do jogo, à mão (scene/chalkdraw.ts, DESIGN.md §79): grupos de quatro riscos e o quinto atravessado
+  return chalkTexture('contagem', 64, 32, days * 7, { days, step: 4 });
 }

@@ -100,10 +100,11 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   condenados; uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
   `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, fundo `src/ui/loadart.ts` no pós-processo,
   modo `load` do motor) depois de Novo jogo, Continuar e Carregar: a parede no escuro, a canaleta por onde o fogo corre acendendo cinco
-  braseiros, a frase «ACENDER BRASEIRO» que acende quando os cinco estão acesos, a fresta fria com poeira e o dado em 2D com o rosto vivo,
-  recuando a cada braseiro; espera modelos, quadros e os sons (que agora
+  braseiros, os desenhos a giz dos condenados que aparecem com a luz, a fresta fria com poeira e o dado em 2D com o rosto vivo, recuando a
+  cada braseiro; espera modelos, quadros e os sons (que agora
   baixam desde a abertura da página, `Sfx.prepare`) e, se a página recarregou, pede «Clique/Toque para começar» (o gesto libera o som e prende o
-  mouse). A mira só aparece com o jogo começado. O dado da tela inicial tenta rolar, olha em volta e para o feixe; o rosto olha de canto, mexe as
+  mouse). A mira só aparece com o jogo começado. **Os desenhos a giz das paredes** (`src/scene/chalkdraw.ts`: braseiro, porta, dado, a luz do
+  poço, quem passa de capuz, mão, rosto apagado, tamanhos, contagem) com o giz do jogo feito à mão, na Galeria, nos corredores e na Lousa. O dado da tela inicial tenta rolar, olha em volta e para o feixe; o rosto olha de canto, mexe as
   sobrancelhas e suspira de leve, sempre neutro.
   **Tela inicial do dado caído** (`DESIGN.md` §46): o dado reto no chão DE VERDADE do Poço (desenhado com a câmera da sala), no meio do entulho da própria sala (o dado do HUD é projetado no ponto `dieLie`), profundidade de campo com foco no dado (`uBlur`/`uFocus`), o olho seguindo o
   mouse/opção/dedo, cochilo em 30 s; Novo jogo sobe pelo feixe até o branco; Continuar faz o dado pular para fora e a imagem se desfaz em

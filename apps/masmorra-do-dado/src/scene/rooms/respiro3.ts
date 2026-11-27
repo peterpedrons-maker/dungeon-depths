@@ -12,6 +12,7 @@ import { buildDoor, buildEntrance, Kit, lambert } from '../kit';
 import { makeBrazier } from '../brazier';
 import { makeGemNiche } from '../firegrid';
 import { makeScribe } from '../scribe';
+import { chalkTexture, decalRes } from '../chalkdraw';
 import { mkBox, Z1 } from './shell';
 import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
@@ -40,78 +41,6 @@ const ceilAt = (x: number, z: number) => {
 // a câmara lateral (à esquerda), com a passagem em z ∈ [CZ - 0.9, CZ + 0.9]
 const CH = { x0: -10, z0: -16, z1: -8, h: 4 };
 const CZ = -12;
-
-function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  draw(c.getContext('2d')!);
-  const t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-// marcas de contagem a giz: grupos de quatro riscos e um corte, em fileiras tortas
-function tallyTexture(seed: number) {
-  let s = seed;
-  const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  return canvasTex(128, 96, (g) => {
-    g.clearRect(0, 0, 128, 96);
-    g.fillStyle = 'rgba(232,228,214,0.85)';
-    for (let row = 0; row < 7; row++) {
-      let x = 2 + r() * 6;
-      const y = 6 + row * 13 + r() * 3;
-      while (x < 118) {
-        for (let k = 0; k < 4; k++) g.fillRect(Math.round(x + k * 3), Math.round(y + r() * 1.5), 1, 8);
-        for (let k = 0; k < 12; k++) g.fillRect(Math.round(x - 1 + k), Math.round(y + 7 - k * 0.6), 1, 1);
-        x += 16 + r() * 4;
-        if (r() < 0.12) x += 14;
-      }
-    }
-  });
-}
-// os desenhos a giz: o braseiro grande e o pequeno (com os glifos GRANDE e PEQUENO embaixo) e um rosto apagado
-function chalkDrawing(kind: 'tamanhos' | 'rosto' | 'porta') {
-  return canvasTex(128, 96, (g) => {
-    g.clearRect(0, 0, 128, 96);
-    g.strokeStyle = 'rgba(236,232,220,0.9)';
-    g.fillStyle = 'rgba(236,232,220,0.9)';
-    g.lineWidth = 2;
-    const line = (pts: number[][]) => {
-      g.beginPath();
-      pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-      g.stroke();
-    };
-    if (kind === 'tamanhos') {
-      // braseiro enorme
-      line([[10, 64], [50, 64], [44, 74], [16, 74], [10, 64]]);
-      line([[24, 74], [24, 84]]);
-      line([[36, 74], [36, 84]]);
-      line([[16, 62], [22, 36], [30, 50], [34, 24], [40, 48], [46, 62]]);
-      // braseiro minúsculo
-      line([[90, 76], [104, 76], [102, 80], [92, 80], [90, 76]]);
-      line([[94, 75], [97, 66], [100, 75]]);
-      // GRANDE (moldura em V com os quatro cantos) e PEQUENO (moldura em V com o centro)
-      const glyph = (cx: number, pts: number[]) => {
-        line([[cx - 9, 86], [cx - 9, 95], [cx + 9, 95], [cx + 9, 86]]);
-        for (const p of pts) g.fillRect(cx - 6 + (p % 3) * 6 - 1, 86 + Math.floor(p / 3) * 3, 2, 2);
-      };
-      glyph(30, [0, 2, 6, 8]);
-      glyph(97, [4]);
-    } else if (kind === 'rosto') {
-      g.globalAlpha = 0.35;
-      g.strokeRect(34, 20, 60, 60);
-      line([[46, 42], [58, 42]]);
-      line([[70, 42], [82, 42]]);
-      line([[64, 46], [64, 62]]);
-      line([[52, 68], [76, 68]]);
-    } else {
-      line([[44, 90], [44, 30], [64, 14], [84, 30], [84, 90]]);
-      line([[58, 60], [62, 60]]);
-    }
-  });
-}
 
 export function buildRespiro3(ctx: Ctx): Room {
   const kit = new Kit('crypt');
@@ -186,13 +115,15 @@ export function buildRespiro3(ctx: Ctx): Room {
   // marcas de contagem e desenhos a giz nas paredes (decalques)
   let dk = 0;
   for (const [x, nx, z] of [[X1, -1, -2.5], [X1, -1, -7], [X1, -1, -13.5], [X1, -1, -20], [X0, 1, -3], [X0, 1, -7.5], [X0, 1, -17], [X0, 1, -22.5]] as [number, number, number][]) {
-    kit.decal(2.4, 1.8, `tally${dk}`, () => tallyTexture(31 + dk * 17), x + nx * 0.02, 2.2 + (dk % 3) * 0.5, z, 0, nx > 0 ? Math.PI / 2 : -Math.PI / 2);
+    // (centenas: a contagem miúda, de giz fino, igual à de antes no tamanho; o giz agora é o do jogo, feito à mão, DESIGN.md §79)
+    const seed = 31 + dk * 17;
+    kit.decal(2.4, 1.8, `tally${dk}`, () => chalkTexture('contagem', 128, 96, seed, { days: 150 + (seed % 60), step: 3 }), x + nx * 0.02, 2.2 + (dk % 3) * 0.5, z, 0, nx > 0 ? Math.PI / 2 : -Math.PI / 2);
     dk++;
   }
-  kit.decal(1.4, 1.05, 'rosto', () => chalkDrawing('rosto'), X1 - 0.02, 1.6, -15.6, 0, -Math.PI / 2);
-  kit.decal(1.1, 0.85, 'porta', () => chalkDrawing('porta'), X0 + 0.02, 1.5, -19, 0, Math.PI / 2);
+  kit.decal(1.4, 1.05, 'rosto', () => chalkTexture('rosto', ...decalRes(1.4, 1.05), 5), X1 - 0.02, 1.6, -15.6, 0, -Math.PI / 2);
+  kit.decal(1.1, 0.85, 'porta', () => chalkTexture('porta', ...decalRes(1.1, 0.85), 6), X0 + 0.02, 1.5, -19, 0, Math.PI / 2);
   // o desenho dos tamanhos (GRANDE e PEQUENO), e a três passos a folha nº 6 dela, que diz o contrário
-  kit.decal(1.7, 1.28, 'tamanhos', () => chalkDrawing('tamanhos'), X1 - 0.02, 1.5, -5.4, 0, -Math.PI / 2);
+  kit.decal(1.7, 1.28, 'tamanhos', () => chalkTexture('tamanhos', ...decalRes(1.7, 1.28), 7), X1 - 0.02, 1.5, -5.4, 0, -Math.PI / 2);
   // ── as folhas dela ──
   const leaf = (id: string, x: number, y: number, z: number) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.004, 0.3), lambert(null, 0xd8b880));
