@@ -21,6 +21,7 @@ import {
 import { Chalk } from './chalk';
 import { Sfx, type AudioMode, type StepKind } from './audio';
 import { CORRIDOR, dbg, lightEnv } from './kit';
+import { Place } from './place';
 import { createDiaryBook } from '../book/book3d';
 import { diary, diaryStore } from '../story/diary';
 import { LEX } from '../story/lexicon';
@@ -613,7 +614,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       for (const i of activeRooms) {
         for (const s of rooms[i].sockets ?? []) {
           if (s.r <= 0) continue; // pilar ainda escondido: o dado não o "vê"
-          sp.set(s.x, s.y, s.z).add(offs[i]);
+          toW(i, sp.set(s.x, s.y, s.z));
           const c = pick(sp, 0.35, 7);
           if (c > bc) {
             bc = c;
@@ -624,7 +625,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (best) return ndcOf(best, eagerFire);
       const r = rooms[curRoom];
       if (r) {
-        sp.set(0, 1.4, r.doorZ).add(offs[curRoom]);
+        toW(curRoom, sp.set(0, 1.4, r.doorZ));
         if (pick(sp, 0.6, 10) > 0) return ndcOf(sp);
       }
     }
@@ -1041,10 +1042,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const moveVel = new THREE.Vector3(); // velocidade horizontal (m/s)
 
   // ── mundo: as salas ficam lado a lado, ligadas por corredores abertos ───
-  // Cada sala é construída em coordenadas próprias e colocada num deslocamento (offs) pra
-  // que o corredor da porta de uma desemboque direto na entrada da próxima: nada de carregar.
+  // Cada sala é construída em coordenadas próprias e posta no mundo por um `Place` (posição + giro em quartos de volta; place.ts, DESIGN.md §73)
+  // pra que o corredor da porta de uma desemboque na entrada da próxima: nada de carregar. Toda conversão sala <-> mundo passa por toW/toL.
   const rooms: Room[] = [];
-  const offs: THREE.Vector3[] = [];
+  const places: Place[] = [];
+  const toW = (i: number, v: THREE.Vector3, out: THREE.Vector3 = v) => places[i].toWorld(v, out);
+  const toL = (i: number, v: THREE.Vector3, out: THREE.Vector3 = v) => places[i].toLocal(v, out);
+  const insN = new THREE.Vector3();
+  const nrmW = (i: number, n: THREE.Vector3) => places[i].dirToWorld(n, insN); // normal (da sala) -> mundo
+  const wtmp = new THREE.Vector3();
   let curRoom = 0;
   // cenas: quem "segura" o jogador (freeze), o giro suave da câmera (lookAt), a cena de acordar e o dado queimando
   let holds = 0;
@@ -1071,8 +1077,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let scribeDie: THREE.Object3D | null = null;
   const outdoor = new THREE.DirectionalLight(0xd8dcf4, 0); // luz da madrugada lá fora (só acesa nos planos de fora)
   scene.add(outdoor, outdoor.target);
-  const shaftWorld = () => rooms[0].shaft!.clone().add(offs[0]).setY(rooms[0].shaft!.y - 2.5 + offs[0].y); // centro do furo no TETO
-  const wellWorld = () => rooms[0].wellTop!.clone().add(offs[0]); // a boca do poço, lá fora (nível do chão do pátio)
+  const shaftWorld = () => toW(0, rooms[0].shaft!.clone().setY(rooms[0].shaft!.y - 2.5)); // centro do furo no TETO
+  const wellWorld = () => toW(0, rooms[0].wellTop!.clone()); // a boca do poço, lá fora (nível do chão do pátio)
   const scribeHand = new THREE.Vector3();
   const sPos = new THREE.Vector3();
   const scribeLook = new THREE.Vector3();
@@ -1169,7 +1175,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     scribeDie!.visible = false;
     scribeDie!.getWorldPosition(scribeHand);
     dieRoom = 0;
-    dieP.copy(scribeHand).sub(offs[0]);
+    toL(0, scribeHand, dieP);
     {
       // garante que ele cai por DENTRO da coluna do poço (senão bateria na borda)
       const sl = rooms[0].shaft!;
@@ -1184,7 +1190,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     dieV.set(0, -0.3, 0);
     dieW.set(4, 2.5, -3.5);
-    worldDie.position.copy(dieP).add(offs[0]);
+    toW(0, dieP, worldDie.position);
     worldModel.scale.setScalar(DIE_IN_HAND); // sai da mão no tamanho da mão; cresce enquanto cai (parece só a perspectiva: ele vem na direção da câmera)
     worldDie.visible = true;
     thrownFace = 3;
@@ -1193,8 +1199,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // ...e com uma face LATERAL virada exatamente para o jogador: nela, o ROSTO, de olhos fechados (ele cai "desmaiado" e só acorda depois)
     {
       const sl0 = rooms[0].shaft!;
-      const landX = sl0.x + 0.05 + offs[0].x;
-      const landZ = sl0.z + 0.3 + offs[0].z;
+      const [landX, landZ] = places[0].xz(sl0.x + 0.05, sl0.z + 0.3);
       const aP = Math.atan2(pos.x - landX, pos.z - landZ);
       let best = -1;
       let bestA = 0;
@@ -1462,8 +1467,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return Math.max(-1, Math.min(1, (dx * Math.cos(yaw) - dz * Math.sin(yaw)) / d)) * Math.min(1, d / 1.5);
   };
 
-  const makeCtx = (off: THREE.Vector3, idx: number): Ctx => {
+  const makeCtx = (idx: number): Ctx => {
+    const pl = places[idx]; // (criado antes de a sala ser montada; buildWorld o põe no lugar depois)
     const lp = new THREE.Vector3();
+    const gp = new THREE.Vector3();
+    const gn = new THREE.Vector3();
     const aimO = new THREE.Vector3();
     const aimD = new THREE.Vector3();
     return {
@@ -1500,16 +1508,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       player: {
         get pos() {
-          return lp.copy(pos).sub(off);
+          return pl.toLocal(pos, lp);
         },
       },
-      feetY: () => feetY - off.y,
-      glyphLight: (i, n, at) => sfx.glyph(i, n, panOf(at.x + off.x, at.z + off.z)),
+      feetY: () => feetY - pl.pos.y,
+      glyphLight: (i, n, at) => {
+        pl.toWorld(at, gp);
+        sfx.glyph(i, n, panOf(gp.x, gp.z));
+      },
       // pegou uma gema (`at` = onde ela estava, local da sala): a cena da gema leva ela ao fundo do caderno (DESIGN.md §69)
       gem: (id, at, cap) => {
         life.react('joy');
         if (diary.hasGem(id)) return;
-        const ndc = new THREE.Vector3(at.x + off.x, at.y + off.y, at.z + off.z).project(camera);
+        const ndc = pl.toWorld(at, new THREE.Vector3()).project(camera);
         const first = progress.set('gema');
         gemFx.start(id, new THREE.Vector2(Math.max(-1.2, Math.min(1.2, ndc.x)), Math.max(-1.2, Math.min(1.2, ndc.y))), first, progress.has('caderno'), () => {
           if (cap) caption(cap[0], cap[1], cap[2]);
@@ -1568,12 +1579,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       dieSay: (glyphs, o) => saySay(glyphs, o),
       dieLook: (p, secs = 3) => {
-        forcedLook = { p: p.clone().add(off), until: performance.now() + secs * 1000 };
+        forcedLook = { p: pl.toWorld(p, new THREE.Vector3()), until: performance.now() + secs * 1000 };
       },
       dieReact: (k) => life.react(k),
       aim: () => {
         camera.getWorldDirection(aimD);
-        return { o: aimO.copy(camera.position).sub(off), d: aimD };
+        return { o: pl.toLocal(camera.position, aimO), d: pl.dirToLocal(aimD) };
       },
       dieTalk: (lines, o) => talkSeq(lines, o),
       freeze: (on) => {
@@ -1585,9 +1596,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dark: () => darkK,
       lookAt: (p, dur = 0.9) => {
         camera.updateMatrixWorld();
-        const wx = p.x + off.x - pos.x;
-        const wy = p.y + off.y - pos.y;
-        const wz = p.z + off.z - pos.z;
+        pl.toWorld(p, gp);
+        const wx = gp.x - pos.x;
+        const wy = gp.y - pos.y;
+        const wz = gp.z - pos.z;
         const y1 = Math.atan2(-wx, -wz);
         const dy = Math.atan2(Math.sin(y1 - yaw), Math.cos(y1 - yaw)); // caminho mais curto
         camTween = { y0: yaw, p0: pitch, y1: yaw + dy, p1: clamp(Math.atan2(wy, Math.hypot(wx, wz)), -1.0, 1.0), t: 0, dur };
@@ -1614,7 +1626,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       chalk: {
         dotsOn: (o) =>
-          chalk.dotsOn(o.id).map((d) => ({ ...d, x: d.x - off.x, y: d.y - off.y, z: d.z - off.z })),
+          chalk.dotsOn(o.id).map((d) => {
+            pl.toLocal(gp.set(d.x, d.y, d.z));
+            pl.dirToLocal(gn.set(d.nx, d.ny, d.nz));
+            return { ...d, x: gp.x, y: gp.y, z: gp.z, nx: gn.x, ny: gn.y, nz: gn.z };
+          }),
         get revision() {
           return chalk.revision;
         },
@@ -1622,25 +1638,33 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     };
   };
 
+  // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`)
+  const bounds: THREE.Box3[] = [];
   const buildWorld = () => {
     rooms.forEach((r) => {
       scene.remove(r.group);
       r.dispose();
     });
     rooms.length = 0;
-    offs.length = 0;
+    places.length = 0;
+    bounds.length = 0;
     BUILDERS.forEach((build, i) => {
-      const off = new THREE.Vector3();
+      const pl = new Place();
+      places.push(pl);
       if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
-      const room = build(makeCtx(off, i));
+      const room = build(makeCtx(i));
       room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
-      if (i > 0) off.z = offs[i - 1].z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ;
-      if (i > 0) off.y = offs[i - 1].y + (rooms[i - 1].exitDy ?? 0) - (room.entranceY ?? 0); // salas que descem (fosso, banhos): a seguinte começa no nível da porta de saída
-      room.group.position.copy(off);
+      bounds.push(new THREE.Box3().setFromObject(room.group)); // (a sala ainda está na origem, sem giro)
+      // em fila: o corredor da porta de uma desemboca na entrada da próxima; salas que descem (fosso, banhos): a seguinte começa no nível
+      // da porta de saída
+      if (i > 0) {
+        const pv = places[i - 1];
+        pl.set(0, 0, pv.pos.y + (rooms[i - 1].exitDy ?? 0) - (room.entranceY ?? 0), pv.pos.z + rooms[i - 1].doorZ - CORRIDOR - room.entranceZ);
+      }
+      pl.apply(room.group);
       if (!room.group.userData.ownShadows) applyShadowFlags(room.group);
       scene.add(room.group);
       rooms.push(room);
-      offs.push(off);
     });
   };
 
@@ -1657,12 +1681,37 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (!FLAT.has(m.geometry.type) && !m.userData.noShadow) m.castShadow = true;
     });
   }
-  // em qual sala está o ponto z (o corredor pertence à sala da porta)
-  const roomOfZ = (z: number) => {
+  // em que sala está um ponto do mundo (o corredor da porta pertence à sala da porta). Pela caixa da sala nas coordenadas dela: entre a
+  // entrada e o fim do corredor da porta, e dentro da largura e da altura dela (`feet` = a altura dos pés; há salas umas por cima das outras,
+  // DESIGN.md §73). Duas salas no mesmo ponto: fica a do jogador. Fora de todas: a mais perto.
+  const rA = new THREE.Vector3();
+  const roomAt = (p: THREE.Vector3, feet = p.y) => {
+    let hit = -1;
+    let loose = -1;
     for (let i = 0; i < rooms.length; i++) {
-      if (z <= offs[i].z + rooms[i].entranceZ && z > offs[i].z + rooms[i].doorZ - CORRIDOR) return i;
+      const r = rooms[i];
+      toL(i, p, rA);
+      if (rA.z > r.entranceZ || rA.z <= r.doorZ - CORRIDOR) continue;
+      if (loose < 0 || i === curRoom) loose = i;
+      const b = bounds[i];
+      const fy = feet - places[i].pos.y;
+      if (rA.x < b.min.x - 1 || rA.x > b.max.x + 1 || fy < b.min.y - 2 || fy > b.max.y + 1) continue;
+      if (hit < 0 || i === curRoom) hit = i;
     }
-    return z > offs[0].z + rooms[0].entranceZ ? 0 : rooms.length - 1;
+    if (hit >= 0) return hit;
+    if (loose >= 0) return loose;
+    let best = 0;
+    let bd = Infinity;
+    for (let i = 0; i < rooms.length; i++) {
+      toL(i, p, rA);
+      const b = bounds[i];
+      const d = Math.hypot(Math.max(b.min.x - rA.x, 0, rA.x - b.max.x), Math.max(b.min.z - rA.z, 0, rA.z - b.max.z), Math.max(b.min.y - rA.y, 0, rA.y - b.max.y));
+      if (d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    return best;
   };
   // Só as salas vizinhas são desenhadas/atualizadas. As LUZES continuam acesas (se o número de
   // luzes mudasse, o three recompilaria o shader e daria um tranco); só as malhas vão pra
@@ -1767,7 +1816,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       activeRooms.forEach((i) => {
         for (const e of rooms[i].emitters) {
           if (e.intensity < 0.5) continue;
-          wp.copy(e.pos).add(offs[i]);
+          toW(i, e.pos, wp);
           cand.push({ e, room: i, score: e.intensity / (1 + wp.distanceToSquared(camera.position)) });
         }
       });
@@ -1838,7 +1887,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         continue;
       }
       sl.w = Math.min(1, sl.w);
-      sl.light.position.copy(sl.em.pos).add(sl.em.jit).add(offs[sl.room]);
+      toW(sl.room, wp.copy(sl.em.pos).add(sl.em.jit), sl.light.position);
       sl.light.color.setHex(sl.em.color);
       sl.light.distance = sl.em.range;
       sl.light.intensity = sl.em.intensity * sl.w * lightScale();
@@ -1864,7 +1913,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
       sl.w = Math.min(1, sl.w);
       // o mapa da sombra só é refeito quando precisa: luz recém-chegada, ou o jogador/o dado se mexeram perto dela (parado, custo zero)
-      sl.light.position.copy(sl.em.pos).add(offs[sl.room]);
+      toW(sl.room, sl.em.pos, sl.light.position);
       const near = sl.light.position.distanceToSquared(body.position) < 100 || sl.light.position.distanceToSquared(worldDie.position) < 100;
       const moved = near && (sl.lastBody.distanceToSquared(body.position) > 0.0025 || sl.lastDie.distanceToSquared(worldDie.position) > 0.0025);
       if (sl.fresh || (moved && (k - turn0 + SHADOW_POOL) % SHADOW_POOL < shadowCfg.perFrame)) {
@@ -1895,7 +1944,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieV.set(0, 0, 0);
     dieW.set(0, 0, 0);
     restQ.setFromEuler(new THREE.Euler(-Math.PI / 2 + 0.35, 0.9, 0.2));
-    worldDie.position.copy(dieP).add(offs[0]);
+    toW(0, dieP, worldDie.position);
     worldDie.quaternion.copy(restQ);
     worldModel.scale.setScalar(0.42);
     // o dado SÓ está no chão depois de ter caído do poço (cena da porta trancada, `ctx.dropDie`); antes disso a sala não tem dado
@@ -1917,9 +1966,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // põe o jogador no ponto de início de uma sala
   const spawnIn = (i: number) => {
     const r = rooms[i];
-    feetY = offs[i].y + r.start.y;
-    pos.set(offs[i].x + r.start.x, feetY + EYE, offs[i].z + r.start.z);
-    yaw = r.startYaw;
+    toW(i, r.start, pos);
+    feetY = pos.y;
+    pos.y = feetY + EYE;
+    yaw = r.startYaw + places[i].yaw;
     pitch = -0.04;
     vy = 0;
     moveVel.set(0, 0, 0);
@@ -1978,12 +2028,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       for (const i of activeRooms) {
         for (const ins of rooms[i].inscriptions ?? []) {
           if (ins.hidden) continue;
-          toIns.copy(ins.center).add(offs[i]).sub(camera.position);
+          toW(i, ins.center, toIns).sub(camera.position);
           const d = toIns.length();
           if (d > 6) continue;
           toIns.divideScalar(d);
-          if (lookDir.dot(toIns) > 0.955 && toIns.dot(ins.normal) < -0.2) {
-            lookedPos.copy(ins.center).add(offs[i]);
+          if (lookDir.dot(toIns) > 0.955 && toIns.dot(nrmW(i, ins.normal)) < -0.2) {
+            toW(i, ins.center, lookedPos);
             lookedT = 0;
           }
         }
@@ -2001,7 +2051,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
             toIns.divideScalar(d);
             const pg = p as unknown as { gaze?: number; shown?: boolean };
             if (pg.shown) continue; // cada palavra da parede só mostra o desenho uma vez por visita
-            const looking = d < 4.6 && lookDir.dot(toIns) > 0.965 && toIns.dot(ins.normal) < -0.2;
+            const looking = d < 4.6 && lookDir.dot(toIns) > 0.965 && toIns.dot(nrmW(i, ins.normal)) < -0.2;
             pg.gaze = Math.max(0, (pg.gaze ?? 0) + (looking ? dt : -dt));
             if (pg.gaze > 0.5) {
               pg.gaze = 0;
@@ -2016,12 +2066,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       for (const ins of rooms[i].inscriptions ?? []) {
         ins.setGlow(inscGlow);
         if (ins.read || ins.hidden || !canRead) continue;
-        toIns.copy(ins.center).add(offs[i]).sub(camera.position);
+        toW(i, ins.center, toIns).sub(camera.position);
         const d = toIns.length();
         if (d > 5.2) continue;
         toIns.divideScalar(d);
         // olhando de frente (ângulo estreito) e do lado de onde se lê
-        if (lookDir.dot(toIns) < 0.88 || toIns.dot(ins.normal) > -0.2) {
+        if (lookDir.dot(toIns) < 0.88 || toIns.dot(nrmW(i, ins.normal)) > -0.2) {
           ins.seeT = Math.max(0, ins.seeT - dt);
           continue;
         }
@@ -2286,7 +2336,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         introP0 = pitch;
         // para onde olhar: o poço
         const sh = rooms[0].shaft;
-        const w = sh ? sh.clone().add(offs[0]) : new THREE.Vector3(0, 8, -4);
+        const w = sh ? toW(0, sh.clone()) : new THREE.Vector3(0, 8, -4);
         const y1 = Math.atan2(-(w.x - pos.x), -(w.z - pos.z));
         introY1 = introY0 + Math.atan2(Math.sin(y1 - introY0), Math.cos(y1 - introY0));
         introP1 = clamp(Math.atan2(w.y - (pos.y - 0.05), Math.hypot(w.x - pos.x, w.z - pos.z)), -0.2, 1.45);
@@ -2336,17 +2386,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     camera.getWorldDirection(fwdV);
     dieRoom = curRoom;
     handWorld(dieP);
-    dieP.sub(offs[dieRoom]); // a posição do dado é local à sala dele
+    toL(dieRoom, dieP); // a posição (e a velocidade) do dado são locais à sala dele
     dieV.copy(fwdV).multiplyScalar(ph.speed);
     dieV.y += ph.up * ph.speed;
     dieV.addScaledVector(moveVel, 0.6); // herda um pouco do movimento de quem arremessa
+    places[dieRoom].dirToLocal(dieV);
     if (face === 3 && fireAimOn) {
       // MIRA DE FOGO: o dado vai até o ponto da frase realçada
-      const v = arcTo(dieP, tmpV.copy(fireAimPt).sub(offs[dieRoom]), ph.speed, ph.g);
+      const v = arcTo(dieP, toL(dieRoom, fireAimPt, tmpV), ph.speed, ph.g);
       if (v) dieV.copy(v);
     }
     dieW.set((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14);
-    worldDie.position.copy(dieP).add(offs[dieRoom]);
+    toW(dieRoom, dieP, worldDie.position);
     worldModel.scale.setScalar(0.42);
     worldDie.visible = true;
     dieState = 'flying';
@@ -2366,8 +2417,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const hit = ray.intersectObjects(nearSurfaces(), false)[0];
     if (!hit || !hit.face) return null;
     // só dá pra posicionar dentro do salão (não no corredor, que é só passagem)
-    const ri = roomOfZ(hit.point.z);
-    const lz = hit.point.z - offs[ri].z;
+    const ri = roomAt(hit.point);
+    const lz = toL(ri, hit.point, wtmp).z;
     if (lz < rooms[ri].doorZ - 0.1 || lz > rooms[ri].entranceZ - 0.15) return null; // (a própria porta conta: há portas que são lousas)
     const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
     if (n.dot(ray.ray.direction) > 0) n.negate();
@@ -2386,14 +2437,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     dieRoom = a.room;
     animTo.copy(a.p).addScaledVector(a.n, R + 0.02);
     // encaixe: perto de um braseiro/altar, o dado vai exatamente pro centro, em cima dele
-    const off = offs[a.room];
+    const ap = toL(a.room, a.p, wtmp);
     let best = 0.6; // tolerância vertical (m)
     for (const s of rooms[a.room].sockets ?? []) {
-      const dh = Math.hypot(a.p.x - off.x - s.x, a.p.z - off.z - s.z);
-      const dy = Math.abs(a.p.y - off.y - s.y);
+      const dh = Math.hypot(ap.x - s.x, ap.z - s.z);
+      const dy = Math.abs(ap.y - s.y);
       if (dh <= s.r && dy < best) {
         best = dy;
-        animTo.set(off.x + s.x, off.y + s.y + R + 0.02, off.z + s.z);
+        toW(a.room, animTo.set(s.x, s.y + R + 0.02, s.z));
       }
     }
     handWorld(animFrom);
@@ -2817,8 +2868,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const worldRects = (): Rect[] => {
     const out: Rect[] = [];
     for (let i = Math.max(0, curRoom - 1); i <= Math.min(rooms.length - 1, curRoom + 1); i++) {
-      const o = offs[i];
-      for (const r of rooms[i].rects(feetY - o.y)) out.push([r[0] + o.x, r[1] + o.z, r[2] + o.x, r[3] + o.z, r[4] === undefined ? undefined : r[4] + o.y]);
+      const pl = places[i];
+      for (const r of rooms[i].rects(feetY - pl.pos.y)) out.push(pl.rectToWorld(r));
     }
     return out;
   };
@@ -2903,9 +2954,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
       const cr = rooms[curRoom];
       if (cr.clampPlayer) {
-        lcl.copy(pos).sub(offs[curRoom]);
+        toL(curRoom, pos, lcl);
         cr.clampPlayer(lcl);
-        pos.copy(lcl).add(offs[curRoom]);
+        toW(curRoom, lcl, pos);
       }
     }
     return sp > 0.35;
@@ -2913,8 +2964,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // gravidade: subir rampa gruda no chão; ladeira abaixo acompanha; beirada = queda
   const vertical = (dt: number) => {
-    const ri = roomOfZ(pos.z);
-    const gy = rooms[ri].groundY(pos.x - offs[ri].x, pos.z - offs[ri].z, feetY - offs[ri].y) + offs[ri].y;
+    const ri = roomAt(pos, feetY);
+    toL(ri, pos, lcl);
+    const py = places[ri].pos.y;
+    const gy = rooms[ri].groundY(lcl.x, lcl.z, feetY - py) + py;
     const diff = gy - feetY;
     if (diff >= 0 || (diff > -0.3 && vy === 0)) {
       feetY = gy;
@@ -2994,13 +3047,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (!canSave()) return;
     rooms.forEach((r, i) => r.bonus?.() && bonusSet.add(i));
     const r = rooms[curRoom];
+    const lp = toL(curRoom, pos, new THREE.Vector3());
     const m: SlotMeta = {
       room: curRoom,
       roomName: r.name,
-      x: +(pos.x - offs[curRoom].x).toFixed(2),
-      z: +(pos.z - offs[curRoom].z).toFixed(2),
-      feet: +(feetY - offs[curRoom].y).toFixed(2),
-      yaw: +yaw.toFixed(3),
+      // (tudo LOCAL à sala, inclusive o ângulo: assim o salvo continua valendo se a sala mudar de lugar ou de giro na planta)
+      x: +lp.x.toFixed(2),
+      z: +lp.z.toFixed(2),
+      feet: +(feetY - places[curRoom].pos.y).toFixed(2),
+      yaw: +(yaw - places[curRoom].yaw).toFixed(3),
       solvedHere: r.isSolved?.() ?? true,
       bonus: [...bonusSet].sort((a, b) => a - b),
       gems: (diaryStore.get().gems ?? []).length,
@@ -3088,18 +3143,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (place) {
       // depois do capítulo 1: baixo, no lugar salvo, olhando para onde o jogador olhava; o dado no chão, um pouco à frente e à direita
       curRoom = place.room;
-      feetY = offs[place.room].y + rooms[place.room].groundY(place.x, place.z, 0);
-      titleBase.set(offs[place.room].x + place.x, feetY + 0.62, offs[place.room].z + place.z);
+      const pr = place.room;
+      const gy0 = rooms[pr].groundY(place.x, place.z, 0);
+      feetY = places[pr].pos.y + gy0;
+      toW(pr, titleBase.set(place.x, gy0 + 0.62, place.z));
       const fx = place.x - Math.sin(place.yaw) * 1.25 + Math.cos(place.yaw) * 0.35;
       const fz = place.z - Math.cos(place.yaw) * 1.25 - Math.sin(place.yaw) * 0.35;
-      titleFocus.set(offs[place.room].x + fx, offs[place.room].y + rooms[place.room].groundY(fx, fz, 0), offs[place.room].z + fz);
+      toW(pr, titleFocus.set(fx, rooms[pr].groundY(fx, fz, 0), fz));
     } else {
       const lie = rooms[0].dieLie;
       if (!lie) return;
       curRoom = 0;
-      feetY = offs[0].y;
+      feetY = places[0].pos.y;
       // o ponto em que o dado cai na abertura, no meio do entulho de verdade embaixo do poço
-      titleFocus.copy(lie).add(offs[0]);
+      toW(0, lie, titleFocus);
       const k = camera.aspect < 1.5 || window.innerHeight < 500 ? TT.far : 1;
       titleBase.set(titleFocus.x + TT.cx * k, titleFocus.y + TT.cy, titleFocus.z + TT.cz * k);
     }
@@ -3131,7 +3188,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const e = u * u * (3 - 2 * u);
       const sh = rooms[0].shaft;
       if (sh) {
-        const c = sh.clone().add(offs[0]);
+        const c = toW(0, sh.clone());
         const a = clamp(e * 1.8, 0, 1);
         pos.x += (c.x - pos.x) * a;
         pos.z += (c.z - pos.z) * a;
@@ -3334,9 +3391,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const gy = r.groundY(m.x, m.z, m.feet);
       // a posição salva só vale se ainda há chão ali (senão, o começo da sala)
       if (Number.isFinite(gy) && Math.abs(gy - m.feet) < 1.2) {
-        feetY = offs[m.room].y + gy;
-        pos.set(offs[m.room].x + m.x, feetY + EYE, offs[m.room].z + m.z);
-        yaw = m.yaw;
+        toW(m.room, pos.set(m.x, gy, m.z));
+        feetY = pos.y;
+        pos.y = feetY + EYE;
+        yaw = m.yaw + places[m.room].yaw;
       }
       for (let i = 0; i <= m.room; i++) announced.add(i);
       diary.visitRoom(r.name);
@@ -3365,7 +3423,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       activeRooms.forEach((i) => {
         for (const it of rooms[i].interactables ?? []) {
           if (!it.enabled()) continue;
-          toIns.copy(it.pos).add(offs[i]).sub(camera.position);
+          toW(i, it.pos, toIns).sub(camera.position);
           const d = Math.hypot(toIns.x, toIns.z);
           if (d > it.r || lookDir.dot(toIns.normalize()) < 0.3) continue;
           if (d < bd) {
@@ -3388,15 +3446,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let fireAimOn = false;
   const coarse = window.matchMedia('(pointer: coarse)').matches;
   const aimO = new THREE.Vector3();
+  const aimDL = new THREE.Vector3();
   const scanFireAim = () => {
     let on = false;
     if (hasDie && tool === 'die' && dieState === 'hand' && face === 3 && !busy() && !lookLocked()) {
       const r = rooms[curRoom];
       if (r.fireAim) {
         camera.getWorldDirection(lookDir);
-        const p = r.fireAim(aimO.copy(camera.position).sub(offs[curRoom]), lookDir);
+        const p = r.fireAim(toL(curRoom, camera.position, aimO), places[curRoom].dirToLocal(lookDir, aimDL));
         if (p) {
-          fireAimPt.copy(p).add(offs[curRoom]);
+          toW(curRoom, p, fireAimPt);
           on = true;
         }
       }
@@ -3470,10 +3529,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let quizBeat = false;
   const quizWhere = (): { room: string; at: 'after' | 'arrive' } | null => {
     const r = rooms[curRoom];
-    const lx = pos.x - offs[curRoom].x;
-    const lz = pos.z - offs[curRoom].z;
+    toL(curRoom, pos, lcl);
+    const lx = lcl.x;
+    const lz = lcl.z;
     const room = r.name.replace(/^Sala \d+ · /, '');
-    if (lz < r.doorZ - 0.6 && lz > r.doorZ - CORRIDOR + 0.4 && Math.abs(feetY - offs[curRoom].y - (r.exitDy ?? 0)) < 0.5) return { room, at: 'after' }; // (no chão do corredor: há salas com galeria por cima dele)
+    if (lz < r.doorZ - 0.6 && lz > r.doorZ - CORRIDOR + 0.4 && Math.abs(feetY - places[curRoom].pos.y - (r.exitDy ?? 0)) < 0.5) return { room, at: 'after' }; // (no chão do corredor: há salas com galeria por cima dele)
     if (r.calm?.(lx, lz)) return { room, at: 'arrive' };
     return null;
   };
@@ -3638,10 +3698,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const i = curRoom;
     const r = rooms[i];
     if (!r) return;
-    const o = offs[i];
-    const lx = pos.x - o.x;
-    const lz = pos.z - o.z;
-    const lf = feetY - o.y;
+    const pl = places[i];
+    toL(i, pos, lcl);
+    const lx = lcl.x;
+    const lz = lcl.z;
+    const lf = feetY - pl.pos.y;
     const a = r.ambience;
     const wind = a?.wind ? Math.max(0, Math.min(1, a.wind(lx, lz, lf))) : 0;
     let drip = 0;
@@ -3651,7 +3712,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const k = Math.max(0, 1 - dist / 9) ** 2;
       if (k > drip) {
         drip = k;
-        dripPan = panOf(d.x + o.x, d.z + o.z);
+        const [dx, dz] = pl.xz(d.x, d.z);
+        dripPan = panOf(dx, dz);
       }
     }
     const calm = mode === 'play' && !paused && !busy() && !cineCam && darkK === 0 && !dialogueStore.get() && !chatterStore.get();
@@ -3687,7 +3749,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (ui.diaryOpen() && locked()) document.exitPointerLock(); // o diário precisa do mouse livre
     const moving = move(dt);
     vertical(dt);
-    const ri = roomOfZ(pos.z);
+    const ri = roomAt(pos, feetY);
     if (ri !== curRoom && mode === 'play') {
       curRoom = ri;
       saveIn = Math.min(saveIn, 0.25); // entrou numa sala: salva
@@ -3741,8 +3803,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (stepIdx !== lastStepIdx) {
       lastStepIdx = stepIdx;
       if (speedFrac > 0.12 && vy === 0) {
-        const sr = roomOfZ(pos.z);
-        let kind: StepKind = rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone';
+        const sr = roomAt(pos, feetY);
+        toL(sr, pos, lcl);
+        let kind: StepKind = rooms[sr].surfaceAt?.(lcl.x, lcl.z) ?? 'stone';
         // o passo subiu ou desceu (escada, rampa): o degrau, com o peso do corpo
         if (kind === 'stone' && Math.abs(feetY - lastStepY) > 0.12) kind = 'stair';
         lastStepY = feetY;
@@ -3804,7 +3867,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       }
       for (let i = 0; i < n && dieState === 'flying'; i++) stepDie(dt / n);
-      worldDie.position.copy(dieP).add(offs[dieRoom]);
+      toW(dieRoom, dieP, worldDie.position);
       const w = dieW.length();
       if (w > 1e-4) {
         tmpQ.setFromAxisAngle(tmpAxis.copy(dieW).normalize(), w * dt);
@@ -3828,7 +3891,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       worldDie.position.y += Math.sin(Math.PI * u) * 0.28;
       worldModel.scale.setScalar(0.3 + 0.12 * e);
       if (u >= 1) {
-        dieP.copy(animTo).sub(offs[dieRoom]);
+        toL(dieRoom, animTo, dieP);
         dieV.set(0, 0, 0);
         dieW.set(0, 0, 0);
         worldModel.scale.setScalar(0.42);
@@ -3865,7 +3928,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     } else if (dieState === 'rest') {
       worldDie.quaternion.slerp(restQ, 1 - Math.exp(-dt * 12));
-      worldDie.position.copy(dieP).add(offs[dieRoom]);
+      toW(dieRoom, dieP, worldDie.position);
       if (hasDie && !rooms[dieRoom].holdsDie()) {
         restReturn += dt;
         if (restReturn > 1.8) recall();
@@ -3874,9 +3937,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     if (dropWatch && !camTween && (dieState === 'flying' || dieState === 'rest')) {
       // a câmera ACOMPANHA o dado despencando (cinema): do buraco até o chão
-      const wx = dieP.x + offs[0].x - pos.x;
-      const wy = dieP.y + offs[0].y - pos.y;
-      const wz = dieP.z + offs[0].z - pos.z;
+      toW(0, dieP, wtmp);
+      const wx = wtmp.x - pos.x;
+      const wy = wtmp.y - pos.y;
+      const wz = wtmp.z - pos.z;
       const ty = Math.atan2(-wx, -wz);
       const tp = clamp(Math.atan2(wy, Math.hypot(wx, wz)), -1.0, 1.5);
       yaw += Math.atan2(Math.sin(ty - yaw), Math.cos(ty - yaw)) * Math.min(1, dt * 5);
@@ -3895,7 +3959,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const fy = rooms[dieRoom].dieFloor(dieP.x, dieP.z);
       const hgt = Math.max(0, dieP.y - R - fy);
       dieShadow.visible = hgt < 3;
-      dieShadow.position.set(dieP.x, fy + 0.015, dieP.z).add(offs[dieRoom]);
+      toW(dieRoom, dieShadow.position.set(dieP.x, fy + 0.015, dieP.z));
       dieShadow.scale.setScalar(0.62 + hgt * 0.25);
       dieShadowMat.opacity = Math.max(0, 1 - hgt / 3);
     } else dieShadow.visible = false;
@@ -4129,15 +4193,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         return rc.intersectObjects(rooms[curRoom].group.children, true).slice(0, 4).map((h) => {
           const m = h.object as THREE.Mesh;
           const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.MeshLambertMaterial;
-          const lp = h.point.clone().sub(offs[curRoom]);
+          const lp = toL(curRoom, h.point.clone());
           return { type: m.type, geo: m.geometry?.type, color: mat?.color?.getHexString?.(), op: mat?.opacity, tr: mat?.transparent, p: lp.toArray().map((v) => +v.toFixed(2)), d: +h.distance.toFixed(2) };
         });
       },
       quizAnswer: (i: number) => quiz.answer(i),
-      feet: () => +(feetY - offs[curRoom].y).toFixed(2),
+      feet: () => +(feetY - places[curRoom].pos.y).toFixed(2),
       surface: () => {
-        const sr = roomOfZ(pos.z);
-        return rooms[sr].surfaceAt?.(pos.x - offs[sr].x, pos.z - offs[sr].z) ?? 'stone';
+        const sr = roomAt(pos, feetY);
+        toL(sr, pos, lcl);
+        return rooms[sr].surfaceAt?.(lcl.x, lcl.z) ?? 'stone';
       },
       sfx: (n: string, v = 1) => sfx.play(n as never, v),
       say: (lines: Parameters<typeof dialogue.say>[0], block = true) => dialogue.say(lines, { block }),
@@ -4149,7 +4214,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       stamps: () => diaryStore.get().stamps.length,
       inv: () => ({ die: hasDie, chalk: hasChalk, prompt: promptLabel }),
       interact: () => interact(),
-      interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: [+(camera.position.x - offs[curRoom].x).toFixed(2), +(camera.position.z - offs[curRoom].z).toFixed(2)] })),
+      interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: (toL(curRoom, camera.position, lcl), [+lcl.x.toFixed(2), +lcl.z.toFixed(2)]) })),
       chat: (k: string) => { chatCool = 0; chatFn(k); },
       // (para o desenho do mapa, DESIGN.md §73: a planta de cada sala no chão, em coordenadas da sala, sem o corredor da porta e sem o que fica lá fora)
       footprints: () =>
@@ -4169,24 +4234,24 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
             if (c.z < r.doorZ - 0.6 || c.z > r.entranceZ + 0.6) return; // (o corredor da porta e o de fora da entrada)
             box.union(b);
           });
-          return { i, n: r.name, x0: +box.min.x.toFixed(1), x1: +box.max.x.toFixed(1), z0: +box.min.z.toFixed(1), z1: +box.max.z.toFixed(1), y0: +box.min.y.toFixed(1), y1: +box.max.y.toFixed(1), door: r.doorZ, ent: r.entranceZ, entY: r.entranceY ?? 0, exitDy: r.exitDy ?? 0, offY: +offs[i].y.toFixed(1) };
+          return { i, n: r.name, x0: +box.min.x.toFixed(1), x1: +box.max.x.toFixed(1), z0: +box.min.z.toFixed(1), z1: +box.max.z.toFixed(1), y0: +box.min.y.toFixed(1), y1: +box.max.y.toFixed(1), door: r.doorZ, ent: r.entranceZ, entY: r.entranceY ?? 0, exitDy: r.exitDy ?? 0, offY: +places[i].pos.y.toFixed(1), q: places[i].q };
         }),
-      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +offs[i].z.toFixed(1), x: +offs[i].x.toFixed(2), y: +offs[i].y.toFixed(2), door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
+      rooms: () => rooms.map((r, i) => ({ n: r.name, z: +places[i].pos.z.toFixed(1), x: +places[i].pos.x.toFixed(2), y: +places[i].pos.y.toFixed(2), q: places[i].q, door: r.doorZ, dy: r.exitDy ?? 0, sx: r.start.x, sz: r.start.z, sy: r.startYaw, ent: r.entranceZ })),
       flags: () => ({ ...progressStore.get().flags, stage: progress.stage() }),
       cine: () => ({ intro: intro ? intro.ph : null, burn: burn ? +burn.t.toFixed(2) : null, holds }),
       // (testes) a cena da gema: uma gema `id` 1,2 m à frente dos olhos; `first` = a cena inteira
       gem: (id: string, first = true) => {
         if (first) progressStore.set((st) => ({ ...st, flags: { ...st.flags, gema: undefined } }));
         progress.set('caderno');
-        const at = new THREE.Vector3(-Math.sin(yaw) * 1.2, -0.25, -Math.cos(yaw) * 1.2).add(pos).sub(offs[curRoom]);
-        makeCtx(offs[curRoom], curRoom).gem(id, at);
+        const at = toL(curRoom, new THREE.Vector3(-Math.sin(yaw) * 1.2, -0.25, -Math.cos(yaw) * 1.2).add(pos));
+        makeCtx(curRoom).gem(id, at);
       },
       gemState: () => ({ active: gemFx.active(), gems: [...(diaryStore.get().gems ?? [])], book: book.opened() }),
       inscriptions: () => rooms.map((r) => (r.inscriptions ?? []).map((i) => ({ w: i.words.join('+'), read: i.read }))),
       progressReset: () => progress.reset(),
       sketch: (w = 'brasa') => showSketch(w, true),
       dieSay: (g: string[], pic?: string) => saySay(g, { pic }),
-      opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, headW: topScribe && rooms[0].wellTop ? (topScribe.head.getWorldPosition(tmpV), [+(tmpV.x - wellWorld().x).toFixed(2), +(tmpV.y - wellWorld().y).toFixed(2), +(tmpV.z - wellWorld().z).toFixed(2)]) : null, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [offs[0].x, offs[0].z] }),
+      opening: () => ({ ph: scribeDrop ? scribeDrop.ph : null, cine: !!cineCam, headW: topScribe && rooms[0].wellTop ? (topScribe.head.getWorldPosition(tmpV), [+(tmpV.x - wellWorld().x).toFixed(2), +(tmpV.y - wellWorld().y).toFixed(2), +(tmpV.z - wellWorld().z).toFixed(2)]) : null, hand: topScribe && rooms[0].wellTop ? (topScribe.hand.getWorldPosition(scribeHand), [+(scribeHand.x - wellWorld().x).toFixed(2), +(scribeHand.y - wellWorld().y).toFixed(2), +(scribeHand.z - wellWorld().z).toFixed(2)]) : null, pinned, walk: !!autoWalk, fov: +camera.fov.toFixed(1), pos: [+pos.x.toFixed(2), +pos.z.toFixed(2)], pitch: +pitch.toFixed(2), die: dieState, dieY: +dieP.y.toFixed(2), dieXZ: [+dieP.x.toFixed(2), +dieP.z.toFixed(2)], sh: rooms[0].shaft ? [rooms[0].shaft.x, rooms[0].shaft.z] : null, off0: [places[0].pos.x, places[0].pos.z] }),
       lifeDbg: () => ({ talking: talkingNow(), look: { ...life.out.look }, rostoP: rostoP.map((v) => +v.toFixed(2)), dots: FACE_N.map((n) => +nW.copy(n).applyQuaternion(dieHolder.quaternion).dot(FRONT).toFixed(2)), out: [life.out.dx, life.out.dy, life.out.scale, life.out.glow, life.out.quat.toArray()], tgt: lifeTarget(), glow: lifeGlow, pos: dieGroup.position.toArray(), scale: dieGroup.scale.x, q: dieHolder.quaternion.toArray(), vis: dieGroup.visible, css: [dieCssX, dieCssY] }),
       rostoSheet: () => {
         // prévia dos 6 rostos (face e brilho) em grande, só para avaliar o desenho
