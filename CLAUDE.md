@@ -96,11 +96,12 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   Telas em `src/ui/Menus.tsx` + `menus.css` (pedra talhada). Não há mais botões no canto no PC (som, ⓘ, ⤓, tela cheia e "recomeçar do zero" saíram);
   no celular só a pausa (e o diário, depois do caderno). Apagar um jogo só na tela de espaços, com confirmação dupla.
   **Abertura da editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`, `DESIGN.md` §78): ao abrir o jogo, uma luz quente acende numa parede das
-  salas e o giz do jogo risca o símbolo e o nome (propostas `?editora=quina|riscos|olho`, padrão Quina: a face do cinco feita de riscos de contar
-  dias; uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
+  salas e o giz do jogo risca o símbolo e o nome: a editora é **«Cinco Riscos»** (escolha do Pedro; o símbolo é a contagem de cinco dos
+  condenados; uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
   `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, fundo `src/ui/loadart.ts` no pós-processo,
-  modo `load` do motor) depois de Novo jogo, Continuar e Carregar: a parede no escuro, o fogo correndo no sulco e iluminando a parede, faíscas,
-  a fresta fria com poeira, riscos de giz contando, o dado no canto aquecido pela chama e de olho nela; espera modelos, quadros e os sons (que agora
+  modo `load` do motor) depois de Novo jogo, Continuar e Carregar: a parede no escuro, a canaleta por onde o fogo corre acendendo cinco
+  braseiros, a frase «ACENDER BRASEIRO» que acende quando os cinco estão acesos, a fresta fria com poeira e o dado em 2D com o rosto vivo,
+  recuando a cada braseiro; espera modelos, quadros e os sons (que agora
   baixam desde a abertura da página, `Sfx.prepare`) e, se a página recarregou, pede «Clique/Toque para começar» (o gesto libera o som e prende o
   mouse). A mira só aparece com o jogo começado. O dado da tela inicial tenta rolar, olha em volta e para o feixe; o rosto olha de canto, mexe as
   sobrancelhas e suspira de leve, sempre neutro.

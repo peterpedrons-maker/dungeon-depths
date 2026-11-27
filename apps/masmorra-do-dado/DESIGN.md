@@ -1553,17 +1553,14 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
 
 ## 78. A abertura Pedra-Sabão, a tela inicial que espera o cenário, o dado mais vivo, a tela de carregamento e a mira (cenógrafo, pedidos do Pedro)
 
-- **A editora** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`). A 1ª versão, «Pedra-Sabão» (uma laje clara com o nome a giz), não agradou ao
-  Pedro: ele pediu **outro nome** e **um símbolo mais original, desenhado pelo giz do jogo**. Agora: o escuro, uma **luz quente se acende numa
-  parede das salas** (a mesma alvenaria do jogo) e o **giz do jogo** (os quadradinhos claros `#f0ecdc`, que falham no grão da pedra) risca, traço a
-  traço, o **símbolo** e depois o **nome**, com um toco de giz na ponta soltando pó; no fim a luz baixa até o preto e a tela inicial se abre.
-  Três propostas, o Pedro escolhe (`?editora=quina|riscos|olho`; o padrão é a Quina):
-  - **QUINA** (no dado, a quina é a face do cinco): a face de um dado em que os cinco pontos viraram **cinco riscos de contar dias**, como os que
-    os condenados deixam nas paredes da Casa (o dado + o giz + a sentença num desenho só);
-  - **CINCO RISCOS**: a contagem sozinha, grande, com o risco atravessado passando da conta;
-  - **OLHO DE GIZ**: o olho do dado (a amêndoa e a íris em losango), num traço.
-  Tudo em pixel, no tamanho de pixel do jogo; ~4 s; um toque, clique ou tecla pula; uma vez por sessão do navegador (voltar à tela inicial no meio
-  do jogo não repete); `?splash=0` pula, `?splash=1` força. Ela só sai quando a tela inicial está pronta.
+- **A editora: «CINCO RISCOS»** (`src/ui/Splash.tsx`, `src/ui/chalkart.ts`). A 1ª versão, «Pedra-Sabão» (uma laje clara com o nome a giz),
+  não agradou: o Pedro pediu outro nome e um símbolo mais original, desenhado pelo giz do jogo. Foram propostas «Quina» (a face do cinco feita de
+  riscos), «Cinco Riscos» e «Olho de Giz»; **o Pedro escolheu Cinco Riscos**, por ser um nome que serve também a outros jogos. Agora: o escuro,
+  uma **luz quente se acende numa parede das salas** (a mesma alvenaria do jogo) e o **giz do jogo** (os quadradinhos claros `#f0ecdc`, que
+  falham no grão da pedra) risca, traço a traço, o símbolo, a **contagem de cinco dos condenados** (quatro riscos e o quinto atravessado,
+  passando da conta), e depois o nome, com um toco de giz na ponta soltando pó; no fim a luz baixa até o preto e a tela inicial se abre. Tudo em
+  pixel, no tamanho de pixel do jogo; ~4 s; um toque, clique ou tecla pula; uma vez por sessão do navegador (voltar à tela inicial no meio do
+  jogo não repete); `?splash=0` pula, `?splash=1` força. Ela só sai quando a tela inicial está pronta.
 - **A tela inicial não "sobe do preto" mais.** O defeito: o menu aparecia (subindo de baixo) com a tela ainda preta, e o cenário surgia segundos
   depois, porque o 1º desenho de cada material compila o programa de sombreamento, e os modelos 3D chegam depois. Agora a cena avisa quando está
   pronta (`onReady`: 4 quadros desenhados, os modelos chegaram, a fonte carregou; no máximo 10 s; `src/story/loading.ts`) e só então, depois da
@@ -1588,17 +1585,22 @@ brilho, e ele volta com a marca do Peso. Depois, para mostrar o que o Peso faz, 
   A boca continua sempre reta (§51); nada disso é emoção.
 - **A tela de carregamento** (`src/ui/LoadingScreen.tsx` + o fundo em `src/ui/loadart.ts`; o motor entra no modo `load`): depois de **Novo
   jogo** (a subida pelo feixe até o branco, que vira preto), de **Continuar** (o dado pula para fora e a imagem vira pontilhado até o preto) e de
-  **Carregar** outro espaço. A 1ª versão (preto liso, o dado e uma barra) ficou "muito purista"; agora ela tem vida:
-  - o fundo é **uma parede das salas no escuro**; embaixo, o **sulco talhado** por onde **o fogo corre** (marfim fosco apagado, ouro aceso, a
-    linguinha de chama na ponta), e **a luz da chama ilumina a parede** por onde passa e solta **faíscas** que sobem;
-  - do alto à esquerda desce **uma fresta de luz fria com poeira boiando** dentro (a assinatura de luz do jogo);
-  - acima do sulco, **riscos de giz vão contando os dias** conforme carrega, de cinco em cinco, o quinto atravessado (um risco a cada 5%);
-  - **o dado no canto de baixo à direita**, quase de frente para o jogador, **aquecido pela luz da chama** (mais forte quanto mais perto ela
-    chega), **de olho na ponta do fogo** enquanto carrega e no jogador quando termina; dá um **pulinho a cada grupo de cinco riscos**, se anima
-    quando o fogo passa de 60% e, no clique de começar, **sai pulando pela direita** enquanto a parede escurece (0,5 s).
+  **Carregar** outro espaço. Três rodadas com o Pedro: o preto liso com a barra ficou "muito purista"; a parede com o fogo e os riscos de giz
+  ganhou vida, mas ele pediu **o dado em 2D, mexendo o rosto**, e **uma barra com mais coisas do jogo**. Agora:
+  - uma **parede das salas no escuro** e uma **bancada de pedra** embaixo; do alto à esquerda desce a **fresta de luz fria com poeira boiando**;
+  - na bancada, a **canaleta** por onde o **fogo corre** conforme carrega e **cinco braseiros** de ferro (pé, haste, bacia) que **se acendem um a
+    um quando o fogo chega**, com clarão e faíscas, e cada um **ilumina a parede** (a mecânica do jogo: o fogo corre e acende);
+  - na parede, talhada em marfim, a frase **«ACENDER BRASEIRO»** (a primeira coisa que o dado diz no jogo; sem número, para não ensinar
+    antes da hora o CINCO, que é segredo da Lousa). **Com os cinco acesos, a frase fica verdadeira e acende traço a traço**, em ouro, com o clarão
+    na ponta, como as frases das salas (e, com o som liberado, soa símbolo a símbolo): é aí que o jogo está pronto;
+  - no canto, **o dado em 2D, em pixel**, quase de frente, com **o rosto vivo de verdade** (o mesmo de `dielife.ts`/`textures.ts`: os olhos seguem
+    a ponta do fogo e depois a frase, pisca, mexe as sobrancelhas, olha de canto, suspira); **recua a cada braseiro que acende** (como no jogo),
+    se anima quando a frase acende, a luz da chama esquenta a lateral dele e, no clique de começar, **sai pulando pela direita** enquanto a
+    parede escurece (0,5 s);
+  - o aviso «Clique/Toque para começar» fica embaixo da canaleta (nada por cima de nada).
   O fundo é pintado a cada quadro num canvas no tamanho de pixel do jogo e entra no **pós-processo** (`tBack`/`uBack`): a mesma paleta e o mesmo
-  pontilhado do jogo, com o dado 3D por cima. O lugar salvo é preparado por baixo (o mundo fica parado), e a tela espera **os modelos, os
-  primeiros quadros e as gravações de som** (no máximo 15 s; a barra leva no mínimo ~1,4 s).
+  pontilhado do jogo. O lugar salvo é preparado por baixo (o mundo fica parado), e a tela espera **os modelos, os primeiros quadros e as
+  gravações de som** (no máximo 15 s; a barra leva no mínimo ~1,4 s).
   - **Os sons que chegavam tarde**: antes, as gravações só começavam a baixar depois do 1º toque/tecla (e, depois de Novo jogo, a página recarrega:
     era preciso um gesto novo). Agora o motor de som (`audio.ts`, `prepare`) cria o contexto de áudio **suspenso logo ao abrir a página** e já
     baixa e decodifica tudo durante a abertura, a tela inicial e a de carregamento; nada é agendado antes do gesto (`unlock`), para não tocar tudo

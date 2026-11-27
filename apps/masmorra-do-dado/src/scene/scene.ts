@@ -3936,7 +3936,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const a = sfx.progress;
       const p = 0.2 * Math.min(1, drawn / 6) + 0.3 * models + 0.5 * a;
       barShown = Math.min(p, barShown + dt / 1.4); // (no mínimo ~1,4 s de barra: dá tempo de ver o fogo correr)
-      const ready = (barShown >= 0.999 && drawn >= 6 && fonts) || loadT > 15;
+      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.phraseDone()) || loadT > 15; // (pronto quando a frase acende)
       loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
     }
   };
@@ -3948,65 +3948,38 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   backTex.generateMipmaps = false;
   backTex.colorSpace = THREE.NoColorSpace;
   postMat.uniforms.tBack.value = backTex;
-  let tallyWas = 0;
-  let headWas = 0;
   const loadBackTick = (dt: number) => {
     loadArt.resize(rt.width, rt.height);
     const goK = goT >= 0 ? Math.min(1, goT / 0.45) : 0;
-    loadArt.paint(dt, barShown, loadStoreReady(), goK);
+    const ev = loadArt.paint(dt, barShown, goK, life.out);
     backTex.needsUpdate = true;
     postMat.uniforms.uBack.value = 1;
-    // a cada grupo de cinco riscos, um pulinho; quando o fogo chega ao fim, ele se anima e olha para o jogador
-    const n = Math.floor(Math.min(1, barShown) * loadArt.tallyN());
-    if (Math.floor(n / 5) > Math.floor(tallyWas / 5)) life.hop(2.4);
-    tallyWas = n;
-    const hx = loadArt.headAt().x;
-    if (hx > 0.6 && headWas <= 0.6) life.react('perk');
-    headWas = hx;
-  };
-  // TELA DE CARREGAMENTO: o dado no canto de baixo à direita, de rosto para o jogador; a cabeça acompanha um pouco os olhos; a chama o ilumina
-  const loadPose = (lo: { dy: number; scale: number; look: { x: number; y: number } }) => {
-    const ty = Math.tan((45 * Math.PI) / 360);
-    const hw = ty * dieCam.aspect;
-    const s = dieScaleBase * 0.78 * lo.scale;
-    dieGroup.scale.setScalar(s);
-    // saindo (o clique de começar): pula para fora pela direita
-    const out = goT >= 0 ? Math.min(1, goT / 0.45) : 0;
-    dieGroup.position.set(hw * 0.9 - s * 0.65 + out * out * hw * 0.6, -ty * 0.86 + s * 0.68 + lo.dy * 0.5 + Math.sin(Math.PI * Math.min(1, out * 1.2)) * 0.12, -1);
-    // a luz quente da chama: vem da ponta do fogo, mais forte quanto mais perto ela chega
-    const hd = loadArt.headAt();
-    const hx = (hd.x * 2 - 1) * hw;
-    const hy = -(hd.y * 2 - 1) * ty;
-    const prox = Math.max(0, 1 - Math.abs(hx - dieGroup.position.x) / (hw * 1.4));
-    titleRim.color.setHex(0xffa04a);
-    titleRim.intensity = (0.5 + 2.2 * prox * prox) * (1 + Math.sin(t * 11 + loadT * 23) * 0.06) * (1 - out);
-    titleRim.position.set(hx, hy + 0.05, -0.55);
-    titleRim.target.position.copy(dieGroup.position);
-    titleRim.target.updateMatrixWorld();
-    // quase de frente para a câmera (no canto, a perspectiva mostraria muito a lateral): o rosto encara o jogador e ainda se vê uma lasca
-    // da lateral e do topo, para ele ler como cubo
-    const gx = dieGroup.position.x;
-    const gy = dieGroup.position.y;
-    dieHolder.quaternion.premultiply(tmpQ.setFromEuler(wobbleEuler.set(0.5 * Math.atan2(gy, 1) - lo.look.y * 0.1, 0.62 * Math.atan2(-gx, 1) + lo.look.x * 0.22, 0, 'YXZ')));
-    wobbleEuler.order = 'XYZ';
+    // a cada braseiro que acende, o dado recua (como no jogo); quando a frase acende, ele se anima
+    if (ev.ignited) {
+      life.react('flinch');
+      if (sfx.unlocked) sfx.play('ignite', 0.4);
+    }
+    if (ev.phrase) {
+      life.react('perk');
+      if (sfx.unlocked) for (let i = 0; i < 2; i++) window.setTimeout(() => sfx.glyph(i, 2, -0.2), 120 + i * 480);
+    }
   };
   // para onde o dado do canto olha: quase sempre para o jogador; de vez em quando, para a ponta do fogo que corre na barra
   let loadLookT = 1.5;
   let loadAtBar = false;
   const loadTarget = (): LifeTarget | null => {
     loadLookT -= 1 / 60;
+    const ready = loadStoreReady();
     if (loadLookT <= 0) {
       // carregando: quase sempre de olho no fogo, de vez em quando no jogador; pronto: no jogador, espiando o fogo às vezes
-      const ready = loadStoreReady();
       loadAtBar = ready ? !loadAtBar && Math.random() < 0.3 : !loadAtBar || Math.random() < 0.5;
       loadLookT = loadAtBar ? (ready ? 0.8 : 1.6 + Math.random() * 1.6) : 1.2 + Math.random() * 1.8;
     }
     if (!loadAtBar) return { dx: 0, dy: 0, player: true };
-    dieOnScreen(dieNdc);
-    const hd = loadArt.headAt();
-    const bx = hd.x * 2 - 1;
-    const by = -(hd.y * 2 - 1);
-    return Number.isFinite(dieNdc.x + dieNdc.y) ? { dx: bx - dieNdc.x, dy: by - dieNdc.y } : null;
+    const dd = loadArt.dieAt();
+    // o fogo correndo; depois, a frase acendendo; depois, o braseiro mais perto
+    const tg = barShown < 0.999 ? loadArt.headAt() : !loadArt.phraseDone() ? loadArt.phraseAt() : loadArt.litAt() ?? loadArt.headAt();
+    return { dx: (tg.x - dd.x) * 2, dy: -(tg.y - dd.y) * 2 };
   };
   const loadStoreReady = () => barShown >= 0.999;
   applyConfig();
@@ -4684,7 +4657,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       mode === 'title'
         ? life.update({ dt: hdt, t, idle: titleIdle > 1, target: lifeTarget(), busy: false, sleepAfter: 30, face: Math.max(...rostoP), lively: true, glare: true })
         : mode === 'load'
-        ? life.update({ dt: hdt, t, idle: false, target: lifeTarget(), busy: false, face: Math.max(...rostoP), lively: true })
+        ? life.update({ dt: hdt, t, idle: false, target: lifeTarget(), busy: false, face: 1, lively: true })
         : life.update({ dt: hdt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP), talking: talkingNow() });
     lifeGlow = lo.glow * (quizShake > 0.05 && !calmFx ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
     updateMats();
@@ -4702,7 +4675,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       -1,
     );
     if (mode === 'title' || titleTr) titlePose(hdt, lo);
-    else if (mode === 'load') loadPose(lo);
     updateRostos(hdt);
     publishDieScreen();
     dieCam.position.set(0, 0, 0);
@@ -4741,7 +4713,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new' || mode === 'load') && !devNoHud; // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
+      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new') && !devNoHud; // (na tela de carregamento o dado é o 2D, pintado no fundo) // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
       gemFx.update(dt);
       const hide = book.update(dt, t);

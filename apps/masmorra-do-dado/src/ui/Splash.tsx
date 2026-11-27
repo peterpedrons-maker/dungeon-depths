@@ -1,51 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { DUST_RGB, CHALK_RGB, bayer, chalkAlong, chalkStub, lenOf, rnd, shapeStrokes, textStrokes, textWidth, wallBase, type Stroke } from './chalkart';
 
-// A ABERTURA DA EDITORA (pedido do Pedro, DESIGN.md §78). Ao abrir o jogo, antes da tela inicial: o escuro, uma luz quente se acende numa
-// PAREDE DAS SALAS (a mesma alvenaria do jogo) e o GIZ DO JOGO (os quadradinhos claros) risca, traço a traço, o SÍMBOLO da editora e depois o
-// nome, com um toco de giz na ponta soltando pó. No fim a luz baixa até o preto. Tudo em pixel, no tamanho de pixel do jogo, desenhado aqui.
-// Três propostas (o Pedro escolhe; `?editora=quina|riscos|olho`, o padrão é a Quina):
-// - QUINA (no dado, a quina é a face do cinco): a face de um dado em que os cinco pontos viraram cinco RISCOS de contar dias, como os que os
-//   condenados deixam nas paredes da Casa;
-// - CINCO RISCOS: a contagem sozinha, grande, com o risco atravessado passando da conta;
-// - OLHO DE GIZ: o olho do dado (a amêndoa e a íris em losango), num traço só.
+// A ABERTURA DA EDITORA «CINCO RISCOS» (nome escolhido pelo Pedro, DESIGN.md §78). Ao abrir o jogo, antes da tela inicial: o escuro, uma luz
+// quente se acende numa PAREDE DAS SALAS (a mesma alvenaria do jogo) e o GIZ DO JOGO (os quadradinhos claros) risca, traço a traço, o símbolo, a
+// contagem de cinco dos condenados (quatro riscos e o quinto atravessado, passando da conta), e depois o nome, com um toco de giz na ponta
+// soltando pó. No fim a luz baixa até o preto. Tudo em pixel, no tamanho de pixel do jogo, desenhado aqui. (Foram propostas também «Quina» e
+// «Olho de Giz»; o Pedro ficou com Cinco Riscos por ser um nome que serve a outros jogos.)
 // Dura ~4 s; um toque, clique ou tecla pula. O jogo carrega por trás; a abertura só sai quando a tela inicial está pronta.
 
-type Kind = 'quina' | 'riscos' | 'olho';
-const MARKS: Record<Kind, { name: string; s: Stroke[] }> = {
-  quina: {
-    name: 'QUINA',
-    s: [
-      { p: [[3, 0.3], [17, 0], [20, 3], [20.2, 17], [17, 20], [3, 20.2], [0, 17], [0.2, 3], [3.2, 0.1]], c: true },
-      { p: [[5.4, 5.2], [5.7, 14.8]] },
-      { p: [[8.3, 5.0], [8.5, 14.9]] },
-      { p: [[11.2, 5.3], [11.4, 14.7]] },
-      { p: [[14.1, 5.1], [14.4, 14.8]] },
-      { p: [[3.4, 13.6], [16.8, 6.2]] },
-    ],
-  },
-  riscos: {
-    name: 'CINCO RISCOS',
-    s: [
-      { p: [[2.6, 0.8], [3.2, 19.2]] },
-      { p: [[7.0, 0.4], [7.4, 19.5]] },
-      { p: [[11.3, 0.9], [11.9, 19.0]] },
-      { p: [[15.6, 0.5], [16.0, 19.4]] },
-      { p: [[-1.5, 15.5], [20.5, 3.5]] },
-    ],
-  },
-  olho: {
-    name: 'OLHO DE GIZ',
-    s: [
-      { p: [[0, 10], [3, 5.6], [7, 3.6], [13, 3.6], [17, 5.6], [20, 10], [17, 14.2], [13, 16.2], [7, 16.2], [3, 14.2], [0.2, 10.1]], c: true },
-      { p: [[10, 6.0], [14, 10], [10, 14], [6, 10], [10, 6.1]] },
-      { p: [[9.5, 9.4], [10.5, 10.5]] },
-      { p: [[9.6, 10.5], [10.4, 9.4]] },
-    ],
-  },
+const MARK: { name: string; s: Stroke[] } = {
+  name: 'CINCO RISCOS',
+  s: [
+    { p: [[2.6, 0.8], [3.2, 19.2]] },
+    { p: [[7.0, 0.4], [7.4, 19.5]] },
+    { p: [[11.3, 0.9], [11.9, 19.0]] },
+    { p: [[15.6, 0.5], [16.0, 19.4]] },
+    { p: [[-1.5, 15.5], [20.5, 3.5]] },
+  ],
 };
-const Q = new URLSearchParams(location.search);
-const KIND: Kind = (['quina', 'riscos', 'olho'] as Kind[]).includes(Q.get('editora') as Kind) ? (Q.get('editora') as Kind) : 'quina';
 
 interface Seg {
   pts: number[][];
@@ -100,7 +72,7 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
       wall = wallBase(W, H, 1);
       ink = new Int8Array(W * H).fill(-1);
       img = g.createImageData(W, H);
-      const mark = MARKS[KIND];
+      const mark = MARK;
       // o símbolo no alto, o nome embaixo
       const S = Math.round(H * 0.4);
       const su = S / 20;
@@ -242,5 +214,5 @@ export function Splash({ ready, onDone }: { ready: boolean; onDone: () => void }
       window.removeEventListener('resize', onResize);
     };
   }, []);
-  return <canvas ref={ref} className="splash" aria-label={MARKS[KIND].name} role="img" />;
+  return <canvas ref={ref} className="splash" aria-label="Cinco Riscos" role="img" />;
 }

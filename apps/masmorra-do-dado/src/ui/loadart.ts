@@ -1,12 +1,25 @@
 import { LOAD_BAR } from '../story/loading';
-import { CHALK_RGB, bayer, chalkAlong, lenOf, rnd, wallBase } from './chalkart';
+import { glyphsOf, type GlyphDef } from '../story/lexicon';
+import { dieFaceCanvas, dieRostoCanvas, type RostoLook } from '../scene/textures';
+import type { RostoMove } from '../scene/dielife';
+import { FACES } from '../faces';
+import { bayer, rnd, wallBase } from './chalkart';
 
-// O FUNDO DA TELA DE CARREGAMENTO (pedido do Pedro: "muito purista, dá mais vida"; DESIGN.md §78). Uma parede das salas no escuro; embaixo, o
-// SULCO talhado por onde o fogo corre (marfim apagado, ouro aceso, o clarão na ponta) e A LUZ DA CHAMA ILUMINA A PAREDE por onde passa, soltando
-// FAÍSCAS que sobem; acima do sulco, RISCOS DE GIZ vão contando os dias conforme carrega (de cinco em cinco, o quinto atravessado). Pintado
-// num canvas no tamanho de pixel do jogo; a cena o usa de fundo no pós-processo (paleta e pontilhado do jogo) e desenha o dado 3D por cima.
+// O FUNDO DA TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §78): uma parede das salas no escuro e uma bancada de pedra embaixo.
+// - Na bancada corre uma CANALETA por onde o fogo anda conforme carrega, e cinco BRASEIROS que se ACENDEM um a um quando o fogo chega
+//   (a mecânica do jogo: o fogo corre e acende); cada um ilumina a parede e solta faíscas.
+// - Na parede, talhada em marfim, a frase «ACENDER BRASEIRO» (a primeira coisa que o dado diz no jogo). Com os cinco acesos, a frase
+//   "fica verdadeira" e ACENDE traço a traço, em ouro, como as frases das salas: aí o jogo está pronto.
+// - Do alto à esquerda desce a fresta de luz fria com poeira boiando.
+// - No canto, O DADO EM 2D, em pixel, com o rosto vivo (o mesmo de dielife.ts: olha a ponta do fogo, pisca, mexe as sobrancelhas, suspira),
+//   recuando a cada braseiro que acende, aquecido pela luz; no clique de começar, sai pulando pela direita.
+// Pintado num canvas no tamanho de pixel do jogo; a cena o usa no pós-processo (a paleta e o pontilhado do jogo).
 
-const GROUPS = 4; // 4 grupos de cinco riscos
+export interface DieLook {
+  dx: number;
+  dy: number;
+  look: RostoMove;
+}
 interface Ember {
   x: number;
   y: number;
@@ -15,6 +28,27 @@ interface Ember {
   life: number;
   max: number;
 }
+type RGB = [number, number, number];
+const N_BRAZ = 5;
+const PHRASE = ['acender', 'brasa']; // ACENDER BRASEIRO
+
+// o rosto da vida do dado → o desenho (igual a scene.ts/updateRostos)
+const rostoOf = (lk: RostoMove): RostoLook => ({
+  ex: Math.round(lk.x * 5),
+  ey: Math.round(-lk.y * 4),
+  by: Math.round(-lk.brow * 3),
+  closed: lk.closed,
+  mo: Math.round(lk.mouth * 4),
+  mx: Math.round(lk.mx * 2),
+  mw: Math.round(lk.mw * 3),
+  sq: Math.round(lk.squint * 3),
+  nose: lk.nose,
+  bl: Math.round(lk.bl * 1.45),
+  br: Math.round(lk.br * 1.45),
+  sd: Math.round(lk.side * 4),
+  ir: lk.iris < -0.5 ? -1 : 0,
+});
+const pixels = (c: HTMLCanvasElement) => c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
 
 export function makeLoadArt() {
   const canvas = document.createElement('canvas');
@@ -22,20 +56,35 @@ export function makeLoadArt() {
   let W = 0;
   let H = 0;
   let wall = new Float32Array(0);
-  let ink = new Int8Array(0);
+  let beam = new Float32Array(0); // a fresta fria (fixa)
+  let lmaps: Float32Array[] = []; // a luz de cada braseiro (fixa; o tremor é um número por quadro)
+  let phraseMap = new Float32Array(0);
   let img: ImageData | null = null;
-  let tallies: { pts: number[][]; len: number }[] = [];
-  let tallyDrawn: number[] = [];
   let t = 0;
-  const embers: Ember[] = [];
-  // a fresta de luz fria que desce do alto à esquerda, com poeira boiando dentro (a assinatura de luz do jogo: poeira só em feixes)
-  const motes: { u: number; v: number; s: number; ph: number }[] = [];
-  for (let i = 0; i < 46; i++) motes.push({ u: Math.random(), v: Math.random(), s: 0.004 + Math.random() * 0.01, ph: Math.random() * 6.3 });
   const r = rnd(5);
   let bx0 = 0;
   let bx1 = 0;
-  let by = 0;
-  let head = 0; // a ponta do fogo (px)
+  let by = 0; // o alto da bancada
+  let head = 0;
+  let braz: { x: number; lit: number; seed: number }[] = []; // lit: segundos desde que acendeu (-1 = frio)
+  let phrasePx: { x: number; y: number; s: number; top: boolean }[] = [];
+  let phraseT = -1; // acendendo a frase (s); -1 = ainda não
+  let dieX = 0;
+  let dieY = 0;
+  const embers: Ember[] = [];
+  const motes: { u: number; v: number; s: number; ph: number }[] = [];
+  for (let i = 0; i < 40; i++) motes.push({ u: Math.random(), v: Math.random(), s: 0.004 + Math.random() * 0.01, ph: Math.random() * 6.3 });
+  // as faces do dado 2D: a da frente é o rosto (refeito quando o olhar muda), a de cima e a da esquerda são fixas
+  const accent = FACES[2].color;
+  const topPx = pixels(dieFaceCanvas(1, FACES[0].color, false));
+  const sidePx = pixels(dieFaceCanvas(2, FACES[1].color, false));
+  let faceKey = '';
+  let facePx: Uint8ClampedArray = new Uint8ClampedArray(64 * 64 * 4);
+  let glowPx: Uint8ClampedArray = new Uint8ClampedArray(64 * 64 * 4);
+
+  const fx0 = () => W * 0.42;
+  const fx1 = () => W * 0.16;
+  const fw = () => W * 0.1;
 
   const resize = (w: number, h: number) => {
     if (w === W && h === H) return;
@@ -44,118 +93,175 @@ export function makeLoadArt() {
     canvas.width = W;
     canvas.height = H;
     wall = wallBase(W, H, H > 300 ? 2 : 1);
-    ink = new Int8Array(W * H).fill(-1);
     img = g.createImageData(W, H);
     bx0 = Math.round(LOAD_BAR.x0 * W);
     bx1 = Math.round(LOAD_BAR.x1 * W);
     by = Math.round(LOAD_BAR.y * H);
-    // os riscos: de cinco em cinco, acima do sulco, com tremor de mão
-    tallies = [];
-    const rr = rnd(23);
-    const hh = Math.round(H * 0.085);
-    const sp = Math.max(4, Math.round(H * 0.022));
-    const top = by - Math.round(H * 0.3); // (mais alto que o aviso de começar, que fica logo acima do sulco)
-    let x = bx0 + 2;
-    for (let gI = 0; gI < GROUPS; gI++) {
-      const gx = x;
-      for (let k = 0; k < 4; k++) {
-        const lean = (rr() - 0.5) * 1.6;
-        tallies.push(mk([[x + (rr() - 0.5), top + (rr() - 0.5) * 2], [x + lean, top + hh + (rr() - 0.5) * 2]]));
-        x += sp;
-      }
-      tallies.push(mk([[gx - sp * 0.6, top + hh * 0.78], [x - sp * 0.3, top + hh * 0.22]]));
-      x += sp * 2.2;
-    }
-    tallyDrawn = tallies.map(() => 0);
     head = bx0;
-  };
-  const mk = (pts: number[][]) => ({ pts, len: lenOf(pts) });
-  const plot = (px: number, py: number, k: number) => {
-    if (px < 0 || py < 0 || px >= W || py >= H) return;
-    const i = py * W + px;
-    if (k < 0) {
-      if (ink[i] < 0) ink[i] = 4;
-    } else ink[i] = k;
+    // os braseiros: um a cada quinto da canaleta (o último na ponta)
+    braz = [];
+    for (let k = 0; k < N_BRAZ; k++) braz.push({ x: Math.round(bx0 + ((bx1 - bx0) * (k + 1)) / N_BRAZ) - 4, lit: -1, seed: k * 1.7 + 0.3 });
+    // as luzes fixas (falloff de cada braseiro e da frase) e a fresta
+    const R = H * 0.42;
+    lmaps = braz.map((b) => {
+      const m = new Float32Array(W * H);
+      const cy = by - 20;
+      for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) {
+          const dx = (x - b.x) / R;
+          const dy = (y - cy) / (R * 0.8);
+          const f = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy));
+          m[y * W + x] = f * f;
+        }
+      return m;
+    });
+    beam = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) {
+      const cx = fx0() + (fx1() - fx0()) * (y / H);
+      for (let x = 0; x < W; x++) {
+        const band = Math.max(0, 1 - Math.abs(x - cx) / fw()) * (1 - 0.55 * (y / H));
+        beam[y * W + x] = y < by ? band * band : 0;
+      }
+    }
+    // a frase talhada: os símbolos de ACENDER e BRASEIRO, centrados sobre a canaleta
+    const glyphs: GlyphDef[] = PHRASE.flatMap((id) => glyphsOf(id));
+    const c = Math.max(6, Math.round(H * 0.042)); // passo da grade 3×3
+    const hf = Math.round(c * 1.65); // meia moldura
+    const gw = hf * 2;
+    const gap = Math.round(c * 1.6);
+    const totalW = glyphs.length * gw + (glyphs.length - 1) * gap;
+    const gcy = by - Math.round(H * 0.33);
+    const strokes: number[][][] = [];
+    const dots: { x: number; y: number; big: boolean; ring: boolean }[] = [];
+    glyphs.forEach((gl, k) => {
+      const gcx = Math.round((bx0 + bx1) / 2 - totalW / 2 + hf + k * (gw + gap));
+      const pt = (i: number) => [gcx + ((i % 3) - 1) * c, gcy + (Math.floor(i / 3) - 1) * c];
+      const x0 = gcx - hf;
+      const x1 = gcx + hf;
+      const y0 = gcy - hf;
+      const y1 = gcy + hf;
+      if (gl.F === 'full') strokes.push([[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]);
+      else if (gl.F === 'V') strokes.push([[x0, y0], [x0, y1]], [[x1, y0], [x1, y1]]);
+      else if (gl.F === 'U') strokes.push([[x0, y0], [x0, y1], [x1, y1], [x1, y0]]);
+      else if (gl.F === 'N') strokes.push([[x0, y1], [x0, y0], [x1, y0], [x1, y1]]);
+      else if (gl.F === 'R') strokes.push([[x1, y0], [x0, y0], [x0, y1], [x1, y1]]);
+      else if (gl.F === 'L') strokes.push([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+      for (const [a, b] of gl.l) strokes.push([pt(a), pt(b)]);
+      for (const i of gl.p) dots.push({ x: pt(i)[0], y: pt(i)[1], big: gl.big.includes(i), ring: false });
+      for (const i of gl.ring) dots.push({ x: pt(i)[0], y: pt(i)[1], big: false, ring: true });
+    });
+    // em pixels, na ordem da escrita (moldura, ligações, pontos), cada um com a fração do caminho em que a luz passa por ele
+    const raw: { x: number; y: number; d: number; top: boolean }[] = [];
+    let acc = 0;
+    const seen = new Set<number>();
+    const add = (x: number, y: number, dd: number, top: boolean) => {
+      const k = y * W + x;
+      if (seen.has(k)) return;
+      seen.add(k);
+      raw.push({ x, y, d: dd, top });
+    };
+    for (const st of strokes) {
+      for (let i = 1; i < st.length; i++) {
+        const [xa, ya] = st[i - 1];
+        const [xb, yb] = st[i];
+        const L = Math.max(Math.abs(xb - xa), Math.abs(yb - ya));
+        const vert = Math.abs(yb - ya) > Math.abs(xb - xa);
+        for (let s = 0; s <= L; s++) {
+          const x = Math.round(xa + ((xb - xa) * s) / (L || 1));
+          const y = Math.round(ya + ((yb - ya) * s) / (L || 1));
+          add(x, y, acc + s, true);
+          add(x + (vert ? 1 : 0), y + (vert ? 0 : 1), acc + s, false); // 2 px de largura
+        }
+        acc += L;
+      }
+      acc += 3;
+    }
+    for (const dt of dots) {
+      const rr = dt.big ? 2 : 1;
+      for (let yy = -rr; yy <= rr; yy++)
+        for (let xx = -rr; xx <= rr; xx++) {
+          if (dt.ring && Math.abs(xx) < rr && Math.abs(yy) < rr) continue;
+          add(dt.x + xx, dt.y + yy, acc, yy === -rr);
+        }
+      acc += 4;
+    }
+    phrasePx = raw.map((q) => ({ x: q.x, y: q.y, s: q.d / acc, top: q.top }));
+    phraseMap = new Float32Array(W * H);
+    const pr = H * 0.16;
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const dx = (x - (bx0 + bx1) / 2) / (totalW / 2 + pr);
+        const dy = (y - gcy) / pr;
+        const f = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy));
+        phraseMap[y * W + x] = f * f;
+      }
+    // o dado: no canto de baixo à direita, apoiado na bancada
+    dieX = Math.round(W * 0.84);
+    dieY = by;
   };
 
-  // p: 0..1 (a barra como o jogador a vê); ready: tudo chegou; goK: 0..1 saindo para o jogo (escurece)
-  const paint = (dt: number, p: number, ready: boolean, goK: number) => {
-    if (!img) return;
+  // p: 0..1 (a barra como o jogador a vê); goK: 0..1 saindo para o jogo (escurece); devolve quantos braseiros acenderam neste quadro e se
+  // a frase começou a acender
+  const paint = (dt: number, p: number, goK: number, die: DieLook) => {
+    const ev = { ignited: 0, phrase: false };
+    if (!img) return ev;
     t += dt;
     const target = bx0 + (bx1 - bx0) * Math.min(1, p);
-    head += (target - head) * Math.min(1, dt * 10);
-    // os riscos de giz: um a cada (1/20) da barra; o da vez sendo riscado
-    const nT = tallies.length;
-    const f = Math.min(1, p) * nT;
-    for (let i = 0; i < nT; i++) {
-      const want = Math.min(1, Math.max(0, f - i)) * tallies[i].len;
-      if (want > tallyDrawn[i]) {
-        chalkAlong(plot, tallies[i].pts, tallyDrawn[i], want, 2);
-        tallyDrawn[i] = want;
-      }
+    head += (target - head) * Math.min(1, dt * 8);
+    if (p >= 0.999) head = Math.max(head, bx1);
+    for (const b of braz) {
+      if (b.lit < 0 && head >= Math.min(b.x + 4, bx1 - 1)) {
+        b.lit = 0;
+        ev.ignited++;
+        for (let n = 0; n < 16; n++) embers.push({ x: b.x + 4 + (r() - 0.5) * 10, y: by - 18, vx: (r() - 0.5) * 40, vy: -(30 + r() * 50), life: 0, max: 0.4 + r() * 0.7 });
+      } else if (b.lit >= 0) b.lit += dt;
     }
-    // faíscas da ponta do fogo
-    const rate = ready ? 10 : 34;
-    for (let n = r() < (rate * dt) % 1 ? Math.ceil(rate * dt) : Math.floor(rate * dt); n > 0; n--)
-      embers.push({ x: head + (r() - 0.5) * 3, y: by - 1, vx: (r() - 0.5) * 14, vy: -(18 + r() * 34), life: 0, max: 0.5 + r() * 0.9 });
-    if (ready && r() < dt * 6) {
-      const ex = bx0 + r() * (bx1 - bx0);
-      embers.push({ x: ex, y: by - 1, vx: (r() - 0.5) * 8, vy: -(10 + r() * 20), life: 0, max: 0.6 + r() * 0.7 });
-    }
+    const allLit = braz.every((b) => b.lit >= 0);
+    if (allLit && phraseT < 0) {
+      phraseT = 0;
+      ev.phrase = true;
+    } else if (phraseT >= 0) phraseT += dt;
+    const phraseU = phraseT < 0 ? 0 : Math.min(1, phraseT / 1.1);
+    // faíscas: da ponta do fogo e dos braseiros acesos
+    if (head < bx1 - 1 && r() < dt * 30) embers.push({ x: head, y: by + 2, vx: (r() - 0.5) * 12, vy: -(14 + r() * 26), life: 0, max: 0.4 + r() * 0.6 });
+    for (const b of braz) if (b.lit >= 0 && r() < dt * 3.5) embers.push({ x: b.x + 4 + (r() - 0.5) * 8, y: by - 24, vx: (r() - 0.5) * 10, vy: -(16 + r() * 26), life: 0, max: 0.6 + r() * 0.9 });
     for (let i = embers.length - 1; i >= 0; i--) {
       const e = embers[i];
       e.life += dt;
-      e.vy += 6 * dt;
+      e.vy += 10 * dt;
       e.vx += Math.sin(t * 5 + i) * 10 * dt;
       e.x += e.vx * dt;
       e.y += e.vy * dt;
       if (e.life >= e.max) embers.splice(i, 1);
     }
-    // a luz: a chama na ponta ilumina a parede em volta; o trecho aceso do sulco brilha baixinho; tremula
-    const d = img.data;
-    const flick = 1 + Math.sin(t * 11.3) * 0.06 + Math.sin(t * 27.1) * 0.04;
-    const R = H * 0.72;
-    const lit = Math.max(0, head - bx0);
-    const amb = 0.06;
-    // a fresta: uma faixa diagonal (de cima, à esquerda do centro, descendo para a esquerda), bordas pontilhadas, mais fraca embaixo
-    const fx0 = W * 0.42;
-    const fx1 = W * 0.16;
-    const fw = W * 0.1;
+    // a força de cada luz agora (acende com um clarão e tremula)
+    const ks = braz.map((b) => (b.lit < 0 ? 0 : (1 + Math.max(0, 0.9 - b.lit * 2.2)) * (1 + Math.sin(t * 10.3 + b.seed * 5) * 0.06 + Math.sin(t * 23.1 + b.seed) * 0.04)));
+    const headK = head < bx1 - 0.5 ? 0.55 : 0;
+    const RH = H * 0.22;
     const fade = 1 - goK;
+    const d = img.data;
+    const amb = 0.055;
     for (let y = 0; y < H; y++) {
-      const dyg = Math.abs(y - by);
-      const grooveY = Math.max(0, 1 - dyg / (H * 0.16)); // o brilho do sulco aceso só perto dele
+      const ledge = y >= by;
       for (let x = 0; x < W; x++) {
         const i = y * W + x;
-        const dx = (x - head) / R;
-        const dy = (y - by) / (R * 0.75);
-        let fl = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy));
-        fl = fl * fl * 1.35 * flick;
-        // ao longo do trecho aceso (mais forte com tudo pronto)
-        if (x >= bx0 && x <= bx0 + lit) fl += grooveY * grooveY * (ready ? 0.55 : 0.32);
-        const lv = Math.floor(Math.min(1.3, fl) * 7 + bayer(x, y)) / 7;
-        // a fresta fria
-        const cx = fx0 + (fx1 - fx0) * (y / H);
-        const band = Math.max(0, 1 - Math.abs(x - cx) / fw) * (1 - 0.55 * (y / H));
-        const cool = Math.floor(band * band * 0.55 * 5 + bayer(x + 1, y)) / 5;
-        const k = ink[i];
-        let rr: number;
-        let gg: number;
-        let bb: number;
-        if (k >= 0) {
-          const c = k === 4 ? [0.6, 0.6, 0.57] : CHALK_RGB[k];
-          // o giz é claro mesmo no escuro (é ele que se lê); a chama só o esquenta um pouco
-          const l = Math.min(1, 0.56 + lv * 0.5 + cool * 0.3);
-          const warm = Math.min(1, lv);
-          rr = c[0] * l;
-          gg = c[1] * l * (1 - 0.05 * warm);
-          bb = c[2] * l * (1 - 0.14 * warm);
-        } else {
-          const o = i * 3;
-          rr = wall[o] * (amb + lv * 1.3 + cool * 0.55);
-          gg = wall[o + 1] * (amb + lv * 0.88 + cool * 0.62);
-          bb = wall[o + 2] * (amb * 1.4 + lv * 0.5 + cool * 0.85);
+        let L = 0;
+        for (let k = 0; k < ks.length; k++) if (ks[k]) L += ks[k] * lmaps[k][i];
+        if (headK) {
+          const dx = (x - head) / RH;
+          const dy = (y - by) / (RH * 0.8);
+          const f = 1 - Math.sqrt(dx * dx + dy * dy);
+          if (f > 0) L += headK * f * f;
         }
+        if (phraseU > 0) L += phraseMap[i] * 0.45 * phraseU;
+        const lv = Math.floor(Math.min(1.4, L) * 7 + bayer(x, y)) / 7;
+        const cool = Math.floor(beam[i] * 0.55 * 5 + bayer(x + 1, y)) / 5;
+        const o = i * 3;
+        // a bancada: a mesma pedra, mais escura, com a aresta de cima pegando a luz
+        const lk = ledge ? (y === by ? 1.5 : y === by + 1 ? 1.1 : 0.62) : 1;
+        const rr = wall[o] * (amb + lv * 1.3 + cool * 0.55) * lk;
+        const gg = wall[o + 1] * (amb + lv * 0.88 + cool * 0.62) * lk;
+        const bb = wall[o + 2] * (amb * 1.4 + lv * 0.5 + cool * 0.85) * lk;
         const o4 = i * 4;
         d[o4] = Math.min(255, rr * 255 * fade);
         d[o4 + 1] = Math.min(255, gg * 255 * fade);
@@ -163,46 +269,21 @@ export function makeLoadArt() {
         d[o4 + 3] = 255;
       }
     }
-    const put = (px: number, py: number, c: number[]) => {
+    const put = (px: number, py: number, c: RGB | number[]) => {
       if (px < 0 || py < 0 || px >= W || py >= H) return;
       const o4 = (py * W + px) * 4;
       d[o4] = Math.min(255, c[0] * 255 * fade);
       d[o4 + 1] = Math.min(255, c[1] * 255 * fade);
       d[o4 + 2] = Math.min(255, c[2] * 255 * fade);
     };
-    // o sulco talhado: borda de cima na sombra, de baixo pegando luz; dentro, 3 px de marfim apagado ou de ouro aceso
-    const hx = Math.round(head);
-    for (let x = bx0 - 1; x <= bx1 + 1; x++) {
-      const near = Math.max(0, 1 - Math.abs(x - hx) / (H * 0.3));
-      put(x, by - 3, [0.06, 0.05, 0.06]);
-      put(x, by + 1, [0.22 + near * 0.35, 0.18 + near * 0.22, 0.16 + near * 0.08]);
-      for (let yy = -2; yy <= 0; yy++) {
-        if (x < bx0 || x > bx1) {
-          put(x, by + yy, [0.05, 0.04, 0.05]);
-          continue;
-        }
-        if (x > hx) {
-          // apagado: marfim fosco (mais claro perto da chama), uma fuligem velha em cima
-          const k2 = 0.35 + near * 0.55;
-          put(x, by + yy, yy === -2 ? [0.42 * k2, 0.39 * k2, 0.33 * k2] : [0.82 * k2, 0.78 * k2, 0.66 * k2]);
-          continue;
-        }
-        const dist = hx - x;
-        const pulse = 0.5 + 0.5 * Math.sin(x * 0.35 - t * 6);
-        const c = dist < 2 ? [1, 0.97, 0.82] : dist < 6 ? [1, 0.86, 0.45] : pulse > 0.8 ? [1, 0.82, 0.36] : [0.92, 0.66, 0.24];
-        put(x, by + yy, yy === -1 ? [Math.min(1, c[0] + 0.05), Math.min(1, c[1] + 0.08), Math.min(1, c[2] + 0.1)] : c);
-      }
-    }
-    // a chama na ponta: uma linguinha que tremula acima do sulco
-    if (!ready || Math.sin(t * 3) > -0.6) {
-      const hgt = 3 + Math.round(2 + Math.sin(t * 17) * 1.5 + Math.sin(t * 29) * 1);
-      for (let yy = 0; yy < hgt; yy++) {
-        const w = yy < hgt - 2 ? 1 : 0;
-        const c = yy < 2 ? [1, 0.98, 0.85] : yy < hgt - 1 ? [1, 0.8, 0.35] : [0.95, 0.45, 0.15];
-        for (let xx = -w; xx <= w; xx++) put(hx + xx + (yy > 2 ? Math.round(Math.sin(t * 13 + yy) * 0.6) : 0), by - 3 - yy, c);
-      }
-    }
-    // a poeira da fresta: grãos claros boiando devagar, que piscam quando cruzam o miolo da luz
+    const lightAt = (x: number, y: number) => {
+      const xi = Math.max(0, Math.min(W - 1, Math.round(x)));
+      const yi = Math.max(0, Math.min(H - 1, Math.round(y)));
+      let L = 0;
+      for (let k = 0; k < ks.length; k++) if (ks[k]) L += ks[k] * lmaps[k][yi * W + xi];
+      return Math.min(1.3, L);
+    };
+    // a fresta: a poeira boiando
     for (const m of motes) {
       m.v += m.s * dt * 2.2;
       m.u += Math.sin(t * 0.7 + m.ph) * dt * 0.01;
@@ -210,24 +291,166 @@ export function makeLoadArt() {
         m.v -= 1;
         m.u = Math.random();
       }
-      const y = Math.round(m.v * H * 0.92);
-      const cx = fx0 + (fx1 - fx0) * (y / H);
-      const x = Math.round(cx + (m.u - 0.5) * fw * 1.5);
+      const y = Math.round(m.v * by * 0.98);
+      const cx = fx0() + (fx1() - fx0()) * (y / H);
+      const x = Math.round(cx + (m.u - 0.5) * fw() * 1.5);
       const tw = 0.5 + 0.5 * Math.sin(t * 2.3 + m.ph * 3);
-      const inb = Math.max(0, 1 - Math.abs(x - cx) / fw);
-      if (inb * tw > 0.25) put(x, y, [0.62 + 0.3 * tw, 0.66 + 0.28 * tw, 0.74 + 0.2 * tw]);
+      if (Math.max(0, 1 - Math.abs(x - cx) / fw()) * tw > 0.25) put(x, y, [0.62 + 0.3 * tw, 0.66 + 0.28 * tw, 0.74 + 0.2 * tw]);
     }
-    // as faíscas: claras no começo, laranja, depois vermelho escuro
+    // a frase talhada: marfim fosco; acesa, a luz corre por ela traço a traço, com o clarão na ponta
+    for (const q of phrasePx) {
+      const lt = lightAt(q.x, q.y);
+      if (q.s < phraseU) {
+        const hot = phraseU - q.s < 0.06 && phraseU < 1;
+        put(q.x, q.y, hot ? [1, 0.97, 0.85] : q.top ? [1, 0.86, 0.45] : [0.95, 0.7, 0.28]);
+      } else {
+        const k = 0.55 + lt * 0.5;
+        put(q.x, q.y, q.top ? [0.5 * k, 0.46 * k, 0.38 * k] : [0.84 * k, 0.79 * k, 0.66 * k]);
+      }
+    }
+    // a canaleta: o sulco na frente da bancada; apagado = marfim, aceso = ouro, a linguinha de fogo na ponta
+    const hx = Math.round(head);
+    const running = head < bx1 - 0.5;
+    for (let x = bx0 - 1; x <= bx1 + 1; x++) {
+      const lt = lightAt(x, by + 3);
+      put(x, by + 2, [0.05, 0.04, 0.05]);
+      put(x, by + 6, [0.2 + lt * 0.3, 0.16 + lt * 0.2, 0.14 + lt * 0.08]);
+      for (let yy = 3; yy <= 5; yy++) {
+        if (x < bx0 || x > bx1) {
+          put(x, by + yy, [0.05, 0.04, 0.05]);
+          continue;
+        }
+        if (x > hx) {
+          const k2 = 0.35 + lt * 0.5;
+          put(x, by + yy, yy === 3 ? [0.42 * k2, 0.39 * k2, 0.33 * k2] : [0.82 * k2, 0.78 * k2, 0.66 * k2]);
+          continue;
+        }
+        const dist = hx - x;
+        const pulse = 0.5 + 0.5 * Math.sin(x * 0.35 - t * 6);
+        const c: RGB = dist < 2 && running ? [1, 0.97, 0.82] : dist < 6 && running ? [1, 0.86, 0.45] : pulse > 0.8 ? [1, 0.82, 0.36] : [0.92, 0.66, 0.24];
+        put(x, by + yy, c);
+      }
+    }
+    if (running) {
+      const hgt = 3 + Math.round(1.5 + Math.sin(t * 17) * 1.2 + Math.sin(t * 29) * 0.8);
+      for (let yy = 0; yy < hgt; yy++) put(hx + (yy > 1 ? Math.round(Math.sin(t * 13 + yy) * 0.6) : 0), by + 2 - yy, yy < 2 ? [1, 0.98, 0.85] : yy < hgt - 1 ? [1, 0.8, 0.35] : [0.95, 0.45, 0.15]);
+    }
+    // os braseiros: pé, haste e bacia de ferro na bancada; frios, brasas cinzentas; acesos, brasas e a chama
+    for (const b of braz) {
+      const bxx = b.x;
+      const lt = Math.max(lightAt(bxx + 4, by - 10), 0.15);
+      const iron = (k: number): RGB => [0.16 * k + 0.32 * lt * k, 0.13 * k + 0.2 * lt * k, 0.14 * k + 0.1 * lt * k];
+      const cx = bxx + 4;
+      for (let xx = -5; xx <= 5; xx++) {
+        put(cx + xx, by - 1, iron(Math.abs(xx) === 5 ? 0.8 : 1.15)); // o pé
+        if (Math.abs(xx) < 4) put(cx + xx, by - 2, iron(xx === -3 ? 1.4 : 0.9));
+      }
+      for (let yy = 3; yy <= 7; yy++) {
+        put(cx - 1, by - yy, iron(1.35));
+        put(cx, by - yy, iron(1));
+        put(cx + 1, by - yy, iron(0.75));
+      }
+      // a bacia: de 8 px embaixo a 16 em cima, a borda de cima mais clara
+      for (let row = 0; row < 7; row++) {
+        const w = 4 + Math.round(row * 0.67);
+        const yb = by - 8 - row;
+        for (let xx = -w; xx <= w; xx++) put(cx + xx, yb, iron(xx === -w ? 1.6 : xx === w ? 0.7 : row === 6 ? 1.9 : row === 5 ? 0.8 : 1));
+      }
+      // a boca (brasas)
+      const hot = b.lit >= 0;
+      for (let xx = -7; xx <= 7; xx++) {
+        const h = (((xx * 7 + Math.floor(t * (hot ? 6 : 0))) % 5) + 5) % 5;
+        put(cx + xx, by - 15, hot ? (h === 0 ? [1, 0.88, 0.5] : h < 3 ? [1, 0.55, 0.18] : [0.75, 0.25, 0.08]) : h < 2 ? [0.26, 0.24, 0.24] : [0.16, 0.15, 0.16]);
+      }
+      if (!hot) continue;
+      // a chama: colunas que tremulam, maior no clarão de quando acende
+      const boost = 1 + Math.max(0, 0.8 - b.lit * 2.5);
+      for (let xx = -6; xx <= 6; xx++) {
+        const base = (12 - Math.abs(xx) * 1.45) * boost;
+        const n = 0.72 + 0.28 * Math.sin(t * 9 + xx * 1.7 + b.seed * 3) * Math.sin(t * 5.3 + xx * 0.9 + b.seed);
+        const hgt = Math.max(1, Math.round(base * n));
+        for (let yy = 0; yy < hgt; yy++) {
+          const u = yy / hgt;
+          if (u > 0.85 && (xx + yy + Math.floor(t * 12)) % 2) continue;
+          put(cx + xx + (u > 0.5 ? Math.round(Math.sin(t * 11 + yy * 0.7 + b.seed) * 0.9) : 0), by - 16 - yy, u < 0.3 ? [1, 0.96, 0.78] : u < 0.62 ? [1, 0.74, 0.3] : u < 0.85 ? [0.98, 0.45, 0.14] : [0.72, 0.2, 0.07]);
+        }
+      }
+    }
+    // as faíscas
     for (const e of embers) {
       const u = e.life / e.max;
-      const c = u < 0.3 ? [1, 0.93, 0.6] : u < 0.65 ? [1, 0.62, 0.22] : [0.7, 0.22, 0.08];
+      const c: RGB = u < 0.3 ? [1, 0.93, 0.6] : u < 0.65 ? [1, 0.62, 0.22] : [0.7, 0.22, 0.08];
       if (u > 0.85 && (Math.round(e.x) + Math.round(e.y)) % 2) continue;
       put(Math.round(e.x), Math.round(e.y), c);
     }
+    // O DADO 2D: a face da frente é o rosto vivo; em cima e à esquerda, as faces que se veem de quem está à esquerda; sombra no chão
+    drawDie(put, lightAt, die, goK);
     g.putImageData(img, 0, 0);
+    return ev;
   };
-  // a ponta do fogo e a altura do sulco, em frações da tela (o dado olha para lá e recebe a luz)
-  const headAt = () => ({ x: W ? head / W : LOAD_BAR.x0, y: LOAD_BAR.y });
-  return { canvas, resize, paint, headAt, tallyN: () => tallies.length };
+
+  const drawDie = (put: (x: number, y: number, c: RGB | number[]) => void, lightAt: (x: number, y: number) => number, die: DieLook, goK: number) => {
+    const look = rostoOf(die.look);
+    const key = JSON.stringify(look);
+    if (key !== faceKey) {
+      faceKey = key;
+      const rc = dieRostoCanvas(3, accent, false, 0, look);
+      facePx = pixels(rc.face);
+      glowPx = pixels(rc.glow);
+    }
+    const S = 64;
+    const D = 12; // profundidade das faces de lado
+    const hop = Math.min(16, Math.round(Math.max(0, die.dy) * 320));
+    const shake = Math.round(die.dx * 500);
+    const out = goK * goK;
+    const away = Math.round(out * W * 0.25);
+    const ox = dieX - S / 2 + shake + away;
+    const oy = dieY - S - hop - Math.round(Math.sin(Math.PI * Math.min(1, goK * 1.2)) * 18);
+    const L = lightAt(dieX - S * 0.6, dieY - S * 0.5); // a luz que chega pela esquerda
+    // sombra de contato pontilhada (encolhe com o pulo)
+    const sw = Math.round((S / 2 + 4) * (1 - Math.min(0.5, hop / 30)));
+    for (let xx = -sw; xx <= sw; xx++)
+      for (let yy = 0; yy < 2; yy++) if ((xx + yy) % 2 === 0) put(dieX + away + xx - 4, dieY + yy, [0.02, 0.015, 0.02]);
+    const shadeOf = (px: Uint8ClampedArray, i: number, k: number, warm: number): RGB => [
+      (px[i] / 255) * k * (1 + warm * 0.35),
+      (px[i + 1] / 255) * k * (1 + warm * 0.1),
+      (px[i + 2] / 255) * k * (1 - warm * 0.2),
+    ];
+    // em cima: recua para a esquerda (quem olha está à esquerda e acima)
+    for (let rI = 0; rI < D; rI++) {
+      const ty = Math.floor((rI * S) / D);
+      const x0 = ox - (D - rI);
+      for (let x = 0; x < S; x++) put(x0 + x, oy - D + rI, shadeOf(topPx, (ty * S + x) * 4, 0.62 + L * 0.25, L * 0.5));
+    }
+    // à esquerda: a face que a chama ilumina
+    for (let cI = 0; cI < D; cI++) {
+      const tx = Math.floor((cI * S) / D);
+      const y0 = oy - (D - cI);
+      for (let y = 0; y < S; y++) put(ox - D + cI, y0 + y, shadeOf(sidePx, (y * S + tx) * 4, 0.42 + L * 0.75, Math.min(1, L * 1.2)));
+    }
+    // a frente: o rosto, com o ouro e os olhos acesos (o brilho soma)
+    for (let y = 0; y < S; y++)
+      for (let x = 0; x < S; x++) {
+        const i = (y * S + x) * 4;
+        const base = shadeOf(facePx, i, 0.7 + L * 0.35, L * 0.6);
+        put(ox + x, oy + y, [base[0] + (glowPx[i] / 255) * 0.55, base[1] + (glowPx[i + 1] / 255) * 0.55, base[2] + (glowPx[i + 2] / 255) * 0.55]);
+      }
+  };
+
+  return {
+    canvas,
+    resize,
+    paint,
+    // a ponta do fogo e o dado, em frações da tela (o dado olha para lá)
+    headAt: () => ({ x: W ? head / W : LOAD_BAR.x0, y: LOAD_BAR.y }),
+    dieAt: () => ({ x: W ? dieX / W : 0.84, y: H ? (dieY - 32) / H : 0.75 }),
+    // o último braseiro aceso (para onde o dado olha quando o fogo já passou)
+    litAt: () => {
+      const b = [...braz].reverse().find((q) => q.lit >= 0);
+      return b ? { x: (b.x + 4) / W, y: (by - 18) / H } : null;
+    },
+    phraseDone: () => phraseT >= 1.4,
+    phraseAt: () => ({ x: (bx0 + bx1) / 2 / (W || 1), y: (by - H * 0.33) / (H || 1) }),
+  };
 }
 export type LoadArt = ReturnType<typeof makeLoadArt>;
