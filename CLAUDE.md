@@ -144,10 +144,16 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   sala), sempre com GRAVAÇÕES REAIS (CC0 do OpenGameArt e os instrumentos do FluidR3_GM), registrando créditos e scripts reprodutíveis, e entrega
   uma faixa de demonstração para o Pedro ouvir. Não mexe na música, nos textos nem nos puzzles; como subagente, não faz commit.
 
+- **`enigmista`** (`.claude/agents/enigmista.md`): o agente de puzzle de «Sentença». Projeta puzzles novos e CONFERE todo puzzle feito ou corrigido
+  antes de ir para o jogo: solução única provada num verificador em `tools/verify_*.mjs`, dedução e não sorte (mede o custo de testar à força,
+  acender tudo, chutar), o que o erro ensina, ensino da língua, régua de dificuldade (`DESIGN.md` §17), janelas de tempo com âncora visível.
+  Não mexe em arte, texto nem som; como subagente, não faz commit. **Pedido do Pedro: todo puzzle que for feito ou corrigido passa por ele.**
+
 ## Convenção para puzzles (sentenca)
 
 Sempre que criar ou alterar um puzzle: **explique ao usuário como resolvê-lo** na resposta e
-registre a solução em `apps/sentenca/PUZZLES.md`.
+registre a solução em `apps/sentenca/PUZZLES.md`. E passe o puzzle pelo subagente **`enigmista`** (projetar e conferir), com o
+verificador dele em `tools/verify_*.mjs`.
 
 Os jogos antigos (dungeon-depths, reino-e-masmorras, ricochete) foram removidos de `apps/` e
 continuam no histórico do git.
