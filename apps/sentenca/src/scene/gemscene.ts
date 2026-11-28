@@ -148,8 +148,34 @@ export function makeGemScene(env: { scene: THREE.Scene; cam: THREE.PerspectiveCa
     skip() {
       if (s && s.t > 0.35) skip = true;
     },
+    // encerra a cena na hora, com a gema guardada (um erro, ou a cena passou muito do tempo: nada pode prender o jogador nela)
+    abort() {
+      if (!s) return;
+      try {
+        land();
+      } catch {
+        /* a gema já pode ter sido guardada */
+      }
+      gem.visible = false;
+      halo.visible = false;
+      dust.visible = false;
+      try {
+        env.book.present(false);
+        env.book.board(null);
+      } catch {
+        /* o caderno se arruma sozinho */
+      }
+      const cb = s.onDone;
+      s = null;
+      cb?.();
+    },
     update(dt: number) {
       if (!s) return;
+      // (rede de segurança: a cena inteira dura ~6 s; se passar de 20 s, algo a prendeu, e ela acaba)
+      if (s.t > 20) {
+        this.abort();
+        return;
+      }
       const T = s.T;
       if (skip && !s.landed) {
         // pulou: a gema vai direto para o furo
@@ -268,7 +294,7 @@ export function makeGemScene(env: { scene: THREE.Scene; cam: THREE.PerspectiveCa
         dust.visible = false;
         halo.visible = false;
       }
-      if (s.closed && (!s.withBook || env.book.opened() <= 0)) {
+      if (s.closed && (!s.withBook || env.book.opened() <= 0 || t > doneT + T.hold + 3)) {
         env.book.board(null);
         const cb = s.onDone;
         s = null;

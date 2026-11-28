@@ -702,6 +702,15 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
   const slab = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.86, 0.12), kit.stone);
   slab.position.set(0, 0, 0.37);
   g.add(slab);
+  // o nicho é SÓLIDO (pedido do Pedro): a moldura e a laje saem 43 cm da parede e o jogador (raio de 30 cm) entrava com a cabeça na caixa e via
+  // o segredo por dentro da laje fechada. O bloqueio vai do chão do nicho para cima (`r[5]`): quem passa num andar de baixo não esbarra nele
+  {
+    const cx = x + nx * 0.225;
+    const cz = z + nz * 0.225;
+    const hx = Math.abs(nx) * 0.225 + Math.abs(nz) * 0.5;
+    const hz = Math.abs(nz) * 0.225 + Math.abs(nx) * 0.5;
+    kit.rects.push([cx - hx, cz - hz, cx + hx, cz + hz, y + 0.56, y - 1.3]);
+  }
   const light = kit.light(x + nx * 0.5, y, z + nz * 0.5, page ? 0xffd8a0 : 0x7ad8ff, 0);
   let open = 0;
   let opening = false;

@@ -4740,11 +4740,33 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let emittedDie: DieState | null = null;
   let aimTick = 0;
   let aimCache: ReturnType<typeof aimPoint> = null;
-  const loop = (now: number) => {
-    if (fpsCap > 0 && now - lastDraw < 1000 / fpsCap - 2) {
-      raf = requestAnimationFrame(loop); // limitar quadros (configurações)
-      return;
+  // O quadro seguinte é pedido ANTES de desenhar este: um erro no meio de um quadro (de qualquer parte do jogo) não pode mais parar o jogo
+  // inteiro. Antes, o próximo quadro só era pedido no fim, e um erro deixava a imagem congelada (o Pedro, no celular, ao pegar a gema da
+  // Cisterna). O erro é guardado (`mdd-erro`) e aparece uma vez numa legenda discreta, para a gente saber o que foi.
+  let loopErrs = 0;
+  const loopError = (e: unknown, where: string) => {
+    loopErrs++;
+    const msg = e instanceof Error ? e.message : String(e);
+    if (loopErrs <= 3) console.error(`[sentença] erro em ${where}:`, e);
+    if (loopErrs === 1) {
+      try {
+        localStorage.setItem('mdd-erro', JSON.stringify({ where, msg, stack: e instanceof Error ? (e.stack ?? '').slice(0, 1200) : '', room: rooms[curRoom]?.name ?? '', at: new Date().toISOString(), ua: navigator.userAgent }));
+      } catch {
+        /* sem armazenamento: tudo bem */
+      }
+      caption('Algo falhou (o jogo seguiu)', `${where}: ${msg}`.slice(0, 90), '#c89a90');
     }
+  };
+  const loop = (now: number) => {
+    raf = requestAnimationFrame(loop);
+    try {
+      frame(now);
+    } catch (e) {
+      loopError(e, 'quadro');
+    }
+  };
+  const frame = (now: number) => {
+    if (fpsCap > 0 && now - lastDraw < 1000 / fpsCap - 2) return; // limitar quadros (configurações)
     lastDraw = now;
     // pausa e tela de carregamento: o mundo pára (fogo, tempo), só a imagem continua; na tela de carregamento o dado do canto vive (rdt)
     const paused = ui.menu() === 'pause' || mode === 'load';
@@ -5027,7 +5049,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
 
     // ── salas ──
-    activeRooms.forEach((i) => rooms[i].update(dt, t));
+    // (um erro na lógica de uma sala não pode parar o desenho: o quadro segue, e o erro fica guardado)
+    activeRooms.forEach((i) => {
+      try {
+        rooms[i].update(dt, t);
+      } catch (e) {
+        loopError(e, rooms[i].name);
+      }
+    });
     activeRooms.forEach((i) => dripUpd[i]?.forEach((f) => f(t)));
     solvedTick();
     readInscriptions(dt);
@@ -5192,7 +5221,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     {
       dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new') && !devNoHud; // (na tela de carregamento o dado é o 2D, pintado no fundo) // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
-      gemFx.update(dt);
+      // (a cena da gema nunca pode prender o jogo: um erro nela a encerra com a gema guardada, e o caderno, se foi aberto por cima dela, fecha)
+      try {
+        if (gemFx.active() && ui.diaryOpen()) ui.setDiary(false);
+        gemFx.update(dt);
+      } catch (e) {
+        loopError(e, 'cena da gema');
+        gemFx.abort();
+      }
       const hide = book.update(dt, t);
       if (hide > 0) {
         dieGroup.position.y -= hide * 0.95; // dado e giz saem da frente enquanto o livro está na mão
@@ -5255,7 +5291,6 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       postMat.uniforms.uDis.value = u;
       snapWant = null;
     }
-    raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
 
@@ -5304,6 +5339,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       interactables: () => rooms[curRoom].interactables?.map((it) => ({ l: it.label, on: it.enabled(), p: it.pos.toArray().map((v) => +v.toFixed(2)), cam: (toL(curRoom, camera.position, lcl), [+lcl.x.toFixed(2), +lcl.z.toFixed(2)]) })),
       chat: (k: string) => { chatCool = 0; chatFn(k); },
       // (para o desenho do mapa, DESIGN.md §73: a planta de cada sala no chão, em coordenadas da sala, sem o corredor da porta e sem o que fica lá fora)
+      // (testes) o que de uma sala entra na planta de OUTRA (um nicho cavado na parede que fura a sala vizinha deixa ver o segredo pelo outro lado)
+      intrusions: (pad = 0.2) => {
+        const out: { i: number; j: number; type: string; min: number[]; max: number[] }[] = [];
+        const bb = new THREE.Box3();
+        rooms.forEach((r, i) => {
+          r.group.updateMatrixWorld(true);
+          r.group.traverse((o) => {
+            const m = o as THREE.Mesh;
+            if (!m.isMesh || m.userData.noPlan) return;
+            bb.setFromObject(m);
+            if (bb.isEmpty() || bb.getSize(new THREE.Vector3()).length() > 30) return;
+            bounds.forEach((B, j) => {
+              if (j === i) return;
+              // (a planta de cada sala é local a ela: os cantos da caixa do objeto, levados para o chão da sala j)
+              const lb = new THREE.Box3();
+              for (let c = 0; c < 8; c++) lb.expandByPoint(toL(j, new THREE.Vector3(c & 1 ? bb.max.x : bb.min.x, c & 2 ? bb.max.y : bb.min.y, c & 4 ? bb.max.z : bb.min.z)));
+              if (!B.clone().expandByScalar(-pad).intersectsBox(lb)) return;
+              out.push({ i, j, type: m.geometry.type, min: lb.min.toArray().map((v) => +v.toFixed(2)), max: lb.max.toArray().map((v) => +v.toFixed(2)) });
+            });
+          });
+        });
+        return out;
+      },
       footprints: () =>
         rooms.map((r, i) => {
           const box = bounds[i]; // (a mesma planta que o motor usa: sem o pátio de fora, os céus e os corredores das portas)
