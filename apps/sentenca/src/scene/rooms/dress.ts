@@ -152,6 +152,7 @@ export function barrelCeiling(kit: Kit, X0: number, X1: number, Z0: number, Z1: 
     geo.computeVertexNormals();
     const rib = new THREE.Mesh(geo, slab);
     rib.userData.noShadow = true;
+    rib.userData.merge = true; // (todos os arcos numa malha só, na hora de assar)
     kit.group.add(rib);
     for (const sx of [-1, 1]) {
       kit.box(0.34, 0.26, 0.5, kit.slab, cx + sx * (hx - 0.17), H - 0.11, zr, false);
