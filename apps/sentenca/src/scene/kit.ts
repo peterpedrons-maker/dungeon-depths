@@ -713,7 +713,8 @@ export class Kit {
         tc.light.intensity = tc.base * (1 + 0.22 * n);
         tc.light.jit.set(Math.sin(t * 6.1 + p) * 0.035, Math.sin(t * 8.7 + p * 1.3) * 0.03 + n * 0.02, Math.cos(t * 5.3 + p) * 0.035);
       } else
-      tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
+      // (DESIGN.md §95: a luz de toda tocha oscila de verdade, uns 10%, em três ritmos; antes eram 3% e a luz parecia de lâmpada)
+      tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.065 * Math.sin(t * 5.1 + tc.phase) + 0.04 * Math.sin(t * 11.3 + tc.phase * 2) + 0.028 * Math.sin(t * 19.7 + tc.phase * 3)) : tc.base;
       // (o primeiro quadro do jogo chegava a ter o relógio negativo, e um índice negativo deixava a chama sem desenho: um retângulo branco)
       tc.sprite.material.map = this.frame(t * 9 + i * 3 + tc.phase, true);
       // a chama estica e encolhe um pouco com a luz, e o brilho do ar acompanha (uma tocha sem luz, tirada no `clearTorches`, não brilha)

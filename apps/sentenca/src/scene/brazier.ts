@@ -1,7 +1,7 @@
 // Braseiro de pedra que o jogador acende com a face Fogo do dado. Reaproveitado pelas salas novas.
 
 import * as THREE from 'three';
-import { lambert, lightEnv, type Kit } from './kit';
+import { dbg, lambert, lightEnv, type Kit } from './kit';
 import type { Box, Ctx, Socket } from './types';
 import { adoptLayers, brazierModelMode, onBrazierModel } from './models';
 import { FLAME_H, FLAME_W } from './textures';
@@ -134,7 +134,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
         n = 0.25 * Math.sin(t * 6.7 + x) + 0.15 * Math.sin(t * 12.3 + z) + 0.1 * Math.sin(t * 21.1 + x * 2);
         lamp.intensity = 40 * k * (1 + 0.2 * n);
         lamp.jit.set(Math.sin(t * 5.9 + z) * 0.05, n * 0.04, Math.cos(t * 4.7 + x) * 0.05);
-      } else lamp.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + x) + 0.012 * Math.sin(t * 11));
+      } else lamp.intensity = 40 * k * (dbg.flicker ? 0.96 + 0.065 * Math.sin(t * 5.3 + x) + 0.04 * Math.sin(t * 12.1 + z) + 0.025 * Math.sin(t * 21 + x * 2) : 1); // (a luz do braseiro oscila uns 10%, DESIGN.md §95)
       flame.scale.set(flameW * k, flameH * k * (1 + 0.08 * n), 1); // a chama encolhe quando está acabando (e estica com a luz)
       flame.material.map = kit.frame(t * 9 + x * 2.3 + z * 1.7, true); // (cada braseiro no seu passo)
       glow.material.opacity = 0.3 * k * (1 + 0.25 * n) * lightEnv.scale; // (no escuro da Casa o brilho do ar some junto com a luz)

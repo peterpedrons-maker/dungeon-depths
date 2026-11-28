@@ -304,6 +304,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §94): 0 = o corte seco de antes
       // o AR QUENTE em cima dos braseiros (DESIGN.md §95): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
       uHot: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
+      // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §95): um banho de cor muito leve na imagem do mundo, que muda com a sala em que o jogador está
+      uGrade: { value: new THREE.Vector3(1, 1, 1) },
       uTime: { value: 0 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
@@ -325,6 +327,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uShoulder;
       uniform vec4 uHot[4];
       uniform float uTime;
+      uniform vec3 uGrade;
       varying vec2 vUv;
       // O OMBRO DA LUZ (DESIGN.md §94): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
       // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
@@ -448,6 +451,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           c += glow * uGlowK;
         }
         c *= uBright;
+        if (hud.a < 0.5) c *= uGrade;
         if (uShoulder > 0.5 && hud.a < 0.5) c = shoulder(c);
         c = clamp(c, 0.0, 1.0);
         c = pow(c, vec3(1.0 / 2.2));
@@ -487,12 +491,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let darkQ: { secs: number; onDark?: () => void } | null = null; // pedido esperando a conversa acabar
   let darkCb: (() => void) | null = null;
   const lightScale = () => 1 - 0.92 * darkK;
+  // O ESCURO DE VERDADE (DESIGN.md §95): dentro da Casa a luz que vem "de todo lado" caiu um quinto. O que as chamas não alcançam fica mais
+  // fundo (os cantos, o alto das paredes, o avesso das coisas) e as poças de luz das tochas e dos braseiros se destacam. Lá fora (a abertura,
+  // na neblina) não muda.
+  const DARK_K = 0.8;
   const shapeLight = () => {
+    const dk = outsideAtmo ? 1 : DARK_K;
     ambReal.color.copy(ambient.color);
-    ambReal.intensity = ambient.intensity * AMB_K * lightScale();
+    ambReal.intensity = ambient.intensity * AMB_K * dk * lightScale();
     hemi.color.copy(ambient.color);
     hemi.groundColor.copy(ambient.color).multiplyScalar(0.22);
-    hemi.intensity = ambient.intensity * HEMI_K * lightScale();
+    hemi.intensity = ambient.intensity * HEMI_K * dk * lightScale();
     sideKey.color.copy(ambient.color);
     sideKey.intensity = ambient.intensity * SIDE_K * lightScale();
   };
@@ -3053,6 +3062,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     fpsCap = c.fpsCap;
     calmFx = c.reduceFlash;
     dbg.bob = !c.reduceMotion;
+    dbg.flicker = !c.reduceMotion; // (reduzir movimento: a luz das chamas também para de oscilar)
     resize();
   };
   const unsubConfig = configStore.subscribe(applyConfig);
@@ -4497,6 +4507,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
   // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
+  // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §95; ideia do Pedro: cada capítulo com a sua cor, mudando aos poucos conforme o jogador avança
+  // dentro dele). O capítulo 1 é o do FOGO: começa FRIO (o Poço, pedra cinza e luz de fora) e vai esquentando sala a sala até o âmbar do
+  // Tribunal. É um banho leve (uns 7%), que a paleta transforma em outra escolha de cores; muda devagar ao trocar de sala.
+  const GRADE_A = new THREE.Vector3(0.95, 0.99, 1.07); // a primeira sala do capítulo
+  const GRADE_B = new THREE.Vector3(1.08, 1.0, 0.9); // a última
+  const gradeT = new THREE.Vector3(1, 1, 1);
+  const updateGrade = (dt: number) => {
+    const f = rooms.length > 1 ? curRoom / (rooms.length - 1) : 0;
+    gradeT.lerpVectors(GRADE_A, GRADE_B, f);
+    (postMat.uniforms.uGrade.value as THREE.Vector3).lerp(gradeT, Math.min(1, Math.max(dt, 0.001) * 0.6));
+  };
   // o AR QUENTE (DESIGN.md §95): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
   const hotV = new THREE.Vector3();
   const hotList: { u: number; v: number; r: number; d: number }[] = [];
@@ -5014,6 +5035,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     renderer.shadowMap.needsUpdate = (!!rooms[curRoom]?.shadowLight && shadowsOn) || shadowsDirty;
     fxEye.copy(camera.position);
     updateHot(t);
+    updateGrade(dt);
     renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
