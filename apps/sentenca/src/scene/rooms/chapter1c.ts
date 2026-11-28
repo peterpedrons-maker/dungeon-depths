@@ -83,6 +83,30 @@ function slabRimTexture() {
   return rimTex;
 }
 
+// (cenógrafo) A TRAVA: um grampo de bronze em cauda de andorinha, a peça que os pedreiros embutem atravessando a junta de dois blocos. Deitado
+// no tampo, com o eixo comprido em x; o tampo dele fica 6 mm acima da laje (lê-se por cima da quina clara), claro onde se pisa e escuro dos lados
+function keyGeometry() {
+  const L = 0.46; // comprimento (atravessa a junta)
+  const E = 0.11; // meia largura nas pontas
+  const W = 0.05; // meia largura na cintura (sobre a junta)
+  const s = new THREE.Shape();
+  s.moveTo(-L / 2, -E);
+  s.lineTo(0, -W);
+  s.lineTo(L / 2, -E);
+  s.lineTo(L / 2, E);
+  s.lineTo(0, W);
+  s.lineTo(-L / 2, E);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: false });
+  g.rotateX(Math.PI / 2); // a extrusão desce: o tampo fica em y = 0
+  g.translate(0, 0.006, 0);
+  const nrm = g.attributes.normal;
+  const col = new Float32Array(nrm.count * 3);
+  for (let q = 0; q < nrm.count; q++) col.fill(nrm.getY(q) > 0.5 ? 1 : 0.5, q * 3, q * 3 + 3);
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return g;
+}
+
 function ponteFrasesExtra(api: FireExtraApi): FireExtra {
   const { kit, ctx, X0, X1, Z0, boxes } = api;
   const D = PF.depth;
@@ -148,6 +172,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
   // luz: lampiões de ferro pendurados no meio da sala, sobre as costuras das fileiras, entre as duas colunas (longe das frases das paredes)
   const iron = lambert(null, 0x26242a);
   const lamps: THREE.Sprite[] = [];
+  const lampEms: ReturnType<typeof kit.light>[] = [];
   for (let k = 1; k < PF.rows; k++) {
     const z = gz1 - ROW_L * k;
     kit.box(0.03, 0.7, 0.03, iron, 0, PF.h - 0.35, z, false);
@@ -159,10 +184,95 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
     f.position.set(0, PF.h - 0.92, z);
     kit.group.add(f);
     lamps.push(f);
-    kit.light(0, PF.h - 0.95, z, 0xffa860, 30).shadow = true;
+    const em = kit.light(0, PF.h - 0.95, z, 0xffa860, 30);
+    // (cenógrafo, medido; DESIGN.md §96) os quatro podem ganhar sombra. O motor tem um número fixo de luzes com sombra por opção (Altas 4,
+    // Médias 2) e as dá às chamas marcadas mais perto: o custo é o da opção. Nas Médias (o padrão do celular) não se mede diferença; nas
+    // Altas, andando na ponte, os mapas dos lampiões se refazem a cada passo (~+15% no quadro contra nenhum lampião com sombra), e dois em
+    // vez de quatro não economizam nada (os dois mapas por quadro se refazem do mesmo jeito). Sem sombra nenhuma, a ponte perderia a sombra
+    // do jogador e a das lajes no fosso
+    em.shadow = true;
+    lampEms.push(em);
   }
   // (no fundo do fosso, as brasas velhas nas frestas são o chão do buraco, no construtor: fire.ts, `floorGap`; sem luz própria, o fundo fica
   // escuro e a profundidade se lê pela luz que some)
+
+  // ── (cenógrafo) AS TRAVAS: a ponte é UMA PEÇA SÓ, e isso se vê. Em cada junta entre duas lajes erguidas que a Casa pesa (a demonstração não
+  // faz parte da peça) assenta um grampo de bronze em cauda de andorinha: dois em cada junta entre fileiras, dois na junta do meio. Ele desce
+  // na junta quando as duas lajes chegam em cima; sai quando uma desce (a frase apagada); no tremor, chacoalha e range; quando a ponte
+  // cede, todos saltam e caem no fosso. Uma malha só para todos (InstancedMesh) ──
+  type Cell = (typeof cells)[number];
+  type KeySt = 'off' | 'in' | 'on' | 'out' | 'fly';
+  const keyList: { a: Cell; b: Cell; x: number; z: number; ry: number; st: KeySt; t: number; p: THREE.Vector3; v: THREE.Vector3; rx: number; rz: number; spin: number }[] = [];
+  for (const a of cells)
+    for (const b of cells) {
+      if (a.demo || b.demo || a.i >= b.i) continue;
+      const mk = (x: number, z: number, ry: number) => keyList.push({ a, b, x, z, ry, st: 'off', t: 0, p: new THREE.Vector3(x, 0, z), v: new THREE.Vector3(), rx: 0, rz: 0, spin: 0 });
+      if (a.col === b.col && Math.abs(a.row - b.row) === 1) {
+        const z = gz1 - ROW_L * Math.max(a.row, b.row); // a junta entre as duas fileiras
+        const xe = a.col === 'E' ? X0 : X1;
+        for (const u of [1 / 3, 2 / 3]) mk(xe * u, z, Math.PI / 2);
+      } else if (a.row === b.row && a.col !== b.col) {
+        const zc = (a.z0 + a.z1) / 2; // a junta do meio, em x = 0
+        for (const u of [-0.75, 0.75]) mk(0, zc + u, 0);
+      }
+    }
+  // (bronze escuro: contra a quina clara das lajes ele se lê como metal embutido, e não como um remendo de madeira; o recuo de profundidade
+  // ganha da quina, que é um plano por cima do tampo)
+  const keyMat = new THREE.MeshLambertMaterial({ color: 0x5a4228, vertexColors: true, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 });
+  const keyMesh = new THREE.InstancedMesh(keyGeometry(), keyMat, keyList.length);
+  keyMesh.frustumCulled = false;
+  keyMesh.userData.noShadow = true; // (rentes ao chão: sombra nenhuma valeria o custo)
+  keyMesh.userData.noPlan = true;
+  kit.group.add(keyMesh);
+  const keyCol = new THREE.Color();
+  const keyM = new THREE.Matrix4();
+  const keyQ = new THREE.Quaternion();
+  const keyE = new THREE.Euler();
+  const keyS = new THREE.Vector3();
+  let keySnap = true; // (a abertura, recomeçar, o salvamento: as travas já no lugar, sem animação)
+  // ── o PÓ das juntas: no tremor ele sobe das juntas travadas e escorre da beirada da borda da porta para o fosso; quando a ponte cede, uma
+  // nuvem. Pontos pequenos cor de pedra (nunca a cor das brasas), um desenho só ──
+  const DN = 160;
+  const dp = new Float32Array(DN * 3);
+  const dv = new Float32Array(DN * 3);
+  const dl = new Float32Array(DN);
+  for (let q = 0; q < DN; q++) dp[q * 3 + 1] = -50;
+  const dustGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(dp, 3));
+  const dustMat = new THREE.PointsMaterial({ color: 0x9a8a72, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  dust.frustumCulled = false;
+  dust.userData.noPlan = true;
+  kit.group.add(dust);
+  let dustNext = 0;
+  const puff = (x: number, y: number, z: number, spread: number, up: number) => {
+    const q = dustNext++ % DN;
+    dp[q * 3] = x + (Math.random() - 0.5) * spread;
+    dp[q * 3 + 1] = y;
+    dp[q * 3 + 2] = z + (Math.random() - 0.5) * spread;
+    dv[q * 3] = (Math.random() - 0.5) * 0.35;
+    dv[q * 3 + 1] = up * (0.5 + Math.random() * 0.6);
+    dv[q * 3 + 2] = (Math.random() - 0.5) * 0.35;
+    dl[q] = 0.6 + Math.random() * 0.6;
+  };
+  // ── a CITAÇÃO de longe: a frase citada esquenta a parede em volta dela, com uma luz de verdade perto (curta, para não dourar a vizinha;
+  // nunca uma faixa atrás da escrita, §58). Da entrada, a frase do fundo citada vira uma mancha quente na parede rasante, e não só um ponto.
+  // (Sem sombra: ela quase nunca ganharia uma das luzes com sombra, e cada troca refaz um mapa.) A força é FIRME e alta: o motor empresta as
+  // luzes de verdade pela força dividida pela distância ao quadrado, e com a força das frases (4 a 11) a citada do fundo nunca ganhava uma
+  // vaga vista da entrada (medido: a 12ª vaga fica com nota ~0,1). A 46, ela ganha. A luz fica 1,4 m fora da parede e acima da frase: o
+  // mais claro cai em cima dela e na laje embaixo, e os glifos não perdem o contraste; o alcance curto (2,6 m) segura a luz na frase dela
+  // (a vizinha recebe uns 5%) ──
+  const glows = [...new Set(Object.values(FPF_CITA).flat())].map((i) => {
+    const c = cells[i];
+    const z = Z0 + rowDz(c.row);
+    const em = kit.light(c.col === 'E' ? X0 + 1.4 : X1 - 1.4, 2.3, z, 0xffc070, 0);
+    em.range = 2.6;
+    return { i, em, t: 0, k: 0, at: new THREE.Vector3(c.col === 'E' ? X0 + 0.3 : X1 - 0.3, 1.65, z) };
+  });
+  // a Casa aponta estas frases por `secs` (a luz corre por elas; fire.ts) e a parede em volta delas esquenta junto
+  const citeNow = (idx: number[], secs: number) => {
+    api.cite(idx, secs);
+    for (const g of glows) if (idx.includes(g.i)) g.t = secs;
+  };
 
   let falling = false; // caiu no fosso: o escuro vem e ele volta à entrada
   let weigh = -1; // >= 0: a Casa está pesando a ponte (o tremor antes de ceder)
@@ -183,6 +293,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
       c.mesh.position.y = -D / 2;
       shade(c);
     }
+    keySnap = true;
   };
   opening();
   if (import.meta.env.DEV) {
@@ -194,7 +305,11 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
       falling,
       weigh: +weigh.toFixed(2),
       cited,
+      keys: keyList.map((k) => k.st).join(''),
+      glows: glows.map((g) => `${g.i}:${g.em.intensity.toFixed(1)}:${g.em.lit.toFixed(1)}`), // (índice : força : luz de verdade que o motor deu)
     });
+    // (testes) quais lampiões podem ganhar sombra (para medir o custo): uma lista de 0/1, do 1º (junto da entrada) ao 4º
+    (globalThis as Record<string, unknown>).__pfLamps = (on: number[]) => lampEms.forEach((e, k) => (e.shadow = !!on[k]));
   }
   return {
     update(dt, t) {
@@ -206,7 +321,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         const want = c.demo || L[c.i]?.lit ? 0 : SUNK;
         if (want > c.y) {
           if (!c.upSnd) {
-            ctx.sfx('rise');
+            ctx.sfx('bridgeRise'); // (o arrasto da laje subindo, sem o baque e sem o violoncelo do pilar: a laje de uma mentira também sobe)
             c.upSnd = true;
           }
           c.y = Math.min(want, c.y + dt * 1.7);
@@ -234,17 +349,32 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         if (lies.length) {
           weigh = 0;
           cited = citeFor(lies);
-          api.cite(cited, 20); // (a Casa aponta a verdade negada no tremor e no escuro; quando a luz volta, de novo, por CITE_S)
+          citeNow(cited, 20); // (a Casa aponta a verdade negada no tremor e no escuro; quando a luz volta, de novo, por CITE_S)
           citeBack = 1;
-          ctx.sfx('altarCrack');
+          ctx.sfx('bridgeHold'); // (as travas mordem e a pedra range nas juntas: a ponte prende o pé, até ceder em t = WEIGH_S)
+          ctx.dieReact('shake'); // (o dado da mão treme junto)
         }
       }
       if (weigh >= 0 && !still) {
         weigh += dt;
+        // (cenógrafo) A PONTE PRENDE O PÉ: o chão treme cada vez mais e o passo quase não sai (a borda da porta já não recebe ninguém, rects())
+        ctx.shake(0.35 + 0.65 * Math.min(1, weigh / WEIGH_S), 0.12, 0.8);
         if (weigh > WEIGH_S) {
           weigh = -1;
           api.failLines(1); // a Casa apaga tudo o que ele acendeu (o frio só cobre a queda: o relógio dele para no escuro, e na volta já se acende)
           collapsing = true;
+          ctx.shake(1.6, 0.3, 0.8); // (o tranco: ela cedeu)
+          ctx.sfx('bridgeBreak'); // (as travas estalam e soltam, as lajes raspam e batem no fundo do fosso, o entulho e as travas assentam)
+          // as travas saltam das juntas e caem no fosso; uma nuvem de pó sobe de todas as juntas
+          for (const k of keyList) {
+            if (k.st !== 'on' && k.st !== 'in') continue;
+            k.st = 'fly';
+            // (um pulo curto: as lajes já descem a 6 m/s, e a trava que fica no ar um instante é o que se vê soltar)
+            k.v.set((Math.random() - 0.5) * 0.6, 0.6 + Math.random() * 0.6, (Math.random() - 0.5) * 0.6);
+            k.spin = (Math.random() - 0.5) * 9;
+            for (let q = 0; q < 4; q++) puff(k.p.x, 0.02, k.p.z, 0.7, 0.9);
+          }
+          for (let q = 0; q < 24; q++) puff(X0 + Math.random() * (X1 - X0), 0.0, gz0 + 0.06, 0.1, -0.6);
         }
       }
       // caiu no fosso (a ponte cedeu, ou ele andou para fora de uma laje): o escuro, e ele volta à entrada
@@ -260,7 +390,110 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
       if (citeBack === 1 && ctx.dark() >= 1) citeBack = 2;
       else if (citeBack === 2 && ctx.dark() < 0.6) {
         citeBack = 0;
-        api.cite(cited, CITE_S);
+        citeNow(cited, CITE_S);
+        // (cenógrafo) e o dado da mão MOSTRA a citada mais perto (no erro da porta, ela fica atrás do jogador: o dado se vira para o lado dela)
+        const near = glows.filter((g) => cited.includes(g.i)).sort((a, b) => a.at.distanceToSquared(p) - b.at.distanceToSquared(p))[0];
+        if (near) ctx.dieLook(near.at, CITE_S - 1);
+      }
+      const dk = 1 - 0.92 * ctx.dark(); // (no escuro da Casa o pó e o brilho das travas apagam como o resto)
+      // as travas: descem na junta quando as duas lajes chegam em cima, saem quando uma desce, chacoalham no tremor, voam quando a ponte cede
+      const wk = weigh >= 0 ? 0.4 + 0.6 * Math.min(1, weigh / WEIGH_S) : 0;
+      let lockSnd = false; // (várias travas assentando no mesmo quadro: um som só)
+      keyList.forEach((k, n) => {
+        const up = k.a.y > -0.03 && k.b.y > -0.03 && !collapsing;
+        const top = Math.max(k.a.y, k.b.y);
+        if (keySnap) k.st = up ? 'on' : 'off';
+        else if (k.st === 'off' && up) {
+          k.st = 'in';
+          k.t = 0;
+        } else if ((k.st === 'on' || k.st === 'in') && !up) {
+          k.st = 'out';
+          k.t = 0;
+        }
+        let y = top;
+        let s = 1;
+        let glint = 0;
+        if (k.st !== 'fly') k.rx = k.rz = 0;
+        if (k.st === 'off') s = 0;
+        else if (k.st === 'in') {
+          // assenta na junta, de cima, depressa (um "clac"; a 1ª vez que duas lajes se travam)
+          k.t += dt;
+          const u = Math.min(1, k.t / 0.22);
+          y = top + 0.14 * (1 - u) * (1 - u);
+          if (u >= 1) {
+            k.st = 'on';
+            if (!lockSnd) ctx.sfx('bridgeLock'); // (a trava assenta: a pedra encaixa e o grampo fecha)
+            lockSnd = true;
+          }
+        } else if (k.st === 'out') {
+          k.t += dt;
+          const u = Math.min(1, k.t / 0.25);
+          y = top + 0.1 * u;
+          s = 1 - u;
+          if (u >= 1) k.st = 'off';
+        } else if (k.st === 'on' && wk > 0) {
+          // o tremor: chacoalha na junta e range (um lampejo pálido de metal forçado, nunca a cor das brasas)
+          y = top + Math.abs(Math.sin(t * 83 + n * 1.7)) * 0.012 * wk;
+          k.rz = Math.sin(t * 71 + n) * 0.06 * wk;
+          glint = Math.max(0, Math.sin(t * 29 + n * 2.3)) ** 4 * wk;
+        }
+        if (k.st === 'fly') {
+          k.v.y -= 9.8 * dt;
+          k.p.addScaledVector(k.v, dt);
+          k.rx += k.spin * dt;
+          k.rz += k.spin * 0.6 * dt;
+          if (k.p.y < -D + 0.35) {
+            k.st = 'off'; // (o tinido das travas no fundo já está no fim de 'bridgeBreak')
+            s = 0;
+          }
+          keyE.set(k.rx, k.ry, k.rz);
+        } else {
+          const sh = k.st === 'on' && wk > 0;
+          k.p.set(k.x + (sh ? Math.sin(t * 61 + n) * 0.02 : 0), y, k.z + (sh ? Math.cos(t * 53 + n) * 0.02 : 0));
+          keyE.set(0, k.ry, k.rz);
+        }
+        keyQ.setFromEuler(keyE);
+        keyS.setScalar(Math.max(0.0001, s));
+        keyM.compose(k.p, keyQ, keyS);
+        keyMesh.setMatrixAt(n, keyM);
+        keyCol.setScalar(1 + 0.45 * glint);
+        keyMesh.setColorAt(n, keyCol);
+      });
+      keySnap = false;
+      keyMesh.instanceMatrix.needsUpdate = true;
+      if (keyMesh.instanceColor) keyMesh.instanceColor.needsUpdate = true;
+      // o pó: no tremor, sobe das juntas travadas e escorre da beirada da borda da porta para o fosso
+      if (wk > 0 && !still) {
+        const on = keyList.filter((k) => k.st === 'on');
+        for (let q = 0; q < 3; q++) {
+          const k = on[Math.floor(Math.random() * on.length)];
+          if (k) puff(k.p.x, 0.02, k.p.z, 0.8, 0.5);
+        }
+        if (Math.random() < 0.6) puff(X0 + Math.random() * (X1 - X0), 0, gz0 + 0.05, 0.1, -0.4);
+      }
+      for (let q = 0; q < DN; q++) {
+        if (dl[q] <= 0) continue;
+        dl[q] -= dt;
+        if (dl[q] <= 0) {
+          dp[q * 3 + 1] = -50;
+          continue;
+        }
+        const drag = Math.max(0, 1 - dt * 1.6);
+        dv[q * 3] *= drag;
+        dv[q * 3 + 2] *= drag;
+        dv[q * 3 + 1] -= 1.6 * dt;
+        dp[q * 3] += dv[q * 3] * dt;
+        dp[q * 3 + 1] += dv[q * 3 + 1] * dt;
+        dp[q * 3 + 2] += dv[q * 3 + 2] * dt;
+      }
+      dustGeo.attributes.position.needsUpdate = true;
+      dustMat.opacity = 0.85 * dk;
+      // a parede em volta da frase citada: acende depressa quando a Casa aponta e apaga devagar (firme: uma luz que pulsasse entraria e
+      // sairia da vaga do motor e piscaria; quem pulsa é a luz que corre pela frase)
+      for (const g of glows) {
+        if (g.t > 0 && !still) g.t = Math.max(0, g.t - dt);
+        g.k += ((g.t > 0 ? 1 : 0) - g.k) * Math.min(1, dt * (g.t > 0 ? 5 : 1.4));
+        g.em.intensity = g.k < 0.02 ? 0 : g.k * 46;
       }
     },
     // a porta recusou o conjunto: se havia mentira acesa, a Casa também cita a verdade negada (no escuro e, quando a luz volta, de novo)
@@ -268,7 +501,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
       const lies = cells.filter((c) => !c.demo && !c.good && lit[c.i]).map((c) => c.i);
       if (!lies.length) return;
       cited = citeFor(lies);
-      api.cite(cited, 20);
+      citeNow(cited, 20);
       citeBack = 1;
     },
     // o chão: as bordas no nível da sala; no fosso, o tampo da laje daquele ponto (afundada = o fundo)
@@ -309,6 +542,9 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
       collapsing = false;
       cited = [];
       citeBack = 0;
+      for (const g of glows) g.t = g.k = g.em.intensity = 0;
+      dl.fill(0);
+      for (let q = 0; q < DN; q++) dp[q * 3 + 1] = -50;
       opening(); // (recomeçar a sala: de novo a ponte de quem veio antes)
     },
     // salvamento: a sala volta resolvida (o construtor reacende as frases certas e a da porta; as lajes delas sobem já em cima)
@@ -319,6 +555,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         c.mesh.position.y = c.y - D / 2;
         shade(c);
       }
+      keySnap = true;
     },
   };
 }

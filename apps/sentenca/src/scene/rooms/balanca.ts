@@ -154,12 +154,20 @@ export function buildBalanca(ctx: Ctx): Room {
     cap.position.set(sx * ARM, 0, 0);
     beam.add(cap);
   }
-  // o FIEL: a agulha que sobe do eixo; a marca de ouro numa haste de pedra atrás dela mostra onde é o meio
-  const needle = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.55, 0.045), darkBronze);
-  needle.position.set(0, 0.34, 0.1);
-  beam.add(needle);
-  kit.box(0.08, 0.7, 0.06, kit.stone, 0, PIV + 0.42, 0.02, false);
-  kit.box(0.05, 0.14, 0.03, lambert(null, 0xe6c46a), 0, PIV + 0.66, 0.065, false);
+  // o FIEL: a agulha que sobe do eixo e o MOSTRADOR fixo atrás dela, numa haste de pedra; a marca de ouro no alto do mostrador é o meio.
+  // (cenógrafo) A agulha é o que diz para que lado a balança pende e se parou no meio (IGUAL): antes era fina (4,5 cm), escura contra a pedra
+  // escura e só de um lado (de trás, a haste a escondia). Agora: mais grossa e mais comprida (a ponta anda mais), em ferro escuro contra um
+  // mostrador de pedra lavrada clara, com uma agulha em cada face (lê-se da entrada e do lado da porta); centrada, a ponta fica embaixo da marca
+  const IRON_NEEDLE = lambert(null, 0x221c18);
+  const gold = lambert(null, 0xe6c46a);
+  for (const sz of [-1, 1]) {
+    const needle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.74, 0.035), IRON_NEEDLE);
+    needle.position.set(0, 0.43, sz * 0.06);
+    beam.add(needle);
+    kit.box(0.06, 0.06, 0.012, gold, 0, PIV + 0.85, sz * 0.031, false); // a marca do meio, logo acima da ponta
+  }
+  kit.box(0.06, 0.52, 0.05, kit.stone, 0, PIV + 0.34, 0, false); // a haste
+  kit.box(0.5, 0.3, 0.05, kit.slab, 0, PIV + 0.75, 0, false); // o mostrador
   const pans = [-1, 1].map((side) => {
     const g = new THREE.Group();
     kit.group.add(g);
@@ -213,8 +221,9 @@ export function buildBalanca(ctx: Ctx): Room {
     const top = parent < 0 ? BEAM_Y : hangY[parent] - EDGE[WEIGHTS[parent][1]] / 2; // de onde desce a corda dele
     const face = new THREE.MeshLambertMaterial({ map: weightTexture(word, size) });
     const plain = lambert(null, size === 'G' ? 0x5c5550 : size === 'M' ? 0x655f59 : 0x6d6761);
-    // o número na frente (virada para a entrada) e atrás
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(e, e, e), [plain, plain, plain, plain, face, face]);
+    // o número nas QUATRO faces de pé (cenógrafo: antes só na frente e atrás; de lado, na rotunda, o peso não dizia o nome). Em cima e
+    // embaixo, a pedra lisa (de baixo, o número de ponta-cabeça confundiria)
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(e, e, e), [face, face, plain, plain, face, face]);
     kit.group.add(mesh);
     const hx = side * ARM + ox;
     const hz = oz;

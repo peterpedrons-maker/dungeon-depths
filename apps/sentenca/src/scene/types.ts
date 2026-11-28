@@ -60,7 +60,7 @@ export interface Ctx {
   // 'spread' = o fogo que CORRE (canaleta, friso) acende algo sozinho: só o som, sem a cena do dado queimando
   // 'rise' = pilar subindo do chão (2,2 s)
   // 'altarCrack' / 'altarPush' = a pedra do altar do Tribunal racha / é empurrada (DESIGN.md §77)
-  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout' | 'rise' | 'altarCrack' | 'altarPush' | 'secret', key?: string): void;
+  sfx(name: 'ignite' | 'spread' | 'plate' | 'gem' | 'door' | 'doorClose' | 'piece' | 'error' | 'burnout' | 'rise' | 'altarCrack' | 'altarPush' | 'secret' | 'bridgeRise' | 'bridgeLock' | 'bridgeHold' | 'bridgeBreak', key?: string): void;
   // a luz que escreve uma frase acesa passou pelo símbolo i de n (`at` = onde ele está, local da sala): a nota que acompanha a onda (§60)
   glyphLight?(i: number, n: number, at: THREE.Vector3): void;
   // pegou a gema `id` (story/gems.ts) que estava em `at` (local da sala): toca a cena da gema e ela vai para o fundo do caderno; `cap` = a
@@ -102,6 +102,9 @@ export interface Ctx {
   blackout(secs: number, onDark?: () => void): void;
   dark(): number; // 0 = luz normal, 1 = escuro total (para a CAL: só aparece no escuro)
   lookAt(p: THREE.Vector3, dur?: number): void; // vira a câmera suavemente para um ponto (local da sala)
+  // o chão TREME sob o jogador (a câmera sacode de leve; nada com "reduzir movimento"): `k` = força (1 = um tremor de pedra), por `secs`
+  // segundos (chamar de novo substitui). `hold` (0..1) PRENDE o passo enquanto treme (a Ponte de Frases segura quem está nela)
+  shake(k: number, secs?: number, hold?: number): void;
   die: {
     readonly state: DieState;
     readonly face: number; // face do dado que está lá fora

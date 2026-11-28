@@ -610,6 +610,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (forcedLook && performance.now() < forcedLook.until) {
       // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
       dieOnScreen(dieNdc);
+      // (a coisa está ATRÁS do jogador: a projeção inverteria o lado; ele se inclina todo para o lado dela, "olha por cima do ombro")
+      tgtNdc.copy(forcedLook.p).applyMatrix4(camera.matrixWorldInverse);
+      if (tgtNdc.z > -0.3) return { dx: tgtNdc.x >= 0 ? 1 : -1, dy: 0.15, eager: true, player: false };
       tgtNdc.copy(forcedLook.p).project(camera);
       const fx = tgtNdc.x - dieNdc.x;
       const fy = tgtNdc.y - dieNdc.y;
@@ -1074,6 +1077,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let feetY = 0;
   let vy = 0;
   let landKick = 0;
+  // o chão tremendo (ctx.shake): força, segundos que faltam e quanto prende o passo
+  let shakeK = 0;
+  let shakeT = 0;
+  let shakeHold = 0;
   const moveVel = new THREE.Vector3(); // velocidade horizontal (m/s)
 
   // ── mundo: as salas ficam lado a lado, ligadas por corredores abertos ───
@@ -1647,6 +1654,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         darkQ = { secs, onDark };
       },
       dark: () => darkK,
+      shake: (k, secs = 0.3, hold = 0) => {
+        shakeK = k;
+        shakeT = secs;
+        shakeHold = Math.max(0, Math.min(1, hold));
+      },
       lookAt: (p, dur = 0.9) => {
         camera.updateMatrixWorld();
         pl.toWorld(p, gp);
@@ -3266,7 +3278,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       fwd /= len;
       str /= len;
     }
-    const run = (keys.has('shift') ? SPRINT : 1) * walkK;
+    const run = (keys.has('shift') ? SPRINT : 1) * walkK * (shakeT > 0 ? 1 - shakeHold : 1); // (o chão tremendo pode prender o passo: ctx.shake)
     // A inércia é calculada NO REFERENCIAL DA CÂMERA (f = pra frente, s = pra direita). Antes era no
     // mundo: ao girar andando, a velocidade demorava a acompanhar e o personagem "escorregava".
     const cyw = Math.cos(yaw);
@@ -4473,6 +4485,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     accentLight.intensity = 5 * lightScale(); // a luz que o dado da mão carrega também apaga (numa sala baixa ela acendia o teto)
     shapeLight();
     landKick = Math.max(0, landKick - dt * 4);
+    // o tremor do chão (ctx.shake): uns milímetros de câmera e um quase nada de giro, que somem no fim; "reduzir movimento" não treme
+    shakeT = Math.max(0, shakeT - dt);
+    const shakeA = shakeT > 0 && dbg.bob ? shakeK * Math.min(1, shakeT / 0.12) : 0;
+    const shX = shakeA * 0.012 * (Math.sin(t * 67) + 0.6 * Math.sin(t * 41 + 1.7));
+    const shY = shakeA * 0.01 * (Math.sin(t * 59 + 0.4) + 0.5 * Math.sin(t * 97));
+    const shR = shakeA * 0.004 * Math.sin(t * 47 + 2.1);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     // sensação de velocidade: o campo de visão abre um pouquinho correndo
     const fovTarget = fovCine > 0 ? fovCine : fovBase + (dbg.bob ? 2.5 : 0) * Math.min(1.3, speedFrac); // (reduzir movimento: sem o campo de visão abrindo)
@@ -4510,8 +4528,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pitch = c.p0 + (c.p1 - c.p0) * u;
       if (c.t >= c.dur) camTween = null;
     }
-    camera.position.set(pos.x, pos.y + bobY - introDrop, pos.z);
-    camera.rotation.set(pitch, yaw, introRoll);
+    camera.position.set(pos.x + shX * Math.cos(yaw), pos.y + bobY - introDrop + shY, pos.z - shX * Math.sin(yaw));
+    camera.rotation.set(pitch + shR, yaw, introRoll + shR * 0.6);
     if (cineCam) {
       // câmera de cinema (cena da abertura): solta do jogador
       camera.position.copy(cineCam.pos);
@@ -5156,6 +5174,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
       shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
+      // (testes) as luzes comuns emprestadas agora: de que sala, a força e a nota (força / (1 + distância²)) com que ganharam a vaga
+      lights: () => slots.filter((sl) => sl.em).map((sl) => ({ sala: sl.room, i: +sl.em!.intensity.toFixed(1), nota: +(sl.em!.intensity / (1 + sl.light.position.distanceToSquared(camera.position))).toFixed(2) })),
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)
       drop: (x: number, y: number, z: number) => {

@@ -14,20 +14,31 @@ INSTRUMENTOS (música e sinos/notas dos efeitos)
   contrabaixo também dá o grave do "resolvido" dos puzzles.
 
 EFEITOS SONOROS (todos CC0 / domínio público, via OpenGameArt.org)
-  - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro (abrir, fechar, virar a página), facada, trinco.
+  - RPG Sound Pack — Kenney (kenney.nl): pano, couro, livro (abrir, fechar, virar a página), facada, trinco
+    (o fecho do caderno; e, mais grave, o grampo de ferro que fecha quando uma
+    laje da Ponte de Frases trava).
   - 100 CC0 SFX e 100 CC0 SFX #2 — rubberduck: gongo, sinos, vidro, pancadas,
     pedras, interruptores, ar, madeira; o baque da porta de pedra travando.
+    Na Ponte de Frases (sala 14): ferros batidos (metal_01, 02, 03, 11) nos
+    grampos que travam, mordem e estalam, e a catraca de uma fechadura
+    (lock_open_01) apertando no tremor.
   - 75 CC0 breaking / falling / hit sfx — rubberduck: pedrinhas e pó caindo
     (porta, pilar, passos no entulho; e a Casa "assentando" em outra sala,
-    três quedas de pedra em cascata).
+    três quedas de pedra em cascata). Na Ponte de Frases: ferros batidos
+    (metal_hit 01, 03, 04, 05), o grampo solto caindo (metal_falling_02), a
+    pedra rachando (rock_breaking_02) e o baque fundo (hit_02) das lajes
+    batendo no fundo do fosso.
   - Metal footsteps on concrete: o peso do passo no degrau (bota em concreto).
   - Fantozzi's Footsteps (Grass/Sand & Stone) — Fantozzi, recortados por
     qubodup: os passos em pedra, degrau e entulho (sapato em pedra).
   - Drawing with chalk: giz riscando pedra.
   - Pencil sounds: borracha.
-  - Stone door — bonebrah: a porta de pedra e o pilar arrastando.
-  - Scrapes (Stendhal) — AntumDeluge: arrastos de pedra; a pedra rangendo longe.
-  - Moving Boulder — themightyglider: pedregulho batendo e arrastando.
+  - Stone door — bonebrah: a porta de pedra e o pilar arrastando; o peso da
+    Ponte de Frases trepidando.
+  - Scrapes (Stendhal) — AntumDeluge: arrastos de pedra; a pedra rangendo longe;
+    as juntas da Ponte de Frases rangendo e as lajes raspando ao cair.
+  - Moving Boulder — themightyglider: pedregulho batendo e arrastando; as lajes
+    da Ponte de Frases assentando e batendo no fundo do fosso.
   - Fire Staff Sound Effects — LEGIT Audio: a chama pegando (braseiro, tocha,
     pano), a chama sugada ao apagar, o fogo aceso (laço) e as faíscas.
   - Fire Crackling — AntumDeluge: estalos de lareira.

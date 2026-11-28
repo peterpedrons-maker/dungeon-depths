@@ -2140,7 +2140,7 @@ Madeira, Ponte de Frases, Sombra, Escuro, Lei Pequena, Fogo que Corre, Claustro 
   vem na chegada ao pé da Escadaria (`Room.calm` em `respiro4.ts`; a saída dela dá direto na passarela da Biblioteca, sem corredor) e TODOS no
   corredor depois da Memória, antes do Tribunal.
 
-## §95 O trailer (o começo do jogo)
+## 95. O trailer do começo do jogo (pedido do Pedro)
 
 O Pedro pediu um trailer "épico, cinematográfico", só com o começo por enquanto, para melhorar depois. Ele dura 1min18, em 1080p e 24 quadros por
 segundo, e é todo gravado do jogo de verdade (`tools/trailer/`, ver o README de lá). Um relógio virtual faz cada quadro andar exatamente 1/24 s, então a
@@ -2165,3 +2165,48 @@ A **trilha** é composta com as gravações do próprio jogo: contrabaixo, coro,
 
 Os efeitos continuam sendo coisas físicas: fogo, pedra, corda, vento.
 
+
+## 96. Leitura e acabamento na Ponte de Frases, na Balança e no Claustro do Vento (cenógrafo, pedido do Pedro)
+
+As sugestões que ficaram da conferência do enigmista (§94) e da revisão do cenógrafo (§93). Nenhuma regra, número, posição de puzzle, furo, segredo,
+gema ou folha mudou; os 21 verificadores passam e as três salas se resolvem no navegador como antes.
+- **A Ponte de Frases** (`rooms/chapter1c.ts`):
+  - **As travas.** A ponte é uma peça só, e agora isso se vê: em cada junta entre duas lajes erguidas que a Casa pesa (a demonstração não entra) assenta
+    um grampo de bronze escuro em cauda de andorinha, a peça que se embute atravessando a junta de dois blocos (dois em cada junta entre fileiras e
+    dois na junta do meio; 20 numa malha só, `InstancedMesh`). Ele desce na junta 0,22 s depois de a 2ª laje chegar em cima, sai quando uma delas desce
+    (a frase apagada), chacoalha e dá um lampejo pálido de metal forçado no tremor (nunca a cor das brasas) e, quando a ponte cede, salta e cai no fosso.
+    O bronze tem recuo de profundidade para ganhar da quina clara das lajes (um plano por cima do tampo, que antes cobria metade dele).
+  - **A ponte prende o pé.** O motor ganhou `ctx.shake(k, secs, hold)` (`types.ts`, `scene.ts`): uns milímetros de câmera e um quase nada de giro, que
+    somem no fim; com "reduzir movimento", não treme. `hold` prende o passo enquanto treme. Nos 0,7 s em que a Casa pesa, o tremor cresce (0,35 → 1) e o
+    passo anda a 20%; quando ela cede, um tranco (1,6). O dado da mão treme junto (`dieReact('shake')`) e um pó cor de pedra sobe das juntas travadas e
+    escorre da beirada da borda da porta para o fosso (uma nuvem quando cede; `Points`, 160 grãos, que apagam no escuro da Casa). A borda continua
+    fechada por `rects()`, como no §94: o que mudou é que o jogador sente a ponte segurar em vez de bater numa parede que não se vê.
+  - **A citação se lê de longe.** Cada frase que a Casa pode citar (as de `FPF_CITA`: UM ANTES DOIS, UM DEPOIS TRÊS e QUATRO DEPOIS DOIS) tem uma luz de
+    verdade 1,4 m fora da parede e acima dela, que acende quando a Casa aponta (`citeNow`, junto com `api.cite`) e apaga devagar: da entrada, a citada do
+    fundo vira uma mancha quente na parede, e não um pontinho dourado. É luz na pedra, não faixa atrás da escrita (§58): o glifo continua sendo o que
+    brilha, e o mais claro cai acima dele. A força é firme (46) e o alcance curto (2,6 m; a vizinha recebe uns 5%): medido com `__mdd.lights()`, com a
+    força das frases (4 a 11) a citada do fundo nunca ganhava uma das luzes emprestadas vista da entrada (a 12ª vaga tem nota ~0,1); a 46, ganha sempre.
+  - **No erro da porta, as citadas ficam atrás do jogador.** Quando a luz volta, o dado da mão MOSTRA a citada mais perto (`ctx.dieLook` por 5 s). O
+    motor ganhou o caso de um ponto atrás da câmera: o dado se inclina todo para o lado dele, "por cima do ombro" (antes a projeção invertia o lado).
+    O som das citadas vindo de trás fica com o sonoplasta.
+  - **O custo dos lampiões com sombra** (medido andando na ponte, 3 idas e voltas, Chromium sem placa de vídeo; vale a proporção, não os ms): Altas no
+    PC, 4 lampiões com sombra ~215–230 ms por quadro, ~870–890 desenhos; 2 lampiões (o 2º e o 4º) ~210 ms, ~860–910 desenhos; nenhum ~180 ms, ~610
+    desenhos. Médias no celular (o padrão de lá), 4: ~133–136 ms, ~650–670 desenhos; 2: ~131–134; nenhum: ~126 ms, ~650. O motor tem um número fixo de
+    luzes com sombra por opção e refaz até 2 (Altas) ou 1 (Médias) mapas por quadro quando o jogador se mexe: dois lampiões em vez de quatro não
+    economizam nada, e sem nenhum a ponte perde a sombra do jogador e a das lajes no fosso (~15% nas Altas; nas Médias, nada que se meça). **Ficam os
+    quatro.** O gancho `__pfLamps([1, 0, 1, 0])` liga e desliga cada um para medir de novo.
+  - **Os sons** (do sonoplasta, `audio.ts`; `AUDIO_VERSION` 9). São só pedra, ferro e mecanismo, montados das gravações CC0 que o jogo já tinha (`tools/build_audio.py`, 4ª leva):
+    - `'bridgeRise'`: o arrasto da laje subindo, sem o baque e sem o violoncelo do pilar. Antes era o `'rise'`, que fazia a "Casa aceita" até para a laje de uma mentira.
+    - `'bridgeLock'`: a trava assenta 0,22 s depois de a 2ª laje chegar em cima; várias no mesmo quadro tocam um som só.
+    - `'bridgeHold'`: no lugar do `altarCrack`, as travas mordem e a pedra range nas juntas, trepidando no ritmo do tremor, de t = 0 até t = 0,7 s.
+    - `'bridgeBreak'`: quando ela cede, as travas estalam, as lajes raspam e batem no fundo (aos 0,44 s, o tempo da queda), e o entulho e as travas assentam.
+- **A Balança** (`rooms/balanca.ts`): o número talhado agora está nas **quatro faces de pé** de cada peso (em cima e embaixo, a pedra lisa): de lado, na
+  rotunda, o peso não dizia o nome. O **fiel** foi refeito: a agulha de ferro escuro ficou mais grossa (7 cm) e mais comprida (a ponta anda mais), contra
+  um **mostrador** de pedra lavrada clara numa haste, com a marca de ouro do meio logo acima da ponta; uma agulha em cada face, para ler da entrada e do
+  lado da porta (antes, de trás, a haste a escondia). Pendendo, a agulha sai de baixo da marca; IGUAL, a ponta fica embaixo dela. Tamanhos, massas,
+  posições e cordas não mudaram.
+- **O Claustro do Vento** (`claustroExtra`, `rooms/chapter1b.ts`; vale também para Os Que Dizem o Mesmo, na reserva): a passagem de 63 cm junto aos
+  fogaréus era a **colisão quadrada da bacia redonda** da fonte (2,9 m de lado): nas diagonais ela sobrava 1 m além da pedra, justo onde ficam os dois
+  fogaréus do lado, e o jogador esbarrava no ar. Agora a bacia é redonda também na colisão (cinco retângulos cruzados com as quinas no círculo, para o
+  jogador e para o dado): a passagem é a que se vê, ~1 m na parte mais justa (junto ao pé do poste) e mais larga logo adiante. Os fogaréus, as gaiolas,
+  os estandartes e a estela não se mexeram; o dado que cai na quina antiga agora vai ao chão, e não fica flutuando nela.
