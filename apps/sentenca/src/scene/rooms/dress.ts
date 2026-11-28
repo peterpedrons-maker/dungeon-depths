@@ -1,4 +1,4 @@
-// A CENOGRAFIA DAS SALAS DE PUZZLE (DESIGN.md §95). As salas do construtor `fire.ts` eram caixas: quatro paredes de tijolo e um teto chato e
+// A CENOGRAFIA DAS SALAS DE PUZZLE (DESIGN.md §96). As salas do construtor `fire.ts` eram caixas: quatro paredes de tijolo e um teto chato e
 // escuro, todas iguais. Aqui ficam as peças que dão ARQUITETURA a elas sem tocar em nada que o puzzle usa:
 //   · a ABÓBADA de berço baixa, de tijolo, com arcos de pedra lavrada sobre mísulas (a mesma gramática da Lousa, que é o quadro de estilo);
 //   · a JANELA alta: uma fresta em arco numa parede do lado, com o vão na espessura da parede, grade, o céu lá fora, o feixe de luz que

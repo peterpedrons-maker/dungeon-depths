@@ -158,7 +158,7 @@ export interface FireSpec {
   doorY?: number; // a porta de saída fica num andar alto (mezanino): a sala seguinte começa nessa altura
   sky?: boolean; // sem teto: um pátio a céu aberto (céu pálido, como o do pátio da abertura)
   ambience?: Ambience; // o som do lugar: vento, gotas, tamanho (DESIGN.md §60)
-  // (cenógrafo, DESIGN.md §95) ARQUITETURA, sem tocar no puzzle. `vault`: o teto chato vira uma abóbada de tijolo com arcos de pedra sobre
+  // (cenógrafo, DESIGN.md §96) ARQUITETURA, sem tocar no puzzle. `vault`: o teto chato vira uma abóbada de tijolo com arcos de pedra sobre
   // mísulas, toda ACIMA de `h` (o dado continua batendo num teto invisível em `h`); não usar em sala que tem coisa no teto (cal, frisos).
   // `windows`: frestas altas numa parede do lado SEM porta, com o feixe de luz caindo num pedaço de chão vazio (`dz` = distância do fundo);
   // só em sala na superfície e em parede que dá para fora.
@@ -343,7 +343,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     c.width = 64;
     c.height = 64;
     const g = c.getContext('2d')!;
-    // (DESIGN.md §95: o céu é NÉVOA, como no pátio da abertura. Antes era azul pálido com nuvens: via-se "o lado de fora")
+    // (DESIGN.md §96: o céu é NÉVOA, como no pátio da abertura. Antes era azul pálido com nuvens: via-se "o lado de fora")
     g.fillStyle = '#a4a2b4';
     g.fillRect(0, 0, 64, 64);
     for (let k = 0; k < 90; k++) {
@@ -1030,7 +1030,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     g.__fire = fn; // a última sala construída
     ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
   }
-  // (cenógrafo) OS RASTROS de quem passou (DESIGN.md §95): num canto da frente, perto da entrada e longe do puzzle (nada se há um braseiro, a
+  // (cenógrafo) OS RASTROS de quem passou (DESIGN.md §96): num canto da frente, perto da entrada e longe do puzzle (nada se há um braseiro, a
   // placa ou uma coluna a menos de 1,8 m). O tipo e o lado saem do nome da sala; uma em cada quatro não tem nada.
   {
     const hsh = [...spec.name].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
@@ -1051,10 +1051,10 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     if (kind < 4 && !busy && !spec.doorY) traces(kit, kind, tx, tz, { x: sx * spec.hx, z: tz - 0.9, nx: -sx, nz: 0 }, hsh % 97);
     if (import.meta.env.DEV) (((globalThis as Record<string, unknown>).__rastros ??= {}) as Record<string, unknown>)[spec.name] = { kind, busy: !!busy, tx, tz };
   }
-  // (cenógrafo) a NÉVOA nos lugares abertos (DESIGN.md §95): numa sala a céu aberto, véus de névoa boiam no alto das paredes, tapando o céu
+  // (cenógrafo) a NÉVOA nos lugares abertos (DESIGN.md §96): numa sala a céu aberto, véus de névoa boiam no alto das paredes, tapando o céu
   // (lá fora nunca se vê nada). Ficam todos acima de 3,4 m: não passam na frente do que se lê nem das fagulhas.
   if (spec.sky) kit.fxUpd.push(mistBank(kit.group, { x0: X0 + 1, x1: X1 - 1, z0: Z0 + 1, z1: Z1 - 1, y0: Math.max(3.6, H - 1.6), y1: H + 1.8, n: 9, size: [4, 7], opacity: 0.55 }));
-  // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §95): só sai com o jogador longe, corre de uma toca a outra e some
+  // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §96): só sai com o jogador longe, corre de uma toca a outra e some
   {
     const span = (side: 'L' | 'R'): [number, number][] => [
       ...(SD?.side === side ? ([[SD.at - 1.8, SD.at + 1.8]] as [number, number][]) : []),

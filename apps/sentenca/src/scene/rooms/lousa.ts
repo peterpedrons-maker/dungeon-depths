@@ -98,7 +98,7 @@ export function buildLousa(ctx: Ctx): Room {
   const nb = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.2, 8), lambert(null, 0x3a3a46));
   nb.position.set(0, NY + 0.17, NZ);
   kit.add(nb);
-  // (a chama alta dos braseiros, com o pé na tigela, onde era o pé da de antes; DESIGN.md §94)
+  // (a chama alta dos braseiros, com o pé na tigela, onde era o pé da de antes; DESIGN.md §95)
   const nFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   nFlame.center.set(0.5, 0);
   nFlame.scale.set(0.42, 0.63, 1);

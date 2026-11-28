@@ -141,7 +141,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
   const lamps: THREE.Sprite[] = [];
   for (let k = 1; k < PF.rows; k++) {
     const z = gz1 - ROW_L * k;
-    // (cenógrafo: com a abóbada, DESIGN.md §95, a corrente sobe até a casca, que no meio fica `VR` acima do teto de antes)
+    // (cenógrafo: com a abóbada, DESIGN.md §96, a corrente sobe até a casca, que no meio fica `VR` acima do teto de antes)
     const VR = Math.max(0.9, Math.min(1.9, PF.hx * 0.28));
     kit.box(0.03, 0.7 + VR, 0.03, iron, 0, PF.h - 0.35 + VR / 2, z, false);
     kit.box(0.3, 0.06, 0.3, iron, 0, PF.h - 0.72, z, false);
@@ -283,7 +283,7 @@ export const FIRE_PONTE_FRASES: FireSpec = {
   hx: PF.hx,
   z0: PF.z0,
   h: PF.h,
-  vault: true, // (cenógrafo, DESIGN.md §95)
+  vault: true, // (cenógrafo, DESIGN.md §96)
   braziers: [],
   rule: { kind: 'custom', lamps: 1 },
   lock: { judge: 'door', penalty: 8, judged: ['A Casa leu', 'A porta acordou.'] },

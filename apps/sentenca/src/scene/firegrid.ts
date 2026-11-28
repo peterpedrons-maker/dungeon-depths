@@ -519,7 +519,7 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
       }),
     );
   else oldTorch((w, h, d, m, px, py, pz) => kit.box(w, h, d, m, px, py, pz, false));
-  // a chama alta, igual à das tochas de enfeite (DESIGN.md §94): o pé fica no alto do cabo, 15 cm abaixo do ponto que o dado acende
+  // a chama alta, igual à das tochas de enfeite (DESIGN.md §95): o pé fica no alto do cabo, 15 cm abaixo do ponto que o dado acende
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   const FH = (0.27 * FLAME_H) / FLAME_W;
   sprite.scale.set(0.27, FH, 1);

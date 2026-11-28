@@ -2105,7 +2105,7 @@ Madeira, Ponte de Frases, Sombra, Escuro, Lei Pequena, Fogo que Corre, Claustro 
   tempo todo; os fogaréus viraram cestos com aro e garras, com carvão em monte e **a brasa pulsando** enquanto apagados, e o poste barra o
   jogador (antes só o dado). A brasa dos soquetes (`emberTexture`, `fire.ts`) agora é exportada e é a mesma nos três lugares.
 
-## 94. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
+## 95. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
 
 "Melhorar o visual do jogo, mantendo todas as coisas, só deixar mais polido: sombras, efeito do fogo... Na cutscene inicial, o lado de fora como
 uma neblina, estilo Silent Hill, para que o jogador não veja nada lá fora, se existe ou não existe, e deixar mais místico."
@@ -2149,3 +2149,95 @@ uma neblina, estilo Silent Hill, para que o jogador não veja nada lá fora, se 
 Testado: a abertura inteira gravada quadro a quadro (a névoa, o Escrivão saindo dela, o corte, a vista de baixo), as salas com fogo de perto
 e de longe (Lousa, Galeria, Apelidos, Tribunal, Biblioteca, Vestíbulo, Boato Verdadeiro, Lei Pequena, Confirma, Fio) antes e depois, no PC
 (1280 × 720) e no celular (844 × 390), sem erros no console.
+
+## 96. Vida, luz e arquitetura: o mundo deixa de ser caixa (cenógrafo, pedido do Pedro)
+
+"Pode sim mudar as arquiteturas na sala dos puzzles, sem mudar puzzle nem nada. O escuro de verdade é legal. O mundo reagir na imagem, o dado
+levantando poeira, pó do teto, achei muito bom. Vida pequena no ar: gotas caindo, o ar tremendo em cima das brasas, algum pequeno animal que
+apareça no fundo. Rastros de quem já passou. A neblina de fora voltar em alguns lugares. Onde tem os poços no topo, o buraco com a luz, ver a
+poeira flutuando: não aquelas bolinhas grandes, uma poeira mesmo. Sombras e o fogo ainda têm como melhorar. E janelas em algum lugar, como
+na sala 2: no capítulo 1 e no 2 ainda se está na superfície do dado. A cor: por capítulo, mudando aos poucos conforme o jogador avança."
+
+**Regra geral** (vale para tudo abaixo): nada disto muda solução, alcance, tempo, nem o que o jogador precisa ver, acertar ou ler. Onde havia
+dúvida, a peça saiu (ver "o que ficou de fora"). Os 21 verificadores de puzzle continuam passando.
+
+**1. O feixe de luz e a poeira fina** (`src/scene/fx.ts`: `lightShaft`, `fineDust`, `sunBeam`)
+- A luz que entra por um furo do teto ou por uma fresta agora SE VÊ no ar: um tubo somado por cima da cena, forte no miolo e sumindo nas
+  bordas, mais forte em cima, com listras lentas. É fraco de propósito (o pontilhado e a paleta o desfazem em degraus de pixel). O cone de
+  antes, de cor chapada, virava uma coluna cinza sólida e tinha sido tirado.
+- A poeira: cada grão é UM pixel da imagem do jogo (as "bolinhas" tinham 2 × 2, eram ~40 e todas iguais). São 150 a 200 por feixe, cada um
+  com o seu brilho, e cada um CINTILA no seu tempo, como poeira que gira na luz. Tudo animado no shader (um relógio só, `fxClock`): nenhuma
+  conta por grão no processador, um desenho por feixe.
+- Onde: os 6 furos redondos (Poço, Lousa, Fio, Cisterna, Banhos, Biblioteca), a Escadaria, as frestas do Vestíbulo e da Galeria, e as
+  janelas novas. O `kit.beamDust` e o `beamMotes` de antes agora chamam isto. No escuro da Casa, feixe e poeira apagam junto (`fxDim`).
+- A luz dos furos faz SOMBRA de verdade, de cima para baixo (o motor empresta um mapa de sombra quando o jogador está perto).
+
+**2. O mundo reage na imagem** (`src/scene/puffs.ts`; antes só o som dizia estas coisas)
+- A pancada do dado levanta POEIRA no ponto do toque, espalhando rente à superfície (chão, parede, coluna); mais forte, mais poeira.
+- O dado de Fogo deixa BRASAS para trás no voo; quando o fogo pega (braseiro, tocha, frase), um sopro de FAGULHAS.
+- A sala RESOLVIDA estremece: fios de pó caem do teto em volta do jogador (o motor procura o teto com raios; a céu aberto, nada cai). A
+  porta que abre solta o pó da verga.
+- Um desenho só, até 260 grãos reusados. A poeira pega a luz da sala e some no escuro; a fagulha é luz somada.
+
+**3. Vida pequena**
+- FUMAÇA em todas as tochas de enfeite (`smokePoints`, um desenho por sala; antes só duas tochas do Vestíbulo tinham, com cinco desenhos
+  cada). O tufo é pontilhado e escuro de verdade: a parede atrás da chama recebe luz muito acima de 1 e um véu fraco não aparecia.
+- MARIPOSAS: um ou dois pontinhos claros em volta de uma tocha em cada três, tortos e rápidos, pousando de vez em quando.
+- O AR QUENTE: em cima de cada braseiro aceso (até 4, os mais perto), as linhas da imagem escorregam um pixel para os lados, em ondas que
+  sobem (no pós-processo; só treme o que está ATRÁS da coluna de ar). `Emitter.hot`.
+- GOTAS: onde a sala já dizia que pinga (`ambience.drips`, que era só som), o motor acha o teto e põe a gota que cresce, cai e abre um
+  anel numa pocinha.
+- A luz de toda chama oscila uns 10%, em três ritmos (eram 3%: parecia lâmpada). "Reduzir movimento" desliga.
+
+**4. Os bichos** (`src/scene/critters.ts`; figuras 2D em pixel, sempre longe, sem som)
+- O RATO: corre rente a uma parede, de uma toca a outra (dois arquinhos escuros no rodapé), às vezes para e fareja. Só sai com o jogador a
+  mais de 4,5 m da corrida, foge mais depressa se ele chega perto, e demora de 30 s a mais de 1 min para voltar. Nas salas de fogo o
+  construtor escolhe sozinho o trecho de parede mais comprido sem nada encostado (confere as caixas de colisão e SONDA a sala com raios:
+  parede na frente, chão embaixo). Hoje em 10 salas.
+- O MORCEGO: cruza o alto de três salas altas (a Escadaria, o fosso da Ponte de Madeira, o Átrio da Biblioteca), com um mergulho no meio.
+- A graça é o jogador achar que viu alguma coisa: aparecem de vez em quando, nunca em laço.
+
+**5. A arquitetura das salas de puzzle** (`src/scene/rooms/dress.ts`, `FireSpec.vault` e `FireSpec.windows`)
+- As salas do construtor `fire.ts` eram caixas iguais: quatro paredes e um teto chato e escuro. Cinco ganharam ABÓBADA de berço de tijolo
+  com arcos de pedra lavrada sobre mísulas (a gramática da Lousa, o quadro de estilo): A Casa Escreve (as nove colunas agora sobem até a
+  casca), O Que a Casa Confirma, A Ponte de Frases (as correntes das lanternas sobem até a casca), A Lei Pequena e o Tribunal.
+- A abóbada fica toda ACIMA da altura `h` da sala: o dado continua batendo num teto invisível em `h` (testado: no Tribunal, arremessado
+  para cima, ele chega a 3,78 m, como antes). As mísulas ficam acima de `h` − 0,6.
+- JANELAS: duas frestas altas em arco no Confirma, na parede que dá para fora (com o vão na espessura da parede, grade, o céu, o feixe e a
+  poeira), nos dois únicos trechos vazios da parede; e um ÓCULO redondo em cima da porta do Tribunal: na última sala do capítulo, a luz de
+  fora entra por onde se sai. O feixe cai no meio do salão, longe da placa da porta e dos braseiros.
+- Como se escolhe o lugar: a planta diz que paredes dão para fora e que salas estão na superfície (as do subsolo não ganham janela); o
+  construtor AVISA no modo de desenvolvimento se um feixe cai a menos de 1,5 m de um braseiro ou da placa, e lista o que há pendurado em
+  cada parede (`__paredes`). Dois lugares que eu tinha escolhido foram recusados por esse aviso e um terceiro porque o feixe passava na
+  frente de uma lousa.
+- O céu das salas abertas (o claustro) deixou de ser azul com nuvens: é NÉVOA, como no pátio da abertura, com véus boiando no alto das
+  paredes (`mistBank`). A névoa também desce um pouco pelo alto do poço da Escadaria.
+
+**6. O escuro, e a cor que anda com o capítulo**
+- Dentro da Casa a luz ambiente caiu um quinto (`DARK_K`): os cantos e o alto das paredes afundam e as poças de luz das chamas se destacam.
+  As lousas continuam legíveis de uma ponta à outra da sala (conferido no Tribunal e no Confirma).
+- A cor: um banho leve (uns 7%) na imagem do mundo, que muda com a sala em que o jogador está (`uGrade`). O capítulo 1 é o do FOGO: começa
+  FRIO (o Poço) e esquenta sala a sala até o âmbar do Tribunal. Cada capítulo terá o seu par de cores (`GRADE_A`, `GRADE_B`). Soma-se ao
+  "estágio" da Casa, que já esquentava a luz com os marcos da história.
+
+**7. Os rastros de quem passou** (`traces` em `dress.ts`; sem texto)
+- Num canto perto da ENTRADA das salas de puzzle: as cinzas de uma fogueira velha entre três pedras, um ou dois tocos de vela derretidos, os
+  riscos de contagem de quem esperou. O tipo sai do nome da sala e uma em cada cinco não tem nada (se todas tivessem, virava enfeite).
+- Não entram se houver braseiro, coluna, caixa de colisão, chama ou escrita a menos de ~2 m (no Pano, o canto tem o braseirinho que ensina a
+  sala: ficou sem). Em sala de frases que se acendem, nada de riscos na parede: perto de uma tocha eles ficam alaranjados e lembram frase acesa.
+
+**O que ficou de fora, e por quê**
+- Abóbada no Pano, no Escuro e no Fogo que Corre (o teto tem frisos ou cal, que são do puzzle), na Sombra (a luz e a sombra são o puzzle)
+  e na Memória (o construtor da sala mexe nas paredes).
+- Janelas nas paredes do Tribunal (cheias: frases, a lei, o altar), na Casa Escreve (as tochas da parede são uma constelação) e no Fogo que
+  Corre (um feixe comprido atravessaria a sala na altura da cal do teto).
+- Névoa no fundo do fosso da Ponte de Madeira (taparia as canaletas) e no pátio da Cisterna (tem teto: o que há ali é o furo).
+- Fumaça nas tochas de puzzle (as que o jogador acende e se apagam).
+
+**Custo**: de 5 a 35 desenhos a mais por sala (o Confirma, com janelas e abóbada, é o que mais subiu: 361 → ~390); triângulos quase iguais.
+
+**Testado**: tsc, build, os 21 verificadores; no navegador de teste, PC (1280 × 720) e celular (844 × 390): os seis furos e as frestas, a
+pancada e o arremesso de Fogo quadro a quadro, o pó do teto, o rato correndo, a fumaça, o ar quente, a gota, todas as salas com abóbada, os
+cantos com rastros; no Tribunal, acender o braseiro certo (conta o passo), um errado (a Casa pune como antes) e o arremesso para cima; a
+tela inicial e a abertura. Sem erros no console. **Não testado**: o capítulo jogado do começo ao fim, um celular de verdade, e o morcego
+visto em jogo (ele voa; nas fotos de teste a câmera ficou embaixo de um patamar).
