@@ -29,7 +29,7 @@ import {
 } from './textures';
 import { makeInscription, type InscribeOpts, type Inscription } from './inscription';
 import { wallTorch } from './models';
-import { fineDust, fxClock, lightShaft } from './fx';
+import { fineDust, fxClock, lightShaft, moths, smokePoints } from './fx';
 import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
@@ -102,6 +102,9 @@ export class Emitter {
   jit = new THREE.Vector3();
   range = 11; // alcance da luz (m): ela some suave até aqui
   lit = 0; // (o motor escreve) quanto de luz de verdade esta chama tem agora: 0 = nenhuma (só o brilho falso)
+  // o AR QUENTE (DESIGN.md §95): o pé da coluna de ar que treme em cima desta chama (local da sala) e a meia largura dela (m). Só os braseiros
+  hot?: THREE.Vector3;
+  hotR = 0.3;
   constructor(
     public pos: THREE.Vector3,
     public color: number,
@@ -132,6 +135,9 @@ export class Kit {
   slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
   private torches: { sprite: THREE.Sprite; glow: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial; haloMesh?: THREE.Mesh; holder?: THREE.Object3D; nx: number; nz: number }[] = [];
   private glowTex: THREE.Texture | null = null;
+  // o que se mexe sozinho na sala e precisa de conta a cada quadro (os bichos, as gotas): o `tick` chama (DESIGN.md §95)
+  fxUpd: ((dt: number, t: number) => void)[] = [];
+  private smoked = false;
   // o que as tochas de ENFEITE têm de respeitar (DESIGN.md §67): [ponto, distância mínima da chama]. Tochas dos puzzles, lousas e braseiros
   // se registram aqui; as escritas entram sozinhas (kit.inscriptions). No `bake`, a tocha que estiver perto demais desliza pela parede.
   keepClear: [THREE.Vector3, number][] = [];
@@ -629,6 +635,16 @@ export class Kit {
 
   bake() {
     this.clearTorches();
+    // a FUMAÇA de todas as tochas de enfeite (um desenho só) e uma mariposa ou duas em volta de uma em cada três (DESIGN.md §95)
+    if (!this.smoked) {
+      this.smoked = true;
+      const lit = this.torches.filter((tc) => tc.base > 0 && tc.sprite.parent);
+      if (lit.length) {
+        smokePoints(this.group, lit.map((tc) => ({ x: tc.sprite.position.x, y: tc.sprite.position.y + 0.22, z: tc.sprite.position.z, nx: tc.nx, nz: tc.nz })));
+        const mo = lit.filter((_, i) => i % 3 === 1).map((tc) => new THREE.Vector3(tc.sprite.position.x + tc.nx * 0.28, tc.sprite.position.y + 0.12, tc.sprite.position.z + tc.nz * 0.28));
+        if (mo.length) moths(this.group, mo);
+      }
+    }
     const byMat = new Map<THREE.Material, THREE.Mesh[]>();
     for (const o of [...this.group.children]) {
       const m = o as THREE.Mesh;
@@ -672,8 +688,9 @@ export class Kit {
     this.group.add(this.emberPts);
   }
 
-  tick(_dt: number, t: number) {
+  tick(dt: number, t: number) {
     fxClock.value = t;
+    for (const f of this.fxUpd) f(dt, t);
     if (!this.emberPts && this.torches.length) this.buildEmbers();
     if (this.emberPts) {
       const arr = this.emberPts.geometry.attributes.position.array as Float32Array;

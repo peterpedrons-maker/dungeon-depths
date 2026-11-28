@@ -7,6 +7,10 @@ import * as THREE from 'three';
 
 // o relógio comum (segundos): o `Kit.tick` o acerta a cada quadro
 export const fxClock = { value: 0 };
+// a altura da imagem do jogo em pixels (o motor a acerta): para um tufo de fumaça ter o tamanho certo em metros
+export const fxView = { value: 270 };
+// os olhos do jogador, no mundo (o motor os acerta): os bichos sabem a que distância ele está
+export const fxEye = new THREE.Vector3();
 
 // a névoa da sala apaga os efeitos de longe (são somados: sem isto um feixe a 30 m brilharia através da névoa)
 const FOG_PARS = 'uniform float fogNear; uniform float fogFar;';
@@ -14,6 +18,7 @@ const fogFade = (depth: string) => `(1.0 - smoothstep(fogNear, fogFar, ${depth})
 const withFog = (u: Record<string, THREE.IUniform>) => THREE.UniformsUtils.merge([THREE.UniformsLib.fog, u]);
 const share = (m: THREE.ShaderMaterial) => {
   m.uniforms.uT = fxClock; // (o `merge` copia os valores: o relógio tem de ser o MESMO objeto em todos)
+  if (m.uniforms.uH) m.uniforms.uH = fxView;
   return m;
 };
 
@@ -160,4 +165,122 @@ export function sunBeam(
   const shaft = lightShaft(parent, from, to, r0, r1, o.color ?? 0xc8d8ff, o.strength ?? 0.085);
   const dust = fineDust(parent, from, to, r0 * 0.92, r1 * 0.92, o.dust ?? 160, o.dustColor ?? 0xe8eeff);
   return { shaft, dust };
+}
+
+// ── A FUMAÇA DAS TOCHAS ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Tufos escuros pontilhados que nascem na chama, sobem afastando-se um pouco da parede, alargam e somem (a fuligem da parede vem daí). Antes
+// só duas tochas do Vestíbulo e as da Galeria tinham, com cinco desenhos por tocha; aqui TODAS as tochas de uma sala saem num desenho só.
+// `at` = a chama; (nx, nz) = para onde a parede olha.
+const BAYER4 = 'float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); } float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }';
+export function smokePoints(parent: THREE.Object3D, torches: { x: number; y: number; z: number; nx: number; nz: number }[], per = 5) {
+  const n = torches.length * per;
+  const base = new Float32Array(n * 3);
+  const seed = new Float32Array(n * 4);
+  const box = new THREE.Box3();
+  torches.forEach((t, i) => {
+    box.expandByPoint(new THREE.Vector3(t.x, t.y, t.z));
+    for (let k = 0; k < per; k++) {
+      const o = i * per + k;
+      base.set([t.x, t.y, t.z], o * 3);
+      seed.set([t.nx, t.nz, k / per + i * 0.137, 0.16 + (k % 3) * 0.03], o * 4);
+    }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  geo.setAttribute('aBase', new THREE.BufferAttribute(base, 3));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 4));
+  geo.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+  geo.boundingSphere.radius += 2.2;
+  const mat = share(
+    new THREE.ShaderMaterial({
+      uniforms: withFog({ uT: { value: 0 }, uH: { value: 270 }, uK: { value: 1 } }),
+      vertexShader: `
+        ${FOG_PARS}
+        uniform float uT; uniform float uH; uniform float uK;
+        attribute vec3 aBase; attribute vec4 aSeed;
+        varying float vA;
+        void main(){
+          float k = fract(uT * aSeed.w + aSeed.z); // 0 = nasce na chama, 1 = some
+          float away = 0.12 + k * 0.25;
+          vec3 p = aBase;
+          p.x += aSeed.x * away + sin(uT * 1.3 + aSeed.z * 9.0) * 0.06 * k;
+          p.z += aSeed.y * away + cos(uT * 1.1 + aSeed.z * 7.0) * 0.06 * k;
+          p.y += k * 1.5;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          gl_PointSize = clamp((0.16 + k * 0.62) * projectionMatrix[1][1] * uH * 0.5 / max(0.2, -mv.z), 1.0, 56.0);
+          vA = sin(k * 3.14159) * (1.0 - k * 0.4) * uK * ${fogFade('-mv.z')};
+        }`,
+      fragmentShader: `
+        varying float vA;
+        ${BAYER4}
+        void main(){
+          float d = max(0.0, 1.0 - length(gl_PointCoord - 0.5) / 0.48);
+          // o tufo é PONTILHADO (some por menos pontos, não por transparência) e escuro de verdade: a parede atrás da chama recebe luz muito
+          // acima de 1, e um véu fraco não aparecia nela
+          if (min(0.8, d * 1.6) * vA <= bayer4(gl_FragCoord.xy) * 0.95 + 0.04) discard;
+          gl_FragColor = vec4(0.021, 0.018, 0.021, 0.68);
+        }`,
+      transparent: true,
+      depthWrite: false,
+      fog: true,
+    }),
+  );
+  const pts = new THREE.Points(geo, mat);
+  pts.renderOrder = 3;
+  parent.add(pts);
+  return pts;
+}
+
+// ── AS MARIPOSAS ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Um ou dois pontinhos claros voando em volta de uma chama, tortos e rápidos, piscando com o bater das asas. Só perto do fogo (é a luz que
+// as mostra). `at` = o meio do voo (um palmo à frente da chama).
+export function moths(parent: THREE.Object3D, at: THREE.Vector3[], each = 2) {
+  const n = at.length * each;
+  const c = new Float32Array(n * 3);
+  const seed = new Float32Array(n * 2);
+  const box = new THREE.Box3();
+  at.forEach((p, i) => {
+    box.expandByPoint(p);
+    for (let k = 0; k < each; k++) {
+      c.set([p.x, p.y, p.z], (i * each + k) * 3);
+      seed.set([(i * 0.37 + k * 0.61) % 1, ((i * 7 + k * 3) % 5) / 5], (i * each + k) * 2);
+    }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  geo.setAttribute('aC', new THREE.BufferAttribute(c, 3));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 2));
+  geo.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+  geo.boundingSphere.radius += 0.8;
+  const mat = share(
+    new THREE.ShaderMaterial({
+      uniforms: withFog({ uT: { value: 0 } }),
+      vertexShader: `
+        ${FOG_PARS}
+        uniform float uT;
+        attribute vec3 aC; attribute vec2 aSeed;
+        varying float vA;
+        void main(){
+          float k = aSeed.x * 10.0;
+          float t = uT * (1.5 + aSeed.y);
+          // de vez em quando pousa (fica quase parada) e torna a voar
+          float rest = smoothstep(0.75, 0.9, sin(uT * 0.21 + k * 3.0));
+          vec3 o = vec3(sin(t * 1.3 + k) * 0.3 + sin(t * 3.1 + k * 2.0) * 0.09, sin(t * 1.9 + k * 3.0) * 0.17 + sin(t * 4.3 + k) * 0.05, cos(t * 1.1 + k * 1.7) * 0.3 + cos(t * 2.7 + k) * 0.09);
+          vec4 mv = modelViewMatrix * vec4(aC + o * (1.0 - 0.85 * rest), 1.0);
+          gl_Position = projectionMatrix * mv;
+          gl_PointSize = -mv.z < 2.2 ? 2.0 : 1.0;
+          vA = (0.3 + 0.7 * step(0.5, fract(uT * 8.0 + k))) * (1.0 - 0.5 * rest) * ${fogFade('-mv.z')};
+        }`,
+      fragmentShader: 'varying float vA; void main(){ gl_FragColor = vec4(0.95, 0.82, 0.6, vA * 0.8); }',
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: true,
+    }),
+  );
+  const pts = new THREE.Points(geo, mat);
+  pts.renderOrder = 5;
+  parent.add(pts);
+  return pts;
 }

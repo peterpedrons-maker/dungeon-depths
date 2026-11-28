@@ -4,6 +4,9 @@
 
 import * as THREE from 'three';
 import { makePuffs } from './puffs';
+import { fxEye, fxView } from './fx';
+import { drip } from './arch';
+import { puddleTexture } from './textures';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
 import {
@@ -299,6 +302,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       tBack: { value: null as THREE.Texture | null },
       uBack: { value: 0 },
       uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §94): 0 = o corte seco de antes
+      // o AR QUENTE em cima dos braseiros (DESIGN.md §95): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
+      uHot: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
+      uTime: { value: 0 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
@@ -317,6 +323,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uAO; // força da oclusão de ambiente (0 = desligada)
       uniform vec2 uTan; // tangente da metade do campo de visão (x, y): para voltar da tela à posição no espaço da câmera
       uniform float uShoulder;
+      uniform vec4 uHot[4];
+      uniform float uTime;
       varying vec2 vUv;
       // O OMBRO DA LUZ (DESIGN.md §94): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
       // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
@@ -383,7 +391,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           gl_FragColor = vec4(texture(tLut, clamp(cb, 0.0, 1.0)).rgb, 1.0);
           return;
         }
-        vec3 room = texture2D(tRoom, vUv).rgb;
+        // O AR QUENTE: em cima de cada braseiro aceso, as linhas da imagem escorregam um pixel para os lados, em ondas que sobem (só o que
+        // está ATRÁS da coluna de ar treme; o que está na frente dela, não)
+        vec2 ruv = vUv;
+        for (int i = 0; i < 4; i++) {
+          vec4 hs = uHot[i];
+          if (hs.z <= 0.0) continue;
+          vec2 hd = vec2((vUv.x - hs.x) / (hs.z * 1.6 * uRes.y / uRes.x), (vUv.y - hs.y) / (hs.z * 4.6));
+          if (hd.y > 0.0 && hd.y < 1.0 && abs(hd.x) < 1.0 && hud.a < 0.5) {
+            float hw = (1.0 - hd.x * hd.x) * sin(hd.y * 3.14159) * step(hs.w - 0.5, linZ(vUv));
+            ruv.x += sin(floor(vUv.y * uRes.y) * 1.7 - uTime * 7.0 + float(i) * 2.0) * hw * 1.2 / uRes.x;
+          }
+        }
+        vec3 room = texture2D(tRoom, ruv).rgb;
         if (uAO < -150.0) { vec3 P = viewP(vUv); vec3 N = normalize(cross(viewP(vUv + vec2(o.x, 0.0)) - P, viewP(vUv + vec2(0.0, o.y)) - P)); gl_FragColor = vec4(N * 0.5 + 0.5, 1.0); return; }
         if (uAO < -50.0) { gl_FragColor = vec4(vec3(fract(linZ(vUv))), 1.0); return; }
         if (uAO < 0.0) { gl_FragColor = vec4(vec3(ambientOccK(vUv, o, -uAO)), 1.0); return; }
@@ -1738,6 +1758,38 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`; e o mapa do caderno)
   const bounds: THREE.Box3[] = [];
+  // AS GOTAS QUE SE VEEM (DESIGN.md §95): onde a sala diz que pinga (`ambience.drips`, que até aqui era só som), o motor acha o teto em cima
+  // do ponto e põe a gota que cresce, cai e abre um anel numa pocinha. (Sem teto em cima, nada: é céu aberto.)
+  const dripUpd: ((t: number) => void)[][] = [];
+  let puddleMat: THREE.MeshBasicMaterial | null = null;
+  const makeDrips = (room: Room) => {
+    const out: ((t: number) => void)[] = [];
+    const list = room.ambience?.drips;
+    if (!list?.length) return out;
+    room.group.updateMatrixWorld(true);
+    const solid: THREE.Object3D[] = [];
+    room.group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && !(Array.isArray(m.material) ? m.material[0] : m.material)?.transparent) solid.push(m);
+    });
+    const ray = new THREE.Raycaster();
+    list.forEach((d, k) => {
+      const fy = room.groundY(d.x, d.z, d.y);
+      ray.set(new THREE.Vector3(d.x, fy + 0.5, d.z), new THREE.Vector3(0, 1, 0));
+      ray.far = 16;
+      const hit = ray.intersectObjects(solid, false)[0];
+      if (!hit || hit.distance < 1.2) return;
+      puddleMat ??= new THREE.MeshBasicMaterial({ map: puddleTexture(), transparent: true, opacity: 0.55, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+      const pud = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.7), puddleMat);
+      pud.rotation.x = -Math.PI / 2;
+      pud.rotation.z = k * 1.3;
+      pud.position.set(d.x, fy + 0.012, d.z);
+      pud.userData.noPlan = true;
+      room.group.add(pud);
+      out.push(drip(room.group, d.x, hit.point.y - 0.03, d.z, 2.3 + ((k * 0.7 + d.x * 0.13) % 1) * 1.6, fy));
+    });
+    return out;
+  };
   const connectors: Connector[] = [];
   // o corredor de ligação em que está um ponto (`y` = a altura dele: pés, ou o ponto da mira)
   const connectorAt = (p: THREE.Vector3, y = p.y): Connector | null => {
@@ -1768,6 +1820,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
       const room = build(makeCtx(i));
       room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
+      dripUpd[i] = makeDrips(room);
       bounds.push(footprint(room)); // (a sala ainda está na origem, sem giro)
       // em fila: o corredor da porta de uma desemboca na entrada da próxima; salas que descem (fosso, banhos): a seguinte começa no nível
       // da porta de saída (também na planta: o andar de cada sala sai da anterior)
@@ -2948,6 +3001,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       rt.depthTexture.dispose();
     }
     postMat.uniforms.uRes.value.set(w, h);
+    fxView.value = h;
     const aspect = w / h;
     const vFromH = (hDeg: number, a = aspect) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / a) * 180) / Math.PI;
     // telas mais largas que 16:9 (ultrawide 21:9, 32:9) veem MAIS dos lados com a mesma altura de visão (o campo de visão escolhido vale para
@@ -4443,6 +4497,33 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
   // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
+  // o AR QUENTE (DESIGN.md §95): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
+  const hotV = new THREE.Vector3();
+  const hotList: { u: number; v: number; r: number; d: number }[] = [];
+  const updateHot = (t: number) => {
+    hotList.length = 0;
+    const p11 = 1 / Math.tan((camera.fov * Math.PI) / 360);
+    if (mode === 'play' || mode === 'title')
+      activeRooms.forEach((i) => {
+        for (const e of rooms[i].emitters) {
+          if (!e.hot || e.intensity < 0.5) continue;
+          toW(i, e.hot, hotV).applyMatrix4(camera.matrixWorldInverse);
+          const d = -hotV.z;
+          if (d < 0.6 || d > 13) continue;
+          hotV.applyMatrix4(camera.projectionMatrix);
+          if (Math.abs(hotV.x) > 1.2 || hotV.y > 1.1 || hotV.y < -1.6) continue;
+          hotList.push({ u: hotV.x * 0.5 + 0.5, v: hotV.y * 0.5 + 0.5, r: (e.hotR * p11 * 0.5) / d, d });
+        }
+      });
+    hotList.sort((a, b) => a.d - b.d);
+    const arr = postMat.uniforms.uHot.value as THREE.Vector4[];
+    for (let k = 0; k < 4; k++) {
+      const h = hotList[k];
+      if (h) arr[k].set(h.u, h.v, h.r, h.d);
+      else arr[k].set(0, 0, 0, 0);
+    }
+    postMat.uniforms.uTime.value = t % 1000;
+  };
   // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §95). Procura o teto com alguns raios para cima; onde
   // não há teto (pátio, claustro), nada cai
   const dustRay = new THREE.Raycaster();
@@ -4756,6 +4837,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── salas ──
     activeRooms.forEach((i) => rooms[i].update(dt, t));
+    activeRooms.forEach((i) => dripUpd[i]?.forEach((f) => f(t)));
     solvedTick();
     readInscriptions(dt);
     scanInteract();
@@ -4930,6 +5012,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     body.position.set(pos.x, feetY, pos.z);
     body.rotation.y = yaw;
     renderer.shadowMap.needsUpdate = (!!rooms[curRoom]?.shadowLight && shadowsOn) || shadowsDirty;
+    fxEye.copy(camera.position);
+    updateHot(t);
     renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);

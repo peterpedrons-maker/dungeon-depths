@@ -605,28 +605,14 @@ export function smokeTexture() {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-export function torchSmoke(parent: THREE.Object3D, x: number, y: number, z: number, nx: number, nz: number, n = 5) {
-  const tex = smokeTexture();
-  const puffs: { s: THREE.Sprite; ph: number; sp: number }[] = [];
-  for (let i = 0; i < n; i++) {
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0, fog: true }));
-    parent.add(s);
-    puffs.push({ s, ph: i / n, sp: 0.16 + (i % 3) * 0.03 });
-  }
-  return (t: number) => {
-    for (const p of puffs) {
-      const k = (t * p.sp + p.ph) % 1; // 0 = nasce na chama, 1 = some
-      const sz = 0.18 + k * 0.7;
-      p.s.scale.set(sz, sz, 1);
-      // sobe e se afasta um pouco da parede, balançando
-      p.s.position.set(x + nx * (0.12 + k * 0.25) + Math.sin(t * 1.3 + p.ph * 9) * 0.06 * k, y + k * 1.5, z + nz * (0.12 + k * 0.25) + Math.cos(t * 1.1 + p.ph * 7) * 0.06 * k);
-      (p.s.material as THREE.SpriteMaterial).opacity = Math.sin(k * Math.PI) * 0.42 * (1 - k * 0.4);
-    }
-  };
+// (DESIGN.md §95) A fumaça agora sai de TODAS as tochas, num desenho só por sala (`smokePoints` do fx.ts, chamado no `Kit.bake`). Esta função
+// ficou só para as salas que a chamavam à mão não desenharem a fumaça duas vezes.
+export function torchSmoke(_parent: THREE.Object3D, _x: number, _y: number, _z: number, _nx: number, _nz: number, _n = 5) {
+  return (_t: number) => {};
 }
 
 // GOTA que pinga de uma rachadura do teto numa poça: a gota cai, a poça faz um anel que abre e some
-export function drip(parent: THREE.Object3D, x: number, yTop: number, z: number, period = 2.6) {
+export function drip(parent: THREE.Object3D, x: number, yTop: number, z: number, period = 2.6, floorY = 0) {
   const dropMat = new THREE.PointsMaterial({ color: 0xa8b8cc, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.85, fog: true, depthWrite: false });
   const dg = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([x, yTop, z], 3));
   const drop = new THREE.Points(dg, dropMat);
@@ -635,9 +621,9 @@ export function drip(parent: THREE.Object3D, x: number, yTop: number, z: number,
   const ringMat = new THREE.MeshBasicMaterial({ color: 0x8a9ab0, transparent: true, opacity: 0, depthWrite: false, fog: true });
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 16), ringMat);
   ring.rotation.x = -Math.PI / 2;
-  ring.position.set(x, 0.02, z);
+  ring.position.set(x, floorY + 0.02, z);
   parent.add(ring);
-  const fallT = Math.sqrt((2 * yTop) / 9.8);
+  const fallT = Math.sqrt((2 * (yTop - floorY)) / 9.8);
   return (t: number) => {
     const k = t % period;
     const arr = dg.attributes.position.array as Float32Array;
@@ -650,7 +636,7 @@ export function drip(parent: THREE.Object3D, x: number, yTop: number, z: number,
       arr[1] = yTop - 4.9 * tt * tt;
       dropMat.opacity = 0.9;
     } else {
-      arr[1] = -1; // (debaixo do chão: some)
+      arr[1] = floorY - 1; // (debaixo do chão: some)
       dropMat.opacity = 0;
     }
     dg.attributes.position.needsUpdate = true;

@@ -11,6 +11,7 @@ import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
 import { drawGlyph } from '../../book/font';
 import { shotGate } from './shell';
+import { ratAlongWall } from '../critters';
 import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
 import type { Ambience, Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
@@ -991,6 +992,17 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     const fn = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rise: +riseK.toFixed(2), plateOpen, lockCold: +lockCold.toFixed(1), lines: litLines.map((l) => l.lit), spots: litLines.map((l) => [l.x, l.y, l.z, l.hw]), rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))), sock: braziers.map((b) => [b.socket.x, b.socket.y, b.socket.z]) });
     g.__fire = fn; // a última sala construída
     ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
+  }
+  // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §95): só sai com o jogador longe, corre de uma toca a outra e some
+  {
+    const span = (side: 'L' | 'R'): [number, number][] => [
+      ...(SD?.side === side ? ([[SD.at - 1.8, SD.at + 1.8]] as [number, number][]) : []),
+      ...(FG && (side === 'L' ? FG.x0 <= X0 + 0.7 : FG.x1 >= X1 - 0.7) ? ([[Z0 + FG.dz0 - 0.3, Z0 + FG.dz1 + 0.3]] as [number, number][]) : []),
+    ];
+    const first = spec.name.length % 2 === 0 ? 'L' : 'R';
+    const tryWall = (side: 'L' | 'R') => ratAlongWall(kit, boxes, side === 'L' ? X0 : X1, side === 'L' ? 1 : -1, Z0 + 0.9, Z1 - 1.4, span(side));
+    const r = tryWall(first) ?? tryWall(first === 'L' ? 'R' : 'L');
+    if (r) kit.fxUpd.push(r);
   }
   kit.bake();
 
