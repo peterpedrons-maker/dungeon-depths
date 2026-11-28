@@ -459,6 +459,7 @@ export const FIRE_LEI: FireSpec = {
   hx: LEI.hx,
   z0: LEI.z0,
   h: LEI.h,
+  vault: true, // (cenógrafo, DESIGN.md §95)
   doorY: LEI.level,
   braziers: [
     { x: -4.2, dz: 2.4, mark: 'n1', y: LEI.level },

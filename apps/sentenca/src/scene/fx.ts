@@ -9,6 +9,8 @@ import * as THREE from 'three';
 export const fxClock = { value: 0 };
 // a altura da imagem do jogo em pixels (o motor a acerta): para um tufo de fumaça ter o tamanho certo em metros
 export const fxView = { value: 270 };
+// quanta luz o mundo tem agora (1 = normal; ~0,08 = o ESCURO da Casa): os feixes, a poeira e as mariposas apagam junto (o `Kit.tick` acerta)
+export const fxDim = { value: 1 };
 // os olhos do jogador, no mundo (o motor os acerta): os bichos sabem a que distância ele está
 export const fxEye = new THREE.Vector3();
 
@@ -19,6 +21,7 @@ const withFog = (u: Record<string, THREE.IUniform>) => THREE.UniformsUtils.merge
 const share = (m: THREE.ShaderMaterial) => {
   m.uniforms.uT = fxClock; // (o `merge` copia os valores: o relógio tem de ser o MESMO objeto em todos)
   if (m.uniforms.uH) m.uniforms.uH = fxView;
+  if (m.uniforms.uDim) m.uniforms.uDim = fxDim;
   return m;
 };
 
@@ -42,7 +45,7 @@ export function lightShaft(parent: THREE.Object3D, from: THREE.Vector3, to: THRE
   const geo = new THREE.CylinderGeometry(r0, r1, len, 28, 1, true);
   const mat = share(
     new THREE.ShaderMaterial({
-      uniforms: withFog({ uT: { value: 0 }, uColor: { value: new THREE.Color(color) }, uK: { value: strength }, uLen: { value: len } }),
+      uniforms: withFog({ uT: { value: 0 }, uDim: { value: 1 }, uColor: { value: new THREE.Color(color) }, uK: { value: strength }, uLen: { value: len } }),
       vertexShader: `
         ${FOG_PARS}
         uniform float uLen;
@@ -57,7 +60,7 @@ export function lightShaft(parent: THREE.Object3D, from: THREE.Vector3, to: THRE
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `
-        uniform float uT; uniform vec3 uColor; uniform float uK;
+        uniform float uT; uniform vec3 uColor; uniform float uK; uniform float uDim;
         varying vec3 vN; varying vec3 vV; varying float vH; varying float vA; varying float vFog;
         void main(){
           float e = abs(dot(normalize(vN), normalize(vV)));
@@ -65,7 +68,7 @@ export function lightShaft(parent: THREE.Object3D, from: THREE.Vector3, to: THRE
           float a = vA * 6.2832;
           float streak = 0.74 + 0.26 * sin(a * 5.0 + sin(uT * 0.13) * 1.6) * sin(a * 3.0 - uT * 0.045 + 1.3);
           float h = mix(1.0, 0.42, vH) * smoothstep(1.0, 0.8, vH) * smoothstep(0.0, 0.05, vH);
-          gl_FragColor = vec4(uColor, uK * e * h * streak * vFog);
+          gl_FragColor = vec4(uColor, uK * e * h * streak * vFog * uDim);
         }`,
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -107,6 +110,7 @@ export function fineDust(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.
     new THREE.ShaderMaterial({
       uniforms: withFog({
         uT: { value: 0 },
+        uDim: { value: 1 },
         uColor: { value: new THREE.Color(color) },
         uOp: { value: opacity },
         uFrom: { value: from.clone() },
@@ -138,9 +142,9 @@ export function fineDust(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.
           vA = (0.1 + 0.9 * tw) * ends * rim * nearK * ${fogFade('-mv.z')};
         }`,
       fragmentShader: `
-        uniform vec3 uColor; uniform float uOp;
+        uniform vec3 uColor; uniform float uOp; uniform float uDim;
         varying float vA;
-        void main(){ gl_FragColor = vec4(uColor, vA * uOp); }`,
+        void main(){ gl_FragColor = vec4(uColor, vA * uOp * uDim); }`,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -255,7 +259,7 @@ export function moths(parent: THREE.Object3D, at: THREE.Vector3[], each = 2) {
   geo.boundingSphere.radius += 0.8;
   const mat = share(
     new THREE.ShaderMaterial({
-      uniforms: withFog({ uT: { value: 0 } }),
+      uniforms: withFog({ uT: { value: 0 }, uDim: { value: 1 } }),
       vertexShader: `
         ${FOG_PARS}
         uniform float uT;
@@ -272,7 +276,7 @@ export function moths(parent: THREE.Object3D, at: THREE.Vector3[], each = 2) {
           gl_PointSize = -mv.z < 2.2 ? 2.0 : 1.0;
           vA = (0.3 + 0.7 * step(0.5, fract(uT * 8.0 + k))) * (1.0 - 0.5 * rest) * ${fogFade('-mv.z')};
         }`,
-      fragmentShader: 'varying float vA; void main(){ gl_FragColor = vec4(0.95, 0.82, 0.6, vA * 0.8); }',
+      fragmentShader: 'uniform float uDim; varying float vA; void main(){ gl_FragColor = vec4(0.95, 0.82, 0.6, vA * 0.8 * uDim); }',
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,

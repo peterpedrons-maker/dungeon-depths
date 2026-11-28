@@ -29,7 +29,7 @@ import {
 } from './textures';
 import { makeInscription, type InscribeOpts, type Inscription } from './inscription';
 import { wallTorch } from './models';
-import { fineDust, fxClock, lightShaft, moths, smokePoints } from './fx';
+import { fineDust, fxClock, fxDim, lightShaft, moths, smokePoints } from './fx';
 import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
@@ -690,6 +690,7 @@ export class Kit {
 
   tick(dt: number, t: number) {
     fxClock.value = t;
+    fxDim.value = lightEnv.scale;
     for (const f of this.fxUpd) f(dt, t);
     if (!this.emberPts && this.torches.length) this.buildEmbers();
     if (this.emberPts) {
