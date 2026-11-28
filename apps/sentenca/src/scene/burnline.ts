@@ -31,6 +31,7 @@ export interface BurnLine {
   update(dt: number, t: number): void;
   level(): number; // 0..1: quanto ela aparenta acesa agora
   running(): boolean; // a luz ainda está correndo pelos sulcos
+  pulse(silent?: boolean): void; // (acesa) a luz corre de novo pelos sulcos, do começo: a Casa APONTA esta frase (a Ponte de Frases cita as confirmadas); `silent`: sem a nota de cada símbolo
 }
 
 // `hold`: enquanto devolver true (o ESCURO da punição), a fuligem não começa a sumir: ela tem de ser vista quando a luz volta.
@@ -176,6 +177,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
   const emPos = new THREE.Vector3(); // onde a luz da frase está (anda com a escrita)
   let hlWant = false;
   let hl = 0;
+  let mute = false; // (pulse silencioso) esta corrida da luz não toca a nota de cada símbolo
 
   const redraw = (pi: number) => {
     const P = ps[pi];
@@ -206,6 +208,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
       if (on === lit && !instant) return;
       if (!on && lit && show > 0.3 && !instant) sootT = SOOT_S; // apagou: fica a fuligem
       if (on && !lit && !instant && show === 0) runV = 0; // começou a escrever: começa a onda
+      if (on && !lit) mute = false; // (acender de verdade sempre soa)
       lit = on;
       if (instant) {
         runV = 1e6;
@@ -224,7 +227,7 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
         if (run < total) {
           const before = run;
           run = Math.min(total, run + dt / PER_GLYPH);
-          if (o.onGlyph && dt > 0)
+          if (o.onGlyph && dt > 0 && !mute)
             glyphs.forEach((gl, k) => {
               if (gl.t0 >= before && gl.t0 < run) o.onGlyph!(k, glyphs.length, start.clone().lerp(end, (gl.t0 + 0.5) / total));
             });
@@ -268,6 +271,13 @@ export function makeBurnLine(kit: Kit, ins: Inscription, o: { size: number; hold
     },
     level: () => show,
     running: () => lit && run < total,
+    pulse(silent = false) {
+      if (!lit) return;
+      run = 0;
+      runV = 0;
+      mute = silent;
+      sync();
+    },
   };
   return api;
 }

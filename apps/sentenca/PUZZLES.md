@@ -196,24 +196,38 @@ corda curta; sobre o prato da **direita**, um **grande com um pequeno pendurado 
 - **Constelação C3 (folha p16):** com a cruz acesa lá embaixo, **os quatro cantos da grade ficam escuros**. Na boca do fosso há **8 tochas apagadas de pé no gradil**: uma em cada canto do fosso e uma no meio de cada lado (a do lado da entrada fica na ponta direita do gradil do patamar). Vistas do alto, caem sobre as casas da grade. **Acenda só as 4 tochas dos CANTOS do fosso, e nenhuma outra** (nem as dos meios, nem as 3 tochas-isca das paredes do fundo); elas duram 70 s, então dê a volta na galeria sem parar. Um **braseiro sobe no patamar do canto da rampa** (o canto do fundo à esquerda, a meia altura); **acenda-o**: abre-se um nicho com uma **folha dela, a p16**, na parede ao lado dele. (1 conjunto aceito de 2048.)
 - **Palavra vista:** MAIS (só o desenho é exigido). **Dificuldade: 6 de 10.**
 
-## Sala 14 — A Ponte de Frases  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 ("dizer é fazer"; `tools/verify_ponte_frases.mjs`; DESIGN.md §93)
-No lugar de O Boato Verdadeiro (reserva), com **as mesmas oito frases** e a mesma porta. O meio da sala é um **fosso** (2,6 m). Da borda da entrada à
-borda da porta, o fundo é feito de **lajes**, duas por fileira (uma junto de cada parede) e quatro fileiras. **Cada frase da parede fica em cima da sua
-laje**: acender a frase faz a laje **subir até o chão** e virar um degrau; apagá-la (tocar de novo) a faz descer. As frases **verdadeiras** (inclusive
-os boatos verdadeiros) aguentam o peso. A laje de uma frase **falsa** sobe igual, mas **racha e cai** quando você pisa nela: você cai no fosso, fica
-escuro, a Casa **apaga as frases** (menos a demonstração) e você volta à entrada. Cair por andar para fora de uma laje só devolve você à entrada.
-A porta diz «**ACENDER VERDADE CONFIRMADO**»: a Casa **só julga quando você acende a frase da porta**; o conjunto aceso tem de ser exatamente o das
-verdadeiras (errado: escuro, as frases se apagam, as lajes descem e a Casa recusa o fogo por 8 s).
-0. **Demonstração** (a primeira fileira, junto da entrada, **já acesa e em cima**): à esquerda «UM ANTES DOIS CONFIRMADO», à direita «DOIS DEPOIS UM
-   BOATO». Um boato aceso, porque diz o mesmo que a confirmada.
-1. Confirmadas: **1 antes de 2**, **1 depois de 3** (esquerda, 2ª fileira), **4 depois de 2** (direita, 4ª fileira, junto da porta) → **3, 1, 2, 4**.
-2. Boatos: «QUATRO ANTES UM» (direita, 2ª fileira) **falso**; «TRÊS ANTES QUATRO» (esquerda, 3ª) **verdade**; «DOIS DEPOIS TRÊS» (direita, 3ª)
-   **verdade**; «TRÊS DEPOIS UM» (esquerda, 4ª, junto da porta) **falso**.
-3. **Solução:** acender «UM DEPOIS TRÊS», «TRÊS ANTES QUATRO», «DOIS DEPOIS TRÊS» e «QUATRO DEPOIS DOIS»; **não** acender «QUATRO ANTES UM» nem
-   «TRÊS DEPOIS UM». Atravessar em **zigue-zague**: esquerda, esquerda, esquerda, passa para a direita na 3ª fileira, direita até a borda da porta.
-   Acender a frase da porta (de onde quiser): a porta abre.
-- **Por que é única** (`node tools/verify_ponte_frases.mjs`): as confirmadas dão uma ordem só; só um conjunto é aceito; acendendo só as confirmadas
-  (o hábito da Sala 8) **não há caminho**; cada boato verdadeiro é necessário para o caminho; e **nenhuma coluna reta é segura** (cada uma tem uma laje falsa).
+## Sala 14 — A Ponte de Frases  (ACENDER · VERDADE · CONFIRMADO)  — NÍVEL 6 ("dizer é fazer"; `tools/verify_ponte_frases.mjs`; DESIGN.md §93 e §94)
+O meio da sala é um **fosso** (2,6 m). O fundo é feito de **lajes**, duas por fileira (uma junto de cada parede), em **cinco fileiras**. Cada frase da
+parede fica em cima da sua laje: acendê-la faz a laje **subir até o chão**; tocar de novo a apaga. As lajes erguidas se travam: **a ponte é uma peça
+só**, e dá para andar nela à vontade (até em cima de uma mentira, para chegar perto das frases e ler). **A Casa pesa a ponte quando você pisa na
+última fileira.** Se **qualquer** frase falsa estiver acesa, a ponte inteira treme e cede: a Casa apaga tudo o que você acendeu, você cai, fica escuro e
+volta à entrada. Enquanto ela pesa, **a ponte segura você** (a borda da porta não deixa subir: ninguém sai da fileira antes de cair) e, numa cena (o
+dado queimando a frase), ela **espera a cena acabar** para pesar. Ela **não diz qual frase mentiu**: **cita as confirmadas que a mentira nega** (a luz
+corre por elas de novo e de novo: no tremor, no escuro e outra vez por 6 s quando a luz volta). Cair por andar para fora de uma laje só devolve você
+à entrada. Pisar numa laje antes da última fileira não responde nada.
+A porta diz «**ACENDER VERDADE CONFIRMADO**»: a Casa julga quando se acende a frase dela; o conjunto aceso tem de ser exatamente o das verdadeiras
+(errado: escuro, as frases se apagam, as lajes descem, a Casa recusa o fogo por 8 s e, se havia mentira acesa, cita a verdade negada).
+- **A abertura (sem custo):** a sala começa com a ponte inteira e acesa (a ponte de quem veio antes). Ela aguenta até a última fileira, cai ali e a
+  Casa cita as três confirmadas. Fica só a demonstração.
+- **Demonstração** (fileira 0, junto da entrada, sempre acesa): «UM ANTES DOIS CONFIRMADO» e «DOIS DEPOIS UM BOATO».
+
+| Fileira | Esquerda | Direita |
+|---|---|---|
+| 1 | «TRÊS ANTES DOIS» boato: **verdade** | «QUATRO ANTES UM» boato: falso |
+| 2 | «QUATRO DEPOIS UM» boato: **verdade** | «UM DEPOIS TRÊS» CONFIRMADO |
+| 3 | «TRÊS DEPOIS UM» boato: falso | «QUATRO DEPOIS DOIS» CONFIRMADO |
+| 4 (porta) | «DOIS ANTES TRÊS» boato: falso | «TRÊS ANTES QUATRO» boato: **verdade** |
+
+1. Confirmadas: 1 antes de 2, 1 depois de 3, 4 depois de 2 → **3, 1, 2, 4**.
+2. Boatos: «TRÊS ANTES DOIS» verdade (3 → 1 → 2); «QUATRO DEPOIS UM» verdade (1 → 2 → 4); «TRÊS ANTES QUATRO» verdade (a cadeia inteira);
+   «QUATRO ANTES UM» falso (1 → 2 → 4); «TRÊS DEPOIS UM» falso (o contrário de «UM DEPOIS TRÊS»); «DOIS ANTES TRÊS» falso (3 → 1 → 2).
+3. **Solução:** acender «TRÊS ANTES DOIS», «QUATRO DEPOIS UM», «UM DEPOIS TRÊS», «QUATRO DEPOIS DOIS» e «TRÊS ANTES QUATRO», e **nenhuma falsa**.
+   Atravessar **esquerda, esquerda, passa para a direita na 2ª fileira, direita, direita**. Acender a frase da porta.
+- **Se cair**, compare as confirmadas citadas com o que você acendeu: «UM DEPOIS TRÊS» sozinha → a mentira é «TRÊS DEPOIS UM»; «UM ANTES DOIS» +
+  «QUATRO DEPOIS DOIS» → «QUATRO ANTES UM»; «UM DEPOIS TRÊS» + «UM ANTES DOIS» → «DOIS ANTES TRÊS».
+- **Por que é única** (`node tools/verify_ponte_frases.mjs`): a ordem é uma só e cada confirmada é necessária; a porta aceita 1 conjunto entre 256 e só
+  ele atravessa sem cair; os hábitos errados (só as confirmadas, boato = mentira, colunas retas, acender tudo) não atravessam ou caem; pisar não diz
+  nada antes da última fileira, e chutar rota custa em média 2,5 quedas, cada uma citando a verdade negada (o chute vira raciocínio).
 - **Palavra nova:** VERDADE. **Dificuldade: 6 de 10.**
 
 ## Sala 15 — A Galeria dos Condenados  — RESPIRO R3 (área livre, sem trava; um puzzle opcional)
@@ -279,20 +293,26 @@ da porta, uma portinha com **seis** pontos de bronze, fechada (a face que a lín
 
 ## Sala 20 — O Fogo que Corre  (ACENDER · DOIS · BRASEIRO · TEMPO + o glifo QUATRO)  — NÍVEL 8 ("o desenho existe num instante"; `tools/verify_fogo_corre.mjs`)
 Salão aberto com **nove plataformas** em grade 3×3, de alturas diferentes, um braseiro em cada. **Canaletas** descem de uma plataforma a outra (o fogo só
-desce) e o desenho do sulco mostra o tempo: **reta 1 s**, **com uma volta 2 s**, **em zigue-zague 3 s**. Cada braseiro queima **só 5,5 s** e **só uma vez**
+desce) e o desenho do sulco mostra o tempo: **reta 1 s**, **com uma volta 2 s**, **em zigue-zague 3 s**. Cada braseiro queima **só 6,5 s** (o do **centro**,
+**menor**, só **5,75 s**: o tamanho diz quanto dura) e **só uma vez**
 por tentativa (o óleo acaba). A porta abre se, **num instante**, os acesos forem **exatamente os quatro cantos**. Quando tudo se apaga sem acertar: escuro
 e a Casa reabastece. (Casa 0 = canto do fundo à esquerda, vendo a porta.)
 Canaletas: centro→cantos do fundo (0 em 2 s, 2 em 3 s) e centro→canto da frente à direita (8, 2 s); frente-esquerda (6)→centro (2 s) e →frente-meio
 (7, 3 s); 7→centro (3 s), 7→8 (1 s); meio-direita (5)→8 e →1 (1 s); meio-esquerda (3)→0 (2 s) e →7 (3 s); 1→0 (1 s).
-1. O centro alimenta três cantos (0, 8 e 2) e **se apaga aos 5,5 s**, sem voltar. O canto da frente à esquerda (6) ninguém alimenta: **2ª ignição, à mão**.
-2. Mas o 6 corre para o 7 (3 s) e para o centro: aceso cedo demais, o 7 acende ou o centro reacende no instante errado.
-3. **Solução: fogo no centro; esperar ~4 a 5 s; fogo no canto da frente à esquerda.** Aos 5,5 s o centro se apaga e, por um instante, só os quatro
-   cantos estão acesos. (Janela: de 3 s a 7 s entre as duas. É o tempo natural de o dado voltar à mão e ser arremessado de novo; quem recolhe o dado
-   na hora com E e arremessa em menos de 3 s vê o 7 acender antes de o centro se apagar.)
+1. O centro alimenta três cantos (0, 8 e 2) e **se apaga aos 5,75 s**, sem voltar. O canto da frente à esquerda (6) ninguém alimenta: **2ª ignição, à mão**.
+2. Mas o 6 corre para o 7 (3 s): aceso cedo demais, o 7 acende antes de o centro se apagar. (A canaleta do 6 para o centro não reacende o centro: o
+   óleo dele já foi.) Na ordem contrária (o 6 primeiro), o 6 acende sozinho o centro e o 7; quando o centro apaga, o 6 já apagou e o 7 está aceso.
+3. **Solução: fogo no centro; quando o fogo chegar ao último canto, ou quando a chama do centro começar a MORRER (ela treme, encolhe de vez, solta
+   fumaça e o glifo TEMPO pulsa), fogo no canto da frente à esquerda.** Aos 5,75 s o centro se apaga e, por um instante, só os quatro cantos estão acesos.
+   (Janela: de ~2,8 s a ~8,4 s entre as duas. O relógio é o óleo: a chama de cada braseiro encolhe devagar enquanto queima e morre no último 1,5 s; o
+   centro é o primeiro a morrer, aos 4,25 s. **Com pressa não dá:** o dado que acende volta à mão logo depois da cena dele queimando, e quem acende o 6
+   na hora vê o 7 aceso junto com os cantos quando o centro apaga. Tarde demais, os cantos 0 e 8, que começam a morrer aos 7 s, já se apagaram.)
 - **Constelação C5:** no escuro de uma tentativa que falhou, aparece no **teto**, em cal, o glifo **MENOS** (a fileira do meio). Acender as tochas dos
   **postes das três plataformas do meio** (meio-esquerda, centro, meio-direita) e nenhuma outra: um braseiro sobe do chão, entre as plataformas;
   acendê-lo abre o nicho com uma **folha dela, a p18** (parede direita, perto da porta).
-- **Por que é única:** uma ignição nunca basta; de todos os pares ordenados só centro → canto 6 funciona. **Dificuldade: 8 de 10.**
+- **Por que é única:** uma ignição nunca basta; de todos os pares ordenados só centro → canto 6 funciona. **O tempo é justo** (`tools/verify_fogo_corre.mjs`,
+  DESIGN.md §94): a pressa (o 6 assim que o dado volta) erra sempre, com 0,7 s de sobra, e não às vezes; quem espera um sinal da sala (o último canto
+  acender, o centro começar a morrer, o centro apagar) cai na janela com 0,75 s, 2 s e 0,8 s de folga. **Dificuldade: 8 de 10.**
 
 ## Sala 21 — O Claustro do Vento  (ACENDER · TODOS · BRASEIRO · ORDEM · CONFIRMADO e «ACENDER UM BOATO»)  — NÍVEL 9 (`tools/verify_dizem_mesmo.mjs` + `tools/verify_vento.mjs`; DESIGN.md §93)
 O claustro de Os Que Dizem o Mesmo (que fica na reserva), com a **mesma lei** e a **mesma resposta**; o novo é **como** queimar o estandarte.

@@ -1,14 +1,17 @@
-// SALA 14 · A PONTE DE FRASES (nível 6; DESIGN.md §93; verificador tools/verify_ponte_frases.mjs). No lugar de O Boato Verdadeiro (FIRE_VERDADE,
-// que foi para a reserva), com as mesmas oito frases e a mesma porta, «ACENDER VERDADE CONFIRMADO». Ensina VERDADE com o lema «dizer é fazer».
-// O meio da sala é um FOSSO. Cada frase da parede tem uma LAJE no fosso, logo embaixo dela; acender a frase faz a laje subir até o chão e virar
-// um degrau. As frases verdadeiras (inclusive os boatos verdadeiros) aguentam o peso; a laje de uma frase FALSA sobe igual, mas racha e cai
-// quando alguém pisa nela: o jogador cai no fosso, a Casa apaga a luz, apaga as frases e ele volta à entrada. A Casa só JULGA quando o jogador
-// acende a frase da porta: o conjunto aceso tem de ser exatamente o das verdadeiras. A primeira fileira é a demonstração (já acesa): um boato
-// aceso porque diz o mesmo que uma confirmada.
-// Confirmadas: 1 antes 2, 1 depois 3, 4 depois 2 → 3, 1, 2, 4. Boatos: «2 DEPOIS 1» verdade (demonstração), «4 ANTES 1» falso, «3 ANTES 4»
-// verdade, «2 DEPOIS 3» verdade, «3 DEPOIS 1» falso.
-// Solução: acender as duas confirmadas (1 DEPOIS 3, 4 DEPOIS 2) e os dois boatos verdadeiros (3 ANTES 4, 2 DEPOIS 3); NÃO acender «4 ANTES 1» nem
-// «3 DEPOIS 1»; depois acender a frase da porta. O caminho firme vai em zigue-zague: esquerda, esquerda, esquerda, direita, direita.
+// SALA 14 · A PONTE DE FRASES (nível 6; DESIGN.md §93 e §94; verificador tools/verify_ponte_frases.mjs, projetado pelo enigmista). No lugar de
+// O Boato Verdadeiro (FIRE_VERDADE, na reserva), com a mesma porta, «ACENDER VERDADE CONFIRMADO». Ensina VERDADE: «dizer é fazer».
+// O meio da sala é um FOSSO. Cada frase da parede tem uma LAJE no fosso, logo embaixo dela (duas por fileira, cinco fileiras); acender a frase faz a
+// laje subir até o chão. As lajes erguidas se travam: a ponte é UMA PEÇA SÓ, e dá para andar nela à vontade (até em cima de uma mentira, para
+// chegar perto das frases e ler). A Casa PESA a ponte quando o jogador pisa na ÚLTIMA fileira: se houver qualquer frase falsa acesa, a ponte inteira
+// treme e cede (e SEGURA quem está nela: ninguém sai para a borda da porta antes de cair), a Casa apaga tudo o que ele acendeu, ele cai, fica
+// escuro e volta à entrada. Ela não diz qual frase mentiu: CITA as confirmadas que a mentira nega (a luz corre por elas de novo e de novo, no tremor,
+// no escuro e outra vez quando a luz volta). Pisar numa laje não responde nada (o atalho de testar laje por laje acabou, pedido do Pedro, §94).
+// A ABERTURA ensina a regra sem custo: a sala começa com a ponte inteira acesa ("a ponte de quem veio antes"); ela aguenta até a última fileira,
+// cai ali e a Casa cita as três confirmadas. A porta julga quando se acende a frase dela: o conjunto aceso tem de ser exatamente o das verdadeiras.
+// Confirmadas: 1 antes 2, 1 depois 3, 4 depois 2 → 3, 1, 2, 4. Verdadeiras: 3 antes 2, 4 depois 1, 3 antes 4 (e a demonstração, 2 depois 1).
+// Falsas: 4 antes 1, 3 depois 1, 2 antes 3.
+// Solução: acender «TRÊS ANTES DOIS», «QUATRO DEPOIS UM», «UM DEPOIS TRÊS», «QUATRO DEPOIS DOIS» e «TRÊS ANTES QUATRO», nenhuma falsa; atravessar
+// esquerda, esquerda, passa para a direita na 2ª fileira, direita, direita; acender a frase da porta.
 import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireSpec, FireTablet } from './fire';
 import { lambert, worldBoxUV } from '../kit';
@@ -19,36 +22,42 @@ const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: n
   max: new THREE.Vector3(x1, y1, z1),
 });
 
-// o fosso: da borda da entrada (17,5 m do fundo) à borda da porta (2,5 m do fundo), a sala inteira de largura; quatro fileiras de duas lajes
-const PF = { hx: 5.6, z0: -19, h: 3.8, front: 17.5, back: 2.5, depth: 2.6, rows: 4 };
+// o fosso: da borda da entrada (17,5 m do fundo) à borda da porta (2,5 m do fundo), a sala inteira de largura; cinco fileiras de duas lajes (3 m)
+const PF = { hx: 5.6, z0: -19, h: 3.8, front: 17.5, back: 2.5, depth: 2.6, rows: 5 };
 const ROW_L = (PF.front - PF.back) / PF.rows;
 const rowDz = (r: number) => PF.front - ROW_L * (r + 0.5);
 // [coluna (E = esquerda, D = direita), fileira (0 = junto da entrada), frase, demonstração, verdadeira]: a ordem do verificador (SLABS)
 const FPF_SLABS: ['E' | 'D', number, string[], boolean, boolean][] = [
   ['E', 0, ['n1', 'antes', 'n2', 'conf'], true, true],
   ['D', 0, ['n2', 'depois', 'n1', 'boato'], true, true],
-  ['E', 1, ['n1', 'depois', 'n3', 'conf'], false, true],
+  ['E', 1, ['n3', 'antes', 'n2', 'boato'], false, true],
   ['D', 1, ['n4', 'antes', 'n1', 'boato'], false, false],
-  ['E', 2, ['n3', 'antes', 'n4', 'boato'], false, true],
-  ['D', 2, ['n2', 'depois', 'n3', 'boato'], false, true],
+  ['E', 2, ['n4', 'depois', 'n1', 'boato'], false, true],
+  ['D', 2, ['n1', 'depois', 'n3', 'conf'], false, true],
   ['E', 3, ['n3', 'depois', 'n1', 'boato'], false, false],
   ['D', 3, ['n4', 'depois', 'n2', 'conf'], false, true],
+  ['E', 4, ['n2', 'antes', 'n3', 'boato'], false, false],
+  ['D', 4, ['n3', 'antes', 'n4', 'boato'], false, true],
 ];
+// quando a ponte cai por uma mentira acesa, a Casa CITA as confirmadas que ela nega (índices de FPF_SLABS; o verificador confere)
+const FPF_CITA: Record<number, number[]> = { 3: [0, 7], 6: [5], 8: [5, 0] };
+const WEIGH_S = 0.7; // o tremor antes de ceder (a ponte SEGURA quem está nela: a borda da porta fecha até ele cair)
+const CITE_S = 6; // quando a luz volta, a Casa ainda aponta as confirmadas negadas por estes segundos (a luz corre por elas de novo e de novo)
 // uma frase por tablete (cada uma em cima da sua laje)
 const FPF_TABLETS: FireTablet[] = FPF_SLABS.map(([col, row, words, demo, good]) => ({
   lines: [{ words, preLit: demo || undefined, good: (!demo && good) || undefined, worn: words[3] === 'boato' || undefined }],
   wall: col === 'E' ? 'left' : 'right',
   dz: rowDz(row),
-  size: 0.4,
+  size: 0.35, // (uma linha de 4 glifos a 0,4 m não cabe com a moldura numa fileira de 3 m)
   lit: true,
 }));
 
-// a quina das lajes (um aro claro com a sombra do chanfro por dentro; o meio é vazado), em pixels grossos: 5,5 × 3,7 m em 88 × 60
+// a quina das lajes (um aro claro com a sombra do chanfro por dentro; o meio é vazado), em pixels grossos: 5,5 × 3 m em 88 × 48
 let rimTex: THREE.CanvasTexture | null = null;
 function slabRimTexture() {
   if (rimTex) return rimTex;
   const W = 88;
-  const H = 60;
+  const H = 48;
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
@@ -64,7 +73,7 @@ function slabRimTexture() {
   frame(2, 1, '#7c766e');
   frame(3, 1, '#3a3430');
   // lascas na quina (gasta onde se pisa)
-  for (const [x, y] of [[9, 0], [30, 1], [61, 0], [0, 17], [87, 40], [44, 59], [72, 58], [1, 46]] as [number, number][]) {
+  for (const [x, y] of [[9, 0], [30, 1], [61, 0], [0, 14], [87, 32], [44, 47], [72, 46], [1, 37]] as [number, number][]) {
     g.fillStyle = '#6e645a';
     g.fillRect(x, y, 2, 1);
   }
@@ -117,7 +126,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
     mesh.add(rim);
     const box = mkBox(x0, -D, z0, x1, demo ? 0 : SUNK, z1);
     boxes.push(box);
-    return { i, col, row, x0, x1, z0, z1, demo, good, y: demo ? 0 : SUNK, mesh, box, crack: -1, fallen: false, upSnd: false, side, topMat, rimMat };
+    return { i, col, row, x0, x1, z0, z1, demo, good, y: demo ? 0 : SUNK, mesh, box, upSnd: false, side, topMat, rimMat };
   });
   // o quanto de luz chega no tampo: no fundo, pouco; na altura do chão, toda (a laje "sobe para a luz")
   const shade = (c: (typeof cells)[number]) => {
@@ -136,7 +145,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
     const row = Math.max(0, Math.min(PF.rows - 1, Math.floor((gz1 - z) / ROW_L)));
     return cells.find((c) => c.row === row && (x < 0 ? c.col === 'E' : c.col === 'D')) ?? null;
   };
-  // luz: três lampiões de ferro pendurados no meio da sala, sobre a costura das duas colunas (longe das frases das paredes)
+  // luz: lampiões de ferro pendurados no meio da sala, sobre as costuras das fileiras, entre as duas colunas (longe das frases das paredes)
   const iron = lambert(null, 0x26242a);
   const lamps: THREE.Sprite[] = [];
   for (let k = 1; k < PF.rows; k++) {
@@ -156,14 +165,35 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
   // escuro e a profundidade se lê pela luz que some)
 
   let falling = false; // caiu no fosso: o escuro vem e ele volta à entrada
-  let lied = false; // ...porque uma laje falsa cedeu
+  let weigh = -1; // >= 0: a Casa está pesando a ponte (o tremor antes de ceder)
+  let collapsing = false; // a ponte cedeu: as lajes descem depressa
+  let cited: number[] = [];
+  // a citação à vista: 1 = a Casa citou e o escuro vai vir; 2 = no escuro. Quando a luz volta (o jogador está na entrada, ou na borda da porta
+  // depois do erro dela), a Casa aponta de novo, por CITE_S: a 1ª corrida da luz acaba no tremor e, sem esta, quase não se via a citação
+  let citeBack = 0;
+  // as mentiras acesas agora (índices de FPF_SLABS)
+  const liesLit = (L: ReturnType<typeof api.lines>) => cells.filter((c) => !c.demo && !c.good && L[c.i]?.lit).map((c) => c.i);
+  const citeFor = (lies: number[]) => [...new Set(lies.flatMap((i) => FPF_CITA[i] ?? []))].sort((a, b) => a - b);
+  // A ABERTURA: a ponte de quem veio antes, inteira e acesa (todas as frases, as falsas também); aguenta até a última fileira e cai ali
+  const opening = () => {
+    api.setLines(cells.map(() => true));
+    for (const c of cells) {
+      c.y = 0;
+      c.box.max.y = 0;
+      c.mesh.position.y = -D / 2;
+      shade(c);
+    }
+  };
+  opening();
   if (import.meta.env.DEV) {
     (globalThis as Record<string, unknown>).__ponteFrases = () => ({
-      cells: cells.map((c) => ({ c: `${c.col}${c.row}`, y: +c.y.toFixed(2), good: c.good, fallen: c.fallen })),
+      cells: cells.map((c) => ({ c: `${c.col}${c.row}`, y: +c.y.toFixed(2), good: c.good })),
       lines: api.lines().map((l) => l.lit),
       risen: api.lockRisen(),
       solved: api.solved(),
       falling,
+      weigh: +weigh.toFixed(2),
+      cited,
     });
   }
   return {
@@ -171,9 +201,9 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
       for (const [k, f] of lamps.entries()) f.material.map = kit.frame(t * 8 + k * 3);
       if (api.lockRisen() && !api.solved()) api.markSolved();
       const L = api.lines();
-      // as lajes: sobem quando a frase acende, descem quando ela apaga; a falsa que cedeu cai rápido
+      // as lajes: sobem quando a frase acende, descem quando ela apaga; quando a ponte cede, descem todas depressa
       for (const c of cells) {
-        const want = c.demo || (L[c.i]?.lit && !c.fallen) ? 0 : SUNK;
+        const want = c.demo || L[c.i]?.lit ? 0 : SUNK;
         if (want > c.y) {
           if (!c.upSnd) {
             ctx.sfx('rise');
@@ -182,47 +212,64 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
           c.y = Math.min(want, c.y + dt * 1.7);
         } else if (want < c.y) {
           c.upSnd = false;
-          c.y = Math.max(want, c.y - dt * (c.fallen ? 6 : 2.4));
+          c.y = Math.max(want, c.y - dt * (collapsing ? 6 : 2.4));
         }
-        let jx = 0;
-        let jz = 0;
-        if (c.crack >= 0) {
-          // rachando: treme meio segundo e cede
-          c.crack += dt;
-          jx = Math.sin(t * 61) * 0.025;
-          jz = Math.cos(t * 53) * 0.025;
-          if (c.crack > 0.5) {
-            c.crack = -1;
-            c.fallen = true;
-            lied = true;
-          }
-        }
+        // o tremor: a Casa pesa a ponte inteira (todas as lajes erguidas tremem juntas; a demonstração não)
+        const shake = weigh >= 0 && !c.demo && c.y > SUNK + 0.2;
+        const jx = shake ? Math.sin(t * 61 + c.i) * 0.025 : 0;
+        const jz = shake ? Math.cos(t * 53 + c.i) * 0.025 : 0;
         c.mesh.position.set((c.x0 + c.x1) / 2 + jx, c.y - D / 2, (c.z0 + c.z1) / 2 + jz);
         c.box.max.y = c.y;
         shade(c);
       }
-      // quem pisa numa laje de frase falsa: ela racha (pisou mais de um instante)
       const p = ctx.player.pos;
       const feet = ctx.feetY();
       const under = cellAt(p.x, p.z);
-      if (under && !under.good && !under.fallen && under.crack < 0 && under.y > -0.05 && Math.abs(feet - under.y) < 0.2) {
-        under.crack = 0;
-        ctx.sfx('altarCrack');
+      // (numa cena, como a do dado queimando a frase, a Casa espera: ela pesa à vista, depois de a frase acender. Antes, quem acendia uma
+      // mentira de pé na última fileira tremia, caía e ia para o escuro com a câmera presa no dado, sem ver a mentira acender)
+      const still = ctx.paused();
+      // PESAR: de pé numa laje erguida da ÚLTIMA fileira, com uma mentira acesa (em qualquer lugar da ponte): a Casa pesa a ponte inteira
+      if (weigh < 0 && !still && !falling && !api.solved() && under && under.row === PF.rows - 1 && under.y > -0.05 && Math.abs(feet - under.y) < 0.2) {
+        const lies = liesLit(L);
+        if (lies.length) {
+          weigh = 0;
+          cited = citeFor(lies);
+          api.cite(cited, 20); // (a Casa aponta a verdade negada no tremor e no escuro; quando a luz volta, de novo, por CITE_S)
+          citeBack = 1;
+          ctx.sfx('altarCrack');
+        }
       }
-      // caiu no fosso: a Casa apaga a luz; no escuro, apaga as frases (se foi a mentira que cedeu) e devolve o jogador à entrada
+      if (weigh >= 0 && !still) {
+        weigh += dt;
+        if (weigh > WEIGH_S) {
+          weigh = -1;
+          api.failLines(1); // a Casa apaga tudo o que ele acendeu (o frio só cobre a queda: o relógio dele para no escuro, e na volta já se acende)
+          collapsing = true;
+        }
+      }
+      // caiu no fosso (a ponte cedeu, ou ele andou para fora de uma laje): o escuro, e ele volta à entrada
       if (!falling && feet < -1) {
         falling = true;
         ctx.blackout(2.5, () => {
-          if (lied) api.failLines(4);
-          for (const c of cells) {
-            c.fallen = false;
-            c.crack = -1;
-          }
-          lied = false;
+          collapsing = false;
           ctx.toEntrance();
           falling = false;
         });
       }
+      // a luz voltou depois de uma citação: a Casa aponta de novo, à vista
+      if (citeBack === 1 && ctx.dark() >= 1) citeBack = 2;
+      else if (citeBack === 2 && ctx.dark() < 0.6) {
+        citeBack = 0;
+        api.cite(cited, CITE_S);
+      }
+    },
+    // a porta recusou o conjunto: se havia mentira acesa, a Casa também cita a verdade negada (no escuro e, quando a luz volta, de novo)
+    judgeFail(lit) {
+      const lies = cells.filter((c) => !c.demo && !c.good && lit[c.i]).map((c) => c.i);
+      if (!lies.length) return;
+      cited = citeFor(lies);
+      api.cite(cited, 20);
+      citeBack = 1;
     },
     // o chão: as bordas no nível da sala; no fosso, o tampo da laje daquele ponto (afundada = o fundo)
     floorY(x, z) {
@@ -250,18 +297,19 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         [X0, Z0 - 0.5, X1, gz0, 0],
       ];
       for (const c of cells) if (c.y > SUNK + 0.2) r.push([c.x0, c.z0, c.x1, c.z1, c.y]);
+      // enquanto a Casa pesa (e até ele cair), a ponte SEGURA quem está nela: a borda da porta não o recebe. Sem isto, quem andava pela última
+      // fileira chegava à borda antes de a ponte ceder (3 m em 0,7 s; a abertura não derrubava ninguém) e, da borda, pôr um pé na fileira e
+      // voltar dizia de graça se havia mentira acesa: o oráculo de pisar, de novo
+      if (weigh >= 0 || collapsing) r.push([X0, Z0 - 0.5, X1, gz0, 99]);
       return r;
     },
     reset() {
       falling = false;
-      lied = false;
-      for (const c of cells) {
-        c.fallen = false;
-        c.crack = -1;
-        c.y = c.demo ? 0 : SUNK;
-        c.box.max.y = c.y;
-        shade(c);
-      }
+      weigh = -1;
+      collapsing = false;
+      cited = [];
+      citeBack = 0;
+      opening(); // (recomeçar a sala: de novo a ponte de quem veio antes)
     },
     // salvamento: a sala volta resolvida (o construtor reacende as frases certas e a da porta; as lajes delas sobem já em cima)
     skip() {

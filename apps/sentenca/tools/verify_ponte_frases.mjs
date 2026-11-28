@@ -1,5 +1,5 @@
 // Verifica «A Ponte de Frases» (sala 14, nível 6; DESIGN.md §93; FIRE_PONTE_FRASES em src/scene/rooms/chapter1c.ts). Uso: node tools/verify_ponte_frases.mjs
-// (A versão anterior, a da laje que racha sozinha sob o pé, ficou no rascunho do enigmista: verify_ponte_frases_antigo.mjs.)
+// (A versão anterior, a da laje que racha sozinha sob o pé, está no histórico do git; os dados dela ficam abaixo em OLD, para comparar.)
 //
 // A REGRA NOVA (proposta do enigmista, pedido do Pedro: "tem um atalho que é ficar pisando em qualquer um"):
 //  · O meio da sala é um FOSSO. Cada frase das paredes tem a SUA laje no fosso, logo embaixo dela; acender a frase faz a laje subir até o chão.
@@ -8,22 +8,22 @@
 //    inteira cede (a laje sob o pé, não a da mentira): a Casa apaga TUDO o que o jogador acendeu, as lajes caem juntas, ele cai, escuro, volta à
 //    entrada. A Casa não diz qual frase mentiu: ela CITA as confirmadas que a mentira nega (elas brilham no tremor, no escuro e um pouco depois).
 //  · A porta «ACENDER VERDADE CONFIRMADO» julga quando se acende a frase dela: o conjunto aceso tem de ser exatamente o das verdadeiras.
-//  · Abertura (uma vez por visita): a ponte já está inteira e acesa ("a ponte de quem veio antes"). Ela aguenta até a última fileira e cai lá,
-//    citando as três confirmadas: a regra inteira mostrada sem palavras, sem custo.
+//  · Abertura: a sala começa (e recomeça) com a ponte inteira e acesa ("a ponte de quem veio antes"). Ela aguenta até a última fileira e cai lá,
+//    citando as três confirmadas: a regra inteira mostrada sem palavras, antes de o jogador ter acendido qualquer coisa.
 // A grade: duas colunas (E = junto da parede esquerda, D = junto da direita) e CINCO fileiras de 3 m (0 = junto da entrada, 4 = junto da porta).
 const R = 5;
 // [coluna, fileira, frase [a, rel, b], marca, demonstração]: a ordem é a de FPF_SLABS em chapter1c.ts
 const SLABS = [
   ['E', 0, [1, 'antes', 2], 'conf', true], // demonstração, já acesa
   ['D', 0, [2, 'depois', 1], 'boato', true], // demonstração, já acesa: um boato que diz o mesmo que a confirmada
-  ['E', 1, [4, 'antes', 1], 'boato', false],
-  ['D', 1, [1, 'depois', 3], 'conf', false],
-  ['E', 2, [3, 'antes', 2], 'boato', false],
-  ['D', 2, [3, 'antes', 1], 'boato', false],
-  ['E', 3, [4, 'depois', 2], 'conf', false],
-  ['D', 3, [3, 'depois', 1], 'boato', false],
-  ['E', 4, [4, 'depois', 3], 'boato', false],
-  ['D', 4, [2, 'antes', 3], 'boato', false],
+  ['E', 1, [3, 'antes', 2], 'boato', false],
+  ['D', 1, [4, 'antes', 1], 'boato', false],
+  ['E', 2, [4, 'depois', 1], 'boato', false],
+  ['D', 2, [1, 'depois', 3], 'conf', false],
+  ['E', 3, [3, 'depois', 1], 'boato', false],
+  ['D', 3, [4, 'depois', 2], 'conf', false],
+  ['E', 4, [2, 'antes', 3], 'boato', false],
+  ['D', 4, [3, 'antes', 4], 'boato', false],
 ];
 // a ponte de antes (a que está no jogo até a troca), para comparar o custo do atalho
 const OLD = { R: 4, SLABS: [['E', 0, [1, 'antes', 2], 'conf', true], ['D', 0, [2, 'depois', 1], 'boato', true], ['E', 1, [1, 'depois', 3], 'conf', false], ['D', 1, [4, 'antes', 1], 'boato', false], ['E', 2, [3, 'antes', 4], 'boato', false], ['D', 2, [2, 'depois', 3], 'boato', false], ['E', 3, [3, 'depois', 1], 'boato', false], ['D', 3, [4, 'depois', 2], 'conf', false]] };
@@ -216,7 +216,11 @@ console.log(`   ao acaso, sem repetir: acerta de primeira 1 vez em ${n}; em méd
 const straights = minimal.filter((m) => new Set(free.filter((i) => m & (1 << free.indexOf(i))).map((i) => S[i][0])).size === 1);
 const eObvious = straights.length + (n - straights.length - 1) / 2;
 console.log(`   "pelo óbvio" (as colunas retas primeiro): ${fmt(eObvious)} quedas em média antes de acertar`);
-check(eRandom >= 2.5 && eObvious >= 3.5, 'nenhum chute de rota resolve em poucas tentativas: mais de duas quedas e meia em média, cada uma reacendendo a rota inteira');
+// quem só olha as marcas: "vou pela rota que passa por todas as confirmadas" (não lê os boatos)
+const confFree = free.filter((i) => S[i][3] === 'conf');
+const byConf = minimal.filter((m) => confFree.every((i) => m & (1 << free.indexOf(i))));
+check(byConf.length >= 3 && byConf.filter((m) => !lieIn(m)).length === 1, `"pela rota que passa pelas confirmadas" (só olha as marcas): ${byConf.length} rotas servem, uma só sem mentira (acerta de primeira 1 vez em ${byConf.length}; em média ${fmt((byConf.length - 1) / 2)} queda(s))`);
+check(eRandom >= 2.5 && eObvious >= 3.5, 'chutar rota não é barato: duas quedas e meia em média (três e meia pelo óbvio), cada uma reacendendo a rota inteira e andando o fosso todo; e cada queda cita a verdade negada (o chute vira raciocínio)');
 // (b) acender tudo e ir tirando (de uma em uma, de duas em duas...), confiando nas confirmadas
 const rumors = free.filter((i) => S[i][3] === 'boato');
 const C = (a, b) => (b < 0 || b > a ? 0 : b === 0 ? 1 : (C(a - 1, b - 1) * a) / b);
@@ -270,6 +274,31 @@ function worst(H) {
 }
 const wIdeal = worst(hyps.map((_, k) => k));
 check(wIdeal >= 4, `o testador IDEAL que não lê (confia nas marcas, aproveita cada queda da melhor forma, ignora as citações): ${hyps.length} verdades possíveis, pior caso ${wIdeal} tentativas (~${wIdeal - 1} quedas)`);
+// (g) o testador sistemático DE CIMA DA PONTE (conferência do enigmista): a Casa pesa o que está aceso na hora, não a rota. Acende tudo, anda até a
+// confirmada da fileira 3 (D3), apaga tudo atrás de si menos ela e a vizinha da fileira 4 (D4), e testa os boatos UM POR UM pisando na D4. Cada
+// boato verdadeiro responde de graça; cada mentira custa uma queda e refazer a ponte (acender de novo tudo menos as mentiras já achadas, andar,
+// apagar atrás). Não é sorte, é trabalho: quantas quedas e quanto tempo?
+{
+  const conf3 = free.find((i) => S[i][1] === R - 2 && S[i][3] === 'conf');
+  const s4 = conf3 !== undefined ? A.cellIdx(S[conf3][0], R - 1) : -1;
+  if (conf3 === undefined || s4 < 0) warn('(g) não há confirmada na penúltima fileira: estratégia não se aplica');
+  else {
+    const order = rumors.filter((i) => i !== s4);
+    let t = free.length * T_THROW + T_WALK + (free.length - 2) * T_THROW; // montar: acender tudo, andar, apagar atrás
+    let falls = truth[s4] ? 0 : 1;
+    const found = [];
+    for (const i of order) {
+      t += T_THROW + 1.5; // acender o boato e pôr o pé na D4
+      if (truth[i]) t += T_THROW; // aguentou: apaga e passa ao próximo
+      else {
+        falls++;
+        found.push(i);
+        t += T_FALL + (free.length - found.length) * T_THROW + T_WALK + (free.length - found.length - 2) * T_THROW; // cai e refaz
+      }
+    }
+    check(falls >= lies.length, `"testar de cima da ponte, um boato de cada vez" (sem ler): ${falls} quedas, sempre (uma por mentira), ~${Math.round(t / 60)} min de mão; deduzir: nenhuma`);
+  }
+}
 // (e) quem lê e deduz
 console.log(`   quem deduz: 0 quedas, 1 travessia (${nThrow(truthMask)} frases + a da porta, ~${Math.round(tWin)} s de mão), mais o tempo de ler e pensar`);
 // (f) quem pensa um pouco e erra um boato: uma queda, e a citação aponta a verdade negada
@@ -285,13 +314,31 @@ try {
   const blk = src.match(/const FPF_SLABS[^=]*=\s*\[([\s\S]*?)\n\];/);
   const rows = src.match(/const PF = \{[^}]*rows:\s*(\d+)/);
   const ID = { n1: 1, n2: 2, n3: 3, n4: 4 };
-  const got = blk ? [...blk[1].matchAll(/\['([ED])',\s*(\d+),\s*\['(\w+)',\s*'(\w+)',\s*'(\w+)',\s*'(\w+)'\],\s*(true|false)/g)].map((m) => [m[1], +m[2], [ID[m[3]], m[4], ID[m[5]]], m[6], m[7] === 'true']) : [];
+  const all = blk ? [...blk[1].matchAll(/\['([ED])',\s*(\d+),\s*\['(\w+)',\s*'(\w+)',\s*'(\w+)',\s*'(\w+)'\],\s*(true|false),\s*(true|false)\]/g)] : [];
+  const got = all.map((m) => [m[1], +m[2], [ID[m[3]], m[4], ID[m[5]]], m[6], m[7] === 'true']);
   const same = rows && +rows[1] === R && JSON.stringify(got) === JSON.stringify(SLABS);
-  if (same) console.log('✓ chapter1c.ts tem as mesmas 10 lajes e 5 fileiras');
-  else warn(`chapter1c.ts ainda não tem esta ponte (${got.length} lajes, ${rows ? rows[1] : '?'} fileiras): implementar a proposta e rodar de novo`);
+  if (!same) warn(`chapter1c.ts ainda não tem esta ponte (${got.length} lajes, ${rows ? rows[1] : '?'} fileiras): implementar a proposta e rodar de novo`);
+  else {
+    check(all.every((m, i) => (m[8] === 'true') === truth[i]), 'chapter1c.ts tem as mesmas 10 lajes e 5 fileiras, e a marca "verdadeira" de cada uma bate com a lógica');
+    const cita = src.match(/const FPF_CITA[^=]*=\s*\{([^}]*)\}/);
+    const tab = cita ? Object.fromEntries([...cita[1].matchAll(/(\d+)\s*:\s*\[([\d,\s]*)\]/g)].map((m) => [+m[1], m[2].split(',').map((x) => +x.trim())])) : null;
+    if (!tab) warn('chapter1c.ts não tem a tabela FPF_CITA (as confirmadas que a Casa cita na queda)');
+    else check(lies.every((i) => JSON.stringify((tab[i] ?? []).slice().sort()) === JSON.stringify(cites[i].slice().sort())) && Object.keys(tab).length === lies.length, 'a tabela FPF_CITA do jogo é a deste verificador');
+    // a ponte SEGURA quem está nela enquanto a Casa pesa: a fileira tem 3 m e o tremor dura WEIGH_S; andando (4,2 m/s) ou correndo (x1,35) o
+    // jogador atravessava a última fileira antes de a ponte ceder, ficava na borda da porta sem cair e, dali, pôr um pé na fileira e voltar dizia
+    // de graça se havia mentira acesa (o oráculo de pisar, de novo; achado na conferência, no navegador)
+    const ws = src.match(/const WEIGH_S = ([\d.]+)/);
+    const W = ws ? +ws[1] : NaN;
+    const rowM = 15 / R;
+    const walkT = rowM / 4.2;
+    const runT = rowM / (4.2 * 1.35);
+    const holds = /if \(weigh >= 0 \|\| collapsing\) r\.push\(\[X0, Z0 - 0\.5, X1, gz0, \d+\]\)/.test(src);
+    const f2 = (x) => x.toFixed(2).replace('.', ',');
+    check(holds || runT > W + 0.3, `ninguém sai da última fileira antes de a ponte ceder: ${fmt(rowM)} m levam ${f2(walkT)} s andando e ${f2(runT)} s correndo, contra ${f2(W)} s de tremor${holds ? '; a ponte segura (a borda da porta fecha enquanto a Casa pesa)' : ''}`);
+  }
 } catch (e) {
   warn(`não consegui ler chapter1c.ts (${e.message})`);
 }
 
-console.log(fail ? '\nFALHOU' : '\nOK: A Ponte de Frases tem uma resposta só, pisar não é mais um oráculo, e todo atalho custa várias quedas; deduzir atravessa de primeira.');
+console.log(fail ? '\nFALHOU' : '\nOK: A Ponte de Frases tem uma resposta só; pisar não é mais um oráculo; chutar custa quedas e cada queda cita a verdade negada; deduzir atravessa de primeira.');
 process.exit(fail ? 1 : 0);

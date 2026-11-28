@@ -28,8 +28,9 @@ const CAP1 = [
   // A Balança (DESIGN.md §93): PEQUENO e GRANDE brilham com esses pesos nos pratos, IGUAL com o travessão parado no meio; IGUAL talhado no poste
   { sala: '9 A Balança', mostra: [...m('efeito', 'grande', 'pequeno', 'igual'), ...m('rotulo', 'igual', 'n1', 'n2', 'n4'), ...m('frase', 'n2', 'conf')], exige: ['grande', 'pequeno', 'igual', 'n2'] },
   { sala: '10 A Ponte de Madeira', mostra: [...m('pergunta', 'depois'), ...m('frase', 'acender', 'n2', 'mais')], exige: ['n2'] },
-  // A Ponte de Frases (§93): a demonstração acesa (um boato aceso que diz o mesmo que a confirmada) e o efeito (a laje da frase verdadeira aguenta)
-  { sala: '11 A Ponte de Frases', mostra: [...m('pergunta', 'pequeno'), ...m('demo', 'verdade'), ...m('efeito', 'verdade'), ...m('frase', 'antes', 'depois', 'conf', 'boato')], exige: ['verdade', 'antes', 'depois', 'conf', 'boato'] },
+  // A Ponte de Frases (§93): a demonstração acesa (um boato aceso que diz o mesmo que a confirmada) e o efeito (a ponte das verdades aguenta; a
+  // da mentira cai e a Casa cita as confirmadas que ela nega). As frases usam UM a QUATRO.
+  { sala: '11 A Ponte de Frases', mostra: [...m('pergunta', 'pequeno'), ...m('demo', 'verdade'), ...m('efeito', 'verdade'), ...m('frase', 'antes', 'depois', 'conf', 'boato', 'n1', 'n2', 'n3', 'n4')], exige: ['verdade', 'antes', 'depois', 'conf', 'boato', 'n1', 'n2', 'n3', 'n4'] },
   { sala: 'R3 A Galeria dos Condenados', mostra: [...m('frase', 'ordem', 'igual', 'boato', 'verdade', 'antes', 'depois'), ...m('pergunta', 'verdade'), ...m('frase', 'condenado', 'ler', 'sentenca'), ...m('figura', 'igual', 'grande', 'pequeno'), ...m('diario', 'pequeno')], exige: [] },
   { sala: '12 A Sombra', mostra: [...m('frase', 'acender', 'brasa'), ...m('efeito', 'n3')], exige: ['n3'] },
   { sala: '13 O Escuro', mostra: [...m('efeito', 'escuro'), ...m('frase', 'acender', 'ordem', 'n1', 'n2', 'n5', 'antes', 'conf', 'boato')], exige: ['n1', 'n2', 'n5', 'antes', 'conf', 'boato'] },
