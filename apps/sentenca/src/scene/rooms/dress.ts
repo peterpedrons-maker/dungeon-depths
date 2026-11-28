@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { Kit, lightEnv, T } from '../kit';
 import { sunBeam } from '../fx';
+import { tallyTexture } from '../textures';
 
 // A ABÓBADA sobre [X0, X1] × [Z0, Z1]: nasce em H nas paredes do lado e sobe `rise` no meio. Fecha as duas pontas (as lunetas, em cima das
 // paredes da frente e do fundo). Devolve a altura dela em x.
@@ -250,4 +251,86 @@ export function wallWithWindows(kit: Kit, x: number, nx: 1 | -1, z0: number, z1:
     kit.light(to.x - nx * 0.3, 1.1, to.z, 0xa8bce8, 7);
   });
   return wall;
+}
+
+// ── OS RASTROS DE QUEM PASSOU ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Coisas pequenas deixadas num canto perto da ENTRADA (nunca perto do puzzle), sem texto: as cinzas de uma fogueira velha entre três pedras,
+// um toco de vela derretido, os riscos de contagem de quem esperou. Cada sala recebe uma combinação (`kind`), e algumas não recebem nada: se
+// todas tivessem, virava enfeite repetido.
+let ashTex: THREE.CanvasTexture | null = null;
+function ashTexture() {
+  if (ashTex) return ashTex;
+  const N = 40;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const g = c.getContext('2d')!;
+  let s = 4711;
+  const rnd = () => ((s = (s * 16807) % 2147483647) & 0xffff) / 0x10000;
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const d = Math.hypot(x - N / 2 + 0.5, y - N / 2 + 0.5) / (N / 2);
+      const k = 1 - d + (rnd() - 0.5) * 0.35;
+      if (k < 0.12) continue;
+      const v = rnd();
+      g.fillStyle = k > 0.6 ? (v < 0.3 ? '#141012' : v < 0.7 ? '#1e181a' : '#2c2628') : v < 0.5 ? '#2a2426' : '#3a3436';
+      if (k > 0.25 || v < 0.5) g.fillRect(x, y, 1, 1);
+    }
+  // pedacinhos de carvão e cinza clara
+  for (let i = 0; i < 26; i++) {
+    const a = rnd() * 6.28;
+    const r = rnd() * N * 0.3;
+    g.fillStyle = rnd() < 0.4 ? '#6a6466' : '#0a0809';
+    g.fillRect(Math.round(N / 2 + Math.cos(a) * r), Math.round(N / 2 + Math.sin(a) * r), 1 + (i % 2), 1);
+  }
+  ashTex = new THREE.CanvasTexture(c);
+  ashTex.magFilter = ashTex.minFilter = THREE.NearestFilter;
+  ashTex.colorSpace = THREE.SRGBColorSpace;
+  return ashTex;
+}
+let waxTex: THREE.CanvasTexture | null = null;
+function waxTexture() {
+  if (waxTex) return waxTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 12;
+  const g = c.getContext('2d')!;
+  const rows = ['....www.....', '..wwwwwww...', '.wwwwwwwww..', '.wwwwwwwwww.', 'wwwwwwwwwww.', '.wwwwwwwwwww', '.wwwwwwwww..', '..wwwwwwww..', '...wwwww.w..', '....ww......', '............', '............'];
+  rows.forEach((r, y) => {
+    for (let x = 0; x < 12; x++) if (r[x] === 'w') {
+      g.fillStyle = (x + y) % 5 === 0 ? '#b8ac90' : '#a2977e';
+      g.fillRect(x, y, 1, 1);
+    }
+  });
+  waxTex = new THREE.CanvasTexture(c);
+  waxTex.magFilter = waxTex.minFilter = THREE.NearestFilter;
+  waxTex.colorSpace = THREE.SRGBColorSpace;
+  return waxTex;
+}
+const waxMat = new THREE.MeshLambertMaterial({ color: 0xb4a888 });
+// (x, z) = o ponto no chão; (wx, wz, nx, nz) = a parede ao lado dele (onde vão os riscos) e para onde ela olha
+export function traces(kit: Kit, kind: number, x: number, z: number, wall: { x: number; z: number; nx: number; nz: number }, seed = 1) {
+  const stoneM = kit.slab;
+  const candle = (cx: number, cz: number) => {
+    kit.decal(0.3, 0.3, 'wax', waxTexture, cx, 0.012, cz, -Math.PI / 2, 0, seed);
+    const b = kit.box(0.06, 0.07 + (seed % 3) * 0.02, 0.06, waxMat, cx, 0.045, cz, false);
+    b.userData.noShadow = true;
+  };
+  if (kind === 0) {
+    // a fogueira velha: cinzas entre três pedras
+    kit.decal(0.95, 0.95, 'ash', ashTexture, x, 0.013, z, -Math.PI / 2, 0, seed * 1.3);
+    for (let i = 0; i < 3; i++) {
+      const a = seed + i * 2.2;
+      const sz = 0.13 + ((seed + i) % 3) * 0.03;
+      const st = kit.box(sz, sz * 0.7, sz * 1.2, stoneM, x + Math.cos(a) * 0.42, sz * 0.35, z + Math.sin(a) * 0.42, false);
+      st.rotation.y = a;
+    }
+  } else if (kind === 1) {
+    candle(x, z);
+    kit.decal(1.1, 0.55, `tally-rastro${seed}`, () => tallyTexture(5 + ((seed * 7) % 19)), wall.x + wall.nx * 0.02, 1.15, wall.z + wall.nz * 0.02, 0, Math.atan2(wall.nx, wall.nz));
+  } else if (kind === 2) {
+    // duas velas, uma caída
+    candle(x, z);
+    candle(x + 0.22, z - 0.12);
+  } else if (kind === 3) {
+    kit.decal(1.1, 0.55, `tally-rastro${seed}`, () => tallyTexture(9 + ((seed * 5) % 23)), wall.x + wall.nx * 0.02, 1.2, wall.z + wall.nz * 0.02, 0, Math.atan2(wall.nx, wall.nz));
+  }
 }

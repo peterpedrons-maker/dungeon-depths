@@ -12,7 +12,8 @@ import { glyphsOf } from '../../story/lexicon';
 import { drawGlyph } from '../../book/font';
 import { shotGate } from './shell';
 import { ratAlongWall } from '../critters';
-import { barrelCeiling, wallWithWindows } from './dress';
+import { barrelCeiling, traces, wallWithWindows } from './dress';
+import { mistBank } from '../fx';
 import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
 import type { Ambience, Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
@@ -342,12 +343,13 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     c.width = 64;
     c.height = 64;
     const g = c.getContext('2d')!;
-    g.fillStyle = '#b8c0d4';
+    // (DESIGN.md §95: o céu é NÉVOA, como no pátio da abertura. Antes era azul pálido com nuvens: via-se "o lado de fora")
+    g.fillStyle = '#a4a2b4';
     g.fillRect(0, 0, 64, 64);
     for (let k = 0; k < 90; k++) {
       const x = (k * 37) % 64;
       const y = (k * 23 + (k % 7) * 5) % 64;
-      g.fillStyle = k % 3 ? '#c8cede' : '#a8b0c6';
+      g.fillStyle = k % 3 ? '#adabbc' : '#9a98ab';
       g.fillRect(x, y, 6 + (k % 5), 2);
     }
     const t = new THREE.CanvasTexture(c);
@@ -1028,6 +1030,30 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     g.__fire = fn; // a última sala construída
     ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
   }
+  // (cenógrafo) OS RASTROS de quem passou (DESIGN.md §95): num canto da frente, perto da entrada e longe do puzzle (nada se há um braseiro, a
+  // placa ou uma coluna a menos de 1,8 m). O tipo e o lado saem do nome da sala; uma em cada quatro não tem nada.
+  {
+    const hsh = [...spec.name].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
+    // (em sala de frases que se acendem, nada de riscos na parede: perto de uma tocha eles ficam alaranjados e lembram uma frase acesa)
+    const kind = spec.lock && (hsh % 5 === 1 || hsh % 5 === 3) ? 2 : hsh % 5; // 0..3 = um tipo; 4 = nada
+    const sx = hsh % 2 ? 1 : -1;
+    const tx = sx * (spec.hx - 0.75);
+    const tz = Z1 - 0.8;
+    const busy =
+      spec.braziers.some((q) => Math.hypot(q.x - tx, Z0 + q.dz - tz) < 1.8) ||
+      (spec.pillars ?? []).some(([px, pdz]) => Math.hypot(px - tx, Z0 + pdz - tz) < 1.6) ||
+      (FG && Z0 + FG.dz1 > tz - 1.2) ||
+      // (o que as peças extras da sala puseram ali: qualquer caixa de colisão no chão, qualquer chama ou escrita registrada)
+      boxes.some((q) => q.min.y < 0.6 && q.max.x > tx - 1.9 && q.min.x < tx + 1.9 && q.max.z > tz - 1.9 && q.min.z < tz + 1.9) ||
+      kit.keepClear.some(([q]) => Math.hypot(q.x - tx, q.z - tz) < 2.4) ||
+      kit.inscriptions.some((ins) => Math.hypot(ins.center.x - tx, ins.center.z - tz) < 2.6) ||
+      (SD && SD.side !== 'B' && (SD.side === 'L') === (sx < 0) && Math.abs(SD.at - tz) < 2.6);
+    if (kind < 4 && !busy && !spec.doorY) traces(kit, kind, tx, tz, { x: sx * spec.hx, z: tz - 0.9, nx: -sx, nz: 0 }, hsh % 97);
+    if (import.meta.env.DEV) (((globalThis as Record<string, unknown>).__rastros ??= {}) as Record<string, unknown>)[spec.name] = { kind, busy: !!busy, tx, tz };
+  }
+  // (cenógrafo) a NÉVOA nos lugares abertos (DESIGN.md §95): numa sala a céu aberto, véus de névoa boiam no alto das paredes, tapando o céu
+  // (lá fora nunca se vê nada). Ficam todos acima de 3,4 m: não passam na frente do que se lê nem das fagulhas.
+  if (spec.sky) kit.fxUpd.push(mistBank(kit.group, { x0: X0 + 1, x1: X1 - 1, z0: Z0 + 1, z1: Z1 - 1, y0: Math.max(3.6, H - 1.6), y1: H + 1.8, n: 9, size: [4, 7], opacity: 0.55 }));
   // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §95): só sai com o jogador longe, corre de uma toca a outra e some
   {
     const span = (side: 'L' | 'R'): [number, number][] => [

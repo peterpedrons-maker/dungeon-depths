@@ -288,3 +288,61 @@ export function moths(parent: THREE.Object3D, at: THREE.Vector3[], each = 2) {
   parent.add(pts);
   return pts;
 }
+
+// ── A NÉVOA ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Véus de névoa em blocos de pixel, com a transparência em pontilhado (a mesma do pátio da abertura), boiando devagar dentro de uma caixa.
+// Para os lugares ABERTOS da Casa (o claustro, o pátio da cisterna, o alto da escadaria): lá fora é sempre névoa, e ela desce um pouco para
+// dentro. Poucos véus (cada um é um desenho); fica sempre ACIMA da cabeça ou encostada nos cantos, nunca na frente do que se lê.
+let mistTex: THREE.CanvasTexture | null = null;
+function mistTexture() {
+  if (mistTex) return mistTex;
+  const N = 48;
+  const cv = document.createElement('canvas');
+  cv.width = N;
+  cv.height = N;
+  const g = cv.getContext('2d')!;
+  const img = g.createImageData(N, N);
+  const B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  const blobs = [[0.5, 0.55, 0.36], [0.3, 0.6, 0.22], [0.7, 0.58, 0.24], [0.45, 0.42, 0.2], [0.62, 0.45, 0.18]];
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      let d = 0;
+      for (const [bx, by, br] of blobs) d = Math.max(d, 1 - Math.hypot(x / N - bx, (y / N - by) * 1.6) / br);
+      d = Math.max(0, Math.min(1, d * 1.3));
+      const level = Math.floor(d * 3.999);
+      const on = d > (B[(y % 4) * 4 + (x % 4)] / 16) * 0.9 + 0.05;
+      const o = (y * N + x) * 4;
+      img.data[o] = 176;
+      img.data[o + 1] = 174;
+      img.data[o + 2] = 196;
+      img.data[o + 3] = on ? [0, 40, 66, 92][level] : 0;
+    }
+  g.putImageData(img, 0, 0);
+  mistTex = new THREE.CanvasTexture(cv);
+  mistTex.magFilter = THREE.NearestFilter;
+  mistTex.minFilter = THREE.NearestFilter;
+  mistTex.generateMipmaps = false;
+  mistTex.colorSpace = THREE.SRGBColorSpace;
+  return mistTex;
+}
+export function mistBank(parent: THREE.Object3D, o: { x0: number; x1: number; z0: number; z1: number; y0: number; y1: number; n: number; size?: [number, number]; opacity?: number }) {
+  const [s0, s1] = o.size ?? [2.6, 5];
+  const list: { s: THREE.Sprite; x: number; y: number; z: number; ph: number; sp: number; op: number }[] = [];
+  for (let i = 0; i < o.n; i++) {
+    const r = (k: number) => ((Math.sin(i * 12.9898 + k * 78.233 + o.x0 * 3.1) * 43758.5453) % 1 + 1) % 1;
+    const m = new THREE.SpriteMaterial({ map: mistTexture(), transparent: true, depthWrite: false, fog: true, opacity: 0 });
+    const s = new THREE.Sprite(m);
+    const sz = s0 + r(1) * (s1 - s0);
+    s.scale.set(sz * 1.7, sz, 1);
+    s.renderOrder = 2;
+    s.userData.noPlan = true;
+    parent.add(s);
+    list.push({ s, x: o.x0 + r(2) * (o.x1 - o.x0), y: o.y0 + r(3) * (o.y1 - o.y0), z: o.z0 + r(4) * (o.z1 - o.z0), ph: r(5) * 6.28, sp: 0.04 + r(6) * 0.06, op: (o.opacity ?? 0.7) * (0.6 + r(7) * 0.4) });
+  }
+  return (_dt: number, t: number) => {
+    for (const m of list) {
+      m.s.position.set(m.x + Math.sin(t * m.sp + m.ph) * 1.4, m.y + Math.sin(t * m.sp * 1.7 + m.ph * 2) * 0.25, m.z + Math.cos(t * m.sp * 0.8 + m.ph) * 1.4);
+      (m.s.material as THREE.SpriteMaterial).opacity = m.op * (0.8 + 0.2 * Math.sin(t * 0.13 + m.ph)) * fxDim.value;
+    }
+  };
+}
