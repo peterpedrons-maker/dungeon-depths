@@ -18,6 +18,7 @@ import { burntTexture, edgeKey, FireGrid, grooveTexture, makeFloorChannel, makeG
 import { mkBox, shotGate, wedge } from './shell';
 import { windNear } from '../ambience';
 import type { Box, Ctx, Rect, Room } from '../types';
+import { bat } from '../critters';
 
 const TOP = 8; // a galeria (boca do fosso), acima do fundo
 const CEIL = 12.4;
@@ -469,6 +470,8 @@ export function buildPonte(ctx: Ctx): Room {
   if (import.meta.env.DEV) {
     ((globalThis as Record<string, unknown>).__ponte = () => ({ lit: floor.points(), burnt: [...floor.burnt], cut: [...floor.cut], used, solved, cold: +coldT.toFixed(1), plank: plank.state, bowls: braz.map((b) => b.bowl.toArray()), torches: torches.map((tc) => tc.pos.toArray().map((v) => +v.toFixed(2))), torchLit: torches.map((tc) => tc.lit), riser: +riser.k.toFixed(2), riserBowl: riser.brazier.bowl.toArray(), bonus, H }));
   }
+  // (cenógrafo) um morcego cruza a boca do fosso, lá no alto (DESIGN.md §95)
+  kit.fxUpd.push(bat(kit, new THREE.Vector3(-OX + 1.5, CEIL - 1.2, OZ0 + 1.5), new THREE.Vector3(OX - 1.5, CEIL - 1.7, Z1 - 1.5), 75));
   kit.bake();
 
   return {

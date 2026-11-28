@@ -12,6 +12,7 @@ import { mkBox, slopedWall, stairs, wedge, Z1 } from './shell';
 import { windNear } from '../ambience';
 import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { bat } from '../critters';
 
 const X0 = -4;
 const X1 = 4;
@@ -282,6 +283,8 @@ export function buildRespiro4(ctx: Ctx): Room {
     rects.push([SX - 0.18, b, SX + 0.02, a, Math.max(hA(b), hC(b)) + 0.9]);
     rects.push([-SX - 0.02, c, -SX + 0.18, d, hB(d) + 0.9]);
   }
+  // (cenógrafo) um morcego cruza o alto do poço da escada de vez em quando (DESIGN.md §95)
+  kit.fxUpd.push(bat(kit, new THREE.Vector3(X0 + 0.8, H - 1.4, Z0 + 0.8), new THREE.Vector3(X1 - 0.8, H - 1.9, 1.2), 70));
   kit.bake();
 
   return {

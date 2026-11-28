@@ -190,10 +190,32 @@ export function bat(kit: Kit, a: THREE.Vector3, b: THREE.Vector3, every = 80) {
 // UM RATO NA PAREDE MAIS LIVRE: procura, no pé de uma parede reta (em x = `x`, que olha para `nx`; de zA a zB), o trecho mais comprido sem
 // nada encostado (caixas de colisão da sala a menos de 60 cm, e os trechos de `avoid`: portas, fossos) e põe o rato a correr nele. Devolve
 // null se não houver 3,5 m livres.
+// Além das caixas, SONDA a sala já montada: um raio de 90 cm para a parede (se bate antes de 70 cm, há alguma coisa encostada: um móvel, uma
+// escada, um pedestal) e um para baixo (tem de haver chão).
 export function ratAlongWall(kit: Kit, boxes: Box[], x: number, nx: number, zA: number, zB: number, avoid: [number, number][] = [], y = 0, every = 55) {
+  kit.group.updateMatrixWorld(true);
+  const solid: THREE.Object3D[] = [];
+  kit.group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && m.visible && !(Array.isArray(m.material) ? m.material[0] : m.material)?.transparent) solid.push(m);
+  });
+  const ray = new THREE.Raycaster();
+  const o = new THREE.Vector3();
+  const toWall = new THREE.Vector3(-nx, 0, 0).transformDirection(kit.group.matrixWorld);
+  const down = new THREE.Vector3(0, -1, 0);
+  const probe = (z: number) => {
+    ray.set(kit.group.localToWorld(o.set(x + nx * 0.9, y + 0.12, z)), toWall);
+    ray.far = 1.0;
+    const h = ray.intersectObjects(solid, false)[0];
+    if (!h || h.distance < 0.7) return false; // (sem parede ali, ou com alguma coisa na frente dela)
+    ray.set(kit.group.localToWorld(o.set(x + nx * 0.25, y + 0.3, z)), down);
+    ray.far = 0.6;
+    return ray.intersectObjects(solid, false).length > 0;
+  };
   const free = (z: number) =>
     !avoid.some(([a, b]) => z > a - 0.4 && z < b + 0.4) &&
-    !boxes.some((b) => b.min.y < y + 0.5 && b.max.y > y - 0.05 && z > b.min.z - 0.35 && z < b.max.z + 0.35 && (nx > 0 ? b.min.x < x + 0.6 && b.max.x > x - 0.2 : b.max.x > x - 0.6 && b.min.x < x + 0.2));
+    !boxes.some((b) => b.min.y < y + 0.5 && b.max.y > y - 0.05 && z > b.min.z - 0.35 && z < b.max.z + 0.35 && (nx > 0 ? b.min.x < x + 0.6 && b.max.x > x - 0.2 : b.max.x > x - 0.6 && b.min.x < x + 0.2)) &&
+    probe(z);
   let best: [number, number] | null = null;
   let start: number | null = null;
   for (let z = zA; z <= zB + 1e-6; z += 0.25) {
