@@ -263,7 +263,10 @@
 @media (pointer: coarse) and (max-height: 420px) { .skipintro { top: 54px; } }
 
 
-/* ── O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §100) ── */
+/* a escolha do IDIOMA na 1ª vez (src/i18n.ts): por cima de tudo, num fundo preto (vem antes da abertura da editora) */
+.mnu-veil.lang-pick { z-index: 80; background: #0b0912; }
+.lang-pick .lang-q { line-height: 1.6; margin: calc(4px * var(--ui)) 0 calc(10px * var(--ui)); }
+/* ── O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §102) ── */
 /* durante o passeio: uma faixa pequena no alto e uma camada invisível que segura os toques (ninguém mexe na câmera) */
 .bench-run { position: absolute; inset: 0; z-index: 50; pointer-events: auto; touch-action: none; }
 .bench-run p { position: relative; margin: calc(6px * var(--ui)) 0 0 calc(10px * var(--ui)); font-size: var(--fs); color: var(--chalk); text-shadow: 2px 2px 0 #05040a; }

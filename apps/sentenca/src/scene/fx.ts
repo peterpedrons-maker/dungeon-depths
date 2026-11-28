@@ -1,4 +1,4 @@
-// EFEITOS DE VIDA (DESIGN.md §98): o feixe de luz que se vê no ar, a poeira fina dentro dele, a fumaça das tochas, a mariposa na chama. Tudo
+// EFEITOS DE VIDA (DESIGN.md §100): o feixe de luz que se vê no ar, a poeira fina dentro dele, a fumaça das tochas, a mariposa na chama. Tudo
 // aqui é animado NO SHADER (a placa de vídeo move cada grão a partir de um relógio só, `fxClock`): não há conta por grão no processador nem
 // envio de posições a cada quadro, e cada efeito é um desenho só.
 //

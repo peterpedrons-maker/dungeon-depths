@@ -49,6 +49,8 @@ certo. Responda sempre em **português do Brasil**.
   furos de luz, os segredos, as gemas nem as folhas dela; rode `npx tsc --noEmit -p .`, o verificador e todos os `tools/verify_*.mjs`.
 - Nunca rode prettier (ele reescreve o arquivo inteiro). Não faça commit. Não escreva textos de fala ou de parede: se a sala precisar de uma
   frase nova em glifos, proponha e diga que o narrador deve revisar.
+- **Três idiomas** (`DESIGN.md` §98): qualquer texto que o jogador lê (rótulo de ação, legenda de julgamento, subtítulo) vai nos três com
+  `T('pt', 'en', 'es')` (`src/i18n.ts`), nunca só em português; rode também `node tools/verify_i18n.mjs`.
 
 ## Entrega
 Um relatório curto: a mecânica (ou o parecer), a prova (saída do verificador), o custo das estratégias bobas, o nível na régua, o que mudou

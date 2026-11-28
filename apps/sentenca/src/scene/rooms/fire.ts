@@ -17,6 +17,8 @@ import { mistBank } from '../fx';
 import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
 import type { Ambience, Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
+import { T as Tr } from '../../i18n';
+import type { Text } from '../../i18n';
 
 // ── a regra que abre a porta ──
 export type FireRule =
@@ -130,7 +132,7 @@ export interface FireSpec {
   name: string; // sem o "Sala N ·": a numeração é automática
   last?: boolean; // a ÚLTIMA sala do capítulo: o corredor da porta termina na luz de saída e chegar nele encerra o capítulo
   blackout?: number; // segundos do ESCURO da punição (PUZZLES_PROPOSTAS Ficha 1: 2,5 s; a sala 13 "O Escuro" usará 4 s)
-  subtitle: string;
+  subtitle: Text;
   hx: number; // meia-largura
   z0: number; // parede do fundo (a da frente é sempre z = 2)
   h: number;
@@ -151,7 +153,7 @@ export interface FireSpec {
   // `judge: 'door'`: acender ou apagar frases não pune; a Casa só JULGA quando o jogador acende a frase da porta (o conjunto aceso tem de ser
   // exatamente as `good`). Tocar de novo numa frase acesa a apaga (para desfazer um engano).
   // `judged`: a legenda quando a Casa aceita o conjunto (padrão: os pilares de fogo subiram)
-  lock?: { ordered?: boolean; penalty?: number; judge?: 'door'; judged?: [string, string] };
+  lock?: { ordered?: boolean; penalty?: number; judge?: 'door'; judged?: [Text, Text] };
   // um FOSSO no chão (A Ponte de Frases): o chão some entre `dz0` e `dz1` (distância do fundo), de `x0` a `x1`, com `depth` metros de fundo.
   // O construtor faz o chão em volta, as paredes e o fundo do buraco; a sala (`extra`) cuida do que pisa (floorY, rects, dieFloor, clampDie).
   floorGap?: { x0: number; x1: number; dz0: number; dz1: number; depth: number };
@@ -163,7 +165,7 @@ export interface FireSpec {
   doorY?: number; // a porta de saída fica num andar alto (mezanino): a sala seguinte começa nessa altura
   sky?: boolean; // sem teto: um pátio a céu aberto (céu pálido, como o do pátio da abertura)
   ambience?: Ambience; // o som do lugar: vento, gotas, tamanho (DESIGN.md §60)
-  // (cenógrafo, DESIGN.md §98) ARQUITETURA, sem tocar no puzzle. `vault`: o teto chato vira uma abóbada de tijolo com arcos de pedra sobre
+  // (cenógrafo, DESIGN.md §100) ARQUITETURA, sem tocar no puzzle. `vault`: o teto chato vira uma abóbada de tijolo com arcos de pedra sobre
   // mísulas, toda ACIMA de `h` (o dado continua batendo num teto invisível em `h`); não usar em sala que tem coisa no teto (cal, frisos).
   // `windows`: frestas altas numa parede do lado SEM porta, com o feixe de luz caindo num pedaço de chão vazio (`dz` = distância do fundo);
   // só em sala na superfície e em parede que dá para fora.
@@ -348,7 +350,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     c.width = 64;
     c.height = 64;
     const g = c.getContext('2d')!;
-    // (DESIGN.md §98: o céu é NÉVOA, como no pátio da abertura. Antes era azul pálido com nuvens: via-se "o lado de fora")
+    // (DESIGN.md §100: o céu é NÉVOA, como no pátio da abertura. Antes era azul pálido com nuvens: via-se "o lado de fora")
     g.fillStyle = '#a4a2b4';
     g.fillRect(0, 0, 64, 64);
     for (let k = 0; k < 90; k++) {
@@ -1056,7 +1058,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     g.__fire = fn; // a última sala construída
     ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
   }
-  // (cenógrafo) OS RASTROS de quem passou (DESIGN.md §98): num canto da frente, perto da entrada e longe do puzzle (nada se há um braseiro, a
+  // (cenógrafo) OS RASTROS de quem passou (DESIGN.md §100): num canto da frente, perto da entrada e longe do puzzle (nada se há um braseiro, a
   // placa ou uma coluna a menos de 1,8 m). O tipo e o lado saem do nome da sala; uma em cada quatro não tem nada.
   {
     const hsh = [...spec.name].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
@@ -1077,10 +1079,10 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     if (kind < 4 && !busy && !spec.doorY) traces(kit, kind, tx, tz, { x: sx * spec.hx, z: tz - 0.9, nx: -sx, nz: 0 }, hsh % 97);
     if (import.meta.env.DEV) (((globalThis as Record<string, unknown>).__rastros ??= {}) as Record<string, unknown>)[spec.name] = { kind, busy: !!busy, tx, tz };
   }
-  // (cenógrafo) a NÉVOA nos lugares abertos (DESIGN.md §98): numa sala a céu aberto, véus de névoa boiam no alto das paredes, tapando o céu
+  // (cenógrafo) a NÉVOA nos lugares abertos (DESIGN.md §100): numa sala a céu aberto, véus de névoa boiam no alto das paredes, tapando o céu
   // (lá fora nunca se vê nada). Ficam todos acima de 3,4 m: não passam na frente do que se lê nem das fagulhas.
   if (spec.sky) kit.fxUpd.push(mistBank(kit.group, { x0: X0 + 1, x1: X1 - 1, z0: Z0 + 1, z1: Z1 - 1, y0: Math.max(3.6, H - 1.6), y1: H + 1.8, n: 9, size: [4, 7], opacity: 0.55 }));
-  // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §98): só sai com o jogador longe, corre de uma toca a outra e some
+  // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §100): só sai com o jogador longe, corre de uma toca a outra e some
   {
     const span = (side: 'L' | 'R'): [number, number][] => [
       ...(SD?.side === side ? ([[SD.at - 1.8, SD.at + 1.8]] as [number, number][]) : []),
@@ -1221,7 +1223,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     dieFloor: (x, z) => extra.dieFloor?.(x, z) ?? 0,
     holdsDie: () => plateDown,
     onDieRest() {
-      if (PL && onPlate() && ctx.die.face !== 2) ctx.caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
+      if (PL && onPlate() && ctx.die.face !== 2) ctx.caption(Tr('Leve demais', 'Too light', 'Demasiado ligero'), Tr('Só o dado pesado afunda a placa.', 'Only the heavy die sinks the plate.', 'Solo el dado pesado hunde la placa.'), '#d9a066');
     },
     update(dt, t) {
       kit.tick(dt, t);
@@ -1274,14 +1276,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   risen = true;
                   ctx.sfx('ignite', best.key);
                   ctx.sfx('rise');
-                  ctx.caption(...(lk.judged ?? ['A Casa leu', 'Os pilares de fogo subiram.']), '#ffd36b');
+                  ctx.caption(...(lk.judged ?? [Tr('A Casa leu', 'The House read it', 'La Casa lo leyó'), Tr('Os pilares de fogo subiram.', 'The pillars of fire rose.', 'Los pilares de fuego subieron.')]), '#ffd36b');
                 } else {
                   extra.judgeFail?.(litLines.map((l) => l.lit));
                   litLines.forEach((l) => (l.lit = l.preLit));
                   lockCold = lk.penalty ?? 10;
                   ctx.sfx('error');
                   ctx.blackout(spec.blackout ?? 2.5); // a punição: a Casa apaga tudo
-                  ctx.caption('A Casa apagou as frases', 'Apagou tudo.', '#cfc6e8');
+                  ctx.caption(Tr('A Casa apagou as frases', 'The House put out the sentences', 'La Casa apagó las frases'), Tr('Apagou tudo.', 'It put everything out.', 'Lo apagó todo.'), '#cfc6e8');
                 }
               } else if (best.lit) {
                 best.lit = false;
@@ -1301,15 +1303,15 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                 if (litLines.filter((l) => l.lit).length >= needed) {
                   risen = true;
                   ctx.sfx('rise');
-                  ctx.caption('Algo se move sob o chão', 'Pilares.', '#ffd36b');
-                } else ctx.caption('A frase acendeu', 'A Casa aceitou esta.', '#ff9a3c');
+                  ctx.caption(Tr('Algo se move sob o chão', 'Something moves under the floor', 'Algo se mueve bajo el suelo'), Tr('Pilares.', 'Pillars.', 'Pilares.'), '#ffd36b');
+                } else ctx.caption(Tr('A frase acendeu', 'The sentence lit up', 'La frase se encendió'), Tr('A Casa aceitou esta.', 'The House accepted this one.', 'La Casa aceptó esta.'), '#ff9a3c');
               } else {
                 litLines.forEach((l) => (l.lit = false));
                 lockProg = 0;
                 lockCold = lk.penalty ?? 4;
                 ctx.sfx('error');
                 ctx.blackout(spec.blackout ?? 2.5);
-                ctx.caption('A Casa apagou as frases', 'Apagou tudo.', '#cfc6e8');
+                ctx.caption(Tr('A Casa apagou as frases', 'The House put out the sentences', 'La Casa apagó las frases'), Tr('Apagou tudo.', 'It put everything out.', 'Lo apagó todo.'), '#cfc6e8');
               }
             }
           }
@@ -1487,13 +1489,13 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             solved = true;
             door.lampMats.forEach((m) => m.color.setHex(0xff7a2e));
             ctx.sfx('piece');
-            ctx.caption('A placa aceitou', 'As chamas respondem.', '#ffd36b');
+            ctx.caption(Tr('A placa aceitou', 'The plate accepted it', 'La placa lo aceptó'), Tr('As chamas respondem.', 'The flames answer.', 'Las llamas responden.'), '#ffd36b');
           } else {
             braziers.forEach((b) => b.light(false, true));
             coldT = rule.penalty ?? 6;
             ctx.sfx('error');
             ctx.blackout(spec.blackout ?? 2.5);
-            ctx.caption('A placa abafou o fogo', 'A Casa não aceitou estas chamas.', '#cfc6e8');
+            ctx.caption(Tr('A placa abafou o fogo', 'The plate smothered the fire', 'La placa sofocó el fuego'), Tr('A Casa não aceitou estas chamas.', 'The House did not accept these flames.', 'La Casa no aceptó estas llamas.'), '#cfc6e8');
           }
         }
         if (!pressed && !(solved && onPlate())) plateDown = false;

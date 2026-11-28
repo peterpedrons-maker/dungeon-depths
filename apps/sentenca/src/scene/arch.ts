@@ -605,7 +605,7 @@ export function smokeTexture() {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-// (DESIGN.md §98) A fumaça agora sai de TODAS as tochas, num desenho só por sala (`smokePoints` do fx.ts, chamado no `Kit.bake`). Esta função
+// (DESIGN.md §100) A fumaça agora sai de TODAS as tochas, num desenho só por sala (`smokePoints` do fx.ts, chamado no `Kit.bake`). Esta função
 // ficou só para as salas que a chamavam à mão não desenharem a fumaça duas vezes.
 export function torchSmoke(_parent: THREE.Object3D, _x: number, _y: number, _z: number, _nx: number, _nz: number, _n = 5) {
   return (_t: number) => {};
@@ -672,7 +672,7 @@ export function reliefPlaneMat(t: Tex2, w: number, h: number, bumpScale = 3, til
 }
 
 // POEIRA DENTRO DE UM FEIXE INCLINADO (de `from` a `to`): os grãos flutuam devagar dentro do cone de luz (só no feixe, nunca no ar todo).
-// (DESIGN.md §98) Agora é a poeira FINA do `fx.ts` (um pixel por grão, cintilando) e o feixe que se vê no ar; `n` é o número de antes.
+// (DESIGN.md §100) Agora é a poeira FINA do `fx.ts` (um pixel por grão, cintilando) e o feixe que se vê no ar; `n` é o número de antes.
 export function beamMotes(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3, n = 48, color = 0xc8d4f0, opacity = 0.5) {
   lightShaft(parent, from, to, 0.28, 1.05, color, 0.075);
   fineDust(parent, from, to, 0.24, 0.98, Math.round(n * 4), color, Math.min(1, opacity * 2));

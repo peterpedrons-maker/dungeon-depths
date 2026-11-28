@@ -30,6 +30,7 @@ import { windNear } from '../ambience';
 import { bakeProps, loadPack, placeProp } from '../props';
 import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import { ponteThrough } from '../plan';
+import { T as Tr } from '../../i18n';
 import { bat } from '../critters';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
@@ -425,7 +426,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
       interactables.push({
         pos: new THREE.Vector3(x, 1.65, BZ - 0.3),
         r: 1.5,
-        label: 'Mover o bloco',
+        label: Tr('Mover o bloco', 'Move the block', 'Mover el bloque'),
         enabled: () => !encaixeDone,
         use: () => {
           if (pick < 0) {
@@ -472,7 +473,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
       m.position.set(7.2 + k * 1.15, 1.65, BZ - 0.146);
       m.rotation.y = Math.PI;
       g.add(m);
-      // a escrita do bloco passa a ser a NOVA (o caderno, a etiqueta da mira e a tira leem a palavra que está ali agora; DESIGN.md §99)
+      // a escrita do bloco passa a ser a NOVA (o caderno, a etiqueta da mira e a tira leem a palavra que está ali agora; DESIGN.md §101)
       const bi = blockIns[k];
       const p0 = bi?.panels[0];
       if (p0) {
@@ -611,7 +612,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   kit.skirting(-AX, AX, Z0, Z1, 1.3);
   kit.aoSides(-AX, AX, Z0, Z1, H);
   kit.wear([[0, 1.5], [0.4, -10], [0, -24]], 1.4);
-  // (cenógrafo) um morcego cruza o alto do Átrio, acima das passarelas (DESIGN.md §98)
+  // (cenógrafo) um morcego cruza o alto do Átrio, acima das passarelas (DESIGN.md §100)
   kit.fxUpd.push(bat(kit, new THREE.Vector3(-AX + 1, H - 1.3, Z0 + 2), new THREE.Vector3(AX - 1, H - 1.8, -2), 85));
   kit.bake();
   refreshBlocks();
@@ -623,7 +624,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   return {
     skyHoles: SKY,
     name: 'A Biblioteca',
-    subtitle: 'O Arquivo das Sentenças.',
+    subtitle: Tr('O Arquivo das Sentenças.', 'The Archive of Sentences.', 'El Archivo de las Sentencias.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -696,7 +697,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
       const caderno = books.find((b) => b.kind === 'caderno' && b.cloth && b.cloth.k > 0.5);
       if (caderno && !lostPage) {
         lostPage = true;
-        ctx.caption('Um caderno de alguém', 'Uma página se perdeu.', '#d8b880');
+        ctx.caption(Tr('Um caderno de alguém', "Someone's notebook", 'El cuaderno de alguien'), Tr('Uma página se perdeu.', 'A page was lost.', 'Se perdió una página.'), '#d8b880');
       }
       if (!paperGem && books.filter((b) => b.kind === 'boato').every((b) => b.cloth && b.cloth.k >= 1)) paperNiche.open();
       const lp = ctx.player.pos;

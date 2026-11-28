@@ -29,7 +29,7 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
   const c = useStore(chatterStore);
   const k = useUiScale();
   const [shown, setShown] = useState(0);
-  const notesOn = useStore(configStore).glyphNotes; // (DESIGN.md §99) as anotações dele embaixo dos símbolos, se a opção estiver ligada
+  const notesOn = useStore(configStore).glyphNotes; // (DESIGN.md §101) as anotações dele embaixo dos símbolos, se a opção estiver ligada
   useStore(diaryStore);
 
   useEffect(() => setShown(0), [c?.id]);
@@ -57,7 +57,7 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
   }, [c, shown]);
 
   if (!c) return null;
-  // uma PERGUNTA do dado («VOCÊ SABER ?», «BRASEIRO ONDE ?») nunca mostra anotação: ela testa o que ele acha (DESIGN.md §99)
+  // uma PERGUNTA do dado («VOCÊ SABER ?», «BRASEIRO ONDE ?») nunca mostra anotação: ela testa o que ele acha (DESIGN.md §101)
   const ask = c.glyphs.includes('perg');
   return (
     <div className="boato" aria-hidden="true">

@@ -45,8 +45,8 @@ export interface DiaryState {
   here: string; // sala atual
   unread: number; // símbolos novos desde a última vez que abriu
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
-  // a CÓPIA (DESIGN.md §99): a última frase que o jogador copiou para o caderno (abrindo-o enquanto lia), com o lugar de onde veio
-  copy?: { lines: string[][]; from: 'parede' | 'conversa'; room: string; chalk?: boolean } | null; // (DESIGN.md §99; '' = lacuna)
+  // a CÓPIA (DESIGN.md §101): a última frase que o jogador copiou para o caderno (abrindo-o enquanto lia), com o lugar de onde veio
+  copy?: { lines: string[][]; from: 'parede' | 'conversa'; room: string; chalk?: boolean } | null; // (DESIGN.md §101; '' = lacuna)
 }
 
 const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], pages: [], gems: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
@@ -175,7 +175,7 @@ export const diary = {
       ...s,
       seen: Object.fromEntries(ids.map((id, k) => [id, { room: s.here || 'Sala 5 · A Entrada', at: k }])),
       order: ids,
-      notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
+      notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' }, // i18n-ok (?demo=1: anotações de exemplo, como as que o jogador escreve)
       texts: ['demo-pagina'],
       pages: ['p2'],
       herKnown: true,

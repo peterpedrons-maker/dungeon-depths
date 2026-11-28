@@ -17,6 +17,7 @@ import { makeGemNiche, makeLivePanel, makeWallBoard, type WallBoard } from '../f
 import { mkBox, roomShell, shotGate } from './shell';
 import { planDoors } from '../plan';
 import type { Ctx, Room } from '../types';
+import { T } from '../../i18n';
 
 function dieFaceTex(points: number[]) {
   // face do dado de PEDRA: pedra clara com a moldura gasta e os PONTOS talhados: cavidades REDONDAS, fundas (escuras), com a borda de baixo
@@ -98,7 +99,7 @@ export function buildLousa(ctx: Ctx): Room {
   const nb = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.2, 8), lambert(null, 0x3a3a46));
   nb.position.set(0, NY + 0.17, NZ);
   kit.add(nb);
-  // (a chama alta dos braseiros, com o pé na tigela, onde era o pé da de antes; DESIGN.md §97)
+  // (a chama alta dos braseiros, com o pé na tigela, onde era o pé da de antes; DESIGN.md §99)
   const nFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   nFlame.center.set(0.5, 0);
   nFlame.scale.set(0.42, 0.63, 1);
@@ -349,7 +350,7 @@ export function buildLousa(ctx: Ctx): Room {
   return {
     skyHoles: SKY,
     name: 'A Lousa',
-    subtitle: 'Nove lampiões.',
+    subtitle: T('Nove lampiões.', 'Nine lamps.', 'Nueve faroles.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -388,15 +389,15 @@ export function buildLousa(ctx: Ctx): Room {
       updateCopy(L1, dt, () => {
         grateUp = true;
         ctx.sfx('door');
-        ctx.caption('A grade subiu', 'Igual ao da parede.', '#ffd36b');
+        ctx.caption(T('A grade subiu', 'The grate rose', 'La reja subió'), T('Igual ao da parede.', 'Same as the one on the wall.', 'Igual al de la pared.'), '#ffd36b');
       });
       updateCopy(L2, dt, () => {
         DB.setDim(1);
-        ctx.caption('A porta acordou', '', '#ffd36b');
+        ctx.caption(T('A porta acordou', 'The door woke up', 'La puerta despertó'), '', '#ffd36b');
       });
       updateCopy(secret, dt, () => {
         niche.open();
-        ctx.caption('Algo se abriu na parede', 'Cinco pontos. Como no dado talhado.', '#7ad8ff');
+        ctx.caption(T('Algo se abriu na parede', 'Something opened in the wall', 'Algo se abrió en la pared'), T('Cinco pontos. Como no dado talhado.', 'Five dots. Like on the carved die.', 'Cinco puntos. Como en el dado tallado.'), '#7ad8ff');
       });
       // copiar → brilhar o glifo talhado
       for (const c of [L1, L2]) for (const p of c.ins.panels) p.fire = (p.fire ?? 0) + ((c.solved ? 1 : 0) - (p.fire ?? 0)) * Math.min(1, dt * 4);
@@ -436,7 +437,7 @@ export function buildLousa(ctx: Ctx): Room {
             // a Casa lê e não aceita: a frase é falsa
             DB.grid.clear();
             ctx.sfx('error');
-            ctx.caption('A Casa não aceitou', 'Não era isso.', '#cfc6e8');
+            ctx.caption(T('A Casa não aceitou', 'The House did not accept it', 'La Casa no lo aceptó'), T('Não era isso.', "That wasn't it.", 'No era eso.'), '#cfc6e8');
             rejectT = 1.2;
             doorIdle = 0;
           }

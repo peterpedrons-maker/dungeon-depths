@@ -10,6 +10,8 @@ import type { Inscription } from './inscription';
 import { drip } from './arch';
 import { puddleTexture } from './textures';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { T, tx, type Text } from '../i18n';
+import { roomTitle } from '../story/roomnames';
 import { FACES } from '../faces';
 import {
   blobShadowTexture,
@@ -79,7 +81,7 @@ const FOG = '#0b0912';
 const LAB = new URLSearchParams(location.search).has('lab');
 // ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
 const VITRINE = new URLSearchParams(location.search).has('vitrine');
-// O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §100): a câmera passeia sozinha por salas pesadas; nada é gravado no aparelho
+// O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §102): a câmera passeia sozinha por salas pesadas; nada é gravado no aparelho
 const BENCH = new URLSearchParams(location.search).has('bench');
 const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
 // o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; plan.ts), o padrão: cada sala no seu lugar e com o seu giro, ligadas por
@@ -298,7 +300,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uRes: { value: new THREE.Vector2(64, 64) },
       uNear: { value: CAM_NEAR },
       uFar: { value: CAM_FAR },
-      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §97)
+      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §99)
       tLut: { value: lutTex },
       uBloom: { value: 1 },
       uBright: { value: 1 },
@@ -311,10 +313,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uTan: { value: new THREE.Vector2(1, 1) },
       tBack: { value: null as THREE.Texture | null },
       uBack: { value: 0 },
-      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §97): 0 = o corte seco de antes
-      // o AR QUENTE em cima dos braseiros (DESIGN.md §98): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
+      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §99): 0 = o corte seco de antes
+      // o AR QUENTE em cima dos braseiros (DESIGN.md §100): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
       uHot: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
-      // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §98): um banho de cor muito leve na imagem do mundo, que muda com a sala em que o jogador está
+      // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §100): um banho de cor muito leve na imagem do mundo, que muda com a sala em que o jogador está
       uGrade: { value: new THREE.Vector3(1, 1, 1) },
       uTime: { value: 0 },
     },
@@ -339,7 +341,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uTime;
       uniform vec3 uGrade;
       varying vec2 vUv;
-      // O OMBRO DA LUZ (DESIGN.md §97): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
+      // O OMBRO DA LUZ (DESIGN.md §99): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
       // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
       // (1 → 0,88; 1,5 → 0,94; 3 → 0,98): o vermelho enche primeiro, depois o verde, e a cor passa de laranja a amarelo e a branco aos poucos,
       // como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase tudo) nada muda.
@@ -480,7 +482,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   postScene.add(postQuad);
   // ── sala e cena ─────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
-  // a poeira das pancadas, as fagulhas e o pó que cai (DESIGN.md §98)
+  // a poeira das pancadas, as fagulhas e o pó que cai (DESIGN.md §100)
   const puffs = makePuffs(scene);
   const fallQ: { t: number; at: THREE.Vector3; n: number; spread: number; floor: number }[] = []; // pó do teto ainda por soltar
   // `ambient` é a luz ambiente "lógica" de cada sala (cor e força vêm da sala e da história). Na cena ela é repartida em três luzes que DEFINEM
@@ -501,7 +503,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let darkQ: { secs: number; onDark?: () => void } | null = null; // pedido esperando a conversa acabar
   let darkCb: (() => void) | null = null;
   const lightScale = () => 1 - 0.92 * darkK;
-  // O ESCURO DE VERDADE (DESIGN.md §98): dentro da Casa a luz que vem "de todo lado" caiu um quinto. O que as chamas não alcançam fica mais
+  // O ESCURO DE VERDADE (DESIGN.md §100): dentro da Casa a luz que vem "de todo lado" caiu um quinto. O que as chamas não alcançam fica mais
   // fundo (os cantos, o alto das paredes, o avesso das coisas) e as poças de luz das tochas e dos braseiros se destacam. Lá fora (a abertura,
   // na neblina) não muda.
   const DARK_K = 0.8;
@@ -1091,19 +1093,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   const clearChalk = () => {
     if (chalk.count === 0) {
-      caption('Nada pra apagar', 'Não há marcas de giz nesta sala.', '#cfc6e8');
+      caption(T('Nada pra apagar', 'Nothing to erase', 'Nada que borrar'), T('Não há marcas de giz nesta sala.', 'There are no chalk marks in this room.', 'No hay marcas de tiza en esta sala.'), '#cfc6e8');
       return;
     }
     if (eraseArmed <= 0) {
       eraseArmed = 2;
-      caption('Apagar tudo?', 'Aperte de novo para confirmar.', '#ff9aa8');
+      caption(T('Apagar tudo?', 'Erase everything?', '¿Borrar todo?'), T('Aperte de novo para confirmar.', 'Press again to confirm.', 'Pulsa otra vez para confirmar.'), '#ff9aa8');
       return;
     }
     eraseArmed = 0;
     sfx.play('sweep');
     chalk.clear();
     soapKick = 1;
-    caption('Giz apagado', 'A sala está limpa.', '#cfc6e8');
+    caption(T('Giz apagado', 'Chalk erased', 'Tiza borrada'), T('A sala está limpa.', 'The room is clean.', 'La sala está limpia.'), '#cfc6e8');
   };
 
   // ── regras físicas ──────────────────────────────────────────────────────
@@ -1132,7 +1134,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const rightV = new THREE.Vector3();
   const gN = new THREE.Vector3();
 
-  const caption = (title: string, sub: string, color: string) => opts.onCaption?.(title, sub, color);
+  const caption = (title: Text, sub: Text, color: string) => opts.onCaption?.(tx(title), tx(sub), color); // (os três idiomas: src/i18n.ts)
 
   // ── jogador ─────────────────────────────────────────────────────────────
   const EYE = 1.6;
@@ -1189,7 +1191,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const DIE_IN_HAND = 0.22;
-  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §97)
+  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §99)
   const RIM_OUT = 1.63; // raio de fora da mureta do poço (vestibulo.ts: SHAFT.r + 0,43)
   const SCRIBE_AT = new THREE.Vector3(0, 0, RIM_OUT + 0.12); // encostado na mureta: abaixo da borda o pano se achata contra ela (`press`)
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
@@ -1367,7 +1369,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       outsideAtmo = outside;
       blendAtmosphere(0, true); // corte: o ar muda na hora
     }
-    // NA NEBLINA (DESIGN.md §97): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
+    // NA NEBLINA (DESIGN.md §99): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
     // não (são a primeira coisa que aparece). Visto de baixo, pelo poço, ele continua sem névoa, nítido contra a luz
     if (topScribe)
       topScribe.group.traverse((o) => {
@@ -1376,7 +1378,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         m.fog = outside;
         m.needsUpdate = true;
       });
-    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §97)
+    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §99)
     if (S.ph === 4 || S.ph === 6 || S.ph === 7) {
       outdoor.position.set(W.x - 4, W.y + 9, W.z - 3);
       outdoor.target.position.copy(W);
@@ -1413,7 +1415,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         break;
       case 1:
-        dialogue.say([{ who: 'thought', text: '…Tem alguém aí?' }], { block: true, onEnd: () => go(2) });
+        dialogue.say([{ who: 'thought', text: T('…Tem alguém aí?', '…Is anyone there?', '…¿Hay alguien ahí?') }], { block: true, onEnd: () => go(2) });
         S.ph = 1.5;
         break;
       case 2:
@@ -1449,7 +1451,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
           S.pose = { walk: 0, lean: 1.3, rest: 1, headPitch: -0.1 }; // debruçado por cima da mureta: a cabeça fica sobre a boca do poço, o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           S.leanT = (S.leanT ?? 0) + dt;
-          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §97)
+          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §99)
           if (S.t > 6.2 && S.leanT > 1.3) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
@@ -1513,7 +1515,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 9.5:
         fovCine = 44; // (o mesmo zoom leve, só com o olhar já lá em cima)
         if (S.t > 1.3) {
-          dialogue.say([{ who: 'thought', text: 'Sumiu.' }], { block: true, onEnd: () => go(10) });
+          dialogue.say([{ who: 'thought', text: T('Sumiu.', 'Gone.', 'Se fue.') }], { block: true, onEnd: () => go(10) });
           S.ph = 9.8;
         }
         break;
@@ -1623,7 +1625,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           life.react('thump');
           chatFn('plate');
         } else if (n === 'door' || n === 'rise') {
-          // a porta que abre solta o pó da verga (DESIGN.md §98)
+          // a porta que abre solta o pó da verga (DESIGN.md §100)
           if (n === 'door' && rooms[idx]) {
             const e = exitOf(rooms[idx]);
             const dy = rooms[idx].exitDy ?? 0;
@@ -1789,7 +1791,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`; e o mapa do caderno)
   const bounds: THREE.Box3[] = [];
-  // AS GOTAS QUE SE VEEM (DESIGN.md §98): onde a sala diz que pinga (`ambience.drips`, que até aqui era só som), o motor acha o teto em cima
+  // AS GOTAS QUE SE VEEM (DESIGN.md §100): onde a sala diz que pinga (`ambience.drips`, que até aqui era só som), o motor acha o teto em cima
   // do ponto e põe a gota que cresce, cai e abre um anel numa pocinha. (Sem teto em cima, nada: é céu aberto.)
   const dripUpd: ((t: number) => void)[][] = [];
   let puddleMat: THREE.MeshBasicMaterial | null = null;
@@ -1850,7 +1852,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       places.push(pl);
       if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
       const room = build(makeCtx(i));
-      room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
+      room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática // i18n-ok (o nome da sala é o identificador dela; a tela traduz com roomTitle)
       dripUpd[i] = makeDrips(room);
       bounds.push(footprint(room)); // (a sala ainda está na origem, sem giro)
       // em fila: o corredor da porta de uma desemboca na entrada da próxima; salas que descem (fosso, banhos): a seguinte começa no nível
@@ -2332,7 +2334,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const blendAtmosphere = (dt: number, snap = false) => {
     if (outsideAtmo) {
       const f = scene.fog as THREE.Fog;
-      // A NEBLINA (pedido do Pedro, DESIGN.md §97): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
+      // A NEBLINA (pedido do Pedro, DESIGN.md §99): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
       // horizonte. O Escrivão sai dela primeiro como sombra. (A cor é a mesma do pé do céu, em vestibulo.ts)
       f.color.set('#8e8c9e');
       f.near = 0.8;
@@ -2362,7 +2364,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Olhar para uma inscrição por um instante manda os símbolos dela para o diário (como "avistados").
   const lookDir = new THREE.Vector3();
   const toIns = new THREE.Vector3();
-  // AS ANOTAÇÕES JUNTO DOS SÍMBOLOS (DESIGN.md §99; story/reading.ts):
+  // AS ANOTAÇÕES JUNTO DOS SÍMBOLOS (DESIGN.md §101; story/reading.ts):
   //  · a escrita que o jogador está LENDO agora (olhando de frente, a menos de 6 m): abrir o caderno nesse instante faz a cópia dela;
   //  · a palavra sob a MIRA (raio do centro da tela, a menos de 5 m, parada ~0,3 s): a anotação só dela, numa etiqueta;
   //  · com a opção ligada, a escrita olhada por ~0,8 s sobe numa tira de papel com as anotações (se alguma palavra dela tiver anotação).
@@ -2546,7 +2548,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         ins.seeT += dt;
         if (ins.seeT > 0.6) {
-          // só as palavras À VISTA vão para o diário: a que o pano cobre só conta quando o pano queima (DESIGN.md §99)
+          // só as palavras À VISTA vão para o diário: a que o pano cobre só conta quando o pano queima (DESIGN.md §101)
           const vis = ins.panels.length ? ins.panels.filter((p) => p.id && p.mesh.visible).map((p) => p.id!) : ins.words;
           const all = !ins.panels.length || ins.panels.every((p) => !p.id || p.mesh.visible);
           const iv = ins as Inscription & { seenKey?: string };
@@ -2634,7 +2636,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     const imp = Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0);
     sfx.bounce(imp);
-    // a pancada levanta poeira (DESIGN.md §98): no ponto do toque, espalhando rente à superfície. A normal é a direção do tranco
+    // a pancada levanta poeira (DESIGN.md §100): no ponto do toque, espalhando rente à superfície. A normal é a direção do tranco
     if (imp > 1.7) {
       puffN.set(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0).divideScalar(imp);
       puffAt.copy(dieP).addScaledVector(puffN, -R);
@@ -2897,12 +2899,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let introRoll = 0;
   const INTRO_LINES = {
     lying: [
-      { who: 'thought' as const, text: 'Dói tudo.' },
-      { who: 'thought' as const, text: 'Caí? Ou me jogaram?' },
+      { who: 'thought' as const, text: T('Dói tudo.', 'Everything hurts.', 'Me duele todo.') },
+      { who: 'thought' as const, text: T('Caí? Ou me jogaram?', 'Did I fall? Or was I thrown?', '¿Me caí? ¿O me tiraron?') },
     ],
     shaft: [
-      { who: 'thought' as const, text: 'Luz, lá em cima. Alto demais.' },
-      { who: 'thought' as const, text: 'Preciso de uma porta.' },
+      { who: 'thought' as const, text: T('Luz, lá em cima. Alto demais.', 'Light, up there. Too high.', 'Luz, allá arriba. Demasiado alto.') },
+      { who: 'thought' as const, text: T('Preciso de uma porta.', 'I need a door.', 'Necesito una puerta.') },
     ],
   };
   const startIntro = () => {
@@ -3057,7 +3059,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (dieState !== 'hand' || busy()) return;
     const a = aimPoint();
     if (!a) {
-      caption('Longe demais', '', '#cfc6e8');
+      caption(T('Longe demais', 'Too far', 'Demasiado lejos'), '', '#cfc6e8');
       return;
     }
     thrownFace = face;
@@ -3108,14 +3110,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const f = FACES[n - 1];
     if (!f) return;
     if (!f.unlocked) {
-      caption(`${n} · ?`, 'Selada.', '#8f86a8');
+      caption(`${n} · ?`, T('Selada.', 'Sealed.', 'Sellada.'), '#8f86a8');
       sfx.play('locked');
       return;
     }
     if (tool !== 'die') setTool('die');
     applyFace(n);
     sfx.play('face', n);
-    caption(`${n} · ${f.name}`, f.desc, f.color);
+    caption(`${n} · ${tx(f.name)}`, f.desc, f.color);
   };
   const cycleFace = (dir: number) => {
     if (tool !== 'die') {
@@ -3696,7 +3698,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     blendAtmosphere(0, true);
     announced.add(0);
     diary.visitRoom(rooms[0].name);
-    caption(rooms[0].name, rooms[0].subtitle, '#ffd36b');
+    caption(roomTitle(rooms[0].name), rooms[0].subtitle, '#ffd36b');
   };
 
   let chatFn: (key: string) => void = () => {};
@@ -3769,7 +3771,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     saves.writeMeta(m);
   };
   // pede um salvamento com miniatura (a imagem é copiada logo depois do próximo quadro).
-  // O ENGASGO AO ENTRAR NUMA SALA (DESIGN.md §101): copiar a imagem para a miniatura faz a placa de vídeo parar e entregar o quadro, e isso
+  // O ENGASGO AO ENTRAR NUMA SALA (DESIGN.md §103): copiar a imagem para a miniatura faz a placa de vídeo parar e entregar o quadro, e isso
   // custava de 5 a 10 quadros de uma vez, toda vez que o jogador cruzava uma porta. Agora o salvamento AUTOMÁTICO (`quiet`: entrar numa
   // sala, resolver um puzzle, fechar o caderno) grava na hora sem foto nova, e a foto fica para um momento PARADO (o jogador sem andar nem
   // virar por 0,6 s), quando um quadro a mais não se vê. Pausar e voltar à tela inicial tiram a foto na hora (a imagem já está parada).
@@ -4249,7 +4251,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
       for (let i = 0; i <= m.room; i++) announced.add(i);
       diary.visitRoom(r.name);
-      goPending = { cap: () => caption(r.name, r.subtitle, '#ffd36b'), intro: false };
+      goPending = { cap: () => caption(roomTitle(r.name), r.subtitle, '#ffd36b'), intro: false };
     } else {
       spawnIn(0);
       announced.add(0);
@@ -4316,7 +4318,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let readyT = 0;
   let readySent = false;
   let barShown = 0; // a barra como o jogador a vê (anda macio até o valor de verdade)
-  // PREPARAR A PLACA DE VÍDEO (DESIGN.md §101): na primeira vez que uma sala aparecia, a placa de vídeo montava os materiais dela (os
+  // PREPARAR A PLACA DE VÍDEO (DESIGN.md §103): na primeira vez que uma sala aparecia, a placa de vídeo montava os materiais dela (os
   // "shaders") e recebia as texturas, e o quadro engasgava (a Biblioteca, quase 1 s num aparelho lento). Agora, assim que os modelos chegam:
   //  · os MATERIAIS de todas as salas são montados de uma vez (em paralelo quando o navegador deixa: compileAsync), montados para a imagem do
   //    pós-processo, onde a sala é desenhada; a tela de carregamento espera isso terminar;
@@ -4470,7 +4472,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       });
     }
     nearest = best;
-    const label: string | null = best ? (best as Interactable).label : null;
+    const label: string | null = best ? tx((best as Interactable).label) : null;
     if (label !== promptLabel) {
       promptLabel = label;
       opts.onPrompt?.(label);
@@ -4758,7 +4760,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
   // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
-  // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §98; ideia do Pedro: cada capítulo com a sua cor, mudando aos poucos conforme o jogador avança
+  // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §100; ideia do Pedro: cada capítulo com a sua cor, mudando aos poucos conforme o jogador avança
   // dentro dele). O capítulo 1 é o do FOGO: começa FRIO (o Poço, pedra cinza e luz de fora) e vai esquentando sala a sala até o âmbar do
   // Tribunal. É um banho leve (uns 7%), que a paleta transforma em outra escolha de cores; muda devagar ao trocar de sala.
   const GRADE_A = new THREE.Vector3(0.95, 0.99, 1.07); // a primeira sala do capítulo
@@ -4769,7 +4771,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     gradeT.lerpVectors(GRADE_A, GRADE_B, f);
     (postMat.uniforms.uGrade.value as THREE.Vector3).lerp(gradeT, Math.min(1, Math.max(dt, 0.001) * 0.6));
   };
-  // o AR QUENTE (DESIGN.md §98): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
+  // o AR QUENTE (DESIGN.md §100): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
   const hotV = new THREE.Vector3();
   const hotList: { u: number; v: number; r: number; d: number }[] = [];
   const updateHot = (t: number) => {
@@ -4796,7 +4798,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     postMat.uniforms.uTime.value = t % 1000;
   };
-  // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §98). Procura o teto com alguns raios para cima; onde
+  // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §100). Procura o teto com alguns raios para cima; onde
   // não há teto (pátio, claustro), nada cai
   const dustRay = new THREE.Raycaster();
   const ceilingDust = (ri: number) => {
@@ -4856,7 +4858,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       } catch {
         /* sem armazenamento: tudo bem */
       }
-      caption('Algo falhou (o jogo seguiu)', `${where}: ${msg}`.slice(0, 90), '#c89a90');
+      caption(T('Algo falhou (o jogo seguiu)', 'Something failed (the game went on)', 'Algo falló (el juego siguió)'), `${where}: ${msg}`.slice(0, 90), '#c89a90');
     }
   };
   const loop = (now: number) => {
@@ -4864,7 +4866,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     try {
       frame(now);
     } catch (e) {
-      loopError(e, 'quadro');
+      loopError(e, tx(T('quadro', 'frame', 'fotograma')));
     }
   };
   let benchCam: { yaw: number; pitch: number } | null = null;
@@ -4928,7 +4930,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (!announced.has(ri)) {
         announced.add(ri);
         sfx.play('room');
-        caption(rooms[ri].name, rooms[ri].subtitle, '#ffd36b');
+        caption(roomTitle(rooms[ri].name), rooms[ri].subtitle, '#ffd36b');
       }
     }
     blendAtmosphere(dt);
@@ -5344,7 +5346,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (gemFx.active() && ui.diaryOpen()) ui.setDiary(false);
         gemFx.update(dt);
       } catch (e) {
-        loopError(e, 'cena da gema');
+        loopError(e, tx(T('cena da gema', 'gem scene', 'escena de la gema')));
         gemFx.abort();
       }
       const hide = book.update(dt, t);
@@ -5729,7 +5731,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
       puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
       note: (id: string, text: string) => diary.setNote(id, text), // (testes) escreve uma anotação no caderno
-      // (testes) os programas de desenho já montados pela placa de vídeo, e se a preparação de todas as salas terminou (DESIGN.md §101)
+      // (testes) os programas de desenho já montados pela placa de vídeo, e se a preparação de todas as salas terminou (DESIGN.md §103)
       progs: () => ({ warm: warmState, list: (renderer.info.programs ?? []).map((pg) => [pg.name, (pg as unknown as { cacheKey: string }).cacheKey]) }),
       // (testes) quanta memória de vídeo as texturas de cada sala ocupam (MB, com mipmaps)
       texMem: () => {

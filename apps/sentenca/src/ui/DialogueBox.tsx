@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { diary, diaryStore } from '../story/diary';
 import { dialogue, dialogueStore, SPEAKER_WORD } from '../story/dialogue';
 import { useStore } from '../story/store';
+import { tx, useLang } from '../i18n';
 import { WordGlyph } from './Glyph';
 import { useUiScale } from './scale';
 import { PART_MS, scribbleFor, wordMs } from '../story/writing';
@@ -15,11 +16,13 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
   const c = useStore(dialogueStore);
   const k = useUiScale();
   const line = c ? c.lines[c.i] : null;
-  const total = line ? (line.glyphs ? line.glyphs.length : (line.text?.length ?? 0)) : 0;
+  const lang = useLang();
+  const text = line?.text != null ? tx(line.text, lang) : undefined;
+  const total = line ? (line.glyphs ? line.glyphs.length : (text?.length ?? 0)) : 0;
   const key = c ? `${c.id}:${c.i}` : '';
   const [shown, setShown] = useState(0);
   const [skipped, setSkipped] = useState(false); // o jogador pulou a escrita: tudo aparece de uma vez, sem animação
-  // AS ANOTAÇÕES (DESIGN.md §99): `peek` = o símbolo que o jogador apontou (tocou, ou passou o mouse); `hov` = onde está o "cursor" no PC
+  // AS ANOTAÇÕES (DESIGN.md §101): `peek` = o símbolo que o jogador apontou (tocou, ou passou o mouse); `hov` = onde está o "cursor" no PC
   const notesOn = useStore(configStore).glyphNotes;
   useStore(diaryStore); // (para as anotações acompanharem o caderno)
   const [peek, setPeek] = useState<number | null>(null);
@@ -48,12 +51,12 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
       () => {
         setShown(shown + 1);
         if (line.glyphs) scribbleFor(wordMs(line.glyphs[shown]), onSound); // risquinhos de giz enquanto o símbolo é escrito
-        else if (shown % 3 === 0 && /\S/.test(line.text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
+        else if (shown % 3 === 0 && /\S/.test(text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
       },
       line.glyphs ? (shown === 0 ? 200 : wordMs(line.glyphs[shown - 1])) : 32, // cada símbolo só começa quando o anterior terminou de ser escrito
     );
     return () => window.clearTimeout(t);
-  }, [line, shown, total, onSound]);
+  }, [line, text, shown, total, onSound]);
 
   // o que aparece na conversa vai para o diário como "avistado"
   useEffect(() => {
@@ -65,7 +68,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
 
   const done = shown >= total;
   const block = !!c?.block;
-  // a fala inteira escrita vai para a LEITURA: abrir o caderno logo depois copia a conversa (DESIGN.md §99)
+  // a fala inteira escrita vai para a LEITURA: abrir o caderno logo depois copia a conversa (DESIGN.md §101)
   useEffect(() => {
     if (c && line?.glyphs && done) readTalk(line.glyphs, diaryStore.get().here, String(c.id));
   }, [c, line, done]);
@@ -114,7 +117,7 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
     const pd = (e: Event) => {
       if ((e.target as HTMLElement | null)?.closest?.('.skipintro')) return; // (segurar para pular a introdução não passa a fala)
       e.stopPropagation();
-      // tocar num SÍMBOLO que tem anotação mostra a anotação dele (DESIGN.md §99); tocar de novo no mesmo passa a fala
+      // tocar num SÍMBOLO que tem anotação mostra a anotação dele (DESIGN.md §101); tocar de novo no mesmo passa a fala
       const tile = (e.target as HTMLElement | null)?.closest?.('.dlg-tile[data-i]') as HTMLElement | null;
       const gl = c.lines[c.i]?.glyphs;
       if (tile && gl) {
@@ -166,8 +169,8 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
         ) : (
           <p data-done={done ? '' : undefined}>
             {/* (a tira de papel já diz que é pensamento: sem os parênteses de antes) */}
-            {(line.text ?? '').slice(0, shown)}
-            <span className="ghost">{(line.text ?? '').slice(shown)}</span>
+            {(text ?? '').slice(0, shown)}
+            <span className="ghost">{(text ?? '').slice(shown)}</span>
           </p>
         )}
       </div>

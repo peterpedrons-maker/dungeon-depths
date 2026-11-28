@@ -1,4 +1,4 @@
-// AS ANOTAÇÕES DO JOGADOR FORA DO CADERNO (DESIGN.md §99; story/reading.ts).
+// AS ANOTAÇÕES DO JOGADOR FORA DO CADERNO (DESIGN.md §101; story/reading.ts).
 //  · `AimNote`: a etiqueta de papel embaixo da mira, com a anotação da palavra da parede que está sob ela (sempre ligada; só aparece se ele
 //    anotou alguma coisa sobre aquela palavra);
 //  · `ReadingStrip`: com a opção "Minhas anotações embaixo dos símbolos" ligada, a escrita que ele está olhando sobe numa tira de papel, com
@@ -9,6 +9,9 @@ import { diaryStore } from '../story/diary';
 import { useStore } from '../story/store';
 import { WordGlyph } from './Glyph';
 import { useUiScale } from './scale';
+import { T, tx, useLang } from '../i18n';
+
+const CHALK = T('a giz', 'in chalk', 'a tiza');
 
 export function AimNote() {
   const a = useStore(aimNoteStore);
@@ -24,10 +27,11 @@ export function ReadingStrip() {
   const l = useStore(lookingStore);
   useStore(diaryStore); // (a anotação mudou no caderno: a tira acompanha)
   const k = useUiScale();
+  useLang(); // (o idioma mudou: redesenha)
   if (!l) return null;
   return (
     <div className="readstrip" aria-hidden="true" key={l.key}>
-      {l.chalk && <span className="rs-from">a giz</span>}
+      {l.chalk && <span className="rs-from">{tx(CHALK)}</span>}
       {l.words.map((id, i) => {
         if (!id)
           return (

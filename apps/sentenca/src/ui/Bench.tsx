@@ -1,4 +1,4 @@
-// O TESTE DE DESEMPENHO (?bench=1; DESIGN.md §100, pedido do Pedro antes de pensar em app de celular e Steam).
+// O TESTE DE DESEMPENHO (?bench=1; DESIGN.md §102, pedido do Pedro antes de pensar em app de celular e Steam).
 // Qualquer pessoa abre o endereço do jogo com ?bench=1 no aparelho que quer medir: o jogo passeia sozinho por cinco salas pesadas, em quatro
 // níveis de qualidade, mede quantos quadros por segundo o aparelho desenha e onde engasga, e mostra um relatório com o aparelho, os números
 // e a qualidade que ele recomenda. Nada é gravado: nem o jogo salvo, nem o caderno, nem as configurações (só se a pessoa apertar "Usar a
@@ -167,7 +167,7 @@ export function Bench({ api, ready }: { api: React.MutableRefObject<SceneApi | n
     window.addEventListener('resize', r);
     return () => window.removeEventListener('resize', r);
   }, []);
-  // pronto de verdade: o cenário desenhado E a placa de vídeo com os materiais de todas as salas preparados (DESIGN.md §101)
+  // pronto de verdade: o cenário desenhado E a placa de vídeo com os materiais de todas as salas preparados (DESIGN.md §103)
   const [warm, setWarm] = useState(false);
   useEffect(() => {
     if (!ready || warm) return;

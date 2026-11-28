@@ -32,23 +32,33 @@ const ASCII: number[][] = [
 type Accent = 'acute' | 'grave' | 'circ' | 'tilde' | 'cedil' | 'uml';
 const COMPOSED: Record<string, [string, Accent]> = {};
 const add = (base: string, list: string, acc: Accent) => [...list].forEach((c, i) => (COMPOSED[c] = [base[i] ?? base[0], acc]));
-add('aeiou', 'áéíóú', 'acute');
-add('AEIOU', 'ÁÉÍÓÚ', 'acute');
-add('aeiou', 'àèìòù', 'grave');
-add('AEIOU', 'ÀÈÌÒÙ', 'grave');
-add('aeo', 'âêô', 'circ');
-add('AEO', 'ÂÊÔ', 'circ');
-add('aon', 'ãõñ', 'tilde');
-add('AON', 'ÃÕÑ', 'tilde');
-add('c', 'ç', 'cedil');
-add('C', 'Ç', 'cedil');
-add('u', 'ü', 'uml');
+add('aeiou', 'áéíóú', 'acute'); // i18n-ok
+add('AEIOU', 'ÁÉÍÓÚ', 'acute'); // i18n-ok
+add('aeiou', 'àèìòù', 'grave'); // i18n-ok
+add('AEIOU', 'ÀÈÌÒÙ', 'grave'); // i18n-ok
+add('aeo', 'âêô', 'circ'); // i18n-ok
+add('AEO', 'ÂÊÔ', 'circ'); // i18n-ok
+add('aon', 'ãõñ', 'tilde'); // i18n-ok
+add('AON', 'ÃÕÑ', 'tilde'); // i18n-ok
+add('c', 'ç', 'cedil'); // i18n-ok
+add('C', 'Ç', 'cedil'); // i18n-ok
+add('u', 'ü', 'uml'); // i18n-ok
+// o espanhol abre a pergunta e a exclamação de ponta-cabeça (¿ ¡): o mesmo desenho de ? e !, girado meia volta (os três idiomas, src/i18n.ts)
+const FLIP: Record<string, string> = { '¡': '!', '¿': '?' };
 const ALIAS: Record<string, string> = { '–': '-', '—': '-', '…': '...', '“': '"', '”': '"', '‘': "'", '’': "'", '·': '-', '«': '<', '»': '>', 'º': 'o', 'ª': 'a', '•': '*' };
 
 export const LINE = 10; // altura de uma linha de texto (escala 1)
 export const ADV = 6; // avanço horizontal por caractere (escala 1)
 
 function pixels(ch: string): number[] {
+  const f = FLIP[ch];
+  if (f) {
+    // meia volta dentro da letra (linhas 0 a 6): coluna c -> 4 - c, linha r -> 6 - r
+    const src = ASCII[f.charCodeAt(0) - 32];
+    const out = [0, 0, 0, 0, 0];
+    for (let c = 0; c < 5; c++) for (let r = 0; r <= 6; r++) if (src[c] & (1 << r)) out[4 - c] |= 1 << (6 - r);
+    return out;
+  }
   const code = ch.charCodeAt(0);
   return code >= 32 && code <= 126 ? ASCII[code - 32] : ASCII['?'.charCodeAt(0) - 32];
 }
@@ -97,16 +107,17 @@ export function textWidth(s: string, sc = 1) {
   return [...s].length * ADV * sc;
 }
 
-export function drawText(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, color: string, sc = 1) {
+// `adv`: o passo entre letras (padrão ADV × escala); um título que não cabe aperta o passo (as letras não encolhem)
+export function drawText(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, color: string, sc = 1, adv = ADV * sc) {
   let cx = x;
   for (const ch of s) {
     drawChar(ctx, ch, cx, y, color, sc);
-    cx += ADV * sc;
+    cx += adv;
   }
 }
 
-export function drawCentered(ctx: CanvasRenderingContext2D, s: string, cx: number, y: number, color: string, sc = 1) {
-  drawText(ctx, s, Math.round(cx - textWidth(s, sc) / 2), y, color, sc);
+export function drawCentered(ctx: CanvasRenderingContext2D, s: string, cx: number, y: number, color: string, sc = 1, adv = ADV * sc) {
+  drawText(ctx, s, Math.round(cx - ([...s].length * adv - (adv - ADV * sc)) / 2), y, color, sc, adv);
 }
 
 // quebra de linha por palavras (largura em caracteres); \n força quebra

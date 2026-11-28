@@ -17,6 +17,7 @@ import { skyHole } from '../skyhole';
 import { FireGrid, makeFloorChannel, makeGemNiche, makeWallBoard, type GridEdge, type WallBoard } from '../firegrid';
 import { mkBox, roomShell, shotGate, slopedWall, stairs, stairsX } from './shell';
 import type { Ctx, Rect, Room } from '../types';
+import { T } from '../../i18n';
 
 const BAL = 3; // altura do balcão
 const BZ0 = -2.6; // borda do balcão do lado da entrada
@@ -211,7 +212,7 @@ export function buildFio(ctx: Ctx): Room {
   return {
     skyHoles: SKY,
     name: 'O Fio de Fogo',
-    subtitle: 'O fogo não fica onde eu o ponho.',
+    subtitle: T('O fogo não fica onde eu o ponho.', "The fire doesn't stay where I put it.", 'El fuego no se queda donde lo pongo.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -322,7 +323,7 @@ export function buildFio(ctx: Ctx): Room {
               sockFlame.visible = false;
               niche.open();
               ctx.sfx('piece');
-              ctx.caption('Algo se abriu sob o balcão', 'Dizer é fazer.', '#7ad8ff');
+              ctx.caption(T('Algo se abriu sob o balcão', 'Something opened under the balcony', 'Algo se abrió bajo el balcón'), T('Dizer é fazer.', 'Saying is doing.', 'Decir es hacer.'), '#7ad8ff');
               used = 0;
               stopT = 0;
               floor.clear();

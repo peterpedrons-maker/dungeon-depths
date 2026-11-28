@@ -1,4 +1,4 @@
-// AS ANOTAÇÕES JUNTO DOS SÍMBOLOS (DESIGN.md §99, pedido do Pedro). O que o jogador escreveu sobre um glifo (`diary.notes`) só aparecia no
+// AS ANOTAÇÕES JUNTO DOS SÍMBOLOS (DESIGN.md §101, pedido do Pedro). O que o jogador escreveu sobre um glifo (`diary.notes`) só aparecia no
 // caderno. Agora aparece em três lugares, sempre com as palavras DELE (o jogo continua sem traduzir e sem corrigir; sem anotação, nada aparece):
 //   1. a CÓPIA (sempre): abrir o caderno lendo uma escrita (ou logo depois de uma conversa) abre numa página com a frase copiada e a anotação
 //      embaixo de cada símbolo; tocar num símbolo da cópia deixa anotar ali (book/pages.ts, book/book3d.ts). Uma cópia só, a última: um

@@ -1,6 +1,7 @@
 import { diary, diaryStore } from './diary';
 import { slotKey } from './save';
 import { createStore } from './store';
+import { T, tx, type Tx } from '../i18n';
 
 // AS PERGUNTAS DO DADO (DESIGN.md §42): de tempos em tempos, num momento calmo, o dado treme, vem ao centro da tela, mostra um glifo e
 // pergunta «VOCÊ SABER ?». O jogador escolhe entre 4 significados e "não sei". É o único lugar do jogo onde alguém diz se ele acertou
@@ -36,7 +37,44 @@ export const QUIZ: QuizDef[] = [
   { id: 'q10', word: 'todos', right: 'todos', wrong: ['nove', 'muitos', 'nenhum'], when: { room: 'A Memória da Casa', at: 'after' } },
 ];
 
-export const IDK = 'não sei';
+export const IDK = 'não sei'; // i18n-ok (chave; a tela mostra MEAN[IDK])
+// o que o jogador LÊ em cada opção (a chave continua a palavra em português; os três idiomas: src/i18n.ts)
+const MEAN: Record<string, Tx> = {
+  [IDK]: T('não sei', "I don't know", 'no sé'),
+  acender: T('acender', 'ignite', 'encender'), // ("ignite": a mesma palavra da anotação dela, herpages.ts)
+  braseiro: T('braseiro', 'brazier', 'brasero'),
+  fogo: T('fogo', 'fire', 'fuego'),
+  um: T('um', 'one', 'uno'),
+  dois: T('dois', 'two', 'dos'),
+  'três': T('três', 'three', 'tres'),
+  quatro: T('quatro', 'four', 'cuatro'),
+  cinco: T('cinco', 'five', 'cinco'),
+  seis: T('seis', 'six', 'seis'),
+  nove: T('nove', 'nine', 'nueve'),
+  antes: T('antes', 'before', 'antes'),
+  depois: T('depois', 'after', 'después'),
+  agora: T('agora', 'now', 'ahora'),
+  ordem: T('ordem', 'order', 'orden'),
+  confirmado: T('confirmado', 'confirmed', 'confirmado'),
+  boato: T('boato', 'rumor', 'rumor'),
+  pergunta: T('pergunta', 'question', 'pregunta'),
+  fim: T('fim', 'end', 'fin'),
+  mentira: T('mentira', 'lie', 'mentira'),
+  pano: T('pano', 'cloth', 'paño'),
+  longe: T('longe', 'far', 'lejos'),
+  pequeno: T('pequeno', 'small', 'pequeño'),
+  grande: T('grande', 'big', 'grande'),
+  meio: T('meio', 'half', 'medio'),
+  verdade: T('verdade', 'truth', 'verdad'),
+  'dúvida': T('dúvida', 'doubt', 'duda'),
+  igual: T('igual', 'equal', 'igual'),
+  lei: T('lei', 'law', 'ley'),
+  mais: T('mais', 'more', 'más'),
+  todos: T('todos', 'all', 'todos'),
+  muitos: T('muitos', 'many', 'muchos'),
+  nenhum: T('nenhum', 'none', 'ninguno'),
+};
+export const optLabel = (k: string) => tx(MEAN[k] ?? k);
 const MAX_TRIES = 3; // depois disso o dado desiste da pergunta
 
 interface Rec {
@@ -132,8 +170,9 @@ export const quiz = {
     save();
     if (result !== 'idk') {
       const old = diaryStore.get().notes[s.def.word] ?? '';
-      const has = old.split('\n').some((l) => l.trim() === label);
-      if (!has) diary.setNote(s.def.word, old.trim() ? `${old.replace(/\s+$/, '')}\n${label}` : label);
+      const said = optLabel(label); // (a anotação vai no idioma de quem jogou)
+      const has = old.split('\n').some((l) => l.trim() === said);
+      if (!has) diary.setNote(s.def.word, old.trim() ? `${old.replace(/\s+$/, '')}\n${said}` : said);
     }
     quizStore.set({ ...s, phase: 'done', picked: i, result });
   },

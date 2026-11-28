@@ -18,6 +18,7 @@ import { burntTexture, edgeKey, FireGrid, grooveTexture, makeFloorChannel, makeG
 import { mkBox, shotGate, wedge } from './shell';
 import { windNear } from '../ambience';
 import type { Box, Ctx, Rect, Room } from '../types';
+import { T as Tr } from '../../i18n';
 import { bat } from '../critters';
 
 const TOP = 8; // a galeria (boca do fosso), acima do fundo
@@ -470,13 +471,13 @@ export function buildPonte(ctx: Ctx): Room {
   if (import.meta.env.DEV) {
     ((globalThis as Record<string, unknown>).__ponte = () => ({ lit: floor.points(), burnt: [...floor.burnt], cut: [...floor.cut], used, solved, cold: +coldT.toFixed(1), plank: plank.state, bowls: braz.map((b) => b.bowl.toArray()), torches: torches.map((tc) => tc.pos.toArray().map((v) => +v.toFixed(2))), torchLit: torches.map((tc) => tc.lit), riser: +riser.k.toFixed(2), riserBowl: riser.brazier.bowl.toArray(), bonus, H }));
   }
-  // (cenógrafo) um morcego cruza a boca do fosso, lá no alto (DESIGN.md §98)
+  // (cenógrafo) um morcego cruza a boca do fosso, lá no alto (DESIGN.md §100)
   kit.fxUpd.push(bat(kit, new THREE.Vector3(-OX + 1.5, CEIL - 1.2, OZ0 + 1.5), new THREE.Vector3(OX - 1.5, CEIL - 1.7, Z1 - 1.5), 75));
   kit.bake();
 
   return {
     name: 'A Ponte de Madeira',
-    subtitle: 'Madeira sobre o fosso.',
+    subtitle: Tr('Madeira sobre o fosso.', 'Wood over the pit.', 'Madera sobre el foso.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -622,7 +623,7 @@ export function buildPonte(ctx: Ctx): Room {
         const n = lit.filter((c) => c !== -1).length;
         if (n === 4 && lit.every((c, i) => !torches[i].lit || (c !== null && CORNERS.has(c as number)))) {
           riser.raise();
-          ctx.caption('Algo subiu na rampa', 'Do alto, a grade ficou inteira.', '#7ad8ff');
+          ctx.caption(Tr('Algo subiu na rampa', 'Something rose on the ramp', 'Algo subió en la rampa'), Tr('Do alto, a grade ficou inteira.', 'From above, the grid is whole.', 'Desde arriba, la cuadrícula quedó entera.'), '#7ad8ff');
         }
       }
       riser.update(dt, t);

@@ -2211,7 +2211,77 @@ gema ou folha mudou; os 21 verificadores passam e as três salas se resolvem no 
   jogador e para o dado): a passagem é a que se vê, ~1 m na parte mais justa (junto ao pé do poste) e mais larga logo adiante. Os fogaréus, as gaiolas,
   os estandartes e a estela não se mexeram; o dado que cai na quina antiga agora vai ao chão, e não fica flutuando nela.
 
-## 97. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
+## 97. A galeria do Escrivão, atrás da janela de grade dos Nichos (cenógrafo, pedido do Pedro)
+
+O Pedro mandou uma foto do celular: pela janela de grade do Corredor dos Nichos (sala 5, trecho C), onde o Escrivão passa andando, via-se um vazio
+preto, um chão chapado e uma parede de tijolo com três tochas, com cara de cenário inacabado. Agora é uma galeria de verdade
+(`src/scene/rooms/galeriaEscrivao.ts`, chamada por `respiro1.ts` no lugar dos quatro planos de antes). Não mudaram: o caminho e a velocidade dele
+(x = −13, chão a 0,2 m, 8 m em 9 s), a janela e as barras (§78), a mini cena e quando ela dispara, os segredos da sala (as folhas, o nicho vazio, o
+reflexo da Cisterna, a gema), a planta e o furo de luz.
+- **A arcada de frente para a janela.** Cinco tramos de 3,4 m com abóbadas de aresta (as peças de `arch.ts`, como na Galeria dos Condenados, §65):
+  quatro colunas redondas com arcos de aduelas entre elas, o tramo do meio bem na frente da janela, e arcos entre os tramos que nascem das colunas
+  e de mísulas na parede do fundo. A face de fora da arcada é mais escura (nenhuma chama a alcança e a luz ambiente desta sala é forte): ela vira a
+  moldura escura, e o olho vai para o claro de dentro dos arcos. Embaixo, uma mureta baixa entre as colunas (26 cm: da janela, não tapa os pés dele).
+- **Ele aparece, vira o capuz e some entre colunas.** Visto da janela, ele surge saindo de trás da coluna da esquerda (o aparecer pontilhado fica
+  meio escondido por ela), atravessa o arco do meio, vira o capuz para o jogador ali e passa para trás da coluna da direita perto do fim da mini
+  cena (os últimos ~0,4 s dela); some no tramo seguinte, na frente do atril.
+- **A luz desenha ele.** Duas tochas na parede do fundo (antes três): uma no tramo em que ele aparece e outra no tramo do meio, 0,9 m adiante de onde
+  ele vira o capuz. A parede atrás dele fica clara e ele, escuro na frente dela, com os olhos acesos. Poças de luz no chão, fuligem acima de cada
+  tocha. As tochas de lá só valem com o jogador no corredor (no pátio, com intensidade zero, não disputam as luzes emprestadas) e alcançam 7 m
+  (não clareiam o corredor através da parede).
+- **O caminho é dele.** No chão de lajes, uma faixa gasta, mais clara no meio, exatamente onde ele anda. No tramo onde ele some, o **atril** (o
+  mesmo modelo da Biblioteca, onde fica o escritório dele) com um livro aberto, e numa mísula ao lado três velas, uma acesa (uma luz fraca, de 3 m).
+- **As pontas e o vão.** A galeria termina, dos dois lados, numa parede com uma porta escura (o caminho dele continua no escuro, e não num corte).
+  A beirada da galeria é uma fiada de pedra lavrada em balanço sobre mísulas; a parede de arrimo, recuada, some no preto até uma água parada 2 m
+  abaixo. O peitoril esconde quase toda a água: quem se debruça na grade e olha para baixo vê, nela, as duas chamas de cabeça para baixo, tremendo.
+  Lá em cima, o teto do vão quase preto. A janela ganhou espessura por fora (ombreiras, peitoril e verga de 30 cm, atrás da grade, sem mudar a
+  abertura de 1,6 × 1,7 m).
+- **Custo.** As peças paradas viram 14 malhas, uma por material (os objetos do atril juntados pelo `bakeProps`). Medido na janela:
+  ~72 desenhos e ~19 mil triângulos (antes ~48 e ~9 mil); no pátio, o mesmo de antes (~355). A pegada da sala no mapa é a mesma (até x = −15);
+  ela só desce mais (o fundo do vão, y = −2,2, antes −1,2), num lugar onde não há sala nenhuma embaixo.
+- Testado no navegador (PC 1920×1080 e celular 844×390): a mini cena inteira com ele passando, a galeria de vários pontos do corredor, os reflexos.
+  Não testado num celular de verdade.
+- **Quando a câmera vira para ele** (pedido do Pedro: "apenas quando o jogador estiver totalmente em frente a grade"). A 1ª passagem, a da mini
+  cena, só começa com o jogador NA janela (a menos de 0,6 m do eixo dela, entre as barras de fora, e na metade do corredor junto da janela) e
+  OLHANDO para a grade (até ~40° de lado; `ctx.aim()`). Antes bastava passar perto, de lado ou de costas, e a câmera virava sozinha. Testado:
+  de lado, de costas, 60° de lado, 1,1 m para o lado e longe demais, nada; de frente, a câmera acompanha o capuz. Depois da 1ª vez, ele só passa,
+  sem cena, em qualquer ponto daquele trecho.
+
+## 98. Três idiomas: português, inglês e espanhol (pedido do Pedro)
+
+Pedido: "fazer com que o jogo esteja disponível no idioma do inglês… inglês e espanhol… a partir de agora… tudo que a gente colocar no jogo tem
+que ter todos os idiomas, os 3… O jogador pode escolher ele assim que começar o jogo… Ou nas configurações."
+
+- **A regra.** Todo texto que o jogador lê existe nos três: interface (menus, configurações, pausa, créditos, carregamento, avisos de ação, botões
+  do celular, dicas), legendas e subtítulos de sala, pensamentos, o caderno inteiro (capa, índice, cabeçalhos, tutorial), as folhas dela, os
+  textos, as perguntas do dado e os significados das respostas. O que **não** se traduz: os **glifos** dos Contáveis (a língua do mundo; o dado e
+  o Escrivão só falam neles), o nome do jogo «SENTENÇA» e o da editora «Cinco Riscos» (marcas; o Pedro pode mudar isso).
+- **Como.** `src/lang.ts` (sem dependências) tem `Lang`, `LANGS`, `guessLang()`, o tipo `Tx = { pt, en, es }`, `Text = string | Tx` e
+  `T(pt, en, es)`; `src/i18n.ts` reexporta e soma `tx(texto)` (o idioma de agora, na hora de mostrar) e `useLang()` (React redesenha quando
+  muda). O TypeScript cobra: um `Tx` sem um dos três não compila. O texto vira string **na hora de mostrar**, não na hora de criar: `ctx.caption`,
+  `ctx.say` (a caixa de conversa resolve), os rótulos de ação (a cada quadro), as páginas do caderno (`pages.ts`; o livro se redesenha quando
+  o idioma muda). Por isso trocar o idioma no meio do jogo muda tudo na hora, inclusive o caderno aberto.
+  - `lang.ts` existe separado porque `story/config.ts` (onde o idioma é guardado) precisa de `T`, e o `i18n.ts` importa `config.ts`: com os
+    dois se importando, a ordem de carga deixava `T` sem valor e a página ficava em branco.
+- **Nomes de sala.** O `name` de cada sala continua em português: é a CHAVE da planta, dos saves, das gemas, das perguntas e do mapa. A tradução
+  fica em `src/story/roomnames.ts` (`ROOM_NAMES`, `roomTitle("Sala N · X")`) e só vale na tela. Sala nova = linha nova lá.
+- **Perguntas do dado.** As opções continuam guardadas pela chave em português (o save não muda); `optLabel(chave)` mostra no idioma
+  (`MEAN` em `quiz.ts`), e a anotação que a resposta acrescenta ao glifo é escrita no idioma de quando se respondeu.
+- **O caderno.** Os rótulos das abas do mapa traduzem só na tela (térreo/subsolo: T e S, G e B, B e S). A capa «CUADERNO» e «NOTEBOOK» têm 8
+  letras: a etiqueta alarga 6 pixels e o passo das letras aperta 1. As folhas dela foram traduzidas pelo `narrador` cabendo nas mesmas 13
+  linhas de 16 letras. A fonte do caderno (`src/book/font.ts`) e a da interface (`public/fonts/mdd-pixel.otf`, `tools/build_font.mjs`)
+  ganharam ¿ e ¡ (o ? e o ! girados meia volta) e os acentos do espanhol.
+- **A escolha.** Na 1ª vez que o jogo abre (`langChosen` falso), antes da abertura da editora, uma tábua de pedra pergunta nos três
+  («Escolha o idioma / Choose your language / Elige el idioma») com o idioma do aparelho já em cima e em ouro (`LanguagePick` em `Menus.tsx`).
+  Depois, em Configurações → Idioma. `?lang=pt|en|es` fixa o idioma (testes, trailer: `tools/trailer/` grava em português, `TRAILER_LANG` muda).
+- **O verificador.** `tools/verify_i18n.mjs` lê os arquivos do jogo e acha texto solto em português (strings com cara de frase fora de um
+  `T(...)`, e texto no JSX). Não conta: chaves (nomes de sala, ids, palavras do léxico), mensagens de erro e de console, código de shader e as
+  linhas marcadas `// i18n-ok` (o que não é texto para o jogador). Ficam de fora as salas da reserva que não estão no jogo. Também fica de fora o
+  teste de desempenho (`?bench=1`, §102): é ferramenta nossa, e o relatório dele é para colar na conversa. Roda junto com os
+  outros `verify_*.mjs` antes de cada commit.
+- **Daqui em diante:** nada entra no jogo só em português (CLAUDE.md, "Convenção para textos"; as regras dos subagentes também dizem isso).
+
+## 99. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
 
 "Melhorar o visual do jogo, mantendo todas as coisas, só deixar mais polido: sombras, efeito do fogo... Na cutscene inicial, o lado de fora como
 uma neblina, estilo Silent Hill, para que o jogador não veja nada lá fora, se existe ou não existe, e deixar mais místico."
@@ -2256,7 +2326,7 @@ Testado: a abertura inteira gravada quadro a quadro (a névoa, o Escrivão saind
 e de longe (Lousa, Galeria, Apelidos, Tribunal, Biblioteca, Vestíbulo, Boato Verdadeiro, Lei Pequena, Confirma, Fio) antes e depois, no PC
 (1280 × 720) e no celular (844 × 390), sem erros no console.
 
-## 98. Vida, luz e arquitetura: o mundo deixa de ser caixa (cenógrafo, pedido do Pedro)
+## 100. Vida, luz e arquitetura: o mundo deixa de ser caixa (cenógrafo, pedido do Pedro)
 
 "Pode sim mudar as arquiteturas na sala dos puzzles, sem mudar puzzle nem nada. O escuro de verdade é legal. O mundo reagir na imagem, o dado
 levantando poeira, pó do teto, achei muito bom. Vida pequena no ar: gotas caindo, o ar tremendo em cima das brasas, algum pequeno animal que
@@ -2348,7 +2418,7 @@ cantos com rastros; no Tribunal, acender o braseiro certo (conta o passo), um er
 tela inicial e a abertura. Sem erros no console. **Não testado**: o capítulo jogado do começo ao fim, um celular de verdade, e o morcego
 visto em jogo (ele voa; nas fotos de teste a câmera ficou embaixo de um patamar).
 
-## 99. As anotações do jogador junto dos símbolos (cenógrafo, pedido do Pedro)
+## 101. As anotações do jogador junto dos símbolos (cenógrafo, pedido do Pedro)
 
 "Depois que o jogador escreve o que acha que um glifo significa, quando esse glifo aparecer (parede, conversa, textos), deveria aparecer?
 Não tem outra forma? De qualquer forma o ideal é ter a opção de ativar ou não." A resposta foi uma combinação de três formas, aprovada pelo
@@ -2415,7 +2485,7 @@ incompleta).
 **Detalhe de acabamento**: a fonte do caderno não tinha as reticências e trocava «…» por «?» (o «o que eu acho…» da parte Símbolos saía
 «o que eu acho?»); agora são três pingos numa célula só (`book/font.ts`).
 
-## 100. O teste de desempenho (cenógrafo, pedido do Pedro)
+## 102. O teste de desempenho (cenógrafo, pedido do Pedro)
 
 Antes de decidir se o jogo vira app de celular e de Steam como está (embalado com Capacitor e Electron) ou se é convertido para outra engine,
 o Pedro quis saber como ele roda em celulares antigos e PCs fracos. Daqui não dá para medir aparelhos de verdade (não há aparelho ligado, e o
@@ -2447,7 +2517,7 @@ instalar nada (`src/ui/Bench.tsx`).
   embalado usaria, então o resultado vale para o app; o Steam Deck e o iPhone se testam neles mesmos.
 - `?bench=rapido`: o mesmo passeio em tempos curtos, só para conferir que o teste funciona (os números não valem).
 
-## 101. O engasgo ao entrar numa sala (cenógrafo, pedido do Pedro)
+## 103. O engasgo ao entrar numa sala (cenógrafo, pedido do Pedro)
 
 "Às vezes, quando o jogador entra na sala, grande ou pequena, o jogo dá uma pequena engasgada. Ajudaria pôr portas com um carregamento
 pequeno?" Medido quadro a quadro (o motor marca, no modo de desenvolvimento, quanto cada parte custa: `__probe`), o engasgo NÃO era falta de
@@ -2475,4 +2545,4 @@ depois, se o teste de desempenho ou o Pedro ainda sentirem.
 
 Ganchos de teste (só no modo de desenvolvimento): `__probe` (o custo de cada parte de cada quadro), `__mdd.progs()` (os materiais montados e
 se a preparação terminou), `__mdd.texMem()` (a memória de vídeo das texturas, sala por sala), `__mdd.thumbState()`. O teste de desempenho
-(§100) espera a preparação terminar antes de liberar o Começar.
+(§102) espera a preparação terminar antes de liberar o Começar.

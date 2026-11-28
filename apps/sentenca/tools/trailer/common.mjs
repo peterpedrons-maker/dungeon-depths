@@ -9,6 +9,9 @@ const { chromium } = require('playwright');
 // onde tudo é gravado (clips/, seg/, trilha.wav, trailer.mp4); o servidor de desenvolvimento do jogo (npx vite --port 5310 --host 127.0.0.1)
 export const T = process.env.TRAILER_OUT ?? fileURLToPath(new URL('./out/', import.meta.url));
 export const URL0 = process.env.TRAILER_URL ?? 'http://127.0.0.1:5310/';
+// o trailer é em português (o idioma do jogo segue o navegador sem config; ?lang= fixa; TRAILER_LANG=en|es grava em outro, DESIGN.md §98)
+export const LANG = process.env.TRAILER_LANG ?? 'pt';
+export const withLang = (u) => (u.includes('lang=') ? u : `${u}${u.includes('?') ? '&' : '?'}lang=${LANG}`);
 export const VT = fileURLToPath(new URL('./vt.js', import.meta.url));
 mkdirSync(T + 'clips', { recursive: true });
 mkdirSync(T + 'frames', { recursive: true });
@@ -25,7 +28,7 @@ export async function open({ w = 1920, h = 1080, url = '?intro=0&titulo=0&splash
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('ERR', e.message));
   page.on('console', (m) => m.type() === 'error' && !/GL Driver|AudioContext|favicon/.test(m.text()) && console.log('CONSOLE', m.text().slice(0, 160)));
-  await page.goto(URL0 + url, { waitUntil: 'networkidle' });
+  await page.goto(URL0 + withLang(url), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__mdd, null, { timeout: 120000 });
   await page.waitForTimeout(2500);
   await page.mouse.click(w / 2, h / 2);

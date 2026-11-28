@@ -1,4 +1,5 @@
 import { createStore } from './store';
+import type { Text } from '../i18n';
 
 // Quem fala. O mundo (dado, escrivão, ecos) fala em GLIFOS; os pensamentos do jogador vêm em português.
 export type Speaker = 'thought' | 'boato' | 'escrivao' | 'eco';
@@ -6,7 +7,7 @@ export type Speaker = 'thought' | 'boato' | 'escrivao' | 'eco';
 export interface Line {
   who: Speaker;
   glyphs?: string[]; // ids de palavras (lexicon)
-  text?: string; // português (só pensamentos)
+  text?: Text; // pensamentos: nos três idiomas (src/i18n.ts)
 }
 
 export interface Conversation {

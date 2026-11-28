@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { SLOTS, occupied, readMeta, saveStore, saves, type SlotMeta } from '../story/save';
 import { ACTION_LABEL, DEFAULT_KEYS, config, configStore, keyName, type Action, type Config } from '../story/config';
 import { useStore } from '../story/store';
+import { T, tx, useLang, LANGS, type Lang } from '../i18n';
+import { roomTitle } from '../story/roomnames';
 import { PixelIcon } from './PixelIcon';
 import { LOGO } from './logo';
 import { uiScaleStore } from './scale';
@@ -137,7 +139,7 @@ export function Logo({ px, big }: { px?: number; big?: boolean }) {
     }),
   );
   return (
-    <div className="logo" aria-label="Sentença" role="img">
+    <div className="logo" aria-label="Sentença" role="img"> {/* i18n-ok (o nome do jogo) */}
       <svg viewBox={`0 0 ${W + 2} ${Hh + 2}`} width={(W + 2) * p} height={(Hh + 2) * p} shapeRendering="crispEdges" aria-hidden="true">
         {/* o brilho da brasa */}
         <circle cx={W - 6} cy={1.5} r={2.6} fill="#ff8a3a" opacity={0.12} />
@@ -163,7 +165,7 @@ export function SaveIndicator({ hidden }: { hidden: boolean }) {
   }, [n]);
   if (!on || hidden) return null;
   return (
-    <div key={on} className="saving" aria-label="Jogo salvo">
+    <div key={on} className="saving" aria-label={tx(T('Jogo salvo', 'Game saved', 'Juego guardado'))}>
       <svg viewBox="0 0 12 12" shapeRendering="crispEdges" aria-hidden="true">
         <rect x={1} y={1} width={10} height={10} fill="#ffd36b" />
         <rect x={2} y={2} width={8} height={8} fill="#1d1922" />
@@ -175,8 +177,115 @@ export function SaveIndicator({ hidden }: { hidden: boolean }) {
   );
 }
 
+// os textos das telas, nos três idiomas (src/i18n.ts)
+const M = {
+  cancel: T('Cancelar', 'Cancel', 'Cancelar'),
+  back: T('Voltar', 'Back', 'Volver'),
+  start: T('O começo', 'The beginning', 'El comienzo'),
+  newPick: T('Novo jogo: escolha um espaço', 'New game: choose a slot', 'Nuevo juego: elige un espacio'),
+  load: T('Carregar', 'Load', 'Cargar'),
+  empty: T('Vazio', 'Empty', 'Vacío'),
+  slot: T('Espaço', 'Slot', 'Espacio'),
+  chapter: T('Capítulo', 'Chapter', 'Capítulo'),
+  gem: T('gema', 'gem', 'gema'),
+  gems: T('gemas', 'gems', 'gemas'),
+  noGame: T('Nenhum jogo aqui', 'No game here', 'Ningún juego aquí'),
+  erase: T('Apagar', 'Delete', 'Borrar'),
+  useThis: T('Usar este', 'Use this one', 'Usar este'),
+  startHere: T('Começar aqui', 'Start here', 'Empezar aquí'),
+  askNew: T('Apagar este jogo e começar outro?', 'Delete this game and start another?', '¿Borrar este juego y empezar otro?'),
+  eraseStart: T('Apagar e começar', 'Delete and start', 'Borrar y empezar'),
+  askErase: T('Apagar este jogo?', 'Delete this game?', '¿Borrar este juego?'),
+  sure: T('Tem certeza? Não dá para desfazer.', 'Are you sure? This cannot be undone.', '¿Seguro? No se puede deshacer.'),
+  sureSub: T('O progresso, o caderno e o mapa deste espaço somem.', 'The progress, the notebook and the map of this slot will be gone.', 'El progreso, el cuaderno y el mapa de este espacio desaparecen.'),
+  yesErase: T('Sim, apagar', 'Yes, delete', 'Sí, borrar'),
+  less: T('Menos', 'Less', 'Menos'),
+  more: T('Mais', 'More', 'Más'),
+  yes: T('Sim', 'Yes', 'Sí'),
+  no: T('Não', 'No', 'No'),
+  tAudio: T('Áudio', 'Audio', 'Audio'),
+  tImage: T('Imagem', 'Video', 'Imagen'),
+  tControls: T('Controles', 'Controls', 'Controles'),
+  tAccess: T('Acessibilidade', 'Accessibility', 'Accesibilidad'),
+  tLang: T('Idioma', 'Language', 'Idioma'),
+  settings: T('Configurações', 'Settings', 'Ajustes'),
+  volMaster: T('Volume geral', 'Master volume', 'Volumen general'),
+  music: T('Música', 'Music', 'Música'),
+  sfx: T('Efeitos', 'Effects', 'Efectos'),
+  screenMode: T('Modo de tela', 'Display mode', 'Modo de pantalla'),
+  window: T('Janela', 'Window', 'Ventana'),
+  full: T('Tela cheia', 'Fullscreen', 'Pantalla completa'),
+  quality: T('Qualidade', 'Quality', 'Calidad'),
+  low: T('Baixa', 'Low', 'Baja'),
+  mid: T('Média', 'Medium', 'Media'),
+  high: T('Alta', 'High', 'Alta'),
+  shadows: T('Sombras', 'Shadows', 'Sombras'),
+  off: T('Desligadas', 'Off', 'Desactivadas'),
+  sLow: T('Baixas', 'Low', 'Bajas'),
+  sMid: T('Médias', 'Medium', 'Medias'),
+  sHigh: T('Altas', 'High', 'Altas'),
+  pixel: T('Tamanho do pixel', 'Pixel size', 'Tamaño del píxel'),
+  fine: T('Fino', 'Fine', 'Fino'),
+  pMid: T('Médio', 'Medium', 'Medio'),
+  coarse: T('Grosso', 'Coarse', 'Grueso'),
+  bright: T('Brilho', 'Brightness', 'Brillo'),
+  fov: T('Campo de visão', 'Field of view', 'Campo de visión'),
+  deg: T('graus', 'degrees', 'grados'),
+  fps: T('Limitar quadros', 'Frame limit', 'Limitar fotogramas'),
+  noLimit: T('Sem limite', 'No limit', 'Sin límite'),
+  perS: T('por s', 'per s', 'por s'),
+  mouse: T('Sensibilidade do mouse', 'Mouse sensitivity', 'Sensibilidad del ratón'),
+  touch: T('Sensibilidade do toque', 'Touch sensitivity', 'Sensibilidad táctil'),
+  invert: T('Inverter o eixo Y', 'Invert Y axis', 'Invertir el eje Y'),
+  vibration: T('Vibração', 'Vibration', 'Vibración'),
+  keys: T('Teclas', 'Keys', 'Teclas'),
+  pressKey: T('Aperte uma tecla', 'Press a key', 'Pulsa una tecla'),
+  resetKeys: T('Voltar às teclas padrão', 'Restore default keys', 'Restaurar las teclas'),
+  uiSize: T('Tamanho da interface', 'Interface size', 'Tamaño de la interfaz'),
+  textSpeed: T('Velocidade do texto', 'Text speed', 'Velocidad del texto'),
+  slow: T('Lenta', 'Slow', 'Lenta'),
+  normal: T('Normal', 'Normal', 'Normal'),
+  fast: T('Rápida', 'Fast', 'Rápida'),
+  flash: T('Reduzir tremores e clarões', 'Reduce shaking and flashes', 'Reducir temblores y destellos'),
+  motion: T('Reduzir o movimento da câmera', 'Reduce camera motion', 'Reducir el movimiento de la cámara'),
+  contrast: T('Alto contraste nos glifos', 'High-contrast glyphs', 'Alto contraste en los glifos'),
+  cross: T('Mira sempre visível', 'Always show crosshair', 'Mira siempre visible'),
+  glyphNotes: T('Minhas anotações embaixo dos símbolos', 'My notes under the symbols', 'Mis apuntes debajo de los símbolos'),
+  langNote: T('O idioma muda o caderno, os pensamentos e a interface. Os glifos não mudam.', 'The language changes the notebook, the thoughts and the interface. The glyphs do not change.', 'El idioma cambia el cuaderno, los pensamientos y la interfaz. Los glifos no cambian.'),
+  credits: T('Créditos', 'Credits', 'Créditos'),
+  cont: T('Continuar', 'Continue', 'Continuar'),
+  newGame: T('Novo jogo', 'New game', 'Nuevo juego'),
+  pause: T('Pausa', 'Pause', 'Pausa'),
+  notebook: T('Caderno', 'Notebook', 'Cuaderno'),
+  resetRoom: T('Reiniciar a sala', 'Restart the room', 'Reiniciar la sala'),
+  toTitle: T('Voltar à tela inicial', 'Back to the title screen', 'Volver a la pantalla de inicio'),
+  askTitle: T('Voltar à tela inicial?', 'Back to the title screen?', '¿Volver a la pantalla de inicio?'),
+  saved: T('O jogo é salvo antes.', 'The game is saved first.', 'El juego se guarda antes.'),
+  stay: T('Ficar', 'Stay', 'Quedarse'),
+  // créditos
+  cInst: T('Instrumentos', 'Instruments', 'Instrumentos'),
+  cInstSrc: T('Amostras reais do soundfont FluidR3_GM, de Frank Wen (CC BY 3.0)', 'Real samples from the FluidR3_GM soundfont, by Frank Wen (CC BY 3.0)', 'Muestras reales del soundfont FluidR3_GM, de Frank Wen (CC BY 3.0)'),
+  cInstList: T('violoncelo, contrabaixo, cordas, coro, vozes, harpa, celesta, glockenspiel, flauta, garrafa soprada, tímpano e sinos tubulares', 'cello, double bass, strings, choir, voices, harp, celesta, glockenspiel, flute, blown bottle, timpani and tubular bells', 'violonchelo, contrabajo, cuerdas, coro, voces, arpa, celesta, glockenspiel, flauta, botella soplada, timbales y campanas tubulares'),
+  cSfx: T('Efeitos', 'Sound effects', 'Efectos'),
+  cSteps: T('passos', 'footsteps', 'pasos'),
+  cBall: T('bola rolando', 'rolling ball', 'bola rodando'),
+  cDrops: T('gotas', 'drops', 'gotas'),
+  cFire: T('fogo', 'fire', 'fuego'),
+  cWind: T('vento', 'wind', 'viento'),
+  cDrum: T('tambor ao longe', 'distant drum', 'tambor a lo lejos'),
+  cRec: T('gravações de giz, borracha, porta de pedra, arrastos, pedras, estalos e vapor', 'recordings of chalk, eraser, stone door, scrapes, stones, cracks and steam', 'grabaciones de tiza, borrador, puerta de piedra, arrastres, piedras, chasquidos y vapor'),
+  cModels: T('Modelos 3D', '3D models', 'Modelos 3D'),
+  cBrazier: T('braseiro: Stone Column Brazier, de Amarveer (Sketchfab, CC BY 4.0), adaptado para o pixel', 'brazier: Stone Column Brazier, by Amarveer (Sketchfab, CC BY 4.0), adapted to pixel art', 'brasero: Stone Column Brazier, de Amarveer (Sketchfab, CC BY 4.0), adaptado al píxel'),
+  cTorch: T('tocha de parede: Medieval Wall Torch, de Kigha (Sketchfab, CC BY 4.0), adaptada para o pixel', 'wall torch: Medieval Wall Torch, by Kigha (Sketchfab, CC BY 4.0), adapted to pixel art', 'antorcha de pared: Medieval Wall Torch, de Kigha (Sketchfab, CC BY 4.0), adaptada al píxel'),
+  cScribe: T('animações do Escrivão: esqueleto e movimentos do Mixamo (Adobe)', 'the Scribe\'s animations: rig and motions from Mixamo (Adobe)', 'animaciones del Escribano: esqueleto y movimientos de Mixamo (Adobe)'),
+  cLib: T('Biblioteca: estantes de Paul Wortmann, velas da AnyRPG e livros da Quaternius (CC0); candelabro de Marco Antonio Meireles Carvalho, do jogo Radya: Visions From The Past', 'Library: shelves by Paul Wortmann, candles by AnyRPG and books by Quaternius (CC0); candelabrum by Marco Antonio Meireles Carvalho, from the game Radya: Visions From The Past', 'Biblioteca: estanterías de Paul Wortmann, velas de AnyRPG y libros de Quaternius (CC0); candelabro de Marco Antonio Meireles Carvalho, del juego Radya: Visions From The Past'),
+  cFont: T('Letra', 'Lettering', 'Letra'),
+  cFontTxt: T('a letra do caderno, desenhada pixel a pixel para o jogo', 'the notebook\'s lettering, drawn pixel by pixel for the game', 'la letra del cuaderno, dibujada píxel a píxel para el juego'),
+};
+
 // ── tábua de confirmação ──
-function Confirm({ text, sub, yes, no = 'Cancelar', onYes, onNo, snd }: { text: string; sub?: string; yes: string; no?: string; onYes: () => void; onNo: () => void; snd: UiSound }) {
+function Confirm({ text, sub, yes, no = tx(M.cancel), onYes, onNo, snd }: { text: string; sub?: string; yes: string; no?: string; onYes: () => void; onNo: () => void; snd: UiSound }) {
+  useLang();
   const ref = useRef<HTMLDivElement>(null);
   useMenuKeys(true, ref, onNo, snd);
   return (
@@ -208,9 +317,10 @@ const fmtDate = (ms: number) => {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
-const roomLabel = (m: SlotMeta | null) => (m ? m.roomName.replace(/\s*·\s*/, ' - ') : 'O começo');
+const roomLabel = (m: SlotMeta | null) => (m ? roomTitle(m.roomName).replace(/\s*·\s*/, ' - ') : tx(M.start));
 
 function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new'; onBack: () => void; onPlay: (slot: number) => void; onNew: (slot: number) => void; snd: UiSound }) {
+  useLang();
   const ref = useRef<HTMLDivElement>(null);
   const [, force] = useState(0);
   const [ask, setAsk] = useState<{ slot: number; step: 'new' | 'erase1' | 'erase2' } | null>(null);
@@ -220,44 +330,46 @@ function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new
   return (
     <div className="mnu-veil">
       <div ref={ref} className="board board-w">
-        <h2>{purpose === 'new' ? 'Novo jogo: escolha um espaço' : 'Carregar'}</h2>
+        <h2>{purpose === 'new' ? tx(M.newPick) : tx(M.load)}</h2>
         <div className="slots">
           {slots.map((s) => {
             const occ = occupied(s);
             const m = readMeta(s);
             return (
               <div key={s} className={`slot${occ ? '' : ' empty'}${s === saves.active() && occ ? ' last' : ''}`}>
-                <div className="slot-thumb">{m?.thumb ? <img src={m.thumb} alt="" /> : <span>{occ ? '' : 'Vazio'}</span>}</div>
-                <b>Espaço {s}</b>
+                <div className="slot-thumb">{m?.thumb ? <img src={m.thumb} alt="" /> : <span>{occ ? '' : tx(M.empty)}</span>}</div>
+                <b>
+                  {tx(M.slot)} {s}
+                </b>
                 {occ ? (
                   <ul>
                     <li>{roomLabel(m)}</li>
                     <li>
-                      Capítulo {m?.chapter ?? 1} - {fmtTime(m?.time ?? 0)}
+                      {tx(M.chapter)} {m?.chapter ?? 1} - {fmtTime(m?.time ?? 0)}
                     </li>
                     <li className="gems">
-                      <PixelIcon name="gema" size={16} /> {m?.gems ?? 0} {m?.gems === 1 ? 'gema' : 'gemas'}
+                      <PixelIcon name="gema" size={16} /> {m?.gems ?? 0} {m?.gems === 1 ? tx(M.gem) : tx(M.gems)}
                     </li>
                     <li className="dim">{m ? fmtDate(m.at) : ''}</li>
                   </ul>
                 ) : (
                   <ul>
-                    <li className="dim">Nenhum jogo aqui</li>
+                    <li className="dim">{tx(M.noGame)}</li>
                   </ul>
                 )}
                 <div className="slot-btns">
                   {purpose === 'load' ? (
                     <>
                       <Plaque small tone="gold" disabled={!occ} onClick={() => onPlay(s)} snd={snd}>
-                        Carregar
+                        {tx(M.load)}
                       </Plaque>
                       <Plaque small tone="plain" disabled={!occ} onClick={() => setAsk({ slot: s, step: 'erase1' })} snd={snd}>
-                        Apagar
+                        {tx(M.erase)}
                       </Plaque>
                     </>
                   ) : (
                     <Plaque small tone="gold" onClick={() => (occ ? setAsk({ slot: s, step: 'new' }) : onNew(s))} snd={snd}>
-                      {occ ? 'Usar este' : 'Começar aqui'}
+                      {occ ? tx(M.useThis) : tx(M.startHere)}
                     </Plaque>
                   )}
                 </div>
@@ -267,17 +379,17 @@ function Slots({ purpose, onBack, onPlay, onNew, snd }: { purpose: 'load' | 'new
         </div>
         <div className="row-btns">
           <Plaque onClick={onBack} snd={snd}>
-            Voltar
+            {tx(M.back)}
           </Plaque>
         </div>
       </div>
-      {ask?.step === 'new' && <Confirm text="Apagar este jogo e começar outro?" sub={`Espaço ${ask.slot}`} yes="Apagar e começar" onYes={() => onNew(ask.slot)} onNo={() => setAsk(null)} snd={snd} />}
-      {ask?.step === 'erase1' && <Confirm text="Apagar este jogo?" sub={`Espaço ${ask.slot}: ${roomLabel(readMeta(ask.slot))}`} yes="Apagar" onYes={() => setAsk({ slot: ask.slot, step: 'erase2' })} onNo={() => setAsk(null)} snd={snd} />}
+      {ask?.step === 'new' && <Confirm text={tx(M.askNew)} sub={`${tx(M.slot)} ${ask.slot}`} yes={tx(M.eraseStart)} onYes={() => onNew(ask.slot)} onNo={() => setAsk(null)} snd={snd} />}
+      {ask?.step === 'erase1' && <Confirm text={tx(M.askErase)} sub={`${tx(M.slot)} ${ask.slot}: ${roomLabel(readMeta(ask.slot))}`} yes={tx(M.erase)} onYes={() => setAsk({ slot: ask.slot, step: 'erase2' })} onNo={() => setAsk(null)} snd={snd} />}
       {ask?.step === 'erase2' && (
         <Confirm
-          text="Tem certeza? Não dá para desfazer."
-          sub="O progresso, o caderno e o mapa deste espaço somem."
-          yes="Sim, apagar"
+          text={tx(M.sure)}
+          sub={tx(M.sureSub)}
+          yes={tx(M.yesErase)}
           onYes={() => {
             const wasActive = ask.slot === saves.active();
             saves.erase(ask.slot);
@@ -325,13 +437,13 @@ function Adjust({ label, value, min, max, step = 1, fmt, onChange, snd }: { labe
           }
         }}
       >
-        <button tabIndex={-1} className="adj-b l" aria-label="Menos" onClick={() => set(value - step)} />
+        <button tabIndex={-1} className="adj-b l" aria-label={tx(M.less)} onClick={() => set(value - step)} />
         <span className="adj-bar">
           {Array.from({ length: Math.min(n, 20) + 1 }, (_, i) => (
             <i key={i} className={i <= (k * Math.min(n, 20)) / n ? 'on' : ''} />
           ))}
         </span>
-        <button tabIndex={-1} className="adj-b r" aria-label="Mais" onClick={() => set(value + step)} />
+        <button tabIndex={-1} className="adj-b r" aria-label={tx(M.more)} onClick={() => set(value + step)} />
         <span className="adj-v">{fmt ? fmt(value) : value}</span>
       </div>
     </div>
@@ -360,18 +472,18 @@ function Choice<T extends string | number | boolean>({ label, value, options, on
     </div>
   );
 }
-const yesNo = [
-  { v: true, label: 'Sim' },
-  { v: false, label: 'Não' },
+const yesNo = () => [
+  { v: true, label: tx(M.yes) },
+  { v: false, label: tx(M.no) },
 ];
 
 type Tab = 'audio' | 'imagem' | 'controles' | 'acess' | 'idioma';
-const TABS: [Tab, string, 'audio' | 'imagem' | 'controles' | 'acess' | 'idioma'][] = [
-  ['audio', 'Áudio', 'audio'],
-  ['imagem', 'Imagem', 'imagem'],
-  ['controles', 'Controles', 'controles'],
-  ['acess', 'Acessibilidade', 'acess'],
-  ['idioma', 'Idioma', 'idioma'],
+const TABS: [Tab, typeof M.tAudio, 'audio' | 'imagem' | 'controles' | 'acess' | 'idioma'][] = [
+  ['audio', M.tAudio, 'audio'],
+  ['imagem', M.tImage, 'imagem'],
+  ['controles', M.tControls, 'controles'],
+  ['acess', M.tAccess, 'acess'],
+  ['idioma', M.tLang, 'idioma'],
 ];
 
 function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
@@ -418,7 +530,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
     <div className="mnu-veil">
       <div ref={ref} className="board board-w settings">
         <h2>
-          <PixelIcon name="config" size={48} /> Configurações
+          <PixelIcon name="config" size={48} /> {tx(M.settings)}
         </h2>
         <div className="tabs" role="tablist">
           {TABS.map(([t, label, ico]) => (
@@ -434,7 +546,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
               }}
             >
               <PixelIcon name={ico} size={24} />
-              {label}
+              {tx(label)}
             </button>
           ))}
         </div>
@@ -442,68 +554,68 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
           <div className="opts">
             {tab === 'audio' && (
               <>
-                <Adjust label="Volume geral" value={c.volMaster} min={0} max={10} onChange={set('volMaster')} snd={snd} />
-                <Adjust label="Música" value={c.volMusic} min={0} max={10} onChange={set('volMusic')} snd={snd} />
-                <Adjust label="Efeitos" value={c.volSfx} min={0} max={10} onChange={set('volSfx')} snd={snd} />
+                <Adjust label={tx(M.volMaster)} value={c.volMaster} min={0} max={10} onChange={set('volMaster')} snd={snd} />
+                <Adjust label={tx(M.music)} value={c.volMusic} min={0} max={10} onChange={set('volMusic')} snd={snd} />
+                <Adjust label={tx(M.sfx)} value={c.volSfx} min={0} max={10} onChange={set('volSfx')} snd={snd} />
               </>
             )}
             {tab === 'imagem' && (
               <>
                 {document.fullscreenEnabled && (
                   <Choice
-                    label="Modo de tela"
+                    label={tx(M.screenMode)}
                     value={full}
                     options={[
-                      { v: false, label: 'Janela' },
-                      { v: true, label: 'Tela cheia' },
+                      { v: false, label: tx(M.window) },
+                      { v: true, label: tx(M.full) },
                     ]}
                     onChange={screenMode}
                     snd={snd}
                   />
                 )}
                 <Choice
-                  label="Qualidade"
+                  label={tx(M.quality)}
                   value={c.quality}
                   options={[
-                    { v: 'baixa', label: 'Baixa' },
-                    { v: 'media', label: 'Média' },
-                    { v: 'alta', label: 'Alta' },
+                    { v: 'baixa', label: tx(M.low) },
+                    { v: 'media', label: tx(M.mid) },
+                    { v: 'alta', label: tx(M.high) },
                   ]}
                   onChange={set('quality')}
                   snd={snd}
                 />
                 <Choice
-                  label="Sombras"
+                  label={tx(M.shadows)}
                   value={c.shadows}
                   options={[
-                    { v: 'desligadas', label: 'Desligadas' },
-                    { v: 'baixas', label: 'Baixas' },
-                    { v: 'medias', label: 'Médias' },
-                    { v: 'altas', label: 'Altas' },
+                    { v: 'desligadas', label: tx(M.off) },
+                    { v: 'baixas', label: tx(M.sLow) },
+                    { v: 'medias', label: tx(M.sMid) },
+                    { v: 'altas', label: tx(M.sHigh) },
                   ]}
                   onChange={set('shadows')}
                   snd={snd}
                 />
                 <Choice
-                  label="Tamanho do pixel"
+                  label={tx(M.pixel)}
                   value={c.pixel}
                   options={[
-                    { v: 'fino', label: 'Fino' },
-                    { v: 'medio', label: 'Médio' },
-                    { v: 'grosso', label: 'Grosso' },
+                    { v: 'fino', label: tx(M.fine) },
+                    { v: 'medio', label: tx(M.pMid) },
+                    { v: 'grosso', label: tx(M.coarse) },
                   ]}
                   onChange={set('pixel')}
                   snd={snd}
                 />
-                <Adjust label="Brilho" value={c.brightness} min={-5} max={5} fmt={(v) => (v > 0 ? `+${v}` : String(v))} onChange={set('brightness')} snd={snd} />
-                <Adjust label="Campo de visão" value={c.fov} min={75} max={115} step={5} fmt={(v) => `${v} graus`} onChange={set('fov')} snd={snd} />
+                <Adjust label={tx(M.bright)} value={c.brightness} min={-5} max={5} fmt={(v) => (v > 0 ? `+${v}` : String(v))} onChange={set('brightness')} snd={snd} />
+                <Adjust label={tx(M.fov)} value={c.fov} min={75} max={115} step={5} fmt={(v) => `${v} ${tx(M.deg)}`} onChange={set('fov')} snd={snd} />
                 <Choice
-                  label="Limitar quadros"
+                  label={tx(M.fps)}
                   value={c.fpsCap}
                   options={[
-                    { v: 0, label: 'Sem limite' },
-                    { v: 60, label: '60 por s' },
-                    { v: 30, label: '30 por s' },
+                    { v: 0, label: tx(M.noLimit) },
+                    { v: 60, label: `60 ${tx(M.perS)}` },
+                    { v: 30, label: `30 ${tx(M.perS)}` },
                   ]}
                   onChange={set('fpsCap')}
                   snd={snd}
@@ -512,16 +624,16 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
             )}
             {tab === 'controles' && (
               <>
-                {!coarse && <Adjust label="Sensibilidade do mouse" value={c.mouseSens} min={1} max={10} onChange={set('mouseSens')} snd={snd} />}
-                <Adjust label="Sensibilidade do toque" value={c.touchSens} min={1} max={10} onChange={set('touchSens')} snd={snd} />
-                <Choice label="Inverter o eixo Y" value={c.invertY} options={yesNo} onChange={set('invertY')} snd={snd} />
-                {coarse && <Choice label="Vibração" value={c.vibration} options={yesNo} onChange={set('vibration')} snd={snd} />}
+                {!coarse && <Adjust label={tx(M.mouse)} value={c.mouseSens} min={1} max={10} onChange={set('mouseSens')} snd={snd} />}
+                <Adjust label={tx(M.touch)} value={c.touchSens} min={1} max={10} onChange={set('touchSens')} snd={snd} />
+                <Choice label={tx(M.invert)} value={c.invertY} options={yesNo()} onChange={set('invertY')} snd={snd} />
+                {coarse && <Choice label={tx(M.vibration)} value={c.vibration} options={yesNo()} onChange={set('vibration')} snd={snd} />}
                 {!coarse && (
                   <>
-                    <p className="opt-h">Teclas</p>
+                    <p className="opt-h">{tx(M.keys)}</p>
                     {(Object.keys(DEFAULT_KEYS) as Action[]).map((a) => (
                       <div key={a} className="opt">
-                        <span className="opt-l">{ACTION_LABEL[a]}</span>
+                        <span className="opt-l">{tx(ACTION_LABEL[a])}</span>
                         <button
                           data-nav
                           className={`keycap${wait === a ? ' wait' : ''}`}
@@ -530,13 +642,13 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
                             setWait(a);
                           }}
                         >
-                          {wait === a ? 'Aperte uma tecla' : keyName(c.keys[a])}
+                          {wait === a ? tx(M.pressKey) : keyName(c.keys[a])}
                         </button>
                       </div>
                     ))}
                     <div className="row-btns left">
                       <Plaque small onClick={() => config.resetKeys()} snd={snd}>
-                        Voltar às teclas padrão
+                        {tx(M.resetKeys)}
                       </Plaque>
                     </div>
                   </>
@@ -545,46 +657,46 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
             )}
             {tab === 'acess' && (
               <>
-                <Adjust label="Tamanho da interface" value={c.uiSize} min={80} max={160} step={10} fmt={(v) => `${v}%`} onChange={set('uiSize')} snd={snd} />
+                <Adjust label={tx(M.uiSize)} value={c.uiSize} min={80} max={160} step={10} fmt={(v) => `${v}%`} onChange={set('uiSize')} snd={snd} />
                 <Choice
-                  label="Velocidade do texto"
+                  label={tx(M.textSpeed)}
                   value={c.textSpeed}
                   options={[
-                    { v: 'lenta', label: 'Lenta' },
-                    { v: 'normal', label: 'Normal' },
-                    { v: 'rapida', label: 'Rápida' },
+                    { v: 'lenta', label: tx(M.slow) },
+                    { v: 'normal', label: tx(M.normal) },
+                    { v: 'rapida', label: tx(M.fast) },
                   ]}
                   onChange={set('textSpeed')}
                   snd={snd}
                 />
-                <Choice label="Reduzir tremores e clarões" value={c.reduceFlash} options={yesNo} onChange={set('reduceFlash')} snd={snd} />
-                <Choice label="Reduzir o movimento da câmera" value={c.reduceMotion} options={yesNo} onChange={set('reduceMotion')} snd={snd} />
-                <Choice label="Alto contraste nos glifos" value={c.highContrast} options={yesNo} onChange={set('highContrast')} snd={snd} />
-                <Choice label="Mira sempre visível" value={c.crosshair} options={yesNo} onChange={set('crosshair')} snd={snd} />
-                {/* (DESIGN.md §99) as palavras do PRÓPRIO jogador embaixo dos símbolos; o jogo continua sem traduzir */}
-                <Choice label="Minhas anotações embaixo dos símbolos" value={c.glyphNotes} options={yesNo} onChange={set('glyphNotes')} snd={snd} />
+                <Choice label={tx(M.flash)} value={c.reduceFlash} options={yesNo()} onChange={set('reduceFlash')} snd={snd} />
+                <Choice label={tx(M.motion)} value={c.reduceMotion} options={yesNo()} onChange={set('reduceMotion')} snd={snd} />
+                <Choice label={tx(M.contrast)} value={c.highContrast} options={yesNo()} onChange={set('highContrast')} snd={snd} />
+                <Choice label={tx(M.cross)} value={c.crosshair} options={yesNo()} onChange={set('crosshair')} snd={snd} />
+                {/* (DESIGN.md §101) as palavras do PRÓPRIO jogador embaixo dos símbolos; o jogo continua sem traduzir */}
+                <Choice label={tx(M.glyphNotes)} value={c.glyphNotes} options={yesNo()} onChange={set('glyphNotes')} snd={snd} />
               </>
             )}
             {tab === 'idioma' && (
               <>
-                <Choice
-                  label="Idioma"
+                <Choice<Lang>
+                  label={tx(M.tLang)}
                   value={c.lang}
-                  options={[
-                    { v: 'pt', label: 'Português' },
-                    { v: 'en' as 'pt', label: 'English (em breve)', off: true },
-                  ]}
-                  onChange={set('lang')}
+                  options={LANGS}
+                  onChange={(v) => {
+                    config.set('lang', v);
+                    config.set('langChosen', true);
+                  }}
                   snd={snd}
                 />
-                <p className="opt-note">O idioma muda o caderno, os pensamentos e a interface. Os glifos não mudam.</p>
+                <p className="opt-note">{tx(M.langNote)}</p>
               </>
             )}
           </div>
         </div>
         <div className="row-btns">
           <Plaque onClick={onBack} snd={snd}>
-            Voltar
+            {tx(M.back)}
           </Plaque>
         </div>
       </div>
@@ -594,6 +706,7 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
 
 // ── créditos (os sons CC0 e o soundfont CC BY pedem crédito) ──
 export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSound; roll?: boolean }) {
+  useLang();
   const ref = useRef<HTMLDivElement>(null);
   useMenuKeys(true, ref, onBack, snd);
   useScrollCue(ref);
@@ -604,62 +717,56 @@ export function Credits({ onBack, snd, roll }: { onBack: () => void; snd: UiSoun
         <div className="roll-win">
           <div className="roll-txt">
             <Logo />
-            <h3>Instrumentos</h3>
-            <p>Amostras reais do soundfont FluidR3_GM, de Frank Wen (CC BY 3.0)</p>
-            <p>violoncelo, contrabaixo, cordas, coro, vozes, harpa, celesta, glockenspiel, flauta, garrafa soprada, tímpano e sinos tubulares</p>
-            <h3>Efeitos</h3>
+            <h3>{tx(M.cInst)}</h3>
+            <p>{tx(M.cInstSrc)}</p>
+            <p>{tx(M.cInstList)}</p>
+            <h3>{tx(M.cSfx)}</h3>
             <p>CC0, via OpenGameArt.org</p>
             <p>Kenney (RPG Sound Pack)</p>
             <p>rubberduck (100 CC0 SFX)</p>
-            <p>Fantozzi (passos)</p>
-            <p>qubodup (bola rolando)</p>
-            <p>Independent.nu (gotas)</p>
-            <p>LEGIT Audio (fogo)</p>
-            <p>Tsorthan Grove (vento)</p>
-            <p>NenadSimic (tambor ao longe)</p>
-            <p>gravações de giz, borracha, porta de pedra, arrastos, pedras, estalos e vapor</p>
-            <h3>Modelos 3D</h3>
-            <p>braseiro: Stone Column Brazier, de Amarveer (Sketchfab, CC BY 4.0), adaptado para o pixel</p>
-            <p>tocha de parede: Medieval Wall Torch, de Kigha (Sketchfab, CC BY 4.0), adaptada para o pixel</p>
-            <p>animações do Escrivão: esqueleto e movimentos do Mixamo (Adobe)</p>
-            <p>Biblioteca: estantes de Paul Wortmann, velas da AnyRPG e livros da Quaternius (CC0); candelabro de Marco Antonio Meireles Carvalho, do jogo Radya: Visions From The Past</p>
-            <h3>Letra</h3>
-            <p>a letra do caderno, desenhada pixel a pixel para o jogo</p>
+            <p>Fantozzi ({tx(M.cSteps)})</p>
+            <p>qubodup ({tx(M.cBall)})</p>
+            <p>Independent.nu ({tx(M.cDrops)})</p>
+            <p>LEGIT Audio ({tx(M.cFire)})</p>
+            <p>Tsorthan Grove ({tx(M.cWind)})</p>
+            <p>NenadSimic ({tx(M.cDrum)})</p>
+            <p>{tx(M.cRec)}</p>
+            <h3>{tx(M.cModels)}</h3>
+            <p>{tx(M.cBrazier)}</p>
+            <p>{tx(M.cTorch)}</p>
+            <p>{tx(M.cScribe)}</p>
+            <p>{tx(M.cLib)}</p>
+            <h3>{tx(M.cFont)}</h3>
+            <p>{tx(M.cFontTxt)}</p>
           </div>
         </div>
         <Plaque onClick={onBack} snd={snd}>
-          Voltar
+          {tx(M.back)}
         </Plaque>
       </div>
     );
   return (
     <div className="mnu-veil top">
       <div ref={ref} className="board board-w credits-b">
-        <h2>Créditos</h2>
+        <h2>{tx(M.credits)}</h2>
         <div className="credits-t">
           <p>
-            <b>Instrumentos</b> (música, sinos e notas): amostras reais do soundfont <i>FluidR3_GM</i>, de Frank Wen (CC BY 3.0): violoncelo, contrabaixo, cordas, coro,
-            vozes, harpa, celesta, glockenspiel, flauta, garrafa soprada, tímpano e sinos tubulares.
+            <b>{tx(M.cInst)}</b>: {tx(M.cInstSrc)}: {tx(M.cInstList)}.
           </p>
           <p>
-            <b>Efeitos</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi (passos), qubodup (bola rolando), Independent.nu (gotas),
-            LEGIT Audio (fogo), Tsorthan Grove (vento), NenadSimic (tambor ao longe), e gravações de giz, borracha, porta de pedra, arrastos, pedras, estalos e vapor.
+            <b>{tx(M.cSfx)}</b> (CC0, via OpenGameArt.org): Kenney (RPG Sound Pack), rubberduck (100 CC0 SFX), Fantozzi ({tx(M.cSteps)}), qubodup ({tx(M.cBall)}),
+            Independent.nu ({tx(M.cDrops)}), LEGIT Audio ({tx(M.cFire)}), Tsorthan Grove ({tx(M.cWind)}), NenadSimic ({tx(M.cDrum)}); {tx(M.cRec)}.
           </p>
           <p>
-            <b>Modelos 3D</b>: o braseiro é baseado em <i>Stone Column Brazier</i>, de Amarveer (sketchfab.com/amarveer), licença CC BY 4.0; adaptado para o
-            pixel (sem a chama original, texturas reduzidas). A tocha de parede é baseada em <i>Medieval Wall Torch</i>, de Kigha (sketchfab.com/Kigha),
-            licença CC BY 4.0; adaptada para o pixel (texturas reduzidas, com a oclusão do modelo na cor). O esqueleto e as animações do Escrivão
-            (andar e olhar para baixo) foram feitos no Mixamo (mixamo.com, Adobe). Na Biblioteca: estantes de Paul Wortmann, velas da AnyRPG, atril e
-            livros da Quaternius (todos CC0) e o candelabro de Marco Antonio Meireles Carvalho, feito para o jogo <i>Radya: Visions From The Past</i>
-            (marco-antonio.itch.io/radya-visions-from-the-past), domínio público.
+            <b>{tx(M.cModels)}</b>: {tx(M.cBrazier)}; {tx(M.cTorch)}; {tx(M.cScribe)}. {tx(M.cLib)}.
           </p>
           <p>
-            <b>Fonte</b>: a letra do caderno, desenhada pixel a pixel para o jogo.
+            <b>{tx(M.cFont)}</b>: {tx(M.cFontTxt)}.
           </p>
         </div>
         <div className="row-btns">
           <Plaque onClick={onBack} snd={snd}>
-            Voltar
+            {tx(M.back)}
           </Plaque>
         </div>
       </div>
@@ -694,6 +801,7 @@ export interface TitleApi {
   play(slot: number): void; // o dado pula para fora e a imagem se desfaz em pontilhado
 }
 export function TitleScreen({ api, snd }: { api: TitleApi; snd: UiSound }) {
+  useLang();
   const ref = useRef<HTMLDivElement>(null);
   const [sub, setSub] = useState<Sub>('main');
   const [leaving, setLeaving] = useState(false);
@@ -727,20 +835,20 @@ export function TitleScreen({ api, snd }: { api: TitleApi; snd: UiSound }) {
         <div className="title-list">
           {cont !== null && (
             <Plaque tone="gold" onClick={() => go(cont)} snd={snd} onFocus={focusLook(null)}>
-              Continuar
+              {tx(M.cont)}
             </Plaque>
           )}
           <Plaque onClick={() => setSub('new')} snd={snd} onFocus={focusLook('new')}>
-            Novo jogo
+            {tx(M.newGame)}
           </Plaque>
           <Plaque disabled={!anySaved} onClick={() => setSub('load')} snd={snd} onFocus={focusLook(null)}>
-            Carregar
+            {tx(M.load)}
           </Plaque>
           <Plaque onClick={() => setSub('settings')} snd={snd} onFocus={focusLook(null)}>
-            Configurações
+            {tx(M.settings)}
           </Plaque>
           <Plaque onClick={() => setSub('credits')} snd={snd} onFocus={focusLook(null)}>
-            Créditos
+            {tx(M.credits)}
           </Plaque>
           {/* Sair: só nas versões instaladas pelas lojas (na web, fecha-se a aba); com o cursor nele, o dado fica abatido (api.mood('quit')) */}
         </div>
@@ -752,8 +860,42 @@ export function TitleScreen({ api, snd }: { api: TitleApi; snd: UiSound }) {
   );
 }
 
+// ── O IDIOMA, na 1ª vez que o jogo abre (pedido do Pedro: escolher logo no começo; depois, nas Configurações → Idioma). O idioma do aparelho
+// vem primeiro. O título fica nos três idiomas, cada um na sua língua ──
+export function LanguagePick({ onPick, snd }: { onPick: (l: Lang) => void; snd: UiSound }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useMenuKeys(true, ref, null, snd);
+  const first = configStore.get().lang;
+  const list = [...LANGS].sort((a, b) => (a.v === first ? -1 : b.v === first ? 1 : 0));
+  return (
+    <div className="mnu-veil lang-pick">
+      <div ref={ref} className="board board-s">
+        <h2>
+          <PixelIcon name="idioma" size={48} />
+        </h2>
+        <p className="board-sub lang-q">
+          {/* i18n-ok: a pergunta, escrita nas três línguas ao mesmo tempo */}
+          Escolha o idioma
+          <br />
+          Choose your language
+          <br />
+          Elige el idioma
+        </p>
+        <div className="title-list">
+          {list.map((o) => (
+            <Plaque key={o.v} tone={o.v === first ? 'gold' : undefined} onClick={() => onPick(o.v)} snd={snd}>
+              {o.label}
+            </Plaque>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── PAUSA ──
 export function PauseMenu({ onResume, onDiary, onResetRoom, onTitle, hasBook, snd }: { onResume: () => void; onDiary: () => void; onResetRoom: () => void; onTitle: () => void; hasBook: boolean; snd: UiSound }) {
+  useLang();
   const ref = useRef<HTMLDivElement>(null);
   const [sub, setSub] = useState<Sub>('main');
   useMenuKeys(sub === 'main', ref, onResume, snd);
@@ -761,30 +903,30 @@ export function PauseMenu({ onResume, onDiary, onResetRoom, onTitle, hasBook, sn
     <div className="mnu-veil pause">
       <div ref={ref} className="board board-s" style={sub !== 'main' ? { visibility: 'hidden' } : undefined}>
         <h2>
-          <PixelIcon name="pausa" size={48} /> Pausa
+          <PixelIcon name="pausa" size={48} /> {tx(M.pause)}
         </h2>
         <div className="title-list">
           <Plaque tone="gold" onClick={onResume} snd={snd}>
-            Continuar
+            {tx(M.cont)}
           </Plaque>
           {hasBook && (
             <Plaque onClick={onDiary} snd={snd}>
-              Caderno
+              {tx(M.notebook)}
             </Plaque>
           )}
           <Plaque onClick={() => setSub('settings')} snd={snd}>
-            Configurações
+            {tx(M.settings)}
           </Plaque>
           <Plaque onClick={onResetRoom} snd={snd}>
-            Reiniciar a sala
+            {tx(M.resetRoom)}
           </Plaque>
           <Plaque onClick={() => setSub('askTitle')} snd={snd}>
-            Voltar à tela inicial
+            {tx(M.toTitle)}
           </Plaque>
         </div>
       </div>
       {sub === 'settings' && <Settings onBack={() => setSub('main')} snd={snd} />}
-      {sub === 'askTitle' && <Confirm text="Voltar à tela inicial?" sub="O jogo é salvo antes." yes="Voltar" no="Ficar" onYes={onTitle} onNo={() => setSub('main')} snd={snd} />}
+      {sub === 'askTitle' && <Confirm text={tx(M.askTitle)} sub={tx(M.saved)} yes={tx(M.back)} no={tx(M.stay)} onYes={onTitle} onNo={() => setSub('main')} snd={snd} />}
     </div>
   );
 }

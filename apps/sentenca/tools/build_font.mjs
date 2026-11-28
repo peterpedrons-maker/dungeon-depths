@@ -15,6 +15,7 @@ const ascii = eval(src.match(/const ASCII: number\[\]\[\] = (\[[\s\S]*?\n\]);/)[
 const COMPOSED = {};
 for (const m of src.matchAll(/add\('([^']+)', '([^']+)', '(\w+)'\);/g)) [...m[2]].forEach((c, i) => (COMPOSED[c] = [m[1][i] ?? m[1][0], m[3]]));
 const ALIAS = eval('(' + src.match(/const ALIAS: Record<string, string> = (\{[^\n]*\});/)[1] + ')');
+const FLIP = eval('(' + src.match(/const FLIP: Record<string, string> = (\{[^\n]*\});/)[1] + ')');
 
 const U = 100;
 const ADV = 6;
@@ -25,7 +26,13 @@ function pixelsOf(ch) {
   let acc = null;
   if (COMPOSED[ch]) [ch, acc] = COMPOSED[ch];
   const code = ch.charCodeAt(0);
-  const cols = code >= 32 && code <= 126 ? ascii[code - 32] : ascii['?'.charCodeAt(0) - 32];
+  let cols = code >= 32 && code <= 126 ? ascii[code - 32] : ascii['?'.charCodeAt(0) - 32];
+  if (FLIP[ch]) {
+    // ¿ e ¡: o ? e o ! girados meia volta (como em font.ts)
+    const s = ascii[FLIP[ch].charCodeAt(0) - 32];
+    cols = [0, 0, 0, 0, 0];
+    for (let c = 0; c < 5; c++) for (let r = 0; r <= 6; r++) if (s[c] & (1 << r)) cols[4 - c] |= 1 << (6 - r);
+  }
   const out = [];
   for (let c = 0; c < 5; c++)
     for (let r = 0; r < 8; r++) {
@@ -64,6 +71,7 @@ const chars = new Set();
 for (let c = 32; c <= 126; c++) chars.add(String.fromCharCode(c));
 Object.keys(COMPOSED).forEach((c) => chars.add(c));
 Object.keys(ALIAS).filter((c) => ALIAS[c].length === 1).forEach((c) => chars.add(c));
+Object.keys(FLIP).forEach((c) => chars.add(c));
 const glyphs = [new opentype.Glyph({ name: '.notdef', unicode: 0, advanceWidth: ADV * U, path: new opentype.Path() })];
 for (const ch of chars) glyphs.push(glyphFor(ch, 'u' + ch.codePointAt(0).toString(16)));
 // as reticências viram três pontos numa célula só (no diário elas são '...')

@@ -3,6 +3,52 @@ import type { DiaryState, Stroke } from '../story/diary';
 import { TEXTS } from '../story/texts';
 import { ADV, drawCentered, drawGlyph, drawText, drawWord, LINE, plot, textWidth, wrap } from './font';
 import { CELL_H, CELL_W, getWorld, onFloor, shortRoom, type MapRoom } from '../story/worldmap';
+import { T, tx } from '../i18n';
+import { roomTitle } from '../story/roomnames';
+
+// o que o caderno escreve por conta própria (títulos, índice) e a letra DELA nas páginas vazias, nos três idiomas (src/i18n.ts). As páginas são
+// estreitas (16 letras por linha): as traduções foram medidas para caber
+// os andares do mapa: térreo (T) e subsolo (S); em inglês G(round) e B(asement), em espanhol B(aja) e S(ótano)
+const FLOORS: Record<string, ReturnType<typeof T>> = { T: T('T', 'G', 'B'), S: T('S', 'B', 'S') };
+const floorLabel = (k: string) => (FLOORS[k] ? tx(FLOORS[k]) : k);
+
+const P = {
+  notebook: T('CADERNO', 'NOTEBOOK', 'CUADERNO'),
+  saw: T('O que eu vi.', 'What I saw.', 'Lo que vi.'),
+  think: T('O que eu acho.', 'What I think.', 'Lo que creo.'),
+  index: T('ÍNDICE', 'INDEX', 'ÍNDICE'),
+  hers: T('Dela', 'Hers', 'De ella'),
+  leaves: T('Folhas', 'Pages', 'Hojas'),
+  symbols: T('Símbolos', 'Symbols', 'Símbolos'),
+  faces: T('Faces', 'Faces', 'Caras'),
+  texts: T('Textos', 'Texts', 'Textos'),
+  map: T('Mapa', 'Map', 'Mapa'),
+  notes: T('Notas', 'Notes', 'Notas'),
+  gems: T('Gemas', 'Gems', 'Gemas'),
+  // a CÓPIA a lápis da frase que ele estava lendo (DESIGN.md §101)
+  copy: T('Cópia', 'Copy', 'Copia'),
+  COPY: T('CÓPIA', 'COPY', 'COPIA'),
+  wall: T('parede', 'wall', 'pared'),
+  chalk: T('a giz', 'in chalk', 'a tiza'),
+  fromTalk: T('da conversa', 'from a talk', 'de una charla'),
+  tapSym: T('toque num símbolo', 'tap a symbol', 'toca un símbolo'),
+  toNote: T('para anotar', 'to take notes', 'para anotar'),
+  putAway: T('Guardar', 'Put away', 'Guardar'),
+  SYMBOLS: T('SÍMBOLOS', 'SYMBOLS', 'SÍMBOLOS'),
+  sawLow: T('o que eu vi', 'what I saw', 'lo que vi'),
+  seenIn: T('VI EM', 'SEEN IN', 'LO VI EN'),
+  aPlace: T('um lugar', 'a place', 'un lugar'),
+  whatI: T('O QUE EU ACHO QUE', 'WHAT I THINK', 'LO QUE CREO QUE'),
+  means: T('SIGNIFICA', 'IT MEANS', 'SIGNIFICA'),
+  thinkDots: T('o que eu acho…', 'what I think…', 'lo que creo…'),
+  sawDot: T('o que eu vi.', 'what I saw.', 'lo que vi.'),
+  thinkDot: T('o que eu acho.', 'what I think.', 'lo que creo.'),
+  FACES: T('FACES', 'FACES', 'CARAS'),
+  TEXTS: T('TEXTOS', 'TEXTS', 'TEXTOS'),
+  whole: T('frases inteiras, quando eu achar', 'whole sentences, when I find them', 'frases enteras, cuando las encuentre'),
+  by: T('de', 'by', 'de'),
+  NOTES: T('ANOTAÇÕES', 'NOTES', 'APUNTES'),
+};
 import { glyphsOf, LEX } from '../story/lexicon';
 import { HER_NOTES, HER_PAGES as HER_ALL, HER_RELATO } from '../story/herpages';
 // (só as folhas que já existem no jogo: as que ainda não foram escritas não aparecem como buracos nem contam no índice)
@@ -104,7 +150,7 @@ export interface Layout {
   mapAt: number;
   notesAt: number;
   gemsAt: number; // o FIM do caderno: a guarda solta à esquerda e, à direita, a parte dura da capa de trás com o dado aberto (as gemas)
-  copyAt: number; // a CÓPIA (a última frase copiada, DESIGN.md §99), logo depois do índice; -1 = ainda nenhuma
+  copyAt: number; // a CÓPIA (a última frase copiada, DESIGN.md §101), logo depois do índice; -1 = ainda nenhuma
 }
 
 export function layout(d: DiaryState): Layout {
@@ -603,9 +649,12 @@ function endpaper(ctx: CanvasRenderingContext2D, label = true) {
   ctx.fillRect(4, 4, 1, PH - 8);
   if (!label) return;
   // a etiqueta colada (papel claro, moldura dupla, levemente torta não: reta e limpa, para ler)
-  const lx = 17;
+  // (CUADERNO e NOTEBOOK têm 8 letras: a etiqueta alarga 6 pixels e o passo das letras aperta 1)
+  const nb = tx(P.notebook);
+  const long = textWidth(nb, 2) > 86;
+  const lx = long ? 14 : 17;
   const ly = 22;
-  const lw = 94;
+  const lw = long ? 100 : 94;
   const lh = 132;
   ctx.drawImage(paper('L'), 20, 20, lw, lh, lx, ly, lw, lh);
   ctx.fillStyle = 'rgba(10,6,10,0.4)';
@@ -621,18 +670,18 @@ function endpaper(ctx: CanvasRenderingContext2D, label = true) {
     ctx.fillRect(x, ly + lh - 6, 1, 1);
   }
   const cx = lx + lw / 2;
-  drawCentered(ctx, 'CADERNO', cx, ly + 12, INK, 2);
+  drawCentered(ctx, nb, cx, ly + 12, INK, 2, long ? ADV * 2 - 1 : ADV * 2);
   rule(ctx, Math.round(cx), ly + 36, 32);
   drawGlyph(ctx, LEX.dado.g!, Math.round(cx), ly + 70, 50, INK);
-  drawCentered(ctx, 'O que eu vi.', cx, ly + 102, INK2);
-  drawCentered(ctx, 'O que eu acho.', cx, ly + 114, INK2);
+  drawCentered(ctx, tx(P.saw), cx, ly + 102, INK2);
+  drawCentered(ctx, tx(P.think), cx, ly + 114, INK2);
 }
 
 // o papel de uma folha sem nada escrito (as folhas do meio de um maço virando de uma vez, book3d.ts)
 export const blankPaper = (side: 'L' | 'R') => paper(side, 0);
 
 // a linha das folhas dela no índice, ANTES de o personagem ler o relato (ele ainda não sabe de quem é o caderno); depois, "Dela"
-export const HER_ROW_BEFORE = 'Folhas';
+export const HER_ROW_BEFORE = P.leaves;
 // (saves de antes desta regra: quem já escreveu sobre BRASEIRO no tutorial já leu o relato)
 const herKnown = (d: DiaryState) => d.herKnown ?? !!(d.notes?.brasa ?? '').trim();
 
@@ -641,10 +690,10 @@ const herKnown = (d: DiaryState) => d.herKnown ?? !!(d.notes?.brasa ?? '').trim(
 function noteEditor(ctx: CanvasRenderingContext2D, x0: number, cur: string, d: DiaryState, view: View, regions: Region[]) {
   const cx = x0 + CW / 2;
   drawWord(ctx, cur, x0 + 8, 14, CW - 16, 36, INK); // o símbolo direto no papel, sem caixa
-  heading(ctx, 'VI EM', 'R', 54);
-  drawCentered(ctx, shortRoom(d.seen[cur]?.room || 'um lugar'), cx, 71, INK);
-  drawCentered(ctx, 'O QUE EU ACHO QUE', cx, 85, INK);
-  drawCentered(ctx, 'SIGNIFICA', cx, 95, INK);
+  heading(ctx, tx(P.seenIn), 'R', 54);
+  drawCentered(ctx, d.seen[cur]?.room ? shortRoom(roomTitle(d.seen[cur].room)) : tx(P.aPlace), cx, 71, INK);
+  drawCentered(ctx, tx(P.whatI), cx, 85, INK);
+  drawCentered(ctx, tx(P.means), cx, 95, INK);
   ctx.fillStyle = INK2;
   ctx.fillRect(x0 + 10, 106, CW - 20, 1);
   ctx.fillRect(Math.round(cx) - 1, 105, 3, 3);
@@ -653,7 +702,7 @@ function noteEditor(ctx: CanvasRenderingContext2D, x0: number, cur: string, d: D
   let by = 110;
   let nl = 4;
   if (her) {
-    drawText(ctx, her.text, x0 + 1, by, SEPIA);
+    drawText(ctx, tx(her.text), x0 + 1, by, SEPIA);
     if (her.doodle === 'brasa') herBrazier(ctx, x0 + CW - 26, by - 4);
     by += LINE + 4;
     nl = 3;
@@ -672,12 +721,12 @@ function noteEditor(ctx: CanvasRenderingContext2D, x0: number, cur: string, d: D
   }
   const note = d.notes[cur] ?? '';
   const txt = note + (editing && view.caret ? '_' : '');
-  if (!note && !editing) drawText(ctx, 'o que eu acho…', x0 + 1, by, INK2);
+  if (!note && !editing) drawText(ctx, tx(P.thinkDots), x0 + 1, by, INK2);
   lines(ctx, wrap(txt, CH), x0 + 1, by, INK, nl);
   regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: nl * LINE + 4, id: 'edit:note' });
 }
 
-// A CÓPIA (DESIGN.md §99): a frase que o jogador estava lendo quando abriu o caderno (ou as falas da última conversa), copiada a lápis, com a
+// A CÓPIA (DESIGN.md §101): a frase que o jogador estava lendo quando abriu o caderno (ou as falas da última conversa), copiada a lápis, com a
 // anotação DELE embaixo de cada símbolo (a última linha; nada anotado = um pontilhado esperando). Cada frase começa numa fileira nova, dois
 // símbolos por fileira: três fileiras na página da esquerda e quatro na da direita. Tocar num símbolo faz a página da direita virar o lugar
 // de anotar ele (tocar de novo volta para a cópia).
@@ -701,10 +750,10 @@ function renderCopy(ctx: CanvasRenderingContext2D, side: 'L' | 'R', x0: number, 
   const cells = copyCells(d);
   const sel = view.copySel != null && cells[view.copySel] ? view.copySel : null;
   if (side === 'L') {
-    heading(ctx, 'CÓPIA', side);
+    heading(ctx, tx(P.COPY), side);
     // de onde ele copiou ("parede, Sala 24" cabe nos 16 caracteres da linha)
     // (a giz: o giz é a pista de que a frase é boato, a cópia não pode perder isso)
-    const from = d.copy!.from === 'parede' ? `${d.copy!.chalk ? 'a giz' : 'parede'}, ${shortRoom(d.copy!.room || '')}` : 'da conversa';
+    const from = d.copy!.from === 'parede' ? `${tx(d.copy!.chalk ? P.chalk : P.wall)}, ${shortRoom(roomTitle(d.copy!.room || ''))}` : tx(P.fromTalk);
     drawCentered(ctx, from.length > 16 ? `${from.slice(0, 15)}…` : from, x0 + CW / 2, 31, INK2);
   }
   if (side === 'R' && sel !== null) {
@@ -742,8 +791,8 @@ function renderCopy(ctx: CanvasRenderingContext2D, side: 'L' | 'R', x0: number, 
   });
   // (cópia curta: a página da direita fica livre, com um lembrete a lápis de que dá para anotar ali)
   if (side === 'R' && sel === null && !cells.some((c) => c.side === 'R')) {
-    drawCentered(ctx, 'toque num símbolo', x0 + CW / 2, 70, INK2);
-    drawCentered(ctx, 'para anotar', x0 + CW / 2, 80, INK2);
+    drawCentered(ctx, tx(P.tapSym), x0 + CW / 2, 70, INK2);
+    drawCentered(ctx, tx(P.toNote), x0 + CW / 2, 80, INK2);
   }
 }
 
@@ -786,20 +835,20 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
 
   if (s === 0) {
     {
-      drawCentered(ctx, 'ÍNDICE', PW / 2 + 4, 18, INK, 2);
+      drawCentered(ctx, tx(P.index), PW / 2 + 4, 18, INK, 2);
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 8, 40, CW - 16, 1);
       // [rótulo, contagem, folha, ícone]
       const rows: [string, string, number, number][] = [
-        [herKnown(d) ? 'Dela' : HER_ROW_BEFORE, `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
-        ['Símbolos', `${d.order.length}`, lay.dictAt, 0],
-        ['Faces', `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt, 1],
-        ['Textos', `${d.texts.length}`, lay.textsAt, 2],
-        ['Mapa', `${d.rooms.length}`, lay.mapAt, 4],
-        ['Notas', '', lay.notesAt, 5],
-        ['Gemas', `${(d.gems ?? []).length}/21`, lay.gemsAt, 6],
+        [tx(herKnown(d) ? P.hers : HER_ROW_BEFORE), `${(d.pages ?? []).length}/${HER_PAGES.length}`, lay.herAt, 3],
+        [tx(P.symbols), `${d.order.length}`, lay.dictAt, 0],
+        [tx(P.faces), `${FACES.filter((f) => f.unlocked).length}/6`, lay.facesAt, 1],
+        [tx(P.texts), `${d.texts.length}`, lay.textsAt, 2],
+        [tx(P.map), `${d.rooms.length}`, lay.mapAt, 4],
+        [tx(P.notes), '', lay.notesAt, 5],
+        [tx(P.gems), `${(d.gems ?? []).length}/21`, lay.gemsAt, 6],
       ];
-      if (lay.copyAt > 0) rows.unshift(['Cópia', '', lay.copyAt, 2]);
+      if (lay.copyAt > 0) rows.unshift([tx(P.copy), '', lay.copyAt, 2]);
       const step = rows.length > 7 ? 11 : 12;
       rows.forEach(([label, n, to, ico], i) => {
         const y = 46 + i * step;
@@ -815,7 +864,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
       });
       ctx.fillStyle = INK2;
       ctx.fillRect(x0 + 8, 137, CW - 16, 1);
-      drawCentered(ctx, 'Guardar', x0 + CW / 2, 141, INK2);
+      drawCentered(ctx, tx(P.putAway), x0 + CW / 2, 141, INK2);
       regions.push({ x: x0, y: 139, w: CW, h: 13, id: 'close' });
     }
   } else if (s >= lay.dictAt && s < lay.facesAt) {
@@ -823,9 +872,9 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     const items = d.order.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE);
     const cur = view.sel && d.seen[view.sel] ? view.sel : (d.order[0] ?? null);
     if (side === 'L') {
-      heading(ctx, 'SÍMBOLOS', side);
+      heading(ctx, tx(P.SYMBOLS), side);
       if (!items.length) {
-        lines(ctx, wrap('o que eu vi', CH), x0, 44, SEPIA, 10); // (a letra dela: o caderno não explica nada)
+        lines(ctx, wrap(tx(P.sawLow), CH), x0, 44, SEPIA, 10); // (a letra dela: o caderno não explica nada)
       } else {
         items.forEach((id, i) => {
           const cx = x0 + (i % 3) * 35;
@@ -851,41 +900,41 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     } else if (cur) {
       noteEditor(ctx, x0, cur, d, view, regions);
     } else {
-      lines(ctx, wrap('o que eu vi.', CH), x0, 30, SEPIA, 2);
-      lines(ctx, wrap('o que eu acho.', CH), x0, 44, SEPIA, 2);
+      lines(ctx, wrap(tx(P.sawDot), CH), x0, 30, SEPIA, 2);
+      lines(ctx, wrap(tx(P.thinkDot), CH), x0, 44, SEPIA, 2);
     }
   } else if (s === lay.copyAt && d.copy) {
     renderCopy(ctx, side, x0, d, view, regions);
   } else if (s === lay.facesAt) {
     // as faces, sem explicação: o nome das que o dado já tem; nas outras, só o "?" dela
-    if (side === 'L') heading(ctx, 'FACES', side);
+    if (side === 'L') heading(ctx, tx(P.FACES), side);
     const list = side === 'L' ? FACES.slice(0, 3) : FACES.slice(3, 6);
     list.forEach((f, i) => {
       const y = 32 + i * 40;
       dieFace(ctx, x0, y, f.n, f.unlocked);
-      drawText(ctx, f.unlocked ? f.name : '?', x0 + 22, y + 1, f.unlocked ? INK : SEPIA);
+      drawText(ctx, f.unlocked ? tx(f.name) : '?', x0 + 22, y + 1, f.unlocked ? INK : SEPIA);
     });
   } else if (s >= lay.herAt && s < lay.dictAt) {
     // as páginas DELA: o relato (as duas primeiras, para no meio da frase) e, depois, as folhas arrancadas (buracos até serem achadas)
     const k = (s - lay.herAt) * 2 + (side === 'L' ? 0 : 1);
     if (k < HER_RELATO.length) {
-      lines(ctx, HER_RELATO[k].flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
+      lines(ctx, HER_RELATO[k].flatMap((p) => ['', ...wrap(tx(p), CH)]).slice(1), x0, 18, SEPIA, 13);
     } else if (k - HER_RELATO.length < HER_PAGES.length) {
       const pg = HER_PAGES[k - HER_RELATO.length];
       if ((d.pages ?? []).includes(pg.id)) {
         tape(ctx, side);
-        lines(ctx, pg.body.flatMap((p) => ['', ...wrap(p, CH)]).slice(1), x0, 18, SEPIA, 13);
+        lines(ctx, pg.body.flatMap((p) => ['', ...wrap(tx(p), CH)]).slice(1), x0, 18, SEPIA, 13);
       } else tornPage(ctx, side, k);
     }
   } else if (s >= lay.textsAt && s < lay.mapAt) {
     const entry = d.texts.length ? TEXTS[d.texts[s - lay.textsAt]] : null;
     if (!entry) {
       if (side === 'L') {
-        heading(ctx, 'TEXTOS', side);
-        lines(ctx, wrap('frases inteiras, quando eu achar', CH), x0, 44, SEPIA, 10);
+        heading(ctx, tx(P.TEXTS), side);
+        lines(ctx, wrap(tx(P.whole), CH), x0, 44, SEPIA, 10);
       }
     } else {
-      const all = [entry.title, `de ${entry.by}`, '', ...entry.body.flatMap((p) => ['', ...wrap(p, CH)])];
+      const all = [tx(entry.title), `${tx(P.by)} ${tx(entry.by)}`, '', ...entry.body.flatMap((p) => ['', ...wrap(tx(p), CH)])];
       const wrapped = all.flatMap((l, i) => (i < 2 ? wrap(l, CH) : [l]));
       const cap = Math.floor((PH - 46) / LINE);
       const part = wrapped.slice(side === 'L' ? 0 : cap, side === 'L' ? cap : cap * 2);
@@ -896,7 +945,7 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
     const editing = view.editing === 'free';
     const all = wrap(d.free + (editing && view.caret ? '_' : ''), CH);
     if (side === 'L') {
-      heading(ctx, 'ANOTAÇÕES', side);
+      heading(ctx, tx(P.NOTES), side);
       lines(ctx, all.length || editing ? all : wrap('...', CH), x0, 34, all.length || editing ? INK : INK2, 12);
       for (let i = 0; i < 12; i++) {
         ctx.fillStyle = 'rgba(122,80,48,0.28)';
@@ -1175,8 +1224,9 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
   const { ox, oy } = mapOrigin();
   regs.push({ x: MAP_AREA.x, y: MAP_AREA.y, w: MAP_AREA.w, h: MAP_AREA.h, id: 'map' });
 
-  // abas dos andares
-  w.floors.forEach((label, i) => {
+  // abas dos andares (a chave é 'T'/'S', térreo e subsolo; só o rótulo muda com o idioma)
+  w.floors.forEach((key, i) => {
+    const label = floorLabel(key);
     const bx = 14 + i * 22;
     const on = i === fl;
     if (on) {
@@ -1296,7 +1346,7 @@ function buildMap(view: View, d: DiaryState, lay: Layout): { cvs: HTMLCanvasElem
     }
     regs.push({ x: bx - 1, y: PH - 23, w: 13, h: 12, id: `pen:${i}` });
   });
-  const here = d.here ? `${shortRoom(d.here)} - ${w.floors[w.rooms.find((r) => named(r.key, [d.here]))?.floor ?? 0] ?? ''}` : '';
+  const here = d.here ? `${shortRoom(roomTitle(d.here))} - ${floorLabel(w.floors[w.rooms.find((r) => named(r.key, [d.here]))?.floor ?? 0] ?? '')}` : '';
   if (view.pen === STAMP_PEN) {
     // bandeja: só os símbolos que o jogador já avistou (◄ quatro de cada vez ►)
     const n = d.order.length;
