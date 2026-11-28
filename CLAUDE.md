@@ -105,7 +105,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   salas e o giz do jogo risca o símbolo e o nome: a editora é **«Cinco Riscos»** (escolha do Pedro; o símbolo é a contagem de cinco dos
   condenados; uma vez por sessão; toque pula; `?splash=0`/`?splash=1`); a tela inicial só aparece com o cenário pronto (`onReady`,
   `src/story/loading.ts`) e se abre do preto. **Tela de carregamento** (`src/ui/LoadingScreen.tsx`, fundo `src/ui/loadart.ts` no pós-processo,
-  modo `load` do motor) depois de Novo jogo, Continuar e Carregar: a parede no escuro, a barra é uma frase de glifos talhada numa laje
+  modo `load` do motor) **logo que o jogo abre** (antes do idioma, da editora e da tela inicial; espera o jogo inteiro e segue sozinha, `DESIGN.md` §105) e depois de Novo jogo, Continuar e Carregar: a parede no escuro, a barra é uma frase de glifos talhada numa laje
   («EU DAR DADO · VOCÊ LER») que a luz dourada enche traço a traço, como as frases acendíveis, com a nota de cada símbolo (`DESIGN.md` §82),
   os desenhos a giz dos condenados que aparecem com a luz, a fresta fria com poeira e o dado em 2D de verdade (só a face da frente, chapada,
   com o rosto vivo, `DESIGN.md` §83), olhando a ponta da luz; espera modelos, quadros e os sons (que agora
@@ -127,11 +127,11 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   pensamento; no fim, "Guardar" pisca (`DESIGN.md` §75). Lousas de
   parede são lajes afastadas 2,5 cm da parede; decalques com offset -1 e plano acima do chão.
   **Trailer** (`tools/trailer/`, `DESIGN.md` §95): o começo do jogo em 1min18, gravado quadro a quadro do jogo de verdade (relógio virtual, câmera do trailer `__trailerCam` só em desenvolvimento), trilha composta com os sons do jogo (`renderAudio` com `note`/`sample`), legendas na fonte do jogo e o título no fim.
-  **Sem engasgo ao entrar nas salas** (`DESIGN.md` §103): os materiais de todas as salas são montados na placa de vídeo durante o carregamento (`compileAsync`, para a imagem do pós-processo) e as texturas sobem aos poucos; o salvamento automático não tira a foto da miniatura na hora, ela espera o jogador parar.
+  **Sem engasgo ao entrar nas salas** (`DESIGN.md` §104): os materiais de todas as salas são montados na placa de vídeo durante o carregamento (`compileAsync`, para a imagem do pós-processo) e as texturas sobem aos poucos; o salvamento automático não tira a foto da miniatura na hora, ela espera o jogador parar.
   **Menos trabalho por quadro** (`DESIGN.md` §106): a sala vizinha só é desenhada quando a passagem até ela está à vista; a sombra da luz principal da sala só é refeita quando algo se mexe; a posição das peças só é recalculada nas salas ativas; o rosto do dado guarda a face de base; os ícones da interface não se remontam.
   **Teste de desempenho** `?bench=1` (`src/ui/Bench.tsx`, `DESIGN.md` §102): o jogo passeia sozinho por cinco salas pesadas em quatro níveis de qualidade, mede os quadros por segundo e os engasgos e mostra um relatório com o aparelho e a qualidade recomendada (copiar, usar a recomendada); nada é gravado; `?bench=rapido` confere em tempos curtos.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
-  Publicado em `/sentenca/` (https://peterpedrons-maker.github.io/dungeon-depths/sentenca/; a pasta se chamava `masmorra-do-dado` até a troca de nome, `DESIGN.md` §89). **Três idiomas** (português, inglês e espanhol; escolha na 1ª tela e em Configurações → Idioma; `src/i18n.ts`, `DESIGN.md` §98; ver a convenção abaixo). É um PWA instalável (manifest + service worker em
+  Publicado em `/sentenca/` (https://peterpedrons-maker.github.io/dungeon-depths/sentenca/; a pasta se chamava `masmorra-do-dado` até a troca de nome, `DESIGN.md` §89). Colado numa conversa, o link vira um **cartão** com a imagem da tela inicial (`public/og.jpg`, Open Graph no `index.html`, `DESIGN.md` §103). **Três idiomas** (português, inglês e espanhol; escolha na 1ª tela e em Configurações → Idioma; `src/i18n.ts`, `DESIGN.md` §98; ver a convenção abaixo). É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; a instalação fica com o navegador).
 
 ## Subagentes do projeto

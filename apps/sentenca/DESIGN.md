@@ -2517,7 +2517,22 @@ instalar nada (`src/ui/Bench.tsx`).
   embalado usaria, então o resultado vale para o app; o Steam Deck e o iPhone se testam neles mesmos.
 - `?bench=rapido`: o mesmo passeio em tempos curtos, só para conferir que o teste funciona (os números não valem).
 
-## 103. O engasgo ao entrar numa sala (cenógrafo, pedido do Pedro)
+## 103. Mandar o jogo para alguém: o cartão do link e o QR code (pedido do Pedro)
+
+Pedido: "mandar o link do jogo pra pessoa… ela só clicar e já abrir de uma vez".
+
+- O jogo já é um site comum (GitHub Pages): https://peterpedrons-maker.github.io/dungeon-depths/sentenca/ abre direto no navegador, sem conta no
+  GitHub, sem instalar nada, no PC ou no celular. O site se atualiza sozinho a cada envio da branch de trabalho (`deploy.yml`).
+- **O cartão do link** (`index.html`, Open Graph): colado no WhatsApp, Telegram, Discord ou numa rede, o link vira um cartão com a imagem da
+  tela inicial (o dado caído no poço embaixo do nome; `public/og.jpg`, 1200 × 630, 81 KB, tirada do próprio jogo), o título «Sentença» e uma
+  frase; a pessoa toca no cartão e o jogo abre. O cartão só tem um texto: fica em português (o jogo pergunta o idioma ao abrir). Os aplicativos
+  guardam o cartão de um link por um tempo: o primeiro envio depois da mudança pode ainda vir sem imagem.
+- **O QR code** (feito aqui, sem site de terceiros; conferido lendo de volta): apontar a câmera e tocar abre o jogo, sem ver endereço nenhum.
+- Esconder o endereço de vez pede o Pedro decidir: um encurtador (bit.ly e parecidos, conta dele) ou um domínio próprio (pago; com ele, o
+  endereço do site inteiro muda e os caminhos `/dungeon-depths/...` do build precisam mudar junto). Depois da 1ª visita, "Adicionar à tela
+  inicial" instala o jogo como app (PWA): abre em tela cheia, sem a barra de endereço.
+
+## 104. O engasgo ao entrar numa sala (cenógrafo, pedido do Pedro)
 
 "Às vezes, quando o jogador entra na sala, grande ou pequena, o jogo dá uma pequena engasgada. Ajudaria pôr portas com um carregamento
 pequeno?" Medido quadro a quadro (o motor marca, no modo de desenvolvimento, quanto cada parte custa: `__probe`), o engasgo NÃO era falta de
@@ -2546,6 +2561,23 @@ depois, se o teste de desempenho ou o Pedro ainda sentirem.
 Ganchos de teste (só no modo de desenvolvimento): `__probe` (o custo de cada parte de cada quadro), `__mdd.progs()` (os materiais montados e
 se a preparação terminou), `__mdd.texMem()` (a memória de vídeo das texturas, sala por sala), `__mdd.thumbState()`. O teste de desempenho
 (§102) espera a preparação terminar antes de liberar o Começar.
+
+## 105. A tela de carregamento logo que o jogo abre (pedido do Pedro)
+
+Pedido: "quando eu entrei no jogo pela primeira vez, apareceu a janela de escolher o idioma, mas como ainda estava carregando, ela estava sem
+nenhuma informação, aí depois de 2 segundos apareceu… colocar um loading… só no começo… o mesmo tipo de load… a mesma tela".
+
+- **A causa:** a escolha do idioma subia antes de a fonte do jogo chegar (o navegador esconde o texto enquanto a fonte vem).
+- **Agora**, ao abrir o jogo (quando a tela inicial vai aparecer), a 1ª coisa é a MESMA tela de carregamento do Novo jogo (§80, §82, §83): a
+  parede no escuro com os desenhos a giz, a frase «EU DAR DADO · VOCÊ LER» que a luz dourada enche e o dado 2D no canto. Ela espera o jogo
+  inteiro: a fonte, os modelos, as gravações de som, os primeiros quadros e a placa de vídeo com os materiais de todas as salas (§104); no
+  máximo 15 s, para nunca prender ninguém. Por baixo, a tela inicial já se prepara no preto.
+- No fim ela segue **sozinha** (sem o «Toque para começar»: o 1º toque vem logo depois, no idioma ou na tela inicial): o dado sai pulando
+  como no Novo jogo, a parede escurece e vêm, na ordem de sempre, a escolha do idioma (só na 1ª vez, já com o texto), a abertura da editora e
+  a tela inicial.
+- Como tudo já chegou, a tela de carregamento do Novo jogo / Continuar fica curta: a luz corre a frase de novo (~1,4 s) e pede o clique.
+- Motor: `opts.boot` + `onBooted` e `bootGo()` em `scene.ts` (o modo continua `title`; por cima, o fundo da tela de carregamento, `uBack`);
+  `LoadingScreen auto` em `App.tsx`; `loadArt.reset()` para a 2ª tela. `?boot=0` pula (testes).
 
 ## 106. Desempenho: menos trabalho por quadro (cenógrafo, pedido do Pedro)
 

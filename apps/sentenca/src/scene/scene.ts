@@ -156,6 +156,8 @@ export interface SceneOptions {
   title?: boolean; // começa na TELA INICIAL (a câmera olha o poço de baixo; o jogo só começa com begin())
   load?: boolean; // começa na TELA DE CARREGAMENTO (veio da tela inicial: jogo novo ou outro espaço); o jogo só começa com loadGo()
   onReady?: () => void; // a cena já desenhou e os modelos chegaram: a tela inicial pode aparecer (DESIGN.md §80)
+  boot?: boolean; // (com `title`) a TELA DE CARREGAMENTO DA ABERTURA (DESIGN.md §105): a mesma do Novo jogo, por cima de tudo, até o jogo inteiro chegar
+  onBooted?: () => void; // a tela de carregamento da abertura terminou (o dado saiu pulando): vêm o idioma, a editora e a tela inicial
   onPause?: () => void;
   onCine?: (on: boolean) => void; // cena em curso: a interface esconde a mira // o mouse foi solto no meio do jogo (Esc no PC): abrir a pausa
   onIntroSkip?: (on: boolean) => void; // a abertura está em curso e pode ser pulada (DESIGN.md §92)
@@ -181,6 +183,7 @@ export interface SceneApi {
   fadeInFromBlack(): void;
   titleReveal(): void; // a tela inicial aparece: o preto se abre sobre o cenário (depois da tela da editora)
   loadGo(): void; // fim da tela de carregamento: o jogo começa (ou a cena de acordar, num jogo novo)
+  bootGo(): void; // fim da tela de carregamento da abertura: o dado sai pulando, a parede escurece e o resto da abertura segue (onBooted)
   begin(): void; // sai da tela inicial: continua do último ponto salvo do espaço ativo (ou acorda, num jogo novo)
   toTitle(): void; // salva e volta à tela inicial
   saveNow(): void; // salva agora (pausa, sair)
@@ -669,8 +672,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // para onde o dado olha agora: inscrição encarada > braseiro à frente > porta > nada (ele vagueia)
   let titleTarget: LifeTarget | null = null; // tela inicial: para onde o olho do dado vai (o mouse, a opção marcada, o dedo)
   const lifeTarget = (): LifeTarget | null => {
+    if (mode === 'load' || booting) return loadTarget();
     if (mode === 'title') return titleTarget;
-    if (mode === 'load') return loadTarget();
     if (dieCineTarget > 0.5) return { dx: 0, dy: 0, player: true }; // na cena, o dado olha DIRETO para o jogador
     if (forcedLook && performance.now() < forcedLook.until) {
       // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
@@ -3810,7 +3813,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     saves.writeMeta(m);
   };
   // pede um salvamento com miniatura (a imagem é copiada logo depois do próximo quadro).
-  // O ENGASGO AO ENTRAR NUMA SALA (DESIGN.md §103): copiar a imagem para a miniatura faz a placa de vídeo parar e entregar o quadro, e isso
+  // O ENGASGO AO ENTRAR NUMA SALA (DESIGN.md §104): copiar a imagem para a miniatura faz a placa de vídeo parar e entregar o quadro, e isso
   // custava de 5 a 10 quadros de uma vez, toda vez que o jogador cruzava uma porta. Agora o salvamento AUTOMÁTICO (`quiet`: entrar numa
   // sala, resolver um puzzle, fechar o caderno) grava na hora sem foto nova, e a foto fica para um momento PARADO (o jogador sem andar nem
   // virar por 0,6 s), quando um quadro a mais não se vê. Pausar e voltar à tela inicial tiram a foto na hora (a imagem já está parada).
@@ -4306,10 +4309,34 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       veilQuad = true;
       loadT = 0;
       drawn = 0;
+      barShown = 0;
+      loadArt.reset();
+      loading.set(0, false, sfx.unlocked); // (o "pronto" da tela da abertura não vale para esta)
       dieCineTarget = 1;
       dieCine = 1;
       life.settle();
     } else loadGo();
+  };
+  // a abertura: a tela de carregamento por cima da tela inicial (que segue no preto, se preparando); no fim o dado sai pulando como no Novo jogo
+  const bootTick = (rdt: number) => {
+    bootT += rdt;
+    if (goT >= 0) {
+      goT += rdt;
+      if (goT >= 0.5) {
+        goT = -1;
+        booting = false;
+        postMat.uniforms.uBack.value = 0; // (a tela inicial está no preto: o véu dela só se abre depois da editora)
+        opts.onBooted?.();
+        return;
+      }
+    }
+    postMat.uniforms.uBright.value = 1 + configStore.get().brightness * 0.07; // (a tela inicial apaga o brilho enquanto está no preto)
+    loadBackTick(rdt);
+  };
+  const bootGo = () => {
+    if (!booting || goT >= 0) return;
+    goT = 0;
+    life.hop(3.6);
   };
   // o clique de começar: o dado sai pulando para a direita e a parede escurece (0,5 s); depois, o jogo (finishGo)
   let goT = -1;
@@ -4356,8 +4383,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // arquivo que não vem
   let readyT = 0;
   let readySent = false;
+  // A TELA DE CARREGAMENTO DA ABERTURA (pedido do Pedro, DESIGN.md §105): ao abrir o jogo, antes do idioma, da editora e da tela inicial, a
+  // MESMA tela do Novo jogo (a parede, a frase que a luz enche, o dado 2D) espera tudo chegar: modelos, fonte, sons e a placa de vídeo com os
+  // materiais de todas as salas. Por baixo, a tela inicial já se prepara no preto. Antes, a escolha do idioma subia vazia (a fonte ainda vindo)
+  let booting = !!(opts.title && opts.boot);
+  let bootT = 0;
   let barShown = 0; // a barra como o jogador a vê (anda macio até o valor de verdade)
-  // PREPARAR A PLACA DE VÍDEO (DESIGN.md §103): na primeira vez que uma sala aparecia, a placa de vídeo montava os materiais dela (os
+  // PREPARAR A PLACA DE VÍDEO (DESIGN.md §104): na primeira vez que uma sala aparecia, a placa de vídeo montava os materiais dela (os
   // "shaders") e recebia as texturas, e o quadro engasgava (a Biblioteca, quase 1 s num aparelho lento). Agora, assim que os modelos chegam:
   //  · os MATERIAIS de todas as salas são montados de uma vez (em paralelo quando o navegador deixa: compileAsync), montados para a imagem do
   //    pós-processo, onde a sala é desenhada; a tela de carregamento espera isso terminar;
@@ -4437,11 +4469,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       readySent = true;
       opts.onReady?.();
     }
-    if (mode === 'load') {
+    if (mode === 'load' || booting) {
       const a = sfx.progress;
       const p = 0.2 * Math.min(1, drawn / 6) + 0.3 * models + 0.5 * a;
       barShown = Math.min(p, barShown + dt / 1.4); // (no mínimo ~1,4 s de barra: dá tempo de ver o fogo correr)
-      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone() && warmState === 'done') || loadT > 15; // (pronto: a frase inteira acesa e a placa de vídeo preparada)
+      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone() && warmState === 'done') || (booting ? bootT : loadT) > 15; // (pronto: a frase inteira acesa e a placa de vídeo preparada)
       loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
     }
   };
@@ -4964,6 +4996,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (mode === 'title') {
       titleTick(dt);
       titleCam();
+      if (booting) bootTick(rdt);
     } else if (mode === 'load') {
       loadT += rdt;
       if (goT >= 0) {
@@ -5363,9 +5396,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const cn = dieCine * dieCine * (3 - 2 * dieCine);
     tiltNow.copy(idQ).slerp(tilt, 1 - cn);
     const lo =
-      mode === 'title'
+      mode === 'title' && !booting
         ? life.update({ dt: hdt, t, idle: titleIdle > 1, target: lifeTarget(), busy: false, sleepAfter: 30, face: Math.max(...rostoP), lively: true, glare: true })
-        : mode === 'load'
+        : mode === 'load' || booting
         ? life.update({ dt: hdt, t, idle: false, target: lifeTarget(), busy: false, face: 1, lively: true })
         : life.update({ dt: hdt, t, idle: !moving && !busy() && dieState === 'hand', target: lifeTarget(), busy: busy(), face: Math.max(...rostoP), talking: talkingNow() });
     lifeGlow = lo.glow * (quizShake > 0.05 && !calmFx ? (Math.sin(t * 26) > 0 ? 1.9 : 0.55) : 1); // tremendo: as gemas piscam
@@ -5422,7 +5455,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── o diário: sobe da bolsa, abre a capa e vira as páginas ──
     {
-      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone) || titleTr?.k === 'new') && !devNoHud; // (na tela de carregamento o dado é o 2D, pintado no fundo) // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
+      dieGroup.visible = ((hasDie && dieState === 'hand' && mode === 'play') || (mode === 'title' && !titleGone && !booting) || titleTr?.k === 'new') && !devNoHud; // (na tela de carregamento o dado é o 2D, pintado no fundo) // sem dado/giz nas mãos até achá-los; arremessado ou posicionado, o dado NÃO fica na mão
       soapGroup.visible = hasChalk && mode === 'play';
       // (a cena da gema nunca pode prender o jogo: um erro nela a encerra com a gema guardada, e o caderno, se foi aberto por cima dela, fecha)
       try {
@@ -5837,7 +5870,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       note: (id: string, text: string) => diary.setNote(id, text), // (testes) escreve uma anotação no caderno
       cull: (on: boolean) => (cullOn = on), // (testes) liga/desliga o corte das salas vizinhas (DESIGN.md §106)
       drawn: () => rooms.map((r, i) => (activeRooms.has(i) ? `${i}:${r.group.visible ? 'v' : '-'}` : '')).filter(Boolean).join(' '),
-      // (testes) os programas de desenho já montados pela placa de vídeo, e se a preparação de todas as salas terminou (DESIGN.md §103)
+      // (testes) os programas de desenho já montados pela placa de vídeo, e se a preparação de todas as salas terminou (DESIGN.md §104)
       progs: () => ({ warm: warmState, list: (renderer.info.programs ?? []).map((pg) => [pg.name, (pg as unknown as { cacheKey: string }).cacheKey]) }),
       // (testes) quanta memória de vídeo as texturas de cada sala ocupam (MB, com mipmaps)
       texMem: () => {
@@ -5930,6 +5963,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     },
     // ao abrir a página logo depois de escolher outro espaço: aparece em pontilhado a partir do preto
     titleReveal,
+    bootGo,
     loadGo: () => {
       if (mode === 'load') loadGo();
     },

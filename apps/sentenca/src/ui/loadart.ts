@@ -533,6 +533,18 @@ export function makeLoadArt() {
     dieAt: () => ({ x: W ? dieX / W : 0.84, y: H ? (dieY - 32) / H : 0.75 }),
     // a frase inteira acesa há um instante: pronto
     allDone: () => doneT >= 0.8,
+    // a frase volta ao começo (a tela de carregamento do Novo jogo, depois da da abertura: a luz corre de novo)
+    reset: () => {
+      front = 0;
+      reached = -1;
+      arrive.length = 0;
+      doneT = -1;
+      focus = -1;
+      litKey = '';
+      motes.length = 0;
+      headX = slab.x0 + 2;
+      headY = gy;
+    },
     // o desenho que a luz do último símbolo iluminou (para onde o dado olha); depois de tudo aceso, um desenho qualquer, trocando de vez em quando
     focusAt: () => {
       let i = focus;

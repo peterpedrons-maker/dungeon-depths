@@ -167,7 +167,7 @@ export function Bench({ api, ready }: { api: React.MutableRefObject<SceneApi | n
     window.addEventListener('resize', r);
     return () => window.removeEventListener('resize', r);
   }, []);
-  // pronto de verdade: o cenário desenhado E a placa de vídeo com os materiais de todas as salas preparados (DESIGN.md §103)
+  // pronto de verdade: o cenário desenhado E a placa de vídeo com os materiais de todas as salas preparados (DESIGN.md §104)
   const [warm, setWarm] = useState(false);
   useEffect(() => {
     if (!ready || warm) return;
