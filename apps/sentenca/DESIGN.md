@@ -2546,3 +2546,37 @@ depois, se o teste de desempenho ou o Pedro ainda sentirem.
 Ganchos de teste (só no modo de desenvolvimento): `__probe` (o custo de cada parte de cada quadro), `__mdd.progs()` (os materiais montados e
 se a preparação terminou), `__mdd.texMem()` (a memória de vídeo das texturas, sala por sala), `__mdd.thumbState()`. O teste de desempenho
 (§102) espera a preparação terminar antes de liberar o Começar.
+
+## 106. Desempenho: menos trabalho por quadro (cenógrafo, pedido do Pedro)
+
+O Pedro rodou o teste de desempenho (§102) num Galaxy S25: na Alta, média de 56 quadros por segundo, mas com quadros perdidos (em algumas
+salas mais de 5% dos quadros em 33 ms em vez de 17, e picos de 117 a 183 ms), sentidos como engasgo. Com uma placa de vídeo daquelas e uma
+imagem de 416×192, o peso não é desenhar pixels: é o trabalho do processador a cada quadro (quantas ordens de desenho, quantas sombras
+refeitas, quantas contas). Medido sala por sala (`__probe`, contagem de ordens de desenho, perfil de processador), o que mudou:
+
+1. **A sala vizinha só é desenhada quando dá para vê-la.** O motor desenha a sala do jogador e as duas vizinhas; atrás das paredes a vizinha
+   não aparece, mas cada peça dela custava uma ordem de desenho (no Claustro, a vizinha tinha o dobro de peças do próprio Claustro). Agora
+   cada par de salas tem uma CAIXA DE PASSAGEM (a porta de saída de uma, o corredor, a entrada da outra; `portals`); a vizinha só vai para o
+   desenho se essa caixa está no campo de visão e mais perto que o fim da névoa (`cullNeighbors`). As salas vistas de um caminho especial (a
+   Biblioteca, da passarela) ficam sempre. Conferido: a mesma vista com e sem o corte, com o tempo congelado, nas 24 salas e em 8 direções,
+   dá a MESMA imagem (nenhuma peça some).
+2. **A sombra da luz principal da sala** (a fresta, o furo do teto) era refeita TODO quadro, a sala inteira desenhada de novo para o mapa,
+   mesmo com tudo parado (girar a câmera parado era justamente quando o quadro escapava). Agora: quando o jogador ou o dado se mexem (a cada
+   2 quadros: a sombra dele acompanha a 30 por segundo), ao chegar na sala e, de garantia, a cada 6 quadros (o que se mexe na sala: pilares,
+   pesos, portas). As sombras das chamas já eram assim.
+3. **A posição das peças só das salas ativas.** O Three.js recalculava todo quadro a posição de ~8 mil objetos das 24 salas (1,6 ms por
+   quadro num PC, o triplo num celular). Agora a cena calcula tudo uma vez ao montar o mundo e, depois, só a parte geral e as salas ativas
+   (`updateWorld`). Conferido: as 5.574 peças das 24 salas, cada uma no lugar exato.
+4. **O rosto do dado** redesenhava a face inteira do dado (a obsidiana, as runas) a cada piscar de olho e a reenviava à placa de vídeo. Agora
+   a face de base fica guardada e só os traços do rosto são desenhados por cima; o olhar refaz a textura no máximo 15 vezes por segundo
+   (o olho em pixel andando a 15 quadros por segundo não se nota).
+5. **Os ícones da interface** (centenas de quadradinhos cada) não se remontam quando a interface se refaz (`PixelIcon` guardado).
+
+**Medido no navegador da nuvem** (sem placa de vídeo; os números de verdade vêm do aparelho): ordens de desenho por quadro, Vestíbulo 335 →
+106, Galeria 379 → 135, Biblioteca ~800 → ~80; o tempo de processador antes de desenhar, Lousa 8,1 → 4,9 ms, Claustro 6,0 → 2,6, Galeria
+6,1 → 3,6, Tribunal 3,3 → 2,0; o de desenhar, Claustro 11,3 → 6,8, Tribunal 7,5 → 4,0. **O que sobra**: a Lousa ainda manda ~500 ordens de
+desenho (as lousas de lampiões são muitas peças pequenas, cada uma acendendo sozinha); juntar peças paradas por material reduziria isso,
+mas mexe em como o puzzle acende cada lampião, então fica para uma conversa com o Pedro e o enigmista.
+
+Ganchos de teste (só em desenvolvimento): `__mdd.cull(false)` desliga o corte das vizinhas (para comparar) e `__mdd.drawn()` diz quais salas
+ativas estão sendo desenhadas.

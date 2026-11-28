@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type React from 'react';
 import { ICON_PAL, ICONS16, ICONS24 } from './icons';
 
@@ -7,7 +8,8 @@ import { ICON_PAL, ICONS16, ICONS24 } from './icons';
 export type IconName = keyof typeof ICONS16 | keyof typeof ICONS24;
 
 // `size` em px na tela: múltiplos de 16 (HUD) ou de 24 (menus) ficam nítidos. `grid` força a versão (senão: a de 24 nos tamanhos de menu, se existir).
-export function PixelIcon({ name, size = 32, grid }: { name: IconName; size?: number; grid?: 16 | 24 }) {
+// (guardado: o mesmo ícone, no mesmo tamanho, não se remonta quando a interface se refaz; são centenas de quadradinhos por ícone; DESIGN.md §106)
+export const PixelIcon = memo(function PixelIcon({ name, size = 32, grid }: { name: IconName; size?: number; grid?: 16 | 24 }) {
   const has24 = name in ICONS24;
   const has16 = name in ICONS16;
   const use24 = grid === 24 ? has24 : grid === 16 ? !has16 : has24 && (size % 24 === 0 || !has16);
@@ -32,4 +34,4 @@ export function PixelIcon({ name, size = 32, grid }: { name: IconName; size?: nu
       {rects}
     </svg>
   );
-}
+});

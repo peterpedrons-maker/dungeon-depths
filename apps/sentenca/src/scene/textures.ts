@@ -826,10 +826,25 @@ function turned(c: HTMLCanvasElement, turn: number): HTMLCanvasElement {
   ctx.drawImage(c, -32, -32);
   return o;
 }
+// a face SEM as gemas, guardada: ela é a mesma sempre (o desenho é sorteado com semente fixa), e refazê-la a cada piscar de olho era o que
+// mais pesava nas contas do jogo a cada quadro (DESIGN.md §106)
+const rostoBases = new Map<string, { face: HTMLCanvasElement; glow: HTMLCanvasElement }>();
+function rostoBase(n: number, accent: string, locked: boolean) {
+  const k = `${n}|${accent}|${locked}`;
+  let b = rostoBases.get(k);
+  if (!b) {
+    b = { face: dieFaceCanvas(n, accent, locked, false), glow: dieGlowCanvas(n, accent, locked, false) };
+    rostoBases.set(k, b);
+  }
+  const face = canvas(64);
+  face.ctx.drawImage(b.face, 0, 0);
+  const glow = canvas(64);
+  glow.ctx.drawImage(b.glow, 0, 0);
+  return { face: face.c, glow: glow.c };
+}
 export function dieRostoCanvas(n: number, accent: string, locked: boolean, turn = 0, look: RostoLook = NO_LOOK) {
   // a face SEM as gemas (o rosto as substitui): obsidiana, filete dourado e rebites; o número fica nos pontinhos da testa
-  const face = dieFaceCanvas(n, accent, locked, false);
-  const glow = dieGlowCanvas(n, accent, locked, false);
+  const { face, glow } = rostoBase(n, accent, locked);
   const col = locked ? '#5a5270' : accent;
   tracos(face.getContext('2d')!, n, false, col, look);
   tracos(glow.getContext('2d')!, n, true, col, look);

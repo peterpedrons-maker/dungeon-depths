@@ -906,7 +906,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const FACE_N_LOCAL = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)];
   const FACE_N = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)];
   const nW = new THREE.Vector3();
+  let rostoLookT = 1;
+  let rostoLookUsed = false;
   const updateRostos = (dt: number) => {
+    rostoLookT += dt;
+    rostoLookUsed = false;
     if (rostosDirty) {
       rostosDirty = false;
       buildRostos(); // a face escolhida mudou: as faces laterais giram de outro jeito
@@ -938,9 +942,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           ir: lk.iris < -0.5 ? -1 : 0,
         };
         const key = `${q.ex},${q.ey},${q.by},${q.closed},${q.mo},${q.mx},${q.mw},${q.sq},${q.nose},${q.bl},${q.br},${q.sd},${q.ir}`;
-        if (rostoKey[i] !== key) {
+        // (o olhar refaz a textura no máximo ~15 vezes por segundo: cada troca recompõe e reenvia duas imagens à placa de vídeo, e o olho em
+        // pixel andando a 15 quadros por segundo não se nota; DESIGN.md §106)
+        if (rostoKey[i] !== key && rostoLookT >= 1 / 15) {
           rostoKey[i] = key;
           rostos[i].setLook(q);
+          rostoLookUsed = true;
         }
       }
       if (Math.abs(rostoP[i] - rostoLast[i]) > 0.03 || (rostoP[i] < 0.005 && rostoLast[i] > 0) || (rostoP[i] > 0.995 && rostoLast[i] < 1)) {
@@ -948,6 +955,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         rostoLast[i] = rostoP[i];
       }
     });
+    if (rostoLookUsed) rostoLookT = 0;
   };
   // a MARCA de cada face: o glifo do efeito (3 Fogo = ACENDER, 2 Peso = IGUAL/PESAR, 1 Ricochete = ECO), só depois de o jogador ter visto a palavra e com a face liberada;
   // as outras ficam com a marca apagada (a palavra delas ainda não está definida na língua). Ver DESIGN.md §27.
@@ -1824,6 +1832,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return out;
   };
   const connectors: Connector[] = [];
+  // AS PASSAGENS ENTRE SALAS VIZINHAS (DESIGN.md §106): a porta de saída de uma sala, o corredor e a entrada da seguinte, numa caixa. A sala
+  // vizinha só se vê por ela; se a caixa está fora do campo de visão (ou além da névoa), a sala vizinha não é desenhada naquele quadro
+  const portals: { a: number; b: number; box: THREE.Box3 }[] = [];
   // o corredor de ligação em que está um ponto (`y` = a altura dele: pés, ou o ponto da mira)
   const connectorAt = (p: THREE.Vector3, y = p.y): Connector | null => {
     for (const c of connectors) {
@@ -1845,6 +1856,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       c.dispose();
     });
     connectors.length = 0;
+    portals.length = 0;
     const bare = (n: string) => n.replace(/^Sala \d+ · /, '');
     const p0 = PLANTA_ON ? PLAN_ORIGIN : undefined;
     BUILDERS.forEach((build, i) => {
@@ -1881,6 +1893,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const end = corridorEnd(door, [Math.round(da.x), Math.round(da.z)]);
       const ent = pb.xz(en.x, en.z);
       const db = pb.dirToWorld(new THREE.Vector3(en.dx, 0, en.dz));
+      {
+        // a caixa da passagem: a porta de saída de A, a entrada de B (e o corredor, se houver), da altura do chão até o alto de uma porta
+        const y0 = pa.pos.y + (a.exitDy ?? 0);
+        const yb = pb.pos.y + (b.entranceY ?? 0);
+        const box = new THREE.Box3(
+          new THREE.Vector3(Math.min(door[0], ent[0]) - 1.6, Math.min(y0, yb) - 0.5, Math.min(door[1], ent[1]) - 1.6),
+          new THREE.Vector3(Math.max(door[0], ent[0]) + 1.6, Math.max(y0, yb) + 4.2, Math.max(door[1], ent[1]) + 1.6),
+        );
+        portals.push({ a: i, b: i + 1, box });
+      }
       // uma PONTE (plan.ts): o caminho passa pelos pontos dela (pela passarela da Biblioteca) antes de seguir até a entrada
       const pn = PONTES.find((p) => p.de === bare(a.name));
       if (pn && p0) {
@@ -1899,6 +1921,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         applyShadowFlags(c.group);
         scene.add(c.group);
         connectors.push(c);
+        portals[portals.length - 1].box.union(new THREE.Box3().setFromObject(c.group));
         continue;
       }
       if (Math.hypot(end[0] - ent[0], end[1] - ent[1]) < 0.05) continue;
@@ -1907,6 +1930,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       applyShadowFlags(c.group);
       scene.add(c.group);
       connectors.push(c);
+      portals[portals.length - 1].box.union(new THREE.Box3().setFromObject(c.group));
     }
   };
   // O MAPA DO CADERNO SAI DO 3D (DESIGN.md §73): cada sala é a caixa dela, no lugar dela; cada corredor, o caminho dele (da porta até a
@@ -2059,6 +2083,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // uma camada que a câmera não enxerga.
   let surfCache: THREE.Object3D[] = [];
   const activeRooms = new Set<number>();
+  // AS POSIÇÕES DAS PEÇAS (DESIGN.md §106): o Three.js recalculava, todo quadro, a posição de cada peça das 24 salas (~8 mil objetos, quase
+  // 2 ms por quadro num PC, o triplo num celular), mesmo das salas longe. Agora a cena calcula tudo uma vez ao montar o mundo e, depois, a
+  // cada quadro, só a parte geral e as salas ativas; as outras ficam paradas (nada nelas se mexe; quando uma volta a ficar ativa, o que
+  // mudou se recalcula sozinho)
+  const idleGroups = new Set<THREE.Object3D>();
+  const updateWorld = () => {
+    for (const ch of scene.children) if (!idleGroups.has(ch)) ch.updateMatrixWorld();
+  };
   const applyActive = () => {
     activeRooms.clear();
     surfCache = [];
@@ -2072,6 +2104,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       });
     rooms.forEach((r, i) => setLayer(r.group, activeRooms.has(i) ? 0 : 1));
     connectors.forEach((c) => setLayer(c.group, activeRooms.has(c.from) || activeRooms.has(c.to) ? 0 : 1));
+    // (as salas que não estão sendo desenhadas nem rodando não recalculam a posição das peças a cada quadro: ver `updateWorld`)
+    idleGroups.clear();
+    rooms.forEach((r, i) => !activeRooms.has(i) && idleGroups.add(r.group));
+    connectors.forEach((c) => !(activeRooms.has(c.from) || activeRooms.has(c.to)) && idleGroups.add(c.group));
   };
   const nearSurfaces = () => surfCache;
 
@@ -3205,6 +3241,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const l = r.shadowLight;
       if (!l) return;
       if (l.castShadow !== shadowsOn) l.castShadow = shadowsOn;
+      l.shadow.autoUpdate = false; // (o motor decide quando refazer: DESIGN.md §106)
       if (shadowsOn && l.shadow.mapSize.x !== shadowCfg.room) {
         l.shadow.mapSize.set(shadowCfg.room, shadowCfg.room);
         l.shadow.map?.dispose();
@@ -3703,6 +3740,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   let chatFn: (key: string) => void = () => {};
   buildWorld();
+  scene.updateMatrixWorld(true); // (todas as salas com a posição certa uma vez; depois só as ativas: `updateWorld`)
+  scene.matrixWorldAutoUpdate = false;
   if (new URLSearchParams(location.search).get('demo') !== 'mapa') setWorld(PLANTA_ON ? realWorld() : layoutWorld(rooms.map((r) => r.name)));
   scene.fog = new THREE.Fog(rooms[0].fog.color, rooms[0].fog.near, rooms[0].fog.far);
   ambient.color.setHex(rooms[0].ambient.color);
@@ -4870,6 +4909,40 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   let benchCam: { yaw: number; pitch: number } | null = null;
+  let rsFrames = 0;
+  let rsRoom = -1;
+  const rsBody = new THREE.Vector3();
+  const rsDie = new THREE.Vector3();
+  // SÓ DESENHAR A SALA VIZINHA QUANDO DÁ PARA VÊ-LA (DESIGN.md §106). O motor desenha a sala do jogador e as duas vizinhas; atrás das paredes, a
+  // vizinha não aparece, mas cada peça dela ainda custava uma ordem de desenho (no Claustro, a vizinha tinha o dobro de peças do próprio
+  // Claustro). Agora a vizinha só vai para o desenho se a passagem até ela (porta, corredor, entrada) está no campo de visão e mais perto que
+  // o fim da névoa. As salas que se veem de um caminho especial (a Biblioteca, da passarela) ficam sempre.
+  const cullFrustum = new THREE.Frustum();
+  const cullM = new THREE.Matrix4();
+  let cullOn = true; // (testes: __mdd.cull(false) desliga, para comparar)
+  const cullNeighbors = () => {
+    camera.updateMatrixWorld();
+    cullM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    cullFrustum.setFromProjectionMatrix(cullM);
+    const far = ((scene.fog as THREE.Fog | null)?.far ?? 60) + 2;
+    const seeing = new Set<number>();
+    for (const c of connectors) if (c.from === curRoom) for (const k of c.see) seeing.add(k);
+    activeRooms.forEach((i) => {
+      const g = rooms[i].group;
+      if (!cullOn || i === curRoom || seeing.has(i) || mode !== 'play') {
+        g.visible = true;
+        return;
+      }
+      let linked = false;
+      let vis = false;
+      for (const pt of portals) {
+        if (!((pt.a === curRoom && pt.b === i) || (pt.b === curRoom && pt.a === i))) continue;
+        linked = true;
+        if (pt.box.containsPoint(camera.position) || (cullFrustum.intersectsBox(pt.box) && pt.box.distanceToPoint(camera.position) < far)) vis = true;
+      }
+      g.visible = linked ? vis : true;
+    });
+  };
   let stillYaw = 0;
   let stillPitch = 0;
   const PROBE = import.meta.env.DEV ? ((globalThis as Record<string, unknown>).__probe = (globalThis as Record<string, unknown>).__probe ?? []) as Record<string, number | string>[] : null;
@@ -5170,6 +5243,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     // ── salas ──
     // (um erro na lógica de uma sala não pode parar o desenho: o quadro segue, e o erro fica guardado)
+    const qr = PROBE ? performance.now() : 0;
     activeRooms.forEach((i) => {
       try {
         rooms[i].update(dt, t);
@@ -5178,11 +5252,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
     });
     activeRooms.forEach((i) => dripUpd[i]?.forEach((f) => f(t)));
+    if (PROBE) pf.rooms = performance.now() - qr;
+    const q0 = PROBE ? performance.now() : 0;
     solvedTick();
     readInscriptions(dt);
+    const q1 = PROBE ? performance.now() : 0;
     scanInteract();
     scanFireAim();
+    const q2 = PROBE ? performance.now() : 0;
     updateLights(dt);
+    if (PROBE) {
+      pf.read = q1 - q0;
+      pf.scan = q2 - q1;
+      pf.lights = performance.now() - q2;
+    }
     // a poeira pega a luz da sala (e some no escuro da Casa); o pó do teto solta na hora marcada
     puffs.light.copy(ambient.color).multiplyScalar(Math.min(0.8, ambient.intensity * 0.32)).add(puffWarm).multiplyScalar(lightScale());
     for (let k = fallQ.length - 1; k >= 0; k--) {
@@ -5358,10 +5441,31 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
     body.position.set(pos.x, feetY, pos.z);
     body.rotation.y = yaw;
-    renderer.shadowMap.needsUpdate = (!!rooms[curRoom]?.shadowLight && shadowsOn) || shadowsDirty;
+    // A SOMBRA DA LUZ PRINCIPAL DA SALA (a fresta, o furo do teto; DESIGN.md §106) era refeita TODO quadro: a sala inteira desenhada de
+    // novo para o mapa, mesmo com tudo parado (e era aí, girando a câmera parado, que o quadro escapava). Agora: quando o jogador ou o dado
+    // se mexem (a cada 2 quadros: a sombra dele acompanha a 30 por segundo), ao chegar na sala, e, de garantia, 10 vezes por segundo (o que se
+    // mexe na sala: pilares que sobem, pesos que caem, portas)
+    let roomShadow = false;
+    const rsl = shadowsOn ? rooms[curRoom]?.shadowLight : undefined;
+    if (rsl) {
+      rsFrames++;
+      const moved = rsBody.distanceToSquared(body.position) > 0.0004 || rsDie.distanceToSquared(worldDie.position) > 0.0004;
+      if (rsRoom !== curRoom || rsl.shadow.needsUpdate || (moved && rsFrames >= 2) || rsFrames >= 6) {
+        rsl.shadow.needsUpdate = true;
+        roomShadow = true;
+        rsRoom = curRoom;
+        rsFrames = 0;
+        rsBody.copy(body.position);
+        rsDie.copy(worldDie.position);
+      }
+    }
+    renderer.shadowMap.needsUpdate = roomShadow || shadowsDirty;
+    if (PROBE) pf.rs = roomShadow ? 1 : 0;
     fxEye.copy(camera.position);
     updateHot(t);
     updateGrade(dt);
+    cullNeighbors();
+    updateWorld();
     renderer.info.reset();
     const pr = performance.now();
     if (PROBE) pf.logic = pr - p0;
@@ -5731,6 +5835,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
       puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
       note: (id: string, text: string) => diary.setNote(id, text), // (testes) escreve uma anotação no caderno
+      cull: (on: boolean) => (cullOn = on), // (testes) liga/desliga o corte das salas vizinhas (DESIGN.md §106)
+      drawn: () => rooms.map((r, i) => (activeRooms.has(i) ? `${i}:${r.group.visible ? 'v' : '-'}` : '')).filter(Boolean).join(' '),
       // (testes) os programas de desenho já montados pela placa de vídeo, e se a preparação de todas as salas terminou (DESIGN.md §103)
       progs: () => ({ warm: warmState, list: (renderer.info.programs ?? []).map((pg) => [pg.name, (pg as unknown as { cacheKey: string }).cacheKey]) }),
       // (testes) quanta memória de vídeo as texturas de cada sala ocupam (MB, com mipmaps)
