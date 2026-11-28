@@ -402,8 +402,8 @@ De tempos em tempos, num momento calmo, o dado **treme** na mão, vem **grande a
 | 6 | no corredor depois da Sala 12 (A Balança) | DEPOIS | **depois** (antes · longe · agora) |
 | 7 | no corredor depois da Sala 13 (A Ponte de Madeira) | PEQUENO | **pequeno** (um · grande · meio) |
 | 8 | no corredor depois da Sala 14 (A Ponte de Frases) | VERDADE | **verdade** (mentira · dúvida · boato) |
-| 9 | **sem gatilho** (a pergunta está pronta em `quiz.ts`, mas nenhuma sala a chama) | IGUAL | **igual** (dois · lei · mais) |
-| 10 | **sem gatilho** (pronta, nenhuma sala a chama) | TODOS | **todos** (nove · muitos · nenhum) |
+| 9 | na chegada à Sala 19 (A Escadaria), ao pé do poço | IGUAL | **igual** (dois · lei · mais) |
+| 10 | no corredor depois da Sala 23 (A Memória da Casa), antes do Tribunal | TODOS | **todos** (nove · muitos · nenhum) |
 Uma pergunta só acontece se o jogador **já viu** o glifo, tem o caderno, está com o dado na mão e nada mais ocupa a tela.
 
 ## RESERVA — salas fora do jogo por ora (voltam nos capítulos 2 e 3, usam Peso e/ou giz)

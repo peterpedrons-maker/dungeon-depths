@@ -29,9 +29,11 @@ export const QUIZ: QuizDef[] = [
   { id: 'q7', word: 'pequeno', right: 'pequeno', wrong: ['um', 'grande', 'meio'], when: { room: 'A Ponte de Madeira', at: 'after' } },
   // a 8ª é no corredor depois da Ponte de Frases (a que ensina VERDADE)
   { id: 'q8', word: 'verdade', right: 'verdade', wrong: ['mentira', 'dúvida', 'boato'], when: { room: 'A Ponte de Frases', at: 'after' } },
-  // a 9ª (Escadaria, R4) e a 10ª (sala 17) esperam salas que ainda não existem
-  { id: 'q9', word: 'igual', right: 'igual', wrong: ['dois', 'lei', 'mais'], when: null },
-  { id: 'q10', word: 'todos', right: 'todos', wrong: ['nove', 'muitos', 'nenhum'], when: null },
+  // a 9ª na chegada ao pé da Escadaria (R4; a saída dela dá direto na passarela da Biblioteca, sem corredor), com IGUAL já visto na Balança e
+  // na Lei Pequena; a 10ª no corredor depois da Memória da Casa,
+  // antes do Tribunal (pedido do Pedro: as duas estavam prontas e nenhuma sala as chamava)
+  { id: 'q9', word: 'igual', right: 'igual', wrong: ['dois', 'lei', 'mais'], when: { room: 'A Escadaria', at: 'arrive' } },
+  { id: 'q10', word: 'todos', right: 'todos', wrong: ['nove', 'muitos', 'nenhum'], when: { room: 'A Memória da Casa', at: 'after' } },
 ];
 
 export const IDK = 'não sei';
