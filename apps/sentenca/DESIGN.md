@@ -2139,3 +2139,29 @@ Madeira, Ponte de Frases, Sombra, Escuro, Lei Pequena, Fogo que Corre, Claustro 
 - **As perguntas de IGUAL e TODOS** (`quiz.ts`): estavam prontas e nenhuma sala as chamava (o verificador de vocabulário já contava com elas). IGUAL
   vem na chegada ao pé da Escadaria (`Room.calm` em `respiro4.ts`; a saída dela dá direto na passarela da Biblioteca, sem corredor) e TODOS no
   corredor depois da Memória, antes do Tribunal.
+
+## §95 O trailer (o começo do jogo)
+
+O Pedro pediu um trailer "épico, cinematográfico", só com o começo por enquanto, para melhorar depois. Ele dura 1min18, em 1080p e 24 quadros por
+segundo, e é todo gravado do jogo de verdade (`tools/trailer/`, ver o README de lá). Um relógio virtual faz cada quadro andar exatamente 1/24 s, então a
+gravação não trava nem pula. A **câmera do trailer** (`__trailerCam`, só em desenvolvimento, em `scene.ts`) assume a imagem nas tomadas fora da
+abertura. Os ganchos de teste ganharam `sockets(i)` e `w(i, x, y, z)`. O roteiro:
+- o preto, e o olhar que sobe do chão do Poço até a luz;
+- o acordar, com as falas em legenda na fonte do jogo: «Caí? Ou me jogaram?», «Luz, lá em cima. Alto demais.», «Trancada.», «...Tem alguém aí?»;
+- o Escrivão chega e se debruça; VOCÊ VIVER ? · EU DAR DADO · VOCÊ LER em glifos; a mão, a queda com a câmera embaixo do dado, o baque e o preto;
+- o dado no chão falando em balões, o rosto dele grande, e o 1º fogo de perto (o dado queimando na brasa);
+- uma montagem: o fogo correndo nas canaletas, a corda da Balança queimando e o peso caindo no prato, as fagulhas no vento queimando o estandarte
+  do boato, uma frase acendendo e a laje subindo do fosso, e a ponte de quem veio antes desabando;
+- o preto, e o título «SENTENÇA» com o triângulo ACENDER, EM BREVE e Cinco Riscos.
+
+A **trilha** é composta com as gravações do próprio jogo: contrabaixo, coro, harpa, celesta, sino, tímpano e cordas do FluidR3, mais os efeitos CC0.
+`renderAudio` ganhou as operações `note` e `sample`, e o passo caiu para ~11 ms, para os golpes caírem no corte. O desenho da trilha:
+- um grave que respira e gotas no Poço;
+- vento, passos e um sino quando o Escrivão aparece;
+- a celesta nas falas em glifos;
+- na queda, cordas subindo e um rufo de tímpano até o baque, depois silêncio;
+- na montagem, um pulso de cordas, com um golpe em cada corte e o som de cada sala;
+- no título, o gongo e o coro.
+
+Os efeitos continuam sendo coisas físicas: fogo, pedra, corda, vento.
+

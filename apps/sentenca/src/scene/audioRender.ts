@@ -1,5 +1,5 @@
 // (só em desenvolvimento) Grava o motor de som de verdade num OfflineAudioContext, mais rápido que o tempo real, para as FAIXAS DE
-// DEMONSTRAÇÃO (DESIGN.md §79): a mesma classe Sfx, os mesmos arquivos e a mesma música composta na hora; o tempo anda em passos de ~53 ms
+// DEMONSTRAÇÃO (DESIGN.md §79): a mesma classe Sfx, os mesmos arquivos e a mesma música composta na hora; o tempo anda em passos de ~11 ms
 // (suspend/resume) e, a cada passo, o motor recebe um tick() como no jogo. Devolve um WAV estéreo em base64.
 import { Sfx, type AmbientState, type MusicScene, type SfxName, type StepKind } from './audio';
 
@@ -13,10 +13,15 @@ export type RenderOp =
   | [number, 'fire', number, number?]
   | [number, 'musicTest', Parameters<Sfx['musicTest']>[0]]
   | [number, 'breath']
-  | [number, 'old', 'piece' | 'door' | 'error'];
+  | [number, 'old', 'piece' | 'door' | 'error']
+  // (o TRAILER, tools/trailer/) uma nota de um instrumento gravado, com envelope; um efeito gravado qualquer, pelo nome do arquivo
+  // [t, 'sample', nome, volume, rate, reverberação, pan]
+  | [number, 'note', string, number, number, { fadeIn?: number; hold?: number; fadeOut?: number; verb?: number; echo?: number; pan?: number }?]
+  | [number, 'sample', string, number?, number?, number?, number?];
 
 type Priv = {
-  sample(name: string, vol?: number, rate?: number, delay?: number, verb?: number): void;
+  sample(name: string, vol?: number, rate?: number, delay?: number, verb?: number, pan?: number): void;
+  note(inst: string, midi: number, t: number, vol: number, o?: object): unknown;
   fxNote(inst: string, midi: number, vol: number, delay?: number, verb?: number, echo?: number): void;
   nextBreath: number;
   ac: BaseAudioContext;
@@ -66,6 +71,12 @@ export async function renderAudio(secs: number, ops: RenderOp[], sr = 48000, dry
         case 'breath':
           p.nextBreath = p.ac.currentTime;
           break;
+        case 'note':
+          p.note(o[2], o[3], p.ac.currentTime, o[4], { toMusic: false, ...(o[5] ?? {}) });
+          break;
+        case 'sample':
+          p.sample(o[2], o[3] ?? 1, o[4] ?? 1, 0, o[5] ?? 0.3, o[6] ?? 0);
+          break;
         case 'old':
           // os sons de ANTES (para comparar na faixa), com os mesmos parâmetros que tinham
           if (o[2] === 'piece') {
@@ -81,7 +92,7 @@ export async function renderAudio(secs: number, ops: RenderOp[], sr = 48000, dry
     }
     s.ambient(amb);
   };
-  const STEP = 2560; // (múltiplo de 128 amostras: cada suspend cai num quantum)
+  const STEP = 512; // (múltiplo de 128 amostras: cada suspend cai num quantum; ~11 ms, para os golpes do trailer caírem no corte)
   const dt = STEP / sr;
   run(0);
   s.tick(0);

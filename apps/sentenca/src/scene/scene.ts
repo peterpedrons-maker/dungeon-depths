@@ -4517,6 +4517,21 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       camera.position.copy(cineCam.pos);
       camera.lookAt(cineCam.look);
     }
+    // (só em desenvolvimento) a câmera do TRAILER (tools/trailer/): posição e alvo no mundo, campo de visão e giro; assume a imagem
+    // enquanto `__trailerCam` estiver definida
+    if (import.meta.env.DEV) {
+      const tc = (globalThis as Record<string, unknown>).__trailerCam as { p: number[]; t: number[]; fov?: number; roll?: number } | undefined;
+      if (tc) {
+        camera.position.set(tc.p[0], tc.p[1], tc.p[2]);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(tc.t[0], tc.t[1], tc.t[2]);
+        if (tc.roll) camera.rotateZ(tc.roll);
+        if (tc.fov && Math.abs(camera.fov - tc.fov) > 1e-3) {
+          camera.fov = tc.fov;
+          camera.updateProjectionMatrix();
+        }
+      }
+    }
 
     // ── dado no mundo ──
     wakeHopV -= 22 * dt;
@@ -5101,6 +5116,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       noHud: (v = true) => {
         devNoHud = v;
+      },
+      // (TRAILER, tools/trailer/) os soquetes da sala i (coordenadas locais) e um ponto local da sala i no mundo
+      sockets: (i: number) => (rooms[i].sockets ?? []).map((k) => [k.x, k.y, k.z]),
+      w: (i: number, x: number, y: number, z: number) => {
+        const v = toW(i, new THREE.Vector3(x, 0, z));
+        return [v.x, places[i].pos.y + y, v.z];
       },
       prompt: (l: string | null) => opts.onPrompt?.(l), // (testes: mostra um aviso de ação)
       meta: () => saves.meta(),

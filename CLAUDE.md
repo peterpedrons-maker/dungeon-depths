@@ -125,6 +125,7 @@ sob `apps/`. Cada jogo é um projeto Vite completo e isolado: seu próprio `pack
   fazer (anotar o que acha que é BRASEIRO, riscar o mapa), a tarefa pisca até ser feita e o caderno volta sozinho ao índice; um toque passa o
   pensamento; no fim, "Guardar" pisca (`DESIGN.md` §75). Lousas de
   parede são lajes afastadas 2,5 cm da parede; decalques com offset -1 e plano acima do chão.
+  **Trailer** (`tools/trailer/`, `DESIGN.md` §95): o começo do jogo em 1min18, gravado quadro a quadro do jogo de verdade (relógio virtual, câmera do trailer `__trailerCam` só em desenvolvimento), trilha composta com os sons do jogo (`renderAudio` com `note`/`sample`), legendas na fonte do jogo e o título no fim.
   **Sala de teste isolada** `?lab=1` (A Placa que Julga: Fogo + Peso + giz ao mesmo tempo, nada salvo; regra `commit` e tablete `rub` do construtor `fire.ts`; verificador `tools/verify_lab.mjs`; solução em `PUZZLES.md`).
   Publicado em `/sentenca/` (https://peterpedrons-maker.github.io/dungeon-depths/sentenca/; a pasta se chamava `masmorra-do-dado` até a troca de nome, `DESIGN.md` §89). É um PWA instalável (manifest + service worker em
   `public/`, funciona offline depois da primeira visita; a instalação fica com o navegador).
