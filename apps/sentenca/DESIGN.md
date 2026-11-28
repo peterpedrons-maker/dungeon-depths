@@ -2050,3 +2050,41 @@ tela, logo depois de ser pego), aparece no alto, à direita, uma plaquinha de pe
 - `PUZZLES.md` corrigido junto: o topo (o capítulo 1 é só o Fogo; o Peso chega no altar do Tribunal), a Sala 1 (a cena do Escrivão e o pulo) e
   a tabela das perguntas do dado (numeração atual das salas; as perguntas de IGUAL e TODOS estão prontas, mas sem gatilho).
 
+
+## 93. Três salas novas no lugar das salas de ordem: A Balança, A Ponte de Frases, O Claustro do Vento (pedido do Pedro)
+
+Da avaliação do §91 (item 1: da sala 12 em diante, quase tudo era «ler ANTES/DEPOIS e acender em fila»), o Pedro aprovou trocar três salas,
+mantendo as palavras que cada uma ensina (as salas seguintes dependem delas), com um elemento que o capítulo ainda não tinha. Condição dele:
+**passar por todos os verificadores e pelo cenógrafo, sem perder nenhum furo de luz, segredo, gema ou folha**. As antigas vão para a reserva,
+com os verificadores (`apelidos.ts`, `FIRE_VERDADE`, `FIRE_DIZEM`). Da 12 em diante o capítulo alterna espaço e lógica: Balança, Ponte de
+Madeira, Ponte de Frases, Sombra, Escuro, Lei Pequena, Fogo que Corre, Claustro do Vento, Memória, Tribunal.
+- **Sala 12 · A Balança** (`rooms/balanca.ts`, `tools/verify_balanca.mjs`): a mesma rotunda de Os Apelidos. Uma balança de pedra e bronze; sete
+  pesos de pedra pendurados por cordas numa viga do teto; **dois pendem embaixo de outro** por uma corda curta (queimar a de cima derruba os
+  dois; a curta, só o de baixo). O dado de Fogo queima a corda (a mira de Fogo clareia a corda, `fireAim`/`fireNear`) e o peso cai no prato; o
+  travessão é uma mola amortecida até o ângulo da diferença de massa (pequeno 1, médio 1,5, grande 2). Os números talhados nos pesos (GRANDE
+  = UM, pequeno = QUATRO, médio = DOIS) são a armadilha de Os Apelidos em outra forma. A Casa julga no **braseirinho ao pé do poste**; o erro
+  é o único jeito de desfazer (escuro, os pesos sobem, cordas frias 8 s). IGUAL é o glifo do Peso: a sala planta a ideia de peso no capítulo do
+  Fogo, e paga no altar do Tribunal (§77). Ensina GRANDE, PEQUENO e IGUAL pelo efeito (os glifos da porta e o IGUAL do poste reagem).
+- **Sala 14 · A Ponte de Frases** (`rooms/chapter1c.ts`, `tools/verify_ponte_frases.mjs`): as mesmas oito frases e a porta «ACENDER VERDADE» de
+  O Boato Verdadeiro, mas o meio da sala é um **fosso** e cada frase acesa **ergue a sua laje**: dizer é fazer. A laje da frase falsa sobe e
+  **racha quando pisada** (o jogador cai, o escuro vem, a Casa apaga as frases e ele volta à entrada; `ctx.toEntrance()`). A demonstração é a
+  primeira fileira, já em cima. O caminho firme vai em zigue-zague e exige os dois boatos verdadeiros; só as confirmadas (o hábito da sala 8)
+  não atravessam. **No motor** (`fire.ts`): `FireSpec.floorGap` (o chão com o buraco, as paredes e o fundo), `lock.judged` (a legenda do
+  julgamento), e na `FireExtraApi` `lines()`, `lockRisen()` e `failLines()`. O `skip()` das salas julgadas na porta deixa acesas as frases
+  certas e a da porta (a ponte fica em pé para quem volta). As lajes têm `userData.noPlan`: a afundada passa do fundo e não conta na planta.
+  A proposta dizia «volta pela escada»; a escada não coube (a fileira da demonstração fica sempre em cima, encostada na borda), e a volta é o
+  escuro da Casa, como nas outras punições.
+- **Sala 21 · O Claustro do Vento** (`FIRE_VENTO`, `claustroExtra`, `buildWind` em `rooms/chapter1b.ts`; `tools/verify_vento.mjs`): o mesmo claustro,
+  a mesma lei e a mesma ordem (1, 5, 2, 3, 4), a mesma constelação C6 e a **gema c6**. Os estandartes ficam em **gaiolas de ferro** penduradas sob o
+  telhado das galerias (o dado não chega; elas param abaixo dos frisos da C6) e o fogo chega pelo **vento**, que gira em ciclo (fundo,
+  esquerda, frente, direita; 6 s cada; o cata-vento na estela da fonte aponta). Três **fogaréus** no pátio soltam fagulhas por 4 s, que voam a
+  ~3,2 m/s numa faixa (larga no grande) e põem fogo nos estandartes que alcançam; queimar dois faz a Casa abafar os fogaréus e pendurar tudo
+  de volta. Só o fogaréu da esquerda da fonte, no vento para o fundo, queima o boato certo sozinho (~6 s por volta). Mudanças de lugar: o 5º
+  estandarte passou para entre as colunas 6 e 7 (antes ficava dentro da coluna do meio da frente) e os braseiros UM e DOIS foram um pouco
+  para o fundo (os fogaréus ficam a quase 2 m deles).
+- **O que foi conferido** (a condição do Pedro): os 21 verificadores passam (os três novos e os das salas antigas, que ficam na reserva); a
+  foto do mundo antes e depois (`__mdd.rooms()`, `skyHoles()`, `footprints()`): as 24 salas nos mesmos lugares, giros e portas, os **6 furos de
+  luz** nas mesmas salas e pontos (nenhum estava nas salas trocadas), as plantas iguais (a da Ponte de Frases ficou dentro da antiga); as
+  gemas do capítulo continuam três (Cisterna, Ala do Papel, C6) e as folhas p2 a p18 continuam nas mesmas salas (nenhuma estava nas trocadas).
+  Os nomes novos foram para `tools/planta/salas.json` (a planta regenerada só trocou os nomes), `gems.ts` (c6), `quiz.ts` (as perguntas 6 e 8
+  passam a vir depois da Balança e da Ponte de Frases) e os verificadores de vocabulário e de constelações.
