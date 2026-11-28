@@ -3,6 +3,7 @@
 // do jogador, giz livre e a passagem de uma sala para a outra.
 
 import * as THREE from 'three';
+import { makePuffs } from './puffs';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { FACES } from '../faces';
 import {
@@ -445,6 +446,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   postScene.add(postQuad);
   // ── sala e cena ─────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
+  // a poeira das pancadas, as fagulhas e o pó que cai (DESIGN.md §95)
+  const puffs = makePuffs(scene);
+  const fallQ: { t: number; at: THREE.Vector3; n: number; spread: number; floor: number }[] = []; // pó do teto ainda por soltar
   // `ambient` é a luz ambiente "lógica" de cada sala (cor e força vêm da sala e da história). Na cena ela é repartida em três luzes que DEFINEM
   // as formas: uma ambiente menor, uma luz de cima (o que olha para cima fica mais claro, o que olha para baixo, mais escuro: pisos de degrau
   // claros, espelhos e o avesso das coisas mais escuros) e uma luz fraca de lado (paredes que se encontram num canto não ficam do mesmo tom).
@@ -1563,6 +1567,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         else sfx.play(n, 1, key);
         // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
         if (n === 'ignite') {
+          // as fagulhas de quando o fogo pega (no dado, que está encostado no que acendeu)
+          if (dieRoom === idx && (dieState === 'flying' || dieState === 'rest')) puffs.sparks(toW(idx, dieP, new THREE.Vector3()), 16);
           const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
           startBurn(first);
           life.react('flinch');
@@ -1571,6 +1577,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           life.react('thump');
           chatFn('plate');
         } else if (n === 'door' || n === 'rise') {
+          // a porta que abre solta o pó da verga (DESIGN.md §95)
+          if (n === 'door' && rooms[idx]) {
+            const e = exitOf(rooms[idx]);
+            const dy = rooms[idx].exitDy ?? 0;
+            const at = toW(idx, new THREE.Vector3(e.x, dy + 2.3, e.z));
+            fallQ.push({ t: 0.25, at, n: 22, spread: 0.55, floor: at.y - 2.3 }, { t: 0.9, at: at.clone(), n: 12, spread: 0.55, floor: at.y - 2.3 });
+          }
           // (o pilar que sobe soava como a porta; ganhou som próprio, mas o dado reage igual)
           life.react('perk');
           chatFn('door');
@@ -2368,6 +2381,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return tmpN;
   };
 
+  const puffWarm = new THREE.Color(0.3, 0.24, 0.18); // (um tanto da luz quente das chamas, que a ambiente não conta)
+  const puffN = new THREE.Vector3();
+  const puffAt = new THREE.Vector3();
+  let emberAcc = 0;
   const stepDie = (dt: number) => {
     const ph = PHYS[thrownFace] ?? PHYS[1];
     dieV.y -= ph.g * dt;
@@ -2396,7 +2413,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const n = collideBox(b, ph.e);
       if (n && n.y > 0.7) ground = true;
     }
-    sfx.bounce(Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0));
+    const imp = Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0);
+    sfx.bounce(imp);
+    // a pancada levanta poeira (DESIGN.md §95): no ponto do toque, espalhando rente à superfície. A normal é a direção do tranco
+    if (imp > 1.7) {
+      puffN.set(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0).divideScalar(imp);
+      puffAt.copy(dieP).addScaledVector(puffN, -R);
+      toW(dieRoom, puffN.add(puffAt), puffN);
+      toW(dieRoom, puffAt);
+      puffs.hit(puffAt, puffN.sub(puffAt).normalize(), Math.min(1, (imp - 1.7) / 6));
+    }
+    // o dado de Fogo deixa brasas para trás no voo
+    if (thrownFace === 3 && (emberAcc += dt) > 0.034) {
+      emberAcc = 0;
+      toW(dieRoom, dieP, puffAt);
+      puffs.ember(puffAt, dieV);
+    }
     if (ground) {
       const k = Math.exp(-ph.fr * dt);
       dieV.x *= k;
@@ -4411,6 +4443,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
   // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
+  // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §95). Procura o teto com alguns raios para cima; onde
+  // não há teto (pátio, claustro), nada cai
+  const dustRay = new THREE.Raycaster();
+  const ceilingDust = (ri: number) => {
+    const up = new THREE.Vector3(0, 1, 0);
+    rooms[ri].group.updateMatrixWorld(true);
+    // (só as malhas sólidas: chamas, poeira e feixes não são teto)
+    const solid: THREE.Object3D[] = [];
+    rooms[ri].group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && m.visible && !(Array.isArray(m.material) ? m.material[0] : m.material)?.transparent) solid.push(m);
+    });
+    for (let k = 0; k < 9; k++) {
+      const a = yaw + Math.PI + (Math.random() - 0.5) * 2.6; // mais na frente do jogador que atrás
+      const d = 1.2 + Math.random() * 5.5;
+      const o = new THREE.Vector3(pos.x - Math.sin(a + Math.PI) * d, pos.y, pos.z - Math.cos(a + Math.PI) * d);
+      dustRay.set(o, up);
+      dustRay.far = 16;
+      const hit = dustRay.intersectObjects(solid, false)[0];
+      if (!hit || hit.distance < 0.6) continue;
+      fallQ.push({ t: 0.15 + Math.random() * 1.3, at: hit.point.clone().addScaledVector(up, -0.04), n: 13 + Math.floor(Math.random() * 12), spread: 0.2, floor: feetY });
+    }
+  };
   const solvedTick = () => {
     const ms = performance.now();
     let rang = -1;
@@ -4423,7 +4478,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         rang = i;
       }
     }
-    if (rang >= 0) sfx.play('solved');
+    if (rang >= 0) {
+      sfx.play('solved');
+      ceilingDust(rang);
+    }
     for (const i of heldPiece) if (i !== rang) sfx.play('piece');
     heldPiece = [];
   };
@@ -4703,6 +4761,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     scanInteract();
     scanFireAim();
     updateLights(dt);
+    // a poeira pega a luz da sala (e some no escuro da Casa); o pó do teto solta na hora marcada
+    puffs.light.copy(ambient.color).multiplyScalar(Math.min(0.8, ambient.intensity * 0.32)).add(puffWarm).multiplyScalar(lightScale());
+    for (let k = fallQ.length - 1; k >= 0; k--) {
+      const f = fallQ[k];
+      if ((f.t -= dt) <= 0) {
+        puffs.fall(f.at, f.n, f.spread, f.floor);
+        fallQ.splice(k, 1);
+      }
+    }
+    puffs.update(dt);
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
       complete = true;
@@ -5171,6 +5239,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       },
       perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
       three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
+      puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
+      ceilingDust: () => ceilingDust(curRoom),
       shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)
