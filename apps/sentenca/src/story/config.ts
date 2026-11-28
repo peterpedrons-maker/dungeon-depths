@@ -110,7 +110,10 @@ function load(): Config {
 }
 
 export const configStore = createStore<Config>(load());
+// (o teste de desempenho, ?bench=1, troca a qualidade sozinho: nada disso fica gravado no aparelho)
+const BENCH = typeof location !== 'undefined' && new URLSearchParams(location.search).has('bench');
 configStore.subscribe(() => {
+  if (BENCH) return;
   try {
     localStorage.setItem(KEY, JSON.stringify(configStore.get()));
   } catch {

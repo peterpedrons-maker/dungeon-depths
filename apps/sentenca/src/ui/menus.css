@@ -262,3 +262,31 @@
 @media (pointer: coarse) { .skipintro { top: 62px; padding: 8px 14px 8px 10px; } }
 @media (pointer: coarse) and (max-height: 420px) { .skipintro { top: 54px; } }
 
+
+/* ── O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §100) ── */
+/* durante o passeio: uma faixa pequena no alto e uma camada invisível que segura os toques (ninguém mexe na câmera) */
+.bench-run { position: absolute; inset: 0; z-index: 50; pointer-events: auto; touch-action: none; }
+.bench-run p { position: relative; margin: calc(6px * var(--ui)) 0 0 calc(10px * var(--ui)); font-size: var(--fs); color: var(--chalk); text-shadow: 2px 2px 0 #05040a; }
+.bench-run .bench-dim { opacity: 0.7; margin-top: 2px; }
+.bench-bar { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(5, 4, 10, 0.6); }
+.bench-bar i { display: block; height: 100%; background: var(--gold); transition: width 0.3s steps(4); }
+.bench-veil { z-index: 50; }
+.bench-board { max-width: 96vw; }
+.bench-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; text-align: left; padding: 0 4px; }
+.bench-txt { text-align: left; opacity: 0.9; }
+.bench-dev { margin: 0 0 8px; font-size: var(--fs); line-height: 1.5; opacity: 0.85; }
+.bench-t { width: 100%; border-collapse: collapse; font-size: var(--fs); margin: 4px 0 8px; }
+.bench-t th { text-align: left; font-weight: normal; color: var(--gold-old); padding: 2px 6px; border-bottom: 2px solid var(--st-lo); }
+.bench-t td { padding: 3px 6px; border-bottom: 1px solid var(--st-dark); white-space: nowrap; }
+.bench-t tr.best td { color: var(--gold); }
+.bench-t tr.best td:first-child::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--gold); box-shadow: 1px 1px 0 #05040a; }
+.bench-t .v-fluido td:last-child { color: #a8d88a; }
+.bench-t .v-bom td:last-child { color: #d8d08a; }
+.bench-t .v-jogavel td:last-child { color: #e0a868; }
+.bench-t .v-pesado td:last-child { color: var(--ember); }
+.bench-rec { margin: 6px 0; font-size: var(--fm); color: var(--gold); text-shadow: 2px 2px 0 #05040a; }
+.bench-dim { font-size: var(--fs); opacity: 0.65; line-height: 1.4; }
+.bench-note { margin: 6px 0; font-size: var(--fs); color: #fff6dc; }
+.bench-warn { margin: 8px 0 0; font-size: var(--fm); color: var(--gold); text-align: center; text-shadow: 2px 2px 0 #05040a; }
+.bench-btns { flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+.bench-btns .plq { min-width: calc(150px * var(--ui)); }

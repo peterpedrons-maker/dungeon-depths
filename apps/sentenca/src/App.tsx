@@ -20,6 +20,7 @@ import { Splash } from './ui/Splash';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { SkipIntro } from './ui/SkipIntro';
 import { AimNote, ReadingStrip } from './ui/NoteTags';
+import { Bench } from './ui/Bench';
 import { saves } from './story/save';
 import { configStore, keyName } from './story/config';
 import type { IconName } from './ui/PixelIcon';
@@ -50,7 +51,9 @@ const mark = (k: string) => {
     /* ok */
   }
 };
-const SHOW_TITLE = !PLAY_NOW && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
+// O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §100): sem tela inicial, sem interface do jogo, nada gravado
+const BENCH = Q.has('bench');
+const SHOW_TITLE = !PLAY_NOW && !BENCH && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
 // A ABERTURA DA EDITORA (Pedra-Sabão): ao abrir o jogo, uma vez por sessão do navegador (voltar à tela inicial no meio do jogo não repete).
 // ?splash=0 pula, ?splash=1 força (testes)
 const SPLASH = (() => {
@@ -312,6 +315,14 @@ export default function App() {
     [],
   );
 
+  if (BENCH)
+    return (
+      <div className="stage bench">
+        <canvas ref={canvasRef} />
+        <div className="vignette" />
+        <Bench api={sceneRef} ready={sceneReady} />
+      </div>
+    );
   return (
     <div className={`stage${uis.bookOut ? ' book-out' : ''}`}>
       <canvas ref={canvasRef} />

@@ -79,6 +79,8 @@ const FOG = '#0b0912';
 const LAB = new URLSearchParams(location.search).has('lab');
 // ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
 const VITRINE = new URLSearchParams(location.search).has('vitrine');
+// O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §100): a câmera passeia sozinha por salas pesadas; nada é gravado no aparelho
+const BENCH = new URLSearchParams(location.search).has('bench');
 const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
 // o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; plan.ts), o padrão: cada sala no seu lugar e com o seu giro, ligadas por
 // corredores com curvas. ?planta=0: a fila antiga (para comparar).
@@ -181,6 +183,11 @@ export interface SceneApi {
   toTitle(): void; // salva e volta à tela inicial
   saveNow(): void; // salva agora (pausa, sair)
   lock(): void; // (PC) captura o mouse de novo (precisa de um clique ou tecla)
+  // (teste de desempenho, ?bench=1) os nomes das salas; pôr a câmera na entrada da sala i, girada `yaw` (radianos, a partir do olhar de
+  // entrada) e inclinada `pitch`; null solta a câmera. E a resolução interna (linhas desenhadas)
+  benchRooms(): string[];
+  benchView(v: { room: number; yaw: number; pitch: number } | null): void;
+  benchRes(): { w: number; h: number };
   dispose(): void;
 }
 
@@ -832,7 +839,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if ((sketchCount[word] ?? 0) >= SKETCH_MAX) return;
       sketchCount[word] = (sketchCount[word] ?? 0) + 1;
       try {
-        localStorage.setItem(SKETCH_KEY, JSON.stringify(sketchCount));
+        if (!BENCH) localStorage.setItem(SKETCH_KEY, JSON.stringify(sketchCount));
       } catch {
         /* sem armazenamento: tudo bem */
       }
@@ -3701,8 +3708,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
     const q = new URLSearchParams(location.search);
     // (?intro=poco: pula o acordar, mas sem o dado: para testar a cena do poço, que começa ao tentar abrir a porta)
-    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0' || q.get('intro') === 'poco') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
-    if (q.has('demo')) {
+    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0' || q.get('intro') === 'poco' || BENCH) saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
+    if (BENCH) {
+      // o teste de desempenho: nada vai para o aparelho (nem marcos, nem caderno, nem perguntas), e todo aparelho mede o mesmo jogo, do zero
+      progress.noSave();
+      diary.noSave();
+      quiz.noSave();
+      progress.reset();
+      for (const f of ['intro', 'dado'] as const) progress.set(f);
+    } else if (q.has('demo')) {
       progress.noSave();
       for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz', 'peso'] as const) progress.set(f);
     } else if (q.has('lab') || q.has('vitrine')) {
@@ -3729,7 +3743,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const thumbCanvas = document.createElement('canvas');
   thumbCanvas.width = 192;
   thumbCanvas.height = 108;
-  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB && !VITRINE;
+  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB && !VITRINE && !BENCH;
   const writeSave = (thumb?: string) => {
     if (!canSave()) return;
     rooms.forEach((r, i) => r.bonus?.() && bonusSet.add(i));
@@ -4765,6 +4779,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       loopError(e, 'quadro');
     }
   };
+  let benchCam: { yaw: number; pitch: number } | null = null;
   const frame = (now: number) => {
     if (fpsCap > 0 && now - lastDraw < 1000 / fpsCap - 2) return; // limitar quadros (configurações)
     lastDraw = now;
@@ -4883,9 +4898,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pitch = c.p0 + (c.p1 - c.p0) * u;
       if (c.t >= c.dur) camTween = null;
     }
+    if (benchCam) {
+      // o teste de desempenho segura a câmera: parada na entrada da sala, girando devagar (nenhuma cena nem toque a tira de lá)
+      yaw = benchCam.yaw;
+      pitch = benchCam.pitch;
+    }
     camera.position.set(pos.x + shX * Math.cos(yaw), pos.y + bobY - introDrop + shY, pos.z - shX * Math.sin(yaw));
     camera.rotation.set(pitch + shR, yaw, introRoll + shR * 0.6);
-    if (cineCam) {
+    if (cineCam && !benchCam) {
       // câmera de cinema (cena da abertura): solta do jogador
       camera.position.copy(cineCam.pos);
       camera.lookAt(cineCam.look);
@@ -5039,7 +5059,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieShadowMat.opacity = Math.max(0, 1 - hgt / 3);
     } else dieShadow.visible = false;
     updateBurn(dt, t);
-    if (mode === 'play') {
+    if (mode === 'play' && !BENCH) {
       chatTick(dt, moving);
       quizTick(dt);
     }
@@ -5664,6 +5684,25 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     },
     saveNow: () => saveGame(),
     lock: requestLock,
+    benchRooms: () => rooms.map((r) => r.name),
+    benchView: (v) => {
+      if (!BENCH) return;
+      if (!v) {
+        benchCam = null;
+        return;
+      }
+      const y0 = rooms[v.room].startYaw + places[v.room].yaw;
+      if (v.room !== curRoom || !benchCam) {
+        spawnIn(v.room);
+        // uns passos para dentro: a entrada às vezes ainda é o corredor, e ali se vê menos da sala do que o jogador vê ao entrar
+        pos.x -= Math.sin(y0) * 2.5;
+        pos.z -= Math.cos(y0) * 2.5;
+        applyActive();
+      }
+      moveVel.set(0, 0, 0);
+      benchCam = { yaw: y0 + v.yaw, pitch: v.pitch };
+    },
+    benchRes: () => ({ w: rt.width, h: rt.height }),
     dispose() {
       cancelAnimationFrame(raf);
       unsubProgress();

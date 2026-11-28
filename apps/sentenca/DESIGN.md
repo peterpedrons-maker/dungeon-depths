@@ -2414,3 +2414,35 @@ incompleta).
 
 **Detalhe de acabamento**: a fonte do caderno não tinha as reticências e trocava «…» por «?» (o «o que eu acho…» da parte Símbolos saía
 «o que eu acho?»); agora são três pingos numa célula só (`book/font.ts`).
+
+## 100. O teste de desempenho (cenógrafo, pedido do Pedro)
+
+Antes de decidir se o jogo vira app de celular e de Steam como está (embalado com Capacitor e Electron) ou se é convertido para outra engine,
+o Pedro quis saber como ele roda em celulares antigos e PCs fracos. Daqui não dá para medir aparelhos de verdade (não há aparelho ligado, e o
+navegador da nuvem desenha o 3D sem placa de vídeo), então o próprio jogo ganhou um **teste de desempenho**, aberto por um link:
+
+**O endereço do jogo com `?bench=1`** (por exemplo `…/dungeon-depths/sentenca/?bench=1`). Qualquer pessoa abre no aparelho que quer medir, sem
+instalar nada (`src/ui/Bench.tsx`).
+
+- **O passeio**: uma tela explica e pede Começar (no celular, com o aparelho deitado; tenta tela cheia). O jogo passa sozinho por cinco salas
+  pesadas (Vestíbulo, Galeria, Biblioteca, Claustro do Vento, Tribunal) em quatro níveis, como alguém escolheria em Configurações → Imagem:
+  **Alta** (qualidade alta, sombras altas), **Média** (média, médias), **Baixa** (baixa, baixas) e **Mínima** (baixa, sem sombras, pixel
+  grosso). Em cada sala a câmera fica uns passos para dentro da entrada e gira uma volta inteira devagar (`scene.benchView`); o primeiro 1,2 s
+  não conta (trocar de sala e de qualidade monta sombras e materiais e engasga uma vez), e depois mede 5 s. Uns 2 minutos e meio no total. O
+  som fica ligado (ele também pesa).
+- **O que mede**: o intervalo entre um quadro e o seguinte (`requestAnimationFrame`, o mesmo ritmo do desenho do jogo). Por sala: quadros por
+  segundo, o quadro mais lento dos 95% mais rápidos, a fração de **engasgos** (quadros acima de 34 ms, abaixo de 30 por segundo) e o pior
+  quadro. Se a página some no meio (trocou de aplicativo, a tela apagou), aquela sala é medida de novo.
+- **A nota**: por sala, **Fluido** (50 ou mais por segundo e até 3% de engasgos), **Bom** (40 ou mais, até 8%), **Jogável** (28 ou mais) ou
+  **Pesado**; a nota do nível é a da PIOR sala, porque é lá que o jogador sente. **Recomendado**: o nível mais alto que fica Bom ou Fluido;
+  se nenhum, o mais alto Jogável.
+- **O relatório**: o aparelho (modelo e sistema quando o navegador conta, navegador, placa de vídeo, núcleos, memória, tela), quanto o jogo
+  levou para abrir, a tabela dos quatro níveis e a recomendação. Botões: **Copiar o resultado** (um texto com tudo, sala por sala, para colar
+  na conversa), **Usar a recomendada aqui** (grava só a qualidade, as sombras e o pixel daquele aparelho), Repetir e Ir para o jogo.
+- **Nada é gravado**: nem o espaço de jogo, nem o caderno, nem as perguntas do dado, nem os desenhos do dado, nem as configurações (o teste
+  troca a qualidade só na memória); o jogo começa do zero na memória, igual em todo aparelho. O dado não fala nem pergunta, nenhuma cena toma
+  a câmera, e uma camada invisível segura os toques. Conferido: o armazenamento do navegador fica idêntico antes e depois.
+- **O que o número não diz**: o aparelho esquenta ao longo do teste (a Alta é medida primeiro, com ele frio); celulares com tela de 90 ou 120 Hz
+  passam de 60; no modo de economia de bateria muitos celulares travam em 30. O navegador do celular é praticamente o mesmo motor que o app
+  embalado usaria, então o resultado vale para o app; o Steam Deck e o iPhone se testam neles mesmos.
+- `?bench=rapido`: o mesmo passeio em tempos curtos, só para conferir que o teste funciona (os números não valem).
