@@ -736,7 +736,32 @@ const DM_BANNERS: { words: string[]; at: [number, number]; n: [number, number] }
   { words: ['n3', 'antes', 'n1'], at: [DM.gx, (DM.gz[0] + DM.gz[1]) / 2], n: [-1, 0] }, // entre 2 e 5
   { words: ['n3', 'depois', 'n4'], at: [0, DM.gz[2]], n: [0, -1] }, // na galeria da frente
 ];
-function dizemExtra(api: FireExtraApi): FireExtra {
+// ── SALA 21 · O CLAUSTRO DO VENTO (nível 9; DESIGN.md §93; tools/verify_vento.mjs): o mesmo claustro e a mesma lei, com o VENTO ──
+// Os estandartes ficam em gaiolas de ferro penduradas sob o telhado das galerias: o dado não chega neles. O claustro é aberto e o vento gira em
+// ciclo (para o fundo, para a esquerda, para a frente, para a direita; 6 s cada): o cata-vento em cima da estela da fonte e as fagulhas mostram
+// para onde. Três FOGARÉUS (cestos de ferro em postes) no pátio: acender um com o dado solta fagulhas por 4 s, que voam a favor do vento numa
+// faixa e põem fogo em todo estandarte dentro dela. A lógica continua a de Os Que Dizem o Mesmo (só sem «DOIS ANTES QUATRO» sobra uma ordem:
+// 1, 5, 2, 3, 4); o novo é COMO queimá-lo sozinho: o fogaréu da esquerda da fonte, com as fagulhas no vento para o fundo (aceso no fim do vento
+// para a direita ou no começo do vento para o fundo). O fogaréu grande do meio queima os dois do fundo; aceso tarde, o da esquerda pega também
+// o da galeria da esquerda. Queimar dois: a Casa pendura tudo de volta.
+const VT_BANNERS = DM_BANNERS.map((b, k) => (k === 4 ? { ...b, at: [-DM.gx / 2, DM.gz[2]] as [number, number] } : b)); // (o 5º entre as colunas 6 e 7, não dentro da coluna)
+// [x, dz, meia-largura da faixa das fagulhas, comprimento]: a mesma ordem do verificador (FIRES)
+const VT_FIRES: [number, number, number, number][] = [
+  [-2.25, 7.6, 0.6, 6],
+  [2.25, 7.6, 0.6, 6],
+  [0, 6.0, 1.8, 8],
+];
+const VT_PHASE = 6;
+const VT_BURN = 4;
+const VT_DIRS: [number, number][] = [
+  [0, -1],
+  [-1, 0],
+  [0, 1],
+  [1, 0],
+]; // para onde o vento sopra: o fundo, a esquerda, a frente, a direita
+const dizemExtra = (api: FireExtraApi) => claustroExtra(api, false);
+const ventoExtra = (api: FireExtraApi) => claustroExtra(api, true);
+function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
   const { kit, ctx, X0, X1, Z0, H, boxes } = api;
   // ── as galerias: telhado de pedra entre as paredes e a linha das colunas ──
   const R = DM.roof;
@@ -793,11 +818,13 @@ function dizemExtra(api: FireExtraApi): FireExtra {
   boxes.push(mkBox(fx - 1.4, 0, fz - 1.4, fx + 1.4, 0.55, fz + 1.4), mkBox(fx - 0.95, 0, fz - 0.25, fx + 0.95, 2.45, fz + 0.47));
   kit.contact(fx, fz, 3.4);
   // ── os estandartes (boatos de pano) ──
-  const banners = DM_BANNERS.map((b, k) => {
+  const BN = vento ? VT_BANNERS : DM_BANNERS;
+  const banners = BN.map((b, k) => {
     const [x, dz] = b.at;
     const rodTop = R - 0.45;
     return makeCloth(kit, ctx, { x: x + b.n[0] * 0.08, y: rodTop - 0.55, z: Z0 + dz + b.n[1] * 0.08, nx: b.n[0], nz: b.n[1], words: b.words, size: 0.34, color: ['#8a3040', '#5a4280', '#8a5a2a', '#3a6a4a', '#7a3a6a'][k], tall: 0.25, key: `dm${k}`, secs: 2.2 });
   });
+  const wind = vento ? buildWind(api, BN, banners, fx, fz) : null;
   let restoreT = -1;
   // ── C6: tochas nas 8 colunas e na fonte (grade 3×3) + 3 iscas ──
   const torches: Torch[] = [];
@@ -819,6 +846,7 @@ function dizemExtra(api: FireExtraApi): FireExtra {
   return {
     update(dt, t) {
       C.update(dt, t);
+      wind?.update(dt, t, api.solved());
       for (const f of frieze) {
         const on = litCell(f.a) && litCell(f.b);
         f.k = on ? Math.min(1, f.k + dt / 1.2) : Math.max(0, f.k - dt / 0.6);
@@ -827,12 +855,13 @@ function dizemExtra(api: FireExtraApi): FireExtra {
       }
       // os estandartes: o Fogo os queima; queimar um 2º faz a Casa pendurar todos de volta
       const solved = api.solved();
-      banners.forEach((b) => b.update(dt, t, !solved && restoreT < 0));
+      banners.forEach((b) => b.update(dt, t, !vento && !solved && restoreT < 0)); // (no Claustro do Vento o dado não chega neles: só as fagulhas)
       const gone = banners.filter((b) => b.k > 0 || b.burning).length;
       if (gone >= 2 && restoreT < 0 && banners.every((b) => !b.burning)) {
         restoreT = 1.2;
         ctx.sfx('error');
         ctx.caption('A Casa pendurou tudo de novo', '', '#cfc6e8');
+        wind?.douse(); // (e abafa os fogaréus: as fagulhas que ainda voavam queimariam os estandartes novos)
       }
       if (restoreT >= 0) {
         restoreT -= ctx.paused() ? 0 : dt;
@@ -850,6 +879,7 @@ function dizemExtra(api: FireExtraApi): FireExtra {
     reset() {
       banners.forEach((b) => b.restore());
       restoreT = -1;
+      wind?.reset();
       C.reset();
       for (const f of frieze) f.k = 0;
     },
@@ -858,6 +888,221 @@ function dizemExtra(api: FireExtraApi): FireExtra {
     interactables: [C.niche.interactable],
   };
 }
+// o VENTO do claustro: o ciclo, o cata-vento, as gaiolas dos estandartes, os três fogaréus e as fagulhas
+function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType<typeof makeCloth>[], fx: number, fz: number) {
+  const { kit, ctx, Z0, boxes } = api;
+  const R = DM.roof;
+  const iron = lambert(null, 0x2a282e);
+  // ── as gaiolas: barras de ferro em volta de cada estandarte, penduradas do telhado por quatro correntes (passa-se por baixo; o dado bate
+  // nelas). Param abaixo dos frisos da constelação C6 (que correm na linha das colunas, a 3,85 m): o friso continua inteiro à vista ──
+  const CAGE_Y = 2.35;
+  const CAGE_TOP = R - 0.42;
+  BN.forEach((b, k) => {
+    const c = banners[k].center;
+    const n = new THREE.Vector3(b.n[0], 0, b.n[1]);
+    const right = new THREE.Vector3(n.z, 0, -n.x);
+    const w = 1.95;
+    const dep = 0.5;
+    const hh = CAGE_TOP - CAGE_Y;
+    const mid = c.clone().addScaledVector(n, 0.06);
+    for (const side of [-1, 1]) {
+      for (let a = -w / 2; a <= w / 2 + 1e-6; a += w / 13) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.035, hh, 0.035), iron);
+        bar.position.copy(mid).addScaledVector(right, a).addScaledVector(n, (side * dep) / 2);
+        bar.position.y = CAGE_Y + hh / 2;
+        kit.group.add(bar);
+      }
+      for (const y of [CAGE_Y, CAGE_Y + hh * 0.5, CAGE_TOP]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.05, 0.05), iron);
+        rail.position.copy(mid).addScaledVector(n, (side * dep) / 2);
+        rail.position.y = y;
+        rail.rotation.y = Math.atan2(right.x, right.z) - Math.PI / 2;
+        kit.group.add(rail);
+      }
+    }
+    for (const a of [-w / 2, w / 2]) {
+      for (const y of [CAGE_Y, CAGE_TOP]) {
+        const end = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, dep), iron);
+        end.position.copy(mid).addScaledVector(right, a);
+        end.position.y = y;
+        end.rotation.y = Math.atan2(n.x, n.z);
+        kit.group.add(end);
+      }
+      for (const side of [-1, 1]) {
+        const chain = new THREE.Mesh(new THREE.BoxGeometry(0.02, R - CAGE_TOP, 0.02), iron);
+        chain.position.copy(mid).addScaledVector(right, a * 0.9).addScaledVector(n, (side * dep) / 2);
+        chain.position.y = (R + CAGE_TOP) / 2;
+        kit.group.add(chain);
+      }
+    }
+    const hx = Math.abs(right.x) * w / 2 + Math.abs(n.x) * dep / 2;
+    const hz = Math.abs(right.z) * w / 2 + Math.abs(n.z) * dep / 2;
+    boxes.push(mkBox(mid.x - hx, CAGE_Y - 0.03, mid.z - hz, mid.x + hx, R, mid.z + hz));
+  });
+  // ── o cata-vento, em cima da estela da fonte ──
+  const vane = new THREE.Group();
+  vane.position.set(fx, 2.45, fz + 0.36);
+  kit.group.add(vane);
+  const pole = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.7, 0.05), iron);
+  pole.position.y = 0.35;
+  vane.add(pole);
+  const arrow = new THREE.Group();
+  arrow.position.y = 0.72;
+  vane.add(arrow);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.9), iron);
+  arrow.add(shaft);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.24, 4), iron);
+  head.rotation.x = Math.PI / 2;
+  head.position.z = 0.52;
+  arrow.add(head);
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.22, 0.26), lambert(null, 0x6a5a40));
+  tail.position.z = -0.4;
+  arrow.add(tail);
+  // ── os fogaréus ──
+  const fires = VT_FIRES.map(([x, dz, hw, len], k) => {
+    const z = Z0 + dz;
+    const big = k === 2;
+    const ph = big ? 1.45 : 1.25;
+    kit.box(0.12, ph, 0.12, iron, x, ph / 2, z);
+    kit.box(0.34, 0.06, 0.34, iron, x, 0.03, z);
+    const r = big ? 0.34 : 0.22;
+    const basket = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.6, big ? 0.34 : 0.24, 8, 1, true), iron);
+    basket.position.set(x, ph + 0.12, z);
+    kit.add(basket, false);
+    const coals = new THREE.Mesh(new THREE.CircleGeometry(r * 0.85, 8), new THREE.MeshBasicMaterial({ color: 0x2a1610 }));
+    coals.rotation.x = -Math.PI / 2;
+    coals.position.set(x, ph + 0.06, z);
+    kit.group.add(coals);
+    const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+    flame.scale.set(big ? 0.62 : 0.42, big ? 0.66 : 0.46, 1);
+    flame.position.set(x, ph + (big ? 0.42 : 0.32), z);
+    flame.visible = false;
+    kit.group.add(flame);
+    const light = kit.light(x, ph + 0.6, z, 0xff8a3a, 0);
+    boxes.push(mkBox(x - r, 0, z - r, x + r, ph + 0.2, z + r));
+    kit.contact(x, z, 0.9);
+    return { x, z, hw, len, top: new THREE.Vector3(x, ph + 0.2, z), coals, flame, light, t: -1, big };
+  });
+  // as fagulhas (pontos que voam a favor do vento)
+  const NS = 90;
+  const sp = new Float32Array(NS * 3);
+  const sv = new Float32Array(NS * 3);
+  const life = new Float32Array(NS);
+  const sparkGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xffa040, size: 3, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.95, depthWrite: false }));
+  sparks.frustumCulled = false;
+  kit.group.add(sparks);
+  for (let i = 0; i < NS; i++) sp[i * 3 + 1] = -50;
+  let next = 0;
+  let wt = 0; // o relógio do vento (para durante cenas e conversas)
+  let vaneA = 0;
+  const gate = shotGate(ctx.die);
+  const dirAt = () => VT_DIRS[Math.floor(wt / VT_PHASE) % 4];
+  // a Casa abafa os fogaréus (e as fagulhas no ar se apagam)
+  const douse = () => {
+    for (const f of fires) {
+      f.t = -1;
+      f.flame.visible = false;
+      f.light.intensity = 0;
+      (f.coals.material as THREE.MeshBasicMaterial).color.setHex(0x2a1610);
+    }
+    life.fill(0);
+  };
+  // a faixa: o estandarte k está a favor do vento do fogaréu f, dentro da largura e do comprimento (a mesma conta do verificador)
+  const inBand = (f: (typeof fires)[number], k: number, [ux, uz]: [number, number]) => {
+    const [bx, bdz] = BN[k].at;
+    const ax = bx - f.x;
+    const az = Z0 + bdz - f.z;
+    const along = ax * ux + az * uz;
+    const lat = Math.abs(ax * uz - az * ux);
+    return along > 0 && along < f.len && lat < f.hw + 0.7 ? along : -1;
+  };
+  const SPARK_V = 3.2; // m/s: o estandarte a `along` metros pega fogo quando as fagulhas chegam (o verificador usa a mesma conta)
+  if (import.meta.env.DEV) {
+    (globalThis as Record<string, unknown>).__vento = {
+      state: () => ({ wt: +wt.toFixed(2), dir: Math.floor(wt / VT_PHASE) % 4, fires: fires.map((f) => +f.t.toFixed(2)), banners: banners.map((b) => +b.k.toFixed(2)), burning: banners.map((b) => b.burning) }),
+      setWind: (s: number) => (wt = s),
+      light: (k: number) => (fires[k].t = 0),
+      spots: () => fires.map((f) => f.top.toArray()),
+    };
+  }
+  return {
+    update(dt: number, t: number, solved: boolean) {
+      const paused = ctx.paused();
+      if (!paused) wt = (wt + dt) % (4 * VT_PHASE);
+      const [ux, uz] = dirAt();
+      // o cata-vento aponta para onde o vento vai (vira depressa quando muda)
+      const want = Math.atan2(ux, uz);
+      let da = want - vaneA;
+      while (da > Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      vaneA += da * Math.min(1, dt * 6);
+      arrow.rotation.y = vaneA + Math.sin(t * 7) * 0.04;
+      // o dado de Fogo num cesto acende o fogaréu
+      gate.tick();
+      const d = ctx.die;
+      if (!solved && d.face === 3 && (d.state === 'flying' || d.state === 'rest'))
+        for (const [k, f] of fires.entries()) {
+          if (f.t >= 0 || d.pos.distanceTo(f.top) > (f.big ? 0.55 : 0.45) || !gate.take()) continue;
+          f.t = 0;
+          ctx.sfx('ignite', `fogareu${k}`);
+        }
+      // aceso: as fagulhas voam com o vento por 4 s e põem fogo nos estandartes da faixa
+      for (const f of fires) {
+        if (f.t < 0) continue;
+        if (!paused) f.t += dt;
+        const on = f.t < VT_BURN;
+        f.flame.visible = on;
+        f.flame.material.map = kit.frame(t * 9 + f.x);
+        f.light.intensity = on ? 34 : 0;
+        (f.coals.material as THREE.MeshBasicMaterial).color.setHex(on ? 0xff7a2e : 0x2a1610);
+        if (!on) {
+          f.t = -1;
+          f.flame.visible = false;
+          ctx.sfx('burnout');
+          continue;
+        }
+        if (!paused) {
+          for (let e = 0; e < (f.big ? 5 : 3); e++) {
+            const i = next++ % NS;
+            const sp0 = SPARK_V * (0.8 + Math.random() * 0.4);
+            sp[i * 3] = f.top.x + (Math.random() - 0.5) * 0.3;
+            sp[i * 3 + 1] = f.top.y + 0.2;
+            sp[i * 3 + 2] = f.top.z + (Math.random() - 0.5) * 0.3;
+            const spread = (Math.random() - 0.5) * f.hw * 1.6;
+            sv[i * 3] = ux * sp0 + uz * spread;
+            sv[i * 3 + 1] = 0.9 + Math.random() * 0.9;
+            sv[i * 3 + 2] = uz * sp0 - ux * spread;
+            life[i] = f.len / sp0;
+          }
+          for (let k = 0; k < banners.length; k++)
+            if (!banners[k].burning && banners[k].k === 0 && f.t * SPARK_V >= inBand(f, k, [ux, uz]) && inBand(f, k, [ux, uz]) > 0) {
+              banners[k].ignite(true);
+              ctx.sfx('spread');
+            }
+        }
+      }
+      for (let i = 0; i < NS; i++) {
+        if (life[i] <= 0) {
+          sp[i * 3 + 1] = -50;
+          continue;
+        }
+        life[i] -= dt;
+        sp[i * 3] += sv[i * 3] * dt;
+        sp[i * 3 + 1] += sv[i * 3 + 1] * dt;
+        sp[i * 3 + 2] += sv[i * 3 + 2] * dt;
+        sv[i * 3 + 1] -= 0.6 * dt;
+      }
+      sparkGeo.attributes.position.needsUpdate = true;
+    },
+    reset() {
+      wt = 0;
+      douse();
+    },
+    douse,
+  };
+}
+
 export const FIRE_DIZEM: FireSpec = {
   name: 'Os Que Dizem o Mesmo',
   subtitle: 'Um pátio a céu aberto.',
@@ -891,6 +1136,15 @@ export const FIRE_DIZEM: FireSpec = {
   fog: { color: '#1a1c26', near: 8, far: 34 },
   ambient: { color: 0x9aa0c8, intensity: 2.2 },
   extra: dizemExtra,
+};
+// a sala que está no jogo: o mesmo claustro, com o vento (Os Que Dizem o Mesmo, acima, fica na reserva)
+export const FIRE_VENTO: FireSpec = {
+  ...FIRE_DIZEM,
+  name: 'O Claustro do Vento',
+  subtitle: 'O vento leva o fogo.',
+  // (UM e DOIS mais para o fundo: os fogaréus ficam a quase 2 m deles, e o dado que vai num cesto não acende um braseiro sem querer)
+  braziers: FIRE_DIZEM.braziers.map((b, i) => (i === 0 ? { ...b, x: -2.6, dz: 5.7 } : i === 1 ? { ...b, x: 2.6, dz: 5.7 } : b)),
+  extra: ventoExtra,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════

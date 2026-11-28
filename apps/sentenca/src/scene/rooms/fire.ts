@@ -100,6 +100,10 @@ export interface FireExtraApi {
   cold(): number; // segundos de frio que ainda faltam
   lamps: THREE.MeshBasicMaterial[]; // os lampiões da porta
   cloths: { burned(): boolean[]; burning(): boolean[]; restore(): void }; // os panos do construtor (`spec.cloths`)
+  // (trava de escrita) as frases acendíveis, na ordem dos tabletes (a da porta por último): acesa? certa? demonstração? da porta?
+  lines(): { lit: boolean; good: boolean; preLit: boolean; door: boolean }[];
+  lockRisen(): boolean; // a Casa já aceitou o conjunto (ou a trava já abriu)?
+  failLines(cold?: number): void; // a Casa apaga as frases acesas (as de demonstração ficam) e recusa o fogo `cold` segundos (sem escuro)
 }
 export interface FireExtra {
   update?(dt: number, t: number): void;
@@ -138,7 +142,11 @@ export interface FireSpec {
   // `ordered`: as frases com `ord` têm de ser acesas nessa ordem; senão (padrão) basta acender todas as `good`, em qualquer ordem.
   // `judge: 'door'`: acender ou apagar frases não pune; a Casa só JULGA quando o jogador acende a frase da porta (o conjunto aceso tem de ser
   // exatamente as `good`). Tocar de novo numa frase acesa a apaga (para desfazer um engano).
-  lock?: { ordered?: boolean; penalty?: number; judge?: 'door' };
+  // `judged`: a legenda quando a Casa aceita o conjunto (padrão: os pilares de fogo subiram)
+  lock?: { ordered?: boolean; penalty?: number; judge?: 'door'; judged?: [string, string] };
+  // um FOSSO no chão (A Ponte de Frases): o chão some entre `dz0` e `dz1` (distância do fundo), de `x0` a `x1`, com `depth` metros de fundo.
+  // O construtor faz o chão em volta, as paredes e o fundo do buraco; a sala (`extra`) cuida do que pisa (floorY, rects, dieFloor, clampDie).
+  floorGap?: { x0: number; x1: number; dz0: number; dz1: number; depth: number };
   cloths?: FireCloth[];
   torches?: 'all' | 'few'; // 'few' = só as tochas da entrada e a da porta (salas de constelação: as tochas que contam são as que o jogador acende)
   extra?: (api: FireExtraApi) => FireExtra;
@@ -252,7 +260,29 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const L = Z1 - Z0;
   const zm = (Z0 + Z1) / 2;
 
-  kit.plane(W, L, lambert(floorTexture([W / T, L / T], theme)), 0, 0, zm, -Math.PI / 2);
+  const FG = spec.floorGap;
+  if (!FG) kit.plane(W, L, lambert(floorTexture([W / T, L / T], theme)), 0, 0, zm, -Math.PI / 2);
+  else {
+    // o chão em volta do fosso (até quatro pedaços), as paredes do buraco e o fundo dele
+    const gz0 = Z0 + FG.dz0;
+    const gz1 = Z0 + FG.dz1;
+    const piece = (x0: number, x1: number, z0: number, z1: number, y = 0) => {
+      if (x1 - x0 < 0.01 || z1 - z0 < 0.01) return;
+      kit.plane(x1 - x0, z1 - z0, lambert(floorTexture([(x1 - x0) / T, (z1 - z0) / T], theme)), (x0 + x1) / 2, y, (z0 + z1) / 2, -Math.PI / 2);
+    };
+    piece(X0, X1, Z0, gz0);
+    piece(X0, X1, gz1, Z1);
+    piece(X0, FG.x0, gz0, gz1);
+    piece(FG.x1, X1, gz0, gz1);
+    piece(FG.x0, FG.x1, gz0, gz1, -FG.depth);
+    const D = FG.depth;
+    const gw = FG.x1 - FG.x0;
+    const gl = gz1 - gz0;
+    kit.plane(gw, D, kit.brick([gw / T, D / T], 0.8, 71), (FG.x0 + FG.x1) / 2, -D / 2, gz1, 0, Math.PI); // a parede de baixo da borda da entrada
+    kit.plane(gw, D, kit.brick([gw / T, D / T], 0.8, 72), (FG.x0 + FG.x1) / 2, -D / 2, gz0, 0, 0); // a da borda da porta
+    kit.plane(gl, D, kit.brick([gl / T, D / T], 0.8, 73), FG.x0, -D / 2, (gz0 + gz1) / 2, 0, Math.PI / 2);
+    kit.plane(gl, D, kit.brick([gl / T, D / T], 0.8, 74), FG.x1, -D / 2, (gz0 + gz1) / 2, 0, -Math.PI / 2);
+  }
   if (!spec.sky) kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
   else {
     // o céu: uma placa clara bem acima das paredes, com nuvens em pixels (sem luz e sem névoa)
@@ -863,6 +893,13 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
         cold: () => coldT,
         lamps: door.lampMats,
         cloths: { burned: () => cloths.map((c) => c.k >= 1), burning: () => cloths.map((c) => c.burning || c.k > 0), restore: () => restoreCloths() },
+        lines: () => litLines.map((l) => ({ lit: l.lit, good: l.good, preLit: l.preLit, door: l.door })),
+        lockRisen: () => risen,
+        failLines(cold = 4) {
+          litLines.forEach((l) => (l.lit = l.preLit));
+          lockProg = 0;
+          lockCold = cold;
+        },
       })
     : {};
 
@@ -1056,7 +1093,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   risen = true;
                   ctx.sfx('ignite', best.key);
                   ctx.sfx('rise');
-                  ctx.caption('A Casa leu', 'Os pilares de fogo subiram.', '#ffd36b');
+                  ctx.caption(...(lk.judged ?? ['A Casa leu', 'Os pilares de fogo subiram.']), '#ffd36b');
                 } else {
                   litLines.forEach((l) => (l.lit = l.preLit));
                   lockCold = lk.penalty ?? 10;
@@ -1382,6 +1419,12 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
       risen = true;
       riseK = 1;
       applyRise();
+      // (julgada na porta) as frases certas e a da porta ficam acesas, como ficaram quando a Casa aceitou
+      if (judgeDoor)
+        litLines.forEach((l) => {
+          l.lit = l.preLit || l.good || l.door;
+          l.burn.set(l.lit, true);
+        });
       extra.skip?.();
     },
     isSolved: () => solved,

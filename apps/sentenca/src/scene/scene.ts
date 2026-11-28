@@ -47,15 +47,16 @@ import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
 import { layout as bookLayout, MAP_AREA, mapPreview } from '../book/pages';
 import { config, configStore } from '../story/config';
-import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
-import { FIRE_DIZEM, FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_MEMORIA, FIRE_SOMBRA } from './rooms/chapter1b';
+import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO } from './rooms/chapter1';
+import { FIRE_PONTE_FRASES } from './rooms/chapter1c';
+import { FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_MEMORIA, FIRE_SOMBRA, FIRE_VENTO } from './rooms/chapter1b';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
 import { buildChamaCurta } from './rooms/chamaCurta';
 import { buildRespiro1 } from './rooms/respiro1';
 import { buildPonte } from './rooms/ponte';
 import { buildRespiro2 } from './rooms/respiro2';
-import { buildApelidos } from './rooms/apelidos';
+import { buildBalanca } from './rooms/balanca';
 import type { AltarPhase, Ctx, DieState, Interactable, Rect, Room, RoomBuilder, Socket } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
@@ -90,16 +91,16 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     buildRespiro2, // RESPIRO R2 (sem trava): Os Banhos Secos; piscinas vazias, a fonte seca, o estandarte; puzzle opcional (exatamente DOIS)
     (c) => buildFireRoom(c, FIRE_PANO), // NÍVEL 5. O PANO: o fogo queima o boato tecido e mostra a pedra (+ constelação C2)
     buildBiblioteca, // A BIBLIOTECA (térreo, área livre): o Átrio de 9 mesas (C-Bib), as alas, o Museu dos Nomes, a Sala de Aula, o escritório do Escrivão
-    buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
+    buildBalanca, // NÍVEL 6. A BALANÇA (rotunda): o dado queima cordas e os pesos caem nos pratos; GRANDE, PEQUENO e IGUAL pelo peso
     buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
-    (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
+    (c) => buildFireRoom(c, FIRE_PONTE_FRASES), // NÍVEL 6. A PONTE DE FRASES: o fosso; cada frase acesa ergue uma laje; as falsas cedem; ACENDER VERDADE
     buildRespiro3, // RESPIRO R3 A GALERIA DOS CONDENADOS: marcas de giz, o Escrivão sentado, duas folhas dela; puzzle opcional da lei (2, 3, 1)
     (c) => buildFireRoom(c, FIRE_SOMBRA), // NÍVEL 7. A SOMBRA: a luz escreve na moldura da frase; a frase tem de ser verdade (o número de acesos)
     (c) => buildFireRoom(c, FIRE_ESCURO), // NÍVEL 7. O ESCURO: errar de propósito; no escuro de 4 s, a cal no teto dá a ordem
     (c) => buildFireRoom(c, FIRE_LEI), // NÍVEL 8. A LEI PEQUENA: a sala sobe; «UM BOATO IGUAL VERDADE», dois boatos que dizem o mesmo
     buildRespiro4, // RESPIRO R4 A ESCADARIA: o poço com três lances; janelas para salas já feitas; a porta dos seis pontos (fechada)
     (c) => buildFireRoom(c, FIRE_FOGO_CORRE), // NÍVEL 8. O FOGO QUE CORRE: 5,5 s de chama, uma vez; canaletas com tempo; os quatro cantos num instante (+ C5)
-    (c) => buildFireRoom(c, FIRE_DIZEM), // NÍVEL 9. OS QUE DIZEM O MESMO: claustro; queimar UM estandarte (o boato sai da conta) e acender na ordem (+ C6)
+    (c) => buildFireRoom(c, FIRE_VENTO), // NÍVEL 9. O CLAUSTRO DO VENTO: o vento leva as fagulhas de um fogaréu; queimar UM estandarte (o boato sai da conta) e acender na ordem (+ C6)
     buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (ensina a sala seguinte)
     (c) => buildFireRoom(c, FIRE_MEMORIA), // NÍVEL 9. A MEMÓRIA DA CASA: hub + três anexos; a confirmada escondida no quadro vazio (soquete frio → escuro)
     buildTribunal, // NÍVEL 10. O TRIBUNAL DOS RUMORES: o fim do capítulo 1
@@ -1617,6 +1618,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         pinned = on;
       },
       introGen: () => introGen,
+      // o jogador volta ao começo desta sala (a sala NÃO recomeça; o dado volta para a mão): quem cai no fosso da Ponte de Frases
+      toEntrance: () => {
+        if (curRoom === idx) spawnIn(idx);
+      },
       dieCenter: (on) => {
         dieCineTarget = on ? 1 : 0;
         ui.setBars(on);
@@ -1849,7 +1854,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     r.group.updateMatrixWorld(true);
     r.group.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (!m.isMesh || !m.geometry || m.userData.corridor) return;
+      if (!m.isMesh || !m.geometry || m.userData.corridor || m.userData.noPlan) return;
       if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
       b.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld);
       const c = b.getCenter(wtmp);

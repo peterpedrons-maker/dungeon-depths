@@ -53,7 +53,7 @@ const CONSTELACOES = [
     pista: { tipo: 'invertida', armadilha: 'acender', descricao: 'a página do Escrivão, vista de cabeça para baixo' },
   },
   {
-    sala: 'Sala 16 · Os Que Dizem o Mesmo (claustro: 8 colunas da galeria + a fonte no meio = grade 3x3)',
+    sala: 'Sala 21 · O Claustro do Vento (claustro: 8 colunas da galeria + a fonte no meio = grade 3x3)',
     nota: 'todas as 9 têm tocha, mais 3 nas paredes. Frisos: o da galeria do fundo (de canto a canto), uma VIGA de pedra que cruza o pátio na diagonal, e o da galeria da frente. Formam um Z.',
     tochas: [
       ...[0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => ({ id: `coluna${c}`, casa: c })),
