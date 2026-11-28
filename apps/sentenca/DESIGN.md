@@ -2404,9 +2404,10 @@ constelações: não são escrita, e uma etiqueta viraria o oráculo "isto é um
 inscrição, a cópia daria o lado certo da página) e **uma cópia só**, a última (um histórico de cópias apagaria a "informação espalhada" da
 Lei Pequena, da Memória e do Tribunal).
 
-**Para o Pedro decidir**: quando ele erra a pergunta do dado, a escolha errada também entra no caderno (numa linha nova) e passa a ser a
-anotação curta mostrada junto do símbolo, embora o dado a tenha rejeitado. Dá para a etiqueta mostrar só a última linha escrita por ele ou
-confirmada pelo dado (a escolha rejeitada ficaria só no caderno); como mexe no que a pergunta faz, fica para ele.
+**A resposta da pergunta do dado aparece igual, certa ou errada** (decisão do Pedro): quando ele erra a pergunta do dado, a escolha também
+entra no caderno (numa linha nova) e é ela a anotação curta mostrada junto do símbolo, como qualquer outra. "O jogador percebe na hora que o
+dado reagiu; o jogador consciente vai entrar no caderno, anotar as outras palavras que tinham lá e ver como encaixa." O jogo não filtra o que
+ele escreveu (nem o que escolheu) por certo ou errado: a anotação é dele, e corrigir é trabalho dele.
 
 **Em aberto (opcional)**: na Sombra e no Escuro cada palavra é uma inscrição separada, então a cópia pega uma palavra só (não engana, só fica
 incompleta).
