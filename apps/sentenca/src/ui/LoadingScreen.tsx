@@ -11,7 +11,8 @@ import { T, tx } from '../i18n';
 
 const coarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
-export function LoadingScreen({ onGo }: { onGo: () => void }) {
+// `auto`: a da ABERTURA (DESIGN.md §105): segue sozinha no fim, sem pedir o clique (o 1º toque vem depois, no idioma ou na tela inicial)
+export function LoadingScreen({ onGo, auto = false }: { onGo: () => void; auto?: boolean }) {
   const st = useStore(loadStore);
   const [asked, setAsked] = useState(false);
   const [gone, setGone] = useState(false);
@@ -26,12 +27,12 @@ export function LoadingScreen({ onGo }: { onGo: () => void }) {
   };
   useEffect(() => {
     if (!st.ready) return;
-    if (st.live) {
+    if (st.live || auto) {
       const t = window.setTimeout(go, 450);
       return () => window.clearTimeout(t);
     }
     setAsked(true);
-  }, [st.ready, st.live]);
+  }, [st.ready, st.live, auto]);
   useEffect(() => {
     if (!asked) return;
     const kd = (e: KeyboardEvent) => {

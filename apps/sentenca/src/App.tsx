@@ -102,6 +102,9 @@ const SHOW_TITLE = !PLAY_NOW && !BENCH && !Q.has('demo') && !Q.has('lab') && Q.g
   }
 }
 const ASK_LANG = SHOW_TITLE && !configStore.get().langChosen;
+// A TELA DE CARREGAMENTO DA ABERTURA (pedido do Pedro, DESIGN.md §105): a mesma do Novo jogo, logo que o jogo abre, até tudo chegar; depois
+// vêm o idioma (na 1ª vez), a editora e a tela inicial. ?boot=0 pula (testes)
+const BOOT = SHOW_TITLE && Q.get('boot') !== '0';
 // A ABERTURA DA EDITORA (Pedra-Sabão): ao abrir o jogo, uma vez por sessão do navegador (voltar à tela inicial no meio do jogo não repete).
 // ?splash=0 pula, ?splash=1 força (testes)
 const SPLASH = (() => {
@@ -154,6 +157,7 @@ export default function App() {
   const [sceneReady, setSceneReady] = useState(false); // a cena já desenhou e os modelos chegaram (a tela inicial pode aparecer)
   const [splashOn, setSplashOn] = useState(SPLASH);
   const [langAsk, setLangAsk] = useState(ASK_LANG);
+  const [booting, setBooting] = useState(BOOT);
   const [titleShown, setTitleShown] = useState(false);
   const openPauseRef = useRef<() => void>(() => {});
   const dry = useStore(diaryStore);
@@ -302,6 +306,8 @@ export default function App() {
       title: SHOW_TITLE,
       load: PLAY_NOW,
       onReady: () => setSceneReady(true),
+      boot: BOOT,
+      onBooted: () => setBooting(false),
       onCine: setCine,
       onIntroSkip: setIntroSkip,
       onPause: () => openPauseRef.current(),
@@ -338,7 +344,7 @@ export default function App() {
   };
 
   const inMenu = uis.menu !== null;
-  const titleNow = uis.menu === 'title' && sceneReady && !splashOn && !langAsk;
+  const titleNow = uis.menu === 'title' && sceneReady && !splashOn && !langAsk && !booting;
   useEffect(() => {
     if (titleNow && !titleShown) {
       setTitleShown(true);
@@ -577,9 +583,10 @@ export default function App() {
 
       {uis.menu === 'title' && titleShown && <TitleScreen api={titleApi} snd={sound} />}
       {uis.menu === 'loading' && <LoadingScreen onGo={() => sceneRef.current?.loadGo()} />}
+      {booting && <LoadingScreen auto onGo={() => sceneRef.current?.bootGo()} />}
       {whiteIn && <div className="white-in" onAnimationEnd={() => setWhiteIn(false)} />}
-      {splashOn && !langAsk && <Splash ready={sceneReady} onDone={() => setSplashOn(false)} />}
-      {langAsk && (
+      {splashOn && !langAsk && !booting && <Splash ready={sceneReady} onDone={() => setSplashOn(false)} />}
+      {langAsk && !booting && (
         <LanguagePick
           snd={sound}
           onPick={(l) => {
