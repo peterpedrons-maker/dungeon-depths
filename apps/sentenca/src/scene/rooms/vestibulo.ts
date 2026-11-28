@@ -115,7 +115,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     {
       const g = skyCv.getContext('2d')!;
       const grd = g.createLinearGradient(0, 0, 0, 64);
-      // (DESIGN.md §93: a NEBLINA. O céu não é céu: é a mesma névoa, mais clara no alto; embaixo ele tem a cor exata da névoa do chão, então
+      // (DESIGN.md §94: a NEBLINA. O céu não é céu: é a mesma névoa, mais clara no alto; embaixo ele tem a cor exata da névoa do chão, então
       // não há horizonte, nem nada lá longe)
       grd.addColorStop(0, '#e6e3dc');
       grd.addColorStop(0.35, '#bdbbc6');
@@ -260,7 +260,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         p.needsUpdate = true;
       };
     }
-    // (as torres escuras da Casa contra o céu saíram, DESIGN.md §93: lá fora não se sabe o que existe)
+    // (as torres escuras da Casa contra o céu saíram, DESIGN.md §94: lá fora não se sabe o que existe)
     // coluna de luz (translúcida) e mancha de luz no chão
     const beam = new THREE.Mesh(
       new THREE.CylinderGeometry(SHAFT.r * 0.95, SHAFT.r * 1.3, H, 20, 1, true),

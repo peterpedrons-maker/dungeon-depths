@@ -1,4 +1,4 @@
-// A BIBLIOTECA · O ARQUIVO DAS SENTENÇAS, térreo (PUZZLES_PROPOSTAS.md §2d, §5 "A Biblioteca" e Ficha 2). Entre O Pano e Os Apelidos.
+// A BIBLIOTECA · O ARQUIVO DAS SENTENÇAS, térreo (PUZZLES_PROPOSTAS.md §2d, §5 "A Biblioteca" e Ficha 2). Entre O Pano e A Balança.
 // Onde os Contáveis guardavam tudo o que foi dito e julgado: tábuas de PEDRA são o que a Casa confirmou; LIVROS e rolos de papel são cópias, boatos.
 // O caminho principal é CURTO (atravessar o Átrio até a porta, sempre aberta); todo o resto é opcional. Módulos em volta do Átrio:
 //  · O ÁTRIO: três andares de altura, uma luz redonda no alto, passarelas vazias em cima, NOVE MESAS DE LEITURA em grade 3×3 com lamparinas e mais quatro

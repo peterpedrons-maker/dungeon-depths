@@ -1,4 +1,4 @@
-// R3 · A GALERIA DOS CONDENADOS (PUZZLES_PROPOSTAS.md §2b "R3", §5 e Ficha 3). Respiro entre O Boato Verdadeiro e A Sombra: sem trava.
+// R3 · A GALERIA DOS CONDENADOS (PUZZLES_PROPOSTAS.md §2b "R3", §5 e Ficha 3). Respiro entre A Ponte de Frases e A Sombra: sem trava.
 // Uma galeria longa e alta, com bancos de pedra e, nas paredes, centenas de MARCAS DE CONTAGEM a giz (dias? tentativas?) e desenhos de outros
 // condenados (um braseiro, uma porta, um rosto apagado). Sobre a porta de saída, talhada: «CONDENADO LER SENTENÇA».
 // - O Escrivão (4ª aparição) está sentado no fim da galeria, escrevendo; quando o jogador chega perto, ele se levanta e some.

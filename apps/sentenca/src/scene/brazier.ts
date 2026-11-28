@@ -47,7 +47,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     kit.add(bowlMesh);
   }
   const bowl = new THREE.Vector3(x, y0 + 1.15 * s, z);
-  // a chama (DESIGN.md §93): o pé dela fica preso nas brasas (o `center` embaixo) e ela cresce para cima; quando está acabando, encolhe para
+  // a chama (DESIGN.md §94): o pé dela fica preso nas brasas (o `center` embaixo) e ela cresce para cima; quando está acabando, encolhe para
   // dentro da cesta em vez de boiar no ar
   const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   const flameH = flameW * (FLAME_H / FLAME_W);

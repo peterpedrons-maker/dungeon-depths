@@ -57,7 +57,7 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p4',
     where: 'Os Banhos Secos (num banco da câmara de banho do oeste)',
-    // (ERRO PLANTADO, decidido: ela está enganada; O Boato Verdadeiro e o Tribunal mostram que o talhado também pode ser boato)
+    // (ERRO PLANTADO, decidido: ela está enganada; A Ponte de Frases e o Tribunal mostram que o talhado também pode ser boato)
     body: ['O que está talhado não mente. O que alguém só disse, às vezes mente.', 'Acendi uma frase de boato e a Casa me apagou, como a uma vela.'],
   },
   {
@@ -101,7 +101,7 @@ export const HER_PAGES: HerPage[] = [
   {
     id: 'p6',
     where: 'A Galeria dos Condenados (perto do desenho a giz do braseiro grande e do pequeno)',
-    // (ela erra de novo: o glifo é PEQUENO; quem fez Os Apelidos sabe)
+    // (ela erra de novo: o glifo é PEQUENO; quem fez A Balança sabe)
     body: ['O ponto no meio, com as duas barras do lado, quer dizer UM.', 'Tenho certeza.'],
   },
   {

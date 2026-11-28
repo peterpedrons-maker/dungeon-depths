@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireSpec } from './fire';
+import { emberTexture } from './fire';
 import { glyphPattern, makeCloth, makeTorch, makeWallBoard, type Torch, type WallBoard } from '../firegrid';
 import { constellation } from './chapter1';
 import { lambert } from '../kit';
@@ -736,7 +737,32 @@ const DM_BANNERS: { words: string[]; at: [number, number]; n: [number, number] }
   { words: ['n3', 'antes', 'n1'], at: [DM.gx, (DM.gz[0] + DM.gz[1]) / 2], n: [-1, 0] }, // entre 2 e 5
   { words: ['n3', 'depois', 'n4'], at: [0, DM.gz[2]], n: [0, -1] }, // na galeria da frente
 ];
-function dizemExtra(api: FireExtraApi): FireExtra {
+// ── SALA 21 · O CLAUSTRO DO VENTO (nível 9; DESIGN.md §93; tools/verify_vento.mjs): o mesmo claustro e a mesma lei, com o VENTO ──
+// Os estandartes ficam em gaiolas de ferro penduradas sob o telhado das galerias: o dado não chega neles. O claustro é aberto e o vento gira em
+// ciclo (para o fundo, para a esquerda, para a frente, para a direita; 6 s cada): o cata-vento em cima da estela da fonte e as fagulhas mostram
+// para onde. Três FOGARÉUS (cestos de ferro em postes) no pátio: acender um com o dado solta fagulhas por 4 s, que voam a favor do vento numa
+// faixa e põem fogo em todo estandarte dentro dela. A lógica continua a de Os Que Dizem o Mesmo (só sem «DOIS ANTES QUATRO» sobra uma ordem:
+// 1, 5, 2, 3, 4); o novo é COMO queimá-lo sozinho: o fogaréu da esquerda da fonte, com as fagulhas no vento para o fundo (aceso no fim do vento
+// para a direita ou no começo do vento para o fundo). O fogaréu grande do meio queima os dois do fundo; aceso tarde, o da esquerda pega também
+// o da galeria da esquerda. Queimar dois: a Casa pendura tudo de volta.
+const VT_BANNERS = DM_BANNERS.map((b, k) => (k === 4 ? { ...b, at: [-DM.gx / 2, DM.gz[2]] as [number, number] } : b)); // (o 5º entre as colunas 6 e 7, não dentro da coluna)
+// [x, dz, meia-largura da faixa das fagulhas, comprimento]: a mesma ordem do verificador (FIRES)
+const VT_FIRES: [number, number, number, number][] = [
+  [-2.25, 7.6, 0.6, 6],
+  [2.25, 7.6, 0.6, 6],
+  [0, 6.0, 1.8, 8],
+];
+const VT_PHASE = 6;
+const VT_BURN = 4;
+const VT_DIRS: [number, number][] = [
+  [0, -1],
+  [-1, 0],
+  [0, 1],
+  [1, 0],
+]; // para onde o vento sopra: o fundo, a esquerda, a frente, a direita
+const dizemExtra = (api: FireExtraApi) => claustroExtra(api, false);
+const ventoExtra = (api: FireExtraApi) => claustroExtra(api, true);
+function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
   const { kit, ctx, X0, X1, Z0, H, boxes } = api;
   // ── as galerias: telhado de pedra entre as paredes e a linha das colunas ──
   const R = DM.roof;
@@ -793,11 +819,14 @@ function dizemExtra(api: FireExtraApi): FireExtra {
   boxes.push(mkBox(fx - 1.4, 0, fz - 1.4, fx + 1.4, 0.55, fz + 1.4), mkBox(fx - 0.95, 0, fz - 0.25, fx + 0.95, 2.45, fz + 0.47));
   kit.contact(fx, fz, 3.4);
   // ── os estandartes (boatos de pano) ──
-  const banners = DM_BANNERS.map((b, k) => {
+  const BN = vento ? VT_BANNERS : DM_BANNERS;
+  const banners = BN.map((b, k) => {
     const [x, dz] = b.at;
     const rodTop = R - 0.45;
-    return makeCloth(kit, ctx, { x: x + b.n[0] * 0.08, y: rodTop - 0.55, z: Z0 + dz + b.n[1] * 0.08, nx: b.n[0], nz: b.n[1], words: b.words, size: 0.34, color: ['#8a3040', '#5a4280', '#8a5a2a', '#3a6a4a', '#7a3a6a'][k], tall: 0.25, key: `dm${k}`, secs: 2.2 });
+    // (no Claustro do Vento o bordado é grosso: o estandarte fica no alto e atrás das barras da gaiola, e o traço fino não se lia do pátio)
+    return makeCloth(kit, ctx, { x: x + b.n[0] * 0.08, y: rodTop - 0.55, z: Z0 + dz + b.n[1] * 0.08, nx: b.n[0], nz: b.n[1], words: b.words, size: 0.34, color: ['#8a3040', '#5a4280', '#8a5a2a', '#3a6a4a', '#7a3a6a'][k], tall: 0.25, key: `dm${k}`, secs: 2.2, thick: vento ? 3 : undefined });
   });
+  const wind = vento ? buildWind(api, BN, banners, fx, fz) : null;
   let restoreT = -1;
   // ── C6: tochas nas 8 colunas e na fonte (grade 3×3) + 3 iscas ──
   const torches: Torch[] = [];
@@ -819,6 +848,7 @@ function dizemExtra(api: FireExtraApi): FireExtra {
   return {
     update(dt, t) {
       C.update(dt, t);
+      wind?.update(dt, t, api.solved());
       for (const f of frieze) {
         const on = litCell(f.a) && litCell(f.b);
         f.k = on ? Math.min(1, f.k + dt / 1.2) : Math.max(0, f.k - dt / 0.6);
@@ -827,12 +857,13 @@ function dizemExtra(api: FireExtraApi): FireExtra {
       }
       // os estandartes: o Fogo os queima; queimar um 2º faz a Casa pendurar todos de volta
       const solved = api.solved();
-      banners.forEach((b) => b.update(dt, t, !solved && restoreT < 0));
+      banners.forEach((b) => b.update(dt, t, !vento && !solved && restoreT < 0)); // (no Claustro do Vento o dado não chega neles: só as fagulhas)
       const gone = banners.filter((b) => b.k > 0 || b.burning).length;
       if (gone >= 2 && restoreT < 0 && banners.every((b) => !b.burning)) {
         restoreT = 1.2;
         ctx.sfx('error');
         ctx.caption('A Casa pendurou tudo de novo', '', '#cfc6e8');
+        wind?.douse(); // (e abafa os fogaréus: as fagulhas que ainda voavam queimariam os estandartes novos)
       }
       if (restoreT >= 0) {
         restoreT -= ctx.paused() ? 0 : dt;
@@ -850,14 +881,317 @@ function dizemExtra(api: FireExtraApi): FireExtra {
     reset() {
       banners.forEach((b) => b.restore());
       restoreT = -1;
+      wind?.reset();
       C.reset();
       for (const f of frieze) f.k = 0;
     },
     bonus: C.bonus,
-    rects: () => [...C.rect(), [fx - 1.45, fz - 1.45, fx + 1.45, fz + 1.45, 0.55] as Rect, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect],
+    rects: () => [...C.rect(), [fx - 1.45, fz - 1.45, fx + 1.45, fz + 1.45, 0.55] as Rect, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect, ...(wind?.rects ?? [])],
     interactables: [C.niche.interactable],
   };
 }
+// o VENTO do claustro: o ciclo, o cata-vento, as gaiolas dos estandartes, os três fogaréus e as fagulhas
+function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType<typeof makeCloth>[], fx: number, fz: number) {
+  const { kit, ctx, Z0, boxes } = api;
+  const R = DM.roof;
+  const iron = lambert(null, 0x2a282e);
+  const rects: Rect[] = [];
+  // ── as gaiolas: barras de ferro em volta de cada estandarte, penduradas do telhado por quatro correntes (passa-se por baixo; o dado bate
+  // nelas). Param abaixo dos frisos da constelação C6 (que correm na linha das colunas, a 3,85 m): o friso continua inteiro à vista ──
+  const CAGE_Y = 2.35;
+  const CAGE_TOP = R - 0.42;
+  // (cenógrafo) as peças da gaiola são fixas: vão todas para uma malha só no kit.bake (eram ~40 desenhos por gaiola, 210 na sala)
+  const cagePart = (m: THREE.Mesh) => {
+    m.userData.merge = true;
+    kit.group.add(m);
+  };
+  BN.forEach((b, k) => {
+    const c = banners[k].center;
+    const n = new THREE.Vector3(b.n[0], 0, b.n[1]);
+    const right = new THREE.Vector3(n.z, 0, -n.x);
+    const w = 1.95;
+    const dep = 0.5;
+    const hh = CAGE_TOP - CAGE_Y;
+    const mid = c.clone().addScaledVector(n, 0.06);
+    for (const side of [-1, 1]) {
+      // barras a cada 28 cm (eram 15): o dado continua sem passar, e o bordado do estandarte aparece entre elas (com 14 barras por face, cada
+      // símbolo ficava atrás de três)
+      for (let a = -w / 2; a <= w / 2 + 1e-6; a += w / 7) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.04, hh, 0.04), iron);
+        bar.position.copy(mid).addScaledVector(right, a).addScaledVector(n, (side * dep) / 2);
+        bar.position.y = CAGE_Y + hh / 2;
+        cagePart(bar);
+      }
+      for (const y of [CAGE_Y, CAGE_Y + hh * 0.5, CAGE_TOP]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.05, 0.05), iron);
+        rail.position.copy(mid).addScaledVector(n, (side * dep) / 2);
+        rail.position.y = y;
+        rail.rotation.y = Math.atan2(right.x, right.z) - Math.PI / 2;
+        cagePart(rail);
+      }
+    }
+    for (const a of [-w / 2, w / 2]) {
+      for (const y of [CAGE_Y, CAGE_TOP]) {
+        const end = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, dep), iron);
+        end.position.copy(mid).addScaledVector(right, a);
+        end.position.y = y;
+        end.rotation.y = Math.atan2(n.x, n.z);
+        cagePart(end);
+      }
+      for (const side of [-1, 1]) {
+        const chain = new THREE.Mesh(new THREE.BoxGeometry(0.02, R - CAGE_TOP, 0.02), iron);
+        chain.position.copy(mid).addScaledVector(right, a * 0.9).addScaledVector(n, (side * dep) / 2);
+        chain.position.y = (R + CAGE_TOP) / 2;
+        cagePart(chain);
+      }
+    }
+    const hx = Math.abs(right.x) * w / 2 + Math.abs(n.x) * dep / 2;
+    const hz = Math.abs(right.z) * w / 2 + Math.abs(n.z) * dep / 2;
+    boxes.push(mkBox(mid.x - hx, CAGE_Y - 0.03, mid.z - hz, mid.x + hx, R, mid.z + hz));
+  });
+  // ── o cata-vento, em cima da estela da fonte ──
+  const vane = new THREE.Group();
+  vane.position.set(fx, 2.45, fz + 0.36);
+  kit.group.add(vane);
+  const pole = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.7, 0.05), iron);
+  pole.position.y = 0.35;
+  vane.add(pole);
+  // (cenógrafo) a seta em bronze velho, maior, com a cauda larga: contra o céu claro e contra a pedra escura ela se lê dos dois jeitos (em ferro
+  // escuro sumia na parede do fundo); as quatro hastes fixas embaixo dão a régua (fundo, esquerda, frente, direita) para o olho comparar
+  const bronze = lambert(null, 0x9a7a44);
+  const arrow = new THREE.Group();
+  arrow.position.y = 0.72;
+  vane.add(arrow);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 1.0), bronze);
+  arrow.add(shaft);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.32, 4), bronze);
+  head.rotation.x = Math.PI / 2;
+  head.position.z = 0.62;
+  arrow.add(head);
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.3, 0.34), bronze);
+  tail.position.z = -0.44;
+  arrow.add(tail);
+  for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.025, 0.36), iron);
+    arm.position.set(Math.sin(a) * 0.18, 0.5, Math.cos(a) * 0.18);
+    arm.rotation.y = a;
+    vane.add(arm);
+  }
+  // ── os fogaréus ──
+  const fires = VT_FIRES.map(([x, dz, hw, len], k) => {
+    const z = Z0 + dz;
+    const big = k === 2;
+    const ph = big ? 1.45 : 1.25;
+    kit.box(0.12, ph, 0.12, iron, x, ph / 2, z);
+    kit.box(0.34, 0.06, 0.34, iron, x, 0.03, z);
+    const r = big ? 0.34 : 0.22;
+    const hb = big ? 0.34 : 0.24;
+    const basket = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.6, hb, 8, 1, true), iron);
+    basket.position.set(x, ph + 0.12, z);
+    kit.add(basket, false);
+    // (cenógrafo) um CESTO de fogo e não uma taça num poste: aro grosso na boca e garras de ferro que sobem dele (o fogaréu dos pátios). Fica
+    // longe da cara das tochas da constelação (tocha de parede, nas colunas): nada aqui parece uma delas
+    const rimY = ph + 0.12 + hb / 2;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.03, 4, 8), iron);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.set(x, rimY, z);
+    rim.userData.merge = true;
+    kit.group.add(rim);
+    for (let q = 0; q < 6; q++) {
+      const a = (q / 6) * Math.PI * 2 + 0.3;
+      const claw = new THREE.Mesh(new THREE.BoxGeometry(0.03, big ? 0.2 : 0.15, 0.03), iron);
+      claw.position.set(x + Math.cos(a) * (r + 0.02), rimY + (big ? 0.09 : 0.065), z + Math.sin(a) * (r + 0.02));
+      claw.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35); // (abertas para fora)
+      claw.userData.merge = true;
+      kit.group.add(claw);
+    }
+    // o carvão: um monte (cone baixo), que de lado aparece na boca do cesto
+    const coals = new THREE.Mesh(new THREE.ConeGeometry(r * 0.8, big ? 0.16 : 0.12, 8), new THREE.MeshBasicMaterial({ color: 0x2a1610 }));
+    coals.position.set(x, rimY - (big ? 0.06 : 0.05), z);
+    kit.group.add(coals);
+    // a brasa fraca que pulsa no carvão: a mesma dos soquetes das frases ("isto pode ser aceso")
+    const ember = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, transparent: true, depthWrite: false }));
+    ember.position.set(x, rimY + 0.03, z);
+    kit.group.add(ember);
+    rects.push([x - 0.17, z - 0.17, x + 0.17, z + 0.17]); // (o poste e o pé barram o jogador, como barram o dado; antes ele atravessava o ferro)
+    const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+    flame.scale.set(big ? 0.62 : 0.42, big ? 0.66 : 0.46, 1);
+    flame.position.set(x, ph + (big ? 0.42 : 0.32), z);
+    flame.visible = false;
+    kit.group.add(flame);
+    const light = kit.light(x, ph + 0.6, z, 0xff8a3a, 0);
+    boxes.push(mkBox(x - r, 0, z - r, x + r, ph + 0.2, z + r));
+    kit.contact(x, z, 0.9);
+    return { x, z, hw, len, top: new THREE.Vector3(x, ph + 0.2, z), coals, flame, light, t: -1, big, ember };
+  });
+  // as fagulhas (pontos que voam a favor do vento)
+  const NS = 90;
+  const sp = new Float32Array(NS * 3);
+  const sv = new Float32Array(NS * 3);
+  const life = new Float32Array(NS);
+  const sparkGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xffa040, size: 3, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.95, depthWrite: false }));
+  sparks.frustumCulled = false;
+  kit.group.add(sparks);
+  for (let i = 0; i < NS; i++) sp[i * 3 + 1] = -50;
+  // (cenógrafo) FOLHAS SECAS que o vento arrasta pelo pátio: mostram para onde ele sopra o tempo todo, mesmo sem fogaréu aceso, e viram junto
+  // quando ele vira. Poucas, baixas, só no pátio (o claustro é aberto: é daí que elas vêm), cor de folha seca (nunca a das fagulhas)
+  const NL = 26;
+  const lp = new Float32Array(NL * 3);
+  const lby = new Float32Array(NL);
+  const lph = new Float32Array(NL);
+  const LX0 = -DM.gx + 0.5;
+  const LX1 = DM.gx - 0.5;
+  const LZ0 = Z0 + DM.gz[0] + 0.5;
+  const LZ1 = Z0 + DM.gz[2] - 0.5;
+  for (let i = 0; i < NL; i++) {
+    lp[i * 3] = LX0 + Math.random() * (LX1 - LX0);
+    lp[i * 3 + 2] = LZ0 + Math.random() * (LZ1 - LZ0);
+    lby[i] = 0.12 + Math.random() * Math.random() * 1.5;
+    lph[i] = Math.random() * 10;
+  }
+  const leafGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(lp, 3));
+  const leaves = new THREE.Points(leafGeo, new THREE.PointsMaterial({ color: 0x5e5644, size: 2, sizeAttenuation: false, depthWrite: false })); // (pardo apagado: nada de laranja, que é brasa)
+  leaves.frustumCulled = false;
+  kit.group.add(leaves);
+  let lvx = 0;
+  let lvz = -1;
+  const blowLeaves = (dt: number, t: number, ux: number, uz: number) => {
+    lvx += (ux - lvx) * Math.min(1, dt * 1.4);
+    lvz += (uz - lvz) * Math.min(1, dt * 1.4);
+    for (let i = 0; i < NL; i++) {
+      const o = i * 3;
+      const v = 1.2 + 0.8 * Math.sin(t * 0.9 + lph[i]); // (rajadas: cada folha no seu tempo)
+      const wob = Math.sin(t * 2.3 + lph[i] * 2) * 0.3;
+      lp[o] += (lvx * v - lvz * wob) * dt;
+      lp[o + 2] += (lvz * v + lvx * wob) * dt;
+      lp[o + 1] = lby[i] + 0.18 * Math.sin(t * 3.1 + lph[i]) * (0.4 + lby[i]);
+      // saiu do pátio: volta pela beirada de onde o vento vem
+      if (lp[o] < LX0 || lp[o] > LX1 || lp[o + 2] < LZ0 || lp[o + 2] > LZ1) {
+        lp[o] = Math.abs(lvx) > 0.5 ? (lvx > 0 ? LX0 : LX1) : LX0 + Math.random() * (LX1 - LX0);
+        lp[o + 2] = Math.abs(lvz) > 0.5 ? (lvz > 0 ? LZ0 : LZ1) : LZ0 + Math.random() * (LZ1 - LZ0);
+      }
+    }
+    leafGeo.attributes.position.needsUpdate = true;
+  };
+  let next = 0;
+  let wt = 0; // o relógio do vento (para durante cenas e conversas)
+  let vaneA = 0;
+  const gate = shotGate(ctx.die);
+  const dirAt = () => VT_DIRS[Math.floor(wt / VT_PHASE) % 4];
+  // a Casa abafa os fogaréus (e as fagulhas no ar se apagam)
+  const douse = () => {
+    for (const f of fires) {
+      f.t = -1;
+      f.flame.visible = false;
+      f.light.intensity = 0;
+      (f.coals.material as THREE.MeshBasicMaterial).color.setHex(0x2a1610);
+    }
+    life.fill(0);
+  };
+  // a faixa: o estandarte k está a favor do vento do fogaréu f, dentro da largura e do comprimento (a mesma conta do verificador)
+  const inBand = (f: (typeof fires)[number], k: number, [ux, uz]: [number, number]) => {
+    const [bx, bdz] = BN[k].at;
+    const ax = bx - f.x;
+    const az = Z0 + bdz - f.z;
+    const along = ax * ux + az * uz;
+    const lat = Math.abs(ax * uz - az * ux);
+    return along > 0 && along < f.len && lat < f.hw + 0.7 ? along : -1;
+  };
+  const SPARK_V = 3.2; // m/s: o estandarte a `along` metros pega fogo quando as fagulhas chegam (o verificador usa a mesma conta)
+  if (import.meta.env.DEV) {
+    (globalThis as Record<string, unknown>).__vento = {
+      state: () => ({ wt: +wt.toFixed(2), dir: Math.floor(wt / VT_PHASE) % 4, fires: fires.map((f) => +f.t.toFixed(2)), banners: banners.map((b) => +b.k.toFixed(2)), burning: banners.map((b) => b.burning) }),
+      setWind: (s: number) => (wt = s),
+      light: (k: number) => (fires[k].t = 0),
+      spots: () => fires.map((f) => f.top.toArray()),
+    };
+  }
+  return {
+    update(dt: number, t: number, solved: boolean) {
+      const paused = ctx.paused();
+      if (!paused) wt = (wt + dt) % (4 * VT_PHASE);
+      const [ux, uz] = dirAt();
+      // o cata-vento aponta para onde o vento vai (vira depressa quando muda)
+      const want = Math.atan2(ux, uz);
+      let da = want - vaneA;
+      while (da > Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      vaneA += da * Math.min(1, dt * 6);
+      arrow.rotation.y = vaneA + Math.sin(t * 7) * 0.04;
+      if (!paused) blowLeaves(dt, t, ux, uz);
+      // o dado de Fogo num cesto acende o fogaréu
+      gate.tick();
+      const d = ctx.die;
+      if (!solved && d.face === 3 && (d.state === 'flying' || d.state === 'rest'))
+        for (const [k, f] of fires.entries()) {
+          if (f.t >= 0 || d.pos.distanceTo(f.top) > (f.big ? 0.55 : 0.45) || !gate.take()) continue;
+          f.t = 0;
+          ctx.sfx('ignite', `fogareu${k}`);
+        }
+      // aceso: as fagulhas voam com o vento por 4 s e põem fogo nos estandartes da faixa
+      // a brasa fraca dos cestos apagados pulsa (some no aceso e com a sala resolvida)
+      for (const f of fires) {
+        f.ember.visible = f.t < 0 && !solved;
+        const es = (f.big ? 0.2 : 0.15) + 0.06 * (0.5 + 0.5 * Math.sin(t * 3 + f.x));
+        f.ember.scale.set(es, es, 1);
+      }
+      for (const f of fires) {
+        if (f.t < 0) continue;
+        if (!paused) f.t += dt;
+        const on = f.t < VT_BURN;
+        f.flame.visible = on;
+        f.flame.material.map = kit.frame(t * 9 + f.x);
+        f.light.intensity = on ? 34 : 0;
+        (f.coals.material as THREE.MeshBasicMaterial).color.setHex(on ? 0xff7a2e : 0x2a1610);
+        if (!on) {
+          f.t = -1;
+          f.flame.visible = false;
+          ctx.sfx('burnout');
+          continue;
+        }
+        if (!paused) {
+          for (let e = 0; e < (f.big ? 5 : 3); e++) {
+            const i = next++ % NS;
+            const sp0 = SPARK_V * (0.8 + Math.random() * 0.4);
+            sp[i * 3] = f.top.x + (Math.random() - 0.5) * 0.3;
+            sp[i * 3 + 1] = f.top.y + 0.2;
+            sp[i * 3 + 2] = f.top.z + (Math.random() - 0.5) * 0.3;
+            const spread = (Math.random() - 0.5) * f.hw * 1.6;
+            sv[i * 3] = ux * sp0 + uz * spread;
+            sv[i * 3 + 1] = 0.9 + Math.random() * 0.9;
+            sv[i * 3 + 2] = uz * sp0 - ux * spread;
+            life[i] = f.len / sp0;
+          }
+          for (let k = 0; k < banners.length; k++)
+            if (!banners[k].burning && banners[k].k === 0 && f.t * SPARK_V >= inBand(f, k, [ux, uz]) && inBand(f, k, [ux, uz]) > 0) {
+              banners[k].ignite(true);
+              ctx.sfx('spread');
+            }
+        }
+      }
+      for (let i = 0; i < NS; i++) {
+        if (life[i] <= 0) {
+          sp[i * 3 + 1] = -50;
+          continue;
+        }
+        life[i] -= dt;
+        sp[i * 3] += sv[i * 3] * dt;
+        sp[i * 3 + 1] += sv[i * 3 + 1] * dt;
+        sp[i * 3 + 2] += sv[i * 3 + 2] * dt;
+        sv[i * 3 + 1] -= 0.6 * dt;
+      }
+      sparkGeo.attributes.position.needsUpdate = true;
+    },
+    reset() {
+      wt = 0;
+      douse();
+    },
+    douse,
+    rects,
+  };
+}
+
 export const FIRE_DIZEM: FireSpec = {
   name: 'Os Que Dizem o Mesmo',
   subtitle: 'Um pátio a céu aberto.',
@@ -891,6 +1225,15 @@ export const FIRE_DIZEM: FireSpec = {
   fog: { color: '#1a1c26', near: 8, far: 34 },
   ambient: { color: 0x9aa0c8, intensity: 2.2 },
   extra: dizemExtra,
+};
+// a sala que está no jogo: o mesmo claustro, com o vento (Os Que Dizem o Mesmo, acima, fica na reserva)
+export const FIRE_VENTO: FireSpec = {
+  ...FIRE_DIZEM,
+  name: 'O Claustro do Vento',
+  subtitle: 'O vento leva o fogo.',
+  // (UM e DOIS mais para o fundo: os fogaréus ficam a quase 2 m deles, e o dado que vai num cesto não acende um braseiro sem querer)
+  braziers: FIRE_DIZEM.braziers.map((b, i) => (i === 0 ? { ...b, x: -2.6, dz: 5.7 } : i === 1 ? { ...b, x: 2.6, dz: 5.7 } : b)),
+  extra: ventoExtra,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════

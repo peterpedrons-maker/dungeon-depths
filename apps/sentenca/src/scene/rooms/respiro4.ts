@@ -298,6 +298,7 @@ export function buildRespiro4(ctx: Ctx): Room {
     exitDy: L3,
     start: new THREE.Vector3(0, 0, 1.2),
     startYaw: 0,
+    calm: (x, z) => Math.abs(x) < SX - 0.3 && z < Z1 - 1.2 && z > -3, // o pé do poço, entre os lances: o dado pode fazer a pergunta de IGUAL
     fog: { color: '#09090f', near: 5, far: 22 },
     ambient: { color: 0x7078a8, intensity: 1.7 },
     boxes: [...boxes, ...kit.boxes],

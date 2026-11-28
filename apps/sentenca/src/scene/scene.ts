@@ -47,15 +47,16 @@ import type { SketchKind } from './sketch';
 import { DieLife, type LifeTarget } from './dielife';
 import { layout as bookLayout, MAP_AREA, mapPreview } from '../book/pages';
 import { config, configStore } from '../story/config';
-import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO, FIRE_VERDADE } from './rooms/chapter1';
-import { FIRE_DIZEM, FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_MEMORIA, FIRE_SOMBRA } from './rooms/chapter1b';
+import { FIRE_CASA_ESCREVE, FIRE_CONFIRMA, FIRE_PANO } from './rooms/chapter1';
+import { FIRE_PONTE_FRASES } from './rooms/chapter1c';
+import { FIRE_ESCURO, FIRE_FOGO_CORRE, FIRE_LEI, FIRE_MEMORIA, FIRE_SOMBRA, FIRE_VENTO } from './rooms/chapter1b';
 import { buildLousa } from './rooms/lousa';
 import { buildFio } from './rooms/fio';
 import { buildChamaCurta } from './rooms/chamaCurta';
 import { buildRespiro1 } from './rooms/respiro1';
 import { buildPonte } from './rooms/ponte';
 import { buildRespiro2 } from './rooms/respiro2';
-import { buildApelidos } from './rooms/apelidos';
+import { buildBalanca } from './rooms/balanca';
 import type { AltarPhase, Ctx, DieState, Interactable, Rect, Room, RoomBuilder, Socket } from './types';
 import type { Emitter } from './kit';
 import { LINGER_MS, lineMs } from '../story/writing';
@@ -90,16 +91,16 @@ function MAIN_BUILDERS(): RoomBuilder[] {
     buildRespiro2, // RESPIRO R2 (sem trava): Os Banhos Secos; piscinas vazias, a fonte seca, o estandarte; puzzle opcional (exatamente DOIS)
     (c) => buildFireRoom(c, FIRE_PANO), // NÍVEL 5. O PANO: o fogo queima o boato tecido e mostra a pedra (+ constelação C2)
     buildBiblioteca, // A BIBLIOTECA (térreo, área livre): o Átrio de 9 mesas (C-Bib), as alas, o Museu dos Nomes, a Sala de Aula, o escritório do Escrivão
-    buildApelidos, // NÍVEL 6. OS APELIDOS (rotunda): GRANDE no centro, os outros em cruz; o mesmo braseiro tem dois nomes
+    buildBalanca, // NÍVEL 6. A BALANÇA (rotunda): o dado queima cordas e os pesos caem nos pratos; GRANDE, PEQUENO e IGUAL pelo peso
     buildPonte, // NÍVEL 6. A PONTE DE MADEIRA: o fosso com rampa em espiral; o fogo queima a ponte e corta o próprio caminho (+ constelação C3)
-    (c) => buildFireRoom(c, FIRE_VERDADE), // NÍVEL 6. ACENDER VERDADE: boatos verdadeiros também; a Casa julga na frase da porta
+    (c) => buildFireRoom(c, FIRE_PONTE_FRASES), // NÍVEL 6. A PONTE DE FRASES: o fosso; cada frase acesa ergue uma laje; as falsas cedem; ACENDER VERDADE
     buildRespiro3, // RESPIRO R3 A GALERIA DOS CONDENADOS: marcas de giz, o Escrivão sentado, duas folhas dela; puzzle opcional da lei (2, 3, 1)
     (c) => buildFireRoom(c, FIRE_SOMBRA), // NÍVEL 7. A SOMBRA: a luz escreve na moldura da frase; a frase tem de ser verdade (o número de acesos)
     (c) => buildFireRoom(c, FIRE_ESCURO), // NÍVEL 7. O ESCURO: errar de propósito; no escuro de 4 s, a cal no teto dá a ordem
     (c) => buildFireRoom(c, FIRE_LEI), // NÍVEL 8. A LEI PEQUENA: a sala sobe; «UM BOATO IGUAL VERDADE», dois boatos que dizem o mesmo
     buildRespiro4, // RESPIRO R4 A ESCADARIA: o poço com três lances; janelas para salas já feitas; a porta dos seis pontos (fechada)
     (c) => buildFireRoom(c, FIRE_FOGO_CORRE), // NÍVEL 8. O FOGO QUE CORRE: 5,5 s de chama, uma vez; canaletas com tempo; os quatro cantos num instante (+ C5)
-    (c) => buildFireRoom(c, FIRE_DIZEM), // NÍVEL 9. OS QUE DIZEM O MESMO: claustro; queimar UM estandarte (o boato sai da conta) e acender na ordem (+ C6)
+    (c) => buildFireRoom(c, FIRE_VENTO), // NÍVEL 9. O CLAUSTRO DO VENTO: o vento leva as fagulhas de um fogaréu; queimar UM estandarte (o boato sai da conta) e acender na ordem (+ C6)
     buildRespiro5, // RESPIRO R5 A ANTECÂMARA FRIA (sem puzzle): o soquete frio traz o escuro e a cal na moldura; a porta abre (ensina a sala seguinte)
     (c) => buildFireRoom(c, FIRE_MEMORIA), // NÍVEL 9. A MEMÓRIA DA CASA: hub + três anexos; a confirmada escondida no quadro vazio (soquete frio → escuro)
     buildTribunal, // NÍVEL 10. O TRIBUNAL DOS RUMORES: o fim do capítulo 1
@@ -283,7 +284,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uRes: { value: new THREE.Vector2(64, 64) },
       uNear: { value: CAM_NEAR },
       uFar: { value: CAM_FAR },
-      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §93)
+      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §94)
       tLut: { value: lutTex },
       uBloom: { value: 1 },
       uBright: { value: 1 },
@@ -296,7 +297,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uTan: { value: new THREE.Vector2(1, 1) },
       tBack: { value: null as THREE.Texture | null },
       uBack: { value: 0 },
-      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §93): 0 = o corte seco de antes
+      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §94): 0 = o corte seco de antes
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
@@ -316,7 +317,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform vec2 uTan; // tangente da metade do campo de visão (x, y): para voltar da tela à posição no espaço da câmera
       uniform float uShoulder;
       varying vec2 vUv;
-      // O OMBRO DA LUZ (DESIGN.md §93): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
+      // O OMBRO DA LUZ (DESIGN.md §94): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
       // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
       // (1 → 0,88; 1,5 → 0,94; 3 → 0,98): o vermelho enche primeiro, depois o verde, e a cor passa de laranja a amarelo e a branco aos poucos,
       // como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase tudo) nada muda.
@@ -1138,7 +1139,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const DIE_IN_HAND = 0.22;
-  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §93)
+  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §94)
   const RIM_OUT = 1.63; // raio de fora da mureta do poço (vestibulo.ts: SHAFT.r + 0,43)
   const SCRIBE_AT = new THREE.Vector3(0, 0, RIM_OUT + 0.12); // encostado na mureta: abaixo da borda o pano se achata contra ela (`press`)
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
@@ -1316,7 +1317,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       outsideAtmo = outside;
       blendAtmosphere(0, true); // corte: o ar muda na hora
     }
-    // NA NEBLINA (DESIGN.md §93): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
+    // NA NEBLINA (DESIGN.md §94): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
     // não (são a primeira coisa que aparece). Visto de baixo, pelo poço, ele continua sem névoa, nítido contra a luz
     if (topScribe)
       topScribe.group.traverse((o) => {
@@ -1325,7 +1326,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         m.fog = outside;
         m.needsUpdate = true;
       });
-    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §93)
+    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §94)
     if (S.ph === 4 || S.ph === 6 || S.ph === 7) {
       outdoor.position.set(W.x - 4, W.y + 9, W.z - 3);
       outdoor.target.position.copy(W);
@@ -1398,7 +1399,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
           S.pose = { walk: 0, lean: 1.3, rest: 1, headPitch: -0.1 }; // debruçado por cima da mureta: a cabeça fica sobre a boca do poço, o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           S.leanT = (S.leanT ?? 0) + dt;
-          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §93)
+          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §94)
           if (S.t > 6.2 && S.leanT > 1.3) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
@@ -1649,6 +1650,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         pinned = on;
       },
       introGen: () => introGen,
+      // o jogador volta ao começo desta sala (a sala NÃO recomeça; o dado volta para a mão): quem cai no fosso da Ponte de Frases
+      toEntrance: () => {
+        if (curRoom === idx) spawnIn(idx);
+      },
       dieCenter: (on) => {
         dieCineTarget = on ? 1 : 0;
         ui.setBars(on);
@@ -1881,7 +1886,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     r.group.updateMatrixWorld(true);
     r.group.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (!m.isMesh || !m.geometry || m.userData.corridor) return;
+      if (!m.isMesh || !m.geometry || m.userData.corridor || m.userData.noPlan) return;
       if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
       b.copy(m.geometry.boundingBox!).applyMatrix4(m.matrixWorld);
       const c = b.getCenter(wtmp);
@@ -2230,7 +2235,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const blendAtmosphere = (dt: number, snap = false) => {
     if (outsideAtmo) {
       const f = scene.fog as THREE.Fog;
-      // A NEBLINA (pedido do Pedro, DESIGN.md §93): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
+      // A NEBLINA (pedido do Pedro, DESIGN.md §94): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
       // horizonte. O Escrivão sai dela primeiro como sombra. (A cor é a mesma do pé do céu, em vestibulo.ts)
       f.color.set('#8e8c9e');
       f.near = 0.8;

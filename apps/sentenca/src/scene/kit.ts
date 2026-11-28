@@ -35,7 +35,7 @@ export const T = 1.2; // metros por "tile" de textura
 // chaves de depuração (só usadas pelos testes em desenvolvimento)
 export const dbg = { flicker: true, bob: true };
 export const LAMP_OFF = 0x2a2230;
-// a que distância da parede fica o PONTO DE LUZ de uma tocha (DESIGN.md §93). Eram 45 cm: a luz cai com o quadrado da distância, e a pedra logo
+// a que distância da parede fica o PONTO DE LUZ de uma tocha (DESIGN.md §94). Eram 45 cm: a luz cai com o quadrado da distância, e a pedra logo
 // atrás da chama recebia umas 20 vezes a luz do chão (uma mancha chapada em volta de toda tocha). Mais longe, a parede clareia por igual.
 export const TORCH_LIGHT_OUT = 0.8;
 // o motor escreve aqui quanto de luz o mundo tem agora (1 = normal, ~0,08 = o ESCURO da Casa): os brilhos falsos apagam junto
@@ -120,7 +120,7 @@ export class Kit {
   group = new THREE.Group();
   surfaces: THREE.Object3D[] = [];
   frames = flameFrames(); // a chama baixa (lampiões, soquetes, o fogo das canaletas)
-  tallFrames = flameFrames(FLAME_W, FLAME_H); // a chama alta (tochas e braseiros, DESIGN.md §93)
+  tallFrames = flameFrames(FLAME_W, FLAME_H); // a chama alta (tochas e braseiros, DESIGN.md §94)
   // o quadro da chama para um "tempo" qualquer (o resto da divisão nunca fica negativo: um índice negativo deixava a chama sem desenho)
   frame(n: number, tall = false) {
     const f = tall ? this.tallFrames : this.frames;
@@ -192,7 +192,7 @@ export class Kit {
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: this.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }),
     );
-    // a chama nova (DESIGN.md §93): mais alta que larga, com o pé no alto do cabo (a 0,42 m) e a ponta subindo; o ponto de referência da
+    // a chama nova (DESIGN.md §94): mais alta que larga, com o pé no alto do cabo (a 0,42 m) e a ponta subindo; o ponto de referência da
     // tocha continua onde era (as distâncias das escritas e do teto, no `clearTorches`, não mudam)
     sprite.scale.set(0.27, (0.27 * FLAME_H) / FLAME_W, 1);
     sprite.center.set(0.5, 0.15 / sprite.scale.y);
@@ -211,7 +211,7 @@ export class Kit {
     this.torches.push({ sprite, glow, light, phase, base: intensity, halo: halo.material as THREE.MeshBasicMaterial, haloMesh: halo, holder, nx, nz });
   }
 
-  // o BRILHO NO AR em volta de uma chama (DESIGN.md §93): somado por cima, sem névoa e sem gravar profundidade (não ganha contorno nem tapa
+  // o BRILHO NO AR em volta de uma chama (DESIGN.md §94): somado por cima, sem névoa e sem gravar profundidade (não ganha contorno nem tapa
   // nada); a tocha e o braseiro mexem na força dele junto com a luz
   flameGlow(x: number, y: number, z: number, size: number, color = 0xffa040) {
     const g = new THREE.Sprite(
