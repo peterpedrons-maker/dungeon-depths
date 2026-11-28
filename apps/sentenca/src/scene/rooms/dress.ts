@@ -102,7 +102,8 @@ export function barrelCeiling(kit: Kit, X0: number, X1: number, Z0: number, Z1: 
       }
       const from = new THREE.Vector3(cx, H + oy, z - dir * 0.2);
       const to = new THREE.Vector3(cx, 0.04, z + dir * (o.reach ?? 3.4));
-      sunBeam(kit.group, from, to, OR * 0.9, 0.9, { color: 0xc8d8ff, strength: 0.075, dust: 150 });
+      // (mais leve que o dos furos: visto da entrada, este feixe fica na frente da porta, que tem de continuar se lendo)
+      sunBeam(kit.group, from, to, OR * 0.9, 0.9, { color: 0xc8d8ff, strength: 0.048, dust: 70 });
       const pool = kit.lightPool(to.x, to.z, 1.3, 0, 0xbfd0ff);
       pool.opacity = 0.16;
       kit.light(to.x, 1.2, to.z - dir * 0.3, 0xa8bce8, 8);

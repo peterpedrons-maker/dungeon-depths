@@ -114,6 +114,12 @@ ou ferramentas de ofício. Só objetos do dia a dia de quem esperou na Casa (ver
   - **pó de giz** onde há escrita de condenados;
   - **gotas** onde há umidade.
 - **Tirar a poeira uniforme** da tela inteira.
+- **Como ficou** (`DESIGN.md` §96): a poeira é **fina** (um pixel da imagem do jogo por grão, muitos, cada um cintilando no seu tempo; não
+  bolinhas de 2 × 2) e o feixe de luz **se vê no ar**, fraco, desfeito em degraus pelo pontilhado. Entraram também, sempre com motivo: a
+  **fumaça** de toda tocha, a **poeira da pancada** do dado, as **brasas** do arremesso de Fogo e as **fagulhas** de quando o fogo pega, o
+  **pó que cai do teto** quando uma sala se resolve, e a **névoa** só nos lugares abertos, sempre acima da cabeça.
+- **Regra dos feixes e da vida**: nenhuma luz cai em cima de UMA coisa de puzzle (viraria pista falsa); nenhum feixe passa na frente do que se
+  lê; os bichos (rato, morcego) ficam sempre longe, sem som, e aparecem de vez em quando, nunca em laço.
 
 ### 4.9 Objetos da mão (viewmodel)
 - **Diminuir ~40%** e **descer** na tela: o dado no canto de baixo à direita, ocupando no máximo ~15% da altura.
