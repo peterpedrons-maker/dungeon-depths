@@ -283,6 +283,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uRes: { value: new THREE.Vector2(64, 64) },
       uNear: { value: CAM_NEAR },
       uFar: { value: CAM_FAR },
+      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §93)
       tLut: { value: lutTex },
       uBloom: { value: 1 },
       uBright: { value: 1 },
@@ -295,12 +296,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uTan: { value: new THREE.Vector2(1, 1) },
       tBack: { value: null as THREE.Texture | null },
       uBack: { value: 0 },
+      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §93): 0 = o corte seco de antes
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
       uniform sampler2D tRoom; uniform sampler2D tDepth; uniform sampler2D tHud;
       uniform sampler2D tBack; uniform float uBack;
       uniform vec2 uRes; uniform float uNear; uniform float uFar;
+      uniform vec3 uEdgeFog;
       uniform highp sampler3D tLut;
       uniform float uBloom;
       uniform float uBright;
@@ -311,7 +314,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uDis; // transição em pontilhado: < 0 desligada; 0..1 = quanto da imagem nova já apareceu
       uniform float uAO; // força da oclusão de ambiente (0 = desligada)
       uniform vec2 uTan; // tangente da metade do campo de visão (x, y): para voltar da tela à posição no espaço da câmera
+      uniform float uShoulder;
       varying vec2 vUv;
+      // O OMBRO DA LUZ (DESIGN.md §93): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
+      // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
+      // (1 → 0,88; 1,5 → 0,94; 3 → 0,98): o vermelho enche primeiro, depois o verde, e a cor passa de laranja a amarelo e a branco aos poucos,
+      // como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase tudo) nada muda.
+      vec3 shoulder(vec3 c){
+        const float K = 0.7;
+        vec3 x = max(c - K, 0.0);
+        return min(c, vec3(K)) + (1.0 - K) * x / (x + 0.2);
+      }
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
       // inverso da distância: varia de forma LINEAR na tela dentro de uma superfície
@@ -397,6 +410,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         float lx = invZ(vUv - vec2(o.x, 0.0)) + invZ(vUv + vec2(o.x, 0.0)) - 2.0 * ic;
         float ly = invZ(vUv - vec2(0.0, o.y)) + invZ(vUv + vec2(0.0, o.y)) - 2.0 * ic;
         float edge = step(0.1 * ic + 0.025, max(lx, ly)) * (hud.a > 0.5 ? 1.0 : 1.0 - min(1.0, uBlur * 0.5 * coc));
+        if (uEdgeFog.z > 0.0 && hud.a < 0.5) {
+          // na neblina, quem está longe não tem contorno: some inteiro, e o contorno volta conforme ele chega (o lado de perto da borda manda)
+          float zc = min(linZ(vUv), min(min(linZ(vUv - vec2(o.x, 0.0)), linZ(vUv + vec2(o.x, 0.0))), min(linZ(vUv - vec2(0.0, o.y)), linZ(vUv + vec2(0.0, o.y)))));
+          edge *= 1.0 - uEdgeFog.z * smoothstep(uEdgeFog.x, uEdgeFog.y, zc);
+        }
         // brilho (bloom barato): luz forte "vaza" pros pixels vizinhos
         if (hud.a < 0.5 && uBloom > 0.5) {
           vec3 glow = vec3(0.0);
@@ -407,7 +425,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           }
           c += glow * uGlowK;
         }
-        c = clamp(c * uBright, 0.0, 1.0);
+        c *= uBright;
+        if (uShoulder > 0.5 && hud.a < 0.5) c = shoulder(c);
+        c = clamp(c, 0.0, 1.0);
         c = pow(c, vec3(1.0 / 2.2));
         float l = dot(c, vec3(0.299, 0.587, 0.114));
         c = mix(vec3(l), c, 1.0);
@@ -1105,7 +1125,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let autoWalk: null | { x: number; z: number; speed: number } = null; // o personagem anda sozinho (cena) até um ponto fixo
   let fovCine = 0; // > 0: campo de visão da cena (zoom)
   let cineCam: null | { pos: THREE.Vector3; look: THREE.Vector3 } = null; // câmera de cinema, solta do jogador
-  let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean } = null;
+  let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean; leanT?: number } = null;
   let topScribe: ReturnType<typeof makeScribeRig> | null = null;
   void preloadScribeRig(); // o Escrivão animado (DESIGN.md §70) começa a baixar já: a cena do poço vem logo
   let scribeDie: THREE.Object3D | null = null;
@@ -1118,7 +1138,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const DIE_IN_HAND = 0.22;
-  const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
+  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §93)
   const RIM_OUT = 1.63; // raio de fora da mureta do poço (vestibulo.ts: SHAFT.r + 0,43)
   const SCRIBE_AT = new THREE.Vector3(0, 0, RIM_OUT + 0.12); // encostado na mureta: abaixo da borda o pano se achata contra ela (`press`)
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
@@ -1296,7 +1316,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       outsideAtmo = outside;
       blendAtmosphere(0, true); // corte: o ar muda na hora
     }
-    outdoor.intensity = outside ? 1.9 : 0;
+    // NA NEBLINA (DESIGN.md §93): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
+    // não (são a primeira coisa que aparece). Visto de baixo, pelo poço, ele continua sem névoa, nítido contra a luz
+    if (topScribe)
+      topScribe.group.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+        if (!m || !(m instanceof THREE.MeshLambertMaterial) || m.fog === outside) return;
+        m.fog = outside;
+        m.needsUpdate = true;
+      });
+    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §93)
     if (S.ph === 4 || S.ph === 6 || S.ph === 7) {
       outdoor.position.set(W.x - 4, W.y + 9, W.z - 3);
       outdoor.target.position.copy(W);
@@ -1357,6 +1386,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           sPos.copy(SCRIBE_FROM).add(W);
           S.yaw = Math.atan2(SCRIBE_AT.x - SCRIBE_FROM.x, SCRIBE_AT.z - SCRIBE_FROM.z);
           S.arrived = false;
+          S.leanT = 0;
           S.pose = { walk: 0.8, lean: 0, headPitch: 0.1 };
           topScribe!.setAlpha(1);
           fovCine = 46;
@@ -1367,7 +1397,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (S.arrived) {
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
           S.pose = { walk: 0, lean: 1.3, rest: 1, headPitch: -0.1 }; // debruçado por cima da mureta: a cabeça fica sobre a boca do poço, o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
-          if (S.t > 6.2) {
+          S.leanT = (S.leanT ?? 0) + dt;
+          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §93)
+          if (S.t > 6.2 && S.leanT > 1.3) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
             fovCine = 10;
@@ -2198,14 +2230,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const blendAtmosphere = (dt: number, snap = false) => {
     if (outsideAtmo) {
       const f = scene.fog as THREE.Fog;
-      f.color.set('#5d5b74');
-      f.near = 3;
-      f.far = 21; // ar grosso de madrugada: ao longe tudo vira silhueta na névoa
-      ambient.color.setHex(0xa29fc6);
-      ambient.intensity = 1.55;
+      // A NEBLINA (pedido do Pedro, DESIGN.md §93): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
+      // horizonte. O Escrivão sai dela primeiro como sombra. (A cor é a mesma do pé do céu, em vestibulo.ts)
+      f.color.set('#8e8c9e');
+      f.near = 0.8;
+      f.far = 8.5;
+      ambient.color.setHex(0xa8a6c4);
+      ambient.intensity = 1.3;
       fogColor = '#' + f.color.getHexString();
+      postMat.uniforms.uEdgeFog.value.set(f.near + 1, f.far * 0.85, 1);
       return;
     }
+    postMat.uniforms.uEdgeFog.value.z = 0;
     const r = rooms[curRoom];
     const k = snap ? 1 : 1 - Math.exp(-dt * 2.2);
     stageK += (progress.stage() - stageK) * (snap ? 1 : Math.min(1, dt * 0.35));
@@ -5129,6 +5165,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (k === 'half') { renderer.setSize(200, 90, false); rt.setSize(200, 90); rtHud.setSize(200, 90); postMat.uniforms.uRes.value.set(200, 90); }
       },
       perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
+      three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
       shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)

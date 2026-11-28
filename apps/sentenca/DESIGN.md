@@ -2050,3 +2050,48 @@ tela, logo depois de ser pego), aparece no alto, à direita, uma plaquinha de pe
 - `PUZZLES.md` corrigido junto: o topo (o capítulo 1 é só o Fogo; o Peso chega no altar do Tribunal), a Sala 1 (a cena do Escrivão e o pulo) e
   a tabela das perguntas do dado (numeração atual das salas; as perguntas de IGUAL e TODOS estão prontas, mas sem gatilho).
 
+
+## 93. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
+
+"Melhorar o visual do jogo, mantendo todas as coisas, só deixar mais polido: sombras, efeito do fogo... Na cutscene inicial, o lado de fora como
+uma neblina, estilo Silent Hill, para que o jogador não veja nada lá fora, se existe ou não existe, e deixar mais místico."
+
+**A neblina** (abertura, os planos de fora do poço; `rooms/vestibulo.ts` e `blendAtmosphere`/`updateScribeDrop` em `scene.ts`):
+- Lá fora a névoa é clara e fechada (`#8e8c9e`, de 0,8 m a 8,5 m): a 8 m já não se vê nada. O céu deixou de ser céu: é a mesma névoa, mais
+  clara no alto e da cor exata da névoa embaixo, então não há horizonte. As torres escuras da Casa saíram (não se sabe o que existe lá fora).
+- 38 véus de névoa em pixel (24 no ar, 14 em bancos rasos no chão) andam devagar em volta da boca do poço, e uma cinza clara cai sem parar
+  (170 pontos, como em Silent Hill).
+- O Escrivão vem de mais longe (`SCRIBE_FROM` de (-2,7; 2,9) para (-3,9; 4,2)): ele SAI da névoa, primeiro como uma sombra com os dois olhos
+  acesos, e o pano dele só ganha cor perto da mureta (nos planos de fora o material dele entra na névoa; os olhos e o halo não). O corte para
+  baixo espera ele se debruçar (1,3 s depois de chegar), como antes.
+- O contorno do pós-processo some junto com a névoa (`uEdgeFog`): sem isso, quem estava longe virava um "fantasma desenhado a lápis".
+- A luz lá fora é difusa (o sol não atravessa a névoa): `outdoor` de 1,9 para 1,25 e a ambiente lilás.
+- Visto de baixo, pela boca do poço, nada mudou (é a mesma luz fria).
+
+**O fogo** (`flameFrames` em `textures.ts`, `kit.torch`, `brazier.ts`, `makeTorch` em `firegrid.ts`):
+- A chama era 3 quadros de 10 × 8 com o amarelo em cima e o vermelho embaixo (de cabeça para baixo, uma gota). Agora são **8 quadros**: o pé
+  é o mais quente (miolo branco-amarelo), o corpo laranja, as pontas vermelhas; o corpo balança e afina, as línguas sobem tortas e de vez em
+  quando uma ponta se solta. Dois tamanhos: a **alta** (12 × 18) nas tochas e nos braseiros, e a **baixa** (12 × 10) nas chaminhas de
+  lampião, nos soquetes e no fogo que corre nas canaletas, que já têm o tamanho medido (nenhum desses mudou de tamanho).
+- A chama do braseiro fica presa nas brasas (cresce para cima e, quando está acabando, encolhe para dentro da cesta em vez de boiar). A da
+  tocha fica no alto do cabo; o **ponto de referência** das tochas não mudou (as distâncias das escritas, do teto e do toque do dado são as
+  mesmas). Cada braseiro e cada tocha anda no seu passo, e a chama estica um pouco junto com a oscilação da luz.
+- Um **brilho no ar** em volta de cada chama acesa (`kit.flameGlow`: um disco quente pontilhado, somado, sem névoa e sem gravar profundidade)
+  acompanha a força da luz; apagada, some. Tocha tirada pelo `clearTorches` não brilha.
+- Aceso e apagado continuam se lendo igual (a chama só aparece acesa; nada mudou na regra).
+
+**A luz forte** (pós-processo e tochas):
+- Perto de uma chama a parede "estourava" num creme chapado do tamanho de uma pedra, com um anel vermelho duro em volta, e a chama sumia no
+  meio. Duas causas, dois consertos:
+  1. O ponto de luz da tocha ficava a 45 cm da parede; com a luz caindo com o quadrado da distância, a pedra logo atrás recebia umas 20 vezes
+     a luz do chão. Agora fica a 80 cm (`TORCH_LIGHT_OUT` em `kit.ts`): a parede clareia por igual e o resto da sala quase não muda.
+  2. O pós-processo cortava cada canal seco no 1. Agora há um **ombro** (`shoulder` no shader, só no mundo, nunca na interface): cada canal
+     entra numa curva macia a partir de 0,7 (1 → 0,88; 1,5 → 0,94; 3 → 0,98). O vermelho enche primeiro, depois o verde: a cor passa de
+     laranja a amarelo e a branco aos poucos, como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase
+     tudo na tela) nada muda. Foram testadas outras duas curvas que guardam o matiz (escalando os três canais juntos): o tijolo vermelho
+     perto da chama ficava laranja "radioativo" e o miolo puxava para rosa; ficou a de cada canal. (`uShoulder = 0` volta ao corte, para testes.)
+- Custo: 5 a 10 desenhos a mais por sala (os brilhos), sem diferença medida de quadros por segundo.
+
+Testado: a abertura inteira gravada quadro a quadro (a névoa, o Escrivão saindo dela, o corte, a vista de baixo), as salas com fogo de perto
+e de longe (Lousa, Galeria, Apelidos, Tribunal, Biblioteca, Vestíbulo, Boato Verdadeiro, Lei Pequena, Confirma, Fio) antes e depois, no PC
+(1280 × 720) e no celular (844 × 390), sem erros no console.

@@ -433,23 +433,64 @@ export function sparkTexture() {
   return toTexture(c, undefined, false);
 }
 
-export function flameFrames(): THREE.CanvasTexture[] {
-  const shapes = [
-    ['....##....', '...####...', '..######..', '..######..', '.########.', '.########.', '..######..', '...####...'],
-    ['...##.....', '...###....', '..#####...', '..######..', '.#######..', '.########.', '..######..', '...####...'],
-    ['.....##...', '....###...', '...#####..', '..######..', '..#######.', '.########.', '..######..', '...####...'],
-  ];
-  return shapes.map((rows) => {
-    const { c, ctx } = canvas(10, 8);
-    rows.forEach((line, y) => {
-      for (let x = 0; x < line.length; x++) {
-        if (line[x] !== '#') continue;
-        const t = y / (rows.length - 1);
-        px(ctx, x, y, t < 0.35 ? '#fff3a8' : t < 0.7 ? '#ffb02e' : '#ff5a1f');
+// A CHAMA (DESIGN.md §93): 8 quadros em laço. O pé da chama é o mais quente (um miolo branco-amarelo), o corpo laranja e as pontas vermelhas;
+// o corpo balança e afina, as línguas sobem tortas, e de vez em quando uma ponta se solta e some no alto. (Antes eram 3 quadros de 10 × 8,
+// com o amarelo em cima e o vermelho embaixo: ao contrário de um fogo de verdade.) Dois tamanhos: a ALTA (12 × 18, tochas e braseiros) e a
+// BAIXA (12 × 10, o mesmo jeito da de antes: chaminhas de lampião, soquetes e o fogo que corre nas canaletas, que já têm o tamanho medido).
+export const FLAME_W = 12;
+export const FLAME_H = 18;
+export function flameFrames(W = 12, H = 10): THREE.CanvasTexture[] {
+  const N = 8;
+  const out: THREE.CanvasTexture[] = [];
+  for (let k = 0; k < N; k++) {
+    const tau = (k / N) * Math.PI * 2;
+    const { c, ctx } = canvas(W, H);
+    const tipLift = 0.5 + 0.5 * Math.sin(tau * 2 + 0.7); // a ponta estica e encolhe
+    for (let y = 0; y < H; y++) {
+      const h = (H - 1 - y) / (H - 1); // 0 no pé, 1 no alto
+      // a largura: pé arredondado, o corpo mais largo um pouco acima do pé, e a ponta fina (mais alta ou mais baixa em cada quadro)
+      const top = 0.78 + 0.16 * tipLift;
+      if (h > top) continue;
+      const u = h / top;
+      let hw = 4.9 * Math.pow(1 - u, 0.75) * (u < 0.18 ? 0.72 + u * 1.55 : 1);
+      hw *= 1 + 0.13 * Math.sin(tau * 3 + h * 7.5) + 0.06 * Math.sin(tau * 5 + h * 13);
+      // o corpo balança, mais em cima que embaixo
+      const cx = (W - 1) / 2 + Math.sin(tau + h * 3.4) * h * 1.7 + Math.sin(tau * 2 + h * 6) * h * 0.55;
+      for (let x = 0; x < W; x++) {
+        const d = Math.abs(x - cx) / Math.max(0.6, hw);
+        if (d > 1) continue;
+        // o calor: maior no pé e no meio
+        const heat = (1 - d * 0.85) * (1 - u * 0.95) + (u < 0.25 ? 0.15 : 0);
+        px(ctx, x, y, heat > 0.72 ? '#fff6d0' : heat > 0.5 ? '#ffd45a' : heat > 0.27 ? '#ff9a2c' : u > 0.55 ? '#d9441a' : '#f26a1e');
       }
-    });
-    return toTexture(c, undefined, false);
-  });
+    }
+    // a língua que se solta: em metade dos quadros, um fiapo acima da ponta, subindo e sumindo
+    const free = Math.sin(tau * 2 - 0.4);
+    if (free > 0.15) {
+      const fy = Math.round(H * (0.1 - free * 0.08));
+      const fx = Math.round((W - 1) / 2 + Math.sin(tau + 2.4) * 2.2);
+      px(ctx, fx, Math.max(0, fy), free > 0.7 ? '#ff9a2c' : '#d9441a');
+      if (free > 0.45) px(ctx, fx, Math.max(0, fy + 1), '#d9441a');
+    }
+    out.push(toTexture(c, undefined, false));
+  }
+  return out;
+}
+
+// o BRILHO no ar em volta de uma chama (não na parede): um disco quente e macio, em degraus pontilhados, somado por cima (DESIGN.md §93)
+export function flameGlowTexture() {
+  const { c, ctx } = canvas(24);
+  for (let y = 0; y < 24; y++)
+    for (let x = 0; x < 24; x++) {
+      const d = Math.hypot(x - 11.5, (y - 12.5) * 0.9) / 11.5;
+      if (d >= 1) continue;
+      const k = (1 - d) ** 2.2;
+      const lvl = Math.floor(k * 4 + dith(x, y)) / 4;
+      if (lvl <= 0) continue;
+      ctx.fillStyle = `rgba(255,${Math.round(140 + 70 * lvl)},${Math.round(60 + 50 * lvl)},${lvl})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  return toTexture(c, undefined, false, false);
 }
 
 const PIPS: Record<number, [number, number][]> = {

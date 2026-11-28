@@ -1,9 +1,10 @@
 // Braseiro de pedra que o jogador acende com a face Fogo do dado. Reaproveitado pelas salas novas.
 
 import * as THREE from 'three';
-import { lambert, type Kit } from './kit';
+import { lambert, lightEnv, type Kit } from './kit';
 import type { Box, Ctx, Socket } from './types';
 import { adoptLayers, brazierModelMode, onBrazierModel } from './models';
+import { FLAME_H, FLAME_W } from './textures';
 
 export interface Brazier {
   x: number;
@@ -25,14 +26,14 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   kit.keepClear.push([new THREE.Vector3(x, y0 + 1.1 * scale, z), 1.3]); // (nenhuma chama de enfeite logo acima de um braseiro: parece aceso)
   const useModel = !!brazierModelMode;
   // o modelo da coluna com a cesta de ferro (models.ts) no lugar do pé e da tigela (`?braseiro=antigo` volta ao de caixas); as medidas do puzzle são as mesmas
-  let flameW = 0.75 * s;
+  let flameW = 0.6 * s;
   let coalR = 0.22 * s;
   if (useModel) {
     const holder = new THREE.Group();
     holder.position.set(x, y0, z);
     holder.scale.setScalar(s);
     kit.group.add(holder);
-    flameW = 0.5 * s;
+    flameW = 0.46 * s;
     coalR = 0.09 * s;
     onBrazierModel((m) => {
       holder.add(m.group.clone());
@@ -46,11 +47,17 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     kit.add(bowlMesh);
   }
   const bowl = new THREE.Vector3(x, y0 + 1.15 * s, z);
-  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-  flame.scale.set(flameW, 0.6 * s, 1);
-  flame.position.set(x, y0 + 1.45 * s, z);
+  // a chama (DESIGN.md §93): o pé dela fica preso nas brasas (o `center` embaixo) e ela cresce para cima; quando está acabando, encolhe para
+  // dentro da cesta em vez de boiar no ar
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+  const flameH = flameW * (FLAME_H / FLAME_W);
+  flame.center.set(0.5, 0);
+  flame.scale.set(flameW, flameH, 1);
+  flame.position.set(x, y0 + (useModel ? 1.07 : 1.08) * s, z);
   flame.visible = false;
   kit.group.add(flame);
+  const glow = kit.flameGlow(x, y0 + 1.45 * s, z, 1.7 * s);
+  glow.visible = false;
   const lamp = kit.light(x - 0.3 * s, y0 + 1.9 * s, z + 0.4 * s, 0xff8a2a, 0);
   lamp.shadow = true; // braseiro aceso faz sombra de verdade (o motor dá às chamas mais perto)
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
@@ -110,6 +117,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
       b.lit = on;
       b.flameK = 1;
       flame.visible = on;
+      glow.visible = on;
       pool.visible = on;
       embers.visible = on;
       if (!on) lamp.intensity = 0;
@@ -118,14 +126,17 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     update(t) {
       if (!b.lit) return;
       const k = Math.max(0.15, b.flameK);
-      flame.scale.set(flameW * k, 0.6 * s * k, 1); // a chama encolhe quando está acabando
-      flame.material.map = kit.frame(t * 8);
+      let n = 0;
       if (kit.lively) {
         // chama viva: a luz oscila e o ponto de luz treme (com sombra, as sombras dançam)
-        const n = 0.25 * Math.sin(t * 6.7 + x) + 0.15 * Math.sin(t * 12.3 + z) + 0.1 * Math.sin(t * 21.1 + x * 2);
+        n = 0.25 * Math.sin(t * 6.7 + x) + 0.15 * Math.sin(t * 12.3 + z) + 0.1 * Math.sin(t * 21.1 + x * 2);
         lamp.intensity = 40 * k * (1 + 0.2 * n);
         lamp.jit.set(Math.sin(t * 5.9 + z) * 0.05, n * 0.04, Math.cos(t * 4.7 + x) * 0.05);
       } else lamp.intensity = 40 * k * (0.97 + 0.02 * Math.sin(t * 5 + x) + 0.012 * Math.sin(t * 11));
+      flame.scale.set(flameW * k, flameH * k * (1 + 0.08 * n), 1); // a chama encolhe quando está acabando (e estica com a luz)
+      flame.material.map = kit.frame(t * 9 + x * 2.3 + z * 1.7, true); // (cada braseiro no seu passo)
+      glow.material.opacity = 0.3 * k * (1 + 0.25 * n) * lightEnv.scale; // (no escuro da Casa o brilho do ar some junto com a luz)
+      glow.scale.setScalar(1.7 * s * (0.55 + 0.45 * k));
       pool.opacity = 0.3 * k * (0.92 + 0.08 * Math.sin(t * 6 + z));
       // as brasas: sobem da chama, balançando, e somem no alto (cada uma no seu tempo)
       for (let i = 0; i < EN; i++) {
