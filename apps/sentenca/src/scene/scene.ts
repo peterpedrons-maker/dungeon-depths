@@ -2366,6 +2366,44 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let aimHold = 0;
   let lookKey = '';
   let lookHold = 0;
+  // as palavras de uma escrita como o jogador as VÊ: a lacuna vira '' (um ▢ vazio na cópia e na tira, nunca preenchido com o que está aceso).
+  // Com alguma palavra escondida (a que o pano da sala 10 cobre; uma escrita que ainda está aparecendo), a escrita não vale: ele não está
+  // lendo a pedra (o pano tem a sua própria escrita, a bordada)
+  const seenWords = (ins: Inscription): string[] | null => {
+    if (!ins.panels.length) return ins.words.length ? [...ins.words] : null;
+    if (ins.panels.some((p) => p.id && !p.mesh.visible)) return null;
+    const w = ins.panels.map((p) => p.id ?? '');
+    return w.some(Boolean) ? w : null;
+  };
+  // o que TAPA a vista (paredes, colunas, panos; não as chamas, a poeira, os feixes nem as próprias escritas), por sala, refeito a cada 2 s
+  const occCache = new Map<number, { t: number; list: THREE.Mesh[] }>();
+  const panelSet = new Set<THREE.Object3D>();
+  const occluders = (ri: number, now: number) => {
+    const c = occCache.get(ri);
+    if (c && now - c.t < 2) return c.list;
+    panelSet.clear();
+    for (const i of activeRooms) for (const ins of rooms[i].inscriptions ?? []) for (const p of ins.panels) panelSet.add(p.mesh);
+    const list: THREE.Mesh[] = [];
+    rooms[ri].group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || panelSet.has(m)) return;
+      const mt = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.Material | undefined;
+      // (o opaco tapa; o recorte com alphaTest que escreve profundidade, como o pano, também; decalques e brilhos colados na parede, não)
+      if (mt && (!mt.transparent || (mt.alphaTest > 0 && mt.depthWrite))) list.push(m);
+    });
+    occCache.set(ri, { t: now, list });
+    return list;
+  };
+  const occRay = new THREE.Raycaster();
+  const occStart = new THREE.Vector3();
+  // algo sólido entre a câmera e o ponto `at` (mundo), a `d` metros? (o raio para 25 cm antes: o que está colado na parede não conta)
+  const blocked = (ri: number, at: THREE.Vector3, d: number, now: number) => {
+    occStart.copy(at).sub(camera.position).divideScalar(d);
+    occRay.set(camera.position, occStart);
+    occRay.far = Math.max(0.05, d - 0.25);
+    const list = occluders(ri, now).filter((m) => m.visible);
+    return occRay.intersectObjects(list, false).length > 0;
+  };
   const readNotes = (dt: number, canRead: boolean) => {
     if (!canRead || mode !== 'play') {
       if (aimNoteStore.get()) aimNoteStore.set(null);
@@ -2378,8 +2416,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (noteTick > 0) return;
     const step = 0.1;
     noteTick = step;
-    // a escrita lida: a mais de frente, dentro do cone do olhar
-    let best: { ins: Inscription; room: number; dot: number } | null = null;
+    // a escrita lida: a mais de frente, dentro do cone do olhar, à vista (nada sólido no meio) e sem palavra escondida
+    const now = performance.now() / 1000;
+    const cands: { ins: Inscription; room: number; dot: number; d: number; words: string[] }[] = [];
     for (const i of activeRooms)
       for (const ins of rooms[i].inscriptions ?? []) {
         if (ins.hidden || !ins.words.length) continue;
@@ -2388,46 +2427,56 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (d > 6) continue;
         toIns.divideScalar(d);
         const dot = lookDir.dot(toIns);
-        if (dot > 0.93 && toIns.dot(nrmW(i, ins.normal)) < -0.2 && (!best || dot > best.dot)) best = { ins, room: i, dot };
+        if (dot <= 0.93 || toIns.dot(nrmW(i, ins.normal)) >= -0.2) continue;
+        const words = seenWords(ins);
+        if (words) cands.push({ ins, room: i, dot, d, words });
       }
-    if (best) readingStore.set({ lines: [[...best.ins.words]], from: 'parede', room: rooms[best.room].name, t: performance.now() });
+    cands.sort((a, b) => b.dot - a.dot);
+    const best = cands.find((c) => !blocked(c.room, toW(c.room, c.ins.center, toIns), c.d, now)) ?? null;
+    if (best)
+      readingStore.set({ lines: [best.words], from: 'parede', room: rooms[best.room].name, t: performance.now(), chalk: !!best.ins.chalk || undefined });
     // a tira (opção): a mesma escrita por ~0,8 s, e só se alguma palavra tem anotação
     const key = best ? `${best.room}:${best.ins.center.x.toFixed(2)}:${best.ins.center.y.toFixed(2)}:${best.ins.center.z.toFixed(2)}` : '';
+    // (os tempos contam no RELÓGIO, não em passos: num aparelho lento os passos de 0,1 s demoram mais)
     if (key !== lookKey) {
       lookKey = key;
-      lookHold = 0;
+      lookHold = now;
       if (lookingStore.get()) lookingStore.set(null);
     } else if (best) {
-      lookHold += step;
-      const want = configStore.get().glyphNotes && lookHold >= 0.8 && best.ins.words.some((w) => shortNote(w));
+      const want = configStore.get().glyphNotes && now - lookHold >= 0.8 && best.words.some((w) => w && shortNote(w));
       const cur = lookingStore.get();
-      if (want && cur?.key !== key) lookingStore.set({ words: [...best.ins.words], key });
+      if (want && cur?.key !== key) lookingStore.set({ words: best.words, key, chalk: !!best.ins.chalk || undefined });
       else if (!want && cur) lookingStore.set(null);
     }
     // a palavra sob a mira
     noteRay.setFromCamera(noteCenter, camera);
     noteRay.far = 5;
-    const panels: THREE.Object3D[] = [];
+    // (o raio testa as palavras E o que tapa a vista: só vale a palavra que é o PRIMEIRO acerto; uma palavra atrás de uma coluna não aparece)
+    const targets: THREE.Object3D[] = [];
     const byMesh = new Map<THREE.Object3D, string>();
-    for (const i of activeRooms)
+    for (const i of activeRooms) {
       for (const ins of rooms[i].inscriptions ?? []) {
         if (ins.hidden) continue;
         for (const p of ins.panels)
           if (p.id && p.mesh.visible) {
-            panels.push(p.mesh);
+            targets.push(p.mesh);
             byMesh.set(p.mesh, p.id);
           }
       }
-    const hit = noteRay.intersectObjects(panels, false)[0];
+      if (targets.length) for (const m of occluders(i, now)) if (m.visible) targets.push(m);
+    }
+    const hits = byMesh.size ? noteRay.intersectObjects(targets, false) : [];
+    const ph = hits.find((h) => byMesh.has(h.object));
+    // (uma palavra rente à superfície dela empata com a pedra: só tapa o que está 5 cm ou mais na frente)
+    const hit = ph && !hits.some((h) => !byMesh.has(h.object) && h.distance < ph.distance - 0.05) ? ph : undefined;
     const id = hit ? (byMesh.get(hit.object) ?? null) : null;
     if (id !== aimId) {
       aimId = id;
-      aimHold = 0;
+      aimHold = now;
       if (aimNoteStore.get()) aimNoteStore.set(null);
     } else if (id) {
-      aimHold += step;
       const text = shortNote(id, 18);
-      if (aimHold >= 0.3 && text && aimNoteStore.get()?.text !== text) aimNoteStore.set({ id, text });
+      if (now - aimHold >= 0.3 && text && aimNoteStore.get()?.text !== text) aimNoteStore.set({ id, text });
     }
   };
   const readInscriptions = (dt: number) => {
@@ -2489,11 +2538,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         ins.seeT += dt;
         if (ins.seeT > 0.6) {
-          ins.read = true;
-          ins.words.forEach((id) => {
-            diary.markSeen(id, rooms[i].name);
-            quiz.wordRead(id); // uma pergunta do dado que ficou sem resposta pode voltar
-          });
+          // só as palavras À VISTA vão para o diário: a que o pano cobre só conta quando o pano queima (DESIGN.md §99)
+          const vis = ins.panels.length ? ins.panels.filter((p) => p.id && p.mesh.visible).map((p) => p.id!) : ins.words;
+          const all = !ins.panels.length || ins.panels.every((p) => !p.id || p.mesh.visible);
+          const iv = ins as Inscription & { seenKey?: string };
+          const key = vis.join(' ');
+          if (iv.seenKey !== key) {
+            iv.seenKey = key;
+            vis.forEach((id) => {
+              diary.markSeen(id, rooms[i].name);
+              quiz.wordRead(id); // uma pergunta do dado que ficou sem resposta pode voltar
+            });
+          }
+          if (all) ins.read = true;
+          else ins.seeT = 0; // (olha de novo depois: quando o pano queimar, a palavra de baixo entra)
         }
       }
     });

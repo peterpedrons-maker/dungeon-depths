@@ -45,6 +45,7 @@ export interface Inscription {
   read: boolean; // já foi lida (foi pro diário)
   seeT: number; // tempo seguido olhando pra ela
   hidden: boolean; // ainda não foi escrita
+  chalk?: boolean; // escrita A GIZ (os boatos da Galeria), não talhada: a cópia do caderno diz isso (DESIGN.md §99)
   gap?: THREE.Mesh; // a lacuna (superfície de giz), se houver
   setReveal(i: number, v: number): void; // v 0..1 do painel i
   extras: THREE.MeshLambertMaterial[]; // molduras (acompanham o brilho)

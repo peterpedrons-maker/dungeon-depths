@@ -46,7 +46,7 @@ export interface DiaryState {
   unread: number; // símbolos novos desde a última vez que abriu
   last: { id: string; n: number } | null; // o último símbolo avistado (para o aviso na tela)
   // a CÓPIA (DESIGN.md §99): a última frase que o jogador copiou para o caderno (abrindo-o enquanto lia), com o lugar de onde veio
-  copy?: { lines: string[][]; from: 'parede' | 'conversa'; room: string } | null;
+  copy?: { lines: string[][]; from: 'parede' | 'conversa'; room: string; chalk?: boolean } | null; // (DESIGN.md §99; '' = lacuna)
 }
 
 const empty: DiaryState = { seen: {}, order: [], notes: {}, free: '', texts: [], pages: [], gems: [], rooms: [], strokes: [], stamps: [], here: '', unread: 0, last: null };
@@ -88,8 +88,8 @@ export const diary = {
     diaryStore.set((s) => ({ ...s, notes: { ...s.notes, [id]: text } }));
   },
   // copiar para o caderno: os símbolos da cópia contam como vistos (copiar é ler)
-  setCopy(c: { lines: string[][]; from: 'parede' | 'conversa'; room: string }) {
-    for (const l of c.lines) for (const id of l) diary.markSeen(id, c.room);
+  setCopy(c: { lines: string[][]; from: 'parede' | 'conversa'; room: string; chalk?: boolean }) {
+    for (const l of c.lines) for (const id of l) if (id) diary.markSeen(id, c.room);
     diaryStore.set((s) => ({ ...s, copy: c }));
   },
   setFree(text: string) {

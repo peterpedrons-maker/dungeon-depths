@@ -472,6 +472,14 @@ export function buildBiblioteca(ctx: Ctx): Room {
       m.position.set(7.2 + k * 1.15, 1.65, BZ - 0.146);
       m.rotation.y = Math.PI;
       g.add(m);
+      // a escrita do bloco passa a ser a NOVA (o caderno, a etiqueta da mira e a tira leem a palavra que está ali agora; DESIGN.md §99)
+      const bi = blockIns[k];
+      const p0 = bi?.panels[0];
+      if (p0) {
+        p0.mesh = m as unknown as typeof p0.mesh;
+        p0.id = w;
+        bi.words = [w];
+      }
     });
   };
   let aulaOpens = 0;

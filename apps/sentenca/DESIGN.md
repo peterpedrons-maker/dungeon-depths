@@ -2376,9 +2376,40 @@ toda conversa e todo balão do dado mostram a anotação dele embaixo de cada s�
 de papel no pé da tela com a frase e as anotações (`lookingStore`, `ReadingStrip`). É para quem quer jogar mais leve, ou tem dificuldade de
 memória: a dedução continua dele, porque as palavras são as que ele escreveu.
 
-**O que nunca mostra anotação**: a pergunta do dado («VOCÊ SABER ?», o quiz testa a memória e o palpite dele, mostrar a resposta o anularia),
-as anotações DELA (a sépia fica só no caderno) e as palavras que ele nunca anotou. A letra é sempre a dele, grafite em papel: nunca o dourado
-(a verdade da Casa) nem a sépia (a letra dela).
+**O que nunca mostra anotação**: as perguntas do dado («VOCÊ SABER ?» e os pedidos «BRASEIRO ONDE ?»: testam o que ele acha, mostrar a
+anotação as anularia; um balão com o glifo da pergunta não mostra anotação nem vai para a cópia), as anotações DELA (a sépia fica só no
+caderno) e as palavras que ele nunca anotou. A letra é sempre a dele, grafite em papel: nunca o dourado (a verdade da Casa) nem a sépia (a letra
+dela).
+
+**Conferido pelo enigmista** (todo puzzle passa por ele). Nenhuma sala muda de nível na régua (§17): as três formas tiram custo de leitura e de
+memória visual, não camadas de regra nem de dedução, e só ajudam quem anotou certo. Ele achou, e foi corrigido antes de ir para o jogo:
+- **O Pano entregava a solução**: a cópia e a tira liam a escrita da pedra com a palavra que o pano cobre (a tira mostrava TRÊS onde o pano
+  diz UM). Agora a escrita só vale com todas as palavras à vista; com o pano no lugar, ele lê o pano (a escrita bordada). O mesmo valia para o
+  "avistado": a palavra coberta só entra no diário quando o pano queima (`scene.ts`: `seenWords` e a leitura das inscrições).
+- **A etiqueta atravessava paredes**: na Lousa, mirar a coluna mostrava «cinco» e denunciava o segredo S1 escondido atrás dela. Agora a mira
+  e o olhar testam o que TAPA a vista (paredes, colunas, panos; não chamas, poeira, feixes nem decalques): só vale a palavra que é o primeiro
+  acerto, e a escrita lida tem de estar à vista.
+- **A lacuna sumia**: «ACENDER ▢ BRASEIRO» virava «ACENDER BRASEIRO». Agora a lacuna aparece como um quadrado VAZIO na cópia e na tira, nunca
+  preenchido com o que estiver aceso (a Lousa, o «DIZER IGUAL ▢» do Fio, as lousas da Sala de Aula).
+- **O mural de encaixe** (Biblioteca) mostrava o glifo antigo depois de uma troca: a escrita do bloco passa a ser a nova a cada troca.
+- **O giz é a pista**: a cópia de uma frase a giz da Galeria diz «a giz, Sala 15», e a tira diz «a giz» (as frases a giz são boatos).
+- **Editar a anotação juntava as linhas**: a resposta à pergunta do dado entra numa linha nova, e qualquer tecla depois disso juntava tudo,
+  fazendo a anotação curta mostrar a hipótese mais VELHA. Agora as linhas ficam.
+- (O retângulo laranja que aparecia sobre a coluna da Lousa no teste dele é o fantasma do POSICIONAR, onde o dado vai parar; não é vazamento.)
+
+**Fora de propósito, para sempre** (o enigmista conferiu): a **cal** (só aparece no escuro; O Escuro ensina a anotar o que some rápido, e uma
+cópia faria a anotação pelo jogador; a cal não é inscrição e não entra em nenhuma das formas), os **desenhos de fogo e luz** (lousas de
+lampiões, a casa lisa, a lousa da Casa Escreve, a moldura da Sombra, as lousas do Escuro, as grades do Fio e do Fogo que Corre, as
+constelações: não são escrita, e uma etiqueta viraria o oráculo "isto é um número"), a **página do C-Bib** (é um desenho; se virasse
+inscrição, a cópia daria o lado certo da página) e **uma cópia só**, a última (um histórico de cópias apagaria a "informação espalhada" da
+Lei Pequena, da Memória e do Tribunal).
+
+**Para o Pedro decidir**: quando ele erra a pergunta do dado, a escolha errada também entra no caderno (numa linha nova) e passa a ser a
+anotação curta mostrada junto do símbolo, embora o dado a tenha rejeitado. Dá para a etiqueta mostrar só a última linha escrita por ele ou
+confirmada pelo dado (a escolha rejeitada ficaria só no caderno); como mexe no que a pergunta faz, fica para ele.
+
+**Em aberto (opcional)**: na Sombra e no Escuro cada palavra é uma inscrição separada, então a cópia pega uma palavra só (não engana, só fica
+incompleta).
 
 **Detalhe de acabamento**: a fonte do caderno não tinha as reticências e trocava «…» por «?» (o «o que eu acho…» da parte Símbolos saía
 «o que eu acho?»); agora são três pingos numa célula só (`book/font.ts`).

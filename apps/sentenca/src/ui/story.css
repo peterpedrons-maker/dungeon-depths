@@ -27,6 +27,8 @@
 .readstrip .rs-tile { display: inline-flex; flex-direction: column; align-items: center; }
 .readstrip .gnote { color: #2f2a2e; }
 .readstrip .gnote.empty { color: rgba(47, 42, 46, 0.35); }
+.readstrip .rs-gap { display: block; margin-top: 4px; border: 2px solid #3a2214; box-sizing: border-box; }
+.readstrip .rs-from { align-self: center; font-size: var(--fs); color: #6a5a4a; margin-right: calc(4px * var(--ui, 1)); }
 @keyframes gpop { from { opacity: 0; transform: translateY(6px) scale(0.85); } to { opacity: 1; transform: none; } }
 .dlg.thought { border-color: #7f90c4; }
 .dlg.thought p { margin: 0;  font-size: var(--fl); line-height: 1.5; color: #d4dcf6; min-height: 1.5em; }

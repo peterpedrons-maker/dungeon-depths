@@ -703,7 +703,8 @@ function renderCopy(ctx: CanvasRenderingContext2D, side: 'L' | 'R', x0: number, 
   if (side === 'L') {
     heading(ctx, 'CÓPIA', side);
     // de onde ele copiou ("parede, Sala 24" cabe nos 16 caracteres da linha)
-    const from = d.copy!.from === 'parede' ? `parede, ${shortRoom(d.copy!.room || '')}` : 'da conversa';
+    // (a giz: o giz é a pista de que a frase é boato, a cópia não pode perder isso)
+    const from = d.copy!.from === 'parede' ? `${d.copy!.chalk ? 'a giz' : 'parede'}, ${shortRoom(d.copy!.room || '')}` : 'da conversa';
     drawCentered(ctx, from.length > 16 ? `${from.slice(0, 15)}…` : from, x0 + CW / 2, 31, INK2);
   }
   if (side === 'R' && sel !== null) {
@@ -714,6 +715,15 @@ function renderCopy(ctx: CanvasRenderingContext2D, side: 'L' | 'R', x0: number, 
     if (c.side !== side) return;
     const cx = x0 + c.col * 52;
     const cy = c.row;
+    if (!c.id) {
+      // a LACUNA da escrita: um quadrado vazio, como na pedra (nunca preenchido com o que estiver aceso)
+      ctx.fillStyle = INK;
+      ctx.fillRect(cx + 16, cy + 1, 16, 1);
+      ctx.fillRect(cx + 16, cy + 16, 16, 1);
+      ctx.fillRect(cx + 16, cy + 1, 1, 16);
+      ctx.fillRect(cx + 31, cy + 1, 1, 16);
+      return;
+    }
     if (sel === i) {
       ctx.fillStyle = HILITE;
       ctx.fillRect(cx - 1, cy - 1, 50, 34);

@@ -186,6 +186,7 @@ export function buildRespiro3(ctx: Ctx): Room {
   const chalk = (words: string[], y: number, z: number, seed: number) => {
     const ins = kit.inscribe({ words, x: CH.x0 + 0.025, y, z, nx: 1, nz: 0, size: 0.26, age: 0.45, seed });
     for (const p of ins.panels) p.mat.color.setHex(0xdfe8f2); // giz: mais frio e mais claro que a cal talhada
+    ins.chalk = true; // (a cópia do caderno diz "a giz": DESIGN.md §99)
     return ins;
   };
   chalk(['n3', 'antes', 'n1'], 2.5, -10.0, 231);

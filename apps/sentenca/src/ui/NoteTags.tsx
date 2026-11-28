@@ -27,7 +27,15 @@ export function ReadingStrip() {
   if (!l) return null;
   return (
     <div className="readstrip" aria-hidden="true" key={l.key}>
+      {l.chalk && <span className="rs-from">a giz</span>}
       {l.words.map((id, i) => {
+        if (!id)
+          return (
+            <span className="rs-tile" key={i}>
+              <span className="rs-gap" style={{ width: Math.round(22 * k), height: Math.round(22 * k) }} />
+              <span className="gnote empty">·</span>
+            </span>
+          ); // (a lacuna da pedra: vazia)
         const n = shortNote(id);
         return (
           <span className="rs-tile" key={i}>

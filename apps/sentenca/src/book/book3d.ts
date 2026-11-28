@@ -514,7 +514,9 @@ export function createDiaryBook(env: BookEnv) {
     refresh();
   };
   ta.addEventListener('input', () => {
-    if (view.editing === 'note' && view.sel) diary.setNote(view.sel, ta.value.replace(/\n/g, ' '));
+    // (as quebras de linha FICAM: a resposta à pergunta do dado entra numa linha nova, e a última linha é o que ele acha agora, a que aparece
+    // junto dos símbolos; antes, qualquer tecla juntava tudo numa linha só e a anotação curta mostrava a hipótese mais velha. DESIGN.md §99)
+    if (view.editing === 'note' && view.sel) diary.setNote(view.sel, ta.value.replace(/\r/g, '').replace(/\n{2,}/g, '\n'));
     else if (view.editing === 'free') diary.setFree(ta.value);
     if (ui.guided()) ui.setGuidedNote(guidedOk());
   });
@@ -845,7 +847,7 @@ export function createDiaryBook(env: BookEnv) {
         const rd = readingStore.get();
         const age = rd ? performance.now() - rd.t : Infinity;
         if (want && rd && !np && !ui.guided() && !presenting && (rd.from === 'parede' ? age < 800 : age < TALK_COPY_MS)) {
-          diary.setCopy({ lines: rd.lines.map((l) => [...l]), from: rd.from, room: rd.room });
+          diary.setCopy({ lines: rd.lines.map((l) => [...l]), from: rd.from, room: rd.room, chalk: rd.chalk });
           if (rd.from === 'conversa') readingStore.set(null); // (a conversa vira cópia uma vez só)
           stopEdit();
           flip = null;
