@@ -2516,3 +2516,18 @@ instalar nada (`src/ui/Bench.tsx`).
   passam de 60; no modo de economia de bateria muitos celulares travam em 30. O navegador do celular é praticamente o mesmo motor que o app
   embalado usaria, então o resultado vale para o app; o Steam Deck e o iPhone se testam neles mesmos.
 - `?bench=rapido`: o mesmo passeio em tempos curtos, só para conferir que o teste funciona (os números não valem).
+
+## 103. Mandar o jogo para alguém: o cartão do link e o QR code (pedido do Pedro)
+
+Pedido: "mandar o link do jogo pra pessoa… ela só clicar e já abrir de uma vez".
+
+- O jogo já é um site comum (GitHub Pages): https://peterpedrons-maker.github.io/dungeon-depths/sentenca/ abre direto no navegador, sem conta no
+  GitHub, sem instalar nada, no PC ou no celular. O site se atualiza sozinho a cada envio da branch de trabalho (`deploy.yml`).
+- **O cartão do link** (`index.html`, Open Graph): colado no WhatsApp, Telegram, Discord ou numa rede, o link vira um cartão com a imagem da
+  tela inicial (o dado caído no poço embaixo do nome; `public/og.jpg`, 1200 × 630, 81 KB, tirada do próprio jogo), o título «Sentença» e uma
+  frase; a pessoa toca no cartão e o jogo abre. O cartão só tem um texto: fica em português (o jogo pergunta o idioma ao abrir). Os aplicativos
+  guardam o cartão de um link por um tempo: o primeiro envio depois da mudança pode ainda vir sem imagem.
+- **O QR code** (feito aqui, sem site de terceiros; conferido lendo de volta): apontar a câmera e tocar abre o jogo, sem ver endereço nenhum.
+- Esconder o endereço de vez pede o Pedro decidir: um encurtador (bit.ly e parecidos, conta dele) ou um domínio próprio (pago; com ele, o
+  endereço do site inteiro muda e os caminhos `/dungeon-depths/...` do build precisam mudar junto). Depois da 1ª visita, "Adicionar à tela
+  inicial" instala o jogo como app (PWA): abre em tela cheia, sem a barra de endereço.
