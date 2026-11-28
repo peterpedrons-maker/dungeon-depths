@@ -1,4 +1,4 @@
-// OS BICHOS (DESIGN.md §96, pedido do Pedro: "algum pequeno animal que apareça no fundo, que o jogador até vê passando"). São figuras 2D em
+// OS BICHOS (DESIGN.md §98, pedido do Pedro: "algum pequeno animal que apareça no fundo, que o jogador até vê passando"). São figuras 2D em
 // pixel, pequenas e escuras, sempre LONGE: um rato que corre rente à parede de um buraco a outro, um morcego que cruza o alto de uma sala
 // alta. Nunca chegam perto (o rato espera o jogador estar longe para sair, e foge se ele se aproxima), nunca tocam em coisa de puzzle e não
 // fazem som. Aparecem de vez em quando, não em laço: a graça é o jogador achar que viu alguma coisa.

@@ -53,7 +53,14 @@ export type SfxName =
   | 'altarSlide'
   | 'altarShut'
   | 'altarGlow'
-  | 'altarOpen';
+  | 'altarOpen'
+  // A PONTE DE FRASES (sala 14, DESIGN.md §94), só pedra, ferro e mecanismo: a laje subindo (o arrasto, sem baque: ~1,5 s, o tempo da laje);
+  // a laje chegando em cima e TRAVANDO na ponte (a pedra assenta e o grampo fecha); a Casa PESANDO a ponte (os grampos mordem o pé, a pedra
+  // range e trepida, ~0,8 s); a ponte CEDENDO (os grampos estalam, as lajes batem lá no fundo do fosso, o entulho assenta, ~1,7 s)
+  | 'bridgeRise'
+  | 'bridgeLock'
+  | 'bridgeHold'
+  | 'bridgeBreak';
 
 // 0 = tudo ligado, 1 = só efeitos, 2 = mudo
 export type AudioMode = 0 | 1 | 2;
@@ -80,7 +87,7 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
 // Muda quando qualquer arquivo de áudio é trocado: força o navegador/PWA a baixar de novo
-const AUDIO_VERSION = 8;
+const AUDIO_VERSION = 9;
 
 const SFX_FILES = [
   'step_stone_l', 'step_stone_r', 'step_stair_l', 'step_stair_r', 'step_rubble_l', 'step_rubble_r', 'step_rug', 'step_plate', 'step_water',
@@ -89,6 +96,7 @@ const SFX_FILES = [
   'erase', 'ignite', 'ignite_small', 'ignite_cloth', 'plate1', 'plate2', 'gem1', 'gem2', 'bell', 'gong', 'door_open', 'door_shut', 'rise',
   'doorclose1', 'error', 'burnout', 'fire', 'crackle', 'wind', 'gust', 'drip', 'boom', 'creak', 'settle',
   'book_open', 'book_close', 'book_flip1', 'book_flip2', 'book_flip3', 'latch',
+  'bridge_lock', 'bridge_hold', 'bridge_break',
 ];
 // as gotas do arquivo drip.mp3 (início em s; cada uma dura ~0,55 s)
 const DRIPS = [0, 0.6, 1.2, 1.8, 2.4, 3.0];
@@ -237,6 +245,10 @@ export class Sfx {
   private lastBounce = 0;
   // o resolvido e a porta (o violoncelo da porta dá lugar ao do resolvido)
   private flipN = 0; // (a próxima tomada da virada de página)
+  // a Ponte de Frases: várias lajes de uma vez não viram um estrondo (um arrasto só; as travas em cascata curta)
+  private bridgeRiseAt = -9;
+  private bridgeLockAt = -9;
+  private bridgeLockN = 0;
   private solvedAt = -99;
   // música do jogo
   private musicScene: MusicScene = 'game';
@@ -805,7 +817,7 @@ export class Sfx {
     if (!this.ac || this.mode === 2) return;
     this.played++;
     const now = this.ac.currentTime;
-    if (name === 'door' || name === 'doorClose' || name === 'rise' || name === 'error' || name === 'dark' || name === 'gem' || name === 'gemBreak' || name === 'piece') this.duckUntil = Math.max(this.duckUntil, now + 1.6);
+    if (name === 'door' || name === 'doorClose' || name === 'rise' || name === 'error' || name === 'dark' || name === 'gem' || name === 'gemBreak' || name === 'piece' || name === 'bridgeHold' || name === 'bridgeBreak') this.duckUntil = Math.max(this.duckUntil, now + 1.6);
     switch (name) {
       case 'throw':
         this.sample(pick(['throw1', 'throw2']), 0.9 * Math.min(1, 0.4 + v), rand(0.93, 1.07));
@@ -957,6 +969,39 @@ export class Sfx {
         break;
       case 'altarOpen':
         this.sample('door_open', 0.85, 1.15, 0, 0.35);
+        break;
+      // A PONTE DE FRASES (sala 14, §94). A laje SUBINDO: o arrasto do pilar cortado em 1,5 s, sem o baque do fim (a laje sobe 2,5 m a 1,7 m/s
+      // e chega antes do baque do 'rise'; quem marca a chegada é a trava) e sem o violoncelo do pilar (subir não quer dizer que a Casa aceitou:
+      // a laje da mentira também sobe). Várias de uma vez: um arrasto só
+      case 'bridgeRise':
+        if (now - this.bridgeRiseAt < 0.3) break;
+        this.bridgeRiseAt = now;
+        this.duckMusic(0.7, 1.2, 1.2);
+        this.sample('rise', 0.9, 1, 0, 0.4, 0, 0, 0, 1.5);
+        break;
+      // a laje chega em cima e TRAVA na ponte: a pedra assenta e o grampo de ferro fecha. Várias juntas viram uma cascata curta (até três,
+      // cada uma mais baixa), não um estrondo
+      case 'bridgeLock': {
+        const k = now - this.bridgeLockAt < 0.3 ? this.bridgeLockN + 1 : 0;
+        if (k > 2) break;
+        if (k === 0) this.bridgeLockAt = now;
+        this.bridgeLockN = k;
+        this.sample('bridge_lock', 0.85 * (1 - 0.25 * k), 1 - 0.04 * k, 0.09 * k, 0.4);
+        break;
+      }
+      // a Casa PESA a ponte (o tremor de 0,7 s que prende o pé): os grampos mordem, a pedra range nas juntas e trepida no ritmo da imagem. A
+      // música abre espaço (e o ambiente baixa, lá em cima). Serve se a ponte cede ou se aguenta: a tensão alivia no fim
+      case 'bridgeHold':
+        this.duckMusic(0.55, 0.8, 1.2);
+        this.sample('bridge_hold', 0.9, 1, 0, 0.45);
+        break;
+      // a ponte CEDE: os grampos estalam, as lajes raspam e batem lá no fundo (aos ~0,44 s, já no escuro), mais duas batem, o entulho e um
+      // grampo solto assentam. O arquivo é mono: o fundo assentando dos dois lados dá a largura do fosso
+      case 'bridgeBreak':
+        this.duckMusic(0.3, 1.6, 2.0);
+        this.sample('bridge_break', 1.3, 1, 0, 0.5); // (o clímax da sala: mais alto que o tremor, perto do pilar subindo)
+        this.sample('settle', 0.28, 0.8, 0.62, 0.5, -0.45, 2600);
+        this.sample('step_rubble_r', 0.16, 0.8, 0.52, 0.4, 0.5, 3000);
         break;
       // porta de pedra: a laje sobe arrastando e trava lá em cima (com pó caindo); a Casa aceita (violoncelo grave). Logo depois do
       // "resolvido", quem fala pela Casa é ele: a porta fica só com a pedra

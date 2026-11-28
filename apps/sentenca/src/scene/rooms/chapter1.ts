@@ -137,7 +137,7 @@ export const FIRE_CASA_ESCREVE: FireSpec = {
   hx: 7,
   z0: -14,
   h: 5.6,
-  vault: { rise: 1.7, ribEvery: 4 }, // (cenógrafo, DESIGN.md §96)
+  vault: { rise: 1.7, ribEvery: 4 }, // (cenógrafo, DESIGN.md §98)
   braziers: [footOf(5), footOf(0), footOf(7), footOf(2)],
   rule: { kind: 'order', seq: [0, 1, 2, 3], hints: false, penalty: 6 }, // meio-direita, fundo-esquerda, frente-meio, fundo-direita
   words: ['acender', 'brasa', 'ordem'],
@@ -484,7 +484,7 @@ export const FIRE_CONFIRMA: FireSpec = {
   hx: 5.5,
   z0: -22,
   h: 3.8,
-  // (cenógrafo, DESIGN.md §96) abóbada e duas frestas altas na parede que dá para fora (a esquerda)
+  // (cenógrafo, DESIGN.md §98) abóbada e duas frestas altas na parede que dá para fora (a esquerda)
   vault: true,
   windows: [
     { side: 'L', dz: 1.6, y: 2.42 }, // (nos dois trechos vazios da parede: o canto do fundo e entre as frases)

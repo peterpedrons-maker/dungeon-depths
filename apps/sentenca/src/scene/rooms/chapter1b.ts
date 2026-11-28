@@ -459,7 +459,7 @@ export const FIRE_LEI: FireSpec = {
   hx: LEI.hx,
   z0: LEI.z0,
   h: LEI.h,
-  vault: true, // (cenógrafo, DESIGN.md §96)
+  vault: true, // (cenógrafo, DESIGN.md §98)
   doorY: LEI.level,
   braziers: [
     { x: -4.2, dz: 2.4, mark: 'n1', y: LEI.level },
@@ -867,7 +867,13 @@ function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
   kit.box(0.5, 1.6, 0.5, kit.stone, fx, 0.8, fz);
   kit.box(1.9, 1.0, 0.22, kit.slab, fx, 1.95, fz + 0.36);
   kit.inscribe({ words: ['n2', 'boato', 'igual', 'verdade', 'conf'], x: fx, y: 1.95, z: fz + 0.475, nx: 0, nz: 1, size: 0.22, age: 0.12, seed: 181, plaque: true });
-  boxes.push(mkBox(fx - 1.4, 0, fz - 1.4, fx + 1.4, 0.55, fz + 1.4), mkBox(fx - 0.95, 0, fz - 0.25, fx + 0.95, 2.45, fz + 0.47));
+  // (cenógrafo) a bacia é REDONDA também na colisão: cinco retângulos cruzados com as quinas no círculo, no lugar de um quadrado de 2,9 m. O
+  // quadrado sobrava 1 m nas diagonais, justo onde ficam os dois fogaréus do lado: entre o poste e a quina invisível sobravam 63 cm, e o
+  // jogador (60 cm) esbarrava no ar a mais de 1 m da pedra. Agora a passagem é a que se vê (~1 m na parte mais justa, junto ao pé do poste)
+  const round = (r: number) => [9, 27, 45, 63, 81].map((a) => [r * Math.cos((a * Math.PI) / 180), r * Math.sin((a * Math.PI) / 180)]);
+  for (const [hx, hz] of round(1.4)) boxes.push(mkBox(fx - hx, 0, fz - hz, fx + hx, 0.55, fz + hz));
+  const basinRects: Rect[] = round(1.45).map(([hx, hz]) => [fx - hx, fz - hz, fx + hx, fz + hz, 0.55]);
+  boxes.push(mkBox(fx - 0.95, 0, fz - 0.25, fx + 0.95, 2.45, fz + 0.47));
   kit.contact(fx, fz, 3.4);
   // ── os estandartes (boatos de pano) ──
   const BN = vento ? VT_BANNERS : DM_BANNERS;
@@ -937,7 +943,7 @@ function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
       for (const f of frieze) f.k = 0;
     },
     bonus: C.bonus,
-    rects: () => [...C.rect(), [fx - 1.45, fz - 1.45, fx + 1.45, fz + 1.45, 0.55] as Rect, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect, ...(wind?.rects ?? [])],
+    rects: () => [...C.rect(), ...basinRects, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect, ...(wind?.rects ?? [])],
     interactables: [C.niche.interactable],
   };
 }

@@ -433,7 +433,7 @@ export function sparkTexture() {
   return toTexture(c, undefined, false);
 }
 
-// A CHAMA (DESIGN.md §95): 8 quadros em laço. O pé da chama é o mais quente (um miolo branco-amarelo), o corpo laranja e as pontas vermelhas;
+// A CHAMA (DESIGN.md §97): 8 quadros em laço. O pé da chama é o mais quente (um miolo branco-amarelo), o corpo laranja e as pontas vermelhas;
 // o corpo balança e afina, as línguas sobem tortas, e de vez em quando uma ponta se solta e some no alto. (Antes eram 3 quadros de 10 × 8,
 // com o amarelo em cima e o vermelho embaixo: ao contrário de um fogo de verdade.) Dois tamanhos: a ALTA (12 × 18, tochas e braseiros) e a
 // BAIXA (12 × 10, o mesmo jeito da de antes: chaminhas de lampião, soquetes e o fogo que corre nas canaletas, que já têm o tamanho medido).
@@ -477,7 +477,7 @@ export function flameFrames(W = 12, H = 10): THREE.CanvasTexture[] {
   return out;
 }
 
-// o BRILHO no ar em volta de uma chama (não na parede): um disco quente e macio, em degraus pontilhados, somado por cima (DESIGN.md §95)
+// o BRILHO no ar em volta de uma chama (não na parede): um disco quente e macio, em degraus pontilhados, somado por cima (DESIGN.md §97)
 export function flameGlowTexture() {
   const { c, ctx } = canvas(24);
   for (let y = 0; y < 24; y++)

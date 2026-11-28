@@ -432,7 +432,7 @@ export function buildTribunal(ctx: Ctx): Room {
     tablets,
     plate: PLATE, // a trava da porta: só o Peso, que o altar dá
     extra: altarExtra,
-    // (cenógrafo, DESIGN.md §96) a última sala do capítulo ganha abóbada e um óculo em cima da porta do fundo: a luz de fora entra por onde
+    // (cenógrafo, DESIGN.md §98) a última sala do capítulo ganha abóbada e um óculo em cima da porta do fundo: a luz de fora entra por onde
     // se sai. (As paredes do lado estão cheias: frases, a lei, o altar. Uma fresta ali cairia na frente de alguma delas.)
     vault: { oculus: 'B', reach: 5.2 }, // (o feixe cai no meio do salão, longe da placa da porta e dos braseiros)
     fog: { color: '#0a0a11', near: 5, far: 30 },

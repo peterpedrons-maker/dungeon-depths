@@ -114,7 +114,7 @@ ou ferramentas de ofício. Só objetos do dia a dia de quem esperou na Casa (ver
   - **pó de giz** onde há escrita de condenados;
   - **gotas** onde há umidade.
 - **Tirar a poeira uniforme** da tela inteira.
-- **Como ficou** (`DESIGN.md` §96): a poeira é **fina** (um pixel da imagem do jogo por grão, muitos, cada um cintilando no seu tempo; não
+- **Como ficou** (`DESIGN.md` §98): a poeira é **fina** (um pixel da imagem do jogo por grão, muitos, cada um cintilando no seu tempo; não
   bolinhas de 2 × 2) e o feixe de luz **se vê no ar**, fraco, desfeito em degraus pelo pontilhado. Entraram também, sempre com motivo: a
   **fumaça** de toda tocha, a **poeira da pancada** do dado, as **brasas** do arremesso de Fogo e as **fagulhas** de quando o fogo pega, o
   **pó que cai do teto** quando uma sala se resolve, e a **névoa** só nos lugares abertos, sempre acima da cabeça.

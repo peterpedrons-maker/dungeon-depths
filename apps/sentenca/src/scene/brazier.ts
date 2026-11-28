@@ -47,7 +47,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
     kit.add(bowlMesh);
   }
   const bowl = new THREE.Vector3(x, y0 + 1.15 * s, z);
-  // a chama (DESIGN.md §95): o pé dela fica preso nas brasas (o `center` embaixo) e ela cresce para cima; quando está acabando, encolhe para
+  // a chama (DESIGN.md §97): o pé dela fica preso nas brasas (o `center` embaixo) e ela cresce para cima; quando está acabando, encolhe para
   // dentro da cesta em vez de boiar no ar
   const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   const flameH = flameW * (FLAME_H / FLAME_W);
@@ -60,7 +60,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
   glow.visible = false;
   const lamp = kit.light(x - 0.3 * s, y0 + 1.9 * s, z + 0.4 * s, 0xff8a2a, 0);
   lamp.shadow = true; // braseiro aceso faz sombra de verdade (o motor dá às chamas mais perto)
-  lamp.hot = new THREE.Vector3(x, y0 + 1.3 * s, z); // o ar treme em cima da chama (DESIGN.md §96)
+  lamp.hot = new THREE.Vector3(x, y0 + 1.3 * s, z); // o ar treme em cima da chama (DESIGN.md §98)
   lamp.hotR = 0.3 * s;
   const coalMat = new THREE.MeshLambertMaterial({ color: 0x1c1516, emissive: 0x2a0b08 });
   for (let i = 0; i < 5; i++) {
@@ -134,7 +134,7 @@ export function makeBrazier(kit: Kit, ctx: Ctx, x: number, z: number, startLit =
         n = 0.25 * Math.sin(t * 6.7 + x) + 0.15 * Math.sin(t * 12.3 + z) + 0.1 * Math.sin(t * 21.1 + x * 2);
         lamp.intensity = 40 * k * (1 + 0.2 * n);
         lamp.jit.set(Math.sin(t * 5.9 + z) * 0.05, n * 0.04, Math.cos(t * 4.7 + x) * 0.05);
-      } else lamp.intensity = 40 * k * (dbg.flicker ? 0.96 + 0.065 * Math.sin(t * 5.3 + x) + 0.04 * Math.sin(t * 12.1 + z) + 0.025 * Math.sin(t * 21 + x * 2) : 1); // (a luz do braseiro oscila uns 10%, DESIGN.md §96)
+      } else lamp.intensity = 40 * k * (dbg.flicker ? 0.96 + 0.065 * Math.sin(t * 5.3 + x) + 0.04 * Math.sin(t * 12.1 + z) + 0.025 * Math.sin(t * 21 + x * 2) : 1); // (a luz do braseiro oscila uns 10%, DESIGN.md §98)
       flame.scale.set(flameW * k, flameH * k * (1 + 0.08 * n), 1); // a chama encolhe quando está acabando (e estica com a luz)
       flame.material.map = kit.frame(t * 9 + x * 2.3 + z * 1.7, true); // (cada braseiro no seu passo)
       glow.material.opacity = 0.3 * k * (1 + 0.25 * n) * lightEnv.scale; // (no escuro da Casa o brilho do ar some junto com a luz)

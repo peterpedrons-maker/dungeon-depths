@@ -213,9 +213,11 @@ def concrete_step():
 
 # ── passos: UM som fixo por piso, pé esquerdo e pé direito (sempre na mesma ordem; decisão do Pedro: sem sorteio) ──
 STEP = 'highpass=f=70,lowpass=f=6000'
+# (cada som só lê as gravações dele quando é pedido: refazer alguns arquivos não exige ter baixado todos os pacotes)
 for foot, take in (('l', 'L2'), ('r', 'R2')):
     # pedra: sapato de couro em pedra (Fantozzi), sem o "toque-toque" de bota
-    wr(fade(trim(rd(f'{FZ}/Fantozzi-Stone{take}.flac', af=STEP))[:int(0.34 * SR)], 0, 0.08), f'step_stone_{foot}', peak=-4)
+    if want(f'step_stone_{foot}'):
+        wr(fade(trim(rd(f'{FZ}/Fantozzi-Stone{take}.flac', af=STEP))[:int(0.34 * SR)], 0, 0.08), f'step_stone_{foot}', peak=-4)
 if want('step_stair_l') or want('step_stair_r'):
     body = fade(trim(concrete_step()), 0, 0.1)
     for foot, take in (('l', 'L3'), ('r', 'R3')):
@@ -224,15 +226,19 @@ if want('step_stair_l') or want('step_stair_r'):
         wr(fade(mix((nrm(x), 0, -3), (nrm(body), 0.004, 0)), 0, 0.08), f'step_stair_{foot}', peak=-4)
 for foot, take, peb in (('l', 'L1', 'bfh1_rock_falling_04'), ('r', 'R1', 'bfh1_rock_falling_07')):
     # entulho: o passo de pedra e pedrinhas soltas que rolam sob o sapato
+    if not want(f'step_rubble_{foot}'):
+        continue
     x = trim(rd(f'{FZ}/Fantozzi-Stone{take}.flac', af=STEP))[:int(0.34 * SR)]
     pe = trim(rd(f'{BF}/{peb}.ogg', af='highpass=f=400,lowpass=f=7000'))[:int(0.3 * SR)]
     wr(fade(mix((nrm(x), 0, 0), (nrm(pe), 0.025, -8)), 0, 0.08), f'step_rubble_{foot}', peak=-4)
 
 # ── fogo ──
 # acender: a chama pegando ("fff") com o corpo grave dela, de um bastão de fogo de verdade
-wr(fade(trim(rd(fst(20), 0, 1.5, 'highpass=f=40')), 0.0, 0.5), 'ignite', peak=-2)
+if want('ignite'):
+    wr(fade(trim(rd(fst(20), 0, 1.5, 'highpass=f=40')), 0.0, 0.5), 'ignite', peak=-2)
 # tocha: a chama menor e mais curta
-wr(fade(trim(rd(fst(11), 0, 1.1, 'highpass=f=60')), 0.0, 0.35), 'ignite_small', peak=-3)
+if want('ignite_small'):
+    wr(fade(trim(rd(fst(11), 0, 1.1, 'highpass=f=60')), 0.0, 0.35), 'ignite_small', peak=-3)
 # pano pegando fogo: a lufada e o estalar do tecido queimando
 if want('ignite_cloth'):
     puff = trim(rd(fst(11), 0, 1.1, 'highpass=f=60'))
@@ -244,7 +250,8 @@ if want('burnout'):
     hiss = fade(rd(p('x', 'steam_hisses', 'steam hisses - Marker #3.wav'), 0.05, 0.7, 'highpass=f=1500,lowpass=f=7000'), 0.02, 0.5)
     wr(mix((nrm(suck), 0, 0), (nrm(hiss), len(suck) / SR - 0.03, -14)), 'burnout', peak=-3)
 # o fogo aceso (laço): a chama de um bastão de fogo queimando parada, emendada sem estalo (~10 s)
-wr(loop(rd(fst(22), 0.3, 11.3, 'highpass=f=60,lowpass=f=7000'), 9.6, 1.4), 'fire', peak=-4, br='48k')
+if want('fire'):
+    wr(loop(rd(fst(22), 0.3, 11.3, 'highpass=f=60,lowpass=f=7000'), 9.6, 1.4), 'fire', peak=-4, br='48k')
 # os ESTALOS (o motor toca pedacinhos ao acaso perto do fogo, para o laço nunca se repetir igual): faíscas do bastão + estalos de lareira
 if want('crackle'):
     a = rd(fst(21), 0.0, 2.6, 'highpass=f=900')
@@ -276,9 +283,11 @@ if want('rise'):
 
 # ── ambiente ──
 # vento: um trecho calmo da tempestade Arwen (gravada de uma janela), sem o ronco do microfone, emendado em laço de 16 s
-wr(loop(rd(p('storm_arwen_2022.flac'), 28, 18.5, 'highpass=f=110,lowpass=f=6500'), 16, 2.2), 'wind', peak=-3, br='48k')
+if want('wind'):
+    wr(loop(rd(p('storm_arwen_2022.flac'), 28, 18.5, 'highpass=f=110,lowpass=f=6500'), 16, 2.2), 'wind', peak=-3, br='48k')
 # rajada: um pedaço forte da mesma tempestade, que cresce e passa
-wr(fade(rd(p('storm_arwen_2022.flac'), 51.5, 4.5, 'highpass=f=150,lowpass=f=7000'), 1.4, 1.8), 'gust', peak=-3, br='48k')
+if want('gust'):
+    wr(fade(rd(p('storm_arwen_2022.flac'), 51.5, 4.5, 'highpass=f=150,lowpass=f=7000'), 1.4, 1.8), 'gust', peak=-3, br='48k')
 # gotas (seis): pingos caindo numa poça de um porão; o zumbido do porão sai no filtro. Ficam em 0, 0,6, 1,2 ... 3,0 s do arquivo
 # (as três primeiras são as de antes; as outras três vieram em DESIGN.md §79, para as gotas expostas no silêncio da música não se repetirem.
 # Na revisão do §79 as três novas foram trocadas: as primeiras escolhidas, em 2,66, 9,52 e 15,58 s, eram estalos secos com o brilho em 4 a
@@ -292,15 +301,93 @@ if want('drip'):
     drops = drops[:3] + [d * min(ref_rms / rms(d), ref_pk / float(np.abs(d).max())) for d in drops[3:]]
     wr(mix(*[(d, 0.6 * i, 0) for i, d in enumerate(drops)]), 'drip', peak=-3)
 # a Casa respira (1): um tambor de tronco ao longe, abafado (NenadSimic)
-wr(fade(rd(p('distant_log_drum.wav'), 0, 4.6, 'lowpass=f=500'), 0, 1.2), 'boom', peak=-3, br='48k')
+if want('boom'):
+    wr(fade(rd(p('distant_log_drum.wav'), 0, 4.6, 'lowpass=f=500'), 0, 1.2), 'boom', peak=-3, br='48k')
 # a Casa respira (2): pedra rangendo, longe (um bloco arrastado num tijolo, uma oitava abaixo)
-wr(fade(rd(p('scrape-1.ogg'), af='asetrate=44100*0.5,aresample=44100,lowpass=f=1200,highpass=f=50'), 0.3, 0.8), 'creak', peak=-3, br='48k')
+if want('creak'):
+    wr(fade(rd(p('scrape-1.ogg'), af='asetrate=44100*0.5,aresample=44100,lowpass=f=1200,highpass=f=50'), 0.3, 0.8), 'creak', peak=-3, br='48k')
 # a Casa respira (3, DESIGN.md §79): pedrinhas e pó caindo em outra sala, a Casa assentando (três quedas de pedra do rubberduck, em cascata)
 if want('settle'):
     a = trim(rd(f'{BF}/bfh1_rock_falling_01.ogg', af='highpass=f=200,lowpass=f=5000'))
     b = trim(rd(f'{BF}/bfh1_rock_falling_03.ogg', af='highpass=f=200,lowpass=f=5000'))
     c = trim(rd(f'{BF}/bfh1_rock_falling_09.ogg', af='highpass=f=200,lowpass=f=4000'))
     wr(fade(mix((nrm(a), 0, 0), (nrm(b), 0.38, -5), (nrm(c), 0.9, -9)), 0, 0.3), 'settle', peak=-3, br='48k')
+
+
+# ══ 4ª leva: A PONTE DE FRASES (sala 14, DESIGN.md §94) ════════════════════════════════════════════════════════════════════
+# A ponte é UMA peça: cada laje que sobe trava nas outras com um grampo de ferro; a Casa a pesa (os grampos mordem e a pedra range) e, se há
+# mentira acesa, os grampos estalam e tudo cai no fosso. Só pedra, ferro e mecanismo (o Pedro: nada de "mágico" nos efeitos, §79 e §86), e só
+# dos pacotes que o jogo já baixa: rubberduck (100 CC0 SFX, 100 CC0 SFX #2, 75 breaking/falling/hit), o trinco da Kenney, os arrastos de
+# AntumDeluge, a porta de pedra de bonebrah e o pedregulho de themightyglider. Recortes, altura (asetrate), filtros, envelope e emendas.
+def rate(r, extra=''):
+    """muda a altura junto com a duração (como uma fita mais lenta), e uma cadeia de filtros depois"""
+    return f'asetrate={SR}*{r},aresample={SR}' + (',' + extra if extra else '')
+
+
+def tremolo(x, f, depth, ph=0.0):
+    """a pedra trepidando: o volume pulsa a f Hz (depth 0..1); é só processamento de uma gravação"""
+    t = np.arange(len(x)) / SR
+    return (x * (1 - depth * 0.5 * (1 + np.sin(2 * np.pi * f * t + ph)))).astype(np.float32)
+
+
+def cut(x, L, fo):
+    """corta em L s e some nos últimos fo s"""
+    return fade(x[:int(L * SR)], 0, fo)
+
+
+# a laje chega em cima e TRAVA (~0,5 s; toca quando ela termina de subir): a pedra assenta (o baque da porta de pedra travando, mais grave,
+# porque a laje é enorme, com o peso do pedregulho por baixo) e, um instante depois, o grampo de ferro fecha (o trinco uma quinta abaixo, com
+# o corpo de um ferro batido); um grão de pedrisco
+if want('bridge_lock'):
+    seat = fade(trim(rd(C1 + '/slam_02.ogg', af=rate(0.85, 'lowpass=f=1500,highpass=f=40'))), 0, 0.15)
+    weight = fade(trim(rd(p('boulder_drop.ogg'), af='lowpass=f=700'))[:int(0.16 * SR)], 0, 0.08)
+    clamp = fade(trim(rd(K + '/metalLatch.ogg', af=rate(0.62, 'lowpass=f=6000'))), 0, 0.06)
+    iron = fade(trim(rd(C1 + '/metal_03.ogg', af=rate(0.85, 'lowpass=f=3500,highpass=f=90'))), 0, 0.08)
+    grit = fade(trim(rd(f'{BF}/bfh1_rock_falling_06.ogg', af='highpass=f=500,lowpass=f=6000')), 0, 0.1)
+    wr(cut(mix((nrm(seat), 0, 0), (nrm(weight), 0, -7), (nrm(clamp), 0.11, -5), (nrm(iron), 0.11, -9), (nrm(grit), 0.03, -24)), 0.55, 0.12),
+       'bridge_lock', peak=-3)
+# a Casa PESA a ponte (~0,8 s; o tremor de 0,7 s em que ela prende o pé): os grampos mordem (dois ferros quase juntos e a catraca apertando),
+# a pedra range nas juntas (o bloco arrastado no tijolo, quase uma oitava abaixo, como o 'creak') sobre o peso do arrasto da porta, e tudo
+# trepida a 9,7 Hz, o tremor da imagem (sin(t·61) em chapter1c.ts). A tensão sobe até ~0,45 s e alivia: serve se a ponte cede e se aguenta
+if want('bridge_hold'):
+    bite = fade(trim(rd(f'{BF}/bfh1_metal_hit_04.ogg', af=rate(0.72, 'lowpass=f=4000,highpass=f=60'))), 0, 0.1)
+    bite2 = fade(trim(rd(C1 + '/metal_03.ogg', af=rate(0.7, 'lowpass=f=3000,highpass=f=60'))), 0, 0.1)
+    groan = rd(p('scrape-1.ogg'), 0.1, 0.9, rate(0.55, 'highpass=f=70,lowpass=f=1400'))
+    groan = tremolo(groan * np.interp(np.arange(len(groan)) / SR, [0, 0.05, 0.45, 0.8, 9], [0, 0.6, 1, 0.25, 0.25]), 9.7, 0.55)
+    mass = rd(p('stone_door.ogg'), 0.15, 1.0, rate(0.75, 'lowpass=f=500,highpass=f=35'))
+    mass = fade(tremolo(mass, 9.7, 0.35, 1.3), 0.06, 0.3)
+    ratchet = rd(C2 + '/sfx100v2_lock_open_01.ogg', af=rate(0.6, 'highpass=f=300,lowpass=f=5000'))
+    dust = fade(trim(rd(f'{BF}/bfh1_rock_falling_04.ogg', af='highpass=f=600')), 0, 0.1)
+    wr(cut(mix((nrm(bite), 0, 0), (nrm(bite2), 0.025, -4), (nrm(groan), 0.03, -6), (nrm(mass), 0.02, -7), (nrm(ratchet), 0.1, -16),
+               (nrm(dust), 0.34, -22)), 0.85, 0.25), 'bridge_hold', peak=-3)
+# a ponte CEDE (~1,7 s): os grampos estalam e soltam em cascata (cada um, o corpo de um ferro batido com o estalo agudo por cima, cada vez mais
+# fraco), a pedra raspa na parede do fosso acelerando, as lajes batem lá embaixo aos 0,44 s (2,5 m a 6 m/s, como em chapter1c.ts) e racham,
+# mais duas batem logo depois, e o entulho e um grampo solto assentam no fundo (já no escuro: o som conta o que a imagem não mostra)
+if want('bridge_break'):
+    def snap(body, br, crack, cr, g):
+        b = fade(trim(rd(body, af=rate(br, 'lowpass=f=3500,highpass=f=60'))), 0, 0.1)
+        c = fade(trim(rd(crack, af=rate(cr, 'highpass=f=400,lowpass=f=8000'))), 0, 0.06)
+        return mix((nrm(b), 0, 0), (nrm(c), 0, g))
+    s1 = snap(C1 + '/metal_03.ogg', 0.6, f'{BF}/bfh1_metal_hit_03.ogg', 0.7, -3)
+    s2 = snap(f'{BF}/bfh1_metal_hit_04.ogg', 0.62, C1 + '/metal_11.ogg', 0.6, -6)
+    s3 = snap(C1 + '/metal_01.ogg', 0.7, f'{BF}/bfh1_metal_hit_01.ogg', 0.6, -6)
+    s4 = snap(f'{BF}/bfh1_metal_hit_05.ogg', 0.7, C1 + '/metal_02.ogg', 0.65, -8)
+    slide = rd(p('scrape-2.ogg'), 0.2, 0.44, 'lowpass=f=3000,highpass=f=60')
+    slide = slide * np.linspace(0.12, 1, len(slide)) ** 1.6  # (a laje cai cada vez mais depressa)
+    crash = fade(trim(rd(p('boulder_drop.ogg'))), 0, 0.3)
+    deep = fade(trim(rd(f'{BF}/bfh1_hit_02.ogg', af='lowpass=f=1500')), 0, 0.2)
+    crack = fade(trim(rd(f'{BF}/bfh1_rock_breaking_02.ogg', af='highpass=f=200,lowpass=f=7000')), 0, 0.2)
+    hit2 = fade(trim(rd(C1 + '/slam_02.ogg', af=rate(0.8, 'lowpass=f=1800'))), 0, 0.12)
+    hit3 = fade(trim(rd(p('boulder_drop.ogg'), af=rate(1.15, 'lowpass=f=2000'))), 0, 0.2)
+    rub1 = fade(trim(rd(f'{BF}/bfh1_rock_falling_01.ogg', af='highpass=f=200,lowpass=f=5000')), 0, 0.2)
+    rub2 = fade(trim(rd(f'{BF}/bfh1_rock_falling_03.ogg', af='highpass=f=200,lowpass=f=4500')), 0, 0.2)
+    pin = fade(trim(rd(f'{BF}/bfh1_metal_falling_02.ogg', af=rate(0.85, 'highpass=f=300,lowpass=f=6000'))), 0, 0.15)
+    T = 0.44
+    wr(cut(mix((nrm(s1), 0, 0), (nrm(s2), 0.06, -3), (nrm(s3), 0.13, -6), (nrm(s4), 0.19, -9),
+               (nrm(slide), 0.02, -8),
+               (nrm(crash), T, 0), (nrm(deep), T + 0.005, -3), (nrm(crack), T + 0.02, -10),
+               (nrm(hit2), T + 0.12, -6), (nrm(hit3), T + 0.24, -10),
+               (nrm(rub1), T + 0.2, -14), (nrm(rub2), T + 0.5, -17), (nrm(pin), T + 0.42, -17)), 1.7, 0.4), 'bridge_break', peak=-3)
 
 # instrumentos reais: uma nota a cada 3 semitons, tocada com playbackRate pra cobrir o resto
 NOTE = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']

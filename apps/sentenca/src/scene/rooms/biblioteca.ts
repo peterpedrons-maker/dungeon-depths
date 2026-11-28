@@ -603,7 +603,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   kit.skirting(-AX, AX, Z0, Z1, 1.3);
   kit.aoSides(-AX, AX, Z0, Z1, H);
   kit.wear([[0, 1.5], [0.4, -10], [0, -24]], 1.4);
-  // (cenógrafo) um morcego cruza o alto do Átrio, acima das passarelas (DESIGN.md §96)
+  // (cenógrafo) um morcego cruza o alto do Átrio, acima das passarelas (DESIGN.md §98)
   kit.fxUpd.push(bat(kit, new THREE.Vector3(-AX + 1, H - 1.3, Z0 + 2), new THREE.Vector3(AX - 1, H - 1.8, -2), 85));
   kit.bake();
   refreshBlocks();

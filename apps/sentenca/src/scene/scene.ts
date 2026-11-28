@@ -288,7 +288,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uRes: { value: new THREE.Vector2(64, 64) },
       uNear: { value: CAM_NEAR },
       uFar: { value: CAM_FAR },
-      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §95)
+      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §97)
       tLut: { value: lutTex },
       uBloom: { value: 1 },
       uBright: { value: 1 },
@@ -301,10 +301,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uTan: { value: new THREE.Vector2(1, 1) },
       tBack: { value: null as THREE.Texture | null },
       uBack: { value: 0 },
-      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §95): 0 = o corte seco de antes
-      // o AR QUENTE em cima dos braseiros (DESIGN.md §96): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
+      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §97): 0 = o corte seco de antes
+      // o AR QUENTE em cima dos braseiros (DESIGN.md §98): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
       uHot: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
-      // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §96): um banho de cor muito leve na imagem do mundo, que muda com a sala em que o jogador está
+      // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §98): um banho de cor muito leve na imagem do mundo, que muda com a sala em que o jogador está
       uGrade: { value: new THREE.Vector3(1, 1, 1) },
       uTime: { value: 0 },
     },
@@ -329,7 +329,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uTime;
       uniform vec3 uGrade;
       varying vec2 vUv;
-      // O OMBRO DA LUZ (DESIGN.md §95): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
+      // O OMBRO DA LUZ (DESIGN.md §97): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
       // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
       // (1 → 0,88; 1,5 → 0,94; 3 → 0,98): o vermelho enche primeiro, depois o verde, e a cor passa de laranja a amarelo e a branco aos poucos,
       // como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase tudo) nada muda.
@@ -470,7 +470,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   postScene.add(postQuad);
   // ── sala e cena ─────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
-  // a poeira das pancadas, as fagulhas e o pó que cai (DESIGN.md §96)
+  // a poeira das pancadas, as fagulhas e o pó que cai (DESIGN.md §98)
   const puffs = makePuffs(scene);
   const fallQ: { t: number; at: THREE.Vector3; n: number; spread: number; floor: number }[] = []; // pó do teto ainda por soltar
   // `ambient` é a luz ambiente "lógica" de cada sala (cor e força vêm da sala e da história). Na cena ela é repartida em três luzes que DEFINEM
@@ -491,7 +491,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let darkQ: { secs: number; onDark?: () => void } | null = null; // pedido esperando a conversa acabar
   let darkCb: (() => void) | null = null;
   const lightScale = () => 1 - 0.92 * darkK;
-  // O ESCURO DE VERDADE (DESIGN.md §96): dentro da Casa a luz que vem "de todo lado" caiu um quinto. O que as chamas não alcançam fica mais
+  // O ESCURO DE VERDADE (DESIGN.md §98): dentro da Casa a luz que vem "de todo lado" caiu um quinto. O que as chamas não alcançam fica mais
   // fundo (os cantos, o alto das paredes, o avesso das coisas) e as poças de luz das tochas e dos braseiros se destacam. Lá fora (a abertura,
   // na neblina) não muda.
   const DARK_K = 0.8;
@@ -663,6 +663,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (forcedLook && performance.now() < forcedLook.until) {
       // o dado MOSTRA uma coisa (apontar): inclina-se para ela, com vontade
       dieOnScreen(dieNdc);
+      // (a coisa está ATRÁS do jogador: a projeção inverteria o lado; ele se inclina todo para o lado dela, "olha por cima do ombro")
+      tgtNdc.copy(forcedLook.p).applyMatrix4(camera.matrixWorldInverse);
+      if (tgtNdc.z > -0.3) return { dx: tgtNdc.x >= 0 ? 1 : -1, dy: 0.15, eager: true, player: false };
       tgtNdc.copy(forcedLook.p).project(camera);
       const fx = tgtNdc.x - dieNdc.x;
       const fy = tgtNdc.y - dieNdc.y;
@@ -1127,6 +1130,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let feetY = 0;
   let vy = 0;
   let landKick = 0;
+  // o chão tremendo (ctx.shake): força, segundos que faltam e quanto prende o passo
+  let shakeK = 0;
+  let shakeT = 0;
+  let shakeHold = 0;
   const moveVel = new THREE.Vector3(); // velocidade horizontal (m/s)
 
   // ── mundo: as salas ficam lado a lado, ligadas por corredores abertos ───
@@ -1172,7 +1179,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const DIE_IN_HAND = 0.22;
-  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §95)
+  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §97)
   const RIM_OUT = 1.63; // raio de fora da mureta do poço (vestibulo.ts: SHAFT.r + 0,43)
   const SCRIBE_AT = new THREE.Vector3(0, 0, RIM_OUT + 0.12); // encostado na mureta: abaixo da borda o pano se achata contra ela (`press`)
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
@@ -1350,7 +1357,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       outsideAtmo = outside;
       blendAtmosphere(0, true); // corte: o ar muda na hora
     }
-    // NA NEBLINA (DESIGN.md §95): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
+    // NA NEBLINA (DESIGN.md §97): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
     // não (são a primeira coisa que aparece). Visto de baixo, pelo poço, ele continua sem névoa, nítido contra a luz
     if (topScribe)
       topScribe.group.traverse((o) => {
@@ -1359,7 +1366,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         m.fog = outside;
         m.needsUpdate = true;
       });
-    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §95)
+    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §97)
     if (S.ph === 4 || S.ph === 6 || S.ph === 7) {
       outdoor.position.set(W.x - 4, W.y + 9, W.z - 3);
       outdoor.target.position.copy(W);
@@ -1432,7 +1439,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
           S.pose = { walk: 0, lean: 1.3, rest: 1, headPitch: -0.1 }; // debruçado por cima da mureta: a cabeça fica sobre a boca do poço, o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
           S.leanT = (S.leanT ?? 0) + dt;
-          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §95)
+          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §97)
           if (S.t > 6.2 && S.leanT > 1.3) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
@@ -1606,7 +1613,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           life.react('thump');
           chatFn('plate');
         } else if (n === 'door' || n === 'rise') {
-          // a porta que abre solta o pó da verga (DESIGN.md §96)
+          // a porta que abre solta o pó da verga (DESIGN.md §98)
           if (n === 'door' && rooms[idx]) {
             const e = exitOf(rooms[idx]);
             const dy = rooms[idx].exitDy ?? 0;
@@ -1721,6 +1728,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         darkQ = { secs, onDark };
       },
       dark: () => darkK,
+      shake: (k, secs = 0.3, hold = 0) => {
+        shakeK = k;
+        shakeT = secs;
+        shakeHold = Math.max(0, Math.min(1, hold));
+      },
       lookAt: (p, dur = 0.9) => {
         camera.updateMatrixWorld();
         pl.toWorld(p, gp);
@@ -1767,7 +1779,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`; e o mapa do caderno)
   const bounds: THREE.Box3[] = [];
-  // AS GOTAS QUE SE VEEM (DESIGN.md §96): onde a sala diz que pinga (`ambience.drips`, que até aqui era só som), o motor acha o teto em cima
+  // AS GOTAS QUE SE VEEM (DESIGN.md §98): onde a sala diz que pinga (`ambience.drips`, que até aqui era só som), o motor acha o teto em cima
   // do ponto e põe a gota que cresce, cai e abre um anel numa pocinha. (Sem teto em cima, nada: é céu aberto.)
   const dripUpd: ((t: number) => void)[][] = [];
   let puddleMat: THREE.MeshBasicMaterial | null = null;
@@ -2310,7 +2322,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const blendAtmosphere = (dt: number, snap = false) => {
     if (outsideAtmo) {
       const f = scene.fog as THREE.Fog;
-      // A NEBLINA (pedido do Pedro, DESIGN.md §95): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
+      // A NEBLINA (pedido do Pedro, DESIGN.md §97): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
       // horizonte. O Escrivão sai dela primeiro como sombra. (A cor é a mesma do pé do céu, em vestibulo.ts)
       f.color.set('#8e8c9e');
       f.near = 0.8;
@@ -2477,7 +2489,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     const imp = Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0);
     sfx.bounce(imp);
-    // a pancada levanta poeira (DESIGN.md §96): no ponto do toque, espalhando rente à superfície. A normal é a direção do tranco
+    // a pancada levanta poeira (DESIGN.md §98): no ponto do toque, espalhando rente à superfície. A normal é a direção do tranco
     if (imp > 1.7) {
       puffN.set(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0).divideScalar(imp);
       puffAt.copy(dieP).addScaledVector(puffN, -R);
@@ -3398,7 +3410,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       fwd /= len;
       str /= len;
     }
-    const run = (keys.has('shift') ? SPRINT : 1) * walkK;
+    const run = (keys.has('shift') ? SPRINT : 1) * walkK * (shakeT > 0 ? 1 - shakeHold : 1); // (o chão tremendo pode prender o passo: ctx.shake)
     // A inércia é calculada NO REFERENCIAL DA CÂMERA (f = pra frente, s = pra direita). Antes era no
     // mundo: ao girar andando, a velocidade demorava a acompanhar e o personagem "escorregava".
     const cyw = Math.cos(yaw);
@@ -4507,7 +4519,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
   // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
-  // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §96; ideia do Pedro: cada capítulo com a sua cor, mudando aos poucos conforme o jogador avança
+  // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §98; ideia do Pedro: cada capítulo com a sua cor, mudando aos poucos conforme o jogador avança
   // dentro dele). O capítulo 1 é o do FOGO: começa FRIO (o Poço, pedra cinza e luz de fora) e vai esquentando sala a sala até o âmbar do
   // Tribunal. É um banho leve (uns 7%), que a paleta transforma em outra escolha de cores; muda devagar ao trocar de sala.
   const GRADE_A = new THREE.Vector3(0.95, 0.99, 1.07); // a primeira sala do capítulo
@@ -4518,7 +4530,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     gradeT.lerpVectors(GRADE_A, GRADE_B, f);
     (postMat.uniforms.uGrade.value as THREE.Vector3).lerp(gradeT, Math.min(1, Math.max(dt, 0.001) * 0.6));
   };
-  // o AR QUENTE (DESIGN.md §96): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
+  // o AR QUENTE (DESIGN.md §98): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
   const hotV = new THREE.Vector3();
   const hotList: { u: number; v: number; r: number; d: number }[] = [];
   const updateHot = (t: number) => {
@@ -4545,7 +4557,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
     postMat.uniforms.uTime.value = t % 1000;
   };
-  // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §96). Procura o teto com alguns raios para cima; onde
+  // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §98). Procura o teto com alguns raios para cima; onde
   // não há teto (pátio, claustro), nada cai
   const dustRay = new THREE.Raycaster();
   const ceilingDust = (ri: number) => {
@@ -4669,6 +4681,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     accentLight.intensity = 5 * lightScale(); // a luz que o dado da mão carrega também apaga (numa sala baixa ela acendia o teto)
     shapeLight();
     landKick = Math.max(0, landKick - dt * 4);
+    // o tremor do chão (ctx.shake): uns milímetros de câmera e um quase nada de giro, que somem no fim; "reduzir movimento" não treme
+    shakeT = Math.max(0, shakeT - dt);
+    const shakeA = shakeT > 0 && dbg.bob ? shakeK * Math.min(1, shakeT / 0.12) : 0;
+    const shX = shakeA * 0.012 * (Math.sin(t * 67) + 0.6 * Math.sin(t * 41 + 1.7));
+    const shY = shakeA * 0.01 * (Math.sin(t * 59 + 0.4) + 0.5 * Math.sin(t * 97));
+    const shR = shakeA * 0.004 * Math.sin(t * 47 + 2.1);
     const speedFrac = Math.min(1, Math.hypot(moveVel.x, moveVel.z) / MAX_SPEED);
     // sensação de velocidade: o campo de visão abre um pouquinho correndo
     const fovTarget = fovCine > 0 ? fovCine : fovBase + (dbg.bob ? 2.5 : 0) * Math.min(1.3, speedFrac); // (reduzir movimento: sem o campo de visão abrindo)
@@ -4706,12 +4724,27 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pitch = c.p0 + (c.p1 - c.p0) * u;
       if (c.t >= c.dur) camTween = null;
     }
-    camera.position.set(pos.x, pos.y + bobY - introDrop, pos.z);
-    camera.rotation.set(pitch, yaw, introRoll);
+    camera.position.set(pos.x + shX * Math.cos(yaw), pos.y + bobY - introDrop + shY, pos.z - shX * Math.sin(yaw));
+    camera.rotation.set(pitch + shR, yaw, introRoll + shR * 0.6);
     if (cineCam) {
       // câmera de cinema (cena da abertura): solta do jogador
       camera.position.copy(cineCam.pos);
       camera.lookAt(cineCam.look);
+    }
+    // (só em desenvolvimento) a câmera do TRAILER (tools/trailer/): posição e alvo no mundo, campo de visão e giro; assume a imagem
+    // enquanto `__trailerCam` estiver definida
+    if (import.meta.env.DEV) {
+      const tc = (globalThis as Record<string, unknown>).__trailerCam as { p: number[]; t: number[]; fov?: number; roll?: number } | undefined;
+      if (tc) {
+        camera.position.set(tc.p[0], tc.p[1], tc.p[2]);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(tc.t[0], tc.t[1], tc.t[2]);
+        if (tc.roll) camera.rotateZ(tc.roll);
+        if (tc.fov && Math.abs(camera.fov - tc.fov) > 1e-3) {
+          camera.fov = tc.fov;
+          camera.updateProjectionMatrix();
+        }
+      }
     }
 
     // ── dado no mundo ──
@@ -5312,6 +5345,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       noHud: (v = true) => {
         devNoHud = v;
       },
+      // (TRAILER, tools/trailer/) os soquetes da sala i (coordenadas locais) e um ponto local da sala i no mundo
+      sockets: (i: number) => (rooms[i].sockets ?? []).map((k) => [k.x, k.y, k.z]),
+      w: (i: number, x: number, y: number, z: number) => {
+        const v = toW(i, new THREE.Vector3(x, 0, z));
+        return [v.x, places[i].pos.y + y, v.z];
+      },
       prompt: (l: string | null) => opts.onPrompt?.(l), // (testes: mostra um aviso de ação)
       meta: () => saves.meta(),
       solved: () => rooms.map((r) => r.isSolved?.() ?? null),
@@ -5348,6 +5387,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
       ceilingDust: () => ceilingDust(curRoom),
       shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
+      // (testes) as luzes comuns emprestadas agora: de que sala, a força e a nota (força / (1 + distância²)) com que ganharam a vaga
+      lights: () => slots.filter((sl) => sl.em).map((sl) => ({ sala: sl.room, i: +sl.em!.intensity.toFixed(1), nota: +(sl.em!.intensity / (1 + sl.light.position.distanceToSquared(camera.position))).toFixed(2) })),
       chalkCount: () => chalk.count,
       // coloca o dado direto num ponto (para testes de puzzle)
       drop: (x: number, y: number, z: number) => {

@@ -1,4 +1,4 @@
-// O MUNDO REAGE NA IMAGEM (DESIGN.md §96): a poeira que o dado levanta ao bater, as fagulhas de quando ele acende alguma coisa, o rastro de
+// O MUNDO REAGE NA IMAGEM (DESIGN.md §98): a poeira que o dado levanta ao bater, as fagulhas de quando ele acende alguma coisa, o rastro de
 // brasa do arremesso de Fogo, o pó que cai do teto quando a sala se resolve e a poeira que a porta solta ao abrir. Antes só o SOM dizia
 // essas coisas.
 //

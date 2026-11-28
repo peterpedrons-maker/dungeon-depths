@@ -284,9 +284,9 @@ export function buildRespiro4(ctx: Ctx): Room {
     rects.push([SX - 0.18, b, SX + 0.02, a, Math.max(hA(b), hC(b)) + 0.9]);
     rects.push([-SX - 0.02, c, -SX + 0.18, d, hB(d) + 0.9]);
   }
-  // (cenógrafo) a névoa de fora desce um pouco pelo alto do poço da escada (DESIGN.md §96): só lá em cima, acima do último lance
+  // (cenógrafo) a névoa de fora desce um pouco pelo alto do poço da escada (DESIGN.md §98): só lá em cima, acima do último lance
   kit.fxUpd.push(mistBank(kit.group, { x0: X0 + 1, x1: X1 - 1, z0: Z0 + 1, z1: 1, y0: H - 3.2, y1: H - 0.6, n: 6, size: [3, 5], opacity: 0.45 }));
-  // (cenógrafo) um morcego cruza o alto do poço da escada de vez em quando (DESIGN.md §96)
+  // (cenógrafo) um morcego cruza o alto do poço da escada de vez em quando (DESIGN.md §98)
   kit.fxUpd.push(bat(kit, new THREE.Vector3(X0 + 0.8, H - 1.4, Z0 + 0.8), new THREE.Vector3(X1 - 0.8, H - 1.9, 1.2), 70));
   kit.bake();
 

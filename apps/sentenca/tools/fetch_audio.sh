@@ -6,6 +6,9 @@
 # Para refazer um instrumento do FluidR3_GM: ... public/audio inst:contrabass inst:voice_oohs (as notas baixadas ficam em <pasta>/sf)
 # 3ª leva (DESIGN.md §79): nada novo para baixar aqui. As gotas novas e a pedra assentando saem dos pacotes de cima; os instrumentos novos
 # da música do menu (contrabaixo, coro "oohs", garrafa soprada) vêm do mesmo FluidR3_GM, baixados pelo build_audio.py.
+# 4ª leva (a Ponte de Frases, sala 14): também nada novo. Os grampos, o tremor e a queda (bridge_lock, bridge_hold, bridge_break) saem dos
+# pacotes da 1ª e da 2ª leva (rubberduck, Kenney, AntumDeluge, bonebrah, themightyglider); para refazer só eles bastam esses pacotes:
+#   python3 -I tools/build_audio.py <pasta dos downloads> public/audio bridge_lock bridge_hold bridge_break
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 D=${1:-$(mktemp -d)}; mkdir -p "$D"; cd "$D"

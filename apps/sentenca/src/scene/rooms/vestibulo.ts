@@ -115,7 +115,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     {
       const g = skyCv.getContext('2d')!;
       const grd = g.createLinearGradient(0, 0, 0, 64);
-      // (DESIGN.md §95: a NEBLINA. O céu não é céu: é a mesma névoa, mais clara no alto; embaixo ele tem a cor exata da névoa do chão, então
+      // (DESIGN.md §97: a NEBLINA. O céu não é céu: é a mesma névoa, mais clara no alto; embaixo ele tem a cor exata da névoa do chão, então
       // não há horizonte, nem nada lá longe)
       grd.addColorStop(0, '#e6e3dc');
       grd.addColorStop(0.35, '#bdbbc6');
@@ -260,8 +260,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
         p.needsUpdate = true;
       };
     }
-    // (as torres escuras da Casa contra o céu saíram, DESIGN.md §95: lá fora não se sabe o que existe)
-    // a mancha de luz no chão (a coluna de luz agora é o FEIXE do `beamDust`, DESIGN.md §96: antes era um tubo de cor chapada)
+    // (as torres escuras da Casa contra o céu saíram, DESIGN.md §97: lá fora não se sabe o que existe)
+    // a mancha de luz no chão (a coluna de luz agora é o FEIXE do `beamDust`, DESIGN.md §98: antes era um tubo de cor chapada)
     const pool = new THREE.Mesh(
       new THREE.CircleGeometry(1.6, 24),
       new THREE.MeshBasicMaterial({ color: 0xcfd8f0, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
@@ -496,7 +496,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     moon.shadow.camera.far = 16;
     moon.shadow.bias = -0.002;
     kit.group.add(moon, moon.target);
-    // o feixe da fresta no ar e a poeira fina dentro dele (DESIGN.md §96; antes só 56 grãos de 2 × 2 pixels, sem feixe: a paleta achatava o
+    // o feixe da fresta no ar e a poeira fina dentro dele (DESIGN.md §98; antes só 56 grãos de 2 × 2 pixels, sem feixe: a paleta achatava o
     // cone de cor chapada num bloco)
     lifeFx.push(beamMotes(kit.group, moon.position.clone(), moon.target.position.clone(), 56, 0xc8d4f0, 0.5));
     // o caminho gasto da entrada à porta, teias nos cantos altos do fundo
