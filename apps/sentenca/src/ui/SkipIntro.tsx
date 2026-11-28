@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { T, tx } from '../i18n';
+import { keyName } from '../story/config';
+
+const SKIP = T('Segure para pular a introdução', 'Hold to skip the intro', 'Mantén pulsado para saltar la introducción');
 
 // PULAR A INTRODUÇÃO (DESIGN.md §92, pedido do Pedro): uma plaquinha de pedra no alto, à direita, enquanto a abertura dura (do acordar até o dado
 // estar na mão). SEGURAR (não basta tocar, para ninguém pular sem querer): no PC, a tecla Espaço (o mouse está preso no jogo); no celular, o
@@ -66,7 +70,7 @@ export function SkipIntro({ onSkip, coarse }: { onSkip: () => void; coarse: bool
     <div
       className={`skipintro${k > 0 ? ' holding' : ''}`}
       role="button"
-      aria-label="Segure para pular a introdução"
+      aria-label={tx(SKIP)}
       onPointerDown={(e) => {
         e.stopPropagation();
         try {
@@ -81,8 +85,8 @@ export function SkipIntro({ onSkip, coarse }: { onSkip: () => void; coarse: bool
       onPointerCancel={release}
       onLostPointerCapture={release}
     >
-      {!coarse && <span className="keycap-hud">Espaço</span>}
-      <span className="skipintro-t">Segure para pular a introdução</span>
+      {!coarse && <span className="keycap-hud">{keyName(' ')}</span>}
+      <span className="skipintro-t">{tx(SKIP)}</span>
       <i className="skipintro-bar" style={{ transform: `scaleX(${k})` }} />
     </div>
   );

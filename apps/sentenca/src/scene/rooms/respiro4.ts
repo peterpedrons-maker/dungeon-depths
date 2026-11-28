@@ -12,6 +12,7 @@ import { mkBox, slopedWall, stairs, wedge, Z1 } from './shell';
 import { windNear } from '../ambience';
 import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { T as Tr } from '../../i18n';
 
 const X0 = -4;
 const X1 = 4;
@@ -242,7 +243,7 @@ export function buildRespiro4(ctx: Ctx): Room {
     {
       pos: leaf.position.clone(),
       r: 1.6,
-      label: 'Pegar a folha',
+      label: Tr('Pegar a folha', 'Take the page', 'Tomar la hoja'),
       enabled: () => !taken && Math.abs(ctx.feetY() - L1) < 0.4,
       use: () => {
         taken = true;
@@ -286,7 +287,7 @@ export function buildRespiro4(ctx: Ctx): Room {
 
   return {
     name: 'A Escadaria',
-    subtitle: 'Muitos degraus.',
+    subtitle: Tr('Muitos degraus.', 'Many steps.', 'Muchos escalones.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

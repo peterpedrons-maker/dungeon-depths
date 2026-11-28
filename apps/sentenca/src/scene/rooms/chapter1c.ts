@@ -16,6 +16,7 @@ import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireSpec, FireTablet } from './fire';
 import { lambert, worldBoxUV } from '../kit';
 import type { Box, Rect } from '../types';
+import { T } from '../../i18n';
 
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
@@ -562,13 +563,13 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
 
 export const FIRE_PONTE_FRASES: FireSpec = {
   name: 'A Ponte de Frases',
-  subtitle: 'O que é verdade aguenta.',
+  subtitle: T('O que é verdade aguenta.', 'What is true holds.', 'Lo que es verdad aguanta.'),
   hx: PF.hx,
   z0: PF.z0,
   h: PF.h,
   braziers: [],
   rule: { kind: 'custom', lamps: 1 },
-  lock: { judge: 'door', penalty: 8, judged: ['A Casa leu', 'A porta acordou.'] },
+  lock: { judge: 'door', penalty: 8, judged: [T('A Casa leu', 'The House read it', 'La Casa lo leyó'), T('A porta acordou.', 'The door woke up.', 'La puerta despertó.')] },
   words: ['acender', 'verdade', 'conf'],
   tablets: FPF_TABLETS,
   floorGap: { x0: -PF.hx, x1: PF.hx, dz0: PF.back, dz1: PF.front, depth: PF.depth },

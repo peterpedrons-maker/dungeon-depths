@@ -262,3 +262,7 @@
 @media (pointer: coarse) { .skipintro { top: 62px; padding: 8px 14px 8px 10px; } }
 @media (pointer: coarse) and (max-height: 420px) { .skipintro { top: 54px; } }
 
+
+/* a escolha do IDIOMA na 1ª vez (src/i18n.ts): por cima de tudo, num fundo preto (vem antes da abertura da editora) */
+.mnu-veil.lang-pick { z-index: 80; background: #0b0912; }
+.lang-pick .lang-q { line-height: 1.6; margin: calc(4px * var(--ui)) 0 calc(10px * var(--ui)); }

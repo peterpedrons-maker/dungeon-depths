@@ -4,6 +4,8 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { T, tx, type Text } from '../i18n';
+import { roomTitle } from '../story/roomnames';
 import { FACES } from '../faces';
 import {
   blobShadowTexture,
@@ -1028,19 +1030,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   const clearChalk = () => {
     if (chalk.count === 0) {
-      caption('Nada pra apagar', 'Não há marcas de giz nesta sala.', '#cfc6e8');
+      caption(T('Nada pra apagar', 'Nothing to erase', 'Nada que borrar'), T('Não há marcas de giz nesta sala.', 'There are no chalk marks in this room.', 'No hay marcas de tiza en esta sala.'), '#cfc6e8');
       return;
     }
     if (eraseArmed <= 0) {
       eraseArmed = 2;
-      caption('Apagar tudo?', 'Aperte de novo para confirmar.', '#ff9aa8');
+      caption(T('Apagar tudo?', 'Erase everything?', '¿Borrar todo?'), T('Aperte de novo para confirmar.', 'Press again to confirm.', 'Pulsa otra vez para confirmar.'), '#ff9aa8');
       return;
     }
     eraseArmed = 0;
     sfx.play('sweep');
     chalk.clear();
     soapKick = 1;
-    caption('Giz apagado', 'A sala está limpa.', '#cfc6e8');
+    caption(T('Giz apagado', 'Chalk erased', 'Tiza borrada'), T('A sala está limpa.', 'The room is clean.', 'La sala está limpia.'), '#cfc6e8');
   };
 
   // ── regras físicas ──────────────────────────────────────────────────────
@@ -1069,7 +1071,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const rightV = new THREE.Vector3();
   const gN = new THREE.Vector3();
 
-  const caption = (title: string, sub: string, color: string) => opts.onCaption?.(title, sub, color);
+  const caption = (title: Text, sub: Text, color: string) => opts.onCaption?.(tx(title), tx(sub), color); // (os três idiomas: src/i18n.ts)
 
   // ── jogador ─────────────────────────────────────────────────────────────
   const EYE = 1.6;
@@ -1341,7 +1343,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         break;
       case 1:
-        dialogue.say([{ who: 'thought', text: '…Tem alguém aí?' }], { block: true, onEnd: () => go(2) });
+        dialogue.say([{ who: 'thought', text: T('…Tem alguém aí?', '…Is anyone there?', '…¿Hay alguien ahí?') }], { block: true, onEnd: () => go(2) });
         S.ph = 1.5;
         break;
       case 2:
@@ -1438,7 +1440,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       case 9.5:
         fovCine = 44; // (o mesmo zoom leve, só com o olhar já lá em cima)
         if (S.t > 1.3) {
-          dialogue.say([{ who: 'thought', text: 'Sumiu.' }], { block: true, onEnd: () => go(10) });
+          dialogue.say([{ who: 'thought', text: T('Sumiu.', 'Gone.', 'Se fue.') }], { block: true, onEnd: () => go(10) });
           S.ph = 9.8;
         }
         break;
@@ -1734,7 +1736,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       places.push(pl);
       if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
       const room = build(makeCtx(i));
-      room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática
+      room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática // i18n-ok (o nome da sala é o identificador dela; a tela traduz com roomTitle)
       bounds.push(footprint(room)); // (a sala ainda está na origem, sem giro)
       // em fila: o corredor da porta de uma desemboca na entrada da próxima; salas que descem (fosso, banhos): a seguinte começa no nível
       // da porta de saída (também na planta: o andar de cada sala sai da anterior)
@@ -2622,12 +2624,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let introRoll = 0;
   const INTRO_LINES = {
     lying: [
-      { who: 'thought' as const, text: 'Dói tudo.' },
-      { who: 'thought' as const, text: 'Caí? Ou me jogaram?' },
+      { who: 'thought' as const, text: T('Dói tudo.', 'Everything hurts.', 'Me duele todo.') },
+      { who: 'thought' as const, text: T('Caí? Ou me jogaram?', 'Did I fall? Or was I thrown?', '¿Me caí? ¿O me tiraron?') },
     ],
     shaft: [
-      { who: 'thought' as const, text: 'Luz, lá em cima. Alto demais.' },
-      { who: 'thought' as const, text: 'Preciso de uma porta.' },
+      { who: 'thought' as const, text: T('Luz, lá em cima. Alto demais.', 'Light, up there. Too high.', 'Luz, allá arriba. Demasiado alto.') },
+      { who: 'thought' as const, text: T('Preciso de uma porta.', 'I need a door.', 'Necesito una puerta.') },
     ],
   };
   const startIntro = () => {
@@ -2782,7 +2784,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (dieState !== 'hand' || busy()) return;
     const a = aimPoint();
     if (!a) {
-      caption('Longe demais', '', '#cfc6e8');
+      caption(T('Longe demais', 'Too far', 'Demasiado lejos'), '', '#cfc6e8');
       return;
     }
     thrownFace = face;
@@ -2833,14 +2835,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     const f = FACES[n - 1];
     if (!f) return;
     if (!f.unlocked) {
-      caption(`${n} · ?`, 'Selada.', '#8f86a8');
+      caption(`${n} · ?`, T('Selada.', 'Sealed.', 'Sellada.'), '#8f86a8');
       sfx.play('locked');
       return;
     }
     if (tool !== 'die') setTool('die');
     applyFace(n);
     sfx.play('face', n);
-    caption(`${n} · ${f.name}`, f.desc, f.color);
+    caption(`${n} · ${tx(f.name)}`, f.desc, f.color);
   };
   const cycleFace = (dir: number) => {
     if (tool !== 'die') {
@@ -3419,7 +3421,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     blendAtmosphere(0, true);
     announced.add(0);
     diary.visitRoom(rooms[0].name);
-    caption(rooms[0].name, rooms[0].subtitle, '#ffd36b');
+    caption(roomTitle(rooms[0].name), rooms[0].subtitle, '#ffd36b');
   };
 
   let chatFn: (key: string) => void = () => {};
@@ -3950,7 +3952,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       }
       for (let i = 0; i <= m.room; i++) announced.add(i);
       diary.visitRoom(r.name);
-      goPending = { cap: () => caption(r.name, r.subtitle, '#ffd36b'), intro: false };
+      goPending = { cap: () => caption(roomTitle(r.name), r.subtitle, '#ffd36b'), intro: false };
     } else {
       spawnIn(0);
       announced.add(0);
@@ -4099,7 +4101,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       });
     }
     nearest = best;
-    const label: string | null = best ? (best as Interactable).label : null;
+    const label: string | null = best ? tx((best as Interactable).label) : null;
     if (label !== promptLabel) {
       promptLabel = label;
       opts.onPrompt?.(label);
@@ -4421,7 +4423,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       } catch {
         /* sem armazenamento: tudo bem */
       }
-      caption('Algo falhou (o jogo seguiu)', `${where}: ${msg}`.slice(0, 90), '#c89a90');
+      caption(T('Algo falhou (o jogo seguiu)', 'Something failed (the game went on)', 'Algo falló (el juego siguió)'), `${where}: ${msg}`.slice(0, 90), '#c89a90');
     }
   };
   const loop = (now: number) => {
@@ -4429,7 +4431,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     try {
       frame(now);
     } catch (e) {
-      loopError(e, 'quadro');
+      loopError(e, tx(T('quadro', 'frame', 'fotograma')));
     }
   };
   const frame = (now: number) => {
@@ -4482,7 +4484,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (!announced.has(ri)) {
         announced.add(ri);
         sfx.play('room');
-        caption(rooms[ri].name, rooms[ri].subtitle, '#ffd36b');
+        caption(roomTitle(rooms[ri].name), rooms[ri].subtitle, '#ffd36b');
       }
     }
     blendAtmosphere(dt);
@@ -4882,7 +4884,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (gemFx.active() && ui.diaryOpen()) ui.setDiary(false);
         gemFx.update(dt);
       } catch (e) {
-        loopError(e, 'cena da gema');
+        loopError(e, tx(T('cena da gema', 'gem scene', 'escena de la gema')));
         gemFx.abort();
       }
       const hide = book.update(dt, t);

@@ -20,6 +20,7 @@ import { diary, diaryStore } from '../../story/diary';
 import { mkBox, slopedWall, stairs, wedge } from './shell';
 import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { T as Tr } from '../../i18n';
 
 const HALL = 1.2; // o chão do salão
 const EY = 2.7; // o patamar da entrada
@@ -386,7 +387,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   interactables.push({
     pos: new THREE.Vector3(DR.x, 0.9, DR.z),
     r: 1.7,
-    label: 'Pegar a folha',
+    label: Tr('Pegar a folha', 'Take the page', 'Tomar la hoja'),
     enabled: () => solved && gemK > 0.95 && !gemTaken,
     use: () => {
       gemTaken = true;
@@ -407,7 +408,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   interactables.push({
     pos: leaf.position.clone(),
     r: 1.7,
-    label: 'Pegar a folha',
+    label: Tr('Pegar a folha', 'Take the page', 'Tomar la hoja'),
     enabled: () => !p4Taken,
     use: () => {
       p4Taken = true;
@@ -441,7 +442,7 @@ export function buildRespiro2(ctx: Ctx): Room {
   return {
     skyHoles: SKY,
     name: 'Os Banhos Secos',
-    subtitle: 'A água se foi. As palavras ficaram.',
+    subtitle: Tr('A água se foi. As palavras ficaram.', 'The water is gone. The words remained.', 'El agua se fue. Las palabras quedaron.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

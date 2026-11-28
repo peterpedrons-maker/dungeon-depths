@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import type { Inscription } from './inscription';
 import type { Ctx, Interactable } from './types';
 import { quiz } from '../story/quiz';
+import { T } from '../i18n';
 
 export interface PointAskOpts {
   id: string; // chave para lembrar no aparelho que já foi respondida
@@ -72,7 +73,7 @@ export function makePointAsk(ctx: Ctx, o: PointAskOpts): PointAsk {
     interactable: {
       pos,
       r: 2.7,
-      label: 'Apontar',
+      label: T('Apontar', 'Point', 'Señalar'),
       enabled: () => st === 'asking' && calm(),
       use: () => {
         if (hit()) {

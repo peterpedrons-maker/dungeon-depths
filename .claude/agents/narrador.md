@@ -24,6 +24,16 @@ cada cena começa, respira e termina. Responda sempre em **português do Brasil*
 - **Textos de parede e frases de porta** (glifos): `kit.inscribe({ words: [...] })` e `FireTablet.lines` nas salas e em `src/scene/rooms/chapter1.ts`.
 - **Nomes e subtítulos de sala** (`name`, `subtitle` de cada `Room`), **perguntas do dado** (`src/story/quiz.ts`), textos fixos em `src/story/texts.ts`.
 
+## TRÊS IDIOMAS (pedido do Pedro; `DESIGN.md` §98)
+- **Todo texto que você escreve ou revisa vai nos três idiomas: português, inglês e espanhol**, com `T('pt', 'en', 'es')` (`src/i18n.ts`).
+  Pensamentos, folhas dela (`HER_PAGES`, `HER_RELATO`, `HER_NOTES`: cada linha é um `Tx`), textos (`texts.ts`), legendas, subtítulos, nomes de
+  sala (a tradução mora em `src/story/roomnames.ts`; o `name` da sala continua em português, é chave), significados das perguntas (`MEAN` em
+  `quiz.ts`). Nada entra só em português.
+- **Traduza a voz, não as palavras.** Mesma economia, mesmo tom, mesma frase curta. Inglês e espanhol naturais, sem calque do português.
+- **Os glifos não se traduzem** (ids do léxico); «SENTENÇA» e «Cinco Riscos» também não.
+- **Caber na página:** o caderno tem 13 linhas de 16 caracteres por folha dela; a tradução precisa caber igual (a mais longa manda).
+- Rode `node tools/verify_i18n.mjs` (acha texto solto em português) e `npx tsc --noEmit -p .` (um `Tx` sem um dos três não compila).
+
 ## As regras da voz (não quebre)
 - **O mundo fala em glifos; só os humanos escrevem em português.** O dado, o Escrivão, as inscrições: só ids do léxico. Nunca traduza um glifo
   ao lado dele, nunca ponha legenda em português numa fala do mundo, e o diário **nunca corrige** o jogador.

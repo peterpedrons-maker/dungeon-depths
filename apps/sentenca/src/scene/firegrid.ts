@@ -18,6 +18,7 @@ import { glyphsOf, LEX, type GlyphDef } from '../story/lexicon';
 import type { Box, Ctx, Interactable } from './types';
 import type { Inscription } from './inscription';
 import { diary, diaryStore } from '../story/diary';
+import { T } from '../i18n';
 
 export const edgeKey = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
 
@@ -710,7 +711,7 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
   const it: Interactable = {
     pos: new THREE.Vector3(x + nx * 0.6, y, z + nz * 0.6),
     r: 1.8,
-    label: page ? 'Pegar a folha' : 'Pegar a gema',
+    label: page ? T('Pegar a folha', 'Take the page', 'Tomar la hoja') : T('Pegar a gema', 'Take the gem', 'Tomar la gema'),
     enabled: () => open > 0.95 && !taken,
     use() {
       taken = true;
@@ -719,7 +720,7 @@ export function makeGemNiche(kit: Kit, ctx: Ctx, x: number, y: number, z: number
       if (page) {
         ctx.sfx('gem');
         diary.addPage(page);
-      } else ctx.gem(prize, new THREE.Vector3(x + nx * 0.16, y - 0.05, z + nz * 0.16), ['Uma gema', 'Escondida pela Casa. Nem toda porta é a da frente.', '#7ad8ff']);
+      } else ctx.gem(prize, new THREE.Vector3(x + nx * 0.16, y - 0.05, z + nz * 0.16), [T('Uma gema', 'A gem', 'Una gema'), T('Escondida pela Casa. Nem toda porta é a da frente.', 'Hidden by the House. Not every door is the front one.', 'Escondida por la Casa. No toda puerta es la de enfrente.'), '#7ad8ff']);
       onTake?.();
     },
   };

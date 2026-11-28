@@ -16,6 +16,7 @@ import data from './tribunal.json';
 import { buildFireRoom, type FireExtra, type FireExtraApi, type FireLine, type FireSpec, type FireTablet } from './fire';
 import { LINGER_MS } from '../../story/writing';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
+import { T as Tr } from '../../i18n';
 
 const SCALE: Record<string, number> = { pequeno: 0.7, medio: 1, grande: 1.35 };
 interface Stmt {
@@ -256,7 +257,7 @@ function altarExtra(api: FireExtraApi): FireExtra {
   const push: Interactable = {
     pos: new THREE.Vector3(AX, (OY0 + OY1) / 2, ZF + 0.3),
     r: 1.7,
-    label: 'Empurrar a pedra',
+    label: Tr('Empurrar a pedra', 'Push the stone', 'Empujar la piedra'),
     enabled: () => st === 'cracked',
     use() {
       st = 'pushing';
@@ -270,7 +271,7 @@ function altarExtra(api: FireExtraApi): FireExtra {
   const put: Interactable = {
     pos: new THREE.Vector3(AX, (OY0 + OY1) / 2, ZF + 0.3),
     r: 1.7,
-    label: 'Pôr o dado',
+    label: Tr('Pôr o dado', 'Place the die', 'Poner el dado'),
     enabled: () => st === 'open' && performance.now() >= readyAt,
     use() {
       const ok = ctx.altar({
@@ -302,7 +303,7 @@ function altarExtra(api: FireExtraApi): FireExtra {
           }
         },
       });
-      if (!ok) ctx.caption('O dado', 'Primeiro, o dado na mão.', '#cfc6e8');
+      if (!ok) ctx.caption(Tr('O dado', 'The die', 'El dado'), Tr('Primeiro, o dado na mão.', 'First, the die in hand.', 'Primero, el dado en la mano.'), '#cfc6e8');
     },
   };
 
@@ -421,7 +422,7 @@ export function buildTribunal(ctx: Ctx): Room {
   const spec: FireSpec = {
     name: data.nome,
     last: true, // o fim do capítulo 1
-    subtitle: 'Todas as frases falam de alguém.',
+    subtitle: Tr('Todas as frases falam de alguém.', 'Every sentence speaks of someone.', 'Todas las frases hablan de alguien.'),
     hx: 6.2,
     z0: -16,
     h: 4,

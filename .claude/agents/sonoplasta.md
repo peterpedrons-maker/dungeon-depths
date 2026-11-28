@@ -84,6 +84,8 @@ jogo, e que **ajude o jogador a entender** o que aconteceu (acertou, errou, algo
 
 ## O que NÃO é seu
 - A música (só convivência com ela), os textos, os puzzles, os gráficos e o workflow de deploy (`.github/workflows/deploy.yml`: nunca edite).
+- Se algum texto que o jogador lê mudar por causa do som (um rótulo nas Configurações, por exemplo), ele vai nos três idiomas com
+  `T('pt', 'en', 'es')` (`src/i18n.ts`, `DESIGN.md` §98); rode `node tools/verify_i18n.mjs`.
 
 ## Formato da resposta
 - **Avaliação** (o que havia): 5 a 10 linhas, direto.

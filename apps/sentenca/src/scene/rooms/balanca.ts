@@ -20,6 +20,7 @@ import { drawGlyphPart } from '../../book/font';
 import { glyphsOf } from '../../story/lexicon';
 import { mkBox, shotGate } from './shell';
 import type { Box, Ctx, Rect, Room } from '../types';
+import { T as Tr } from '../../i18n';
 
 const R = 6.2;
 const HALF = 1.75;
@@ -418,7 +419,7 @@ export function buildBalanca(ctx: Ctx): Room {
   const PR = 0.75;
   return {
     name: 'A Balança',
-    subtitle: 'O que pesa igual.',
+    subtitle: Tr('O que pesa igual.', 'What weighs the same.', 'Lo que pesa igual.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -608,7 +609,7 @@ export function buildBalanca(ctx: Ctx): Room {
             ctx.sfx('piece');
           } else {
             ctx.sfx('error');
-            ctx.caption('A Casa não aceitou', 'Os pesos subiram de volta.', '#cfc6e8');
+            ctx.caption(Tr('A Casa não aceitou', 'The House did not accept it', 'La Casa no lo aceptó'), Tr('Os pesos subiram de volta.', 'The weights went back up.', 'Los pesos volvieron a subir.'), '#cfc6e8');
             coldT = COLD;
             ctx.blackout(2.5, () => {
               hangAll();

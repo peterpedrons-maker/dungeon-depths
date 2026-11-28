@@ -15,17 +15,56 @@ import { QuizPanel } from './ui/QuizPanel';
 import { quiz } from './story/quiz';
 import { WordGlyph } from './ui/Glyph';
 import { useUiScale } from './ui/scale';
-import { Credits, PauseMenu, SaveIndicator, TitleScreen, type TitleApi } from './ui/Menus';
+import { Credits, LanguagePick, PauseMenu, SaveIndicator, TitleScreen, type TitleApi } from './ui/Menus';
 import { Splash } from './ui/Splash';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { SkipIntro } from './ui/SkipIntro';
 import { saves } from './story/save';
-import { configStore, keyName } from './story/config';
+import { config, configStore, keyName } from './story/config';
 import type { IconName } from './ui/PixelIcon';
+import { T, tx, useLang } from './i18n';
 
 // o ícone de cada aviso de ação (pelo verbo do texto)
+// (o aviso já chega no idioma escolhido: os verbos dos três idiomas)
 const actionIcon = (label: string | null): IconName =>
-  !label ? 'agir' : /^Pegar/i.test(label) ? 'pegar' : /abrir/i.test(label) ? 'abrir' : /^(Ler|Olhar)/i.test(label) ? 'ler' : 'agir';
+  !label ? 'agir' : /^(Pegar|Take|Tomar)/i.test(label) ? 'pegar' : /(abrir|open)/i.test(label) ? 'abrir' : /^(Ler|Olhar|Read|Look|Leer|Mirar)/i.test(label) ? 'ler' : 'agir';
+
+// os textos da interface do jogo, nos três idiomas (src/i18n.ts)
+const A = {
+  notebook: T('Caderno', 'Notebook', 'Cuaderno'),
+  pause: T('Pausa', 'Pause', 'Pausa'),
+  noted: T('Anotado no caderno.', 'Noted in the notebook.', 'Anotado en el cuaderno.'),
+  hintPc1: T('WASD anda · clique arremessa · G posiciona', 'WASD moves · click throws · G places', 'WASD mueve · clic lanza · G coloca'),
+  hintPc2: T('1-6 trocam a face · E age · J caderno', '1-6 change the face · E acts · J notebook', '1-6 cambian la cara · E actúa · J cuaderno'),
+  hintT1: T('esquerda: andar · direita: olhar', 'left: walk · right: look', 'izquierda: andar · derecha: mirar'),
+  hintT2: T('botões: arremessar, posicionar, girar', 'buttons: throw, place, turn', 'botones: lanzar, colocar, girar'),
+  act: T('AGIR', 'ACT', 'ACTUAR'),
+  turnDie: T('Girar o dado', 'Turn the die', 'Girar el dado'),
+  turn: T('GIRAR', 'TURN', 'GIRAR'),
+  placeDie: T('Posicionar o dado onde a mira aponta', 'Place the die where the crosshair points', 'Colocar el dado donde apunta la mira'),
+  place: T('POSICIONAR', 'PLACE', 'COLOCAR'),
+  recallDie: T('Recolher o dado', 'Recall the die', 'Recoger el dado'),
+  throwDie: T('Arremessar o dado', 'Throw the die', 'Lanzar el dado'),
+  recall: T('RECOLHER', 'RECALL', 'RECOGER'),
+  throw: T('ARREMESSAR', 'THROW', 'LANZAR'),
+  takeChalk: T('Pegar o giz', 'Take the chalk', 'Tomar la tiza'),
+  takeDie: T('Pegar o dado', 'Take the die', 'Tomar el dado'),
+  chalk: T('GIZ', 'CHALK', 'TIZA'),
+  die: T('DADO', 'DIE', 'DADO'),
+  draw: T('Desenhar', 'Draw', 'Dibujar'),
+  erase: T('Apagar', 'Erase', 'Borrar'),
+  eraseAll: T('Apagar tudo', 'Erase everything', 'Borrar todo'),
+  clear: T('LIMPAR', 'CLEAR', 'LIMPIAR'),
+  look: T('OLHAR', 'LOOK', 'MIRAR'),
+  clickPlay: T('Clique para jogar', 'Click to play', 'Haz clic para jugar'),
+  clickHelp: T('WASD anda · Shift corre · mouse olha · Esc solta o mouse', 'WASD moves · Shift runs · mouse looks · Esc frees the mouse', 'WASD mueve · Shift corre · ratón mira · Esc suelta el ratón'),
+  demoEnd: T('Fim da demonstração', 'End of the demo', 'Fin de la demostración'),
+  gemFound: T('Você achou uma gema escondida.', 'You found a hidden gem.', 'Encontraste una gema escondida.'),
+  gemsLeft: T('Ainda havia gemas escondidas pelo caminho.', 'There were still gems hidden along the way.', 'Aún quedaban gemas escondidas por el camino.'),
+  credits: T('Créditos', 'Credits', 'Créditos'),
+  toTitle: T('Voltar à tela inicial', 'Back to the title screen', 'Volver a la pantalla de inicio'),
+  rotate: T('Gire o celular para o modo horizontal', 'Turn your phone to landscape', 'Gira el móvil a horizontal'),
+};
 
 // TELA INICIAL ao abrir a página (INTERFACE.md §3.1); não aparece logo depois de escolher um espaço (a página recarrega já no jogo)
 // nem nas pré-visualizações e testes (?demo, ?lab, ?intro=0, ?titulo=0)
@@ -50,6 +89,15 @@ const mark = (k: string) => {
   }
 };
 const SHOW_TITLE = !PLAY_NOW && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
+// O IDIOMA (src/i18n.ts): ?lang=pt|en|es escolhe direto (testes, links); senão, na 1ª vez que o jogo abre, uma tela pergunta (antes da abertura)
+{
+  const l = Q.get('lang');
+  if (l === 'pt' || l === 'en' || l === 'es') {
+    config.set('lang', l);
+    config.set('langChosen', true);
+  }
+}
+const ASK_LANG = SHOW_TITLE && !configStore.get().langChosen;
 // A ABERTURA DA EDITORA (Pedra-Sabão): ao abrir o jogo, uma vez por sessão do navegador (voltar à tela inicial no meio do jogo não repete).
 // ?splash=0 pula, ?splash=1 força (testes)
 const SPLASH = (() => {
@@ -74,6 +122,7 @@ interface Caption {
 }
 
 export default function App() {
+  useLang(); // (o idioma mudou: a interface se redesenha)
   const uiK = useUiScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<SceneApi | null>(null);
@@ -100,6 +149,7 @@ export default function App() {
   const [introSkip, setIntroSkip] = useState(false); // a abertura está em curso e dá para pular (DESIGN.md §92)
   const [sceneReady, setSceneReady] = useState(false); // a cena já desenhou e os modelos chegaram (a tela inicial pode aparecer)
   const [splashOn, setSplashOn] = useState(SPLASH);
+  const [langAsk, setLangAsk] = useState(ASK_LANG);
   const [titleShown, setTitleShown] = useState(false);
   const openPauseRef = useRef<() => void>(() => {});
   const dry = useStore(diaryStore);
@@ -181,7 +231,7 @@ export default function App() {
     if (!np) return;
     const n = (dry.pages ?? []).length;
     const known = dry.herKnown ?? !!(dry.notes?.brasa ?? '').trim();
-    const lines = !known ? ['Uma folha arrancada. A mesma letra do caderno.'] : n <= 1 ? ['Uma folha arrancada. A letra dela.'] : [['Outra folha dela.', 'Mais uma folha dela.', 'A letra dela de novo.'][n % 3]];
+    const lines = !known ? [T('Uma folha arrancada. A mesma letra do caderno.', 'A torn-out page. The same handwriting as the notebook.', 'Una hoja arrancada. La misma letra del cuaderno.')] : n <= 1 ? [T('Uma folha arrancada. A letra dela.', 'A torn-out page. Her handwriting.', 'Una hoja arrancada. Su letra.')] : [[T('Outra folha dela.', 'Another page of hers.', 'Otra hoja suya.'), T('Mais uma folha dela.', 'One more page of hers.', 'Una hoja más de ella.'), T('A letra dela de novo.', 'Her handwriting again.', 'Su letra otra vez.')][n % 3]];
     window.setTimeout(() => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false }), 450);
   }, [dry.newPage, dry.pages, dry.herKnown, dry.notes]);
 
@@ -216,9 +266,9 @@ export default function App() {
     const t = window.setTimeout(
       () =>
         dialogue.say([
-          { who: 'thought', text: 'Fala sem voz.' },
+          { who: 'thought', text: T('Fala sem voz.', 'Speech without a voice.', 'Habla sin voz.') },
           { who: 'escrivao', glyphs: ['voce', 'poder', 'ajudar', 'eu', 'perg'] },
-          { who: 'thought', text: 'Uma pergunta, acho.' },
+          { who: 'thought', text: T('Uma pergunta, acho.', 'A question, I think.', 'Una pregunta, creo.') },
         ]),
       1400,
     );
@@ -284,7 +334,7 @@ export default function App() {
   };
 
   const inMenu = uis.menu !== null;
-  const titleNow = uis.menu === 'title' && sceneReady && !splashOn;
+  const titleNow = uis.menu === 'title' && sceneReady && !splashOn && !langAsk;
   useEffect(() => {
     if (titleNow && !titleShown) {
       setTitleShown(true);
@@ -336,7 +386,7 @@ export default function App() {
       {!inMenu && !complete && (
         <div className="hudbtns">
           {hasBook && (coarse || uis.bookCall || !!dry.newPage) && !uis.bookOut && (
-            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) || dry.newPage ? ' call' : ''}`} onClick={toggleDiary} aria-label="Caderno" title="Caderno (J)">
+            <button className={`diary-btn${uis.bookCall || (uis.guided && uis.guidedNote) || dry.newPage ? ' call' : ''}`} onClick={toggleDiary} aria-label={tx(A.notebook)} title={`${tx(A.notebook)} (J)`}>
               <PixelIcon name="diario" size={32} />
               {dry.unread > 0 && !uis.bookCall && <span className="badge">{dry.unread > 9 ? '9+' : dry.unread}</span>}
               {/* (no PC, que não tem botão fixo: a folha nova faz o botão aparecer pulsando, com a tecla do caderno embaixo) */}
@@ -344,7 +394,7 @@ export default function App() {
             </button>
           )}
           {coarse && !uis.bookOut && (
-            <button onClick={openPause} aria-label="Pausa">
+            <button onClick={openPause} aria-label={tx(A.pause)}>
               <PixelIcon name="pausa" size={32} />
             </button>
           )}
@@ -365,9 +415,7 @@ export default function App() {
       {toast && !speaking && !uis.bookOut && (
         <div key={toast.n} className="toast">
           <WordGlyph id={toast.id} size={Math.round(30 * uiK)} />
-          <span>
-            Anotado no caderno.
-          </span>
+          <span>{tx(A.noted)}</span>
         </div>
       )}
 
@@ -384,14 +432,14 @@ export default function App() {
       {hintShown && (
         <div className="hint">
           <span className="hint-pc">
-            WASD anda · clique arremessa · G posiciona
+            {tx(A.hintPc1)}
             <br />
-            1-6 trocam a face · E age · J caderno
+            {tx(A.hintPc2)}
           </span>
           <span className="hint-touch">
-            esquerda: andar · direita: olhar
+            {tx(A.hintT1)}
             <br />
-            botões: arremessar, posicionar, girar
+            {tx(A.hintT2)}
           </span>
         </div>
       )}
@@ -400,7 +448,7 @@ export default function App() {
         <div className="touchbtns">
           <button className="btn-throw" onPointerDown={(e) => { e.preventDefault(); sceneRef.current?.action(); }} aria-label={prompt}>
             <span className="ico"><PixelIcon name={actionIcon(prompt)} size={32} /></span>
-            <span>AGIR</span>
+            <span>{tx(A.act)}</span>
           </button>
         </div>
       )}
@@ -413,10 +461,10 @@ export default function App() {
               e.preventDefault();
               sceneRef.current?.rotate();
             }}
-            aria-label="Girar o dado"
+            aria-label={tx(A.turnDie)}
           >
             <span className="ico"><PixelIcon name="girar" size={32} /></span>
-            <span>GIRAR</span>
+            <span>{tx(A.turn)}</span>
           </button>
           {!dieOut && (
             <button
@@ -425,10 +473,10 @@ export default function App() {
                 e.preventDefault();
                 sceneRef.current?.place();
               }}
-              aria-label="Posicionar o dado onde a mira aponta"
+              aria-label={tx(A.placeDie)}
             >
               <span className="ico"><PixelIcon name="posicionar" size={32} /></span>
-              <span>POSICIONAR</span>
+              <span>{tx(A.place)}</span>
             </button>
           )}
           <button
@@ -437,10 +485,10 @@ export default function App() {
               e.preventDefault();
               sceneRef.current?.action();
             }}
-            aria-label={dieOut ? 'Recolher o dado' : 'Arremessar o dado'}
+            aria-label={dieOut ? tx(A.recallDie) : tx(A.throwDie)}
           >
             <span className="ico"><PixelIcon name={prompt ? actionIcon(prompt) : dieOut ? 'recolher' : 'arremessar'} size={32} /></span>
-            <span>{prompt ? 'AGIR' : dieOut ? 'RECOLHER' : 'ARREMESSAR'}</span>
+            <span>{prompt ? tx(A.act) : dieOut ? tx(A.recall) : tx(A.throw)}</span>
           </button>
         </div>
       )}
@@ -449,21 +497,21 @@ export default function App() {
         <div className={`soapbtns${tool === 'chalk' ? ' chalk' : ''}`} style={uis.bars ? { display: 'none' } : undefined}>
           <button
             className="soap-swap"
-            aria-label={tool === 'die' ? 'Pegar o giz' : 'Pegar o dado'}
+            aria-label={tool === 'die' ? tx(A.takeChalk) : tx(A.takeDie)}
             onPointerDown={(e) => {
               e.preventDefault();
               sceneRef.current?.swapTool();
             }}
           >
             <span className="ico"><PixelIcon name={tool === 'die' ? 'giz' : 'dado'} size={16} /></span>
-            <span>{tool === 'die' ? 'GIZ' : 'DADO'}</span>
+            <span>{tool === 'die' ? tx(A.chalk) : tx(A.die)}</span>
           </button>
           {tool === 'chalk' && (
             <>
               {(
                 [
-                  ['draw', 'desenhar', 'Desenhar'],
-                  ['erase', 'apagar', 'Apagar'],
+                  ['draw', 'desenhar', tx(A.draw)],
+                  ['erase', 'apagar', tx(A.erase)],
                 ] as [ChalkMode, 'desenhar' | 'apagar', string][]
               ).map(([m, ico, label]) => (
                 <button
@@ -481,14 +529,14 @@ export default function App() {
               ))}
               <button
                 className="soap-clear"
-                aria-label="Apagar tudo"
+                aria-label={tx(A.eraseAll)}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   sceneRef.current?.clearChalk();
                 }}
               >
                 <span className="ico"><PixelIcon name="limpar" size={16} /></span>
-                <span>LIMPAR</span>
+                <span>{tx(A.clear)}</span>
               </button>
             </>
           )}
@@ -498,14 +546,14 @@ export default function App() {
       {tool === 'chalk' && !complete && (
         <div className="lookzone" aria-hidden="true">
           <span><PixelIcon name="olhar" size={32} /></span>
-          <span>OLHAR</span>
+          <span>{tx(A.look)}</span>
         </div>
       )}
 
       {!coarse && look === 'free' && !complete && !inMenu && !diaryOpen && !uis.bookOut && !speaking && (
         <div className="clicktoplay" aria-hidden="true">
-          <b>Clique para jogar</b>
-          <span>WASD anda · Shift corre · mouse olha · Esc solta o mouse</span>
+          <b>{tx(A.clickPlay)}</b>
+          <span>{tx(A.clickHelp)}</span>
         </div>
       )}
 
@@ -515,7 +563,17 @@ export default function App() {
       {uis.menu === 'title' && titleShown && <TitleScreen api={titleApi} snd={sound} />}
       {uis.menu === 'loading' && <LoadingScreen onGo={() => sceneRef.current?.loadGo()} />}
       {whiteIn && <div className="white-in" onAnimationEnd={() => setWhiteIn(false)} />}
-      {splashOn && <Splash ready={sceneReady} onDone={() => setSplashOn(false)} />}
+      {splashOn && !langAsk && <Splash ready={sceneReady} onDone={() => setSplashOn(false)} />}
+      {langAsk && (
+        <LanguagePick
+          snd={sound}
+          onPick={(l) => {
+            config.set('lang', l);
+            config.set('langChosen', true);
+            setLangAsk(false);
+          }}
+        />
+      )}
       {uis.menu === 'pause' && (
         <PauseMenu
           hasBook={hasBook}
@@ -533,11 +591,11 @@ export default function App() {
 
       {complete && (
         <div className="done">
-          <h1>Fim da demonstração</h1>
-          <p>{complete.gem ? 'Você achou uma gema escondida.' : 'Ainda havia gemas escondidas pelo caminho.'}</p>
+          <h1>{tx(A.demoEnd)}</h1>
+          <p>{complete.gem ? tx(A.gemFound) : tx(A.gemsLeft)}</p>
           <div className="row-btns">
-            <button onClick={() => setCredits(true)}>Créditos</button>
-            <button onClick={() => sceneRef.current?.toTitle()}>Voltar à tela inicial</button>
+            <button onClick={() => setCredits(true)}>{tx(A.credits)}</button>
+            <button onClick={() => sceneRef.current?.toTitle()}>{tx(A.toTitle)}</button>
           </div>
         </div>
       )}
@@ -545,7 +603,7 @@ export default function App() {
 
       <div className="rotate">
         <div className="phone" />
-        <p>Gire o celular para o modo horizontal</p>
+        <p>{tx(A.rotate)}</p>
       </div>
     </div>
   );

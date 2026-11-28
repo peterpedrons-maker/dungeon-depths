@@ -30,6 +30,7 @@ import { windNear } from '../ambience';
 import { bakeProps, loadPack, placeProp } from '../props';
 import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import { ponteThrough } from '../plan';
+import { T as Tr } from '../../i18n';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
 const Z0 = -26;
@@ -424,7 +425,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
       interactables.push({
         pos: new THREE.Vector3(x, 1.65, BZ - 0.3),
         r: 1.5,
-        label: 'Mover o bloco',
+        label: Tr('Mover o bloco', 'Move the block', 'Mover el bloque'),
         enabled: () => !encaixeDone,
         use: () => {
           if (pick < 0) {
@@ -612,7 +613,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
   return {
     skyHoles: SKY,
     name: 'A Biblioteca',
-    subtitle: 'O Arquivo das Sentenças.',
+    subtitle: Tr('O Arquivo das Sentenças.', 'The Archive of Sentences.', 'El Archivo de las Sentencias.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -685,7 +686,7 @@ export function buildBiblioteca(ctx: Ctx): Room {
       const caderno = books.find((b) => b.kind === 'caderno' && b.cloth && b.cloth.k > 0.5);
       if (caderno && !lostPage) {
         lostPage = true;
-        ctx.caption('Um caderno de alguém', 'Uma página se perdeu.', '#d8b880');
+        ctx.caption(Tr('Um caderno de alguém', "Someone's notebook", 'El cuaderno de alguien'), Tr('Uma página se perdeu.', 'A page was lost.', 'Se perdió una página.'), '#d8b880');
       }
       if (!paperGem && books.filter((b) => b.kind === 'boato').every((b) => b.cloth && b.cloth.k >= 1)) paperNiche.open();
       const lp = ctx.player.pos;

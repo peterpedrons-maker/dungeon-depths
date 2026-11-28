@@ -12,6 +12,7 @@ import { makeInscription } from '../inscription';
 import { roomShell, shotGate } from './shell';
 import { planDoors } from '../plan';
 import type { Ctx, Room } from '../types';
+import { T } from '../../i18n';
 
 const CAL = new THREE.Color('#c8f0a0'); // a cal fosforescente (Ficha 1)
 
@@ -109,7 +110,7 @@ export function buildRespiro5(ctx: Ctx): Room {
 
   return {
     name: 'A Antecâmara Fria',
-    subtitle: 'Uma moldura vazia.',
+    subtitle: T('Uma moldura vazia.', 'An empty frame.', 'Un marco vacío.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

@@ -13,6 +13,7 @@ import { makeBrazier, type Brazier } from '../brazier';
 import { makeFuse, serpentine } from '../firegrid';
 import { mkBox, roomShell } from './shell';
 import type { Ctx, Room } from '../types';
+import { T } from '../../i18n';
 
 // s = distância da entrada da sala (como no verificador); z = 2 - s
 const zs = (s: number) => 2 - s;
@@ -130,7 +131,7 @@ export function buildChamaCurta(ctx: Ctx): Room {
 
   return {
     name: 'A Chama Curta',
-    subtitle: 'As chamas não duram.',
+    subtitle: T('As chamas não duram.', "The flames don't last.", 'Las llamas no duran.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

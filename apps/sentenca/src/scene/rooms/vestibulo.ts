@@ -18,6 +18,8 @@ import { ui } from '../../story/ui';
 import type { Box, Ctx, Room } from '../types';
 import { column, drip, flagstones, floorPlane, groinVault, masonry, reliefMat, ST, stoneBox, torchSmoke, transverseArch } from '../arch';
 import { windNear } from '../ambience';
+import { T as Tr } from '../../i18n';
+import type { Text } from '../../i18n';
 
 export type VestVariant = 1 | 2 | 3 | 4;
 
@@ -27,17 +29,17 @@ interface Dim {
   h: number;
   theme: string;
   name: string;
-  subtitle: string;
+  subtitle: Text;
   fog: { color: string; near: number; far: number };
   ambient: { color: number; intensity: number };
 }
 
 // tamanhos bem diferentes: pequena e abafada, um salão comprido, média, baixa e apertada
 const DIMS: Record<VestVariant, Dim> = {
-  1: { hx: 3.4, z0: -9, h: 3.2, theme: 'ruin', name: 'Sala 1 · O Poço', subtitle: 'Uma porta. Um braseiro frio.', fog: { color: '#090a11', near: 3, far: 15 }, ambient: { color: 0x6a72a4, intensity: 1.45 } },
-  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: 'A escrita mudou.', fog: { color: '#07070c', near: 4, far: 22 }, ambient: { color: 0x524e78, intensity: 0.5 } },
-  3: { hx: 3.7, z0: -11.5, h: 3.4, theme: 'ruin', name: 'Sala 3 · Os Quatro', subtitle: 'Quatro braseiros. Outro número.', fog: { color: '#0a0a11', near: 3.5, far: 17 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
-  4: { hx: 3.3, z0: -8, h: 3.0, theme: 'crypt', name: 'Sala 5 · A Lacuna', subtitle: 'Falta uma palavra na frase.', fog: { color: '#0b0912', near: 3.5, far: 15 }, ambient: { color: 0x7a78b8, intensity: 1.7 } },
+  1: { hx: 3.4, z0: -9, h: 3.2, theme: 'ruin', name: 'Sala 1 · O Poço', subtitle: Tr('Uma porta. Um braseiro frio.', 'A door. A cold brazier.', 'Una puerta. Un brasero frío.'), fog: { color: '#090a11', near: 3, far: 15 }, ambient: { color: 0x6a72a4, intensity: 1.45 } },
+  2: { hx: 4.7, z0: -15, h: 3.9, theme: 'ruin', name: 'Sala 2 · O Vestíbulo', subtitle: Tr('A escrita mudou.', 'The writing changed.', 'La escritura cambió.'), fog: { color: '#07070c', near: 4, far: 22 }, ambient: { color: 0x524e78, intensity: 0.5 } },
+  3: { hx: 3.7, z0: -11.5, h: 3.4, theme: 'ruin', name: 'Sala 3 · Os Quatro', subtitle: Tr('Quatro braseiros. Outro número.', 'Four braziers. Another number.', 'Cuatro braseros. Otro número.'), fog: { color: '#0a0a11', near: 3.5, far: 17 }, ambient: { color: 0x706ea8, intensity: 1.6 } },
+  4: { hx: 3.3, z0: -8, h: 3.0, theme: 'crypt', name: 'Sala 5 · A Lacuna', subtitle: Tr('Falta uma palavra na frase.', 'A word is missing from the sentence.', 'Falta una palabra en la frase.'), fog: { color: '#0b0912', near: 3.5, far: 15 }, ambient: { color: 0x7a78b8, intensity: 1.7 } },
 };
 
 const Z1 = 2;
@@ -568,16 +570,16 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     interactables.push({
       pos: doorPos,
       r: 2.6,
-      label: 'Tentar abrir a porta',
+      label: Tr('Tentar abrir a porta', 'Try to open the door', 'Intentar abrir la puerta'),
       enabled: () => !ctx.have().die && doorOpen < 0.05 && !pickingUp,
       use: () => {
         if (tried || ctx.flag('caiu')) {
-          ctx.say([{ who: 'thought', text: 'Continua trancada.' }], { block: true });
+          ctx.say([{ who: 'thought', text: Tr('Continua trancada.', 'Still locked.', 'Sigue cerrada.') }], { block: true });
           return;
         }
         tried = true;
         ctx.sfx('error');
-        ctx.say([{ who: 'thought', text: 'Trancada.' }], {
+        ctx.say([{ who: 'thought', text: Tr('Trancada.', 'Locked.', 'Cerrada.') }], {
           block: true,
           onEnd: () => {
             // um barulho lá em cima: algo cai pelo poço (a câmera vira para o buraco)
@@ -596,7 +598,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     interactables.push({
       pos: diePos,
       r: 2.6,
-      label: 'Pegar o dado',
+      label: Tr('Pegar o dado', 'Take the die', 'Tomar el dado'),
       enabled: () => ctx.flag('caiu') && !ctx.have().die && ctx.die.state === 'rest' && !pickingUp,
       use: () => {
         pickingUp = true;
@@ -615,7 +617,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
             if (ctx.introGen() !== gen) return; // (pulou a abertura: a cena já foi desmontada)
             ctx.dieCenter(false);
             ctx.freeze(false);
-            ctx.say([{ who: 'thought', text: 'Pesa como se me conhecesse.' }], { block: true });
+            ctx.say([{ who: 'thought', text: Tr('Pesa como se me conhecesse.', 'It weighs as if it knew me.', 'Pesa como si me conociera.') }], { block: true });
           }, 1300 + ms);
         });
       },
@@ -662,7 +664,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     interactables.push({
       pos: nbPos,
       r: 2.3,
-      label: 'Pegar o caderno',
+      label: Tr('Pegar o caderno', 'Take the notebook', 'Tomar el cuaderno'),
       enabled: () => nb === 'shown' || nb === 'talked',
       use: () => {
         nb = 'taken';

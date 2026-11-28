@@ -14,6 +14,8 @@ import { shotGate } from './shell';
 import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
 import type { Ambience, Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
+import { T as Tr } from '../../i18n';
+import type { Text } from '../../i18n';
 
 // ── a regra que abre a porta ──
 export type FireRule =
@@ -127,7 +129,7 @@ export interface FireSpec {
   name: string; // sem o "Sala N ·": a numeração é automática
   last?: boolean; // a ÚLTIMA sala do capítulo: o corredor da porta termina na luz de saída e chegar nele encerra o capítulo
   blackout?: number; // segundos do ESCURO da punição (PUZZLES_PROPOSTAS Ficha 1: 2,5 s; a sala 13 "O Escuro" usará 4 s)
-  subtitle: string;
+  subtitle: Text;
   hx: number; // meia-largura
   z0: number; // parede do fundo (a da frente é sempre z = 2)
   h: number;
@@ -148,7 +150,7 @@ export interface FireSpec {
   // `judge: 'door'`: acender ou apagar frases não pune; a Casa só JULGA quando o jogador acende a frase da porta (o conjunto aceso tem de ser
   // exatamente as `good`). Tocar de novo numa frase acesa a apaga (para desfazer um engano).
   // `judged`: a legenda quando a Casa aceita o conjunto (padrão: os pilares de fogo subiram)
-  lock?: { ordered?: boolean; penalty?: number; judge?: 'door'; judged?: [string, string] };
+  lock?: { ordered?: boolean; penalty?: number; judge?: 'door'; judged?: [Text, Text] };
   // um FOSSO no chão (A Ponte de Frases): o chão some entre `dz0` e `dz1` (distância do fundo), de `x0` a `x1`, com `depth` metros de fundo.
   // O construtor faz o chão em volta, as paredes e o fundo do buraco; a sala (`extra`) cuida do que pisa (floorY, rects, dieFloor, clampDie).
   floorGap?: { x0: number; x1: number; dz0: number; dz1: number; depth: number };
@@ -1118,7 +1120,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     dieFloor: (x, z) => extra.dieFloor?.(x, z) ?? 0,
     holdsDie: () => plateDown,
     onDieRest() {
-      if (PL && onPlate() && ctx.die.face !== 2) ctx.caption('Leve demais', 'Só o dado pesado afunda a placa.', '#d9a066');
+      if (PL && onPlate() && ctx.die.face !== 2) ctx.caption(Tr('Leve demais', 'Too light', 'Demasiado ligero'), Tr('Só o dado pesado afunda a placa.', 'Only the heavy die sinks the plate.', 'Solo el dado pesado hunde la placa.'), '#d9a066');
     },
     update(dt, t) {
       kit.tick(dt, t);
@@ -1171,14 +1173,14 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   risen = true;
                   ctx.sfx('ignite', best.key);
                   ctx.sfx('rise');
-                  ctx.caption(...(lk.judged ?? ['A Casa leu', 'Os pilares de fogo subiram.']), '#ffd36b');
+                  ctx.caption(...(lk.judged ?? [Tr('A Casa leu', 'The House read it', 'La Casa lo leyó'), Tr('Os pilares de fogo subiram.', 'The pillars of fire rose.', 'Los pilares de fuego subieron.')]), '#ffd36b');
                 } else {
                   extra.judgeFail?.(litLines.map((l) => l.lit));
                   litLines.forEach((l) => (l.lit = l.preLit));
                   lockCold = lk.penalty ?? 10;
                   ctx.sfx('error');
                   ctx.blackout(spec.blackout ?? 2.5); // a punição: a Casa apaga tudo
-                  ctx.caption('A Casa apagou as frases', 'Apagou tudo.', '#cfc6e8');
+                  ctx.caption(Tr('A Casa apagou as frases', 'The House put out the sentences', 'La Casa apagó las frases'), Tr('Apagou tudo.', 'It put everything out.', 'Lo apagó todo.'), '#cfc6e8');
                 }
               } else if (best.lit) {
                 best.lit = false;
@@ -1198,15 +1200,15 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                 if (litLines.filter((l) => l.lit).length >= needed) {
                   risen = true;
                   ctx.sfx('rise');
-                  ctx.caption('Algo se move sob o chão', 'Pilares.', '#ffd36b');
-                } else ctx.caption('A frase acendeu', 'A Casa aceitou esta.', '#ff9a3c');
+                  ctx.caption(Tr('Algo se move sob o chão', 'Something moves under the floor', 'Algo se mueve bajo el suelo'), Tr('Pilares.', 'Pillars.', 'Pilares.'), '#ffd36b');
+                } else ctx.caption(Tr('A frase acendeu', 'The sentence lit up', 'La frase se encendió'), Tr('A Casa aceitou esta.', 'The House accepted this one.', 'La Casa aceptó esta.'), '#ff9a3c');
               } else {
                 litLines.forEach((l) => (l.lit = false));
                 lockProg = 0;
                 lockCold = lk.penalty ?? 4;
                 ctx.sfx('error');
                 ctx.blackout(spec.blackout ?? 2.5);
-                ctx.caption('A Casa apagou as frases', 'Apagou tudo.', '#cfc6e8');
+                ctx.caption(Tr('A Casa apagou as frases', 'The House put out the sentences', 'La Casa apagó las frases'), Tr('Apagou tudo.', 'It put everything out.', 'Lo apagó todo.'), '#cfc6e8');
               }
             }
           }
@@ -1384,13 +1386,13 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
             solved = true;
             door.lampMats.forEach((m) => m.color.setHex(0xff7a2e));
             ctx.sfx('piece');
-            ctx.caption('A placa aceitou', 'As chamas respondem.', '#ffd36b');
+            ctx.caption(Tr('A placa aceitou', 'The plate accepted it', 'La placa lo aceptó'), Tr('As chamas respondem.', 'The flames answer.', 'Las llamas responden.'), '#ffd36b');
           } else {
             braziers.forEach((b) => b.light(false, true));
             coldT = rule.penalty ?? 6;
             ctx.sfx('error');
             ctx.blackout(spec.blackout ?? 2.5);
-            ctx.caption('A placa abafou o fogo', 'A Casa não aceitou estas chamas.', '#cfc6e8');
+            ctx.caption(Tr('A placa abafou o fogo', 'The plate smothered the fire', 'La placa sofocó el fuego'), Tr('A Casa não aceitou estas chamas.', 'The House did not accept these flames.', 'La Casa no aceptó estas llamas.'), '#cfc6e8');
           }
         }
         if (!pressed && !(solved && onPlate())) plateDown = false;

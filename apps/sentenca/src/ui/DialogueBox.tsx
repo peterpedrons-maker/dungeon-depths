@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { diary, diaryStore } from '../story/diary';
 import { dialogue, dialogueStore, SPEAKER_WORD } from '../story/dialogue';
 import { useStore } from '../story/store';
+import { tx, useLang } from '../i18n';
 import { WordGlyph } from './Glyph';
 import { useUiScale } from './scale';
 import { PART_MS, scribbleFor, wordMs } from '../story/writing';
@@ -13,7 +14,9 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
   const c = useStore(dialogueStore);
   const k = useUiScale();
   const line = c ? c.lines[c.i] : null;
-  const total = line ? (line.glyphs ? line.glyphs.length : (line.text?.length ?? 0)) : 0;
+  const lang = useLang();
+  const text = line?.text != null ? tx(line.text, lang) : undefined;
+  const total = line ? (line.glyphs ? line.glyphs.length : (text?.length ?? 0)) : 0;
   const key = c ? `${c.id}:${c.i}` : '';
   const [shown, setShown] = useState(0);
   const [skipped, setSkipped] = useState(false); // o jogador pulou a escrita: tudo aparece de uma vez, sem animação
@@ -30,12 +33,12 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
       () => {
         setShown(shown + 1);
         if (line.glyphs) scribbleFor(wordMs(line.glyphs[shown]), onSound); // risquinhos de giz enquanto o símbolo é escrito
-        else if (shown % 3 === 0 && /\S/.test(line.text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
+        else if (shown % 3 === 0 && /\S/.test(text?.[shown] ?? '')) onSound?.('write', 1); // letras: um risquinho a cada poucas letras, sem espaços
       },
       line.glyphs ? (shown === 0 ? 200 : wordMs(line.glyphs[shown - 1])) : 32, // cada símbolo só começa quando o anterior terminou de ser escrito
     );
     return () => window.clearTimeout(t);
-  }, [line, shown, total, onSound]);
+  }, [line, text, shown, total, onSound]);
 
   // o que aparece na conversa vai para o diário como "avistado"
   useEffect(() => {
@@ -106,8 +109,8 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
         ) : (
           <p data-done={done ? '' : undefined}>
             {/* (a tira de papel já diz que é pensamento: sem os parênteses de antes) */}
-            {(line.text ?? '').slice(0, shown)}
-            <span className="ghost">{(line.text ?? '').slice(shown)}</span>
+            {(text ?? '').slice(0, shown)}
+            <span className="ghost">{(text ?? '').slice(shown)}</span>
           </p>
         )}
       </div>

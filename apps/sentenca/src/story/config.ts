@@ -1,5 +1,6 @@
 // CONFIGURAÇÕES (INTERFACE.md §3.3): valem para o APARELHO, fora dos espaços de jogo. Lidas pelo motor e pela interface.
 import { createStore } from './store';
+import { guessLang, T, type Lang, type Tx } from '../lang';
 
 const KEY = 'mdd-config-v1';
 
@@ -21,16 +22,16 @@ export const DEFAULT_KEYS: Record<Action, string> = {
   diario: 'j',
   reiniciar: 'r',
 };
-export const ACTION_LABEL: Record<Action, string> = {
-  frente: 'Andar para a frente',
-  tras: 'Andar para trás',
-  esquerda: 'Andar para a esquerda',
-  direita: 'Andar para a direita',
-  correr: 'Correr',
-  agir: 'Agir / recolher o dado',
-  posicionar: 'Posicionar o dado',
-  diario: 'Abrir o caderno',
-  reiniciar: 'Reiniciar a sala',
+export const ACTION_LABEL: Record<Action, Tx> = {
+  frente: T('Andar para a frente', 'Move forward', 'Avanzar'),
+  tras: T('Andar para trás', 'Move back', 'Retroceder'),
+  esquerda: T('Andar para a esquerda', 'Move left', 'Moverse a la izquierda'),
+  direita: T('Andar para a direita', 'Move right', 'Moverse a la derecha'),
+  correr: T('Correr', 'Run', 'Correr'),
+  agir: T('Agir / recolher o dado', 'Act / recall the die', 'Actuar / recoger el dado'),
+  posicionar: T('Posicionar o dado', 'Place the die', 'Colocar el dado'),
+  diario: T('Abrir o caderno', 'Open the notebook', 'Abrir el cuaderno'),
+  reiniciar: T('Reiniciar a sala', 'Restart the room', 'Reiniciar la sala'),
 };
 
 export interface Config {
@@ -58,8 +59,9 @@ export interface Config {
   reduceMotion: boolean; // reduzir o movimento da câmera
   highContrast: boolean; // glifos com mais contraste
   crosshair: boolean; // mira sempre visível
-  // idioma
-  lang: 'pt';
+  // idioma (src/i18n.ts): português, inglês ou espanhol; `langChosen` = o jogador já escolheu (senão, a 1ª tela pergunta)
+  lang: Lang;
+  langChosen: boolean;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -84,7 +86,8 @@ export const DEFAULT_CONFIG: Config = {
   reduceMotion: false,
   highContrast: false,
   crosshair: true,
-  lang: 'pt',
+  lang: guessLang(),
+  langChosen: false,
 };
 
 function load(): Config {
@@ -143,5 +146,17 @@ export const config = {
 };
 
 // o nome de uma tecla para mostrar na tela
-export const keyName = (k: string) =>
-  ({ ' ': 'Espaço', shift: 'Shift', control: 'Ctrl', alt: 'Alt', tab: 'Tab', enter: 'Enter', arrowup: 'Seta p/ cima', arrowdown: 'Seta p/ baixo', arrowleft: 'Seta esq.', arrowright: 'Seta dir.', backspace: 'Apagar' })[k] ?? k.toUpperCase();
+const KEY_NAMES: Record<string, Tx> = {
+  ' ': T('Espaço', 'Space', 'Espacio'),
+  shift: T('Shift', 'Shift', 'Mayús'),
+  control: T('Ctrl', 'Ctrl', 'Ctrl'),
+  alt: T('Alt', 'Alt', 'Alt'),
+  tab: T('Tab', 'Tab', 'Tab'),
+  enter: T('Enter', 'Enter', 'Intro'),
+  arrowup: T('Seta p/ cima', 'Up arrow', 'Flecha arriba'),
+  arrowdown: T('Seta p/ baixo', 'Down arrow', 'Flecha abajo'),
+  arrowleft: T('Seta esq.', 'Left arrow', 'Flecha izq.'),
+  arrowright: T('Seta dir.', 'Right arrow', 'Flecha der.'),
+  backspace: T('Apagar', 'Backspace', 'Retroceso'),
+};
+export const keyName = (k: string) => (KEY_NAMES[k] ? KEY_NAMES[k][configStore.get().lang] : k.toUpperCase());

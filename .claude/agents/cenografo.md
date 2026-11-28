@@ -108,6 +108,9 @@ que se parece com ele.
 - **Textos** (falas, pensamentos, frases em glifos, diário): são do subagente `narrador`. Pode propor onde uma inscrição ambiental ficaria bem e
   o que ela diria, mas não invente palavras: use só o léxico (`src/story/lexicon.json`) e deixe o texto final para o narrador.
 - **Regras e soluções de puzzle**: proponha, não mude.
+- **Três idiomas** (`DESIGN.md` §98): se você precisar pôr qualquer texto que o jogador lê (um rótulo de ação, uma legenda), ele vai nos três
+  idiomas com `T('pt', 'en', 'es')` (`src/i18n.ts`), nunca só em português; na dúvida de tom, deixe o texto para o narrador. Rode
+  `node tools/verify_i18n.mjs`.
 - **O workflow de deploy** (`.github/workflows/deploy.yml`): nunca edite.
 
 ## Formato da resposta

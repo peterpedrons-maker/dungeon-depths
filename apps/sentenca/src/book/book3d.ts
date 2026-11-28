@@ -6,6 +6,7 @@ import { HER_PAGES, HER_RELATO } from '../story/herpages';
 import { dialogue, dialogueStore } from '../story/dialogue';
 import { BOARD_H, BOARD_W, diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt, drawGemBoard, gemSocketPx } from './bookart';
 import { blankPaper, currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
+import { T as Tr, tx, type Text } from '../i18n';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -385,48 +386,48 @@ export function createDiaryBook(env: BookEnv) {
   };
   interface Stop {
     at: (l: Lay) => number; // a folha onde o personagem para e pensa
-    say: string[];
+    say: Text[];
     task?: 'note' | 'stroke';
-    done?: string[]; // o que ele pensa depois de fazer a tarefa
+    done?: Text[]; // o que ele pensa depois de fazer a tarefa
     after?: () => void; // depois dos pensamentos desta parada
   }
   // (antes de ler, nada de "ela": ele só vê letra à mão e as partes; sem memória, nem sabe ainda se a letra é dele)
-  const INTRO = ['Escrito à mão. Dividido em partes.', 'Vou ver uma por uma.'];
+  const INTRO = [Tr('Escrito à mão. Dividido em partes.', 'Handwritten. Divided into parts.', 'Escrito a mano. Dividido en partes.'), Tr('Vou ver uma por uma.', "I'll look at them one by one.", 'Voy a verlas una por una.')];
   const STOPS: Record<Part, Stop[]> = {
     dela: [
       // (é LENDO o relato que ele descobre de quem é o caderno: daí em diante o índice diz "Dela")
-      { at: (l) => l.herAt, say: ['A letra não é minha.', 'É de uma mulher. Condenada.', 'Ela também acordou embaixo da luz.', 'E parou no meio.'], after: () => diary.knowHer() },
-      { at: (l) => l.herAt + 1, say: ['Faltam folhas. Arrancadas.', 'Se eu achar alguma, ponho de volta no lugar.'] },
+      { at: (l) => l.herAt, say: [Tr('A letra não é minha.', "The handwriting isn't mine.", 'La letra no es mía.'), Tr('É de uma mulher. Condenada.', "A woman's. Condemned.", 'Es de una mujer. Condenada.'), Tr('Ela também acordou embaixo da luz.', 'She also woke up under the light.', 'Ella también despertó bajo la luz.'), Tr('E parou no meio.', 'And she stopped halfway.', 'Y se detuvo a la mitad.')], after: () => diary.knowHer() },
+      { at: (l) => l.herAt + 1, say: [Tr('Faltam folhas. Arrancadas.', 'Pages are missing. Torn out.', 'Faltan hojas. Arrancadas.'), Tr('Se eu achar alguma, ponho de volta no lugar.', "If I find any, I'll put it back in its place.", 'Si encuentro alguna, la pongo de vuelta en su lugar.')] },
     ],
     simbolos: [
       {
         at: () => symbolSpread(GUIDED_ID, dState()),
-        say: ['Os símbolos das paredes. Os que eu já vi estão aqui.', 'Ela anotava o que achava que eram. Se anotava, era importante.', 'Este ela não sabia. E eu, o que acho que é?'],
+        say: [Tr('Os símbolos das paredes. Os que eu já vi estão aqui.', "The symbols on the walls. The ones I've seen are here.", 'Los símbolos de las paredes. Los que ya vi están aquí.'), Tr('Ela anotava o que achava que eram. Se anotava, era importante.', 'She wrote down what she thought they were. If she wrote it, it mattered.', 'Ella anotaba lo que creía que eran. Si lo anotaba, era importante.'), Tr('Este ela não sabia. E eu, o que acho que é?', "This one she didn't know. And me, what do I think it is?", 'Este no lo sabía. ¿Y yo, qué creo que es?')],
         task: 'note',
-        done: ['Anotado. Se eu entender melhor, mudo depois.'],
+        done: [Tr('Anotado. Se eu entender melhor, mudo depois.', "Noted. If I understand it better, I'll change it later.", 'Anotado. Si lo entiendo mejor, lo cambio después.')],
       },
     ],
-    faces: [{ at: (l) => l.facesAt, say: ['As faces do dado. Só uma tem nome, por enquanto.'] }],
-    textos: [{ at: (l) => l.textsAt, say: ['Aqui ficam as frases inteiras, quando eu achar alguma.'] }],
+    faces: [{ at: (l) => l.facesAt, say: [Tr('As faces do dado. Só uma tem nome, por enquanto.', "The die's faces. Only one has a name, for now.", 'Las caras del dado. Solo una tiene nombre, por ahora.')] }],
+    textos: [{ at: (l) => l.textsAt, say: [Tr('Aqui ficam as frases inteiras, quando eu achar alguma.', 'Whole sentences go here, when I find any.', 'Aquí van las frases enteras, cuando encuentre alguna.')] }],
     mapa: [
       {
         at: (l) => l.mapAt,
-        say: ['Um mapa de onde eu passei. Ele se desenha sozinho.', 'Dá para riscar nele. Vou marcar alguma coisa.'],
+        say: [Tr('Um mapa de onde eu passei. Ele se desenha sozinho.', "A map of where I've been. It draws itself.", 'Un mapa de por donde pasé. Se dibuja solo.'), Tr('Dá para riscar nele. Vou marcar alguma coisa.', "I can draw on it. I'll mark something.", 'Se puede rayar. Voy a marcar algo.')],
         task: 'stroke',
-        done: ['Assim eu lembro. Dá para carimbar os símbolos também.'],
+        done: [Tr('Assim eu lembro. Dá para carimbar os símbolos também.', 'That way I remember. I can stamp the symbols too.', 'Así me acuerdo. También se pueden sellar los símbolos.')],
       },
     ],
-    notas: [{ at: (l) => l.notesAt, say: ['Folhas em branco. Posso anotar o que eu achar importante.'] }],
-    gemas: [{ at: (l) => l.gemsAt, say: ['No fundo, uma cruz cheia de furos. Vazios.'] }],
+    notas: [{ at: (l) => l.notesAt, say: [Tr('Folhas em branco. Posso anotar o que eu achar importante.', 'Blank pages. I can write down what I think matters.', 'Hojas en blanco. Puedo anotar lo que me parezca importante.')] }],
+    gemas: [{ at: (l) => l.gemsAt, say: [Tr('No fundo, uma cruz cheia de furos. Vazios.', 'At the back, a cross full of holes. Empty.', 'Al fondo, una cruz llena de agujeros. Vacíos.')] }],
   };
-  const END = ['Vou anotar tudo, como ela.'];
+  const END = [Tr('Vou anotar tudo, como ela.', "I'll write everything down, like she did.", 'Voy a anotarlo todo, como ella.')];
   // fase: idle (sem tutorial) · intro · pick (no índice, esperando o toque na parte) · go (indo até a folha) · say (pensando) · task · back (voltando
   // ao índice) · end (terminou: "Guardar" pisca, e o caderno já pode ser folheado e guardado)
   const tut = { phase: 'idle' as 'idle' | 'intro' | 'pick' | 'go' | 'say' | 'task' | 'back' | 'end', i: 0, stop: 0, strokes0: 0, wait: 0 };
   const tutorialOn = () => ui.guided() && tut.phase !== 'idle' && tut.phase !== 'end';
   const thinking = () => dialogueStore.get() !== null; // um pensamento ainda na tela
   const noteDone = () => !!(dState().notes[GUIDED_ID] ?? '').trim();
-  const thinkInBook = (lines: string[], onEnd?: () => void) => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false, onEnd });
+  const thinkInBook = (lines: Text[], onEnd?: () => void) => dialogue.say(lines.map((text) => ({ who: 'thought' as const, text })), { block: false, onEnd });
   // só pode guardar o caderno depois de passar por tudo
   const guidedOk = () => tut.phase === 'end';
   const curStop = () => STOPS[TOUR[tut.i]][tut.stop];
@@ -482,6 +483,14 @@ export function createDiaryBook(env: BookEnv) {
   const unsub = diaryStore.subscribe(() => {
     if (T > 0.01) refresh();
   });
+  // o idioma mudou (src/i18n.ts): as páginas se escrevem de novo
+  let langWas = configStore.get().lang;
+  const unsubLang = configStore.subscribe(() => {
+    const l = configStore.get().lang;
+    if (l === langWas) return;
+    langWas = l;
+    refresh();
+  });
   refresh();
 
   // ── edição de texto (teclado do aparelho) ──
@@ -489,7 +498,7 @@ export function createDiaryBook(env: BookEnv) {
   ta.setAttribute('autocomplete', 'off');
   ta.setAttribute('autocapitalize', 'sentences');
   ta.setAttribute('spellcheck', 'false');
-  ta.setAttribute('aria-label', 'Anotação do caderno');
+  ta.setAttribute('aria-label', tx(Tr('Anotação do caderno', 'Notebook note', 'Nota del cuaderno')));
   ta.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0;border:0;padding:0;resize:none;z-index:-1;';
   document.body.appendChild(ta);
   const stopEdit = () => {
@@ -628,7 +637,7 @@ export function createDiaryBook(env: BookEnv) {
     // modo guiado: só fecha depois de ler tudo e de escrever sobre BRASEIRO; senão o personagem diz o que falta (com as palavras dele)
     if (ui.guided() && !guidedOk()) {
       env.sound('bookTap');
-      if (!thinking()) thinkInBook(['Ainda não. Falta ver o resto.']);
+      if (!thinking()) thinkInBook([Tr('Ainda não. Falta ver o resto.', 'Not yet. I still need to see the rest.', 'Todavía no. Falta ver el resto.')]);
       return;
     }
     stopEdit();
@@ -1025,6 +1034,7 @@ export function createDiaryBook(env: BookEnv) {
     },
     dispose() {
       unsub();
+      unsubLang();
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('pointerup', endDraw, true);
       window.removeEventListener('pointercancel', endDraw, true);

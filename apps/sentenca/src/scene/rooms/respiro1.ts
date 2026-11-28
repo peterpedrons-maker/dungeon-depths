@@ -16,6 +16,7 @@ import { floorTexture } from '../textures';
 import { makeBrazier, type Brazier } from '../brazier';
 import { makeGemNiche, makeWallBoard } from '../firegrid';
 import { makeScribeRig } from '../scribeRig';
+import { buildScribeGallery } from './galeriaEscrivao';
 import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import { adoptLayers } from '../models';
 import { diary, diaryStore } from '../../story/diary';
@@ -26,6 +27,7 @@ import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { makePointAsk } from '../pointask';
 import { windNear } from '../ambience';
 import type { Inscription } from '../inscription';
+import { T as Tr } from '../../i18n';
 
 const Z1 = 2;
 const Z0 = -26; // a porta (parede do fundo do pátio)
@@ -284,14 +286,10 @@ export function buildRespiro1(ctx: Ctx): Room {
     // a luz quente da galeria entra pela janela e cai no chão do corredor: chama o olhar para ela
     kit.lightPool(-6.35, wz, 1.7, 0, 0xffb060).opacity = 0.22;
     boxes.push(mkBox(-7.1, 0, wz - 1, -6.95, CH, wz + 1));
-    // a galeria lá longe: um corredor iluminado, mais baixo, do outro lado de um vão escuro
-    kit.plane(8, 14, lambert(null, 0x0a0910), -11, -1.2, wz, -Math.PI / 2, 0, false);
-    kit.plane(3, 14, lambert(floorTexture([3 / T, 14 / T], 'ruin')), -13, 0.2, wz, -Math.PI / 2, 0, false);
-    kit.plane(14, 4, brick(14, 4, 47), -14.5, 2.2, wz, 0, Math.PI / 2, false);
-    // o teto da galeria e do vão (de perto da janela, olhando para cima, via-se o vazio por cima da parede de lá; §67)
-    kit.plane(7.5, 14, brick(7.5, 14, 48), -10.75, 3.6, wz, Math.PI / 2, 0, false);
-    for (const dz of [-4, 0, 4]) kit.torch(-14.4, 1.8, wz + dz, 1, 0, dz);
   }
+  // a galeria lá longe, do outro lado de um vão fundo: a arcada, as abóbadas, as tochas, o caminho gasto e o atril dele (DESIGN.md §97; antes
+  // eram um chão, uma parede de tijolo e um teto chapados)
+  const gallery = buildScribeGallery(kit, cz(4));
   const scribe = makeScribeRig(); // (o animado, DESIGN.md §70; chega depois da sala montada: entra na camada dela)
   void scribe.ready.then((ok) => ok && adoptLayers(kit.group, scribe.group));
   scribe.group.position.set(-13, 0.2, cz(4) + 3.2);
@@ -371,7 +369,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   interactables.push({
     pos: leaf.position.clone(),
     r: 1.6,
-    label: 'Pegar a folha',
+    label: Tr('Pegar a folha', 'Take the page', 'Tomar la hoja'),
     enabled: () => !p2Taken && ctx.feetY() > GAL - 0.3,
     use: () => {
       p2Taken = true;
@@ -446,12 +444,12 @@ export function buildRespiro1(ctx: Ctx): Room {
   interactables.push({
     pos: new THREE.Vector3(CIST.x, 0.8, CIST.z + CIST.r),
     r: 2.6,
-    label: 'Pegar a gema',
+    label: Tr('Pegar a gema', 'Take the gem', 'Tomar la gema'),
     enabled: () => reflSolved && gemK > 0.95 && !gemTaken,
     use: () => {
       gemTaken = true;
       gem.visible = false;
-      ctx.gem('cisterna', gem.position.clone(), ['Uma gema', 'Na água, a Casa escreve ao contrário.', '#7ad8ff']);
+      ctx.gem('cisterna', gem.position.clone(), [Tr('Uma gema', 'A gem', 'Una gema'), Tr('Na água, a Casa escreve ao contrário.', 'In the water, the House writes backwards.', 'En el agua, la Casa escribe al revés.'), '#7ad8ff']);
     },
   });
 
@@ -488,7 +486,7 @@ export function buildRespiro1(ctx: Ctx): Room {
   return {
     skyHoles: SKY,
     name: 'Os Nichos e a Cisterna',
-    subtitle: 'Nada trancado.',
+    subtitle: Tr('Nada trancado.', 'Nothing locked.', 'Nada cerrado.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -558,6 +556,8 @@ export function buildRespiro1(ctx: Ctx): Room {
     holdsDie: () => false,
     update(dt, t) {
       kit.tick(dt, t);
+      // (as luzes da galeria só valem com o jogador no corredor: no pátio ela não se vê, e não tira luz de ninguém)
+      gallery.update(dt, t, ctx.player.pos.z > COURT.z1);
       gate.tick();
       point.update(dt);
       for (const c of candleLights) {
@@ -592,8 +592,12 @@ export function buildRespiro1(ctx: Ctx): Room {
       const lp = ctx.player.pos;
       if (scribeT < 0) {
         scribeCool -= dt;
-        // a 1ª vez, só quando o jogador está NA janela (de lá se vê a galeria inteira); depois, em qualquer ponto daquele trecho
-        const atWindow = lp.x < -5 && Math.abs(lp.z - cz(4)) < 1.1;
+        // a 1ª vez, só quando o jogador está NA janela, bem de frente para a grade (pedido do Pedro): entre as barras de fora (±0,6 m), na
+        // metade do corredor junto da janela e olhando para ela (até ~40° de lado). Antes bastava passar perto, de lado ou de costas, e a câmera
+        // virava sozinha. Depois, em qualquer ponto daquele trecho, ele só passa
+        const aimD = ctx.aim().d;
+        const aimH = Math.hypot(aimD.x, aimD.z) || 1;
+        const atWindow = lp.x < -5.5 && Math.abs(lp.z - cz(4)) < 0.6 && aimD.x / aimH < -0.76;
         if (scribeCool <= 0 && (scribeSeen ? lp.x < -4 && Math.abs(lp.z - cz(4)) < 4 : atWindow) && !ctx.paused()) {
           scribeT = 0;
           scribe.group.visible = true;

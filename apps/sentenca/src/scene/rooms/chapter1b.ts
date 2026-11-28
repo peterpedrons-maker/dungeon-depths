@@ -11,6 +11,7 @@ import { makeCal, type CalText } from '../cal';
 import { shotGate, slopedWall, wedge } from './shell';
 import type { Box, Rect } from '../types';
 import { windNear } from '../ambience';
+import { T } from '../../i18n';
 
 const mkBox = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number): Box => ({
   min: new THREE.Vector3(x0, y0, z0),
@@ -200,7 +201,7 @@ function sombraExtra(api: FireExtraApi): FireExtra {
           if (mismatch > 3) {
             mismatch = 0;
             api.punish(6);
-            ctx.caption('A frase mentia', '', '#cfc6e8');
+            ctx.caption(T('A frase mentia', 'The sentence lied', 'La frase mentía'), '', '#cfc6e8');
           }
         } else mismatch = 0;
       }
@@ -221,7 +222,7 @@ function sombraExtra(api: FireExtraApi): FireExtra {
 }
 export const FIRE_SOMBRA: FireSpec = {
   name: 'A Sombra',
-  subtitle: 'Uma tela de pedra.',
+  subtitle: T('Uma tela de pedra.', 'A stone screen.', 'Una pantalla de piedra.'),
   hx: 7,
   z0: -14,
   h: 6,
@@ -334,7 +335,7 @@ function escuroExtra(api: FireExtraApi): FireExtra {
 }
 export const FIRE_ESCURO: FireSpec = {
   name: 'O Escuro',
-  subtitle: 'Nada para ler.',
+  subtitle: T('Nada para ler.', 'Nothing to read.', 'Nada que leer.'),
   hx: 3.4,
   z0: -9,
   h: 3.0,
@@ -455,7 +456,7 @@ function leiExtra(api: FireExtraApi): FireExtra {
 }
 export const FIRE_LEI: FireSpec = {
   name: 'A Lei Pequena',
-  subtitle: 'A sala sobe.',
+  subtitle: T('A sala sobe.', 'The room rises.', 'La sala sube.'),
   hx: LEI.hx,
   z0: LEI.z0,
   h: LEI.h,
@@ -755,7 +756,7 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
 }
 export const FIRE_FOGO_CORRE: FireSpec = {
   name: 'O Fogo que Corre',
-  subtitle: 'Nove plataformas.',
+  subtitle: T('Nove plataformas.', 'Nine platforms.', 'Nueve plataformas.'),
   hx: FC.hx,
   z0: FC.z0,
   h: FC.h,
@@ -918,7 +919,7 @@ function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
       if (gone >= 2 && restoreT < 0 && banners.every((b) => !b.burning)) {
         restoreT = 1.2;
         ctx.sfx('error');
-        ctx.caption('A Casa pendurou tudo de novo', '', '#cfc6e8');
+        ctx.caption(T('A Casa pendurou tudo de novo', 'The House hung everything back up', 'La Casa volvió a colgarlo todo'), '', '#cfc6e8');
         wind?.douse(); // (e abafa os fogaréus: as fagulhas que ainda voavam queimariam os estandartes novos)
       }
       if (restoreT >= 0) {
@@ -1250,7 +1251,7 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
 
 export const FIRE_DIZEM: FireSpec = {
   name: 'Os Que Dizem o Mesmo',
-  subtitle: 'Um pátio a céu aberto.',
+  subtitle: T('Um pátio a céu aberto.', 'A courtyard open to the sky.', 'Un patio a cielo abierto.'),
   hx: DM.hx,
   z0: DM.z0,
   h: DM.h,
@@ -1286,7 +1287,7 @@ export const FIRE_DIZEM: FireSpec = {
 export const FIRE_VENTO: FireSpec = {
   ...FIRE_DIZEM,
   name: 'O Claustro do Vento',
-  subtitle: 'O vento leva o fogo.',
+  subtitle: T('O vento leva o fogo.', 'The wind carries the fire.', 'El viento lleva el fuego.'),
   // (UM e DOIS mais para o fundo: os fogaréus ficam a quase 2 m deles, e o dado que vai num cesto não acende um braseiro sem querer)
   braziers: FIRE_DIZEM.braziers.map((b, i) => (i === 0 ? { ...b, x: -2.6, dz: 5.7 } : i === 1 ? { ...b, x: 2.6, dz: 5.7 } : b)),
   extra: ventoExtra,
@@ -1419,7 +1420,7 @@ function memoriaExtra(api: FireExtraApi): FireExtra {
 }
 export const FIRE_MEMORIA: FireSpec = {
   name: 'A Memória da Casa',
-  subtitle: 'Três câmaras em volta.',
+  subtitle: T('Três câmaras em volta.', 'Three chambers around.', 'Tres cámaras alrededor.'),
   hx: MEM.hx,
   z0: MEM.z0,
   h: MEM.h,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LOAD_BAR, loadStore } from '../story/loading';
 import { useStore } from '../story/store';
+import { T, tx } from '../i18n';
 
 // A TELA DE CARREGAMENTO (pedidos do Pedro, DESIGN.md §80 e §82): depois de Novo jogo / Continuar / Carregar. A imagem é do motor
 // (`ui/loadart.ts`): a parede no escuro com os desenhos a giz, a frase de glifos talhada numa laje que a luz enche traço a traço (a barra) e, no
@@ -42,10 +43,10 @@ export function LoadingScreen({ onGo }: { onGo: () => void }) {
   }, [asked]);
 
   return (
-    <div className={`loadscr${asked && !gone ? ' asked' : ''}`} onPointerDown={() => asked && go()} role="status" aria-label={asked ? undefined : 'Carregando'}>
+    <div className={`loadscr${asked && !gone ? ' asked' : ''}`} onPointerDown={() => asked && go()} role="status" aria-label={asked ? undefined : tx(T('Carregando', 'Loading', 'Cargando'))}>
       {asked && !gone && (
         <b className="loadgo" style={{ left: `${((LOAD_BAR.x0 + LOAD_BAR.x1) / 2) * 100}%`, top: `${LOAD_BAR.prompt * 100}%` }}>
-          {coarse ? 'Toque para começar' : 'Clique para começar'}
+          {coarse ? tx(T('Toque para começar', 'Tap to start', 'Toca para empezar')) : tx(T('Clique para começar', 'Click to start', 'Haz clic para empezar'))}
         </b>
       )}
     </div>

@@ -1,5 +1,6 @@
 import type * as THREE from 'three';
 import type { Line } from '../story/dialogue';
+import type { Text } from '../i18n';
 import type { Emitter, Opening } from './kit';
 import type { Inscription } from './inscription';
 import type { Flag } from '../story/progress';
@@ -55,7 +56,7 @@ export interface Socket {
 
 // O que o motor oferece a cada sala.
 export interface Ctx {
-  caption(title: string, sub: string, color: string): void;
+  caption(title: Text, sub: Text, color: string): void; // (os três idiomas: src/i18n.ts)
   // `key` identifica o braseiro em 'ignite': a cena do dado queimando só toca inteira na 1ª vez de cada um
   // 'spread' = o fogo que CORRE (canaleta, friso) acende algo sozinho: só o som, sem a cena do dado queimando
   // 'rise' = pilar subindo do chão (2,2 s)
@@ -65,7 +66,7 @@ export interface Ctx {
   glyphLight?(i: number, n: number, at: THREE.Vector3): void;
   // pegou a gema `id` (story/gems.ts) que estava em `at` (local da sala): toca a cena da gema e ela vai para o fundo do caderno; `cap` = a
   // legenda que aparece depois da cena
-  gem(id: string, at: THREE.Vector3, cap?: [string, string, string]): void;
+  gem(id: string, at: THREE.Vector3, cap?: [Text, Text, string]): void;
   // O ALTAR (DESIGN.md §77): a cena em que o dado sai da mão, entra devagar num nicho da parede e volta com uma face nova. `at` = o fundo do
   // nicho e `n` = para fora da parede (locais da sala). A sala anima a pedra conforme as fases (`onPhase`); o motor cuida do dado, da câmera,
   // do som e do marco `flag` (que libera a face `face`, na fase 'glow'). Devolve false se o dado não está na mão.
@@ -123,7 +124,7 @@ export interface Ctx {
 export interface Interactable {
   pos: THREE.Vector3; // local da sala
   r: number; // de quão perto (m)
-  label: string; // o que aparece na tela ("Tentar abrir")
+  label: Text; // o que aparece na tela ("Tentar abrir"), nos três idiomas
   enabled(): boolean;
   use(): void;
 }
@@ -131,7 +132,7 @@ export interface Interactable {
 // Uma sala: tudo que o motor precisa saber pra montar, colidir e jogar.
 export interface Room {
   name: string;
-  subtitle: string;
+  subtitle: Text; // (os três idiomas)
   hint?: string;
   theme?: string; // a pedra da sala (textures.ts THEMES): o corredor de ligação que sai dela usa a mesma (DESIGN.md §73)
   group: THREE.Group;

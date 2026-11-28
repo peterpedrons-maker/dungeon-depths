@@ -18,6 +18,7 @@ import { burntTexture, edgeKey, FireGrid, grooveTexture, makeFloorChannel, makeG
 import { mkBox, shotGate, wedge } from './shell';
 import { windNear } from '../ambience';
 import type { Box, Ctx, Rect, Room } from '../types';
+import { T as Tr } from '../../i18n';
 
 const TOP = 8; // a galeria (boca do fosso), acima do fundo
 const CEIL = 12.4;
@@ -473,7 +474,7 @@ export function buildPonte(ctx: Ctx): Room {
 
   return {
     name: 'A Ponte de Madeira',
-    subtitle: 'Madeira sobre o fosso.',
+    subtitle: Tr('Madeira sobre o fosso.', 'Wood over the pit.', 'Madera sobre el foso.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,
@@ -619,7 +620,7 @@ export function buildPonte(ctx: Ctx): Room {
         const n = lit.filter((c) => c !== -1).length;
         if (n === 4 && lit.every((c, i) => !torches[i].lit || (c !== null && CORNERS.has(c as number)))) {
           riser.raise();
-          ctx.caption('Algo subiu na rampa', 'Do alto, a grade ficou inteira.', '#7ad8ff');
+          ctx.caption(Tr('Algo subiu na rampa', 'Something rose on the ramp', 'Algo subió en la rampa'), Tr('Do alto, a grade ficou inteira.', 'From above, the grid is whole.', 'Desde arriba, la cuadrícula quedó entera.'), '#7ad8ff');
         }
       }
       riser.update(dt, t);

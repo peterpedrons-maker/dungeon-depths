@@ -168,7 +168,7 @@ export const diary = {
       ...s,
       seen: Object.fromEntries(ids.map((id, k) => [id, { room: s.here || 'Sala 5 · A Entrada', at: k }])),
       order: ids,
-      notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' },
+      notes: { acender: 'acender? fogo?', n3: 'três', porta: 'porta (acho)', eu: 'ele sempre começa com isso… "eu"?' }, // i18n-ok (?demo=1: anotações de exemplo, como as que o jogador escreve)
       texts: ['demo-pagina'],
       pages: ['p2'],
       herKnown: true,

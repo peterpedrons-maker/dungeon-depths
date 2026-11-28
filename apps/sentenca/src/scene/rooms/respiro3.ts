@@ -18,6 +18,7 @@ import { diary, diaryStore } from '../../story/diary';
 import type { Box, Ctx, Interactable, Rect, Room } from '../types';
 import { bakeProps, placeProp, T_HEIGHT } from '../props';
 import { beamMotes, flagstones, floorPlane, groinVault, masonry, reliefMat, reliefPlaneMat, ST, stoneBox, transverseArch } from '../arch';
+import { T } from '../../i18n';
 
 const X0 = -3.5;
 const X1 = 3.5;
@@ -135,7 +136,7 @@ export function buildRespiro3(ctx: Ctx): Room {
     const it: Interactable = {
       pos: m.position.clone(),
       r: 1.6,
-      label: 'Pegar a folha',
+      label: T('Pegar a folha', 'Take the page', 'Tomar la hoja'),
       enabled: () => !taken,
       use: () => {
         taken = true;
@@ -380,7 +381,7 @@ export function buildRespiro3(ctx: Ctx): Room {
 
   return {
     name: 'A Galeria dos Condenados',
-    subtitle: 'Marcas de giz. Centenas.',
+    subtitle: T('Marcas de giz. Centenas.', 'Chalk marks. Hundreds.', 'Marcas de tiza. Cientos.'),
     group: kit.group,
     surfaces: kit.surfaces,
     emitters: kit.emitters,

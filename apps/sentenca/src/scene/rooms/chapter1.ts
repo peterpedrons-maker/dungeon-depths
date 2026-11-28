@@ -9,6 +9,7 @@ import { lambert } from '../kit';
 import type { Rect } from '../types';
 import { shotGate } from './shell';
 import { diary, diaryStore } from '../../story/diary';
+import { T } from '../../i18n';
 
 // ── constelação: tochas que escrevem (§3) ─────────────────────────────────
 // `cells[i]` = casa da grade da tocha i (null = isca, fora da grade). Acender EXATAMENTE as tochas do alvo, nenhuma outra, faz o braseiro
@@ -38,7 +39,7 @@ export function constellation(api: FireExtraApi, torches: Torch[], cells: (numbe
         const ok = lit.filter((c) => c !== -1).length === want.size && lit.every((c, i) => !torches[i].lit || (c !== null && want.has(c as number)));
         if (ok) {
           riser.raise();
-          ctx.caption('O chão se abriu', 'As tochas escreveram alguma coisa.', '#7ad8ff');
+          ctx.caption(T('O chão se abriu', 'The floor opened', 'El suelo se abrió'), T('As tochas escreveram alguma coisa.', 'The torches wrote something.', 'Las antorchas escribieron algo.'), '#7ad8ff');
         }
       }
       riser.update(dt, t);
@@ -133,7 +134,7 @@ function casaEscreveExtra(api: FireExtraApi): FireExtra {
 
 export const FIRE_CASA_ESCREVE: FireSpec = {
   name: 'A Casa Escreve',
-  subtitle: 'Uma luz de cada vez.',
+  subtitle: T('Uma luz de cada vez.', 'One light at a time.', 'Una luz a la vez.'),
   hx: 7,
   z0: -14,
   h: 5.6,
@@ -273,7 +274,7 @@ function panoExtra(api: FireExtraApi): FireExtra {
 
 export const FIRE_PANO: FireSpec = {
   name: 'O Pano',
-  subtitle: 'Panos sobre a pedra.',
+  subtitle: T('Panos sobre a pedra.', 'Cloths over the stone.', 'Paños sobre la piedra.'),
   hx: 4,
   z0: -12,
   h: 7,
@@ -305,7 +306,7 @@ export const FIRE_PANO: FireSpec = {
 // Solução: TRÊS, GRANDE, QUATRO, DOIS, UM.
 export const FIRE_APELIDOS: FireSpec = {
   name: 'Os Apelidos',
-  subtitle: 'Um braseiro sem número.',
+  subtitle: T('Um braseiro sem número.', 'A brazier without a number.', 'Un brasero sin número.'),
   hx: 5.6,
   z0: -17,
   h: 3.8,
@@ -337,7 +338,7 @@ export const FIRE_APELIDOS: FireSpec = {
 const f = (a: string, rel: string, b: string, mark: string, extra: Partial<FireLine> = {}): FireLine => ({ words: [a, rel, b, mark], ...extra });
 export const FIRE_VERDADE: FireSpec = {
   name: 'O Boato Verdadeiro',
-  subtitle: 'Algumas frases já acesas.',
+  subtitle: T('Algumas frases já acesas.', 'Some sentences already lit.', 'Algunas frases ya encendidas.'),
   hx: 5.6,
   z0: -19,
   h: 3.8,
@@ -401,7 +402,7 @@ function confirmaExtra(api: FireExtraApi): FireExtra {
   const takeLeaf = {
     pos: leafPos,
     r: 1.8,
-    label: 'Pegar a folha',
+    label: T('Pegar a folha', 'Take the page', 'Tomar la hoja'),
     enabled: () => !leafTaken,
     use: () => {
       leafTaken = true;
@@ -479,7 +480,7 @@ function confirmaExtra(api: FireExtraApi): FireExtra {
 const fc = (a: string, rel: string, b: string, mark: string, good = false): FireLine => ({ words: [a, rel, b, mark], good });
 export const FIRE_CONFIRMA: FireSpec = {
   name: 'O Que a Casa Confirma',
-  subtitle: 'Uma lousa. Uma grade.',
+  subtitle: T('Uma lousa. Uma grade.', 'A slate. A grid.', 'Una pizarra. Una cuadrícula.'),
   hx: 5.5,
   z0: -22,
   h: 3.8,
