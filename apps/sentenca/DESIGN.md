@@ -2276,6 +2276,243 @@ que ter todos os idiomas, os 3… O jogador pode escolher ele assim que começar
   Depois, em Configurações → Idioma. `?lang=pt|en|es` fixa o idioma (testes, trailer: `tools/trailer/` grava em português, `TRAILER_LANG` muda).
 - **O verificador.** `tools/verify_i18n.mjs` lê os arquivos do jogo e acha texto solto em português (strings com cara de frase fora de um
   `T(...)`, e texto no JSX). Não conta: chaves (nomes de sala, ids, palavras do léxico), mensagens de erro e de console, código de shader e as
-  linhas marcadas `// i18n-ok` (o que não é texto para o jogador). Ficam de fora as salas da reserva que não estão no jogo. Roda junto com os
+  linhas marcadas `// i18n-ok` (o que não é texto para o jogador). Ficam de fora as salas da reserva que não estão no jogo. Também fica de fora o
+  teste de desempenho (`?bench=1`, §102): é ferramenta nossa, e o relatório dele é para colar na conversa. Roda junto com os
   outros `verify_*.mjs` antes de cada commit.
 - **Daqui em diante:** nada entra no jogo só em português (CLAUDE.md, "Convenção para textos"; as regras dos subagentes também dizem isso).
+
+## 99. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
+
+"Melhorar o visual do jogo, mantendo todas as coisas, só deixar mais polido: sombras, efeito do fogo... Na cutscene inicial, o lado de fora como
+uma neblina, estilo Silent Hill, para que o jogador não veja nada lá fora, se existe ou não existe, e deixar mais místico."
+
+**A neblina** (abertura, os planos de fora do poço; `rooms/vestibulo.ts` e `blendAtmosphere`/`updateScribeDrop` em `scene.ts`):
+- Lá fora a névoa é clara e fechada (`#8e8c9e`, de 0,8 m a 8,5 m): a 8 m já não se vê nada. O céu deixou de ser céu: é a mesma névoa, mais
+  clara no alto e da cor exata da névoa embaixo, então não há horizonte. As torres escuras da Casa saíram (não se sabe o que existe lá fora).
+- 38 véus de névoa em pixel (24 no ar, 14 em bancos rasos no chão) andam devagar em volta da boca do poço, e uma cinza clara cai sem parar
+  (170 pontos, como em Silent Hill).
+- O Escrivão vem de mais longe (`SCRIBE_FROM` de (-2,7; 2,9) para (-3,9; 4,2)): ele SAI da névoa, primeiro como uma sombra com os dois olhos
+  acesos, e o pano dele só ganha cor perto da mureta (nos planos de fora o material dele entra na névoa; os olhos e o halo não). O corte para
+  baixo espera ele se debruçar (1,3 s depois de chegar), como antes.
+- O contorno do pós-processo some junto com a névoa (`uEdgeFog`): sem isso, quem estava longe virava um "fantasma desenhado a lápis".
+- A luz lá fora é difusa (o sol não atravessa a névoa): `outdoor` de 1,9 para 1,25 e a ambiente lilás.
+- Visto de baixo, pela boca do poço, nada mudou (é a mesma luz fria).
+
+**O fogo** (`flameFrames` em `textures.ts`, `kit.torch`, `brazier.ts`, `makeTorch` em `firegrid.ts`):
+- A chama era 3 quadros de 10 × 8 com o amarelo em cima e o vermelho embaixo (de cabeça para baixo, uma gota). Agora são **8 quadros**: o pé
+  é o mais quente (miolo branco-amarelo), o corpo laranja, as pontas vermelhas; o corpo balança e afina, as línguas sobem tortas e de vez em
+  quando uma ponta se solta. Dois tamanhos: a **alta** (12 × 18) nas tochas e nos braseiros, e a **baixa** (12 × 10) nas chaminhas de
+  lampião, nos soquetes e no fogo que corre nas canaletas, que já têm o tamanho medido (nenhum desses mudou de tamanho).
+- A chama do braseiro fica presa nas brasas (cresce para cima e, quando está acabando, encolhe para dentro da cesta em vez de boiar). A da
+  tocha fica no alto do cabo; o **ponto de referência** das tochas não mudou (as distâncias das escritas, do teto e do toque do dado são as
+  mesmas). Cada braseiro e cada tocha anda no seu passo, e a chama estica um pouco junto com a oscilação da luz.
+- Um **brilho no ar** em volta de cada chama acesa (`kit.flameGlow`: um disco quente pontilhado, somado, sem névoa e sem gravar profundidade)
+  acompanha a força da luz; apagada, some. Tocha tirada pelo `clearTorches` não brilha.
+- Aceso e apagado continuam se lendo igual (a chama só aparece acesa; nada mudou na regra).
+
+**A luz forte** (pós-processo e tochas):
+- Perto de uma chama a parede "estourava" num creme chapado do tamanho de uma pedra, com um anel vermelho duro em volta, e a chama sumia no
+  meio. Duas causas, dois consertos:
+  1. O ponto de luz da tocha ficava a 45 cm da parede; com a luz caindo com o quadrado da distância, a pedra logo atrás recebia umas 20 vezes
+     a luz do chão. Agora fica a 80 cm (`TORCH_LIGHT_OUT` em `kit.ts`): a parede clareia por igual e o resto da sala quase não muda.
+  2. O pós-processo cortava cada canal seco no 1. Agora há um **ombro** (`shoulder` no shader, só no mundo, nunca na interface): cada canal
+     entra numa curva macia a partir de 0,7 (1 → 0,88; 1,5 → 0,94; 3 → 0,98). O vermelho enche primeiro, depois o verde: a cor passa de
+     laranja a amarelo e a branco aos poucos, como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase
+     tudo na tela) nada muda. Foram testadas outras duas curvas que guardam o matiz (escalando os três canais juntos): o tijolo vermelho
+     perto da chama ficava laranja "radioativo" e o miolo puxava para rosa; ficou a de cada canal. (`uShoulder = 0` volta ao corte, para testes.)
+- Custo: 5 a 10 desenhos a mais por sala (os brilhos), sem diferença medida de quadros por segundo.
+
+Testado: a abertura inteira gravada quadro a quadro (a névoa, o Escrivão saindo dela, o corte, a vista de baixo), as salas com fogo de perto
+e de longe (Lousa, Galeria, Apelidos, Tribunal, Biblioteca, Vestíbulo, Boato Verdadeiro, Lei Pequena, Confirma, Fio) antes e depois, no PC
+(1280 × 720) e no celular (844 × 390), sem erros no console.
+
+## 100. Vida, luz e arquitetura: o mundo deixa de ser caixa (cenógrafo, pedido do Pedro)
+
+"Pode sim mudar as arquiteturas na sala dos puzzles, sem mudar puzzle nem nada. O escuro de verdade é legal. O mundo reagir na imagem, o dado
+levantando poeira, pó do teto, achei muito bom. Vida pequena no ar: gotas caindo, o ar tremendo em cima das brasas, algum pequeno animal que
+apareça no fundo. Rastros de quem já passou. A neblina de fora voltar em alguns lugares. Onde tem os poços no topo, o buraco com a luz, ver a
+poeira flutuando: não aquelas bolinhas grandes, uma poeira mesmo. Sombras e o fogo ainda têm como melhorar. E janelas em algum lugar, como
+na sala 2: no capítulo 1 e no 2 ainda se está na superfície do dado. A cor: por capítulo, mudando aos poucos conforme o jogador avança."
+
+**Regra geral** (vale para tudo abaixo): nada disto muda solução, alcance, tempo, nem o que o jogador precisa ver, acertar ou ler. Onde havia
+dúvida, a peça saiu (ver "o que ficou de fora"). Os 21 verificadores de puzzle continuam passando.
+
+**1. O feixe de luz e a poeira fina** (`src/scene/fx.ts`: `lightShaft`, `fineDust`, `sunBeam`)
+- A luz que entra por um furo do teto ou por uma fresta agora SE VÊ no ar: um tubo somado por cima da cena, forte no miolo e sumindo nas
+  bordas, mais forte em cima, com listras lentas. É fraco de propósito (o pontilhado e a paleta o desfazem em degraus de pixel). O cone de
+  antes, de cor chapada, virava uma coluna cinza sólida e tinha sido tirado.
+- A poeira: cada grão é UM pixel da imagem do jogo (as "bolinhas" tinham 2 × 2, eram ~40 e todas iguais). São 150 a 200 por feixe, cada um
+  com o seu brilho, e cada um CINTILA no seu tempo, como poeira que gira na luz. Tudo animado no shader (um relógio só, `fxClock`): nenhuma
+  conta por grão no processador, um desenho por feixe.
+- Onde: os 6 furos redondos (Poço, Lousa, Fio, Cisterna, Banhos, Biblioteca), a Escadaria, as frestas do Vestíbulo e da Galeria, e as
+  janelas novas. O `kit.beamDust` e o `beamMotes` de antes agora chamam isto. No escuro da Casa, feixe e poeira apagam junto (`fxDim`).
+- A luz dos furos faz SOMBRA de verdade, de cima para baixo (o motor empresta um mapa de sombra quando o jogador está perto).
+
+**2. O mundo reage na imagem** (`src/scene/puffs.ts`; antes só o som dizia estas coisas)
+- A pancada do dado levanta POEIRA no ponto do toque, espalhando rente à superfície (chão, parede, coluna); mais forte, mais poeira.
+- O dado de Fogo deixa BRASAS para trás no voo; quando o fogo pega (braseiro, tocha, frase), um sopro de FAGULHAS.
+- A sala RESOLVIDA estremece: fios de pó caem do teto em volta do jogador (o motor procura o teto com raios; a céu aberto, nada cai). A
+  porta que abre solta o pó da verga.
+- Um desenho só, até 260 grãos reusados. A poeira pega a luz da sala e some no escuro; a fagulha é luz somada.
+
+**3. Vida pequena**
+- FUMAÇA em todas as tochas de enfeite (`smokePoints`, um desenho por sala; antes só duas tochas do Vestíbulo tinham, com cinco desenhos
+  cada). O tufo é pontilhado e escuro de verdade: a parede atrás da chama recebe luz muito acima de 1 e um véu fraco não aparecia.
+- MARIPOSAS: um ou dois pontinhos claros em volta de uma tocha em cada três, tortos e rápidos, pousando de vez em quando.
+- O AR QUENTE: em cima de cada braseiro aceso (até 4, os mais perto), as linhas da imagem escorregam um pixel para os lados, em ondas que
+  sobem (no pós-processo; só treme o que está ATRÁS da coluna de ar). `Emitter.hot`.
+- GOTAS: onde a sala já dizia que pinga (`ambience.drips`, que era só som), o motor acha o teto e põe a gota que cresce, cai e abre um
+  anel numa pocinha.
+- A luz de toda chama oscila uns 10%, em três ritmos (eram 3%: parecia lâmpada). "Reduzir movimento" desliga.
+
+**4. Os bichos** (`src/scene/critters.ts`; figuras 2D em pixel, sempre longe, sem som)
+- O RATO: corre rente a uma parede, de uma toca a outra (dois arquinhos escuros no rodapé), às vezes para e fareja. Só sai com o jogador a
+  mais de 4,5 m da corrida, foge mais depressa se ele chega perto, e demora de 30 s a mais de 1 min para voltar. Nas salas de fogo o
+  construtor escolhe sozinho o trecho de parede mais comprido sem nada encostado (confere as caixas de colisão e SONDA a sala com raios:
+  parede na frente, chão embaixo). Hoje em 10 salas.
+- O MORCEGO: cruza o alto de três salas altas (a Escadaria, o fosso da Ponte de Madeira, o Átrio da Biblioteca), com um mergulho no meio.
+- A graça é o jogador achar que viu alguma coisa: aparecem de vez em quando, nunca em laço.
+
+**5. A arquitetura das salas de puzzle** (`src/scene/rooms/dress.ts`, `FireSpec.vault` e `FireSpec.windows`)
+- As salas do construtor `fire.ts` eram caixas iguais: quatro paredes e um teto chato e escuro. Cinco ganharam ABÓBADA de berço de tijolo
+  com arcos de pedra lavrada sobre mísulas (a gramática da Lousa, o quadro de estilo): A Casa Escreve (as nove colunas agora sobem até a
+  casca), O Que a Casa Confirma, A Ponte de Frases (as correntes das lanternas sobem até a casca), A Lei Pequena e o Tribunal.
+- A abóbada fica toda ACIMA da altura `h` da sala: o dado continua batendo num teto invisível em `h` (testado: no Tribunal, arremessado
+  para cima, ele chega a 3,78 m, como antes). As mísulas ficam acima de `h` − 0,6.
+- JANELAS: duas frestas altas em arco no Confirma, na parede que dá para fora (com o vão na espessura da parede, grade, o céu, o feixe e a
+  poeira), nos dois únicos trechos vazios da parede; e um ÓCULO redondo em cima da porta do Tribunal: na última sala do capítulo, a luz de
+  fora entra por onde se sai. O feixe cai no meio do salão, longe da placa da porta e dos braseiros.
+- Como se escolhe o lugar: a planta diz que paredes dão para fora e que salas estão na superfície (as do subsolo não ganham janela); o
+  construtor AVISA no modo de desenvolvimento se um feixe cai a menos de 1,5 m de um braseiro ou da placa, e lista o que há pendurado em
+  cada parede (`__paredes`). Dois lugares que eu tinha escolhido foram recusados por esse aviso e um terceiro porque o feixe passava na
+  frente de uma lousa.
+- O céu das salas abertas (o claustro) deixou de ser azul com nuvens: é NÉVOA, como no pátio da abertura, com véus boiando no alto das
+  paredes (`mistBank`). A névoa também desce um pouco pelo alto do poço da Escadaria.
+
+**6. O escuro, e a cor que anda com o capítulo**
+- Dentro da Casa a luz ambiente caiu um quinto (`DARK_K`): os cantos e o alto das paredes afundam e as poças de luz das chamas se destacam.
+  As lousas continuam legíveis de uma ponta à outra da sala (conferido no Tribunal e no Confirma).
+- A cor: um banho leve (uns 7%) na imagem do mundo, que muda com a sala em que o jogador está (`uGrade`). O capítulo 1 é o do FOGO: começa
+  FRIO (o Poço) e esquenta sala a sala até o âmbar do Tribunal. Cada capítulo terá o seu par de cores (`GRADE_A`, `GRADE_B`). Soma-se ao
+  "estágio" da Casa, que já esquentava a luz com os marcos da história.
+
+**7. Os rastros de quem passou** (`traces` em `dress.ts`; sem texto)
+- Num canto perto da ENTRADA das salas de puzzle: as cinzas de uma fogueira velha entre três pedras, um ou dois tocos de vela derretidos, os
+  riscos de contagem de quem esperou. O tipo sai do nome da sala e uma em cada cinco não tem nada (se todas tivessem, virava enfeite).
+- Não entram se houver braseiro, coluna, caixa de colisão, chama ou escrita a menos de ~2 m (no Pano, o canto tem o braseirinho que ensina a
+  sala: ficou sem). Em sala de frases que se acendem, nada de riscos na parede: perto de uma tocha eles ficam alaranjados e lembram frase acesa.
+
+**O que ficou de fora, e por quê**
+- Abóbada no Pano, no Escuro e no Fogo que Corre (o teto tem frisos ou cal, que são do puzzle), na Sombra (a luz e a sombra são o puzzle)
+  e na Memória (o construtor da sala mexe nas paredes).
+- Janelas nas paredes do Tribunal (cheias: frases, a lei, o altar), na Casa Escreve (as tochas da parede são uma constelação) e no Fogo que
+  Corre (um feixe comprido atravessaria a sala na altura da cal do teto).
+- Névoa no fundo do fosso da Ponte de Madeira (taparia as canaletas) e no pátio da Cisterna (tem teto: o que há ali é o furo).
+- Fumaça nas tochas de puzzle (as que o jogador acende e se apagam).
+
+**Custo**: de 5 a 35 desenhos a mais por sala (o Confirma, com janelas e abóbada, é o que mais subiu: 361 → ~390); triângulos quase iguais.
+
+**Testado**: tsc, build, os 21 verificadores; no navegador de teste, PC (1280 × 720) e celular (844 × 390): os seis furos e as frestas, a
+pancada e o arremesso de Fogo quadro a quadro, o pó do teto, o rato correndo, a fumaça, o ar quente, a gota, todas as salas com abóbada, os
+cantos com rastros; no Tribunal, acender o braseiro certo (conta o passo), um errado (a Casa pune como antes) e o arremesso para cima; a
+tela inicial e a abertura. Sem erros no console. **Não testado**: o capítulo jogado do começo ao fim, um celular de verdade, e o morcego
+visto em jogo (ele voa; nas fotos de teste a câmera ficou embaixo de um patamar).
+
+## 101. As anotações do jogador junto dos símbolos (cenógrafo, pedido do Pedro)
+
+"Depois que o jogador escreve o que acha que um glifo significa, quando esse glifo aparecer (parede, conversa, textos), deveria aparecer?
+Não tem outra forma? De qualquer forma o ideal é ter a opção de ativar ou não." A resposta foi uma combinação de três formas, aprovada pelo
+Pedro. O que o jogador escreve sobre um glifo (`diary.notes`) só aparecia dentro do caderno; agora aparece em três lugares, e **sempre nas
+palavras dele**: o jogo continua sem traduzir e sem corrigir, e sem anotação nada aparece (`src/story/reading.ts`).
+
+**A anotação curta**: a ÚLTIMA linha que ele escreveu sobre o glifo (as respostas às perguntas do dado entram numa linha nova embaixo, e a
+última é o que ele acha agora), cortada no que cabe (`shortNote`).
+
+**1. A CÓPIA (sempre ligada).** Abrir o caderno (J ou o botão) olhando uma escrita da parede, ou até 20 s depois de uma conversa ou de um
+balão do dado, abre numa página nova do caderno, **Cópia**, logo depois da contracapa: a frase copiada a lápis, símbolo por símbolo, com a
+anotação dele embaixo de cada um (ou uma linha pontilhada, se não anotou). Tocar num símbolo da cópia abre na página da direita o mesmo
+quadro de anotar da parte Símbolos: dá para anotar ali mesmo, com a frase toda na frente. É o gesto natural de quem decifra: copiar a frase
+e trabalhar nela. A cópia fica no caderno até a próxima (uma só, a última), aparece no índice como «Cópia» e não abre durante o tutorial do
+caderno, nem quando o caderno abre sozinho numa folha nova dela (`diary.copy`, `book/pages.ts: renderCopy`, `book/book3d.ts`).
+
+**2. APONTAR (sempre ligada).** A mira parada (0,3 s) sobre uma palavra talhada na parede, a até 5 m, mostra embaixo da mira uma etiqueta
+de papel só com a anotação DAQUELA palavra (`aimNoteStore`, `ui/NoteTags.tsx: AimNote`). Numa conversa, no celular, tocar num símbolo mostra
+a anotação dele por 2,6 s (o segundo toque segue a conversa, como antes); no PC, com o mouse preso no jogo, mexer o mouse anda por cima dos
+símbolos (um sublinhado de ouro marca qual) e mostra a dele (`ui/DialogueBox.tsx`). Uma palavra por vez: ajuda a lembrar, não lê a frase
+pelo jogador.
+
+**3. EMBAIXO DOS SÍMBOLOS (opção, DESLIGADA por padrão).** Configurações → Acessibilidade → «Minhas anotações embaixo dos símbolos». Ligada,
+toda conversa e todo balão do dado mostram a anotação dele embaixo de cada símbolo, e olhar parado (0,8 s) uma escrita da parede sobe uma tira
+de papel no pé da tela com a frase e as anotações (`lookingStore`, `ReadingStrip`). É para quem quer jogar mais leve, ou tem dificuldade de
+memória: a dedução continua dele, porque as palavras são as que ele escreveu.
+
+**O que nunca mostra anotação**: as perguntas do dado («VOCÊ SABER ?» e os pedidos «BRASEIRO ONDE ?»: testam o que ele acha, mostrar a
+anotação as anularia; um balão com o glifo da pergunta não mostra anotação nem vai para a cópia), as anotações DELA (a sépia fica só no
+caderno) e as palavras que ele nunca anotou. A letra é sempre a dele, grafite em papel: nunca o dourado (a verdade da Casa) nem a sépia (a letra
+dela).
+
+**Conferido pelo enigmista** (todo puzzle passa por ele). Nenhuma sala muda de nível na régua (§17): as três formas tiram custo de leitura e de
+memória visual, não camadas de regra nem de dedução, e só ajudam quem anotou certo. Ele achou, e foi corrigido antes de ir para o jogo:
+- **O Pano entregava a solução**: a cópia e a tira liam a escrita da pedra com a palavra que o pano cobre (a tira mostrava TRÊS onde o pano
+  diz UM). Agora a escrita só vale com todas as palavras à vista; com o pano no lugar, ele lê o pano (a escrita bordada). O mesmo valia para o
+  "avistado": a palavra coberta só entra no diário quando o pano queima (`scene.ts`: `seenWords` e a leitura das inscrições).
+- **A etiqueta atravessava paredes**: na Lousa, mirar a coluna mostrava «cinco» e denunciava o segredo S1 escondido atrás dela. Agora a mira
+  e o olhar testam o que TAPA a vista (paredes, colunas, panos; não chamas, poeira, feixes nem decalques): só vale a palavra que é o primeiro
+  acerto, e a escrita lida tem de estar à vista.
+- **A lacuna sumia**: «ACENDER ▢ BRASEIRO» virava «ACENDER BRASEIRO». Agora a lacuna aparece como um quadrado VAZIO na cópia e na tira, nunca
+  preenchido com o que estiver aceso (a Lousa, o «DIZER IGUAL ▢» do Fio, as lousas da Sala de Aula).
+- **O mural de encaixe** (Biblioteca) mostrava o glifo antigo depois de uma troca: a escrita do bloco passa a ser a nova a cada troca.
+- **O giz é a pista**: a cópia de uma frase a giz da Galeria diz «a giz, Sala 15», e a tira diz «a giz» (as frases a giz são boatos).
+- **Editar a anotação juntava as linhas**: a resposta à pergunta do dado entra numa linha nova, e qualquer tecla depois disso juntava tudo,
+  fazendo a anotação curta mostrar a hipótese mais VELHA. Agora as linhas ficam.
+- (O retângulo laranja que aparecia sobre a coluna da Lousa no teste dele é o fantasma do POSICIONAR, onde o dado vai parar; não é vazamento.)
+
+**Fora de propósito, para sempre** (o enigmista conferiu): a **cal** (só aparece no escuro; O Escuro ensina a anotar o que some rápido, e uma
+cópia faria a anotação pelo jogador; a cal não é inscrição e não entra em nenhuma das formas), os **desenhos de fogo e luz** (lousas de
+lampiões, a casa lisa, a lousa da Casa Escreve, a moldura da Sombra, as lousas do Escuro, as grades do Fio e do Fogo que Corre, as
+constelações: não são escrita, e uma etiqueta viraria o oráculo "isto é um número"), a **página do C-Bib** (é um desenho; se virasse
+inscrição, a cópia daria o lado certo da página) e **uma cópia só**, a última (um histórico de cópias apagaria a "informação espalhada" da
+Lei Pequena, da Memória e do Tribunal).
+
+**A resposta da pergunta do dado aparece igual, certa ou errada** (decisão do Pedro): quando ele erra a pergunta do dado, a escolha também
+entra no caderno (numa linha nova) e é ela a anotação curta mostrada junto do símbolo, como qualquer outra. "O jogador percebe na hora que o
+dado reagiu; o jogador consciente vai entrar no caderno, anotar as outras palavras que tinham lá e ver como encaixa." O jogo não filtra o que
+ele escreveu (nem o que escolheu) por certo ou errado: a anotação é dele, e corrigir é trabalho dele.
+
+**Em aberto (opcional)**: na Sombra e no Escuro cada palavra é uma inscrição separada, então a cópia pega uma palavra só (não engana, só fica
+incompleta).
+
+**Detalhe de acabamento**: a fonte do caderno não tinha as reticências e trocava «…» por «?» (o «o que eu acho…» da parte Símbolos saía
+«o que eu acho?»); agora são três pingos numa célula só (`book/font.ts`).
+
+## 102. O teste de desempenho (cenógrafo, pedido do Pedro)
+
+Antes de decidir se o jogo vira app de celular e de Steam como está (embalado com Capacitor e Electron) ou se é convertido para outra engine,
+o Pedro quis saber como ele roda em celulares antigos e PCs fracos. Daqui não dá para medir aparelhos de verdade (não há aparelho ligado, e o
+navegador da nuvem desenha o 3D sem placa de vídeo), então o próprio jogo ganhou um **teste de desempenho**, aberto por um link:
+
+**O endereço do jogo com `?bench=1`** (por exemplo `…/dungeon-depths/sentenca/?bench=1`). Qualquer pessoa abre no aparelho que quer medir, sem
+instalar nada (`src/ui/Bench.tsx`).
+
+- **O passeio**: uma tela explica e pede Começar (no celular, com o aparelho deitado; tenta tela cheia). O jogo passa sozinho por cinco salas
+  pesadas (Vestíbulo, Galeria, Biblioteca, Claustro do Vento, Tribunal) em quatro níveis, como alguém escolheria em Configurações → Imagem:
+  **Alta** (qualidade alta, sombras altas), **Média** (média, médias), **Baixa** (baixa, baixas) e **Mínima** (baixa, sem sombras, pixel
+  grosso). Em cada sala a câmera fica uns passos para dentro da entrada e gira uma volta inteira devagar (`scene.benchView`); o primeiro 1,2 s
+  não conta (trocar de sala e de qualidade monta sombras e materiais e engasga uma vez), e depois mede 5 s. Uns 2 minutos e meio no total. O
+  som fica ligado (ele também pesa).
+- **O que mede**: o intervalo entre um quadro e o seguinte (`requestAnimationFrame`, o mesmo ritmo do desenho do jogo). Por sala: quadros por
+  segundo, o quadro mais lento dos 95% mais rápidos, a fração de **engasgos** (quadros acima de 34 ms, abaixo de 30 por segundo) e o pior
+  quadro. Se a página some no meio (trocou de aplicativo, a tela apagou), aquela sala é medida de novo.
+- **A nota**: por sala, **Fluido** (50 ou mais por segundo e até 3% de engasgos), **Bom** (40 ou mais, até 8%), **Jogável** (28 ou mais) ou
+  **Pesado**; a nota do nível é a da PIOR sala, porque é lá que o jogador sente. **Recomendado**: o nível mais alto que fica Bom ou Fluido;
+  se nenhum, o mais alto Jogável.
+- **O relatório**: o aparelho (modelo e sistema quando o navegador conta, navegador, placa de vídeo, núcleos, memória, tela), quanto o jogo
+  levou para abrir, a tabela dos quatro níveis e a recomendação. Botões: **Copiar o resultado** (um texto com tudo, sala por sala, para colar
+  na conversa), **Usar a recomendada aqui** (grava só a qualidade, as sombras e o pixel daquele aparelho), Repetir e Ir para o jogo.
+- **Nada é gravado**: nem o espaço de jogo, nem o caderno, nem as perguntas do dado, nem os desenhos do dado, nem as configurações (o teste
+  troca a qualidade só na memória); o jogo começa do zero na memória, igual em todo aparelho. O dado não fala nem pergunta, nenhuma cena toma
+  a câmera, e uma camada invisível segura os toques. Conferido: o armazenamento do navegador fica idêntico antes e depois.
+- **O que o número não diz**: o aparelho esquenta ao longo do teste (a Alta é medida primeiro, com ele frio); celulares com tela de 90 ou 120 Hz
+  passam de 60; no modo de economia de bateria muitos celulares travam em 30. O navegador do celular é praticamente o mesmo motor que o app
+  embalado usaria, então o resultado vale para o app; o Steam Deck e o iPhone se testam neles mesmos.
+- `?bench=rapido`: o mesmo passeio em tempos curtos, só para conferir que o teste funciona (os números não valem).

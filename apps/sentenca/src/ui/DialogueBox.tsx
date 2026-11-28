@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { diary, diaryStore } from '../story/diary';
 import { dialogue, dialogueStore, SPEAKER_WORD } from '../story/dialogue';
 import { useStore } from '../story/store';
@@ -6,6 +6,8 @@ import { tx, useLang } from '../i18n';
 import { WordGlyph } from './Glyph';
 import { useUiScale } from './scale';
 import { PART_MS, scribbleFor, wordMs } from '../story/writing';
+import { configStore } from '../story/config';
+import { readTalk, shortNote } from '../story/reading';
 import './story.css';
 
 // Janela de conversa estilo RPG clássico, no rodapé. O mundo fala em glifos (aparecem um a um);
@@ -20,11 +22,27 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
   const key = c ? `${c.id}:${c.i}` : '';
   const [shown, setShown] = useState(0);
   const [skipped, setSkipped] = useState(false); // o jogador pulou a escrita: tudo aparece de uma vez, sem animação
+  // AS ANOTAÇÕES (DESIGN.md §101): `peek` = o símbolo que o jogador apontou (tocou, ou passou o mouse); `hov` = onde está o "cursor" no PC
+  const notesOn = useStore(configStore).glyphNotes;
+  useStore(diaryStore); // (para as anotações acompanharem o caderno)
+  const [peek, setPeek] = useState<number | null>(null);
+  const [hov, setHov] = useState<number | null>(null);
+  const peekRef = useRef<number | null>(null);
+  peekRef.current = peek;
+  const rowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setShown(0);
     setSkipped(false);
+    setPeek(null);
+    setHov(null);
   }, [key]);
+  // a etiqueta do símbolo apontado some sozinha
+  useEffect(() => {
+    if (peek === null) return;
+    const t = window.setTimeout(() => setPeek(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [peek]);
 
   // "digitação": um glifo por vez (mais lento) ou uma letra por vez
   useEffect(() => {
@@ -50,6 +68,34 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
 
   const done = shown >= total;
   const block = !!c?.block;
+  // a fala inteira escrita vai para a LEITURA: abrir o caderno logo depois copia a conversa (DESIGN.md §101)
+  useEffect(() => {
+    if (c && line?.glyphs && done) readTalk(line.glyphs, diaryStore.get().here, String(c.id));
+  }, [c, line, done]);
+  // PC (o mouse está preso no jogo, sem cursor): com a fala parada, mover o mouse anda por cima dos símbolos, e o de baixo mostra a anotação
+  useEffect(() => {
+    if (!c || !block || !done || !line?.glyphs) return;
+    let vx = -1;
+    const mv = (e: MouseEvent) => {
+      if (!document.pointerLockElement) return;
+      const row = rowRef.current;
+      if (!row) return;
+      const tiles = [...row.querySelectorAll<HTMLElement>('.dlg-tile')];
+      if (!tiles.length) return;
+      const r0 = row.getBoundingClientRect();
+      if (vx < 0) vx = r0.width / 2;
+      vx = Math.max(0, Math.min(r0.width, vx + e.movementX * 0.7));
+      let at = 0;
+      tiles.forEach((t, i) => {
+        const r = t.getBoundingClientRect();
+        if (vx >= r.left - r0.left - 6) at = i;
+      });
+      setHov(at);
+      setPeek(shortNote(line.glyphs![at]) ? at : null);
+    };
+    window.addEventListener('mousemove', mv);
+    return () => window.removeEventListener('mousemove', mv);
+  }, [c, block, done, line]);
   const advance = useCallback(() => {
     if (!done) {
       setShown(total);
@@ -71,6 +117,16 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
     const pd = (e: Event) => {
       if ((e.target as HTMLElement | null)?.closest?.('.skipintro')) return; // (segurar para pular a introdução não passa a fala)
       e.stopPropagation();
+      // tocar num SÍMBOLO que tem anotação mostra a anotação dele (DESIGN.md §101); tocar de novo no mesmo passa a fala
+      const tile = (e.target as HTMLElement | null)?.closest?.('.dlg-tile[data-i]') as HTMLElement | null;
+      const gl = c.lines[c.i]?.glyphs;
+      if (tile && gl) {
+        const i = Number(tile.dataset.i);
+        if (shortNote(gl[i]) && peekRef.current !== i) {
+          setPeek(i);
+          return;
+        }
+      }
       advance();
     };
     window.addEventListener('keydown', kd, true);
@@ -99,12 +155,16 @@ export function DialogueBox({ onSound }: { onSound?: (name: 'uiblip' | 'uinew' |
       )}
       <div className="dlg-body">
         {line.glyphs ? (
-          <div className="dlg-glyphs">
-            {line.glyphs.slice(0, shown).map((id, i) => (
-              <span className="dlg-tile" key={`${key}-${i}`}>
-                <WordGlyph id={id} size={Math.round(50 * k)} draw={skipped ? 0 : PART_MS - 100} />
-              </span>
-            ))}
+          <div className="dlg-glyphs" ref={rowRef}>
+            {line.glyphs.slice(0, shown).map((id, i) => {
+              const n = notesOn || peek === i ? shortNote(id, peek === i ? 18 : 11) : '';
+              return (
+                <span className={`dlg-tile${hov === i ? ' hov' : ''}`} key={`${key}-${i}`} data-i={i}>
+                  <WordGlyph id={id} size={Math.round(50 * k)} draw={skipped ? 0 : PART_MS - 100} />
+                  {n && (peek === i ? <span className="gtag">{n}</span> : <span className="gnote">{n}</span>)}
+                </span>
+              );
+            })}
           </div>
         ) : (
           <p data-done={done ? '' : undefined}>

@@ -31,6 +31,7 @@ import { bakeProps, loadPack, placeProp } from '../props';
 import { ceilingWithHoles, holeCeilingMat, skyHole } from '../skyhole';
 import { ponteThrough } from '../plan';
 import { T as Tr } from '../../i18n';
+import { bat } from '../critters';
 
 const AX = 6; // o Átrio: x ∈ [-6, 6]
 const Z0 = -26;
@@ -472,6 +473,14 @@ export function buildBiblioteca(ctx: Ctx): Room {
       m.position.set(7.2 + k * 1.15, 1.65, BZ - 0.146);
       m.rotation.y = Math.PI;
       g.add(m);
+      // a escrita do bloco passa a ser a NOVA (o caderno, a etiqueta da mira e a tira leem a palavra que está ali agora; DESIGN.md §101)
+      const bi = blockIns[k];
+      const p0 = bi?.panels[0];
+      if (p0) {
+        p0.mesh = m as unknown as typeof p0.mesh;
+        p0.id = w;
+        bi.words = [w];
+      }
     });
   };
   let aulaOpens = 0;
@@ -603,6 +612,8 @@ export function buildBiblioteca(ctx: Ctx): Room {
   kit.skirting(-AX, AX, Z0, Z1, 1.3);
   kit.aoSides(-AX, AX, Z0, Z1, H);
   kit.wear([[0, 1.5], [0.4, -10], [0, -24]], 1.4);
+  // (cenógrafo) um morcego cruza o alto do Átrio, acima das passarelas (DESIGN.md §100)
+  kit.fxUpd.push(bat(kit, new THREE.Vector3(-AX + 1, H - 1.3, Z0 + 2), new THREE.Vector3(AX - 1, H - 1.8, -2), 85));
   kit.bake();
   refreshBlocks();
   const gate = shotGate(ctx.die);

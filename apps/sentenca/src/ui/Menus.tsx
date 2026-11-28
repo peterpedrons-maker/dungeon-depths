@@ -250,6 +250,7 @@ const M = {
   motion: T('Reduzir o movimento da câmera', 'Reduce camera motion', 'Reducir el movimiento de la cámara'),
   contrast: T('Alto contraste nos glifos', 'High-contrast glyphs', 'Alto contraste en los glifos'),
   cross: T('Mira sempre visível', 'Always show crosshair', 'Mira siempre visible'),
+  glyphNotes: T('Minhas anotações embaixo dos símbolos', 'My notes under the symbols', 'Mis apuntes debajo de los símbolos'),
   langNote: T('O idioma muda o caderno, os pensamentos e a interface. Os glifos não mudam.', 'The language changes the notebook, the thoughts and the interface. The glyphs do not change.', 'El idioma cambia el cuaderno, los pensamientos y la interfaz. Los glifos no cambian.'),
   credits: T('Créditos', 'Credits', 'Créditos'),
   cont: T('Continuar', 'Continue', 'Continuar'),
@@ -672,6 +673,8 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
                 <Choice label={tx(M.motion)} value={c.reduceMotion} options={yesNo()} onChange={set('reduceMotion')} snd={snd} />
                 <Choice label={tx(M.contrast)} value={c.highContrast} options={yesNo()} onChange={set('highContrast')} snd={snd} />
                 <Choice label={tx(M.cross)} value={c.crosshair} options={yesNo()} onChange={set('crosshair')} snd={snd} />
+                {/* (DESIGN.md §101) as palavras do PRÓPRIO jogador embaixo dos símbolos; o jogo continua sem traduzir */}
+                <Choice label={tx(M.glyphNotes)} value={c.glyphNotes} options={yesNo()} onChange={set('glyphNotes')} snd={snd} />
               </>
             )}
             {tab === 'idioma' && (

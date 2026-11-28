@@ -11,6 +11,9 @@ import { makeBrazier, type Brazier } from '../brazier';
 import { glyphsOf } from '../../story/lexicon';
 import { drawGlyph } from '../../book/font';
 import { shotGate } from './shell';
+import { ratAlongWall } from '../critters';
+import { barrelCeiling, traces, wallWithWindows } from './dress';
+import { mistBank } from '../fx';
 import { makeBurnLine, type BurnLine } from '../burnline';
 import type { Inscription } from '../inscription';
 import type { Ambience, Box, Ctx, Interactable, Rect, Room, Socket } from '../types';
@@ -162,6 +165,12 @@ export interface FireSpec {
   doorY?: number; // a porta de saída fica num andar alto (mezanino): a sala seguinte começa nessa altura
   sky?: boolean; // sem teto: um pátio a céu aberto (céu pálido, como o do pátio da abertura)
   ambience?: Ambience; // o som do lugar: vento, gotas, tamanho (DESIGN.md §60)
+  // (cenógrafo, DESIGN.md §100) ARQUITETURA, sem tocar no puzzle. `vault`: o teto chato vira uma abóbada de tijolo com arcos de pedra sobre
+  // mísulas, toda ACIMA de `h` (o dado continua batendo num teto invisível em `h`); não usar em sala que tem coisa no teto (cal, frisos).
+  // `windows`: frestas altas numa parede do lado SEM porta, com o feixe de luz caindo num pedaço de chão vazio (`dz` = distância do fundo);
+  // só em sala na superfície e em parede que dá para fora.
+  vault?: boolean | { rise?: number; ribEvery?: number; oculus?: 'B' | 'F'; reach?: number }; // `oculus`: uma janela redonda na luneta do fundo ou da frente
+  windows?: { side: 'L' | 'R'; dz: number; y?: number; reach?: number; slide?: number }[];
 }
 
 // brasa fraca (um pontinho laranja) para o soquete das frases acendíveis (e, pela mesma gramática, o que mais se acende: o braseirinho da
@@ -332,19 +341,22 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     pitWall(gl, 73, FG.x0, (gz0 + gz1) / 2, Math.PI / 2);
     pitWall(gl, 74, FG.x1, (gz0 + gz1) / 2, -Math.PI / 2);
   }
-  if (!spec.sky) kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
+  let vaultTop: ((x: number) => number) | null = null;
+  if (spec.vault && !spec.sky) vaultTop = barrelCeiling(kit, X0, X1, Z0, Z1, H, spec.vault === true ? {} : spec.vault);
+  else if (!spec.sky) kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
   else {
     // o céu: uma placa clara bem acima das paredes, com nuvens em pixels (sem luz e sem névoa)
     const c = document.createElement('canvas');
     c.width = 64;
     c.height = 64;
     const g = c.getContext('2d')!;
-    g.fillStyle = '#b8c0d4';
+    // (DESIGN.md §100: o céu é NÉVOA, como no pátio da abertura. Antes era azul pálido com nuvens: via-se "o lado de fora")
+    g.fillStyle = '#a4a2b4';
     g.fillRect(0, 0, 64, 64);
     for (let k = 0; k < 90; k++) {
       const x = (k * 37) % 64;
       const y = (k * 23 + (k % 7) * 5) % 64;
-      g.fillStyle = k % 3 ? '#c8cede' : '#a8b0c6';
+      g.fillStyle = k % 3 ? '#adabbc' : '#9a98ab';
       g.fillRect(x, y, 6 + (k % 5), 2);
     }
     const t = new THREE.CanvasTexture(c);
@@ -355,6 +367,12 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     t.colorSpace = THREE.SRGBColorSpace;
     kit.plane(W * 3, L * 3, new THREE.MeshBasicMaterial({ map: t, fog: false }), 0, H + 10, zm, Math.PI / 2, 0, false);
   }
+  if (import.meta.env.DEV && typeof spec.vault === 'object' && spec.vault.oculus) {
+    // (o feixe do óculo não pode cair em cima de coisa de puzzle)
+    const lz = spec.vault.oculus === 'B' ? Z0 + (spec.vault.reach ?? 3.4) : Z1 - (spec.vault.reach ?? 3.4);
+    const near = [...spec.braziers.map((q) => [q.x, Z0 + q.dz]), ...(spec.plate ? [[spec.plate.x, Z0 + spec.plate.dz]] : [])].filter(([qx, qz]) => Math.hypot(qx, qz - lz) < 1.6);
+    if (near.length) console.error(`${spec.name}: o feixe do óculo cai perto de ${JSON.stringify(near)}`);
+  }
   const entrance = buildEntrance(kit, { x0: X0, x1: X1, z: Z1, h: H });
   // A PLANTA NOVA (DESIGN.md §73, passo 3): a porta pode sair por uma parede do lado (a planta diz qual e onde) ou fora do meio do fundo. A
   // parede do lado ganha a peça da porta (com o arco) e fica em dois pedaços; o fundo fica liso.
@@ -363,6 +381,21 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   if (planDoors(spec.name).entry.side !== 'F') throw new Error(`${spec.name}: entrada de lado ainda não existe nas salas de fogo`);
   const DSPAN = 1.6;
   const sideWall = (x: number, ry: number, seed: number, cut: boolean) => {
+    const wins = (spec.windows ?? []).filter((w) => (w.side === 'L') === (x < 0));
+    if (wins.length && cut) throw new Error(`${spec.name}: janela numa parede que tem porta`);
+    if (wins.length) {
+      const nx = x < 0 ? 1 : -1;
+      const list = wins.map((w) => ({ z: Z0 + w.dz, y: w.y, reach: w.reach ?? 1.9, slide: w.slide }));
+      // (o feixe não pode cair em cima de coisa de puzzle: confere contra os braseiros e a placa, e avisa no modo de desenvolvimento)
+      if (import.meta.env.DEV)
+        for (const w of list) {
+          const lx = x + nx * w.reach;
+          const lz = w.z + (w.slide ?? 0.5);
+          const near = [...spec.braziers.map((q) => [q.x, Z0 + q.dz]), ...(spec.plate ? [[spec.plate.x, Z0 + spec.plate.dz]] : [])].filter(([qx, qz]) => Math.hypot(qx - lx, qz - lz) < 1.5);
+          if (near.length) console.error(`${spec.name}: o feixe da janela em z=${w.z} cai perto de ${JSON.stringify(near)}`);
+        }
+      return wallWithWindows(kit, x, nx, Z0, Z1, H, seed, list);
+    }
     if (!cut) return kit.plane(L, H, kit.brick([L / T, H / T], 0.95, seed), x, H / 2, zm, 0, ry);
     const za = SD!.at - DSPAN;
     const zb = SD!.at + DSPAN;
@@ -392,6 +425,11 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     kit.box(0.9, PH, 0.9, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, PH / 2, pz);
     kit.box(1.1, 0.25, 1.1, kit.stone, px, 0.125, pz);
     kit.box(1.1, 0.25, 1.1, kit.stone, px, PH - 0.125, pz);
+    // (com a abóbada, a coluna continua até a casca: sem isto ela acabaria no ar, na altura do teto de antes)
+    if (vaultTop && PH >= H) {
+      const top = vaultTop(px) + 0.04;
+      kit.box(0.9, top - H, 0.9, kit.brick([1, 1], 0.95, 50 + Math.abs(px * pz)), px, (H + top) / 2, pz, false);
+    }
     kit.contact(px, pz, 2.1);
     boxes.push(mkBox(px - 0.45, 0, pz - 0.45, px + 0.45, PH, pz + 0.45), mkBox(px - 0.55, 0, pz - 0.55, px + 0.55, 0.25, pz + 0.55), mkBox(px - 0.55, PH - 0.25, pz - 0.55, px + 0.55, PH, pz + 0.55));
     rects.push([px - 0.55, pz - 0.55, px + 0.55, pz + 0.55]);
@@ -1019,6 +1057,71 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     const fn = () => ({ lit: braziers.map((b) => b.lit), left: left.map((v) => (Number.isFinite(v) ? +v.toFixed(1) : null)), solved, tries, count: lastCount, progress, cold: +coldT.toFixed(1), plate: plateDown, rise: +riseK.toFixed(2), plateOpen, lockCold: +lockCold.toFixed(1), lines: litLines.map((l) => l.lit), spots: litLines.map((l) => [l.x, l.y, l.z, l.hw]), rub: rubs.map((r) => r.v.map((x) => +x.toFixed(2))), sock: braziers.map((b) => [b.socket.x, b.socket.y, b.socket.z]) });
     g.__fire = fn; // a última sala construída
     ((g.__fires ??= {}) as Record<string, unknown>)[spec.name] = fn; // por nome: __fires['O Que a Casa Confirma']()
+  }
+  // (cenógrafo) OS RASTROS de quem passou (DESIGN.md §100): num canto da frente, perto da entrada e longe do puzzle (nada se há um braseiro, a
+  // placa ou uma coluna a menos de 1,8 m). O tipo e o lado saem do nome da sala; uma em cada quatro não tem nada.
+  {
+    const hsh = [...spec.name].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
+    // (em sala de frases que se acendem, nada de riscos na parede: perto de uma tocha eles ficam alaranjados e lembram uma frase acesa)
+    const kind = spec.lock && (hsh % 5 === 1 || hsh % 5 === 3) ? 2 : hsh % 5; // 0..3 = um tipo; 4 = nada
+    const sx = hsh % 2 ? 1 : -1;
+    const tx = sx * (spec.hx - 0.75);
+    const tz = Z1 - 0.8;
+    const busy =
+      spec.braziers.some((q) => Math.hypot(q.x - tx, Z0 + q.dz - tz) < 1.8) ||
+      (spec.pillars ?? []).some(([px, pdz]) => Math.hypot(px - tx, Z0 + pdz - tz) < 1.6) ||
+      (FG && Z0 + FG.dz1 > tz - 1.2) ||
+      // (o que as peças extras da sala puseram ali: qualquer caixa de colisão no chão, qualquer chama ou escrita registrada)
+      boxes.some((q) => q.min.y < 0.6 && q.max.x > tx - 1.9 && q.min.x < tx + 1.9 && q.max.z > tz - 1.9 && q.min.z < tz + 1.9) ||
+      kit.keepClear.some(([q]) => Math.hypot(q.x - tx, q.z - tz) < 2.4) ||
+      kit.inscriptions.some((ins) => Math.hypot(ins.center.x - tx, ins.center.z - tz) < 2.6) ||
+      (SD && SD.side !== 'B' && (SD.side === 'L') === (sx < 0) && Math.abs(SD.at - tz) < 2.6);
+    if (kind < 4 && !busy && !spec.doorY) traces(kit, kind, tx, tz, { x: sx * spec.hx, z: tz - 0.9, nx: -sx, nz: 0 }, hsh % 97);
+    if (import.meta.env.DEV) (((globalThis as Record<string, unknown>).__rastros ??= {}) as Record<string, unknown>)[spec.name] = { kind, busy: !!busy, tx, tz };
+  }
+  // (cenógrafo) a NÉVOA nos lugares abertos (DESIGN.md §100): numa sala a céu aberto, véus de névoa boiam no alto das paredes, tapando o céu
+  // (lá fora nunca se vê nada). Ficam todos acima de 3,4 m: não passam na frente do que se lê nem das fagulhas.
+  if (spec.sky) kit.fxUpd.push(mistBank(kit.group, { x0: X0 + 1, x1: X1 - 1, z0: Z0 + 1, z1: Z1 - 1, y0: Math.max(3.6, H - 1.6), y1: H + 1.8, n: 9, size: [4, 7], opacity: 0.55 }));
+  // (cenógrafo) UM RATO rente à parede mais livre da sala (DESIGN.md §100): só sai com o jogador longe, corre de uma toca a outra e some
+  {
+    const span = (side: 'L' | 'R'): [number, number][] => [
+      ...(SD?.side === side ? ([[SD.at - 1.8, SD.at + 1.8]] as [number, number][]) : []),
+      ...(FG && (side === 'L' ? FG.x0 <= X0 + 0.7 : FG.x1 >= X1 - 0.7) ? ([[Z0 + FG.dz0 - 0.3, Z0 + FG.dz1 + 0.3]] as [number, number][]) : []),
+    ];
+    const first = spec.name.length % 2 === 0 ? 'L' : 'R';
+    const tryWall = (side: 'L' | 'R') => ratAlongWall(kit, boxes, side === 'L' ? X0 : X1, side === 'L' ? 1 : -1, Z0 + 0.9, Z1 - 1.4, span(side));
+    const r = tryWall(first) ?? tryWall(first === 'L' ? 'R' : 'L');
+    if (r) kit.fxUpd.push(r);
+  }
+  // (testes) o que há pendurado em cada parede do lado: os trechos de z ocupados (para escolher onde cabe uma janela), e o aviso se uma
+  // janela ficou em cima de alguma coisa
+  if (import.meta.env.DEV) {
+    kit.group.updateMatrixWorld(true);
+    const occ: Record<'L' | 'R', [number, number][]> = { L: [], R: [] };
+    const bb = new THREE.Box3();
+    kit.group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!(m.isMesh || (o as THREE.Sprite).isSprite) || !o.visible) return;
+      bb.setFromObject(o);
+      if (bb.isEmpty() || bb.max.z - bb.min.z > L * 0.6 || bb.max.y < 0.35 || bb.min.y > H - 0.2) return;
+      for (const side of ['L', 'R'] as const) {
+        const wx = side === 'L' ? X0 : X1;
+        if (bb.min.x < wx + 0.45 && bb.max.x > wx - 0.45 && bb.max.x - bb.min.x < 1.2) occ[side].push([+bb.min.z.toFixed(1), +bb.max.z.toFixed(1)]);
+      }
+    });
+    const merge = (v: [number, number][]) => {
+      v.sort((p, q) => p[0] - q[0]);
+      const out: [number, number][] = [];
+      for (const iv of v) {
+        const last = out[out.length - 1];
+        if (last && iv[0] <= last[1] + 0.3) last[1] = Math.max(last[1], iv[1]);
+        else out.push([iv[0], iv[1]]);
+      }
+      return out;
+    };
+    const g = globalThis as Record<string, unknown>;
+    const walls = { L: merge(occ.L), R: merge(occ.R), z0: Z0, z1: Z1 };
+    ((g.__paredes ??= {}) as Record<string, unknown>)[spec.name] = walls;
   }
   kit.bake();
 

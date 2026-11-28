@@ -59,6 +59,7 @@ export interface Config {
   reduceMotion: boolean; // reduzir o movimento da câmera
   highContrast: boolean; // glifos com mais contraste
   crosshair: boolean; // mira sempre visível
+  glyphNotes: boolean; // as anotações do jogador embaixo dos símbolos (conversas, balões e a tira de leitura das paredes; DESIGN.md §101)
   // idioma (src/i18n.ts): português, inglês ou espanhol; `langChosen` = o jogador já escolheu (senão, a 1ª tela pergunta)
   lang: Lang;
   langChosen: boolean;
@@ -86,6 +87,7 @@ export const DEFAULT_CONFIG: Config = {
   reduceMotion: false,
   highContrast: false,
   crosshair: true,
+  glyphNotes: false,
   lang: guessLang(),
   langChosen: false,
 };
@@ -111,7 +113,10 @@ function load(): Config {
 }
 
 export const configStore = createStore<Config>(load());
+// (o teste de desempenho, ?bench=1, troca a qualidade sozinho: nada disso fica gravado no aparelho)
+const BENCH = typeof location !== 'undefined' && new URLSearchParams(location.search).has('bench');
 configStore.subscribe(() => {
+  if (BENCH) return;
   try {
     localStorage.setItem(KEY, JSON.stringify(configStore.get()));
   } catch {

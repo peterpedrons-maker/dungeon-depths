@@ -176,7 +176,9 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
   const lampEms: ReturnType<typeof kit.light>[] = [];
   for (let k = 1; k < PF.rows; k++) {
     const z = gz1 - ROW_L * k;
-    kit.box(0.03, 0.7, 0.03, iron, 0, PF.h - 0.35, z, false);
+    // (cenógrafo: com a abóbada, DESIGN.md §100, a corrente sobe até a casca, que no meio fica `VR` acima do teto de antes)
+    const VR = Math.max(0.9, Math.min(1.9, PF.hx * 0.28));
+    kit.box(0.03, 0.7 + VR, 0.03, iron, 0, PF.h - 0.35 + VR / 2, z, false);
     kit.box(0.3, 0.06, 0.3, iron, 0, PF.h - 0.72, z, false);
     kit.box(0.24, 0.05, 0.24, iron, 0, PF.h - 1.08, z, false);
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) kit.box(0.025, 0.36, 0.025, iron, sx * 0.12, PF.h - 0.9, z + sz * 0.12, false);
@@ -567,6 +569,7 @@ export const FIRE_PONTE_FRASES: FireSpec = {
   hx: PF.hx,
   z0: PF.z0,
   h: PF.h,
+  vault: true, // (cenógrafo, DESIGN.md §100)
   braziers: [],
   rule: { kind: 'custom', lamps: 1 },
   lock: { judge: 'door', penalty: 8, judged: [T('A Casa leu', 'The House read it', 'La Casa lo leyó'), T('A porta acordou.', 'The door woke up.', 'La puerta despertó.')] },

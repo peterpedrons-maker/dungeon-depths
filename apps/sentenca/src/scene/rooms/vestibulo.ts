@@ -16,7 +16,7 @@ import { glyphsOf } from '../../story/lexicon';
 import { diary } from '../../story/diary';
 import { ui } from '../../story/ui';
 import type { Box, Ctx, Room } from '../types';
-import { column, drip, flagstones, floorPlane, groinVault, masonry, reliefMat, ST, stoneBox, torchSmoke, transverseArch } from '../arch';
+import { beamMotes, column, drip, flagstones, floorPlane, groinVault, masonry, reliefMat, ST, stoneBox, torchSmoke, transverseArch } from '../arch';
 import { windNear } from '../ambience';
 import { T as Tr } from '../../i18n';
 import type { Text } from '../../i18n';
@@ -61,6 +61,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
   const SHAFT = { x: 0, z: Z0 + 5.4, r: 1.2 }; // boca larga o bastante para, de baixo, se ver o Escrivão debruçado sobre ela
   // névoa mística do pátio lá fora (sala 1): manchas de névoa PIXELADAS que passeiam devagar em volta do poço
   const mist: { s: THREE.Sprite; a: number; r: number; y: number; sp: number; ph: number; base: number }[] = [];
+  let ashFall: ((dt: number, t: number) => void) | null = null;
 
   // SALA 2, O SALÃO DE COLUNAS (DESIGN.md §61): cantaria com relevo, lajes grandes, abóbadas de aresta sobre arcos e colunas redondas
   const A2 = v === 2;
@@ -116,10 +117,12 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     {
       const g = skyCv.getContext('2d')!;
       const grd = g.createLinearGradient(0, 0, 0, 64);
-      grd.addColorStop(0, '#e8e4d6');
-      grd.addColorStop(0.45, '#b9b8c4');
-      grd.addColorStop(0.8, '#5c5a72');
-      grd.addColorStop(1, '#25243a');
+      // (DESIGN.md §99: a NEBLINA. O céu não é céu: é a mesma névoa, mais clara no alto; embaixo ele tem a cor exata da névoa do chão, então
+      // não há horizonte, nem nada lá longe)
+      grd.addColorStop(0, '#e6e3dc');
+      grd.addColorStop(0.35, '#bdbbc6');
+      grd.addColorStop(0.7, '#8e8c9e');
+      grd.addColorStop(1, '#8e8c9e');
       g.fillStyle = grd;
       g.fillRect(0, 0, 4, 64);
     }
@@ -160,7 +163,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 4.6, 5), new THREE.MeshLambertMaterial({ color: 0x8a7656, emissive: 0x1e170e }));
     rope.position.set(0.16, 1.86 - 2.3, 0.02);
     out.add(rope);
-    // ruínas em volta: muretas quebradas, um pilar tombado, pedras; ao longe, torres escuras da Casa contra o céu
+    // ruínas em volta: muretas quebradas, um pilar tombado, pedras (o resto some na neblina)
     const ruin = (w: number, h: number, d: number, x: number, z: number, ry: number, seed: number) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lambert(brickTexture([w / T, h / T], 0.85, seed, D.theme)));
       m.position.set(x, h / 2, z);
@@ -213,28 +216,54 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       const x = Math.sin(k * 127.1 + 311.7) * 43758.5453;
       return x - Math.floor(x);
     };
-    for (let i = 0; i < 18; i++) {
-      const m = new THREE.SpriteMaterial({ map: mistTex, transparent: true, depthWrite: false, fog: true, opacity: 0.8 });
+    // (a névoa em camadas: 24 fiapos no ar, de 1,8 a 9 m do poço, e 14 bancos baixos e largos rente ao chão, que engolem o pé das ruínas e a barra
+    // da túnica dele. Nenhum fica a menos de 1,8 m da boca do poço: o capuz debruçado e o dado na mão continuam limpos)
+    for (let i = 0; i < 38; i++) {
+      const low = i >= 24;
+      // (sem a névoa da cena: um fiapo um pouco mais claro que a neblina se vê mesmo longe, passando devagar; é o que dá volume ao branco)
+      const m = new THREE.SpriteMaterial({ map: mistTex, transparent: true, depthWrite: false, fog: false, opacity: 0.8 });
       const sp = new THREE.Sprite(m);
-      const sz = 2.4 + rnd(i) * 3.6;
-      sp.scale.set(sz * 1.6, sz, 1);
-      mist.push({ s: sp, a: rnd(i + 9) * Math.PI * 2, r: 1.9 + rnd(i + 3) * 7.5, y: 0.25 + rnd(i + 5) * 2.4, sp: (rnd(i + 7) - 0.5) * 0.06, ph: rnd(i + 11) * 6, base: 0.4 + rnd(i + 13) * 0.35 });
+      const sz = low ? 3.4 + rnd(i) * 3 : 2.4 + rnd(i) * 3.8;
+      sp.scale.set(sz * (low ? 2.4 : 1.6), sz * (low ? 0.55 : 1), 1);
+      mist.push({
+        s: sp,
+        a: rnd(i + 9) * Math.PI * 2,
+        r: 1.8 + rnd(i + 3) * (low ? 6 : 7.2),
+        y: low ? 0.12 + rnd(i + 5) * 0.4 : 0.35 + rnd(i + 5) * 2.6,
+        sp: (rnd(i + 7) - 0.5) * (low ? 0.04 : 0.07),
+        ph: rnd(i + 11) * 6,
+        base: low ? 0.5 + rnd(i + 13) * 0.3 : 0.3 + rnd(i + 13) * 0.35,
+      });
       out.add(sp);
     }
-    const towerMat = new THREE.MeshBasicMaterial({ color: 0x1b1a2a, fog: false });
-    for (const [a, dist, h, w] of [[0.3, 13, 9, 2.6], [1.4, 15, 12, 3.4], [2.6, 12.5, 7, 4], [3.5, 14.5, 10, 2.6], [4.6, 13.5, 8, 5], [5.6, 15.5, 13, 3]]) {
-      const tw = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), towerMat);
-      tw.position.set(Math.sin(a) * dist, h / 2 - 0.5, Math.cos(a) * dist);
-      tw.rotation.y = a;
-      out.add(tw);
+    // a cinza que cai: pontinhos claros descendo devagar e se desviando no ar (como neve que não derrete); somem na névoa de longe
+    {
+      const N = 170;
+      const pos = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        const a = rnd(i + 101) * Math.PI * 2;
+        const r = 0.6 + Math.sqrt(rnd(i + 202)) * 9;
+        pos.set([Math.sin(a) * r, rnd(i + 303) * 6, Math.cos(a) * r], i * 3);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const ash = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xdcdae4, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.85, depthWrite: false, fog: true }));
+      ash.frustumCulled = false;
+      out.add(ash);
+      ashFall = (dt: number, t: number) => {
+        const p = geo.attributes.position as THREE.BufferAttribute;
+        for (let i = 0; i < N; i++) {
+          let y = p.getY(i) - dt * (0.18 + rnd(i + 404) * 0.16);
+          if (y < 0) y += 6;
+          p.setY(i, y);
+          p.setX(i, p.getX(i) + Math.sin(t * 0.7 + i) * dt * 0.08);
+          p.setZ(i, p.getZ(i) + Math.cos(t * 0.5 + i * 1.3) * dt * 0.06);
+        }
+        p.needsUpdate = true;
+      };
     }
-    // coluna de luz (translúcida) e mancha de luz no chão
-    const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(SHAFT.r * 0.95, SHAFT.r * 1.3, H, 20, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0.055, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
-    );
-    beam.position.set(SHAFT.x, H / 2, SHAFT.z);
-    kit.group.add(beam);
+    // (as torres escuras da Casa contra o céu saíram, DESIGN.md §99: lá fora não se sabe o que existe)
+    // a mancha de luz no chão (a coluna de luz agora é o FEIXE do `beamDust`, DESIGN.md §100: antes era um tubo de cor chapada)
     const pool = new THREE.Mesh(
       new THREE.CircleGeometry(1.6, 24),
       new THREE.MeshBasicMaterial({ color: 0xcfd8f0, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
@@ -243,7 +272,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     pool.position.set(SHAFT.x, 0.02, SHAFT.z);
     kit.group.add(pool);
     kit.light(SHAFT.x, H - 0.3, SHAFT.z, 0xcfdcff, 70);
-    kit.beamDust(SHAFT.x, SHAFT.z, SHAFT.r * 1.05, 0.2, H - 0.2, 44, 0xe8eeff); // poeira só no feixe do poço
+    kit.beamDust(SHAFT.x, SHAFT.z, SHAFT.r * 1.0, 0.1, H, 44, 0xe8eeff, 0.15); // o feixe do poço e a poeira fina dentro dele (o mais forte do jogo: é o furo do UM)
   } else if (A2) {
     // três abóbadas de aresta, uma por tramo (entre a entrada, os dois pares de colunas e a porta); pedra mais miúda e escura que a parede
     const vaultM = reliefMat(masonry({ rows: [12, 16], blocks: [22, 42], seed: 302, theme: D.theme, tint: 0.8, cracks: 0.3 }), 2.2);
@@ -469,34 +498,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     moon.shadow.camera.far = 16;
     moon.shadow.bias = -0.002;
     kit.group.add(moon, moon.target);
-    // nada de cone desenhado (a paleta o achataria num bloco): o feixe se lê pela POEIRA que flutua dentro dele e pela luz onde ele cai
-    {
-      const from = moon.position.clone();
-      const dir = moon.target.position.clone().sub(from);
-      const N = 56;
-      const pos = new Float32Array(N * 3);
-      const seeds = Array.from({ length: N }, (_, i) => [((i * 0.618) % 1) * 0.8 + 0.12, Math.random() * Math.PI * 2, Math.sqrt(Math.random()), Math.random() * 10]);
-      const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xc8d4f0, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.5, fog: false, depthWrite: false }));
-      pts.frustumCulled = false;
-      kit.group.add(pts);
-      const side = new THREE.Vector3(0, 0, 1).cross(dir).normalize();
-      const up = dir.clone().cross(side).normalize();
-      lifeFx.push((t) => {
-        for (let i = 0; i < N; i++) {
-          const [t0, a0, r0, k] = seeds[i];
-          const tt = (t0 + t * 0.006 * (1 + (k % 1))) % 1; // descem devagar ao longo do feixe
-          const along = 0.12 + tt * 0.82;
-          const rad = (0.12 + along * 0.95) * r0;
-          const a = a0 + t * 0.15 * ((k % 2) - 0.5);
-          const p = from.clone().addScaledVector(dir, along).addScaledVector(side, Math.cos(a) * rad).addScaledVector(up, Math.sin(a) * rad);
-          pos[i * 3] = p.x;
-          pos[i * 3 + 1] = p.y + Math.sin(t * 0.7 + k) * 0.03;
-          pos[i * 3 + 2] = p.z;
-        }
-        geo.attributes.position.needsUpdate = true;
-      });
-    }
+    // o feixe da fresta no ar e a poeira fina dentro dele (DESIGN.md §100; antes só 56 grãos de 2 × 2 pixels, sem feixe: a paleta achatava o
+    // cone de cor chapada num bloco)
+    lifeFx.push(beamMotes(kit.group, moon.position.clone(), moon.target.position.clone(), 56, 0xc8d4f0, 0.5));
     // o caminho gasto da entrada à porta, teias nos cantos altos do fundo
     kit.wear([[0, 1.6], [0, -6], [0.2, -14.4]], 1.5);
     kit.web(X0, H + 0.2, Z0 + 0.5, 1, 0);
@@ -802,7 +806,8 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     dieFloor: () => 0,
     holdsDie: () => false,
     update(dt, t) {
-      // a névoa do pátio gira devagar em volta do poço, sobe e desce, engrossa e afina
+      // a névoa do pátio gira devagar em volta do poço, sobe e desce, engrossa e afina; a cinza cai
+      ashFall?.(dt, t);
       for (const m of mist) {
         m.a += m.sp * dt;
         m.s.position.set(Math.sin(m.a) * m.r, m.y + Math.sin(t * 0.3 + m.ph) * 0.25, Math.cos(m.a) * m.r);

@@ -3,6 +3,12 @@
 // do jogador, giz livre e a passagem de uma sala para a outra.
 
 import * as THREE from 'three';
+import { makePuffs } from './puffs';
+import { fxEye, fxView } from './fx';
+import { aimNoteStore, lookingStore, readingStore, shortNote } from '../story/reading';
+import type { Inscription } from './inscription';
+import { drip } from './arch';
+import { puddleTexture } from './textures';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { T, tx, type Text } from '../i18n';
 import { roomTitle } from '../story/roomnames';
@@ -75,6 +81,8 @@ const FOG = '#0b0912';
 const LAB = new URLSearchParams(location.search).has('lab');
 // ?vitrine=1: a vitrine dos objetos em modelo 3D (rooms/vitrine.ts), também isolada e sem salvar
 const VITRINE = new URLSearchParams(location.search).has('vitrine');
+// O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §102): a câmera passeia sozinha por salas pesadas; nada é gravado no aparelho
+const BENCH = new URLSearchParams(location.search).has('bench');
 const BUILDERS: RoomBuilder[] = VITRINE ? [buildVitrine] : LAB ? [buildLab] : MAIN_BUILDERS();
 // o mundo montado pela PLANTA NOVA do capítulo 1 (DESIGN.md §73; plan.ts), o padrão: cada sala no seu lugar e com o seu giro, ligadas por
 // corredores com curvas. ?planta=0: a fila antiga (para comparar).
@@ -177,6 +185,11 @@ export interface SceneApi {
   toTitle(): void; // salva e volta à tela inicial
   saveNow(): void; // salva agora (pausa, sair)
   lock(): void; // (PC) captura o mouse de novo (precisa de um clique ou tecla)
+  // (teste de desempenho, ?bench=1) os nomes das salas; pôr a câmera na entrada da sala i, girada `yaw` (radianos, a partir do olhar de
+  // entrada) e inclinada `pitch`; null solta a câmera. E a resolução interna (linhas desenhadas)
+  benchRooms(): string[];
+  benchView(v: { room: number; yaw: number; pitch: number } | null): void;
+  benchRes(): { w: number; h: number };
   dispose(): void;
 }
 
@@ -286,6 +299,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uRes: { value: new THREE.Vector2(64, 64) },
       uNear: { value: CAM_NEAR },
       uFar: { value: CAM_FAR },
+      uEdgeFog: { value: new THREE.Vector3(0, 1, 0) }, // (near, far, força): o contorno some junto com a névoa (só lá fora, na neblina, DESIGN.md §99)
       tLut: { value: lutTex },
       uBloom: { value: 1 },
       uBright: { value: 1 },
@@ -298,12 +312,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uTan: { value: new THREE.Vector2(1, 1) },
       tBack: { value: null as THREE.Texture | null },
       uBack: { value: 0 },
+      uShoulder: { value: 1 }, // o ombro das luzes fortes (DESIGN.md §99): 0 = o corte seco de antes
+      // o AR QUENTE em cima dos braseiros (DESIGN.md §100): até 4 colunas, cada uma (u, v do pé; meia largura em v; distância em m)
+      uHot: { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
+      // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §100): um banho de cor muito leve na imagem do mundo, que muda com a sala em que o jogador está
+      uGrade: { value: new THREE.Vector3(1, 1, 1) },
+      uTime: { value: 0 },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
       uniform sampler2D tRoom; uniform sampler2D tDepth; uniform sampler2D tHud;
       uniform sampler2D tBack; uniform float uBack;
       uniform vec2 uRes; uniform float uNear; uniform float uFar;
+      uniform vec3 uEdgeFog;
       uniform highp sampler3D tLut;
       uniform float uBloom;
       uniform float uBright;
@@ -314,7 +335,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       uniform float uDis; // transição em pontilhado: < 0 desligada; 0..1 = quanto da imagem nova já apareceu
       uniform float uAO; // força da oclusão de ambiente (0 = desligada)
       uniform vec2 uTan; // tangente da metade do campo de visão (x, y): para voltar da tela à posição no espaço da câmera
+      uniform float uShoulder;
+      uniform vec4 uHot[4];
+      uniform float uTime;
+      uniform vec3 uGrade;
       varying vec2 vUv;
+      // O OMBRO DA LUZ (DESIGN.md §99): perto de uma chama a pedra recebe muito mais luz que 1. Cortar cada canal seco no 1 (o de antes)
+      // chapava a parede num creme sem desenho, com um anel vermelho duro em volta. Aqui cada canal entra numa curva macia a partir de 0,7
+      // (1 → 0,88; 1,5 → 0,94; 3 → 0,98): o vermelho enche primeiro, depois o verde, e a cor passa de laranja a amarelo e a branco aos poucos,
+      // como numa foto de fogo, e a pedra continua desenhada onde a luz é forte. Abaixo de 0,7 (quase tudo) nada muda.
+      vec3 shoulder(vec3 c){
+        const float K = 0.7;
+        vec3 x = max(c - K, 0.0);
+        return min(c, vec3(K)) + (1.0 - K) * x / (x + 0.2);
+      }
       float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
       float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
       // inverso da distância: varia de forma LINEAR na tela dentro de uma superfície
@@ -371,7 +405,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           gl_FragColor = vec4(texture(tLut, clamp(cb, 0.0, 1.0)).rgb, 1.0);
           return;
         }
-        vec3 room = texture2D(tRoom, vUv).rgb;
+        // O AR QUENTE: em cima de cada braseiro aceso, as linhas da imagem escorregam um pixel para os lados, em ondas que sobem (só o que
+        // está ATRÁS da coluna de ar treme; o que está na frente dela, não)
+        vec2 ruv = vUv;
+        for (int i = 0; i < 4; i++) {
+          vec4 hs = uHot[i];
+          if (hs.z <= 0.0) continue;
+          vec2 hd = vec2((vUv.x - hs.x) / (hs.z * 1.6 * uRes.y / uRes.x), (vUv.y - hs.y) / (hs.z * 4.6));
+          if (hd.y > 0.0 && hd.y < 1.0 && abs(hd.x) < 1.0 && hud.a < 0.5) {
+            float hw = (1.0 - hd.x * hd.x) * sin(hd.y * 3.14159) * step(hs.w - 0.5, linZ(vUv));
+            ruv.x += sin(floor(vUv.y * uRes.y) * 1.7 - uTime * 7.0 + float(i) * 2.0) * hw * 1.2 / uRes.x;
+          }
+        }
+        vec3 room = texture2D(tRoom, ruv).rgb;
         if (uAO < -150.0) { vec3 P = viewP(vUv); vec3 N = normalize(cross(viewP(vUv + vec2(o.x, 0.0)) - P, viewP(vUv + vec2(0.0, o.y)) - P)); gl_FragColor = vec4(N * 0.5 + 0.5, 1.0); return; }
         if (uAO < -50.0) { gl_FragColor = vec4(vec3(fract(linZ(vUv))), 1.0); return; }
         if (uAO < 0.0) { gl_FragColor = vec4(vec3(ambientOccK(vUv, o, -uAO)), 1.0); return; }
@@ -400,6 +446,11 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         float lx = invZ(vUv - vec2(o.x, 0.0)) + invZ(vUv + vec2(o.x, 0.0)) - 2.0 * ic;
         float ly = invZ(vUv - vec2(0.0, o.y)) + invZ(vUv + vec2(0.0, o.y)) - 2.0 * ic;
         float edge = step(0.1 * ic + 0.025, max(lx, ly)) * (hud.a > 0.5 ? 1.0 : 1.0 - min(1.0, uBlur * 0.5 * coc));
+        if (uEdgeFog.z > 0.0 && hud.a < 0.5) {
+          // na neblina, quem está longe não tem contorno: some inteiro, e o contorno volta conforme ele chega (o lado de perto da borda manda)
+          float zc = min(linZ(vUv), min(min(linZ(vUv - vec2(o.x, 0.0)), linZ(vUv + vec2(o.x, 0.0))), min(linZ(vUv - vec2(0.0, o.y)), linZ(vUv + vec2(0.0, o.y)))));
+          edge *= 1.0 - uEdgeFog.z * smoothstep(uEdgeFog.x, uEdgeFog.y, zc);
+        }
         // brilho (bloom barato): luz forte "vaza" pros pixels vizinhos
         if (hud.a < 0.5 && uBloom > 0.5) {
           vec3 glow = vec3(0.0);
@@ -410,7 +461,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           }
           c += glow * uGlowK;
         }
-        c = clamp(c * uBright, 0.0, 1.0);
+        c *= uBright;
+        if (hud.a < 0.5) c *= uGrade;
+        if (uShoulder > 0.5 && hud.a < 0.5) c = shoulder(c);
+        c = clamp(c, 0.0, 1.0);
         c = pow(c, vec3(1.0 / 2.2));
         float l = dot(c, vec3(0.299, 0.587, 0.114));
         c = mix(vec3(l), c, 1.0);
@@ -427,6 +481,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   postScene.add(postQuad);
   // ── sala e cena ─────────────────────────────────────────────────────────
   const scene = new THREE.Scene();
+  // a poeira das pancadas, as fagulhas e o pó que cai (DESIGN.md §100)
+  const puffs = makePuffs(scene);
+  const fallQ: { t: number; at: THREE.Vector3; n: number; spread: number; floor: number }[] = []; // pó do teto ainda por soltar
   // `ambient` é a luz ambiente "lógica" de cada sala (cor e força vêm da sala e da história). Na cena ela é repartida em três luzes que DEFINEM
   // as formas: uma ambiente menor, uma luz de cima (o que olha para cima fica mais claro, o que olha para baixo, mais escuro: pisos de degrau
   // claros, espelhos e o avesso das coisas mais escuros) e uma luz fraca de lado (paredes que se encontram num canto não ficam do mesmo tom).
@@ -445,12 +502,17 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let darkQ: { secs: number; onDark?: () => void } | null = null; // pedido esperando a conversa acabar
   let darkCb: (() => void) | null = null;
   const lightScale = () => 1 - 0.92 * darkK;
+  // O ESCURO DE VERDADE (DESIGN.md §100): dentro da Casa a luz que vem "de todo lado" caiu um quinto. O que as chamas não alcançam fica mais
+  // fundo (os cantos, o alto das paredes, o avesso das coisas) e as poças de luz das tochas e dos braseiros se destacam. Lá fora (a abertura,
+  // na neblina) não muda.
+  const DARK_K = 0.8;
   const shapeLight = () => {
+    const dk = outsideAtmo ? 1 : DARK_K;
     ambReal.color.copy(ambient.color);
-    ambReal.intensity = ambient.intensity * AMB_K * lightScale();
+    ambReal.intensity = ambient.intensity * AMB_K * dk * lightScale();
     hemi.color.copy(ambient.color);
     hemi.groundColor.copy(ambient.color).multiplyScalar(0.22);
-    hemi.intensity = ambient.intensity * HEMI_K * lightScale();
+    hemi.intensity = ambient.intensity * HEMI_K * dk * lightScale();
     sideKey.color.copy(ambient.color);
     sideKey.intensity = ambient.intensity * SIDE_K * lightScale();
   };
@@ -779,7 +841,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if ((sketchCount[word] ?? 0) >= SKETCH_MAX) return;
       sketchCount[word] = (sketchCount[word] ?? 0) + 1;
       try {
-        localStorage.setItem(SKETCH_KEY, JSON.stringify(sketchCount));
+        if (!BENCH) localStorage.setItem(SKETCH_KEY, JSON.stringify(sketchCount));
       } catch {
         /* sem armazenamento: tudo bem */
       }
@@ -1115,7 +1177,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let autoWalk: null | { x: number; z: number; speed: number } = null; // o personagem anda sozinho (cena) até um ponto fixo
   let fovCine = 0; // > 0: campo de visão da cena (zoom)
   let cineCam: null | { pos: THREE.Vector3; look: THREE.Vector3 } = null; // câmera de cinema, solta do jogador
-  let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean } = null;
+  let scribeDrop: null | { ph: number; t: number; done: () => void; thrown: boolean; pose: ScribePose; yaw: number; arrived: boolean; leanT?: number } = null;
   let topScribe: ReturnType<typeof makeScribeRig> | null = null;
   void preloadScribeRig(); // o Escrivão animado (DESIGN.md §70) começa a baixar já: a cena do poço vem logo
   let scribeDie: THREE.Object3D | null = null;
@@ -1128,7 +1190,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const scribeLook = new THREE.Vector3();
   const tmpV = new THREE.Vector3();
   const DIE_IN_HAND = 0.22;
-  const SCRIBE_FROM = new THREE.Vector3(-2.7, 0, 2.9); // de onde ele vem (atrás da mureta), relativo à boca do poço
+  const SCRIBE_FROM = new THREE.Vector3(-3.9, 0, 4.2); // de onde ele vem (atrás da mureta), relativo à boca do poço: de dentro da neblina (DESIGN.md §99)
   const RIM_OUT = 1.63; // raio de fora da mureta do poço (vestibulo.ts: SHAFT.r + 0,43)
   const SCRIBE_AT = new THREE.Vector3(0, 0, RIM_OUT + 0.12); // encostado na mureta: abaixo da borda o pano se achata contra ela (`press`)
   // uma conversa do dado em várias frases, uma depois da outra; devolve a duração total (ms, até o balão sumir)
@@ -1306,7 +1368,16 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       outsideAtmo = outside;
       blendAtmosphere(0, true); // corte: o ar muda na hora
     }
-    outdoor.intensity = outside ? 1.9 : 0;
+    // NA NEBLINA (DESIGN.md §99): nos planos de fora, o pano dele entra na névoa (ele sai dela primeiro como sombra); os olhos acesos e o halo
+    // não (são a primeira coisa que aparece). Visto de baixo, pelo poço, ele continua sem névoa, nítido contra a luz
+    if (topScribe)
+      topScribe.group.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+        if (!m || !(m instanceof THREE.MeshLambertMaterial) || m.fog === outside) return;
+        m.fog = outside;
+        m.needsUpdate = true;
+      });
+    outdoor.intensity = outside ? 1.25 : 0; // (na neblina a luz é difusa: o sol não atravessa, DESIGN.md §99)
     if (S.ph === 4 || S.ph === 6 || S.ph === 7) {
       outdoor.position.set(W.x - 4, W.y + 9, W.z - 3);
       outdoor.target.position.copy(W);
@@ -1367,6 +1438,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           sPos.copy(SCRIBE_FROM).add(W);
           S.yaw = Math.atan2(SCRIBE_AT.x - SCRIBE_FROM.x, SCRIBE_AT.z - SCRIBE_FROM.z);
           S.arrived = false;
+          S.leanT = 0;
           S.pose = { walk: 0.8, lean: 0, headPitch: 0.1 };
           topScribe!.setAlpha(1);
           fovCine = 46;
@@ -1377,7 +1449,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (S.arrived) {
           // na borda: apoia a mão esquerda, se debruça e olha para baixo, para dentro do poço
           S.pose = { walk: 0, lean: 1.3, rest: 1, headPitch: -0.1 }; // debruçado por cima da mureta: a cabeça fica sobre a boca do poço, o rosto aponta para BAIXO // o rosto aponta para BAIXO, para dentro do poço // debruçado por cima da mureta (o corpo fica do lado de fora dela)
-          if (S.t > 6.2) {
+          S.leanT = (S.leanT ?? 0) + dt;
+          // (o corte espera ele se debruçar: 1,3 s depois de chegar. Ele vem de mais longe, de dentro da neblina, DESIGN.md §99)
+          if (S.t > 6.2 && S.leanT > 1.3) {
             // CORTE: de baixo, o olhar do jogador: o capuz aparece na boca do poço, contra o céu
             cineCam = null;
             fovCine = 10;
@@ -1540,6 +1614,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         else sfx.play(n, 1, key);
         // acender com o dado: ele queima. 1,5 s na 1ª vez de cada braseiro; depois só um instante (0,3 s)
         if (n === 'ignite') {
+          // as fagulhas de quando o fogo pega (no dado, que está encostado no que acendeu)
+          if (dieRoom === idx && (dieState === 'flying' || dieState === 'rest')) puffs.sparks(toW(idx, dieP, new THREE.Vector3()), 16);
           const first = key ? progress.firstBurn(`${idx}:${key}`) : true;
           startBurn(first);
           life.react('flinch');
@@ -1548,6 +1624,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
           life.react('thump');
           chatFn('plate');
         } else if (n === 'door' || n === 'rise') {
+          // a porta que abre solta o pó da verga (DESIGN.md §100)
+          if (n === 'door' && rooms[idx]) {
+            const e = exitOf(rooms[idx]);
+            const dy = rooms[idx].exitDy ?? 0;
+            const at = toW(idx, new THREE.Vector3(e.x, dy + 2.3, e.z));
+            fallQ.push({ t: 0.25, at, n: 22, spread: 0.55, floor: at.y - 2.3 }, { t: 0.9, at: at.clone(), n: 12, spread: 0.55, floor: at.y - 2.3 });
+          }
           // (o pilar que sobe soava como a porta; ganhou som próprio, mas o dado reage igual)
           life.react('perk');
           chatFn('door');
@@ -1707,6 +1790,38 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
 
   // a caixa de cada sala nas coordenadas DELA (para saber em que sala está um ponto: `roomAt`; e o mapa do caderno)
   const bounds: THREE.Box3[] = [];
+  // AS GOTAS QUE SE VEEM (DESIGN.md §100): onde a sala diz que pinga (`ambience.drips`, que até aqui era só som), o motor acha o teto em cima
+  // do ponto e põe a gota que cresce, cai e abre um anel numa pocinha. (Sem teto em cima, nada: é céu aberto.)
+  const dripUpd: ((t: number) => void)[][] = [];
+  let puddleMat: THREE.MeshBasicMaterial | null = null;
+  const makeDrips = (room: Room) => {
+    const out: ((t: number) => void)[] = [];
+    const list = room.ambience?.drips;
+    if (!list?.length) return out;
+    room.group.updateMatrixWorld(true);
+    const solid: THREE.Object3D[] = [];
+    room.group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && !(Array.isArray(m.material) ? m.material[0] : m.material)?.transparent) solid.push(m);
+    });
+    const ray = new THREE.Raycaster();
+    list.forEach((d, k) => {
+      const fy = room.groundY(d.x, d.z, d.y);
+      ray.set(new THREE.Vector3(d.x, fy + 0.5, d.z), new THREE.Vector3(0, 1, 0));
+      ray.far = 16;
+      const hit = ray.intersectObjects(solid, false)[0];
+      if (!hit || hit.distance < 1.2) return;
+      puddleMat ??= new THREE.MeshBasicMaterial({ map: puddleTexture(), transparent: true, opacity: 0.55, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+      const pud = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.7), puddleMat);
+      pud.rotation.x = -Math.PI / 2;
+      pud.rotation.z = k * 1.3;
+      pud.position.set(d.x, fy + 0.012, d.z);
+      pud.userData.noPlan = true;
+      room.group.add(pud);
+      out.push(drip(room.group, d.x, hit.point.y - 0.03, d.z, 2.3 + ((k * 0.7 + d.x * 0.13) % 1) * 1.6, fy));
+    });
+    return out;
+  };
   const connectors: Connector[] = [];
   // o corredor de ligação em que está um ponto (`y` = a altura dele: pés, ou o ponto da mira)
   const connectorAt = (p: THREE.Vector3, y = p.y): Connector | null => {
@@ -1737,6 +1852,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       if (import.meta.env.DEV) (globalThis as Record<string, unknown>).__salaMontando = i; // (testes: de que sala é cada tocha movida)
       const room = build(makeCtx(i));
       room.name = `Sala ${i + 1} · ${room.name.replace(/^Sala \d+ · /, '')}`; // numeração automática // i18n-ok (o nome da sala é o identificador dela; a tela traduz com roomTitle)
+      dripUpd[i] = makeDrips(room);
       bounds.push(footprint(room)); // (a sala ainda está na origem, sem giro)
       // em fila: o corredor da porta de uma desemboca na entrada da próxima; salas que descem (fosso, banhos): a seguinte começa no nível
       // da porta de saída (também na planta: o andar de cada sala sai da anterior)
@@ -2217,14 +2333,18 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const blendAtmosphere = (dt: number, snap = false) => {
     if (outsideAtmo) {
       const f = scene.fog as THREE.Fog;
-      f.color.set('#5d5b74');
-      f.near = 3;
-      f.far = 21; // ar grosso de madrugada: ao longe tudo vira silhueta na névoa
-      ambient.color.setHex(0xa29fc6);
-      ambient.intensity = 1.55;
+      // A NEBLINA (pedido do Pedro, DESIGN.md §99): clara e fechada, como em Silent Hill. A 8 m já não se vê nada: nem ruína, nem torre, nem
+      // horizonte. O Escrivão sai dela primeiro como sombra. (A cor é a mesma do pé do céu, em vestibulo.ts)
+      f.color.set('#8e8c9e');
+      f.near = 0.8;
+      f.far = 8.5;
+      ambient.color.setHex(0xa8a6c4);
+      ambient.intensity = 1.3;
       fogColor = '#' + f.color.getHexString();
+      postMat.uniforms.uEdgeFog.value.set(f.near + 1, f.far * 0.85, 1);
       return;
     }
+    postMat.uniforms.uEdgeFog.value.z = 0;
     const r = rooms[curRoom];
     const k = snap ? 1 : 1 - Math.exp(-dt * 2.2);
     stageK += (progress.stage() - stageK) * (snap ? 1 : Math.min(1, dt * 0.35));
@@ -2243,6 +2363,131 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Olhar para uma inscrição por um instante manda os símbolos dela para o diário (como "avistados").
   const lookDir = new THREE.Vector3();
   const toIns = new THREE.Vector3();
+  // AS ANOTAÇÕES JUNTO DOS SÍMBOLOS (DESIGN.md §101; story/reading.ts):
+  //  · a escrita que o jogador está LENDO agora (olhando de frente, a menos de 6 m): abrir o caderno nesse instante faz a cópia dela;
+  //  · a palavra sob a MIRA (raio do centro da tela, a menos de 5 m, parada ~0,3 s): a anotação só dela, numa etiqueta;
+  //  · com a opção ligada, a escrita olhada por ~0,8 s sobe numa tira de papel com as anotações (se alguma palavra dela tiver anotação).
+  // Nada disto vale para escrita escondida (`hidden`), nem durante conversa, cena ou caderno.
+  const noteRay = new THREE.Raycaster();
+  const noteCenter = new THREE.Vector2(0, 0);
+  let noteTick = 0;
+  let aimId: string | null = null;
+  let aimHold = 0;
+  let lookKey = '';
+  let lookHold = 0;
+  // as palavras de uma escrita como o jogador as VÊ: a lacuna vira '' (um ▢ vazio na cópia e na tira, nunca preenchido com o que está aceso).
+  // Com alguma palavra escondida (a que o pano da sala 10 cobre; uma escrita que ainda está aparecendo), a escrita não vale: ele não está
+  // lendo a pedra (o pano tem a sua própria escrita, a bordada)
+  const seenWords = (ins: Inscription): string[] | null => {
+    if (!ins.panels.length) return ins.words.length ? [...ins.words] : null;
+    if (ins.panels.some((p) => p.id && !p.mesh.visible)) return null;
+    const w = ins.panels.map((p) => p.id ?? '');
+    return w.some(Boolean) ? w : null;
+  };
+  // o que TAPA a vista (paredes, colunas, panos; não as chamas, a poeira, os feixes nem as próprias escritas), por sala, refeito a cada 2 s
+  const occCache = new Map<number, { t: number; list: THREE.Mesh[] }>();
+  const panelSet = new Set<THREE.Object3D>();
+  const occluders = (ri: number, now: number) => {
+    const c = occCache.get(ri);
+    if (c && now - c.t < 2) return c.list;
+    panelSet.clear();
+    for (const i of activeRooms) for (const ins of rooms[i].inscriptions ?? []) for (const p of ins.panels) panelSet.add(p.mesh);
+    const list: THREE.Mesh[] = [];
+    rooms[ri].group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || panelSet.has(m)) return;
+      const mt = (Array.isArray(m.material) ? m.material[0] : m.material) as THREE.Material | undefined;
+      // (o opaco tapa; o recorte com alphaTest que escreve profundidade, como o pano, também; decalques e brilhos colados na parede, não)
+      if (mt && (!mt.transparent || (mt.alphaTest > 0 && mt.depthWrite))) list.push(m);
+    });
+    occCache.set(ri, { t: now, list });
+    return list;
+  };
+  const occRay = new THREE.Raycaster();
+  const occStart = new THREE.Vector3();
+  // algo sólido entre a câmera e o ponto `at` (mundo), a `d` metros? (o raio para 25 cm antes: o que está colado na parede não conta)
+  const blocked = (ri: number, at: THREE.Vector3, d: number, now: number) => {
+    occStart.copy(at).sub(camera.position).divideScalar(d);
+    occRay.set(camera.position, occStart);
+    occRay.far = Math.max(0.05, d - 0.25);
+    const list = occluders(ri, now).filter((m) => m.visible);
+    return occRay.intersectObjects(list, false).length > 0;
+  };
+  const readNotes = (dt: number, canRead: boolean) => {
+    if (!canRead || mode !== 'play') {
+      if (aimNoteStore.get()) aimNoteStore.set(null);
+      if (lookingStore.get()) lookingStore.set(null);
+      aimId = null;
+      lookKey = '';
+      return;
+    }
+    noteTick -= dt;
+    if (noteTick > 0) return;
+    const step = 0.1;
+    noteTick = step;
+    // a escrita lida: a mais de frente, dentro do cone do olhar, à vista (nada sólido no meio) e sem palavra escondida
+    const now = performance.now() / 1000;
+    const cands: { ins: Inscription; room: number; dot: number; d: number; words: string[] }[] = [];
+    for (const i of activeRooms)
+      for (const ins of rooms[i].inscriptions ?? []) {
+        if (ins.hidden || !ins.words.length) continue;
+        toW(i, ins.center, toIns).sub(camera.position);
+        const d = toIns.length();
+        if (d > 6) continue;
+        toIns.divideScalar(d);
+        const dot = lookDir.dot(toIns);
+        if (dot <= 0.93 || toIns.dot(nrmW(i, ins.normal)) >= -0.2) continue;
+        const words = seenWords(ins);
+        if (words) cands.push({ ins, room: i, dot, d, words });
+      }
+    cands.sort((a, b) => b.dot - a.dot);
+    const best = cands.find((c) => !blocked(c.room, toW(c.room, c.ins.center, toIns), c.d, now)) ?? null;
+    if (best)
+      readingStore.set({ lines: [best.words], from: 'parede', room: rooms[best.room].name, t: performance.now(), chalk: !!best.ins.chalk || undefined });
+    // a tira (opção): a mesma escrita por ~0,8 s, e só se alguma palavra tem anotação
+    const key = best ? `${best.room}:${best.ins.center.x.toFixed(2)}:${best.ins.center.y.toFixed(2)}:${best.ins.center.z.toFixed(2)}` : '';
+    // (os tempos contam no RELÓGIO, não em passos: num aparelho lento os passos de 0,1 s demoram mais)
+    if (key !== lookKey) {
+      lookKey = key;
+      lookHold = now;
+      if (lookingStore.get()) lookingStore.set(null);
+    } else if (best) {
+      const want = configStore.get().glyphNotes && now - lookHold >= 0.8 && best.words.some((w) => w && shortNote(w));
+      const cur = lookingStore.get();
+      if (want && cur?.key !== key) lookingStore.set({ words: best.words, key, chalk: !!best.ins.chalk || undefined });
+      else if (!want && cur) lookingStore.set(null);
+    }
+    // a palavra sob a mira
+    noteRay.setFromCamera(noteCenter, camera);
+    noteRay.far = 5;
+    // (o raio testa as palavras E o que tapa a vista: só vale a palavra que é o PRIMEIRO acerto; uma palavra atrás de uma coluna não aparece)
+    const targets: THREE.Object3D[] = [];
+    const byMesh = new Map<THREE.Object3D, string>();
+    for (const i of activeRooms) {
+      for (const ins of rooms[i].inscriptions ?? []) {
+        if (ins.hidden) continue;
+        for (const p of ins.panels)
+          if (p.id && p.mesh.visible) {
+            targets.push(p.mesh);
+            byMesh.set(p.mesh, p.id);
+          }
+      }
+      if (targets.length) for (const m of occluders(i, now)) if (m.visible) targets.push(m);
+    }
+    const hits = byMesh.size ? noteRay.intersectObjects(targets, false) : [];
+    const ph = hits.find((h) => byMesh.has(h.object));
+    // (uma palavra rente à superfície dela empata com a pedra: só tapa o que está 5 cm ou mais na frente)
+    const hit = ph && !hits.some((h) => !byMesh.has(h.object) && h.distance < ph.distance - 0.05) ? ph : undefined;
+    const id = hit ? (byMesh.get(hit.object) ?? null) : null;
+    if (id !== aimId) {
+      aimId = id;
+      aimHold = now;
+      if (aimNoteStore.get()) aimNoteStore.set(null);
+    } else if (id) {
+      const text = shortNote(id, 18);
+      if (now - aimHold >= 0.3 && text && aimNoteStore.get()?.text !== text) aimNoteStore.set({ id, text });
+    }
+  };
   const readInscriptions = (dt: number) => {
     inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) + (configStore.get().highContrast ? 0.35 : 0) - inscGlow) * Math.min(1, dt * 0.8); // (alto contraste: a cal brilha mais)
     camera.getWorldDirection(lookDir);
@@ -2286,6 +2531,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       }
     }
+    readNotes(dt, canRead);
     activeRooms.forEach((i) => {
       for (const ins of rooms[i].inscriptions ?? []) {
         ins.setGlow(inscGlow);
@@ -2301,11 +2547,20 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
         ins.seeT += dt;
         if (ins.seeT > 0.6) {
-          ins.read = true;
-          ins.words.forEach((id) => {
-            diary.markSeen(id, rooms[i].name);
-            quiz.wordRead(id); // uma pergunta do dado que ficou sem resposta pode voltar
-          });
+          // só as palavras À VISTA vão para o diário: a que o pano cobre só conta quando o pano queima (DESIGN.md §101)
+          const vis = ins.panels.length ? ins.panels.filter((p) => p.id && p.mesh.visible).map((p) => p.id!) : ins.words;
+          const all = !ins.panels.length || ins.panels.every((p) => !p.id || p.mesh.visible);
+          const iv = ins as Inscription & { seenKey?: string };
+          const key = vis.join(' ');
+          if (iv.seenKey !== key) {
+            iv.seenKey = key;
+            vis.forEach((id) => {
+              diary.markSeen(id, rooms[i].name);
+              quiz.wordRead(id); // uma pergunta do dado que ficou sem resposta pode voltar
+            });
+          }
+          if (all) ins.read = true;
+          else ins.seeT = 0; // (olha de novo depois: quando o pano queimar, a palavra de baixo entra)
         }
       }
     });
@@ -2346,6 +2601,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     return tmpN;
   };
 
+  const puffWarm = new THREE.Color(0.3, 0.24, 0.18); // (um tanto da luz quente das chamas, que a ambiente não conta)
+  const puffN = new THREE.Vector3();
+  const puffAt = new THREE.Vector3();
+  let emberAcc = 0;
   const stepDie = (dt: number) => {
     const ph = PHYS[thrownFace] ?? PHYS[1];
     dieV.y -= ph.g * dt;
@@ -2374,7 +2633,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const n = collideBox(b, ph.e);
       if (n && n.y > 0.7) ground = true;
     }
-    sfx.bounce(Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0));
+    const imp = Math.hypot(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0);
+    sfx.bounce(imp);
+    // a pancada levanta poeira (DESIGN.md §100): no ponto do toque, espalhando rente à superfície. A normal é a direção do tranco
+    if (imp > 1.7) {
+      puffN.set(dieV.x - vx0, dieV.y - vy0, dieV.z - vz0).divideScalar(imp);
+      puffAt.copy(dieP).addScaledVector(puffN, -R);
+      toW(dieRoom, puffN.add(puffAt), puffN);
+      toW(dieRoom, puffAt);
+      puffs.hit(puffAt, puffN.sub(puffAt).normalize(), Math.min(1, (imp - 1.7) / 6));
+    }
+    // o dado de Fogo deixa brasas para trás no voo
+    if (thrownFace === 3 && (emberAcc += dt) > 0.034) {
+      emberAcc = 0;
+      toW(dieRoom, dieP, puffAt);
+      puffs.ember(puffAt, dieV);
+    }
     if (ground) {
       const k = Math.exp(-ph.fr * dt);
       dieV.x *= k;
@@ -2894,6 +3168,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       rt.depthTexture.dispose();
     }
     postMat.uniforms.uRes.value.set(w, h);
+    fxView.value = h;
     const aspect = w / h;
     const vFromH = (hDeg: number, a = aspect) => (2 * Math.atan(Math.tan((hDeg * Math.PI) / 360) / a) * 180) / Math.PI;
     // telas mais largas que 16:9 (ultrawide 21:9, 32:9) veem MAIS dos lados com a mesma altura de visão (o campo de visão escolhido vale para
@@ -2945,6 +3220,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     fpsCap = c.fpsCap;
     calmFx = c.reduceFlash;
     dbg.bob = !c.reduceMotion;
+    dbg.flicker = !c.reduceMotion; // (reduzir movimento: a luz das chamas também para de oscilar)
     resize();
   };
   const unsubConfig = configStore.subscribe(applyConfig);
@@ -3434,8 +3710,15 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     // pré-visualizações (?demo) não mexem no progresso salvo; ?intro=0 pula a cena de acordar (testes)
     const q = new URLSearchParams(location.search);
     // (?intro=poco: pula o acordar, mas sem o dado: para testar a cena do poço, que começa ao tentar abrir a porta)
-    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0' || q.get('intro') === 'poco') saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
-    if (q.has('demo')) {
+    if (q.has('demo') || q.has('lab') || q.has('vitrine') || q.get('intro') === '0' || q.get('intro') === 'poco' || BENCH) saves.noSave(); // (testes e pré-visualizações não gravam no espaço)
+    if (BENCH) {
+      // o teste de desempenho: nada vai para o aparelho (nem marcos, nem caderno, nem perguntas), e todo aparelho mede o mesmo jogo, do zero
+      progress.noSave();
+      diary.noSave();
+      quiz.noSave();
+      progress.reset();
+      for (const f of ['intro', 'dado'] as const) progress.set(f);
+    } else if (q.has('demo')) {
       progress.noSave();
       for (const f of ['fogo', 'dois', 'tres', 'escrivao', 'intro', 'dado', 'giz', 'peso'] as const) progress.set(f);
     } else if (q.has('lab') || q.has('vitrine')) {
@@ -3462,7 +3745,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   const thumbCanvas = document.createElement('canvas');
   thumbCanvas.width = 192;
   thumbCanvas.height = 108;
-  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB && !VITRINE;
+  const canSave = () => mode === 'play' && saves.saving() && progress.has('intro') && intro === null && !LAB && !VITRINE && !BENCH;
   const writeSave = (thumb?: string) => {
     if (!canSave()) return;
     rooms.forEach((r, i) => r.bonus?.() && bonusSet.add(i));
@@ -4389,6 +4672,67 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   };
   // (o resolvido: ver solvedWas lá em cima) uma sala que acabou de ficar resolvida, perto de um som dela, toca a recompensa; as outras
   // mudanças (carregar um jogo salvo, `skip`) não fazem som nenhum
+  // A COR QUE ANDA COM O CAPÍTULO (DESIGN.md §100; ideia do Pedro: cada capítulo com a sua cor, mudando aos poucos conforme o jogador avança
+  // dentro dele). O capítulo 1 é o do FOGO: começa FRIO (o Poço, pedra cinza e luz de fora) e vai esquentando sala a sala até o âmbar do
+  // Tribunal. É um banho leve (uns 7%), que a paleta transforma em outra escolha de cores; muda devagar ao trocar de sala.
+  const GRADE_A = new THREE.Vector3(0.95, 0.99, 1.07); // a primeira sala do capítulo
+  const GRADE_B = new THREE.Vector3(1.08, 1.0, 0.9); // a última
+  const gradeT = new THREE.Vector3(1, 1, 1);
+  const updateGrade = (dt: number) => {
+    const f = rooms.length > 1 ? curRoom / (rooms.length - 1) : 0;
+    gradeT.lerpVectors(GRADE_A, GRADE_B, f);
+    (postMat.uniforms.uGrade.value as THREE.Vector3).lerp(gradeT, Math.min(1, Math.max(dt, 0.001) * 0.6));
+  };
+  // o AR QUENTE (DESIGN.md §100): os braseiros acesos mais perto, na frente da câmera, viram colunas de ar que treme no pós-processo
+  const hotV = new THREE.Vector3();
+  const hotList: { u: number; v: number; r: number; d: number }[] = [];
+  const updateHot = (t: number) => {
+    hotList.length = 0;
+    const p11 = 1 / Math.tan((camera.fov * Math.PI) / 360);
+    if (mode === 'play' || mode === 'title')
+      activeRooms.forEach((i) => {
+        for (const e of rooms[i].emitters) {
+          if (!e.hot || e.intensity < 0.5) continue;
+          toW(i, e.hot, hotV).applyMatrix4(camera.matrixWorldInverse);
+          const d = -hotV.z;
+          if (d < 0.6 || d > 13) continue;
+          hotV.applyMatrix4(camera.projectionMatrix);
+          if (Math.abs(hotV.x) > 1.2 || hotV.y > 1.1 || hotV.y < -1.6) continue;
+          hotList.push({ u: hotV.x * 0.5 + 0.5, v: hotV.y * 0.5 + 0.5, r: (e.hotR * p11 * 0.5) / d, d });
+        }
+      });
+    hotList.sort((a, b) => a.d - b.d);
+    const arr = postMat.uniforms.uHot.value as THREE.Vector4[];
+    for (let k = 0; k < 4; k++) {
+      const h = hotList[k];
+      if (h) arr[k].set(h.u, h.v, h.r, h.d);
+      else arr[k].set(0, 0, 0, 0);
+    }
+    postMat.uniforms.uTime.value = t % 1000;
+  };
+  // a sala resolvida ESTREMECE: fios de pó caem do teto em volta do jogador (DESIGN.md §100). Procura o teto com alguns raios para cima; onde
+  // não há teto (pátio, claustro), nada cai
+  const dustRay = new THREE.Raycaster();
+  const ceilingDust = (ri: number) => {
+    const up = new THREE.Vector3(0, 1, 0);
+    rooms[ri].group.updateMatrixWorld(true);
+    // (só as malhas sólidas: chamas, poeira e feixes não são teto)
+    const solid: THREE.Object3D[] = [];
+    rooms[ri].group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && m.visible && !(Array.isArray(m.material) ? m.material[0] : m.material)?.transparent) solid.push(m);
+    });
+    for (let k = 0; k < 9; k++) {
+      const a = yaw + Math.PI + (Math.random() - 0.5) * 2.6; // mais na frente do jogador que atrás
+      const d = 1.2 + Math.random() * 5.5;
+      const o = new THREE.Vector3(pos.x - Math.sin(a + Math.PI) * d, pos.y, pos.z - Math.cos(a + Math.PI) * d);
+      dustRay.set(o, up);
+      dustRay.far = 16;
+      const hit = dustRay.intersectObjects(solid, false)[0];
+      if (!hit || hit.distance < 0.6) continue;
+      fallQ.push({ t: 0.15 + Math.random() * 1.3, at: hit.point.clone().addScaledVector(up, -0.04), n: 13 + Math.floor(Math.random() * 12), spread: 0.2, floor: feetY });
+    }
+  };
   const solvedTick = () => {
     const ms = performance.now();
     let rang = -1;
@@ -4401,7 +4745,10 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         rang = i;
       }
     }
-    if (rang >= 0) sfx.play('solved');
+    if (rang >= 0) {
+      sfx.play('solved');
+      ceilingDust(rang);
+    }
     for (const i of heldPiece) if (i !== rang) sfx.play('piece');
     heldPiece = [];
   };
@@ -4434,6 +4781,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       loopError(e, tx(T('quadro', 'frame', 'fotograma')));
     }
   };
+  let benchCam: { yaw: number; pitch: number } | null = null;
   const frame = (now: number) => {
     if (fpsCap > 0 && now - lastDraw < 1000 / fpsCap - 2) return; // limitar quadros (configurações)
     lastDraw = now;
@@ -4552,9 +4900,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       pitch = c.p0 + (c.p1 - c.p0) * u;
       if (c.t >= c.dur) camTween = null;
     }
+    if (benchCam) {
+      // o teste de desempenho segura a câmera: parada na entrada da sala, girando devagar (nenhuma cena nem toque a tira de lá)
+      yaw = benchCam.yaw;
+      pitch = benchCam.pitch;
+    }
     camera.position.set(pos.x + shX * Math.cos(yaw), pos.y + bobY - introDrop + shY, pos.z - shX * Math.sin(yaw));
     camera.rotation.set(pitch + shR, yaw, introRoll + shR * 0.6);
-    if (cineCam) {
+    if (cineCam && !benchCam) {
       // câmera de cinema (cena da abertura): solta do jogador
       camera.position.copy(cineCam.pos);
       camera.lookAt(cineCam.look);
@@ -4708,7 +5061,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       dieShadowMat.opacity = Math.max(0, 1 - hgt / 3);
     } else dieShadow.visible = false;
     updateBurn(dt, t);
-    if (mode === 'play') {
+    if (mode === 'play' && !BENCH) {
       chatTick(dt, moving);
       quizTick(dt);
     }
@@ -4726,11 +5079,22 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         loopError(e, rooms[i].name);
       }
     });
+    activeRooms.forEach((i) => dripUpd[i]?.forEach((f) => f(t)));
     solvedTick();
     readInscriptions(dt);
     scanInteract();
     scanFireAim();
     updateLights(dt);
+    // a poeira pega a luz da sala (e some no escuro da Casa); o pó do teto solta na hora marcada
+    puffs.light.copy(ambient.color).multiplyScalar(Math.min(0.8, ambient.intensity * 0.32)).add(puffWarm).multiplyScalar(lightScale());
+    for (let k = fallQ.length - 1; k >= 0; k--) {
+      const f = fallQ[k];
+      if ((f.t -= dt) <= 0) {
+        puffs.fall(f.at, f.n, f.spread, f.floor);
+        fallQ.splice(k, 1);
+      }
+    }
+    puffs.update(dt);
     const lastRoom = rooms[rooms.length - 1];
     if (!complete && curRoom === rooms.length - 1 && lastRoom.exitReached?.()) {
       complete = true;
@@ -4897,6 +5261,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     body.position.set(pos.x, feetY, pos.z);
     body.rotation.y = yaw;
     renderer.shadowMap.needsUpdate = (!!rooms[curRoom]?.shadowLight && shadowsOn) || shadowsDirty;
+    fxEye.copy(camera.position);
+    updateHot(t);
+    updateGrade(dt);
     renderer.info.reset();
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
@@ -5233,6 +5600,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         if (k === 'half') { renderer.setSize(200, 90, false); rt.setSize(200, 90); rtHud.setSize(200, 90); postMat.uniforms.uRes.value.set(200, 90); }
       },
       perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
+      three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
+      puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
+      note: (id: string, text: string) => diary.setNote(id, text), // (testes) escreve uma anotação no caderno
+      cfg: (k: string, v: unknown) => configStore.set((c) => ({ ...c, [k]: v })), // (testes) muda uma configuração
+      reading: () => ({ r: readingStore.get(), look: lookingStore.get(), aim: aimNoteStore.get(), copy: diaryStore.get().copy ?? null }),
+      ceilingDust: () => ceilingDust(curRoom),
       shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
       // (testes) as luzes comuns emprestadas agora: de que sala, a força e a nota (força / (1 + distância²)) com que ganharam a vaga
       lights: () => slots.filter((sl) => sl.em).map((sl) => ({ sala: sl.room, i: +sl.em!.intensity.toFixed(1), nota: +(sl.em!.intensity / (1 + sl.light.position.distanceToSquared(camera.position))).toFixed(2) })),
@@ -5313,6 +5686,25 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     },
     saveNow: () => saveGame(),
     lock: requestLock,
+    benchRooms: () => rooms.map((r) => r.name),
+    benchView: (v) => {
+      if (!BENCH) return;
+      if (!v) {
+        benchCam = null;
+        return;
+      }
+      const y0 = rooms[v.room].startYaw + places[v.room].yaw;
+      if (v.room !== curRoom || !benchCam) {
+        spawnIn(v.room);
+        // uns passos para dentro: a entrada às vezes ainda é o corredor, e ali se vê menos da sala do que o jogador vê ao entrar
+        pos.x -= Math.sin(y0) * 2.5;
+        pos.z -= Math.cos(y0) * 2.5;
+        applyActive();
+      }
+      moveVel.set(0, 0, 0);
+      benchCam = { yaw: y0 + v.yaw, pitch: v.pitch };
+    },
+    benchRes: () => ({ w: rt.width, h: rt.height }),
     dispose() {
       cancelAnimationFrame(raf);
       unsubProgress();

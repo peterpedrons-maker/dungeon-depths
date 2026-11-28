@@ -13,6 +13,9 @@ import {
   crateTexture,
   doorTexture,
   flameFrames,
+  flameGlowTexture,
+  FLAME_H,
+  FLAME_W,
   floorTexture,
   puddleTexture,
   rugTexture,
@@ -26,12 +29,16 @@ import {
 } from './textures';
 import { makeInscription, type InscribeOpts, type Inscription } from './inscription';
 import { wallTorch } from './models';
+import { fineDust, fxClock, fxDim, lightShaft, moths, smokePoints } from './fx';
 import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
 // chaves de depuração (só usadas pelos testes em desenvolvimento)
 export const dbg = { flicker: true, bob: true };
 export const LAMP_OFF = 0x2a2230;
+// a que distância da parede fica o PONTO DE LUZ de uma tocha (DESIGN.md §99). Eram 45 cm: a luz cai com o quadrado da distância, e a pedra logo
+// atrás da chama recebia umas 20 vezes a luz do chão (uma mancha chapada em volta de toda tocha). Mais longe, a parede clareia por igual.
+export const TORCH_LIGHT_OUT = 0.8;
 // o motor escreve aqui quanto de luz o mundo tem agora (1 = normal, ~0,08 = o ESCURO da Casa): os brilhos falsos apagam junto
 export const lightEnv = { scale: 1 };
 
@@ -95,6 +102,9 @@ export class Emitter {
   jit = new THREE.Vector3();
   range = 11; // alcance da luz (m): ela some suave até aqui
   lit = 0; // (o motor escreve) quanto de luz de verdade esta chama tem agora: 0 = nenhuma (só o brilho falso)
+  // o AR QUENTE (DESIGN.md §100): o pé da coluna de ar que treme em cima desta chama (local da sala) e a meia largura dela (m). Só os braseiros
+  hot?: THREE.Vector3;
+  hotR = 0.3;
   constructor(
     public pos: THREE.Vector3,
     public color: number,
@@ -113,20 +123,25 @@ export class Kit {
   private emberPts: THREE.Points | null = null;
   group = new THREE.Group();
   surfaces: THREE.Object3D[] = [];
-  frames = flameFrames();
+  frames = flameFrames(); // a chama baixa (lampiões, soquetes, o fogo das canaletas)
+  tallFrames = flameFrames(FLAME_W, FLAME_H); // a chama alta (tochas e braseiros, DESIGN.md §99)
   // o quadro da chama para um "tempo" qualquer (o resto da divisão nunca fica negativo: um índice negativo deixava a chama sem desenho)
-  frame(n: number) {
-    const k = this.frames.length;
-    return this.frames[((Math.floor(n) % k) + k) % k];
+  frame(n: number, tall = false) {
+    const f = tall ? this.tallFrames : this.frames;
+    const k = f.length;
+    return f[((Math.floor(n) % k) + k) % k];
   }
   stone: THREE.MeshLambertMaterial;
   slab: THREE.MeshLambertMaterial; // pedra lavrada, clara (pisos de degrau, capas de mureta)
-  private torches: { sprite: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial; haloMesh?: THREE.Mesh; holder?: THREE.Object3D; nx: number; nz: number }[] = [];
+  private torches: { sprite: THREE.Sprite; glow: THREE.Sprite; light: Emitter; phase: number; base: number; halo?: THREE.MeshBasicMaterial; haloMesh?: THREE.Mesh; holder?: THREE.Object3D; nx: number; nz: number }[] = [];
+  private glowTex: THREE.Texture | null = null;
+  // o que se mexe sozinho na sala e precisa de conta a cada quadro (os bichos, as gotas): o `tick` chama (DESIGN.md §100)
+  fxUpd: ((dt: number, t: number) => void)[] = [];
+  private smoked = false;
   // o que as tochas de ENFEITE têm de respeitar (DESIGN.md §67): [ponto, distância mínima da chama]. Tochas dos puzzles, lousas e braseiros
   // se registram aqui; as escritas entram sozinhas (kit.inscriptions). No `bake`, a tocha que estiver perto demais desliza pela parede.
   keepClear: [THREE.Vector3, number][] = [];
   private poolTex: THREE.Texture | null = null;
-  private beams: { geo: THREE.BufferGeometry; cx: number; cz: number; r: number; y0: number; y1: number; seed: number[] }[] = [];
   private flicker = true;
   // lively: chamas mais vivas (a luz oscila de verdade e o ponto de luz treme alguns cm: com as luzes de sombra, a sombra dança)
   lively = false;
@@ -181,12 +196,16 @@ export class Kit {
       }
     });
     const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: this.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }),
+      new THREE.SpriteMaterial({ map: this.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }),
     );
-    sprite.scale.set(0.38, 0.3, 1);
+    // a chama nova (DESIGN.md §99): mais alta que larga, com o pé no alto do cabo (a 0,42 m) e a ponta subindo; o ponto de referência da
+    // tocha continua onde era (as distâncias das escritas e do teto, no `clearTorches`, não mudam)
+    sprite.scale.set(0.27, (0.27 * FLAME_H) / FLAME_W, 1);
+    sprite.center.set(0.5, 0.15 / sprite.scale.y);
     sprite.position.set(x + nx * 0.16, y + 0.57, z + nz * 0.16);
     this.group.add(sprite);
-    const light = this.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, color, intensity);
+    const glow = this.flameGlow(sprite.position.x + nx * 0.04, y + 0.62, sprite.position.z + nz * 0.04, 1.05);
+    const light = this.light(x + nx * TORCH_LIGHT_OUT, y + 0.6, z + nz * TORCH_LIGHT_OUT, color, intensity);
     light.shadow = true; // toda tocha pode ganhar sombra de verdade (o motor dá às mais perto)
     // o BRILHO DE LONGE: uma mancha de luz na parede (em volta da chama), que só aparece enquanto a tocha está sem luz de verdade (longe do jogador)
     const haloMat = this.mat(`halo:${color}`, () => new THREE.MeshBasicMaterial({ map: this.poolTex ?? (this.poolTex = lightPoolTexture()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: true, opacity: 0.3, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 })) as THREE.MeshBasicMaterial;
@@ -195,7 +214,20 @@ export class Kit {
     halo.rotation.y = Math.atan2(nx, nz);
     halo.renderOrder = 2;
     this.group.add(halo);
-    this.torches.push({ sprite, light, phase, base: intensity, halo: halo.material as THREE.MeshBasicMaterial, haloMesh: halo, holder, nx, nz });
+    this.torches.push({ sprite, glow, light, phase, base: intensity, halo: halo.material as THREE.MeshBasicMaterial, haloMesh: halo, holder, nx, nz });
+  }
+
+  // o BRILHO NO AR em volta de uma chama (DESIGN.md §99): somado por cima, sem névoa e sem gravar profundidade (não ganha contorno nem tapa
+  // nada); a tocha e o braseiro mexem na força dele junto com a luz
+  flameGlow(x: number, y: number, z: number, size: number, color = 0xffa040) {
+    const g = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: this.glowTex ?? (this.glowTex = flameGlowTexture()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: 0.3 }),
+    );
+    g.scale.set(size, size, 1);
+    g.position.set(x, y, z);
+    g.renderOrder = 3;
+    this.group.add(g);
+    return g;
   }
 
   // inscrição dos Contáveis (talhada, cal branca); olhar para ela manda os símbolos ao diário
@@ -514,21 +546,13 @@ export class Kit {
 
   // POEIRA SÓ DENTRO DE UM FEIXE DE LUZ (DIRECAO_DE_ARTE.md §4.8): grãos que flutuam num cilindro de luz (o poço, o buraco do pátio, a luz do
   // nicho alto). Antes havia poeira na sala inteira, igual em toda parte: saiu. Pode haver vários feixes por sala.
-  beamDust(cx: number, cz: number, r: number, y0: number, y1: number, n = 36, color = 0xf0e4c8) {
-    const pos = new Float32Array(n * 3);
-    const seed: number[] = [];
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const rr = Math.sqrt(Math.random()) * r * 0.9;
-      pos[i * 3] = cx + Math.cos(a) * rr;
-      pos[i * 3 + 1] = y0 + Math.random() * (y1 - y0);
-      pos[i * 3 + 2] = cz + Math.sin(a) * rr;
-      seed.push(Math.random() * 10);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.beams.push({ geo, cx, cz, r, y0, y1, seed });
-    this.group.add(new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.75, fog: false, depthWrite: false })));
+  // (DESIGN.md §100) Os grãos agora são a POEIRA FINA do `fx.ts` (um pixel cada, muitos, cintilando), e o facho ganha o FEIXE que se vê no ar
+  // (`shaft` = a força dele; 0 = só a poeira, para a luz que não vem reta de cima). `n` é o número de antes: a poeira fina usa 4,5 vezes isso.
+  beamDust(cx: number, cz: number, r: number, y0: number, y1: number, n = 36, color = 0xf0e4c8, shaft = 0.085) {
+    const from = new THREE.Vector3(cx, y1, cz);
+    const to = new THREE.Vector3(cx, y0, cz);
+    if (shaft > 0) lightShaft(this.group, from, to, r, r * 1.22, color, shaft);
+    fineDust(this.group, from, to, r * 0.92, r * 1.12, Math.round(n * 4.5), color);
   }
 
   // Junta as caixas decorativas que usam o mesmo material numa única malha (menos chamadas de
@@ -582,6 +606,7 @@ export class Kit {
       if (to) {
         const dlt = to.clone().sub(f0);
         tc.sprite.position.add(dlt);
+        tc.glow.position.add(dlt);
         tc.light.pos.add(dlt);
         tc.haloMesh?.position.add(dlt);
         tc.holder?.position.add(dlt);
@@ -592,6 +617,7 @@ export class Kit {
       } else if (this.torches.length > 2) {
         // sem lugar livre numa sala que tem outras tochas: a de enfeite sai (a sala continua iluminada pelas outras)
         tc.sprite.removeFromParent();
+        tc.glow.removeFromParent();
         tc.haloMesh?.removeFromParent();
         tc.holder?.removeFromParent();
         tc.light.intensity = 0;
@@ -609,6 +635,16 @@ export class Kit {
 
   bake() {
     this.clearTorches();
+    // a FUMAÇA de todas as tochas de enfeite (um desenho só) e uma mariposa ou duas em volta de uma em cada três (DESIGN.md §100)
+    if (!this.smoked) {
+      this.smoked = true;
+      const lit = this.torches.filter((tc) => tc.base > 0 && tc.sprite.parent);
+      if (lit.length) {
+        smokePoints(this.group, lit.map((tc) => ({ x: tc.sprite.position.x, y: tc.sprite.position.y + 0.22, z: tc.sprite.position.z, nx: tc.nx, nz: tc.nz })));
+        const mo = lit.filter((_, i) => i % 3 === 1).map((tc) => new THREE.Vector3(tc.sprite.position.x + tc.nx * 0.28, tc.sprite.position.y + 0.12, tc.sprite.position.z + tc.nz * 0.28));
+        if (mo.length) moths(this.group, mo);
+      }
+    }
     const byMat = new Map<THREE.Material, THREE.Mesh[]>();
     for (const o of [...this.group.children]) {
       const m = o as THREE.Mesh;
@@ -653,6 +689,9 @@ export class Kit {
   }
 
   tick(dt: number, t: number) {
+    fxClock.value = t;
+    fxDim.value = lightEnv.scale;
+    for (const f of this.fxUpd) f(dt, t);
     if (!this.emberPts && this.torches.length) this.buildEmbers();
     if (this.emberPts) {
       const arr = this.emberPts.geometry.attributes.position.array as Float32Array;
@@ -661,7 +700,7 @@ export class Kit {
           const ph = (t * 0.55 + k * 0.2 + i * 0.13) % 1; // sobe e some
           const o = (i * 5 + k) * 3;
           arr[o] = tc.sprite.position.x + Math.sin(t * 2 + k * 2.1 + i) * 0.06 * ph;
-          arr[o + 1] = tc.sprite.position.y + 0.1 + ph * 0.7;
+          arr[o + 1] = tc.sprite.position.y + 0.2 + ph * 0.7;
           arr[o + 2] = tc.sprite.position.z + Math.cos(t * 1.7 + k * 1.3 + i) * 0.06 * ph;
         }
       });
@@ -674,9 +713,15 @@ export class Kit {
         tc.light.intensity = tc.base * (1 + 0.22 * n);
         tc.light.jit.set(Math.sin(t * 6.1 + p) * 0.035, Math.sin(t * 8.7 + p * 1.3) * 0.03 + n * 0.02, Math.cos(t * 5.3 + p) * 0.035);
       } else
-      tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.025 * Math.sin(t * 4 + tc.phase) + 0.015 * Math.sin(t * 9.3 + tc.phase * 2)) : tc.base;
+      // (DESIGN.md §100: a luz de toda tocha oscila de verdade, uns 10%, em três ritmos; antes eram 3% e a luz parecia de lâmpada)
+      tc.light.intensity = dbg.flicker ? tc.base * (1 + 0.065 * Math.sin(t * 5.1 + tc.phase) + 0.04 * Math.sin(t * 11.3 + tc.phase * 2) + 0.028 * Math.sin(t * 19.7 + tc.phase * 3)) : tc.base;
       // (o primeiro quadro do jogo chegava a ter o relógio negativo, e um índice negativo deixava a chama sem desenho: um retângulo branco)
-      tc.sprite.material.map = this.frame(t * 8 + i);
+      tc.sprite.material.map = this.frame(t * 9 + i * 3 + tc.phase, true);
+      // a chama estica e encolhe um pouco com a luz, e o brilho do ar acompanha (uma tocha sem luz, tirada no `clearTorches`, não brilha)
+      const f = tc.base > 0 ? tc.light.intensity / tc.base : 0;
+      tc.sprite.scale.y = ((0.27 * FLAME_H) / FLAME_W) * (0.94 + 0.06 * f + (this.lively ? 0.04 * Math.sin(t * 11 + tc.phase) : 0));
+      tc.sprite.center.y = 0.15 / tc.sprite.scale.y; // (o pé fica no cabo)
+      tc.glow.material.opacity = 0.26 * f * lightEnv.scale;
       // o brilho falso some na medida em que a luz de verdade chega (e oscila com a chama)
       const fake = (1 - tc.light.lit) * (tc.light.intensity / Math.max(1, tc.base)) * lightEnv.scale;
       if (tc.halo) {
@@ -684,26 +729,6 @@ export class Kit {
         tc.halo.visible = fake > 0.02;
       }
     });
-    for (const b of this.beams) {
-      // descem devagar, rodopiando (a luz de cima as faz brilhar); quem sai do feixe volta para o alto dele
-      const arr = b.geo.attributes.position.array as Float32Array;
-      for (let i = 0; i < b.seed.length; i++) {
-        const k = b.seed[i];
-        arr[i * 3] += Math.sin(t * 0.5 + k) * dt * 0.05;
-        arr[i * 3 + 2] += Math.cos(t * 0.43 + k * 1.7) * dt * 0.05;
-        arr[i * 3 + 1] -= dt * (0.03 + (k % 1) * 0.04);
-        const dx = arr[i * 3] - b.cx;
-        const dz = arr[i * 3 + 2] - b.cz;
-        if (arr[i * 3 + 1] < b.y0 || dx * dx + dz * dz > b.r * b.r) {
-          const a = k * 2.3 + t;
-          const rr = Math.sqrt((k * 0.37) % 1) * b.r * 0.85;
-          arr[i * 3] = b.cx + Math.cos(a) * rr;
-          arr[i * 3 + 1] = b.y1 - Math.random() * 0.3;
-          arr[i * 3 + 2] = b.cz + Math.sin(a) * rr;
-        }
-      }
-      b.geo.attributes.position.needsUpdate = true;
-    }
     void this.flicker;
   }
 }

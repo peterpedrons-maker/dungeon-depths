@@ -19,6 +19,8 @@ import { Credits, LanguagePick, PauseMenu, SaveIndicator, TitleScreen, type Titl
 import { Splash } from './ui/Splash';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { SkipIntro } from './ui/SkipIntro';
+import { AimNote, ReadingStrip } from './ui/NoteTags';
+import { Bench } from './ui/Bench';
 import { saves } from './story/save';
 import { config, configStore, keyName } from './story/config';
 import type { IconName } from './ui/PixelIcon';
@@ -88,7 +90,9 @@ const mark = (k: string) => {
     /* ok */
   }
 };
-const SHOW_TITLE = !PLAY_NOW && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
+// O TESTE DE DESEMPENHO (?bench=1, ui/Bench.tsx, DESIGN.md §102): sem tela inicial, sem interface do jogo, nada gravado
+const BENCH = Q.has('bench');
+const SHOW_TITLE = !PLAY_NOW && !BENCH && !Q.has('demo') && !Q.has('lab') && Q.get('intro') !== '0' && Q.get('titulo') !== '0';
 // O IDIOMA (src/i18n.ts): ?lang=pt|en|es escolhe direto (testes, links); senão, na 1ª vez que o jogo abre, uma tela pergunta (antes da abertura)
 {
   const l = Q.get('lang');
@@ -361,6 +365,14 @@ export default function App() {
     [],
   );
 
+  if (BENCH)
+    return (
+      <div className="stage bench">
+        <canvas ref={canvasRef} />
+        <div className="vignette" />
+        <Bench api={sceneRef} ready={sceneReady} />
+      </div>
+    );
   return (
     <div className={`stage${uis.bookOut ? ' book-out' : ''}`}>
       <canvas ref={canvasRef} />
@@ -377,6 +389,9 @@ export default function App() {
         ) : (
           <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />
         ))}
+      {/* (DESIGN.md §101) a anotação da palavra sob a mira e, com a opção ligada, a tira de leitura da escrita olhada */}
+      {!inMenu && !cine && !uis.bars && !uis.bookOut && !speaking && <AimNote />}
+      {!inMenu && !cine && !uis.bars && !uis.bookOut && !speaking && <ReadingStrip />}
       {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
       <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 

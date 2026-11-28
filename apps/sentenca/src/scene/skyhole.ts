@@ -89,6 +89,7 @@ export function skyHole(kit: Kit, x: number, z: number, y: number, o: { floorY?:
   sky.position.set(x, y + TUBE, z);
   kit.group.add(sky);
   // a luz e a poeira no facho (sem o cone de luz do Poço: aqui, com o teto alto e visto de lado, ele virava uma coluna cinza sólida no pixel)
-  kit.light(x, y - 0.8, z, 0xc8d8ff, o.light ?? 30);
+  // (DESIGN.md §100) a luz do furo faz SOMBRA de verdade, de cima para baixo, quando o jogador está perto (o motor empresta um mapa de sombra)
+  kit.light(x, y - 0.8, z, 0xc8d8ff, o.light ?? 30).shadow = true;
   kit.beamDust(x, z, r * 0.95, floorY + 0.3, y - 0.3, 40, 0xe8eeff);
 }

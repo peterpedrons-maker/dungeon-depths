@@ -99,10 +99,13 @@ export function buildLousa(ctx: Ctx): Room {
   const nb = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.2, 8), lambert(null, 0x3a3a46));
   nb.position.set(0, NY + 0.17, NZ);
   kit.add(nb);
-  const nFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-  nFlame.scale.set(0.5, 0.42, 1);
-  nFlame.position.set(0, NY + 0.48, NZ);
+  // (a chama alta dos braseiros, com o pé na tigela, onde era o pé da de antes; DESIGN.md §99)
+  const nFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+  nFlame.center.set(0.5, 0);
+  nFlame.scale.set(0.42, 0.63, 1);
+  nFlame.position.set(0, NY + 0.25, NZ);
   kit.group.add(nFlame);
+  kit.flameGlow(0, NY + 0.55, NZ, 1.4);
   const nLight = kit.light(0, NY + 0.4, NZ - 0.5, 0xff8a2a, 14);
   kit.soot(0, NY + 0.35, Z1, 0, -1, 0.8, 0.42);
   // a LUZ PRINCIPAL da sala: a chama do nicho alto projeta sombra (é ela que joga a sombra do jogador para a frente, quando ele entra:
@@ -117,7 +120,7 @@ export function buildLousa(ctx: Ctx): Room {
   keyLight.shadow.bias = -0.003;
   kit.group.add(keyLight, keyLight.target);
   kit.lightPool(0, 0.2, 2.6, 0, 0xffa050).opacity = 0.18;
-  kit.beamDust(0, 0.4, 1.0, 0.3, 3.2, 30, 0xffe0b0); // poeira só no feixe da chama alta
+  kit.beamDust(0, 0.4, 1.0, 0.3, 3.2, 30, 0xffe0b0, 0); // poeira só no feixe da chama alta (sem o tubo de luz: esta luz vem de lado)
 
   // ── o dado de pedra, meio enterrado (UM em cima, DOIS e TRÊS dos lados) ──
   // (mais longe do braseiro da direita: a poça e a luz dele não passam mais por cima do dado)
@@ -379,7 +382,7 @@ export function buildLousa(ctx: Ctx): Room {
       kit.tick(dt, t);
       gate.tick();
       for (const b of bz) b.update(t);
-      nFlame.material.map = kit.frame(t * 8 + 3);
+      nFlame.material.map = kit.frame(t * 9 + 3, true);
       nLight.intensity = 14 * (0.97 + 0.03 * Math.sin(t * 5));
       keyLight.intensity = 46 * (0.96 + 0.03 * Math.sin(t * 5) + 0.015 * Math.sin(t * 11.3));
       for (const b of boards) b.update(dt, t);

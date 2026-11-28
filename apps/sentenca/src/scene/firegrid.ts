@@ -11,7 +11,8 @@
 
 import * as THREE from 'three';
 import { wallTorch } from './models';
-import { lambert, type Kit } from './kit';
+import { FLAME_H, FLAME_W } from './textures';
+import { lambert, lightEnv, TORCH_LIGHT_OUT, type Kit } from './kit';
 import { makeBrazier, type Brazier } from './brazier';
 import { drawGlyph, drawGlyphPart } from '../book/font';
 import { glyphsOf, LEX, type GlyphDef } from '../story/lexicon';
@@ -519,14 +520,19 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
       }),
     );
   else oldTorch((w, h, d, m, px, py, pz) => kit.box(w, h, d, m, px, py, pz, false));
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
-  sprite.scale.set(0.38, 0.3, 1);
+  // a chama alta, igual à das tochas de enfeite (DESIGN.md §99): o pé fica no alto do cabo, 15 cm abaixo do ponto que o dado acende
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.tallFrames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
+  const FH = (0.27 * FLAME_H) / FLAME_W;
+  sprite.scale.set(0.27, FH, 1);
+  sprite.center.set(0.5, 0.15 / FH);
   const pos = new THREE.Vector3(x + nx * 0.16, y + 0.57, z + nz * 0.16);
   sprite.position.copy(pos);
   kit.keepClear.push([pos.clone(), 2.2]); // (nenhuma tocha de enfeite colada numa tocha de puzzle)
   sprite.visible = false;
   kit.group.add(sprite);
-  const light = kit.light(x + nx * 0.45, y + 0.6, z + nz * 0.45, 0xff9a3c, 0);
+  const glow = kit.flameGlow(pos.x + nx * 0.04, y + 0.62, pos.z + nz * 0.04, 1.05);
+  glow.visible = false;
+  const light = kit.light(x + nx * TORCH_LIGHT_OUT, y + 0.6, z + nz * TORCH_LIGHT_OUT, 0xff9a3c, 0);
   light.shadow = true;
   let left = 0;
   const tc: Torch = {
@@ -541,6 +547,7 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
       tc.lit = on;
       left = life;
       sprite.visible = on;
+      glow.visible = on;
       if (!on) light.intensity = 0;
       if (!on && !quiet) ctx.sfx('burnout');
     },
@@ -548,9 +555,11 @@ export function makeTorch(kit: Kit, ctx: Ctx, x: number, y: number, z: number, n
       if (!tc.lit) return;
       if (!paused) left -= dt;
       const k = left < 6 ? Math.max(0.2, left / 6) : 1; // a chama encolhe nos últimos segundos
-      sprite.scale.set(0.38 * k, 0.3 * k, 1);
-      sprite.material.map = kit.frame(t * 8 + x * 3 + z);
+      sprite.scale.set(0.27 * k, FH * k, 1);
+      sprite.center.y = 0.15 / sprite.scale.y; // (o pé não sai do cabo quando ela encolhe)
+      sprite.material.map = kit.frame(t * 9 + x * 3 + z, true);
       light.intensity = 34 * k * (0.97 + 0.03 * Math.sin(t * 5 + x));
+      glow.material.opacity = 0.26 * k * lightEnv.scale;
       if (left <= 0) tc.light(false);
     },
   };

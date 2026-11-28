@@ -11,6 +11,8 @@ const ROOT = new URL('../src/', import.meta.url).pathname;
 const SKIP = [
   'scene/rooms/room1.ts', 'scene/rooms/room2.ts', 'scene/rooms/room3.ts', 'scene/rooms/room4.ts', 'scene/rooms/apelidos.ts', 'scene/rooms/lab.ts',
   'scene/rooms/vitrine.ts', 'scene/rooms/fireRooms.ts', 'book/mapdemo.ts', 'story/lexicon.ts', 'story/lexicon.json', 'i18n.ts', 'lang.ts',
+  // o teste de desempenho (?bench=1, DESIGN.md §102) é ferramenta de desenvolvimento: o relatório é para colar na conversa conosco
+  'ui/Bench.tsx',
 ];
 const files = [];
 const walk = (d) => {
