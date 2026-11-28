@@ -43,14 +43,46 @@ const FPF_TABLETS: FireTablet[] = FPF_SLABS.map(([col, row, words, demo, good]) 
   lit: true,
 }));
 
+// a quina das lajes (um aro claro com a sombra do chanfro por dentro; o meio é vazado), em pixels grossos: 5,5 × 3,7 m em 88 × 60
+let rimTex: THREE.CanvasTexture | null = null;
+function slabRimTexture() {
+  if (rimTex) return rimTex;
+  const W = 88;
+  const H = 60;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d')!;
+  const frame = (o: number, t: number, color: string) => {
+    g.fillStyle = color;
+    g.fillRect(o, o, W - 2 * o, t);
+    g.fillRect(o, H - o - t, W - 2 * o, t);
+    g.fillRect(o, o, t, H - 2 * o);
+    g.fillRect(W - o - t, o, t, H - 2 * o);
+  };
+  frame(0, 2, '#a29c92');
+  frame(2, 1, '#7c766e');
+  frame(3, 1, '#3a3430');
+  // lascas na quina (gasta onde se pisa)
+  for (const [x, y] of [[9, 0], [30, 1], [61, 0], [0, 17], [87, 40], [44, 59], [72, 58], [1, 46]] as [number, number][]) {
+    g.fillStyle = '#6e645a';
+    g.fillRect(x, y, 2, 1);
+  }
+  rimTex = new THREE.CanvasTexture(c);
+  rimTex.magFilter = rimTex.minFilter = THREE.NearestFilter;
+  rimTex.colorSpace = THREE.SRGBColorSpace;
+  return rimTex;
+}
+
 function ponteFrasesExtra(api: FireExtraApi): FireExtra {
   const { kit, ctx, X0, X1, Z0, boxes } = api;
   const D = PF.depth;
   const gz1 = Z0 + PF.front; // a borda da entrada
   const gz0 = Z0 + PF.back; // a borda da porta
   const SUNK = -D + 0.06; // a laje afundada: um palmo acima do fundo (vê-se o contorno de cada uma)
-  const side = kit.stone;
-  const topMat = kit.slab;
+  // (cenógrafo) cada laje tem os seus materiais: a face de cima escurece quando ela está lá embaixo (no escuro do fosso) e clareia conforme
+  // sobe para a luz, e os lados escurecem para baixo, como as paredes do fosso. Antes, a laje afundada tinha a mesma cor do chão das bordas e,
+  // da entrada, o fosso parecia só um piso mais escuro.
   const cells = FPF_SLABS.map(([col, row, , demo, good], i) => {
     const x0 = col === 'E' ? X0 : 0;
     const x1 = col === 'E' ? 0 : X1;
@@ -60,14 +92,45 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
     const d = z1 - z0 - 0.06;
     const geo = new THREE.BoxGeometry(w, D, d);
     worldBoxUV(geo, (x0 + x1) / 2, -D / 2, (z0 + z1) / 2); // (a pedra em metros, como nas caixas do kit; a textura sobe junto com a laje)
+    const pos = geo.attributes.position;
+    const col3 = new Float32Array(pos.count * 3);
+    for (let q = 0; q < pos.count; q++) {
+      const k = (pos.getY(q) + D / 2) / D; // 1 no tampo, 0 no pé
+      const v = 0.16 + 0.84 * k * k;
+      col3[q * 3] = col3[q * 3 + 1] = col3[q * 3 + 2] = v;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col3, 3));
+    const side = kit.stone.clone();
+    side.vertexColors = true;
+    const topMat = kit.slab.clone();
+    topMat.vertexColors = true;
     const mesh = new THREE.Mesh(geo, [side, side, topMat, side, side, side]);
     mesh.position.set((x0 + x1) / 2, (demo ? 0 : SUNK) - D / 2, (z0 + z1) / 2);
     mesh.userData.noPlan = true; // (a laje afundada passa do fundo do fosso: não conta na planta da sala)
     kit.add(mesh);
+    // a quina lavrada em volta do tampo: cada laje é UM bloco (lê-se qual é qual, lá embaixo ou em cima) e a beirada dela, de longe, é uma
+    // linha clara que diz onde o chão acaba
+    const rimMat = new THREE.MeshLambertMaterial({ map: slabRimTexture(), transparent: true, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    const rim = new THREE.Mesh(new THREE.PlaneGeometry(w, d), rimMat);
+    rim.rotation.x = -Math.PI / 2;
+    rim.position.y = D / 2 + 0.004;
+    mesh.add(rim);
     const box = mkBox(x0, -D, z0, x1, demo ? 0 : SUNK, z1);
     boxes.push(box);
-    return { i, col, row, x0, x1, z0, z1, demo, good, y: demo ? 0 : SUNK, mesh, box, crack: -1, fallen: false, upSnd: false };
+    return { i, col, row, x0, x1, z0, z1, demo, good, y: demo ? 0 : SUNK, mesh, box, crack: -1, fallen: false, upSnd: false, side, topMat, rimMat };
   });
+  // o quanto de luz chega no tampo: no fundo, pouco; na altura do chão, toda (a laje "sobe para a luz")
+  const shade = (c: (typeof cells)[number]) => {
+    const k = Math.max(0, Math.min(1, (c.y - SUNK) / -SUNK));
+    const v = 0.3 + 0.7 * k * k;
+    c.topMat.color.setScalar(v);
+    c.rimMat.color.setScalar(v);
+    c.side.color.setScalar(0.55 + 0.45 * k);
+  };
+  cells.forEach(shade);
+  // a BORDA dos dois patamares: uma capa de pedra lavrada clara, com a face descendo uns palmos para dentro do fosso (a linha clara da beirada,
+  // com o escuro embaixo, é o que o olho lê como "aqui o chão acaba")
+  for (const [z, s] of [[gz1, 1], [gz0, -1]] as [number, number][]) kit.box(X1 - X0, 0.26, 0.38, kit.slab, 0, -0.124, z + s * 0.17, false);
   const cellAt = (x: number, z: number) => {
     if (z > gz1 || z < gz0) return null;
     const row = Math.max(0, Math.min(PF.rows - 1, Math.floor((gz1 - z) / ROW_L)));
@@ -89,9 +152,8 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
     lamps.push(f);
     kit.light(0, PF.h - 0.95, z, 0xffa860, 30).shadow = true;
   }
-  // no fundo do fosso, brasas velhas nas frestas: uma luz baixa e quente (dá para ver a profundidade)
-  kit.light(-2.8, -D + 0.5, (gz0 + gz1) / 2, 0xff6a2a, 10);
-  kit.light(2.8, -D + 0.5, (gz0 + gz1) / 2, 0xff6a2a, 10);
+  // (no fundo do fosso, as brasas velhas nas frestas são o chão do buraco, no construtor: fire.ts, `floorGap`; sem luz própria, o fundo fica
+  // escuro e a profundidade se lê pela luz que some)
 
   let falling = false; // caiu no fosso: o escuro vem e ele volta à entrada
   let lied = false; // ...porque uma laje falsa cedeu
@@ -137,6 +199,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         }
         c.mesh.position.set((c.x0 + c.x1) / 2 + jx, c.y - D / 2, (c.z0 + c.z1) / 2 + jz);
         c.box.max.y = c.y;
+        shade(c);
       }
       // quem pisa numa laje de frase falsa: ela racha (pisou mais de um instante)
       const p = ctx.player.pos;
@@ -197,6 +260,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         c.crack = -1;
         c.y = c.demo ? 0 : SUNK;
         c.box.max.y = c.y;
+        shade(c);
       }
     },
     // salvamento: a sala volta resolvida (o construtor reacende as frases certas e a da porta; as lajes delas sobem já em cima)
@@ -205,6 +269,7 @@ function ponteFrasesExtra(api: FireExtraApi): FireExtra {
         c.y = c.demo || c.good ? 0 : SUNK;
         c.box.max.y = c.y;
         c.mesh.position.y = c.y - D / 2;
+        shade(c);
       }
     },
   };

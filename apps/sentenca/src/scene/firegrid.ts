@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { wallTorch } from './models';
 import { lambert, type Kit } from './kit';
 import { makeBrazier, type Brazier } from './brazier';
-import { drawGlyph } from '../book/font';
+import { drawGlyph, drawGlyphPart } from '../book/font';
 import { glyphsOf, LEX, type GlyphDef } from '../story/lexicon';
 import type { Box, Ctx, Interactable } from './types';
 import type { Inscription } from './inscription';
@@ -833,7 +833,8 @@ export interface Cloth {
   restore(): void;
   update(dt: number, t: number, byDie?: boolean): void; // `byDie` = o dado de Fogo pode queimá-lo (padrão: sim)
 }
-export function makeCloth(kit: Kit, ctx: Ctx, o: { x: number; y: number; z: number; nx: number; nz: number; words: string[]; size?: number; color?: string; mark?: boolean; tall?: number; key?: string; secs?: number }): Cloth {
+// `thick`: bordado mais grosso (px a mais no traço), para panos lidos de longe e atrás de barras (o Claustro do Vento); sem ele, o desenho de sempre
+export function makeCloth(kit: Kit, ctx: Ctx, o: { x: number; y: number; z: number; nx: number; nz: number; words: string[]; size?: number; color?: string; mark?: boolean; tall?: number; key?: string; secs?: number; thick?: number }): Cloth {
   const sz = o.size ?? 0.4;
   const n = new THREE.Vector3(o.nx, 0, o.nz);
   const right = new THREE.Vector3(n.z, 0, -n.x);
@@ -862,15 +863,27 @@ export function makeCloth(kit: Kit, ctx: Ctx, o: { x: number; y: number; z: numb
   const gs = (48 * 0.94) / 0.86;
   let cx = cw / 2 - ((glyphs.length - 1) * gs * 1.12) / 2;
   const cy = (sz * 0.7 + 0.12 + (o.tall ?? 0) * 0.5) * PXM * 0.5;
+  const th = o.thick ?? 0;
   for (const gl of glyphs) {
-    drawGlyph(g, gl, Math.round(cx) + 1, Math.round(cy) + 1, gs, '#1a0c10');
-    drawGlyph(g, gl, Math.round(cx), Math.round(cy), gs, '#f0d488');
+    if (th) {
+      // o fio escuro em volta (o contorno do bordado) e o fio claro por cima, grossos: o traço de 1 px sumia a 3 m
+      drawGlyphPart(g, gl, Math.round(cx), Math.round(cy) + 1, gs, '#1a0c10', 1, th + 3);
+      drawGlyphPart(g, gl, Math.round(cx), Math.round(cy), gs, '#f0d488', 1, th);
+    } else {
+      drawGlyph(g, gl, Math.round(cx) + 1, Math.round(cy) + 1, gs, '#1a0c10');
+      drawGlyph(g, gl, Math.round(cx), Math.round(cy), gs, '#f0d488');
+    }
     cx += gs * 1.12;
   }
   if (o.mark !== false) {
     const bo = glyphsOf('boato')[0];
-    drawGlyph(g, bo, Math.round(cw / 2) + 1, chh - 24, gs * 0.42, '#1a0c10');
-    drawGlyph(g, bo, Math.round(cw / 2), chh - 25, gs * 0.42, '#f0d488');
+    if (th) {
+      drawGlyphPart(g, bo, Math.round(cw / 2), chh - 24, gs * 0.42, '#1a0c10', 1, Math.ceil(th / 2) + 2);
+      drawGlyphPart(g, bo, Math.round(cw / 2), chh - 25, gs * 0.42, '#f0d488', 1, Math.ceil(th / 2));
+    } else {
+      drawGlyph(g, bo, Math.round(cw / 2) + 1, chh - 24, gs * 0.42, '#1a0c10');
+      drawGlyph(g, bo, Math.round(cw / 2), chh - 25, gs * 0.42, '#f0d488');
+    }
   }
   const tx = tex(cv);
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: tx, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }));

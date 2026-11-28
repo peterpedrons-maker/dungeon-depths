@@ -157,9 +157,10 @@ export interface FireSpec {
   ambience?: Ambience; // o som do lugar: vento, gotas, tamanho (DESIGN.md §60)
 }
 
-// brasa fraca (um pontinho laranja) para o soquete das frases acendíveis
+// brasa fraca (um pontinho laranja) para o soquete das frases acendíveis (e, pela mesma gramática, o que mais se acende: o braseirinho da
+// Balança, os fogaréus do Claustro do Vento)
 let emberTex: THREE.CanvasTexture | null = null;
-function emberTexture() {
+export function emberTexture() {
   if (emberTex) return emberTex;
   const c = document.createElement('canvas');
   c.width = c.height = 8;
@@ -274,14 +275,55 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     piece(X0, X1, gz1, Z1);
     piece(X0, FG.x0, gz0, gz1);
     piece(FG.x1, X1, gz0, gz1);
-    piece(FG.x0, FG.x1, gz0, gz1, -FG.depth);
     const D = FG.depth;
     const gw = FG.x1 - FG.x0;
     const gl = gz1 - gz0;
-    kit.plane(gw, D, kit.brick([gw / T, D / T], 0.8, 71), (FG.x0 + FG.x1) / 2, -D / 2, gz1, 0, Math.PI); // a parede de baixo da borda da entrada
-    kit.plane(gw, D, kit.brick([gw / T, D / T], 0.8, 72), (FG.x0 + FG.x1) / 2, -D / 2, gz0, 0, 0); // a da borda da porta
-    kit.plane(gl, D, kit.brick([gl / T, D / T], 0.8, 73), FG.x0, -D / 2, (gz0 + gz1) / 2, 0, Math.PI / 2);
-    kit.plane(gl, D, kit.brick([gl / T, D / T], 0.8, 74), FG.x1, -D / 2, (gz0 + gz1) / 2, 0, -Math.PI / 2);
+    // (cenógrafo) o FUNDO do buraco: carvão velho com brasas nas frestas. Só aparece nas frestas entre as lajes afundadas e junto das paredes:
+    // um fio de brasa em volta de cada laje, que é a dica de "algo sobe daqui" (DESIGN.md §25), sem luz nenhuma (antes eram duas luzes vermelhas
+    // no fundo, que viravam dois círculos acesos no chão e clareavam o fosso que devia ser escuro)
+    {
+      const N = 64;
+      const c = document.createElement('canvas');
+      c.width = c.height = N;
+      const g = c.getContext('2d')!;
+      g.fillStyle = '#120b0a';
+      g.fillRect(0, 0, N, N);
+      let s = 917;
+      const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 260; i++) {
+        const r = rnd();
+        g.fillStyle = r < 0.12 ? '#ffb048' : r < 0.45 ? '#ff6a22' : r < 0.7 ? '#7a2414' : '#2a1610';
+        g.fillRect(Math.floor(rnd() * N), Math.floor(rnd() * N), 1 + Math.floor(rnd() * 2), 1);
+      }
+      const t = new THREE.CanvasTexture(c);
+      t.magFilter = t.minFilter = THREE.NearestFilter;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(gw / 2, gl / 2);
+      t.colorSpace = THREE.SRGBColorSpace;
+      kit.plane(gw, gl, new THREE.MeshBasicMaterial({ map: t }), (FG.x0 + FG.x1) / 2, -D, (gz0 + gz1) / 2, -Math.PI / 2);
+    }
+    // as paredes do fosso ESCURECEM para baixo (a luz das lanternas não chega no fundo): é o que diz, de longe, que o buraco é fundo
+    const pitWall = (w: number, seed: number, x: number, z: number, ry: number) => {
+      const geo = new THREE.PlaneGeometry(w, D, 1, 4);
+      const pos = geo.attributes.position;
+      const col = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const k = (pos.getY(i) + D / 2) / D; // 1 na borda, 0 no fundo
+        const v = 0.16 + 0.84 * k * k;
+        col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = v;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const mat = kit.brick([w / T, D / T], 0.8, seed);
+      mat.vertexColors = true;
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, -D / 2, z);
+      m.rotation.set(0, ry, 0);
+      kit.add(m);
+    };
+    pitWall(gw, 71, (FG.x0 + FG.x1) / 2, gz1, Math.PI); // a parede de baixo da borda da entrada
+    pitWall(gw, 72, (FG.x0 + FG.x1) / 2, gz0, 0); // a da borda da porta
+    pitWall(gl, 73, FG.x0, (gz0 + gz1) / 2, Math.PI / 2);
+    pitWall(gl, 74, FG.x1, (gz0 + gz1) / 2, -Math.PI / 2);
   }
   if (!spec.sky) kit.plane(W, L, kit.brick([W / T, L / T], 0.65, 19), 0, H, zm, Math.PI / 2);
   else {
@@ -793,8 +835,18 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
   const awayD = (z: number, s: 'L' | 'R') => (SD?.side === s && Math.abs(SD.at - z) < 2.6 ? (z - Z0 > L / 2 ? Z0 + L * 0.2 : Z0 + L * 0.75) : z);
   kit.damp(X0, 1.0, awayD(Z0 + L * 0.4, 'L'), 1, 0, 1.9);
   kit.damp(X1, 2.2, awayD(Z0 + L * 0.3, 'R'), -1, 0, 1.5);
-  if (SD) {
-    const holes = { L: SD.side === 'L' ? [SD.at] : [], R: SD.side === 'R' ? [SD.at] : [], B: SD.side === 'B' ? [SD.at] : [], F: [0] };
+  // (cenógrafo) o FOSSO que vai de parede a parede: nem rodapé nem a sombra do pé da parede por cima dele (os dois desenhavam, nas paredes do
+  // lado, a linha do chão continuando por cima do buraco: o olho lia "aqui tem chão"). Os cortes cobrem o trecho do fosso, de 2,6 em 2,6 m.
+  const pitCuts: number[] = [];
+  if (FG) for (let c = Z0 + FG.dz0 + 1.3; ; c += 2.6) {
+    const last = Z0 + FG.dz1 - 1.3;
+    pitCuts.push(Math.min(c, last));
+    if (c >= last) break;
+  }
+  const pitL = FG && FG.x0 <= X0 + 0.01 ? pitCuts : [];
+  const pitR = FG && FG.x1 >= X1 - 0.01 ? pitCuts : [];
+  if (SD || pitL.length || pitR.length) {
+    const holes = { L: [...(SD?.side === 'L' ? [SD.at] : []), ...pitL], R: [...(SD?.side === 'R' ? [SD.at] : []), ...pitR], B: SD ? (SD.side === 'B' ? [SD.at] : []) : [0], F: [0] };
     kit.skirting(X0, X1, Z0, Z1, 1.3, holes);
     kit.aoSides(X0, X1, Z0, Z1, H, 0, holes);
   } else {

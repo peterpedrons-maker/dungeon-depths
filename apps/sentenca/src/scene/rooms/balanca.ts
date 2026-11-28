@@ -14,7 +14,8 @@
 // pequeno); depois, acender o braseirinho do poste.
 import * as THREE from 'three';
 import { buildDoor, buildEntrance, Kit, lambert, LAMP_OFF, T } from '../kit';
-import { floorTexture } from '../textures';
+import { floorTexture, slabTexture } from '../textures';
+import { emberTexture } from './fire';
 import { drawGlyphPart } from '../../book/font';
 import { glyphsOf } from '../../story/lexicon';
 import { mkBox, shotGate } from './shell';
@@ -69,9 +70,11 @@ function weightTexture(word: string, size: Size) {
   g.fillRect(0, 0, 3, 64);
   const gl = glyphsOf(word)[0];
   if (gl) {
-    // (traço grosso: o número tem de ser lido de longe, embaixo do peso pendurado)
-    drawGlyphPart(g, gl, 34, 34, 120, '#241c22', 1, 2);
-    drawGlyphPart(g, gl, 32, 32, 120, '#e8dec6', 1, 2);
+    // o número TALHADO como as inscrições das paredes: sulco escuro largo e a cal branca por dentro, no tamanho de um símbolo dentro da face
+    // (antes o desenho era maior que a face: os pontos caíam nas quinas e pareciam rebites, e o UM virava um quadradinho solto). Cal branca,
+    // nunca o marfim das frases acendíveis (o peso não se acende).
+    drawGlyphPart(g, gl, 32, 33, 70, '#15110f', 1, 7);
+    drawGlyphPart(g, gl, 32, 32, 70, '#f1ebd9', 1, 3);
   }
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
@@ -109,6 +112,28 @@ export function buildBalanca(ctx: Ctx): Room {
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.006;
   kit.group.add(ring);
+  // (cenógrafo) a rotunda CONSTRUÍDA: um soco de pedra lavrada no pé da parede curva e uma cornija em dois degraus no alto, só nos dois arcos
+  // (a porta e a entrada têm os batentes delas). Rasos (6 cm o soco): o dado que encosta na parede não some dentro deles.
+  const bandMat = (h: number) => lambert(slabTexture([(R * arc) / T, h / T], 'ember'));
+  const capMat = new THREE.MeshLambertMaterial({ color: 0x8a7468, side: THREE.DoubleSide });
+  const band = (y0: number, h: number, depth: number, capY: number | null) => {
+    const m = bandMat(h);
+    m.side = THREE.BackSide;
+    for (const start of [gap / 2, Math.PI + gap / 2]) {
+      const face = new THREE.Mesh(new THREE.CylinderGeometry(R - depth, R - depth, h, 32, 1, true, start, arc), m);
+      face.position.y = y0 + h / 2;
+      kit.group.add(face);
+      if (capY === null) continue;
+      // a capa (em cima do soco) ou o fundo (embaixo da cornija): o anel entre a face e a parede
+      const cap = new THREE.Mesh(new THREE.RingGeometry(R - depth, R + 0.01, 32, 1, start - Math.PI / 2, arc), capMat);
+      cap.rotation.x = -Math.PI / 2;
+      cap.position.y = capY;
+      kit.group.add(cap);
+    }
+  };
+  band(0, 0.32, 0.06, 0.32);
+  band(H - 0.3, 0.3, 0.18, H - 0.3);
+  band(H - 0.42, 0.12, 0.09, H - 0.42);
 
   // ── a balança: o poste, o travessão (gira) e os dois pratos (penduram das pontas) ──
   const bronze = lambert(null, 0x8e6c3a);
@@ -170,10 +195,13 @@ export function buildBalanca(ctx: Ctx): Room {
   placeBalance();
 
   // ── a viga do teto e os pesos pendurados ──
-  const wood = lambert(null, 0x4e3422);
+  // (cenógrafo) madeira mais clara que o teto: a viga é a linha de onde tudo pende, e no teto escuro ela sumia (as cordas pareciam sair do nada)
+  const wood = lambert(null, 0x7a5638);
   for (const side of [-1, 1]) {
     kit.box(1.5, 0.16, 0.2, wood, side * ARM, BEAM_Y + 0.08, 0, false);
     for (const sx of [-0.62, 0.62]) kit.box(0.12, H - BEAM_Y - 0.16, 0.12, wood, side * ARM + sx, (H + BEAM_Y + 0.16) / 2, 0, false);
+    // as cintas de ferro onde a viga encontra os esteios
+    for (const sx of [-0.62, 0.62]) kit.box(0.16, 0.2, 0.24, iron, side * ARM + sx, BEAM_Y + 0.08, 0, false);
   }
   const tarMat = lambert(null, 0x1c1612);
   const hangY: number[] = [];
@@ -194,6 +222,8 @@ export function buildBalanca(ctx: Ctx): Room {
     const ropeMat = lambert(null, 0x8a7550);
     const rope = new THREE.Mesh(new THREE.BoxGeometry(0.045, 1, 0.045), ropeMat);
     kit.group.add(rope);
+    // o olhal de ferro de onde a corda desce, na viga (o do peso que pende de outro vai preso no de cima, logo abaixo: cai junto com ele)
+    if (parent < 0) kit.box(0.1, 0.05, 0.1, iron, hx, top - 0.025, hz, false);
     // o nó de piche no meio da corda: onde o fogo pega
     const tar = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), tarMat);
     kit.group.add(tar);
@@ -203,6 +233,13 @@ export function buildBalanca(ctx: Ctx): Room {
     kit.group.add(flame);
     return { i, side, size, word, parent, sx, sz, e, hx, hz, hy, top, ropeLen, mesh, rope, ropeMat, tar, flame, state: 'hang' as 'hang' | 'burn' | 'fall' | 'in', t: 0, y: hy, vy: 0, x: hx, z: hz };
   });
+  for (const w of weights) {
+    if (w.parent < 0) continue;
+    const p = weights[w.parent];
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.08), iron);
+    eye.position.set(w.hx - p.hx, -p.e / 2 - 0.025, w.hz - p.hz);
+    p.mesh.add(eye);
+  }
   type W = (typeof weights)[number];
   const kids = (w: W): W[] => weights.filter((o) => o.parent === w.i).flatMap((o) => [o, ...kids(o)]);
   const setRope = (w: W, len: number) => {
@@ -235,18 +272,43 @@ export function buildBalanca(ctx: Ctx): Room {
   // ── o braseirinho ao pé do poste: acendê-lo pede o julgamento ──
   const BOWL = new THREE.Vector3(0, 0.56, 0.44);
   kit.box(0.34, 0.5, 0.3, kit.stone, 0, 0.25, 0.44);
+  // (cenógrafo) pé e capa de pedra lavrada: um pedestal pequeno, da família dos braseiros, e não um tijolo solto
+  kit.box(0.42, 0.07, 0.38, kit.slab, 0, 0.035, 0.44, false);
+  kit.box(0.4, 0.04, 0.36, kit.slab, 0, 0.48, 0.44, false);
   boxes.push(mkBox(-0.17, 0, 0.29, 0.17, 0.5, 0.59));
   const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.13, 0.12, 12, 1, true), darkBronze);
   bowl.position.copy(BOWL);
   kit.add(bowl, false);
-  const bowlIn = new THREE.Mesh(new THREE.CircleGeometry(0.17, 12), new THREE.MeshBasicMaterial({ color: 0x1a1412 }));
+  // a borda da tigela em bronze claro (pega a luz das tochas: de longe a tigela se lê como tigela)
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.022, 4, 16), bronze);
+  lip.rotation.x = Math.PI / 2;
+  lip.position.set(BOWL.x, BOWL.y + 0.06, BOWL.z);
+  kit.group.add(lip);
+  // dentro, carvão velho (e não um disco preto liso)
+  const coal = document.createElement('canvas');
+  coal.width = coal.height = 16;
+  const cg = coal.getContext('2d')!;
+  cg.fillStyle = '#16100e';
+  cg.fillRect(0, 0, 16, 16);
+  for (const [x, y, c] of [[3, 4, '#2c2420'], [8, 2, '#3a302a'], [11, 7, '#2c2420'], [5, 10, '#3a302a'], [10, 12, '#2c2420'], [2, 8, '#241c18'], [13, 3, '#241c18'], [7, 6, '#4a2a1c']] as [number, number, string][]) {
+    cg.fillStyle = c;
+    cg.fillRect(x, y, 3, 2);
+  }
+  const coalTex = new THREE.CanvasTexture(coal);
+  coalTex.magFilter = coalTex.minFilter = THREE.NearestFilter;
+  coalTex.colorSpace = THREE.SRGBColorSpace;
+  const bowlIn = new THREE.Mesh(new THREE.CircleGeometry(0.17, 12), new THREE.MeshBasicMaterial({ map: coalTex }));
   bowlIn.rotation.x = -Math.PI / 2;
   bowlIn.position.set(BOWL.x, BOWL.y + 0.01, BOWL.z);
   kit.add(bowlIn, false);
-  const ember = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff7a2e, fog: false, transparent: true, opacity: 0.8, depthWrite: false }));
-  ember.scale.set(0.06, 0.06, 1);
-  ember.position.set(BOWL.x, BOWL.y + 0.04, BOWL.z);
+  // a brasa fraca que PULSA (a mesma dos soquetes das frases: "isto pode ser aceso"; antes era um pontinho parado de 6 cm)
+  const ember = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, transparent: true, depthWrite: false }));
+  ember.scale.set(0.15, 0.15, 1);
+  ember.position.set(BOWL.x, BOWL.y + 0.05, BOWL.z);
   kit.group.add(ember);
+  kit.contact(0, 0.2, 1.3, 1.5); // a sombra de contato da balança e do pedestal
+  // a luz do julgamento: o braseirinho aceso ilumina a balança de baixo (só enquanto a Casa olha e depois de aceita)
+  const judgeLight = kit.light(BOWL.x, BOWL.y + 0.45, BOWL.z + 0.25, 0xff9a48, 0);
   const judgeFlame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
   judgeFlame.scale.set(0.34, 0.38, 1);
   judgeFlame.position.set(BOWL.x, BOWL.y + 0.2, BOWL.z);
@@ -265,8 +327,15 @@ export function buildBalanca(ctx: Ctx): Room {
     [-0.62, 0.78, 3.1],
     [0.62, 0.78, 4.4],
   ] as [number, number, number][])
+  {
     kit.torch(ux * (R - 0.14), 2.9, uz * (R - 0.14), -ux, -uz, ph, 0xffb070, 34);
+    kit.soot(ux * (R - 0.035), 3.3, uz * (R - 0.035), -ux, -uz, 0.85, 1.25); // (a fumaça sobe e suja a parede até a cornija)
+  }
   kit.aoRing(R, H);
+  // o chão gasto: da entrada até a frente da balança (onde se mira e se julga) e da balança até a porta, dos dois lados
+  kit.wear([[0, ZH - 0.2], [0, 1.4]], 1.2);
+  kit.wear([[-2.6, 0.6], [-1.9, -2.6], [0, -ZH + 0.3]], 1.0);
+  kit.wear([[2.6, 0.6], [1.9, -2.6], [0, -ZH + 0.3]], 1.0);
 
   // ── a regra ──
   const gate = shotGate(ctx.die);
@@ -509,7 +578,10 @@ export function buildBalanca(ctx: Ctx): Room {
       const aimed = aimIdx;
       aimIdx = -1;
       for (const w of weights) if (w.state === 'hang') w.ropeMat.color.setHex(aimed === w.i ? 0xe0b878 : 0x8a7550);
-      ember.scale.setScalar(aimed === 99 ? 0.1 : 0.06);
+      // a brasa pulsa devagar enquanto espera (como nos soquetes das frases); sob a mira, cresce
+      const es = aimed === 99 ? 0.22 : 0.13 + 0.05 * (0.5 + 0.5 * Math.sin(t * 3));
+      ember.scale.set(es, es, 1);
+      judgeLight.intensity = judgeFlame.visible ? 16 : 0;
       // o travessão: mola amortecida até o ângulo do peso. theta > 0 levanta a ponta da direita: o lado mais pesado desce
       const target = Math.max(-0.3, Math.min(0.3, 0.16 * (panMass(-1) - panMass(1))));
       omega += ((target - theta) * 26 - omega * 5) * dt;

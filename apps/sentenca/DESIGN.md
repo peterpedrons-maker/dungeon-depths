@@ -2088,3 +2088,19 @@ Madeira, Ponte de Frases, Sombra, Escuro, Lei Pequena, Fogo que Corre, Claustro 
   gemas do capítulo continuam três (Cisterna, Ala do Papel, C6) e as folhas p2 a p18 continuam nas mesmas salas (nenhuma estava nas trocadas).
   Os nomes novos foram para `tools/planta/salas.json` (a planta regenerada só trocou os nomes), `gems.ts` (c6), `quiz.ts` (as perguntas 6 e 8
   passam a vir depois da Balança e da Ponte de Frases) e os verificadores de vocabulário e de constelações.
+- **A revisão do cenógrafo** (leitura e acabamento, sem mexer em regra, número, posição de puzzle nem planta; os três verificadores e os testes
+  de solução e de erro passam como antes). **Balança**: os números dos pesos agora são talhados como as inscrições (sulco escuro e cal
+  branca, dentro da face: antes o desenho era maior que a face e os pontos pareciam rebites nas quinas); a viga em madeira clara com cintas de
+  ferro e um olhal em cada corda (no teto escuro as cordas pareciam sair do nada; o olhal do peso de baixo fica preso no de cima, e cai com
+  ele); o braseirinho ganhou pé e capa de pedra lavrada, borda de bronze, carvão e **a mesma brasa pulsando dos soquetes das frases** (era um
+  ponto parado de 6 cm), e uma luz quente enquanto a Casa julga; soco e cornija nos arcos da rotunda, fuligem acima das quatro tochas, chão gasto
+  da entrada à balança e da balança à porta, sombra de contato no pé. **Ponte de Frases**: o fosso agora se lê da entrada: as paredes do
+  buraco e os lados das lajes escurecem para baixo (cor por vértice), o tampo de cada laje escurece lá embaixo e clareia conforme sobe, cada
+  laje tem uma quina lavrada (lê-se qual é qual), as duas bordas ganharam uma capa de pedra lavrada que desce para dentro do fosso, o fundo é
+  carvão com brasas nas frestas (sem luz) e saíram as duas luzes vermelhas do fundo (viravam dois círculos acesos e clareavam o buraco); o
+  rodapé e a sombra do pé das paredes não passam mais por cima do fosso (desenhavam a linha do chão continuando). **Claustro do Vento**: o
+  bordado dos estandartes ficou grosso (`makeCloth` ganhou `thick`; só nesta sala) e as gaiolas têm metade das barras (o texto aparece entre
+  elas; o dado continua sem passar), e as peças das gaiolas vão juntas numa malha (de ~500 para ~300 desenhos olhando o pátio); o cata-vento é
+  de bronze, maior, com quatro hastes fixas de referência; folhas secas (pontos pardos, nunca laranja) correm pelo pátio a favor do vento o
+  tempo todo; os fogaréus viraram cestos com aro e garras, com carvão em monte e **a brasa pulsando** enquanto apagados, e o poste barra o
+  jogador (antes só o dado). A brasa dos soquetes (`emberTexture`, `fire.ts`) agora é exportada e é a mesma nos três lugares.

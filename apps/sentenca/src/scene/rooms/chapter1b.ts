@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import type { FireExtra, FireExtraApi, FireSpec } from './fire';
+import { emberTexture } from './fire';
 import { glyphPattern, makeCloth, makeTorch, makeWallBoard, type Torch, type WallBoard } from '../firegrid';
 import { constellation } from './chapter1';
 import { lambert } from '../kit';
@@ -822,7 +823,8 @@ function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
   const banners = BN.map((b, k) => {
     const [x, dz] = b.at;
     const rodTop = R - 0.45;
-    return makeCloth(kit, ctx, { x: x + b.n[0] * 0.08, y: rodTop - 0.55, z: Z0 + dz + b.n[1] * 0.08, nx: b.n[0], nz: b.n[1], words: b.words, size: 0.34, color: ['#8a3040', '#5a4280', '#8a5a2a', '#3a6a4a', '#7a3a6a'][k], tall: 0.25, key: `dm${k}`, secs: 2.2 });
+    // (no Claustro do Vento o bordado é grosso: o estandarte fica no alto e atrás das barras da gaiola, e o traço fino não se lia do pátio)
+    return makeCloth(kit, ctx, { x: x + b.n[0] * 0.08, y: rodTop - 0.55, z: Z0 + dz + b.n[1] * 0.08, nx: b.n[0], nz: b.n[1], words: b.words, size: 0.34, color: ['#8a3040', '#5a4280', '#8a5a2a', '#3a6a4a', '#7a3a6a'][k], tall: 0.25, key: `dm${k}`, secs: 2.2, thick: vento ? 3 : undefined });
   });
   const wind = vento ? buildWind(api, BN, banners, fx, fz) : null;
   let restoreT = -1;
@@ -884,7 +886,7 @@ function claustroExtra(api: FireExtraApi, vento: boolean): FireExtra {
       for (const f of frieze) f.k = 0;
     },
     bonus: C.bonus,
-    rects: () => [...C.rect(), [fx - 1.45, fz - 1.45, fx + 1.45, fz + 1.45, 0.55] as Rect, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect],
+    rects: () => [...C.rect(), [fx - 1.45, fz - 1.45, fx + 1.45, fz + 1.45, 0.55] as Rect, [fx - 1.0, fz - 0.3, fx + 1.0, fz + 0.5] as Rect, ...(wind?.rects ?? [])],
     interactables: [C.niche.interactable],
   };
 }
@@ -893,10 +895,16 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
   const { kit, ctx, Z0, boxes } = api;
   const R = DM.roof;
   const iron = lambert(null, 0x2a282e);
+  const rects: Rect[] = [];
   // ── as gaiolas: barras de ferro em volta de cada estandarte, penduradas do telhado por quatro correntes (passa-se por baixo; o dado bate
   // nelas). Param abaixo dos frisos da constelação C6 (que correm na linha das colunas, a 3,85 m): o friso continua inteiro à vista ──
   const CAGE_Y = 2.35;
   const CAGE_TOP = R - 0.42;
+  // (cenógrafo) as peças da gaiola são fixas: vão todas para uma malha só no kit.bake (eram ~40 desenhos por gaiola, 210 na sala)
+  const cagePart = (m: THREE.Mesh) => {
+    m.userData.merge = true;
+    kit.group.add(m);
+  };
   BN.forEach((b, k) => {
     const c = banners[k].center;
     const n = new THREE.Vector3(b.n[0], 0, b.n[1]);
@@ -906,18 +914,20 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
     const hh = CAGE_TOP - CAGE_Y;
     const mid = c.clone().addScaledVector(n, 0.06);
     for (const side of [-1, 1]) {
-      for (let a = -w / 2; a <= w / 2 + 1e-6; a += w / 13) {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.035, hh, 0.035), iron);
+      // barras a cada 28 cm (eram 15): o dado continua sem passar, e o bordado do estandarte aparece entre elas (com 14 barras por face, cada
+      // símbolo ficava atrás de três)
+      for (let a = -w / 2; a <= w / 2 + 1e-6; a += w / 7) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.04, hh, 0.04), iron);
         bar.position.copy(mid).addScaledVector(right, a).addScaledVector(n, (side * dep) / 2);
         bar.position.y = CAGE_Y + hh / 2;
-        kit.group.add(bar);
+        cagePart(bar);
       }
       for (const y of [CAGE_Y, CAGE_Y + hh * 0.5, CAGE_TOP]) {
         const rail = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.05, 0.05), iron);
         rail.position.copy(mid).addScaledVector(n, (side * dep) / 2);
         rail.position.y = y;
         rail.rotation.y = Math.atan2(right.x, right.z) - Math.PI / 2;
-        kit.group.add(rail);
+        cagePart(rail);
       }
     }
     for (const a of [-w / 2, w / 2]) {
@@ -926,13 +936,13 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
         end.position.copy(mid).addScaledVector(right, a);
         end.position.y = y;
         end.rotation.y = Math.atan2(n.x, n.z);
-        kit.group.add(end);
+        cagePart(end);
       }
       for (const side of [-1, 1]) {
         const chain = new THREE.Mesh(new THREE.BoxGeometry(0.02, R - CAGE_TOP, 0.02), iron);
         chain.position.copy(mid).addScaledVector(right, a * 0.9).addScaledVector(n, (side * dep) / 2);
         chain.position.y = (R + CAGE_TOP) / 2;
-        kit.group.add(chain);
+        cagePart(chain);
       }
     }
     const hx = Math.abs(right.x) * w / 2 + Math.abs(n.x) * dep / 2;
@@ -946,18 +956,27 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
   const pole = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.7, 0.05), iron);
   pole.position.y = 0.35;
   vane.add(pole);
+  // (cenógrafo) a seta em bronze velho, maior, com a cauda larga: contra o céu claro e contra a pedra escura ela se lê dos dois jeitos (em ferro
+  // escuro sumia na parede do fundo); as quatro hastes fixas embaixo dão a régua (fundo, esquerda, frente, direita) para o olho comparar
+  const bronze = lambert(null, 0x9a7a44);
   const arrow = new THREE.Group();
   arrow.position.y = 0.72;
   vane.add(arrow);
-  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.9), iron);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 1.0), bronze);
   arrow.add(shaft);
-  const head = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.24, 4), iron);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.32, 4), bronze);
   head.rotation.x = Math.PI / 2;
-  head.position.z = 0.52;
+  head.position.z = 0.62;
   arrow.add(head);
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.22, 0.26), lambert(null, 0x6a5a40));
-  tail.position.z = -0.4;
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.3, 0.34), bronze);
+  tail.position.z = -0.44;
   arrow.add(tail);
+  for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.025, 0.36), iron);
+    arm.position.set(Math.sin(a) * 0.18, 0.5, Math.cos(a) * 0.18);
+    arm.rotation.y = a;
+    vane.add(arm);
+  }
   // ── os fogaréus ──
   const fires = VT_FIRES.map(([x, dz, hw, len], k) => {
     const z = Z0 + dz;
@@ -966,13 +985,35 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
     kit.box(0.12, ph, 0.12, iron, x, ph / 2, z);
     kit.box(0.34, 0.06, 0.34, iron, x, 0.03, z);
     const r = big ? 0.34 : 0.22;
-    const basket = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.6, big ? 0.34 : 0.24, 8, 1, true), iron);
+    const hb = big ? 0.34 : 0.24;
+    const basket = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.6, hb, 8, 1, true), iron);
     basket.position.set(x, ph + 0.12, z);
     kit.add(basket, false);
-    const coals = new THREE.Mesh(new THREE.CircleGeometry(r * 0.85, 8), new THREE.MeshBasicMaterial({ color: 0x2a1610 }));
-    coals.rotation.x = -Math.PI / 2;
-    coals.position.set(x, ph + 0.06, z);
+    // (cenógrafo) um CESTO de fogo e não uma taça num poste: aro grosso na boca e garras de ferro que sobem dele (o fogaréu dos pátios). Fica
+    // longe da cara das tochas da constelação (tocha de parede, nas colunas): nada aqui parece uma delas
+    const rimY = ph + 0.12 + hb / 2;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.03, 4, 8), iron);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.set(x, rimY, z);
+    rim.userData.merge = true;
+    kit.group.add(rim);
+    for (let q = 0; q < 6; q++) {
+      const a = (q / 6) * Math.PI * 2 + 0.3;
+      const claw = new THREE.Mesh(new THREE.BoxGeometry(0.03, big ? 0.2 : 0.15, 0.03), iron);
+      claw.position.set(x + Math.cos(a) * (r + 0.02), rimY + (big ? 0.09 : 0.065), z + Math.sin(a) * (r + 0.02));
+      claw.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35); // (abertas para fora)
+      claw.userData.merge = true;
+      kit.group.add(claw);
+    }
+    // o carvão: um monte (cone baixo), que de lado aparece na boca do cesto
+    const coals = new THREE.Mesh(new THREE.ConeGeometry(r * 0.8, big ? 0.16 : 0.12, 8), new THREE.MeshBasicMaterial({ color: 0x2a1610 }));
+    coals.position.set(x, rimY - (big ? 0.06 : 0.05), z);
     kit.group.add(coals);
+    // a brasa fraca que pulsa no carvão: a mesma dos soquetes das frases ("isto pode ser aceso")
+    const ember = new THREE.Sprite(new THREE.SpriteMaterial({ map: emberTexture(), fog: false, transparent: true, depthWrite: false }));
+    ember.position.set(x, rimY + 0.03, z);
+    kit.group.add(ember);
+    rects.push([x - 0.17, z - 0.17, x + 0.17, z + 0.17]); // (o poste e o pé barram o jogador, como barram o dado; antes ele atravessava o ferro)
     const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.frames[0], fog: false, alphaTest: 0.5, depthWrite: false }));
     flame.scale.set(big ? 0.62 : 0.42, big ? 0.66 : 0.46, 1);
     flame.position.set(x, ph + (big ? 0.42 : 0.32), z);
@@ -981,7 +1022,7 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
     const light = kit.light(x, ph + 0.6, z, 0xff8a3a, 0);
     boxes.push(mkBox(x - r, 0, z - r, x + r, ph + 0.2, z + r));
     kit.contact(x, z, 0.9);
-    return { x, z, hw, len, top: new THREE.Vector3(x, ph + 0.2, z), coals, flame, light, t: -1, big };
+    return { x, z, hw, len, top: new THREE.Vector3(x, ph + 0.2, z), coals, flame, light, t: -1, big, ember };
   });
   // as fagulhas (pontos que voam a favor do vento)
   const NS = 90;
@@ -993,6 +1034,46 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
   sparks.frustumCulled = false;
   kit.group.add(sparks);
   for (let i = 0; i < NS; i++) sp[i * 3 + 1] = -50;
+  // (cenógrafo) FOLHAS SECAS que o vento arrasta pelo pátio: mostram para onde ele sopra o tempo todo, mesmo sem fogaréu aceso, e viram junto
+  // quando ele vira. Poucas, baixas, só no pátio (o claustro é aberto: é daí que elas vêm), cor de folha seca (nunca a das fagulhas)
+  const NL = 26;
+  const lp = new Float32Array(NL * 3);
+  const lby = new Float32Array(NL);
+  const lph = new Float32Array(NL);
+  const LX0 = -DM.gx + 0.5;
+  const LX1 = DM.gx - 0.5;
+  const LZ0 = Z0 + DM.gz[0] + 0.5;
+  const LZ1 = Z0 + DM.gz[2] - 0.5;
+  for (let i = 0; i < NL; i++) {
+    lp[i * 3] = LX0 + Math.random() * (LX1 - LX0);
+    lp[i * 3 + 2] = LZ0 + Math.random() * (LZ1 - LZ0);
+    lby[i] = 0.12 + Math.random() * Math.random() * 1.5;
+    lph[i] = Math.random() * 10;
+  }
+  const leafGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(lp, 3));
+  const leaves = new THREE.Points(leafGeo, new THREE.PointsMaterial({ color: 0x5e5644, size: 2, sizeAttenuation: false, depthWrite: false })); // (pardo apagado: nada de laranja, que é brasa)
+  leaves.frustumCulled = false;
+  kit.group.add(leaves);
+  let lvx = 0;
+  let lvz = -1;
+  const blowLeaves = (dt: number, t: number, ux: number, uz: number) => {
+    lvx += (ux - lvx) * Math.min(1, dt * 1.4);
+    lvz += (uz - lvz) * Math.min(1, dt * 1.4);
+    for (let i = 0; i < NL; i++) {
+      const o = i * 3;
+      const v = 1.2 + 0.8 * Math.sin(t * 0.9 + lph[i]); // (rajadas: cada folha no seu tempo)
+      const wob = Math.sin(t * 2.3 + lph[i] * 2) * 0.3;
+      lp[o] += (lvx * v - lvz * wob) * dt;
+      lp[o + 2] += (lvz * v + lvx * wob) * dt;
+      lp[o + 1] = lby[i] + 0.18 * Math.sin(t * 3.1 + lph[i]) * (0.4 + lby[i]);
+      // saiu do pátio: volta pela beirada de onde o vento vem
+      if (lp[o] < LX0 || lp[o] > LX1 || lp[o + 2] < LZ0 || lp[o + 2] > LZ1) {
+        lp[o] = Math.abs(lvx) > 0.5 ? (lvx > 0 ? LX0 : LX1) : LX0 + Math.random() * (LX1 - LX0);
+        lp[o + 2] = Math.abs(lvz) > 0.5 ? (lvz > 0 ? LZ0 : LZ1) : LZ0 + Math.random() * (LZ1 - LZ0);
+      }
+    }
+    leafGeo.attributes.position.needsUpdate = true;
+  };
   let next = 0;
   let wt = 0; // o relógio do vento (para durante cenas e conversas)
   let vaneA = 0;
@@ -1038,6 +1119,7 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
       while (da < -Math.PI) da += Math.PI * 2;
       vaneA += da * Math.min(1, dt * 6);
       arrow.rotation.y = vaneA + Math.sin(t * 7) * 0.04;
+      if (!paused) blowLeaves(dt, t, ux, uz);
       // o dado de Fogo num cesto acende o fogaréu
       gate.tick();
       const d = ctx.die;
@@ -1048,6 +1130,12 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
           ctx.sfx('ignite', `fogareu${k}`);
         }
       // aceso: as fagulhas voam com o vento por 4 s e põem fogo nos estandartes da faixa
+      // a brasa fraca dos cestos apagados pulsa (some no aceso e com a sala resolvida)
+      for (const f of fires) {
+        f.ember.visible = f.t < 0 && !solved;
+        const es = (f.big ? 0.2 : 0.15) + 0.06 * (0.5 + 0.5 * Math.sin(t * 3 + f.x));
+        f.ember.scale.set(es, es, 1);
+      }
       for (const f of fires) {
         if (f.t < 0) continue;
         if (!paused) f.t += dt;
@@ -1100,6 +1188,7 @@ function buildWind(api: FireExtraApi, BN: typeof DM_BANNERS, banners: ReturnType
       douse();
     },
     douse,
+    rects,
   };
 }
 
