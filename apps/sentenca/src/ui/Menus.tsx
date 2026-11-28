@@ -561,6 +561,8 @@ function Settings({ onBack, snd }: { onBack: () => void; snd: UiSound }) {
                 <Choice label="Reduzir o movimento da câmera" value={c.reduceMotion} options={yesNo} onChange={set('reduceMotion')} snd={snd} />
                 <Choice label="Alto contraste nos glifos" value={c.highContrast} options={yesNo} onChange={set('highContrast')} snd={snd} />
                 <Choice label="Mira sempre visível" value={c.crosshair} options={yesNo} onChange={set('crosshair')} snd={snd} />
+                {/* (DESIGN.md §99) as palavras do PRÓPRIO jogador embaixo dos símbolos; o jogo continua sem traduzir */}
+                <Choice label="Minhas anotações embaixo dos símbolos" value={c.glyphNotes} options={yesNo} onChange={set('glyphNotes')} snd={snd} />
               </>
             )}
             {tab === 'idioma' && (

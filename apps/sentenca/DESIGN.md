@@ -2347,3 +2347,38 @@ pancada e o arremesso de Fogo quadro a quadro, o pó do teto, o rato correndo, a
 cantos com rastros; no Tribunal, acender o braseiro certo (conta o passo), um errado (a Casa pune como antes) e o arremesso para cima; a
 tela inicial e a abertura. Sem erros no console. **Não testado**: o capítulo jogado do começo ao fim, um celular de verdade, e o morcego
 visto em jogo (ele voa; nas fotos de teste a câmera ficou embaixo de um patamar).
+
+## 99. As anotações do jogador junto dos símbolos (cenógrafo, pedido do Pedro)
+
+"Depois que o jogador escreve o que acha que um glifo significa, quando esse glifo aparecer (parede, conversa, textos), deveria aparecer?
+Não tem outra forma? De qualquer forma o ideal é ter a opção de ativar ou não." A resposta foi uma combinação de três formas, aprovada pelo
+Pedro. O que o jogador escreve sobre um glifo (`diary.notes`) só aparecia dentro do caderno; agora aparece em três lugares, e **sempre nas
+palavras dele**: o jogo continua sem traduzir e sem corrigir, e sem anotação nada aparece (`src/story/reading.ts`).
+
+**A anotação curta**: a ÚLTIMA linha que ele escreveu sobre o glifo (as respostas às perguntas do dado entram numa linha nova embaixo, e a
+última é o que ele acha agora), cortada no que cabe (`shortNote`).
+
+**1. A CÓPIA (sempre ligada).** Abrir o caderno (J ou o botão) olhando uma escrita da parede, ou até 20 s depois de uma conversa ou de um
+balão do dado, abre numa página nova do caderno, **Cópia**, logo depois da contracapa: a frase copiada a lápis, símbolo por símbolo, com a
+anotação dele embaixo de cada um (ou uma linha pontilhada, se não anotou). Tocar num símbolo da cópia abre na página da direita o mesmo
+quadro de anotar da parte Símbolos: dá para anotar ali mesmo, com a frase toda na frente. É o gesto natural de quem decifra: copiar a frase
+e trabalhar nela. A cópia fica no caderno até a próxima (uma só, a última), aparece no índice como «Cópia» e não abre durante o tutorial do
+caderno, nem quando o caderno abre sozinho numa folha nova dela (`diary.copy`, `book/pages.ts: renderCopy`, `book/book3d.ts`).
+
+**2. APONTAR (sempre ligada).** A mira parada (0,3 s) sobre uma palavra talhada na parede, a até 5 m, mostra embaixo da mira uma etiqueta
+de papel só com a anotação DAQUELA palavra (`aimNoteStore`, `ui/NoteTags.tsx: AimNote`). Numa conversa, no celular, tocar num símbolo mostra
+a anotação dele por 2,6 s (o segundo toque segue a conversa, como antes); no PC, com o mouse preso no jogo, mexer o mouse anda por cima dos
+símbolos (um sublinhado de ouro marca qual) e mostra a dele (`ui/DialogueBox.tsx`). Uma palavra por vez: ajuda a lembrar, não lê a frase
+pelo jogador.
+
+**3. EMBAIXO DOS SÍMBOLOS (opção, DESLIGADA por padrão).** Configurações → Acessibilidade → «Minhas anotações embaixo dos símbolos». Ligada,
+toda conversa e todo balão do dado mostram a anotação dele embaixo de cada símbolo, e olhar parado (0,8 s) uma escrita da parede sobe uma tira
+de papel no pé da tela com a frase e as anotações (`lookingStore`, `ReadingStrip`). É para quem quer jogar mais leve, ou tem dificuldade de
+memória: a dedução continua dele, porque as palavras são as que ele escreveu.
+
+**O que nunca mostra anotação**: a pergunta do dado («VOCÊ SABER ?», o quiz testa a memória e o palpite dele, mostrar a resposta o anularia),
+as anotações DELA (a sépia fica só no caderno) e as palavras que ele nunca anotou. A letra é sempre a dele, grafite em papel: nunca o dourado
+(a verdade da Casa) nem a sépia (a letra dela).
+
+**Detalhe de acabamento**: a fonte do caderno não tinha as reticências e trocava «…» por «?» (o «o que eu acho…» da parte Símbolos saía
+«o que eu acho?»); agora são três pingos numa célula só (`book/font.ts`).

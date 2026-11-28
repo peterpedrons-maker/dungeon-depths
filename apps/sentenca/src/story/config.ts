@@ -58,6 +58,7 @@ export interface Config {
   reduceMotion: boolean; // reduzir o movimento da câmera
   highContrast: boolean; // glifos com mais contraste
   crosshair: boolean; // mira sempre visível
+  glyphNotes: boolean; // as anotações do jogador embaixo dos símbolos (conversas, balões e a tira de leitura das paredes; DESIGN.md §99)
   // idioma
   lang: 'pt';
 }
@@ -84,6 +85,7 @@ export const DEFAULT_CONFIG: Config = {
   reduceMotion: false,
   highContrast: false,
   crosshair: true,
+  glyphNotes: false,
   lang: 'pt',
 };
 

@@ -6,6 +6,8 @@ import { WordGlyph } from './Glyph';
 import { useUiScale } from './scale';
 import { LINGER_MS, PART_MS, PIC_MS, scribbleFor, wordMs } from '../story/writing';
 import { sketchCanvas, type SketchKind } from '../scene/sketch';
+import { configStore } from '../story/config';
+import { readTalk, shortNote } from '../story/reading';
 
 // o rabisco da palavra (o mesmo que o dado mostra na face), em pixel
 function SketchPic({ kind, size }: { kind: SketchKind; size: number }) {
@@ -27,6 +29,8 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
   const c = useStore(chatterStore);
   const k = useUiScale();
   const [shown, setShown] = useState(0);
+  const notesOn = useStore(configStore).glyphNotes; // (DESIGN.md §99) as anotações dele embaixo dos símbolos, se a opção estiver ligada
+  useStore(diaryStore);
 
   useEffect(() => setShown(0), [c?.id]);
   useEffect(() => {
@@ -47,7 +51,9 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
   useEffect(() => {
     if (!c) return;
     const here = diaryStore.get().here;
-    c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).forEach((id) => diary.markSeen(id, here));
+    const said = c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0)));
+    said.forEach((id) => diary.markSeen(id, here));
+    if (said.length === c.glyphs.length && said.length) readTalk(c.glyphs, here, `dado:${c.id}`); // (abrir o caderno logo depois copia a fala)
   }, [c, shown]);
 
   if (!c) return null;
@@ -61,6 +67,7 @@ export function BoatoBubble({ onSound }: { onSound?: (name: 'write', v?: number)
       {c.glyphs.slice(0, Math.max(0, shown - (c.pic ? 1 : 0))).map((id, i) => (
         <span className="dlg-tile" key={`${c.id}-${i}`}>
           <WordGlyph id={id} size={Math.round(26 * k)} draw={PART_MS - 100} />
+          {notesOn && shortNote(id, 9) && <span className="gnote">{shortNote(id, 9)}</span>}
         </span>
       ))}
     </div>

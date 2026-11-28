@@ -19,6 +19,7 @@ import { Credits, PauseMenu, SaveIndicator, TitleScreen, type TitleApi } from '.
 import { Splash } from './ui/Splash';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { SkipIntro } from './ui/SkipIntro';
+import { AimNote, ReadingStrip } from './ui/NoteTags';
 import { saves } from './story/save';
 import { configStore, keyName } from './story/config';
 import type { IconName } from './ui/PixelIcon';
@@ -327,6 +328,9 @@ export default function App() {
         ) : (
           <div className={`crosshair${prompt && !speaking ? ' on' : ''}`} />
         ))}
+      {/* (DESIGN.md §99) a anotação da palavra sob a mira e, com a opção ligada, a tira de leitura da escrita olhada */}
+      {!inMenu && !cine && !uis.bars && !uis.bookOut && !speaking && <AimNote />}
+      {!inMenu && !cine && !uis.bars && !uis.bookOut && !speaking && <ReadingStrip />}
       {/* o caderno acabou de ser achado: a tela escurece e só o botão do diário fica aceso, pulsando */}
       <div className={`book-call${uis.bookCall && !uis.bookOut ? ' on' : ''}`} aria-hidden="true" />
 

@@ -55,6 +55,12 @@ function pixels(ch: string): number[] {
 
 // y = topo da célula (a célula tem 2 linhas de folga em cima para os acentos de maiúsculas)
 export function drawChar(ctx: CanvasRenderingContext2D, ch: string, x: number, y: number, color: string, sc = 1) {
+  if (ch === '…') {
+    // as reticências numa célula só (três pingos na linha de base): a fonte não tinha, e saía «?» no lugar
+    ctx.fillStyle = color;
+    for (let i = 0; i < 3; i++) ctx.fillRect(x + i * 2 * sc, y + 8 * sc, sc, sc);
+    return;
+  }
   const a = ALIAS[ch];
   if (a && a.length === 1) ch = a;
   let acc: Accent | null = null;

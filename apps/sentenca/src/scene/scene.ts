@@ -5,6 +5,8 @@
 import * as THREE from 'three';
 import { makePuffs } from './puffs';
 import { fxEye, fxView } from './fx';
+import { aimNoteStore, lookingStore, readingStore, shortNote } from '../story/reading';
+import type { Inscription } from './inscription';
 import { drip } from './arch';
 import { puddleTexture } from './textures';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -2352,6 +2354,82 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   // Olhar para uma inscrição por um instante manda os símbolos dela para o diário (como "avistados").
   const lookDir = new THREE.Vector3();
   const toIns = new THREE.Vector3();
+  // AS ANOTAÇÕES JUNTO DOS SÍMBOLOS (DESIGN.md §99; story/reading.ts):
+  //  · a escrita que o jogador está LENDO agora (olhando de frente, a menos de 6 m): abrir o caderno nesse instante faz a cópia dela;
+  //  · a palavra sob a MIRA (raio do centro da tela, a menos de 5 m, parada ~0,3 s): a anotação só dela, numa etiqueta;
+  //  · com a opção ligada, a escrita olhada por ~0,8 s sobe numa tira de papel com as anotações (se alguma palavra dela tiver anotação).
+  // Nada disto vale para escrita escondida (`hidden`), nem durante conversa, cena ou caderno.
+  const noteRay = new THREE.Raycaster();
+  const noteCenter = new THREE.Vector2(0, 0);
+  let noteTick = 0;
+  let aimId: string | null = null;
+  let aimHold = 0;
+  let lookKey = '';
+  let lookHold = 0;
+  const readNotes = (dt: number, canRead: boolean) => {
+    if (!canRead || mode !== 'play') {
+      if (aimNoteStore.get()) aimNoteStore.set(null);
+      if (lookingStore.get()) lookingStore.set(null);
+      aimId = null;
+      lookKey = '';
+      return;
+    }
+    noteTick -= dt;
+    if (noteTick > 0) return;
+    const step = 0.1;
+    noteTick = step;
+    // a escrita lida: a mais de frente, dentro do cone do olhar
+    let best: { ins: Inscription; room: number; dot: number } | null = null;
+    for (const i of activeRooms)
+      for (const ins of rooms[i].inscriptions ?? []) {
+        if (ins.hidden || !ins.words.length) continue;
+        toW(i, ins.center, toIns).sub(camera.position);
+        const d = toIns.length();
+        if (d > 6) continue;
+        toIns.divideScalar(d);
+        const dot = lookDir.dot(toIns);
+        if (dot > 0.93 && toIns.dot(nrmW(i, ins.normal)) < -0.2 && (!best || dot > best.dot)) best = { ins, room: i, dot };
+      }
+    if (best) readingStore.set({ lines: [[...best.ins.words]], from: 'parede', room: rooms[best.room].name, t: performance.now() });
+    // a tira (opção): a mesma escrita por ~0,8 s, e só se alguma palavra tem anotação
+    const key = best ? `${best.room}:${best.ins.center.x.toFixed(2)}:${best.ins.center.y.toFixed(2)}:${best.ins.center.z.toFixed(2)}` : '';
+    if (key !== lookKey) {
+      lookKey = key;
+      lookHold = 0;
+      if (lookingStore.get()) lookingStore.set(null);
+    } else if (best) {
+      lookHold += step;
+      const want = configStore.get().glyphNotes && lookHold >= 0.8 && best.ins.words.some((w) => shortNote(w));
+      const cur = lookingStore.get();
+      if (want && cur?.key !== key) lookingStore.set({ words: [...best.ins.words], key });
+      else if (!want && cur) lookingStore.set(null);
+    }
+    // a palavra sob a mira
+    noteRay.setFromCamera(noteCenter, camera);
+    noteRay.far = 5;
+    const panels: THREE.Object3D[] = [];
+    const byMesh = new Map<THREE.Object3D, string>();
+    for (const i of activeRooms)
+      for (const ins of rooms[i].inscriptions ?? []) {
+        if (ins.hidden) continue;
+        for (const p of ins.panels)
+          if (p.id && p.mesh.visible) {
+            panels.push(p.mesh);
+            byMesh.set(p.mesh, p.id);
+          }
+      }
+    const hit = noteRay.intersectObjects(panels, false)[0];
+    const id = hit ? (byMesh.get(hit.object) ?? null) : null;
+    if (id !== aimId) {
+      aimId = id;
+      aimHold = 0;
+      if (aimNoteStore.get()) aimNoteStore.set(null);
+    } else if (id) {
+      aimHold += step;
+      const text = shortNote(id, 18);
+      if (aimHold >= 0.3 && text && aimNoteStore.get()?.text !== text) aimNoteStore.set({ id, text });
+    }
+  };
   const readInscriptions = (dt: number) => {
     inscGlow += (0.24 + Math.min(0.5, stageK * 0.085) + (configStore.get().highContrast ? 0.35 : 0) - inscGlow) * Math.min(1, dt * 0.8); // (alto contraste: a cal brilha mais)
     camera.getWorldDirection(lookDir);
@@ -2395,6 +2473,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         }
       }
     }
+    readNotes(dt, canRead);
     activeRooms.forEach((i) => {
       for (const ins of rooms[i].inscriptions ?? []) {
         ins.setGlow(inscGlow);
@@ -5385,6 +5464,9 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       perf: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, lights: scene.children.length }),
       three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
       puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
+      note: (id: string, text: string) => diary.setNote(id, text), // (testes) escreve uma anotação no caderno
+      cfg: (k: string, v: unknown) => configStore.set((c) => ({ ...c, [k]: v })), // (testes) muda uma configuração
+      reading: () => ({ r: readingStore.get(), look: lookingStore.get(), aim: aimNoteStore.get(), copy: diaryStore.get().copy ?? null }),
       ceilingDust: () => ceilingDust(curRoom),
       shadows: () => sslots.map((sl) => ({ on: !!sl.em, i: +sl.light.intensity.toFixed(1), p: sl.light.position.toArray().map((v) => +v.toFixed(2)), cast: sl.light.castShadow })),
       // (testes) as luzes comuns emprestadas agora: de que sala, a força e a nota (força / (1 + distância²)) com que ganharam a vaga

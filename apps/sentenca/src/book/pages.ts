@@ -72,6 +72,7 @@ export interface View {
   guide?: string | null; // o tutorial do caderno: a região (id) que pisca em ouro, mostrando onde tocar (DESIGN.md §75)
   blink?: boolean;
   hereOff?: boolean; // o "aqui" do mapa pisca devagar: na fase apagada ele não é pintado
+  copySel?: number | null; // na CÓPIA: o símbolo tocado (índice na frase copiada); a página da direita vira o lugar de anotar ele
 }
 // a moldura dourada que pisca em volta de onde o tutorial pede para tocar
 function guideFrame(ctx: CanvasRenderingContext2D, regs: Region[], view: View) {
@@ -103,11 +104,14 @@ export interface Layout {
   mapAt: number;
   notesAt: number;
   gemsAt: number; // o FIM do caderno: a guarda solta à esquerda e, à direita, a parte dura da capa de trás com o dado aberto (as gemas)
+  copyAt: number; // a CÓPIA (a última frase copiada, DESIGN.md §99), logo depois do índice; -1 = ainda nenhuma
 }
 
 export function layout(d: DiaryState): Layout {
-  // a ordem do caderno é a dela: o índice, o RELATO e as folhas que ela escreveu, os símbolos, as faces, os textos, o mapa e as notas
-  const herAt = 1;
+  // a ordem do caderno é a dela: o índice, o RELATO e as folhas que ela escreveu, os símbolos, as faces, os textos, o mapa e as notas. A CÓPIA
+  // (a última frase que o jogador copiou) fica entre o índice e o relato: é o que ele acabou de fazer
+  const copyAt = d.copy?.lines.length ? 1 : -1;
+  const herAt = copyAt > 0 ? 2 : 1;
   const herN = Math.ceil((HER_RELATO.length + HER_PAGES.length) / 2);
   const dictAt = herAt + herN;
   const dictN = Math.max(1, Math.ceil(d.order.length / PER_PAGE));
@@ -117,7 +121,7 @@ export function layout(d: DiaryState): Layout {
   const mapAt = textsAt + textsN;
   const notesAt = mapAt + 1;
   const gemsAt = notesAt + 1;
-  return { total: gemsAt + 1, dictN, dictAt, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt, gemsAt };
+  return { total: gemsAt + 1, dictN, dictAt, facesAt, textsAt, textsN, herAt, herN, mapAt, notesAt, gemsAt, copyAt };
 }
 // em que folha (spread) do dicionário fica um símbolo
 export function symbolSpread(id: string, d: DiaryState): number {
@@ -632,6 +636,107 @@ export const HER_ROW_BEFORE = 'Folhas';
 // (saves de antes desta regra: quem já escreveu sobre BRASEIRO no tutorial já leu o relato)
 const herKnown = (d: DiaryState) => d.herKnown ?? !!(d.notes?.brasa ?? '').trim();
 
+// o lugar de ANOTAR um símbolo (a página da direita dos Símbolos e da Cópia): o símbolo grande, onde foi visto, a anotação dela (sépia, se
+// houver) e as linhas do jogador
+function noteEditor(ctx: CanvasRenderingContext2D, x0: number, cur: string, d: DiaryState, view: View, regions: Region[]) {
+  const cx = x0 + CW / 2;
+  drawWord(ctx, cur, x0 + 8, 14, CW - 16, 36, INK); // o símbolo direto no papel, sem caixa
+  heading(ctx, 'VI EM', 'R', 54);
+  drawCentered(ctx, shortRoom(d.seen[cur]?.room || 'um lugar'), cx, 71, INK);
+  drawCentered(ctx, 'O QUE EU ACHO QUE', cx, 85, INK);
+  drawCentered(ctx, 'SIGNIFICA', cx, 95, INK);
+  ctx.fillStyle = INK2;
+  ctx.fillRect(x0 + 10, 106, CW - 20, 1);
+  ctx.fillRect(Math.round(cx) - 1, 105, 3, 3);
+  // a anotação DELA (tinta sépia, não se apaga): a 1ª linha, com o rabisco ao lado
+  const her = HER_NOTES[cur];
+  let by = 110;
+  let nl = 4;
+  if (her) {
+    drawText(ctx, her.text, x0 + 1, by, SEPIA);
+    if (her.doodle === 'brasa') herBrazier(ctx, x0 + CW - 26, by - 4);
+    by += LINE + 4;
+    nl = 3;
+  }
+  // área de anotação pautada (a do jogador)
+  const editing = view.editing === 'note';
+  ctx.fillStyle = editing ? RED : 'rgba(122,80,48,0.45)';
+  for (let i = 0; i < nl; i++) ctx.fillRect(x0, by + i * LINE + 9, CW, 1);
+  if (view.pulse) {
+    // modo guiado: o campo pisca em dourado pedindo uma palavra
+    ctx.fillStyle = GOLD;
+    ctx.fillRect(x0 - 2, by - 3, CW + 4, 1);
+    ctx.fillRect(x0 - 2, by + nl * LINE + 2, CW + 4, 1);
+    ctx.fillRect(x0 - 2, by - 3, 1, nl * LINE + 6);
+    ctx.fillRect(x0 + CW + 1, by - 3, 1, nl * LINE + 6);
+  }
+  const note = d.notes[cur] ?? '';
+  const txt = note + (editing && view.caret ? '_' : '');
+  if (!note && !editing) drawText(ctx, 'o que eu acho…', x0 + 1, by, INK2);
+  lines(ctx, wrap(txt, CH), x0 + 1, by, INK, nl);
+  regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: nl * LINE + 4, id: 'edit:note' });
+}
+
+// A CÓPIA (DESIGN.md §99): a frase que o jogador estava lendo quando abriu o caderno (ou as falas da última conversa), copiada a lápis, com a
+// anotação DELE embaixo de cada símbolo (a última linha; nada anotado = um pontilhado esperando). Cada frase começa numa fileira nova, dois
+// símbolos por fileira: três fileiras na página da esquerda e quatro na da direita. Tocar num símbolo faz a página da direita virar o lugar
+// de anotar ele (tocar de novo volta para a cópia).
+const COPY_ROWS_L = [46, 80, 114];
+const COPY_ROWS_R = [16, 52, 88, 124];
+export function copyCells(d: DiaryState): { id: string; side: 'L' | 'R'; row: number; col: number }[] {
+  const out: { id: string; side: 'L' | 'R'; row: number; col: number }[] = [];
+  let r = 0;
+  const cap = COPY_ROWS_L.length + COPY_ROWS_R.length;
+  for (const line of d.copy?.lines ?? []) {
+    for (let k = 0; k < line.length && r < cap; k += 2, r++) {
+      for (let c = 0; c < 2 && k + c < line.length; c++) {
+        const L = r < COPY_ROWS_L.length;
+        out.push({ id: line[k + c], side: L ? 'L' : 'R', row: L ? COPY_ROWS_L[r] : COPY_ROWS_R[r - COPY_ROWS_L.length], col: c });
+      }
+    }
+  }
+  return out;
+}
+function renderCopy(ctx: CanvasRenderingContext2D, side: 'L' | 'R', x0: number, d: DiaryState, view: View, regions: Region[]) {
+  const cells = copyCells(d);
+  const sel = view.copySel != null && cells[view.copySel] ? view.copySel : null;
+  if (side === 'L') {
+    heading(ctx, 'CÓPIA', side);
+    // de onde ele copiou ("parede, Sala 24" cabe nos 16 caracteres da linha)
+    const from = d.copy!.from === 'parede' ? `parede, ${shortRoom(d.copy!.room || '')}` : 'da conversa';
+    drawCentered(ctx, from.length > 16 ? `${from.slice(0, 15)}…` : from, x0 + CW / 2, 31, INK2);
+  }
+  if (side === 'R' && sel !== null) {
+    noteEditor(ctx, x0, cells[sel].id, d, view, regions);
+    return;
+  }
+  cells.forEach((c, i) => {
+    if (c.side !== side) return;
+    const cx = x0 + c.col * 52;
+    const cy = c.row;
+    if (sel === i) {
+      ctx.fillStyle = HILITE;
+      ctx.fillRect(cx - 1, cy - 1, 50, 34);
+    }
+    drawWord(ctx, c.id, cx + 3, cy, 42, 20, INK);
+    // a anotação dele, a lápis, cortada no que cabe (8 letras)
+    const raw = (d.notes[c.id] ?? '').split('\n').map((l) => l.trim()).filter(Boolean).pop() ?? '';
+    if (raw) {
+      const t = raw.length > 8 ? `${raw.slice(0, 7).trimEnd()}…` : raw;
+      drawCentered(ctx, t, cx + 24, cy + 22, INK);
+    } else {
+      ctx.fillStyle = INK2;
+      for (let px = cx + 10; px < cx + 39; px += 3) ctx.fillRect(px, cy + 29, 1, 1);
+    }
+    regions.push({ x: cx - 1, y: cy - 1, w: 50, h: 34, id: `csel:${i}` });
+  });
+  // (cópia curta: a página da direita fica livre, com um lembrete a lápis de que dá para anotar ali)
+  if (side === 'R' && sel === null && !cells.some((c) => c.side === 'R')) {
+    drawCentered(ctx, 'toque num símbolo', x0 + CW / 2, 70, INK2);
+    drawCentered(ctx, 'para anotar', x0 + CW / 2, 80, INK2);
+  }
+}
+
 // leva a lista de regiões a sério: dá para clicar em quase tudo que está escrito
 export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view: View, d: DiaryState, lay: Layout): Region[] {
   if (view.spread === lay.mapAt) return renderMapHalf(ctx, side, view, d, lay);
@@ -684,8 +789,10 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         ['Notas', '', lay.notesAt, 5],
         ['Gemas', `${(d.gems ?? []).length}/21`, lay.gemsAt, 6],
       ];
+      if (lay.copyAt > 0) rows.unshift(['Cópia', '', lay.copyAt, 2]);
+      const step = rows.length > 7 ? 11 : 12;
       rows.forEach(([label, n, to, ico], i) => {
-        const y = 46 + i * 12;
+        const y = 46 + i * step;
         indexIcon(ctx, ico, x0 + 1, y);
         drawText(ctx, label, x0 + 12, y, INK);
         if (n) drawText(ctx, n, x0 + CW - textWidth(n) - 2, y, INK2);
@@ -732,46 +839,13 @@ export function renderPage(ctx: CanvasRenderingContext2D, side: 'L' | 'R', view:
         });
       }
     } else if (cur) {
-      const cx = x0 + CW / 2;
-      drawWord(ctx, cur, x0 + 8, 14, CW - 16, 36, INK); // o símbolo direto no papel, sem caixa
-      heading(ctx, 'VI EM', side, 54);
-      drawCentered(ctx, shortRoom(d.seen[cur].room || 'um lugar'), cx, 71, INK);
-      drawCentered(ctx, 'O QUE EU ACHO QUE', cx, 85, INK);
-      drawCentered(ctx, 'SIGNIFICA', cx, 95, INK);
-      ctx.fillStyle = INK2;
-      ctx.fillRect(x0 + 10, 106, CW - 20, 1);
-      ctx.fillRect(Math.round(cx) - 1, 105, 3, 3);
-      // a anotação DELA (tinta sépia, não se apaga): a 1ª linha, com o rabisco ao lado
-      const her = HER_NOTES[cur];
-      let by = 110;
-      let nl = 4;
-      if (her) {
-        drawText(ctx, her.text, x0 + 1, by, SEPIA);
-        if (her.doodle === 'brasa') herBrazier(ctx, x0 + CW - 26, by - 4);
-        by += LINE + 4;
-        nl = 3;
-      }
-      // área de anotação pautada (a do jogador)
-      const editing = view.editing === 'note';
-      ctx.fillStyle = editing ? RED : 'rgba(122,80,48,0.45)';
-      for (let i = 0; i < nl; i++) ctx.fillRect(x0, by + i * LINE + 9, CW, 1);
-      if (view.pulse) {
-        // modo guiado: o campo pisca em dourado pedindo uma palavra
-        ctx.fillStyle = GOLD;
-        ctx.fillRect(x0 - 2, by - 3, CW + 4, 1);
-        ctx.fillRect(x0 - 2, by + nl * LINE + 2, CW + 4, 1);
-        ctx.fillRect(x0 - 2, by - 3, 1, nl * LINE + 6);
-        ctx.fillRect(x0 + CW + 1, by - 3, 1, nl * LINE + 6);
-      }
-      const note = d.notes[cur] ?? '';
-      const txt = note + (editing && view.caret ? '_' : '');
-      if (!note && !editing) drawText(ctx, 'o que eu acho…', x0 + 1, by, INK2);
-      lines(ctx, wrap(txt, CH), x0 + 1, by, INK, nl);
-      regions.push({ x: x0 - 2, y: by - 2, w: CW + 4, h: nl * LINE + 4, id: 'edit:note' });
+      noteEditor(ctx, x0, cur, d, view, regions);
     } else {
       lines(ctx, wrap('o que eu vi.', CH), x0, 30, SEPIA, 2);
       lines(ctx, wrap('o que eu acho.', CH), x0, 44, SEPIA, 2);
     }
+  } else if (s === lay.copyAt && d.copy) {
+    renderCopy(ctx, side, x0, d, view, regions);
   } else if (s === lay.facesAt) {
     // as faces, sem explicação: o nome das que o dado já tem; nas outras, só o "?" dela
     if (side === 'L') heading(ctx, 'FACES', side);

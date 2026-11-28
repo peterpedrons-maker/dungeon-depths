@@ -5,7 +5,8 @@ import { ui } from '../story/ui';
 import { HER_PAGES, HER_RELATO } from '../story/herpages';
 import { dialogue, dialogueStore } from '../story/dialogue';
 import { BOARD_H, BOARD_W, diaryCoverArt, diaryEdgeArt, diaryLeatherArt, diarySpineArt, drawGemBoard, gemSocketPx } from './bookart';
-import { blankPaper, currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
+import { readingStore, TALK_COPY_MS } from '../story/reading';
+import { blankPaper, copyCells, currentFloor, ERASER_PEN, FREE_MAX, layout, MAP_AREA, NOTE_MAX, PH, PW, renderPage, stampBox, stampChoice, STAMP_PEN, symbolSpread, TRAY_N, trayStart, type Region, type View } from './pages';
 
 // O diário: um livro de verdade, no HUD. Duas metades presas ao lombo, folhas que viram, e as páginas
 // (desenhadas em pixels no próprio papel) que se escolhem pelo índice da contracapa.
@@ -601,6 +602,17 @@ export function createDiaryBook(env: BookEnv) {
       stopEdit();
       view.sel = id.slice(4);
       refresh();
+    } else if (id.startsWith('csel:')) {
+      // a CÓPIA (DESIGN.md §99): tocar num símbolo abre o lugar de anotar ele na página da direita; tocar de novo volta para a cópia
+      const i = Number(id.slice(5));
+      const cell = copyCells(d)[i];
+      stopEdit();
+      if (!cell || view.copySel === i) view.copySel = null;
+      else {
+        view.copySel = i;
+        view.sel = cell.id;
+      }
+      refresh();
     } else if (id === 'edit:note') startEdit('note');
     else if (id === 'edit:free') startEdit('free');
     else if (id.startsWith('floor:')) {
@@ -827,6 +839,20 @@ export function createDiaryBook(env: BookEnv) {
             refresh();
           }
           diary.readPage();
+        }
+        // A CÓPIA (DESIGN.md §99): abriu o caderno LENDO (olhando uma escrita da parede, ou logo depois de uma conversa): ele abre na página
+        // com a frase copiada e as anotações embaixo de cada símbolo
+        const rd = readingStore.get();
+        const age = rd ? performance.now() - rd.t : Infinity;
+        if (want && rd && !np && !ui.guided() && !presenting && (rd.from === 'parede' ? age < 800 : age < TALK_COPY_MS)) {
+          diary.setCopy({ lines: rd.lines.map((l) => [...l]), from: rd.from, room: rd.room });
+          if (rd.from === 'conversa') readingStore.set(null); // (a conversa vira cópia uma vez só)
+          stopEdit();
+          flip = null;
+          leaves.forEach((lf) => (lf.group.visible = false));
+          view.copySel = null;
+          view.spread = target = layout(dState()).copyAt;
+          refresh();
         }
         if (want && ui.guided() && !presenting) {
           // o caderno abre no ÍNDICE e o personagem começa a olhar parte por parte
