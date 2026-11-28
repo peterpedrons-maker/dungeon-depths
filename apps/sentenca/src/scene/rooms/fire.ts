@@ -107,6 +107,10 @@ export interface FireExtraApi {
   lines(): { lit: boolean; good: boolean; preLit: boolean; door: boolean }[];
   lockRisen(): boolean; // a Casa já aceitou o conjunto (ou a trava já abriu)?
   failLines(cold?: number): void; // a Casa apaga as frases acesas (as de demonstração ficam) e recusa o fogo `cold` segundos (sem escuro)
+  // a Casa APONTA estas frases (índices de lines()) por `secs` segundos (parados numa cena): a luz corre por elas de novo e de novo (só a aparência;
+  // não acende nem conta no julgamento). Chamar de novo recomeça a contagem e a corrida.
+  cite(idx: number[], secs: number): void;
+  setLines(on: boolean[]): void; // acende/apaga as frases sem animação (as de demonstração e a da porta ficam como estão)
 }
 export interface FireExtra {
   update?(dt: number, t: number): void;
@@ -118,6 +122,7 @@ export interface FireExtra {
   floorY?(x: number, z: number, feet: number): number; // chão com alturas (plataformas, rampa)
   dieFloor?(x: number, z: number): number;
   clampDie?(p: THREE.Vector3, vel: THREE.Vector3, e: number, R: number): void;
+  judgeFail?(lit: boolean[]): void; // (trava julgada na porta) a Casa recusou o conjunto; `lit` = as frases acesas ANTES de ela apagar tudo
   skip?(): void; // salvamento: a sala volta resolvida (grades em cima etc.)
 }
 
@@ -546,6 +551,8 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     gap: number; // folga vertical do toque: metade do espaço até a frase de cima/de baixo
     nx: number; // para onde a parede olha
     nz: number;
+    cite?: number; // segundos em que a Casa ainda APONTA esta frase (api.cite): a luz corre por ela sem que ela esteja acesa
+    citeT?: number; // (apontando) quanto tempo a luz já ficou parada no fim da frase: passado um instante, ela corre de novo
   }
   // as PRATELEIRAS dos soquetes: posicionar o dado nelas acende a frase (são pontos de encaixe do "posicionar")
   const shelves: Socket[] = [];
@@ -990,6 +997,23 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           lockProg = 0;
           lockCold = cold;
         },
+        cite(idx, secs) {
+          for (const k of idx) {
+            const l = litLines[k];
+            if (!l) continue;
+            l.burn.pulse(); // (a que já brilha, acesa ou já apontada: a luz corre de novo por ela; a apagada começa a correr no próximo quadro)
+            l.cite = secs;
+            l.citeT = 0;
+          }
+        },
+        setLines(on) {
+          litLines.forEach((l, k) => {
+            if (l.preLit || l.door || on[k] === undefined) return;
+            l.lit = on[k];
+            l.burn.set(l.lit, true);
+            l.fire = l.lit ? 1 : 0;
+          });
+        },
       })
     : {};
 
@@ -998,6 +1022,8 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
     plateOpen = false;
     litLines.forEach((l) => {
       l.lit = l.preLit;
+      l.cite = 0;
+      l.citeT = 0;
       l.fire = l.preLit ? 1 : 0;
       l.flame.visible = l.preLit;
       l.burn.set(l.preLit, true);
@@ -1250,6 +1276,7 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
                   ctx.sfx('rise');
                   ctx.caption(...(lk.judged ?? ['A Casa leu', 'Os pilares de fogo subiram.']), '#ffd36b');
                 } else {
+                  extra.judgeFail?.(litLines.map((l) => l.lit));
                   litLines.forEach((l) => (l.lit = l.preLit));
                   lockCold = lk.penalty ?? 10;
                   ctx.sfx('error');
@@ -1299,7 +1326,17 @@ export function buildFireRoom(ctx: Ctx, spec: FireSpec): Room {
           l.emb.visible = !risen && !l.lit && l.fire < 0.15 && lockCold <= 0;
           const es = 0.17 + 0.07 * (0.5 + 0.5 * Math.sin(t * 3 + l.z));
           l.emb.scale.set(es, es, 1);
-          l.burn.set(l.lit);
+          if (l.cite) {
+            // APONTAR é a luz correndo pela frase de novo e de novo (a acesa fica parada): assim a apontada não se confunde com a acesa, nem a
+            // demonstração apontada (sempre acesa) com a que não foi. Numa cena a Casa espera, como a luz.
+            const st = ctx.paused() ? 0 : dt;
+            l.cite = Math.max(0, l.cite - st);
+            if (l.cite && !l.burn.running() && l.burn.level() > 0.99 && (l.citeT = (l.citeT ?? 0) + st) > 0.6) {
+              l.burn.pulse(true); // (as repetições são mudas: a nota de cada símbolo soa só quando a Casa aponta, api.cite)
+              l.citeT = 0;
+            }
+          }
+          l.burn.set(l.lit || !!l.cite);
           l.burn.highlight(l === aimed);
           l.burn.update(ctx.paused() ? 0 : dt, t); // (durante uma cena, como a do dado queimando, a luz espera: ela escreve à vista)
           l.fire = l.burn.level();

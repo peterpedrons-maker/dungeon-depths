@@ -478,13 +478,19 @@ export const FIRE_LEI: FireSpec = {
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 // SALA 15 · O FOGO QUE CORRE (nível 8; tools/verify_fogo_corre.mjs; Ficha 8)
 // Salão aberto com nove plataformas em grade 3×3, em alturas diferentes, um braseiro em cada. Canaletas descem de uma plataforma a outra (a altura
-// mostra o sentido) e cada uma leva um TEMPO (reta e curta 1 s; com uma volta 2 s; em zigue-zague 3 s). Cada braseiro queima SÓ 5,5 s e SÓ UMA VEZ por
-// tentativa (o óleo acaba: o pote fica vazio). A porta («ACENDER DOIS BRASEIRO TEMPO» + QUATRO talhado) abre se, num instante, os acesos forem
-// EXATAMENTE os quatro cantos. Quando tudo se apaga sem acertar: escuro e a Casa reabastece. Solução: fogo no centro; ~4 a 5 s depois, no canto da
-// frente à esquerda (janela de 3 a 7 s: o dado leva uns 3 a 4 s para voltar à mão e ser arremessado de novo, então a janela fica no meio desse tempo).
+// mostra o sentido) e cada uma leva um TEMPO (reta e curta 1 s; com uma volta 2 s; em zigue-zague 3 s). Cada braseiro queima SÓ 6,5 s (o do centro,
+// menor, 5,75 s) e SÓ UMA VEZ por tentativa (o óleo acaba: o pote fica vazio). A porta («ACENDER DOIS BRASEIRO TEMPO» + QUATRO talhado) abre se, num
+// instante, os acesos forem EXATAMENTE os quatro cantos. Quando tudo se apaga sem acertar: escuro e a Casa reabastece. Solução: fogo no centro; quando
+// o centro começar a morrer (~4 s), no canto da frente à esquerda (janela de ~2,8 a ~8,4 s. O dado que acende volta à mão logo depois da cena dele
+// queimando, que para o relógio: quem acende o 6 com pressa erra sempre, porque o 6 também corre para o 7).
 // C5: tochas nos nove postes + 3 de parede; no escuro de uma tentativa que falhou, MENOS em cal no teto; acender os postes do meio (3, 4, 5).
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-const FC = { hx: 9, z0: -18, h: 9, burn: 5.5 };
+const FC = { hx: 9, z0: -18, h: 9 };
+// quanto queima cada braseiro (s). O do CENTRO é MENOR e queima menos (a regra da Chama Curta: o tamanho diz quanto dura; DESIGN.md §94): ele é o
+// primeiro a morrer, aos 4,25 s, e é essa a referência de tempo para a 2ª ignição. (Com 5,5 e o centro a 4,5 a janela começava em 1,55 s, no meio
+// do tempo de quem acende o 6 com pressa: acertar dependia da mão; tools/verify_fogo_corre.mjs mede a pressa e as âncoras)
+const FC_BURN = [6.5, 6.5, 6.5, 6.5, 5.75, 6.5, 6.5, 6.5, 6.5];
+const FC_DIE = 1.5; // a fase de MORRER: a chama treme, encolhe de vez, solta fumaça e o glifo TEMPO pulsa
 const FC_X = [-5, 0, 5];
 const FC_DZ = [4.2, 9.2, 14.2]; // linha 0 = a do fundo (perto da porta)
 const FC_HY = [0.25, 0.55, 0.25, 1.85, 1.0, 1.0, 1.85, 1.4, 0.25]; // altura de cada plataforma (o fogo só desce)
@@ -617,14 +623,50 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
   // luz alta e fria para o salão; os braseiros fazem o resto
   for (const [x, z] of [[X0 + 0.1, Z0 + 2.5], [X1 - 0.1, Z0 + 7.5], [X0 + 0.1, Z0 + 12], [X1 - 0.1, Z0 + 17]] as [number, number][]) kit.torch(x, 4.6, z, x < 0 ? 1 : -1, 0, x + z, 0xb8c4f0, 24);
 
-  // ── a regra: queima 5,5 s, uma vez; o fogo corre; os quatro cantos sozinhos num instante ──
+  // a fumaça de quem está morrendo (pontos cinzentos que sobem e se espalham)
+  const NSM = 80;
+  const smP = new Float32Array(NSM * 3);
+  const smV = new Float32Array(NSM * 3);
+  const smL = new Float32Array(NSM);
+  for (let k = 0; k < NSM; k++) smP[k * 3 + 1] = -50;
+  const smGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(smP, 3));
+  const smoke = new THREE.Points(smGeo, new THREE.PointsMaterial({ color: 0x6a6670, size: 4, sizeAttenuation: false, transparent: true, opacity: 0.6, depthWrite: false }));
+  smoke.frustumCulled = false;
+  kit.group.add(smoke);
+  let smNext = 0;
+  const smokeT = Array(9).fill(-1);
+  const puff = (at: THREE.Vector3) => {
+    const k = smNext++ % NSM;
+    smP[k * 3] = at.x + (Math.random() - 0.5) * 0.2;
+    smP[k * 3 + 1] = at.y + 0.35;
+    smP[k * 3 + 2] = at.z + (Math.random() - 0.5) * 0.2;
+    smV[k * 3] = (Math.random() - 0.5) * 0.25;
+    smV[k * 3 + 1] = 0.7 + Math.random() * 0.4;
+    smV[k * 3 + 2] = (Math.random() - 0.5) * 0.25;
+    smL[k] = 1.4 + Math.random() * 0.5;
+  };
+  const smokeTick = (dt: number) => {
+    for (let k = 0; k < NSM; k++) {
+      if (smL[k] <= 0) {
+        smP[k * 3 + 1] = -50;
+        continue;
+      }
+      smL[k] -= dt;
+      for (let c = 0; c < 3; c++) smP[k * 3 + c] += smV[k * 3 + c] * dt;
+      smV[k * 3] *= 1 + dt * 0.8;
+      smV[k * 3 + 2] *= 1 + dt * 0.8;
+    }
+    smGeo.attributes.position.needsUpdate = true;
+  };
+
+  // ── a regra: queima 6,5 s (o centro 5,75), uma vez; o fogo corre; os quatro cantos sozinhos num instante ──
   const used = Array(9).fill(false);
   const left = Array(9).fill(0);
   let refill = -1;
   const ignite = (i: number, quiet = false) => {
     if (used[i] || braziers[i].lit) return;
     used[i] = true;
-    left[i] = FC.burn;
+    left[i] = FC_BURN[i];
     braziers[i].light(true, quiet); // (com som: o próprio braseiro toca o fogo e a cena do dado queimando)
     for (const ch of chans) if (ch.a === i && ch.t < 0 && !used[ch.b]) ch.t = 0;
   };
@@ -647,13 +689,20 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
       const p = ctx.paused();
       const step = p ? 0 : dt;
       if (!api.solved() && refill < 0) for (let i = 0; i < 9; i++) if (braziers[i].touched() && !used[i]) ignite(i);
-      // o óleo: 5,5 s de chama; a chama encolhe no último segundo e meio
+      // o óleo é o relógio: a chama encolhe devagar (até ~60%) enquanto queima e, no último 1,5 s, MORRE: treme, encolhe de vez e solta fumaça
       for (let i = 0; i < 9; i++) {
         if (!braziers[i].lit) continue;
         left[i] -= step;
-        braziers[i].flameK = left[i] < 1.5 ? Math.max(0.15, left[i] / 1.5) : 1;
-        if (left[i] <= 0 && !api.solved()) braziers[i].light(false);
+        const L = left[i];
+        braziers[i].flameK =
+          L > FC_DIE ? 0.62 + (0.38 * (L - FC_DIE)) / (FC_BURN[i] - FC_DIE) : Math.max(0.15, (0.62 * L) / FC_DIE) * (0.7 + 0.3 * Math.abs(Math.sin(t * 23 + i * 1.7)));
+        if (L < FC_DIE && !p && t - smokeT[i] > 0.07) {
+          smokeT[i] = t;
+          puff(braziers[i].bowl);
+        }
+        if (L <= 0 && !api.solved()) braziers[i].light(false);
       }
+      smokeTick(step);
       // as canaletas
       for (const ch of chans) {
         if (ch.t < 0) continue;
@@ -690,7 +739,8 @@ function fogoCorreExtra(api: FireExtraApi): FireExtra {
         refill -= step;
         if (refill < 0) refillAll();
       }
-      for (const [k, glow] of [['tempo', braziers.some((b) => b.lit && b.flameK < 1) ? 0.55 + 0.45 * Math.sin(t * 7) : litNow.length ? 0.35 : 0]] as [string, number][]) api.glow(k, glow, dt);
+      // o glifo TEMPO pulsa só quando alguma chama está MORRENDO (a chama que encolhe devagar não pulsa)
+      for (const [k, glow] of [['tempo', braziers.some((b, i) => b.lit && left[i] < FC_DIE) ? 0.55 + 0.45 * Math.sin(t * 7) : litNow.length ? 0.35 : 0]] as [string, number][]) api.glow(k, glow, dt);
     },
     reset() {
       refillAll();
@@ -710,7 +760,7 @@ export const FIRE_FOGO_CORRE: FireSpec = {
   hx: FC.hx,
   z0: FC.z0,
   h: FC.h,
-  braziers: [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ x: fcCell(i).x, dz: fcCell(i).dz, y: fcCell(i).y })),
+  braziers: [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ x: fcCell(i).x, dz: fcCell(i).dz, y: fcCell(i).y, scale: i === 4 ? 0.72 : undefined })), // (o do centro é o menor: queima menos)
   rule: { kind: 'custom', lamps: 1 },
   words: ['acender', 'n2', 'brasa', 'tempo'],
   torches: 'few',

@@ -2105,6 +2105,41 @@ Madeira, Ponte de Frases, Sombra, Escuro, Lei Pequena, Fogo que Corre, Claustro 
   tempo todo; os fogaréus viraram cestos com aro e garras, com carvão em monte e **a brasa pulsando** enquanto apagados, e o poste barra o
   jogador (antes só o dado). A brasa dos soquetes (`emberTexture`, `fire.ts`) agora é exportada e é a mesma nos três lugares.
 
+## 94. O enigmista; a Ponte de Frases sem o atalho de pisar; o tempo do Fogo que Corre; as perguntas de IGUAL e TODOS (pedidos do Pedro)
+
+- **O agente de puzzle** (`.claude/agents/enigmista.md`): o Pedro pediu que todo puzzle feito ou corrigido passe por um agente de puzzle, que não
+  existia (o cenógrafo é de arte e level design). O **enigmista** projeta e confere: solução única num verificador (`tools/verify_*.mjs`), dedução e
+  não sorte (mede o custo de testar à força, acender tudo, chutar), o que o erro ensina, a língua, a régua (§17) e janelas de tempo com âncora que
+  se vê. Ele projetou as duas mudanças abaixo e conferiu a implementação.
+- **A Ponte de Frases sem o oráculo** (sala 14, `rooms/chapter1c.ts`): na 1ª versão (§93), pisar numa laje dizia se a frase dela era verdadeira, e
+  dava para resolver acendendo uma por uma e pisando, sem entender VERDADE (o Pedro: "a ideia continua a mesma, mais orgânica, que não dependa só
+  de sorte; o jogador nem aprende o que está querendo dizer"; e "aumentar o tempo de punição não é solução"). Agora **a ponte é uma peça só**: as
+  lajes erguidas se travam e dá para andar nela à vontade; **a Casa pesa a ponte quando o jogador pisa na última fileira**, e qualquer mentira acesa
+  (em qualquer lugar) derruba a ponte inteira. Ela **não diz qual frase mentiu: cita as confirmadas que a mentira nega** (a luz corre por elas no
+  tremor e, quando a luz volta, por mais 6 s, a luz correndo por elas de novo e de novo; `FPF_CITA`, `CITE_S`). O erro ensina: comparar as citadas com o que se acendeu leva à mentira por uma cadeia de 1 ou 2
+  passos. A grade passou a **2 × 5** (fileiras de 3 m; a sala e o fosso não mudaram) com seis boatos (três verdadeiros, três falsos) e as mesmas
+  três confirmadas (ordem 3, 1, 2, 4). A **abertura** ensina a regra sem custo: a sala começa com a ponte inteira acesa (a ponte de quem veio antes),
+  que aguenta até a última fileira, cai e cita as três confirmadas. O custo de chutar (`verify_ponte_frases.mjs`): pisar não responde; chutar rota
+  custa 2,5 quedas em média; acender tudo e ir apagando, ~31; deduzir, nenhuma. Motor: `api.cite(idx, secs)` (a luz da frase sem acendê-la),
+  `api.setLines(on)`, `extra.judgeFail(lit)` (o erro da porta também cita) e `BurnLine.pulse(silent)` (a frase já acesa repete a luz; só a corrida
+  que a Casa dispara soa, as repetições são mudas). O frio da queda é de 1 s (`failLines(1)`): só barra um dado em voo enquanto a ponte cede (um frio
+  maior fazia a 1ª frase da volta ser recusada). Na conferência, o enigmista achou e fechou três buracos: andando ou correndo dava para sair da
+  última fileira antes de a ponte ceder (0,7 s de tremor), e da borda da porta pôr um pé na fileira 4 virava o oráculo de novo, sem queda; agora,
+  enquanto a Casa pesa, a borda não recebe ninguém. A Casa espera a cena do dado queimando acabar para pesar (a mentira chega a brilhar). E a
+  citação se repete quando a luz volta. A estratégia "testar de cima da ponte, um boato de cada vez" custa 3 quedas, sempre: é trabalho, não sorte.
+- **O tempo do Fogo que Corre** (sala 20, `fogoCorreExtra`): a janela de 3 a 7 s não tinha referência que se visse (§91, item 3). Agora **o braseiro do
+  centro é menor e queima menos** (a regra da Chama Curta: o tamanho diz quanto dura; `FC_BURN`: 6,5 s cada, o centro 5,75 s), a chama de cada
+  braseiro encolhe devagar enquanto queima (até ~62%) e **morre** no último 1,5 s (treme, encolhe de vez, solta fumaça e o glifo TEMPO pulsa só aí).
+  A janela é de ~2,8 a 8,4 s e o centro é o primeiro a morrer, aos 4,25 s. Na conferência, o enigmista mediu no navegador que o dado que ACENDE volta
+  à mão ~0,2 s depois (a cena de 0,3 s para o relógio da sala), e não 2,45 s: com o centro a 4,5 s a janela começava no meio do tempo de quem acende
+  o 6 com pressa, e a mesma ideia dava certo ou errado conforme a mão. Com os tempos novos **a pressa erra sempre** (0,7 s de sobra; o 7 aceso junto
+  com os cantos mostra por quê) e quem espera um sinal da sala acerta: o último canto acender (0,75 s de folga), o centro começar a morrer (2 s) ou o
+  centro apagar (0,8 s). Os cantos 0 e 8 começam a morrer aos 7 s, o aviso de "tarde demais". No celular, quem leva ~1,8 s para mirar com pressa já
+  cai na beira da janela (o verificador avisa). Ele confere que o jogo usa os mesmos tempos.
+- **As perguntas de IGUAL e TODOS** (`quiz.ts`): estavam prontas e nenhuma sala as chamava (o verificador de vocabulário já contava com elas). IGUAL
+  vem na chegada ao pé da Escadaria (`Room.calm` em `respiro4.ts`; a saída dela dá direto na passarela da Biblioteca, sem corredor) e TODOS no
+  corredor depois da Memória, antes do Tribunal.
+
 ## 95. Polimento: a neblina lá fora, o fogo e a luz forte (cenógrafo, pedido do Pedro)
 
 "Melhorar o visual do jogo, mantendo todas as coisas, só deixar mais polido: sombras, efeito do fogo... Na cutscene inicial, o lado de fora como
