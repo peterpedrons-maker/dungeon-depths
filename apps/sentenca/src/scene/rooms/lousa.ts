@@ -119,7 +119,7 @@ export function buildLousa(ctx: Ctx): Room {
   keyLight.shadow.bias = -0.003;
   kit.group.add(keyLight, keyLight.target);
   kit.lightPool(0, 0.2, 2.6, 0, 0xffa050).opacity = 0.18;
-  kit.beamDust(0, 0.4, 1.0, 0.3, 3.2, 30, 0xffe0b0); // poeira só no feixe da chama alta
+  kit.beamDust(0, 0.4, 1.0, 0.3, 3.2, 30, 0xffe0b0, 0); // poeira só no feixe da chama alta (sem o tubo de luz: esta luz vem de lado)
 
   // ── o dado de pedra, meio enterrado (UM em cima, DOIS e TRÊS dos lados) ──
   // (mais longe do braseiro da direita: a poça e a luz dele não passam mais por cima do dado)

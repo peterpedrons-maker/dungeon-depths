@@ -8,6 +8,7 @@
 //  · Fumaça de tocha e gota que pinga (vida, pouca e com motivo).
 // Tudo em metros; as texturas repetem a cada `ST` metros (a mesma densidade de pixel do resto do jogo: ~53 px por metro).
 import * as THREE from 'three';
+import { fineDust, lightShaft } from './fx';
 import { THEMES, type Theme } from './textures';
 
 export const ST = 2.4; // metros por ladrilho das texturas de cantaria (128 px)
@@ -684,30 +685,10 @@ export function reliefPlaneMat(t: Tex2, w: number, h: number, bumpScale = 3, til
   return new THREE.MeshLambertMaterial({ map, bumpMap: bump, bumpScale });
 }
 
-// POEIRA DENTRO DE UM FEIXE INCLINADO (de `from` a `to`): os grãos flutuam devagar dentro do cone de luz (só no feixe, nunca no ar todo)
+// POEIRA DENTRO DE UM FEIXE INCLINADO (de `from` a `to`): os grãos flutuam devagar dentro do cone de luz (só no feixe, nunca no ar todo).
+// (DESIGN.md §95) Agora é a poeira FINA do `fx.ts` (um pixel por grão, cintilando) e o feixe que se vê no ar; `n` é o número de antes.
 export function beamMotes(parent: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3, n = 48, color = 0xc8d4f0, opacity = 0.5) {
-  const dir = to.clone().sub(from);
-  const pos = new Float32Array(n * 3);
-  const seeds = Array.from({ length: n }, (_, i) => [((i * 0.618) % 1) * 0.8 + 0.12, Math.random() * Math.PI * 2, Math.sqrt(Math.random()), Math.random() * 10]);
-  const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity, fog: false, depthWrite: false }));
-  pts.frustumCulled = false;
-  parent.add(pts);
-  const ref = Math.abs(dir.clone().normalize().z) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
-  const side = ref.cross(dir).normalize();
-  const up = dir.clone().cross(side).normalize();
-  const p = new THREE.Vector3();
-  return (t: number) => {
-    for (let i = 0; i < n; i++) {
-      const [t0, a0, r0, k] = seeds[i];
-      const along = 0.12 + ((t0 + t * 0.006 * (1 + (k % 1))) % 1) * 0.82;
-      const rad = (0.12 + along * 0.95) * r0;
-      const a = a0 + t * 0.15 * ((k % 2) - 0.5);
-      p.copy(from).addScaledVector(dir, along).addScaledVector(side, Math.cos(a) * rad).addScaledVector(up, Math.sin(a) * rad);
-      pos[i * 3] = p.x;
-      pos[i * 3 + 1] = p.y + Math.sin(t * 0.7 + k) * 0.03;
-      pos[i * 3 + 2] = p.z;
-    }
-    geo.attributes.position.needsUpdate = true;
-  };
+  lightShaft(parent, from, to, 0.28, 1.05, color, 0.075);
+  fineDust(parent, from, to, 0.24, 0.98, Math.round(n * 4), color, Math.min(1, opacity * 2));
+  return (_t: number) => {};
 }

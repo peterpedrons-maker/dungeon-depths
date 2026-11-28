@@ -16,7 +16,7 @@ import { glyphsOf } from '../../story/lexicon';
 import { diary } from '../../story/diary';
 import { ui } from '../../story/ui';
 import type { Box, Ctx, Room } from '../types';
-import { column, drip, flagstones, floorPlane, groinVault, masonry, reliefMat, ST, stoneBox, torchSmoke, transverseArch } from '../arch';
+import { beamMotes, column, drip, flagstones, floorPlane, groinVault, masonry, reliefMat, ST, stoneBox, torchSmoke, transverseArch } from '../arch';
 import { windNear } from '../ambience';
 
 export type VestVariant = 1 | 2 | 3 | 4;
@@ -261,13 +261,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
       };
     }
     // (as torres escuras da Casa contra o céu saíram, DESIGN.md §94: lá fora não se sabe o que existe)
-    // coluna de luz (translúcida) e mancha de luz no chão
-    const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(SHAFT.r * 0.95, SHAFT.r * 1.3, H, 20, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0.055, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
-    );
-    beam.position.set(SHAFT.x, H / 2, SHAFT.z);
-    kit.group.add(beam);
+    // a mancha de luz no chão (a coluna de luz agora é o FEIXE do `beamDust`, DESIGN.md §95: antes era um tubo de cor chapada)
     const pool = new THREE.Mesh(
       new THREE.CircleGeometry(1.6, 24),
       new THREE.MeshBasicMaterial({ color: 0xcfd8f0, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }),
@@ -276,7 +270,7 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     pool.position.set(SHAFT.x, 0.02, SHAFT.z);
     kit.group.add(pool);
     kit.light(SHAFT.x, H - 0.3, SHAFT.z, 0xcfdcff, 70);
-    kit.beamDust(SHAFT.x, SHAFT.z, SHAFT.r * 1.05, 0.2, H - 0.2, 44, 0xe8eeff); // poeira só no feixe do poço
+    kit.beamDust(SHAFT.x, SHAFT.z, SHAFT.r * 1.0, 0.1, H, 44, 0xe8eeff, 0.15); // o feixe do poço e a poeira fina dentro dele (o mais forte do jogo: é o furo do UM)
   } else if (A2) {
     // três abóbadas de aresta, uma por tramo (entre a entrada, os dois pares de colunas e a porta); pedra mais miúda e escura que a parede
     const vaultM = reliefMat(masonry({ rows: [12, 16], blocks: [22, 42], seed: 302, theme: D.theme, tint: 0.8, cracks: 0.3 }), 2.2);
@@ -502,34 +496,9 @@ export function buildVestibulo(ctx: Ctx, v: VestVariant): Room {
     moon.shadow.camera.far = 16;
     moon.shadow.bias = -0.002;
     kit.group.add(moon, moon.target);
-    // nada de cone desenhado (a paleta o achataria num bloco): o feixe se lê pela POEIRA que flutua dentro dele e pela luz onde ele cai
-    {
-      const from = moon.position.clone();
-      const dir = moon.target.position.clone().sub(from);
-      const N = 56;
-      const pos = new Float32Array(N * 3);
-      const seeds = Array.from({ length: N }, (_, i) => [((i * 0.618) % 1) * 0.8 + 0.12, Math.random() * Math.PI * 2, Math.sqrt(Math.random()), Math.random() * 10]);
-      const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xc8d4f0, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.5, fog: false, depthWrite: false }));
-      pts.frustumCulled = false;
-      kit.group.add(pts);
-      const side = new THREE.Vector3(0, 0, 1).cross(dir).normalize();
-      const up = dir.clone().cross(side).normalize();
-      lifeFx.push((t) => {
-        for (let i = 0; i < N; i++) {
-          const [t0, a0, r0, k] = seeds[i];
-          const tt = (t0 + t * 0.006 * (1 + (k % 1))) % 1; // descem devagar ao longo do feixe
-          const along = 0.12 + tt * 0.82;
-          const rad = (0.12 + along * 0.95) * r0;
-          const a = a0 + t * 0.15 * ((k % 2) - 0.5);
-          const p = from.clone().addScaledVector(dir, along).addScaledVector(side, Math.cos(a) * rad).addScaledVector(up, Math.sin(a) * rad);
-          pos[i * 3] = p.x;
-          pos[i * 3 + 1] = p.y + Math.sin(t * 0.7 + k) * 0.03;
-          pos[i * 3 + 2] = p.z;
-        }
-        geo.attributes.position.needsUpdate = true;
-      });
-    }
+    // o feixe da fresta no ar e a poeira fina dentro dele (DESIGN.md §95; antes só 56 grãos de 2 × 2 pixels, sem feixe: a paleta achatava o
+    // cone de cor chapada num bloco)
+    lifeFx.push(beamMotes(kit.group, moon.position.clone(), moon.target.position.clone(), 56, 0xc8d4f0, 0.5));
     // o caminho gasto da entrada à porta, teias nos cantos altos do fundo
     kit.wear([[0, 1.6], [0, -6], [0.2, -14.4]], 1.5);
     kit.web(X0, H + 0.2, Z0 + 0.5, 1, 0);

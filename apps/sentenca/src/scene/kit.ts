@@ -29,6 +29,7 @@ import {
 } from './textures';
 import { makeInscription, type InscribeOpts, type Inscription } from './inscription';
 import { wallTorch } from './models';
+import { fineDust, fxClock, lightShaft } from './fx';
 import type { Box, Rect, Surface } from './types';
 
 export const T = 1.2; // metros por "tile" de textura
@@ -135,7 +136,6 @@ export class Kit {
   // se registram aqui; as escritas entram sozinhas (kit.inscriptions). No `bake`, a tocha que estiver perto demais desliza pela parede.
   keepClear: [THREE.Vector3, number][] = [];
   private poolTex: THREE.Texture | null = null;
-  private beams: { geo: THREE.BufferGeometry; cx: number; cz: number; r: number; y0: number; y1: number; seed: number[] }[] = [];
   private flicker = true;
   // lively: chamas mais vivas (a luz oscila de verdade e o ponto de luz treme alguns cm: com as luzes de sombra, a sombra dança)
   lively = false;
@@ -540,21 +540,13 @@ export class Kit {
 
   // POEIRA SÓ DENTRO DE UM FEIXE DE LUZ (DIRECAO_DE_ARTE.md §4.8): grãos que flutuam num cilindro de luz (o poço, o buraco do pátio, a luz do
   // nicho alto). Antes havia poeira na sala inteira, igual em toda parte: saiu. Pode haver vários feixes por sala.
-  beamDust(cx: number, cz: number, r: number, y0: number, y1: number, n = 36, color = 0xf0e4c8) {
-    const pos = new Float32Array(n * 3);
-    const seed: number[] = [];
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const rr = Math.sqrt(Math.random()) * r * 0.9;
-      pos[i * 3] = cx + Math.cos(a) * rr;
-      pos[i * 3 + 1] = y0 + Math.random() * (y1 - y0);
-      pos[i * 3 + 2] = cz + Math.sin(a) * rr;
-      seed.push(Math.random() * 10);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.beams.push({ geo, cx, cz, r, y0, y1, seed });
-    this.group.add(new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.75, fog: false, depthWrite: false })));
+  // (DESIGN.md §95) Os grãos agora são a POEIRA FINA do `fx.ts` (um pixel cada, muitos, cintilando), e o facho ganha o FEIXE que se vê no ar
+  // (`shaft` = a força dele; 0 = só a poeira, para a luz que não vem reta de cima). `n` é o número de antes: a poeira fina usa 4,5 vezes isso.
+  beamDust(cx: number, cz: number, r: number, y0: number, y1: number, n = 36, color = 0xf0e4c8, shaft = 0.085) {
+    const from = new THREE.Vector3(cx, y1, cz);
+    const to = new THREE.Vector3(cx, y0, cz);
+    if (shaft > 0) lightShaft(this.group, from, to, r, r * 1.22, color, shaft);
+    fineDust(this.group, from, to, r * 0.92, r * 1.12, Math.round(n * 4.5), color);
   }
 
   // Junta as caixas decorativas que usam o mesmo material numa única malha (menos chamadas de
@@ -680,7 +672,8 @@ export class Kit {
     this.group.add(this.emberPts);
   }
 
-  tick(dt: number, t: number) {
+  tick(_dt: number, t: number) {
+    fxClock.value = t;
     if (!this.emberPts && this.torches.length) this.buildEmbers();
     if (this.emberPts) {
       const arr = this.emberPts.geometry.attributes.position.array as Float32Array;
@@ -717,26 +710,6 @@ export class Kit {
         tc.halo.visible = fake > 0.02;
       }
     });
-    for (const b of this.beams) {
-      // descem devagar, rodopiando (a luz de cima as faz brilhar); quem sai do feixe volta para o alto dele
-      const arr = b.geo.attributes.position.array as Float32Array;
-      for (let i = 0; i < b.seed.length; i++) {
-        const k = b.seed[i];
-        arr[i * 3] += Math.sin(t * 0.5 + k) * dt * 0.05;
-        arr[i * 3 + 2] += Math.cos(t * 0.43 + k * 1.7) * dt * 0.05;
-        arr[i * 3 + 1] -= dt * (0.03 + (k % 1) * 0.04);
-        const dx = arr[i * 3] - b.cx;
-        const dz = arr[i * 3 + 2] - b.cz;
-        if (arr[i * 3 + 1] < b.y0 || dx * dx + dz * dz > b.r * b.r) {
-          const a = k * 2.3 + t;
-          const rr = Math.sqrt((k * 0.37) % 1) * b.r * 0.85;
-          arr[i * 3] = b.cx + Math.cos(a) * rr;
-          arr[i * 3 + 1] = b.y1 - Math.random() * 0.3;
-          arr[i * 3 + 2] = b.cz + Math.sin(a) * rr;
-        }
-      }
-      b.geo.attributes.position.needsUpdate = true;
-    }
     void this.flicker;
   }
 }
