@@ -167,9 +167,18 @@ export function Bench({ api, ready }: { api: React.MutableRefObject<SceneApi | n
     window.addEventListener('resize', r);
     return () => window.removeEventListener('resize', r);
   }, []);
+  // pronto de verdade: o cenário desenhado E a placa de vídeo com os materiais de todas as salas preparados (DESIGN.md §101)
+  const [warm, setWarm] = useState(false);
   useEffect(() => {
-    if (ready && !loadSecs.current) loadSecs.current = performance.now() / 1000;
-  }, [ready]);
+    if (!ready || warm) return;
+    const t = window.setInterval(() => {
+      if (api.current?.benchReady()) {
+        setWarm(true);
+        if (!loadSecs.current) loadSecs.current = performance.now() / 1000;
+      }
+    }, 200);
+    return () => window.clearInterval(t);
+  }, [ready, warm, api]);
   useEffect(
     () => () => {
       cancel.current = true;
@@ -406,8 +415,8 @@ export function Bench({ api, ready }: { api: React.MutableRefObject<SceneApi | n
           {!landscape && <p className="bench-warn">Deite o aparelho (tela na horizontal) para começar.</p>}
         </div>
         <div className="row-btns bench-btns">
-          <button className="plq plq-gold" disabled={!ready || !landscape} onClick={run}>
-            {ready ? 'Começar' : 'Carregando'}
+          <button className="plq plq-gold" disabled={!warm || !landscape} onClick={run}>
+            {warm ? 'Começar' : 'Carregando'}
           </button>
           <button className="plq" onClick={toGame}>
             Ir para o jogo

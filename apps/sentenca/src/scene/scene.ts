@@ -188,6 +188,7 @@ export interface SceneApi {
   benchRooms(): string[];
   benchView(v: { room: number; yaw: number; pitch: number } | null): void;
   benchRes(): { w: number; h: number };
+  benchReady(): boolean; // a placa de vídeo já preparou os materiais de todas as salas (o teste espera, para não medir a preparação)
   dispose(): void;
 }
 
@@ -3767,14 +3768,29 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     };
     saves.writeMeta(m);
   };
-  // pede um salvamento com miniatura (a imagem é copiada logo depois do próximo quadro)
-  const saveGame = (then?: () => void) => {
+  // pede um salvamento com miniatura (a imagem é copiada logo depois do próximo quadro).
+  // O ENGASGO AO ENTRAR NUMA SALA (DESIGN.md §101): copiar a imagem para a miniatura faz a placa de vídeo parar e entregar o quadro, e isso
+  // custava de 5 a 10 quadros de uma vez, toda vez que o jogador cruzava uma porta. Agora o salvamento AUTOMÁTICO (`quiet`: entrar numa
+  // sala, resolver um puzzle, fechar o caderno) grava na hora sem foto nova, e a foto fica para um momento PARADO (o jogador sem andar nem
+  // virar por 0,6 s), quando um quadro a mais não se vê. Pausar e voltar à tela inicial tiram a foto na hora (a imagem já está parada).
+  let thumbPending = false;
+  let stillT = 0;
+  let thumbAge = 0;
+  const saveGame = (then?: () => void, quiet = false) => {
     saveIn = Infinity;
     if (!canSave()) {
       then?.();
       return;
     }
+    if (quiet && !then) {
+      writeSave();
+      thumbPending = true;
+      thumbAge = 0;
+      stillT = 0;
+      return;
+    }
     thumbWant = true;
+    thumbPending = false;
     if (then) afterSave = then;
   };
   const captureThumb = () => {
@@ -4300,10 +4316,82 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
   let readyT = 0;
   let readySent = false;
   let barShown = 0; // a barra como o jogador a vê (anda macio até o valor de verdade)
+  // PREPARAR A PLACA DE VÍDEO (DESIGN.md §101): na primeira vez que uma sala aparecia, a placa de vídeo montava os materiais dela (os
+  // "shaders") e recebia as texturas, e o quadro engasgava (a Biblioteca, quase 1 s num aparelho lento). Agora, assim que os modelos chegam:
+  //  · os MATERIAIS de todas as salas são montados de uma vez (em paralelo quando o navegador deixa: compileAsync), montados para a imagem do
+  //    pós-processo, onde a sala é desenhada; a tela de carregamento espera isso terminar;
+  //  · as TEXTURAS (~100 MB no capítulo 1) sobem aos poucos, das salas mais perto do jogador para as mais longe: ~10 ms por quadro nas
+  //    telas de carregamento e inicial (nada a jogar ali), ~2 ms durante o jogo. Uma sala que aparece antes de a fila chegar nela sobe as
+  //    dela na hora, como antes.
+  let warmState: 'no' | 'going' | 'done' = 'no';
+  let warmT0 = 0;
+  const texQueue: THREE.Texture[] = [];
+  const texOf = (o: THREE.Object3D, out: Set<THREE.Texture>) => {
+    const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+    if (!m) return;
+    for (const mt of Array.isArray(m) ? m : [m]) {
+      for (const v of Object.values(mt as unknown as Record<string, unknown>)) if ((v as THREE.Texture)?.isTexture) out.add(v as THREE.Texture);
+      const u = (mt as THREE.ShaderMaterial).uniforms;
+      if (u) for (const k in u) if ((u[k]?.value as THREE.Texture)?.isTexture) out.add(u[k].value as THREE.Texture);
+    }
+  };
+  const warmUp = () => {
+    warmState = 'going';
+    warmT0 = performance.now();
+    try {
+      scene.updateMatrixWorld(true);
+      // a fila das texturas: a sala do jogador e as vizinhas primeiro
+      const seen = new Set<THREE.Texture>();
+      const order = rooms.map((_, i) => i).sort((a, b) => Math.abs(a - curRoom) - Math.abs(b - curRoom));
+      const queue: THREE.Texture[] = [];
+      const take = (g: THREE.Object3D) => {
+        const set = new Set<THREE.Texture>();
+        g.traverse((o) => texOf(o, set));
+        set.forEach((tx) => {
+          if (seen.has(tx) || (tx as THREE.Texture & { isRenderTargetTexture?: boolean }).isRenderTargetTexture || (tx as THREE.DepthTexture).isDepthTexture) return;
+          seen.add(tx);
+          queue.push(tx);
+        });
+      };
+      order.forEach((i) => take(rooms[i].group));
+      take(scene);
+      texQueue.push(...queue.reverse()); // (pop tira do fim: o fim é o mais perto)
+      // os materiais: montados para a imagem do pós-processo (a sala é desenhada nela, não direto na tela; senão a placa de vídeo monta
+      // tudo de novo na primeira vez de cada sala)
+      const prevRt = renderer.getRenderTarget();
+      renderer.setRenderTarget(rt);
+      const job = renderer.compileAsync(scene, camera);
+      renderer.setRenderTarget(prevRt);
+      job
+        .catch(() => undefined)
+        .finally(() => {
+          warmState = 'done';
+          if (import.meta.env.DEV) console.info(`[placa de vídeo] materiais de todas as salas prontos em ${Math.round(performance.now() - warmT0)} ms; ${texQueue.length} texturas na fila`);
+        });
+    } catch {
+      warmState = 'done'; // (se falhar, o jogo segue como antes: cada sala se prepara na primeira vez)
+    }
+  };
+  const warmTex = () => {
+    if (!texQueue.length) return;
+    const budget = mode === 'load' ? 12 : mode === 'title' ? 6 : 2; // (na tela inicial o dado ainda se mexe: menos de uma vez)
+    const t0 = performance.now();
+    do {
+      const tx = texQueue.pop()!;
+      try {
+        renderer.initTexture(tx);
+      } catch {
+        /* uma textura que não sobe agora sobe quando aparecer */
+      }
+    } while (texQueue.length && performance.now() - t0 < budget);
+    if (import.meta.env.DEV && !texQueue.length) console.info(`[placa de vídeo] texturas de todas as salas na placa em ${Math.round(performance.now() - warmT0)} ms`);
+  };
   const readyTick = (dt: number) => {
     readyT += dt;
     const models = loading.models();
     const fonts = loading.fonts();
+    if (warmState === 'no' && models >= 1 && drawn >= 2) warmUp();
+    else if (warmState !== 'no') warmTex();
     if (!readySent && ((drawn >= 4 && models >= 1 && fonts) || readyT > 10)) {
       readySent = true;
       opts.onReady?.();
@@ -4312,7 +4400,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       const a = sfx.progress;
       const p = 0.2 * Math.min(1, drawn / 6) + 0.3 * models + 0.5 * a;
       barShown = Math.min(p, barShown + dt / 1.4); // (no mínimo ~1,4 s de barra: dá tempo de ver o fogo correr)
-      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone()) || loadT > 15; // (pronto: a frase inteira acesa)
+      const ready = (barShown >= 0.999 && drawn >= 6 && fonts && loadArt.allDone() && warmState === 'done') || loadT > 15; // (pronto: a frase inteira acesa e a placa de vídeo preparada)
       loading.set(ready ? 1 : barShown, ready, sfx.unlocked);
     }
   };
@@ -4780,8 +4868,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     }
   };
   let benchCam: { yaw: number; pitch: number } | null = null;
+  let stillYaw = 0;
+  let stillPitch = 0;
+  const PROBE = import.meta.env.DEV ? ((globalThis as Record<string, unknown>).__probe = (globalThis as Record<string, unknown>).__probe ?? []) as Record<string, number | string>[] : null;
+  let pf: Record<string, number | string> = {};
   const frame = (now: number) => {
     if (fpsCap > 0 && now - lastDraw < 1000 / fpsCap - 2) return; // limitar quadros (configurações)
+    const p0 = performance.now();
+    if (PROBE) pf = { room: curRoom };
     lastDraw = now;
     // pausa e tela de carregamento: o mundo pára (fogo, tempo), só a imagem continua; na tela de carregamento o dado do canto vive (rdt)
     const paused = ui.menu() === 'pause' || mode === 'load';
@@ -4808,7 +4902,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     } else if (!paused) {
       playTime += dt;
       saveIn -= dt;
-      if (saveIn <= 0) saveGame();
+      if (saveIn <= 0) saveGame(undefined, true);
       const dOpen = ui.diaryOpen();
       if (diaryWas && !dOpen) saveIn = Math.min(saveIn, 0.6); // fechou o diário: salva
       diaryWas = dOpen;
@@ -4821,8 +4915,12 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     if (ri !== curRoom && mode === 'play') {
       curRoom = ri;
       saveIn = Math.min(saveIn, 0.25); // entrou numa sala: salva
+      const pa = performance.now();
       diary.visitRoom(rooms[ri].name);
+      if (PROBE) pf.visit = performance.now() - pa;
+      const pb = performance.now();
       applyActive();
+      if (PROBE) pf.active = performance.now() - pb;
       // saiu da sala do dado: o dado volta pra mão (a porta atrás fecha)
       if (dieState !== 'hand' && dieRoom !== curRoom) resetDie();
       if (/Mirante/.test(rooms[ri].name)) chatFn('cold');
@@ -5263,10 +5361,19 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
     updateHot(t);
     updateGrade(dt);
     renderer.info.reset();
+    const pr = performance.now();
+    if (PROBE) pf.logic = pr - p0;
+    const progs0 = renderer.info.programs?.length ?? 0;
+    const tex0 = renderer.info.memory.textures;
     renderer.setRenderTarget(rt);
     renderer.setClearColor(fogColor, 1);
     renderer.clear();
     renderer.render(scene, camera);
+    if (PROBE) {
+      pf.render = performance.now() - pr;
+      pf.newProgs = (renderer.info.programs?.length ?? 0) - progs0;
+      pf.newTex = renderer.info.memory.textures - tex0;
+    }
     // dado e giz do HUD: alvo à parte (fundo transparente), colados por cima no pós-processo
     renderer.setRenderTarget(rtHud);
     renderer.setClearColor(0x000000, 0);
@@ -5297,7 +5404,28 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
         opts.onIntroSkip?.(sk);
       }
     }
-    if (thumbWant) captureThumb(); // (logo depois de desenhar: a imagem ainda está no canvas)
+    // a foto da miniatura espera o jogador parar (ou, no máximo, 30 s)
+    if (thumbPending && !thumbWant && mode === 'play') {
+      const turning = Math.abs(yaw - stillYaw) + Math.abs(pitch - stillPitch) > 0.002;
+      stillT = moveVel.lengthSq() < 0.0025 && !turning && !cineCam && !ui.diaryOpen() ? stillT + rdt : 0;
+      thumbAge += rdt;
+      if (stillT >= 0.6 || thumbAge > 30) {
+        thumbWant = true;
+        thumbPending = false;
+      }
+    }
+    stillYaw = yaw;
+    stillPitch = pitch;
+    if (thumbWant) {
+      const pt = performance.now();
+      captureThumb(); // (logo depois de desenhar: a imagem ainda está no canvas)
+      if (PROBE) pf.thumb = performance.now() - pt;
+    }
+    if (PROBE) {
+      pf.total = performance.now() - p0;
+      PROBE.push(pf);
+      if (PROBE.length > 4000) PROBE.splice(0, 1000);
+    }
     if (snapWant) {
       // guarda a imagem (ou o preto) para a transição em pontilhado
       const u = postMat.uniforms.uDis.value;
@@ -5601,6 +5729,30 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       three: () => ({ scene, camera, renderer, rooms, postMat }), // (testes: medir luz e objetos de perto)
       puffs: () => puffs.count(), // (testes) quantos grãos de poeira/fagulha estão vivos
       note: (id: string, text: string) => diary.setNote(id, text), // (testes) escreve uma anotação no caderno
+      // (testes) os programas de desenho já montados pela placa de vídeo, e se a preparação de todas as salas terminou (DESIGN.md §101)
+      progs: () => ({ warm: warmState, list: (renderer.info.programs ?? []).map((pg) => [pg.name, (pg as unknown as { cacheKey: string }).cacheKey]) }),
+      // (testes) quanta memória de vídeo as texturas de cada sala ocupam (MB, com mipmaps)
+      texMem: () => {
+        const seen = new Set<THREE.Texture>();
+        const per = rooms.map((r) => {
+          let b = 0;
+          r.group.traverse((o) => {
+            const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+            if (!m) return;
+            for (const mt of Array.isArray(m) ? m : [m])
+              for (const v of Object.values(mt as unknown as Record<string, unknown>)) {
+                const tx = v as THREE.Texture;
+                if (!tx?.isTexture || seen.has(tx)) continue;
+                seen.add(tx);
+                const im = tx.image as { width?: number; height?: number } | undefined;
+                if (im?.width && im?.height) b += im.width * im.height * 4 * (tx.generateMipmaps ? 1.33 : 1);
+              }
+          });
+          return [r.name, +(b / 1048576).toFixed(1)] as [string, number];
+        });
+        return { total: +per.reduce((a, p) => a + p[1], 0).toFixed(1), count: seen.size, per };
+      },
+      thumbState: () => ({ thumbPending, stillT: +stillT.toFixed(2), thumbAge: +thumbAge.toFixed(1), v: +moveVel.length().toFixed(3) }),
       cfg: (k: string, v: unknown) => configStore.set((c) => ({ ...c, [k]: v })), // (testes) muda uma configuração
       reading: () => ({ r: readingStore.get(), look: lookingStore.get(), aim: aimNoteStore.get(), copy: diaryStore.get().copy ?? null }),
       ceilingDust: () => ceilingDust(curRoom),
@@ -5703,6 +5855,7 @@ export function createScene(canvas: HTMLCanvasElement, opts: SceneOptions = {}):
       benchCam = { yaw: y0 + v.yaw, pitch: v.pitch };
     },
     benchRes: () => ({ w: rt.width, h: rt.height }),
+    benchReady: () => warmState === 'done' && (texQueue.length === 0 || performance.now() - warmT0 > 25000),
     dispose() {
       cancelAnimationFrame(raf);
       unsubProgress();

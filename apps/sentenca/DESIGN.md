@@ -2446,3 +2446,33 @@ instalar nada (`src/ui/Bench.tsx`).
   passam de 60; no modo de economia de bateria muitos celulares travam em 30. O navegador do celular é praticamente o mesmo motor que o app
   embalado usaria, então o resultado vale para o app; o Steam Deck e o iPhone se testam neles mesmos.
 - `?bench=rapido`: o mesmo passeio em tempos curtos, só para conferir que o teste funciona (os números não valem).
+
+## 101. O engasgo ao entrar numa sala (cenógrafo, pedido do Pedro)
+
+"Às vezes, quando o jogador entra na sala, grande ou pequena, o jogo dá uma pequena engasgada. Ajudaria pôr portas com um carregamento
+pequeno?" Medido quadro a quadro (o motor marca, no modo de desenvolvimento, quanto cada parte custa: `__probe`), o engasgo NÃO era falta de
+carregar: o capítulo inteiro já é montado ao abrir o jogo. Eram duas coisas, e as duas foram corrigidas sem portas de carregamento (que
+quebrariam o mundo sem cortes, §73, e só esconderiam o engasgo atrás de uma pausa):
+
+1. **O salvamento automático tirava a foto da miniatura na entrada de toda sala.** Copiar a imagem para a miniatura obriga a placa de vídeo
+   a parar e entregar o quadro (o navegador avisava: "GPU stall due to ReadPixels"); custava de 5 a 10 quadros de uma vez, em TODA entrada.
+   Agora o salvamento automático (entrar numa sala, resolver um puzzle, fechar o caderno) grava na hora SEM foto nova, e a foto espera um
+   momento PARADO (o jogador sem andar nem virar por 0,6 s; no máximo 30 s), quando um quadro a mais não se vê. Pausar e voltar à tela
+   inicial tiram a foto na hora, como antes (a imagem já está parada). Saindo da página, o salvamento guarda a última foto.
+2. **Na primeira vez que uma sala aparecia, a placa de vídeo montava os materiais dela e recebia as texturas.** Na Lousa ~0,3 s, na Biblioteca
+   quase 1 s (medido no navegador da nuvem, sem placa de vídeo; num aparelho de verdade é menos, mas montar materiais é justamente o que
+   celular faz devagar). Agora, assim que os modelos chegam, os **materiais de todas as salas** são montados de uma vez (`compileAsync`, em
+   paralelo quando o navegador deixa), já para a imagem do pós-processo onde a sala é desenhada (montados para a tela, a placa de vídeo os
+   refazia todos); a tela de carregamento espera isso. As **texturas** (~100 MB no capítulo 1; elas nunca saíam da placa depois de usadas,
+   então o pico de memória é o mesmo de quem jogava o capítulo todo) sobem aos poucos, das salas perto do jogador para as longe: ~12 ms
+   por quadro na tela de carregamento, ~6 na inicial, ~2 durante o jogo.
+
+**O resultado** (o pior quadro da primeira visita, no navegador da nuvem; um quadro normal ali leva 10 a 25 ms): Lousa 338 → 56 ms, Fio de
+Fogo 1656 → 47, Biblioteca 892 → 111, e a foto da miniatura sumiu da entrada das salas. **O que sobra**: a primeira sombra de algumas salas
+(a Galeria, ~200 ms ali, monta o mapa de sombra da fresta de lua e um material de sombra; os Nichos montam alguns materiais de sombra pequenos):
+desenhar sombra usa materiais próprios que a montagem antecipada não alcança. Num aparelho de verdade deve ser bem menor; dá para atacar
+depois, se o teste de desempenho ou o Pedro ainda sentirem.
+
+Ganchos de teste (só no modo de desenvolvimento): `__probe` (o custo de cada parte de cada quadro), `__mdd.progs()` (os materiais montados e
+se a preparação terminou), `__mdd.texMem()` (a memória de vídeo das texturas, sala por sala), `__mdd.thumbState()`. O teste de desempenho
+(§100) espera a preparação terminar antes de liberar o Começar.
